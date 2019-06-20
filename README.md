@@ -1,15 +1,15 @@
-##### 宝塔开源许可协议：https://www.bt.cn/kyxy.html
-##### 使用手册：http://docs.bt.cn
-##### 论坛地址：https://www.bt.cn/bbs
-##### 反馈建议： https://www.bt.cn/bbs/forum-43-1.html
-##### Bug提交：https://www.bt.cn/bbs/forum-39-1.html
+##### aaPanel Open Source License Agreement：https://www.bt.cn/kyxy.html
+##### Manual：http://docs.bt.cn
+##### Forum address：https://forum.aapanel.com/
+##### Feedback： https://forum.aapanel.com/
+##### Bug submission：https://forum.aapanel.com/
 
-#### 安装命令：
+#### Installation command：
 ##### Centos
 ```bash
-yum install -y wget && wget -O install.sh http://download.bt.cn/install/install_6.0.sh && sh install.sh
+yum install -y wget && wget -O install.sh http://www.aapanel.com/script/install_6.0_en.sh && bash install.sh
 ```
 ##### Ubuntu/Debian
 ```bash
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh && sudo bash install.sh
+wget -O install.sh http://www.aapanel.com/script/install-ubuntu_6.0_en.sh && sudo bash install.sh
 ```
