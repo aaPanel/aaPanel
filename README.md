@@ -1,4 +1,3 @@
-##### aaPanel Open Source License Agreement：https://www.bt.cn/kyxy.html
 ##### Forum address：https://forum.aapanel.com/
 ##### Feedback： https://forum.aapanel.com/
 ##### Bug submission：https://forum.aapanel.com/
