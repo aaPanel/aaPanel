@@ -1,0 +1,79 @@
+[
+  {
+    "title": "Home",
+    "href": "/",
+    "class": "menu_home",
+    "id": "memuA",
+    "sort": 1
+  },
+  {
+    "title": "Website",
+    "href": "/site",
+    "class": "menu_web",
+    "id": "memuAsite",
+    "sort": 2
+  },
+  {
+    "title": "FTP",
+    "href": "/ftp",
+    "class": "menu_ftp",
+    "id": "memuAftp",
+    "sort": 3
+  },
+  {
+    "title": "Databases",
+    "href": "/database",
+    "class": "menu_data",
+    "id": "memuAdatabase",
+    "sort": 4
+  },
+  {
+    "title": "Monitor",
+    "href": "/control",
+    "class": "menu_control",
+    "id": "memuAcontrol",
+    "sort": 5
+  },
+  {
+    "title": "Security",
+    "href": "/firewall",
+    "class": "menu_firewall",
+    "id": "memuAfirewall",
+    "sort": 6
+  },
+  {
+    "title": "Files",
+    "href": "/files",
+    "class": "menu_folder",
+    "id": "memuAfiles",
+    "sort": 7
+  },
+  {
+    "title": "Cron",
+    "href": "/crontab",
+    "class": "menu_day",
+    "id": "memuAcrontab",
+    "sort": 8
+  },
+  {
+    "title": "App Store",
+    "href": "/soft",
+    "class": "menu_soft",
+    "id": "memuAsoft",
+    "sort": 9
+  },
+  {
+    "title": "Settings",
+    "href": "/config",
+    "class": "menu_set",
+    "id": "memuAconfig",
+    "sort": 10
+  },
+  {
+    "title": "Log out",
+    "href": "/login?dologin=True",
+    "class": "menu_exit",
+    "id": "dologin",
+    "sort": 11
+  }
+]

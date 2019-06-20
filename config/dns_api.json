@@ -1,0 +1,26 @@
+[
+  {
+    "name": "dns_cx",
+    "title": "CloudXns",
+    "ps": "Automatically resolve application SSL using cloudxns API interface",
+    "help": "CloudxnsBackground > User Center > API Management, follow the instructions to get AccessKey/SecretKey",
+    "data": [
+      {
+        "key": "SAVED_CX_Key",
+        "name": "AccessKey",
+        "value": ""
+      },
+      {
+        "key": "SAVED_CX_Secret",
+        "name": "SecretKey",
+        "value": ""
+      }
+    ]
+  },
+  {
+    "name": "dns",
+    "title": "Manual resolution",
+    "ps": "Returns the host and txt values, which are manually parsed by the user",
+    "data": false
+  }
+]

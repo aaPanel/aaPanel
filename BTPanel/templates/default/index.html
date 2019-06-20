@@ -1,0 +1,153 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="main-content">
+    <div class="index-pos-box bgw">
+        <div class="position f12 c6 pull-left" style="background:none;padding-left:15px">
+            <!--<span class="bind-user c4">-->
+                <!--<a href="javascript:bt.pub.bind_btname();" class="btlink">{{data['lan']['BT_ACCOUNT']}}</a>-->
+            <!--</span>-->
+			{% if data['pd'].find("{{data['lan']['BT_ACCOUNT']}}") != -1 %}
+			<span class="bt-dashi">
+			<a class="btlink" href="https://www.bt.cn/invite" target="_blank" style="margin-left:5px">{{data['lan']['INVITATION_REWARD']}}</a>
+			</span>
+			{% endif %}
+            <!--<span class="bind-weixin c4"><a href="javascript:bt.weixin.open_wxapp();" class="btlink">{{data['lan']['WECHAT']}}</a></span>-->
+            <span class="ico-system">{{data['lan']['S1']}}</span><span id="info" style="margin-left:10px;"> {{data['lan']['S2']}}</span>&#12288;&#12288;{{data['lan']['S3']}} <span id="running">{{data['lan']['S4']}}</span>
+        </div>
+        <span class="pull-right f12 c6" style="line-height:52px; margin-right:15px">
+            <!--{{data['pd']|safe}}--> <span id="btversion" style="margin-right:10px"><a onclick="index.open_log()">{{session['version']}}</a></span>
+            <span id="toUpdate"><a class="btlink" href="javascript:index.check_update();">{{data['lan']['UPDATE']}}</a></span>
+            <span style="margin:0 10px"><a class="btlink" href="javascript:index.re_panel();">{{data['lan']['FIX']}}</a></span>
+            <span style="margin-right:10px"><a class="btlink" href="javascript:index.re_server();">{{data['lan']['RESTART']}}</a></span>
+        </span>
+    </div>
+    <div class="container-fluid" style="padding-bottom: 66px;">
+        <div class="danger-tips">
+            <div class="important-title" id="messageError" style="display: none; margin-top:15px"></div>
+        </div>
+        <div class="conter-box server bgw mtb15">
+            <div class="title c6 f16 plr15">
+                <h3 class="c6 f16 pull-left">{{data['lan']['STATUS']}}</h3>
+            </div>
+            <div class="server-circle">
+                <ul class="row" id="systemInfoList">
+                    <li class="col-xs-6 col-sm-3 col-md-3 col-lg-2 mtb20 circle-box text-center loadbox">
+                        <h3 class="c9 f15">{{data['lan']['LOAD_STATUS']}}<a href="https://www.bt.cn/bbs/thread-11402-1-1.html" target="_blank" class="bt-ico-ask" style="cursor: pointer;">?</a></h3>
+                        <div class="cicle">
+                            <div class="bar bar-left">
+                                <div class="bar-left-an bar-an"></div>
+                            </div>
+                            <div class="bar bar-right">
+                                <div class="bar-right-an bar-an"></div>
+                            </div>
+                            <div class="occupy"><span>0</span>%</div>
+                        </div>
+                        <h4 class="c9 f15">{{data['lan']['S2']}}</h4>
+                    </li>
+                    <li class="col-xs-6 col-sm-3 col-md-3 col-lg-2 mtb20 circle-box text-center cpubox">
+                        <h3 class="c9 f15">{{data['lan']['P1']}}</h3>
+                        <div class="cicle">
+                            <div class="bar bar-left">
+                                <div class="bar-left-an bar-an"></div>
+                            </div>
+                            <div class="bar bar-right">
+                                <div class="bar-right-an bar-an"></div>
+                            </div>
+                            <div class="occupy"><span>0</span>%</div>
+                        </div>
+                        <h4 class="c9 f15">{{data['lan']['S2']}}</h4>
+                    </li>
+                    <li class="col-xs-6 col-sm-3 col-md-3 col-lg-2 mtb20 circle-box text-center membox">
+                        <h3 class="c9 f15">{{data['lan']['P2']}}</h3>
+                        <div class="cicle mem-release">
+                            <div class="bar bar-left">
+                                <div class="bar-left-an bar-an"></div>
+                            </div>
+                            <div class="bar bar-right">
+                                <div class="bar-right-an bar-an"></div>
+                            </div>
+                            <div class="occupy"><span>0</span>%</div>
+                            <div class="mem-re-min"></div>
+                            <div class="mem-re-con" title="$data['lan']['P3']"></div>
+                        </div>
+                        <h4 class="c9 f15">{{data['lan']['S2']}}</h4>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="conter-box system-info bgw clearfix mtb15">
+            <div class="title c6 f16 plr15">
+                {{data['lan']['Overview']}}
+            </div>
+            <div class="system-info-con mtb20">
+                <ul class="clearfix text-center">
+                    <li class="sys-li-box col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                        <p class="name f15 c9">{{data['lan']['N1']}}</p>
+                        <div class="val"><a class="btlink" href="/site">{{data['siteCount']}}</a></div>
+                    </li>
+                    <li class="sys-li-box col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                        <p class="name f15 c9">{{data['lan']['N3']}}</p>
+                        <div class="val"><a class="btlink" href="/ftp">{{data['ftpCount']}}</a></div>
+                    </li>
+                    <li class="sys-li-box col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                        <p class="name f15 c9">{{data['lan']['N2']}}</p>
+                        <div class="val"><a class="btlink" href="/database">{{data['databaseCount']}}</a></div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-xs-12 col-sm-12 col-md-6 pull-left pd0">
+            <div class="pr8">
+                <div class="bgw conter-box">
+                    <div class="title c6 f16 plr15">{{data['lan']['P4']}}</div>
+                    <div class="setting-con" style="padding:0; height:442px; margin-right: -4px; overflow: hidden;">
+                        <div class="container-fluid soft-man">
+                            <input name="list1SortOrder" type="hidden" value="" />
+                            <div id="indexsoft" class="row"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-12 col-sm-12 col-md-6 pull-left pd0">
+            <div class="pl7">
+                <div class="bgw conter-box" style="height:491px">
+                    <div class="title c6 f16 plr15">{{data['lan']['FLOW']}}</div>
+                    <div class="bw-info">
+                        <div class="col-sm-6 col-md-3"><p class="c9"><span class="ico-up"></span>{{data['lan']['UPLOAD']}}</p><a id="upSpeed">{{data['lan']['S2']}}</a></div>
+                        <div class="col-sm-6 col-md-3"><p class="c9"><span class="ico-down"></span>{{data['lan']['DOWNLOAD']}}</p><a id="downSpeed">{{data['lan']['S2']}}</a></div>
+                        <div class="col-sm-6 col-md-3"><p class="c9">{{data['lan']['TOTAL_TX']}}</p><a id="upAll">{{data['lan']['S2']}}</a></div>
+                        <div class="col-sm-6 col-md-3"><p class="c9">{{data['lan']['TOTAL_RX']}}</p><a id="downAll">{{data['lan']['S2']}}</a></div>
+                    </div>
+                    <div id="NetImg" style="width:100%;height:370px;"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
+<script type="text/javascript" src="/static/js/echarts.min.js"></script>
+<script type="text/javascript" src="/static/js/index.js?version={{g['version']}}"></script>
+<script type="text/javascript" src="/static/js/soft.js?version={{g['version']}}"></script>
+<script type="text/javascript">
+	$(".btpro").click(function(){
+        layer.confirm(lan.index.change_free, { icon: 3, btn: [lan.index.ubind], closeBtn: 2, title: lan.index.confirm_cancel }, function () {
+            $.post('/ssl?action=DelToken', {}, function (rdata) {
+                layer.msg(rdata.msg);
+                setTimeout(function () {
+                    window.location.reload();
+                },2000);
+            });
+        });
+	})
+</script>
+
+{% endblock %}

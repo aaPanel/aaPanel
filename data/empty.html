@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Site not found</title>
+<style>
+*{margin:0;padding:0;color:#444}
+body{font-size:14px;font-family:"宋体"}
+.main{width:600px;margin:10% auto;}
+.title{background: #20a53a;color: #fff;font-size: 16px;height: 40px;line-height: 40px;padding-left: 20px;}
+.content{background-color:#f3f7f9; height:300px;border:1px dashed #c6d9b6;padding:20px}
+.t1{border-bottom: 1px dashed #c6d9b6;color: #ff4000;font-weight: bold; margin: 0 0 20px; padding-bottom: 18px;}
+.t2{margin-bottom:8px; font-weight:bold}
+ol{margin:0 0 20px 22px;padding:0;}
+ol li{line-height:30px}
+</style>
+</head>
+
+<body>
+	<div class="main">
+		<div class="title">Site not found</div>
+		<div class="content">
+			<p class="t1">Your request did not find this site in the web server!</p>
+			<p class="t2">Probable cause: </p>
+			<ol>
+				<li>Did not bind this domain name or IP to this site!</li>
+				<li>Configuration file not in effect!</li>
+			</ol>
+			<p class="t2">How to solve: </p>
+			<ol>
+				<li>Check whether already bound to the site, if true, try reloading the Web services.</li>
+				<li>Check if the port is correct.</li>
+				<li>If you are using a CDN product, try clearing the CDN cache.</li>
+				<li>For ordinary website visitors, please contact the webadmin.</li>
+			</ol>
+		</div>
+	</div>
+</body>
+</html>
