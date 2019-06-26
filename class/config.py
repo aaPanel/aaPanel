@@ -58,21 +58,21 @@ class config:
         if oldPort != get.port:
             get.port = str(int(get.port))
             if self.IsOpen(get.port):
-                return public.returnMsg(False, 'PORT_CHECK_EXISTS', (get.port,))
-            if int(get.port) >= 65535 or int(get.port) < 100: return public.returnMsg(False, 'PORT_CHECK_RANGE');
-            public.writeFile('data/port.pl', get.port)
+                return public.returnMsg(False,'PORT_CHECK_EXISTS',(get.port,))
+            if int(get.port) >= 65535 or  int(get.port) < 100: return public.returnMsg(False,'PORT_CHECK_RANGE');
+            public.writeFile('data/port.pl',get.port)
             import firewalls
             get.ps = public.getMsg('PORT_CHECK_PS');
             fw = firewalls.firewalls();
             fw.AddAcceptPort(get);
             get.port = oldPort;
-            get.id = public.M('firewall').where("port=?", (oldPort,)).getField('id');
+            get.id = public.M('firewall').where("port=?",(oldPort,)).getField('id');
             fw.DelAcceptPort(get);
             isReWeb = True
 
         if get.webname != session['title']:
             session['title'] = get.webname
-            public.SetConfigValue('title', get.webname)
+            public.SetConfigValue('title',get.webname)
 
         limitip = public.readFile('data/limitip.conf');
         if get.limitip != limitip: public.writeFile('data/limitip.conf',get.limitip);
@@ -91,7 +91,8 @@ class config:
         if isReWeb: public.restart_panel()
         return data
 
-    def set_admin_path(self, get):
+
+    def set_admin_path(self,get):
         get.admin_path = get.admin_path.strip()
         if get.admin_path == '': get.admin_path = '/'
         if get.admin_path != '/':
@@ -111,121 +112,124 @@ class config:
         admin_path = '/'
         if os.path.exists(admin_path_file): admin_path = public.readFile(admin_path_file).strip()
         if get.admin_path != admin_path:
-            public.writeFile(admin_path_file, get.admin_path)
+            public.writeFile(admin_path_file,get.admin_path)
             public.restart_panel()
         return public.returnMsg(True, 'EDIT_SUCCESS');
 
-    def setPathInfo(self, get):
-        # 设置PATH_INFO
+
+    def setPathInfo(self,get):
+        #设置PATH_INFO
         version = get.version
         type = get.type
         if public.get_webserver() == 'nginx':
-            path = public.GetConfigValue('setup_path') + '/nginx/conf/enable-php-' + version + '.conf';
+            path = public.GetConfigValue('setup_path')+'/nginx/conf/enable-php-'+version+'.conf';
             conf = public.readFile(path);
             rep = "\s+#*include\s+pathinfo.conf;";
             if type == 'on':
-                conf = re.sub(rep, '\n\t\t\tinclude pathinfo.conf;', conf)
+                conf = re.sub(rep,'\n\t\t\tinclude pathinfo.conf;',conf)
             else:
-                conf = re.sub(rep, '\n\t\t\t#include pathinfo.conf;', conf)
-            public.writeFile(path, conf)
+                conf = re.sub(rep,'\n\t\t\t#include pathinfo.conf;',conf)
+            public.writeFile(path,conf)
             public.serviceReload();
 
-        path = public.GetConfigValue('setup_path') + '/php/' + version + '/etc/php.ini';
+        path = public.GetConfigValue('setup_path')+'/php/'+version+'/etc/php.ini';
         conf = public.readFile(path);
         rep = "\n*\s*cgi\.fix_pathinfo\s*=\s*([0-9]+)\s*\n";
         status = '0'
-        if type == 'on': status = '1'
-        conf = re.sub(rep, "\ncgi.fix_pathinfo = " + status + "\n", conf)
-        public.writeFile(path, conf)
-        public.WriteLog("TYPE_PHP", "PHP_PATHINFO_SUCCESS", (version, type));
+        if type == 'on':status = '1'
+        conf = re.sub(rep,"\ncgi.fix_pathinfo = "+status+"\n",conf)
+        public.writeFile(path,conf)
+        public.WriteLog("TYPE_PHP", "PHP_PATHINFO_SUCCESS",(version,type));
         public.phpReload(version);
-        return public.returnMsg(True, 'SET_SUCCESS');
+        return public.returnMsg(True,'SET_SUCCESS');
 
-    # 设置文件上传大小限制
-    def setPHPMaxSize(self, get):
+
+    #设置文件上传大小限制
+    def setPHPMaxSize(self,get):
         version = get.version
         max = get.max
 
-        if int(max) < 2: return public.returnMsg(False, 'PHP_UPLOAD_MAX_ERR')
+        if int(max) < 2: return public.returnMsg(False,'PHP_UPLOAD_MAX_ERR')
 
-        # 设置PHP
-        path = public.GetConfigValue('setup_path') + '/php/' + version + '/etc/php.ini'
+        #设置PHP
+        path = public.GetConfigValue('setup_path')+'/php/'+version+'/etc/php.ini'
         conf = public.readFile(path)
         rep = u"\nupload_max_filesize\s*=\s*[0-9]+M"
-        conf = re.sub(rep, u'\nupload_max_filesize = ' + max + 'M', conf)
+        conf = re.sub(rep,u'\nupload_max_filesize = '+max+'M',conf)
         rep = u"\npost_max_size\s*=\s*[0-9]+M"
-        conf = re.sub(rep, u'\npost_max_size = ' + max + 'M', conf)
-        public.writeFile(path, conf)
+        conf = re.sub(rep,u'\npost_max_size = '+max+'M',conf)
+        public.writeFile(path,conf)
 
         if public.get_webserver() == 'nginx':
-            # 设置Nginx
-            path = public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf'
+            #设置Nginx
+            path = public.GetConfigValue('setup_path')+'/nginx/conf/nginx.conf'
             conf = public.readFile(path)
             rep = "client_max_body_size\s+([0-9]+)m"
-            tmp = re.search(rep, conf).groups()
+            tmp = re.search(rep,conf).groups()
             if int(tmp[0]) < int(max):
-                conf = re.sub(rep, 'client_max_body_size ' + max + 'm', conf)
-                public.writeFile(path, conf)
+                conf = re.sub(rep,'client_max_body_size '+max+'m',conf)
+                public.writeFile(path,conf)
 
         public.serviceReload()
         public.phpReload(version);
-        public.WriteLog("TYPE_PHP", "PHP_UPLOAD_MAX", (version, max))
-        return public.returnMsg(True, 'SET_SUCCESS')
+        public.WriteLog("TYPE_PHP", "PHP_UPLOAD_MAX",(version,max))
+        return public.returnMsg(True,'SET_SUCCESS')
 
-    # 设置禁用函数
-    def setPHPDisable(self, get):
+    #设置禁用函数
+    def setPHPDisable(self,get):
         filename = public.GetConfigValue('setup_path') + '/php/' + get.version + '/etc/php.ini'
-        if not os.path.exists(filename): return public.returnMsg(False, 'PHP_NOT_EXISTS');
+        if not os.path.exists(filename): return public.returnMsg(False,'PHP_NOT_EXISTS');
         phpini = public.readFile(filename);
         rep = "disable_functions\s*=\s*.*\n"
         phpini = re.sub(rep, 'disable_functions = ' + get.disable_functions + "\n", phpini);
-        public.WriteLog('TYPE_PHP', 'PHP_DISABLE_FUNCTION', (get.version, get.disable_functions))
-        public.writeFile(filename, phpini);
+        public.WriteLog('TYPE_PHP','PHP_DISABLE_FUNCTION',(get.version,get.disable_functions))
+        public.writeFile(filename,phpini);
         public.phpReload(get.version);
-        return public.returnMsg(True, 'SET_SUCCESS');
+        return public.returnMsg(True,'SET_SUCCESS');
 
-    # 设置PHP超时时间
-    def setPHPMaxTime(self, get):
+    #设置PHP超时时间
+    def setPHPMaxTime(self,get):
         time = get.time
         version = get.version;
-        if int(time) < 30 or int(time) > 86400: return public.returnMsg(False, 'PHP_TIMEOUT_ERR');
-        file = public.GetConfigValue('setup_path') + '/php/' + version + '/etc/php-fpm.conf';
+        if int(time) < 30 or int(time) > 86400: return public.returnMsg(False,'PHP_TIMEOUT_ERR');
+        file = public.GetConfigValue('setup_path')+'/php/'+version+'/etc/php-fpm.conf';
         conf = public.readFile(file);
         rep = "request_terminate_timeout\s*=\s*([0-9]+)\n";
-        conf = re.sub(rep, "request_terminate_timeout = " + time + "\n", conf);
-        public.writeFile(file, conf)
+        conf = re.sub(rep,"request_terminate_timeout = "+time+"\n",conf);
+        public.writeFile(file,conf)
 
-        file = '/www/server/php/' + version + '/etc/php.ini';
+        file = '/www/server/php/'+version+'/etc/php.ini';
         phpini = public.readFile(file);
         rep = "max_execution_time\s*=\s*([0-9]+)\r?\n";
-        phpini = re.sub(rep, "max_execution_time = " + time + "\n", phpini);
+        phpini = re.sub(rep,"max_execution_time = "+time+"\n",phpini);
         rep = "max_input_time\s*=\s*([0-9]+)\r?\n";
-        phpini = re.sub(rep, "max_input_time = " + time + "\n", phpini);
-        public.writeFile(file, phpini)
+        phpini = re.sub(rep,"max_input_time = "+time+"\n",phpini);
+        public.writeFile(file,phpini)
 
         if public.get_webserver() == 'nginx':
-            # 设置Nginx
-            path = public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf';
+            #设置Nginx
+            path = public.GetConfigValue('setup_path')+'/nginx/conf/nginx.conf';
             conf = public.readFile(path);
             rep = "fastcgi_connect_timeout\s+([0-9]+);";
             tmp = re.search(rep, conf).groups();
             if int(tmp[0]) < int(time):
-                conf = re.sub(rep, 'fastcgi_connect_timeout ' + time + ';', conf);
+                conf = re.sub(rep,'fastcgi_connect_timeout '+time+';',conf);
                 rep = "fastcgi_send_timeout\s+([0-9]+);";
-                conf = re.sub(rep, 'fastcgi_send_timeout ' + time + ';', conf);
+                conf = re.sub(rep,'fastcgi_send_timeout '+time+';',conf);
                 rep = "fastcgi_read_timeout\s+([0-9]+);";
-                conf = re.sub(rep, 'fastcgi_read_timeout ' + time + ';', conf);
-                public.writeFile(path, conf);
+                conf = re.sub(rep,'fastcgi_read_timeout '+time+';',conf);
+                public.writeFile(path,conf);
 
-        public.WriteLog("TYPE_PHP", "PHP_TIMEOUT", (version, time));
+        public.WriteLog("TYPE_PHP", "PHP_TIMEOUT",(version,time));
         public.serviceReload()
         public.phpReload(version);
         return public.returnMsg(True, 'SET_SUCCESS');
 
-    # 取FPM设置
-    def getFpmConfig(self, get):
+
+    #取FPM设置
+    def getFpmConfig(self,get):
         version = get.version;
-        file = public.GetConfigValue('setup_path') + "/php/" + version + "/etc/php-fpm.conf";
+        file = public.GetConfigValue('setup_path')+"/php/"+version+"/etc/php-fpm.conf";
         conf = public.readFile(file);
         data = {}
         rep = "\s*pm.max_children\s*=\s*([0-9]+)\s*";
@@ -250,8 +254,9 @@ class config:
 
         return data
 
-    # 设置
-    def setFpmConfig(self, get):
+
+    #设置
+    def setFpmConfig(self,get):
         version = get.version
         max_children = get.max_children
         start_servers = get.start_servers
@@ -259,73 +264,75 @@ class config:
         max_spare_servers = get.max_spare_servers
         pm = get.pm
 
-        file = public.GetConfigValue('setup_path') + "/php/" + version + "/etc/php-fpm.conf";
+        file = public.GetConfigValue('setup_path')+"/php/"+version+"/etc/php-fpm.conf";
         conf = public.readFile(file);
 
         rep = "\s*pm.max_children\s*=\s*([0-9]+)\s*";
-        conf = re.sub(rep, "\npm.max_children = " + max_children, conf);
+        conf = re.sub(rep, "\npm.max_children = "+max_children, conf);
 
         rep = "\s*pm.start_servers\s*=\s*([0-9]+)\s*";
-        conf = re.sub(rep, "\npm.start_servers = " + start_servers, conf);
+        conf = re.sub(rep, "\npm.start_servers = "+start_servers, conf);
 
         rep = "\s*pm.min_spare_servers\s*=\s*([0-9]+)\s*";
-        conf = re.sub(rep, "\npm.min_spare_servers = " + min_spare_servers, conf);
+        conf = re.sub(rep, "\npm.min_spare_servers = "+min_spare_servers, conf);
 
         rep = "\s*pm.max_spare_servers \s*=\s*([0-9]+)\s*";
-        conf = re.sub(rep, "\npm.max_spare_servers = " + max_spare_servers + "\n", conf);
+        conf = re.sub(rep, "\npm.max_spare_servers = "+max_spare_servers+"\n", conf);
 
         rep = "\s*pm\s*=\s*(\w+)\s*";
-        conf = re.sub(rep, "\npm = " + pm + "\n", conf);
+        conf = re.sub(rep, "\npm = "+pm+"\n", conf);
 
-        public.writeFile(file, conf)
+        public.writeFile(file,conf)
         public.phpReload(version);
-        public.WriteLog("TYPE_PHP", 'PHP_CHILDREN',
-                        (version, max_children, start_servers, min_spare_servers, max_spare_servers));
+        public.WriteLog("TYPE_PHP",'PHP_CHILDREN', (version,max_children,start_servers,min_spare_servers,max_spare_servers));
         return public.returnMsg(True, 'SET_SUCCESS');
 
-    # 同步时间
-    def syncDate(self, get):
-        dateStr = public.HttpGet(public.GetConfigValue('home') + '/api/index/get_date')
-        result = public.ExecShell('date -s "%s"' % dateStr);
+    #同步时间
+    def syncDate(self,get):
+        time_str = public.HttpGet(public.GetConfigValue('home') + '/api/index/get_time')
+        new_time = int(time_str)
+        time_arr = time.localtime(new_time)
+        date_str = time.strftime("%Y-%m-%d %H:%M:%S", time_arr)
+        result = public.ExecShell('date -s "%s"' % date_str);
         public.WriteLog("TYPE_PANEL", "DATE_SUCCESS");
-        return public.returnMsg(True, "DATE_SUCCESS");
+        return public.returnMsg(True,"DATE_SUCCESS");
 
-    def IsOpen(self, port):
-        # 检查端口是否占用
+    def IsOpen(self,port):
+        #检查端口是否占用
         import socket
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         try:
-            s.connect(('127.0.0.1', int(port)))
+            s.connect(('127.0.0.1',int(port)))
             s.shutdown(2)
             return True
         except:
             return False
 
-    # 设置是否开启监控
-    def SetControl(self, get):
+    #设置是否开启监控
+    def SetControl(self,get):
         try:
-            if hasattr(get, 'day'):
+            if hasattr(get,'day'):
                 get.day = int(get.day);
                 get.day = str(get.day);
-                if (get.day < 1): return public.returnMsg(False, "CONTROL_ERR");
+                if(get.day < 1): return public.returnMsg(False,"CONTROL_ERR");
         except:
             pass
 
         filename = 'data/control.conf';
         if get.type == '1':
-            public.writeFile(filename, get.day);
-            public.WriteLog("TYPE_PANEL", 'CONTROL_OPEN', (get.day,));
+            public.writeFile(filename,get.day);
+            public.WriteLog("TYPE_PANEL",'CONTROL_OPEN',(get.day,));
         elif get.type == '0':
             public.ExecShell("rm -f " + filename);
             public.WriteLog("TYPE_PANEL", "CONTROL_CLOSE");
         elif get.type == 'del':
-            if not public.IsRestart(): return public.returnMsg(False, 'EXEC_ERR_TASK');
+            if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK');
             os.remove("data/system.db")
             import db;
             sql = db.Sql()
             result = sql.dbfile('system').create('system');
             public.WriteLog("TYPE_PANEL", "CONTROL_CLOSE");
-            return public.returnMsg(True, "CONTROL_CLOSE");
+            return public.returnMsg(True,"CONTROL_CLOSE");
 
         else:
             data = {}
@@ -340,10 +347,10 @@ class config:
                 data['status'] = False
             return data
 
-        return public.returnMsg(True, "SET_SUCCESS");
+        return public.returnMsg(True,"SET_SUCCESS");
 
-    # 关闭面板
-    def ClosePanel(self, get):
+    #关闭面板
+    def ClosePanel(self,get):
         filename = 'data/close.pl'
         if os.path.exists(filename):
             os.remove(filename)
@@ -351,69 +358,69 @@ class config:
         public.writeFile(filename, 'True');
         public.ExecShell("chmod 600 " + filename);
         public.ExecShell("chown root.root " + filename);
-        return public.returnMsg(True, 'PANEL_CLOSE');
+        return public.returnMsg(True,'PANEL_CLOSE');
 
-    # 设置自动更新
-    def AutoUpdatePanel(self, get):
-        # return public.returnMsg(False,'体验服务器，禁止修改!')
+
+    #设置自动更新
+    def AutoUpdatePanel(self,get):
+        #return public.returnMsg(False,'体验服务器，禁止修改!')
         filename = 'data/autoUpdate.pl'
         if os.path.exists(filename):
             os.remove(filename);
         else:
-            public.writeFile(filename, 'True');
+            public.writeFile(filename,'True');
             public.ExecShell("chmod 600 " + filename);
             public.ExecShell("chown root.root " + filename);
-        return public.returnMsg(True, 'SET_SUCCESS');
+        return public.returnMsg(True,'SET_SUCCESS');
 
-    # 设置二级密码
-    def SetPanelLock(self, get):
+    #设置二级密码
+    def SetPanelLock(self,get):
         path = 'data/lock';
         if not os.path.exists(path):
             public.ExecShell('mkdir ' + path);
             public.ExecShell("chmod 600 " + path);
             public.ExecShell("chown root.root " + path);
 
-        keys = ['files', 'tasks', 'config'];
+        keys = ['files','tasks','config'];
         for name in keys:
             filename = path + '/' + name + '.pl';
-            if hasattr(get, name):
-                public.writeFile(filename, 'True');
+            if hasattr(get,name):
+                public.writeFile(filename,'True');
             else:
                 if os.path.exists(filename): os.remove(filename);
 
-    # 设置PHP守护程序
-    def Set502(self, get):
+    #设置PHP守护程序
+    def Set502(self,get):
         filename = 'data/502Task.pl';
         if os.path.exists(filename):
             os.system('rm -f ' + filename)
         else:
-            public.writeFile(filename, 'True')
+            public.writeFile(filename,'True')
 
-        return public.returnMsg(True, 'SET_SUCCESS');
+        return public.returnMsg(True,'SET_SUCCESS');
 
-    # 设置模板
-    def SetTemplates(self, get):
-        public.writeFile('data/templates.pl', get.templates);
-        return public.returnMsg(True, 'SET_SUCCESS');
+    #设置模板
+    def SetTemplates(self,get):
+        public.writeFile('data/templates.pl',get.templates);
+        return public.returnMsg(True,'SET_SUCCESS');
 
-    # 设置面板SSL
-    def SetPanelSSL(self, get):
+    #设置面板SSL
+    def SetPanelSSL(self,get):
         sslConf = '/www/server/panel/data/ssl.pl';
         if os.path.exists(sslConf):
             os.system('rm -f ' + sslConf);
-            return public.returnMsg(True, 'PANEL_SSL_CLOSE');
+            return public.returnMsg(True,'PANEL_SSL_CLOSE');
         else:
             os.system('pip insatll cffi==1.10');
             os.system('pip install cryptography==2.1');
             os.system('pip install pyOpenSSL==16.2');
             try:
-                if not self.CreateSSL(): return public.returnMsg(False, 'PANEL_SSL_ERR');
-                public.writeFile(sslConf, 'True')
+                if not self.CreateSSL(): return public.returnMsg(False,'PANEL_SSL_ERR');
+                public.writeFile(sslConf,'True')
             except Exception as ex:
-                return public.returnMsg(False, 'PANEL_SSL_ERR');
-            return public.returnMsg(True, 'PANEL_SSL_OPEN');
-
-    # 自签证书
+                return public.returnMsg(False,'PANEL_SSL_ERR');
+            return public.returnMsg(True,'PANEL_SSL_OPEN');
+    #自签证书
     def CreateSSL(self):
         if os.path.exists('ssl/input.pl'): return True;
         import OpenSSL
@@ -423,25 +430,25 @@ class config:
         cert.set_serial_number(0)
         cert.get_subject().CN = '120.27.27.98';
         cert.set_issuer(cert.get_subject())
-        cert.gmtime_adj_notBefore(0)
+        cert.gmtime_adj_notBefore( 0 )
         cert.gmtime_adj_notAfter(86400 * 3650)
-        cert.set_pubkey(key)
-        cert.sign(key, 'md5')
+        cert.set_pubkey( key )
+        cert.sign( key, 'md5' )
         cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
         private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
         if len(cert_ca) > 100 and len(private_key) > 100:
-            public.writeFile('ssl/certificate.pem', cert_ca)
-            public.writeFile('ssl/privateKey.pem', private_key)
+            public.writeFile('ssl/certificate.pem',cert_ca)
+            public.writeFile('ssl/privateKey.pem',private_key)
             return True
         return False
 
-    # 生成Token
-    def SetToken(self, get):
+    #生成Token
+    def SetToken(self,get):
         data = {}
         data[''] = public.GetRandomString(24);
 
-    # 取面板列表
-    def GetPanelList(self, get):
+    #取面板列表
+    def GetPanelList(self,get):
         try:
             data = public.M('panel').field('id,title,url,username,password,click,addtime').order('click desc').select();
             if type(data) == str: data[111];
@@ -497,60 +504,61 @@ class config:
         public.M('panel').where('id=?',(get.id,)).setField('click',click+1);
         return True;
 
-    # 获取PHP配置参数
-    def GetPHPConf(self, get):
+    #获取PHP配置参数
+    def GetPHPConf(self,get):
         gets = [
-            {'name': 'short_open_tag', 'type': 1, 'ps': public.getMsg('PHP_CONF_1')},
-            {'name': 'asp_tags', 'type': 1, 'ps': public.getMsg('PHP_CONF_2')},
-            {'name': 'max_execution_time', 'type': 2, 'ps': public.getMsg('PHP_CONF_4')},
-            {'name': 'max_input_time', 'type': 2, 'ps': public.getMsg('PHP_CONF_5')},
-            {'name': 'memory_limit', 'type': 2, 'ps': public.getMsg('PHP_CONF_6')},
-            {'name': 'post_max_size', 'type': 2, 'ps': public.getMsg('PHP_CONF_7')},
-            {'name': 'file_uploads', 'type': 1, 'ps': public.getMsg('PHP_CONF_8')},
-            {'name': 'upload_max_filesize', 'type': 2, 'ps': public.getMsg('PHP_CONF_9')},
-            {'name': 'max_file_uploads', 'type': 2, 'ps': public.getMsg('PHP_CONF_10')},
-            {'name': 'default_socket_timeout', 'type': 2, 'ps': public.getMsg('PHP_CONF_11')},
-            {'name': 'error_reporting', 'type': 3, 'ps': public.getMsg('PHP_CONF_12')},
-            {'name': 'display_errors', 'type': 1, 'ps': public.getMsg('PHP_CONF_13')},
-            {'name': 'cgi.fix_pathinfo', 'type': 0, 'ps': public.getMsg('PHP_CONF_14')},
-            {'name': 'date.timezone', 'type': 3, 'ps': public.getMsg('PHP_CONF_15')}
-        ]
+                {'name':'short_open_tag','type':1,'ps':public.getMsg('PHP_CONF_1')},
+                {'name':'asp_tags','type':1,'ps':public.getMsg('PHP_CONF_2')},
+                {'name':'max_execution_time','type':2,'ps':public.getMsg('PHP_CONF_4')},
+                {'name':'max_input_time','type':2,'ps':public.getMsg('PHP_CONF_5')},
+                {'name':'memory_limit','type':2,'ps':public.getMsg('PHP_CONF_6')},
+                {'name':'post_max_size','type':2,'ps':public.getMsg('PHP_CONF_7')},
+                {'name':'file_uploads','type':1,'ps':public.getMsg('PHP_CONF_8')},
+                {'name':'upload_max_filesize','type':2,'ps':public.getMsg('PHP_CONF_9')},
+                {'name':'max_file_uploads','type':2,'ps':public.getMsg('PHP_CONF_10')},
+                {'name':'default_socket_timeout','type':2,'ps':public.getMsg('PHP_CONF_11')},
+                {'name':'error_reporting','type':3,'ps':public.getMsg('PHP_CONF_12')},
+                {'name':'display_errors','type':1,'ps':public.getMsg('PHP_CONF_13')},
+                {'name':'cgi.fix_pathinfo','type':0,'ps':public.getMsg('PHP_CONF_14')},
+                {'name':'date.timezone','type':3,'ps':public.getMsg('PHP_CONF_15')}
+                ]
         phpini = public.readFile('/www/server/php/' + get.version + '/etc/php.ini');
 
         result = []
         for g in gets:
             rep = g['name'] + '\s*=\s*([0-9A-Za-z_& ~]+)(\s*;?|\r?\n)';
-            tmp = re.search(rep, phpini)
+            tmp = re.search(rep,phpini)
             if not tmp: continue;
             g['value'] = tmp.groups()[0];
             result.append(g);
 
         return result;
 
-    def get_php_config(self, get):
-        # 取PHP配置
-        get.version = get.version.replace('.', '')
-        file = session['setupPath'] + "/php/" + get.version + "/etc/php.ini"
+
+    def get_php_config(self,get):
+        #取PHP配置
+        get.version = get.version.replace('.','')
+        file = session['setupPath'] + "/php/"+get.version+"/etc/php.ini"
         phpini = public.readFile(file)
-        file = session['setupPath'] + "/php/" + get.version + "/etc/php-fpm.conf"
+        file = session['setupPath'] + "/php/"+get.version+"/etc/php-fpm.conf"
         phpfpm = public.readFile(file)
         data = {}
         try:
             rep = "upload_max_filesize\s*=\s*([0-9]+)M"
-            tmp = re.search(rep, phpini).groups()
+            tmp = re.search(rep,phpini).groups()
             data['max'] = tmp[0]
         except:
             data['max'] = '50'
         try:
             rep = "request_terminate_timeout\s*=\s*([0-9]+)\n"
-            tmp = re.search(rep, phpfpm).groups()
+            tmp = re.search(rep,phpfpm).groups()
             data['maxTime'] = tmp[0]
         except:
             data['maxTime'] = 0
 
         try:
             rep = r"\n;*\s*cgi\.fix_pathinfo\s*=\s*([0-9]+)\s*\n"
-            tmp = re.search(rep, phpini).groups()
+            tmp = re.search(rep,phpini).groups()
 
             if tmp[0] == '1':
                 data['pathinfo'] = True
@@ -561,27 +569,25 @@ class config:
 
         return data
 
-    # 提交PHP配置参数
-    def SetPHPConf(self, get):
-        gets = ['display_errors', 'cgi.fix_pathinfo', 'date.timezone', 'short_open_tag', 'asp_tags',
-                'max_execution_time', 'max_input_time', 'memory_limit', 'post_max_size', 'file_uploads',
-                'upload_max_filesize', 'max_file_uploads', 'default_socket_timeout', 'error_reporting']
+    #提交PHP配置参数
+    def SetPHPConf(self,get):
+        gets = ['display_errors','cgi.fix_pathinfo','date.timezone','short_open_tag','asp_tags','max_execution_time','max_input_time','memory_limit','post_max_size','file_uploads','upload_max_filesize','max_file_uploads','default_socket_timeout','error_reporting']
         filename = '/www/server/php/' + get.version + '/etc/php.ini';
         phpini = public.readFile(filename);
         for g in gets:
             try:
                 rep = g + '\s*=\s*(.+)\r?\n';
-                val = g + ' = ' + get[g] + '\n';
-                phpini = re.sub(rep, val, phpini);
-            except:
-                continue
+                val = g+' = ' + get[g] + '\n';
+                phpini = re.sub(rep,val,phpini);
+            except: continue
 
-        public.writeFile(filename, phpini);
+        public.writeFile(filename,phpini);
         os.system('/etc/init.d/php-fpm-' + get.version + ' reload');
-        return public.returnMsg(True, 'SET_SUCCESS');
+        return public.returnMsg(True,'SET_SUCCESS');
 
-    # 取Session缓存方式
-    def GetSessionConf(self, get):
+
+ # 取Session缓存方式
+    def GetSessionConf(self,get):
         phpini = public.readFile('/www/server/php/' + get.version + '/etc/php.ini')
         rep = 'session.save_handler\s*=\s*([0-9A-Za-z_& ~]+)(\s*;?|\r?\n)'
         save_handler = re.search(rep, phpini)
@@ -667,7 +673,7 @@ class config:
 
     # 获取Session文件数量
     def GetSessionCount(self, get):
-        d = "/tmp"
+        d="/tmp"
         count = 0
         list = os.listdir(d)
         for l in list:
@@ -677,10 +683,10 @@ class config:
         s = "find /tmp -mtime +1 |grep 'sess_'|wc -l"
         old_file_conf = int(public.ExecShell(s)[0].split("\n")[0])
 
-        return {"total": count, "oldfile": old_file_conf}
+        return {"total":count,"oldfile":old_file_conf}
 
     # 删除老文件
-    def DelOldSession(self, get):
+    def DelOldSession(self,get):
         s = "find /tmp -mtime +1 |grep 'sess_'|xargs rm -f"
         os.system(s)
         s = "find /tmp -mtime +1 |grep 'sess_'|wc -l"
@@ -698,45 +704,44 @@ class config:
         cert['rep'] = os.path.exists('ssl/input.pl');
         return cert;
 
-    # 保存面板证书
-    def SavePanelSSL(self, get):
+    #保存面板证书
+    def SavePanelSSL(self,get):
         keyPath = 'ssl/privateKey.pem'
         certPath = 'ssl/certificate.pem'
         checkCert = '/tmp/cert.pl'
-        public.writeFile(checkCert, get.certPem)
+        public.writeFile(checkCert,get.certPem)
         if get.privateKey:
-            public.writeFile(keyPath, get.privateKey);
+            public.writeFile(keyPath,get.privateKey);
         if get.certPem:
             public.writeFile(certPath, get.certPem);
         if not public.CheckCert(checkCert): return public.returnMsg(False, 'SITE_SSL_ERR_CERT');
         public.writeFile('ssl/input.pl', 'True');
         return public.returnMsg(True, 'SITE_SSL_SUCCESS');
 
-    # 获取配置
-    def get_config(self, get):
+    #获取配置
+    def get_config(self,get):
         if 'config' in session: return session['config']
-        data = public.M('config').where("id=?", ('1',)).field(
-            'webserver,sites_path,backup_path,status,mysql_root').find();
+        data = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find();
         return data
 
-    # 取面板错误日志
-    def get_error_logs(self, get):
-        return public.GetNumLines('logs/error.log', 2000)
 
-    def is_pro(self, get):
-        import panelAuth, json
+    #取面板错误日志
+    def get_error_logs(self,get):
+        return public.GetNumLines('logs/error.log',2000)
+
+    def is_pro(self,get):
+        import panelAuth,json
         pdata = panelAuth.panelAuth().create_serverid(None)
         url = public.GetConfigValue('home') + '/api/panel/is_pro'
-        pluginTmp = public.httpPost(url, pdata)
+        pluginTmp = public.httpPost(url,pdata)
         pluginInfo = json.loads(pluginTmp)
         return pluginInfo
 
-    def get_token(self, get):
-        import json
+    def get_token(self,get):
         save_path = '/www/server/panel/config/api.json'
         if not os.path.exists(save_path):
-            data = {"open": False, "token": "", "limit_addr": []}
-            public.WriteFile(save_path, json.dumps(data))
+            data = { "open":False, "token":"", "limit_addr":[] }
+            public.WriteFile(save_path,json.dumps(data))
             public.ExecShell("chmod 600 " + save_path)
         data = json.loads(public.ReadFile(save_path))
         data['token'] = "***********************************"
@@ -744,9 +749,6 @@ class config:
         return data
 
     def set_token(self, get):
-        import json
-        # panel_password = public.M('users').where('id=?',(1,)).getField('password')
-        # if not public.md5(get.panel_password.strip()) == panel_password: return public.returnMsg(False,'面板密码错误!')
         if 'request_token' in get: return public.returnMsg(False, 'CANT_SET_API_WIFTH_API')
         save_path = '/www/server/panel/config/api.json'
         data = json.loads(public.ReadFile(save_path))
@@ -782,22 +784,22 @@ class config:
         n = nginx.nginx()
         return n.GetNginxValue()
 
-    def SetNginxValue(self, get):
+    def SetNginxValue(self,get):
         n = nginx.nginx()
         return n.SetNginxValue(get)
 
-    def GetApacheValue(self, get):
+    def GetApacheValue(self,get):
         a = apache.apache()
         return a.GetApacheValue()
 
-    def SetApacheValue(self, get):
+    def SetApacheValue(self,get):
         a = apache.apache()
         return a.SetApacheValue(get)
 
-    def get_ipv6_listen(self, get):
+    def get_ipv6_listen(self,get):
         return os.path.exists('data/ipv6.pl')
 
-    def set_ipv6_status(self, get):
+    def set_ipv6_status(self,get):
         ipv6_file = 'data/ipv6.pl'
         if self.get_ipv6_listen(get):
             os.remove(ipv6_file)
@@ -813,7 +815,7 @@ class config:
         import panelSite
         php_versions = panelSite.panelSite().GetPHPVersion(get)
         php_bin_src = "/www/server/php/%s/bin/php" % php_versions[-1]['version']
-        if not os.path.exists(php_bin_src): return public.returnMsg(False,'未安装PHP!')
+        if not os.path.exists(php_bin_src): return public.returnMsg(False,'PHP_NOT_INSTALL')
         get.php_version = php_versions[-1]['version']
         self.set_cli_php_version(get)
         return php_versions[-1]
@@ -843,7 +845,7 @@ class config:
         php_pecl_src = "/www/server/php/%s/bin/pecl" % get.php_version
         php_pear = '/usr/bin/pear'
         php_pear_src = "/www/server/php/%s/bin/pear" % get.php_version
-        if not os.path.exists(php_bin_src): return public.returnMsg(False,'指定PHP版本未安装!')
+        if not os.path.exists(php_bin_src): return public.returnMsg(False,'SPECIFIED_PHP_NOT_INSTALL')
         is_chattr = public.ExecShell('lsattr /usr|grep /usr/bin')[0].find('-i-')
         if is_chattr != -1: public.ExecShell('chattr -i /usr/bin')
         public.ExecShell("rm -f " + php_bin + ' '+ php_ize + ' ' + php_fpm + ' ' + php_pecl + ' ' + php_pear)
@@ -853,5 +855,51 @@ class config:
         public.ExecShell("ln -sf %s %s" % (php_pecl_src,php_pecl))
         public.ExecShell("ln -sf %s %s" % (php_pear_src,php_pear))
         if is_chattr != -1:  public.ExecShell('chattr +i /usr/bin')
-        return public.returnMsg(True,'设置成功!')
+        public.WriteLog('P_CONF','SET_PHP_CLI %s' % get.php_version)
+        return public.returnMsg(True,'SET_SUCCESS')
 
+
+    #获取BasicAuth状态
+    def get_basic_auth_stat(self,get):
+        path = 'config/basic_auth.json'
+        is_install = True
+        if not os.path.exists(path): return {"basic_user":"","basic_pwd":"","open":False,"is_install":is_install}
+        ba_conf = json.loads(public.readFile(path))
+        ba_conf['is_install'] = is_install
+        return ba_conf
+
+    #设置BasicAuth
+    def set_basic_auth(self,get):
+        is_open = False
+        if get.open == 'True': is_open = True
+        tips = '_bt.cn'
+        path = 'config/basic_auth.json'
+        ba_conf = None
+        if os.path.exists(path):
+            ba_conf = json.loads(public.readFile(path))
+
+        if not ba_conf:
+            ba_conf = {"basic_user":public.md5(get.basic_user.strip() + tips),"basic_pwd":public.md5(get.basic_pwd.strip() + tips),"open":is_open}
+        else:
+            if get.basic_user: ba_conf['basic_user'] = public.md5(get.basic_user.strip() + tips)
+            if get.basic_pwd: ba_conf['basic_pwd'] = public.md5(get.basic_pwd.strip() + tips)
+            ba_conf['open'] = is_open
+
+        public.writeFile(path,json.dumps(ba_conf))
+        os.chmod(path,384)
+        public.WriteLog('P_CONF','SET_BASICAUTH_STATUS %s' % is_open)
+        public.writeFile('data/reload.pl','True')
+        return public.returnMsg(True,"SET_SUCCESS")
+
+    #取面板运行日志
+    def get_panel_error_logs(self,get):
+        filename = 'logs/error.log'
+        if not os.path.exists(filename): return public.returnMsg(False,'LOG_CLOSE')
+        result = public.GetNumLines(filename,2000)
+        return public.returnMsg(True,result)
+    #清空面板运行日志
+    def clean_panel_error_logs(self,get):
+        filename = 'logs/error.log'
+        public.writeFile(filename,'')
+        public.WriteLog('P_CONF','CLEARING_LOG')
+        return public.returnMsg(True,'CLEARED')
