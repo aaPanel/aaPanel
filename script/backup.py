@@ -13,7 +13,11 @@ if sys.version_info[0] == 2:
 import public,db,time
 
 class backupTools:
-    
+    __exclude = ""
+
+    def __init__(self):
+        self.get_exclode()
+
     def backupSite(self,name,count):
         sql = db.Sql();
         path = sql.table('sites').where('name=?',(name,)).getField('path');
@@ -27,9 +31,8 @@ class backupTools:
         
         backup_path = sql.table('config').where("id=?",(1,)).getField('backup_path') + '/site';
         if not os.path.exists(backup_path): public.ExecShell("mkdir -p " + backup_path);
-        
         filename= backup_path + "/Web_" + name + "_" + time.strftime('%Y%m%d_%H%M%S',time.localtime()) + '.tar.gz'
-        public.ExecShell("cd " + os.path.dirname(path) + " && tar zcvf '" + filename + "' '" + os.path.basename(path) + "' > /dev/null")
+        public.ExecShell("cd " + os.path.dirname(path) + " && tar zcvf '" + filename + "' '" + os.path.basename(path) + "'"+self.__exclude +" > /dev/null")
         
         
         endDate = time.strftime('%Y/%m/%d %X',time.localtime())
@@ -48,6 +51,7 @@ class backupTools:
         print(u"★["+endDate+"] " + log)
         print(public.GetMsg("KEEP_PART",(count,)))
         print(public.GetMsg("FTP_FILE_NAME")+filename)
+        if self.__exclude: print(u"|---Exclusion rules: " + self.__exclude)
         
         #清理多余备份     
         backups = sql.table('backup').where('type=? and pid=? and filename!=? and filename!=? and filename!=? and filename!=? and filename!=?',('0',pid,'alioss','txcos','upyun','qiniu','ftp')).field('id,filename').select();
@@ -150,7 +154,8 @@ class backupTools:
         print(u"★["+endDate+"] " + log)
         print(public.GetMsg("KEEP_PART",(count,)))
         print(public.GetMsg("FTP_FILE_NAME")+filename)
-        
+        if self.__exclude: print(u"|---Exclusion rules: " + self.__exclude)
+
         #清理多余备份     
         backups = sql.table('backup').where('type=? and pid=? and name=?',('2',0,path)).field('id,filename').select();
         num = len(backups) - int(count)
@@ -174,7 +179,14 @@ class backupTools:
         for database in databases:
             self.backupDatabase(database['name'],save)
     
-    
+    def get_exclode(self):
+        tmp_exclude = os.getenv('BT_EXCLUDE')
+        if not tmp_exclude: return ""
+        for ex in tmp_exclude.split(','):
+            self.__exclude += " --exclude=\"" + ex + "\""
+        self.__exclude += " "
+        return self.__exclude
+
 
 
 if __name__ == "__main__":
