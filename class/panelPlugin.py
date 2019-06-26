@@ -156,14 +156,12 @@ class panelPlugin:
             if not os.path.exists(tmp_path): os.makedirs(tmp_path,mode=384);
             toFile = tmp_path + '/' + pluginInfo['name'] + '.zip'
             public.downloadFile('http://www.bt.cn/api/Pluginother/get_file?fname=' + pluginInfo['versions'][0]['download'],toFile)
-
             if public.FileMd5(toFile) != pluginInfo['versions'][0]['md5']: return public.returnMsg(False,'CHECK_FILE_HASH')
             update = False;
             if os.path.exists(pluginInfo['install_checks']): update =pluginInfo['versions'][0]['version_msg']
             return self.update_zip(None,toFile,update);
         else:
-            if not 'download_url' in session: session['download_url'] = 'http://download.bt.cn';
-            download_url = session['download_url'] + '/install/plugin/' + pluginInfo['name'] + '/install.sh';
+            download_url = public.get_url() + '/install/plugin/' + pluginInfo['name'] + '/install.sh';
             toFile = '/tmp/%s.sh' % pluginInfo['name']
             public.downloadFile(download_url,toFile);
             os.system('/bin/bash ' + toFile + ' install > /tmp/panelShell.pl');
@@ -604,8 +602,9 @@ class panelPlugin:
                 self.get_icon(softInfo['name'])
         if softInfo['name'].find('php-') != -1: 
             v2= softInfo['versions'][0]['m_version'].replace('.','')
-            softInfo['fpm'] = os.path.exists('/etc/init.d/php-fpm-' + v2)
+            softInfo['fpm'] = os.path.exists('/www/server/php/' + v2 + '/sbin/php-fpm')
             softInfo['status'] = os.path.exists('/tmp/php-cgi-'+v2+'.sock')
+            if not softInfo['fpm']: softInfo['status'] = True
         if softInfo['name'] == 'mysql': softInfo['status'] = self.process_exists('mysqld')
         if softInfo['name'] == 'phpmyadmin': softInfo['status'] = self.get_phpmyadmin_stat()
         return softInfo
