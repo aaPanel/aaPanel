@@ -97,7 +97,7 @@ function edit_task_info(id){
 				minute: rdata.where_minute,
 				week: rdata.where1,
 				sType: rdata.sType,
-				sBody: rdata.sBody,
+                sBody: rdata.sBody == 'undefined' ? '' : rdata.sBody,
 				sName: rdata.sName,
 				backupTo: rdata.backupTo,
 				save: rdata.save,
@@ -213,9 +213,9 @@ function edit_task_info(id){
 										</div>\
 									</div>\
 								</div>\
-								<div class="clearfix plan ptb10"  style="display:'+ (obj.from.sType == "toShell"?'block;':'none') +'">\
+								<div class="clearfix plan ptb10"  style="display:'+ ((obj.from.sType == "toShell" || obj.from.sType == 'site' || obj.from.sType == 'path')?'block;':'none') +'">\
 									<span class="typename controls c4 pull-left f14 text-right mr20">'+lan.crontab.shell_content+'</span>\
-									<div style="line-height:34px"><textarea class="txtsjs bt-input-text sBody_create" name="sBody">'+ obj.from.sBody +'</textarea></div>\
+									<div style="line-height:34px"><textarea style="line-height:22px" class="txtsjs bt-input-text sBody_create" name="sBody">'+ obj.from.sBody +'</textarea></div>\
 								</div>\
 								<div class="clearfix plan ptb10" style="display:'+ (obj.from.sType == "rememory"?'block;':'none') +'">\
 									<span class="typename controls c4 pull-left f14 text-right mr20">'+lan.crontab.tips+'</span>\
@@ -560,7 +560,7 @@ function planAdd(){
 			return;
 		}
 	}else{
-		if(sBody == ''){
+		if(sBody == '' && sType=='toShell'){
 			$("#implement textarea[name='sBody']").focus();
 			layer.msg(lan.crontab.input_script_err,{icon:2});
 			return;
@@ -784,7 +784,7 @@ function toBackup(type){
 					  <li><a role="menuitem" tabindex="-1" href="javascript:;" value="ALL">'+lan.public.all+'</a></li>\
 					  	'+sOpt+'\
 					  </ul>\
-					</div>'
+                    </div>'
 		}else{
 			$(".planname input[name='name']").val(sMsg+'[/www/wwwroot/]');
 			sOptBody = '<div class="info-r" style="display: inline-block;float: left;margin-right: 25px;"><input id="inputPath" class="bt-input-text mr5" type="text" name="path" value="/www/wwwroot/" placeholder="'+lan.crontab.dir_bak+'" style="width:208px;height:33px;"><span class="glyphicon glyphicon-folder-open cursor" onclick="ChangePath(&quot;inputPath&quot;)"></span></div>'
@@ -819,6 +819,14 @@ function toBackup(type){
 					<span><input type="number" name="save" id="save" value="3" maxlength="4" max="100" min="1"></span>\
 					<span class="name">'+lan.crontab.save_num+'</span>\
 					</div>';
+        if (sType == 'sites') {
+            sBody += '<p class="clearfix plan">\
+                    <div class="textname pull-left mr20" style="margin-left: 63px; font-size: 14px;">'+lan.public.exclusion_rule+'</div>\
+                    <div class="dropdown planBackupTo pull-left mr20">\
+                        <span><textarea style=" height: 100px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
+                    </div>\
+                </p>';
+        }
 		$("#implement").html(sBody);
 		getselectname();
 		$(".dropdown ul li a").click(function(){
