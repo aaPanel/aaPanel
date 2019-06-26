@@ -294,13 +294,11 @@ def ClearOther():
         for d in os.listdir(c['path']):
             if d.find(c['find']) == -1: continue;
             filename = c['path'] + '/' + d;
+            if os.path.isdir(filename): continue
             fsize = os.path.getsize(filename);
             print('|---['+ToSize(fsize)+'] del ' + filename),
             total += fsize
-            if os.path.isdir(filename):
-                shutil.rmtree(filename)
-            else:
-                os.remove(filename)
+            os.remove(filename)
             print('\t\033[1;32m[OK]\033[0m')
             count += 1;
     public.serviceReload();
@@ -412,8 +410,9 @@ def bt_cli():
     print("(5) %s                   (12) %s"% (public.GetMsg("CHANGE_PANEL_PASS"),public.GetMsg("CANCEL_DOMAIN_BIND")))
     print("(6) %s                   (13) %s"% (public.GetMsg("CHANGE_PANEL_USER"),public.GetMsg("CANCEL_IP_LIMIT")))
     print("(7) %s     (14) %s"% (public.GetMsg("CHANGE_MYSQL_PASS_FORCE"),public.GetMsg("GET_PANEL_DEFAULT_MSG")))
-    print("(0) %s                                   (15) %s"% (public.GetMsg("CANCEL"),public.GetMsg("CLEAR_SYS_RUBBISH")))
-    print("(0) %s                                   (16) %s"% (public.GetMsg("CANCEL"),"Repair panel (check for errors and update panel files to the latest version)"))
+    print("(22) %s                                   (15) %s"% ("Display panel error log",public.GetMsg("CLEAR_SYS_RUBBISH")))
+    print("(23) %s                                   (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
+    print("(0) Cancel")
     print(raw_tip)
     try:
         u_input = input(public.GetMsg("INPUT_CMD_NUM"))
@@ -529,8 +528,13 @@ def bt_cli():
         ClearSystem()
     elif u_input == 16:
         os.system("curl http://download.bt.cn/install/update6.sh|bash")
-
-
+    elif u_input == 22:
+        os.system('tail -100 /www/server/panel/logs/error.log')
+    elif u_input == 23:
+        filename = '/www/server/panel/config/basic_auth.json'
+        if os.path.exists(filename): os.remove(filename)
+        os.system('bt reload')
+        print("|-BasicAuth authentication has been turned off")
 
 
 
@@ -561,6 +565,8 @@ if __name__ == "__main__":
     elif type == 'update_to6':
         update_to6()
     elif type == "cli":
-        bt_cli()
+        clinum = 0
+        if len(sys.argv) > 2: clinum = int(sys.argv[2])
+        bt_cli(clinum)
     else:
         print('ERROR: Parameter error')
