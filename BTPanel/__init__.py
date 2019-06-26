@@ -20,6 +20,16 @@ from werkzeug.contrib.cache import SimpleCache
 from werkzeug.wrappers import Response
 from flask_socketio import SocketIO,emit,send
 
+#设置BasicAuth
+basic_auth_conf = 'config/basic_auth.json'
+app.config['BASIC_AUTH_OPEN'] = False
+if os.path.exists(basic_auth_conf):
+    try:
+        ba_conf = json.loads(public.readFile(basic_auth_conf))
+        app.config['BASIC_AUTH_USERNAME'] = ba_conf['basic_user']
+        app.config['BASIC_AUTH_PASSWORD'] = ba_conf['basic_pwd']
+        app.config['BASIC_AUTH_OPEN'] = ba_conf['open']
+    except: pass
 
 cache = SimpleCache()
 socketio = SocketIO()
@@ -28,6 +38,7 @@ socketio.init_app(app)
 import common,db,jobs,uuid
 jobs.control_init()
 app.secret_key = uuid.UUID(int=uuid.getnode()).hex[-12:]
+
 
 try:
     from flask_sqlalchemy import SQLAlchemy
@@ -73,6 +84,22 @@ if admin_path in admin_path_checks: admin_path = '/bt'
 @app.route('/service_status',methods = method_get)
 def service_status():
     return 'True'
+
+
+@app.before_request
+def basic_auth_check():
+    if app.config['BASIC_AUTH_OPEN']:
+        if request.path in ['/public']: return;
+        auth = request.authorization
+        if not comm.get_sk(): return;
+        if not auth: return send_authenticated()
+        tips = '_bt.cn'
+        if public.md5(auth.username.strip() + tips) != app.config['BASIC_AUTH_USERNAME'] or public.md5(auth.password.strip() + tips) != app.config['BASIC_AUTH_PASSWORD']:
+            return send_authenticated()
+
+
+def send_authenticated():
+    return Response('', 401,{'WWW-Authenticate': 'Basic realm="Login Required"'})
 
 @app.route('/',methods=method_all)
 def home():
@@ -179,7 +206,7 @@ def ftp(pdata = None):
         data['isSetup'] = True;
         if os.path.exists(public.GetConfigValue('setup_path') + '/pure-ftpd') == False: data['isSetup'] = False;
         data['lan'] = public.GetLan('ftp')
-        return render_template( 'ftp.html',data=data)
+        return render_template('ftp.html',data=data)
     import ftp
     ftpObject = ftp.ftp()
     defs = ('AddUser','DeleteUser','SetUserPassword','SetStatus','setPort')
@@ -330,6 +357,7 @@ def config(pdata = None):
     if comReturn: return comReturn
     if request.method == method_get[0] and not pdata:
         import system,wxapp,config
+        c_obj = config.config()
         data = system.system().GetConcifInfo()
         data['lan'] = public.GetLan('config')
         try:
@@ -344,13 +372,15 @@ def config(pdata = None):
         if not os.path.exists(workers_p): public.writeFile(workers_p,'1')
         data['workers'] = int(public.readFile(workers_p))
         data['session_timeout'] = int(public.readFile(sess_out_path))
-        if config.config().get_ipv6_listen(None): data['ipv6'] = 'checked'
-        if config.config().get_token(None)['open']: data['api'] = 'checked' 
+        if c_obj.get_ipv6_listen(None): data['ipv6'] = 'checked'
+        if c_obj.get_token(None)['open']: data['api'] = 'checked'
+        data['basic_auth'] = c_obj.get_basic_auth_stat(None)
+        data['basic_auth']['value'] = public.GetMsg("CLOSE")
+        if data['basic_auth']['open']: data['basic_auth']['value'] = public.GetMsg("OPEN")
         return render_template( 'config.html',data=data)
     import config
-    configObject = config.config()
-    defs = ('get_cli_php_version','get_tmp_token','set_cli_php_version','DelOldSession', 'GetSessionCount', 'SetSessionConf', 'GetSessionConf','get_ipv6_listen','set_ipv6_status','GetApacheValue','SetApacheValue','GetNginxValue','SetNginxValue','get_token','set_token','set_admin_path','is_pro','get_php_config','get_config','SavePanelSSL','GetPanelSSL','GetPHPConf','SetPHPConf','GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL','SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize','getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl','ClosePanel','AutoUpdatePanel','SetPanelLock')
-    return publicObject(configObject,defs,None,pdata);
+    defs = ('get_panel_error_logs','clean_panel_error_logs','get_basic_auth_stat','set_basic_auth','get_cli_php_version','get_tmp_token','set_cli_php_version','DelOldSession', 'GetSessionCount', 'SetSessionConf', 'GetSessionConf','get_ipv6_listen','set_ipv6_status','GetApacheValue','SetApacheValue','GetNginxValue','SetNginxValue','get_token','set_token','set_admin_path','is_pro','get_php_config','get_config','SavePanelSSL','GetPanelSSL','GetPHPConf','SetPHPConf','GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL','SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize','getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl','ClosePanel','AutoUpdatePanel','SetPanelLock')
+    return publicObject(config.config(),defs,None,pdata);
 
 @app.route('/ajax',methods=method_all)
 def ajax(pdata = None):
@@ -376,7 +406,7 @@ def deployment(pdata = None):
     if comReturn: return comReturn
     import plugin_deployment
     sysObject = plugin_deployment.plugin_deployment()
-    defs = ('GetList','AddPackage','DelPackage','SetupPackage','GetSpeed')
+    defs = ('GetList','AddPackage','DelPackage','SetupPackage','GetSpeed','GetPackageOther')
     return publicObject(sysObject,defs,None,pdata);
 
 @app.route('/data',methods=method_all)
@@ -448,7 +478,12 @@ def plugin(pdata = None):
 def panel_public():
     get = get_input();
     get.client_ip = public.GetClientIp();
+
     if get.fun in ['scan_login','login_qrcode','set_login','is_scan_ok','blind']:
+        #检查是否验证过安全入口
+        if get.fun in ['login_qrcode','is_scan_ok']:
+            global admin_check_auth,admin_path,route_path,admin_path_file
+            if admin_path != '/bt' and os.path.exists(admin_path_file) and  not 'admin_auth' in session: return 'False'
         import wxapp
         pluwx = wxapp.wxapp()
         checks = pluwx._check(get)
@@ -501,8 +536,8 @@ def coll_socket(msg):
         return;
     emit('coll_response',getattr(t,msg['f'])(msg))
 
-@app.route('/btco',methods=method_all)
-@app.route('/btco/',methods=method_all)
+@app.route('/coll',methods=method_all)
+@app.route('/coll/',methods=method_all)
 @app.route('/<name>/<fun>',methods=method_all)
 @app.route('/<name>/<fun>/<path:stype>',methods=method_all)
 def panel_other(name=None,fun = None,stype=None):
@@ -517,7 +552,7 @@ def panel_other(name=None,fun = None,stype=None):
 
     #前置准备
 
-    if not name: name = 'btco'
+    if not name: name = 'coll'
 
     #是否响应面板默认静态文件
     if name == 'static':
@@ -932,6 +967,7 @@ def publicObject(toObject,defs,action=None,get = None):
 
     if hasattr(get,'path'):
             get.path = get.path.replace('//','/').replace('\\','/');
+            if get.path.find('..') != -1: return public.ReturnJson(False,public.GetMsg("UNSAFE_PATH")),json_header
             if get.path.find('->') != -1:
                 get.path = get.path.split('->')[0].strip();
     not_acts = ['GetTaskSpeed','GetNetWork','check_pay_status','get_re_order_status','get_order_stat']
