@@ -118,7 +118,7 @@ var site = {
                         }
                     });
                 })
-            //})
+           //})
         });
 
     },
@@ -301,6 +301,10 @@ var site = {
     //PHP-CLI
     get_cli_version: function () {
         $.post('/config?action=get_cli_php_version', {}, function (rdata) {
+            if (rdata.status === false) {
+                layer.msg(rdata.msg, { icon: 2 });
+                return;
+            }
             var _options = '';
             for (var i = rdata.versions.length - 1; i >= 0; i--) {
                 var ed = '';
@@ -508,10 +512,10 @@ var site = {
         });
     },
     get_class_type: function(callback){
-    site.get_types(function(rdata){
+      site.get_types(function(rdata){
         bt.render({
-			table: '#type_table',
-			columns: [
+            table: '#type_table',
+            columns: [
                 { field: 'name', title: lan.site.name },
                 { field: 'opt', width: '80px', title: lan.site.operate, templet: function (item) { return '<a class="btlink edit_type" href="javascript:;">'+lan.site.edit+'</a> | <a class="btlink del_type" href="javascript:;">'+lan.site.del+'</a>'; } }
             ],
@@ -519,8 +523,8 @@ var site = {
         });
         $('.layui-layer-page').css({ 'margin-top':'-' + ($('.layui-layer-page').height() / 2) +'px','top':'50%' });
         if(callback) callback(rdata);
-    });
-    },
+      });
+  	},
     ssl: {
         my_ssl_msg : null,
         renew_ssl: function () {
@@ -1027,67 +1031,67 @@ var site = {
 
             })
         },
-				set_default_index: function (web) {
-						bt.site.get_index(web.id, function (rdata) {
-								rdata = rdata.replace(new RegExp(/(,)/g), "\n");
-								var data = {
-										items: [
-												{ name: 'Dindex', height: '230px', width: '50%', type: 'textarea', value: rdata },
-												{
-														name: 'btn_submit', text: lan.site.add, type: 'button', callback: function (ddata) {
-																var Dindex = ddata.Dindex.replace(new RegExp(/(\n)/g), ",");
-																bt.site.set_index(web.id, Dindex, function (ret) {
-																		if (ret.status) site.reload(5)
-																})
-														}
-												}
-										]
-								}
-								var _form_data = bt.render_form_line(data);
-								var _html = $(_form_data.html)
-								_html.append(bt.render_help([lan.site.default_doc_help]))
-								$('#webedit-con').append(_html);
-								$('.btn_submit').addClass('pull-right').css("margin", "90px 100px 0 0")
-								bt.render_clicks(_form_data.clicks);
-						})
-				},
-				set_config: function (web) {
-						bt.site.get_site_config(web.name, function (rdata) {
-								if (!rdata.status) {
-										bt.msg(rdata);
-										return;
-								}
-								var datas = [
-										{ items: [{ name: 'site_config', type: 'textarea', value: rdata.data, widht: '340px', height: '200px' }] },
-										{
-												name: 'btn_config_submit', text: lan.site.save, type: 'button', callback: function (ddata) {
-														bt.site.set_site_config(web.name, editor.getValue(), rdata.encoding, function (ret) {
-																if (ret.status) site.reload(6)
-																bt.msg(ret);
-														})
-												}
-										}
-								]
-								var robj = $('#webedit-con');
-								for (var i = 0; i < datas.length; i++) {
-										var _form_data = bt.render_form_line(datas[i]);
-										robj.append(_form_data.html);
-										bt.render_clicks(_form_data.clicks);
-								}
-								robj.append(bt.render_help([lan.site.web_config_help]));
-								$('textarea.site_config').attr('id', 'configBody');
-								var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
-										extraKeys: { "Ctrl-Space": "autocomplete" },
-										lineNumbers: true,
-										matchBrackets: true,
-								});
-								$(".CodeMirror-scroll").css({ "height": "400px", "margin": 0, "padding": 0 });
-						})
-				},
-				set_ssl: function (web) {
-						$('#webedit-con').html("<div id='ssl_tabs'></div><div class=\"tab-con\" style=\"padding:20px 0px;\"></div>");
-						bt.site.get_site_ssl(web.name, function (rdata) {
-								var _tabs = [
+        set_default_index: function (web) {
+            bt.site.get_index(web.id, function (rdata) {
+                rdata = rdata.replace(new RegExp(/(,)/g), "\n");
+                var data = {
+                    items: [
+                        { name: 'Dindex', height: '230px', width: '50%', type: 'textarea', value: rdata },
+                        {
+                            name: 'btn_submit', text: lan.site.add, type: 'button', callback: function (ddata) {
+                                var Dindex = ddata.Dindex.replace(new RegExp(/(\n)/g), ",");
+                                bt.site.set_index(web.id, Dindex, function (ret) {
+                                    if (ret.status) site.reload(5)
+                                })
+                            }
+                        }
+                    ]
+                }
+                var _form_data = bt.render_form_line(data);
+                var _html = $(_form_data.html)
+                _html.append(bt.render_help([lan.site.default_doc_help]))
+                $('#webedit-con').append(_html);
+                $('.btn_submit').addClass('pull-right').css("margin", "90px 100px 0 0")
+                bt.render_clicks(_form_data.clicks);
+            })
+        },
+        set_config: function (web) {
+            bt.site.get_site_config(web.name, function (rdata) {
+                if (!rdata.status) {
+                    bt.msg(rdata);
+                    return;
+                }
+                var datas = [
+                    { items: [{ name: 'site_config', type: 'textarea', value: rdata.data, widht: '340px', height: '200px' }] },
+                    {
+                        name: 'btn_config_submit', text: lan.site.save, type: 'button', callback: function (ddata) {
+                            bt.site.set_site_config(web.name, editor.getValue(), rdata.encoding, function (ret) {
+                                if (ret.status) site.reload(6)
+                                bt.msg(ret);
+                            })
+                        }
+                    }
+                ]
+                var robj = $('#webedit-con');
+                for (var i = 0; i < datas.length; i++) {
+                    var _form_data = bt.render_form_line(datas[i]);
+                    robj.append(_form_data.html);
+                    bt.render_clicks(_form_data.clicks);
+                }
+                robj.append(bt.render_help([lan.site.web_config_help]));
+                $('textarea.site_config').attr('id', 'configBody');
+                var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
+                    extraKeys: { "Ctrl-Space": "autocomplete" },
+                    lineNumbers: true,
+                    matchBrackets: true,
+                });
+                $(".CodeMirror-scroll").css({ "height": "400px", "margin": 0, "padding": 0 });
+            })
+        },
+        set_ssl: function (web) {
+            $('#webedit-con').html("<div id='ssl_tabs'></div><div class=\"tab-con\" style=\"padding:10px 0px;\"></div>");
+            bt.site.get_site_ssl(web.name, function (rdata) {
+                var _tabs = [
 										// {
 										//     title: lan.site.bt_ssl, on: true, callback: function (robj) {
 										//         bt.pub.get_user_info(function (udata) {
@@ -1196,1211 +1200,1211 @@ var site = {
 										//
 										//     }
 										// },
-										{
-												title: "Let's Encrypt", callback: function (robj) {
-														if (rdata.status && rdata.type == 1) {
-																var cert_info = '';
-																if (rdata.cert_data['notBefore']) {
-																		cert_info = '<div style="margin-bottom: 10px;" class="alert alert-success">\
-																				<p style="margin-bottom: 9px;"><span style="width: 357px;display: inline-block;"><b>'+lan.site.deploy_success_cret+'</b>'+lan.site.try_renew_cret+'</span>\
-																				<span style="margin-left: 20px;display: inline-block;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width: 140px;width: 140px;">\
-																				<b>'+lan.site.cert_brand+'</b>'+ rdata.cert_data.issuer+'</span></p>\
-																				<span style="display:inline-block;max-width: 357px;overflow:hidden;text-overflow:ellipsis;vertical-align:-3px;white-space: nowrap;width: 357px;"><b>'+lan.site.auth_domain+'</b> ' + rdata.cert_data.dns.join('、') + '</span>\
-																				<span style="margin-left: 20px;"><b>'+lan.site.expire_time+'</b> ' + rdata.cert_data.notAfter + '</span></div>'
-																}
-																robj.append('<div>' + cert_info + '<div><span>'+lan.site.ssl_key+'</span><span style="padding-left:194px">'+lan.site.ssl_crt+'</span></div></div>');
-																var datas = [
-																		{
-																				items: [
-																						{ name: 'key', width: '45%', height: '220px', type: 'textarea', value: rdata.key },
-																						{ name: 'csr', width: '45%', height: '220px', type: 'textarea', value: rdata.csr }
-																				]
-																		},
-																		{
-																				items: [
-																						{
-																								text: lan.site.ssl_close, name: 'btn_ssl_close', hide: !rdata.status, type: 'button', callback: function (sdata) {
-																										site.ssl.set_ssl_status('CloseSSLConf', web.name);
-																								}
-																						},
-																						{
-																								text: lan.site.ssl_renew, name: 'btn_ssl_renew', hide: !rdata.status, type: 'button', callback: function (sdata) {
-																										site.ssl.renew_ssl();
-																								}
-																						}
-																				]
-																		}
-																]
-																for (var i = 0; i < datas.length; i++) {
-																		var _form_data = bt.render_form_line(datas[i]);
-																		robj.append(_form_data.html);
-																		bt.render_clicks(_form_data.clicks);
-																}
-																robj.find('textarea').css('background-color', '#f6f6f6').attr('readonly', true);
-																var helps = [
-																		lan.site.ssl_tips1,
-																		lan.site.ssl_tips2,
-																		lan.site.ssl_tips3,
-																		lan.site.ssl_tips4,
-																		lan.site.ssl_tips5,
-																]
-																robj.append(bt.render_help([lan.site.ssl_help_2, lan.site.ssl_help_3]));
-																return;
-														}
-														bt.site.get_site_domains(web.id, function (ddata) {
-																var helps = [[
-																		lan.site.bt_ssl_help_5,
-																		lan.site.bt_ssl_help_8,
-																		lan.site.bt_ssl_help_9,
-																		lan.site.ssl_tips5
-																], [
-																		lan.site.dns_check_tips1,
-																		lan.site.dns_check_tips2,
-																		lan.site.dns_check_tips3,
-																		lan.site.dns_check_tips4
-																]]
-																var datas = [
-																		{
-																				title: lan.site.checking_mode, items: [
-																						{
-																								name: 'check_file', text: lan.site.file_check, type: 'radio', callback: function (obj) {
-																										$('.checks_line').remove()
-																										$(obj).siblings().removeAttr('checked');
+                    {
+                        title: "Let's Encrypt", callback: function (robj) {
+                            if (rdata.status && rdata.type == 1) {
+                                var cert_info = '';
+                                if (rdata.cert_data['notBefore']) {
+                                    cert_info = '<div style="margin-bottom: 10px;" class="alert alert-success">\
+                                        <p style="margin-bottom: 9px;"><span style="width: 357px;display: inline-block;"><b>'+lan.site.deploy_success_cret+'</b>'+lan.site.try_renew_cret+'</span>\
+                                        <span style="margin-left: 20px;display: inline-block;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width: 140px;width: 140px;">\
+                                        <b>'+lan.site.cert_brand+'</b>'+ rdata.cert_data.issuer+'</span></p>\
+                                        <span style="display:inline-block;max-width: 357px;overflow:hidden;text-overflow:ellipsis;vertical-align:-3px;white-space: nowrap;width: 357px;"><b>'+lan.site.auth_domain+'</b> ' + rdata.cert_data.dns.join('、') + '</span>\
+                                        <span style="margin-left: 20px;"><b>'+lan.site.expire_time+'</b> ' + rdata.cert_data.notAfter + '</span></div>'
+                                }
+                                robj.append('<div>' + cert_info + '<div><span>'+lan.site.ssl_key+'</span><span style="padding-left:194px">'+lan.site.ssl_crt+'</span></div></div>');
+                                var datas = [
+                                    {
+                                        items: [
+                                            { name: 'key', width: '45%', height: '220px', type: 'textarea', value: rdata.key },
+                                            { name: 'csr', width: '45%', height: '220px', type: 'textarea', value: rdata.csr }
+                                        ]
+                                    },
+                                    {
+                                        items: [
+                                            {
+                                                text: lan.site.ssl_close, name: 'btn_ssl_close', hide: !rdata.status, type: 'button', callback: function (sdata) {
+                                                    site.ssl.set_ssl_status('CloseSSLConf', web.name);
+                                                }
+                                            },
+                                            {
+                                                text: lan.site.ssl_renew, name: 'btn_ssl_renew', hide: !rdata.status, type: 'button', callback: function (sdata) {
+                                                    site.ssl.renew_ssl();
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                                for (var i = 0; i < datas.length; i++) {
+                                    var _form_data = bt.render_form_line(datas[i]);
+                                    robj.append(_form_data.html);
+                                    bt.render_clicks(_form_data.clicks);
+                                }
+                                robj.find('textarea').css('background-color', '#f6f6f6').attr('readonly', true);
+                                var helps = [
+                                    lan.site.ssl_tips1,
+                                    lan.site.ssl_tips2,
+                                    lan.site.ssl_tips3,
+                                    lan.site.ssl_tips4,
+                                    lan.site.ssl_tips5,
+                                ]
+                                robj.append(bt.render_help([lan.site.ssl_help_2, lan.site.ssl_help_3]));
+                                return;
+                            }
+                            bt.site.get_site_domains(web.id, function (ddata) {
+                                var helps = [[
+                                        lan.site.bt_ssl_help_5,
+                                        lan.site.bt_ssl_help_8,
+                                        lan.site.bt_ssl_help_9,
+                                        lan.site.ssl_tips5
+                                ], [
+                                        lan.site.dns_check_tips1,
+                                        lan.site.dns_check_tips2,
+                                        lan.site.dns_check_tips3,
+                                        lan.site.dns_check_tips4
+                                ]]
+                                var datas = [
+                                    {
+                                        title: lan.site.checking_mode, items: [
+                                            {
+                                                name: 'check_file', text: lan.site.file_check, type: 'radio', callback: function (obj) {
+                                                    $('.checks_line').remove()
+                                                    $(obj).siblings().removeAttr('checked');
 
-																										$('.help-info-text').html($(bt.render_help(helps[0])));
-																										var _form_data = bt.render_form_line({ title: ' ', class: 'checks_line label-input-group', items: [{ name: 'force', type: 'checkbox',value: true, text: lan.site.dns_check_tips5 }] });
-																										$(obj).parents('.line').append(_form_data.html);
+                                                    $('.help-info-text').html($(bt.render_help(helps[0])));
+                                                    var _form_data = bt.render_form_line({ title: ' ', class: 'checks_line label-input-group', items: [{ name: 'force', type: 'checkbox',value: true, text: lan.site.dns_check_tips5 }] });
+                                                    $(obj).parents('.line').append(_form_data.html);
 
-																										$('#ymlist li input[type="checkbox"]').each(function () {
-																												if ($(this).val().indexOf('*') >= 0) {
-																														$(this).parents('li').hide();
-																												}
-																										})
-																								}
-																						},
-																						{
-																								name: 'check_dns', text: lan.site.check_dns, type: 'radio', callback: function (obj) {
-																										$('.checks_line').remove();
-																										$(obj).siblings().removeAttr('checked');
-																										$('.help-info-text').html($(bt.render_help(helps[1])));
-																										$('#ymlist li').show();
+                                                    $('#ymlist li input[type="checkbox"]').each(function () {
+                                                        if ($(this).val().indexOf('*') >= 0) {
+                                                            $(this).parents('li').hide();
+                                                        }
+                                                    })
+                                                }
+                                            },
+                                            {
+                                                name: 'check_dns', text: lan.site.check_dns, type: 'radio', callback: function (obj) {
+                                                    $('.checks_line').remove();
+                                                    $(obj).siblings().removeAttr('checked');
+                                                    $('.help-info-text').html($(bt.render_help(helps[1])));
+                                                    $('#ymlist li').show();
 
-																										var arrs_list = [], arr_obj = {};
-																										bt.site.get_dns_api(function (api) {
-																												for (var x = 0; x < api.length; x++) {
-																														arrs_list.push({ title: api[x].title, value: api[x].name });
-																														arr_obj[api[x].name] = api[x];
-																												}
-																												var data = {
-																														title: lan.site.choose_dns, class: 'checks_line', items: [
-																																{
-																																		name: 'dns_select', width: '120px', type: 'select', items: arrs_list, callback: function (obj) {
-																																				var _val = obj.val();
-																																				$('.set_dns_config').remove();
-																																				var _val_obj = arr_obj[_val];
-																																				var _form = {
-																																						title: '',
-																																						area: '530px',
-																																						list: [],
-																																						btns: [{ title: lan.site.turn_off, name: 'close' }]
-																																				};
+                                                    var arrs_list = [], arr_obj = {};
+                                                    bt.site.get_dns_api(function (api) {
+                                                        for (var x = 0; x < api.length; x++) {
+                                                            arrs_list.push({ title: api[x].title, value: api[x].name });
+                                                            arr_obj[api[x].name] = api[x];
+                                                        }
+                                                        var data = {
+                                                            title: lan.site.choose_dns, class: 'checks_line', items: [
+                                                                {
+                                                                    name: 'dns_select', width: '120px', type: 'select', items: arrs_list, callback: function (obj) {
+                                                                        var _val = obj.val();
+                                                                        $('.set_dns_config').remove();
+                                                                        var _val_obj = arr_obj[_val];
+                                                                        var _form = {
+                                                                            title: '',
+                                                                            area: '530px',
+                                                                            list: [],
+                                                                            btns: [{ title: lan.site.turn_off, name: 'close' }]
+                                                                        };
 
-																																				var helps = [];
-																																				if (_val_obj.data !== false) {
-																																						_form.title = lan.site.set+'【' + _val_obj.title + '】'+lan.site.interface;
-																																						helps.push(_val_obj.help);
-																																						var is_hide = true;
-																																						for (var i = 0; i < _val_obj.data.length; i++) {
-																																								_form.list.push({ title: _val_obj.data[i].name, name: _val_obj.data[i].key, value: _val_obj.data[i].value })
-																																								if (!_val_obj.data[i].value) is_hide = false;
-																																						}
-																																						_form.btns.push({
-																																								title: lan.site.save, css: 'btn-success', name: 'btn_submit_save', callback: function (ldata, load) {
-																																										bt.site.set_dns_api({ pdata: JSON.stringify(ldata) }, function (ret) {
-																																												if (ret.status) {
-																																														load.close();
-																																														robj.find('input[type="radio"]:eq(0)').trigger('click')
-																																														robj.find('input[type="radio"]:eq(1)').trigger('click')
-																																												}
-																																												bt.msg(ret);
-																																										})
-																																								}
-																																						})
-																																						if (is_hide) {
-																																								obj.after('<button class="btn btn-default btn-sm mr5 set_dns_config">'+lan.site.set+'</button>');
-																																								$('.set_dns_config').click(function () {
-																																										var _bs = bt.render_form(_form);
-																																										$('div[data-id="form' + _bs + '"]').append(bt.render_help(helps));
-																																								})
-																																						} else {
-																																								var _bs = bt.render_form(_form);
-																																								$('div[data-id="form' + _bs + '"]').append(bt.render_help(helps));
-																																						}
-																																				}
-																																		}
-																																},
-																																{
-																																		title: lan.site.wait+' ', name: 'dnssleep', width: '60px', type: 'number', value: 10, unit: lan.site.second, callback: function (obj) {
-																																				if (obj.val() < 10) obj.val(10);
-																																				if (obj.val() > 120) obj.val(120);
-																																		}
-																																}
-																														]
-																												}
-																												var _form_data = bt.render_form_line(data);
-																												$(obj).parents('.line').append(_form_data.html);
-																												bt.render_clicks(_form_data.clicks);
-																										})
-																								}
-																						},
-																				]
-																		},
-																		{ title: lan.site.admin_email, name: 'admin_email', value: rdata.email, width: '260px' }
-																]
-																for (var i = 0; i < datas.length; i++) {
-																		var _form_data = bt.render_form_line(datas[i]);
-																		robj.append(_form_data.html);
-																		bt.render_clicks(_form_data.clicks);
-																}
-																var _ul = $('<ul id="ymlist" class="domain-ul-list"></ul>');
-																for (var i = 0; i < ddata.domains.length; i++) {
-																		if (ddata.domains[i].binding === true) continue
-																		_ul.append('<li style="cursor: pointer;"><input class="checkbox-text" type="checkbox" value="' + ddata.domains[i].name + '">' + ddata.domains[i].name + '</li>');
-																}
-																var _line = $("<div class='line mtb10'></div>");
-																_line.append('<span class="tname text-center">'+lan.site.domain+'</span>');
-																_line.append(_ul);
-																robj.append(_line);
-																robj.find('input[type="radio"]').parent().addClass('label-input-group ptb10');
-																$("#ymlist li input").click(function (e) {
-																		e.stopPropagation();
-																})
-																$("#ymlist li").click(function () {
+                                                                        var helps = [];
+                                                                        if (_val_obj.data !== false) {
+                                                                            _form.title = lan.site.set+'【' + _val_obj.title + '】'+lan.site.interface;
+                                                                            helps.push(_val_obj.help);
+                                                                            var is_hide = true;
+                                                                            for (var i = 0; i < _val_obj.data.length; i++) {
+                                                                                _form.list.push({ title: _val_obj.data[i].name, name: _val_obj.data[i].key, value: _val_obj.data[i].value })
+                                                                                if (!_val_obj.data[i].value) is_hide = false;
+                                                                            }
+                                                                            _form.btns.push({
+                                                                                title: lan.site.save, css: 'btn-success', name: 'btn_submit_save', callback: function (ldata, load) {
+                                                                                    bt.site.set_dns_api({ pdata: JSON.stringify(ldata) }, function (ret) {
+                                                                                        if (ret.status) {
+                                                                                            load.close();
+                                                                                            robj.find('input[type="radio"]:eq(0)').trigger('click')
+                                                                                            robj.find('input[type="radio"]:eq(1)').trigger('click')
+                                                                                        }
+                                                                                        bt.msg(ret);
+                                                                                    })
+                                                                                }
+                                                                            })
+                                                                            if (is_hide) {
+                                                                                obj.after('<button class="btn btn-default btn-sm mr5 set_dns_config">'+lan.site.set+'</button>');
+                                                                                $('.set_dns_config').click(function () {
+                                                                                    var _bs = bt.render_form(_form);
+                                                                                    $('div[data-id="form' + _bs + '"]').append(bt.render_help(helps));
+                                                                                })
+                                                                            } else {
+                                                                                var _bs = bt.render_form(_form);
+                                                                                $('div[data-id="form' + _bs + '"]').append(bt.render_help(helps));
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    title: lan.site.wait+' ', name: 'dnssleep', width: '60px', type: 'number', value: 10, unit: lan.site.second, callback: function (obj) {
+                                                                        if (obj.val() < 10) obj.val(10);
+                                                                        if (obj.val() > 120) obj.val(120);
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                        var _form_data = bt.render_form_line(data);
+                                                        $(obj).parents('.line').append(_form_data.html);
+                                                        bt.render_clicks(_form_data.clicks);
+                                                    })
+                                                }
+                                            },
+                                        ]
+                                    },
+                                    { title: lan.site.admin_email, name: 'admin_email', value: rdata.email, width: '260px' }
+                                ]
+                                for (var i = 0; i < datas.length; i++) {
+                                    var _form_data = bt.render_form_line(datas[i]);
+                                    robj.append(_form_data.html);
+                                    bt.render_clicks(_form_data.clicks);
+                                }
+                                var _ul = $('<ul id="ymlist" class="domain-ul-list"></ul>');
+                                for (var i = 0; i < ddata.domains.length; i++) {
+                                    if (ddata.domains[i].binding === true) continue
+                                    _ul.append('<li style="cursor: pointer;"><input class="checkbox-text" type="checkbox" value="' + ddata.domains[i].name + '">' + ddata.domains[i].name + '</li>');
+                                }
+                                var _line = $("<div class='line mtb10'></div>");
+                                _line.append('<span class="tname text-center">'+lan.site.domain+'</span>');
+                                _line.append(_ul);
+                                robj.append(_line);
+                                robj.find('input[type="radio"]').parent().addClass('label-input-group ptb10');
+                                $("#ymlist li input").click(function (e) {
+                                    e.stopPropagation();
+                                })
+                                $("#ymlist li").click(function () {
 
-																		var o = $(this).find("input");
-																		if (o.prop("checked")) {
-																				o.prop("checked", false)
-																		}
-																		else {
-																				o.prop("checked", true);
-																		}
-																})
-																var _btn_data = bt.render_form_line({
-																		title: ' ', text: lan.site.btapply, name: 'letsApply', type: 'button', callback: function (ldata) {
-																				ldata['domains'] = [];
-																				$('#ymlist input[type="checkbox"]:checked').each(function () {
-																						ldata['domains'].push($(this).val())
-																				})
-																				var ddata = {
-																						siteName: web.name,
-																						email: ldata.admin_email,
-																						updateOf: 1,
-																						domains: JSON.stringify(ldata['domains'])
-																				}
-																				if (ldata.check_file) {
-																						ddata['force'] = ldata.force;
-																						site.create_let(ddata);
-																				}
-																				else {
-																						ddata['dnsapi'] = ldata.dns_select;
-																						ddata['dnssleep'] = ldata.dnssleep;
-																						site.create_let(ddata, function (ret) {
-																								if (ldata.dns_select == 'dns') {
-																										if (ret.key) {
-																												site.ssl.reload(1);
-																												bt.msg(ret);
-																												return;
-																										}
-																										var b_load = bt.open({
-																												type: 1,
-																												area: '700px',
-																												title: lan.site.resolve_txt,
-																												closeBtn: 2,
-																												shift: 5,
-																												shadeClose: false,
-																												content: "<div class='divtable pd15 div_txt_jx'><p class='mb15' >"+lan.site.resolve_txt_by_list+":</p><table id='dns_txt_jx' class='table table-hover'></table><div class='text-right mt10'><button class='btn btn-success btn-sm btn_check_txt' >"+lan.site.check+"</button></div></div>"
-																										});
-																										setTimeout(function () {
-																												var data = [];
-																												for (var j = 0; j < ret.fullDomain.length; j++) data.push({ name: ret.fullDomain[j], txt: ret.txtValue[j] });
-																												bt.render({
-																														table: '#dns_txt_jx',
-																														columns: [
-																																{ field: 'name',width: '220px', title: lan.site.resolve_domain },
-																																{ field: 'txt', width: '70px', title: lan.site.txt },
-																														],
-																														data: data
-																												})
-																												if (ret.fullDomain.length == 0) ret.fullDomain.append('_acme-challenge.bt.cn')
-																												$('.div_txt_jx').append(bt.render_help([lan.site.dns_resolve_tips4, lan.site.dns_resolve_tips2 + ret.fullDomain[0], lan.site.dns_resolve_tips3]));
+                                    var o = $(this).find("input");
+                                    if (o.prop("checked")) {
+                                        o.prop("checked", false)
+                                    }
+                                    else {
+                                        o.prop("checked", true);
+                                    }
+                                })
+                                var _btn_data = bt.render_form_line({
+                                    title: ' ', text: lan.site.btapply, name: 'letsApply', type: 'button', callback: function (ldata) {
+                                        ldata['domains'] = [];
+                                        $('#ymlist input[type="checkbox"]:checked').each(function () {
+                                            ldata['domains'].push($(this).val())
+                                        })
+                                        var ddata = {
+                                            siteName: web.name,
+                                            email: ldata.admin_email,
+                                            updateOf: 1,
+                                            domains: JSON.stringify(ldata['domains'])
+                                        }
+                                        if (ldata.check_file) {
+                                            ddata['force'] = ldata.force;
+                                            site.create_let(ddata);
+                                        }
+                                        else {
+                                            ddata['dnsapi'] = ldata.dns_select;
+                                            ddata['dnssleep'] = ldata.dnssleep;
+                                            site.create_let(ddata, function (ret) {
+                                                if (ldata.dns_select == 'dns') {
+                                                    if (ret.key) {
+                                                        site.ssl.reload(1);
+                                                        bt.msg(ret);
+                                                        return;
+                                                    }
+                                                    var b_load = bt.open({
+                                                        type: 1,
+                                                        area: '700px',
+                                                        title: lan.site.resolve_txt,
+                                                        closeBtn: 2,
+                                                        shift: 5,
+                                                        shadeClose: false,
+                                                        content: "<div class='divtable pd15 div_txt_jx'><p class='mb15' >"+lan.site.resolve_txt_by_list+":</p><table id='dns_txt_jx' class='table table-hover'></table><div class='text-right mt10'><button class='btn btn-success btn-sm btn_check_txt' >"+lan.site.check+"</button></div></div>"
+                                                    });
+                                                    setTimeout(function () {
+                                                        var data = [];
+                                                        for (var j = 0; j < ret.fullDomain.length; j++) data.push({ name: ret.fullDomain[j], txt: ret.txtValue[j] });
+                                                        bt.render({
+                                                            table: '#dns_txt_jx',
+                                                            columns: [
+                                                                { field: 'name',width: '220px', title: lan.site.resolve_domain },
+                                                                { field: 'txt', width: '70px', title: lan.site.txt },
+                                                            ],
+                                                            data: data
+                                                        })
+                                                        if (ret.fullDomain.length == 0) ret.fullDomain.append('_acme-challenge.bt.cn')
+                                                        $('.div_txt_jx').append(bt.render_help([lan.site.dns_resolve_tips4, lan.site.dns_resolve_tips2 + ret.fullDomain[0], lan.site.dns_resolve_tips3]));
 
-																												$('.btn_check_txt').click(function () {
-																														var new_data = {
-																																siteName: web.name,
-																																domains: ddata.domains,
-																																updateOf: 1,
-																																email: ldata.email,
-																																renew: 'True'
-																														}
-																														site.create_let(new_data, function (ldata) {
-																																if (ldata.status) {
-																																		b_load.close();
-																																		site.ssl.reload(1);
-																																}
-																														});
-																												})
-																										}, 100)
-																								}
-																								else {
-																										site.ssl.reload(1);
-																										bt.msg(ret);
-																								}
-																						})
-																				}
-																		}
-																});
-																robj.append(_btn_data.html);
-																bt.render_clicks(_btn_data.clicks);
+                                                        $('.btn_check_txt').click(function () {
+                                                            var new_data = {
+                                                                siteName: web.name,
+                                                                domains: ddata.domains,
+                                                                updateOf: 1,
+                                                                email: ldata.email,
+                                                                renew: 'True'
+                                                            }
+                                                            site.create_let(new_data, function (ldata) {
+                                                                if (ldata.status) {
+                                                                    b_load.close();
+                                                                    site.ssl.reload(1);
+                                                                }
+                                                            });
+                                                        })
+                                                    }, 100)
+                                                }
+                                                else {
+                                                    site.ssl.reload(1);
+                                                    bt.msg(ret);
+                                                }
+                                            })
+                                        }
+                                    }
+                                });
+                                robj.append(_btn_data.html);
+                                bt.render_clicks(_btn_data.clicks);
 
-																robj.append(bt.render_help(helps[0]));
-																robj.find('input[type="radio"]:eq(0)').trigger('click')
-														})
-												}
-										},
-										{
-												title: lan.site.other_ssl, callback: function (robj) {
-														var cert_info = '';
-														if (rdata.cert_data['notBefore']) {
-																cert_info = '<div style="margin-bottom: 10px;" class="alert alert-success">\
-																				<p style="margin-bottom: 9px;"><span style="width: 357px;display: inline-block;">'+ (rdata.status ? lan.site.deploy_success_tips :lan.site.not_deploy_and_save)+'</span>\
-																				<span style="margin-left: 20px;display: inline-block;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width: 138px;width: 140px;">\
-																				<b>'+lan.site.cert_brand+'</b>'+ rdata.cert_data.issuer + '</span></p>\
-																				<span style="display:inline-block;max-width: 357px;overflow:hidden;text-overflow:ellipsis;vertical-align:-3px;white-space: nowrap;width: 357px;"><b>'+lan.site.auth_domain+'</b> ' + rdata.cert_data.dns.join('、') + '</span>\
-																				<span style="margin-left: 20px;"><b>'+lan.site.expire_time+'</b> ' + rdata.cert_data.notAfter + '</span></div>'
-														}
-														robj.append('<div>' + cert_info+'<div><span>'+lan.site.ssl_key+'</span><span style="padding-left:194px">'+lan.site.ssl_crt+'</span></div></div>');
-														var datas = [
-																{
-																		items: [
-																				{ name: 'key', width: '45%', height: '220px', type: 'textarea', value: rdata.key },
-																				{ name: 'csr', width: '45%', height: '220px', type: 'textarea', value: rdata.csr }
-																		]
-																},
-																{
-																		items: [
-																				{
-																						text: lan.site.save, name: 'btn_ssl_save', type: 'button', callback: function (sdata) {
-																								bt.site.set_ssl(web.name, sdata, function (ret) {
-																										if (ret.status) site.reload(7);
-																										bt.msg(ret);
-																								})
-																						}
-																				},
-																				{
-																						text: lan.site.ssl_close, name: 'btn_ssl_close', hide: !rdata.status, type: 'button', callback: function (sdata) {
-																								site.ssl.set_ssl_status('CloseSSLConf', web.name);
-																						}
-																				}
-																		]
-																}
-														]
-														for (var i = 0; i < datas.length; i++) {
-																var _form_data = bt.render_form_line(datas[i]);
-																robj.append(_form_data.html);
-																bt.render_clicks(_form_data.clicks);
-														}
-														var helps = [
-																lan.site.bt_ssl_help_10,
-																lan.public_backup.cret_err,
-																lan.public_backup.pem_format,
-																lan.site.ssl_tips5,
-														]
-														robj.append(bt.render_help(helps));
+                                robj.append(bt.render_help(helps[0]));
+                                robj.find('input[type="radio"]:eq(0)').trigger('click')
+                            })
+                        }
+                    },
+                    {
+                        title: lan.site.other_ssl, callback: function (robj) {
+                            var cert_info = '';
+                            if (rdata.cert_data['notBefore']) {
+                                cert_info = '<div style="margin-bottom: 10px;" class="alert alert-success">\
+                                        <p style="margin-bottom: 9px;"><span style="width: 357px;display: inline-block;">'+ (rdata.status ? lan.site.deploy_success_tips :lan.site.not_deploy_and_save)+'</span>\
+                                        <span style="margin-left: 20px;display: inline-block;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width: 138px;width: 140px;">\
+                                        <b>'+lan.site.cert_brand+'</b>'+ rdata.cert_data.issuer + '</span></p>\
+                                        <span style="display:inline-block;max-width: 357px;overflow:hidden;text-overflow:ellipsis;vertical-align:-3px;white-space: nowrap;width: 357px;"><b>'+lan.site.auth_domain+'</b> ' + rdata.cert_data.dns.join('、') + '</span>\
+                                        <span style="margin-left: 20px;"><b>'+lan.site.expire_time+'</b> ' + rdata.cert_data.notAfter + '</span></div>'
+                            }
+                            robj.append('<div>' + cert_info+'<div><span>'+lan.site.ssl_key+'</span><span style="padding-left:194px">'+lan.site.ssl_crt+'</span></div></div>');
+                            var datas = [
+                                {
+                                    items: [
+                                        { name: 'key', width: '45%', height: '220px', type: 'textarea', value: rdata.key },
+                                        { name: 'csr', width: '45%', height: '220px', type: 'textarea', value: rdata.csr }
+                                    ]
+                                },
+                                {
+                                    items: [
+                                        {
+                                            text: lan.site.save, name: 'btn_ssl_save', type: 'button', callback: function (sdata) {
+                                                bt.site.set_ssl(web.name, sdata, function (ret) {
+                                                    if (ret.status) site.reload(7);
+                                                    bt.msg(ret);
+                                                })
+                                            }
+                                        },
+                                        {
+                                            text: lan.site.ssl_close, name: 'btn_ssl_close', hide: !rdata.status, type: 'button', callback: function (sdata) {
+                                                site.ssl.set_ssl_status('CloseSSLConf', web.name);
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                            for (var i = 0; i < datas.length; i++) {
+                                var _form_data = bt.render_form_line(datas[i]);
+                                robj.append(_form_data.html);
+                                bt.render_clicks(_form_data.clicks);
+                            }
+                            var helps = [
+                                            lan.site.bt_ssl_help_10,
+                                            lan.public_backup.cret_err,
+                                            lan.public_backup.pem_format,
+                                            lan.site.ssl_tips5,
+                            ]
+                            robj.append(bt.render_help(helps));
 
-												}
-										},
-										{
-												title: lan.site.turn_off, callback: function (robj) {
-														if (rdata.type == -1) {
-																robj.html("<div class='mtb15' style='line-height:30px'>" + lan.site.ssl_help_1 + "</div>");
-																return;
-														};
-														var txt = '';
-														switch (rdata.type) {
-																case 1:
-																		txt = "Let's Encrypt";
-																		break;
-																case 0:
-																		txt = lan.site.other_ssl;
-																		break;
-																case 2:
-																		txt = lan.site.bt_ssl;
-																		break;
-														}
-														$(".tab-con").html("<div class='line mtb15'>" + lan.get('ssl_enable', [txt]) + "</div><div class='line mtb15'><button class='btn btn-success btn-sm' onclick=\"site.ssl.set_ssl_status('CloseSSLConf','" + web.name + "')\">" + lan.site.ssl_close + "</button></div>");
+                        }
+                    },
+                    {
+                        title: lan.site.turn_off, callback: function (robj) {
+                            if (rdata.type == -1) {
+                                robj.html("<div class='mtb15' style='line-height:30px'>" + lan.site.ssl_help_1 + "</div>");
+                                return;
+                            };
+                            var txt = '';
+                            switch (rdata.type) {
+                                case 1:
+                                    txt = "Let's Encrypt";
+                                    break;
+                                case 0:
+                                    txt = lan.site.other_ssl;
+                                    break;
+                                case 2:
+                                    txt = lan.site.bt_ssl;
+                                    break;
+                            }
+                            $(".tab-con").html("<div class='line mtb15'>" + lan.get('ssl_enable', [txt]) + "</div><div class='line mtb15'><button class='btn btn-success btn-sm' onclick=\"site.ssl.set_ssl_status('CloseSSLConf','" + web.name + "')\">" + lan.site.ssl_close + "</button></div>");
 
-												}
-										},
-										{
-												title: lan.site.ssl_dir, callback: function (robj) {
-														robj.html("<div class='divtable'><table id='cer_list_table' class='table table-hover'></table></div>");
-														bt.site.get_cer_list(function (rdata) {
-																bt.render({
-																		table: '#cer_list_table',
-																		columns: [
-																				{
-																						field: 'subject', title: lan.site.domain, templet: function (item) {
-																								return item.dns.join('<br>')
-																						}
-																				},
-																				{ field: 'notAfter', width: '100px', title: lan.site.endtime },
-																				{ field: 'issuer', width: '150px', title: lan.site.brand },
-																				{
-																						field: 'opt', width: '75px', align: 'right', title: lan.site.operate, templet: function (item) {
-																								var opt = '<a class="btlink" onclick="bt.site.set_cert_ssl(\'' + item.subject + '\',\'' + web.name + '\',function(rdata){if(rdata.status){site.ssl.reload(2);}})" href="javascript:;">'+lan.site.deploy+'</a> | ';
-																								opt += '<a class="btlink" onclick="bt.site.remove_cert_ssl(\'' + item.subject + '\',function(rdata){if(rdata.status){site.ssl.reload(4);}})" href="javascript:;">'+lan.site.del+'</a>'
-																								return opt;
-																						}
-																				}
-																		],
-																		data: rdata
-																})
-														})
-												}
-										}
-								]
-								bt.render_tab('ssl_tabs', _tabs);
-								$('#ssl_tabs').append('<div class="ss-text pull-right mr30" style="position: relative;top:-4px"><em>'+lan.site.force_https+'</em><div class="ssh-item"><input class="btswitch btswitch-ios" id="toHttps" type="checkbox"><label class="btswitch-btn" for="toHttps"></label></div></div>');
-								$("#toHttps").attr('checked', rdata.httpTohttps);
-								$('#toHttps').click(function (sdata) {
-										var isHttps = $("#toHttps").attr('checked');
-										if (isHttps) {
-												layer.confirm(lan.site.close_force_https_tips, { icon: 3, title: lan.site.close_force_https }, function () {
-														bt.site.close_http_to_https(web.name, function () { site.reload(7); })
-												});
-										}
-										else {
-												bt.site.set_http_to_https(web.name, function () { site.reload(7); })
-										}
-								})
-								switch (rdata.type) {
-										case 1:
-												$('#ssl_tabs span:eq(1)').trigger('click');
-												break;
-										case 0:
-												$('#ssl_tabs span:eq(2)').trigger('click');
-												break;
-										default:
-												$('#ssl_tabs span:eq(0)').trigger('click');
-												break;
-								}
+                        }
+                    },
+                    {
+                        title: lan.site.ssl_dir, callback: function (robj) {
+                            robj.html("<div class='divtable'><table id='cer_list_table' class='table table-hover'></table></div>");
+                            bt.site.get_cer_list(function (rdata) {
+                                bt.render({
+                                    table: '#cer_list_table',
+                                    columns: [
+                                        {
+                                            field: 'subject', title: lan.site.domain, templet: function (item) {
+                                                return item.dns.join('<br>')
+                                            }
+                                        },
+                                        { field: 'notAfter', width: '100px', title: lan.site.endtime },
+                                        { field: 'issuer', width: '150px', title: lan.site.brand },
+                                        {
+                                            field: 'opt', width: '75px', align: 'right', title: lan.site.operate, templet: function (item) {
+                                                var opt = '<a class="btlink" onclick="bt.site.set_cert_ssl(\'' + item.subject + '\',\'' + web.name + '\',function(rdata){if(rdata.status){site.ssl.reload(2);}})" href="javascript:;">'+lan.site.deploy+'</a> | ';
+                                                opt += '<a class="btlink" onclick="bt.site.remove_cert_ssl(\'' + item.subject + '\',function(rdata){if(rdata.status){site.ssl.reload(4);}})" href="javascript:;">'+lan.site.del+'</a>'
+                                                return opt;
+                                            }
+                                        }
+                                    ],
+                                    data: rdata
+                                })
+                            })
+                        }
+                    }
+                ]
+                bt.render_tab('ssl_tabs', _tabs);
+                $('#ssl_tabs').append('<div class="ss-text pull-right mr30" style="position: relative;top:-4px"><em>'+lan.site.force_https+'</em><div class="ssh-item"><input class="btswitch btswitch-ios" id="toHttps" type="checkbox"><label class="btswitch-btn" for="toHttps"></label></div></div>');
+                $("#toHttps").attr('checked', rdata.httpTohttps);
+                $('#toHttps').click(function (sdata) {
+                    var isHttps = $("#toHttps").attr('checked');
+                    if (isHttps) {
+                        layer.confirm(lan.site.close_force_https_tips, { icon: 3, title: lan.site.close_force_https }, function () {
+                            bt.site.close_http_to_https(web.name, function () { site.reload(7); })
+                        });
+                    }
+                    else {
+                        bt.site.set_http_to_https(web.name, function () { site.reload(7); })
+                    }
+                })
+                switch (rdata.type) {
+                    case 1:
+                        $('#ssl_tabs span:eq(1)').trigger('click');
+                        break;
+                    case 0:
+                        $('#ssl_tabs span:eq(2)').trigger('click');
+                        break;
+                    default:
+                        $('#ssl_tabs span:eq(0)').trigger('click');
+                        break;
+                }
 
-						})
-				},
-				set_php_version: function (web) {
-						bt.site.get_site_phpversion(web.name, function (sdata) {
-								if (sdata.status === false) {
-										bt.msg(sdata);
-										return;
-								}
-								bt.site.get_all_phpversion(function (vdata) {
-										var versions = [];
-										for (var j = vdata.length - 1; j >= 0; j--) {
-												var o = vdata[j];
-												o.value = o.version;
-												o.title = o.name;
-												versions.push(o);
-										}
-										var data = {
-												items: [
-														{ title: lan.site.php_ver, name: 'versions', value: sdata.phpversion, type: 'select', items: versions },
-														{
-																text: lan.site.switch, name: 'btn_change_phpversion', type: 'button', callback: function (pdata) {
-																		bt.site.set_phpversion(web.name, pdata.versions, function (ret) {
-																				if (ret.status) site.reload(8)
-																				bt.msg(ret);
-																		})
-																}
-														}
-												]
-										}
-										var _form_data = bt.render_form_line(data);
-										var _html = $(_form_data.html);
-										_html.append(bt.render_help([lan.site.switch_php_help1, lan.site.switch_php_help2, lan.site.switch_php_help3]));
-										$('#webedit-con').append(_html);
-										bt.render_clicks(_form_data.clicks);
-								})
-						})
-				},
-				templet_301: function (sitename, id, types, obj) {
-						if (types) {
-								obj = {
-										redirectname:(new Date()).valueOf(),
-										tourl: 'http://',
-										redirectdomain: [],
-										redirectpath: '',
-										redirecttype: '',
-										type: 1,
-										domainorpath: 'domain',
-										holdpath: 1
-								}
-						}
-						var helps = [
-								lan.site.redirect_tips1,
-								lan.site.redirect_tips2,
-								lan.site.redirect_tips3,
-								lan.site.redirect_tips4,
-								lan.site.redirect_tips5,
-								lan.site.redirect_tips6
-						];
-						bt.site.get_domains(id, function (rdata) {
-								var domain_html = ''
-								for (var i = 0; i < rdata.length; i++) {
-										domain_html += '<option value="' + rdata[i].name + '">' + rdata[i].name + '</option>';
-								}
-								var form_redirect = bt.open({
-										type: 1,
-										skin: 'demo-class',
-										area: '650px',
-										title: types ? lan.site.create_redirect : lan.site.modify_redirect+'[' + obj.redirectname + ']',
-										closeBtn: 2,
-										shift: 5,
-										shadeClose: false,
-										content: "<form id='form_redirect' class='divtable pd20' style='padding-bottom: 60px'>" +
-												"<div class='line' style='overflow:hidden;height: 40px;'>" +
-												"<span class='tname' style='position: relative;top: -5px;'>"+lan.site.open_redirect+"</span>" +
-												"<div class='info-r  ml0 mt5' >" +
-												"<input class='btswitch btswitch-ios' id='type' type='checkbox' name='type' " + (obj.type == 1 ? 'checked="checked"' : '') + " /><label class='btswitch-btn phpmyadmin-btn' for='type' style='float:left'></label>" +
-												"<div style='display: inline-block;'>" +
-												"<span class='tname' style='margin-left:10px;position: relative;top: -5px;'>"+lan.site.reserve_url+"</span>" +
-												"<input class='btswitch btswitch-ios' id='holdpath' type='checkbox' name='holdpath' " + (obj.holdpath == 1 ? 'checked="checked"' : '') + " /><label class='btswitch-btn phpmyadmin-btn' for='holdpath' style='float:left'></label>" +
-												"</div>" +
-												"</div>" +
-												"</div>" +
-												"<div class='line' style='clear:both;display:none;'>" +
-												"<span class='tname'>"+lan.site.redirect_name+"</span>" +
-												"<div class='info-r  ml0'><input name='redirectname' class='bt-input-text mr5' " + (types ? '' : 'disabled="disabled"') + " type='text' style='width:300px' value='" + obj.redirectname + "'></div>" +
-												"</div>" +
-												"<div class='line' style='clear:both;'>" +
-												"<span class='tname'>"+lan.site.reserve_type+"</span>" +
-												"<div class='info-r  ml0'>" +
-												"<select class='bt-input-text mr5' name='domainorpath' style='width:100px'><option value='domain' " + (obj.domainorpath == 'domain' ? 'selected ="selected"' : "") + ">"+lan.site.domain+"</option><option value='path'  " + (obj.domainorpath == 'path' ? 'selected ="selected"' : "") + ">"+lan.site.path+"</option></select>" +
-												"<span class='mlr15'>"+lan.site.redirect_mode+"</span>" +
-												"<select class='bt-input-text ml10' name='redirecttype' style='width:100px'><option value='301' " + (obj.redirecttype == '301' ? 'selected ="selected"' : "") + " >301</option><option value='302' " + (obj.redirecttype == '302' ? 'selected ="selected"' : "") + ">302</option></select></div>" +
-												"</div>" +
-												"<div class='line redirectdomain' style='display:" + (obj.domainorpath == 'domain' ? 'block' : 'none') + "'>" +
-												"<span class='tname'>"+lan.site.redirect_domain+"</span>" +
-												"<div class='info-r  ml0'>" +
-												"<select id='usertype' name='redirectdomain' data-actions-box='true' class='selectpicker show-tick form-control' multiple data-live-search='false'>" + domain_html + "</select>" +
-												"<span class='tname' style='width:90px'>"+lan.site.target_url+"</span>" +
-												"<input  name='tourl' class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.tourl + "'>" +
-												"</div>" +
-												"</div>" +
-												"<div class='line redirectpath' style='display:" + (obj.domainorpath == 'path' ? 'block' : 'none') + "'>" +
-												"<span class='tname'>"+lan.site.redirect_path+"</span>" +
-												"<div class='info-r  ml0'>" +
-												"<input  name='redirectpath' class='bt-input-text mr5' type='text' style='width:200px;float: left;margin-right:0px' value='" + obj.redirectpath + "'>" +
-												"<span class='tname' style='width:90px'>"+lan.site.target_url+"</span>" +
-												"<input  name='tourl1' class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.tourl + "'>" +
-												"</div>" +
-												"</div>" +
-												"<ul class='help-info-text c7'>" + bt.render_help(helps) + '</ul>' +
-												"<div class='bt-form-submit-btn'><button type='button' class='btn btn-sm btn-danger btn-colse-prosy'>"+lan.site.turn_off+"</button><button type='button' class='btn btn-sm btn-success btn-submit-redirect'>" + (types ? " "+lan.site.submit : lan.site.save) + "</button></div>" +
-												"</form>"
-								});
-								setTimeout(function () {
-										$('.selectpicker').selectpicker({
-												'noneSelectedText': lan.site.choose_domain,
-												'selectAllText': lan.site.choose_all,
-												'deselectAllText': lan.site.cancel_all
-										});
-										$('.selectpicker').selectpicker('val', obj.redirectdomain);
-										$('#form_redirect').parent().css('overflow', 'inherit');
-										$('[name="domainorpath"]').change(function () {
-												if ($(this).val() == 'path') {
-														$('.redirectpath').show();
-														$('.redirectdomain').hide();
-														$('.selectpicker').selectpicker('val', []);
-												} else {
-														$('.redirectpath').hide();
-														$('.redirectdomain').show();
-														$('[name="redirectpath"]').val('')
-												}
-										});
-										$('.btn-colse-prosy').click(function () {
-												form_redirect.close();
-										});
-										$('.btn-submit-redirect').click(function () {
-												var type = $('[name="type"]').prop('checked') ? 1 : 0;
-												var holdpath = $('[name="holdpath"]').prop('checked') ? 1 : 0;
-												var redirectname = $('[name="redirectname"]').val();
-												var redirecttype = $('[name="redirecttype"]').val();
-												var domainorpath = $('[name="domainorpath"]').val();
-												var redirectpath = $('[name="redirectpath"]').val();
-												var redirectdomain = JSON.stringify($('.selectpicker').val() || []);
-												var tourl = $(domainorpath == 'path' ? '[name="tourl1"]' : '[name="tourl"]').val();
-												if (!types) {
-														bt.site.modify_redirect({
-																type: type,
-																sitename: sitename,
-																holdpath: holdpath,
-																redirectname: redirectname,
-																redirecttype: redirecttype,
-																domainorpath: domainorpath,
-																redirectpath: redirectpath,
-																redirectdomain: redirectdomain,
-																tourl: tourl
-														}, function (rdata) {
-																if (rdata.status) {
-																		form_redirect.close();
-																		site.reload(11);
-																}
-																bt.msg(rdata);
-														});
-												} else {
-														bt.site.create_redirect({
-																type: type,
-																sitename: sitename,
-																holdpath: holdpath,
-																redirectname: redirectname,
-																redirecttype: redirecttype,
-																domainorpath: domainorpath,
-																redirectpath: redirectpath,
-																redirectdomain: redirectdomain,
-																tourl: tourl
-														}, function (rdata) {
-																if (rdata.status) {
-																		form_redirect.close();
-																		site.reload(11);
-																}
-																bt.msg(rdata);
-														});
-												}
-										});
-								}, 100);
-						});
+            })
+        },
+        set_php_version: function (web) {
+            bt.site.get_site_phpversion(web.name, function (sdata) {
+                if (sdata.status === false) {
+                    bt.msg(sdata);
+                    return;
+                }
+                bt.site.get_all_phpversion(function (vdata) {
+                    var versions = [];
+                    for (var j = vdata.length - 1; j >= 0; j--) {
+                        var o = vdata[j];
+                        o.value = o.version;
+                        o.title = o.name;
+                        versions.push(o);
+                    }
+                    var data = {
+                        items: [
+                            { title: lan.site.php_ver, name: 'versions', value: sdata.phpversion, type: 'select', items: versions },
+                            {
+                                text: lan.site.switch, name: 'btn_change_phpversion', type: 'button', callback: function (pdata) {
+                                    bt.site.set_phpversion(web.name, pdata.versions, function (ret) {
+                                        if (ret.status) site.reload(8)
+                                        bt.msg(ret);
+                                    })
+                                }
+                            }
+                        ]
+                    }
+                    var _form_data = bt.render_form_line(data);
+                    var _html = $(_form_data.html);
+                    _html.append(bt.render_help([lan.site.switch_php_help1, lan.site.switch_php_help2, lan.site.switch_php_help3]));
+                    $('#webedit-con').append(_html);
+                    bt.render_clicks(_form_data.clicks);
+                })
+            })
+        },
+        templet_301: function (sitename, id, types, obj) {
+            if (types) {
+                obj = {
+                    redirectname:(new Date()).valueOf(),
+                    tourl: 'http://',
+                    redirectdomain: [],
+                    redirectpath: '',
+                    redirecttype: '',
+                    type: 1,
+                    domainorpath: 'domain',
+                    holdpath: 1
+                }
+            }
+            var helps = [
+                lan.site.redirect_tips1,
+                lan.site.redirect_tips2,
+                lan.site.redirect_tips3,
+                lan.site.redirect_tips4,
+                lan.site.redirect_tips5,
+                lan.site.redirect_tips6
+            ];
+            bt.site.get_domains(id, function (rdata) {
+                var domain_html = ''
+                for (var i = 0; i < rdata.length; i++) {
+                    domain_html += '<option value="' + rdata[i].name + '">' + rdata[i].name + '</option>';
+                }
+                var form_redirect = bt.open({
+                    type: 1,
+                    skin: 'demo-class',
+                    area: '650px',
+                    title: types ? lan.site.create_redirect : lan.site.modify_redirect+'[' + obj.redirectname + ']',
+                    closeBtn: 2,
+                    shift: 5,
+                    shadeClose: false,
+                    content: "<form id='form_redirect' class='divtable pd20' style='padding-bottom: 60px'>" +
+                        "<div class='line' style='overflow:hidden;height: 40px;'>" +
+                        "<span class='tname' style='position: relative;top: -5px;'>"+lan.site.open_redirect+"</span>" +
+                        "<div class='info-r  ml0 mt5' >" +
+                        "<input class='btswitch btswitch-ios' id='type' type='checkbox' name='type' " + (obj.type == 1 ? 'checked="checked"' : '') + " /><label class='btswitch-btn phpmyadmin-btn' for='type' style='float:left'></label>" +
+                        "<div style='display: inline-block;'>" +
+                        "<span class='tname' style='margin-left:10px;position: relative;top: -5px;'>"+lan.site.reserve_url+"</span>" +
+                        "<input class='btswitch btswitch-ios' id='holdpath' type='checkbox' name='holdpath' " + (obj.holdpath == 1 ? 'checked="checked"' : '') + " /><label class='btswitch-btn phpmyadmin-btn' for='holdpath' style='float:left'></label>" +
+                        "</div>" +
+                        "</div>" +
+                        "</div>" +
+                        "<div class='line' style='clear:both;display:none;'>" +
+                        "<span class='tname'>"+lan.site.redirect_name+"</span>" +
+                        "<div class='info-r  ml0'><input name='redirectname' class='bt-input-text mr5' " + (types ? '' : 'disabled="disabled"') + " type='text' style='width:300px' value='" + obj.redirectname + "'></div>" +
+                        "</div>" +
+                        "<div class='line' style='clear:both;'>" +
+                        "<span class='tname'>"+lan.site.reserve_type+"</span>" +
+                        "<div class='info-r  ml0'>" +
+                        "<select class='bt-input-text mr5' name='domainorpath' style='width:100px'><option value='domain' " + (obj.domainorpath == 'domain' ? 'selected ="selected"' : "") + ">"+lan.site.domain+"</option><option value='path'  " + (obj.domainorpath == 'path' ? 'selected ="selected"' : "") + ">"+lan.site.path+"</option></select>" +
+                        "<span class='mlr15'>"+lan.site.redirect_mode+"</span>" +
+                        "<select class='bt-input-text ml10' name='redirecttype' style='width:100px'><option value='301' " + (obj.redirecttype == '301' ? 'selected ="selected"' : "") + " >301</option><option value='302' " + (obj.redirecttype == '302' ? 'selected ="selected"' : "") + ">302</option></select></div>" +
+                        "</div>" +
+                        "<div class='line redirectdomain' style='display:" + (obj.domainorpath == 'domain' ? 'block' : 'none') + "'>" +
+                        "<span class='tname'>"+lan.site.redirect_domain+"</span>" +
+                        "<div class='info-r  ml0'>" +
+                        "<select id='usertype' name='redirectdomain' data-actions-box='true' class='selectpicker show-tick form-control' multiple data-live-search='false'>" + domain_html + "</select>" +
+                        "<span class='tname' style='width:90px'>"+lan.site.target_url+"</span>" +
+                        "<input  name='tourl' class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.tourl + "'>" +
+                        "</div>" +
+                        "</div>" +
+                        "<div class='line redirectpath' style='display:" + (obj.domainorpath == 'path' ? 'block' : 'none') + "'>" +
+                        "<span class='tname'>"+lan.site.redirect_path+"</span>" +
+                        "<div class='info-r  ml0'>" +
+                        "<input  name='redirectpath' class='bt-input-text mr5' type='text' style='width:200px;float: left;margin-right:0px' value='" + obj.redirectpath + "'>" +
+                        "<span class='tname' style='width:90px'>"+lan.site.target_url+"</span>" +
+                        "<input  name='tourl1' class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.tourl + "'>" +
+                        "</div>" +
+                        "</div>" +
+                        "<ul class='help-info-text c7'>" + bt.render_help(helps) + '</ul>' +
+                        "<div class='bt-form-submit-btn'><button type='button' class='btn btn-sm btn-danger btn-colse-prosy'>"+lan.site.turn_off+"</button><button type='button' class='btn btn-sm btn-success btn-submit-redirect'>" + (types ? " "+lan.site.submit : lan.site.save) + "</button></div>" +
+                        "</form>"
+                });
+                setTimeout(function () {
+                    $('.selectpicker').selectpicker({
+                        'noneSelectedText': lan.site.choose_domain,
+                        'selectAllText': lan.site.choose_all,
+                        'deselectAllText': lan.site.cancel_all
+                    });
+                    $('.selectpicker').selectpicker('val', obj.redirectdomain);
+                    $('#form_redirect').parent().css('overflow', 'inherit');
+                    $('[name="domainorpath"]').change(function () {
+                        if ($(this).val() == 'path') {
+                            $('.redirectpath').show();
+                            $('.redirectdomain').hide();
+                            $('.selectpicker').selectpicker('val', []);
+                        } else {
+                            $('.redirectpath').hide();
+                            $('.redirectdomain').show();
+                            $('[name="redirectpath"]').val('')
+                        }
+                    });
+                    $('.btn-colse-prosy').click(function () {
+                        form_redirect.close();
+                    });
+                    $('.btn-submit-redirect').click(function () {
+                        var type = $('[name="type"]').prop('checked') ? 1 : 0;
+                        var holdpath = $('[name="holdpath"]').prop('checked') ? 1 : 0;
+                        var redirectname = $('[name="redirectname"]').val();
+                        var redirecttype = $('[name="redirecttype"]').val();
+                        var domainorpath = $('[name="domainorpath"]').val();
+                        var redirectpath = $('[name="redirectpath"]').val();
+                        var redirectdomain = JSON.stringify($('.selectpicker').val() || []);
+                        var tourl = $(domainorpath == 'path' ? '[name="tourl1"]' : '[name="tourl"]').val();
+                        if (!types) {
+                            bt.site.modify_redirect({
+                                type: type,
+                                sitename: sitename,
+                                holdpath: holdpath,
+                                redirectname: redirectname,
+                                redirecttype: redirecttype,
+                                domainorpath: domainorpath,
+                                redirectpath: redirectpath,
+                                redirectdomain: redirectdomain,
+                                tourl: tourl
+                            }, function (rdata) {
+                                if (rdata.status) {
+                                    form_redirect.close();
+                                    site.reload(11);
+                                }
+                                bt.msg(rdata);
+                            });
+                        } else {
+                            bt.site.create_redirect({
+                                type: type,
+                                sitename: sitename,
+                                holdpath: holdpath,
+                                redirectname: redirectname,
+                                redirecttype: redirecttype,
+                                domainorpath: domainorpath,
+                                redirectpath: redirectpath,
+                                redirectdomain: redirectdomain,
+                                tourl: tourl
+                            }, function (rdata) {
+                                if (rdata.status) {
+                                    form_redirect.close();
+                                    site.reload(11);
+                                }
+                                bt.msg(rdata);
+                            });
+                        }
+                    });
+                }, 100);
+            });
 
-				},
-				set_301_old:function(web){				
-						bt.site.get_domains(web.id,function(rdata){							
-								var domains = [{title:lan.site.site,value:'all'}];
-								for(var i=0;i<rdata.length;i++) domains.push({title:rdata[i].name,value:rdata[i].name});
-								
-								bt.site.get_site_301(web.name,function(pdata){
-										var _val = pdata.src==''?'all':pdata.src
-										var datas = [
-												{title: lan.site.access_domain,width:'360px',name:'domains',value:_val,disabled:pdata.status,type:'select',items:domains},
-												{title: lan.site.target_url,width:'360px',name:'toUrl',value:pdata.url},
-												{title:' ', text: lan.site.enable_301,value:pdata.status,name:'status',class:'label-input-group',type:'checkbox',callback:function(sdata){
-														bt.site.set_site_301(web.name,sdata.domains,sdata.toUrl,sdata.status?'1':'0',function(ret){
-																if(ret.status) site.reload(10)
-																bt.msg(ret);
-														})
-												}},
-										]
-										var robj = $('#webedit-con');
-										for(var i=0;i<datas.length;i++){
-												var _form_data = bt.render_form_line(datas[i]);							
-												robj.append(_form_data.html);	
-												bt.render_clicks(_form_data.clicks);
-										}					
-										robj.append(bt.render_help([lan.site.to301_help_1,lan.site.to301_help_2]));
-								})					
-						})				
-				},
-				set_301: function (web) {
-						bt.site.get_redirect_list(web.name, function (rdata) {
-								var datas = {
-										items: [{ name: 'add_proxy', text: lan.site.add_redirect, type: 'button', callback: function (data) { site.edit.templet_301(web.name, web.id, true) } }]
-								}
-								var form_line = bt.render_form_line(datas);
-								$('#webedit-con').append(form_line.html);
-								bt.render_clicks(form_line.clicks);
-								$('#webedit-con').addClass('divtable').append('<table id="proxy_list" class="table table-hover"></table>');
-								setTimeout(function () {
-										var _tab = bt.render({
-												table: '#proxy_list',
-												columns: [
-														// { field: 'redirectname', title: '名称' },
-														{
-																field: '', title: lan.site.redirect_type, templet: function (item) {
-																		var conter = '';
-																		if (item.domainorpath == 'path') {
-																				conter = item.redirectpath;
-																		} else {
-																				conter = item.redirectdomain ? item.redirectdomain.join('、') : lan.site.empty
-																		}
-																		return '<span style="width:100px;" title="' + conter + '">' + conter + '</span>';
-																}
-														},
-														{ field: 'redirecttype', title: lan.site.redirect_mode },
-														{
-																field: 'holdpath', index: true, title: lan.site.reserve_url, templet: function (item) {
-																		return '<a href="javascript:;" class="btlink set_path_state" style="display:" data-stuats="' + (item.holdpath == 1 ? 0 : 1) + '">' + (item.holdpath == 1 ? '<span style="color:#20a53a;" class="set_path_state">'+lan.site.turn_on+'</span>' : '<span style="color:red;" class="set_path_state">'+lan.site.turn_off+'</span>') + '</a>';
-																}
-														},
-														{
-																field: 'type', title: lan.site.status, index: true, templet: function (item) {
-																		return '<a href="javascript:;" class="btlink set_type_state" style="display:" data-stuats="' + (item.type == 1 ? 0 : 1) + '">' + (item.type == 1 ? '<span style="color:#20a53a;">'+lan.site.running_text+'</span><span style="color:#5CB85C" class="glyphicon glyphicon-play"></span>' : '<span style="color:red;">'+lan.site.already_stop+'</span><span style="color:red" class="glyphicon glyphicon-pause"></span>') + '</a>'
-																}
-														},
-														{
-																field: '', title: lan.site.operate, align: 'right', index: true, templet: function (item) {
-																		var redirectname = item.redirectname;
-																		var sitename = item.sitename;
-																		var conter = '<a class="btlink open_config_file" href="javascript:;">'+lan.site.site_menu_6+'</a> ' +
-																				'| <a class="btlink edit_redirect"  href="javascript:;">'+lan.site.edit+'</a> ' +
-																				'| <a class="btlink" onclick="bt.site.remove_redirect(\'' + sitename + '\',\'' + redirectname + '\',function(rdata){if(rdata.status)site.reload(11)})" href="javascript:;">'+lan.site.del+'</a>';
-																		return conter
-																}
-														}
-												],
-												data: rdata
-										});
+        },
+        set_301_old:function(web){
+            bt.site.get_domains(web.id,function(rdata){
+                var domains = [{title:lan.site.site,value:'all'}];
+                for(var i=0;i<rdata.length;i++) domains.push({title:rdata[i].name,value:rdata[i].name});
 
-										$('.edit_redirect').click(function () {
-												var index = parseInt($(this).parent().attr('data-index'));
-												site.edit.templet_301(web.name, web.id, false, rdata[index]);
-										});
-										$('.open_config_file').click(function () {
-												var index = $(this).parent().attr('data-index');
-												var sitename = web.name;
-												var redirectname = rdata[index].redirectname;
-												var redirect_config = '';
-												bt.site.get_redirect_config({
-														sitename: sitename,
-														redirectname: redirectname,
-														webserver: bt.get_cookie('serverType')
-												}, function (rdata) {
-														if (typeof rdata == 'object' && rdata.constructor == Array) {
-																if (!rdata[0].status) bt.msg(rdata)
-														} else {
-																if (!rdata.status) bt.msg(rdata)
-														}
-														var datas = [
-																{ items: [{ name: 'redirect_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
-																{
-																		name: 'btn_config_submit', text: lan.site.save, type: 'button', callback: function (ddata) {
-																				bt.site.save_redirect_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function (ret) {
-																						if (ret.status) {
-																								site.reload(11);
-																								redirect_config.close();
-																						}
-																						bt.msg(ret);
-																				})
-																		}
-																}
-														]
-														redirect_config = bt.open({
-																type: 1,
-																area: ['550px', '550px'],
-																title: lan.site.edit_conf+'[' + redirectname + ']',
-																closeBtn: 2,
-																shift: 0,
-																content: "<div class='bt-form'><div id='redirect_config_con' class='pd15'></div></div>"
-														})
-														var robj = $('#redirect_config_con');
-														for (var i = 0; i < datas.length; i++) {
-																var _form_data = bt.render_form_line(datas[i]);
-																robj.append(_form_data.html);
-																bt.render_clicks(_form_data.clicks);
-														}
-														robj.append(bt.render_help([lan.site.load_conf]));
-														$('textarea.redirect_configs').attr('id', 'configBody');
-														var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
-																extraKeys: { "Ctrl-Space": "autocomplete" },
-																lineNumbers: true,
-																matchBrackets: true
-														});
-														$(".CodeMirror-scroll").css({ "height": "350px", "margin": 0, "padding": 0 });
-														setTimeout(function () {
-																editor.refresh();
-														}, 250);
-												});
-										});
-										$('.set_path_state').click(function () {
-												type_edit_redirect($(this), 'holdpath')
-										});
-										$('.set_type_state').click(function () {
-												type_edit_redirect($(this), 'type');
-										});
-										function type_edit_redirect(_this, type) {
-												var index = _this.parent().attr('data-index');
-												var status = _this.attr('data-stuats');
-												var item = rdata[index];
-												item[type] = status;
-												item['redirectdomain'] = JSON.stringify(item['redirectdomain']);
-												// item['redirectdomain'] = JSON.stringify(['redirectdomain']);
-												bt.site.modify_redirect(item, function (res) {
-														if (res.status) site.reload(11);
-														bt.msg(res);
-												});
-										}
-								}, 100);
-						});
-				},
-				templet_proxy: function (sitename, type, obj) {
-						if (type) {
-								obj = { "type": 1, "cache": 0, "proxyname": "", "proxydir": "/", "proxysite": "http://", "cachetime": 1, "todomain": "$host", "subfilter": [{ "sub1": "", "sub2": "" }] };
-						}
-						var sub_conter = '';
-						for (var i = 0; i < obj.subfilter.length; i++) {
-								if (i == 0 || obj.subfilter[i]['sub1'] != '') {
-										sub_conter += "<div class='sub-groud'>" +
-												"<input name='rep" + ((i + 1) * 2 - 1) + "' class='bt-input-text mr10' placeholder='"+lan.site.con_rep_info+"' type='text' style='width:200px' value='" + obj.subfilter[i]['sub1'] + "'>" +
-												"<input name='rep" + ((i + 1) * 2) + "' class='bt-input-text ml10' placeholder='"+lan.site.to_con+"' type='text' style='width:200px' value='" + obj.subfilter[i]['sub2'] + "'>" +
-												"<a href='javascript:;' class='proxy_del_sub' style='color:red;'>删除</a>" +
-												"</div>";
-								}
-								if (i == 2) $('.add-replace-prosy').attr('disabled', 'disabled')
-						}
-						var helps = [
-								lan.site.proxy_tips1,
-								lan.site.proxy_tips2,
-								lan.site.proxy_tips3,
-								lan.site.proxy_tips4
-						];
-						var form_proxy = bt.open({
-								type: 1,
-								skin: 'demo-class',
-								area: '650px',
-								title: type ? lan.site.create_proxy : lan.site.modify_proxy+'[' + obj.proxyname + ']',
-								closeBtn: 2,
-								shift: 5,
-								shadeClose: false,
-								content: "<form id='form_proxy' class='divtable pd15' style='padding-bottom: 60px'>" +
-										"<div class='line' style='overflow:hidden'>" +
-										"<span class='tname' style='position: relative;top: -5px;'>"+lan.site.open_proxy+"</span>" +
-										"<div class='info-r  ml0 mt5' >" +
-										"<input class='btswitch btswitch-ios' id='openVpn' type='checkbox' name='type' " + (obj.type == 1 ? 'checked="checked"' : '') + "><label class='btswitch-btn phpmyadmin-btn' for='openVpn' style='float:left'></label>" +
-										"<div style='display:" + (bt.get_cookie('serverType') == 'nginx' ? ' inline-block' : 'none') + "'>" +
-										"<span class='tname' style='margin-left:15px;position: relative;top: -5px;'>"+lan.site.proxy_cache+"</span>" +
-										"<input class='btswitch btswitch-ios' id='openNginx' type='checkbox' name='cache' " + (obj.cache == 1 ? 'checked="checked"' : '') + "'><label class='btswitch-btn phpmyadmin-btn' for='openNginx'></label>" +
-										"</div>" +
-										"<div style='display: inline-block;'>" +
-										"<span class='tname' style='margin-left:10px;position: relative;top: -5px;'>"+lan.site.proxy_adv+"</span>" +
-										"<input class='btswitch btswitch-ios' id='openAdvanced' type='checkbox' name='advanced' " + (obj.advanced == 1 ? 'checked="checked"' : '') + "'><label class='btswitch-btn phpmyadmin-btn' for='openAdvanced'></label>" +
-										"</div>" +
-										"</div>" +
-										"</div>" +
-										"<div class='line' style='clear:both;'>" +
-										"<span class='tname'>"+lan.site.proxy_name+"</span>" +
-										"<div class='info-r  ml0'><input name='proxyname'" + (type ? "" : "readonly='readonly'") + " class='bt-input-text mr5 " + (type ? "" : " disabled") + "' type='text' style='width:200px' value='" + obj.proxyname + "'></div>" +
-										"</div>" +
-										"<div class='line cachetime' style='display:" + (obj.cache == 1 ? 'block' : 'none') + "'>" +
-										"<span class='tname'>"+lan.site.cache_time+"</span>" +
-										"<div class='info-r  ml0'><input name='cachetime'class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.cachetime + "'>"+lan.site.minute+"</div>" +
-										"</div>" +
-										"<div class='line advanced'  style='display:" + (obj.advanced == 1 ? 'block' : 'none') + "'>" +
-										"<span class='tname'>"+lan.site.proxy_dir+"</span>" +
-										"<div class='info-r  ml0'><input id='proxydir' name='proxydir' class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.proxydir + "'>" +
-										"</div>" +
-										"</div>" +
-										"<div class='line'>" +
-										"<span class='tname'>"+lan.site.target_url+"</span>" +
-										"<div class='info-r  ml0'>" +
-										"<input name='proxysite' class='bt-input-text mr10' type='text' style='width:200px' value='" + obj.proxysite + "'>" +
-										"<span class='mlr15'>"+lan.site.proxy_domain+"</span><input name='todomain' class='bt-input-text ml10' type='text' style='width:200px' value='" + obj.todomain + "'>" +
-										"</div>" +
-										"</div>" +
-										"<div class='line replace_conter' style='display:" + (bt.get_cookie('serverType') == 'nginx' ? 'block' : 'none') + "'>" +
-										"<span class='tname'>"+lan.site.con_rep+"</span>" +
-										"<div class='info-r  ml0 '>" + sub_conter + "</div>" +
-										"</div>" +
-										"<div class='line' style='display:" + (bt.get_cookie('serverType') == 'nginx' ? 'block' : 'none') + "'>" +
-										"<div class='info-r  ml0'>" +
-										"<button class='btn btn-success btn-sm btn-title add-replace-prosy' type='button'><span class='glyphicon cursor glyphicon-plus  mr5' ></span>"+lan.site.add_rep_content+"</button>" +
-										"</div>" +
-										"</div>" +
-										"<ul class='help-info-text c7'>" + bt.render_help(helps) +
-										"<div class='bt-form-submit-btn'><button type='button' class='btn btn-sm btn-danger btn-colse-prosy'>"+lan.site.turn_off+"</button><button type='button' class='btn btn-sm btn-success btn-submit-prosy'>" + (type ? " "+lan.site.submit : lan.site.save) + "</button></div>" +
-										"</form>"
-						});
-						bt.set_cookie('form_proxy', form_proxy);
-						$('.add-replace-prosy').click(function () {
-								var length = $(".replace_conter .sub-groud").length;
-								if (length == 2) $(this).attr('disabled', 'disabled')
-								var conter = "<div class='sub-groud'>" +
-										"<input name='rep" + (length * 2 + 1) + "' class='bt-input-text mr10' placeholder='"+lan.site.con_rep_info+"' type='text' style='width:200px' value=''>" +
-										"<input name='rep" + (length * 2 + 2) + "' class='bt-input-text ml10' placeholder='"+lan.site.to_con+"' type='text' style='width:200px' value=''>" +
-										"<a href='javascript:;' class='proxy_del_sub' style='color:red;'>"+lan.site.del+"</a>" +
-										"</div>"
-								$(".replace_conter .info-r").append(conter);
-						});
-						$('[name="proxysite"]').keyup(function () {
-								var val = $(this).val(),ip_reg = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
-								val = val.replace(/^http[s]?:\/\//, '');
+                bt.site.get_site_301(web.name,function(pdata){
+                    var _val = pdata.src==''?'all':pdata.src
+                    var datas = [
+                        {title: lan.site.access_domain,width:'360px',name:'domains',value:_val,disabled:pdata.status,type:'select',items:domains},
+                        {title: lan.site.target_url,width:'360px',name:'toUrl',value:pdata.url},
+                        {title:' ', text: lan.site.enable_301,value:pdata.status,name:'status',class:'label-input-group',type:'checkbox',callback:function(sdata){
+                            bt.site.set_site_301(web.name,sdata.domains,sdata.toUrl,sdata.status?'1':'0',function(ret){
+                                if(ret.status) site.reload(10)
+                                bt.msg(ret);
+                            })
+                        }},
+                    ]
+                    var robj = $('#webedit-con');
+                    for(var i=0;i<datas.length;i++){
+                        var _form_data = bt.render_form_line(datas[i]);
+                        robj.append(_form_data.html);
+                        bt.render_clicks(_form_data.clicks);
+                    }
+                    robj.append(bt.render_help([lan.site.to301_help_1,lan.site.to301_help_2]));
+                })
+            })
+        },
+        set_301: function (web) {
+            bt.site.get_redirect_list(web.name, function (rdata) {
+                var datas = {
+                    items: [{ name: 'add_proxy', text: lan.site.add_redirect, type: 'button', callback: function (data) { site.edit.templet_301(web.name, web.id, true) } }]
+                }
+                var form_line = bt.render_form_line(datas);
+                $('#webedit-con').append(form_line.html);
+                bt.render_clicks(form_line.clicks);
+                $('#webedit-con').addClass('divtable').append('<table id="proxy_list" class="table table-hover"></table>');
+                setTimeout(function () {
+                    var _tab = bt.render({
+                        table: '#proxy_list',
+                        columns: [
+                            // { field: 'redirectname', title: '名称' },
+                            {
+                                field: '', title: lan.site.redirect_type, templet: function (item) {
+                                    var conter = '';
+                                    if (item.domainorpath == 'path') {
+                                        conter = item.redirectpath;
+                                    } else {
+                                        conter = item.redirectdomain ? item.redirectdomain.join('、') : lan.site.empty
+                                    }
+                                    return '<span style="width:100px;" title="' + conter + '">' + conter + '</span>';
+                                }
+                            },
+                            { field: 'redirecttype', title: lan.site.redirect_mode },
+                            {
+                                field: 'holdpath', index: true, title: lan.site.reserve_url, templet: function (item) {
+                                    return '<a href="javascript:;" class="btlink set_path_state" style="display:" data-stuats="' + (item.holdpath == 1 ? 0 : 1) + '">' + (item.holdpath == 1 ? '<span style="color:#20a53a;" class="set_path_state">'+lan.site.turn_on+'</span>' : '<span style="color:red;" class="set_path_state">'+lan.site.turn_off+'</span>') + '</a>';
+                                }
+                            },
+                            {
+                                field: 'type', title: lan.site.status, index: true, templet: function (item) {
+                                    return '<a href="javascript:;" class="btlink set_type_state" style="display:" data-stuats="' + (item.type == 1 ? 0 : 1) + '">' + (item.type == 1 ? '<span style="color:#20a53a;">'+lan.site.running_text+'</span><span style="color:#5CB85C" class="glyphicon glyphicon-play"></span>' : '<span style="color:red;">'+lan.site.already_stop+'</span><span style="color:red" class="glyphicon glyphicon-pause"></span>') + '</a>'
+                                }
+                            },
+                            {
+                                field: '', title: lan.site.operate, align: 'right', index: true, templet: function (item) {
+                                    var redirectname = item.redirectname;
+                                    var sitename = item.sitename;
+                                    var conter = '<a class="btlink open_config_file" href="javascript:;">'+lan.site.site_menu_6+'</a> ' +
+                                        '| <a class="btlink edit_redirect"  href="javascript:;">'+lan.site.edit+'</a> ' +
+                                        '| <a class="btlink" onclick="bt.site.remove_redirect(\'' + sitename + '\',\'' + redirectname + '\',function(rdata){if(rdata.status)site.reload(11)})" href="javascript:;">'+lan.site.del+'</a>';
+                                    return conter
+                                }
+                            }
+                        ],
+                        data: rdata
+                    });
+
+                    $('.edit_redirect').click(function () {
+                        var index = parseInt($(this).parent().attr('data-index'));
+                        site.edit.templet_301(web.name, web.id, false, rdata[index]);
+                    });
+                    $('.open_config_file').click(function () {
+                        var index = $(this).parent().attr('data-index');
+                        var sitename = web.name;
+                        var redirectname = rdata[index].redirectname;
+                        var redirect_config = '';
+                        bt.site.get_redirect_config({
+                            sitename: sitename,
+                            redirectname: redirectname,
+                            webserver: bt.get_cookie('serverType')
+                       }, function (rdata) {
+                            if (typeof rdata == 'object' && rdata.constructor == Array) {
+                                if (!rdata[0].status) bt.msg(rdata)
+                            } else {
+                                if (!rdata.status) bt.msg(rdata)
+                            }
+                            var datas = [
+                                { items: [{ name: 'redirect_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
+                                {
+                                    name: 'btn_config_submit', text: lan.site.save, type: 'button', callback: function (ddata) {
+                                        bt.site.save_redirect_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function (ret) {
+                                            if (ret.status) {
+                                                site.reload(11);
+                                                redirect_config.close();
+                                            }
+                                            bt.msg(ret);
+                                        })
+                                    }
+                                }
+                            ]
+                            redirect_config = bt.open({
+                                type: 1,
+                                area: ['550px', '550px'],
+                                title: lan.site.edit_conf+'[' + redirectname + ']',
+                                closeBtn: 2,
+                                shift: 0,
+                                content: "<div class='bt-form'><div id='redirect_config_con' class='pd15'></div></div>"
+                            })
+                            var robj = $('#redirect_config_con');
+                            for (var i = 0; i < datas.length; i++) {
+                                var _form_data = bt.render_form_line(datas[i]);
+                                robj.append(_form_data.html);
+                                bt.render_clicks(_form_data.clicks);
+                            }
+                            robj.append(bt.render_help([lan.site.load_conf]));
+                            $('textarea.redirect_configs').attr('id', 'configBody');
+                            var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
+                                extraKeys: { "Ctrl-Space": "autocomplete" },
+                                lineNumbers: true,
+                                matchBrackets: true
+                            });
+                            $(".CodeMirror-scroll").css({ "height": "350px", "margin": 0, "padding": 0 });
+                            setTimeout(function () {
+                                editor.refresh();
+                            }, 250);
+                        });
+                    });
+                    $('.set_path_state').click(function () {
+                        type_edit_redirect($(this), 'holdpath')
+                    });
+                    $('.set_type_state').click(function () {
+                        type_edit_redirect($(this), 'type');
+                    });
+                    function type_edit_redirect(_this, type) {
+                        var index = _this.parent().attr('data-index');
+                        var status = _this.attr('data-stuats');
+                        var item = rdata[index];
+                        item[type] = status;
+                        item['redirectdomain'] = JSON.stringify(item['redirectdomain']);
+                        // item['redirectdomain'] = JSON.stringify(['redirectdomain']);
+                        bt.site.modify_redirect(item, function (res) {
+                            if (res.status) site.reload(11);
+                            bt.msg(res);
+                        });
+                    }
+                }, 100);
+            });
+        },
+        templet_proxy: function (sitename, type, obj) {
+            if (type) {
+                obj = { "type": 1, "cache": 0, "proxyname": "", "proxydir": "/", "proxysite": "http://", "cachetime": 1, "todomain": "$host", "subfilter": [{ "sub1": "", "sub2": "" }] };
+            }
+            var sub_conter = '';
+            for (var i = 0; i < obj.subfilter.length; i++) {
+                if (i == 0 || obj.subfilter[i]['sub1'] != '') {
+                    sub_conter += "<div class='sub-groud'>" +
+                        "<input name='rep" + ((i + 1) * 2 - 1) + "' class='bt-input-text mr10' placeholder='"+lan.site.con_rep_info+"' type='text' style='width:200px' value='" + obj.subfilter[i]['sub1'] + "'>" +
+                        "<input name='rep" + ((i + 1) * 2) + "' class='bt-input-text ml10' placeholder='"+lan.site.to_con+"' type='text' style='width:200px' value='" + obj.subfilter[i]['sub2'] + "'>" +
+                        "<a href='javascript:;' class='proxy_del_sub' style='color:red;'>删除</a>" +
+                        "</div>";
+                }
+                if (i == 2) $('.add-replace-prosy').attr('disabled', 'disabled')
+            }
+            var helps = [
+                        lan.site.proxy_tips1,
+                        lan.site.proxy_tips2,
+                        lan.site.proxy_tips3,
+                        lan.site.proxy_tips4
+            ];
+            var form_proxy = bt.open({
+                type: 1,
+                skin: 'demo-class',
+                area: '650px',
+                title: type ? lan.site.create_proxy : lan.site.modify_proxy+'[' + obj.proxyname + ']',
+                closeBtn: 2,
+                shift: 5,
+                shadeClose: false,
+                content: "<form id='form_proxy' class='divtable pd15' style='padding-bottom: 60px'>" +
+                    "<div class='line' style='overflow:hidden'>" +
+                    "<span class='tname' style='position: relative;top: -5px;'>"+lan.site.open_proxy+"</span>" +
+                    "<div class='info-r  ml0 mt5' >" +
+                    "<input class='btswitch btswitch-ios' id='openVpn' type='checkbox' name='type' " + (obj.type == 1 ? 'checked="checked"' : '') + "><label class='btswitch-btn phpmyadmin-btn' for='openVpn' style='float:left'></label>" +
+                    "<div style='display:" + (bt.get_cookie('serverType') == 'nginx' ? ' inline-block' : 'none') + "'>" +
+                    "<span class='tname' style='margin-left:15px;position: relative;top: -5px;'>"+lan.site.proxy_cache+"</span>" +
+                    "<input class='btswitch btswitch-ios' id='openNginx' type='checkbox' name='cache' " + (obj.cache == 1 ? 'checked="checked"' : '') + "'><label class='btswitch-btn phpmyadmin-btn' for='openNginx'></label>" +
+                    "</div>" +
+                    "<div style='display: inline-block;'>" +
+                    "<span class='tname' style='margin-left:10px;position: relative;top: -5px;'>"+lan.site.proxy_adv+"</span>" +
+                    "<input class='btswitch btswitch-ios' id='openAdvanced' type='checkbox' name='advanced' " + (obj.advanced == 1 ? 'checked="checked"' : '') + "'><label class='btswitch-btn phpmyadmin-btn' for='openAdvanced'></label>" +
+                    "</div>" +
+                    "</div>" +
+                    "</div>" +
+                    "<div class='line' style='clear:both;'>" +
+                    "<span class='tname'>"+lan.site.proxy_name+"</span>" +
+                    "<div class='info-r  ml0'><input name='proxyname'" + (type ? "" : "readonly='readonly'") + " class='bt-input-text mr5 " + (type ? "" : " disabled") + "' type='text' style='width:200px' value='" + obj.proxyname + "'></div>" +
+                    "</div>" +
+                    "<div class='line cachetime' style='display:" + (obj.cache == 1 ? 'block' : 'none') + "'>" +
+                    "<span class='tname'>"+lan.site.cache_time+"</span>" +
+                    "<div class='info-r  ml0'><input name='cachetime'class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.cachetime + "'>"+lan.site.minute+"</div>" +
+                    "</div>" +
+                    "<div class='line advanced'  style='display:" + (obj.advanced == 1 ? 'block' : 'none') + "'>" +
+                    "<span class='tname'>"+lan.site.proxy_dir+"</span>" +
+                    "<div class='info-r  ml0'><input id='proxydir' name='proxydir' class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.proxydir + "'>" +
+                    "</div>" +
+                    "</div>" +
+                    "<div class='line'>" +
+                    "<span class='tname'>"+lan.site.target_url+"</span>" +
+                    "<div class='info-r  ml0'>" +
+                    "<input name='proxysite' class='bt-input-text mr10' type='text' style='width:200px' value='" + obj.proxysite + "'>" +
+                    "<span class='mlr15'>"+lan.site.proxy_domain+"</span><input name='todomain' class='bt-input-text ml10' type='text' style='width:200px' value='" + obj.todomain + "'>" +
+                    "</div>" +
+                    "</div>" +
+                    "<div class='line replace_conter' style='display:" + (bt.get_cookie('serverType') == 'nginx' ? 'block' : 'none') + "'>" +
+                    "<span class='tname'>"+lan.site.con_rep+"</span>" +
+                    "<div class='info-r  ml0 '>" + sub_conter + "</div>" +
+                    "</div>" +
+                    "<div class='line' style='display:" + (bt.get_cookie('serverType') == 'nginx' ? 'block' : 'none') + "'>" +
+                    "<div class='info-r  ml0'>" +
+                    "<button class='btn btn-success btn-sm btn-title add-replace-prosy' type='button'><span class='glyphicon cursor glyphicon-plus  mr5' ></span>"+lan.site.add_rep_content+"</button>" +
+                    "</div>" +
+                    "</div>" +
+                    "<ul class='help-info-text c7'>" + bt.render_help(helps) +
+                    "<div class='bt-form-submit-btn'><button type='button' class='btn btn-sm btn-danger btn-colse-prosy'>"+lan.site.turn_off+"</button><button type='button' class='btn btn-sm btn-success btn-submit-prosy'>" + (type ? " "+lan.site.submit : lan.site.save) + "</button></div>" +
+                    "</form>"
+            });
+            bt.set_cookie('form_proxy', form_proxy);
+            $('.add-replace-prosy').click(function () {
+                var length = $(".replace_conter .sub-groud").length;
+                if (length == 2) $(this).attr('disabled', 'disabled')
+                var conter = "<div class='sub-groud'>" +
+                    "<input name='rep" + (length * 2 + 1) + "' class='bt-input-text mr10' placeholder='"+lan.site.con_rep_info+"' type='text' style='width:200px' value=''>" +
+                    "<input name='rep" + (length * 2 + 2) + "' class='bt-input-text ml10' placeholder='"+lan.site.to_con+"' type='text' style='width:200px' value=''>" +
+                    "<a href='javascript:;' class='proxy_del_sub' style='color:red;'>"+lan.site.del+"</a>" +
+                    "</div>"
+                $(".replace_conter .info-r").append(conter);
+            });
+            $('[name="proxysite"]').keyup(function () {
+                var val = $(this).val(),ip_reg = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+                val = val.replace(/^http[s]?:\/\//, '');
 				val = val.replace(/:([0-9]*)$/,'');
 				if(ip_reg.test(val)){
-									 $("[name='todomain']").val('$host');
+                	 $("[name='todomain']").val('$host');
 				}else{
 					 $("[name='todomain']").val(val);
 				}
-						});
-						$('#openAdvanced').click(function () {
-								if ($(this).prop('checked')) {
-										$('.advanced').show();
-								} else {
-										$('.advanced').hide();
-								}
-						});
-						$('#openNginx').click(function () {
-								if ($(this).prop('checked')) {
-										$('.cachetime').show();
-								} else {
-										$('.cachetime').hide();
-								}
-						});
-						$('.btn-colse-prosy').click(function () {
-								form_proxy.close();
-						});
-						$('.replace_conter').on('click', '.proxy_del_sub', function () {
-								$(this).parent().remove();
-								$('.add-replace-prosy').removeAttr('disabled')
-						});
-						$(".btn-submit-prosy").click(function () {
-								var form_proxy_data = {};
-								$.each($('#form_proxy').serializeArray(), function () {
-										if (form_proxy_data[this.name]) {
-												if (!form_proxy_data[this.name].push) {
-														form_proxy_data[this.name] = [form_proxy_data[this.name]];
-												}
-												form_proxy_data[this.name].push(this.value || '');
-										} else {
-												form_proxy_data[this.name] = this.value || '';
-										}
-								});
-								form_proxy_data['type'] = (form_proxy_data['type'] == undefined ? 0 : 1);
-								form_proxy_data['cache'] = (form_proxy_data['cache'] == undefined ? 0 : 1);
-								form_proxy_data['advanced'] = (form_proxy_data['advanced'] == undefined ? 0 : 1);
-								form_proxy_data['sitename'] = sitename;
-								form_proxy_data['subfilter'] = JSON.stringify([
-										{ 'sub1': form_proxy_data['rep1'] || '', 'sub2': form_proxy_data['rep2'] || '' },
-										{ 'sub1': form_proxy_data['rep3'] || '', 'sub2': form_proxy_data['rep4'] || '' },
-										{ 'sub1': form_proxy_data['rep5'] || '', 'sub2': form_proxy_data['rep6'] || '' },
-								]);
-								for (var i in form_proxy_data) {
-										if (i.indexOf('rep') != -1) {
-												delete form_proxy_data[i];
-										}
-								}
-								if (type) {
-										bt.site.create_proxy(form_proxy_data, function (rdata) {
-												if (rdata.status) {
-														form_proxy.close();
-														site.reload(12);
-												}
-												bt.msg(rdata);
-										});
-								} else {
-										bt.site.modify_proxy(form_proxy_data, function (rdata) {
-												if (rdata.status) {
-														form_proxy.close();
-														site.reload(12);
-												}
-												bt.msg(rdata);
-										});
-								}
-						});
-				},
-				set_proxy: function (web) {
-						String.prototype.myReplace = function (f, e) {//吧f替换成e
-								var reg = new RegExp(f, "g"); //创建正则RegExp对象   
-								return this.replace(reg, e);
-						}
-						bt.site.get_proxy_list(web.name, function (rdata) {
-								var datas = {
-										items: [{ name: 'add_proxy', text: lan.site.add_proxy, type: 'button', callback: function (data) { site.edit.templet_proxy(web.name, true) } }]
-								}
-								var form_line = bt.render_form_line(datas);
-								$('#webedit-con').append(form_line.html);
-								bt.render_clicks(form_line.clicks);
-								$('#webedit-con').addClass('divtable').append('<table id="proxy_list" class="table table-hover"></table>');
-								setTimeout(function () {
-										var _tab = bt.render({
-												table: '#proxy_list',
-												columns: [
-														{
-																field: 'proxyname', title: lan.site.name, templet: function (item) {
-																		return '<span style="width:60px;" title="' + item.proxyname + '">' + item.proxyname + '</span>'
-																}
-														},
-														{
-																field: 'proxydir', title: lan.site.proxy_dir, templet: function (item) {
-																		return '<span style="width:60px;" title="' + item.proxydir + '">' + item.proxydir + '</span>'
-																}
-														},
-														{
-																field: 'proxysite', title: lan.site.target_url, templet: function (item) {
-																		return '<span style="width:130px;" title="' + item.proxysite + '">' + item.proxysite + '</span>'
-																}
-														},
-														bt.get_cookie('serverType') == 'nginx' ? {
-																field: 'cache', title: lan.site.cache, index: true, templet: function (item, index) {
-																		return '<a href="javascript:;" class="btlink set_nginx_state" data-stuats="' + (item.cache == 1 ? 0 : 1) + '">' + (item.cache == 1 ? '<span style="color:#20a53a;">'+lan.site.already_open+'</span>' : '<span style="color:red;">'+lan.site.already_close+'</span>') + '</a>'
-																}
-														} : '',
-														{
-																field: 'type', title: lan.site.status, index: true, templet: function (item) {
-																		return '<a href="javascript:;" class="btlink set_type_state" style="display:" data-stuats="' + (item.type == 1 ? 0 : 1) + '">' + (item.type == 1 ? '<span style="color:#20a53a;">'+lan.site.running_text+'</span><span style="color:#5CB85C" class="glyphicon glyphicon-play"></span>' : '<span style="color:red;">'+lan.site.already_stop+'</span><span style="color:red" class="glyphicon glyphicon-pause"></span>') + '</a>'
-																}
-														},
-														{
-																field: 'dname', title: lan.site.operate, align: 'right', templet: function (item) {
-																		console.log(item)
-																		var proxyname = item.proxyname;
-																		var sitename = item.sitename;
-																		item = JSON.stringify(item).myReplace('"', '\'');
-																		var conter = '<a class="btlink open_config_file" data-name="' + sitename + '" data-proxyname="' + proxyname + '" href="javascript:;">'+lan.site.site_menu_6+'</a> ' +
-																				'| <a class="btlink" onclick="site.edit.templet_proxy(\'' + web.name + '\',false,' + item + ')" href="javascript:;">'+lan.site.edit+'</a> ' +
-																				'| <a class="btlink" onclick="bt.site.remove_proxy(\'' + web.name + '\',\'' + proxyname + '\',function(rdata){if(rdata.status)site.reload(12)})" href="javascript:;">'+lan.site.del+'</a>';
-																		return conter
-																}
-														}
-												],
-												data: rdata
-										});
-										$('.open_config_file').click(function () {
-												var sitename = $(this).attr('data-name');
-												var proxyname = $(this).attr('data-proxyname');
-												var proxy_config = '';
-												bt.site.get_proxy_config({
-														sitename: sitename,
-														proxyname: proxyname,
-														webserver: bt.get_cookie('serverType')
-												}, function (rdata) {
-														if (typeof rdata == 'object' && rdata.constructor == Array) {
-																if (!rdata[0].status) bt.msg(rdata)
-														} else {
-																if (!rdata.status) bt.msg(rdata)
-														}
-														var datas = [
-																{ items: [{ name: 'proxy_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
-																{
-																		name: 'btn_config_submit', text: lan.site.save, type: 'button', callback: function (ddata) {
-																				bt.site.save_proxy_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function (ret) {
-																						if (ret.status) {
-																								site.reload(12);
-																								proxy_config.close();
-																						}
-																						bt.msg(ret);
-																				})
-																		}
-																}
-														]
-														proxy_config = bt.open({
-																type: 1,
-																area: ['550px', '550px'],
-																title: lan.site.edit_conf+'[' + proxyname + ']',
-																closeBtn: 2,
-																shift: 0,
-																content: "<div class='bt-form'><div id='proxy_config_con' class='pd15'></div></div>"
-														})
-														var robj = $('#proxy_config_con');
-														for (var i = 0; i < datas.length; i++) {
-																var _form_data = bt.render_form_line(datas[i]);
-																robj.append(_form_data.html);
-																bt.render_clicks(_form_data.clicks);
-														}
-														robj.append(bt.render_help([lan.site.load_conf]));
-														$('textarea.proxy_configs').attr('id', 'configBody');
-														var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
-																extraKeys: { "Ctrl-Space": "autocomplete" },
-																lineNumbers: true,
-																matchBrackets: true
-														});
-														$(".CodeMirror-scroll").css({ "height": "350px", "margin": 0, "padding": 0 });
-														setTimeout(function () {
-																editor.refresh();
-														}, 250);
-												});
-										});
-										$('.set_nginx_state').click(function () {
-												type_edit_proxy($(this), 'cache')
-										});
-										$('.set_type_state').click(function () {
-												type_edit_proxy($(this), 'type');
-										});
-										function type_edit_proxy(_this, type) {
-												var index = _this.parent().attr('data-index');
-												var status = _this.attr('data-stuats');
-												var item = rdata[index];
-												item[type] = status;
-												item['subfilter'] = JSON.stringify(item['subfilter']);
-												bt.site.modify_proxy(item, function (rdata) {
-														if (rdata.status) site.reload(12);
-														bt.msg(rdata);
-												});
-										}
-								}, 100);
-						});
-				},
-				set_security: function (web) {
-						bt.site.get_site_security(web.id, web.name, function (rdata) {
-								var robj = $('#webedit-con');
-								var datas = [
-										{ title: lan.site.url_suffix, name: 'sec_fix', value: rdata.fix, disabled: rdata.status, width: '360px' },
-										{ title: lan.site.access_domain1, name: 'sec_domains', value: rdata.domains, disabled: rdata.status, width: '360px' },
+            });
+            $('#openAdvanced').click(function () {
+                if ($(this).prop('checked')) {
+                    $('.advanced').show();
+                } else {
+                    $('.advanced').hide();
+                }
+            });
+            $('#openNginx').click(function () {
+                if ($(this).prop('checked')) {
+                    $('.cachetime').show();
+                } else {
+                    $('.cachetime').hide();
+                }
+            });
+            $('.btn-colse-prosy').click(function () {
+                form_proxy.close();
+            });
+            $('.replace_conter').on('click', '.proxy_del_sub', function () {
+                $(this).parent().remove();
+                $('.add-replace-prosy').removeAttr('disabled')
+            });
+            $(".btn-submit-prosy").click(function () {
+                var form_proxy_data = {};
+                $.each($('#form_proxy').serializeArray(), function () {
+                    if (form_proxy_data[this.name]) {
+                        if (!form_proxy_data[this.name].push) {
+                            form_proxy_data[this.name] = [form_proxy_data[this.name]];
+                        }
+                        form_proxy_data[this.name].push(this.value || '');
+                    } else {
+                        form_proxy_data[this.name] = this.value || '';
+                    }
+                });
+                form_proxy_data['type'] = (form_proxy_data['type'] == undefined ? 0 : 1);
+                form_proxy_data['cache'] = (form_proxy_data['cache'] == undefined ? 0 : 1);
+                form_proxy_data['advanced'] = (form_proxy_data['advanced'] == undefined ? 0 : 1);
+                form_proxy_data['sitename'] = sitename;
+                form_proxy_data['subfilter'] = JSON.stringify([
+                    { 'sub1': form_proxy_data['rep1'] || '', 'sub2': form_proxy_data['rep2'] || '' },
+                    { 'sub1': form_proxy_data['rep3'] || '', 'sub2': form_proxy_data['rep4'] || '' },
+                    { 'sub1': form_proxy_data['rep5'] || '', 'sub2': form_proxy_data['rep6'] || '' },
+                ]);
+                for (var i in form_proxy_data) {
+                    if (i.indexOf('rep') != -1) {
+                        delete form_proxy_data[i];
+                    }
+                }
+                if (type) {
+                    bt.site.create_proxy(form_proxy_data, function (rdata) {
+                        if (rdata.status) {
+                            form_proxy.close();
+                            site.reload(12);
+                        }
+                        bt.msg(rdata);
+                    });
+                } else {
+                    bt.site.modify_proxy(form_proxy_data, function (rdata) {
+                        if (rdata.status) {
+                            form_proxy.close();
+                            site.reload(12);
+                        }
+                        bt.msg(rdata);
+                    });
+                }
+            });
+        },
+        set_proxy: function (web) {
+            String.prototype.myReplace = function (f, e) {//吧f替换成e
+                var reg = new RegExp(f, "g"); //创建正则RegExp对象
+                return this.replace(reg, e);
+            }
+            bt.site.get_proxy_list(web.name, function (rdata) {
+                var datas = {
+                    items: [{ name: 'add_proxy', text: lan.site.add_proxy, type: 'button', callback: function (data) { site.edit.templet_proxy(web.name, true) } }]
+                }
+                var form_line = bt.render_form_line(datas);
+                $('#webedit-con').append(form_line.html);
+                bt.render_clicks(form_line.clicks);
+                $('#webedit-con').addClass('divtable').append('<table id="proxy_list" class="table table-hover"></table>');
+                setTimeout(function () {
+                    var _tab = bt.render({
+                        table: '#proxy_list',
+                        columns: [
+                            {
+                                field: 'proxyname', title: lan.site.name, templet: function (item) {
+                                    return '<span style="width:60px;" title="' + item.proxyname + '">' + item.proxyname + '</span>'
+                                }
+                            },
+                            {
+                                field: 'proxydir', title: lan.site.proxy_dir, templet: function (item) {
+                                    return '<span style="width:60px;" title="' + item.proxydir + '">' + item.proxydir + '</span>'
+                                }
+                            },
+                            {
+                                field: 'proxysite', title: lan.site.target_url, templet: function (item) {
+                                    return '<span style="width:130px;" title="' + item.proxysite + '">' + item.proxysite + '</span>'
+                                }
+                            },
+                            bt.get_cookie('serverType') == 'nginx' ? {
+                                field: 'cache', title: lan.site.cache, index: true, templet: function (item, index) {
+                                    return '<a href="javascript:;" class="btlink set_nginx_state" data-stuats="' + (item.cache == 1 ? 0 : 1) + '">' + (item.cache == 1 ? '<span style="color:#20a53a;">'+lan.site.already_open+'</span>' : '<span style="color:red;">'+lan.site.already_close+'</span>') + '</a>'
+                                }
+                            } : '',
+                            {
+                                field: 'type', title: lan.site.status, index: true, templet: function (item) {
+                                    return '<a href="javascript:;" class="btlink set_type_state" style="display:" data-stuats="' + (item.type == 1 ? 0 : 1) + '">' + (item.type == 1 ? '<span style="color:#20a53a;">'+lan.site.running_text+'</span><span style="color:#5CB85C" class="glyphicon glyphicon-play"></span>' : '<span style="color:red;">'+lan.site.already_stop+'</span><span style="color:red" class="glyphicon glyphicon-pause"></span>') + '</a>'
+                                }
+                            },
+                            {
+                                field: 'dname', title: lan.site.operate, align: 'right', templet: function (item) {
+                                    console.log(item)
+                                    var proxyname = item.proxyname;
+                                    var sitename = item.sitename;
+                                    item = JSON.stringify(item).myReplace('"', '\'');
+                                    var conter = '<a class="btlink open_config_file" data-name="' + sitename + '" data-proxyname="' + proxyname + '" href="javascript:;">'+lan.site.site_menu_6+'</a> ' +
+                                        '| <a class="btlink" onclick="site.edit.templet_proxy(\'' + web.name + '\',false,' + item + ')" href="javascript:;">'+lan.site.edit+'</a> ' +
+                                        '| <a class="btlink" onclick="bt.site.remove_proxy(\'' + web.name + '\',\'' + proxyname + '\',function(rdata){if(rdata.status)site.reload(12)})" href="javascript:;">'+lan.site.del+'</a>';
+                                    return conter
+                                }
+                            }
+                        ],
+                        data: rdata
+                    });
+                    $('.open_config_file').click(function () {
+                        var sitename = $(this).attr('data-name');
+                        var proxyname = $(this).attr('data-proxyname');
+                        var proxy_config = '';
+                        bt.site.get_proxy_config({
+                            sitename: sitename,
+                            proxyname: proxyname,
+                            webserver: bt.get_cookie('serverType')
+                        }, function (rdata) {
+                            if (typeof rdata == 'object' && rdata.constructor == Array) {
+                                if (!rdata[0].status) bt.msg(rdata)
+                            } else {
+                                if (!rdata.status) bt.msg(rdata)
+                            }
+                            var datas = [
+                                { items: [{ name: 'proxy_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
+                                {
+                                    name: 'btn_config_submit', text: lan.site.save, type: 'button', callback: function (ddata) {
+                                        bt.site.save_proxy_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function (ret) {
+                                            if (ret.status) {
+                                                site.reload(12);
+                                                proxy_config.close();
+                                            }
+                                            bt.msg(ret);
+                                        })
+                                    }
+                                }
+                            ]
+                            proxy_config = bt.open({
+                                type: 1,
+                                area: ['550px', '550px'],
+                                title: lan.site.edit_conf+'[' + proxyname + ']',
+                                closeBtn: 2,
+                                shift: 0,
+                                content: "<div class='bt-form'><div id='proxy_config_con' class='pd15'></div></div>"
+                            })
+                            var robj = $('#proxy_config_con');
+                            for (var i = 0; i < datas.length; i++) {
+                                var _form_data = bt.render_form_line(datas[i]);
+                                robj.append(_form_data.html);
+                                bt.render_clicks(_form_data.clicks);
+                            }
+                            robj.append(bt.render_help([lan.site.load_conf]));
+                            $('textarea.proxy_configs').attr('id', 'configBody');
+                            var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
+                                extraKeys: { "Ctrl-Space": "autocomplete" },
+                                lineNumbers: true,
+                                matchBrackets: true
+                            });
+                            $(".CodeMirror-scroll").css({ "height": "350px", "margin": 0, "padding": 0 });
+                            setTimeout(function () {
+                                editor.refresh();
+                            }, 250);
+                        });
+                    });
+                    $('.set_nginx_state').click(function () {
+                        type_edit_proxy($(this), 'cache')
+                    });
+                    $('.set_type_state').click(function () {
+                        type_edit_proxy($(this), 'type');
+                    });
+                    function type_edit_proxy(_this, type) {
+                        var index = _this.parent().attr('data-index');
+                        var status = _this.attr('data-stuats');
+                        var item = rdata[index];
+                        item[type] = status;
+                        item['subfilter'] = JSON.stringify(item['subfilter']);
+                        bt.site.modify_proxy(item, function (rdata) {
+                            if (rdata.status) site.reload(12);
+                            bt.msg(rdata);
+                        });
+                    }
+                }, 100);
+            });
+        },
+        set_security: function (web) {
+            bt.site.get_site_security(web.id, web.name, function (rdata) {
+                var robj = $('#webedit-con');
+                var datas = [
+                    { title: lan.site.url_suffix, name: 'sec_fix', value: rdata.fix, disabled: rdata.status, width: '360px' },
+                    { title: lan.site.access_domain1, name: 'sec_domains', value: rdata.domains, disabled: rdata.status, width: '360px' },
 
-										{
-												title: ' ', class: 'label-input-group', items: [
-														{
-																text: lan.site.start_anti_leech, name: 'status', value: rdata.status, type: 'checkbox', callback: function (sdata) {
-																		bt.site.set_site_security(web.id, web.name, sdata.sec_fix, sdata.sec_domains, sdata.status, function (ret) {
-																				if (ret.status) site.reload(13)
-																				bt.msg(ret);
-																		})
-																}
-														}
-												]
-										}
-								]
-								for (var i = 0; i < datas.length; i++) {
-										var _form_data = bt.render_form_line(datas[i]);
-										robj.append(_form_data.html);
-										bt.render_clicks(_form_data.clicks);
-								}
-								var helps = [lan.site.access_empty_ref_default, lan.site.multi_url, lan.site.trigger_return_404]
-								robj.append(bt.render_help(helps));
-						})
-				},
-				set_tomact: function (web) {
-						bt.site.get_site_phpversion(web.name, function (rdata) {
-								var robj = $('#webedit-con');
-								if (!rdata.tomcatversion) {
-										robj.html('<font>' + lan.site.tomcat_err_msg1 + '</font>');
-										layer.msg(lan.site.tomcat_err_msg, { icon: 2 });
-										return;
-								}
-								var data = {
-										class: 'label-input-group', items: [{
-												text: lan.site.enable_tomcat, name: 'tomcat', value: rdata.tomcat == -1 ? false : true, type: 'checkbox', callback: function (sdata) {
-														bt.site.set_tomcat(web.name, function (ret) {
-																if (ret.status) site.reload(9)
-																bt.msg(ret);
-														})
-												}
-										}]
-								}
-								var _form_data = bt.render_form_line(data);
-								robj.append(_form_data.html);
-								bt.render_clicks(_form_data.clicks);
-								var helps = [lan.site.tomcat_help1 + ' ' + rdata.tomcatversion + ',' + lan.site.tomcat_help2, lan.site.tomcat_help3, lan.site.tomcat_help4, lan.site.tomcat_help5]
-								robj.append(bt.render_help(helps));
-						})
-				},
-				get_site_logs: function (web) {
-						bt.site.get_site_logs(web.name, function (rdata) {
-								var robj = $('#webedit-con');
-								var logs = { class: 'bt-logs', items: [{ name: 'site_logs', height: '520px', value: rdata.msg, width: '100%', type: 'textarea' }] };
-								var _form_data = bt.render_form_line(logs);
-								robj.append(_form_data.html);
-								bt.render_clicks(_form_data.clicks);
-								$('textarea[name="site_logs"]').attr('readonly', true);
-						})
-				}
-		},
-		create_let: function (ddata, callback) {
-				bt.site.create_let(ddata, function (ret) {
-						if (ret.status) {
-								if (callback) {
-										callback(ret);
-								}
-								else {
-										site.ssl.reload(1);
-										bt.msg(ret);
-										return;
-								}
-						} else {
-								if (!ret.out) {
-										bt.msg(ret);
-										return;
-								}
-								var data = "<p>" + ret.msg + "</p><hr />"
-								if (ret.err[0].length > 10) data += '<p style="color:red;">' + ret.err[0].replace(/\n/g, '<br>') + '</p>';
-								if (ret.err[1].length > 10) data += '<p style="color:red;">' + ret.err[1].replace(/\n/g, '<br>') + '</p>';
+                    {
+                        title: ' ', class: 'label-input-group', items: [
+                            {
+                                text: lan.site.start_anti_leech, name: 'status', value: rdata.status, type: 'checkbox', callback: function (sdata) {
+                                    bt.site.set_site_security(web.id, web.name, sdata.sec_fix, sdata.sec_domains, sdata.status, function (ret) {
+                                        if (ret.status) site.reload(13)
+                                        bt.msg(ret);
+                                    })
+                                }
+                            }
+                        ]
+                    }
+                ]
+                for (var i = 0; i < datas.length; i++) {
+                    var _form_data = bt.render_form_line(datas[i]);
+                    robj.append(_form_data.html);
+                    bt.render_clicks(_form_data.clicks);
+                }
+                var helps = [lan.site.access_empty_ref_default, lan.site.multi_url, lan.site.trigger_return_404]
+                robj.append(bt.render_help(helps));
+            })
+        },
+        set_tomact: function (web) {
+            bt.site.get_site_phpversion(web.name, function (rdata) {
+                var robj = $('#webedit-con');
+                if (!rdata.tomcatversion) {
+                    robj.html('<font>' + lan.site.tomcat_err_msg1 + '</font>');
+                    layer.msg(lan.site.tomcat_err_msg, { icon: 2 });
+                    return;
+                }
+                var data = {
+                    class: 'label-input-group', items: [{
+                        text: lan.site.enable_tomcat, name: 'tomcat', value: rdata.tomcat == -1 ? false : true, type: 'checkbox', callback: function (sdata) {
+                            bt.site.set_tomcat(web.name, function (ret) {
+                                if (ret.status) site.reload(9)
+                                bt.msg(ret);
+                            })
+                        }
+                    }]
+                }
+                var _form_data = bt.render_form_line(data);
+                robj.append(_form_data.html);
+                bt.render_clicks(_form_data.clicks);
+                var helps = [lan.site.tomcat_help1 + ' ' + rdata.tomcatversion + ',' + lan.site.tomcat_help2, lan.site.tomcat_help3, lan.site.tomcat_help4, lan.site.tomcat_help5]
+                robj.append(bt.render_help(helps));
+            })
+        },
+        get_site_logs: function (web) {
+            bt.site.get_site_logs(web.name, function (rdata) {
+                var robj = $('#webedit-con');
+                var logs = { class: 'bt-logs', items: [{ name: 'site_logs', height: '520px', value: rdata.msg, width: '100%', type: 'textarea' }] };
+                var _form_data = bt.render_form_line(logs);
+                robj.append(_form_data.html);
+                bt.render_clicks(_form_data.clicks);
+                $('textarea[name="site_logs"]').attr('readonly', true);
+            })
+        }
+    },
+    create_let: function (ddata, callback) {
+        bt.site.create_let(ddata, function (ret) {
+            if (ret.status) {
+                if (callback) {
+                    callback(ret);
+                }
+                else {
+                    site.ssl.reload(1);
+                    bt.msg(ret);
+                    return;
+                }
+            } else {
+                if (!ret.out) {
+                    bt.msg(ret);
+                    return;
+                }
+                var data = "<p>" + ret.msg + "</p><hr />"
+                if (ret.err[0].length > 10) data += '<p style="color:red;">' + ret.err[0].replace(/\n/g, '<br>') + '</p>';
+                if (ret.err[1].length > 10) data += '<p style="color:red;">' + ret.err[1].replace(/\n/g, '<br>') + '</p>';
 
-								layer.msg(data, { icon: 2, area: '500px', time: 0, shade: 0.3, shadeClose: true });
-						}
-				})
-		},
-		reload: function (index) {
-				$('.site-menu p:eq(' + index + ')').trigger('click');
-		},
-		plugin_firewall: function () {
-				var typename = bt.get_cookie('serverType');
-				var name = 'btwaf_httpd';
-				if (typename == "nginx") name = 'btwaf'
+                layer.msg(data, { icon: 2, area: '500px', time: 0, shade: 0.3, shadeClose: true });
+            }
+        })
+    },
+    reload: function (index) {
+        $('.site-menu p:eq(' + index + ')').trigger('click');
+    },
+    plugin_firewall: function () {
+        var typename = bt.get_cookie('serverType');
+        var name = 'btwaf_httpd';
+        if (typename == "nginx") name = 'btwaf'
 
-				bt.plugin.get_plugin_byhtml(name, function (rhtml) {
-						if (rhtml.status === false) return;
+        bt.plugin.get_plugin_byhtml(name, function (rhtml) {
+            if (rhtml.status === false) return;
 
-						var list = rhtml.split('<script type="javascript/text">');
-						if (list.length > 1) {
-								rcode = rhtml.split('<script type="javascript/text">')[1].replace("<\/script>", "");
-						}
-						else {
-								list = rhtml.split('<script type="text/javascript">');
-								rcode = rhtml.split('<script type="text/javascript">')[1].replace("<\/script>", "");
-						}
-						rcss = rhtml.split('<style>')[1].split('</style>')[0];
-						rcode = rcode.replace('    wafview()','')
-						$("body").append('<div style="display:none"><style>' + rcss + '</style><script type="javascript/text">' + rcode + '<\/script></div>');
+            var list = rhtml.split('<script type="javascript/text">');
+            if (list.length > 1) {
+                rcode = rhtml.split('<script type="javascript/text">')[1].replace("<\/script>", "");
+            }
+            else {
+                list = rhtml.split('<script type="text/javascript">');
+                rcode = rhtml.split('<script type="text/javascript">')[1].replace("<\/script>", "");
+            }
+            rcss = rhtml.split('<style>')[1].split('</style>')[0];
+            rcode = rcode.replace('    wafview()','')
+            $("body").append('<div style="display:none"><style>' + rcss + '</style><script type="javascript/text">' + rcode + '<\/script></div>');
 
-						setTimeout(function () {
-								if (!!(window.attachEvent && !window.opera)) {
-										execScript(rcode);
-								} else {
-										window.eval(rcode);
-								}
-						}, 200)
-				})
+            setTimeout(function () {
+                if (!!(window.attachEvent && !window.opera)) {
+                    execScript(rcode);
+                } else {
+                    window.eval(rcode);
+                }
+            }, 200)
+        })
 
-		},
-		web_edit: function (obj) {
-				var _this = this;
-				var item = $(obj).parents('tr').data('item');
-				bt.open({
-						type: 1,
-						area: ['750px', '650px'],
-						title: lan.site.website_change + '[' + item.name + ']  --  ' + lan.site.addtime + '[' + item.addtime + ']',
-						closeBtn: 2,
-						shift: 0,
-						content: "<div class='bt-form'><div class='bt-w-menu site-menu pull-left' style='height: 100%;'></div><div id='webedit-con' class='bt-w-con webedit-con pd15'></div></div>"
-				})
-				setTimeout(function () {
-						var menus = [
-								{ title: lan.site.domain_man, callback: site.edit.set_domains },
-								{ title: lan.site.site_menu_1, callback: site.edit.set_dirbind },
-								{ title: lan.site.site_menu_2, callback: site.edit.set_dirpath },
-								{ title: lan.site.site_menu_3, callback: site.edit.limit_network },
-								{ title: lan.site.site_menu_4, callback: site.edit.get_rewrite_list },
-								{ title: lan.site.site_menu_5, callback: site.edit.set_default_index },
-								{ title: lan.site.site_menu_6, callback: site.edit.set_config },
-								{ title: lan.site.site_menu_7, callback: site.edit.set_ssl },
-								{ title: lan.site.php_ver, callback: site.edit.set_php_version },
-								// { title: lan.site.site_menu_9, callback: site.edit.set_tomact },
-								{ title: lan.site.redirect, callback: site.edit.set_301_old },
-								{ title: lan.site.redirect_test, callback: site.edit.set_301 },
-								{ title: lan.site.site_menu_11, callback: site.edit.set_proxy },
-								{ title: lan.site.site_menu_12, callback: site.edit.set_security },
-								{ title: lan.site.response_log, callback: site.edit.get_site_logs }
-						]
-						for (var i = 0; i < menus.length; i++) {
-								var men = menus[i];
-								var _p = $('<p>' + men.title + '</p>');
-								_p.data('callback', men.callback);
-								$('.site-menu').append(_p);
-						}
-						$('.site-menu p').click(function () {
-								$('#webedit-con').html('');
-								$(this).addClass('bgw').siblings().removeClass('bgw');
-								var callback = $(this).data('callback')
-								if (callback) callback(item);
-						})
-						site.reload(0);
-				}, 100)
-		}
+    },
+    web_edit: function (obj) {
+        var _this = this;
+        var item = $(obj).parents('tr').data('item');
+        bt.open({
+            type: 1,
+            area: ['750px', '650px'],
+            title: lan.site.website_change + '[' + item.name + ']  --  ' + lan.site.addtime + '[' + item.addtime + ']',
+            closeBtn: 2,
+            shift: 0,
+            content: "<div class='bt-form'><div class='bt-w-menu site-menu pull-left' style='height: 100%;'></div><div id='webedit-con' class='bt-w-con webedit-con pd15'></div></div>"
+        })
+        setTimeout(function () {
+            var menus = [
+                { title: lan.site.domain_man, callback: site.edit.set_domains },
+                { title: lan.site.site_menu_1, callback: site.edit.set_dirbind },
+                { title: lan.site.site_menu_2, callback: site.edit.set_dirpath },
+                { title: lan.site.site_menu_3, callback: site.edit.limit_network },
+                { title: lan.site.site_menu_4, callback: site.edit.get_rewrite_list },
+                { title: lan.site.site_menu_5, callback: site.edit.set_default_index },
+                { title: lan.site.site_menu_6, callback: site.edit.set_config },
+                { title: lan.site.site_menu_7, callback: site.edit.set_ssl },
+                { title: lan.site.php_ver, callback: site.edit.set_php_version },
+                // { title: lan.site.site_menu_9, callback: site.edit.set_tomact },
+                { title: lan.site.redirect, callback: site.edit.set_301_old },
+                { title: lan.site.redirect_test, callback: site.edit.set_301 },
+                { title: lan.site.site_menu_11, callback: site.edit.set_proxy },
+                { title: lan.site.site_menu_12, callback: site.edit.set_security },
+                { title: lan.site.response_log, callback: site.edit.get_site_logs }
+            ]
+            for (var i = 0; i < menus.length; i++) {
+                var men = menus[i];
+                var _p = $('<p>' + men.title + '</p>');
+                _p.data('callback', men.callback);
+                $('.site-menu').append(_p);
+            }
+            $('.site-menu p').click(function () {
+                $('#webedit-con').html('');
+                $(this).addClass('bgw').siblings().removeClass('bgw');
+                var callback = $(this).data('callback')
+                if (callback) callback(item);
+            })
+            site.reload(0);
+        }, 100)
+    }
 }
 site.get_types();
 

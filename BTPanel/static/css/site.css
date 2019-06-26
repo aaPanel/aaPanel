@@ -944,16 +944,20 @@ html {
 	top: 14px
 }
 
-.sidebar-auto .menu {
+.sidebar-scroll .mypcip:hover .btedit {
+	display: block
+}
+
+.sidebar-scroll .sidebar-auto .menu {
 	background-color: #353d44
 }
 
-.menu li {
+.sidebar-scroll .menu li {
 	margin-bottom: 1px;
 	position: relative
 }
 
-.menu li a {
+.sidebar-scroll .menu li a {
 	font-size: 15px;
 	color: #d6d7d9;
 	display: block;
@@ -965,8 +969,8 @@ html {
 	border-left: #404040 2px solid
 }
 
-.menu li.current a,
-.menu li a:hover {
+.sidebar-scroll .menu li.current a,
+.sidebar-scroll .menu li a:hover {
 	background-color: #2c3138;
 	color: #fff;
 	border-left: #20a53a 2px solid
@@ -2044,7 +2048,7 @@ html .menu .menu_exit:hover {
 }
 
 .rec-install .rec-box {
-	width: 300px;
+	width: 305px;
 	float: left
 }
 
@@ -2083,7 +2087,7 @@ html .menu .menu_exit:hover {
 
 .fangshi label {
 	font-weight: normal;
-	margin-right: 40px;
+	margin-right: 44px;
 	float: right
 }
 
@@ -2359,6 +2363,7 @@ html .menu .menu_exit:hover {
 }
 
 .setting-con div.mtb15 .modify {
+	margin-left: -40px;
 	vertical-align: 0;
 	position: absolute;
 	right: 4px;
@@ -3259,8 +3264,8 @@ html .menu .menu_exit:hover {
 	background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAYFJREFUeNpi/P//P8NAAhZkzrVr1zyB1FwglqSiHSZAfBZZQEtLC7sDQJZLSUlJcnNzU8Xm27dvg6jVQByqqqp6FpsaJjS+JCcnJ8O/f/+ogkFATk5uJ8gRQMcYE+MAqgN2dvYMeXn5g0DmGmyOYKJHQmNjY0tQUFA4gc0RLLS0mI+PD5YOQCACSp8BYka6OEBUVJRBXFwcW8IkPgQ+r2lk+PPsJnl5XEqdgTeknvhyABsAWS6Ytwyr3PtJUTjlYPKEAEWJEGQ5MZbQzAGEQoDmDhgNAWITGk0dQCkYcAewUJoIh38IgIpTchMai6Qa5Q4gVJYP+SgYcAcwIjfLHxZo0qWNLj/hOp4GCQs7bo0121D4D1u8wGIwGlkcd/3+k/xyANlgdMcgy8McRbM0QIoFVC8J8VkOCxVSHMdCTZ+TEyooDvjPKfCP8ddXJgZGJqISIskW/v8HtIP/H85seGdWYT3L/eN1jN8/0qR8+M8l8PePgkWzSlp/I1YHDAQACDAAtKS/DHmsv9AAAAAASUVORK5CYII=")
 }
 
-.list-list .ico-gz {
-	background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNui8sowAAAHtSURBVFiF7Ze/T8JAFMe/1QYCRKIDIe1AYcAfLJLowL/grCbGydEJTXBw0qiLA4NxNGFlkX/A0UlJJGEBQzoAC3EzxhgTgz0HPXI9jrahxTr4TZrm3r3r+/Tdu2tPIoTAT8lso9lsrgEoAVA8jLEKoMYaMpmMGABASVVVJRKJeBJZ13UAuAawmU6nayKfKa6thEIhGIbhyQUAiUTiBsC1rusrTgA8VzAY3NU07RZARQQxcQAACAQCO8lk8l4EwdeAp4pGo7QOAGDr5/4AQPoVgFgshng8brIxQM4AXisn6PdaYwHI6gJmNo6tfewe0u+1MJcvC/ueL7dH9tF+O7kqwrl82VGQiQHYZWDiAP8ZoBC+AriV7wCudkK38w/8lQxI0ve3odFoDDuoC2MXmqzMC+003gDASnZ7uVv5PgW+A5imIHK1jicA2sUjuvtLEwk49LvLngs6e4uEVaewTHjxtk5h2XTZ+u4tmg4iQ0XYPchCK9bRPcgO2lRasW7y48WOo758m5ejjWjUYKdiwXjZFiEdPOoBboJbArBvrRXrlllg0y3ytRovEUIGO1P7MPcpfbxNQRpvdfI1MPTmxAAJhI3UeXWamkw10E/lTuX23ZH0/iImkIOWADQDAITLmIRnP/vJ3BlQZYw+H8+/AFShLMorUUd8AAAAAElFTkSuQmCC")
+.list-list .ico-gz, .list-list .ico-bz2 {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNui8sowAAAHtSURBVFiF7Ze/T8JAFMe/1QYCRKIDIe1AYcAfLJLowL/grCbGydEJTXBw0qiLA4NxNGFlkX/A0UlJJGEBQzoAC3EzxhgTgz0HPXI9jrahxTr4TZrm3r3r+/Tdu2tPIoTAT8lso9lsrgEoAVA8jLEKoMYaMpmMGABASVVVJRKJeBJZ13UAuAawmU6nayKfKa6thEIhGIbhyQUAiUTiBsC1rusrTgA8VzAY3NU07RZARQQxcQAACAQCO8lk8l4EwdeAp4pGo7QOAGDr5/4AQPoVgFgshng8brIxQM4AXisn6PdaYwHI6gJmNo6tfewe0u+1MJcvC/ueL7dH9tF+O7kqwrl82VGQiQHYZWDiAP8ZoBC+AriV7wCudkK38w/8lQxI0ve3odFoDDuoC2MXmqzMC+003gDASnZ7uVv5PgW+A5imIHK1jicA2sUjuvtLEwk49LvLngs6e4uEVaewTHjxtk5h2XTZ+u4tmg4iQ0XYPchCK9bRPcgO2lRasW7y48WOo758m5ejjWjUYKdiwXjZFiEdPOoBboJbArBvrRXrlllg0y3ytRovEUIGO1P7MPcpfbxNQRpvdfI1MPTmxAAJhI3UeXWamkw10E/lTuX23ZH0/iImkIOWADQDAITLmIRnP/vJ3BlQZYw+H8+/AFShLMorUUd8AAAAAElFTkSuQmCC")
 }
 
 .list-list .ico-bt {
@@ -5049,9 +5054,9 @@ select[disabled]{
 	text-overflow:ellipsis;
 	white-space: nowrap;
 }
-.codebg{
-	background-color: #333;
-    max-height:200px;
+.codebg {
+    background-color: #333;
+    max-height: 98%;
 }
 .codebg code {
     background: none;
@@ -5138,20 +5143,25 @@ select[disabled]{
     background: -webkit-linear-gradient(top,rgba(220, 220, 220, .8),rgba(255, 255, 255, 0));
 }
 
-#force{
-	vertical-align: top;
+.disable {
+    background-color: #ededed;
 }
 
-#force+label{
-	word-wrap: break-word;
-	width: 350px;
+.onekeyCode .table > tbody > tr > td {
+    line-height: 1.7;
 }
 
-#webedit-con .tname{
-	width: 140px;
+.oneKeysearchBar {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    z-index: 20;
 }
 
-.ssl_tabs{
+.success-msg .suc-con {
+    float: right;
+    width: 280px;
+}
 
 .bt-progress {
     background-color: #e2e2e2;
