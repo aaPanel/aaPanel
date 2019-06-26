@@ -520,3 +520,66 @@ function SetIPv6() {
         bt.msg(rdata);
     });
 }
+
+
+function modify_basic_auth_to() {
+    var pdata = {
+        open: $("select[name='open']").val(),
+        basic_user: $("input[name='basic_user']").val(),
+        basic_pwd: $("input[name='basic_pwd']").val()
+    }
+    var loadT = layer.msg(lan.config.set_basicauth, { icon: 16, time: 0, shade: [0.3, '#000'] });
+    $.post('/config?action=set_basic_auth', pdata, function (rdata) {
+        layer.close(loadT);
+        if (rdata.status) {
+            layer.closeAll();
+            setTimeout(function () { window.location.reload(); }, 3000);
+        }
+        layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+    });
+
+}
+
+function modify_basic_auth() {
+    var loadT = layer.msg(lan.config.setting_basicauth, { icon: 16, time: 0, shade: [0.3, '#000'] });
+    $.post('/config?action=get_basic_auth_stat', {}, function (rdata) {
+        layer.close(loadT);
+        layer.open({
+            type: 1,
+            area: "500px",
+            title: lan.config.set_basicauth,
+            closeBtn: 2,
+            shift: 5,
+            shadeClose: false,
+            content: ' <div class="bt-form bt-form" style="padding:15px 25px">\
+						<div class="line">\
+							<span class="tname">'+lan.public.server_status+'</span>\
+							<div class="info-r" style="height:28px;">\
+								<select class="bt-input-text" name="open">\
+                                    <option value="True" '+(rdata.open?'selected':'')+'>'+lan.public.on+'</option>\
+                                    <option value="False" '+ (rdata.open ? '' : 'selected' )+'>'+lan.public.off+'</option>\
+                                </select>\
+							</div>\
+						</div>\
+                        <div class="line">\
+                            <span class="tname">'+lan.public.username+'</span>\
+                            <div class="info-r">\
+                                <input name="basic_user" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_user?lan.crontab.not_modified:lan.crontab.set_username) +'">\
+                            </div>\
+                        </div>\
+                        <div class="line">\
+                            <span class="tname">'+lan.public.pass+'</span>\
+                            <div class="info-r">\
+                                <input name="basic_pwd" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_pwd ? lan.crontab.not_modified : lan.crontab.set_passwd) +'">\
+                            </div>\
+                        </div>\
+                        <span><button class="btn btn-success btn-sm" style="    margin-left: 340px;" onclick="modify_basic_auth_to()">'+lan.public.save+'</button></span>\
+                        <ul class="help-info-text c7">\
+                            <li style="color:red;">'+lan.config.basic_auth_tips1+'</li>\
+                            <li>'+lan.config.basic_auth_tips2+'</li>\
+                            <li>'+lan.config.basic_auth_tips3+'</li>\
+                        </ul>\
+                    </div>'
+        })
+    });
+}
