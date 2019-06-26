@@ -231,7 +231,15 @@ var lan = {
 		"is_submitting":"Submitting...",
 		"create_int_key_success":"API key generated. Please keep your new key. This key is only displayed once!",
 		"open_successfully":"Successfully turned on",
-		"setting_up":"Setting up, please wait..."
+		"setting_up":"Setting up, please wait...",
+		"setting_basicauth":"Configuring the BasicAuth service, please wait...",
+		"set_basicauth":"Configuring BasicAuth authentication",
+		"not_modified":"Please leave blank if not modified",
+		"set_username":"Please set the username",
+		"set_passwd":"Please set the password",
+		"basic_auth_tips1":"Note: Please do not use your usual password here, which may lead to password leakage!",
+		"basic_auth_tips2":"After opening, access the panel in any way, you will be asked to enter the BasicAuth username and password first.",
+		"basic_auth_tips3":"After being turned on, it can effectively prevent the panel from being scanned and found, but it cannot replace the account password of the panel itself."
 	},
 	"control":{
 		"save_day_err":"Number of saving day is illegal!",
@@ -326,7 +334,9 @@ var lan = {
 		"saving":"Saving changes, please wait...",
 		"crontab_stop_will":"The cron job will not continue to run after suspended. Are you sure to suspend this cron job?",
 		"disable_change_crontab_start":"The cron job deactivated, are you sure to enable this cron job?",
-		"setting_status":"Setting status, please wait..."
+		"setting_status":"Setting status, please wait...",
+		"exclusion_rule":"Exclusion rule",
+		"exclusion_rule_tips":"For each rule in a row, the directory cannot end with /, e.g:"
 	},
 	"firewall":{
 		"empty":"Cleaned!",
@@ -1062,6 +1072,10 @@ var lan = {
 		"upload_fail2":"Upload failed 2!",
 		"installing_please_wait":"Installing, this may take a few minutes...",
 		"running":"Running",
+		"comingsoon":"Coming soon, stay tuned",
+		"del_custom_item":"Delete custom item",
+		"confirm_del":"Are you sure you want to delete [{1}]?'",
+		"deleting":"Deleting, please wait..."
 	},
 	"site":{
 		"running":"Running",
@@ -1571,7 +1585,8 @@ var lan = {
 		"create_dir":"Create a directory",
 		"dir_name":"Directory name:",
 		"dir_name_err":"Directory name cannot be empty",
-		"submitting":"Submitting"
+		"submitting":"Submitting",
+		"update":"Update"
 		},
 	"public_backup":{
 		"login_expire":"Your login status has expired, please log in again!",

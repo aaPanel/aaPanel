@@ -138,5 +138,7 @@
 	"INSTALL_THIRD_PARDY_PLUG": "Installed third-party plugin [{1}]",
 	"SITE_DIR_NOT_EXIST_RECREATE": "Site [{1}], root directory [{2}] does NOT exist, recreated!",
 	"SITE_STOP_ANTI_STEALING_LINK": "Hotlink Protection for site [{1}] disabled!",
-	"SITE_START_ANTI_STEALING_LINK": "Hotlink Protection for site [{1}] enabled!"
+	"SITE_START_ANTI_STEALING_LINK": "Hotlink Protection for site [{1}] enabled!",
+	"SET_PHP_CLI":"Set the PHP-CLI version to: {1}",
+	"SET_BASICAUTH_STATUS":"Set the BasicAuth status to: {1}"
 }

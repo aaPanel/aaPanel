@@ -828,5 +828,9 @@
 	"NOT_INSTALL_MAIL_SERVER":"Have not installed the mail server before, please feel free to install",
 	"MAIL_SERVER_EXIST":"The mail server already exists, please uninstall before reinstalling",
 	"VERIFICATION_FAILED":"Verification failed",
-	"EXPIRED_TOKEN":"Expired Token"
+	"EXPIRED_TOKEN":"Expired Token",
+	"UNSAFE_PATH":"Unsafe path",
+	"PHP_NOT_INSTALL":"PHP is not installed",
+	"SPECIFIED_PHP_NOT_INSTALL":"Specified PHP version not installed",
+	"CLEARED":"Cleared!"
 }

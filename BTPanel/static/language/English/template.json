@@ -166,7 +166,11 @@
 		"WECHAT":"WeChat Mini Program",
 		"panel_performance":"Panel performance tuning",
 		"concurrent_thread":"Concurrent thread",
-		"thread_ps":"Unless more than 10 people/sec access the panel, the recommended value should not exceed 2. Note: >1 will cause the BT terminal plugin to be abnormal."
+		"thread_ps":"Unless more than 10 people/sec access the panel, the recommended value should not exceed 2. Note: >1 will cause the BT terminal plugin to be abnormal.",
+		"BASICAUTH":"BasicAuth",
+		"BASICAUTH_TIPS1":"Used for BasicAuth authentication configuration",
+		"CONFIG":"Set",
+		"BASICAUTH_TIPS2":"Add a BasicAuth-based authentication service to the panel to prevent the panel from being swept"
 	},
 
 	"close":{
@@ -217,6 +221,7 @@
 		"PS":"Type of task: shell script, backup site, backup database, cut log, free memory, access URL",
 		"PS1":"When adding a backup task, you should run it manually and check if the backup package is complete",
 		"PS2":"Insufficient disk space, database password error, network instability, etc. may result in incomplete data backup",
+		"PS3":"Support file or directory exclusion when backing up sites and directories. Please upgrade the plug-ins that need to be excluded to the latest version",
 		"T1":"Type of Task",
 		"T2":"Name of Task",
 		"T3":"Period",
@@ -300,7 +305,10 @@
 		"LTH1":"No.",
 		"LTH2":"Type of Operation",
 		"LTH3":"Details",
-		"LTH4":"Time of Operation"
+		"LTH4":"Time of Operation",
+		"PANEL_LOG":"Panel log",
+		"LOG_EMPTY":"Log empty",
+		"UNABLE_RETRIEVE_LOG":"Unable to retrieve log information"
 	},
 
 	"soft":{
