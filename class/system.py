@@ -325,10 +325,9 @@ class system:
         #取磁盘分区信息
         diskIo = psutil.disk_partitions();
         diskInfo = []
-        
+        cuts = ['/mnt/cdrom','/boot','/boot/efi','/dev','/dev/shm','/run/lock','/run','/run/shm','/run/user'];
         for disk in diskIo:
-            if disk[1] == '/mnt/cdrom':continue;
-            if disk[1] == '/boot':continue;
+            if not cuts: continue
             tmp = {}
             tmp['path'] = disk[1]
             tmp['size'] = psutil.disk_usage(disk[1])
@@ -448,6 +447,9 @@ class system:
             networkInfo['cpu'] = self.GetCpuInfo()
             networkInfo['load'] = self.GetLoadAverage(get);
             networkInfo['mem'] = self.GetMemInfo(get)
+            networkInfo['version'] = session['version']
+            #networkInfo['disk'] = self.GetDiskInfo2()
+
 
         return networkInfo
         
@@ -600,7 +602,7 @@ class system:
                 public.ExecShell('/etc/init.d/httpd stop');
                 self.kill_port()
                 
-            result = public.ExecShell('ulimit -n 10240 && ' + self.setupPath+'/apache/bin/apachectl -t');
+            result = public.ExecShell('ulimit -n 8192 && ' + self.setupPath+'/apache/bin/apachectl -t');
             if result[1].find('Syntax OK') == -1:
                 public.WriteLog("TYPE_SOFT",'SYS_EXEC_ERR', (str(result),));
                 return public.returnMsg(False,'SYS_CONF_APACHE_ERR',(result[1].replace("\n",'<br>'),));
@@ -619,7 +621,7 @@ class system:
                 public.ExecShell('mkdir ' + vhostPath);
                 public.ExecShell('/etc/init.d/nginx start');
             
-            result = public.ExecShell('ulimit -n 10240 && nginx -t -c '+self.setupPath+'/nginx/conf/nginx.conf');
+            result = public.ExecShell('ulimit -n 8192 && nginx -t -c '+self.setupPath+'/nginx/conf/nginx.conf');
             if result[1].find('perserver') != -1:
                 limit = self.setupPath + '/nginx/conf/nginx.conf';
                 nginxConf = public.readFile(limit);

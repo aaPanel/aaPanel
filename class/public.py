@@ -537,6 +537,7 @@ def get_url(timeout = 0.5):
             if not node['ping']: continue;
             if not mnode: mnode = node;
             if node['ping'] < mnode['ping']: mnode = node;
+            if mnode['ping'] < 50: break
         return mnode['protocol'] + mnode['address'] + ':' + mnode['port'];
     except:
         return 'http://download.bt.cn';
@@ -733,10 +734,10 @@ def checkWebConfig():
             if os.path.exists(f3): os.remove(f3)
 
     if get_webserver() == 'nginx':
-        result = ExecShell("ulimit -n 10240 && /www/server/nginx/sbin/nginx -t -c /www/server/nginx/conf/nginx.conf");
+        result = ExecShell("ulimit -n 8192 && /www/server/nginx/sbin/nginx -t -c /www/server/nginx/conf/nginx.conf");
         searchStr = 'successful'
     else:
-        result = ExecShell("ulimit -n 10240 && /www/server/apache/bin/apachectl -t");
+        result = ExecShell("ulimit -n 8192 && /www/server/apache/bin/apachectl -t");
         searchStr = 'Syntax OK'
     
     if result[1].find(searchStr) == -1:
@@ -792,10 +793,12 @@ def hasPwd(password):
     return crypt.crypt(password,password);
 
 def get_timeout(url,timeout=3):
-    start = time.time();
-    result = httpGet(url,timeout);
-    if result != 'True': return False;
-    return int((time.time() - start) * 1000);
+    try:
+        start = time.time();
+        result = httpGet(url,timeout);
+        if result != 'True': return False;
+        return int((time.time() - start) * 1000);
+    except: return False
 
 def getDate(format='%Y-%m-%d %X'):
     #取格式时间
@@ -1075,7 +1078,7 @@ def get_uuid():
 
 
 #进程是否存在
-def process_exists(pname,exe = None):
+def process_exists(pname,exe = None,cmdline = None):
     try:
         import psutil
         pids = psutil.pids()
@@ -1083,10 +1086,13 @@ def process_exists(pname,exe = None):
             try:
                 p = psutil.Process(pid)
                 if p.name() == pname: 
-                    if not exe:
+                    if not exe and not cmdline:
                         return True;
                     else:
-                        if p.exe() == exe: return True
+                        if exe:
+                            if p.exe() == exe: return True
+                        if cmdline:
+                            if cmdline in  p.cmdline(): return True
             except:pass
         return False
     except: return True
@@ -1209,3 +1215,15 @@ def write_request_log():
         log_data['user-agent'] = request.headers.get('User-Agent')
         WriteFile(log_path + '/' + log_file,json.dumps(log_data) + "\n",'a+')
     except: pass
+
+#重载模块
+def mod_reload(mode):
+    if not mode: return False
+    try:
+        if sys.version_info[0] == 2:
+            reload(mode)
+        else:
+            import imp
+            imp.reload(module)
+        return True
+    except: return False

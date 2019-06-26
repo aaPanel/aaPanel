@@ -1,18 +1,17 @@
 #coding: utf-8
-#-------------------------------------------------------------------
-# 宝塔Linux面板
-#-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http:#bt.cn) All rights reserved.
-#-------------------------------------------------------------------
-# Author: 黄文良 <287962566@qq.com>
-#-------------------------------------------------------------------
-import public,os,sys,json,time
+# +-------------------------------------------------------------------
+# | 宝塔Linux面板
+# +-------------------------------------------------------------------
+# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# +-------------------------------------------------------------------
+# | Author: 黄文良 <287962566@qq.com>
+# +-------------------------------------------------------------------
 
 #+--------------------------------------------------------------------
 #|   自动部署网站
 #+--------------------------------------------------------------------
 
-import public,json,os,time,sys
+import public,json,os,time,sys,re
 from BTPanel import session
 class obj: id=0;
 class plugin_deployment:
@@ -166,6 +165,17 @@ class plugin_deployment:
         public.writeFile(jsonFile,json.dumps(data));
         return public.returnMsg(True,'Import Success!');
 
+    #取本地包信息
+    def GetPackageOther(self,get):
+        jsonFile = self.__setupPath + '/deployment_list_other.json';
+        if not os.path.exists(jsonFile): public.returnMsg(False,'could not find [%s]' % p_name)
+        data = json.loads(public.readFile(jsonFile));
+        p_name = get.p_name
+        for i in range(len(data)):
+            if data[i]['name'] == p_name: return data[i]
+        return public.returnMsg(False,'could not find  [%s]' % p_name)
+
+
     #删除程序包
     def DelPackage(self,get):
         jsonFile = self.__setupPath + '/deployment_list_other.json';
@@ -274,6 +284,7 @@ class plugin_deployment:
         self.WriteLogs(json.dumps({'name':'Install the necessary PHP extensions','total':0,'used':0,'pre':0,'speed':0}));
         import files
         mfile = files.files();
+        pinfo['php_ext'] = pinfo['php_ext'].strip().split(',')
         for ext in pinfo['php_ext']:
             if ext == 'pathinfo':
                 import config
@@ -293,7 +304,7 @@ class plugin_deployment:
                 php_f = public.GetConfigValue('setup_path') + '/php/' + php_version + '/etc/php.ini'
                 php_c = public.readFile(php_f)
                 rep = "disable_functions\s*=\s{0,1}(.*)\n"
-                tmp = re.search(rep,phpini).groups();
+                tmp = re.search(rep,php_c).groups();
                 disable_functions = tmp[0].split(',');
                 for fun in pinfo['enable_functions']:
                     fun = fun.strip()
@@ -369,6 +380,7 @@ class plugin_deployment:
                     public.writeFile(siteConfigFile,siteConfig)
 
         #清理文件和目录
+        self.WriteLogs(json.dumps({'name':'清理多余的文件','total':0,'used':0,'pre':0,'speed':0}));
         for f_path in pinfo['remove_file']:
             filename = (path + '/' + f_path).replace('//','/')
             if os.path.exists(filename):
