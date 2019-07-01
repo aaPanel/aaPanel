@@ -2,10 +2,10 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 
-#备份网站
+#Backup website
 Backup_Site()
 {
-    #准备必要信息
+    #necessary information
 	startTime=`date +%s`
 	myDate=`date +"%Y%m%d_%H%M%S"`
 	zipName=${1}_${myDate}.zip
@@ -17,7 +17,7 @@ Backup_Site()
 	
 	if [ "$pid" == '' ];then
 		endDate=`date +"%Y-%m-%d %H:%M:%S"`
-		log="网站[$1]不存在!"
+		log="website[$1]not exist!"
 		echo "★[$endDate] $log"
 		echo '----------------------------------------------------------------------------'
 		exit
@@ -27,14 +27,14 @@ Backup_Site()
 		mkdir -p $backupDir
 	fi
 	
-	#取目录名称
+	#Directory name
 	oldIFS=$IFS
 	IFS=/
 	nameArr=($sitePath)
 	pathName=${nameArr[@]: -1};
 	IFS=$oldIFS
 	
-	#压缩
+	#compression
 	cd $sitePath
 	cd ..
 	zip -r $fileName $pathName > /dev/null
