@@ -78,6 +78,6 @@ else
 fi
 GetPackManager
 if [ ! $NODE_URL ];then
-	echo '正在选择下载节点...';
+	echo 'Selecting download node...';
 	get_node_url
 fi
