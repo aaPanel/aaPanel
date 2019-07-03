@@ -167,10 +167,11 @@ class plugin_deployment:
 
     #取本地包信息
     def GetPackageOther(self,get):
+        p_name = get.p_name
         jsonFile = self.__setupPath + '/deployment_list_other.json';
         if not os.path.exists(jsonFile): public.returnMsg(False,'could not find [%s]' % p_name)
         data = json.loads(public.readFile(jsonFile));
-        p_name = get.p_name
+
         for i in range(len(data)):
             if data[i]['name'] == p_name: return data[i]
         return public.returnMsg(False,'could not find  [%s]' % p_name)
@@ -276,7 +277,7 @@ class plugin_deployment:
         self.WriteLogs(json.dumps({'name':'Setting permissions','total':0,'used':0,'pre':0,'speed':0}));
         os.system('chmod -R 755 ' + path);
         os.system('chown -R www.www ' + path);
-        if pinfo['chmod'] != "":
+        if pinfo['chmod']:
             for chm in pinfo['chmod']:
                 os.system('chmod -R ' + str(chm['mode']) + ' ' + (path + '/' + chm['path']).replace('//','/'));
 
@@ -284,7 +285,7 @@ class plugin_deployment:
         self.WriteLogs(json.dumps({'name':'Install the necessary PHP extensions','total':0,'used':0,'pre':0,'speed':0}));
         import files
         mfile = files.files();
-        pinfo['php_ext'] = pinfo['php_ext'].strip().split(',')
+        if type(pinfo['php_ext']) == str : pinfo['php_ext'] = pinfo['php_ext'].strip().split(',')
         for ext in pinfo['php_ext']:
             if ext == 'pathinfo':
                 import config
@@ -301,6 +302,7 @@ class plugin_deployment:
         #解禁PHP函数
         if 'enable_functions' in pinfo:
             try:
+                if type(pinfo['enable_functions']) == str : pinfo['enable_functions'] = pinfo['enable_functions'].strip().split(',')
                 php_f = public.GetConfigValue('setup_path') + '/php/' + php_version + '/etc/php.ini'
                 php_c = public.readFile(php_f)
                 rep = "disable_functions\s*=\s{0,1}(.*)\n"
@@ -319,7 +321,7 @@ class plugin_deployment:
         #执行额外shell进行依赖安装
         self.WriteLogs(json.dumps({'name':'Execute extra SHELL','total':0,'used':0,'pre':0,'speed':0}));
         if os.path.exists(path+'/install.sh'):
-            os.system('cd '+path+' && bash ' + 'install.sh ' + find['name']);
+            os.system('cd '+path+' && bash ' + 'install.sh ' + find['name'] + " &> install.log");
             os.system('rm -f ' + path+'/install.sh')
 
         #是否执行Composer
@@ -381,6 +383,7 @@ class plugin_deployment:
 
         #清理文件和目录
         self.WriteLogs(json.dumps({'name':'清理多余的文件','total':0,'used':0,'pre':0,'speed':0}));
+        if type(pinfo['remove_file']) == str : pinfo['remove_file'] = pinfo['remove_file'].strip().split(',')
         for f_path in pinfo['remove_file']:
             filename = (path + '/' + f_path).replace('//','/')
             if os.path.exists(filename):
