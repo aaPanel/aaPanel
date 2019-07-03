@@ -38,6 +38,7 @@ socketio.init_app(app)
 import common,db,jobs,uuid
 jobs.control_init()
 app.secret_key = uuid.UUID(int=uuid.getnode()).hex[-12:]
+local_ip = None
 
 
 try:
@@ -89,7 +90,7 @@ def service_status():
 @app.before_request
 def basic_auth_check():
     if app.config['BASIC_AUTH_OPEN']:
-        if request.path in ['/public']: return;
+        if request.path in ['/public','/download']: return;
         auth = request.authorization
         if not comm.get_sk(): return;
         if not auth: return send_authenticated()
@@ -99,7 +100,9 @@ def basic_auth_check():
 
 
 def send_authenticated():
-    return Response('', 401,{'WWW-Authenticate': 'Basic realm="Login Required"'})
+    global local_ip
+    if not local_ip: local_ip = public.GetLocalIp()
+    return Response('', 401,{'WWW-Authenticate': 'Basic realm="%s"' % local_ip})
 
 @app.route('/',methods=method_all)
 def home():
@@ -310,6 +313,35 @@ def firewall_new(pdata = None):
     defs = ('GetList','AddDropAddress','DelDropAddress','FirewallReload','SetFirewallStatus','AddAcceptPort','DelAcceptPort','SetSshStatus','SetPing','SetSshPort','GetSshInfo','AddSpecifiesIp','DelSpecifiesIp')
     return publicObject(firewallObject,defs,None,pdata);
 
+
+@app.route('/monitor', methods=method_all)
+def panel_monitor(pdata=None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import monitor
+    dataObject = monitor.Monitor()
+    defs = ('get_access_ip', 'get_exception', 'get_exception_logs', 'get_attack_nums', 'php_count', 'return_php', 'mysql_client_count')
+    return publicObject(dataObject, defs, None, pdata)
+
+
+@app.route('/san', methods=method_all)
+def san_baseline(pdata=None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import san_baseline
+    dataObject = san_baseline.san_baseline()
+    defs = ('start', 'get_api_log', 'get_resut', 'get_ssh_errorlogin')
+    return publicObject(dataObject, defs, None, pdata)
+
+
+@app.route('/abnormal', methods=method_all)
+def abnormal(pdata=None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import abnormal
+    dataObject = abnormal.abnormal()
+    defs = ( 'mysql_server', 'mysql_cpu', 'mysql_count', 'php_server', 'php_conn_max', 'php_cpu', 'CPU', 'Memory', 'disk', 'not_root_user','start')
+    return publicObject(dataObject, defs, None, pdata)
 
 @app.route('/files',methods=method_all)
 def files(pdata = None):
