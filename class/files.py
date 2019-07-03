@@ -116,11 +116,11 @@ class files:
         os.renames(save_path, new_name)
         if 'dir_mode' in args and 'file_mode' in args:
             mode_tmp1 = args.dir_mode.split(',')
-            public.ExecShell("chmod " + mode_tmp1[0] + " " + args.f_path )
-            public.ExecShell("chown " + mode_tmp1[1] + ":" + mode_tmp1[1] + " " + args.f_path)
+            public.set_mode(args.f_path,mode_tmp1[0])
+            public.set_own(args.f_path,mode_tmp1[1])
             mode_tmp2 = args.file_mode.split(',')
-            public.ExecShell("chmod " + mode_tmp2[0] + " " + new_name )
-            public.ExecShell("chown " + mode_tmp2[1] + ":" + mode_tmp2[1] + " " + new_name )
+            public.set_mode(new_name,mode_tmp2[0])
+            public.set_own(new_name,mode_tmp2[1])
 
         else:
             self.set_mode(new_name)
@@ -390,8 +390,9 @@ class files:
         
         try:
             #检查是否存在.user.ini
-            if os.path.exists(get.path+'/.user.ini'):
-                os.system("chattr -i '"+get.path+"/.user.ini'")
+            #if os.path.exists(get.path+'/.user.ini'):
+            #    os.system("chattr -i '"+get.path+"/.user.ini'")
+            os.system("chattr -R -i " + get.path)
             if hasattr(get,'empty'):
                 if not self.delete_empty(get.path): return public.returnMsg(False,'DIR_ERR_NOT_EMPTY');
             
@@ -883,12 +884,15 @@ class files:
                     public.writeSpeed(key,i,l);
                     if os.path.isdir(filename):
                         if not self.CheckDir(filename): return public.returnMsg(False,'FILE_DANGER');
+                        os.system("chattr -R -i " + filename)
                         if isRecyle:
                             self.Mv_Recycle_bin(get)
                         else:
                             shutil.rmtree(filename)
                     else:
-                        if key == '.user.ini': os.system('chattr -i ' + filename);
+                        if key == '.user.ini':
+                            if l > 1: continue
+                            os.system('chattr -i ' + filename);
                         if isRecyle:
                             
                             self.Mv_Recycle_bin(get)
