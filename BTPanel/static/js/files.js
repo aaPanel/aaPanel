@@ -801,7 +801,7 @@ function BatchPaste(){
 			for(var i=0;i<result.length;i++){
 				tbody += '<tr><td>'+result[i].filename+'</td><td>'+ToSize(result[i].size)+'</td><td>'+getLocalTime(result[i].mtime)+'</td></tr>';
 			}
-			var mbody = '<div class="divtable"><table class="table table-hover" width="100%" border="0" cellpadding="0" cellspacing="0"><thead><th>'+lan.files.file_name+'</th><th>'+lan.files.file_size+'</th><th>'+lan.files.last_edit_time+'</th></thead>\
+			var mbody = '<div class="divtable" style="height: 395px;overflow: auto;border: #ddd 1px solid;position: relative;"><table class="table table-hover" width="100%" border="0" cellpadding="0" cellspacing="0"><thead><th>'+lan.files.file_name+'</th><th>'+lan.files.file_size+'</th><th>'+lan.files.last_edit_time+'</th></thead>\
 						<tbody>'+tbody+'</tbody>\
 						</table></div>';
 			SafeMessage(lan.files.will_cover_this_file,mbody,function(){

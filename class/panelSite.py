@@ -2277,20 +2277,20 @@ server
     #清除多余user.ini
     def DelUserInI(self,path,up = 0):
         useriniPath = path + '/.user.ini'
-        public.ExecShell('chattr -i ' + useriniPath);
-        public.ExecShell('rm -f ' + useriniPath);
+        if os.path.exists(useriniPath):
+            public.ExecShell('chattr -i ' + useriniPath);
+            os.remove(useriniPath)
+
         for p1 in os.listdir(path):
             try:
                 npath = path + '/' + p1;
-                if os.path.isdir(npath):
-                    if up < 2: self.DelUserInI(npath, up + 1);
-                else:
-                    continue;
+                if not os.path.isdir(npath): continue
                 useriniPath = npath + '/.user.ini';
-                if not os.path.exists(useriniPath): continue;
-                public.ExecShell('chattr -i ' + useriniPath);
-                public.ExecShell('rm -f ' + useriniPath);
-            except: continue;
+                if os.path.exists(useriniPath):
+                    public.ExecShell('chattr -i ' + useriniPath);
+                    os.remove(useriniPath)
+                if up < 3: self.DelUserInI(npath, up + 1);
+            except: continue
         return True;
             
             
@@ -3460,8 +3460,10 @@ location %s
     #设置默认站点
     def SetDefaultSite(self,get):
         import time;
+
+        default_site_save = 'data/defaultSite.pl'
         #清理旧的
-        defaultSite = public.readFile('data/defaultSite.pl');
+        defaultSite = public.readFile(default_site_save);
         http2 = ''
         versionStr = public.readFile('/www/server/nginx/version.pl');
         if versionStr:
@@ -3480,13 +3482,22 @@ location %s
                 conf = re.sub(rep,'listen [::]:443 ssl'+http2+';',conf,1);
                 public.writeFile(path,conf);
 
+            path = self.setupPath + '/apache/htdocs/.htaccess'
+            if os.path.exists(path): os.remove(path)
+
+        if get.name == '0':
+            os.remove(default_site_save)
+            return public.returnMsg(True,'SET_SUCCESS')
+
         #处理新的
         path = self.setupPath + '/apache/htdocs';
         if os.path.exists(path):
             conf = '''<IfModule mod_rewrite.c>
   RewriteEngine on
+  RewriteCond %{HTTP_HOST} !^127.0.0.1 [NC] 
   RewriteRule (.*) http://%s/$1 [L]
-</IfModule>''' % (get.name,)
+</IfModule>'''
+            conf = conf.replace("%s",get.name)
             if get.name == 'off': conf = '';
             public.writeFile(path + '/.htaccess',conf);
             
@@ -3506,7 +3517,7 @@ location %s
         
         path = self.setupPath + '/panel/vhost/nginx/default.conf';
         if os.path.exists(path): public.ExecShell('rm -f ' + path);
-        public.writeFile('data/defaultSite.pl',get.name);
+        public.writeFile(default_site_save,get.name);
         public.serviceReload();
         return public.returnMsg(True,'SET_SUCCESS');
     
