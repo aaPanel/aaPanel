@@ -279,6 +279,7 @@ var site = {
     set_default_site: function () {
         bt.site.get_default_site(function (rdata) {
             var arrs = [];
+            arrs.push({title:lan.site.default_site_not_set,value:'0'})
             for (var i = 0; i < rdata.sites.length; i++) arrs.push({ title: rdata.sites[i].name, value: rdata.sites[i].name })
             var form = {
                 title: lan.site.default_site_yes,
@@ -782,7 +783,12 @@ var site = {
                 bt.site.get_dir_userini(web.id, path, function (rdata) {
                     loading.close();
                     var dirs = [];
-                    for (var n = 0; n < rdata.runPath.dirs.length; n++) dirs.push({ title: rdata.runPath.dirs[n], value: rdata.runPath.dirs[n] });
+                    var is_n = false;
+                    for (var n = 0; n < rdata.runPath.dirs.length; n++) {
+                        dirs.push({ title: rdata.runPath.dirs[n], value: rdata.runPath.dirs[n] });
+                        if (rdata.runPath.runPath === rdata.runPath.dirs[n]) is_n = true;
+                    }
+                    if (!is_n) dirs.push({ title: rdata.runPath.runPath, value: rdata.runPath.runPath });
                     var datas = [
                         {
                             title: '', items: [
@@ -790,6 +796,7 @@ var site = {
                                     name: 'userini', type: 'checkbox', text: lan.site.anti_XSS_attack+'(open_basedir)', value: rdata.userini, callback: function (sdata) {
                                         bt.site.set_dir_userini(path, function (ret) {
                                             if (ret.status) site.reload(2)
+                                            layer.msg(ret.msg, { icon: ret.status ? 1 : 2 });
                                         })
                                     }
                                 },
@@ -797,6 +804,7 @@ var site = {
                                     name: 'logs', type: 'checkbox', text: lan.site.write_access_log, value: rdata.logs, callback: function (sdata) {
                                         bt.site.set_logs_status(web.id, function (ret) {
                                             if (ret.status) site.reload(2)
+                                            layer.msg(ret.msg, { icon: ret.status ? 1 : 2 });
                                         })
                                     }
                                 }
@@ -809,6 +817,7 @@ var site = {
                                     name: 'btn_site_path', type: 'button', text: lan.site.save, callback: function (pdata) {
                                         bt.site.set_site_path(web.id, pdata.path, function (ret) {
                                             if (ret.status) site.reload(2)
+                                            layer.msg(ret.msg, { icon: ret.status ? 1 : 2 });
                                         })
                                     }
                                 }
@@ -821,6 +830,7 @@ var site = {
                                     name: 'btn_run_path', type: 'button', text: lan.site.save, callback: function (pdata) {
                                         bt.site.set_site_runpath(web.id, pdata.dirName, function (ret) {
                                             if (ret.status) site.reload(2)
+                                            layer.msg(ret.msg, { icon: ret.status ? 1 : 2 });
                                         })
                                     }
                                 }
