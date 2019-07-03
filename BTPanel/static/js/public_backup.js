@@ -949,29 +949,40 @@ var bt =
 					$('.check').prop('checked',checked?'checked':'');					
 				}				
 			})
-			$(obj.table).find('th').data('checks',checks).click(function(){				
-				var _th =$(this);
-				var _checks = _th.data('checks');
-				var _span = _th.find('span');
-				if(_span.length>0){
-					var asc = 'glyphicon-triangle-top';
-					var desc = 'glyphicon-triangle-bottom';
-					var or = _span.attr('data-id');
-					if(_span.hasClass(asc)){						
-						bt.set_cookie('order',or + ' desc');
-						_checks[or]();
-						setTimeout(function(){
-							$(obj.table).find('th span[data-id="'+or+'"]').removeClass(asc).addClass(desc);
-						},500)
-					}else if(_span.hasClass(desc)){							
-						bt.set_cookie('order',or + ' asc');
-						_checks[or]();						
-						setTimeout(function(){
-							$(obj.table).find('th span[data-id="'+or+'"]').removeClass(desc).addClass(asc);			
-                        }, 500)
-					}	
-				}
-			})
+            var asc = 'glyphicon-triangle-top';
+            var desc = 'glyphicon-triangle-bottom';
+
+            var orderby = bt.get_cookie('order');
+            if (orderby != undefined) {
+                var arrys = orderby.split(' ')
+                if (arrys.length == 2) {
+                    if (arrys[1] == 'asc') {
+                        $(obj.table).find('th span[data-id="' + arrys[0] + '"]').removeClass(desc).addClass(asc);
+                    }
+                    else {
+                        $(obj.table).find('th span[data-id="' + arrys[0] + '"]').removeClass(asc).addClass(desc);
+                    }
+                }
+            }
+
+            $(obj.table).find('th').data('checks', checks).click(function () {
+                var _th = $(this);
+                var _checks = _th.data('checks');
+                var _span = _th.find('span');
+                if (_span.length > 0) {
+                    var or = _span.attr('data-id');
+                    if (_span.hasClass(asc)) {
+                        bt.set_cookie('order', or + ' desc');
+                        $(obj.table).find('th span[data-id="' + or + '"]').removeClass(asc).addClass(desc);
+                        _checks[or]();
+
+                    } else if (_span.hasClass(desc)) {
+                        bt.set_cookie('order', or + ' asc');
+                        $(obj.table).find('th span[data-id="' + arrys[0] + '"]').removeClass(desc).addClass(asc);
+                        _checks[or]();
+                    }
+                }
+            })
 		}
 		return _tab;
 	}
@@ -3488,7 +3499,6 @@ bt.soft = {
 								<li class="active"><span class="item-name pull-left">'+pluginName+'</span><span class="item-info f12 pull-right c7">'+lan.public_backup.apiece_of_plug+'</span></li>\
 								<li><span class="item-name">'+lan.public_backup.up_pro+'</span><span class="item-info f12 pull-right c7">'+lan.public_backup.use_allplug_free+'</span></li>\
 							</ul>\
-							<p class="pro-info" style="position:absolute;top:151px;left:42px;color: #FF7301;font-size: 12px;display:none">'+lan.public_backup.pro_expire_must_renew_or_change_free_version+'</p>\
 						</div>\
 					</div>\
 					<div class="libpay-con">\
