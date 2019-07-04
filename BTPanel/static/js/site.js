@@ -598,8 +598,10 @@ var site = {
             })
         },
         reload: function (index) {
-            site.reload(7);
-            $('#ssl_tabs span:eq(' + index + ')').trigger('click');
+            if (index == undefined) index = 0
+            var _sel = $('#ssl_tabs .on');
+            if (_sel.length == 0) _sel = $('#ssl_tabs span:eq(0)');
+            _sel.trigger('click');
         }
     },
     edit: {
@@ -609,7 +611,7 @@ var site = {
                 var list = [
                     {
                         items: [
-                            { name: 'newdomain', width: '450px', type: 'textarea', placeholder: lan.site.domain_help },
+                            { name: 'newdomain', width: '400px', type: 'textarea', placeholder: lan.site.domain_help },
                             {
                                 name: 'btn_submit_domain', text: lan.site.add, type: 'button', callback: function (sdata) {
                                     var arrs = sdata.newdomain.split("\n");
@@ -1686,7 +1688,7 @@ var site = {
                         "<div class='info-r  ml0 mt5' >" +
                         "<input class='btswitch btswitch-ios' id='type' type='checkbox' name='type' " + (obj.type == 1 ? 'checked="checked"' : '') + " /><label class='btswitch-btn phpmyadmin-btn' for='type' style='float:left'></label>" +
                         "<div style='display: inline-block;'>" +
-                        "<span class='tname' style='margin-left:10px;position: relative;top: -5px;'>"+lan.site.reserve_url+"</span>" +
+                        "<span class='tname' style='margin-left:10px;position: relative;top: -5px; width:150px;'>"+lan.site.reserve_url+"</span>" +
                         "<input class='btswitch btswitch-ios' id='holdpath' type='checkbox' name='holdpath' " + (obj.holdpath == 1 ? 'checked="checked"' : '') + " /><label class='btswitch-btn phpmyadmin-btn' for='holdpath' style='float:left'></label>" +
                         "</div>" +
                         "</div>" +
@@ -1696,7 +1698,7 @@ var site = {
                         "<div class='info-r  ml0'><input name='redirectname' class='bt-input-text mr5' " + (types ? '' : 'disabled="disabled"') + " type='text' style='width:300px' value='" + obj.redirectname + "'></div>" +
                         "</div>" +
                         "<div class='line' style='clear:both;'>" +
-                        "<span class='tname'>"+lan.site.reserve_type+"</span>" +
+                        "<span class='tname'>"+lan.site.redirect_type+"</span>" +
                         "<div class='info-r  ml0'>" +
                         "<select class='bt-input-text mr5' name='domainorpath' style='width:100px'><option value='domain' " + (obj.domainorpath == 'domain' ? 'selected ="selected"' : "") + ">"+lan.site.domain+"</option><option value='path'  " + (obj.domainorpath == 'path' ? 'selected ="selected"' : "") + ">"+lan.site.path+"</option></select>" +
                         "<span class='mlr15'>"+lan.site.redirect_mode+"</span>" +
@@ -1963,7 +1965,7 @@ var site = {
                     sub_conter += "<div class='sub-groud'>" +
                         "<input name='rep" + ((i + 1) * 2 - 1) + "' class='bt-input-text mr10' placeholder='"+lan.site.con_rep_info+"' type='text' style='width:200px' value='" + obj.subfilter[i]['sub1'] + "'>" +
                         "<input name='rep" + ((i + 1) * 2) + "' class='bt-input-text ml10' placeholder='"+lan.site.to_con+"' type='text' style='width:200px' value='" + obj.subfilter[i]['sub2'] + "'>" +
-                        "<a href='javascript:;' class='proxy_del_sub' style='color:red;'>删除</a>" +
+                        "<a href='javascript:;' class='proxy_del_sub' style='color:red;'>Del</a>" +
                         "</div>";
                 }
                 if (i == 2) $('.add-replace-prosy').attr('disabled', 'disabled')
@@ -1992,7 +1994,7 @@ var site = {
                     "<input class='btswitch btswitch-ios' id='openNginx' type='checkbox' name='cache' " + (obj.cache == 1 ? 'checked="checked"' : '') + "'><label class='btswitch-btn phpmyadmin-btn' for='openNginx'></label>" +
                     "</div>" +
                     "<div style='display: inline-block;'>" +
-                    "<span class='tname' style='margin-left:10px;position: relative;top: -5px;'>"+lan.site.proxy_adv+"</span>" +
+                    "<span class='tname' style='margin-left:10px;position: relative;top: -5px;width:150px;'>"+lan.site.proxy_adv+"</span>" +
                     "<input class='btswitch btswitch-ios' id='openAdvanced' type='checkbox' name='advanced' " + (obj.advanced == 1 ? 'checked="checked"' : '') + "'><label class='btswitch-btn phpmyadmin-btn' for='openAdvanced'></label>" +
                     "</div>" +
                     "</div>" +
@@ -2339,7 +2341,11 @@ var site = {
         })
     },
     reload: function (index) {
-        $('.site-menu p:eq(' + index + ')').trigger('click');
+        if (index == undefined) index = 0
+
+        var _sel = $('.site-menu p.bgw');
+        if (_sel.length == 0)  _sel = $('.site-menu p:eq(0)');
+        _sel.trigger('click');
     },
     plugin_firewall: function () {
         var typename = bt.get_cookie('serverType');
