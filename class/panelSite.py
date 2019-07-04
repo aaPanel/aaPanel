@@ -175,8 +175,8 @@ class panelSite(panelRedirect):
     #SSL-END
     
     #ERROR-PAGE-START  %s
-    error_page 404 /404.html;
-    error_page 502 /502.html;
+    #error_page 404 /404.html;
+    #error_page 502 /502.html;
     #ERROR-PAGE-END
     
     #PHP-INFO-START  %s
@@ -2528,12 +2528,12 @@ server
         if public.get_webserver() == 'nginx':
             shutil.copyfile(ng_file, '/tmp/ng_file_bk.conf')
 
-        if os.path.exists('/www/server/nginx/src/ngx_cache_purge'):
-            cureCache += '''
-        location ~ /purge(/.*) {
-            proxy_cache_purge cache_one $1$is_args$args;
-            #access_log  /www/wwwlogs/%s_purge_cache.log;
-        }''' % (get.sitename)
+        #if os.path.exists('/www/server/nginx/src/ngx_cache_purge'):
+        cureCache += '''
+    location ~ /purge(/.*) {
+        proxy_cache_purge cache_one $host$1$is_args$args;
+        #access_log  /www/wwwlogs/%s_purge_cache.log;
+    }''' % (get.sitename)
         if os.path.exists(ng_file):
             self.CheckProxy(get)
             ng_conf = public.readFile(ng_file)
@@ -2565,7 +2565,7 @@ server
                     rep = "location.+\(gif[\w\|\$\(\)\n\{\}\s\;\/\~\.\*\\\\\?]+access_log\s+/"
                     ng_conf = re.sub(rep, 'access_log  /', ng_conf)
                     ng_conf = ng_conf.replace("include enable-php-","%s\n" % public.GetMsg("CLEAR_CACHE") +cureCache +"\n\t%s\n\t" % public.GetMsg("NGINX_PROXY_REP") + "include " + ng_proxyfile + ";\n\n\tinclude enable-php-")
-                    public.writeFile(ng_file,ng_conf)
+                    #public.writeFile(ng_file,ng_conf)
 
             else:
                 rep =  "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{66,66}\n+[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg("CLEAR_CACHE")
@@ -2583,7 +2583,7 @@ server
         access_log /dev/null;
     }'''
                 ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
-                public.writeFile(ng_file, ng_conf)
+            public.writeFile(ng_file, ng_conf)
 
     # 设置apache配置
     def SetApache(self,sitename):
