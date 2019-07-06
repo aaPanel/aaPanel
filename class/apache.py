@@ -55,7 +55,7 @@ class apache:
 
         #格式化重启时间
         restarttime = re.search("RestartTime:\s+(.*)",result).group(1)
-        rep = "\w+,\s([\w-]+)\s([\d\:]+)\sCST"
+        rep = "\w+,\s([\w-]+)\s([\d\:]+)\s\w+"
         date = re.search(rep,restarttime).group(1)
         timedetail = re.search(rep,restarttime).group(2)
         monthen = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
