@@ -30,7 +30,7 @@ class ajax:
             if proc.name() == "nginx":
                 self.GetProcessCpuPercent(proc.pid,process_cpu)
         time.sleep(0.5)
-        #取Nginx负载状态
+        #Take Nginx Load Status
         self.CheckStatusConf()
         result = public.HttpGet('http://127.0.0.1/nginx_status')
         tmp = result.split()
@@ -56,7 +56,7 @@ class ajax:
         return data
     
     def GetPHPStatus(self,get):
-        #取指定PHP版本的负载状态
+        #Deal PHP Version load status
         self.CheckStatusConf()
         version = get.version
         result = public.HttpGet('http://127.0.0.1/phpfpm_'+version+'_status?json')
@@ -135,11 +135,11 @@ class ajax:
     
     
     def GetTaskCount(self,get):
-        #取任务数量
+        #Number of tasks
         return public.M('tasks').where("status!=?",('1',)).count()
     
     def GetSoftList(self,get):
-        #取软件列表
+        #Take the software list
         import json,os
         tmp = public.readFile('data/softList.conf');
         data = json.loads(tmp)
@@ -147,7 +147,7 @@ class ajax:
         for i in range(len(data)):
             data[i]['check'] = public.GetConfigValue('root_path')+'/'+data[i]['check'];
             for n in range(len(data[i]['versions'])):
-                #处理任务标记
+                #Processing task tag
                 isTask = '1';
                 for task in tasks:
                     tmp = public.getStrBetween('[',']',task['name'])
@@ -158,7 +158,7 @@ class ajax:
                     else:
                         if tmp1[0].lower() == data[i]['name'].lower(): isTask = task['status'];
                 
-                #检查安装状态
+                #Check -installation status
                 if data[i]['name'] == 'PHP': 
                     data[i]['versions'][n]['task'] = isTask
                     checkFile = data[i]['check'].replace('VERSION',data[i]['versions'][n]['version'].replace('.',''));
@@ -173,7 +173,7 @@ class ajax:
     
     
     def GetLibList(self,get):
-        #取插件列表
+        #Take a list of plugins
         import json,os
         tmp = public.readFile('data/libList.conf');
         data = json.loads(tmp)
@@ -187,7 +187,7 @@ class ajax:
             if os.path.exists(cFile): return public.GetMsg("ALREADY_INSTALLED")
         return public.GetMsg("NOT_INSTALL")
     
-    #取插件操作选项
+    #Plug-in operation options
     def GetLibOpt(self,status,libName):
         optStr = '';
         if status == public.GetMsg("NOT_INSTALL"):
@@ -199,7 +199,7 @@ class ajax:
             optStr = '<a class="link" href="javascript:SetLibConfig(\''+libName+'\');">'+libConfig+'</a> | <a class="link" href="javascript:UninstallLib(\''+libName+'\');">'+public.GetMsg("UNINSTALL")+'</a>';
         return optStr;
     
-    #取插件AS
+    #PluginAS
     def GetQiniuAS(self,get):
         filename = public.GetConfigValue('setup_path') + '/panel/data/'+get.name+'As.conf';
         if not os.path.exists(filename): public.writeFile(filename,'');
@@ -211,7 +211,7 @@ class ajax:
         return data;
 
 
-    #设置插件AS
+    #Setting up pluginsAS
     def SetQiniuAS(self,get):
         info = self.GetLibInfo(get.name);
         filename = public.GetConfigValue('setup_path') + '/panel/data/'+get.name+'As.conf';
@@ -225,7 +225,7 @@ class ajax:
             return public.returnMsg(True, 'SET_SUCCESS');
         return public.returnMsg(False,'AK_SK_CONNECT_ERROR',(info['name'],))
     
-    #设置内测
+    #Set internal test
     def SetBeta(self,get):
         data = {}
         data['username'] = get.bbs_name
@@ -237,7 +237,7 @@ class ajax:
         if data['status']:
             public.writeFile('data/beta.pl',get.bbs_name + '|' + get.qq + '|' + get.email);
         return data;
-    #取内测资格状态
+    #Take the qualification status
     def GetBetaStatus(self,get):
         try:
             return public.readFile('data/beta.pl').strip();
@@ -245,7 +245,7 @@ class ajax:
             return 'False';
                
 
-    #获取指定插件信息
+    #Get the specified plugin information
     def GetLibInfo(self,name):
         import json
         tmp = public.readFile('data/libList.conf');
