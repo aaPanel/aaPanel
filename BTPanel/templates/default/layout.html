@@ -34,6 +34,7 @@
 <body>
     <div class="bt-warp bge6">
         <div class="top-tips">{{session['top_tips']}}</div>
+        <a style="display:none;" id="request_token_head" token="{{session['request_token_head']}}"></a>
         <div id="container" class="container-fluid {% if 'tmp_login' in session %}group-control{% endif %}">
             <div class="sidebar-scroll{% if 'tmp_login' in session %}-panel{% endif %}">
                 <div class="sidebar-auto">
