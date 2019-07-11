@@ -19,6 +19,7 @@ from flask_session import Session
 from werkzeug.contrib.cache import SimpleCache
 from werkzeug.wrappers import Response
 from flask_socketio import SocketIO,emit,send
+dns_client = None
 
 #设置BasicAuth
 basic_auth_conf = 'config/basic_auth.json'
@@ -178,9 +179,9 @@ def is_login(result):
     if 'login' in session:
         if session['login'] == True:
             result = make_response(result)
-            request_token = public.md5(app.secret_key + str(time.time()))
+            request_token = public.GetRandomString(48)
             session['request_token'] = request_token
-            result.set_cookie('request_token',request_token,httponly=True,max_age=86400*30)
+            result.set_cookie('request_token',request_token,max_age=86400*30)
     return result
 
 @app.route('/site',methods=method_all)
@@ -403,7 +404,9 @@ def config(pdata = None):
         workers_p = 'data/workers.pl'
         if not os.path.exists(workers_p): public.writeFile(workers_p,'1')
         data['workers'] = int(public.readFile(workers_p))
-        data['session_timeout'] = int(public.readFile(sess_out_path))
+        s_time_tmp = public.readFile(sess_out_path)
+        if not s_time_tmp: s_time_tmp = '0'
+        data['session_timeout'] = int(s_time_tmp)
         if c_obj.get_ipv6_listen(None): data['ipv6'] = 'checked'
         if c_obj.get_token(None)['open']: data['api'] = 'checked'
         data['basic_auth'] = c_obj.get_basic_auth_stat(None)
@@ -420,7 +423,7 @@ def ajax(pdata = None):
     if comReturn: return comReturn
     import ajax
     ajaxObject = ajax.ajax()
-    defs = ('check_user_auth','to_not_beta','get_beta_logs','apple_beta','GetApacheStatus','GetCloudHtml','get_load_average','GetOpeLogs','GetFpmLogs','GetFpmSlowLogs','SetMemcachedCache','GetMemcachedStatus','GetRedisStatus','GetWarning','SetWarning','CheckLogin','GetSpeed','GetAd','phpSort','ToPunycode','GetBetaStatus','SetBeta','setPHPMyAdmin','delClose','KillProcess','GetPHPInfo','GetQiniuFileList','UninstallLib','InstallLib','SetQiniuAS','GetQiniuAS','GetLibList','GetProcessList','GetNetWorkList','GetNginxStatus','GetPHPStatus','GetTaskCount','GetSoftList','GetNetWorkIo','GetDiskIo','GetCpuIo','CheckInstalled','UpdatePanel','GetInstalled','GetPHPConfig','SetPHPConfig')
+    defs = ('set_phpmyadmin_ssl','get_phpmyadmin_ssl','check_user_auth','to_not_beta','get_beta_logs','apple_beta','GetApacheStatus','GetCloudHtml','get_load_average','GetOpeLogs','GetFpmLogs','GetFpmSlowLogs','SetMemcachedCache','GetMemcachedStatus','GetRedisStatus','GetWarning','SetWarning','CheckLogin','GetSpeed','GetAd','phpSort','ToPunycode','GetBetaStatus','SetBeta','setPHPMyAdmin','delClose','KillProcess','GetPHPInfo','GetQiniuFileList','UninstallLib','InstallLib','SetQiniuAS','GetQiniuAS','GetLibList','GetProcessList','GetNetWorkList','GetNginxStatus','GetPHPStatus','GetTaskCount','GetSoftList','GetNetWorkIo','GetDiskIo','GetCpuIo','CheckInstalled','UpdatePanel','GetInstalled','GetPHPConfig','SetPHPConfig')
     return publicObject(ajaxObject,defs,None,pdata);
 
 @app.route('/system',methods=method_all)
@@ -481,7 +484,7 @@ def ssl(pdata = None):
     if comReturn: return comReturn
     import panelSSL
     toObject = panelSSL.panelSSL()
-    defs = ('RemoveCert','SetCertToSite','GetCertList','SaveCert','GetCert','GetCertName','DelToken','GetToken','GetUserInfo','GetOrderList','GetDVSSL','Completed','SyncOrder','GetSSLInfo','downloadCRT','GetSSLProduct','Renew_SSL','Get_Renew_SSL')
+    defs = ('RemoveCert','renew_lets_ssl','SetCertToSite','GetCertList','SaveCert','GetCert','GetCertName','DelToken','GetToken','GetUserInfo','GetOrderList','GetDVSSL','Completed','SyncOrder','GetSSLInfo','downloadCRT','GetSSLProduct','Renew_SSL','Get_Renew_SSL')
     result = publicObject(toObject,defs,None,pdata);
     return result;
 
@@ -873,14 +876,15 @@ except:
 
 @socketio.on('webssh')
 def webssh(msg):
-    if not check_login(): 
+    if not check_login(msg['x_http_token']):
         emit('server_response',{'data':public.getMsg('INIT_WEBSSH_LOGOUT')})
         return None
+
     global shell,ssh
     ssh_success = True
-    if type(msg) == dict:
-        if 'ssh_user' in msg:
-            connect_ssh(msg['ssh_user'].strip(),msg['ssh_passwd'].strip())
+    if type(msg['data']) == dict:
+        if 'ssh_user' in msg['data']:
+            connect_ssh(msg['data']['ssh_user'].strip(),msg['data']['ssh_passwd'].strip())
     if not shell: ssh_success = connect_ssh()
     if not shell:
         emit('server_response',{'data':public.getMsg('INIT_WEBSSH_CONN_ERR')})
@@ -889,13 +893,10 @@ def webssh(msg):
     if not ssh_success:
         emit('server_response',{'data':public.getMsg('INIT_WEBSSH_CONN_ERR')})
         return;
-    shell.send(msg)
-    try:
-        time.sleep(0.005)
-        recv = shell.recv(4096)
-        emit('server_response',{'data':recv.decode("utf-8")})
-    except Exception as ex:
-        pass
+    shell.send(msg['data'])
+    time.sleep(0.005)
+    recv = shell.recv(4096)
+    emit('server_response',{'data':recv.decode("utf-8")})
 
 def connect_ssh(user=None,passwd=None):
     global shell,ssh
@@ -964,35 +965,25 @@ def connected_msg(msg):
     if not shell: connect_ssh()
     if shell:
         try:
-            #shell.send(msg)
             recv = shell.recv(8192)
             emit('server_response',{'data':recv.decode("utf-8")})
         except:
             pass
 
 
-@socketio.on('panel')
-def websocket_test(data):
-    pdata = data
-    if not check_login():
-        emit(pdata.s_response,{'data':public.returnMsg(-1,public.getMsg('INIT_WEBSSH_LOGOUT'))})
-        return None 
-    mods = ['site','ftp','database','ajax','system','crontab','files','config','panel_data','plugin','ssl','auth','firewall','panel_wxapp']
-    if not pdata['s_module'] in mods:
-        result = public.returnMsg(False,"INIT_WEBSOCKET_ERR")
-    else:
-        result = eval("%s(pdata)" % pdata['s_module'])
-    if not hasattr(pdata,'s_response'): pdata.s_response = 'response'
-    emit(pdata.s_response,{'data':result})
+def check_csrf():
+    request_token = request.cookies.get('request_token')
+    if session['request_token'] != request_token: return False
+    http_token = request.headers.get('x-http-token')
+    if not http_token: return False
+    if http_token != session['request_token_head']: return False
+    cookie_token = request.headers.get('x-cookie-token')
+    if cookie_token != session['request_token']: return False
+    return True
 
 def publicObject(toObject,defs,action=None,get = None):
     if 'request_token' in session and 'login' in session:
-        request_token = request.cookies.get('request_token')
-        if session['request_token'] != request_token:
-            if session['login'] != False:
-                session['login'] = False;
-                cache.set('dologin',True)
-                return redirect('/login')
+        if not check_csrf(): return public.ReturnJson(False,'Csrf-Token error.'),json_header
 
     if not get: get = get_input()
     if action: get.action = action
@@ -1015,10 +1006,12 @@ def publicObject(toObject,defs,action=None,get = None):
     return public.ReturnJson(False,'ARGS_ERR'),json_header
 
 
-def check_login():
+def check_login(http_token=None):
     if cache.get('dologin'): return False
     if 'login' in session: 
         loginStatus = session['login']
+        if loginStatus and http_token:
+            if session['request_token_head'] != http_token: return False
         return loginStatus
     return False
 

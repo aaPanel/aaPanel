@@ -4,8 +4,7 @@ var site = {
     get_list: function (page, search, type) {
         if (page == undefined) page = 1;
         if (type == '-1' || type == undefined) {
-                console.log($('.site_type select').val())
-                type = $('.site_type select').val();
+            type = $('.site_type select').val();
         }
         bt.site.get_list(page, search, type, function (rdata) {
             $('.dataTables_paginate').html(rdata.page);
@@ -347,7 +346,6 @@ var site = {
             }
             layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
         });
-        console.log(php_version)
     },
     del_site: function (wid, wname) {
         var thtml = "<div class='options' style='width: 320px'><label><input type='checkbox' id='delftp' name='ftp'><span>FTP</span></label><label><input type='checkbox' id='deldata' name='data'><span>" + lan.site.database + "</span></label><label><input type='checkbox' id='delpath' name='path'><span>" + lan.site.root_dir + "</span></label></div>";
@@ -528,13 +526,60 @@ var site = {
   	},
     ssl: {
         my_ssl_msg : null,
-        renew_ssl: function () {
-            $.post('/ssl?action=Renew_SSL', {}, function (rdata) {
-                layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+        renew_ssl: function (siteName) {
+            data = {}
+            if (siteName != undefined) data = { siteName: siteName }
+            var loadT = bt.load("Renewing certificate at one click.")
+            bt.send("renew_lets_ssl", 'ssl/renew_lets_ssl', data, function (rdata) {
+                loadT.close();
                 if (rdata.status) {
-                    setTimeout(function () { site.ssl.get_renew_stat(); }, 500);
+                    if (siteName != undefined) {
+                        if (rdata.err_list.length > 0) {
+                            bt.msg({ status: false, msg: rdata.err_list[0].msg })
+                        }
+                        else {
+                            site.reload();
+                            bt.msg({ status: true, time: 6, msg: 'The website [' + siteName + '] renewed the certificate successfully.' })
+                        }
+                    }
+                    else {
+                        var ehtml = '', shtml = ''
+
+                        if (rdata.sucess_list.length > 0) {
+                            var sucess = {};
+                            sucess.title = "Successful renewal " + rdata.sucess_list.length + " certificate";
+                            sucess.list = [{ title: "Domain name list", val: rdata.sucess_list.join() }];
+                            shtml = bt.render_ps(sucess);
+                        }
+
+                        if (rdata.err_list.length > 0) {
+                            var error = {};
+                            error.title = "Renewal failed " + rdata.err_list.length + " certificate";
+                            error.list = []
+                            for (var i = 0; i < rdata.err_list.length; i++) {
+                                error.list.push({ title: rdata.err_list[i]['siteName'], val: rdata.err_list[i]['msg'] })
+                            }
+                            ehtml = bt.render_ps(error);
+                        }
+
+                        bt.open({
+                            type: 1,
+                            area: '600px',
+                            title: "Successful visa renewal",
+                            closeBtn: 2,
+                            shadeClose: false,
+                            content: "<div class='success-msg'><div class='pic'><img src='/static/img/success-pic.png'></div><div class='suc-con'>" + shtml + ehtml + "</div></div>",
+                        });
+
+                        if ($(".success-msg").height() < 150) {
+                            $(".success-msg").find("img").css({ "width": "150px", "margin-top": "30px" });
+                        }
+                    }
                 }
-            });
+                else {
+                    bt.msg(rdata)
+                }
+            })
         },
         get_renew_stat: function () {
             $.post('/ssl?action=Get_Renew_SSL', {}, function (task_list) {
@@ -1307,7 +1352,7 @@ var site = {
                                                             arrs_list.push({ title: api[x].title, value: api[x].name });
                                                             arr_obj[api[x].name] = api[x];
                                                         }
-                                                        var data = {
+                                                        var data = [{
                                                             title: lan.site.choose_dns, class: 'checks_line', items: [
                                                                 {
                                                                     name: 'dns_select', width: '120px', type: 'select', items: arrs_list, callback: function (obj) {
@@ -1355,17 +1400,20 @@ var site = {
                                                                         }
                                                                     }
                                                                 },
-                                                                {
-                                                                    title: lan.site.wait+' ', name: 'dnssleep', width: '60px', type: 'number', value: 10, unit: lan.site.second, callback: function (obj) {
-                                                                        if (obj.val() < 10) obj.val(10);
-                                                                        if (obj.val() > 120) obj.val(120);
-                                                                    }
-                                                                }
                                                             ]
                                                         }
-                                                        var _form_data = bt.render_form_line(data);
-                                                        $(obj).parents('.line').append(_form_data.html);
-                                                        bt.render_clicks(_form_data.clicks);
+                                                            , {
+                                                                title: ' ', class: 'checks_line label-input-group', items:
+                                                                    [
+                                                                        { css: 'label-input-group ptb10', text: 'Automatically combine pan-domain names', name: 'app_root', type: 'checkbox' }
+                                                                    ]
+                                                            }
+                                                       ]
+                                                        for (var i = 0; i < data.length; i++) {
+                                                            var _form_data = bt.render_form_line(data[i]);
+                                                            $(obj).parents('.line').append(_form_data.html)
+                                                            bt.render_clicks(_form_data.clicks);
+                                                        }
                                                     })
                                                 }
                                             },
@@ -1373,6 +1421,7 @@ var site = {
                                     },
                                     { title: lan.site.admin_email, name: 'admin_email', value: rdata.email, width: '260px' }
                                 ]
+
                                 for (var i = 0; i < datas.length; i++) {
                                     var _form_data = bt.render_form_line(datas[i]);
                                     robj.append(_form_data.html);
@@ -1413,17 +1462,28 @@ var site = {
                                             updateOf: 1,
                                             domains: JSON.stringify(ldata['domains'])
                                         }
+                                        if (ddata.email.indexOf('@') === -1) {
+                                            layer.msg('Admin email cannot be empty!', {icon:2});
+                                            return;
+                                        }
+
                                         if (ldata.check_file) {
                                             ddata['force'] = ldata.force;
-                                            site.create_let(ddata);
+                                            site.create_let(ddata, function (res) {
+                                                if (res.status === true) {
+                                                    site.reload();
+                                                }
+
+                                            });
                                         }
                                         else {
                                             ddata['dnsapi'] = ldata.dns_select;
                                             ddata['dnssleep'] = ldata.dnssleep;
+                                            ddata['app_root'] = ldata.app_root ? 1 : 0;
                                             site.create_let(ddata, function (ret) {
                                                 if (ldata.dns_select == 'dns') {
                                                     if (ret.key) {
-                                                        site.ssl.reload(1);
+                                                        site.reload();
                                                         bt.msg(ret);
                                                         return;
                                                     }
@@ -1438,7 +1498,7 @@ var site = {
                                                     });
                                                     setTimeout(function () {
                                                         var data = [];
-                                                        for (var j = 0; j < ret.fullDomain.length; j++) data.push({ name: ret.fullDomain[j], txt: ret.txtValue[j] });
+                                                        for (var j = 0; j < ret.dns_names.length; j++) data.push({ name: ret.dns_names[j].acme_name, txt: ret.dns_names[j].domain_dns_value });
                                                         bt.render({
                                                             table: '#dns_txt_jx',
                                                             columns: [
@@ -1447,7 +1507,7 @@ var site = {
                                                             ],
                                                             data: data
                                                         })
-                                                        if (ret.fullDomain.length == 0) ret.fullDomain.append('_acme-challenge.bt.cn')
+                                                        if (ret.dns_names.length == 0) ret.dns_names.append('_acme-challenge.bt.cn')
                                                         $('.div_txt_jx').append(bt.render_help([lan.site.dns_resolve_tips4, lan.site.dns_resolve_tips2 + ret.fullDomain[0], lan.site.dns_resolve_tips3]));
 
                                                         $('.btn_check_txt').click(function () {
@@ -1456,7 +1516,8 @@ var site = {
                                                                 domains: ddata.domains,
                                                                 updateOf: 1,
                                                                 email: ldata.email,
-                                                                renew: 'True'
+                                                                renew: 'True',
+                                                                dnsapi:'dns'
                                                             }
                                                             site.create_let(new_data, function (ldata) {
                                                                 if (ldata.status) {
@@ -1468,7 +1529,7 @@ var site = {
                                                     }, 100)
                                                 }
                                                 else {
-                                                    site.ssl.reload(1);
+                                                    site.reload();
                                                     bt.msg(ret);
                                                 }
                                             })
@@ -1559,7 +1620,7 @@ var site = {
                     },
                     {
                         title: lan.site.ssl_dir, callback: function (robj) {
-                            robj.html("<div class='divtable'><table id='cer_list_table' class='table table-hover'></table></div>");
+                            robj.html("<div class='divtable' style='height:510px;'><table id='cer_list_table' class='table table-hover'></table></div>");
                             bt.site.get_cer_list(function (rdata) {
                                 bt.render({
                                     table: '#cer_list_table',
@@ -1591,12 +1652,25 @@ var site = {
                 $('#toHttps').click(function (sdata) {
                     var isHttps = $("#toHttps").attr('checked');
                     if (isHttps) {
-                        layer.confirm(lan.site.close_force_https_tips, { icon: 3, title: lan.site.close_force_https }, function () {
-                            bt.site.close_http_to_https(web.name, function () { site.reload(7); })
+                        layer.confirm('After closing HTTPS, you need to clear your browser cache to see the effect. Continue?', { icon: 3, title: "Turn off forced HTTPS\"" }, function () {
+                            bt.site.close_http_to_https(web.name, function (rdata) {
+                                if (rdata.status) {
+                                    setTimeout(function () {
+                                        site.reload(7);
+                                    }, 3000);
+                                }
+                            })
                         });
                     }
                     else {
-                        bt.site.set_http_to_https(web.name, function () { site.reload(7); })
+                        bt.site.set_http_to_https(web.name, function (rdata) {
+                            if (!rdata.status) {
+                                setTimeout(function () {
+                                    site.reload(7);
+                                }, 3000);
+                            }
+
+                        })
                     }
                 })
                 switch (rdata.type) {
@@ -2163,7 +2237,6 @@ var site = {
                             },
                             {
                                 field: 'dname', title: lan.site.operate, align: 'right', templet: function (item) {
-                                    console.log(item)
                                     var proxyname = item.proxyname;
                                     var sitename = item.sitename;
                                     item = JSON.stringify(item).myReplace('"', '\'');

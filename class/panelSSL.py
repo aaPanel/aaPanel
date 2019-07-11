@@ -357,6 +357,7 @@ class panelSSL:
             data['dns'] = result[0].replace('DNS:','').replace(' ','').strip().split(',');
             return data;
         except:
+            print(public.get_error_info())
             return None;
     
     #转换时间
@@ -393,90 +394,32 @@ class panelSSL:
 
         if type(result) != str: result = result.decode('utf-8')
         return json.loads(result);
-    
-    
+
     # 手动一键续签
-    def Renew_SSL(self, get):
-        if not os.path.isfile("/www/server/panel/vhost/crontab.json"):
-            return {"status": False, "msg": public.GetMsg("NOT_RENEW_CERT")}
-        cmd_list = json.loads(public.ReadFile("/www/server/panel/vhost/crontab.json"))
-        import panelTask
-        task = panelTask.bt_task()
-        Renew = True
-        for xt in task.get_task_list():
-                if xt['status'] != 1: Renew = False
-        if not Renew:
-            return {"status": False, "msg": public.GetMsg("EXIST_RENEW_TASK")}
-        for j in cmd_list:
-            siteName = j['siteName']
-            home_path = os.path.join("/www/server/panel/vhost/cert/", siteName)
-            public.ExecShell("mkdir -p {}".format(home_path))
-            public.ExecShell('''cd {} && rm -rf  check_authorization_status_response Confirmation_verification domain_txt_dns_value.json apply_for_cert_issuance_response timeout_info'''.format(home_path))
-            cmd = j['cmd']
-            for x in task.get_task_list():
-                if x['name'] == siteName:
-                    get.id = x['id']
-                    task.remove_task(get)  # 删除旧的任务
-            task.create_task(siteName, 0, cmd)
+    def renew_lets_ssl(self, get):
+        if not os.path.exists('vhost/cert/crontab.json'):
+            return public.returnMsg(False,'There are currently no certificates to renew!')
 
-        return {"status": True, "msg": public.GetMsg("ADD_RENEW_TO_TASK")}
+        old_list = json.loads(public.ReadFile("vhost/cert/crontab.json"))
+        cron_list = old_list
+        if hasattr(get, 'siteName'):
+            if not get.siteName in old_list:
+                return public.returnMsg(False,'There is no certificate that can be renewed on the current website..')
+            cron_list = {}
+            cron_list[get.siteName] = old_list[get.siteName]
 
-    # 获取一键续订结果
-    def Get_Renew_SSL(self, get):
-        if not os.path.isfile("/www/server/panel/vhost/crontab.json"):
-            return {"status": False, "msg": public.GetMsg("GET_FAIL_NOT_RESULT"), "data": []}
-        cmd_list = json.loads(public.ReadFile("/www/server/panel/vhost/crontab.json"))
-        import panelTask
-        CertList = self.GetCertList(get)
-        data = []
-        for j in cmd_list:
-            siteName = j['siteName']
-            cmd = j['cmd']
-            home_path = os.path.join("/www/server/panel/vhost/cert/", siteName)
-            home_csr = os.path.join(home_path, "fullchain.pem")
-            home_key = os.path.join(home_path, "privkey.pem")
+        import panelLets
+        lets = panelLets.panelLets()
 
-            task = panelTask.bt_task()
-            for i in task.get_task_list():
-                if i['name'] == siteName:
-                    siteName_task = {'status': i['status']}
-                    siteName_task['subject'] = siteName
-                    siteName_task['dns'] = [siteName, ]
-                    for item in CertList:
-                        if siteName == item['subject']:
-                            siteName_task['dns'] = item['dns']
-                            siteName_task['notAfter'] = item['notAfter']
-                            siteName_task['issuer'] = item['issuer']
-                    timeArray = time.localtime(i['addtime'])
-                    siteName_task['addtime'] = time.strftime("%Y-%m-%d %H:%M:%S", timeArray)
-                    if i['endtime']:
-                        timeArray = time.localtime(i['endtime'])
-                        siteName_task['endtime'] = time.strftime("%Y-%m-%d %H:%M:%S", timeArray)
-                    else:
-                        siteName_task['endtime'] = i['endtime']
-                    if i['status'] == -1:
-                        siteName_task['msg'] = public.GetMsg("RENEW_NOW")
-                    if i['status'] == 0:
-                        siteName_task['msg'] = public.GetMsg("WAIT_RENEW")
-                    if i['status'] == 1:
-                        get.keyPath =home_key
-                        get.certPath = home_csr
-                        self.SaveCert(get);
-                        siteName_task['msg'] = public.GetMsg("RENEW_SUCCESS")
-                        siteName_task['status'] = True
-                        if not os.path.isfile(home_key) and not os.path.isfile(home_csr):
-                            siteName_task['msg'] = public.GetMsg("RENEW_FAIL")
-                            siteName_task['status'] = False
-                        if os.path.isfile(os.path.join(home_path, "check_authorization_status_response")):
-                            siteName_task['msg'] = public.GetMsg("RENEW_FAIL1")
-                            siteName_task['status'] = False
-                        if os.path.isfile(os.path.join(home_path, "apply_for_cert_issuance_response")):
-                            siteName_task['msg'] = public.GetMsg("RENEW_FAIL2")
-                            siteName_task['status'] = False
-
-                    data.append(siteName_task)
-                    break
-        if data:
-            return {"status": True, "msg": public.GetMsg("SSL_GET_SUCCESS"), "data": data}
-        else:
-            return {"status": False, "msg": public.GetMsg("GET_FAIL_NOT_RESULT"), "data": []}
+        result = {}
+        result['status'] = True
+        result['sucess_list']  = []
+        result['err_list'] = []
+        for siteName in cron_list:
+            data = cron_list[siteName]
+            ret = lets.renew_lest_cert(data)
+            if ret['status']:
+                result['sucess_list'].append(siteName)
+            else:
+                result['err_list'].append({"siteName":siteName,"msg":ret['msg']})
+        return result;

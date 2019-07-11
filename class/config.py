@@ -15,11 +15,18 @@ class config:
     def getPanelState(self,get):
         return os.path.exists('/www/server/panel/data/close.pl');
 
+    def reload_session(self):
+        userInfo = public.M('users').where("id=?",(1,)).field('username,password').find()
+        token = public.Md5(userInfo['username'] + '/' + userInfo['password'])
+        public.writeFile('/www/server/panel/data/login_token.pl',token)
+        session['login_token'] = token
+
     def setPassword(self,get):
         if get.password1 != get.password2: return public.returnMsg(False,'USER_PASSWORD_CHECK')
         if len(get.password1) < 5: return public.returnMsg(False,'USER_PASSWORD_LEN')
         public.M('users').where("username=?",(session['username'],)).setField('password',public.md5(get.password1.strip()))
         public.WriteLog('TYPE_PANEL','USER_PASSWORD_SUCCESS',(session['username'],))
+        self.reload_session()
         return public.returnMsg(True,'USER_PASSWORD_SUCCESS')
 
     def setUsername(self,get):
@@ -28,6 +35,7 @@ class config:
         public.M('users').where("username=?",(session['username'],)).setField('username',get.username1.strip())
         public.WriteLog('TYPE_PANEL','USER_USERNAME_SUCCESS',(session['username'],get.username2))
         session['username'] = get.username1
+        self.reload_session()
         return public.returnMsg(True,'USER_USERNAME_SUCCESS')
 
     def setPanel(self,get):
@@ -36,8 +44,10 @@ class config:
         sess_out_path = 'data/session_timeout.pl'
         if 'session_timeout' in get:
             session_timeout = int(get.session_timeout)
-            if int(public.readFile(sess_out_path)) != session_timeout:
-                if session_timeout < 300: return public.returnMsg(False,public.GetMsg("NOT_LESS_THAN_TIMEOUT"))
+            s_time_tmp = public.readFile(sess_out_path)
+            if not s_time_tmp: s_time_tmp = '0'
+            if int(s_time_tmp) != session_timeout:
+                if session_timeout < 300: return public.returnMsg(False,'NOT_LESS_THAN_TIMEOUT')
                 public.writeFile(sess_out_path,str(session_timeout))
                 isReWeb = True
 
@@ -411,9 +421,6 @@ class config:
             os.system('rm -f ' + sslConf);
             return public.returnMsg(True,'PANEL_SSL_CLOSE');
         else:
-            os.system('pip insatll cffi==1.10');
-            os.system('pip install cryptography==2.1');
-            os.system('pip install pyOpenSSL==16.2');
             try:
                 if not self.CreateSSL(): return public.returnMsg(False,'PANEL_SSL_ERR');
                 public.writeFile(sslConf,'True')

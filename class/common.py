@@ -27,7 +27,7 @@ class panelSetup:
         if ua:
             ua = ua.lower();
             if ua.find('spider') != -1 or ua.find('bot') != -1: return redirect('https://www.baidu.com');
-        g.version = '6.1.1'
+        g.version = '6.1.2'
         g.title =  public.GetConfigValue('title')
         g.uri = request.path
         session['version'] = g.version;
@@ -142,6 +142,13 @@ class panelAdmin(panelSetup):
                         return redirect('/login')
                     public.writeFile(sess_input_path,str(int(time.time())))
                 except:pass
+
+            filename = '/www/server/panel/data/login_token.pl'
+            if os.path.exists(filename):
+                token = public.readFile(filename).strip()
+                if 'login_token' in session:
+                    if session['login_token'] != token:
+                        return redirect('/login?dologin=True')
         except:
             return redirect('/login')
 
