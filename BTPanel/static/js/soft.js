@@ -111,43 +111,43 @@ var soft = {
                             return '<span>' + ps + '</span>';
                         }
                     },
-                    // {
-                    //     field: 'price', title: lan.soft.price, width: 92, templet: function (item) {
-                    //         var price = lan.soft.free;
-                    //         if (item.price > 0) {
-                    //             price = '<span style="color:#fc6d26">￥' + item.price + '</span>';
-                    //         }
-                    //         return price;
-                    //     }
-                    // },
-                    // {
-                    //     field: 'endtime', width: 120, title: lan.soft.expire_time, templet: function (item) {
-                    //         var endtime = '--';
-                    //         if (item.pid > 0) {
-                    //             if (item.endtime > 0) {
-                    //                 if (item.type != 10) {
-                    //                     endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') + '<a class="btlink" onclick="bt.soft.re_plugin_pay(\'' + item.title + '\',\'' + item.pid + '\',1)"> ('+lan.soft.renew+')</a>';
-                    //                 } else {
-                    //                     endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') + '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',1,'+item.price+')"> ('+lan.soft.renew+')</a>';
-                    //                 }
-                    //             }
-                    //             else if (item.endtime === 0) {
-                    //                 endtime = lan.soft.permanent;
-                    //             }
-                    //             else if (item.endtime === -1) {
-                    //                 endtime = lan.soft.not_open;
-                    //             }
-                    //             else if (item.endtime === -2) {
-                    //                 if (item.type != 10) {
-                    //                     endtime = lan.soft.already_expire + '<a class="btlink" onclick="bt.soft.re_plugin_pay(\'' + item.title + '\',\'' + item.pid + '\',1)"> ('+lan.soft.renew+')</a>';
-                    //                 }else {
-                    //                     endtime = lan.soft.already_expire + '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',1,'+item.price+')"> ('+lan.soft.renew+')</a>';
-                    //                 }
-                    //             }
-                    //         }
-                    //         return endtime;
-                    //     }
-                    // },
+                    {
+                        field: 'price', title: lan.soft.price, width: 92, templet: function (item) {
+                            var price = lan.soft.free;
+                            if (item.price > 0) {
+                                price = '<span style="color:#fc6d26">￥' + item.price + '</span>';
+                            }
+                            return price;
+                        }
+                    },
+                    {
+                        field: 'endtime', width: 120, title: lan.soft.expire_time, templet: function (item) {
+                            var endtime = '--';
+                            if (item.pid > 0) {
+                                if (item.endtime > 0) {
+                                    if (item.type != 10) {
+                                        endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') + '<a class="btlink" onclick="bt.soft.re_plugin_pay(\'' + item.title + '\',\'' + item.pid + '\',1)"> ('+lan.soft.renew+')</a>';
+                                    } else {
+                                        endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') + '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',1,'+item.price+')"> ('+lan.soft.renew+')</a>';
+                                    }
+                                }
+                                else if (item.endtime === 0) {
+                                    endtime = lan.soft.permanent;
+                                }
+                                else if (item.endtime === -1) {
+                                    endtime = lan.soft.not_open;
+                                }
+                                else if (item.endtime === -2) {
+                                    if (item.type != 10) {
+                                        endtime = lan.soft.already_expire + '<a class="btlink" onclick="bt.soft.re_plugin_pay(\'' + item.title + '\',\'' + item.pid + '\',1)"> ('+lan.soft.renew+')</a>';
+                                    }else {
+                                        endtime = lan.soft.already_expire + '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',1,'+item.price+')"> ('+lan.soft.renew+')</a>';
+                                    }
+                                }
+                            }
+                            return endtime;
+                        }
+                    },
                     {
                         field: 'path',
                         width: 40,
@@ -1271,23 +1271,23 @@ var soft = {
             case 'phpmyadmin_safe':
                 var sdata = $('.bt-soft-menu').data('data');
                 var con = '<div class="ver line">\
-									<span style="margin-right:10px">'+ lan.soft.pma_port + '</span>\
-									<input class="bt-input-text phpmyadmindk mr20" name="Name" id="pmport" value="'+ sdata.ext.port + '" placeholder="' + lan.soft.pma_port_title + '" maxlength="5" type="number">\
-									<button class="btn btn-success btn-sm phpmyadmin_port" >'+ lan.public.save + '</button>\
-								</div>\
-								<div class="user_pw_tit">\
-									<span class="tit">'+ lan.soft.pma_pass + '</span>\
-									<span class="btswitch-p"><input class="btswitch btswitch-ios" id="phpmyadminsafe" type="checkbox" '+ (sdata.ext.auth ? 'checked' : '') + '>\
-									<label class="btswitch-btn phpmyadmin-btn phpmyadmin_safe" for="phpmyadminsafe" ></label>\
-									</span>\
-								</div>\
-								<div class="user_pw">\
-									<p><span>'+ lan.soft.pma_user + '</span><input id="username_get" class="bt-input-text" name="username_get" value="" type="text" placeholder="' + lan.soft.edit_empty + '"></p>\
-									<p><span>'+ lan.soft.pma_pass1 + '</span><input id="password_get_1" class="bt-input-text" name="password_get_1" value="" type="password" placeholder="' + lan.soft.edit_empty + '"></p>\
-									<p><span>'+ lan.soft.pma_pass2 + '</span><input id="password_get_2" class="bt-input-text" name="password_get_1" value="" type="password" placeholder="' + lan.soft.edit_empty + '"></p>\
-									<p><button class="btn btn-success btn-sm phpmyadmin_safe_save" >'+ lan.public.save + '</button></p>\
-								</div>\
-								<ul class="help-info-text c7"><li>'+ lan.soft.pma_ps + '</li></ul>';
+                                    <span style="margin-right:10px">'+ lan.soft.pma_port + '</span>\
+                                    <input class="bt-input-text phpmyadmindk mr20" name="Name" id="pmport" value="'+ sdata.ext.port + '" placeholder="' + lan.soft.pma_port_title + '" maxlength="5" type="number">\
+                                    <button class="btn btn-success btn-sm phpmyadmin_port" >'+ lan.public.save + '</button>\
+                                </div>\
+                                <div class="user_pw_tit">\
+                                    <span class="tit">'+ lan.soft.pma_pass + '</span>\
+                                    <span class="btswitch-p"><input class="btswitch btswitch-ios" id="phpmyadminsafe" type="checkbox" '+ (sdata.ext.auth ? 'checked' : '') + '>\
+                                    <label class="btswitch-btn phpmyadmin-btn phpmyadmin_safe" for="phpmyadminsafe" ></label>\
+                                    </span>\
+                                </div>\
+                                <div class="user_pw">\
+                                    <p><span>'+ lan.soft.pma_user + '</span><input id="username_get" class="bt-input-text" name="username_get" value="" type="text" placeholder="' + lan.soft.edit_empty + '"></p>\
+                                    <p><span>'+ lan.soft.pma_pass1 + '</span><input id="password_get_1" class="bt-input-text" name="password_get_1" value="" type="password" placeholder="' + lan.soft.edit_empty + '"></p>\
+                                    <p><span>'+ lan.soft.pma_pass2 + '</span><input id="password_get_2" class="bt-input-text" name="password_get_1" value="" type="password" placeholder="' + lan.soft.edit_empty + '"></p>\
+                                    <p><button class="btn btn-success btn-sm phpmyadmin_safe_save" >'+ lan.public.save + '</button></p>\
+                                </div>\
+                                <ul class="help-info-text c7"><li>'+ lan.soft.pma_ps + '</li></ul>';
                 $(".soft-man-con").html(con);
                 if (sdata.ext.port) {
                     $(".user_pw").show();

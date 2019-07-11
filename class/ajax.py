@@ -714,16 +714,74 @@ ServerName 127.0.0.2
         public.M('logs').where('id>?',(0,)).delete();
         public.WriteLog('TYPE_CONFIG','LOG_CLOSE');
         return public.returnMsg(True,'LOG_CLOSE');
-    
+
+    def __get_webserver_conffile(self):
+        if public.get_webserver() == 'nginx':
+            filename = public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf'
+        else:
+            filename = public.GetConfigValue('setup_path') + '/apache/conf/extra/httpd-vhosts.conf'
+        return filename
+
+    # 获取phpmyadmin ssl状态
+    def get_phpmyadmin_ssl(self,get):
+        import re
+        filename = self.__get_webserver_conffile()
+        conf = public.readFile(filename)
+        rep = "listen 443 ssl;"
+        if re.search(rep,conf):
+            return True
+        return False
+
+
+    # 设置phpmyadmin ssl
+    def set_phpmyadmin_ssl(self,get):
+        import re
+        filename = self.__get_webserver_conffile()
+        conf = public.readFile(filename)
+        if get.v == "on":
+            ssl_conf = """
+        #SSL-START SSL相关配置，请勿删除或修改下一行带注释的404规则
+        #error_page 404/404.html;
+        #AUTH_START
+        auth_basic "Authorization";
+        auth_basic_user_file /www/server/pass/phpmyadmin.pass;
+        #AUTH_END
+        ssl_certificate    /www/server/panel/ssl/certificate.pem;
+        ssl_certificate_key    /www/server/panel/ssl/privateKey.pem;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+        ssl_prefer_server_ciphers on;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 10m;
+        error_page 497  https://$host$request_uri;
+        #SSL-END"""
+            listen_conf = """
+        listen 888 ssl;
+        listen 443 ssl;"""
+            listen_rep = "listen.*"
+
+            conf = re.sub(listen_rep, listen_conf, conf)
+
+            ssl_rep = "\s*#error_page.+;"
+            conf = re.sub(ssl_rep, ssl_conf, conf)
+            public.writeFile(filename,conf)
+        else:
+            listen_rep = "\n\s*listen.*;\n\s*.*"
+            listen_conf = "\n\t\tlisten 888 ssl;"
+            conf = re.sub(listen_rep, listen_conf, conf)
+
+            ssl_rep = "\n\s*#SSL-START(\n|.)+#SSL-END"
+            sslconf = """
+                    #error_page 404/404.html;"""
+            conf = re.sub(ssl_rep, sslconf, conf)
+            public.writeFile(filename,conf)
+        return public.returnMsg(True,'SET_PORT_SUCCESS')
+
     #设置PHPMyAdmin
     def setPHPMyAdmin(self,get):
         import re;
         #try:
-        if public.get_webserver() == 'nginx':
-            filename = public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf';
-        else:
-            filename = public.GetConfigValue('setup_path') + '/apache/conf/extra/httpd-vhosts.conf';
-        
+        filename = self.__get_webserver_conffile()
         conf = public.readFile(filename);
         if hasattr(get,'port'):
             mainPort = public.readFile('data/port.pl').strip();

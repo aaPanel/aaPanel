@@ -400,25 +400,27 @@ def update_to6():
     print("====================================================")
 
 #命令行菜单
-def bt_cli():
+def bt_cli(u_input = 0):
     raw_tip = "==============================================="
-    print("==============="+public.GetMsg("PANEL_SHELL")+"==================")
-    print("(1) %s                           (8) %s" % (public.GetMsg("RESTART_PANEL"),public.GetMsg("CHANGE_PANEL_PORT")))
-    print("(2) %s                              (9) %s"% (public.GetMsg("STOP_PANEL"),public.GetMsg("CLEAR_PANEL_CACHE")))
-    print("(3) %s                             (10) %s"% (public.GetMsg("START_PANEL"),public.GetMsg("CLEAR_PANEL_LIMIT")))
-    print("(4) %s                            (11) %s"% (public.GetMsg("RELOAD_PANEL"),public.GetMsg("CANCEL_ENTRY")))
-    print("(5) %s                   (12) %s"% (public.GetMsg("CHANGE_PANEL_PASS"),public.GetMsg("CANCEL_DOMAIN_BIND")))
-    print("(6) %s                   (13) %s"% (public.GetMsg("CHANGE_PANEL_USER"),public.GetMsg("CANCEL_IP_LIMIT")))
-    print("(7) %s     (14) %s"% (public.GetMsg("CHANGE_MYSQL_PASS_FORCE"),public.GetMsg("GET_PANEL_DEFAULT_MSG")))
-    print("(22) %s                                   (15) %s"% ("Display panel error log",public.GetMsg("CLEAR_SYS_RUBBISH")))
-    print("(23) %s                                   (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
-    print("(0) Cancel")
-    print(raw_tip)
-    try:
-        u_input = input(public.GetMsg("INPUT_CMD_NUM"))
-        if sys.version_info[0] == 3: u_input = int(u_input)
-    except: u_input = 0
-    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    if not u_input:
+        print("==============="+public.GetMsg("PANEL_SHELL")+"==================")
+        print("(1) %s                           (8) %s" % (public.GetMsg("RESTART_PANEL"),public.GetMsg("CHANGE_PANEL_PORT")))
+        print("(2) %s                              (9) %s"% (public.GetMsg("STOP_PANEL"),public.GetMsg("CLEAR_PANEL_CACHE")))
+        print("(3) %s                             (10) %s"% (public.GetMsg("START_PANEL"),public.GetMsg("CLEAR_PANEL_LIMIT")))
+        print("(4) %s                            (11) %s"% (public.GetMsg("RELOAD_PANEL"),public.GetMsg("CANCEL_ENTRY")))
+        print("(5) %s                   (12) %s"% (public.GetMsg("CHANGE_PANEL_PASS"),public.GetMsg("CANCEL_DOMAIN_BIND")))
+        print("(6) %s                   (13) %s"% (public.GetMsg("CHANGE_PANEL_USER"),public.GetMsg("CANCEL_IP_LIMIT")))
+        print("(7) %s     (14) %s"% (public.GetMsg("CHANGE_MYSQL_PASS_FORCE"),public.GetMsg("GET_PANEL_DEFAULT_MSG")))
+        print("(22) %s                (15) %s"% ("Display panel error log",public.GetMsg("CLEAR_SYS_RUBBISH")))
+        print("(23) %s      (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
+        print("(0) Cancel")
+        print(raw_tip)
+        try:
+            u_input = input(public.GetMsg("INPUT_CMD_NUM"))
+            if sys.version_info[0] == 3: u_input = int(u_input)
+        except: u_input = 0
+
+    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,22,23]
     if not u_input in nums:
         print(raw_tip)
         print(public.GetMsg("CANCELLED"))
@@ -527,7 +529,7 @@ def bt_cli():
     elif u_input == 15:
         ClearSystem()
     elif u_input == 16:
-        os.system("curl http://download.bt.cn/install/update6.sh|bash")
+        os.system("curl http://download.bt.cn/install/update6_en.sh|bash")
     elif u_input == 22:
         os.system('tail -100 /www/server/panel/logs/error.log')
     elif u_input == 23:
