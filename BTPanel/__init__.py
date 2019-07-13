@@ -547,30 +547,6 @@ def send_favicon():
     return send_file(s_file,conditional=True,add_etags=True)
 
 
-@socketio.on('coll_socket')
-def coll_socket(msg):
-    coll_path = '/www/server/panel/plugin/coll'
-    if not os.path.exists(coll_path):
-        emit('coll_response',{'data':'aaPanel group control master is not installed!'})
-        return;
-    if type(msg) == str or not 'f' in msg:
-        emit('coll_response',{'data':'Parameter error!'})
-        return;
-    sys.path.insert(0,coll_path)
-    from inc import coll_terminal
-    try:
-        if sys.version_info[0] == 2:
-            reload(coll_terminal)
-        else:
-            from imp import reload
-            reload(coll_terminal)
-    except:pass
-    t = coll_terminal.coll_terminal()
-    if not hasattr(t,msg['f']):
-        emit('coll_response',{'data':'The specified method does not exist!'})
-        return;
-    emit('coll_response',getattr(t,msg['f'])(msg))
-
 @app.route('/coll',methods=method_all)
 @app.route('/coll/',methods=method_all)
 @app.route('/<name>/<fun>',methods=method_all)
@@ -588,10 +564,12 @@ def panel_other(name=None,fun = None,stype=None):
     #前置准备
 
     if not name: name = 'coll'
+    if not public.path_safe_check("%s/%s/%s" % (name,fun,stype)): return abort(404)
 
     #是否响应面板默认静态文件
     if name == 'static':
         s_file = '/www/server/panel/BTPanel/static/' + fun + '/' + stype
+        if s_file.find('..') != -1 or s_file.find('./') != -1: return abort(404)
         if not os.path.exists(s_file): return abort(404)
         return send_file(s_file,conditional=True,add_etags=True)
 
@@ -605,8 +583,9 @@ def panel_other(name=None,fun = None,stype=None):
     if fun == 'static':
         if stype.find('./') != -1 or not os.path.exists(p_path + '/static'): return public.returnJson(False,public.GetMsg("REQUEST_ERR")),json_header
         s_file = p_path + '/static/' + stype
-        if not os.path.exists(s_file): return public.returnJson(False, public.GetMsg("FILE_NOT_EXISTS")+'[' + stype + ']'), json_header
-        return send_file(s_file, conditional=True, add_etags=True)
+        if s_file.find('..') != -1: return abort(404)
+        if not os.path.exists(s_file): return public.returnJson(False,'The specified file does not exist ['+stype+']'),json_header
+        return send_file(s_file,conditional=True,add_etags=True)
 
     #准备参数
     args = get_input();
@@ -873,6 +852,11 @@ try:
     ssh = paramiko.SSHClient()
 except:
     public.ExecShell('pip install paramiko==2.0.2 &')
+
+@socketio.on('connect')
+def socket_connect(msg=None):
+    if not check_login():
+        raise emit('server_response',{'data':public.getMsg('INIT_WEBSSH_LOGOUT')})
 
 @socketio.on('webssh')
 def webssh(msg):
