@@ -8,16 +8,7 @@ var site = {
         }
         bt.site.get_list(page, search, type, function (rdata) {
             $('.dataTables_paginate').html(rdata.page);
-            //bt.plugin.get_firewall_state(function (fdata) {
-                    var data = rdata.data;
-            //        for (var x = 0; x < data.length; x++) {
-            //                data[x]['firewall'] = false;
-            //                data[x]['waf_setup'] = false;
-            //                if (fdata.status !== false) {
-            //                        data[x]['firewall'] = true
-            //                        data[x]['waf_setup'] = true
-            //                }
-            //        }
+                var data = rdata.data;
                 var _tab = bt.render({
                     table: '#webBody',
                     columns: [
@@ -69,20 +60,10 @@ var site = {
                                 return "<span class='c9 input-edit'  onclick=\"bt.pub.set_data_by_key('sites','ps',this)\">" + item.ps + "</span>";
                             }
                         },
-                        /*bt.os == 'Linux' ? {
-                            field: 'id', title: '防火墙', templet: function (item) {
-                                var _check = ' onclick="site.no_firewall(this)"';
-                                if (item.waf_setup) _check = ' onclick="set_site_obj_state(\'' + item.name + '\',\'open\')"';
-                                var _waf = '<input class="btswitch btswitch-ios " ' + _check + ' id="closewaf_' + item.name + '" ' + (item.firewall ? 'checked' : '') + ' type="checkbox">';
-                                _waf += '<label class="btswitch-btn bt-waf-firewall" for="closewaf_' + item.name + '" title="' + bt.get_cookie('serverType') + '防火墙开关"></label>';
-                                return _waf;
-                            }
-                        } : '',*/
+
                         {
                             field: 'opt', width: 260, title: lan.site.operate, align: 'right', templet: function (item) {
                                 var opt = '';
-                                //var _check = ' onclick="site.no_firewall()"';
-                                //if (item.waf_setup)
                                 var _check = ' onclick="site.site_waf(\'' + item.name + '\')"';
 
                                 //if (bt.os == 'Linux') opt += '<a href="javascript:;" ' + _check + ' class="btlink ">'+lan.site.firewalld+'</a> | ';
@@ -1508,24 +1489,16 @@ var site = {
                                                             data: data
                                                         })
                                                         if (ret.dns_names.length == 0) ret.dns_names.append('_acme-challenge.bt.cn')
-                                                        $('.div_txt_jx').append(bt.render_help([lan.site.dns_resolve_tips4, lan.site.dns_resolve_tips2 + ret.fullDomain[0], lan.site.dns_resolve_tips3]));
-
+                                                        $('.div_txt_jx').append(bt.render_help([lan.site.dns_resolve_tips4, lan.site.dns_resolve_tips2 + ret.dns_names[0].acme_name, lan.site.dns_resolve_tips3]));
                                                         $('.btn_check_txt').click(function () {
-                                                            var new_data = {
-                                                                siteName: web.name,
-                                                                domains: ddata.domains,
-                                                                updateOf: 1,
-                                                                email: ldata.email,
-                                                                renew: 'True',
-                                                                dnsapi:'dns'
-                                                            }
-                                                            site.create_let(new_data, function (ldata) {
-                                                                if (ldata.status) {
-                                                                    b_load.close();
-                                                                    site.ssl.reload(1);
-                                                                }
-                                                            });
-                                                        })
+                                                                ddata['renew'] = 'True'
+                                                                site.create_let(ddata, function (ldata) {
+                                                                    if (ldata.status) {
+                                                                        b_load.close();
+                                                                        site.reload()
+                                                                    }
+                                                                });
+                                                            })
                                                     }, 100)
                                                 }
                                                 else {
