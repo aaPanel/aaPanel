@@ -12,12 +12,22 @@ os.chdir(setup_path)
 sys.path.append("class/")
 import requests,sewer,public
 from OpenSSL import crypto
-requests.packages.urllib3.disable_warnings()
+try:
+    requests.packages.urllib3.disable_warnings()
+except:pass
 import BTPanel
+try:
+    import dns.resolver
+except:
+    os.system("pip install dnspython")
+    try:
+        import dns.resolver
+    except:
+        pass
 
 class panelLets:
     let_url = "https://acme-v02.api.letsencrypt.org/directory"
-    #let_url_test = "https://acme-staging-v02.api.letsencrypt.org/directory"
+    #let_url = "https://acme-staging-v02.api.letsencrypt.org/directory"
 
     setupPath = None #安装路径  
     server_type = None
@@ -72,17 +82,17 @@ class panelLets:
     def get_error(self,error):
 
         if error.find("Max checks allowed") >= 0 :
-            return "CA服务器验证超时，请等待5-10分钟后重试."
+            return "CA server verification timed out, please wait 5-10 minutes and try again."
         elif error.find("Max retries exceeded with") >= 0:
-            return "CA服务器连接超时，请确保服务器网络通畅."
+            return "The CA server connection timed out, please make sure the server network is unobstructed."
         elif error.find("The domain name belongs") >= 0:
-            return "域名不属于此DNS服务商，请确保域名填写正确."
+            return "The domain name does not belong to this DNS service provider. Please ensure that the domain name is filled in correctly."
         elif error.find('login token ID is invalid') >=0:
-            return 'DNS服务器连接失败，请检查密钥是否正确.'
+            return 'The DNS server connection failed. Please check if the key is correct.'
         elif "too many certificates already issued for exact set of domains" in error or "Error creating new account :: too many registrations for this IP" in error:
-            return '<h2>签发失败,您今天尝试申请证书的次数已达上限!</h2>'
+            return '<h2>The signing failed, and the number of attempts to apply for a certificate today has reached the limit!</h2>'
         elif "DNS problem: NXDOMAIN looking up A for" in error or "No valid IP addresses found for" in error or "Invalid response from" in error:
-            return '<h2>签发失败,域名解析错误，或解析未生效，或域名未备案!</h2>'
+            return '<h2>The signing failed, the domain name resolution error, or the resolution is not valid, or the domain name is not filed!</h2>'
         else:
             return error;
 
@@ -111,10 +121,10 @@ class panelLets:
     def renew_lest_cert(self,data):  
         #续签网站
         path = self.setupPath + '/panel/vhost/cert/'+ data['siteName'];
-        if not os.path.exists(path):  return public.returnMsg(False, '续签失败,证书目录不存在.') 
+        if not os.path.exists(path):  return public.returnMsg(False, 'The renewal failed and the certificate directory does not exist.')
 
         account_path = path + "/account_key.key"
-        if not os.path.exists(account_path): return public.returnMsg(False, '续签失败,缺少account_key.') 
+        if not os.path.exists(account_path): return public.returnMsg(False, 'Renewal failed, missing account_key.')
 
         #续签
         data['account_key'] = public.readFile(account_path)
@@ -138,7 +148,9 @@ class panelLets:
         pfx_buffer = p12.export()
         public.writeFile(path + "/fullchain.pfx",pfx_buffer,'wb+')
          
-        return public.returnMsg(True, '[%s]证书续签成功.' % data['siteName']) 
+        return public.returnMsg(True, '[%s]The certificate renewal was successful.' % data['siteName'])
+
+
 
     #申请证书
     def apple_lest_cert(self,get):
@@ -149,7 +161,7 @@ class panelLets:
         data['email'] = get.email
         data['dnssleep'] = get.dnssleep
              
-        if len(data['domains']) <=0 : return public.returnMsg(False, '申请域名列表不能为空.')
+        if len(data['domains']) <=0 : return public.returnMsg(False, 'The list of applied domain names cannot be empty.')
         
         data['first_domain'] = data['domains'][0]       
      
@@ -173,8 +185,7 @@ class panelLets:
             domain_list = data['domains']
             if data['app_root'] == '1':
                 domain_list = []
-                data['first_domain'] = self.get_root_domain(data['first_domain'])               
-
+                data['first_domain'] = self.get_root_domain(data['first_domain'])
                 for domain in data['domains']:
                     rootDoamin = self.get_root_domain(domain)
                     if not rootDoamin in domain_list: domain_list.append(rootDoamin)
@@ -190,10 +201,13 @@ class panelLets:
                 else:
                     #手动解析提前返回
                     result = self.crate_let_by_oper(data)
-                    public.writeFile(domain_path, json.dumps(result))
-                    result['code'] = 2
+                    if 'status' in result and not result['status']:  return result
+
                     result['status'] = True
-                    result['msg'] = '获取成功,请手动解析域名'    
+                    public.writeFile(domain_path, json.dumps(result))
+                    result['msg'] = 'Get successful, please manually resolve the domain name'
+                    result['code'] = 2;
+
                     return result
             elif get.dnsapi == 'dns_bt':
                 data['dnsapi'] = get.dnsapi
@@ -236,9 +250,13 @@ class panelLets:
             cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo    
             shell = 'python %s/panel/class/panelLets.py renew_lets_ssl ' % (self.setupPath)
             public.writeFile(cronPath,shell)
-            public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("续签Let's Encrypt证书",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),1,'','localhost','toShell','',shell,''))
+            public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("Renew the Letter's Encrypt certificate",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),1,'','localhost','toShell','',shell,''))
         
-        return public.returnMsg(True, '申请成功.')
+        return public.returnMsg(True, 'Successful application.')
+
+
+
+
 
     #手动解析
     def crate_let_by_oper(self,data):
@@ -282,6 +300,7 @@ class panelLets:
                 dns['finalize_url'] = finalize_url
                 return dns
             else:
+
                 responders = data['dns']['responders']
                 dns_names_to_delete = data['dns']['dns_names']
                 finalize_url = data['dns']['finalize_url']
@@ -305,7 +324,7 @@ class panelLets:
                     result['status'] = True
                     BTPanel.dns_client = None
                 else:
-                    result['msg'] = '证书获取失败，请稍后重试.'
+                    result['msg'] = 'Certificate acquisition failed, please try again later.'
 
         except Exception as e:
             print(public.get_error_info())
@@ -313,10 +332,10 @@ class panelLets:
         return result
 
     #dns验证
-    def crate_let_by_dns(self,data):        
-        dns_class = self.get_dns_class(data)  
+    def crate_let_by_dns(self,data):
+        dns_class = self.get_dns_class(data)
         if not dns_class: 
-            return public.returnMsg(False, 'DNS连接失败，请检查密钥是否正确.')
+            return public.returnMsg(False, 'The DNS connection failed. Please check if the key is correct.')
      
         result = {}
         result['status'] = False
@@ -341,15 +360,23 @@ class panelLets:
 
                     acme_keyauthorization, domain_dns_value = client.get_keyauthorization(dns_token)
                     dns_class.create_dns_record(dns_name, domain_dns_value)
+                    self.check_dns(self.get_acme_name(dns_name),domain_dns_value)
                     dns_names_to_delete.append({"dns_name": dns_name, "domain_dns_value": domain_dns_value})
                     responders.append({"authorization_url": authorization_url, "acme_keyauthorization": acme_keyauthorization,"dns_challenge_url": dns_challenge_url} )
-                for i in responders:     
-                    auth_status_response = client.check_authorization_status(i["authorization_url"])
-                    r_data = auth_status_response.json()
-                    if r_data["status"] == "pending":
-                        client.respond_to_challenge(i["acme_keyauthorization"], i["dns_challenge_url"])
+                n = 0
+                while n<2:
+                    print(n+1," verification")
+                    try:
+                        for i in responders:
+                            auth_status_response = client.check_authorization_status(i["authorization_url"])
+                            r_data = auth_status_response.json()
+                            if r_data["status"] == "pending":
+                                client.respond_to_challenge(i["acme_keyauthorization"], i["dns_challenge_url"])
 
-                for i in responders: client.check_authorization_status(i["authorization_url"], ["valid"])
+                        for i in responders: client.check_authorization_status(i["authorization_url"], ["valid"])
+                        break
+                    except:
+                        n+=1
 
                 certificate_url = client.send_csr(finalize_url)
                 certificate = client.download_certificate(certificate_url)
@@ -360,6 +387,7 @@ class panelLets:
                     result['key'] = client.certificate_key
                     result['account_key'] = client.account_key
                     result['status'] = True
+
             except Exception as e:
                 print(public.get_error_info())
                 raise e
@@ -378,6 +406,7 @@ class panelLets:
     def crate_let_by_file(self,data):
         result = {}
         result['status'] = False
+        result['clecks'] = []
         try:
             log_level = "INFO"
             if data['account_key']: log_level = 'ERROR'
@@ -404,9 +433,20 @@ class panelLets:
                 wellknown_path = acme_dir + '/' + http_token               
                 public.writeFile(wellknown_path,acme_keyauthorization)
                 wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(http_name, http_token)
-            
-                retkey = public.httpGet(wellknown_url)     
-                if retkey == acme_keyauthorization:
+                result['clecks'].append({'wellknown_url':wellknown_url,'http_token':http_token});
+                is_check = False
+                n = 0
+                while n < 5:
+                    print("wait_check_authorization_status")
+                    try:
+                        retkey = public.httpGet(wellknown_url,20)
+                        if retkey == acme_keyauthorization:
+                            is_check = True
+                            break
+                    except :
+                        pass
+                    n += 1
+                if is_check:
                     sucess_domains.append(http_name) 
                     responders.append({"authorization_url": authorization_url, "acme_keyauthorization": acme_keyauthorization,"http_challenge_url": http_challenge_url})
 
@@ -431,9 +471,9 @@ class panelLets:
                     result['account_key'] = client.account_key
                     result['status'] = True
                 else:
-                    result['msg'] = '证书获取失败，请稍后重试.'
+                    result['msg'] = 'Certificate acquisition failed, please try again later.'
             else:
-                result['msg'] = "签发失败,我们无法验证您的域名:<p>1、检查域名是否绑定到对应站点</p><p>2、检查域名是否正确解析到本服务器,或解析还未完全生效</p><p>3、如果您的站点设置了反向代理,或使用了CDN,请先将其关闭</p><p>4、如果您的站点设置了301重定向,请先将其关闭</p><p>5、如果以上检查都确认没有问题，请尝试更换DNS服务商</p>'"
+                result['msg'] = "The signing failed, we were unable to verify your domain name:<p>1. Check if the domain name is bound to the corresponding site.</p><p>2. Check if the domain name is correctly resolved to the server, or the resolution is not fully effective.</p><p>3. If your site has a reverse proxy set up, or if you are using a CDN, please turn it off first.</p><p>4. If your site has a 301 redirect, please turn it off first</p><p>5. If the above checks confirm that there is no problem, please try to change the DNS service provider.</p>'"
         except Exception as e:
             result['msg'] =  self.get_error(str(e)) 
         return result
@@ -465,7 +505,31 @@ class panelLets:
             "http_challenge_url": http_challenge_url,
         }
         return identifier_auth
-    
+
+    #检查DNS记录
+    def check_dns(self,domain,value,type='TXT'):
+        time.sleep(5)
+        n = 0
+        while n < 10:
+            try:
+                import dns.resolver
+                ns = dns.resolver.query(domain,type)
+                for j in ns.response.answer:
+                    for i in j.items:
+                        txt_value = i.to_text().replace('"','').strip()
+                        print(txt_value)
+                        if txt_value == value:
+                            print("Successful verification：",txt_value)
+                            return True
+            except:
+                try:
+                    import dns.resolver
+                except:
+                    return False
+            n+=1
+            time.sleep(5)
+        return True
+
     #获取证书哈希
     def get_cert_data(self,path):
         try:
@@ -514,18 +578,18 @@ class panelLets:
     def renew_lets_ssl(self):        
         cpath = self.setupPath + '/panel/vhost/cert/crontab.json'
         if not os.path.exists(cpath):  
-            print("|-当前没有可以续订的证书. " );        
+            print("|-There are currently no certificates to renew." );
         else:
             old_list = json.loads(public.ReadFile(cpath))    
             print('=======================================================================')
-            print('|-%s 共计[%s]续签证书任务.' % (time.strftime('%Y-%m-%d %X',time.localtime()),len(old_list)))                        
+            print('|-%s Total [%s] renewal of visa tasks' % (time.strftime('%Y-%m-%d %X',time.localtime()),len(old_list)))
             cron_list = self.get_renew_lets_bytimeout(old_list)
 
             tlist = []
             for siteName in old_list:                 
                 if not siteName in cron_list: tlist.append(siteName)
-            print('|-[%s]未到期或网站未使用Let\'s Encrypt证书.' % (','.join(tlist)))
-            print('|-%s 等待续签[%s].' % (time.strftime('%Y-%m-%d %X',time.localtime()),len(cron_list)))
+            print('|-[%s]Not expired or the site does not use the Let\'s Encrypt certificate.' % (','.join(tlist)))
+            print('|-%s Waiting for renewal[%s].' % (time.strftime('%Y-%m-%d %X',time.localtime()),len(cron_list)))
             
             sucess_list  = []
             err_list = []
@@ -536,11 +600,11 @@ class panelLets:
                     sucess_list.append(siteName)
                 else:
                     err_list.append({"siteName":siteName,"msg":ret['msg']})
-            print("|-任务执行完毕，共需续订[%s]，续订成功[%s]，续订失败[%s]. " % (len(cron_list),len(sucess_list),len(err_list)));        
+            print("|-After the task is completed, a total of renewals are required.[%s], renewal success [%s], renewal failed [%s]. " % (len(cron_list),len(sucess_list),len(err_list)));
             if len(sucess_list) > 0:       
-                print("|-续订成功：%s" % (','.join(sucess_list)))
+                print("|-Renewal success：%s" % (','.join(sucess_list)))
             if len(err_list) > 0:       
-                print("|-续订失败：")
+                print("|-Renewal failed：")
                 for x in err_list:
                     print("    %s ->> %s" % (x['siteName'],x['msg']))
 

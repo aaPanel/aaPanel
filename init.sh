@@ -78,7 +78,7 @@ echo "
 +----------------------------------------------------------------------
 "
 get_node_url(){
-	nodes=(http://125.88.182.172:5880 http://183.235.223.101:3389 http://103.224.251.67 http://128.1.164.196);
+	nodes=(http://183.235.223.101:3389 http://119.188.210.21:5880 http://125.88.182.172:5880 http://103.224.251.67 http://45.32.116.160 http://download.bt.cn);
 	i=1;
 	if [ ! -f /bin/curl ];then
 		if [ -f /usr/local/curl/bin/curl ];then
@@ -201,7 +201,7 @@ timedatectl set-ntp 1
 #ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 #echo 'Synchronizing system time...'
-#ntpdate 0.asia.pool.ntp.org
+ntpdate 0.asia.pool.ntp.org
 startTime=`date +%s`
 setenforce 0
 sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
@@ -374,18 +374,7 @@ Install_chardet()
 Install_setuptools
 Install_pip
 
-if [ "${download_Url}" = "$CN" ]; then
-	if [ ! -d "/root/.pip" ];then
-		mkdir ~/.pip
-	fi
-    cat > ~/.pip/pip.conf <<EOF
-[global]
-index-url = https://pypi.doubanio.com/simple/
-
-[install]
-trusted-host=pypi.doubanio.com
-EOF
-fi
+curl -Ss --connect-timeout 3 -m 60 http://download.bt.cn/install/pip_select.sh|bash
 
 isPsutil=`python -m psutil 2>&1|grep package`
 if [ "$isPsutil" != "" ];then
@@ -403,7 +392,9 @@ pip install paramiko==2.0.2
 pip install flask-socketio==3.0.2
 pip install python-socketio==2.1.2
 pip install Werkzeug==0.15.1
-for p_name in psutil chardet virtualenv Flask Flask-Session Flask-SocketIO flask-sqlalchemy Pillow gunicorn gevent-websocket requests;
+pip install Pillow==5.4.1
+pip install -I requests==2.20
+for p_name in psutil chardet virtualenv Flask Flask-Session Flask-SocketIO flask-sqlalchemy Pillow gunicorn gevent-websocket pyopenssl cryptography;
 do
 	pip install ${p_name}
 done
@@ -418,7 +409,7 @@ if [ "$is_gevent" = "" ];then
 	fi
 fi
 
-pip install psutil chardet virtualenv Flask Flask-Session Flask-SocketIO flask-sqlalchemy Pillow gunicorn gevent-websocket paramiko
+pip install psutil chardet virtualenv Flask Flask-Session Flask-SocketIO flask-sqlalchemy Pillow gunicorn gevent-websocket paramiko requests pyopenssl cryptography
 Install_Pillow
 Install_psutil
 
@@ -493,6 +484,9 @@ chkconfig --add bt
 chkconfig --level 2345 bt on
 chmod -R 600 $setup_path/server/panel
 chmod -R +x $setup_path/server/panel/script
+chmod 655 $setup_path/server/panel
+chmod 655 $setup_path/server/panel/data
+chmod 655 $setup_path/server/panel/data/empty.html
 ln -sf /etc/init.d/bt /usr/bin/bt
 echo "$port" > $setup_path/server/panel/data/port.pl
 /etc/init.d/bt start
@@ -617,6 +611,11 @@ fi
 
 curl -sS --connect-timeout 10 -m 60 https://www.bt.cn/Api/SetupCount?type=Linux\&o=EN > /dev/null 2>&1
 curl -sS --connect-timeout 10 -m 60 https://www.aapanel.com/Api/SetupCount?type=Linux > /dev/null 2>&1
+if [ "$1" != "" ];then
+	echo $1 > /www/server/panel/data/o.pl
+	cd /www/server/panel
+	python tools.py o
+fi
 echo /www > /var/bt_setupPath.conf
 /etc/init.d/bt start
 

@@ -934,7 +934,9 @@ class panelSite(panelRedirect):
                 if match: apis[i]['data'][j]['value'] = match.groups()[0]
                 if apis[i]['data'][j]['value']: is_write = True
         if is_write: public.writeFile('./config/dns_api.json',json.dumps(apis))
-        return apis
+        result = []
+        for i in apis: result.insert(0,i)
+        return result
 
     #设置DNS-API
     def SetDnsApi(self,get):

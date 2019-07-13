@@ -259,20 +259,26 @@ class crontab:
     def GetDataList(self,get):
         data = {}
         data['data'] = public.M(get['type']).field('name,ps').select()
-        data['orderOpt'] = [];
+        data['orderOpt'] = []
         import json
-        tmp = public.readFile('data/libList.conf');
+        tmp = public.readFile('data/libList.conf')
         libs = json.loads(tmp)
-        import imp;
+        import imp
         for lib in libs:
             try:
-                imp.find_module(lib['module']);
+                imp.find_module(lib['module'])
                 tmp = {}
-                tmp['name'] = lib['name'];
+                tmp['name'] = lib['name']
                 tmp['value']= lib['opt']
-                data['orderOpt'].append(tmp);
+                data['orderOpt'].append(tmp)
             except:
-                continue;
+                import sys
+                if lib['module'] == "google.cloud" and "google.cloud" in sys.modules.keys():
+                    tmp1 = {}
+                    tmp1['name'] = lib['name']
+                    tmp1['value'] = lib['opt']
+                    data['orderOpt'].append(tmp1)
+                continue
         return data
     
     #取任务日志

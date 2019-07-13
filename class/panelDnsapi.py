@@ -110,9 +110,9 @@ class AliyunDns(object):
         req = requests.get(url=self.url, params=paramsdata)
         if req.status_code != 200:
             if req.json()['Code'] == 'IncorrectDomainUser' or req.json()['Code'] == 'InvalidDomainName.NoExist':
-                raise ValueError(json.dumps({"data": "这个阿里云账户下面不存在这个域名，添加解析失败", "msg": req.json()}))
+                raise ValueError(json.dumps({"data": "This domain name does not exist under this Ali cloud account. Adding parsing failed.", "msg": req.json()}))
             elif req.json()['Code'] == 'InvalidAccessKeyId.NotFound' or req.json()['Code'] == 'SignatureDoesNotMatch':
-                raise ValueError(json.dumps({"data": "API密钥错误，添加解析失败", "msg": req.json()}))
+                raise ValueError(json.dumps({"data": "API key error, add parsing failed", "msg": req.json()}))
             else:
                 raise ValueError(json.dumps({"data": req.json()['Message'], "msg": req.json()}))
         print("create_dns_record end")
@@ -165,7 +165,7 @@ class AliyunDns(object):
         paramsdata['Signature'] = Signature
         req = requests.get(url=self.url, params=paramsdata)
         if req.status_code != 200:
-            raise ValueError(json.dumps({"data": "删除解析记录失败", "msg": req.json()}))
+            raise ValueError(json.dumps({"data": "Deleting a parse record failed", "msg": req.json()}))
         print("delete_dns_record end: ", acme_txt)
 
 class CloudxnsDns(object):
@@ -216,7 +216,7 @@ class CloudxnsDns(object):
         root, _, acme_txt = self.extract_zone(domain_name)
         domain = self.get_domain_id(root)
         if not domain:
-            raise ValueError('域名不存在这个cloudxns用户下面，添加解析失败。')
+            raise ValueError('The domain name does not exist under this cloudxns user, adding parsing failed.')
 
         print("create_dns_record,", acme_txt, domain_dns_value)
         url = "https://www.cloudxns.net/api2/record"
@@ -278,15 +278,17 @@ class Dns_com(object):
 
     def create_dns_record(self, domain_name, domain_dns_value):
         root, _, acme_txt = self.extract_zone(domain_name)
-        print("[DNS]创建TXT记录,", acme_txt, domain_dns_value)
+        print("[DNS]Create a TXT record,", acme_txt, domain_dns_value)
         result = self.get_dns_obj().add_txt(acme_txt + '.' + root,domain_dns_value)
         if result == "False":
-            raise ValueError('[DNS]当前绑定的宝塔DNS云解析账户里面不存在这个域名,添加解析失败!')
-        print("[DNS]TXT记录创建成功")
+            raise ValueError('[DNS] This domain name does not exist in the currently bound Pagoda DNS cloud resolution account. Adding parsing failed!')
+        print("[DNS] TXT record created successfully")
+        print("[DNS] Try to verify TXT record")
+        time.sleep(10)
 
     def delete_dns_record(self, domain_name, domain_dns_value):
         root, _, acme_txt = self.extract_zone(domain_name)
-        print("[DNS]准备删除TXT记录: ", acme_txt, domain_dns_value)
+        print("[DNS] ready to delete TXT records: ", acme_txt, domain_dns_value)
         result = self.get_dns_obj().remove_txt(acme_txt + '.' + root)
-        print("[DNS]TXT记录删除成功")
+        print("[DNS] TXT record deleted successfully")
 
