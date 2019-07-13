@@ -855,8 +855,8 @@ function setUserName(a) {
 				layer.msg(b.msg, {
 					icon: 2
 				})
-			}
-		});
+            }
+        });
 		return
 	}
 	layer.open({
@@ -1622,19 +1622,23 @@ function scroll_handle(e){
 	var scrollTop = this.scrollTop;
 	$(this).find("thead").css({"transform":"translateY("+scrollTop+"px)","position":"relative","z-index":"1"});
 }
-var clipboard, interval, socket, gterm,ssh_login;
+var clipboard, interval, socket, gterm, ssh_login;
+
+var pdata_socket = {
+    x_http_token: document.getElementById("request_token_head").getAttribute('token')
+}
 
 function ssh_login_def() {
-    var pdata = {
-        ssh_user : $("input[name='ssh_user']").val(),
-        ssh_passwd: $("input[name='ssh_passwd']").val()
-    }
-    if (!pdata.ssh_user || !pdata.ssh_passwd) {
+    pdata_socket['data'] = {};
+    pdata_socket['data']['ssh_user'] = $("input[name='ssh_user']").val();
+    pdata_socket['data']['ssh_passwd'] = $("input[name='ssh_passwd']").val();
+    if (!pdata_socket.ssh_user || !pdata_socket.ssh_passwd) {
         layer.msg('The SSH username and password cannot be empty!');
         return;
     }
+
     layer.close(ssh_login);
-    socket.emit('webssh', pdata);
+    socket.emit('webssh', pdata_socket);
     gterm.focus();
 }
 
@@ -1697,7 +1701,8 @@ function web_shell() {
     }
     
     term.on('data', function (data) {
-        socket.emit('webssh', data);
+        pdata_socket['data'] = data;
+        socket.emit('webssh', pdata_socket);
     });
 
 
@@ -1729,8 +1734,10 @@ function web_shell() {
     setTimeout(function () {
         $('.terminal').detach().appendTo('#term');
         $("#term").show();
-        socket.emit('webssh', "\u0015");
-        socket.emit('webssh', "\n");
+        pdata_socket['data'] = "\u0015"
+        socket.emit('webssh', pdata_socket);
+        pdata_socket['data'] = "\n"
+        socket.emit('webssh', pdata_socket);
         term.focus();
 
         // 鼠标右键事件
@@ -1821,7 +1828,8 @@ function web_shell() {
             if ($(this).text().indexOf('Alt') != -1) {
                 ptext +="\n";
             }
-            socket.emit('webssh', ptext);
+            pdata_socket['data'] = ptext;
+            socket.emit('webssh', pdata_socket);
             term.focus();
         })
         $("textarea[name='ssh_copy']").keydown(function (e) {
@@ -1857,8 +1865,9 @@ function shell_to_baidu() {
 }
 
 
-function shell_paste_text(){
-    socket.emit('webssh', getCookie('ssh_selection'));
+function shell_paste_text() {
+    pdata_socket['data'] = getCookie('ssh_selection')
+    socket.emit('webssh', pdata_socket);
     remove_ssh_menu();
     gterm.focus();
 }
