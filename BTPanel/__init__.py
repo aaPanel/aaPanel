@@ -80,7 +80,7 @@ cache.set('p_token','bmac_' + public.Md5(public.get_mac_address()))
 admin_path_file = 'data/admin_path.pl'
 admin_path = '/'
 if os.path.exists(admin_path_file): admin_path = public.readFile(admin_path_file).strip()
-admin_path_checks = ['/','/close','/task','/login','/config','/site','/sites','ftp','/public','/database','/data','/download_file','/control','/crontab','/firewall','/files','config','/soft','/ajax','/system','/panel_data','/code','/ssl','/plugin','/wxapp','/hook','/safe','/yield','/downloadApi','/pluginApi','/auth','/download','/cloud','/webssh','/connect_event','/panel']
+admin_path_checks = ['/','/san','/monitor','/abnormal','/close','/task','/login','/config','/site','/sites','ftp','/public','/database','/data','/download_file','/control','/crontab','/firewall','/files','config','/soft','/ajax','/system','/panel_data','/code','/ssl','/plugin','/wxapp','/hook','/safe','/yield','/downloadApi','/pluginApi','/auth','/download','/cloud','/webssh','/connect_event','/panel']
 if admin_path in admin_path_checks: admin_path = '/bt'
 
 @app.route('/service_status',methods = method_get)
@@ -115,6 +115,7 @@ def home():
     data['ftpCount'] = public.M('ftps').count()
     data['databaseCount'] = public.M('databases').count()
     data['lan'] = public.GetLan('index')
+    data['724'] = public.format_date("%m%d") == '0724'
     return render_template( 'index.html',data = data)
 
 @app.route('/close',methods=method_get)
@@ -321,7 +322,7 @@ def panel_monitor(pdata=None):
     if comReturn: return comReturn
     import monitor
     dataObject = monitor.Monitor()
-    defs = ('get_access_ip', 'get_exception', 'get_exception_logs', 'get_attack_nums', 'php_count', 'return_php', 'mysql_client_count')
+    defs = ('get_spider', 'get_exception', 'get_request_count_qps', 'load_and_up_flow', 'get_request_count_by_hour')
     return publicObject(dataObject, defs, None, pdata)
 
 
@@ -331,7 +332,7 @@ def san_baseline(pdata=None):
     if comReturn: return comReturn
     import san_baseline
     dataObject = san_baseline.san_baseline()
-    defs = ('start', 'get_api_log', 'get_resut', 'get_ssh_errorlogin')
+    defs = ('start', 'get_api_log', 'get_resut', 'get_ssh_errorlogin','repair','repair_all')
     return publicObject(dataObject, defs, None, pdata)
 
 
@@ -341,7 +342,7 @@ def abnormal(pdata=None):
     if comReturn: return comReturn
     import abnormal
     dataObject = abnormal.abnormal()
-    defs = ( 'mysql_server', 'mysql_cpu', 'mysql_count', 'php_server', 'php_conn_max', 'php_cpu', 'CPU', 'Memory', 'disk', 'not_root_user','start')
+    defs = ('mysql_server', 'mysql_cpu', 'mysql_count', 'php_server', 'php_conn_max', 'php_cpu', 'CPU', 'Memory', 'disk', 'not_root_user', 'start')
     return publicObject(dataObject, defs, None, pdata)
 
 @app.route('/files',methods=method_all)
@@ -513,7 +514,7 @@ def plugin(pdata = None):
 def panel_public():
     get = get_input();
     get.client_ip = public.GetClientIp();
-
+    if not public.path_safe_check("%s/%s" % (get.name,get.fun)): return abort(404)
     if get.fun in ['scan_login','login_qrcode','set_login','is_scan_ok','blind']:
         #检查是否验证过安全入口
         if get.fun in ['login_qrcode','is_scan_ok']:
@@ -529,7 +530,6 @@ def panel_public():
     import panelPlugin
     plu = panelPlugin.panelPlugin()
     get.s = '_check';
-        
     checks = plu.a(get)
     if type(checks) != bool or not checks: return public.getJson(checks),json_header
     get.s = get.fun
@@ -756,44 +756,6 @@ def check_token(data):
     if result['token'] != token: return False;
     return result;
 
-@app.route('/yield',methods=method_all)
-def panel_yield():
-    get = get_input()
-    import panelPlugin
-    plu = panelPlugin.panelPlugin()
-    get.s = '_check';
-    get.client_ip = public.GetClientIp()
-    checks = plu.a(get)
-    if type(checks) != bool or not checks: return
-    get.s = get.fun
-    filename = plu.a(get);
-    mimetype = 'application/octet-stream'
-    return send_file(filename,mimetype=mimetype, as_attachment=True,attachment_filename=os.path.basename(filename))
-
-@app.route('/downloadApi',methods=method_all)
-def panel_downloadApi():
-    get = get_input()
-    if not public.checkToken(get): get.filename = str(time.time());
-    filename = 'plugin/psync/backup/' + get.filename.encode('utf-8');
-    mimetype = 'application/octet-stream'
-    return send_file(filename,mimetype=mimetype, as_attachment=True,attachment_filename=os.path.basename(filename))
-
-
-@app.route('/pluginApi',methods=method_all)
-def panel_pluginApi():
-    get = get_input()
-    if not public.checkToken(get): return public.returnJson(False,'INIT_TOKEN_ERR');
-    infoFile = 'plugin/' + get.name + '/info.json';
-    if not os.path.exists(infoFile): return False;
-    import json
-    info = json.loads(public.readFile(infoFile));
-    if not info['api']:  return public.returnJson(False,'INIT_PLU_ACC_ERR');
-
-    import panelPlugin
-    pluginObject = panelPlugin.panelPlugin()
-    
-    defs = ('install','unInstall','getPluginList','getPluginInfo','getPluginStatus','setPluginStatus','a','getCloudPlugin','getConfigHtml','savePluginSort')
-    return publicObject(pluginObject,defs);
 
 @app.route('/auth',methods=method_all)
 def auth(pdata = None):

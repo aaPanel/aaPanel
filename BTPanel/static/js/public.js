@@ -1,4 +1,3 @@
-
 $(document).ready(function() {
 	$(".sub-menu a.sub-menu-a").click(function() {
 		$(this).next(".sub").slideToggle("slow").siblings(".sub:visible").slideUp("slow");
@@ -1632,7 +1631,7 @@ function ssh_login_def() {
     pdata_socket['data'] = {};
     pdata_socket['data']['ssh_user'] = $("input[name='ssh_user']").val();
     pdata_socket['data']['ssh_passwd'] = $("input[name='ssh_passwd']").val();
-    if (!pdata_socket.ssh_user || !pdata_socket.ssh_passwd) {
+    if (!pdata_socket.data.ssh_user || !pdata_socket.data.ssh_passwd) {
         layer.msg('The SSH username and password cannot be empty!');
         return;
     }

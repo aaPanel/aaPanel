@@ -4653,7 +4653,8 @@ bt.site = {
 	set_cert_ssl:function(certName,siteName,callback){
 		var loadT = bt.load(lan.public_backup.deploy_cert);
 		bt.send('SetCertToSite','ssl/SetCertToSite',{certName:certName,siteName:siteName},function(rdata){
-			loadT.close();			
+            loadT.close();
+            site.reload();
 			if(callback) callback(rdata);	
 			bt.msg(rdata);
 		})	

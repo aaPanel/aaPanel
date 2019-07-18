@@ -391,7 +391,7 @@ SetLink
         
         fileName = name + '_' + time.strftime('%Y%m%d_%H%M%S',time.localtime()) + '.sql.gz'
         backupName = session['config']['backup_path'] + '/database/' + fileName
-        public.ExecShell("/www/server/mysql/bin/mysqldump --force --opt \"" + name + "\" | gzip > " + backupName)
+        public.ExecShell("/www/server/mysql/bin/mysqldump --default-character-set="+ public.get_database_character(name) +" --force --opt \"" + name + "\" | gzip > " + backupName)
         if not os.path.exists(backupName): return public.returnMsg(False,'BACKUP_ERROR');
         
         self.mypass(False, root);
@@ -768,6 +768,7 @@ SetLink
         path = self.GetMySQLInfo(get)['datadir'] + '/mysql-slow.log';
         if not os.path.exists(path): return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS');
         return public.returnMsg(True,public.GetNumLines(path,1000));
+
 
     # 获取当前数据库信息
     def GetInfo(self,get):

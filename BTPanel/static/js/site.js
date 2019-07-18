@@ -66,7 +66,7 @@ var site = {
                                 var opt = '';
                                 var _check = ' onclick="site.site_waf(\'' + item.name + '\')"';
 
-                                //if (bt.os == 'Linux') opt += '<a href="javascript:;" ' + _check + ' class="btlink ">'+lan.site.firewalld+'</a> | ';
+                                if (bt.os == 'Linux') opt += '<a href="javascript:;" ' + _check + ' class="btlink ">'+lan.site.firewalld+'</a> | ';
                                 opt += '<a href="javascript:;" class="btlink" onclick="site.web_edit(this)">'+lan.site.set+' </a> | ';
                                 opt += '<a href="javascript:;" class="btlink" onclick="site.del_site(' + item.id + ',\'' + item.name + '\')" title="'+lan.site.del_site+'">'+lan.site.del+'</a>';
                                 return opt;
@@ -1490,15 +1490,23 @@ var site = {
                                                         })
                                                         if (ret.dns_names.length == 0) ret.dns_names.append('_acme-challenge.bt.cn')
                                                         $('.div_txt_jx').append(bt.render_help([lan.site.dns_resolve_tips4, lan.site.dns_resolve_tips2 + ret.dns_names[0].acme_name, lan.site.dns_resolve_tips3]));
+
                                                         $('.btn_check_txt').click(function () {
-                                                                ddata['renew'] = 'True'
-                                                                site.create_let(ddata, function (ldata) {
-                                                                    if (ldata.status) {
-                                                                        b_load.close();
-                                                                        site.reload()
-                                                                    }
-                                                                });
-                                                            })
+                                                            var new_data = {
+                                                                siteName: web.name,
+                                                                domains: ddata.domains,
+                                                                updateOf: 1,
+                                                                email: ldata.email,
+                                                                renew: 'True',
+                                                                dnsapi:'dns'
+                                                            }
+                                                            site.create_let(new_data, function (ldata) {
+                                                                if (ldata.status) {
+                                                                    b_load.close();
+                                                                    site.ssl.reload(1);
+                                                                }
+                                                            });
+                                                        })
                                                     }, 100)
                                                 }
                                                 else {

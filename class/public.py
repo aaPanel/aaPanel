@@ -1274,3 +1274,55 @@ def path_safe_check(path):
     if not re.match(rep,path): return False
     return True
 
+#取数据库字符集
+def get_database_character(db_name):
+    try:
+        import panelMysql
+        tmp = panelMysql.panelMysql().query("show create database `%s`" % db_name.strip())
+        return str(re.findall("SET\s+(.+)\s",tmp[0][1])[0])
+    except:
+        return 'utf8'
+
+def en_punycode(domain):
+        tmp = domain.split('.');
+        newdomain = '';
+        for dkey in tmp:
+            #匹配非ascii字符
+            match = re.search(u"[\x80-\xff]+",dkey);
+            if not match: match = re.search(u"[\u4e00-\u9fa5]+",dkey);
+            if not match:
+                newdomain += dkey + '.';
+            else:
+                newdomain += 'xn--' + dkey.encode('punycode').decode('utf-8') + '.'
+        return newdomain[0:-1];
+
+#punycode 转中文
+def de_punycode(domain):
+    tmp = domain.split('.');
+    newdomain = '';
+    for dkey in tmp:
+        if dkey.find('xn--') >=0:
+            newdomain += dkey.replace('xn--','').encode('utf-8').decode('punycode') + '.'
+        else:
+            newdomain += dkey + '.'
+    return newdomain[0:-1];
+
+#取计划任务文件路径
+def get_cron_path():
+    u_file = '/var/spool/cron/crontabs/root'
+    if not os.path.exists(u_file):
+        file='/var/spool/cron/root'
+    else:
+        file=u_file
+    return file
+
+#取通用对象
+class dict_obj:
+    def __contains__(self, key):
+        return getattr(self,key,None)
+    def __setitem__(self, key, value): setattr(self,key,value)
+    def __getitem__(self, key): return getattr(self,key,None)
+    def __delitem__(self,key): delattr(self,key)
+    def __delattr__(self, key): delattr(self,key)
+    def get_items(self): return self
+

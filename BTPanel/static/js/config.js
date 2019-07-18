@@ -468,7 +468,7 @@ function GetPanelApi() {
                         <div class="line">\
                             <span class="tname">'+lan.config.int_sk+'</span>\
                             <div class="info-r">\
-                                <input disabled="disabled" name="panel_token_value" class="bt-input-text mr5 disable" type="text" style="width: 310px" value="'+rdata.token+'" disable>\
+                                <input readonly="readonly" name="panel_token_value" class="bt-input-text mr5 disable" type="text" style="width: 310px" value="'+rdata.token+'" disable>\
                                 <button class="btn btn-xs btn-success btn-sm" style="margin-left: -50px;" onclick="SetPanelApi(1)">'+lan.config.reset+'</button>\
                             </div>\
                         </div>\

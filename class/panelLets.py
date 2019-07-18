@@ -15,7 +15,8 @@ from OpenSSL import crypto
 try:
     requests.packages.urllib3.disable_warnings()
 except:pass
-import BTPanel
+if __name__ != '__main__':
+    import BTPanel
 try:
     import dns.resolver
 except:
@@ -93,6 +94,9 @@ class panelLets:
             return '<h2>The signing failed, and the number of attempts to apply for a certificate today has reached the limit!</h2>'
         elif "DNS problem: NXDOMAIN looking up A for" in error or "No valid IP addresses found for" in error or "Invalid response from" in error:
             return '<h2>The signing failed, the domain name resolution error, or the resolution is not valid, or the domain name is not filed!</h2>'
+        elif error.find('TLS Web Server Authentication') != -1:
+            public.restart_panel()
+            return "Failed to connect to the CA server, please try again later."
         else:
             return error;
 
@@ -100,6 +104,7 @@ class panelLets:
     def get_dns_class(self,data):
         if data['dnsapi'] == 'dns_ali':
             import panelDnsapi
+            public.mod_reload(panelDnsapi)
             dns_class = panelDnsapi.AliyunDns(key = data['dns_param'][0], secret = data['dns_param'][1])
             return dns_class
         elif data['dnsapi'] == 'dns_dp':
@@ -107,12 +112,14 @@ class panelLets:
             return dns_class
         elif data['dnsapi'] == 'dns_cx':   
             import panelDnsapi
+            public.mod_reload(panelDnsapi)
             dns_class = panelDnsapi.CloudxnsDns(key = data['dns_param'][0] ,secret =data['dns_param'][1])
             result = dns_class.get_domain_list()
             if result['code'] == 1:                
                 return dns_class
         elif data['dnsapi'] == 'dns_bt':
             import panelDnsapi
+            public.mod_reload(panelDnsapi)
             dns_class = panelDnsapi.Dns_com()
             return dns_class
         return False
@@ -202,12 +209,10 @@ class panelLets:
                     #手动解析提前返回
                     result = self.crate_let_by_oper(data)
                     if 'status' in result and not result['status']:  return result
-
                     result['status'] = True
                     public.writeFile(domain_path, json.dumps(result))
                     result['msg'] = 'Get successful, please manually resolve the domain name'
                     result['code'] = 2;
-
                     return result
             elif get.dnsapi == 'dns_bt':
                 data['dnsapi'] = get.dnsapi
@@ -244,19 +249,32 @@ class panelLets:
         public.writeFile(path + "/README","let") 
         
         #计划任务续签
-        echo = public.md5(public.md5('renew_lets_ssl_bt'))
-        crontab = public.M('crontab').where('echo=?',(echo,)).find()
-        if not crontab:
-            cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo    
-            shell = 'python %s/panel/class/panelLets.py renew_lets_ssl ' % (self.setupPath)
-            public.writeFile(cronPath,shell)
-            public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("Renew the Letter's Encrypt certificate",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),1,'','localhost','toShell','',shell,''))
-        
+        self.set_crond()
         return public.returnMsg(True, 'Successful application.')
 
+    #创建计划任务
+    def set_crond(self):
+        try:
+            echo = public.md5(public.md5('renew_lets_ssl_bt'))
+            cron_id = public.M('crontab').where('echo=?',(echo,)).getField('id')
 
-
-
+            import crontab
+            args_obj = public.dict_obj()
+            if not cron_id:
+                cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo
+                shell = 'python %s/panel/class/panelLets.py renew_lets_ssl ' % (self.setupPath)
+                public.writeFile(cronPath,shell)
+                args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("续签Let's Encrypt证书",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
+                crontab.crontab().set_cron_status(args_obj)
+            else:
+                cron_path = public.get_cron_path()
+                if os.path.exists(cron_path):
+                    cron_s = public.readFile(cron_path)
+                    if cron_s.find(echo) == -1:
+                        public.M('crontab').where('echo=?',(echo,)).setField('status',0)
+                        args_obj.id = cron_id
+                        crontab.crontab().set_cron_status(args_obj)
+        except:pass
 
     #手动解析
     def crate_let_by_oper(self,data):
@@ -285,7 +303,7 @@ class panelLets:
                     acme_keyauthorization, domain_dns_value = BTPanel.dns_client.get_keyauthorization(dns_token)
                  
                     acme_name = self.get_acme_name(dns_name)
-                    dns_names_to_delete.append({"dns_name": dns_name,"acme_name":acme_name, "domain_dns_value": domain_dns_value})
+                    dns_names_to_delete.append({"dns_name": public.de_punycode(dns_name),"acme_name":acme_name, "domain_dns_value": domain_dns_value})
                     responders.append(
                         {
                             "authorization_url": authorization_url,
@@ -359,9 +377,9 @@ class panelLets:
                     dns_challenge_url = identifier_auth["dns_challenge_url"]
 
                     acme_keyauthorization, domain_dns_value = client.get_keyauthorization(dns_token)
-                    dns_class.create_dns_record(dns_name, domain_dns_value)
+                    dns_class.create_dns_record(public.de_punycode(dns_name), domain_dns_value)
                     self.check_dns(self.get_acme_name(dns_name),domain_dns_value)
-                    dns_names_to_delete.append({"dns_name": dns_name, "domain_dns_value": domain_dns_value})
+                    dns_names_to_delete.append({"dns_name": public.de_punycode(dns_name), "domain_dns_value": domain_dns_value})
                     responders.append({"authorization_url": authorization_url, "acme_keyauthorization": acme_keyauthorization,"dns_challenge_url": dns_challenge_url} )
                 n = 0
                 while n<2:
@@ -433,6 +451,7 @@ class panelLets:
                 wellknown_path = acme_dir + '/' + http_token               
                 public.writeFile(wellknown_path,acme_keyauthorization)
                 wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(http_name, http_token)
+
                 result['clecks'].append({'wellknown_url':wellknown_url,'http_token':http_token});
                 is_check = False
                 n = 0
@@ -446,6 +465,7 @@ class panelLets:
                     except :
                         pass
                     n += 1
+                    time.sleep(1)
                 if is_check:
                     sucess_domains.append(http_name) 
                     responders.append({"authorization_url": authorization_url, "acme_keyauthorization": acme_keyauthorization,"http_challenge_url": http_challenge_url})
@@ -517,9 +537,8 @@ class panelLets:
                 for j in ns.response.answer:
                     for i in j.items:
                         txt_value = i.to_text().replace('"','').strip()
-                        print(txt_value)
                         if txt_value == value:
-                            print("Successful verification：",txt_value)
+                            print("Successful verification：%s" % txt_value)
                             return True
             except:
                 try:

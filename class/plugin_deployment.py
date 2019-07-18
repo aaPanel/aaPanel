@@ -70,11 +70,12 @@ class plugin_deployment:
     def get_icon(self,pinfo):
         path = '/www/server/panel/BTPanel/static/img/dep_ico'
         if not os.path.exists(path): os.makedirs(path,384)
-        filename = path + '/' + pinfo['name'] + '.png'
+        filename = "%s/%s.png" %  (path, pinfo['name'])
         m_uri = pinfo['min_image']
-        pinfo['min_image'] = '/static/img/dep_ico/' + pinfo['name'] + '.png'
+        pinfo['min_image'] = '/static/img/dep_ico/%s.png' % pinfo['name']
+        if sys.version_info[0] == 2: filename = filename.encode('utf-8')
         if os.path.exists(filename):
-            if os.path.getsize(filename) > 1024: return pinfo
+            if os.path.getsize(filename) > 100: return pinfo
         os.system("wget -O " + filename + ' http://www.bt.cn' + m_uri + " &")
         return pinfo
 
@@ -347,6 +348,13 @@ class plugin_deployment:
             dwfile = self.__panelPath + '/vhost/rewrite/' + site_name + '.conf';
             public.writeFile(dwfile,rewriteConf);
 
+        swfile = path + '/.htaccess';
+        if os.path.exists(swfile):
+            swpath = (path + '/'+ pinfo['run_path'] + '/.htaccess').replace('//','/')
+            if pinfo['run_path'] != '/' and not os.path.exists(swpath):
+                public.writeFile(swpath, public.readFile(swfile))
+
+
         #删除伪静态文件
         public.ExecShell("rm -f " + path + '/*.rewrite')
 
@@ -428,9 +436,9 @@ class plugin_deployment:
                 os.remove(p_info)
                 i_ndex_html = path + '/index.html'
                 if os.path.exists(i_ndex_html): os.remove(i_ndex_html)
-                public.ExecShell("\cp -a -r " + p_tmp + '/* ' + path + '/')
+                os.system("\cp -arf " + p_tmp + '/. ' + path + '/')
             except: pass
-        public.ExecShell("rm -rf " + self.__tmp + '/*')
+        os.system("rm -rf " + self.__tmp + '/*')
         return p_config
 
 
