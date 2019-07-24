@@ -264,7 +264,7 @@ class panelLets:
                 cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo
                 shell = 'python %s/panel/class/panelLets.py renew_lets_ssl ' % (self.setupPath)
                 public.writeFile(cronPath,shell)
-                args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("续签Let's Encrypt证书",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
+                args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("Renew Let's Encrypt Certificate",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
                 crontab.crontab().set_cron_status(args_obj)
             else:
                 cron_path = public.get_cron_path()
