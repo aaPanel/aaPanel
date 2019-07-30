@@ -151,7 +151,7 @@ class panelSite(panelRedirect):
     
         htaccess = self.sitePath+'/.htaccess'
         if not os.path.exists(htaccess): public.writeFile(htaccess, ' ');
-        public.ExecShell('chmod -R 755 ' + htaccess);
+        public.ExecShell('chmod -R 644 ' + htaccess);
         public.ExecShell('chown -R www:www ' + htaccess);
 
         filename = self.setupPath+'/panel/vhost/apache/'+self.siteName+'.conf'
@@ -298,21 +298,21 @@ class panelSite(panelRedirect):
         if not os.path.exists(userIni):
             public.writeFile(userIni, 'open_basedir='+self.sitePath+'/:/tmp/:/proc/');
             public.ExecShell('chmod 644 ' + userIni);
-            public.ExecShell('chown root:root ' + userIni);
+            public.ExecShell('chown www:www ' + userIni);
             public.ExecShell('chattr +i '+userIni);
         
         #创建默认文档
         index = self.sitePath+'/index.html'
         if not os.path.exists(index):
             public.writeFile(index, public.readFile('data/defaultDoc.html'))
-            public.ExecShell('chmod -R 755 ' + index);
+            public.ExecShell('chmod -R 644 ' + index);
             public.ExecShell('chown -R www:www ' + index);
         
         #创建自定义404页
         doc404 = self.sitePath+'/404.html'
         if not os.path.exists(doc404):
             public.writeFile(doc404, public.readFile('data/404.html'));
-            public.ExecShell('chmod -R 755 ' + doc404);
+            public.ExecShell('chmod -R 644 ' + doc404);
             public.ExecShell('chown -R www:www ' + doc404);
         
         #写入配置
@@ -864,7 +864,15 @@ class panelSite(panelRedirect):
             if self.GetRedirectList(get): return public.returnMsg(False, 'SITE_SSL_ERR_301');
             if self.GetProxyList(get): return public.returnMsg(False,'Sites that have reverse proxy turned on cannot request SSL!');
             data = self.get_site_info(get.siteName)
-            get.site_dir = data['path']
+            get.id = data['id']
+            runPath = self.GetRunPath(get)
+            if runPath != '/':
+                if runPath[:1] != '/': runPath = '/' + runPath
+            else:
+                runPath = ''
+            get.site_dir = data['path'] + runPath
+            print(get.site_dir)
+
         else:
             dns_api_list = self.GetDnsApi(get)
             get.dns_param = None
@@ -2084,7 +2092,9 @@ server
         n = 0
         for w in ["nginx", "apache"]:
             conf_path = "%s/panel/vhost/%s/%s.conf" % (self.setupPath, w, get.sitename)
-            old_conf = public.readFile(conf_path)
+            old_conf = ""
+            if os.path.exists(conf_path):
+                old_conf = public.readFile(conf_path)
             rep = "(#PROXY-START(\n|.)+#PROXY-END)"
             url_rep = "proxy_pass (.*);|ProxyPass\s/\s(.*)|Host\s(.*);"
             host_rep = "Host\s(.*);"

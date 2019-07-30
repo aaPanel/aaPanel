@@ -582,74 +582,6 @@ html {
 	overflow: hidden
 }
 
-.sidebar-auto {
-	overflow: auto;
-	height: 100%;
-	margin-right: -18px
-}
-
-.mypcip {
-	display: block;
-	padding: 0 10px;
-	position: relative;
-	transition-duration: 500ms;
-	transition-property: background;
-	transition-timing-function: ease;
-	width: 100%;
-	cursor: pointer;
-	margin: 1px 0
-}
-
-.mypcip:hover {
-	background: #20a53a;
-	opacity: 1
-}
-
-.mypcip span {
-	background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAQCAYAAAAS7Y8mAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNui8sowAAAGPSURBVDiNldQ9ixRBEAbgZ3Zn1fVOuQU/wK9AMDDS1MvuRxj5CwTBP2CiYmYmGBsYGRsaa2qkkSiCgRd4y3ri3XqzbdDV7Lgs7uwLRc90V1dXv29VVymluxiiRoVkNaoYG7wN+9chpTTBBn7jKA5YhYR+JPQEDxYd6rAPeIwDnOgQuMEIz3F8mUMdC9/wqkPAxb1P0Yv/6ziLX/hTy9c6jXPYXSPwBQywF+Mz7GCCSRGMbqK1Ufwbmb4beI9TuNZFqFWoZCH7Mp0XcaX33y3dUDKfmRdD1bM+BYuoWtaEKeIdyqSvg5+RZSWX6Ri3ZUqmRbxjcqnsx3cyF7Utbpmf4YxcapXcWFNcjiSbOk7Yxhu5BocRaGBeoyXYNII32MTJsJ7cvR/D92aN1xFsFA6HYZ/iiiWjTVyVGyrhBz7jXSQxxq3wPahxJ7JuX30sd9IoshviC77KzdSmag+XYm4QNq0tF+0e7sc1SwPs4xFeLPHvt2ibsfwl24rFl/KLV/jdCho2ZC3a+I6HOB9rR38B10ZjDE49T6kAAAAASUVORK5CYII=") no-repeat 0 center;
-	display: inline-block;
-	line-height: 46px;
-	padding-left: 30px;
-	white-space: nowrap;
-    max-width: 146px;
-    overflow: hidden;
-}
-
-.btpc-plus {
-	line-height: 40px;
-	color: #aaa;
-	font-family: arial;
-	font-size: 26px;
-	cursor: pointer;
-	padding-left: 80px;
-	transition-duration: 500ms;
-	transition-property: background;
-	transition-timing-function: ease
-}
-
-.btpc-plus:hover {
-	background-color: #20a53a;
-	color: #fff
-}
-
-.mypcip .btedit {
-	background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNui8sowAAAFVSURBVDiNndO/ahRRFMfxz+zOav6goKC1S54gBBUECy0lIKTeyrXwFcROyBuENCHdNhaCoCgiWoggGPAJxFgIsbEJJBmTrCfFnBFZNjHrDy4z5849935/Z84tIsJ/6gneFhFR4AHuYHjM4jN4iZWM13ALSyWWcR+rOERrzAYFNvP9Ka7jKrZExKeIWI8IpxivIuJrRFxo5lqJXfzDbwfvcQU3cAnTUOIsfif6zeYDfuEDzuM5LuIatrGBu/hcInCAy1mH2STawyLmknI+56bykFZDsJsUP7CAdhIMUeELXo9YGmbOn4o3Nah6vd5Ot9vd6ff7lfr3dXKMVZnIVVp4MRgMZtLW6LpneJhxpB1lJnfwE49yblRtfPsrLhoLpbqA7fT15jjUERXNQeO6biK11DXYnyCnymdIjI+4jXuJdlJXHqq7cArf620izkXEu5hMj5u7cAQCwbENi6a1WQAAAABJRU5ErkJggg==) no-repeat center center;
-	width: 16px;
-	height: 16px;
-	display: none;
-	position: absolute;
-	left: 156px;
-	top: 14px
-}
-
-.mypcip:hover .btedit {
-	display: block
-}
-
-
-
-
-
 .task {
 	position: absolute;
 	right: 6px;
@@ -5209,4 +5141,85 @@ select[disabled]{
     border-bottom: 2px solid #20a53a;
     color: #20a53a;
     font-weight: bold;
+}
+
+.ssl_cert_from .layui-layer-ico{
+	width: 30px;
+    height: 30px;
+    display: inline-block;
+    position: absolute;
+    left: 50px;
+}
+.ssl_cert_from h3{
+	font-weight: bolder;
+	font-size: 18px;
+	margin-left: 75px;
+	display: inline-block;
+	height: 30px;
+  	line-height: 30px;
+}
+
+.ssl_cert_from ul{
+    border: 1px solid #ececec;
+    border-radius: 10px;
+    margin: 0 auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    background: #f7f7f7;
+    width: 80%;
+    padding: 15px;
+    list-style-type: inherit;
+}
+
+.ssl_cert_from ul li:nth-child(0){
+	margin-top: 12px;
+	color:red;
+}
+.ssl_cert_from ul li{
+	margin-left: 20px;
+    height: 25px;
+    line-height: 25px;
+}
+.ssl_cert_from>.line{
+	padding-top: 15px;
+    border-top: 1px solid #ececec;
+    width: 81%;
+    margin: 0 auto;
+    margin-top: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ececec;
+}
+.ssl_cert_from>.line .tname{
+	width:105px;
+}
+
+.ssl_cert_from>.line .info-r{
+	margin-left:70px;
+	height:30px;
+	line-height:30px;
+}
+
+
+
+.ssl_cert_from label{
+    font-weight: 400;
+    margin: 3px 5px 0px;
+    vertical-align: top;
+}
+.ssl_cert_from .details{
+	padding-top:10px;
+	width:80%;
+	margin:0 auto;
+}
+.ssl_cert_from .details a{
+	float: right;
+    position: relative;
+    top: 3px;
+}
+
+.ssl_cert_from>.line .line {
+	padding-bottom:0;
+}
+.ssl_cert_from>.line .line .info-r{
+	margin-bottom:0;
 }

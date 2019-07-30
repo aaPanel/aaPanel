@@ -135,9 +135,11 @@ class files:
         s_path = os.path.dirname(path)
         p_stat = os.stat(s_path)
         os.chown(path,p_stat.st_uid,p_stat.st_gid)
-        os.chmod(path,p_stat.st_mode)
+        if os.path.isfile(path):
+            os.chmod(path,0644)
+        else:
+            os.chmod(path,p_stat.st_mode)
 
-        
     #取文件/目录列表
     def GetDir(self,get):
         if not hasattr(get,'path'):
@@ -796,7 +798,7 @@ class files:
             data['chmod'] = str(oct(stat.st_mode)[-3:])
             data['chown'] = pwd.getpwuid(stat.st_uid).pw_name
         except:
-            data['chmod'] = 755
+            data['chmod'] = 644
             data['chown'] = 'www'
         return data
     
@@ -819,7 +821,7 @@ class files:
 
     def SetFileAccept(self,filename):
         os.system('chown -R www:www ' + filename)
-        os.system('chmod -R 755 ' + filename)
+        os.system('chmod -R 644 ' + filename)
     
     
     

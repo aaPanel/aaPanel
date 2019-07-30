@@ -13,7 +13,9 @@ import cryptography
 
 from . import __version__ as sewer_version
 from .config import ACME_DIRECTORY_URL_PRODUCTION
-requests.packages.urllib3.disable_warnings()
+try:
+    requests.packages.urllib3.disable_warnings()
+except:pass
 
 
 class Client(object):
@@ -585,6 +587,7 @@ class Client(object):
         """
         self.logger.debug("get_acme_header")
         header = {"alg": "RS256", "nonce": self.get_nonce(), "url": url}
+
         if url in [self.ACME_NEW_ACCOUNT_URL, self.ACME_REVOKE_CERT_URL, "GET_THUMBPRINT"]:
             private_key = cryptography.hazmat.primitives.serialization.load_pem_private_key(
                 self.account_key.encode(),
@@ -605,6 +608,7 @@ class Client(object):
             header["jwk"] = jwk
         else:
             header["kid"] = self.kid
+        print('h:',url,header)
         return header
 
     def make_signed_acme_request(self, url, payload):

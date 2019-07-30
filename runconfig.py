@@ -8,22 +8,30 @@ if os.path.exists('data/ipv6.pl'):
     bind.append('[0:0:0:0:0:0:0:0]:%s' % bt_port)
 else:
     bind.append('0.0.0.0:%s' % bt_port)
-workers = 1
-threads = 4
+
+w_num = 'data/workers.pl'
+if not os.path.exists(w_num): public.writeFile(w_num,'1')
+workers = int(public.readFile(w_num))
+if not workers: workers = 1
+threads = 3
 backlog = 512
-reload = False
 daemon = True
 timeout = 7200
 keepalive = 60
-preload_app = True
+debug = os.path.exists('data/debug.pl')
+reload = debug
+preload_app = not debug
 worker_class = 'geventwebsocket.gunicorn.workers.GeventWebSocketWorker'
 chdir = '/www/server/panel'
 capture_output = True
-access_log_format = '%(t)s %(p)s %(h)s "%(r)s" %(s)s %(L)s %(b)s %(f)s" "%(a)s"'
-loglevel = 'info'
+graceful_timeout=0
+loglevel = 'debug'
+access_log_format = '%(h) -  %(t)s - %(u)s - %(s)s %(H)s'
 errorlog = chdir + '/logs/error.log'
 accesslog = chdir + '/logs/access.log'
 pidfile = chdir + '/logs/panel.pid'
 if os.path.exists(chdir + '/data/ssl.pl'):
     certfile = 'ssl/certificate.pem'
     keyfile  = 'ssl/privateKey.pem'
+    ciphers = 'TLSv1 TLSv1.1 TLSv1.2'
+    ssl_version = 2

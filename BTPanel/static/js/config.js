@@ -176,41 +176,111 @@ function setTemplate(){
 
 //设置面板SSL
 function setPanelSSL(){
-	var status = $("#sshswitch").prop("checked")==true?1:0;
-	var msg = $("#panelSSL").attr('checked')?lan.config.ssl_close_msg:'<a style="font-weight: bolder;font-size: 16px;">'+lan.config.ssl_open_ps+'</a><li style="margin-top: 12px;color:red;">'+lan.config.ssl_open_ps_1+'</li><li>'+lan.config.ssl_open_ps_2+'</li><li>'+lan.config.ssl_open_ps_3+'</li><p style="margin-top: 10px;"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: 3px 5px 0px;" for="checkSSL">'+lan.config.ssl_open_ps_4+'</label><a target="_blank" class="btlink" href="https://www.bt.cn/bbs/thread-4689-1-1.html" style="float: right;">'+lan.config.ssl_open_ps_5+'</a></p>';
-	layer.confirm(msg,{title:lan.config.ssl_title,closeBtn:2,icon:3,area:'550px',cancel:function(){
-		if(status == 0){
-			$("#panelSSL").prop("checked",false);
-		}
-		else{
-			$("#panelSSL").prop("checked",true);
-		}
-	}},function(){
-		if(window.location.protocol.indexOf('https') == -1){
-			if(!$("#checkSSL").prop('checked')){
-				layer.msg(lan.config.ssl_ps,{icon:2});
-				return false;
-			}
-		}
-		var loadT = layer.msg(lan.config.ssl_msg,{icon:16,time:0,shade: [0.3, '#000']});
-		$.post('/config?action=SetPanelSSL','',function(rdata){
-			layer.close(loadT);
-			layer.msg(rdata.msg,{icon:rdata.status?1:5});
-			if(rdata.status === true){
-				$.get('/system?action=ReWeb',function(){});
-				setTimeout(function(){
-					window.location.href = ((window.location.protocol.indexOf('https') != -1)?'http://':'https://') + window.location.host + window.location.pathname;
-				},1500);
-			}
-		});
-	},function(){
-		if(status == 0){
-			$("#panelSSL").prop("checked",false);
-		}
-		else{
-			$("#panelSSL").prop("checked",true);
-		}
-	});
+	var status = $("#panelSSL").prop("checked");
+	var loadT = layer.msg(lan.config.ssl_msg,{icon:16,time:0,shade: [0.3, '#000']});
+	if(status){
+		var confirm = layer.confirm('Whether to close the panel SSL certificate', {title:'Tips',btn: ['Confirm','Cancel'],icon:0,closeBtn:2}, function() {
+            bt.send('SetPanelSSL', 'config/SetPanelSSL', {}, function (rdata) {
+                layer.close(loadT);
+                if (rdata.status) {
+                	layer.msg(rdata.msg,{icon:1});
+                    $.get('/system?action=ReWeb', function () {
+                    });
+                    setTimeout(function () {
+                        window.location.href = ((window.location.protocol.indexOf('https') != -1) ? 'http://' : 'https://') + window.location.host + window.location.pathname;
+                    }, 1500);
+                }
+                else {
+                    layer.msg(res.rdata,{icon:2});
+                }
+            });
+            return;
+        })
+	}
+	else {
+        bt.send('get_cert_source', 'config/get_cert_source', {}, function (rdata) {
+            layer.close(loadT);
+            var sdata = rdata;
+            var _data = {
+                title: 'Panel SSL',
+                area: '630px',
+				class:'ssl_cert_from',
+                list: [
+                  {
+                  		html:'<div><i class="layui-layer-ico layui-layer-ico3"></i><h3>'+lan.config.ssl_open_ps+'</h3><ul><li style="color:red;">'+lan.config.ssl_open_ps_1+'</li><li>'+lan.config.ssl_open_ps_2+'</li><li>'+lan.config.ssl_open_ps_3+'</li></ul></div>'
+                  },
+                    {
+                        title: 'Cert Type',
+                        name: 'cert_type',
+                        type: 'select',
+                        width: '200px',
+                        value: sdata.cert_type,
+                        items: [{value: '1', title: 'Self-signed certificate'}, {value: '2', title: 'Let\'s Encrypt'}],
+                        callback: function (obj) {
+                            var subid = obj.attr('name') + '_subid';
+                            $('#' + subid).remove();
+                            if (obj.val() == '2') {
+                                var _tr = bt.render_form_line({
+                                    title: 'Admin E-Mail',
+                                    name: 'email',
+									width: '320px',
+                                    placeholder: 'Admin E-Mail',
+                                    value: sdata.email
+                                });
+                                obj.parents('div.line').append('<div class="line" id=' + subid + '>' + _tr.html + '</div>');
+                            }
+                        }
+                    },
+                  {
+                  	html:'<div class="details"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: 3px 5px 0px;" for="checkSSL">'+lan.config.ssl_open_ps_4+'</label><a target="_blank" class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate">'+lan.config.ssl_open_ps_5+'</a></p></div>'
+                  }
+
+                ],
+                btns: [
+                    {
+                        title: 'Close', name: 'close', callback: function (rdata, load, callback) {
+                            load.close();
+                            $("#panelSSL").prop("checked", false);
+                        }
+                    },
+                    {
+                        title: 'Submit', name: 'submit', css: 'btn-success', callback: function (rdata, load, callback) {
+                          	if(!$('#checkSSL').is(':checked')){
+                            	bt.msg({status:false,msg:'Please confirm the risk first!'})
+                              	return;
+                            }
+                        	var confirm = layer.confirm('Whether to open the panel SSL certificate', {title:'Tips',btn: ['Confirm','Cancel'],icon:0,closeBtn:2}, function() {
+                            var loading = bt.load();
+                            bt.send('SetPanelSSL', 'config/SetPanelSSL', rdata, function (rdata) {
+                                loading.close()
+                                if (rdata.status) {
+                                	layer.msg(rdata.msg,{icon:1});
+                                    $.get('/system?action=ReWeb', function () {
+                                    });
+                                    setTimeout(function () {
+                                        window.location.href = ((window.location.protocol.indexOf('https') != -1) ? 'http://' : 'https://') + window.location.host + window.location.pathname;
+                                    }, 1500);
+                                }
+                                else {
+                                    layer.msg(rdata.msg,{icon:2});
+                                }
+                            })
+							});
+                        }
+
+                    }
+                ],
+                end: function () {
+                    $("#panelSSL").prop("checked", false);
+                }
+            };
+
+            var _bs = bt.render_form(_data);
+            setTimeout(function () {
+                $('.cert_type' + _bs).trigger('change')
+            }, 200);
+        });
+    }
 }
 
 function GetPanelSSL(){
@@ -261,8 +331,29 @@ function SavePanelSSL(){
 	});
 }
 
+function SetDebug() {
+    var status_s = {false:'Open',true:'Close'}
+    var debug_stat = $("#panelDebug").prop('checked');
+    bt.confirm({
+		title: status_s[debug_stat] + "Developer mode",
+		msg: "Do you really want "+ status_s[debug_stat]+" developer mode?",
+		cancel: function () {
+			$("#panelDebug").prop('checked',debug_stat);
+    	}}, function () {
+			var loadT = layer.msg(lan.public.the, { icon: 16, time: 0, shade: [0.3, '#000'] });
+			$.post('/config?action=set_debug', {}, function (rdata) {
+				layer.close(loadT);
+				if (rdata.status) layer.closeAll()
+				layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+			});
+		},function () {
+    	console.log('index.html');
+		$("#panelDebug").prop('checked',debug_stat);
+	});
+}
+
 if(window.location.protocol.indexOf('https') != -1){
-	$("#panelSSL").attr('checked',true);
+	$("#panelSSL").prop('checked',true);
 }
 
 var weChat = {
