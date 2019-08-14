@@ -347,9 +347,28 @@ function SetDebug() {
 				layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
 			});
 		},function () {
-    	console.log('index.html');
 		$("#panelDebug").prop('checked',debug_stat);
 	});
+}
+
+function set_local() {
+    var status_s = { false: 'Open', true: 'Close' }
+    var debug_stat = $("#panelLocal").prop('checked');
+    bt.confirm({
+		title: status_s[debug_stat] + "Offline mode",
+		msg: "Do you really want "+ status_s[debug_stat] + "offline mode?",
+	    cancel: function () {
+			$("#panelLocal").prop('checked',debug_stat);
+    	}}, function () {
+        	var loadT = layer.msg(lan.public.the, { icon: 16, time: 0, shade: [0.3, '#000'] });
+			$.post('/config?action=set_local', {}, function (rdata) {
+				layer.close(loadT);
+				if (rdata.status) layer.closeAll();
+				layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+			});
+        },function () {
+		$("#panelLocal").prop('checked',debug_stat);
+    });
 }
 
 if(window.location.protocol.indexOf('https') != -1){

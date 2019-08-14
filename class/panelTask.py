@@ -133,6 +133,7 @@ class bt_task:
             down_file = downloadFile.downloadFile()
             down_file.logPath = log_file
             print(down_file.DownloadFile(task_shell,other))
+            os.system("chown www.www {}".format(other))
         elif task_type == 2:    #解压文件
             zip_info = json.loads(other)
             self._unzip(task_shell,zip_info['dfile'],zip_info['password'],log_file)
@@ -379,7 +380,12 @@ class bt_task:
     #设置权限
     def set_file_accept(self,filename):
         os.system('chown -R www:www ' + filename)
-        os.system('chmod -R 755 ' + filename)
+        # os.system('chmod -R 755 ' + filename)
+        a = 'find {filename} -type d |xargs chmod 0755'.format(filename=filename)
+        public.writeFile("/tmp/2",str(a))
+        os.system(a)
+        os.system('find {filename} -type f |xargs chmod 0644'.format(filename=filename))
+
 
     #检查敏感目录
     def check_dir(self,path):

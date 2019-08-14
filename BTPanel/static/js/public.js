@@ -4,6 +4,846 @@ $(document).ready(function() {
 	});
 });
 
+function openEditorView(type,path){
+	var paths = path.split('/'),_fileName = paths[paths.length -1], _aceTmplate = document.getElementById("aceTmplate").innerHTML;
+	_aceTmplate = _aceTmplate.replace(/\<\\\/script\>/g,'</script>');
+	if(aceEditor.editor !== null){
+		if(aceEditor.isAceView == false){
+			aceEditor.isAceView = true;
+			$('.aceEditors .layui-layer-max').click()
+		}
+		for(var i=0;i<aceEditor.pathAarry.length;i++){
+			if(path === aceEditor.pathAarry[i]){
+				layer.msg('File is open',{icon:0});
+				return false;
+			}
+		}
+		aceEditor.openEditorView(path);
+		return false;
+	}
+	var r = layer.open({
+		type: 1,
+		maxmin: true,
+		shade:false,
+		area: ['80%','80%'],
+		title: "Online text editor",
+		skin:'aceEditors',
+		zIndex:19999,
+		content: _aceTmplate,
+		success:function(layero,index){
+			aceEditor.layer_view = index;
+			aceEditor.ace_active = '';
+			aceEditor.eventEditor();
+			ace.require("/ace/ext/language_tools");
+			ace.config.set("modePath", "/static/ace");
+			ace.config.set("workerPath", "/static/ace");
+			ace.config.set("themePath", "/static/ace");
+			aceEditor.openEditorView(path);
+			$('.aceEditors .layui-layer-min').click(function (e){
+				aceEditor.isAceView = false;
+				setTimeout(function(){
+					var _id = $('.ace_conter_menu .active').attr('data-id');
+					aceEditor.editor['ace_editor_'+_id].ace.resize();
+				},105);
+			});
+			$('.aceEditors .layui-layer-max').click(function (e){
+				setTimeout(function(){
+					aceEditor.setEditorView();
+					var _id = $('.ace_conter_menu .active').attr('data-id');
+					aceEditor.editor['ace_editor_'+_id].ace.resize();
+				},105);
+			});
+		},
+		cancel:function(){
+			for(var item in aceEditor.editor){
+				if(aceEditor.editor[item].fileType == 1){
+					layer.open({
+						type: 1,
+						area: ['400px', '180px'],
+						title: 'Save Tips',
+						content: '<div class="ace-clear-form">\
+							<div class="clear-icon"></div>\
+							<div class="clear-title">Detected that the file was not saved, did you save the file change?</div>\
+							<div class="clear-tips">If you don\'t save, the changes will be lost!</div>\
+							<div class="ace-clear-btn" style="">\
+								<button type="button" class="btn btn-sm btn-default" style="float:left" data-type="2">Dont save</button>\
+								<button type="button" class="btn btn-sm btn-default" style="margin-right:10px;" data-type="1">Cancel</button>\
+								<button type="button" class="btn btn-sm btn-success" data-type="0">Save</button>\
+							</div>\
+						</div>',
+						success: function (layers, indexs) {
+							$('.ace-clear-btn button').click(function(){
+								var _type = $(this).attr('data-type');
+								switch(_type){
+									case '2':
+										aceEditor.editor = null;
+										layer.closeAll();
+									break;
+									case '1':
+										layer.close(indexs);
+									break;
+									case '0':
+										var _arry = [],editor = aceEditor['editor'];
+										for(var item in editor){
+											_arry.push({
+												path: editor[item]['path'],
+												data: editor[item]['ace'].getValue(),
+												encoding: editor[item]['encoding'],
+											})
+										}
+										aceEditor.saveAllFileBody(_arry,function(){
+											$('.ace_conter_menu>.item').each(function (el,indexx) {
+												var _id = $(this).attr('data-id');
+												$(this).find('i').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove').attr('data-file-state','0')
+												aceEditor.editor['ace_editor_'+_id].fileType = 0;
+											});
+											aceEditor.editor = null;
+											aceEditor.pathAarry = [];
+											layer.closeAll();
+										});
+									break;
+								}
+							});
+						}
+					});
+					return false;
+				}
+			}
+			aceEditor.editor = null;
+			aceEditor.pathAarry = [];
+			aceEditor.editorLength = 0;
+		}
+	});
+}
+
+var aceEditor = {
+	layer_view:'',
+	editor: null,
+	supportedModes: {
+		Apache_Conf: ["^htaccess|^htgroups|^htpasswd|^conf|htaccess|htgroups|htpasswd"],
+		BatchFile: ["bat|cmd"],
+		C_Cpp: ["cpp|c|cc|cxx|h|hh|hpp|ino"],
+		CSharp: ["cs"],
+		CSS: ["css"],
+		Dockerfile: ["^Dockerfile"],
+		golang: ["go"],
+		HTML: ["html|htm|xhtml|vue|we|wpy"],
+		Java: ["java"],
+		JavaScript: ["js|jsm|jsx"],
+		'JSON': ["json"],
+		JSP: ["jsp"],
+		LESS: ["less"],
+		Lua: ["lua"],
+		Makefile: ["^Makefile|^GNUmakefile|^makefile|^OCamlMakefile|make"],
+		Markdown: ["md|markdown"],
+		MySQL: ["mysql"],
+		Nginx: ["nginx|conf"],
+		INI: ["ini|conf|cfg|prefs"],
+		ObjectiveC: ["m|mm"],
+		Perl: ["pl|pm"],
+		Perl6: ["p6|pl6|pm6"],
+		pgSQL: ["pgsql"],
+		PHP_Laravel_blade: ["blade.php"],
+		PHP: ["php|inc|phtml|shtml|php3|php4|php5|phps|phpt|aw|ctp|module"],
+		Powershell: ["ps1"],
+		Python: ["py"],
+		R: ["r"],
+		Ruby: ["rb|ru|gemspec|rake|^Guardfile|^Rakefile|^Gemfile"],
+		Rust: ["rs"],
+		SASS: ["sass"],
+		SCSS: ["scss"],
+		SH: ["sh|bash|^.bashrc"],
+		SQL: ["sql"],
+		SQLServer: ["sqlserver"],
+		Swift: ["swift"],
+		Text: ["txt"],
+		Typescript: ["ts|typescript|str"],
+		VBScript: ["vbs|vb"],
+		Verilog: ["v|vh|sv|svh"],
+		XML: ["xml|rdf|rss|wsdl|xslt|atom|mathml|mml|xul|xbl|xaml"],
+		YAML: ["yaml|yml"]
+	},
+	nameOverrides: {
+		ObjectiveC: "Objective-C",
+		CSharp: "C#",
+		golang: "Go",
+		C_Cpp: "C and C++",
+		PHP_Laravel_blade: "PHP (Blade Template)",
+		Perl6: "Perl 6",
+	},
+	pathAarry:[],
+	encodingList: ['UTF-8', 'GBK', 'GB2312', 'BIG5'],
+	themeList: [
+		'chrome',
+		'clouds',
+		'crimson_editor',
+		'ambiance',
+		'chaos',
+		'monokai'
+	],
+	editorTheme: 'monokai', // 编辑器主题
+	editorLength: 0,
+	isAceView:true,
+	ace_active:'',
+	// aceEditor:'',
+	// 事件编辑器-方法，事件绑定
+	eventEditor: function () {
+		var _this = this;
+		$(window).resize(function(){
+			var _id = $('.ace_conter_menu .active').attr('data-id');
+			aceEditor.editor['ace_editor_'+_id].ace.resize();
+			_this.setEditorView()
+		})
+		// 显示工具条
+		$('.ace_header .pull-down').click(function(){
+			if($(this).find('i').hasClass('glyphicon-menu-down')){
+				$('.ace_header').css({'marginTop':'-35px','height':'0'});
+				$(this).css({'top':'35px','height':'40px','line-height':'40px'});
+				$(this).find('i').addClass('glyphicon-menu-up').removeClass('glyphicon-menu-down');
+			}else{
+				$('.ace_header').removeAttr('style');
+				$(this).removeAttr('style');
+				$(this).find('i').addClass('glyphicon-menu-down').removeClass('glyphicon-menu-up');
+			}
+			_this.setEditorView();
+		});
+
+		// 切换TAB视图
+		$('.ace_conter_menu').on('click', '.item', function (e) {
+			var _id = $(this).attr('data-id');
+			$('.item_tab_'+ _id).addClass('active').siblings().removeClass('active');
+			$('#ace_editor_'+ _id).addClass('active').siblings().removeClass('active');
+			_this.ace_active = _id;
+			_this.currentStatusBar(_id);
+			e.stopPropagation();
+		});
+
+		// 移上TAB按钮变化，仅文件被修改后
+		$('.ace_conter_menu').on('mouseover', '.item .icon-tool', function () {
+			var type = $(this).attr('data-file-state');
+			if (type != '0') {
+				$(this).removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+			}
+		});
+
+		// 移出tab按钮变化，仅文件被修改后
+		$('.ace_conter_menu').on('mouseout', '.item .icon-tool', function () {
+			var type = $(this).attr('data-file-state');
+			if (type != '0') {
+				$(this).removeClass('glyphicon-remove').addClass('glyphicon-exclamation-sign');
+			}
+		});
+
+		// 关闭编辑视图
+		$('.ace_conter_menu').on('click', '.item .icon-tool', function (e) {
+			var file_type = $(this).attr('data-file-state');
+			var file_title = $(this).attr('data-title');
+			var _path = $(this).parent().attr('title');
+			var _id = $(this).parent().attr('data-id');
+			switch (file_type) {
+				// 直接关闭
+				case '0':
+					_this.removeEditor(_id);
+				break;
+					// 未保存
+				case '1':
+					var loadT = layer.open({
+						type: 1,
+						area: ['400px', '180px'],
+						title: 'Tips',
+						content: '<div class="ace-clear-form">\
+							<div class="clear-icon"></div>\
+							<div class="clear-title">Do you want to save changes to &nbsp' + file_title + '&nbsp?</div>\
+							<div class="clear-tips">If you don\'t save, the changes will be lost!</div>\
+							<div class="ace-clear-btn" style="">\
+								<button type="button" class="btn btn-sm btn-default" style="float:left" data-type="2">Dont save</button>\
+								<button type="button" class="btn btn-sm btn-default" style="margin-right:10px;" data-type="1">Cancel</button>\
+								<button type="button" class="btn btn-sm btn-success" data-type="0">Save</button>\
+							</div>\
+						</div>',
+						success: function (layers, index) {
+							$('.ace-clear-btn .btn').click(function () {
+								var _type = $(this).attr('data-type');
+								switch (_type) {
+									case '0': //保存文件
+										console.log()
+										_this.saveFileBody({
+											path:_path,
+											data:editor_item.ace.getValue(),
+											encoding:editor_item.ace.getValue()
+										},function(){
+											layer.msg(res.msg, {icon: 1});
+											editor_item.fileType = 0;
+											$('.item_tab_' + editor_item.id + ' .icon-tool').attr('data-file-state', '0').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+										});
+									break;
+									case '1': //关闭视图
+										layer.close(index);
+									break;
+									case '2': //取消保存
+										_this.removeEditor(_id);
+										layer.close(index);
+									break;
+								}
+							});
+						}
+					});
+				break;
+			}
+			e.stopPropagation();
+		});
+
+		// 新建编辑器视图
+		$('.ace_editor_add').click(function () {
+			_this.addEditor();
+		});
+
+		// 底部状态栏功能按钮
+		$('.ace_conter_toolbar .pull-right span').click(function (e) {
+			var _type = $(this).attr('data-type'),_id = $(this).attr('data-id'),_item = _this.editor['ace_editor_'+_id],_icon = '<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>';
+			$('.ace_toolbar_menu').show();
+			switch (_type) {
+				case 'cursor':
+					$('.ace_toolbar_menu').hide();
+				break;
+				case 'tab':
+					$('.ace_toolbar_menu .menu-tabs').show().siblings().hide();
+					$('.tabsType').find(_item.softTabs?'[data-value="nbsp"]':'[data-value="tabs"]').addClass('active').append(_icon);
+					$('.tabsSize [data-value="'+ _item.tabSize +'"]').addClass('active').append(_icon);
+					$('.menu-tabs li').click(function(e){
+						var _val = $(this).attr('data-value');
+						if($(this).parent().hasClass('tabsType')){
+							_item.ace.getSession().setUseSoftTabs(_val == 'nbsp');
+							_item.softTabs = _val == 'nbsp';
+						}else{
+							_item.ace.getSession().setTabSize(_val);
+							_item.tabSize = _val;
+						}
+						$(this).siblings().removeClass('active').find('.icon').remove();
+						$(this).addClass('active').append(_icon);
+						_this.currentStatusBar(_id);
+						e.stopPropagation();
+						e.preventDefault();
+					});
+				break;
+				case 'encoding':
+					$('.ace_toolbar_menu .menu-encoding').show().siblings().hide();
+					_this.setEncodingType();
+					$('.menu-encoding ul li').click(function (e) {
+						layer.msg('Set file encoding: ' + $(this).attr('data-value'));
+						$('.ace_conter_toolbar [data-type="encoding"]').html('coding: <i>'+ $(this).attr('data-value') +'</i>');
+						$(this).addClass('active').append(_icon).siblings().removeClass('active').find('span').remove();
+						_item.encoding = $(this).attr('data-value');
+					});
+				break;
+				case 'lang':
+					$('.ace_toolbar_menu').hide();
+					layer.msg('Switching language mode is not supported at this time, so stay tuned!',{icon:6});
+					// $('.ace_toolbar_menu .menu-files').show().siblings().hide();
+					// _this.getRelevanceList(_item.fileName);
+				break;
+			}
+			$('.ace_toolbar_menu').click(function(e){
+				e.stopPropagation();
+				e.preventDefault();
+			});
+			$(document).click(function(e){
+				$('.ace_toolbar_menu').hide();
+				$('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
+			})
+			e.stopPropagation();
+			e.preventDefault();
+		});
+
+		// 搜索内容键盘事件
+		$('.menu-files .menu-input').keyup(function () {
+			_this.searchRelevance($(this).val());
+			if($(this).val != ''){
+				$(this).next().show();
+			}else{
+				$(this).next().hide();
+			}
+		});
+
+		// 清除搜索内容事件
+		$('.menu-files .menu-conter .fa').click(function(){
+			$('.menu-files .menu-input').val('').next().hide();
+			_this.searchRelevance()
+		});
+
+		// 状态
+		$('.ace_header span').click(function () {
+			var type =  $(this).attr('class'),editor_item =  _this.editor['ace_editor_'+ _this.ace_active ];
+			switch(type){
+				case 'saveFile': //保存当时文件
+					_this.saveFileBody({
+						path: editor_item.path,
+						data: editor_item.ace.getValue(),
+						encoding: editor_item.encoding
+					}, function (res) {
+						layer.msg(res.msg, {icon: 1});
+						editor_item.fileType = 0;
+						$('.item_tab_' + editor_item.id + ' .icon-tool').attr('data-file-state', '0').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+					});
+				break;
+				case 'saveFileAll': //保存全部
+					var loadT = layer.open({
+						type: 1,
+						area: ['350px', '180px'],
+						title: 'Tips',
+						content: '<div class="ace-clear-form">\
+							<div class="clear-icon"></div>\
+							<div class="clear-title">Do you want to save changes to all files?</div>\
+							<div class="clear-tips">If you don\'t save, the changes will be lost!</div>\
+							<div class="ace-clear-btn" style="">\
+								<button type="button" class="btn btn-sm btn-default clear-btn" style="margin-right:10px;" >Cancel</button>\
+								<button type="button" class="btn btn-sm btn-success save-all-btn">Save</button>\
+							</div>\
+						</div>',
+						success: function (layers, index) {
+							$('.clear-btn').click(function(){
+								layer.close(index);
+							});
+							$('.save-all-btn').click(function(){
+								var _arry = [],editor = aceEditor['editor'];
+								for(var item in editor){
+									_arry.push({
+										path: editor[item]['path'],
+										data: editor[item]['ace'].getValue(),
+										encoding: editor[item]['encoding'],
+									})
+								}
+								_this.saveAllFileBody(_arry,function(){
+									$('.ace_conter_menu>.item').each(function (el,index) {
+										var _id = $(this).attr('data-id');
+										$(this).find('i').attr('data-file-state','0').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove')
+										aceEditor.editor['ace_editor_'+_id].fileType = 0;
+									});
+									layer.close(index);
+								});
+							});
+						}
+					});
+				break;
+				case 'refreshs': //刷新文件
+					if(editor_item.fileType === 0 ){
+						aceEditor.getFileBody({path:editor_item.path},function(res){
+							editor_item.ace.setValue(res.data);
+							editor_item.fileType = 0;
+							$('.item_tab_' + editor_item.id + ' .icon-tool').attr('data-file-state', '0').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+							layer.msg('Refresh successfully',{icon:1});
+						});
+						return false;
+					}
+					var loadT = layer.open({
+						type: 1,
+						area: ['350px', '180px'],
+						title: 'Tips',
+						content: '<div class="ace-clear-form">\
+							<div class="clear-icon"></div>\
+							<div class="clear-title">Whether to refresh the current file</div>\
+							<div class="clear-tips">Refreshing the current file will overwrite the current modification and continue!</div>\
+							<div class="ace-clear-btn" style="">\
+								<button type="button" class="btn btn-sm btn-default clear-btn" style="margin-right:10px;" >Cancel</button>\
+								<button type="button" class="btn btn-sm btn-success save-all-btn">Save</button>\
+							</div>\
+						</div>',
+						success: function (layers, index) {
+							$('.clear-btn').click(function(){
+								layer.close(index);
+							});
+							$('.save-all-btn').click(function(){
+								aceEditor.getFileBody({path:editor_item.path},function(res){
+									layer.close(index);
+									editor_item.ace.setValue(res.data);
+									editor_item.fileType == 0;
+									$('.item_tab_' + editor_item.id + ' .icon-tool').attr('data-file-state', '0').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+									layer.msg('Refresh successfully',{icon:1});
+								});
+							});
+						}
+					});
+				break;
+				// 搜索
+				case 'searchs':
+
+				break;
+				// 替换
+				case 'replaces':
+
+				break;
+				// 字体
+				case 'fontSize':
+					layer.open({
+						type:1,
+						area:['400px','300px'],
+						title:'Tips',
+						btn:['Save','Cancel'],
+						content:'<div class="ace-fontSize">\
+							<div class="line"><div class="">Font style</div><div class=""></div></div>\
+							<div class="line"><div class="">font size</div><div class=""><input type="text" />px</div></div>\
+						</div>',
+						yes:function(layers,index){
+
+						},
+						btn1:function(layers,index){
+
+						}
+					});
+				break;
+				case 'themes':
+					layer.msg('The theme feature is under development, so stay tuned!',{icon:6});
+				break;
+				case 'helps':
+					layer.open({
+						type:1,
+						area:'1300px',
+						title:'Help',
+						content:'<div class="helps_conter">\
+							<div class="helps_left">\
+								<div class="helps_item">Common shortcuts:</div>\
+								<div class="helps_box">\
+									ctrl+s&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Save</br>\
+									ctrl+a&nbsp;&nbsp;Select all&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ctrl+x&nbsp;&nbsp;Cut</br>\
+									ctrl+c&nbsp;&nbsp;Copy&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ctrl+v&nbsp;&nbsp;Paste</br>\
+									ctrl+z&nbsp;&nbsp;Cancel&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ctrl+y&nbsp;&nbsp;Anti-cancel</br>\
+									ctrl+f&nbsp;&nbsp;Find&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ctrl+alt+f&nbsp;&nbsp;Replace</br>\
+									win+alt+0&nbsp;&nbsp;Collapse all</br>\
+									win+alt+shift+0&nbsp;&nbsp;Expand all</br>\
+									esc&nbsp;&nbsp;[Exit the search and cancel the automatic prompt...]</br>\
+									ctrl-shift-s&nbsp;&nbsp;Preview</br>\
+									ctrl-shift-e&nbsp;&nbsp;Show & close function\
+								</div>\
+								<div class="helps_item">Select:</div>\
+								<div class="helps_box">\
+									Mouse frame selection -- drag</br>\
+									shift+home/end/up/left/down/right</br>\
+									shift+pageUp/PageDown&nbsp;&nbsp;Scroll up and down</br>\
+									ctrl+shift+ home/end&nbsp;&nbsp;Current cursor to the end of the head</br>\
+									alt+ Mouse drag&nbsp;&nbsp;Block selection</br>\
+									ctrl+alt+g&nbsp;&nbsp;Batch select current and enter multi-tab editing</br>\
+								</div>\
+							</div>\
+							<div class="helps_left">\
+								<div class="helps_item">Cursor movement:</div>\
+								<div class="helps_box">\
+									home/end/up/left/down/right</br>\
+									ctrl+home/end&nbsp;&nbsp;Cursor moves to the beginning/end of the document</br>\
+									ctrl+p&nbsp;&nbsp;Jump to the matching tag</br>\
+									pageUp/PageDown&nbsp;&nbsp;Cursor up and down</br>\
+									alt+left/right&nbsp;&nbsp;Cursor moves to the top of the line</br>\
+									shift+left/right&nbsp;&nbsp;Cursor moves to the beginning & end of the line</br>\
+									ctrl+l&nbsp;&nbsp;Jump to the specified line</br>\
+									ctrl+alt+up/down&nbsp;&nbsp;Add cursor to the top (bottom)</br>\
+								</div>\
+								<div class="helps_item">Edit:</div>\
+								<div class="helps_box">\
+									ctrl+/&nbsp;&nbsp;Comment & Uncomment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ctrl+alt+a&nbsp;&nbsp;Align left and right</br>\
+									table&nbsp;&nbsp;Tab alignment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shift+table&nbsp;&nbsp;Overall advancement table</br>\
+									delete&nbsp;&nbsp;Delete&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ctrl+d&nbsp;&nbsp;Delete entire line</br>\
+									ctrl+delete&nbsp;&nbsp;Delete the word on the right side of the line</br>\
+									ctrl/shift+backspace&nbsp;&nbsp;Delete the word on the left</br>\
+									alt+shift+up/down&nbsp;&nbsp;Copy the line and add it to the top (below)</br>\
+									alt+delete&nbsp;&nbsp;Delete the right side of the cursor</br>\
+									alt+up/down&nbsp;&nbsp;The current line is swapped with the previous line (the next line)</br>\
+									ctrl+shift+d&nbsp;&nbsp;Copy the line and add it below</br>\
+									ctrl+delete&nbsp;&nbsp;Delete the word on the right</br>\
+									ctrl+shift+u&nbsp;&nbsp;Convert to lowercase</br>\
+									ctrl+u&nbsp;&nbsp;Convert selected content to uppercase</br>\
+								</div>\
+							</div>\
+						</div>'
+					});
+				break;
+			}
+		});
+
+		// 选择语言
+
+		this.setEditorView();
+	},
+	// 设置搜索视图
+	setSearchView:function(){
+
+	},
+	// 设置替换视图
+	setReplaceView:function(){
+
+	},
+	// 设置编辑器视图
+	setEditorView:function () {
+		var page_height = $('.aceEditors').height();
+		var ace_header = $('.ace_header').height();
+		var ace_conter_menu = $('.ace_conter_menu').height();
+		var ace_conter_toolbar = $('.ace_conter_toolbar').height();
+		var _height = page_height - ace_header - ace_conter_menu - ace_conter_toolbar - 42;
+		$('.ace_conter_editor').height(_height);
+	},
+	// 获取文件编码列表
+	getEncodingList: function (type) {
+		var _option = '';
+		for (var i = 0; i < this.encodingList.length; i++) {
+			var item = this.encodingList[i] == type.toUpperCase();
+			_option += '<li data- data-value="' + this.encodingList[i] + '" ' + (item ? 'class="active"' : '') + '>' + this.encodingList[i] + (item ?'<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>' : '') + '</li>';
+		}
+		$('.menu-encoding ul').html(_option);
+	},
+	// 获取文件关联列表
+	getRelevanceList: function (fileName) {
+		var _option = '', _top = 0, fileType = this.getFileType(fileName), _set_tops = 0;
+		for (var name in this.supportedModes) {
+			var data = this.supportedModes[name],item = (name == fileType.name);
+			_option += '<li data-height="' + _top + '" data-rule="' + this.supportedModes[name] + '" data-value="' + name + '" ' + (item ? 'class="active"' : '') + '>' + (this.nameOverrides[name] || name) + (item ?'<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>' : '') + '</li>'
+			if (item) _set_tops = _top
+			_top += 35;
+		}
+		$('.menu-files ul').html(_option);
+		$('.menu-files ul').scrollTop(_set_tops);
+	},
+	// 搜索文件关联
+	searchRelevance: function (search) {
+		if(search == undefined) search = '';
+		$('.menu-files ul li').each(function (index, el) {
+			var val = $(this).attr('data-value').toLowerCase(),
+				rule = $(this).attr('data-rule'),
+				suffixs = rule.split('|'),
+				_suffixs = false;
+				search = search.toLowerCase();
+			for (var i = 0; i < suffixs.length; i++) {
+				if (suffixs[i].indexOf(search) > -1) _suffixs = true
+			}
+			if (search == '') {
+				$(this).removeAttr('style');
+			} else {
+				if (val.indexOf(search) == -1) {
+					$(this).attr('style', 'display:none');
+				} else {
+					$(this).removeAttr('style');
+				}
+				if (_suffixs)  $(this).removeAttr('style')
+			}
+		});
+	},
+	// 设置编码类型
+	setEncodingType: function (encode) {
+		this.getEncodingList('UTF-8');
+		$('.menu-encoding ul li').click(function (e) {
+			layer.msg('Set file encoding：' + $(this).attr('data-value'));
+			$(this).addClass('active').append('<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>').siblings().removeClass('active').find('span').remove();
+		});
+	},
+	// 更新状态栏
+	currentStatusBar: function(id){
+		var _editor = this.editor['ace_editor_'+id];
+		$('.ace_conter_toolbar [data-type="path"]').html('Dir：<i>'+ _editor.path +'</i>');
+		$('.ace_conter_toolbar [data-type="tab"]').html(_editor.softTabs?'Space：<i>'+ _editor.tabSize +'</i>':'Tab length：<i>'+ _editor.tabSize +'</i>');
+		$('.ace_conter_toolbar [data-type="encoding"]').html('coding：<i>'+ _editor.encoding.toUpperCase() +'</i>');
+		$('.ace_conter_toolbar [data-type="lang"]').html('Language：<i>'+ _editor.type +'</i>');
+		$('.ace_conter_toolbar span').attr('data-id',id);
+		_editor.ace.resize();
+	},
+	// 创建ACE编辑器-对象
+	creationEditor: function (obj, callabck) {
+		var _this = this;
+		$('#ace_editor_' + obj.id).text(obj.data || '');
+		if(this.editor == null) this.editor = {}
+		this.editor['ace_editor_' + obj.id] = {
+			ace: ace.edit("ace_editor_" + obj.id, {
+				theme: "ace/theme/monokai", //主题
+				mode: "ace/mode/" + (obj.fileName != undefined ? obj.mode : 'text'), // 语言类型
+				wrap: true,
+				showInvisibles:false,
+				showPrintMargin: false,
+				enableBasicAutocompletion: true,
+				enableSnippets: true,
+				enableLiveAutocompletion: true,
+				useSoftTabs:false,
+				tabSize:4,
+				keyboardHandler:'sublime'
+			}), //ACE编辑器对象
+			id: obj.id,
+			wrap: true, //是否换行
+			path:obj.path,
+			tabSize:4,
+			softTabs:false,
+			fileName:obj.fileName,
+			enableSnippets: true, //是否代码提示
+			encoding: (obj.encoding != undefined ? obj.encoding : 'utf-8'), //编码类型
+			mode: (obj.fileName != undefined ? obj.mode : 'text'), //语言类型
+			type:obj.type,
+            fileType: 0, //文件状态
+            historys: obj.historys
+		};
+		var ACE = this.editor['ace_editor_' + obj.id];
+		ACE.ace.moveCursorTo(0, 0); //设置鼠标焦点
+		ACE.ace.resize(); //设置自适应
+		ACE.ace.commands.addCommand({
+			name: 'Save document',
+			bindKey: {
+				win: 'Ctrl-S',
+				mac: 'Command-S'
+			},
+			exec: function (editor) {
+				// 保存文件
+				_this.saveFileBody({
+					path: ACE.path,
+					data: editor.getValue(),
+					encoding: ACE.encoding
+				}, function (res) {
+					layer.msg(res.msg, {icon: 1});
+					ACE.fileType = 0;
+					$('.item_tab_' + ACE.id + ' .icon-tool').attr('data-file-state', '0').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+				});
+			},
+			readOnly: false // 如果不需要使用只读模式，这里设置false
+		});
+
+
+		// 获取光标位置
+		ACE.ace.getSession().selection.on('changeCursor', function(e) {
+			var _cursor = ACE.ace.selection.getCursor();
+			$('[data-type="cursor"]').html('Row<i class="cursor-row">'+ (_cursor.row + 1) +'</i>,Column<i class="cursor-line">'+ _cursor.column +'</i>');
+		});
+
+		// 触发修改内容
+		ACE.ace.getSession().on('change', function (editor) {
+			$('.item_tab_' + ACE.id + ' .icon-tool').addClass('glyphicon-exclamation-sign').removeClass('glyphicon-remove').attr('data-file-state', '1');
+			ACE.fileType = 1;
+		});
+		this.currentStatusBar(ACE.id);
+	},
+	// 获取文件模型
+	getFileType: function (fileName) {
+		var filenames = fileName.split('.')[1],modesByName = {};
+		for (var name in this.supportedModes) {
+			var data = this.supportedModes[name];
+			var suffixs = data[0].split('|');
+			var filename = name.toLowerCase()
+			for (var i = 0; i < suffixs.length; i++) {
+				if (filenames == suffixs[i]){
+					return { name: name,mode: filename }
+				}
+			}
+		}
+		return {name:'Text',mode:'text'}
+	},
+	// 新建编辑器视图-方法
+	addEditor: function () {
+		var _index = this.editorLength,_id = bt.get_random(8);
+		$('.ace_conter_menu .item').removeClass('active');
+		$('.ace_conter_editor .ace_editors').removeClass('active');
+		$('.ace_conter_menu .ace_editor_add').before('<div class="item active item_tab_'+_id+'" data-type="text" data-id="'+_id+'" data-index="'+ _index +'">\
+			<span class="icon_file"><i class="fa fa-code" aria-hidden="true"></i></span>\
+			<span>Untitled-'+_index+'</span>\
+			<i class="fa fa-circle icon-tool" aria-hidden="true" data-file-state="1" data-title="Untitled-'+ _index +'"></i>\
+		</div>');
+		$('.ace_conter_editor').append('<div id="ace_editor_'+_id+'" class="ace_editors active"></div>');
+		$('#ace_editor_' + _id).siblings().removeClass('active');
+		this.creationEditor({ id: _id });
+		this.editorLength = this.editorLength + 1;
+	},
+	// 删除编辑器视图-方法
+	removeEditor: function (id) {
+		if ($('.item_tab_' + id).next('.item').length == 0) {
+			$('.item_tab_' + id).prev('.item').addClass('active');
+			$('#ace_editor_' + id).prev('.ace_editor').addClass('active');
+			this.ace_active = $('.item_tab_' + id).prev('.item').attr('data-id');
+		} else {
+			$('.item_tab_' + id).next('.item').addClass('active');
+			$('#ace_editor_' + id).next('.ace_editor').addClass('active');
+			this.ace_active = $('.item_tab_' + id).next('.item').attr('data-id');
+		}
+		$('.item_tab_' + id).remove();
+		$('#ace_editor_' + id).remove();
+		for(var i=0;i<aceEditor.pathAarry.length;i++){
+		    if(aceEditor.pathAarry[i] == this.editor['ace_editor_' + id].path){
+		        aceEditor.pathAarry.splice(i,1);
+		    }
+		}
+		delete this.editor['ace_editor_' + id];
+		this.editorLength --;
+		if(this.editorLength === 0){
+			this.ace_active = '';
+			this.pathAarry = [];
+			$('.layui-layer-close').click();
+		}else{
+			this.currentStatusBar(this.ace_active);
+		}
+	},
+	// 打开编辑器文件-方法
+	openEditorView: function (path) {
+		if(path == undefined) return false;
+		// 文件类型（type，列如：JavaScript） 、文件模型（mode，列如：text）、文件标识（id,列如：x8AmsnYn）、文件编号（index,列如：0）、文件路径 (path，列如：/www/root/)
+	    var _this = this,paths = path.split('/'),_fileName = paths[paths.length - 1],_fileType = this.getFileType(_fileName),_type = _fileType.name,_mode = _fileType.mode,_id = bt.get_random(8),_index = this.editorLength;
+		this.getFileBody({path: path}, function (res) {
+		    _this.pathAarry.push(path);
+		    $('.ace_conter_menu .item').removeClass('active');
+    		$('.ace_conter_editor .ace_editors').removeClass('active');
+    		$('.ace_conter_menu .ace_editor_add').before('<div class="item active item_tab_' + _id +'" title="'+ path +'" data-type="'+ _type +'" data-mode="'+ _mode +'" data-id="'+ _id +'" data-index="'+ _index +'" data-fileName="'+ _fileName +'">\
+    			<span class="icon_file"><img src="/static/img/iconfont_code.png" style="width:16px;" /></span><span>' + _fileName + '</span>\
+    			<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' + _fileName + '"></i>\
+    		</div>');
+    		$('.ace_conter_editor').append('<div id="ace_editor_'+_id +'" class="ace_editors active"></div>');
+    		_this.ace_active = _id;
+		    _this.editorLength = _this.editorLength + 1;
+			_this.creationEditor({id: _id,fileName: _fileName,path: path,mode:_mode,encoding: res.encoding,data: res.data,type:_type,historys:res.historys});
+		});
+	},
+	// 获取收藏夹列表-方法
+	getFavoriteList: function () {},
+	// 获取文件列表-请求
+	getFileList: function () {},
+	// 获取文件内容-请求
+	getFileBody: function (obj, callback) {
+		var loadT = layer.msg('Getting file content, please wait...',{time: 0,icon: 16,shade: [0.3, '#000']}),_this = this;
+		$.post("/files?action=GetFileBody", "path=" + encodeURIComponent(obj.path), function(res) {
+			layer.close(loadT);
+			if (!res.status) {
+				if(_this.editorLength == 0) layer.closeAll();
+				layer.msg(res.msg, {icon: 2});
+
+				return false;
+			}else{
+				if(!aceEditor.isAceView){
+				    var _path =  obj.path.split('/');
+					layer.msg('Opened file ['+ (_path[_path.length-1]) +']');
+				}
+			}
+			if (callback) callback(res);
+		});
+	},
+	// 保存文件内容-请求
+	saveFileBody: function (obj, callback) {
+		var loadT = layer.msg('Saving file content, please wait...', {time: 0,icon: 16,shade: [0.3, '#000']});
+		$.post("/files?action=SaveFileBody","data=" + encodeURIComponent(obj.data) + "&path=" + encodeURIComponent(obj.path) + "&encoding=" + obj.encoding, function(res) {
+			layer.close(loadT);
+			if (callback) callback(res)
+		});
+	},
+	// 递归保存文件
+	saveAllFileBody:function(arry,num,callabck) {
+		var _this = this;
+		if(typeof num == "function"){
+			callabck = num; num = 0;
+		}else if(typeof num == "undefined"){
+			num = 0;
+		}
+		if(num == arry.length){
+			if(callabck) callabck();
+			layer.msg('All saved successfully',{icon:1});
+			return false;
+		}
+		aceEditor.saveFileBody({
+			path: arry[num].path,
+			data: arry[num].data,
+			encoding: arry[num].encoding
+		},function(){
+			num = num + 1;
+			aceEditor.saveAllFileBody(arry,num,callabck);
+		});
+	}
+}
+
 var my_headers = {};
 var request_token_ele = document.getElementById("request_token_head");
 if (request_token_ele) {
@@ -699,11 +1539,11 @@ function SafeMessage(j, h, g, f) {
 	$("#toSubmit").click(function() {
 		var a = $("#vcodeResult").val().replace(/ /g, "");
 		if(a == undefined || a == "") {
-			layer.msg(lan.index.input_calc_result);
+			layer.msg(lan.public.input_calc_result);
 			return
 		}
 		if(a != getCookie("vcodesum")) {
-			layer.msg(lan.index.input_calc_result);
+			layer.msg(lan.public.input_calc_result);
 			return
 		}
 		layer.close(mess);

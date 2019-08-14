@@ -939,6 +939,19 @@ class config:
         else:
             t_str = 'Open'
             public.writeFile(debug_path,'True')
-        public.WriteLog('TYPE_PANEL','%sDeveloper mode(debug)' % t_str)
+        public.WriteLog('TYPE_PANEL','%s Developer mode(debug)' % t_str)
         public.restart_panel()
+        return public.returnMsg(True,'Successful setup!')
+
+
+    #设置离线模式
+    def set_local(self,get):
+        d_path = 'data/not_network.pl'
+        if os.path.exists(d_path):
+            t_str = 'Close'
+            os.remove(d_path)
+        else:
+            t_str = 'Open'
+            public.writeFile(d_path,'True')
+        public.WriteLog('TYPE_PANEL','%s Offline mode' % t_str)
         return public.returnMsg(True,'Successful setup!')

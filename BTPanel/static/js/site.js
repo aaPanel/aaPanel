@@ -173,7 +173,7 @@ var site = {
                         },
                         { field: 'addtime', title: lan.site.backup_time },
                         {
-                            field: 'opt', title: lan.site.operation, align: 'right', templet: function (item) {
+                            field: 'opt', title: lan.site.operate, align: 'right', templet: function (item) {
                                 var _opt = '<a class="btlink" href="/download?filename=' + item.filename + '&amp;name=' + item.name + '" target="_blank">'+lan.site.download+'</a> | ';
                                 _opt += '<a class="btlink" herf="javascrpit:;" onclick="bt.site.del_backup(\'' + item.id + '\',\'' + id + '\',\'' + siteName + '\')">'+lan.site.del+'</a>'
                                 return _opt;

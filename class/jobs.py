@@ -49,6 +49,9 @@ def control_init():
         if md51 != md52:
             import shutil
             shutil.copyfile(src_file,init_file)
+            if os.path.getsize(init_file) < 10:
+                os.system("chattr -i " + init_file)
+                os.system("\cp -arf %s %s" % (src_file,init_file))
     except:pass
     public.writeFile('/var/bt_setupPath.conf','/www')
     public.ExecShell(c)
@@ -63,7 +66,39 @@ def control_init():
     public.ExecShell("chown -R root:root /www/server/panel/config")
     #disable_putenv('putenv')
     clean_session()
-    set_crond()
+    #set_crond()
+    clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
+    remove_tty1()
+    clean_hook_log()
+
+#清理webhook日志
+def clean_hook_log():
+    path = '/www/server/panel/plugin/webhook/script'
+    if not os.path.exists(path): return False
+    for name in os.listdir(path):
+        if name[-4:] != ".log": continue;
+        clean_max_log(path+'/' + name,524288)
+
+#清理大日志
+def clean_max_log(log_file,max_size = 104857600,old_line = 100):
+    if not os.path.exists(log_file): return False
+    if os.path.getsize(log_file) > max_size:
+        try:
+            old_body = public.GetNumLines(log_file,old_line)
+            public.writeFile(log_file,old_body)
+        except:
+            print(public.get_error_info())
+
+#删除tty1
+def remove_tty1():
+    file_path = '/etc/systemd/system/getty@tty1.service'
+    if not os.path.exists(file_path): return False
+    if not os.path.islink(file_path): return False
+    if os.readlink(file_path) != '/dev/null': return False
+    try:
+        os.remove(file_path)
+    except:pass
+
 
 #默认禁用指定PHP函数
 def disable_putenv(fun_name):

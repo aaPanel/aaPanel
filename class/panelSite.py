@@ -759,7 +759,7 @@ class panelSite(panelRedirect):
         
         sql.table('domain').where("id=?",(find['id'],)).delete();
         public.WriteLog('TYPE_SITE', 'DOMAIN_DEL_SUCCESS',(get.webname,get.domain));
-        public.serviceReload();
+        public.serviceReload()
         return public.returnMsg(True,'DEL_SUCCESS');
     
     #检查域名是否解析
@@ -856,7 +856,7 @@ class panelSite(panelRedirect):
 
         for domain in domains:
             if public.checkIp(domain): continue;
-            if domain.find('*.') >=0 and not file_auth:
+            if domain.find('*.') >= 0 and file_auth:
                 return public.returnMsg(False, 'A generic domain name cannot be used to apply for a certificate using [File Validation]!');
 
         if file_auth:
@@ -901,7 +901,7 @@ class panelSite(panelRedirect):
         return result
 
     def get_site_info(self,siteName):
-        data = public.M("sites").where('name=?',siteName).field('path,name').find()
+        data = public.M("sites").where('name=?',siteName).field('id,path,name').find()
         return data
 
 
@@ -2439,6 +2439,11 @@ server
         return f.SaveFileBody(get)
         #	return public.returnMsg(True, '保存成功')                                                                 
 
+    # 检查是否存在#Set Nginx Cache
+    def check_annotate(self,data):
+        rep = "\n\s*#Set\s*Nginx\s*Cache"
+        if re.search(rep,data):
+            return True
 
     # 修改反向代理
     def ModifyProxy(self, get):
@@ -2477,17 +2482,26 @@ server
     proxy_cache cache_one;
     proxy_cache_key $host$uri$is_args$args;
     proxy_cache_valid 200 304 301 302 %sm;""" % (get.cachetime)
-                            cache_rep = '#proxy_set_header\s+Connection\s+"upgrade";'
-                            ng_conf = re.sub(cache_rep,'#proxy_set_header Connection "upgrade";\n'+ng_cache,ng_conf)
+                            if self.check_annotate(ng_conf):
+                                cache_rep = '\n\s*#Set\s*Nginx\s*Cache(.|\n)*no-cache;'
+                                ng_conf = re.sub(cache_rep,'\n\t#Set Nginx Cache\n'+ng_cache,ng_conf)
+                            else:
+                                cache_rep = '#proxy_set_header\s+Connection\s+"upgrade";'
+                                ng_conf = re.sub(cache_rep, '\n\t#proxy_set_header Connection "upgrade";\n\t#Set Nginx Cache' + ng_cache,
+                                                 ng_conf)
                     else:
-                        rep = '\s+proxy_cache\s+cache_one.*[\n\s\w\_\";\$]+m;'
-                        ng_conf = re.sub(rep, "", ng_conf)
+                        if self.check_annotate(ng_conf):
+                            rep = '\n\s*#Set\s*Nginx\s*Cache(.|\n)*1m;'
+                            ng_conf = re.sub(rep, "\n\t#Set Nginx Cache\n\tadd_header Cache-Control no-cache;", ng_conf)
+                        else:
+                            rep = '\s+proxy_cache\s+cache_one.*[\n\s\w\_\";\$]+m;'
+                            ng_conf = re.sub(rep, '\n\t#Set Nginx Cache\n\tadd_header Cache-Control no-cache;', ng_conf)
 
                     sub_rep = "sub_filter"
                     subfilter = json.loads(get.subfilter)
                     if str(proxyUrl[i]["subfilter"]) != str(subfilter):
                         if re.search(sub_rep, ng_conf):
-                            sub_rep = "\s+proxy_set_header\s+Accept-Encoding.*[\n\s\w\_\";]+off;"
+                            sub_rep = "\s+proxy_set_header\s+Accept-Encoding(.|\n)+off;"
                             ng_conf = re.sub(sub_rep,"",ng_conf)
 
                         # 构造替换字符串
@@ -2582,8 +2596,9 @@ location %s
     #proxy_http_version 1.1;
     #proxy_set_header Upgrade $http_upgrade;
     #proxy_set_header Connection "upgrade";
-
     add_header X-Cache $upstream_cache_status;
+    
+    #Set Nginx Cache
     %s
     %s
 }
@@ -2617,14 +2632,14 @@ location %s
                     get.proxydir, get.proxydir,get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, ng_cache ,get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, get.proxydir, get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter,'' ,get.proxydir)
+                    get.proxydir, get.proxydir, get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter,'\tadd_header Cache-Control no-cache;' ,get.proxydir)
         else:
             if type == 1 and cache == 1:
                 ng_proxy_cache += ng_proxy % (
                     get.proxydir, get.proxydir, get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, ng_cache, get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, get.proxydir, get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, '', get.proxydir)
+                    get.proxydir, get.proxydir, get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, '\tadd_header Cache-Control no-cache;', get.proxydir)
         public.writeFile(ng_proxyfile, ng_proxy_cache)
 
 
@@ -3348,6 +3363,7 @@ location %s
     #设置防盗链
     def SetSecurity(self,get):
         if len(get.fix) < 2: return public.returnMsg(False,'URL_SUFFIX_NOT_EMPTY!');
+        if len(get.domains) < 3: return public.returnMsg(False,'Anti-theft chain domain name cannot be empty!');
         file = '/www/server/panel/vhost/nginx/' + get.name + '.conf';
         if os.path.exists(file):
             conf = public.readFile(file);

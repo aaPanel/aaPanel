@@ -102,7 +102,7 @@ class database(datatool.datatools):
         if "libmysqlclient" in mysqlMsg: 
             result = self.rep_lnk()
             os.system("pip uninstall mysql-python -y")
-            os.system("pip install mysql-python")
+            os.system("pip install pymysql")
             public.writeFile('data/restart.pl','True')
             return public.returnMsg(False,"MYSQL_FIX_WITH_AUTO_ERR")
         return None
@@ -299,7 +299,7 @@ SetLink
     def SetupPassword(self,get):
         password = get['password'].strip()
         try:
-            rep = "^[\w@\.]+$"
+            rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
             if not re.match(rep, password): return public.returnMsg(False, 'DATABASE_NAME_ERR_T')
             mysql_root = public.M('config').where("id=?",(1,)).getField('mysql_root')
             #修改MYSQL
@@ -343,7 +343,7 @@ SetLink
             id = get['id']
             name = public.M('databases').where('id=?',(id,)).getField('name');
             
-            rep = "^[\w@\.]+$"
+            rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
             if len(re.search(rep, newpassword).groups()) > 0: return public.returnMsg(False, 'DATABASE_NAME_ERR_T')
             
             #修改MYSQL
@@ -447,7 +447,7 @@ SetLink
             tmpFile = tmpFile.replace('.' + ext, '.sql')
             tmpFile = tmpFile.replace('tar.', '')
             backupPath = session['config']['backup_path'] + '/database'
-                
+
             if ext == 'zip':
                 public.ExecShell("cd "  +  backupPath  +  " && unzip " +  file)
             else:

@@ -83,15 +83,15 @@ class panelLets:
     def get_error(self,error):
 
         if error.find("Max checks allowed") >= 0 :
-            return "CA server verification timed out, please wait 5-10 minutes and try again."
+            return "CA can't verify your domain name, please check if the domain name resolution is correct, or wait 5-10 minutes and try again."
         elif error.find("Max retries exceeded with") >= 0:
-            return "The CA server connection timed out, please make sure the server network is unobstructed."
+            return "The CA server connection timed out, please try again later."
         elif error.find("The domain name belongs") >= 0:
             return "The domain name does not belong to this DNS service provider. Please ensure that the domain name is filled in correctly."
         elif error.find('login token ID is invalid') >=0:
             return 'The DNS server connection failed. Please check if the key is correct.'
         elif "too many certificates already issued for exact set of domains" in error or "Error creating new account :: too many registrations for this IP" in error:
-            return '<h2>The signing failed, and the number of attempts to apply for a certificate today has reached the limit!</h2>'
+            return '<h2>You have failed more than 5 verifications in 1 hour. Please wait 1 hour and try again.</h2>'
         elif "DNS problem: NXDOMAIN looking up A for" in error or "No valid IP addresses found for" in error or "Invalid response from" in error:
             return '<h2>The signing failed, the domain name resolution error, or the resolution is not valid, or the domain name is not filed!</h2>'
         elif error.find('TLS Web Server Authentication') != -1:

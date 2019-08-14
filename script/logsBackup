@@ -12,9 +12,9 @@ os.chdir("/www/server/panel")
 sys.path.append('class/')
 import public
 print ('==================================================================')
-print( '★['+time.strftime("%Y/%m/%d %H:%M:%S")+']，切割日志')
+print( '★['+time.strftime("%Y/%m/%d %H:%M:%S")+']，Cutting log')
 print ('==================================================================')
-print ('|--当前保留最新的['+sys.argv[2]+']份')
+print ('|--Currently retaining the latest ['+sys.argv[2]+'] copies')
 logsPath = '/www/wwwlogs/'
 is_nginx = False
 if os.path.exists('/www/server/nginx/logs/nginx.pid'): is_nginx = True
@@ -24,7 +24,7 @@ if not is_nginx: px = '-access_log'
 def split_logs(oldFileName,num):
     global logsPath
     if not os.path.exists(oldFileName):
-        print('|---'+oldFileName+'文件不存在!')
+        print('|---'+oldFileName+'file does not exist!')
         return
 
     logs=sorted(glob.glob(oldFileName+"_*"))
@@ -34,11 +34,12 @@ def split_logs(oldFileName,num):
     for i in range(count):
         if i>num: break;
         os.remove(logs[i])
-        print('|---多余日志['+logs[i]+']已删除!')
+        print('|---Extra log ['+logs[i]+'] has been deleted!')
 
     newFileName=oldFileName+'_'+time.strftime("%Y-%m-%d_%H%M%S")+'.log'
     shutil.move(oldFileName,newFileName)
-    print('|---已切割日志到:'+newFileName)
+    os.system("gzip %s" % newFileName)
+    print('|---The log has been cut to: '+newFileName+'.gz')
 
 def split_all(save):
     sites = public.M('sites').field('name').select()
