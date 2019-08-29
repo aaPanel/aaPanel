@@ -142,7 +142,7 @@ fi
 path=/etc/yum.conf
 isExc=`cat $path|grep httpd`
 if [ "$isExc" = "" ];then
-    echo "exclude=httpd nginx php mysql mairadb python-psutil python2-psutil" >> $path
+    echo "exclude=httpd nginx php mysql mariadb python-psutil python2-psutil" >> $path
 fi
 
 #自动挂载Swap
