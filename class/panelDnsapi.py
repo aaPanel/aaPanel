@@ -110,11 +110,11 @@ class AliyunDns(object):
         req = requests.get(url=self.url, params=paramsdata)
         if req.status_code != 200:
             if req.json()['Code'] == 'IncorrectDomainUser' or req.json()['Code'] == 'InvalidDomainName.NoExist':
-                raise ValueError(json.dumps({"data": "This domain name does not exist under this Ali cloud account. Adding parsing failed.", "msg": req.json()}))
+                raise ValueError("This domain name does not exist under this Ali cloud account. Adding parsing failed.")
             elif req.json()['Code'] == 'InvalidAccessKeyId.NotFound' or req.json()['Code'] == 'SignatureDoesNotMatch':
-                raise ValueError(json.dumps({"data": "API key error, add parsing failed", "msg": req.json()}))
+                raise ValueError("API key error, add parsing failed")
             else:
-                raise ValueError(json.dumps({"data": req.json()['Message'], "msg": req.json()}))
+                raise ValueError(req.json()['Message'])
         print("create_dns_record end")
 
     def query_recored_items(self, host, zone=None, tipe=None, page=1, psize=200):
@@ -165,7 +165,7 @@ class AliyunDns(object):
         paramsdata['Signature'] = Signature
         req = requests.get(url=self.url, params=paramsdata)
         if req.status_code != 200:
-            raise ValueError(json.dumps({"data": "Deleting a parse record failed", "msg": req.json()}))
+            raise ValueError("Deleting a parse record failed")
         print("delete_dns_record end: ", acme_txt)
 
 class CloudxnsDns(object):

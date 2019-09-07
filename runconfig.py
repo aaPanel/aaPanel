@@ -1,5 +1,5 @@
-import os,time,sys
-sys.path.append('/www/server/panel/class')
+import os,time,sys,ssl
+sys.path.insert(0,'/www/server/panel/class')
 import public
 bt_port = public.readFile('data/port.pl')
 if bt_port: bt_port.strip()
@@ -25,8 +25,8 @@ worker_class = 'geventwebsocket.gunicorn.workers.GeventWebSocketWorker'
 chdir = '/www/server/panel'
 capture_output = True
 graceful_timeout=0
-loglevel = 'debug'
-access_log_format = '%(h) -  %(t)s - %(u)s - %(s)s %(H)s'
+loglevel = 'info'
+if debug: loglevel = 'debug'
 errorlog = chdir + '/logs/error.log'
 accesslog = chdir + '/logs/access.log'
 pidfile = chdir + '/logs/panel.pid'

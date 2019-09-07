@@ -821,7 +821,7 @@ function toBackup(type){
 					</div>';
         if (sType == 'sites') {
             sBody += '<p class="clearfix plan">\
-                    <div class="textname pull-left mr20" style="margin-left: 63px; font-size: 14px;">'+lan.public.exclusion_rule+'</div>\
+                    <div class="textname pull-left mr20" style="margin-left: 63px; font-size: 14px;">'+lan.crontab.exclusion_rule+'</div>\
                     <div class="dropdown planBackupTo pull-left mr20">\
                         <span><textarea style=" height: 100px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
                     </div>\

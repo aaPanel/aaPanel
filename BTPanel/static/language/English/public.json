@@ -490,7 +490,7 @@
 	"INPUT_REPLACE_CONTENT": "Please enter the content to be replaced",
 	"REP_CON_CANT_SAMEAS_BEREP_CON": "The content to replace cannot be the same as the content to be replaced",
 	"CLEAR_CACHE":"#Clear cache",
-	"NGINX_PROXY_REP": "Referenced reverse proxy rule, if commented, the configured reverse proxy will be invalid",
+	"NGINX_PROXY_REP": "#Referenced reverse proxy rule, if commented, the configured reverse proxy will be invalid",
 	"NGINX_PROXY_EXIST_ERR": "A global reverse proxy already exists in the rewrite/nginx master configuration/vhost file",
 	"PROXY_WAS_STOP": "Proxy suspended",
 	"NGINX_PERSISTENCE": "#Persistent connection related configuration",

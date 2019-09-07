@@ -23,47 +23,55 @@ class ajax:
         except:
             pass
     def GetNginxStatus(self,get):
-        process_cpu = {}
-        worker = int(public.ExecShell("ps aux|grep nginx|grep 'worker process'|wc -l")[0])-1
-        workermen = int(public.ExecShell("ps aux|grep nginx|grep 'worker process'|awk '{memsum+=$6};END {print memsum}'")[0]) / 1024
-        for proc in psutil.process_iter():
-            if proc.name() == "nginx":
-                self.GetProcessCpuPercent(proc.pid,process_cpu)
-        time.sleep(0.5)
-        #取Nginx负载状态
-        self.CheckStatusConf()
-        result = public.HttpGet('http://127.0.0.1/nginx_status')
-        tmp = result.split()
-        data = {}
-        if "request_time" in tmp:
-            data['accepts']  = tmp[8]
-            data['handled']  = tmp[9]
-            data['requests'] = tmp[10]
-            data['Reading']  = tmp[13]
-            data['Writing']  = tmp[15]
-            data['Waiting']  = tmp[17]
-        else:
-            data['accepts'] = tmp[9]
-            data['handled'] = tmp[7]
-            data['requests'] = tmp[8]
-            data['Reading'] = tmp[11]
-            data['Writing'] = tmp[13]
-            data['Waiting'] = tmp[15]
-        data['active'] = tmp[2]
-        data['worker'] = worker
-        data['workercpu'] = round(float(process_cpu["nginx"]),2)
-        data['workermen'] = "%s%s" % (int(workermen), "MB")
-        return data
+        try:
+            process_cpu = {}
+            worker = int(public.ExecShell("ps aux|grep nginx|grep 'worker process'|wc -l")[0])-1
+            workermen = int(public.ExecShell("ps aux|grep nginx|grep 'worker process'|awk '{memsum+=$6};END {print memsum}'")[0]) / 1024
+            for proc in psutil.process_iter():
+                if proc.name() == "nginx":
+                    self.GetProcessCpuPercent(proc.pid,process_cpu)
+            time.sleep(0.5)
+            #取Nginx负载状态
+            self.CheckStatusConf()
+            result = public.HttpGet('http://127.0.0.1/nginx_status')
+            tmp = result.split()
+            data = {}
+            if "request_time" in tmp:
+                data['accepts']  = tmp[8]
+                data['handled']  = tmp[9]
+                data['requests'] = tmp[10]
+                data['Reading']  = tmp[13]
+                data['Writing']  = tmp[15]
+                data['Waiting']  = tmp[17]
+            else:
+                data['accepts'] = tmp[9]
+                data['handled'] = tmp[7]
+                data['requests'] = tmp[8]
+                data['Reading'] = tmp[11]
+                data['Writing'] = tmp[13]
+                data['Waiting'] = tmp[15]
+            data['active'] = tmp[2]
+            data['worker'] = worker
+            data['workercpu'] = round(float(process_cpu["nginx"]),2)
+            data['workermen'] = "%s%s" % (int(workermen), "MB")
+            return data
+        except Exception as ex:
+            public.WriteLog('Get Info',"Nginx load status acquisition failed:%s" % ex)
+            return public.returnMsg(False,'Data acquisition failed!')
     
     def GetPHPStatus(self,get):
         #取指定PHP版本的负载状态
-        self.CheckStatusConf()
-        version = get.version
-        result = public.HttpGet('http://127.0.0.1/phpfpm_'+version+'_status?json')
-        tmp = json.loads(result)
-        fTime = time.localtime(int(tmp['start time']))
-        tmp['start time'] = time.strftime('%Y-%m-%d %H:%M:%S',fTime)
-        return tmp
+        try:
+            self.CheckStatusConf()
+            version = get.version
+            result = public.HttpGet('http://127.0.0.1/phpfpm_'+version+'_status?json')
+            tmp = json.loads(result)
+            fTime = time.localtime(int(tmp['start time']))
+            tmp['start time'] = time.strftime('%Y-%m-%d %H:%M:%S',fTime)
+            return tmp
+        except Exception as ex:
+            public.WriteLog('Get Info',"PHP load status acquisition failed: %s" % ex)
+            return public.returnMsg(False,'PHP load status acquisition failed!')
         
     def CheckStatusConf(self):
         if public.get_webserver() != 'nginx': return;
@@ -221,9 +229,9 @@ class ajax:
         result = public.ExecShell("python " + public.GetConfigValue('setup_path') + "/panel/script/backup_"+get.name+".py list")
         
         if result[0].find("ERROR:") == -1: 
-            public.WriteLog("PLUG_MAM","SET_PLUG",(info['name']),)
+            public.WriteLog("PLUG_MAM","SET_PLUG[" +info['name']+ "]AS!")
             return public.returnMsg(True, 'SET_SUCCESS');
-        return public.returnMsg(False,'AK_SK_CONNECT_ERROR',(info['name'],))
+        return public.returnMsg(False,'AK_SK_CONNECT_ERROR'+info['name']+',Please check if the [AK/SK/Storage] setting is correct.')
     
     #设置内测
     def SetBeta(self,get):
@@ -496,7 +504,7 @@ class ajax:
                 data['sites'] = str(public.M('sites').count());
                 data['ftps'] = str(public.M('ftps').count());
                 data['databases'] = str(public.M('databases').count());
-                data['system'] = panelsys.GetSystemVersion() + '|' + str(mem.total / 1024 / 1024) + 'MB|' + public.getCpuType() + '*' + str(psutil.cpu_count()) + '|' + public.get_webserver() + '|' +session['version'];
+                data['system'] = panelsys.GetSystemVersion() + '|' + str(mem.total / 1024 / 1024) + 'MB|' + str(public.getCpuType()) + '*' + str(psutil.cpu_count()) + '|' + str(public.get_webserver()) + '|' +session['version'];
                 data['system'] += '||'+self.GetInstalleds(mplugin.getPluginList(None));
                 data['logs'] = logs
                 data['oem'] = ''
@@ -722,30 +730,103 @@ ServerName 127.0.0.2
             filename = public.GetConfigValue('setup_path') + '/apache/conf/extra/httpd-vhosts.conf'
         return filename
 
+    # 获取phpmyadmin ssl配置
+    def get_phpmyadmin_conf(self):
+        if public.get_webserver() == "nginx":
+            conf_file = "/www/server/panel/vhost/nginx/phpmyadmin.conf"
+            rep = "listen\s*(\d+)"
+        else:
+            conf_file = "/www/server/panel/vhost/apache/phpmyadmin.conf"
+            rep = "Listen\s*(\d+)"
+        return {"conf_file":conf_file,"rep":rep}
+
+    # 设置phpmyadmin路径
+    def set_phpmyadmin_session(self):
+        import re
+        conf_file = self.get_phpmyadmin_conf()
+        conf = public.readFile(conf_file["conf_file"])
+        rep = conf_file["rep"]
+        if conf:
+            port = re.search(rep,conf).group(1)
+            path = session['phpmyadminDir'].split("/")[-1]
+            ip = public.GetHost()
+            session['phpmyadminDir'] = "https://{}:{}/{}".format(ip, port, path)
+
     # 获取phpmyadmin ssl状态
     def get_phpmyadmin_ssl(self,get):
         import re
-        filename = self.__get_webserver_conffile()
-        conf = public.readFile(filename)
-        rep = "listen 443 ssl;"
-        if re.search(rep,conf):
-            return True
-        return False
+        conf_file = self.get_phpmyadmin_conf()
+        conf = public.readFile(conf_file["conf_file"])
+        rep = conf_file["rep"]
+        if conf:
+            port = re.search(rep, conf).group(1)
+            return {"status":True,"port":port}
+        return {"status":False,"port":""}
 
+    # 修改php ssl端口
+    def change_phpmyadmin_ssl_port(self,get):
+        import re
+        try:
+            port = int(get.port)
+            if 1 > port > 65535:
+                return public.returnMsg(False, 'Port range is incorrect')
+        except:
+            return public.returnMsg(False, 'The port format is incorrect')
+        for i in ["nginx","apache"]:
+            file = "/www/server/panel/vhost/{}/phpmyadmin.conf".format(i)
+            conf = public.readFile(file)
+            if not conf:
+                return public.returnMsg(False,"Did not find the {} configuration file, please try to close the ssl port settings before opening".format(i))
+            rulePort = ['80', '443', '21', '20', '8080', '8081', '8089', '11211', '6379']
+            if get.port in rulePort:
+                return public.returnMsg(False, 'AJAX_PHPMYADMIN_PORT_ERR')
+            if i == "nginx":
+                if not os.path.exists("/www/server/panel/vhost/apache/phpmyadmin.conf"):
+                    return public.returnMsg(False, "Did not find the apache phpmyadmin ssl configuration file, please try to close the ssl port settings before opening")
+                rep = "listen\s*([0-9]+)\s*.*;"
+                oldPort = re.search(rep, conf)
+                if not oldPort:
+                    return public.returnMsg(False, 'Did not detect the port that nginx phpmyadmin listens, please confirm whether the file has been manually modified.')
+                oldPort = oldPort.groups()[0]
+                conf = re.sub(rep, 'listen ' + get.port + ' ssl;', conf)
+            else:
+                rep = "Listen\s*([0-9]+)\s*\n"
+                oldPort = re.search(rep, conf)
+                if not oldPort:
+                    return public.returnMsg(False, 'Did not detect the port that apache phpmyadmin listens, please confirm whether the file has been manually modified.')
+                oldPort = oldPort.groups()[0]
+                conf = re.sub(rep, "Listen " + get.port + "\n", conf, 1)
+                rep = "VirtualHost\s*\*:[0-9]+"
+                conf = re.sub(rep, "VirtualHost *:" + get.port, conf, 1)
+            if oldPort == get.port: return public.returnMsg(False, 'SOFT_PHPVERSION_ERR_PORT')
+            public.writeFile(file, conf)
+            public.serviceReload()
+            if i=="apache":
+                import firewalls
+                get.ps = public.getMsg('SOFT_PHPVERSION_PS')
+                fw = firewalls.firewalls()
+                fw.AddAcceptPort(get)
+                public.serviceReload()
+                public.WriteLog('TYPE_SOFT', 'SOFT_PHPMYADMIN_PORT', (get.port,))
+                get.id = public.M('firewall').where('port=?', (oldPort,)).getField('id')
+                get.port = oldPort
+                fw.DelAcceptPort(get)
+        return public.returnMsg(True, 'SET_PORT_SUCCESS')
 
     # 设置phpmyadmin ssl
     def set_phpmyadmin_ssl(self,get):
-        import re
-        filename = self.__get_webserver_conffile()
-        conf = public.readFile(filename)
-        if get.v == "on":
-            ssl_conf = """
+        if not os.path.exists("/www/server/panel/ssl/certificate.pem"):
+            return public.returnMsg(False,'The panel certificate does not exist. Please apply for the panel certificate and try again.')
+        if get.v == "1":
+        # nginx配置文件
+            ssl_conf = """server
+    {
+        listen 887 ssl;
+        server_name phpmyadmin;
+        index index.html index.htm index.php;
+        root  /www/server/phpmyadmin;
         #SSL-START SSL相关配置，请勿删除或修改下一行带注释的404规则
         #error_page 404/404.html;
-        #AUTH_START
-        auth_basic "Authorization";
-        auth_basic_user_file /www/server/pass/phpmyadmin.pass;
-        #AUTH_END
         ssl_certificate    /www/server/panel/ssl/certificate.pem;
         ssl_certificate_key    /www/server/panel/ssl/privateKey.pem;
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
@@ -754,35 +835,82 @@ ServerName 127.0.0.2
         ssl_session_cache shared:SSL:10m;
         ssl_session_timeout 10m;
         error_page 497  https://$host$request_uri;
-        #SSL-END"""
-            listen_conf = """
-        listen 888 ssl;
-        listen 443 ssl;"""
-            listen_rep = "listen.*"
-
-            conf = re.sub(listen_rep, listen_conf, conf)
-
-            ssl_rep = "\s*#error_page.+;"
-            conf = re.sub(ssl_rep, ssl_conf, conf)
-            public.writeFile(filename,conf)
+        #SSL-END
+        include enable-php.conf;
+        location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
+        {
+            expires      30d;
+        }
+        location ~ .*\.(js|css)?$
+        {
+            expires      12h;
+        }
+        location ~ /\.
+        {
+            deny all;
+        }
+        access_log  /www/wwwlogs/access.log;
+    }"""
+            public.writeFile("/www/server/panel/vhost/nginx/phpmyadmin.conf",ssl_conf)
+            import panelPlugin
+            get.sName = "phpmyadmin"
+            v = panelPlugin.panelPlugin().get_soft_find(get)
+            public.writeFile("/tmp/2",str(v["ext"]["phpversion"]))
+            # apache配置
+            ssl_conf = '''Listen 887
+<VirtualHost *:887>
+    ServerAdmin webmaster@example.com
+    DocumentRoot "/www/server/phpmyadmin"
+    ServerName 0b842aa5.phpmyadmin
+    ServerAlias phpmyadmin.com
+    #ErrorLog "/www/wwwlogs/BT_default_error.log"
+    #CustomLog "/www/wwwlogs/BT_default_access.log" combined
+    
+    #SSL
+    SSLEngine On
+    SSLCertificateFile /www/server/panel/ssl/certificate.pem
+    SSLCertificateKeyFile /www/server/panel/ssl/privateKey.pem
+    SSLCipherSuite EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH
+    SSLProtocol All -SSLv2 -SSLv3
+    SSLHonorCipherOrder On
+    
+    #PHP
+    <FilesMatch \.php$>
+           SetHandler "proxy:unix:/tmp/php-cgi-{}.sock|fcgi://localhost"
+    </FilesMatch>
+    
+    #DENY FILES
+    <Files ~ (\.user.ini|\.htaccess|\.git|\.svn|\.project|LICENSE|README.md)$>
+      Order allow,deny
+      Deny from all
+    </Files>
+    
+    #PATH
+    <Directory "/www/wwwroot/bt.youbadbad.cn/">
+       SetOutputFilter DEFLATE
+       Options FollowSymLinks
+       AllowOverride All
+       Require all granted
+       DirectoryIndex index.php index.html index.htm default.php default.html default.htm
+    </Directory>
+</VirtualHost>'''.format(v["ext"]["phpversion"])
+            public.writeFile("/www/server/panel/vhost/apache/phpmyadmin.conf", ssl_conf)
         else:
-            listen_rep = "\n\s*listen.*;\n\s*.*"
-            listen_conf = "\n\t\tlisten 888 ssl;"
-            conf = re.sub(listen_rep, listen_conf, conf)
-
-            ssl_rep = "\n\s*#SSL-START(\n|.)+#SSL-END"
-            sslconf = """
-                    #error_page 404/404.html;"""
-            conf = re.sub(ssl_rep, sslconf, conf)
-            public.writeFile(filename,conf)
-        return public.returnMsg(True,'SET_PORT_SUCCESS')
+            if os.path.exists("/www/server/panel/vhost/nginx/phpmyadmin.conf"):
+                os.remove("/www/server/panel/vhost/nginx/phpmyadmin.conf")
+            if os.path.exists("/www/server/panel/vhost/apache/phpmyadmin.conf"):
+                os.remove("/www/server/panel/vhost/apache/phpmyadmin.conf")
+            public.serviceReload()
+            return public.returnMsg(True, '关闭成功')
+        public.serviceReload()
+        return public.returnMsg(True,'开启成功，请手动放行phpmyadmin ssl端口')
 
     #设置PHPMyAdmin
     def setPHPMyAdmin(self,get):
         import re;
-        #try:
         filename = self.__get_webserver_conffile()
         conf = public.readFile(filename);
+        if not conf: return public.returnMsg(False,'ERROR');
         if hasattr(get,'port'):
             mainPort = public.readFile('data/port.pl').strip();
             rulePort = ['80','443','21','20','8080','8081','8089','11211','6379']

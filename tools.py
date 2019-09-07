@@ -4,7 +4,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <2879625666@qq.com>
+# | Author: 黄文良 <287962566@qq.com>
 # +-------------------------------------------------------------------
 
 #------------------------------
@@ -29,13 +29,11 @@ pwd=$1
 mysqld_safe --skip-grant-tables&
 echo 'Changing password...';
 sleep 6
-m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.1.|5.5.|5.6.|mariadb|10.)")
+m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.1.|5.5.|5.6.|10.0|10.1)")
 if [ "$m_version" != "" ];then
     mysql -uroot -e "UPDATE mysql.user SET password=PASSWORD('${pwd}') WHERE user='root'";
 else
-    mysql -uroot -e "UPDATE mysql.user SET authentication_string='' WHERE user='root'";
-    mysql -uroot -e "FLUSH PRIVILEGES";
-    mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${pwd}';";
+    mysql -uroot -e "update mysql.user set authentication_string=password('${pwd}') where user='root';"
 fi
 mysql -uroot -e "FLUSH PRIVILEGES";
 pkill -9 mysqld_safe
@@ -411,14 +409,14 @@ def bt_cli(u_input = 0):
         print("(7) %s     (14) %s"% (public.GetMsg("CHANGE_MYSQL_PASS_FORCE"),public.GetMsg("GET_PANEL_DEFAULT_MSG")))
         print("(22) %s                (15) %s"% ("Display panel error log",public.GetMsg("CLEAR_SYS_RUBBISH")))
         print("(23) %s      (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
-        print("(0) Cancel")
+        print("(0) Cancel                                  (17) Set log cutting on/off compression")
         print(raw_tip)
         try:
             u_input = input(public.GetMsg("INPUT_CMD_NUM"))
             if sys.version_info[0] == 3: u_input = int(u_input)
         except: u_input = 0
 
-    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,22,23]
+    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,22,23]
     if not u_input in nums:
         print(raw_tip)
         print(public.GetMsg("CANCELLED"))
@@ -528,6 +526,16 @@ def bt_cli(u_input = 0):
         ClearSystem()
     elif u_input == 16:
         os.system("curl http://download.bt.cn/install/update6_en.sh|bash")
+    elif u_input == 17:
+        l_path = '/www/server/panel/data/log_not_gzip.pl'
+        if os.path.exists(l_path):
+            print("|-检测到已关闭gzip压缩功能,正在开启...")
+            os.remove(l_path)
+            print("|-已开启gzip压缩")
+        else:
+            print("|-检测到已开启gzip压缩功能,正在关闭...")
+            public.writeFile(l_path,'True')
+            print("|-已关闭gzip压缩")
     elif u_input == 22:
         os.system('tail -100 /www/server/panel/logs/error.log')
     elif u_input == 23:

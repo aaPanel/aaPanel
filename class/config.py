@@ -617,7 +617,10 @@ class config:
 
         reppath = '\nsession.save_path\s*=\s*"tcp\:\/\/([\d\.]+):(\d+).*\r?\n'
         passrep = '\nsession.save_path\s*=\s*"tcp://[\w\.\?\:]+=(.*)"\r?\n'
+        memcached = '\nsession.save_path\s*=\s*"([\d\.]+):(\d+)"'
         save_path = re.search(reppath, phpini)
+        if not save_path:
+            save_path = re.search(memcached, phpini)
         passwd = re.search(passrep, phpini)
         port = ""
         if passwd:
@@ -656,6 +659,15 @@ class config:
         rep = 'session.save_handler\s*=\s*(.+)\r?\n'
         val = 'session.save_handler = ' + g + '\n'
         phpini = re.sub(rep, val, phpini)
+        if g == "memcached":
+            if not re.search("memcached.so", phpini):
+                return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g))
+            rep = '\nsession.save_path\s*=\s*(.+)\r?\n'
+            val = '\nsession.save_path = "%s:%s" \n' % (ip,port)
+            if re.search(rep, phpini):
+                phpini = re.sub(rep, val, phpini)
+            else:
+                phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
         if g == "memcache":
             if not re.search("memcache.so", phpini):
                 return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g))
@@ -692,24 +704,40 @@ class config:
 
     # 获取Session文件数量
     def GetSessionCount(self, get):
-        d="/tmp"
+        d=["/tmp","/www/php_session"]
         count = 0
-        list = os.listdir(d)
-        for l in list:
-            if "sess_" in l:
-                count += 1
+        for i in d:
+            if not os.path.exists(i):
+                continue
+            list = os.listdir(i)
+            for l in list:
+                if os.path.isdir(i+"/"+l):
+                    l1 = os.listdir(i+"/"+l)
+                    for ll in l1:
+                        if "sess_" in ll:
+                            count += 1
+                    continue
+                if "sess_" in l:
+                    count += 1
 
         s = "find /tmp -mtime +1 |grep 'sess_'|wc -l"
-        old_file_conf = int(public.ExecShell(s)[0].split("\n")[0])
+        old_file = int(public.ExecShell(s)[0].split("\n")[0])
 
-        return {"total":count,"oldfile":old_file_conf}
+        s = "find /www/php_session -mtime +1 |grep 'sess_'|wc -l"
+        old_file += int(public.ExecShell(s)[0].split("\n")[0])
+
+        return {"total":count,"oldfile":old_file}
 
     # 删除老文件
     def DelOldSession(self,get):
         s = "find /tmp -mtime +1 |grep 'sess_'|xargs rm -f"
         os.system(s)
-        s = "find /tmp -mtime +1 |grep 'sess_'|wc -l"
-        old_file_conf = int(public.ExecShell(s)[0].split("\n")[0])
+        s = "find /www/php_session -mtime +1 |grep 'sess_'|xargs rm -f"
+        os.system(s)
+        # s = "find /tmp -mtime +1 |grep 'sess_'|wc -l"
+        # old_file_conf = int(public.ExecShell(s)[0].split("\n")[0])
+
+        old_file_conf = self.GetSessionCount(get)
         if old_file_conf == 0:
             return public.returnMsg(True, 'DEL_SUCCESS')
         else:
@@ -778,11 +806,11 @@ class config:
         elif get.t_type == '2':
             data['open'] = not data['open']
             stats = {True: public.GetMsg("TURN_ON"), False: public.GetMsg("CLOSE")}
-            public.WriteLog('SET_API', 'API_INTERFACE', (stats[data['open']],))
+            public.WriteLog('SET_API', '%s API_INTERFACE' % stats[data['open']])
             token = stats[data['open']] + public.GetMsg("SUCCESS")
         elif get.t_type == '3':
             data['limit_addr'] = get.limit_addr.split('\n')
-            public.WriteLog('SET_API', 'CHANGE_IP_LIMIT' , (get.limit_addr))
+            public.WriteLog('SET_API', 'CHANGE_IP_LIMIT [%s]' % get.limit_addr)
             token = public.GetMsg("SAVE_SUCCESS")
 
         public.WriteFile(save_path, json.dumps(data))
@@ -882,8 +910,13 @@ class config:
     def get_basic_auth_stat(self,get):
         path = 'config/basic_auth.json'
         is_install = True
-        if not os.path.exists(path): return {"basic_user":"","basic_pwd":"","open":False,"is_install":is_install}
-        ba_conf = json.loads(public.readFile(path))
+        result = {"basic_user":"","basic_pwd":"","open":False,"is_install":is_install}
+        if not os.path.exists(path): return result
+        try:
+            ba_conf = json.loads(public.readFile(path))
+        except:
+            os.remove(path)
+            return result
         ba_conf['is_install'] = is_install
         return ba_conf
 
@@ -895,7 +928,10 @@ class config:
         path = 'config/basic_auth.json'
         ba_conf = None
         if os.path.exists(path):
-            ba_conf = json.loads(public.readFile(path))
+            try:
+                ba_conf = json.loads(public.readFile(path))
+            except:
+                os.remove(path)
 
         if not ba_conf:
             ba_conf = {"basic_user":public.md5(get.basic_user.strip() + tips),"basic_pwd":public.md5(get.basic_pwd.strip() + tips),"open":is_open}
@@ -955,3 +991,58 @@ class config:
             public.writeFile(d_path,'True')
         public.WriteLog('TYPE_PANEL','%s Offline mode' % t_str)
         return public.returnMsg(True,'Successful setup!')
+
+    # 修改.user.ini文件
+    def _edit_user_ini(self,file,s_conf,act,session_path):
+        os.system("chattr -i {}".format(file))
+        conf = public.readFile(file)
+        if act == "1":
+            if "session.save_path" in conf:
+                return False
+            conf = conf + ":{}/".format(session_path)
+            conf = conf + "\n" + s_conf
+        else:
+            rep = "\n*session.save_path(.|\n)*files"
+            rep1 = ":{}".format(session_path)
+            conf = re.sub(rep,"",conf)
+            conf = re.sub(rep1,"",conf)
+        public.writeFile(file, conf)
+        os.system("chattr +i {}".format(file))
+
+    # 设置php_session存放到独立文件夹
+    def set_php_session_path(self,get):
+        '''
+        get.id      site id
+        get.act     0/1
+        :param get:
+        :return:
+        '''
+        import panelSite
+        site_info = public.M('sites').where('id=?', (get.id,)).field('name,path').find()
+        session_path = "/www/php_session/{}".format(site_info["name"])
+        if os.path.exists(session_path):
+            os.makedirs(session_path)
+        run_path = panelSite.panelSite().GetSiteRunPath(get)["runPath"]
+        user_ini_file = "{site_path}{run_path}/.user.ini".format(site_path=site_info["path"], run_path=run_path)
+        conf = "session.save_path={}/\nsession.save_handler = files".format(session_path)
+        if get.act == "1":
+            if not os.path.exists(user_ini_file):
+                public.writeFile(user_ini_file,conf)
+                os.system("chattr +i {}".format(user_ini_file))
+                return public.returnMsg(True,"Successful setup")
+            self._edit_user_ini(user_ini_file,conf,get.act,session_path)
+            return public.returnMsg(True, "Successful setup")
+        else:
+            self._edit_user_ini(user_ini_file,conf,get.act,session_path)
+            return public.returnMsg(True, "Successful setup")
+
+    # 获取php_session是否存放到独立文件夹
+    def get_php_session_path(self,get):
+        import panelSite
+        site_info = public.M('sites').where('id=?', (get.id,)).field('name,path').find()
+        run_path = panelSite.panelSite().GetSiteRunPath(get)["runPath"]
+        user_ini_file = "{site_path}{run_path}/.user.ini".format(site_path=site_info["path"], run_path=run_path)
+        conf = public.readFile(user_ini_file)
+        if conf and "session.save_path" in conf:
+            return True
+        return False

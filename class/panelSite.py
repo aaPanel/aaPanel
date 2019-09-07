@@ -12,7 +12,8 @@
 #------------------------------
 import io,re,public,os,sys,shutil,json,hashlib,socket,time
 from BTPanel import session
-from panelRedirect import  panelRedirect
+from panelRedirect import panelRedirect
+import site_dir_auth
 class panelSite(panelRedirect):
     siteName = None #网站名称
     sitePath = None #根目录
@@ -239,7 +240,7 @@ class panelSite(panelRedirect):
         get.path = self.__get_site_format_path(get.path)
         siteMenu = json.loads(get.webname)
         self.siteName     = self.ToPunycode(siteMenu['domain'].strip().split(':')[0]).strip().lower();
-        self.sitePath     = self.ToPunycodePath(self.GetPath(get.path.replace(' ','')));
+        self.sitePath     = self.ToPunycodePath(self.GetPath(get.path.replace(' ',''))).strip();
         self.sitePort     = get.port.strip().replace(' ','');
 
         if self.sitePort == "": get.port = "80";
@@ -409,6 +410,24 @@ class panelSite(panelRedirect):
 
         m_path = self.setupPath+'/panel/vhost/apache/proxy/'+siteName
         if os.path.exists(m_path): public.ExecShell("rm -rf %s" % m_path)
+
+        # 删除目录保护
+        _dir_aith_file = "%s/panel/data/site_dir_auth.json" % self.setupPath
+        _dir_aith_conf = public.readFile(_dir_aith_file)
+        if _dir_aith_conf:
+            try:
+                _dir_aith_conf = json.loads(_dir_aith_conf)
+                if siteName in _dir_aith_conf:
+                    del(_dir_aith_conf[siteName])
+            except:
+                pass
+        self.__write_config(_dir_aith_file,_dir_aith_conf)
+
+        dir_aith_path = self.setupPath+'/panel/vhost/nginx/dir_auth/'+siteName
+        if os.path.exists(dir_aith_path): public.ExecShell("rm -rf %s" % dir_aith_path)
+
+        dir_aith_path = self.setupPath+'/panel/vhost/apache/dir_auth/'+siteName
+        if os.path.exists(dir_aith_path): public.ExecShell("rm -rf %s" % dir_aith_path)
 
         #删除重定向
         __redirectfile = "%s/panel/data/redirect.conf" % self.setupPath
@@ -929,7 +948,14 @@ class panelSite(panelRedirect):
     
     #获取DNS-API列表
     def GetDnsApi(self,get):
-        apis = json.loads(public.ReadFile('./config/dns_api.json'))
+        api_path = './config/dns_api.json'
+        api_init = './config/dns_api_init.json'
+        if not os.path.exists(api_path):
+            if os.path.exists(api_init):
+                import shutil
+                shutil.copyfile(api_init,api_path)
+        apis = json.loads(public.ReadFile(api_path))
+
         path = '/root/.acme.sh'
         if not os.path.exists(path + '/account.conf'): path = "/.acme.sh"
         account = public.readFile(path + '/account.conf')
@@ -1348,12 +1374,14 @@ class panelSite(panelRedirect):
         conf = public.readFile(file);
         if conf:
             conf = conf.replace(Path, sitePath);
+            conf = conf.replace("#include","include")
             public.writeFile(file,conf)
         #apaceh
         file = self.setupPath + '/panel/vhost/apache/'+get.name+'.conf';
         conf = public.readFile(file);
         if conf:
             conf = conf.replace(Path, sitePath);
+            conf = conf.replace("#IncludeOptional", "IncludeOptional")
             public.writeFile(file,conf)
         
         public.M('sites').where("id=?",(id,)).setField('status','1');
@@ -1384,6 +1412,7 @@ class panelSite(panelRedirect):
         conf = public.readFile(file);
         if conf:
             conf = conf.replace(sitePath,path);
+            conf = conf.replace("include","#include")
             public.writeFile(file,conf)
         
         #apache
@@ -1391,6 +1420,7 @@ class panelSite(panelRedirect):
         conf = public.readFile(file);
         if conf:
             conf = conf.replace(sitePath,path);
+            conf = conf.replace("IncludeOptional", "#IncludeOptional")
             public.writeFile(file,conf)
         public.M('sites').where("id=?",(id,)).setField('status','0');
         public.serviceReload();
@@ -1622,6 +1652,8 @@ class panelSite(panelRedirect):
             os.system('mkdir -p ' + path);
             os.system('chmod 755 ' + path);
             os.system('chown www:www ' + path);
+            get.path = path
+            self.SetDirUserINI(get)
             siteName = public.M('sites').where('id=?',(get.id,)).getField('name')
             public.WriteLog('TYPE_SITE',"SITE_DIR_NOT_EXIST_RECREATE",(siteName,path))
         dirnames = []
@@ -2018,7 +2050,9 @@ server
         data = {}
         data['logs'] = self.GetLogsStatus(get);
         data['userini'] = False;
-        if os.path.exists(path+'/.user.ini'):
+        user_ini_file = path+'/.user.ini'
+        user_ini_conf = public.readFile(user_ini_file)
+        if user_ini_conf and "open_basedir" in user_ini_conf:
             data['userini'] = True;
         data['runPath'] = self.GetSiteRunPath(get);
         data['pass'] = self.GetHasPwd(get);
@@ -2029,7 +2063,9 @@ server
         useriniPath = path + '/.user.ini'
         if os.path.exists(useriniPath):
             public.ExecShell('chattr -i ' + useriniPath);
-            os.remove(useriniPath)
+            try:
+                os.remove(useriniPath)
+            except:pass
 
         for p1 in os.listdir(path):
             try:
@@ -2042,29 +2078,43 @@ server
                 if up < 3: self.DelUserInI(npath, up + 1);
             except: continue
         return True;
-            
-            
+
+
     #设置目录防御
     def SetDirUserINI(self,get):
         path = get.path
         runPath = self.GetRunPath(get)
         filename = path+runPath+'/.user.ini';
-        if os.path.exists(filename):
-            public.ExecShell("chattr -i "+filename);
-            os.remove(filename)
-            return public.returnMsg(True, 'SITE_BASEDIR_CLOSE_SUCCESS');
-
-        if len(runPath) > 1: 
-            self.DelUserInI(path + runPath);
-        else:
-            self.DelUserInI(path);
-        
-        public.writeFile(filename, 'open_basedir='+path+'/:/tmp/:/proc/');
-        public.ExecShell("chattr +i "+filename);
-        
-        return public.returnMsg(True,'SITE_BASEDIR_OPEN_SUCCESS');
-
-
+        conf = public.readFile(filename)
+        try:
+            public.ExecShell("chattr -i " + filename)
+            # if "open_basedir" not in conf:
+            #     return public.returnMsg(True, 'SITE_BASEDIR_CLOSE_SUCCESS');
+            if conf and "open_basedir" in conf:
+                rep = "\n*open_basedir.*"
+                conf = re.sub(rep,"",conf)
+                if not conf:
+                    os.remove(filename)
+                else:
+                    public.writeFile(filename,conf)
+                    public.ExecShell("chattr +i " + filename)
+                return public.returnMsg(True, 'SITE_BASEDIR_CLOSE_SUCCESS')
+            #
+            # if len(runPath) > 1:
+            #     self.DelUserInI(path + runPath);
+            # else:
+            #     self.DelUserInI(path);
+            if conf and "session.save_path" in conf:
+                rep = "session.save_path\s*=\s*(.*)"
+                s_path = re.search(rep,conf).groups(1)[0]
+                public.writeFile(filename, conf + '\nopen_basedir={}/:/tmp/:/proc/:{}'.format(path,s_path))
+            else:
+                public.writeFile(filename,'open_basedir={}/:/tmp/:/proc/'.format(path))
+            public.ExecShell("chattr +i " + filename)
+            return public.returnMsg(True,'SITE_BASEDIR_OPEN_SUCCESS');
+        except Exception as e:
+            public.ExecShell("chattr +i " + filename)
+            return e
 
        # 读配置
     def __read_config(self, path):
@@ -2950,6 +3000,7 @@ location %s
     def GetLogsStatus(self,get):
         filename = public.GetConfigValue('setup_path') + '/panel/vhost/'+public.get_webserver()+'/' + get.name + '.conf';
         conf = public.readFile(filename);
+        if not conf: return True
         if conf.find('#ErrorLog') != -1: return False;
         if conf.find("access_log  /dev/null") != -1: return False;
         return True;
@@ -3162,13 +3213,19 @@ location %s
             if os.path.exists(filename):
                 conf = public.readFile(filename)
                 rep = '\s*root\s*(.+);'
-                path = re.search(rep,conf).groups()[0];
+                path = re.search(rep,conf)
+                if not path:
+                    return public.returnMsg(False,"Get Site run path false")
+                path = path.groups()[0]
         else:
             filename = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
             if os.path.exists(filename):
                 conf = public.readFile(filename)
                 rep = '\s*DocumentRoot\s*"(.+)"\s*\n'
-                path = re.search(rep,conf).groups()[0];
+                path = re.search(rep,conf)
+                if not path:
+                    return public.returnMsg(False,"Get Site run path false")
+                path = path.groups()[0]
         
         data = {}
         if sitePath == path: 
@@ -3190,12 +3247,12 @@ location %s
         
         data['dirs'] = dirnames;
         return data;
-    
+
     #设置当前站点运行目录
     def SetSiteRunPath(self,get):
         siteName = public.M('sites').where('id=?',(get.id,)).getField('name');
         sitePath = public.M('sites').where('id=?',(get.id,)).getField('path');
-        
+        old_run_path = self.GetRunPath(get)
         #处理Nginx
         filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
         if os.path.exists(filename):
@@ -3214,10 +3271,16 @@ location %s
             conf = conf.replace(path,sitePath + get.runPath);
             public.writeFile(filename,conf);
 
-        self.DelUserInI(sitePath);
-        get.path = sitePath;
-        self.SetDirUserINI(get);
-        
+        # self.DelUserInI(sitePath);
+        # get.path = sitePath;
+        # self.SetDirUserINI(get);
+        s_path = sitePath+old_run_path+"/.user.ini"
+        d_path = sitePath + get.runPath+"/.user.ini"
+        if s_path != d_path:
+            os.system("chattr -i {}".format(s_path))
+            os.system("mv {} {}".format(s_path,d_path))
+            os.system("chattr +i {}".format(d_path))
+
         public.serviceReload();
         return public.returnMsg(True,'SET_SUCCESS');
     
@@ -3250,7 +3313,7 @@ location %s
             if os.path.exists(path): os.remove(path)
 
         if get.name == '0':
-            os.remove(default_site_save)
+            if os.path.exists(default_site_save): os.remove(default_site_save)
             return public.returnMsg(True,'SET_SUCCESS')
 
         #处理新的
@@ -3457,3 +3520,23 @@ location %s
         for s_id in site_ids:
             site_sql.where("id=?",(s_id,)).setField("type_id",get.id)
         return public.returnMsg(True,"SET_SUCCESS")
+
+    # 设置目录保护
+    def set_dir_auth(self,get):
+        sd = site_dir_auth.SiteDirAuth()
+        return sd.set_dir_auth(get)
+
+    # 删除目录保护
+    def delete_dir_auth(self,get):
+        sd = site_dir_auth.SiteDirAuth()
+        return sd.delete_dir_auth(get)
+
+    # 获取目录保护列表
+    def get_dir_auth(self,get):
+        sd = site_dir_auth.SiteDirAuth()
+        return sd.get_dir_auth(get)
+
+    # 修改目录保护密码
+    def modify_dir_auth_pass(self,get):
+        sd = site_dir_auth.SiteDirAuth()
+        return sd.modify_dir_auth_pass(get)

@@ -98,7 +98,7 @@ def request_check():
     if domain_check: return domain_check
     if public.is_local():
         not_networks = ['uninstall_plugin','install_plugin','UpdatePanel']
-        if request.args.get('action') in not_networks:
+        if request.args.get('action') in not_networks: 
             return public.returnJson(False,'This feature is not available in offline mode!'),json_header
 
     if app.config['BASIC_AUTH_OPEN']:
@@ -109,7 +109,7 @@ def request_check():
         tips = '_bt.cn'
         if public.md5(auth.username.strip() + tips) != app.config['BASIC_AUTH_USERNAME'] or public.md5(auth.password.strip() + tips) != app.config['BASIC_AUTH_PASSWORD']:
             return send_authenticated()
-
+    
 
 @app.teardown_request
 def request_end(reques = None):
@@ -162,6 +162,7 @@ def login():
 
     if hasattr(get,'dologin'):
         login_path = '/login'
+        if not 'login' in session: return redirect(login_path)
         if os.path.exists(admin_path_file): login_path = route_path
         if session['login'] != False:
             session['login'] = False;
@@ -216,7 +217,7 @@ def site(pdata = None):
     import panelSite
     siteObject = panelSite.panelSite()
         
-    defs = ('GetRedirectFile','SaveRedirectFile','DeleteRedirect','GetRedirectList','CreateRedirect','ModifyRedirect','GetSiteLogs','GetSiteDomains','GetSecurity','SetSecurity','ProxyCache','CloseToHttps','HttpToHttps','SetEdate','SetRewriteTel','GetCheckSafe','CheckSafe','GetDefaultSite','SetDefaultSite','CloseTomcat','SetTomcat','apacheAddPort','AddSite','GetPHPVersion','SetPHPVersion','DeleteSite','AddDomain','DelDomain','GetDirBinding','AddDirBinding','GetDirRewrite','DelDirBinding','get_site_types','add_site_type','remove_site_type','modify_site_type_name','set_site_type','UpdateRulelist','SetSiteRunPath','GetSiteRunPath','SetPath','SetIndex','GetIndex','GetDirUserINI','SetDirUserINI','GetRewriteList','SetSSL','SetSSLConf','CreateLet','CloseSSLConf','GetSSL','SiteStart','SiteStop','Set301Status','Get301Status','CloseLimitNet','SetLimitNet','GetLimitNet','RemoveProxy','GetProxyList','GetProxyDetals','CreateProxy','ModifyProxy','GetProxyFile','SaveProxyFile','ToBackup','DelBackup','GetSitePHPVersion','logsOpen','GetLogsStatus','CloseHasPwd','SetHasPwd','GetHasPwd','GetDnsApi','SetDnsApi')
+    defs = ('modify_dir_auth_pass','get_dir_auth','delete_dir_auth','set_dir_auth','GetRedirectFile','SaveRedirectFile','DeleteRedirect','GetRedirectList','CreateRedirect','ModifyRedirect','GetSiteLogs','GetSiteDomains','GetSecurity','SetSecurity','ProxyCache','CloseToHttps','HttpToHttps','SetEdate','SetRewriteTel','GetCheckSafe','CheckSafe','GetDefaultSite','SetDefaultSite','CloseTomcat','SetTomcat','apacheAddPort','AddSite','GetPHPVersion','SetPHPVersion','DeleteSite','AddDomain','DelDomain','GetDirBinding','AddDirBinding','GetDirRewrite','DelDirBinding','get_site_types','add_site_type','remove_site_type','modify_site_type_name','set_site_type','UpdateRulelist','SetSiteRunPath','GetSiteRunPath','SetPath','SetIndex','GetIndex','GetDirUserINI','SetDirUserINI','GetRewriteList','SetSSL','SetSSLConf','CreateLet','CloseSSLConf','GetSSL','SiteStart','SiteStop','Set301Status','Get301Status','CloseLimitNet','SetLimitNet','GetLimitNet','RemoveProxy','GetProxyList','GetProxyDetals','CreateProxy','ModifyProxy','GetProxyFile','SaveProxyFile','ToBackup','DelBackup','GetSitePHPVersion','logsOpen','GetLogsStatus','CloseHasPwd','SetHasPwd','GetHasPwd','GetDnsApi','SetDnsApi')
     return publicObject(siteObject,defs,None,pdata);
 
 @app.route('/ftp',methods=method_all)
@@ -250,13 +251,15 @@ def FtpPort():
 
 @app.route('/database',methods=method_all)
 def database(pdata = None):
+    import ajax
     comReturn = comm.local()
     if comReturn: return comReturn
     if request.method == method_get[0] and not pdata:
         pmd = get_phpmyadmin_dir();
         session['phpmyadminDir'] = False
         if pmd: 
-            session['phpmyadminDir'] = 'http://' + public.GetHost() + ':'+ pmd[1] + '/' + pmd[0];
+            session['phpmyadminDir'] = 'http://' + public.GetHost() + ':'+ pmd[1] + '/' + pmd[0]
+        ajax.ajax().set_phpmyadmin_session()
         data = {}
         data['isSetup'] = os.path.exists(public.GetConfigValue('setup_path') + '/mysql/bin');
         data['mysql_root'] = public.M('config').where('id=?',(1,)).getField('mysql_root');
@@ -353,6 +356,15 @@ def san_baseline(pdata=None):
     defs = ('start', 'get_api_log', 'get_resut', 'get_ssh_errorlogin','repair','repair_all')
     return publicObject(dataObject, defs, None, pdata)
 
+@app.route('/password', methods=method_all)
+def panel_password(pdata=None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import password
+    dataObject = password.password()
+    defs = ('set_root_password', 'get_mysql_root', 'set_mysql_password', 'set_panel_password', 'SetPassword', 'SetSshKey','StopKey','GetConfig','StopPassword','GetKey','get_databses','rem_mysql_pass','set_mysql_access',"get_panel_username")
+    return publicObject(dataObject, defs, None, pdata)
+
 
 @app.route('/bak', methods=method_all)
 def backup_bak(pdata=None):
@@ -363,7 +375,6 @@ def backup_bak(pdata=None):
     defs = ('get_sites', 'get_databases', 'backup_database', 'backup_site', 'backup_path', 'get_database_progress',
             'get_site_progress', 'down','get_down_progress','download_path','backup_site_all','get_all_site_progress','backup_date_all','get_all_date_progress')
     return publicObject(dataObject, defs, None, pdata)
-
 
 
 @app.route('/abnormal', methods=method_all)
@@ -388,7 +399,7 @@ def files(pdata = None):
     defs = ('CheckExistsFiles','GetExecLog','GetSearch','ExecShell','GetExecShellMsg','UploadFile','GetDir','CreateFile','CreateDir','DeleteDir','DeleteFile',
             'CopyFile','CopyDir','MvFile','GetFileBody','SaveFileBody','Zip','UnZip','SearchFiles','upload','read_history',
             'GetFileAccess','SetFileAccess','GetDirSize','SetBatchData','BatchPaste','install_rar','get_path_size',
-            'DownloadFile','GetTaskSpeed','CloseLogs','InstallSoft','UninstallSoft','SaveTmpFile','GetTmpFile',
+            'DownloadFile','GetTaskSpeed','CloseLogs','InstallSoft','UninstallSoft','SaveTmpFile','GetTmpFile','del_files_store','add_files_store','get_files_store','del_files_store_types','add_files_store_types',
             'RemoveTask','ActionTask','Re_Recycle_bin','Get_Recycle_bin','Del_Recycle_bin','Close_Recycle_bin','Recycle_bin')
     return publicObject(filesObject,defs,None,pdata);
 
@@ -449,7 +460,7 @@ def config(pdata = None):
         if public.is_local(): data['is_local'] = 'checked'
         return render_template( 'config.html',data=data)
     import config
-    defs = ('get_cert_source','set_local','set_debug','get_panel_error_logs','clean_panel_error_logs','get_basic_auth_stat','set_basic_auth','get_cli_php_version','get_tmp_token','set_cli_php_version','DelOldSession', 'GetSessionCount', 'SetSessionConf', 'GetSessionConf','get_ipv6_listen','set_ipv6_status','GetApacheValue','SetApacheValue','GetNginxValue','SetNginxValue','get_token','set_token','set_admin_path','is_pro','get_php_config','get_config','SavePanelSSL','GetPanelSSL','GetPHPConf','SetPHPConf','GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL','SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize','getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl','ClosePanel','AutoUpdatePanel','SetPanelLock')
+    defs = ('get_php_session_path','set_php_session_path','get_cert_source','set_local','set_debug','get_panel_error_logs','clean_panel_error_logs','get_basic_auth_stat','set_basic_auth','get_cli_php_version','get_tmp_token','set_cli_php_version','DelOldSession', 'GetSessionCount', 'SetSessionConf', 'GetSessionConf','get_ipv6_listen','set_ipv6_status','GetApacheValue','SetApacheValue','GetNginxValue','SetNginxValue','get_token','set_token','set_admin_path','is_pro','get_php_config','get_config','SavePanelSSL','GetPanelSSL','GetPHPConf','SetPHPConf','GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL','SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize','getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl','ClosePanel','AutoUpdatePanel','SetPanelLock')
     return publicObject(config.config(),defs,None,pdata);
 
 @app.route('/ajax',methods=method_all)
@@ -458,7 +469,7 @@ def ajax(pdata = None):
     if comReturn: return comReturn
     import ajax
     ajaxObject = ajax.ajax()
-    defs = ('set_phpmyadmin_ssl','get_phpmyadmin_ssl','check_user_auth','to_not_beta','get_beta_logs','apple_beta','GetApacheStatus','GetCloudHtml','get_load_average','GetOpeLogs','GetFpmLogs','GetFpmSlowLogs','SetMemcachedCache','GetMemcachedStatus','GetRedisStatus','GetWarning','SetWarning','CheckLogin','GetSpeed','GetAd','phpSort','ToPunycode','GetBetaStatus','SetBeta','setPHPMyAdmin','delClose','KillProcess','GetPHPInfo','GetQiniuFileList','UninstallLib','InstallLib','SetQiniuAS','GetQiniuAS','GetLibList','GetProcessList','GetNetWorkList','GetNginxStatus','GetPHPStatus','GetTaskCount','GetSoftList','GetNetWorkIo','GetDiskIo','GetCpuIo','CheckInstalled','UpdatePanel','GetInstalled','GetPHPConfig','SetPHPConfig')
+    defs = ('change_phpmyadmin_ssl_port','set_phpmyadmin_ssl','get_phpmyadmin_ssl','check_user_auth','to_not_beta','get_beta_logs','apple_beta','GetApacheStatus','GetCloudHtml','get_load_average','GetOpeLogs','GetFpmLogs','GetFpmSlowLogs','SetMemcachedCache','GetMemcachedStatus','GetRedisStatus','GetWarning','SetWarning','CheckLogin','GetSpeed','GetAd','phpSort','ToPunycode','GetBetaStatus','SetBeta','setPHPMyAdmin','delClose','KillProcess','GetPHPInfo','GetQiniuFileList','UninstallLib','InstallLib','SetQiniuAS','GetQiniuAS','GetLibList','GetProcessList','GetNetWorkList','GetNginxStatus','GetPHPStatus','GetTaskCount','GetSoftList','GetNetWorkIo','GetDiskIo','GetCpuIo','CheckInstalled','UpdatePanel','GetInstalled','GetPHPConfig','SetPHPConfig')
     return publicObject(ajaxObject,defs,None,pdata);
 
 @app.route('/system',methods=method_all)
@@ -549,6 +560,7 @@ def panel_public():
     get = get_input();
     get.client_ip = public.GetClientIp();
     if not hasattr(get,'name'): get.name = ''
+    if not hasattr(get,'fun'): return abort(404)
     if not public.path_safe_check("%s/%s" % (get.name,get.fun)): return abort(404)
     if get.fun in ['scan_login', 'login_qrcode', 'set_login', 'is_scan_ok', 'blind','static']:
         if get.fun == 'static':
@@ -622,7 +634,7 @@ def panel_other(name=None,fun = None,stype=None):
         if len(tmp) == 1:  tmp.append('')
         stype = tmp[1]
     args.fun = fun
-
+    
     #初始化插件对象
     try:
         is_php = os.path.exists(p_path + '/index.php')
@@ -854,7 +866,8 @@ except:
 @socketio.on('connect')
 def socket_connect(msg=None):
     if not check_login():
-        raise emit('server_response',{'data':public.getMsg('INIT_WEBSSH_LOGOUT')})
+        emit('server_response',{'data':public.getMsg('111')})
+        return False
 
 @socketio.on('webssh')
 def webssh(msg):
@@ -907,14 +920,19 @@ def connect_ssh(user=None,passwd=None):
             import firewalls
             fw = firewalls.firewalls()
             get = common.dict_obj()
-            get.status = '0';
-            fw.SetSshStatus(get)
+            ssh_status = fw.GetSshInfo(get)['status']
+            if not ssh_status:
+                get.status = '0';
+                fw.SetSshStatus(get)
+
             if not user:
                 ssh.connect('127.0.0.1', public.GetSSHPort(),pkey=key)
             else:
                 ssh.connect('127.0.0.1', public.GetSSHPort(),username=user,password=passwd)
-            get.status = '1';
-            fw.SetSshStatus(get);
+
+            if not ssh_status:
+                get.status = '1';
+                fw.SetSshStatus(get);
         shell = ssh.invoke_shell(term='xterm', width=100, height=29)
         shell.setblocking(0)
         return True
@@ -1065,13 +1083,21 @@ def internalerror(e):
 #获取输入数据
 def get_input():
     data = common.dict_obj()
-    post = request.form.to_dict()
-    get = request.args.to_dict()
-    data.args = get
-    for key in get.keys():
-        data[key] = str(get[key])
-    for key in post.keys():
-        data[key] = str(post[key])
+    exludes = ['blob']
+    for key in request.args.keys():
+        data[key] = str(request.args.get(key,''))
+    try:
+        for key in request.form.keys():
+            if key in exludes: continue
+            data[key] = str(request.form.get(key,''))
+    except:
+        try:
+            post = request.form.to_dict()
+            for key in post.keys():
+                if key in exludes: continue
+                data[key] = str(post[key])
+        except:
+            pass
 
     if not hasattr(data,'data'): data.data = []
     return data

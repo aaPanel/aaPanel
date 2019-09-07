@@ -56,6 +56,10 @@ class bt_task:
             else:
                 sql = sql.where('status=?',(get.status,))
         data = sql.field('id,name,type,shell,other,status,exectime,endtime,addtime').order('id asc').limit('10').select();
+        if type(data) == str:
+            public.WriteLog('Task queue',data)
+            return []
+
         if not 'num' in get: get.num = 15
         num = int(get.num)
         for i in range(len(data)):
@@ -133,7 +137,6 @@ class bt_task:
             down_file = downloadFile.downloadFile()
             down_file.logPath = log_file
             print(down_file.DownloadFile(task_shell,other))
-            os.system("chown www.www {}".format(other))
         elif task_type == 2:    #解压文件
             zip_info = json.loads(other)
             self._unzip(task_shell,zip_info['dfile'],zip_info['password'],log_file)

@@ -74,7 +74,7 @@ class plugin_deployment:
         m_uri = pinfo['min_image']
         pinfo['min_image'] = '/static/img/dep_ico/%s.png' % pinfo['name']
         if sys.version_info[0] == 2: filename = filename.encode('utf-8')
-        if os.path.exists(filename):
+        if os.path.exists(filename): 
             if os.path.getsize(filename) > 100: return pinfo
         os.system("wget -O " + filename + ' http://www.bt.cn' + m_uri + " &")
         return pinfo
@@ -172,7 +172,7 @@ class plugin_deployment:
         jsonFile = self.__setupPath + '/deployment_list_other.json';
         if not os.path.exists(jsonFile): public.returnMsg(False,'could not find [%s]' % p_name)
         data = json.loads(public.readFile(jsonFile));
-
+        
         for i in range(len(data)):
             if data[i]['name'] == p_name: return data[i]
         return public.returnMsg(False,'could not find  [%s]' % p_name)
@@ -354,7 +354,7 @@ class plugin_deployment:
             if pinfo['run_path'] != '/' and not os.path.exists(swpath):
                 public.writeFile(swpath, public.readFile(swfile))
 
-
+                
         #删除伪静态文件
         public.ExecShell("rm -f " + path + '/*.rewrite')
 
@@ -392,7 +392,9 @@ class plugin_deployment:
         #清理文件和目录
         self.WriteLogs(json.dumps({'name':'清理多余的文件','total':0,'used':0,'pre':0,'speed':0}));
         if type(pinfo['remove_file']) == str : pinfo['remove_file'] = pinfo['remove_file'].strip().split(',')
+        print(pinfo['remove_file'])
         for f_path in pinfo['remove_file']:
+            if not f_path: continue
             filename = (path + '/' + f_path).replace('//','/')
             if os.path.exists(filename):
                 if not os.path.isdir(filename):
@@ -436,10 +438,28 @@ class plugin_deployment:
                 os.remove(p_info)
                 i_ndex_html = path + '/index.html'
                 if os.path.exists(i_ndex_html): os.remove(i_ndex_html)
-                os.system("\cp -arf " + p_tmp + '/. ' + path + '/')
+                if not self.copy_to(p_tmp,path): os.system(("\cp -arf " + p_tmp + '/. ' + path + '/').replace('//','/'))
             except: pass
         os.system("rm -rf " + self.__tmp + '/*')
         return p_config
+
+
+    def copy_to(self,src,dst):
+        try:
+            if src[-1] == '/': src = src[:-1]
+            if dst[-1] == '/': dst = dst[:-1]
+            if not os.path.exists(src): return False
+            if not os.path.exists(dst): os.makedirs(dst)
+            import shutil
+            for p_name in os.listdir(src):
+                f_src = src + '/' + p_name
+                f_dst = dst + '/' + p_name
+                if os.path.isdir(f_src):
+                    print(shutil.copytree(f_src,f_dst))
+                else:
+                    print(shutil.copyfile(f_src,f_dst))
+            return True
+        except: return False
 
 
     #提交安装统计
@@ -454,7 +474,7 @@ class plugin_deployment:
     #获取进度
     def GetSpeed(self,get):
         try:
-            if not os.path.exists(self.logPath): public.returnMsg(False,'There are currently no deployment tasks!');
+            if not os.path.exists(self.logPath):return public.returnMsg(False,'There are currently no deployment tasks!');
             return json.loads(public.readFile(self.logPath));
         except:
             return {'name':'Ready to deploy','total':0,'used':0,'pre':0,'speed':0}

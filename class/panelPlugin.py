@@ -130,8 +130,11 @@ class panelPlugin:
         if 'version' in get:
             for versionInfo in pluginInfo['versions']:
                 if versionInfo['m_version'] != get.version: continue
-                if not self.check_cpu_limit(versionInfo['cpu_limit']): return public.returnMsg(False,'At least [{0}] CPU cores are required to install'.format(versionInfo['cpu_limit']))
-                if not self.check_mem_limit(versionInfo['mem_limit']): return public.returnMsg(False,'At least [{0} MB] memory is required to install'.format(versionInfo['mem_limit']))
+                if not 'type' in get: get.type = '0'
+                if int(get.type) > 3: get.type = '0'
+                if get.type == '0':
+                    if not self.check_cpu_limit(versionInfo['cpu_limit']): return public.returnMsg(False,'At least [{0}] CPU cores are required to install'.format(versionInfo['cpu_limit']))
+                    if not self.check_mem_limit(versionInfo['mem_limit']): return public.returnMsg(False,'At least [{0} MB] memory is required to install'.format(versionInfo['mem_limit']))
                 if not self.check_os_limit(versionInfo['os_limit']): 
                     m_ps = {0:public.GetMsg("ALL"),1:"Centos",2:"Ubuntu/Debian"}
                     return public.returnMsg(False,'ONLY_SUP_SYS' , (m_ps[int(versionInfo['os_limit'])],))

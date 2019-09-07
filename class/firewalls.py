@@ -211,7 +211,6 @@ class firewalls:
     
     #改远程端口
     def SetSshPort(self,get):
-        #return public.returnMsg(False,'演示服务器，禁止此操作!');
         port = get.port
         if int(port) < 22 or int(port) > 65535: return public.returnMsg(False,'FIREWALL_SSH_PORT_ERR');
         ports = ['21','25','80','443','8080','888','8888'];
@@ -225,7 +224,7 @@ class firewalls:
         public.writeFile(file,conf)
         
         if self.__isFirewalld:
-            self.__Obj.AddAcceptPort(port);
+            public.ExecShell('firewall-cmd --permanent --zone=public --add-port='+port+'/tcp')
             public.ExecShell('setenforce 0');
             public.ExecShell('sed -i "s#SELINUX=enforcing#SELINUX=disabled#" /etc/selinux/config');
             public.ExecShell("systemctl restart sshd.service")
@@ -237,7 +236,8 @@ class firewalls:
             public.ExecShell("/etc/init.d/sshd restart")
         
         self.FirewallReload()
-        public.M('firewall').where("ps=?",(public.GetMsg("SSH_SERVER"),)).setField('port',port)
+        public.M('firewall').where("ps=? or ps=? or port=?",('SSH remote management service','SSH remote service',port)).delete()
+        public.M('firewall').add('port,ps,addtime',(port,'SSH remote service',time.strftime('%Y-%m-%d %X',time.localtime())))
         public.WriteLog("TYPE_FIREWALL", "FIREWALL_SSH_PORT",(port,))
         return public.returnMsg(True,'EDIT_SUCCESS') 
     
@@ -245,8 +245,12 @@ class firewalls:
     def GetSshInfo(self,get):
         file = '/etc/ssh/sshd_config'
         conf = public.readFile(file)
+        if not conf: conf = ''
         rep = "#*Port\s+([0-9]+)\s*\n"
-        port = re.search(rep,conf).groups(0)[0]
+        tmp1 = re.search(rep,conf)
+        port = '22'
+        if tmp1:
+            port = tmp1.groups(0)[0]
         import system
         panelsys = system.system();
         
@@ -276,9 +280,7 @@ class firewalls:
             if tmp == '1': isPing = False
         except:
             isPing = True
-        
-        
-        
+
         data = {}
         data['port'] = port
         data['status'] = status

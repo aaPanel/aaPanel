@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: 曹觉心 <314866873@qq.com>
 # +-------------------------------------------------------------------
-import os,sys,json,time
+import os,sys,json,time,re
 setup_path = '/www/server/panel'
 os.chdir(setup_path)
 sys.path.append("class/")
@@ -81,7 +81,6 @@ class panelLets:
 
     #格式化错误输出
     def get_error(self,error):
-
         if error.find("Max checks allowed") >= 0 :
             return "CA can't verify your domain name, please check if the domain name resolution is correct, or wait 5-10 minutes and try again."
         elif error.find("Max retries exceeded with") >= 0:
@@ -90,13 +89,36 @@ class panelLets:
             return "The domain name does not belong to this DNS service provider. Please ensure that the domain name is filled in correctly."
         elif error.find('login token ID is invalid') >=0:
             return 'The DNS server connection failed. Please check if the key is correct.'
-        elif "too many certificates already issued for exact set of domains" in error or "Error creating new account :: too many registrations for this IP" in error:
-            return '<h2>You have failed more than 5 verifications in 1 hour. Please wait 1 hour and try again.</h2>'
-        elif "DNS problem: NXDOMAIN looking up A for" in error or "No valid IP addresses found for" in error or "Invalid response from" in error:
-            return '<h2>The signing failed, the domain name resolution error, or the resolution is not valid, or the domain name is not filed!</h2>'
+        elif "too many certificates already issued for exact set of domains" in error:
+            return 'The signing failed, the domain name %s exceeded the weekly number of repeated issuances!' % re.findall("exact set of domains: (.+):", error)
+        elif "Error creating new account :: too many registrations for this IP" in error:
+            return 'The signing failed, the current server IP has reached the limit of creating up to 10 accounts every 3 hours..'
+        elif "DNS problem: NXDOMAIN looking up A for" in error:
+            return 'The verification failed, the domain name was not resolved, or the resolution did not take effect.!'
+        elif "Invalid response from" in error:
+            return 'Authentication failed, domain name resolution error or verification URL could not be accessed!'
         elif error.find('TLS Web Server Authentication') != -1:
             public.restart_panel()
-            return "Failed to connect to the CA server, please try again later."
+            return "Failed to connect to CA server, please try again later."
+        elif error.find('Name does not end in a public suffix') != -1:
+            return "Unsupported domain name %s, please check if the domain name is correct!" % re.findall("Cannot issue for \"(.+)\":", error)
+        elif error.find('No valid IP addresses found for') != -1:
+            return "The domain name %s did not find a resolution record. Please check if the domain name is resolved.!" % re.findall("No valid IP addresses found for (.+)", error)
+        elif error.find('No TXT record found at') != -1:
+            return "If a valid TXT resolution record is not found in the domain name %s, please check if the TXT record is correctly parsed. If it is applied by DNSAPI, please try again in 10 minutes.!" % re.findall(
+                "No TXT record found at (.+)", error)
+        elif error.find('Incorrect TXT record') != -1:
+            return "Found the wrong TXT record on %s: %s, please check if the TXT resolution is correct. If it is applied by DNSAPI, please try again in 10 minutes.!" % (
+            re.findall("found at (.+)", error), re.findall("Incorrect TXT record \"(.+)\"", error))
+        elif error.find('Domain not under you or your user') != -1:
+            return "This domain name does not exist under this dnspod account. Adding parsing failed.!"
+        elif error.find('SERVFAIL looking up TXT for') != -1:
+            return "If a valid TXT resolution record is not found in the domain name %s, please check if the TXT record is correctly parsed. If it is applied by DNSAPI, please try again in 10 minutes.!" % re.findall(
+                "looking up TXT for (.+)", error)
+        elif error.find('Timeout during connect') != -1:
+            return "Connection timed out, CA server could not access your website!"
+        elif error.find("DNS problem: SERVFAIL looking up CAA for") != -1:
+            return "The domain name %s is currently required to verify the CAA record. Please manually resolve the CAA record, or try again after 1 hour.!" % re.findall("looking up CAA for (.+)", error)
         else:
             return error;
 
@@ -328,7 +350,7 @@ class panelLets:
                         BTPanel.dns_client.respond_to_challenge(i["acme_keyauthorization"], i["dns_challenge_url"])
 
                 for i in responders:
-                    BTPanel.dns_client.check_authorization_status(i["authorization_url"], ["valid"])
+                    BTPanel.dns_client.check_authorization_status(i["authorization_url"], ["valid","invalid"])
 
                 certificate_url = BTPanel.dns_client.send_csr(finalize_url)
                 certificate = BTPanel.dns_client.download_certificate(certificate_url)
@@ -345,8 +367,13 @@ class panelLets:
                     result['msg'] = 'Certificate acquisition failed, please try again later.'
 
         except Exception as e:
-            print(public.get_error_info())
-            result['msg'] =  self.get_error(str(e)) 
+            res = str(e).split('>>>>')
+            err = False
+            try:
+                err = json.loads(res[1])
+            except: err = False
+            result['msg'] =  [self.get_error(res[0]),err]
+
         return result
 
     #dns验证
@@ -375,26 +402,27 @@ class panelLets:
                     dns_name = identifier_auth["domain"]
                     dns_token = identifier_auth["dns_token"]
                     dns_challenge_url = identifier_auth["dns_challenge_url"]
-
                     acme_keyauthorization, domain_dns_value = client.get_keyauthorization(dns_token)
                     dns_class.create_dns_record(public.de_punycode(dns_name), domain_dns_value)
                     self.check_dns(self.get_acme_name(dns_name),domain_dns_value)
                     dns_names_to_delete.append({"dns_name": public.de_punycode(dns_name), "domain_dns_value": domain_dns_value})
                     responders.append({"authorization_url": authorization_url, "acme_keyauthorization": acme_keyauthorization,"dns_challenge_url": dns_challenge_url} )
-                n = 0
-                while n<2:
-                    print(n+1," verification")
-                    try:
-                        for i in responders:
-                            auth_status_response = client.check_authorization_status(i["authorization_url"])
-                            r_data = auth_status_response.json()
-                            if r_data["status"] == "pending":
-                                client.respond_to_challenge(i["acme_keyauthorization"], i["dns_challenge_url"])
 
-                        for i in responders: client.check_authorization_status(i["authorization_url"], ["valid"])
-                        break
-                    except:
-                        n+=1
+                try:
+                    for i in responders:
+                        auth_status_response = client.check_authorization_status(i["authorization_url"])
+                        r_data = auth_status_response.json()
+                        if r_data["status"] == "pending":
+                            client.respond_to_challenge(i["acme_keyauthorization"], i["dns_challenge_url"])
+
+                    for i in responders: client.check_authorization_status(i["authorization_url"], ["valid","invalid"])
+                except:
+                    for i in responders:
+                        auth_status_response = client.check_authorization_status(i["authorization_url"])
+                        r_data = auth_status_response.json()
+                        if r_data["status"] == "pending":
+                            client.respond_to_challenge(i["acme_keyauthorization"], i["dns_challenge_url"])
+                    for i in responders: client.check_authorization_status(i["authorization_url"], ["valid","invalid"])
 
                 certificate_url = client.send_csr(finalize_url)
                 certificate = client.download_certificate(certificate_url)
@@ -407,7 +435,6 @@ class panelLets:
                     result['status'] = True
 
             except Exception as e:
-                print(public.get_error_info())
                 raise e
             finally:   
                 try:
@@ -415,9 +442,16 @@ class panelLets:
                 except :
                     pass
 
-        except Exception as err:  
-            print(public.get_error_info())
-            result['msg'] =  self.get_error(str(err)) 
+        except Exception as e:
+            try:
+                for i in dns_names_to_delete: dns_class.delete_dns_record(i["dns_name"], i["domain_dns_value"])
+            except:pass
+            res = str(e).split('>>>>')
+            err = False
+            try:
+                err = json.loads(res[1])
+            except: err = False
+            result['msg'] =  [self.get_error(res[0]),err]
         return result
 
     #文件验证
@@ -466,19 +500,18 @@ class panelLets:
                         pass
                     n += 1
                     time.sleep(1)
-                if is_check:
-                    sucess_domains.append(http_name) 
-                    responders.append({"authorization_url": authorization_url, "acme_keyauthorization": acme_keyauthorization,"http_challenge_url": http_challenge_url})
+                sucess_domains.append(http_name)
+                responders.append({"authorization_url": authorization_url, "acme_keyauthorization": acme_keyauthorization,"http_challenge_url": http_challenge_url})
 
             if len(sucess_domains) > 0: 
                 #验证
                 for i in responders:
-                    auth_status_response = client.check_authorization_status(i["authorization_url"])          
+                    auth_status_response = client.check_authorization_status(i["authorization_url"])
                     if auth_status_response.json()["status"] == "pending":
-                        client.respond_to_challenge(i["acme_keyauthorization"], i["http_challenge_url"])
+                        client.respond_to_challenge(i["acme_keyauthorization"], i["http_challenge_url"]).json()
 
                 for i in responders:
-                    client.check_authorization_status(i["authorization_url"], ["valid"])
+                    client.check_authorization_status(i["authorization_url"], ["valid","invalid"])
 
                 certificate_url = client.send_csr(finalize_url)
                 certificate = client.download_certificate(certificate_url)
@@ -495,7 +528,12 @@ class panelLets:
             else:
                 result['msg'] = "The signing failed, we were unable to verify your domain name:<p>1. Check if the domain name is bound to the corresponding site.</p><p>2. Check if the domain name is correctly resolved to the server, or the resolution is not fully effective.</p><p>3. If your site has a reverse proxy set up, or if you are using a CDN, please turn it off first.</p><p>4. If your site has a 301 redirect, please turn it off first</p><p>5. If the above checks confirm that there is no problem, please try to change the DNS service provider.</p>'"
         except Exception as e:
-            result['msg'] =  self.get_error(str(e)) 
+            res = str(e).split('>>>>')
+            err = False
+            try:
+                err = json.loads(res[1])
+            except: err = False
+            result['msg'] =  [self.get_error(res[0]),err]
         return result
 
     

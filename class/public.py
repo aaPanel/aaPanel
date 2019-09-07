@@ -467,35 +467,37 @@ def serviceReload():
 
 
 def ExecShell(cmdstring, cwd=None, timeout=None, shell=True):
-    # 通过管道执行SHELL
-    import shlex
-    import datetime
-    import subprocess
-    import time
-
-    if shell:
-        cmdstring_list = cmdstring
-    else:
-        cmdstring_list = shlex.split(cmdstring)
-    if timeout:
-        end_time = datetime.datetime.now() + datetime.timedelta(seconds=timeout)
-
-    sub = subprocess.Popen(cmdstring_list, cwd=cwd, stdin=subprocess.PIPE, shell=shell, bufsize=4096,
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    while sub.poll() is None:
-        time.sleep(0.1)
-        if timeout:
-            if end_time <= datetime.datetime.now():
-                raise Exception("Timeout：%s" % cmdstring)
-    a, e = sub.communicate()
+    a = ''
+    e = ''
     try:
-        if type(a) == bytes: a = a.decode('utf-8')
-        if type(e) == bytes: e = e.decode('utf-8')
-    except:
-        pass
-    return a, e
+        #通过管道执行SHELL
+        import shlex
+        import datetime
+        import subprocess
+        import time
 
+        if shell:
+            cmdstring_list = cmdstring
+        else:
+            cmdstring_list = shlex.split(cmdstring)
+        if timeout:
+            end_time = datetime.datetime.now() + datetime.timedelta(seconds=timeout)
+        sub = subprocess.Popen(cmdstring_list, cwd=cwd, stdin=subprocess.PIPE,shell=shell,bufsize=4096,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        while sub.poll() is None:
+            time.sleep(0.1)
+            if timeout:
+                if end_time <= datetime.datetime.now():
+                    raise Exception("Timeout：%s"%cmdstring)
+        a,e = sub.communicate()
+        try:
+            if type(a) == bytes: a = a.decode('utf-8')
+            if type(e) == bytes: e = e.decode('utf-8')
+        except:pass
+    except:
+        if not a:
+            a = os.popen(cmdstring).read()
+
+    return a,e
 
 def GetLocalIp():
     # 取本地外网IP
@@ -550,7 +552,16 @@ def check_ip(ip):
 def GetHost(port=False):
     from flask import request
     host_tmp = request.headers.get('host')
-    if host_tmp.find(':') == -1: host_tmp += ':80';
+    if not host_tmp:
+        if request.url_root:
+            tmp = re.findall("(https|http)://([\w:\.-]+)",request.url_root)
+            if tmp: host_tmp = tmp[0][1]
+    if not host_tmp:
+        host_tmp = GetLocalIp() + ':' + readFile('data/port.pl').strip()
+    try:
+        if host_tmp.find(':') == -1: host_tmp += ':80';
+    except:
+        host_tmp = "127.0.0.1:8888"
     h = host_tmp.split(':')
     if port: return h[1]
     return h[0]
@@ -685,10 +696,10 @@ def to_size(size):
     d = ('b', 'KB', 'MB', 'GB', 'TB');
     s = d[0];
     for b in d:
-        if size < 1024: return str(size) + ' ' + b;
+        if size < 1024: return ("%.2f" % size) + ' ' + b;
         size = size / 1024;
         s = b;
-    return str(size) + ' ' + b;
+    return ("%.2f" % size) + ' ' + b;
 
 
 def checkCode(code, outime=120):
@@ -818,7 +829,8 @@ def checkIp(ip):
 
 # 检查端口是否合法
 def checkPort(port):
-    ports = ['21', '25', '443', '8080', '888', '8888', '8443'];
+    if not re.match("^\d+$",port): return False
+    ports = ['21','25','443','8080','888','8888','8443'];
     if port in ports: return False;
     intport = int(port);
     if intport < 1 or intport > 65535: return False;
@@ -1273,6 +1285,7 @@ def get_page(count, p=1, rows=12, callback='', result='1,2,3,4,5,8'):
 def version():
     from BTPanel import g
     try:
+        from BTPanel import g
         return g.version
     except:
         comm = ReadFile('/www/server/panel/class/common.py')
@@ -1471,10 +1484,13 @@ def is_local():
 
 #自动备份面板数据
 def auto_backup_panel():
+    panel_paeh = '/www/server/panel'
+    paths = panel_paeh + '/data/not_auto_backup.pl'
+    if os.path.exists(paths): return False
     b_path = '/www/backup/panel'
     backup_path = b_path + '/' + format_date('%Y-%m-%d')
-    panel_paeh = '/www/server/panel'
     if os.path.exists(backup_path): return True
+    if os.path.getsize(panel_paeh + '/data/default.db') > 104857600 * 2: return False
     os.makedirs(backup_path,384)
     import shutil
     shutil.copytree(panel_paeh + '/data',backup_path + '/data')

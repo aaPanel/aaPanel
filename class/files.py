@@ -7,7 +7,7 @@
 # +-------------------------------------------------------------------
 # | Author: 黄文良 <287962566@qq.com>
 # +-------------------------------------------------------------------
-import sys,os,public,time,json,pwd,cgi
+import sys,os,public,time,json,pwd,cgi,shutil
 from BTPanel import session,request
 class files:
     #检查敏感目录
@@ -90,6 +90,12 @@ class files:
         if sys.version_info[0] == 2:
             args.f_name = args.f_name.encode('utf-8')
             args.f_path = args.f_path.encode('utf-8')
+        if not 'f_name' in args:
+            args.f_name = request.form.get('f_name')
+            args.f_path = request.form.get('f_path')
+            args.f_size = request.form.get('f_size')
+            args.f_start = request.form.get('f_start')
+
         if args.f_name.find('./') != -1 or args.f_path.find('./') != -1:
             return public.returnMsg(False,'错误的参数')
         if not os.path.exists(args.f_path):
@@ -149,6 +155,8 @@ class files:
         if get.path == '': get.path = '/www';
         if not os.path.exists(get.path):
             return public.ReturnMsg(False,'DIR_NOT_EXISTS')
+        if not os.path.isdir(get.path):
+            get.path = os.path.dirname(get.path)
 
         import pwd 
         dirnames = []
@@ -251,6 +259,7 @@ class files:
             data['FILES'] = filenames
 
         data['PATH'] = str(get.path)
+        data['STORE'] = self.get_files_store(None)
         if hasattr(get,'disk'):
             import system
             data['DISK'] = system.system().GetDiskInfo();
@@ -263,20 +272,36 @@ class files:
         tmp_files = []
         tmp_dirs = []
         for f_name in os.listdir(path):
-            if py_v == 2: f_name = f_name.encode('utf-8');
-            filename = os.path.join(path,f_name)
-            if not os.path.exists(filename): continue
-            file_info = self.__format_stat(filename,path)
-            if not file_info: continue
-            if os.path.isdir(filename):
-                tmp_dirs.append(file_info)
-            else:
-                tmp_files.append(file_info)
+            try:
+                if py_v == 2: f_name = f_name.encode('utf-8');
+                filename = os.path.join(path,f_name)
+                if not os.path.exists(filename): continue
+                file_info = self.__format_stat(filename,path)
+                if not file_info: continue
+                if os.path.isdir(filename):
+                    tmp_dirs.append(file_info)
+                else:
+                    tmp_files.append(file_info)
+            except: continue
         tmp_dirs = sorted(tmp_dirs,key=lambda x:x[my_sort],reverse=reverse)
         tmp_files = sorted(tmp_files,key=lambda x:x[my_sort],reverse=reverse)
         
         for f in tmp_files: tmp_dirs.append(f)
         return tmp_dirs
+
+    def __save_list_history(self,path):
+        max_num = 20
+        path = path.strip()
+        save_path = '/www/server/panel/config/list_history.json'
+        if not os.path.exists(save_path): public.writeFile(save_path,'{}')
+        list_history = json.loads(public.readFile(save_path))
+        if path in list_history:
+            list_history[path] += 1
+        else:
+            list_history[path] = 1
+
+        #sorted(list_history,key=lambda x:x )
+
 
 
     def __format_stat(self,filename,path):
@@ -318,6 +343,7 @@ class files:
         data['FILES'] = sorted(my_files)
         data['PATH'] = str(get.path)
         data['PAGE'] = public.get_page(len(my_dirs) + len(my_files),1,max,'GetFiles')['page']
+        data['STORE'] = self.get_files_store(None)
         return data
 
 
@@ -340,6 +366,7 @@ class files:
     
     #计算文件数量
     def GetFilesCount(self,path,search):
+        if os.path.isfile(path): return 1
         i=0;
         for name in os.listdir(path):
             if search:
@@ -593,15 +620,14 @@ class files:
         if not os.path.exists(get.sfile):
             return public.returnMsg(False,'DIR_NOT_EXISTS');
         
-        if os.path.exists(get.dfile):
-            return public.returnMsg(False,'DIR_EXISTS');
+        #if os.path.exists(get.dfile):
+        #    return public.returnMsg(False,'DIR_EXISTS');
         
         #if not self.CheckDir(get.dfile):
         #    return public.returnMsg(False,'FILE_DANGER');
-        
-        import shutil
+
         try:
-            shutil.copytree(get.sfile, get.dfile)
+            self.copytree(get.sfile, get.dfile)
             stat = os.stat(get.sfile)
             os.chown(get.dfile,stat.st_uid,stat.st_gid)
             public.WriteLog('TYPE_FILE','DIR_COPY_SUCCESS',(get.sfile,get.dfile))
@@ -625,11 +651,8 @@ class files:
         
         if not self.CheckDir(get.sfile):
             return public.returnMsg(False,'FILE_DANGER');
-        
-        import shutil
         try:
-            shutil.move(get.sfile, get.dfile)
-            
+            self.move(get.sfile,get.dfile)
             if hasattr(get,'rename'):
                 public.WriteLog('TYPE_FILE','RENAME',(get.sfile,get.dfile))
                 return public.returnMsg(True,'RENAME_SUCCESS')
@@ -775,18 +798,27 @@ class files:
         try:
             save_path = ('/www/backup/file_history/' + filename).replace('//','/')
             if not os.path.exists(save_path): os.makedirs(save_path,384)
-            public.writeFile(save_path + '/' + str(int(time.time())),public.readFile(filename,'rb'),'wb')
-            his_list = sorted(os.listdir(save_path))
+
+            his_list = sorted(os.listdir(save_path),reverse=True)
             num =  public.readFile('data/history_num.pl')
             if not num:
                 num = 10
             else:
                 num = int(num)
             d_num = len(his_list)
+            is_write = True
+            new_file_md5 = public.FileMd5(filename)
             for i in range(d_num):
-                if d_num <= num: break;
                 rm_file = save_path + '/' + his_list[i]
-                if os.path.exists(rm_file): os.remove(rm_file)
+                if i == 0: #判断是否和上一份副本相同
+                    old_file_md5 = public.FileMd5(rm_file)
+                    if old_file_md5 == new_file_md5: is_write = False
+
+                if i+1 >= num: #删除多余的副本
+                    if os.path.exists(rm_file): os.remove(rm_file)
+                    continue
+            #写入新的副本
+            if is_write: public.writeFile(save_path + '/' + str(int(time.time())),public.readFile(filename,'rb'),'wb')
         except:pass
 
     #取历史副本
@@ -864,8 +896,7 @@ class files:
     #取目录大小
     def GetDirSize(self,get):
         if sys.version_info[0] == 2: get.path = get.path.encode('utf-8');
-        tmp = public.ExecShell('du -sbh '+ get.path)
-        return tmp[0].split()[0]
+        return public.to_size(public.get_path_size(get.path))
 
     #取目录大小2
     def get_path_size(self,get):
@@ -906,7 +937,6 @@ class files:
             public.WriteLog('TYPE_FILE','FILE_ALL_ACCESS')
             return public.returnMsg(True,'FILE_ALL_ACCESS')
         else:
-            import shutil
             isRecyle = os.path.exists('data/recycle_bin.pl')
             path = get.path
             get.data = json.loads(get.data)
@@ -928,7 +958,7 @@ class files:
                         else:
                             shutil.rmtree(filename)
                     else:
-                        if key == '.user.ini':
+                        if key == '.user.ini': 
                             if l > 1: continue
                             os.system('chattr -i ' + filename);
                         if isRecyle:
@@ -964,7 +994,7 @@ class files:
                         dfile = get.path + '/' + key
 
                     if os.path.isdir(sfile):
-                        shutil.copytree(sfile,dfile)
+                        self.copytree(sfile,dfile)
                     else:
                         shutil.copyfile(sfile,dfile)
                     stat = os.stat(sfile)
@@ -983,7 +1013,7 @@ class files:
                     else:
                         sfile = session['selected']['path'] + '/' + key
                         dfile = get.path + '/' + key
-                    shutil.move(sfile,dfile)
+                    self.move(sfile,dfile)
                 except:
                     continue;
             public.WriteLog('TYPE_FILE','FILE_ALL_MOTE',(session['selected']['path'],get.path))
@@ -991,7 +1021,45 @@ class files:
         errorCount = len(myfiles) - i
         del(session['selected'])
         return public.returnMsg(True,'FILE_ALL',(str(i),str(errorCount)));
-    
+
+    #移动和重命名
+    def move(self,sfile,dfile):
+        if not os.path.exists(sfile): return False
+        is_dir = os.path.isdir(sfile)
+        if not os.path.exists(dfile) or not is_dir:
+            shutil.move(sfile, dfile)
+        else:
+            self.copytree(sfile,dfile)
+            if os.path.exists(sfile):
+                if is_dir:
+                    shutil.rmtree(sfile)
+                else:
+                    os.remove(sfile)
+        return True
+
+    #复制目录
+    def copytree(self,sfile,dfile):
+        if not os.path.exists(dfile): os.makedirs(dfile)
+        for f_name in os.listdir(sfile):
+            src_filename = (sfile + '/' + f_name).replace('//','/')
+            dst_filename = (dfile + '/' + f_name).replace('//','/')
+            mode_info = public.get_mode_and_user(src_filename)
+            if os.path.isdir(src_filename):
+                if not os.path.exists(dst_filename):
+                    os.makedirs(dst_filename)
+                    public.set_mode(dst_filename,mode_info['mode'])
+                    public.set_own(dst_filename,mode_info['user'])
+                self.copytree(src_filename,dst_filename)
+            else:
+                try:
+                    shutil.copy2(src_filename,dst_filename)
+                    public.set_mode(dst_filename,mode_info['mode'])
+                    public.set_own(dst_filename,mode_info['user'])
+                except:pass
+        return True
+
+
+
     #下载文件
     def DownloadFile(self,get):
         import panelTask
@@ -1223,5 +1291,82 @@ cd %s
         os.system("pip install rarfile")
         #public.writeFile('data/restart.pl','True')
         return True
-        
-       
+
+    def get_store_data(self):
+        data = {}
+        path = 'data/file_store.json'
+        try:
+            if os.path.exists(path):
+                data = json.loads(public.readFile(path))
+        except :
+            data = {}
+        if not data:
+            data['Default category'] = []
+        return data
+
+    def set_store_data(self,data):
+        public.writeFile('data/file_store.json',json.dumps(data))
+        return True
+
+    #添加收藏夹分类
+    def add_files_store_types(self,get):
+        file_type = get.file_type
+        data = self.get_store_data()
+        if file_type in data:  return public.returnMsg(False,'Do not add categories repeatedly!')
+
+        data[file_type] = []
+        self.set_store_data(data)
+        return public.returnMsg(True,'Add favorites to classify successfully!')
+
+    #删除收藏夹分类
+    def del_files_store_types(self,get):
+        file_type = get.file_type
+        if file_type == 'Default category': return public.returnMsg(False,'Default category cannot be deleted!')
+        data = self.get_store_data()
+        del data[file_type]
+        self.set_store_data(data)
+        return public.returnMsg(True,'Delete [' + file_type + '] successfully!')
+
+    #获取收藏夹
+    def get_files_store(self,get):
+        data = self.get_store_data()
+        result = []
+        for key in data:
+            rlist = []
+            for path in data[key]:
+                info = { 'path': path,'name':os.path.basename(path)}
+
+                if os.path.isdir(path) :
+                    info['type'] = 'dir'
+                else:
+                    info['type'] = 'file'
+                rlist.append(info)
+            result.append({'name':key,'data':rlist})
+
+        return result
+
+    #添加收藏夹
+    def add_files_store(self,get):
+        file_type = get.file_type
+        path = get.path
+        if not os.path.exists(path):  return public.returnMsg(False,'File or directory does not exist!')
+
+        data = self.get_store_data()
+        if path in data[file_type]:  return public.returnMsg(False,'Do not add it repeatedly!')
+
+        data[file_type].append(path)
+        self.set_store_data(data)
+        return public.returnMsg(True,'Added successfully!')
+
+    #删除收藏夹
+    def del_files_store(self,get):
+        file_type = get.file_type
+        path = get.path
+
+        data = self.get_store_data()
+        if not file_type in data:  return public.returnMsg(False,'Cannot find this favorite category!')
+        data[file_type].remove(path)
+        if len(data[file_type]) <= 0: data[file_type] = []
+
+        self.set_store_data(data)
+        return public.returnMsg(True,'Successfully deleted!')

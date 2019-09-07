@@ -216,7 +216,7 @@ var soft = {
                                     option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
                                 }
                                 else {
-                                    option = '<span title="\' + lan.soft.ap2_2_not_support + \'">\' + lan.not_comp + \'</span>';
+                                    option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
                                 }
                             }
                             else if (rdata.apache24 && item.name == 'php-5.2') {
@@ -224,7 +224,7 @@ var soft = {
                                     option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
                                 }
                                 else {
-                                    option = '<span title="\' + lan.soft.ap2_2_not_support + \'">\' + lan.not_comp + \'</span>';
+                                    option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
                                 }
                             }
                             else {
@@ -598,7 +598,7 @@ var soft = {
                 title: name + lan.soft.admin,
                 closeBtn: 2,
                 shift: 0,
-                content: '<div class="bt-w-main" style="width:800px;"><div class="bt-w-menu bt-soft-menu"></div><div id="webEdit-con" class="bt-w-con pd15" style="height:555px;overflow:auto"><div class="soft-man-con bt-form"></div></div></div>'
+                content: '<div class="bt-w-main" style="width:800px;height:650px;"><div class="bt-w-menu bt-soft-menu"></div><div id="webEdit-con" class="bt-w-con pd15" style="height:639px;overflow:auto"><div class="soft-man-con bt-form"></div></div></div>'
             });
             var menu = $('.bt-soft-menu').data("data", rdata);
             setTimeout(function () {
@@ -703,7 +703,7 @@ var soft = {
                         matchBrackets: true,
                     });
                     editor.focus();
-                    $(".CodeMirror-scroll").css({ "height": "350px", "margin": 0, "padding": 0 });
+                    $(".CodeMirror-scroll").css({ "height": "510px", "margin": 0, "padding": 0 });
                     $("#OnlineEditFileBtn").click(function () {
                         $("#textBody").text(editor.getValue());
                         bt.soft.save_config(fileName, editor.getValue())
@@ -1015,7 +1015,7 @@ var soft = {
 										<span class="f14 c6 mr20">'+ lan.soft.mysql_log_bin + ' </span><span class="f14 c6 mr20">' + ToSize(rdata.msg) + '</span>\
 										<button class="btn btn-success btn-xs btn-bin va0">'+ (rdata.status ? lan.soft.off : lan.soft.on) + '</button>\
 										<p class="f14 c6 mtb10" style="border-top:#ddd 1px solid; padding:10px 0">'+ lan.soft.mysql_log_err + '<button class="btn btn-default btn-clear btn-xs" style="float:right;" >' + lan.soft.mysql_log_close + '</button></p>\
-										<textarea readonly style="margin: 0px;width: 600px;height: 440px;background-color: #333;color:#fff; padding:0 5px" id="error_log"></textarea>\
+										<textarea readonly style="margin: 0px;width: 597px;height: 538px;background-color: #333;color:#fff; padding:0 5px" id="error_log"></textarea>\
 									</p>'
                     $(".soft-man-con").html(limitCon);
 
@@ -1058,7 +1058,7 @@ var soft = {
                         logs.msg = '';
                     }
                     if (logs.msg == '') logs.msg = lan.soft.no_slow_log;
-                    var phpCon = '<textarea readonly="" style="margin: 0px;width: 600px;height: 520px;background-color: #333;color:#fff; padding:0 5px" id="error_log">' + logs.msg + '</textarea>';
+                    var phpCon = '<textarea readonly="" style="margin: 0px;width: 601px;height: 619px;background-color: #333;color:#fff; padding:0 5px" id="error_log">' + logs.msg + '</textarea>';
                     $(".soft-man-con").html(phpCon);
                     var ob = document.getElementById('error_log');
                     ob.scrollTop = ob.scrollHeight;
@@ -1269,11 +1269,22 @@ var soft = {
                 })
                 break;
             case 'phpmyadmin_safe':
-                var sdata = $('.bt-soft-menu').data('data');
-                var con = '<div class="ver line">\
-                                    <span style="margin-right:10px">'+ lan.soft.pma_port + '</span>\
+                var sdata = $('.bt-soft-menu').data('data'),sslPortNum ='';
+                var con = '<div class="ver line user_set_info">\
+                                    <span class="tit">'+ lan.soft.pma_port + '</span>\
                                     <input class="bt-input-text phpmyadmindk mr20" name="Name" id="pmport" value="'+ sdata.ext.port + '" placeholder="' + lan.soft.pma_port_title + '" maxlength="5" type="number">\
                                     <button class="btn btn-success btn-sm phpmyadmin_port" >'+ lan.public.save + '</button>\
+                                </div>\
+                                <div class="ver line user_set_info" style="margin-top: 30px;padding-top: 30px;border-top: #ccc 1px dashed;">\
+                                	<span class="tit">Open SSL</span>\
+                                    <span class="btswitch-p"><input class="btswitch btswitch-ios" id="ssl_safe_checkbox" type="checkbox">\
+                                    <label class="btswitch-btn phpmyadmin-btn ssl_safe_label" for="ssl_safe_checkbox" style="margin:0px" ></label>\
+                                    </span>\
+                                </div>\
+                                <div class="ver line user_set_info">\
+                                	<span class="tit">SSL port</span>\
+                                	<input class="bt-input-text ssl_port_input mr20" name="Name" id="sslport" value="" maxlength="5" type="number">\
+                                    <button class="btn btn-success btn-sm ssl_port_button" >Save</button>\
                                 </div>\
                                 <div class="user_pw_tit">\
                                     <span class="tit">'+ lan.soft.pma_pass + '</span>\
@@ -1288,21 +1299,52 @@ var soft = {
                                     <p><button class="btn btn-success btn-sm phpmyadmin_safe_save" >'+ lan.public.save + '</button></p>\
                                 </div>\
                                 <ul class="help-info-text c7"><li>'+ lan.soft.pma_ps + '</li></ul>';
+				
                 $(".soft-man-con").html(con);
                 if (sdata.ext.port) {
                     $(".user_pw").show();
                 }
+                
+            	function get_phpmyadmin_ssl(){
+            		var loading = bt.load('Getting SSL Status...');
+					bt.send('get_phpmyadmin_ssl','ajax/get_phpmyadmin_ssl',{},function(tdata){
+						loading.close();
+						$('#ssl_safe_checkbox').prop("checked",tdata.status);
+						$('#sslport').val(tdata.port)
+					})
+				}
+				get_phpmyadmin_ssl()
                 $('.phpmyadmin_port').click(function () {
                     var pmport = $("#pmport").val();
-                    if (!bt.check_port(pmport)) {
-                        layer.msg(lan.firewall.port_err, { icon: 2 });
-                        return;
-                    }
                     var loadT = bt.load(lan.public.the);
                     bt.send('setPHPMyAdmin', 'ajax/setPHPMyAdmin', { port: pmport }, function (rdata) {
                         loadT.close();
                         bt.msg(rdata);
                     })
+                })
+                $('.ssl_safe_label').click(function (){
+                	var stat = $('#ssl_safe_checkbox').prop("checked");
+                	bt.send('set_phpmyadmin_ssl','ajax/set_phpmyadmin_ssl',{v: !stat? 1:0},function(rdata){
+                		bt.msg(rdata)
+                	})
+                	setTimeout(function () {
+                        get_phpmyadmin_ssl();
+                    }, 500)
+                	
+                })
+                $('.ssl_port_button').click(function (){
+                	var sslPort = $('#sslport').val();
+                	if (!bt.check_port(sslPort)) {
+                        layer.msg(lan.firewall.port_err, { icon: 2 });
+                        return;
+                    }
+                    var loadTo = bt.load(lan.public.the);
+                	if(sslPort > 0){
+                		bt.send('change_phpmyadmin_ssl_port','ajax/change_phpmyadmin_ssl_port',{port: sslPort},function(rdata) {
+                			loadTo.close();
+                        	bt.msg(rdata);
+                		})
+                	}
                 })
                 $('.phpmyadmin_safe').click(function () {
                     var stat = $("#phpmyadminsafe").prop("checked");
@@ -1316,7 +1358,7 @@ var soft = {
                 $('.phpmyadmin_safe_save').click(function () {
                     set_phpmyadmin('get');
                 })
-
+				
                 function set_phpmyadmin(msg) {
                     var type = 'password';
                     if (msg == 'close') {
@@ -1351,7 +1393,7 @@ var soft = {
             case 'set_php_config':
 
                 bt.soft.php.get_config(version, function (rdata) {
-                    $(".soft-man-con").empty().append('<div class="divtable" id="phpextdiv" style="margin-right:10px;height: 420px; overflow: auto; margin-right: 0px;"><table id="tab_phpext" class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"></div></div>');
+                    $(".soft-man-con").empty().append('<div class="divtable" id="phpextdiv" style="margin-right:10px;height: 510px; overflow: auto; margin-right: 0px;"><table id="tab_phpext" class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"></div></div>');
 
                     var list = [];
                     for (var i = 0; i < rdata.libs.length; i++) {
@@ -1548,7 +1590,7 @@ var soft = {
                         if (disable_functions[i] == '') continue;
                         list.push({ name: disable_functions[i] })
                     }
-                    var _bt_form = $("<div class='bt-form' style='height:400px;'></div>")
+                    var _bt_form = $("<div class='bt-form' style='height:560px;'></div>")
                     var tabCon = $(".soft-man-con").empty().append(_bt_form);
                     var _line = bt.render_form_line({
                         title: '', items: [
@@ -1568,7 +1610,7 @@ var soft = {
                     }, '', _bt_form)
 
                     bt.render_clicks(_line.clicks);
-                    _bt_form.append("<div class='divtable mtb15' style='height:350px;overflow:auto'><table id=\"blacktable\" class='table table-hover' width='100%' style='margin-bottom:0'></table><div>")
+                    _bt_form.append("<div class='divtable mtb15' style='height:500px;overflow:auto'><table id=\"blacktable\" class='table table-hover' width='100%' style='margin-bottom:0'></table><div>")
                     var _tab = bt.render({
                         table: '#blacktable',
                         data: list,
@@ -1731,6 +1773,7 @@ var soft = {
                                     '<option value="files" '+ (res.save_handler == 'files'?'selected':'') +'>files</option>'+
                                     (version != '52'?'<option value="redis" '+ (res.save_handler == 'redis'?'selected':'') +'>redis</option>':'') +
                                     (version != '73'?'<option value="memcache" '+ (res.save_handler == 'memcache'?'selected':'') +'>memcache</option>':'')+
+                                    '<option value="memcached" '+ (res.save_handler == 'memcached'?'selected':'') +'>memcached</option>'+
                                 '</select>'+
                             '</div>'+
                         '</div>'+
@@ -1794,6 +1837,10 @@ var soft = {
                                 $('[name="ip"]').val('127.0.0.1');
                                 $('[name="port"]').val('11211');
                             break;
+                            case 'memcached':
+                                $('[name="ip"]').val('127.0.0.1');
+                                $('[name="port"]').val('11211');
+                            break;
                         }
                     });
                     $('.btn_conf_save').click(function(){
@@ -1827,13 +1874,18 @@ var soft = {
                                 $('[name="port"]').attr('disabled',false);
                                 $('[name="passwd"]').attr('disabled','disabled').val('');
                             break;
+                            case 'memcached':
+                                $('[name="ip"]').attr('disabled',false);
+                                $('[name="port"]').attr('disabled',false);
+                                $('[name="passwd"]').attr('disabled','disabled').val('');
+                            break;
                         }
                     }
                 });
 			break
             case 'get_fpm_logs':
                 bt.soft.php.get_fpm_logs(version, function (logs) {
-                    var phpCon = '<textarea readonly="" style="margin: 0px;width: 500px;height: 520px;background-color: #333;color:#fff; padding:0 5px" id="error_log">' + logs.msg + '</textarea>';
+                    var phpCon = '<textarea readonly="" style="margin: 0px;width: 600px;height: 620px;background-color: #333;color:#fff; padding:0 5px" id="error_log">' + logs.msg + '</textarea>';
                     $(".soft-man-con").html(phpCon);
                     var ob = document.getElementById('error_log');
                     ob.scrollTop = ob.scrollHeight;
@@ -1841,7 +1893,7 @@ var soft = {
                 break;
             case 'get_slow_logs':
                 bt.soft.php.get_slow_logs(version, function (logs) {
-                    var phpCon = '<textarea readonly="" style="margin: 0px;width: 500px;height: 520px;background-color: #333;color:#fff; padding:0 5px" id="error_log">' + logs.msg + '</textarea>';
+                    var phpCon = '<textarea readonly="" style="margin: 0px;width: 600px;height: 620px;background-color: #333;color:#fff; padding:0 5px" id="error_log">' + logs.msg + '</textarea>';
                     $(".soft-man-con").html(phpCon);
                     var ob = document.getElementById('error_log');
                     ob.scrollTop = ob.scrollHeight;

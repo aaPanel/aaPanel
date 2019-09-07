@@ -611,7 +611,7 @@ function SetPanelApi(t_type) {
         if (t_type == 1) {
             if (rdata.status) {
                 $("input[name='panel_token_value']").val(rdata.msg);
-                layer.msg(lan.config.create_int_key_success, { icon: 1 });
+                layer.msg(lan.config.create_int_key_success, { icon: 1, time: 0, shade: 0.3, shadeClose:true });
                 return;
             }
         }
@@ -654,14 +654,45 @@ function modify_basic_auth() {
     var loadT = layer.msg(lan.config.setting_basicauth, { icon: 16, time: 0, shade: [0.3, '#000'] });
     $.post('/config?action=get_basic_auth_stat', {}, function (rdata) {
         layer.close(loadT);
-        layer.open({
-            type: 1,
-            area: "500px",
-            title: lan.config.set_basicauth,
-            closeBtn: 2,
-            shift: 5,
-            shadeClose: false,
-            content: ' <div class="bt-form bt-form" style="padding:15px 25px">\
+        if (rdata.open) {
+            show_basic_auth(rdata);
+        } else {
+            m_html = '<div><i class="layui-layer-ico layui-layer-ico3"></i>'
+                + '<h3 style="margin-left: 40px;margin - bottom:10px;"> Danger! This feature does not know how to open!</h3>'
+                + '<ul style="border: 1px solid #ececec;border-radius: 10px; margin: 0px auto;margin-top: 20px;margin-bottom: 20px;background: #f7f7f7; width: 100 %;padding: 33px;list-style-type: inherit;">'
+                + '<li style="color:red;">You must use and understand this feature to decide if you want to open it!</li>'
+                + '<li>After opening, access the panel in any way, you will be asked to enter the BasicAuth username and password first.</li>'
+                + '<li>After being turned on, it can effectively prevent the panel from being scanned and found, but it cannot replace the account password of the panel itself.</li>'
+                + '<li>Please remember the BasicAuth password, but forget that you will not be able to access the panel.</li>'
+                + '<li>If you forget your password, you can disable BasicAuth authentication by using the bt command in SSH.</li>'
+                + '</ul></div>'
+                + '<div class="details">'
+                + '<input type="checkbox" id="check_basic"><label style="font-weight: 400;margin: 3px 5px 0px;" for="check_basic">I already know the details and are willing to take risks</label>'
+                + '<a target="_blank" class="btlink" href="https://www.bt.cn/bbs/thread-34374-1-1.html">What is BasicAuth authentication?</a><p></p></div>'
+            var loadT = layer.confirm(m_html, { title: "Risk reminder", area: "600px" }, function () {
+                if (!$("#check_basic").prop("checked")) {
+                    layer.msg("Please read the precautions carefully and check to agree to take risks!");
+                    setTimeout(function () { modify_basic_auth();},3000)
+                    return;
+                }
+                layer.close(loadT)
+                show_basic_auth(rdata);
+            });
+
+        }
+    });
+}
+
+
+function show_basic_auth(rdata) {
+    layer.open({
+        type: 1,
+        area: "500px",
+        title: "配置BasicAuth认证",
+        closeBtn: 2,
+        shift: 5,
+        shadeClose: false,
+        content: ' <div class="bt-form bt-form" style="padding:15px 25px">\
 						<div class="line">\
 							<span class="tname">'+lan.public.server_status+'</span>\
 							<div class="info-r" style="height:28px;">\
@@ -674,13 +705,13 @@ function modify_basic_auth() {
                         <div class="line">\
                             <span class="tname">'+lan.public.username+'</span>\
                             <div class="info-r">\
-                                <input name="basic_user" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_user?lan.crontab.not_modified:lan.crontab.set_username) +'">\
+                                <input name="basic_user" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_user?lan.config.not_modified:lan.config.set_username) +'">\
                             </div>\
                         </div>\
                         <div class="line">\
                             <span class="tname">'+lan.public.pass+'</span>\
                             <div class="info-r">\
-                                <input name="basic_pwd" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_pwd ? lan.crontab.not_modified : lan.crontab.set_passwd) +'">\
+                                <input name="basic_pwd" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_pwd ? lan.config.not_modified : lan.config.set_passwd) +'">\
                             </div>\
                         </div>\
                         <span><button class="btn btn-success btn-sm" style="    margin-left: 340px;" onclick="modify_basic_auth_to()">'+lan.public.save+'</button></span>\
@@ -690,6 +721,5 @@ function modify_basic_auth() {
                             <li>'+lan.config.basic_auth_tips3+'</li>\
                         </ul>\
                     </div>'
-        })
-    });
+    })
 }

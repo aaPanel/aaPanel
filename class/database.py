@@ -76,10 +76,10 @@ class database(datatool.datatools):
     def __CreateUsers(self,dbname,username,password,address):
         mysql_obj = panelMysql.panelMysql()
         mysql_obj.execute("CREATE USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username,password))
-        mysql_obj.execute("grant all privileges on %s.* to `%s`@`localhost`" % (dbname,username))
+        mysql_obj.execute("grant all privileges on `%s`.* to `%s`@`localhost`" % (dbname,username))
         for a in address.split(','):
             mysql_obj.execute("CREATE USER `%s`@`%s` IDENTIFIED BY '%s'" % (username,a,password))
-            mysql_obj.execute("grant all privileges on %s.* to `%s`@`%s`" % (dbname,username,a))
+            mysql_obj.execute("grant all privileges on `%s`.* to `%s`@`%s`" % (dbname,username,a))
         mysql_obj.execute("flush privileges")
         
     #检查是否在回收站
@@ -299,6 +299,7 @@ SetLink
     def SetupPassword(self,get):
         password = get['password'].strip()
         try:
+            if not password: return public.returnMsg(False,'Root password cannot be empty')
             rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
             if not re.match(rep, password): return public.returnMsg(False, 'DATABASE_NAME_ERR_T')
             mysql_root = public.M('config').where("id=?",(1,)).getField('mysql_root')
@@ -341,6 +342,7 @@ SetLink
             newpassword = get['password']
             username = get['name']
             id = get['id']
+            if not newpassword: return public.returnMsg(False,'Database [%s] password cannot be empty' % username)
             name = public.M('databases').where('id=?',(id,)).getField('name');
             
             rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
@@ -374,7 +376,7 @@ SetLink
             return public.returnMsg(True,'DATABASE_PASS_SUCCESS',(name,))
         except Exception as ex:
             import traceback
-            public.WriteLog("TYPE_DATABASE", 'DATABASE_PASS_ERROR',(name,traceback.format_exc(limit=True).replace('\n','<br>')))
+            public.WriteLog("TYPE_DATABASE", 'DATABASE_PASS_ERROR',(username,traceback.format_exc(limit=True).replace('\n','<br>')))
             return public.returnMsg(False,'DATABASE_PASS_ERROR',(name,))    
     
     #备份
@@ -447,26 +449,24 @@ SetLink
             tmpFile = tmpFile.replace('.' + ext, '.sql')
             tmpFile = tmpFile.replace('tar.', '')
             backupPath = session['config']['backup_path'] + '/database'
-
             if ext == 'zip':
-                public.ExecShell("cd "  +  backupPath  +  " && unzip " +  file)
+                public.ExecShell("cd "  +  backupPath  +  " && unzip " + '"'+file+'"')
             else:
-                public.ExecShell("cd "  +  backupPath  +  " && tar zxf " +  file)
+                public.ExecShell("cd "  +  backupPath  +  " && tar zxf " +  '"'+file+'"')
                 if not os.path.exists(backupPath  +  "/"  +  tmpFile): 
-                    public.ExecShell("cd "  +  backupPath  +  " && gunzip -q " +  file)
-                    isgizp = True
-                 
+                    public.ExecShell("cd "  +  backupPath  +  " && gunzip -q " +  '"'+file+'"')
+                    isgzip = True
             if not os.path.exists(backupPath + '/' + tmpFile) or tmpFile == '': return public.returnMsg(False, 'FILE_NOT_EXISTS',(tmpFile,))
             self.mypass(True, root);
-            os.system(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < " + backupPath + '/' +tmpFile)
+            os.system(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < " +'"'+ backupPath + '/' +tmpFile+'"')
             self.mypass(False, root);
-            if isgizp:
+            if isgzip:
                 os.system('cd ' +backupPath+ ' && gzip ' + file.split('/')[-1][:-3]);
             else:
                 os.system("rm -f " +  backupPath + '/' +tmpFile)
         else:
             self.mypass(True, root);
-            os.system(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < " +  file)
+            os.system(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < "+'"' +  file+'"')
             self.mypass(False, root);
                 
             
@@ -711,8 +711,12 @@ SetLink
         gets = ['table_open_cache','thread_cache_size','query_cache_type','key_buffer_size','query_cache_size','tmp_table_size','max_heap_table_size','innodb_buffer_pool_size','innodb_additional_mem_pool_size','innodb_log_buffer_size','max_connections','sort_buffer_size','read_buffer_size','read_rnd_buffer_size','join_buffer_size','thread_stack','binlog_cache_size'];
         result['mem'] = {}
         for d in data:
-            for g in gets:
-                if d[0] == g: result['mem'][g] = d[1];
+            try:
+                for g in gets:
+                    if d[0] == g: result['mem'][g] = d[1];
+            except:
+                continue
+
         if 'query_cache_type' in result['mem']:
             if result['mem']['query_cache_type'] != 'ON': result['mem']['query_cache_size'] = '0';
         return result;
@@ -767,7 +771,7 @@ SetLink
     def GetSlowLogs(self,get):
         path = self.GetMySQLInfo(get)['datadir'] + '/mysql-slow.log';
         if not os.path.exists(path): return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS');
-        return public.returnMsg(True,public.GetNumLines(path,1000));
+        return public.returnMsg(True,public.GetNumLines(path,100));
 
 
     # 获取当前数据库信息

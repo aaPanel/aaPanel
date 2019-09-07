@@ -3771,9 +3771,9 @@ bt.soft = {
 				if(pluginName) qlen = qlen-1;
 				//折扣列表
 				for(var i=0;i<qlen;i++){
-					var j = qarr[i];
-					var a = rdata[j].price;
-					var b = rdata[j].sprice;
+                    var j = qarr[i];
+                    var a = rdata[j].price.toFixed(2);
+                    var b = rdata[j].sprice.toFixed(2);
 					var c = rdata[j].discount;
 					coucon +='<li class="pay-cycle-btn" onclick="bt.soft.get_rscode('+pid+','+a+','+b+','+j+')"><span>'+bt.soft.pro.conver_unit(j)+'</span>'+(c==1?"":'<em>'+c*10+lan.public_backup.discount+'</em>')+'</li>';
 				}
@@ -4868,6 +4868,36 @@ bt.site = {
 			loading.close();
 			if(callback) callback(rdata);
 		})		
+	},
+	get_dir_auth:function(id,callback){
+		var loading = bt.load();
+		bt.send('get_dir_auth','site/get_dir_auth',{id:id},function(rdata){
+			loading.close();
+			if(callback) callback(rdata);
+		})	
+	},
+	create_dir_guard:function(data,callback){
+		var loading = bt.load();
+		bt.send('set_dir_auth','site/set_dir_auth',{id:data.id,name:data.name,site_dir:data.site_dir,username:data.username,password:data.password},function(rdata){
+			loading.close();
+			if(callback) callback(rdata);
+		})
+	},
+	edit_dir_account:function(data,callback){
+		var loading = bt.load();
+		bt.send('modify_dir_auth_pass','site/modify_dir_auth_pass',{id:data.id,name:data.name,username:data.username,password:data.password},function(rdata){
+			loading.close();
+			if(callback) callback(rdata);
+		})
+	},
+	delete_dir_guard:function(id,data,callback){
+		var loading = bt.load();
+		bt.show_confirm(lan.public_backup.del+'['+ data +']',lan.public_backup.del_dir,function(){
+			bt.send('delete_dir_auth','site/delete_dir_auth',{id:id,name:data},function(rdata){
+				loading.close();
+				if(callback) callback(rdata);
+			})
+		})
 	}
 }
 
