@@ -22,9 +22,175 @@ function SetPanelAutoUpload(){
 }
 
 
+
+
+$('#panel_verification').click(function(){
+	var _checked = $(this).prop('checked');
+	if(_checked){
+		layer.open({
+			type: 1,
+			area: ['600px','420px'],
+			title: 'Google authentication binding',
+			closeBtn: 2,
+			shift: 5,
+			shadeClose: false,
+			content: '<div class="bt-form pd20 pd70 ssl_cert_from google_verify" style="padding:20px 35px;">\
+				<div class="">\
+					<i class="layui-layer-ico layui-layer-ico3"></i>\
+					<h3>Warning! Do not understand this feature, do not open!</h3>\
+					<ul style="width:91%;margin-bottom:10px;margin-top:10px;">\
+						<li style="color:red;">You must use and understand this feature to decide if you want to open it!</li>\
+						<li style="color:red;">If it is not possible to verify, enter "bt 24" on the command line to cancel Google authentication.</li>\
+						<li>Once the service is turned on, bind it immediately to avoid the panel being inaccessible.</li>\
+						<li>After opening, the panel will not be accessible. You can click the link below to find out the solution.</li>\
+					</ul>\
+				</div>\
+				<div class="details" style="width: 90%;margin-bottom:10px;">\
+					<input type="checkbox" id="check_verification">\
+					<label style="font-weight: 400;margin: 3px 5px 0px;" for="check_verification">I already know the details and are willing to take risks</label>\
+					<a target="_blank" class="btlink" href="https://forum.aapanel.com/d/357-how-to-use-google-authenticator-in-the-aapanel">Learn more</a>\
+				</div>\
+				<div class="bt-form-submit-btn">\
+					<button type="button" class="btn btn-sm btn-danger close_verify">Close</button>\
+					<button type="button" class="btn btn-sm btn-success submit_verify">Confirm</button>\
+				</div>\
+			</div>',
+			success:function(layers,index){
+				$('.submit_verify').click(function(e){
+					var check_verification = $('#check_verification').prop('checked');
+					if(!check_verification){
+						layer.msg('Please check the consent risk first.',{icon:0});
+						return false;
+					}
+					var loadT = layer.msg('Opening Google authentication, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+					set_two_step_auth({act:_checked},function(rdata){
+						layer.close(loadT);
+						if (rdata.status) layer.closeAll();
+						layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+						if(rdata.status && _checked){
+							$('.open_two_verify_view').click();
+						}
+					});
+				});
+				$('.close_verify').click(function(){
+					layer.closeAll();
+					$('#panel_verification').prop('checked',!_checked);
+				});
+			},cancel:function () {
+				layer.closeAll();
+				$('#panel_verification').prop('checked',!_checked);
+			}
+		});
+	}else{
+		bt.confirm({
+			title: 'Google authentication',
+			msg: 'Turn off Google authentication, do you want to continue?',
+			cancel: function () {
+				$('#panel_verification').prop('checked',!_checked);
+			}}, function () {
+				var loadT = layer.msg('Google authentication is being turned off, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+				set_two_step_auth({act:_checked},function(rdata){
+					layer.close(loadT);
+					if (rdata.status) layer.closeAll();
+					layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+					if(rdata.status && _checked){
+						$('.open_two_verify_view').click();
+					}
+				});
+			},function () {
+				$('#panel_verification').prop('checked',!_checked);
+		   });
+	}
+
+	// console.log(_data);
+
+});
+
+$('.open_two_verify_view').click(function(){
+	var _checked = $('#panel_verification').prop('checked');
+	if(!_checked){
+		layer.msg('Please turn on Google authentication first.',{icon:0});
+		return false;
+	}
+	layer.open({
+        type: 1,
+        area: ['600px','670px'],
+        title: 'Google authentication binding',
+        closeBtn: 2,
+        shift: 5,
+        shadeClose: false,
+        content: '<div class="bt-form pd20" style="padding:20px 35px;">\
+					<div class="verify_title">Login authentication based on Google Authenticator</div>\
+					<div class="verify_item">\
+						<div class="verify_vice_title">1. Key binding</div>\
+						<div class="verify_conter">\
+							<div class="verify_box">\
+								<div class="verify_box_line">Account：<span class="username"></sapn></div>\
+								<div class="verify_box_line">Key：<span class="userkey"></sapn></div>\
+								<div class="verify_box_line">Type：<span class="usertype">Time based</sapn></div>\
+							</div>\
+						</div>\
+					</div>\
+					<div class="verify_item">\
+						<div class="verify_vice_title">2. Scan code binding (Using Google Authenticator APP scan)</div>\
+						<div class="verify_conter" style="text-align:center;padding-top:10px;">\
+							<div id="verify_qrcode"></div>\
+						</div>\
+					</div>\
+					<div class="verify_tips">\
+						<p>Tips: Please use the "Google Authenticator APP" binding to support Android, IOS system.<a href="https://forum.aapanel.com/d/357-how-to-use-google-authenticator-in-the-aapanel" class="btlink" target="_blank">Use tutorial</a></p>\
+						<p style="color:red;">Once you have turned on the service, use the Google Authenticator app binding now to avoid having to sign in.</p>\
+					</div>\
+				</div>',
+		success:function(e){
+			get_two_verify(function(res){
+				$('.verify_box_line .username').html(res.username);
+				$('.verify_box_line .userkey').html(res.key);
+			});
+			get_qrcode_data(function(res){
+				jQuery('#verify_qrcode').qrcode({
+					render: "canvas",
+					text: res,
+					height:150,
+					width:150
+				});
+			});
+		}
+    });
+});
+
+(function(){
+	check_two_step(function(res){
+		$('#panel_verification').prop('checked',res.status);
+	});
+})()
+function get_qrcode_data(callback){
+	$.post('/config?action=get_qrcode_data',function(res){
+		if(callback) callback(res);
+	});
+}
+
+function check_two_step(callback){
+	$.post('/config?action=check_two_step',function(res){
+		if(callback) callback(res);
+	});
+}
+
+
+
+function get_two_verify(callback){
+	$.post('/config?action=get_key',function(res){
+		if(callback) callback(res);
+	});
+}
+function set_two_step_auth(obj,callback){
+	$.post('/config?action=set_two_step_auth',{act:obj.act?1:0},function(res){
+		if(callback) callback(res);
+	});
+}
+
 $(".set-submit").click(function(){
 	var data = $("#set-Config").serialize();
-	console.log(data)
 	layer.msg(lan.config.config_save,{icon:16,time:0,shade: [0.3, '#000']});
 	$.post('/config?action=setPanel',data,function(rdata){
 		layer.closeAll();
@@ -35,7 +201,7 @@ $(".set-submit").click(function(){
 			},1500);
 		}
 	});
-	
+
 });
 
 
@@ -62,8 +228,8 @@ function modify_auth_path() {
     })
 
 
-    
-    
+
+
 
 }
 
@@ -100,7 +266,7 @@ function Set502(){
 	$.post('/config?action=Set502','',function(rdata){
 		layer.close(loadT);
 		layer.msg(rdata.msg,{icon:rdata.status?1:2});
-	});	
+	});
 }
 
 //绑定修改宝塔账号
@@ -153,7 +319,7 @@ function apiSetup(){
 	var loadT = layer.msg(lan.config.token_get,{icon:16,time:0,shade: [0.3, '#000']});
 	$.get('/api?action=GetToken',function(rdata){
 		layer.close(loadT);
-		
+
 	});
 }
 
@@ -496,7 +662,7 @@ var weChat = {
 			});
 		},
 	}
-	
+
 function open_wxapp(){
 	var rhtml = '<div class="boxConter" style="display: none">\
 					<div class="iconCode" >\
@@ -515,7 +681,7 @@ function open_wxapp(){
 						<ul class="userList"></ul>\
 					</div>\
 				</div>'
-	
+
 	layer.open({
 		type: 1,
 		title: lan.config.bind_wechat,
@@ -524,7 +690,7 @@ function open_wxapp(){
 		shadeClose: false,
 		content:rhtml
 	});
-	
+
 	weChat.init();
 }
 
@@ -615,7 +781,7 @@ function SetPanelApi(t_type) {
                 return;
             }
         }
-        
+
         layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
         if (rdata.msg == lan.config.open_successfully) {
             GetPanelApi();
@@ -657,19 +823,19 @@ function modify_basic_auth() {
         if (rdata.open) {
             show_basic_auth(rdata);
         } else {
-            m_html = '<div><i class="layui-layer-ico layui-layer-ico3"></i>'
-                + '<h3 style="margin-left: 40px;margin - bottom:10px;"> Danger! This feature does not know how to open!</h3>'
-                + '<ul style="border: 1px solid #ececec;border-radius: 10px; margin: 0px auto;margin-top: 20px;margin-bottom: 20px;background: #f7f7f7; width: 100 %;padding: 33px;list-style-type: inherit;">'
-                + '<li style="color:red;">You must use and understand this feature to decide if you want to open it!</li>'
-                + '<li>After opening, access the panel in any way, you will be asked to enter the BasicAuth username and password first.</li>'
-                + '<li>After being turned on, it can effectively prevent the panel from being scanned and found, but it cannot replace the account password of the panel itself.</li>'
-                + '<li>Please remember the BasicAuth password, but forget that you will not be able to access the panel.</li>'
-                + '<li>If you forget your password, you can disable BasicAuth authentication by using the bt command in SSH.</li>'
+            m_html = '<div class="risk_form"><i class="layui-layer-ico layui-layer-ico3"></i>'
+                + '<h3 class="risk_tilte">Warning! Do not understand this feature, do not open!</h3>'
+                + '<ul>'
+					+ '<li style="color:red;">You must use and understand this feature to decide if you want to open it!</li>'
+					+ '<li>After opening, access the panel in any way, you will be asked to enter the BasicAuth username and password first.</li>'
+					+ '<li>After being turned on, it can effectively prevent the panel from being scanned and found, but it cannot replace the account password of the panel itself.</li>'
+					+ '<li>Please remember the BasicAuth password, but forget that you will not be able to access the panel.</li>'
+					+ '<li>If you forget your password, you can disable BasicAuth authentication by using the bt command in SSH.</li>'
                 + '</ul></div>'
                 + '<div class="details">'
-                + '<input type="checkbox" id="check_basic"><label style="font-weight: 400;margin: 3px 5px 0px;" for="check_basic">I already know the details and are willing to take risks</label>'
-                + '<a target="_blank" class="btlink" href="https://www.bt.cn/bbs/thread-34374-1-1.html">What is BasicAuth authentication?</a><p></p></div>'
-            var loadT = layer.confirm(m_html, { title: "Risk reminder", area: "600px" }, function () {
+                + '<input type="checkbox" id="check_basic"><label style="font-weight: 400;margin: 3px 10px 0px;font-size:12px;" for="check_basic">I already know the details and are willing to take risks</label>'
+                + '<a target="_blank" style="font-size:12px;" class="btlink" href="https://www.bt.cn/bbs/thread-34374-1-1.html">What is BasicAuth authentication?</a><p></p></div>'
+            var loadT = layer.confirm(m_html, { title: "Risk reminder", area: "600px",closeBtn:2 }, function () {
                 if (!$("#check_basic").prop("checked")) {
                     layer.msg("Please read the precautions carefully and check to agree to take risks!");
                     setTimeout(function () { modify_basic_auth();},3000)
@@ -682,7 +848,6 @@ function modify_basic_auth() {
         }
     });
 }
-
 
 function show_basic_auth(rdata) {
     layer.open({

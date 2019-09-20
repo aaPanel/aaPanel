@@ -5233,6 +5233,13 @@ select[disabled]{
 	margin-bottom:0;
 }
 
+.aceEditors{
+	border: 1px solid rgb(208, 207, 207);
+	overflow: hidden;
+}
+#ace_conter.chrome{
+	background: #ececec;
+}
 #ace_conter{
 	background: #444;
 	height: 100%;

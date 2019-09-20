@@ -10,6 +10,7 @@
 import sys,os,public,time,json,pwd,cgi,shutil
 from BTPanel import session,request
 class files:
+    run_path = None
     #检查敏感目录
     def CheckDir(self,path):
         path = path.replace('//','/');
@@ -44,7 +45,66 @@ class files:
                 public.GetConfigValue('setup_path'))
 
         return not path in nDirs
-    
+
+    #网站文件操作前置检测
+    def site_path_check(self,get):
+        try:
+            if not 'site_id' in get: return True
+            if not self.run_path:
+                self.run_path,self.path,self.site_name = self.GetSiteRunPath(get.site_id)
+            if 'path' in get:
+                if get.path.find(self.path) != 0: return False
+            if 'sfile' in get:
+                if get.sfile.find(self.path) != 0: return False
+            if 'dfile' in get:
+                if get.dfile.find(self.path) != 0: return False
+            return True
+        except: return True
+
+    #网站目录后续安全处理
+    def site_path_safe(self,get):
+        try:
+            if not 'site_id' in get: return True
+            run_path,path,site_name = self.GetSiteRunPath(get.site_id)
+            if not os.path.exists(run_path): os.makedirs(run_path)
+            ini_path = run_path + '/.user.ini'
+            if os.path.exists(ini_path): return True
+            sess_path = '/www/php_session/%s' % site_name
+            if not os.path.exists(sess_path): os.makedirs(sess_path)
+            ini_conf = '''open_basedir={}/:/tmp/:/proc/:{}/
+session.save_path={}/
+session.save_handler = files'''.format(path,sess_path,sess_path)
+            public.writeFile(ini_path, ini_conf)
+            public.ExecShell("chmod 644 %s" % ini_path)
+            public.ExecShell("chdir +i %s" % ini_path)
+            return True
+        except: return False
+
+
+    #取当站点前运行目录
+    def GetSiteRunPath(self,site_id):
+        try:
+            find = public.M('sites').where('id=?',(site_id,)).field('path,name').find();
+            siteName = find['name']
+            sitePath = find['path']
+            if public.get_webserver() == 'nginx':
+                filename = '/www/server/panel/vhost/nginx/' + siteName + '.conf'
+                if os.path.exists(filename):
+                    conf = public.readFile(filename)
+                    rep = '\s*root\s*(.+);'
+                    tmp1 = re.search(rep,conf)
+                    if tmp1: path = tmp1.groups()[0];
+            else:
+                filename = '/www/server/panel/vhost/apache/' + siteName + '.conf'
+                if os.path.exists(filename):
+                    conf = public.readFile(filename)
+                    rep = '\s*DocumentRoot\s*"(.+)"\s*\n'
+                    tmp1 = re.search(rep,conf)
+                    if tmp1: path = tmp1.groups()[0];
+            return path,sitePath,siteName
+        except:
+            return sitePath,sitePath,siteName
+
     #检测文件名
     def CheckFileName(self,filename):
         nots = ['\\','&','*','|',';','"',"'",'<','>']
@@ -83,18 +143,17 @@ class files:
         public.WriteLog('TYPE_FILE','FILE_UPLOAD_SUCCESS',(filename,get['path']));
         return public.returnMsg(True,'FILE_UPLOAD_SUCCESS');
 
-
-
     #上传文件2
     def upload(self,args):
-        if sys.version_info[0] == 2:
-            args.f_name = args.f_name.encode('utf-8')
-            args.f_path = args.f_path.encode('utf-8')
         if not 'f_name' in args:
             args.f_name = request.form.get('f_name')
             args.f_path = request.form.get('f_path')
             args.f_size = request.form.get('f_size')
             args.f_start = request.form.get('f_start')
+
+        if sys.version_info[0] == 2:
+            args.f_name = args.f_name.encode('utf-8')
+            args.f_path = args.f_path.encode('utf-8')
 
         if args.f_name.find('./') != -1 or args.f_path.find('./') != -1:
             return public.returnMsg(False,'错误的参数')
@@ -118,7 +177,10 @@ class files:
         if os.path.exists(new_name):
             if new_name.find('.user.ini') != -1:
                 public.ExecShell("chattr -i " + new_name)
-            os.remove(new_name)
+            try:
+                os.remove(new_name)
+            except:
+                os.system("rm -f %s" % new_name)
         os.renames(save_path, new_name)
         if 'dir_mode' in args and 'file_mode' in args:
             mode_tmp1 = args.dir_mode.split(',')
@@ -158,7 +220,9 @@ class files:
         if not os.path.isdir(get.path):
             get.path = os.path.dirname(get.path)
 
-        import pwd 
+        if not os.path.isdir(get.path): return public.returnMsg(False,'This is not a directory!')
+
+        import pwd
         dirnames = []
         filenames = []
         
@@ -329,14 +393,18 @@ class files:
                 if count >= max: break;
                 d = self.xssencode(d)
                 if d.lower().find(search) != -1:
-                    my_dirs.append(self.__get_stat(d_list[0] + '/' + d,get.path))
+                    filename = d_list[0] + '/' + d
+                    if not os.path.exists(filename): continue
+                    my_dirs.append(self.__get_stat(filename,get.path))
                     count += 1
                     
             for f in d_list[2]:
                 if count >= max: break;
                 f = self.xssencode(f)
                 if f.lower().find(search) != -1:
-                    my_files.append(self.__get_stat(d_list[0] + '/' + f,get.path))
+                    filename = d_list[0] + '/' + f
+                    if not os.path.exists(filename): continue
+                    my_files.append(self.__get_stat(filename,get.path))
                     count += 1
         data = {}
         data['DIR'] = sorted(my_dirs)
@@ -367,6 +435,7 @@ class files:
     #计算文件数量
     def GetFilesCount(self,path,search):
         if os.path.isfile(path): return 1
+        if not os.path.exists(path):return 0
         i=0;
         for name in os.listdir(path):
             if search:
@@ -426,10 +495,13 @@ class files:
                 if not self.delete_empty(get.path): return public.returnMsg(False,'DIR_ERR_NOT_EMPTY');
             
             if os.path.exists('data/recycle_bin.pl'):
-                if self.Mv_Recycle_bin(get): return public.returnMsg(True,'DIR_MOVE_RECYCLE_BIN');
+                if self.Mv_Recycle_bin(get):
+                    self.site_path_safe(get)
+                    return public.returnMsg(True,'DIR_MOVE_RECYCLE_BIN');
             
             import shutil
             shutil.rmtree(get.path)
+            self.site_path_safe(get)
             public.WriteLog('TYPE_FILE','DIR_DEL_SUCCESS',(get.path,))
             return public.returnMsg(True,'DIR_DEL_SUCCESS')
         except:
@@ -453,8 +525,11 @@ class files:
             os.system("chattr -i '"+get.path+"'")
         try:
             if os.path.exists('data/recycle_bin.pl'):
-                if self.Mv_Recycle_bin(get): return public.returnMsg(True,'FILE_MOVE_RECYCLE_BIN');
+                if self.Mv_Recycle_bin(get):
+                    self.site_path_safe(get)
+                    return public.returnMsg(True,'FILE_MOVE_RECYCLE_BIN');
             os.remove(get.path)
+            self.site_path_safe(get)
             public.WriteLog('TYPE_FILE','FILE_DEL_SUCCESS',(get.path,))
             return public.returnMsg(True,'FILE_DEL_SUCCESS')
         except:
@@ -566,11 +641,16 @@ class files:
                 database.database().DeleteTo(path);
                 continue;
             if os.path.isdir(path):
-                #os.system('rm -rf ' + path);
-                shutil.rmtree(path);
+                try:
+                    shutil.rmtree(path);
+                except:
+                    os.system('rm -rf ' + path);
             else:
-                #os.system('rm -f ' + path);
-                os.remove(path);
+                try:
+                    os.remove(path);
+                except:
+                    os.system('rm -f ' + path);
+
         public.writeSpeed(None,0,0);
         public.WriteLog('TYPE_FILE','FILE_CLOSE_RECYCLE_BIN');
         return public.returnMsg(True,'FILE_CLOSE_RECYCLE_BIN');
@@ -653,6 +733,7 @@ class files:
             return public.returnMsg(False,'FILE_DANGER');
         try:
             self.move(get.sfile,get.dfile)
+            self.site_path_safe(get)
             if hasattr(get,'rename'):
                 public.WriteLog('TYPE_FILE','RENAME',(get.sfile,get.dfile))
                 return public.returnMsg(True,'RENAME_SUCCESS')
@@ -668,6 +749,7 @@ class files:
         data = [];
         filesx = [];
         if not hasattr(get,'filename'):
+            if not 'selected' in session: return []
             filesx = json.loads(session['selected']['data']);
         else:
             filesx.append(get.filename);
@@ -694,6 +776,7 @@ class files:
             public.writeFile(get.path,'');
         
         if os.path.getsize(get.path) > 2097152: return public.returnMsg(False,'CANT_EDIT_ONLINE_FILE');
+        if not os.path.isfile(get.path): return public.returnMsg(False,'This is not a file!')
         fp = open(get.path,'rb')
         data = {}
         data['status'] = True
@@ -725,11 +808,7 @@ class files:
                     else:
                         data['data'] = srcBody.decode(data['encoding'])
             else:
-                if sys.version_info[0] == 2: 
-                    data['data'] = srcBody.decode('utf-8').encode('utf-8');
-                else:
-                    data['data'] = srcBody.decode('utf-8')
-                data['encoding'] = u'utf-8';
+               return public.returnMsg(False,'Failed to open file, file may be occupied by other processes!')
             if hasattr(get,'filename'): get.path = get.filename
             data['historys'] = self.get_history(get.path)
             return data;
@@ -739,6 +818,8 @@ class files:
     
     #保存文件
     def SaveFileBody(self,get):
+        if not 'path' in get: return public.returnMsg(False,'path parameter cannot be empty!')
+        if not 'data' in get: return public.returnMsg(False,'data parameter cannot be empty!')
         if sys.version_info[0] == 2: get.path = get.path.encode('utf-8');
         if not os.path.exists(get.path):
             if get.path.find('.htaccess') == -1:
@@ -969,6 +1050,7 @@ class files:
                 except:
                     continue;
                 public.writeSpeed(None,0,0);
+            self.site_path_safe(get)
             public.WriteLog('TYPE_FILE','FILE_ALL_DEL')
             return public.returnMsg(True,'FILE_ALL_DEL')
     
@@ -978,7 +1060,9 @@ class files:
         import shutil
         if sys.version_info[0] == 2: get.path = get.path.encode('utf-8');
         if not self.CheckDir(get.path): return public.returnMsg(False,'FILE_DANGER');
+        if not 'selected' in session: return public.returnMsg(False,'The operation failed, please re-copy the copy or cut process')
         i = 0;
+        if not 'selected' in session:return public.returnMsg(False,'The operation failed, please re-operate');
         myfiles = json.loads(session['selected']['data'])
         l = len(myfiles);
         if get.type == '1':
@@ -1016,6 +1100,7 @@ class files:
                     self.move(sfile,dfile)
                 except:
                     continue;
+            self.site_path_safe(get)
             public.WriteLog('TYPE_FILE','FILE_ALL_MOTE',(session['selected']['path'],get.path))
         public.writeSpeed(None,0,0);
         errorCount = len(myfiles) - i
@@ -1027,6 +1112,7 @@ class files:
         if not os.path.exists(sfile): return False
         is_dir = os.path.isdir(sfile)
         if not os.path.exists(dfile) or not is_dir:
+            if os.path.exists(dfile): os.remove(dfile)
             shutil.move(sfile, dfile)
         else:
             self.copytree(sfile,dfile)
@@ -1311,6 +1397,7 @@ cd %s
     #添加收藏夹分类
     def add_files_store_types(self,get):
         file_type = get.file_type
+        if sys.version_info[0] == 2: file_type = file_type.decode('utf-8')
         data = self.get_store_data()
         if file_type in data:  return public.returnMsg(False,'Do not add categories repeatedly!')
 
@@ -1321,11 +1408,14 @@ cd %s
     #删除收藏夹分类
     def del_files_store_types(self,get):
         file_type = get.file_type
+        if sys.version_info[0] == 2: file_type = file_type.decode('utf-8')
         if file_type == 'Default category': return public.returnMsg(False,'Default category cannot be deleted!')
         data = self.get_store_data()
-        del data[file_type]
-        self.set_store_data(data)
-        return public.returnMsg(True,'Delete [' + file_type + '] successfully!')
+        if file_type in data:
+            del data[file_type]
+            self.set_store_data(data)
+            return public.returnMsg(True,'Delete [' + file_type + '] successfully!')
+        return public.returnMsg(False,'Delete [' + file_type + '] successfully!')
 
     #获取收藏夹
     def get_files_store(self,get):
@@ -1348,6 +1438,7 @@ cd %s
     #添加收藏夹
     def add_files_store(self,get):
         file_type = get.file_type
+        if sys.version_info[0] == 2: file_type = file_type.decode('utf-8')
         path = get.path
         if not os.path.exists(path):  return public.returnMsg(False,'File or directory does not exist!')
 
@@ -1361,8 +1452,8 @@ cd %s
     #删除收藏夹
     def del_files_store(self,get):
         file_type = get.file_type
+        if sys.version_info[0] == 2: file_type = file_type.decode('utf-8')
         path = get.path
-
         data = self.get_store_data()
         if not file_type in data:  return public.returnMsg(False,'Cannot find this favorite category!')
         data[file_type].remove(path)

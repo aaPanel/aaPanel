@@ -50,16 +50,31 @@ import public
 
 
 def extract_zone(domain_name):
-        domain_name = domain_name.lstrip("*.")
-        if domain_name.count(".") > 1:
-            zone, middle, last = str(domain_name).rsplit(".", 2)
-            root = ".".join([middle, last])
-            acme_txt = "_acme-challenge.%s" % zone
-        else:
-            zone = ""
-            root = domain_name
-            acme_txt = "_acme-challenge"
-        return root, zone, acme_txt
+    domain_name = domain_name.lstrip("*.")
+
+    #处理地区域名
+    top_domain_list = ['.ac.cn', '.ah.cn', '.bj.cn', '.com.cn', '.cq.cn', '.fj.cn', '.gd.cn',
+                        '.gov.cn', '.gs.cn', '.gx.cn', '.gz.cn', '.ha.cn', '.hb.cn', '.he.cn',
+                        '.hi.cn', '.hk.cn', '.hl.cn', '.hn.cn', '.jl.cn', '.js.cn', '.jx.cn',
+                        '.ln.cn', '.mo.cn', '.net.cn', '.nm.cn', '.nx.cn', '.org.cn']
+    m_count = domain_name.count(".")
+    top_domain = "."+".".join(domain_name.rsplit('.')[-2:])
+    new_top_domain = "." + top_domain.replace(".","")
+    is_tow_top = False
+    if top_domain in top_domain_list:
+        is_tow_top = True
+        domain_name = domain_name[:-len(top_domain)] + new_top_domain #地区域名后缀去点处理
+
+    if domain_name.count(".") > 1:
+        zone, middle, last = domain_name.rsplit(".", 2)
+        acme_txt = "_acme-challenge.%s" % zone
+        if is_tow_top: last = top_domain[1:] #还原地区域名后缀
+        root = ".".join([middle, last])
+    else:
+        zone = ""
+        root = domain_name
+        acme_txt = "_acme-challenge"
+    return root, zone, acme_txt
 
 class AliyunDns(object):
     def __init__(self, key, secret, ):
@@ -257,17 +272,6 @@ class CloudxnsDns(object):
 
 class Dns_com(object):
 
-    def extract_zone(self,domain_name):
-        domain_name = domain_name.lstrip("*.")
-        if domain_name.count(".") > 1:
-            zone, middle, last = str(domain_name).rsplit(".", 2)
-            root = ".".join([middle, last])
-            acme_txt = "_acme-challenge.%s" % zone
-        else:
-            zone = ""
-            root = domain_name
-            acme_txt = "_acme-challenge"
-        return root, zone, acme_txt
     
     def get_dns_obj(self):
         p_path = '/www/server/panel/plugin/dns'

@@ -64,7 +64,7 @@ function getCronData(){
 						<td>"+s_status+"</td>\
 						<td>"+rdata[i].type+"</td>\
 						<td>"+rdata[i].cycle+"</td>\
-						<td>"+(rdata[i].save?rdata[i].save+'份':'-')+"</td>\
+						<td>"+(rdata[i].save?rdata[i].save:'-')+"</td>\
 						<td>"+optName+"</td>\
 						<td>"+rdata[i].addtime+"</td>\
 						<td>\

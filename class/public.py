@@ -285,8 +285,10 @@ def GetJson(data):
     """
     from json import dumps
     if data == bytes: data = data.decode('utf-8')
-    return dumps(data)
-
+    try:
+        return dumps(data)
+    except:
+        return dumps(returnMsg(False,"Wrong response: %s" % str(data)))
 
 def getJson(data):
     return GetJson(data)
@@ -304,11 +306,18 @@ def ReadFile(filename, mode='r'):
         fp = open(filename, mode)
         f_body = fp.read()
         fp.close()
-    except:
-        fp = open(filename, mode, encoding="utf-8")
-        f_body = fp.read()
-        fp.close()
-
+    except Exception as ex:
+        if sys.version_info[0] != 2:
+            try:
+                fp = open(filename, mode,encoding="utf-8");
+                f_body = fp.read()
+                fp.close()
+            except Exception as ex2:
+                WriteLog('Open File',str(ex2))
+                return False
+        else:
+            WriteLog('Open File',str(ex))
+            return False
     return f_body
 
 
@@ -505,17 +514,14 @@ def GetLocalIp():
         filename = 'data/iplist.txt'
         ipaddress = readFile(filename)
         if not ipaddress:
-            import urllib2
             url = 'http://pv.sohu.com/cityjson?ie=utf-8'
-            opener = urllib2.urlopen(url)
-            m_str = opener.read()
-            ipaddress = re.search('\d+.\d+.\d+.\d+', m_str).group(0)
-            WriteFile(filename, ipaddress)
+            m_str = HttpGet(url)
+            ipaddress = re.search('\d+.\d+.\d+.\d+',m_str).group(0)
+            WriteFile(filename,ipaddress)
         c_ip = check_ip(ipaddress)
         if not c_ip: return GetHost()
         return ipaddress
     except:
-        return get_error_info()
         try:
             url = GetConfigValue('home') + '/Api/getIpAddress';
             return HttpGet(url)

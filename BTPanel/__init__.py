@@ -183,6 +183,8 @@ def login():
 
     if request.method == method_post[0]:
         result = userlogin.userlogin().request_post(get)
+        if result == "1":
+            return result
         return is_login(result)
 
     if request.method == method_get[0]:
@@ -460,7 +462,7 @@ def config(pdata = None):
         if public.is_local(): data['is_local'] = 'checked'
         return render_template( 'config.html',data=data)
     import config
-    defs = ('get_php_session_path','set_php_session_path','get_cert_source','set_local','set_debug','get_panel_error_logs','clean_panel_error_logs','get_basic_auth_stat','set_basic_auth','get_cli_php_version','get_tmp_token','set_cli_php_version','DelOldSession', 'GetSessionCount', 'SetSessionConf', 'GetSessionConf','get_ipv6_listen','set_ipv6_status','GetApacheValue','SetApacheValue','GetNginxValue','SetNginxValue','get_token','set_token','set_admin_path','is_pro','get_php_config','get_config','SavePanelSSL','GetPanelSSL','GetPHPConf','SetPHPConf','GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL','SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize','getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl','ClosePanel','AutoUpdatePanel','SetPanelLock')
+    defs = ('get_qrcode_data','check_two_step','set_two_step_auth','get_key','get_php_session_path','set_php_session_path','get_cert_source','set_local','set_debug','get_panel_error_logs','clean_panel_error_logs','get_basic_auth_stat','set_basic_auth','get_cli_php_version','get_tmp_token','set_cli_php_version','DelOldSession', 'GetSessionCount', 'SetSessionConf', 'GetSessionConf','get_ipv6_listen','set_ipv6_status','GetApacheValue','SetApacheValue','GetNginxValue','SetNginxValue','get_token','set_token','set_admin_path','is_pro','get_php_config','get_config','SavePanelSSL','GetPanelSSL','GetPHPConf','SetPHPConf','GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL','SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize','getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl','ClosePanel','AutoUpdatePanel','SetPanelLock')
     return publicObject(config.config(),defs,None,pdata);
 
 @app.route('/ajax',methods=method_all)
@@ -503,7 +505,11 @@ def panel_data(pdata = None):
     
 @app.route('/code')
 def code():
-    import vilidate,time
+    try:
+        import vilidate,time
+    except:
+        os.system("pip install Pillow==5.4.1 -I")
+        return "Pillow not install!"
     code_time = cache.get('codeOut')
     if code_time: return u'Error: Don\'t request validation codes frequently';
     vie = vilidate.vieCode();
@@ -710,7 +716,9 @@ def panel_other(name=None,fun = None,stype=None):
             if r_type == dict: return public.returnJson(False,public.GetMsg("RETURN_TYPE_ERR") + '[%s]' % r_type), json_header
             return data
     except:
-        return public.get_error_info().replace('\n','<br>\n')
+        error_info = public.get_error_info()
+        public.submit_error(error_info)
+        return error_info.replace('\n','<br>\n')
 
 
 @app.route('/wxapp',methods=method_all)
@@ -991,9 +999,12 @@ def publicObject(toObject,defs,action=None,get = None):
 
     if hasattr(get,'path'):
             get.path = get.path.replace('//','/').replace('\\','/');
-            if get.path.find('..') != -1: return public.ReturnJson(False,public.GetMsg("UNSAFE_PATH")),json_header
+            if get.path.find('./') != -1: return public.ReturnJson(False,public.GetMsg("UNSAFE_PATH")),json_header
             if get.path.find('->') != -1:
                 get.path = get.path.split('->')[0].strip();
+
+    if hasattr(toObject,'site_path_check'):
+        if not toObject.site_path_check(get): return public.ReturnJson(False,'Excessive operation!'),json_header
 
     for key in defs:
         if key == get.action:

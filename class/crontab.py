@@ -412,6 +412,7 @@ echo "--------------------------------------------------------------------------
         
         if not os.path.exists(file): public.writeFile(file,'')
         conf = public.readFile(file)
+        if type(conf)==bool:return public.returnMsg(False,'Failed to read file!')
         conf += config + "\n"
         if public.writeFile(file,conf):
             if not os.path.exists(u_file):

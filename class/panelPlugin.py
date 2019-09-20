@@ -6,7 +6,7 @@
 #-------------------------------------------------------------------
 # Author: 黄文良 <287962566@qq.com>
 #-------------------------------------------------------------------
-import public,os,sys,json,time,psutil,py_compile
+import public,os,sys,json,time,psutil,py_compile,re
 from BTPanel import session,cache
 if sys.version_info[0] == 3: from importlib import reload
 class mget: pass;
@@ -119,6 +119,7 @@ class panelPlugin:
     #安装插件
     def install_plugin(self,get):
         if not self.check_sys_write(): return public.returnMsg(False,'CANT_WRITE_SYS_DIR')
+        if not 'sName' in get: return public.returnMsg(False,'Please specify the software name!')
         pluginInfo = self.get_soft_find(get.sName);
         p_node = '/www/server/panel/install/public.sh'
         if os.path.exists(p_node):
@@ -343,6 +344,10 @@ class panelPlugin:
             else:
                 if name1 == 'pure': name1 = 'pure-ftpd';
                 if name1 == sName: isTask = task['status']; 
+
+            if isTask == '-1' or isTask == '0':
+                if task['name'].find('upgrade') != -1: isTask = '-2'
+            break
         return isTask
 
 
@@ -712,23 +717,38 @@ class panelPlugin:
             versions[i]['setup'] = (version[:vLen] == vTmp)
         return versions
 
+    #取pids
+    def get_pids(self):
+        pids = []
+        for pid in os.listdir('/proc'):
+            if re.match("^\d+$",pid): pids.append(pid)
+        return pids
 
 
     #进程是否存在
     def process_exists(self,pname,exe = None):
-        try:
-            if not self.pids: self.pids = psutil.pids()
-            for pid in self.pids:
-                try:
-                    p = psutil.Process(pid)
-                    if p.name() == pname: 
-                        if not exe:
-                            return True;
-                        else:
-                            if p.exe() == exe: return True
-                except:pass
-            return False
-        except: return True
+        if not self.pids: self.pids = psutil.pids() #self.get_pids() #
+        for pid in self.pids:
+            l = '/proc/%s/exe' % pid
+            f = '/proc/%s/comm' % pid
+            p_exe = ''
+            p_name = ''
+            if os.path.exists(l):
+                p_exe = os.readlink(l)
+                if not p_name: p_name = p_exe.split('/')[-1]
+
+            if not p_name and os.path.exists(f):
+                fp = open(f,'r')
+                p_name = fp.read().strip()
+                fp.close()
+
+            if not p_name: continue
+            if p_name == pname:
+                if not exe:
+                    return True;
+                else:
+                    if p_exe == exe: return True
+        return False
 
      #取分页
     def get_page(self,data,get):

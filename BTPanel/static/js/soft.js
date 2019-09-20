@@ -1,5 +1,6 @@
 var soft = {
-    get_list: function(page, type, search) {
+    is_install: false,
+    get_list: function (page, type, search) {
         if (page == undefined) page = 0;
         if (type == undefined) type = 0;
 
@@ -14,9 +15,8 @@ var soft = {
             soft.get_dep_list(1)
             return;
         }
-
+        soft.is_install = false;
         bt.soft.get_soft_list(page, type, search, function (rdata) {
-
             if (rdata.pro >= 0) {
                 $("#updata_pro_info").html('');
             } else if (rdata.pro === -2) {
@@ -228,7 +228,7 @@ var soft = {
                                 }
                             }
                             else {
-                                if (item.setup) {
+                                if (item.setup && item.task == '1') {
                                     if (pay_opt == '') {
                                         if (item.versions.length > 1) {
                                             for (var i = 0; i < item.versions.length; i++) {
@@ -258,9 +258,15 @@ var soft = {
                                 }
                                 else if (item.task == '-1') {
                                     option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.installing + '</a>';
+                                    soft.is_install = true;
                                 }
                                 else if (item.task == '0') {
                                     option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.wait_install + '</a>';
+                                    soft.is_install = true;
+                                }
+                                else if (item.task == '-2') {
+                                    option = '<a class="btlink" onclick="messagebox()"  >Updating</a>';
+                                    soft.is_install = true;
                                 }
                                 else {
                                     if (pay_opt) {
@@ -277,6 +283,14 @@ var soft = {
                 ],
                 data: data
             })
+            bt.set_cookie('load_page', (page+'').split('not_load')[0])
+            bt.set_cookie('load_type', type)
+            bt.set_cookie('load_search', search)
+            if (soft.is_install) {
+                setTimeout(function () {
+                    soft.get_list(page + 'not_load', type, search);
+                }, 3000);
+            }
         })
     },
     get_dep_list: function (p) {

@@ -71,10 +71,11 @@ class SiteDirAuth:
         if not get.name:
             return public.returnMsg(False, 'Please enter the Name')
 
-        if site_dir[0] == "/":
-            site_dir = site_dir[1:]
-            if site_dir[-1] == "/":
-                site_dir = site_dir[:-1]
+        if site_dir[0] != "/" or site_dir[-1] != "/":
+            return public.returnMsg(False, 'Directory format is incorrect')
+            # site_dir = site_dir[1:]
+            # if site_dir[-1] == "/":
+            #     site_dir = site_dir[:-1]
         passwd = public.hasPwd(get.password)
         site_info = self.get_site_info(get.id)
         site_name = site_info["site_name"]
@@ -126,7 +127,7 @@ class SiteDirAuth:
             file_path = "{setup_path}/panel/vhost/{webserver}/dir_auth/{site_name}"
             if i == "nginx":
                 # 设置nginx
-                conf = '''location ~* ^/%s/* {
+                conf = '''location ~* ^%s* {
     #AUTH_START
     auth_basic "Authorization";
     auth_basic_user_file %s;
@@ -134,7 +135,7 @@ class SiteDirAuth:
 }''' % (site_dir,auth_file)
             else:
             # 设置apache
-                conf = '''<Directory "{site_path}/{site_dir}/">
+                conf = '''<Directory "{site_path}{site_dir}">
     #AUTH_START
     AuthType basic
     AuthName "Authorization "

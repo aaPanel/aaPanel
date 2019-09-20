@@ -409,14 +409,15 @@ def bt_cli(u_input = 0):
         print("(7) %s     (14) %s"% (public.GetMsg("CHANGE_MYSQL_PASS_FORCE"),public.GetMsg("GET_PANEL_DEFAULT_MSG")))
         print("(22) %s                (15) %s"% ("Display panel error log",public.GetMsg("CLEAR_SYS_RUBBISH")))
         print("(23) %s      (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
-        print("(0) Cancel                                  (17) Set log cutting on/off compression")
+        print("(24) Turn off Google Authenticator          (17) Set log cutting on/off compression")
+        print("(0) Cancel")
         print(raw_tip)
         try:
             u_input = input(public.GetMsg("INPUT_CMD_NUM"))
             if sys.version_info[0] == 3: u_input = int(u_input)
         except: u_input = 0
 
-    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,22,23]
+    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,22,23,24]
     if not u_input in nums:
         print(raw_tip)
         print(public.GetMsg("CANCELLED"))
@@ -543,6 +544,10 @@ def bt_cli(u_input = 0):
         if os.path.exists(filename): os.remove(filename)
         os.system('bt reload')
         print("|-BasicAuth authentication has been turned off")
+    elif u_input == 24:
+        filename = '/www/server/panel/data/two_step_auth.txt'
+        if os.path.exists(filename): os.remove(filename)
+        print("|-Google Authenticator has been turned off")
 
 
 

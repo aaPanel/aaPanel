@@ -57,27 +57,45 @@ class panelLets:
             ret = p12.set_ca_certificates((crypto.load_certificate(crypto.FILETYPE_PEM, ca_pem.encode()),) )
         if friendly_name:
             ret = p12.set_friendlyname(friendly_name.encode())
-        return p12  
+        return p12
+
+    #域名处理
+    def extract_zone(self,domain_name):
+        domain_name = domain_name.lstrip("*.")
+
+        #处理地区域名
+        top_domain_list = ['.ac.cn', '.ah.cn', '.bj.cn', '.com.cn', '.cq.cn', '.fj.cn', '.gd.cn',
+                            '.gov.cn', '.gs.cn', '.gx.cn', '.gz.cn', '.ha.cn', '.hb.cn', '.he.cn',
+                            '.hi.cn', '.hk.cn', '.hl.cn', '.hn.cn', '.jl.cn', '.js.cn', '.jx.cn',
+                            '.ln.cn', '.mo.cn', '.net.cn', '.nm.cn', '.nx.cn', '.org.cn']
+        m_count = domain_name.count(".")
+        top_domain = "."+".".join(domain_name.rsplit('.')[-2:])
+        new_top_domain = "." + top_domain.replace(".","")
+        is_tow_top = False
+        if top_domain in top_domain_list:
+            is_tow_top = True
+            domain_name = domain_name[:-len(top_domain)] + new_top_domain #地区域名后缀去点处理
+
+        if domain_name.count(".") > 1:
+            zone, middle, last = domain_name.rsplit(".", 2)
+            acme_txt = "_acme-challenge.%s" % zone
+            if is_tow_top: last = top_domain[1:] #还原地区域名
+            root = ".".join([middle, last])
+        else:
+            zone = ""
+            root = domain_name
+            acme_txt = "_acme-challenge"
+        return root, zone, acme_txt
 
     #获取根域名
     def get_root_domain(self,domain_name):
-        if domain_name.count(".") != 1:  
-            pos = domain_name.rfind(".", 0, domain_name.rfind("."))
-            subd = domain_name[:pos]
-            domain_name =  domain_name[pos + 1 :]
-        return domain_name
-    
+        d_root,tow_name,acme_txt = self.extract_zone(domain_name)
+        return d_root
+
     #获取acmename
     def get_acme_name(self,domain_name):
-        domain_name = domain_name.lstrip("*.")
-        if domain_name.count(".") > 1:
-            zone, middle, last = str(domain_name).rsplit(".", 2)
-            root = ".".join([middle, last])
-            acme_name = "_acme-challenge.%s.%s" % (zone,root)
-        else:          
-            root = domain_name
-            acme_name = "_acme-challenge.%s" % root
-        return acme_name
+        d_root,tow_name,acme_txt = self.extract_zone(domain_name)
+        return acme_txt + '.' + d_root
 
     #格式化错误输出
     def get_error(self,error):
@@ -286,7 +304,7 @@ class panelLets:
                 cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo
                 shell = 'python %s/panel/class/panelLets.py renew_lets_ssl ' % (self.setupPath)
                 public.writeFile(cronPath,shell)
-                args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("续签Let's Encrypt证书",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
+                args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("Renew the Letter's Encrypt certificate",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
                 crontab.crontab().set_cron_status(args_obj)
             else:
                 cron_path = public.get_cron_path()

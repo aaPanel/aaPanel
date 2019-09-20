@@ -243,10 +243,11 @@ class plugin_deployment:
         site_name = get.site_name;
         php_version = get.php_version;
         #取基础信息
-        find = public.M('sites').where('name=?',(site_name,)).field('id,path,name').find();
-        path = find['path'];
+        find = public.M('sites').where('name=?',(site_name,)).field('id,path,name').find()
+        if not  'path' in find:
+            return public.returnMsg(False, 'Site not exist!')
+        path = find['path']
         if path.replace('//','/') == '/': return public.returnMsg(False,'Dangerous website root directory!')
-
         #获取包信息
         pinfo = self.GetPackageInfo(name);
         id = pinfo['id']

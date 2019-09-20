@@ -289,7 +289,10 @@ class panelSite(panelRedirect):
         
         #创建根目录
         if not os.path.exists(self.sitePath): 
-            os.makedirs(self.sitePath)
+            try:
+                os.makedirs(self.sitePath)
+            except Exception as ex:
+                return public.returnMsg(False,'Failed to create site root directory, %s' % ex)
             public.ExecShell('chmod -R 755 ' + self.sitePath);
             public.ExecShell('chown -R www:www ' + self.sitePath);
         
@@ -549,6 +552,7 @@ class panelSite(panelRedirect):
         if isError != True:
             return public.returnMsg(False,'ERROR: %s<br><br><a style="color:red;">' % public.GetMsg("GET_ERR_IN_CONFILE") +isError.replace("\n",'<br>')+'</a>');
         
+        if not 'domain' in get: return public.returnMsg(False,'Please fill in the domain name!')
         if len(get.domain) < 3: return public.returnMsg(False,'SITE_ADD_DOMAIN_ERR_EMPTY');
         domains = get.domain.replace(' ','').split(',')
         
@@ -576,8 +580,6 @@ class panelSite(panelRedirect):
             if public.M('binding').where('domain=?',(get.domain,)).count():
                 return public.returnMsg(False,'SITE_ADD_ERR_DOMAIN_EXISTS');
 
-                
-            
             #写配置文件
             self.NginxDomain(get)
             try:
@@ -720,6 +722,8 @@ class panelSite(panelRedirect):
     
     #删除域名
     def DelDomain(self,get):
+        if not 'id' in get:return public.returnMsg(False,'Please choose a domain name')
+        if not 'port' in get: return public.returnMsg(False, 'Please choose a port')
         sql = public.M('domain');
         id=get['id'];
         port = get.port;
@@ -846,7 +850,9 @@ class panelSite(panelRedirect):
         if not get.id: return False;
         if type(get.id) == list: get.id = get.id[0]['id'];
         result = self.GetSiteRunPath(get);
-        return result['runPath'];
+        if 'runPath' in result:
+            return result['runPath'];
+        return False
 
 
     # 创建Let's Encrypt免费证书
@@ -1838,7 +1844,7 @@ server
         
         public.M('binding').where("id=?",(id,)).delete();
         filename = self.setupPath + '/panel/vhost/rewrite/' + siteName + '_' + binding['path'] + '.conf';
-        if os.path.exists(filename): os.remove(filename)
+        if os.path.exists(filename): os.system('rm -rf %s'%filename)
         public.serviceReload();
         public.WriteLog('TYPE_SITE', 'SITE_BINDING_DEL_SUCCESS',(siteName,binding['path']));
         return public.returnMsg(True,'DEL_SUCCESS')
@@ -1888,9 +1894,10 @@ server
             rep = "\s+index\s+(.+);";
         else:
             rep = "DirectoryIndex\s+(.+)\n";
-            
-        tmp = re.search(rep,conf).groups()
-        return tmp[0].replace(' ',',')
+        if re.search(rep,conf):
+            tmp = re.search(rep,conf).groups()
+            return tmp[0].replace(' ',',')
+        return public.returnMsg(False,'Failed to get, there is no default document in the configuration file')
     
     #设置默认文档
     def SetIndex(self,get):
@@ -2044,7 +2051,8 @@ server
     
     #是否开启目录防御
     def GetDirUserINI(self,get):
-        path = get.path + self.GetRunPath(get);
+        path = get.path + self.GetRunPath(get)
+        if not path:return public.returnMsg(False,'Failed to get directory')
         id = get.id;
         get.name = public.M('sites').where("id=?",(id,)).getField('name');
         data = {}
@@ -3011,6 +3019,7 @@ location %s
             get.siteName = public.M('sites').where('id=?',(get.id,)).getField('name');
             get.configFile = self.setupPath + '/panel/vhost/nginx/' + get.siteName + '.conf';
         conf = public.readFile(get.configFile);
+        if type(conf)==bool:return False
         if conf.find('#AUTH_START') != -1: return True;
         return False;
             

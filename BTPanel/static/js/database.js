@@ -419,5 +419,15 @@ var database = {
                 });
             }, 100)
         })
+    },
+    remove_input_file: function (fileName,name) {
+        layer.confirm(lan.get('recycle_bin_confirm', [fileName]), { title: lan.files.del_file, closeBtn: 2, icon: 3 }, function (index) {
+            layer.msg(lan.public.the, { icon: 16, time: 0, shade: [0.3, '#000'] });
+            $.post('/files?action=DeleteFile', 'path=' + encodeURIComponent(fileName), function (rdata) {
+                layer.close(index);
+                layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+                database.input_database(name);
+            });
+        });
     }
 }

@@ -24,7 +24,7 @@ class database(datatool.datatools):
             reg = "^[\w\.-]+$"
             if not re.match(reg, data_name): return public.returnMsg(False,'DATABASE_NAME_ERR_T')
             if not hasattr(get,'db_user'): get.db_user = data_name;
-            username = get.db_user.strip();
+            username = get.db_user.strip()
             checks = ['root','mysql','test','sys','panel_logs']
             if username in checks or len(username) < 1: return public.returnMsg(False,'DATABASE_USER_NAME_ERR');
             if data_name in checks or len(data_name) < 1: return public.returnMsg(False,'DATABASE_NAME_ERR');
@@ -389,14 +389,14 @@ SetLink
         name = public.M('databases').where("id=?",(id,)).getField('name')
         root = public.M('config').where('id=?',(1,)).getField('mysql_root');
         if not os.path.exists(session['config']['backup_path'] + '/database'): os.system('mkdir -p ' + session['config']['backup_path'] + '/database');
-        self.mypass(True, root);
+        if not self.mypass(True, root):return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
         
         fileName = name + '_' + time.strftime('%Y%m%d_%H%M%S',time.localtime()) + '.sql.gz'
         backupName = session['config']['backup_path'] + '/database/' + fileName
         public.ExecShell("/www/server/mysql/bin/mysqldump --default-character-set="+ public.get_database_character(name) +" --force --opt \"" + name + "\" | gzip > " + backupName)
         if not os.path.exists(backupName): return public.returnMsg(False,'BACKUP_ERROR');
-        
-        self.mypass(False, root);
+
+        if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
         
         sql = public.M('backup')
         addTime = time.strftime('%Y-%m-%d %X',time.localtime())
@@ -457,17 +457,17 @@ SetLink
                     public.ExecShell("cd "  +  backupPath  +  " && gunzip -q " +  '"'+file+'"')
                     isgzip = True
             if not os.path.exists(backupPath + '/' + tmpFile) or tmpFile == '': return public.returnMsg(False, 'FILE_NOT_EXISTS',(tmpFile,))
-            self.mypass(True, root);
+            if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
             os.system(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < " +'"'+ backupPath + '/' +tmpFile+'"')
-            self.mypass(False, root);
+            if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
             if isgzip:
                 os.system('cd ' +backupPath+ ' && gzip ' + file.split('/')[-1][:-3]);
             else:
                 os.system("rm -f " +  backupPath + '/' +tmpFile)
         else:
-            self.mypass(True, root);
+            if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
             os.system(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < "+'"' +  file+'"')
-            self.mypass(False, root);
+            if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
                 
             
         public.WriteLog("TYPE_DATABASE", 'DATABASE_INPUT_SUCCESS',(name,))
@@ -508,9 +508,11 @@ SetLink
             rep = "\[mysqldump\]\nuser=root"
             sea = "[mysqldump]\n"
             subStr = sea + "user=root\npassword=\"" + root + "\"\n";
+            if type(mycnf)==bool:return False
             mycnf = mycnf.replace(sea,subStr)
             if len(mycnf) > 100: public.writeFile('/etc/my.cnf',mycnf);
-    
+            return True
+
     #添加到服务器
     def ToDataBase(self,find):
         #if find['username'] == 'bt_default': return 0
@@ -593,14 +595,16 @@ SetLink
         db_name = public.M('databases').where('username=?',(name,)).getField('name');
         access = get['access']
         password = public.M('databases').where("username=?",(name,)).getField('password')
-        users = panelMysql.panelMysql().query("select Host from mysql.user where User='" + name + "' AND Host!='localhost'")
+        mysql_obj = panelMysql.panelMysql()
+        result = mysql_obj.query("show databases")
+        isError = self.IsSqlError(result)
+        if isError != None: return isError
+        users = mysql_obj.query("select Host from mysql.user where User='" + name + "' AND Host!='localhost'")
         for us in users:
-            panelMysql.panelMysql().execute("drop user '" + name + "'@'" + us[0] + "'")
+            mysql_obj.execute("drop user '" + name + "'@'" + us[0] + "'")
         self.__CreateUsers(db_name,name,password,access)
-
         return public.returnMsg(True, 'SET_SUCCESS')
-        
-    
+
     #获取数据库配置信息
     def GetMySQLInfo(self,get):
         data = {}
@@ -756,10 +760,15 @@ SetLink
         except:pass
         for d in data:
             for g in gets:
-                if d[0] == g: result[g] = d[1];
-        result['Run'] = int(time.time()) - int(result['Uptime'])
+                try:
+                    if d[0] == g: result[g] = d[1];
+                except:
+                    pass
+        if not 'Run' in result and result:
+            result['Run'] = int(time.time()) - int(result['Uptime'])
         tmp = panelMysql.panelMysql().query('show master status');
         try:
+
             result['File'] = tmp[0][0];
             result['Position'] = tmp[0][1];
         except:
@@ -767,6 +776,7 @@ SetLink
             result['Position'] = 'OFF';
         return result;
     
+
     #取慢日志
     def GetSlowLogs(self,get):
         path = self.GetMySQLInfo(get)['datadir'] + '/mysql-slow.log';
