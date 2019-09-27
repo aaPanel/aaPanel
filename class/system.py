@@ -340,7 +340,7 @@ class system:
     def GetDiskInfo2(self):
         #取磁盘分区信息
         temp = public.ExecShell("df -h -P|grep '/'|grep -v tmpfs")[0];
-        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs")[0];
+        tempInodes = public.ExecShell("df -i -P|grep '/'|egrep -v 'tmpfs|udev'")[0];
         temp1 = temp.split('\n');
         tempInodes1 = tempInodes.split('\n');
         diskInfo = [];
