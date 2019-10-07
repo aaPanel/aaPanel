@@ -20,7 +20,7 @@ class database(datatool.datatools):
         try:
             data_name = get['name'].strip()
             if self.CheckRecycleBin(data_name): return public.returnMsg(False,'DATABASE_DEL_RECYCLE_BIN',(data_name,))
-            if len(data_name) > 16: return public.returnMsg(False, 'DATABASE_NAME_LEN')
+            if len(data_name) > 64: return public.returnMsg(False, 'DATABASE_NAME_LEN')
             reg = "^[\w\.-]+$"
             if not re.match(reg, data_name): return public.returnMsg(False,'DATABASE_NAME_ERR_T')
             if not hasattr(get,'db_user'): get.db_user = data_name;
