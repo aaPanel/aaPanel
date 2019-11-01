@@ -11,7 +11,7 @@
 # 宝塔公共库
 # --------------------------------
 
-import json, os, sys, time, re, socket
+import json,os,sys,time,re,socket,importlib,binascii,base64
 
 if sys.version_info[0] == 2:
     reload(sys)
@@ -902,7 +902,7 @@ def CheckMyCnf():
     confFile = '/etc/my.cnf'
     if os.path.exists(confFile):
         conf = readFile(confFile)
-        if len(conf) > 100: return True;
+        if conf.find('[mysqld]') != -1: return True;
     versionFile = '/www/server/mysql/version.pl';
     if not os.path.exists(versionFile): return False;
 
@@ -921,7 +921,7 @@ export PATH
 CN='125.88.182.172'
 HK='download.bt.cn'
 HK2='103.224.251.67'
-US='174.139.221.74'
+US='128.1.164.196'
 sleep 0.5;
 CN_PING=`ping -c 1 -w 1 $CN|grep time=|awk '{print $7}'|sed "s/time=//"`
 HK_PING=`ping -c 1 -w 1 $HK|grep time=|awk '{print $7}'|sed "s/time=//"`
@@ -1336,7 +1336,7 @@ def mod_reload(mode):
             reload(mode)
         else:
             import imp
-            imp.reload(module)
+            imp.reload(mode)
         return True
     except:
         return False
@@ -1444,13 +1444,13 @@ def en_crypt(key,strings):
 #解密字符串
 def de_crypt(key,strings):
     try:
-        if type(strings) != bytes: strings = strings.encode('utf-8')
+        if type(strings) != bytes: strings = strings.decode('utf-8')
         from cryptography.fernet import Fernet
         f = Fernet(key)
         result =  f.decrypt(strings).decode('utf-8')
         return result
     except:
-        print(get_error_info())
+        #print(get_error_info())
         return strings
 
 
@@ -1527,6 +1527,82 @@ def check_port_stat(port):
 
     result = 0;
     if temp['local']: result +=2;
+    return result;
+
+
+#同步时间
+def sync_date():
+    tip_file = "/dev/shm/last_sync_time.pl"
+    s_time = int(time.time())
+    try:
+        if os.path.exists(tip_file):
+            if s_time - int(readFile(tip_file)) < 60: return False
+            os.remove(tip_file)
+        time_str = HttpGet('http://www.bt.cn/api/index/get_time')
+        new_time = int(time_str)
+        time_arr = time.localtime(new_time)
+        date_str = time.strftime("%Y-%m-%d %H:%M:%S", time_arr)
+        os.system('date -s "%s"' % date_str)
+        writeFile(tip_file,str(s_time))
+        return True
+    except:
+        if os.path.exists(tip_file): os.remove(tip_file)
+        return False
+
+
+#重载模块
+def reload_mod(mod_name = None):
+    #是否重载指定模块
+    modules = []
+    if mod_name:
+        if type(mod_name) == str:
+            mod_names = mod_name.split(',')
+
+        for mod_name in mod_names:
+            if mod_name in sys.modules:
+                print(mod_name)
+                try:
+                    if sys.version_info[0] == 2:
+                        reload(sys.modules[mod_name])
+                    else:
+                        importlib.reload(sys.modules[mod_name])
+                    modules.append([mod_name,True])
+                except:
+                    modules.append([mod_name,False])
+            else:
+                modules.append([mod_name,False])
+        return modules
+
+    #重载所有模块
+    for mod_name in sys.modules.keys():
+        if mod_name in ['BTPanel']: continue
+        f = getattr(sys.modules[mod_name],'__file__',None)
+        if f:
+            try:
+                if f.find('panel/') == -1: continue
+                if sys.version_info[0] == 2:
+                    reload(sys.modules[mod_name])
+                else:
+                    importlib.reload(sys.modules[mod_name])
+                modules.append([mod_name,True])
+            except:
+                modules.append([mod_name,False])
+    return modules
+
+
+def de_hexb(data):
+    if sys.version_info[0] != 2:
+        if type(data) == str: data = data.encode('utf-8')
+    pdata = base64.b64encode(data);
+    if sys.version_info[0] != 2:
+        if type(pdata) == str: pdata = pdata.encode('utf-8')
+    return binascii.hexlify(pdata);
+
+def en_hexb(data):
+    if sys.version_info[0] != 2:
+        if type(data) == str: data = data.encode('utf-8')
+    result = base64.b64decode(binascii.unhexlify(data));
+    if type(result) != str: result = result.decode('utf-8')
     return result;
 
 #取通用对象

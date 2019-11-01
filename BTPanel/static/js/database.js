@@ -2,6 +2,7 @@
 var database = {
     get_list: function (page, search) {
         if (page == undefined) page = 1;
+        if (!search) search = $("#SearchValue").val();
         bt.database.get_list(page, search, function (rdata) {
             $('#databasePage').html(rdata.page);
             var _tab = bt.render({
@@ -369,7 +370,7 @@ var database = {
     },
     input_database: function (name) {
         var path = bt.get_cookie('backup_path') + "/database";
-        bt.files.get_files(path, '', function (rdata) {
+        bt.send('get_files', 'files/GetDir', 'reverse=True&sort=mtime&tojs=GetFiles&p=1&showRow=100&path=' + path, function (rdata) {
             var data = [];
             for (var i = 0; i < rdata.FILES.length; i++) {
                 if (rdata.FILES[i] == null) continue;
@@ -410,8 +411,8 @@ var database = {
                             }
                         },
                         {
-                            field: 'opt', title: lan.database.operation, align: 'right', templet: function (item) {
-                                return '<a class="btlink" herf="javascrpit:;" onclick="bt.database.input_sql(\'' + bt.rtrim(rdata.PATH, '/') + "/" + item.name + '\',\'' + name + '\')">'+lan.database.input+'</a>  ';;
+                            field: 'opt', title: 'Operating', align: 'right', templet: function (item) {
+                                return '<a class="btlink" herf="javascrpit:;" onclick="bt.database.input_sql(\'' + bt.rtrim(rdata.PATH, '/') + "/" + item.name + '\',\'' + name + '\')">'+lan.database.input+'</a>  | <a class="btlink" onclick="database.remove_input_file(\'' + bt.rtrim(rdata.PATH, '/') + "/" + item.name + '\',\'' + name + '\')">Del</a>';
                             }
                         },
                     ],

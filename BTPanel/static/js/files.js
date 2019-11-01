@@ -534,15 +534,15 @@ function GetFiles(Path,sort) {
 							</thead>\
 							<tbody id="filesBody" class="list-list">'+Body+'</tbody>\
 						</table></div><div class="oldTableShadow"></div>';
-			$("#fileCon").removeClass("fileList").html(tablehtml);
-			$("#tipTools").width($("#fileCon").width());
-		}
-		else{
-			$("#fileCon").addClass("fileList").html(Body);
-			$("#tipTools").width($("#fileCon").width());
-		}
-		$("#DirPathPlace input").val(rdata.PATH);
-		var BarTools = '<div class="btn-group">\
+            $("#fileCon").removeClass("fileList").html(tablehtml);
+            $("#tipTools").width($("#fileCon")[0].clientWidth - 20);
+        }
+        else {
+            $("#fileCon").addClass("fileList").html(Body);
+            $("#tipTools").width($("#fileCon")[0].clientWidth - 20);
+        }
+        $("#DirPathPlace input").val(rdata.PATH);
+        var BarTools = '<div class="btn-group">\
 						<button class="btn btn-default btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">\
 						'+lan.files.new+' <span class="caret"></span>\
 						</button>\
@@ -600,9 +600,9 @@ function GetFiles(Path,sort) {
 		}
 		$("#Batch").html(BatchTools);
 		$("#setBox").prop("checked", false);
-		
+
 		$("#BarTools").html(BarTools);
-		
+
 		$("input[name=id]").click(function(){
 			if($(this).prop("checked")) {
 				$(this).prop("checked", true);
@@ -631,7 +631,7 @@ function GetFiles(Path,sort) {
 			if ($(this).prop("checked")) {
 				$("input[name=id]").prop("checked", true);
 				$("#filesBody > tr").addClass("ui-selected");
-				
+
 			} else {
 				$("input[name=id]").prop("checked", false);
 				$("#filesBody > tr").removeClass("ui-selected");
@@ -690,13 +690,13 @@ function auto_table_width(){
     });
 	if(oldTable_heigth > oldTable){
 		$('.oldTableShadow,.newTableShadow').show();
-		$('.oldTable').css('marginTop','-8px')
+		$('.oldTable').css('marginTop','0')
 	}else{
     	$('.oldTableShadow,.newTableShadow').hide();
 		$('.oldTable').css('marginTop','0')
 	}
   	$('.oldTable').height(oldTable);
-	$('.oldTable table').css({'marginTop':'-39px'})
+    $('.oldTable table').css({ 'marginTop': '-36px' })
 
 }
 
@@ -757,22 +757,22 @@ function showSeclect(){
 		$("#Batch").html(BatchTools);
 	}
 }
-$("#tipTools").width($(".file-box").width());
-$("#PathPlaceBtn").width($(".file-box").width()-700);
-$("#DirPathPlace input").width($(".file-box").width()-700);
-if($(window).width()<1160){
-	$("#PathPlaceBtn").width(290);
+$("#tipTools").width($(".file-box")[0].clientWidth);
+$("#PathPlaceBtn").width($(".file-box").width() - 700);
+$("#DirPathPlace input").width($(".file-box").width() - 700);
+if ($(window).width() < 1160) {
+    $("#PathPlaceBtn").width(290);
 }
-window.onresize = function(){
-	$("#tipTools").width($(".file-box").width()-30);
-	$("#PathPlaceBtn").width($(".file-box").width()-700);
-	$("#DirPathPlace input").width($(".file-box").width()-700);
-	if($(window).width()<1160){
-		$("#PathPlaceBtn,#DirPathPlace input").width(290);
-	}
-	PathLeft();
-	IsDiskWidth()
-  	auto_table_width();
+window.onresize = function () {
+    $("#tipTools").width($(".file-box")[0].clientWidth);
+    $("#PathPlaceBtn").width($(".file-box").width() - 700);
+    $("#DirPathPlace input").width($(".file-box").width() - 700);
+    if ($(window).width() < 1160) {
+        $("#PathPlaceBtn,#DirPathPlace input").width(290);
+    }
+    PathLeft();
+    IsDiskWidth()
+    auto_table_width();
 }
 function Batch(type,access){
 	var path = $("#DirPathPlace input").val();
@@ -781,9 +781,9 @@ function Batch(type,access){
 	var data='path='+path+'&type='+type;
     var name = 'data';
     var datas = []
-	
+
 	var oldType = getCookie('BatchPaste');
-	
+
 	for(var i=0;i<len;i++){
         if (el[i].checked == true && el[i].value != 'on') {
             datas.push(el[i].value)
@@ -791,27 +791,28 @@ function Batch(type,access){
     }
 
     data += "&data=" + encodeURIComponent(JSON.stringify(datas))
-	
+
 	if(type == 3 && access == undefined){
 		SetChmod(0,lan.files.all);
 		return;
 	}
-	
+
 	if(type < 3) setCookie('BatchSelected', '1');
 	setCookie('BatchPaste',type);
-	
-	if(access == 1){
-		var access = $("#access").val();
-		var chown = $("#chown").val();
-		data += '&access='+access+'&user='+chown;
-		layer.closeAll();
-	}
-	if(type == 4){
-		AllDeleteFileSub(data,path);
-		setCookie('BatchPaste',oldType);
-		return;
-	}
-	
+
+    if (access == 1) {
+        var access = $("#access").val();
+        var chown = $("#chown").val();
+        var all = $("#accept_all").prop("checked") ? 'True' : 'False';
+        data += '&access=' + access + '&user=' + chown + "&all=" + all;
+        layer.closeAll();
+    }
+    if (type == 4) {
+        AllDeleteFileSub(data, path);
+        setCookie('BatchPaste', oldType);
+        return;
+    }
+
 	if(type == 5){
 		var names = '';
 		for(var i=0;i<len;i++){
@@ -822,7 +823,7 @@ function Batch(type,access){
 		Zip(names);
 		return;
 	}
-		
+
 	myloadT = layer.msg("<div class='myspeed'>"+lan.public.the+"</div>",{icon:16,time:0,shade: [0.3, '#000']});
 	setTimeout(function(){getSpeed('.myspeed');},1000);
 	$.post('/files?action=SetBatchData',data,function(rdata){
@@ -835,14 +836,14 @@ function BatchPaste(){
 	var path = $("#DirPathPlace input").val();
 	var type = getCookie('BatchPaste');
 	var data = 'type='+type+'&path='+path;
-	
+
 	$.post('/files?action=CheckExistsFiles',{dfile:path},function(result){
 		if(result.length > 0){
 			var tbody = '';
 			for(var i=0;i<result.length;i++){
 				tbody += '<tr><td>'+result[i].filename+'</td><td>'+ToSize(result[i].size)+'</td><td>'+getLocalTime(result[i].mtime)+'</td></tr>';
 			}
-			var mbody = '<div class="divtable" style="height: 395px;overflow: auto;border: #ddd 1px solid;position: relative;"><table class="table table-hover" width="100%" border="0" cellpadding="0" cellspacing="0"><thead><th>'+lan.files.file_name+'</th><th>'+lan.files.file_size+'</th><th>'+lan.files.last_edit_time+'</th></thead>\
+			var mbody = '<div class="divtable" style="height: 395px;overflow: auto;margin-top: -8px;border: #ddd 1px solid;position: relative;"><table class="table table-hover" width="100%" border="0" cellpadding="0" cellspacing="0"><thead><th>'+lan.files.file_name+'</th><th>'+lan.files.file_size+'</th><th>'+lan.files.last_edit_time+'</th></thead>\
 						<tbody>'+tbody+'</tbody>\
 						</table></div>';
 			SafeMessage(lan.files.will_cover_this_file,mbody,function(){
@@ -854,7 +855,7 @@ function BatchPaste(){
 		}
 	});
 }
-	
+
 function BatchPasteTo(data,path){
 	myloadT = layer.msg("<div class='myspeed'>"+lan.public.the+"</div>",{icon:16,time:0,shade: [0.3, '#000']});
 	setTimeout(function(){getSpeed('.myspeed');},1000);
@@ -866,7 +867,7 @@ function BatchPasteTo(data,path){
 	});
 }
 function GetExtName(fileName){
-	var extArr = fileName.split(".");	
+	var extArr = fileName.split(".");
 	var exts = ['folder','folder-unempty','sql','c','cpp','cs','flv','css','js','htm','html','java','log','mht','php','url','xml','ai','bmp','cdr','gif','ico','jpeg','jpg','JPG','png','psd','webp','ape','avi','flv','mkv','mov','mp3','mp4','mpeg','mpg','rm','rmvb','swf','wav','webm','wma','wmv','rtf','docx','fdf','potm','pptx','txt','xlsb','xlsx','7z','cab','iso','bz2','rar','zip','gz','bt','file','apk','bookfolder','folder','folder-empty','folder-unempty','fromchromefolder','documentfolder','fromphonefolder','mix','musicfolder','picturefolder','videofolder','sefolder','access','mdb','accdb','sql','c','cpp','cs','js','fla','flv','htm','html','java','log','mht','php','url','xml','ai','bmp','cdr','gif','ico','jpeg','jpg','JPG','png','psd','webp','ape','avi','flv','mkv','mov','mp3','mp4','mpeg','mpg','rm','rmvb','swf','wav','webm','wma','wmv','doc','docm','dotx','dotm','dot','rtf','docx','pdf','fdf','ppt','pptm','pot','potm','pptx','txt','xls','csv','xlsm','xlsb','xlsx','7z','gz','cab','iso','rar','zip','bt','file','apk','css'];
 	var extLastName = extArr[extArr.length - 1];
 	for(var i=0; i<exts.length; i++){
@@ -940,7 +941,7 @@ function CreateFile(type, path) {
 		type: 1,
 		shift: 5,
 		closeBtn: 2,
-		area: '320px', 
+		area: '320px',
 		title: lan.files.new_empty_file,
 		content: '<div class="bt-form pd20 pb70">\
 					<div class="line">\
@@ -1114,7 +1115,7 @@ function ExecShell(action){
 			else{
 				layer.msg(rdata.msg,{icon:rdata.status?1:2});
 			}
-			
+
 		});
 		return;
 	}
@@ -1122,7 +1123,7 @@ function ExecShell(action){
 		type: 1,
 		shift: 5,
 		closeBtn: 2,
-		area: ['70%','600px'], 
+		area: ['70%','600px'],
 		title: lan.files.shell_title,
 		content: '<div class="bt-form pd15">\
 					<div class="shellcode"><pre id="Result"></pre></div>\
@@ -1134,7 +1135,7 @@ function ExecShell(action){
 	setTimeout(function(){
 		outTimeGet();
 	},1000);
-	
+
 }
 
 var outTime = null;
@@ -1171,7 +1172,7 @@ function ReName(type, fileName) {
 		type: 1,
 		shift: 5,
 		closeBtn: 2,
-		area: '320px', 
+		area: '320px',
 		title: lan.files.file_menu_rename,
 		content: '<div class="bt-form pd20 pb70">\
 				<div class="line">\
@@ -1250,7 +1251,7 @@ function PasteTo(path,copyName,cutName,fileName){
 		setCookie('cutFileName', null);
 		return;
 	}
-	
+
 	if (cutName != 'null' && cutName != undefined) {
 		layer.msg(lan.files.mv_the, {
 			icon: 16,
@@ -1298,13 +1299,13 @@ function Zip(dirName,submits) {
 		});
 		return
 	}
-	
+
 	param = dirName;
 	if(dirName.indexOf(',') != -1){
 		tmp = path.split('/')
 		dirName = path + '/' + tmp[tmp.length-1]
 	}
-	
+
 	var layers = layer.open({
 		type: 1,
 		shift: 5,
@@ -1336,7 +1337,7 @@ function Zip(dirName,submits) {
             $("#dfile").val(dirName + '.' + z_type);
 		});
 	},100);
-	
+
 }
 function UnZip(fileName,type) {
 	var path = $("#DirPathPlace input").val();
@@ -1354,7 +1355,7 @@ function UnZip(fileName,type) {
 		});
 		return
 	}
-	
+
 	type = (type == 1) ? 'tar':'zip'
 	var umpass = '';
 	if(type == 'zip'){
@@ -1459,7 +1460,7 @@ function UploadFiles() {
 		type:1,
 		closeBtn: 2,
 		title:lan.files.up_title,
-		area: ['500px','500px'], 
+		area: ['500px','500px'],
 		shadeClose:false,
 		content:'<div class="fileUploadDiv"><input type="hidden" id="input-val" value="'+path+'" />\
 				<input type="file" id="file_input"  multiple="true" autocomplete="off" />\
@@ -1497,9 +1498,9 @@ function SetChmod(action,fileName){
 		});
 		return;
 	}
-	
+
 	var toExec = fileName == lan.files.all?'Batch(3,1)':'SetChmod(1,\''+fileName+'\')';
-	
+
 	$.post('/files?action=GetFileAccess','filename='+encodeURIComponent(fileName),function(rdata){
 		var layers = layer.open({
 			type:1,
@@ -1552,7 +1553,7 @@ function SetChmod(action,fileName){
 		$("#access").keyup(function(){
 			onAccess();
 		});
-		
+
 		$("input[type=checkbox]").change(function(){
 			var idName = ['owner','group','public'];
 			var onacc = '';
@@ -1564,15 +1565,15 @@ function SetChmod(action,fileName){
 				onacc += access;
 			}
 			$("#access").val(onacc);
-			
+
 		});
 	})
-	
+
 }
 
 function onAccess(){
 	var access = $("#access").val();
-	var idName = ['owner','group','public'];				
+	var idName = ['owner','group','public'];
 	for(var n=0;n<idName.length;n++){
 		$("#"+idName[n]+"_x").prop('checked',false);
 		$("#"+idName[n]+"_w").prop('checked',false);
@@ -1612,15 +1613,16 @@ function onAccess(){
 		}
 	}
 }
-function RClick(type, path, name, file_store){
-	var displayZip = isZip(type);
-	var options = {items:[
-	  {text: lan.files.file_menu_copy, 	onclick: function() {CopyFile(path)}},
-	  {text: lan.files.file_menu_mv, 	onclick: function() {CutFile(path)}},
-	  {text: lan.files.file_menu_rename, 	onclick: function() {ReName(0,name)}},
-	  {text: lan.files.file_menu_auth, 	onclick: function() {SetChmod(0,path)}},
-	  {text: lan.files.file_menu_zip, onclick: function() {Zip(path)}}
-	  
+function RClick(type, path, name, file_store) {
+    var displayZip = isZip(type);
+    var options = {
+        items: [
+            { text: lan.files.file_menu_copy, onclick: function () { CopyFile(path) } },
+            { text: lan.files.file_menu_mv, onclick: function () { CutFile(path) } },
+            { text: lan.files.file_menu_rename, onclick: function () { ReName(0, name) } },
+            { text: lan.files.file_menu_auth, onclick: function () { SetChmod(0, path) } },
+            { text: lan.files.file_menu_zip, onclick: function () { Zip(path) } }
+
     ]
     };
 

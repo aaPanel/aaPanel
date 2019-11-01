@@ -59,31 +59,29 @@ class panelLets:
             ret = p12.set_friendlyname(friendly_name.encode())
         return p12
 
-    #域名处理
     def extract_zone(self,domain_name):
         domain_name = domain_name.lstrip("*.")
-
-        #处理地区域名
         top_domain_list = ['.ac.cn', '.ah.cn', '.bj.cn', '.com.cn', '.cq.cn', '.fj.cn', '.gd.cn',
                             '.gov.cn', '.gs.cn', '.gx.cn', '.gz.cn', '.ha.cn', '.hb.cn', '.he.cn',
                             '.hi.cn', '.hk.cn', '.hl.cn', '.hn.cn', '.jl.cn', '.js.cn', '.jx.cn',
                             '.ln.cn', '.mo.cn', '.net.cn', '.nm.cn', '.nx.cn', '.org.cn']
+        old_domain_name = domain_name
         m_count = domain_name.count(".")
         top_domain = "."+".".join(domain_name.rsplit('.')[-2:])
         new_top_domain = "." + top_domain.replace(".","")
         is_tow_top = False
         if top_domain in top_domain_list:
             is_tow_top = True
-            domain_name = domain_name[:-len(top_domain)] + new_top_domain #地区域名后缀去点处理
+            domain_name = domain_name[:-len(top_domain)] + new_top_domain
 
         if domain_name.count(".") > 1:
             zone, middle, last = domain_name.rsplit(".", 2)
             acme_txt = "_acme-challenge.%s" % zone
-            if is_tow_top: last = top_domain[1:] #还原地区域名
+            if is_tow_top: last = top_domain[1:]
             root = ".".join([middle, last])
         else:
             zone = ""
-            root = domain_name
+            root = old_domain_name
             acme_txt = "_acme-challenge"
         return root, zone, acme_txt
 
@@ -137,6 +135,10 @@ class panelLets:
             return "Connection timed out, CA server could not access your website!"
         elif error.find("DNS problem: SERVFAIL looking up CAA for") != -1:
             return "The domain name %s is currently required to verify the CAA record. Please manually resolve the CAA record, or try again after 1 hour.!" % re.findall("looking up CAA for (.+)", error)
+        elif error.find("Read timed out.") != -1:
+            return "Verification timeout, please check whether the domain name is correctly resolved. If dns is resolved, the connection between the server and Let'sEncrypt may be abnormal. Please try again later!"
+        elif error.find("Error creating new order") != -1:
+            return "Order creation failed, please try again later!"
         else:
             return error;
 
@@ -272,7 +274,10 @@ class panelLets:
         cpath = self.setupPath + '/panel/vhost/cert/crontab.json'
         config = {}
         if os.path.exists(cpath):
-            config = json.loads(public.readFile(cpath))
+            try:
+                config = json.loads(public.readFile(cpath))
+            except:pass
+
         config[data['siteName']] = data
         public.writeFile(cpath,json.dumps(config))
         public.set_mode(cpath,600)

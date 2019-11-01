@@ -164,20 +164,18 @@ $('.open_two_verify_view').click(function(){
 		$('#panel_verification').prop('checked',res.status);
 	});
 })()
-function get_qrcode_data(callback){
-	$.post('/config?action=get_qrcode_data',function(res){
-		if(callback) callback(res);
-	});
-}
+
 
 function check_two_step(callback){
 	$.post('/config?action=check_two_step',function(res){
 		if(callback) callback(res);
 	});
 }
-
-
-
+function get_qrcode_data(callback){
+	$.post('/config?action=get_qrcode_data',function(res){
+		if(callback) callback(res);
+	});
+}
 function get_two_verify(callback){
 	$.post('/config?action=get_key',function(res){
 		if(callback) callback(res);
@@ -764,30 +762,52 @@ function GetPanelApi() {
         })
     });
 }
+function showPawApi(){
+	layer.msg('The panel API key only supports one-time display, please keep it safe. <br>To display the panel API key, click the reset button to regain the new API key.<br><span style="color:red;">Note: After the key is reset, the associated key product will be invalid. Please re-add the new key to the product.</span>',{icon:0,time:0,shadeClose:true,shade:0.1});
+}
 
 
-function SetPanelApi(t_type) {
+function SetPanelApi(t_type,index) {
     var pdata = {}
     pdata['t_type'] = t_type
     if (t_type == 3) {
         pdata['limit_addr'] = $("textarea[name='api_limit_addr']").val()
     }
-    var loadT = layer.msg(lan.config.is_submitting, { icon: 16, time: 0, shade: [0.3, '#000'] });
-    $.post('/config?action=set_token', pdata, function (rdata) {
-        if (t_type == 1) {
-            if (rdata.status) {
-                $("input[name='panel_token_value']").val(rdata.msg);
-                layer.msg(lan.config.create_int_key_success, { icon: 1, time: 0, shade: 0.3, shadeClose:true });
-                return;
-            }
-        }
-
-        layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+    if(t_type == 1){
+    	var bdinding = layer.confirm('Are you sure you want to reset your current key?<br><span style="color:red;">After the key is reset, the associated key product will be invalid. Please re-add the new key to the product.</span>',{
+			btn:['Confirm','Cancel'],
+			icon:3,
+			closeBtn: 2,
+			title:'Reset key'
+		},function(){
+		    var loadT = layer.msg(lan.config.is_submitting, { icon: 16, time: 0, shade: [0.3, '#000'] });
+		    set_token_req(pdata,function(rdata){
+	    		if (rdata.status) {
+	                $("input[name='panel_token_value']").val(rdata.msg);
+	                layer.msg(lan.config.create_int_key_success, { icon: 1, time: 0, shade: 0.3, shadeClose:true,closeBtn:2});
+	            }else{
+	            	layer.msg(rdata.msg, { icon: 2});
+	            }
+	            return false;
+		    });
+		});
+		return false
+    }
+    set_token_req(pdata,function(rdata){
+    	layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
         if (rdata.msg == lan.config.open_successfully) {
-            GetPanelApi();
+            if(t_type == 2 && index != '0') GetPanelApi();
         }
-    })
+    });
 }
+
+function set_token_req(pdata,callback){
+	$.post('/config?action=set_token', pdata, function (rdata) {
+		if(callback) callback(rdata);
+	});
+}
+
+
 
 function SetIPv6() {
     var loadT = layer.msg(lan.config.setting_up, { icon: 16, time: 0, shade: [0.3, '#000'] });

@@ -463,13 +463,15 @@ var bt =
 
                 //会话失效时自动跳转到登录页面
                 if (typeof (rdata) == 'string') {
-                    if (rdata.indexOf('/static/favicon.ico') != -1 && rdata.indexOf('/static/img/qrCode.png') != -1) {
+                    if ((rdata.indexOf('/static/favicon.ico') != -1 && rdata.indexOf('/static/img/qrCode.png') != -1) || rdata.indexOf('<!DOCTYPE html>') === 0) {
                         window.location.href = "/login"
                         return
                     }
                 }
+
 				if(callback) callback(rdata);
-            }).error(function () {
+            }).error(function (e, f) {
+                // console.log(e,f)
 				if(callback) callback('error');
 			});
 		}
@@ -3975,10 +3977,11 @@ bt.soft = {
                     </div>'
         });
     },
-    update_soft: function (name,title, version, min_version) {
+    update_soft: function (name,title, version, min_version,update_msg) {
         var _this = this;
 		var msg = "<li>"+lan.public_backup.update_tips+"</li>";
 		if(name == 'mysql') msg = "<ul style='color:red;'><li>"+lan.public_backup.db_update_tips+"</li><li>"+lan.public_backup.update_tips1+"</li><li>"+lan.public_backup.update_tips+"</li></ul>";
+        if (update_msg) msg += '<div style="    margin-top: 10px;"><span style="font-size: 14px;font-weight: 900;">Update description: </span><hr style="margin-top: 5px; margin-bottom: 5px;" /><pre>' + update_msg.replace(/(_bt_)/g, "\n") +'</pre><hr style="margin-top: -5px; margin-bottom: -5px;" /></div>';
 		bt.show_confirm(lan.public_backup.update+'[' + title + ']', lan.public_backup.update_tips2.replace('{1}',title).replace('{2}',version).replace('{3}',min_version),function(){
             var loadT = bt.load(lan.public_backup.update_tips3.replace('{1}',title).replace('{2}',version).replace('{3}',min_version));
             bt.send('install_plugin', 'plugin/install_plugin', { sName: name, version: version, upgrade: version }, function (rdata) {

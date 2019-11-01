@@ -7,7 +7,7 @@
 # +-------------------------------------------------------------------
 # | Author: 黄文良 <287962566@qq.com>
 # +-------------------------------------------------------------------
-import sys,os,public,time,json,pwd,cgi,shutil
+import sys,os,public,time,json,pwd,cgi,shutil,re
 from BTPanel import session,request
 class files:
     run_path = None
@@ -204,7 +204,8 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
         p_stat = os.stat(s_path)
         os.chown(path,p_stat.st_uid,p_stat.st_gid)
         if os.path.isfile(path):
-            os.chmod(path,0644)
+            public.writeFile("/tmp/2",str(sys.version_info[0]))
+            os.chmod(path, 0o644)
         else:
             os.chmod(path,p_stat.st_mode)
 
@@ -609,19 +610,27 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
         rPath = '/www/Recycle_bin/'
         if sys.version_info[0] == 2: get.path = get.path.encode('utf-8');
         dFile = get.path.split('_t_')[0];
+        filename = rPath + get.path
+        tfile = get.path.replace('_bt_','/').split('_t_')[0];
+        if not os.path.exists(filename): return public. returnMsg(True,'FILE_DEL_RECYCLE_BIN',(tfile,))
         if dFile.find('BTDB_') != -1:
             import database;
-            return database.database().DeleteTo(rPath+get.path);
-        if not self.CheckDir(rPath + get.path):
+            return database.database().DeleteTo(filename);
+        if not self.CheckDir(filename):
             return public.returnMsg(False,'FILE_DANGER');
-        os.system('chattr -R -i ' + rPath + get.path)
-        if os.path.isdir(rPath + get.path):
+
+        os.system('chattr -R -i ' + filename)
+        if os.path.isdir(filename):
             import shutil
-            shutil.rmtree(rPath + get.path);
+            try:
+                shutil.rmtree(filename);
+            except:
+                os.system("rm -rf " + filename)
         else:
-            os.remove(rPath + get.path);
-        
-        tfile = get.path.replace('_bt_','/').split('_t_')[0];
+            try:
+                os.remove(filename);
+            except:
+                os.system("rm -f " + filename)
         public.WriteLog('TYPE_FILE','FILE_DEL_RECYCLE_BIN',(tfile,));
         return public.returnMsg(True,'FILE_DEL_RECYCLE_BIN',(tfile,));
     
@@ -726,8 +735,8 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
         if not os.path.exists(get.sfile):
             return public.returnMsg(False,'FILE_NOT_EXISTS')
         
-        #if os.path.exists(get.dfile):
-        #    return public.returnMsg(False,'FILE_EXISTS')
+        if get.dfile == get.sfile:
+            return public.returnMsg(False,'Meaningless operation');
         
         if not self.CheckDir(get.sfile):
             return public.returnMsg(False,'FILE_DANGER');
@@ -775,7 +784,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
                 return public.returnMsg(False,'FILE_NOT_EXISTS',(get.path,))
             public.writeFile(get.path,'');
         
-        if os.path.getsize(get.path) > 2097152: return public.returnMsg(False,'CANT_EDIT_ONLINE_FILE');
+        if os.path.getsize(get.path) > 3145928: return public.returnMsg(False,'CANT_EDIT_ONLINE_FILE');
         if not os.path.isfile(get.path): return public.returnMsg(False,'This is not a file!')
         fp = open(get.path,'rb')
         data = {}
@@ -1011,8 +1020,11 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
                     if sys.version_info[0] == 2: key = key.encode('utf-8')
                     filename = get.path+'/'+key
                     if not self.CheckDir(filename): return public.returnMsg(False,'FILE_DANGER');
-                    os.system('chmod -R '+get.access+" '"+filename+"'")
-                    os.system('chown -R '+get.user+':'+get.user+" '"+filename+"'")
+                    ret = ' -R '
+                    if 'all' in get:
+                        if get.all == 'False': ret = ''
+                    os.system('chmod '+ret+get.access+" '"+filename+"'")
+                    os.system('chown '+ret+get.user+':'+get.user+" '"+filename+"'")
                 except:
                     continue;
             public.WriteLog('TYPE_FILE','FILE_ALL_ACCESS')
@@ -1109,6 +1121,9 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
 
     #移动和重命名
     def move(self,sfile,dfile):
+        sfile = sfile.replace('//','/')
+        dfile = dfile.replace('//','/')
+        if sfile == dfile: return False
         if not os.path.exists(sfile): return False
         is_dir = os.path.isdir(sfile)
         if not os.path.exists(dfile) or not is_dir:
@@ -1125,6 +1140,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
 
     #复制目录
     def copytree(self,sfile,dfile):
+        if sfile == dfile: return False
         if not os.path.exists(dfile): os.makedirs(dfile)
         for f_name in os.listdir(sfile):
             src_filename = (sfile + '/' + f_name).replace('//','/')
@@ -1238,6 +1254,7 @@ done
         freshFile = '/tmp/panelFresh'
         import db
         find = db.Sql().table('tasks').where('status=? OR status=?',('-1','0')).field('id,type,name,execstr').find()
+        if(type(find) == str): return public.returnMsg(False,"Query error, "+find)
         if not len(find): return public.returnMsg(False,'NO_TASK_AT_LINEUP',("-2",))
         isTask = '/tmp/panelTask.pl'
         public.writeFile(isTask,'True');

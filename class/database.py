@@ -20,7 +20,7 @@ class database(datatool.datatools):
         try:
             data_name = get['name'].strip()
             if self.CheckRecycleBin(data_name): return public.returnMsg(False,'DATABASE_DEL_RECYCLE_BIN',(data_name,))
-            if len(data_name) > 16: return public.returnMsg(False, 'DATABASE_NAME_LEN')
+            if len(data_name) > 64: return public.returnMsg(False, 'DATABASE_NAME_LEN')
             reg = "^[\w\.-]+$"
             if not re.match(reg, data_name): return public.returnMsg(False,'DATABASE_NAME_ERR_T')
             if not hasattr(get,'db_user'): get.db_user = data_name;
@@ -30,7 +30,7 @@ class database(datatool.datatools):
             if data_name in checks or len(data_name) < 1: return public.returnMsg(False,'DATABASE_NAME_ERR');
             data_pwd = get['password']
             if len(data_pwd)<1:
-                data_pwd = public.md5(time.time())[0:8]
+                data_pwd = public.md5(str(time.time()))[0:8]
             
             sql = public.M('databases')
             if sql.where("name=? or username=?",(data_name,username)).count(): return public.returnMsg(False,'DATABASE_NAME_EXISTS')
@@ -690,7 +690,8 @@ SetLink
             os.system('/etc/init.d/mysqld restart');
         else:
             path = self.GetMySQLInfo(get)['datadir'];
-            if hasattr(get,'status'): 
+            if not os.path.exists(path): return public.returnMsg(False,'数据库目录不存在!')
+            if hasattr(get,'status'):
                 dsize = 0;
                 for n in os.listdir(path):
                     if len(n) < 9: continue;
@@ -698,7 +699,7 @@ SetLink
                         dsize += os.path.getsize(path + '/' + n);
                 return public.returnMsg(True,dsize);
             if os.path.exists(masterslaveconf):
-                return public.returnMsg(False, "MYSQL_TURNOFF_BIN_CHECK")
+                return public.returnMsg(False, "Database directory does not exist")
             mycnf = mycnf.replace('log-bin=mysql-bin','#log-bin=mysql-bin')
             mycnf = mycnf.replace('binlog_format=mixed','#binlog_format=mixed')
             os.system('sync')

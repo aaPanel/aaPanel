@@ -367,7 +367,7 @@ class panelSite(panelRedirect):
         data['databaseStatus'] = False
         if get.sql == 'true' or get.sql == 'MySQL':
             import database
-            if len(get.datauser) > 16: get.datauser = get.datauser[:16]
+            if len(get.datauser) > 64: get.datauser = get.datauser[:64]
             get.name = get.datauser
             get.db_user = get.datauser
             get.password = get.datapassword
@@ -916,7 +916,12 @@ class panelSite(panelRedirect):
                     return public.returnMsg(False, 'Please go to the software store to install [Cloud Resolution] and complete the domain name NS binding.');
 
         self.check_ssl_pack()
-        import panelLets
+        try:
+            import panelLets
+        except Exception as ex:
+            if str(ex).find('No module named requests') != -1:
+                os.system("pip install requests &")
+                return public.returnMsg(False,'Missing requests component, please try to repair the panel!')
         public.mod_reload(panelLets)
         lets = panelLets.panelLets()
         result = lets.apple_lest_cert(get)
@@ -1606,6 +1611,7 @@ class panelSite(panelRedirect):
         #nginx
         filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf';
         mconf = public.readFile(filename);
+        if mconf == False: return public.returnMsg(False,'The specified configuration file does not exist!')
         if mconf:
             if(srcDomain == 'all'):
                 conf301 = "\t#301-START\n\t\treturn 301 "+toDomain+"$request_uri;\n\t#301-END";
@@ -1623,7 +1629,8 @@ class panelSite(panelRedirect):
         #apache
         filename = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf';
         mconf = public.readFile(filename);
-        if type == '1': 
+        if mconf == False: return public.returnMsg(False,'The specified configuration file does not exist!')
+        if type == '1':
             if(srcDomain == 'all'):
                 conf301 = "\n\t#301-START\n\t<IfModule mod_rewrite.c>\n\t\tRewriteEngine on\n\t\tRewriteRule ^(.*)$ "+toDomain+"$1 [L,R=301]\n\t</IfModule>\n\t#301-END\n";
             else:
@@ -1890,6 +1897,7 @@ server
         Name = public.M('sites').where("id=?",(id,)).getField('name');
         file = self.setupPath + '/panel/vhost/'+public.get_webserver()+'/' + Name + '.conf';
         conf = public.readFile(file)
+        if conf == False: return public.returnMsg(False,'The specified website profile does not exist!')
         if public.get_webserver() == 'nginx':
             rep = "\s+index\s+(.+);";
         else:
@@ -2025,28 +2033,30 @@ server
     def SetPHPVersion(self,get):
         siteName = get.siteName
         version = get.version
-        
-        #nginx
-        file = self.setupPath + '/panel/vhost/nginx/'+siteName+'.conf';
-        conf = public.readFile(file);
-        if conf:
-            rep = "enable-php-([0-9]{2,3})\.conf";
-            tmp = re.search(rep,conf).group()
-            conf = conf.replace(tmp,'enable-php-'+version+'.conf');
-            public.writeFile(file,conf)
-        
-        #apache
-        file = self.setupPath + '/panel/vhost/apache/'+siteName+'.conf';
-        conf = public.readFile(file);
-        if conf:
-            rep = "php-cgi-([0-9]{2,3})\.sock";
-            tmp = re.search(rep,conf).group()
-            conf = conf.replace(tmp,'php-cgi-'+version+'.sock');
-            public.writeFile(file,conf)
-        
-        public.serviceReload();
-        public.WriteLog("TYPE_SITE", "SITE_PHPVERSION_SUCCESS",(siteName,version));
-        return public.returnMsg(True,'SITE_PHPVERSION_SUCCESS',(siteName,version));
+        try:
+            #nginx
+            file = self.setupPath + '/panel/vhost/nginx/'+siteName+'.conf';
+            conf = public.readFile(file);
+            if conf:
+                rep = "enable-php-([0-9]{2,3})\.conf";
+                tmp = re.search(rep,conf).group()
+                conf = conf.replace(tmp,'enable-php-'+version+'.conf');
+                public.writeFile(file,conf)
+
+            #apache
+            file = self.setupPath + '/panel/vhost/apache/'+siteName+'.conf';
+            conf = public.readFile(file);
+            if conf:
+                rep = "php-cgi-([0-9]{2,3})\.sock";
+                tmp = re.search(rep,conf).group()
+                conf = conf.replace(tmp,'php-cgi-'+version+'.sock');
+                public.writeFile(file,conf)
+
+            public.serviceReload();
+            public.WriteLog("TYPE_SITE", "SITE_PHPVERSION_SUCCESS",(siteName,version));
+            return public.returnMsg(True,'SITE_PHPVERSION_SUCCESS',(siteName,version));
+        except:
+            return public.returnMsg(False, 'The setup failed, no enable-php-xx related configuration items were found in the website configuration file!')
 
     
     #是否开启目录防御
@@ -2521,7 +2531,7 @@ server
                     proxyUrl[i]["type"] = int(get.type)
                     self.__write_config(self.__proxyfile, proxyUrl)
                     public.serviceReload()
-                    return public.returnMsg(True, '修改成功')
+                    return public.returnMsg(True, 'Successfully modified')
                 else:
                     if os.path.exists(ap_conf_file+"_bak"):
                         os.system("mv %s_bak %s" % (ap_conf_file, ap_conf_file))
@@ -3416,6 +3426,7 @@ location %s
         file = '/www/server/panel/vhost/nginx/' + get.name + '.conf';
         conf = public.readFile(file);
         data = {}
+        if type(conf)==bool:return public.returnMsg(False,'Failed to read configuration file!')
         if conf.find('SECURITY-START') != -1:
             rep = "#SECURITY-START(\n|.){1,500}#SECURITY-END";
             tmp = re.search(rep,conf).group()

@@ -6,6 +6,7 @@ var site = {
         if (type == '-1' || type == undefined) {
             type = $('.site_type select').val();
         }
+        if (!search) search = $("#SearchValue").val();
         bt.site.get_list(page, search, type, function (rdata) {
             $('.dataTables_paginate').html(rdata.page);
                 var data = rdata.data;
@@ -1581,6 +1582,12 @@ var site = {
                                                                     var area_size = '500px';
                                                                     var err_info = "";
 
+                                                                    if (!new_data.msg[1].challenges[1]) {
+                                                                        if (new_data.msg[1].challenges[0]) {
+                                                                            new_data.msg[1].challenges[1] = new_data.msg[1].challenges[0]
+                                                                        }
+                                                                    }
+
                                                                     if (ldata.msg[1].status === 'invalid') {
                                                                         area_size = '600px';
                                                                         var trs = $("#dns_txt_jx tbody tr");
@@ -1617,6 +1624,11 @@ var site = {
                                                         site.reload();
                                                         bt.msg(ret);
                                                     } else {
+                                                        if (!ret.msg[1].challenges[1]) {
+                                                            if (ret.msg[1].challenges[0]) {
+                                                                ret.msg[1].challenges[1] = ret.msg[1].challenges[0]
+                                                            }
+                                                        }
                                                         var area_size = '500px';
                                                         var err_info = "";
 

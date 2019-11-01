@@ -39,6 +39,7 @@ class userlogin:
                 return public.returnJson(False,'LOGIN_USER_ERR',(str(num),)),json_header
             _key_file = "/www/server/panel/data/two_step_auth.txt"
             if hasattr(post,'vcode'):
+                if self.limit_address('?',v="vcode") < 1: return public.returnJson(False,'您多次验证失败，禁止10分钟'),json_header
                 import pyotp
                 secret_key = public.readFile(_key_file)
                 if not secret_key:
@@ -46,8 +47,10 @@ class userlogin:
                 t = pyotp.TOTP(secret_key)
                 result = t.verify(post.vcode)
                 if not result:
-                    num = self.limit_address('++',v="vcode")
-                    return public.returnJson(False, 'Invalid Verification code. You have [{}] times left to try!'.format(num)), json_header
+                    if public.sync_date(): result = t.verify(post.vcode)
+                    if not result:
+                        num = self.limit_address('++',v="vcode")
+                        return public.returnJson(False, 'Invalid Verification code. You have [{}] times left to try!'.format(num)), json_header
                 now = int(time.time())
                 public.writeFile("/www/server/panel/data/dont_vcode_ip.txt",json.dumps({"client_ip":public.GetClientIp(),"add_time":now}))
                 self.limit_address('--',v="vcode")

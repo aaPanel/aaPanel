@@ -170,7 +170,9 @@
 		"BASICAUTH":"BasicAuth",
 		"BASICAUTH_TIPS1":"Used for BasicAuth authentication configuration",
 		"CONFIG":"Set",
-		"BASICAUTH_TIPS2":"Add a BasicAuth-based authentication service to the panel to prevent the panel from being swept"
+		"BASICAUTH_TIPS2":"Add a BasicAuth-based authentication service to the panel to prevent the panel from being swept",
+		"S_PORT_TIPS":"Note: For servers with security groups, please release the new port in the security group in advance."
+
 	},
 
 	"close":{

@@ -145,7 +145,7 @@ var index = {
                     crs += 'CPU-' + i + ": " + d[2][i] + '%' + (n1 % 2 == 0?'</br>':' | ');
 
                 }
-                layer.tips(d[3] +"</br>"+ crs, _this.find('.cicle'), { time: 0, tips: [1, '#999'] });
+                layer.tips(d[3] + "</br>" + d[5] + " CPU, " + d[4] + " Core, " + d[4]+" Thread</br>"+ crs, _this.find('.cicle'), { time: 0, tips: [1, '#999'] });
             }, function () {
                 layer.closeAll('tips');
             });
@@ -230,7 +230,7 @@ var index = {
             var load_arr = [{ title: lan.index.run_block, val: 100, color: '#dd2f00' }, { title: lan.index.run_slow, val: 90, color: '#ff9900' }, { title: lan.index.run_normal, val: 70, color: '#20a53a' }, { title: lan.index.run_fluent, val: 30, color: '#20a53a' }];
             var _cpubox = $('.cpubox'), _membox = $('.membox'), _loadbox = $('.loadbox')
 
-            index.set_val(_cpubox, { usage: net.cpu[0], title: net.cpu[1] + ' ' + lan.index.cpu_core, items: pub_arr })
+            index.set_val(_cpubox, { usage: net.cpu[0], title: net.cpu[1]+' '+lan.index.cpu_core, items: pub_arr })
             index.set_val(_membox, { usage: (net.mem.memRealUsed * 100 / net.mem.memTotal).toFixed(1), items: pub_arr, title: net.mem.memRealUsed + '/' + net.mem.memTotal + '(MB)' })
             bt.set_cookie('memSize', net.mem.memTotal)
 
@@ -261,6 +261,11 @@ var index = {
             if (info.isuser > 0) {
                 $("#messageError").show();
                 $("#messageError").append('<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;"></span>' + lan.index.user_warning + '<span class="c7 mr5" title="'+lan.index.safe_problem_cant_ignore+'" style="cursor:no-drop"> ['+lan.index.cant_ignore+']</span><a class="btlink" href="javascript:setUserName();"> ['+lan.index.edit_now+']</a></p>')
+            }
+
+            if (info.isport === true) {
+                $("#messageError").show();
+                $("#messageError").append('<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;"></span>'+lan.index.panel_port_tips+'<span class="c7 mr5" title="'+lan.index.panel_port_tip1+'" style="cursor:no-drop"> ['+lan.index.panel_port_tip2+']</span><a class="btlink" href="/config"> ['+lan.index.panel_port_tip3+']</a></p>')
             }
             var _system = info.system;
             $("#info").html(_system);
@@ -302,6 +307,11 @@ var index = {
                     arr.push({ title: lan.index.already_use, value: item.inodes[1] })
                     arr.push({ title: lan.index.available, value: item.inodes[2] })
                     arr.push({ title: lan.index.inode_percent, value: item.inodes[3] })
+                    arr.push({ title: '<b>Capacity information</b>', value: '' })
+                    arr.push({ title: 'Capacity', value: item.size[0] })
+                    arr.push({ title: 'Used', value: item.size[1] })
+                    arr.push({ title: 'Available', value: item.size[2] })
+                    arr.push({ title: 'Usage rate', value: item.size[3] })
                     obj.masks = arr;
                     data.items.push(obj)
                 }
@@ -446,7 +456,9 @@ var index = {
         })
     },
     check_update: function () {
+    	var _load = bt.load('Getting updates, please wait...');
         bt.system.check_update(function (rdata) {
+        	_load.close();
             if (rdata.status === false) {
                 if (!rdata.msg.beta) {
                     bt.msg(rdata);

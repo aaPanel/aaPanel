@@ -1,9 +1,10 @@
 var soft = {
     is_install: false,
     get_list: function (page, type, search) {
-        if (page == undefined) page = 0;
-        if (type == undefined) type = 0;
-
+        if (page == undefined || page == 'null' || page == 'undefined') page = 0;
+        if (type == undefined || type == 'null' || type == 'undefined') type = 0;
+        if (!search) search = $("#SearchValue").val();
+        if (search == undefined || search == 'null' || search == 'undefined' || search == '') search = undefined;
         var _this = this;
         var istype = getCookie('softType');
         if (istype == 'undefined' || istype == 'null' || !istype) {
@@ -235,7 +236,8 @@ var soft = {
                                                 var min_version = item.versions[i]
                                                 var ret = bt.check_version(item.version, min_version.m_version + '.' + min_version.version);
                                                 if (ret > 0) {
-                                                    if (ret == 2) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\')" >' + lan.soft.update + '</a> | ';
+                                                    if (!min_version.update_msg) min_version.update_msg = '';
+                                                    if (ret == 2) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g,"_bt_") + '\')" >' + lan.soft.update + '</a> | ';
                                                     break;
                                                 }
                                             }
@@ -243,7 +245,8 @@ var soft = {
                                         else {
                                             var min_version = item.versions[0];
                                             var cloud_version = min_version.m_version + '.' + min_version.version;
-                                            if (item.version != cloud_version) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\')" >' + lan.soft.update + '</a> | ';
+                                            if (!min_version.update_msg) min_version.update_msg = '';
+                                            if (item.version != cloud_version) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
                                         }
                                         if (item.admin) {
                                             option += '<a class="btlink" onclick="bt.soft.set_lib_config(\'' + item.name + '\',\'' + item.title + '\')">' + lan.soft.setup + '</a> | ';
@@ -288,7 +291,7 @@ var soft = {
             bt.set_cookie('load_search', search)
             if (soft.is_install) {
                 setTimeout(function () {
-                    soft.get_list(page + 'not_load', type, search);
+                    soft.get_list(bt.get_cookie('load_page') + 'not_load', bt.get_cookie('load_type'), bt.get_cookie('load_search'));
                 }, 3000);
             }
         })

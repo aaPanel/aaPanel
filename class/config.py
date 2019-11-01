@@ -7,11 +7,15 @@
 # | Author: 黄文良 <287962566@qq.com>
 # +-------------------------------------------------------------------
 
-import public,re,sys,os,nginx,apache,json,time,pyotp
+import public,re,sys,os,nginx,apache,json,time
+try:
+    import pyotp
+except:
+    os.system("pip install pyotp &")
+
 from BTPanel import session,admin_path_checks
 from flask import request
 class config:
-
     _setup_path = "/www/server/panel"
     _key_file = _setup_path+"/data/two_step_auth.txt"
     _bk_key_file = _setup_path + "/data/bk_two_step_auth.txt"
@@ -423,7 +427,8 @@ class config:
     #设置面板SSL
     def SetPanelSSL(self,get):
         if hasattr(get,"email"):
-            rep_mail = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
+            # rep_mail = "^[a-zA-Z0-9_-\.]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
+            rep_mail = "[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
             if not re.search(rep_mail,get.email):
                 return public.returnMsg(False,'The E-Mail format is illegal')
             import setPanelLets
@@ -433,7 +438,8 @@ class config:
         else:
             sslConf = '/www/server/panel/data/ssl.pl';
             if os.path.exists(sslConf):
-                os.system('rm -f ' + sslConf);
+                # os.system('rm -f ' + sslConf);
+                os.remove(sslConf)
                 return public.returnMsg(True,'PANEL_SSL_CLOSE');
             else:
                 os.system('pip install cffi');
@@ -742,7 +748,7 @@ class config:
         # s = "find /tmp -mtime +1 |grep 'sess_'|wc -l"
         # old_file_conf = int(public.ExecShell(s)[0].split("\n")[0])
 
-        old_file_conf = self.GetSessionCount(get)
+        old_file_conf = self.GetSessionCount(get)["oldfile"]
         if old_file_conf == 0:
             return public.returnMsg(True, 'DEL_SUCCESS')
         else:
@@ -796,7 +802,11 @@ class config:
             public.WriteFile(save_path,json.dumps(data))
             public.ExecShell("chmod 600 " + save_path)
         data = json.loads(public.ReadFile(save_path))
-        data['token'] = "***********************************"
+
+        if 'token_crypt' in data:
+            data['token'] = public.de_crypt(data['token'],data['token_crypt'])
+        else:
+            data['token'] = "***********************************"
         data['limit_addr'] = '\n'.join(data['limit_addr'])
         return data
 
@@ -807,6 +817,7 @@ class config:
         if get.t_type == '1':
             token = public.GetRandomString(32)
             data['token'] = public.md5(token)
+            data['token_crypt'] = public.en_crypt(data['token'],token).decode('utf-8')
             public.WriteLog('SET_API', 'REGENERATE_API_TOKEN')
         elif get.t_type == '2':
             data['open'] = not data['open']
@@ -819,6 +830,7 @@ class config:
             token = public.GetMsg("SAVE_SUCCESS")
 
         public.WriteFile(save_path, json.dumps(data))
+        os.chmod(save_path,0o600)
         return public.returnMsg(True, token)
 
 
@@ -1120,3 +1132,12 @@ class config:
         if data:
             return data
         return public.returnMsg(True, "No QR code data, please re-open")
+
+    # 设置是否云控打开
+    def set_coll_open(self,get):
+        if not 'coll_show' in get: return public.returnMsg(False,'Parameter error!')
+        if get.coll_show == 'True':
+            session['tmp_login'] = True
+        else:
+            session['tmp_login'] = False
+        return public.returnMsg(True,'Successful setup!')

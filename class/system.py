@@ -217,6 +217,10 @@ class system:
         data['time'] = self.GetBootTime();
         data['system'] = self.GetSystemVersion();
         data['isuser'] = public.M('users').where('username=?',('admin',)).count();
+        try:
+            data['isport'] = public.GetHost(True) == '8888'
+        except:data['isport'] = False
+
         data['version'] = session['version'];
         return data
     
@@ -272,10 +276,14 @@ class system:
         time.sleep(0.5)
         #取CPU信息
         cpuCount = psutil.cpu_count()
+        cpuNum = psutil.cpu_count(logical=False)
+        c_tmp = public.readFile('/proc/cpuinfo')
+        d_tmp = re.findall("physical id.+",c_tmp)
+        cpuW = len(set(d_tmp))
         used = self.get_cpu_percent()
         used_all = psutil.cpu_percent(percpu=True)
-        cpu_name = public.getCpuType()
-        return used,cpuCount,used_all,cpu_name
+        cpu_name = public.getCpuType() + " * {}".format(cpuW)
+        return used,cpuCount,used_all,cpu_name,cpuNum,cpuW
 
 
     def GetCpuInfo_new(self):
@@ -336,7 +344,7 @@ class system:
             tmp['size'] = psutil.disk_usage(disk[1])
             diskInfo.append(tmp)
         return diskInfo
-    
+
     def GetDiskInfo2(self):
         #取磁盘分区信息
         temp = public.ExecShell("df -h -P|grep '/'|grep -v tmpfs")[0];
@@ -363,7 +371,7 @@ class system:
                 arr['inodes'] = [inodes[1],inodes[2],inodes[3],inodes[4]]
                 diskInfo.append(arr);
             except Exception as ex:
-                public.WriteLog('Get info',str(ex))
+                public.WriteLog('信息获取',str(ex))
                 continue
         return diskInfo;
 

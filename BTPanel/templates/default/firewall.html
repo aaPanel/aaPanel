@@ -229,7 +229,8 @@
             })
         },
 		get_list:function(page,search){
-			if(page==undefined) page=1;			
+            if (page == undefined) page = 1;
+            if (!search) search = $("#SearchValue").val();
             bt.firewall.get_list(page, search, function (rdata) {
                 $('.firewallBody').html(rdata.page);
                 var ports_ps = {"80": lan.firewall.site_default_port, "3306": lan.firewall.mysql_default_port, "888": lan.firewall.phpmmyadmin_default_port, "22": lan.firewall.ssh_default_port, "20": lan.firewall.ftp1_default_port, "21": lan.firewall.ftp_default_port, "39000-40000": lan.firewall.ftp2_default_port, "30000-40000": lan.firewall.ftp2_default_port,"11211":lan.firewall.mem_default_port,"873":lan.firewall.rsync_default_port,"8888":lan.firewall.bt_default_port}
