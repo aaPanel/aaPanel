@@ -2,6 +2,7 @@ Flask>=1.0.2
 paramiko>=2.6.0
 flask-socketio>=4.1.0
 python-socketio>=4.2.0
+flask_sockets>=0.2.1
 Werkzeug>=0.15.1
 Pillow==5.4.1
 requests>=2.20

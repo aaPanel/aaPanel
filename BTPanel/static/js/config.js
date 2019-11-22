@@ -1,3 +1,73 @@
+function modify_port_val(port){
+	layer.open({
+		type: 1,
+		area: '400px',
+		title: 'Change Panel Port',
+		closeBtn:2,
+		shadeClose: false,
+		btn:['Confirm','Cancel'],
+		content: '<div class="bt-form pd20 pd70" style="padding:20px 35px;">\
+				<ul style="margin-bottom:10px;color:red;width: 100%;background: #f7f7f7;padding: 10px;border-radius: 5px;font-size: 12px;">\
+					<li style="color:red;font-size:13px;">1. Have a security group server, please release the new port in the security group in advance.</li>\
+					<li style="color:red;font-size:13px;">2. If the panel is inaccessible after modifying the port, change the original port to the SSH command line by using the bt command.</li>\
+				</ul>\
+				<div class="line">\
+	                <span class="tname" style="width: 70px;">Port</span>\
+	                <div class="info-r" style="margin-left:70px">\
+	                    <input name="portss" class="bt-input-text mr5" type="text" style="width:200px" value="'+ port +'">\
+	                </div>\
+                </div>\
+                <div class="details" style="margin-top:5px;padding-left: 3px;">\
+					<input type="checkbox" id="check_port">\
+					<label style="font-weight: 400;margin: 3px 5px 0px;" for="check_port">I already understand</label>,<a target="_blank" class="btlink" href="https://forum.aapanel.com/d/599-how-to-release-the-aapanel-port">How to release the port?</a>\
+				</div>\
+			</div>',
+		yes:function(index,layero){
+			var check_port = $('#check_port').prop('checked'),_tips = '';
+			if(!check_port){
+				_tips = layer.tips('Please tick the one I already know', '#check_port', {tips:[1,'#ff0000'],time:5000});
+				return false;
+			}
+			layer.close(_tips);
+			$('#banport').val($('[name="portss"]').val());
+			var _data = $("#set-Config").serializeObject();
+			_data['port'] = $('[name="portss"]').val();
+			var loadT = layer.msg(lan.config.config_save,{icon:16,time:0,shade: [0.3, '#000']});
+			$.post('/config?action=setPanel',_data,function(rdata){
+				layer.close(loadT);
+				layer.msg(rdata.msg,{icon:rdata.status?1:2});
+				if(rdata.status){
+					layer.close(index);
+					setTimeout(function(){
+						window.location.href = ((window.location.protocol.indexOf('https') != -1)?'https://':'http://') + rdata.host + window.location.pathname;
+					},4000);
+				}
+			});
+		},
+		success:function(){
+			$('#check_port').click(function(){
+				layer.closeAll('tips');
+			});
+		}
+	});
+}
+$.fn.serializeObject = function(){
+   var o = {};
+   var a = this.serializeArray();
+   $.each(a, function() {
+       if (o[this.name]) {
+           if (!o[this.name].push) {
+               o[this.name] = [o[this.name]];
+           }
+           o[this.name].push(this.value || '');
+       } else {
+           o[this.name] = this.value || '';
+       }
+   });
+   return o;
+};
+
+
 //关闭面板
 function ClosePanel(){
 	layer.confirm(lan.config.close_panel_msg,{title:lan.config.close_panel_title,closeBtn:2,icon:13,cancel:function(){
@@ -845,7 +915,7 @@ function modify_basic_auth() {
         } else {
             m_html = '<div class="risk_form"><i class="layui-layer-ico layui-layer-ico3"></i>'
                 + '<h3 class="risk_tilte">Warning! Do not understand this feature, do not open!</h3>'
-                + '<ul>'
+                + '<ul style="border: 1px solid #ececec;border-radius: 10px; margin: 0px auto;margin-top: 20px;margin-bottom: 20px;background: #f7f7f7; width: 100 %;padding: 33px;list-style-type: inherit;">'
 					+ '<li style="color:red;">You must use and understand this feature to decide if you want to open it!</li>'
 					+ '<li>After opening, access the panel in any way, you will be asked to enter the BasicAuth username and password first.</li>'
 					+ '<li>After being turned on, it can effectively prevent the panel from being scanned and found, but it cannot replace the account password of the panel itself.</li>'

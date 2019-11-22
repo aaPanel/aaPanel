@@ -2550,6 +2550,14 @@ var site = {
                                         bt.msg(ret);
                                     })
                                 }
+                            },
+                            {
+                                text: 'Allow empty HTTP_REFERER requests', name: 'none', value: rdata.none, type: 'checkbox', callback: function (sdata) {
+                                    bt.site.set_site_security(web.id, web.name, sdata.sec_fix, sdata.sec_domains, '1', function (ret) {
+                                        if (ret.status) site.reload(13)
+                                        bt.msg(ret);
+                                    })
+                                }
                             }
                         ]
                     }

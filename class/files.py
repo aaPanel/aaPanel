@@ -180,7 +180,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
             try:
                 os.remove(new_name)
             except:
-                os.system("rm -f %s" % new_name)
+                public.ExecShell("rm -f %s" % new_name)
         os.renames(save_path, new_name)
         if 'dir_mode' in args and 'file_mode' in args:
             mode_tmp1 = args.dir_mode.split(',')
@@ -218,6 +218,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
         if get.path == '': get.path = '/www';
         if not os.path.exists(get.path):
             return public.ReturnMsg(False,'DIR_NOT_EXISTS')
+        if get.path == '/www/Recycle_bin': return public.returnMsg(False,'This is the recycle bin directory, please press the [Recycle Bin] button in the upper right corner to open')
         if not os.path.isdir(get.path):
             get.path = os.path.dirname(get.path)
 
@@ -479,7 +480,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
     #删除目录
     def DeleteDir(self,get) :
         if sys.version_info[0] == 2: get.path = get.path.encode('utf-8');
-        #if get.path.find('/www/wwwroot') == -1: return public.returnMsg(False,'此为演示服务器,禁止删除此目录!');
+        if get.path == '/www/Recycle_bin': return public.returnMsg(False,'You cannot directly operate the recycle bin directory, please press the [Recycle Bin] button in the upper right corner to open')
         if not os.path.exists(get.path):
             return public.returnMsg(False,'DIR_NOT_EXISTS')
         
@@ -490,8 +491,8 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
         try:
             #检查是否存在.user.ini
             #if os.path.exists(get.path+'/.user.ini'):
-            #    os.system("chattr -i '"+get.path+"/.user.ini'")
-            os.system("chattr -R -i " + get.path)
+            #    public.ExecShell("chattr -i '"+get.path+"/.user.ini'")
+            public.ExecShell("chattr -R -i " + get.path)
             if hasattr(get,'empty'):
                 if not self.delete_empty(get.path): return public.returnMsg(False,'DIR_ERR_NOT_EMPTY');
             
@@ -523,7 +524,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
         
         #检查是否为.user.ini
         if get.path.find('.user.ini') != -1:
-            os.system("chattr -i '"+get.path+"'")
+            public.ExecShell("chattr -i '"+get.path+"'")
         try:
             if os.path.exists('data/recycle_bin.pl'):
                 if self.Mv_Recycle_bin(get):
@@ -539,7 +540,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
     #移动到回收站
     def Mv_Recycle_bin(self,get):
         rPath = '/www/Recycle_bin/'
-        if not os.path.exists(rPath): os.system('mkdir -p ' + rPath);
+        if not os.path.exists(rPath): public.ExecShell('mkdir -p ' + rPath);
         rFile = rPath + get.path.replace('/','_bt_') + '_t_' + str(time.time());
         try:
             import shutil
@@ -571,7 +572,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
     #获取回收站信息
     def Get_Recycle_bin(self,get):
         rPath = '/www/Recycle_bin/'
-        if not os.path.exists(rPath): os.system('mkdir -p ' + rPath);
+        if not os.path.exists(rPath): public.ExecShell('mkdir -p ' + rPath);
         data = {};
         data['dirs'] = [];
         data['files'] = [];
@@ -619,25 +620,25 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
         if not self.CheckDir(filename):
             return public.returnMsg(False,'FILE_DANGER');
 
-        os.system('chattr -R -i ' + filename)
+        public.ExecShell('chattr -R -i ' + filename)
         if os.path.isdir(filename):
             import shutil
             try:
                 shutil.rmtree(filename);
             except:
-                os.system("rm -rf " + filename)
+                public.ExecShell("rm -rf " + filename)
         else:
             try:
                 os.remove(filename);
             except:
-                os.system("rm -f " + filename)
+                public.ExecShell("rm -f " + filename)
         public.WriteLog('TYPE_FILE','FILE_DEL_RECYCLE_BIN',(tfile,));
         return public.returnMsg(True,'FILE_DEL_RECYCLE_BIN',(tfile,));
     
     #清空回收站
     def Close_Recycle_bin(self,get):
         rPath = '/www/Recycle_bin/'
-        os.system('chattr -R -i ' + rPath)
+        public.ExecShell('chattr -R -i ' + rPath)
         import database,shutil;
         rlist = os.listdir(rPath)
         i = 0;
@@ -653,12 +654,12 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
                 try:
                     shutil.rmtree(path);
                 except:
-                    os.system('rm -rf ' + path);
+                    public.ExecShell('rm -rf ' + path);
             else:
                 try:
                     os.remove(path);
                 except:
-                    os.system('rm -f ' + path);
+                    public.ExecShell('rm -f ' + path);
 
         public.writeSpeed(None,0,0);
         public.WriteLog('TYPE_FILE','FILE_CLOSE_RECYCLE_BIN');
@@ -732,6 +733,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
             get.sfile = get.sfile.encode('utf-8');
             get.dfile = get.dfile.encode('utf-8');
         if not self.CheckFileName(get.dfile): return public.returnMsg(False,'FILE_NAME_SPECIAL_CHARACTRES');
+        if get.sfile == '/www/Recycle_bin': return public.returnMsg(False,'You cannot directly operate the recycle bin directory, please press the [Recycle Bin] button in the upper right corner to open')
         if not os.path.exists(get.sfile):
             return public.returnMsg(False,'FILE_NOT_EXISTS')
         
@@ -828,12 +830,13 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
     #保存文件
     def SaveFileBody(self,get):
         if not 'path' in get: return public.returnMsg(False,'path parameter cannot be empty!')
-        if not 'data' in get: return public.returnMsg(False,'data parameter cannot be empty!')
         if sys.version_info[0] == 2: get.path = get.path.encode('utf-8');
         if not os.path.exists(get.path):
             if get.path.find('.htaccess') == -1:
                 return public.returnMsg(False,'FILE_NOT_EXISTS')
         
+        his_path = '/www/backup/file_history/'
+        if get.path.find(his_path) != -1: return public.returnMsg(False,'不能直接修改历史副本!')
         try:
             isConf = -1
             if os.path.exists('/etc/init.d/nginx') or os.path.exists('/etc/init.d/httpd'):
@@ -841,7 +844,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
                 if isConf == -1: isConf = get.path.find('apache');
                 if isConf == -1: isConf = get.path.find('rewrite');
                 if isConf != -1:
-                    os.system('\\cp -a '+get.path+' /tmp/backup.conf');
+                    public.ExecShell('\\cp -a '+get.path+' /tmp/backup.conf');
             
             data = get.data;
             userini = False;
@@ -872,7 +875,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
             if isConf != -1:
                 isError = public.checkWebConfig();
                 if isError != True:
-                    os.system('\\cp -a /tmp/backup.conf '+get.path);
+                    public.ExecShell('\\cp -a /tmp/backup.conf '+get.path);
                     return public.returnMsg(False,'ERROR:<br><font style="color:red;">'+isError.replace("\n",'<br>')+'</font>');
                 public.serviceReload();
             
@@ -886,7 +889,9 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
     #保存历史副本
     def save_history(self,filename):
         try:
-            save_path = ('/www/backup/file_history/' + filename).replace('//','/')
+            his_path = '/www/backup/file_history/'
+            if filename.find(his_path) != -1: return
+            save_path = ( his_path + filename).replace('//','/')
             if not os.path.exists(save_path): os.makedirs(save_path,384)
 
             his_list = sorted(os.listdir(save_path),reverse=True)
@@ -969,19 +974,19 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
             if not self.CheckDir(get.filename): return public.returnMsg(False,'FILE_DANGER');
             if not os.path.exists(get.filename):
                 return public.returnMsg(False,'FILE_NOT_EXISTS')
-            os.system('chmod '+all+' '+get.access+" '"+get.filename+"'")
-            os.system('chown '+all+' '+get.user+':'+get.user+" '"+get.filename+"'")
+            public.ExecShell('chmod '+all+' '+get.access+" '"+get.filename+"'")
+            public.ExecShell('chown '+all+' '+get.user+':'+get.user+" '"+get.filename+"'")
             public.WriteLog('TYPE_FILE','FILE_ACCESS_SUCCESS',(get.filename,get.access,get.user))
             return public.returnMsg(True,'SET_SUCCESS')
         except:
             return public.returnMsg(False,'SET_ERROR')
 
     def SetFileAccept(self,filename):
-        os.system('chown -R www:www ' + filename)
+        public.ExecShell('chown -R www:www ' + filename)
         if os.path.isfile(filename):
-            os.system('chmod -R 644 ' + filename)
+            public.ExecShell('chmod -R 644 ' + filename)
         else:
-            os.system('chmod -R 755 ' + filename)
+            public.ExecShell('chmod -R 755 ' + filename)
 
     #取目录大小
     def GetDirSize(self,get):
@@ -998,11 +1003,11 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
     
     def CloseLogs(self,get):
         get.path = public.GetConfigValue('root_path')
-        os.system('rm -f '+public.GetConfigValue('logs_path')+'/*')
+        public.ExecShell('rm -f '+public.GetConfigValue('logs_path')+'/*')
         if public.get_webserver() == 'nginx':
-            os.system('kill -USR1 `cat '+public.GetConfigValue('setup_path')+'/nginx/logs/nginx.pid`');
+            public.ExecShell('kill -USR1 `cat '+public.GetConfigValue('setup_path')+'/nginx/logs/nginx.pid`');
         else:
-            os.system('/etc/init.d/httpd reload');
+            public.ExecShell('/etc/init.d/httpd reload');
         
         public.WriteLog('TYPE_FILE','SITE_LOG_CLOSE')
         get.path = public.GetConfigValue('logs_path')
@@ -1023,8 +1028,8 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
                     ret = ' -R '
                     if 'all' in get:
                         if get.all == 'False': ret = ''
-                    os.system('chmod '+ret+get.access+" '"+filename+"'")
-                    os.system('chown '+ret+get.user+':'+get.user+" '"+filename+"'")
+                    public.ExecShell('chmod '+ret+get.access+" '"+filename+"'")
+                    public.ExecShell('chown '+ret+get.user+':'+get.user+" '"+filename+"'")
                 except:
                     continue;
             public.WriteLog('TYPE_FILE','FILE_ALL_ACCESS')
@@ -1045,7 +1050,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
                     public.writeSpeed(key,i,l);
                     if os.path.isdir(filename):
                         if not self.CheckDir(filename): return public.returnMsg(False,'FILE_DANGER');
-                        os.system("chattr -R -i " + filename)
+                        public.ExecShell("chattr -R -i " + filename)
                         if isRecyle:
                             self.Mv_Recycle_bin(get)
                         else:
@@ -1053,7 +1058,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
                     else:
                         if key == '.user.ini': 
                             if l > 1: continue
-                            os.system('chattr -i ' + filename);
+                            public.ExecShell('chattr -i ' + filename);
                         if isRecyle:
                             
                             self.Mv_Recycle_bin(get)
@@ -1182,7 +1187,7 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
     def InstallSoft(self,get):
         import db,time
         path = public.GetConfigValue('setup_path') + '/php'
-        if not os.path.exists(path): os.system("mkdir -p " + path);
+        if not os.path.exists(path): public.ExecShell("mkdir -p " + path);
         if session['server_os']['x'] != 'RHEL': get.type = '3'
         apacheVersion='false';
         if public.get_webserver() == 'apache':
@@ -1209,10 +1214,10 @@ session.save_handler = files'''.format(path,sess_path,sess_path)
             status = public.M('tasks').where('id=?',(get.id,)).getField('status');
             public.M('tasks').delete(get.id);
             if status == '-1':
-                os.system("kill `ps -ef |grep 'python panelSafe.pyc'|grep -v grep|grep -v panelExec|awk '{print $2}'`");
-                os.system("kill `ps -ef |grep 'install_soft.sh'|grep -v grep|grep -v panelExec|awk '{print $2}'`");
-                os.system("kill `ps aux | grep 'python task.pyc$'|awk '{print $2}'`");
-                os.system('''
+                public.ExecShell("kill `ps -ef |grep 'python panelSafe.pyc'|grep -v grep|grep -v panelExec|awk '{print $2}'`");
+                public.ExecShell("kill `ps -ef |grep 'install_soft.sh'|grep -v grep|grep -v panelExec|awk '{print $2}'`");
+                public.ExecShell("kill `ps aux | grep 'python task.pyc$'|awk '{print $2}'`");
+                public.ExecShell('''
 pids=`ps aux | grep 'sh'|grep -v grep|grep install|awk '{print $2}'`
 arr=($pids)
 
@@ -1222,12 +1227,12 @@ do
 done
             ''');
             
-                os.system('rm -f ' + name.replace('扫描目录[','').replace(']','') + '/scan.pl');
+                public.ExecShell('rm -f ' + name.replace('扫描目录[','').replace(']','') + '/scan.pl');
                 isTask = '/tmp/panelTask.pl';
                 public.writeFile(isTask,'True');
-                os.system('/etc/init.d/bt start');
+                public.ExecShell('/etc/init.d/bt start');
         except:
-            os.system('/etc/init.d/bt start');
+            public.ExecShell('/etc/init.d/bt start');
         return public.returnMsg(True,'PLUGIN_DEL');
     
     #重新激活任务
@@ -1243,7 +1248,7 @@ done
         get.type = '0'
         if session['server_os']['x'] != 'RHEL': get.type = '3'
         execstr = "cd " + public.GetConfigValue('setup_path') + "/panel/install && /bin/bash install_soft.sh "+get.type+" uninstall " + get.name.lower() + " "+ get.version.replace('.','');
-        os.system(execstr);
+        public.ExecShell(execstr);
         public.WriteLog('TYPE_SETUP','PLUGIN_UNINSTALL',(get.name,get.version));
         return public.returnMsg(True,"PLUGIN_UNINSTALL");
         
@@ -1303,7 +1308,7 @@ cd %s
 %s
 ''' % (get.path,get.shell)
         public.writeFile('/tmp/panelShell.sh',shellStr);
-        os.system('nohup bash /tmp/panelShell.sh > /tmp/panelShell.pl 2>&1 &');
+        public.ExecShell('nohup bash /tmp/panelShell.sh > /tmp/panelShell.pl 2>&1 &');
         return public.returnMsg(True,'FILE_SHELL_EXEC');
     
     #取SHELL执行结果
@@ -1371,7 +1376,7 @@ cd %s
             try:
                 import rarfile
             except: 
-                os.system("pip install rarfile")
+                public.ExecShell("pip install rarfile")
             return True
 
         import platform
@@ -1380,101 +1385,82 @@ cd %s
         download_url = public.get_url() + '/src/rarlinux'+os_bit+'-5.6.1.tar.gz';
 
         tmp_file = '/tmp/bt_rar.tar.gz'
-        os.system('wget -O ' + tmp_file + ' ' + download_url)
-        if os.path.exists(unrar_file): os.system("rm -rf /www/server/rar")
-        os.system("tar xvf " + tmp_file + ' -C /www/server/')
+        public.ExecShell('wget -O ' + tmp_file + ' ' + download_url)
+        if os.path.exists(unrar_file): public.ExecShell("rm -rf /www/server/rar")
+        public.ExecShell("tar xvf " + tmp_file + ' -C /www/server/')
         if os.path.exists(tmp_file): os.remove(tmp_file)
         if not os.path.exists(unrar_file): return False
                 
         if os.path.exists(bin_unrar): os.remove(bin_unrar)
         if os.path.exists(bin_rar): os.remove(bin_rar)
 
-        os.system('ln -sf ' + unrar_file + ' ' + bin_unrar)
-        os.system('ln -sf ' + rar_file + ' ' + bin_rar)
-        os.system("pip install rarfile")
+        public.ExecShell('ln -sf ' + unrar_file + ' ' + bin_unrar)
+        public.ExecShell('ln -sf ' + rar_file + ' ' + bin_rar)
+        public.ExecShell("pip install rarfile")
         #public.writeFile('data/restart.pl','True')
         return True
 
     def get_store_data(self):
-        data = {}
+        data = []
         path = 'data/file_store.json'
         try:
             if os.path.exists(path):
                 data = json.loads(public.readFile(path))
         except :
-            data = {}
-        if not data:
-            data['Default category'] = []
+            data = []
+        if type(data) == dict:
+            result = []
+            for key in data:
+                for path in data[key]:
+                    result.append(path)
+            self.set_store_data(result)
+            return result
         return data
 
     def set_store_data(self,data):
         public.writeFile('data/file_store.json',json.dumps(data))
         return True
 
-    #添加收藏夹分类
-    def add_files_store_types(self,get):
-        file_type = get.file_type
-        if sys.version_info[0] == 2: file_type = file_type.decode('utf-8')
-        data = self.get_store_data()
-        if file_type in data:  return public.returnMsg(False,'Do not add categories repeatedly!')
-
-        data[file_type] = []
-        self.set_store_data(data)
-        return public.returnMsg(True,'Add favorites to classify successfully!')
-
-    #删除收藏夹分类
-    def del_files_store_types(self,get):
-        file_type = get.file_type
-        if sys.version_info[0] == 2: file_type = file_type.decode('utf-8')
-        if file_type == 'Default category': return public.returnMsg(False,'Default category cannot be deleted!')
-        data = self.get_store_data()
-        if file_type in data:
-            del data[file_type]
-            self.set_store_data(data)
-            return public.returnMsg(True,'Delete [' + file_type + '] successfully!')
-        return public.returnMsg(False,'Delete [' + file_type + '] successfully!')
-
     #获取收藏夹
     def get_files_store(self,get):
         data = self.get_store_data()
         result = []
-        for key in data:
-            rlist = []
-            for path in data[key]:
-                info = { 'path': path,'name':os.path.basename(path)}
-
-                if os.path.isdir(path) :
-                    info['type'] = 'dir'
-                else:
-                    info['type'] = 'file'
-                rlist.append(info)
-            result.append({'name':key,'data':rlist})
-
+        for path in data:
+            if type(path) == dict:
+                path = path['path']
+            info = { 'path': path,'name':os.path.basename(path)}
+            if os.path.isdir(path) :
+                info['type'] = 'dir'
+            else:
+                info['type'] = 'file'
+            result.append(info)
         return result
 
     #添加收藏夹
     def add_files_store(self,get):
-        file_type = get.file_type
-        if sys.version_info[0] == 2: file_type = file_type.decode('utf-8')
         path = get.path
         if not os.path.exists(path):  return public.returnMsg(False,'File or directory does not exist!')
-
         data = self.get_store_data()
-        if path in data[file_type]:  return public.returnMsg(False,'Do not add it repeatedly!')
-
-        data[file_type].append(path)
+        if path in data:  return public.returnMsg(False,'Do not add it repeatedly!')
+        data.append(path)
         self.set_store_data(data)
         return public.returnMsg(True,'Added successfully!')
 
     #删除收藏夹
     def del_files_store(self,get):
-        file_type = get.file_type
-        if sys.version_info[0] == 2: file_type = file_type.decode('utf-8')
         path = get.path
         data = self.get_store_data()
-        if not file_type in data:  return public.returnMsg(False,'Cannot find this favorite category!')
-        data[file_type].remove(path)
-        if len(data[file_type]) <= 0: data[file_type] = []
-
+        if not path in data:
+            is_go = False
+            for info in data:
+                if type(info) == dict:
+                    if info['path'] == path:
+                        path = info
+                        is_go = True
+                        break
+            if not is_go:
+                return public.returnMsg(False,'This favorite object could not be found!')
+        data.remove(path)
+        if len(data) <= 0: data = []
         self.set_store_data(data)
         return public.returnMsg(True,'Successfully deleted!')

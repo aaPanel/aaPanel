@@ -35,13 +35,14 @@ class panelSite(panelRedirect):
         if not os.path.exists(path): public.ExecShell("mkdir -p " + path + " && chmod -R 644 " + path);
         path = self.setupPath + '/stop';
         if not os.path.exists(path + '/index.html'):
-            os.system('mkdir -p ' + path);
-            os.system('wget -O ' + path + '/index.html '+public.get_url()+'/stop_en.html &');
+            public.ExecShell('mkdir -p ' + path);
+            public.ExecShell('wget -O ' + path + '/index.html '+public.get_url()+'/stop.html &');
         self.__proxyfile = '/www/server/panel/data/proxyfile.json'
         self.OldConfigFile();
         if os.path.exists(self.nginx_conf_bak): os.remove(self.nginx_conf_bak)
         if os.path.exists(self.apache_conf_bak): os.remove(self.apache_conf_bak)
         self.is_ipv6 = os.path.exists(self.setupPath + '/panel/data/ipv6.pl')
+        sys.setrecursionlimit(1000000)
 
     #默认配置文件
     def check_default(self):
@@ -790,7 +791,7 @@ class panelSite(panelRedirect):
         try:
             epass = public.GetRandomString(32);
             spath = get.path + '/.well-known/pki-validation';
-            if not os.path.exists(spath): os.system("mkdir -p '" + spath + "'");
+            if not os.path.exists(spath): public.ExecShell("mkdir -p '" + spath + "'");
             public.writeFile(spath + '/fileauth.txt',epass);
             result = public.httpGet('http://' + get.domain.replace('*.','') + '/.well-known/pki-validation/fileauth.txt');
             if result == epass: return True
@@ -918,11 +919,13 @@ class panelSite(panelRedirect):
         self.check_ssl_pack()
         try:
             import panelLets
+            public.mod_reload(panelLets)
         except Exception as ex:
             if str(ex).find('No module named requests') != -1:
-                os.system("pip install requests &")
+                public.ExecShell("pip install requests &")
                 return public.returnMsg(False,'Missing requests component, please try to repair the panel!')
-        public.mod_reload(panelLets)
+            return public.returnMsg(False,str(ex))
+
         lets = panelLets.panelLets()
         result = lets.apple_lest_cert(get)
         if result['status'] and not 'code' in result:
@@ -940,11 +943,11 @@ class panelSite(panelRedirect):
         try:
             import requests
         except:
-            os.system('pip install requests')
+            public.ExecShell('pip install requests')
         try:
             import OpenSSL
         except:
-            os.system('pip install pyopenssl')
+            public.ExecShell('pip install pyopenssl')
 
 
     #判断DNS-API是否设置
@@ -1076,7 +1079,7 @@ class panelSite(panelRedirect):
                 sslStr = """#error_page 404/404.html;
     ssl_certificate    /www/server/panel/vhost/cert/%s/fullchain.pem;
     ssl_certificate_key    /www/server/panel/vhost/cert/%s/privkey.pem;
-    ssl_protocols TLSv1 TLSv1.1 TLSv1.2%s;
+    ssl_protocols TLSv1.1 TLSv1.2%s;
     ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
     ssl_prefer_server_ciphers on;
     ssl_session_cache shared:SSL:10m;
@@ -1154,7 +1157,7 @@ class panelSite(panelRedirect):
     SSLCertificateFile /www/server/panel/vhost/cert/%s/fullchain.pem
     SSLCertificateKeyFile /www/server/panel/vhost/cert/%s/privkey.pem
     SSLCipherSuite EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH
-    SSLProtocol All -SSLv2 -SSLv3
+    SSLProtocol All -SSLv2 -SSLv3 -TLSv1
     SSLHonorCipherOrder On
     %s
 
@@ -1332,7 +1335,7 @@ class panelSite(panelRedirect):
         partnerOrderId = '/www/server/panel/vhost/cert/' + siteName + '/partnerOrderId';
         if os.path.exists(partnerOrderId): public.ExecShell('rm -f ' + partnerOrderId);
         p_file = '/etc/letsencrypt/live/' + siteName + '/partnerOrderId'
-        if os.path.exists(p_file): os.system('rm -f ' + p_file);
+        if os.path.exists(p_file): public.ExecShell('rm -f ' + p_file);
 
         public.WriteLog('TYPE_SITE', 'SITE_SSL_CLOSE_SUCCESS', (siteName,));
         public.serviceReload();
@@ -1353,6 +1356,7 @@ class panelSite(panelRedirect):
         csr = public.readFile(csrpath);
         file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/' + siteName + '.conf';
         conf = public.readFile(file);
+        if not conf: return public.returnMsg(False,'The specified website profile does not exist!')
         keyText = 'SSLCertificateFile'
         if public.get_webserver() == 'nginx': keyText = 'ssl_certificate';
         status = True
@@ -1662,9 +1666,9 @@ class panelSite(panelRedirect):
                 data['dirs'] = []
                 data['binding'] = []
                 return data;
-            os.system('mkdir -p ' + path);
-            os.system('chmod 755 ' + path);
-            os.system('chown www:www ' + path);
+            public.ExecShell('mkdir -p ' + path);
+            public.ExecShell('chmod 755 ' + path);
+            public.ExecShell('chown www:www ' + path);
             get.path = path
             self.SetDirUserINI(get)
             siteName = public.M('sites').where('id=?',(get.id,)).getField('name')
@@ -1851,7 +1855,7 @@ server
         
         public.M('binding').where("id=?",(id,)).delete();
         filename = self.setupPath + '/panel/vhost/rewrite/' + siteName + '_' + binding['path'] + '.conf';
-        if os.path.exists(filename): os.system('rm -rf %s'%filename)
+        if os.path.exists(filename): public.ExecShell('rm -rf %s'%filename)
         public.serviceReload();
         public.WriteLog('TYPE_SITE', 'SITE_BINDING_DEL_SUCCESS',(siteName,binding['path']));
         return public.returnMsg(True,'DEL_SUCCESS')
@@ -2184,7 +2188,7 @@ server
 
                 #proxyname_md5 = self.__calc_md5(get.proxyname)
                 # 备份并替换老虚拟主机配置文件
-                os.system("cp %s %s_bak" % (conf_path, conf_path))
+                public.ExecShell("cp %s %s_bak" % (conf_path, conf_path))
                 conf = re.sub(rep, "", old_conf)
                 public.writeFile(conf_path, conf)
                 if n == 0:
@@ -2214,8 +2218,8 @@ server
         for i in range(len(proxyUrl)):
             if proxyUrl[i]["sitename"] == sitename and proxyUrl[i]["proxyname"] == proxyname:
                 proxyname_md5 = self.__calc_md5(proxyUrl[i]["proxyname"])
-                os.system("rm -f %s/panel/vhost/nginx/proxy/%s/%s_%s.conf" % (self.setupPath,proxyUrl[i]["sitename"],proxyname_md5,proxyUrl[i]["sitename"]))
-                os.system("rm -f %s/panel/vhost/apache/proxy/%s/%s_%s.conf" % (self.setupPath,proxyUrl[i]["sitename"],proxyname_md5, proxyUrl[i]["sitename"]))
+                public.ExecShell("rm -f %s/panel/vhost/nginx/proxy/%s/%s_%s.conf" % (self.setupPath,proxyUrl[i]["sitename"],proxyname_md5,proxyUrl[i]["sitename"]))
+                public.ExecShell("rm -f %s/panel/vhost/apache/proxy/%s/%s_%s.conf" % (self.setupPath,proxyUrl[i]["sitename"],proxyname_md5, proxyUrl[i]["sitename"]))
                 del proxyUrl[i]
                 self.__write_config(self.__proxyfile,proxyUrl)
                 self.SetNginx(get)
@@ -2307,7 +2311,7 @@ server
                 return public.returnMsg(False, "INPUT_NUM")
 
         rep = "http(s)?\:\/\/"
-        repd = "http(s)?\:\/\/([a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.)+([a-zA-Z0-9][a-zA-Z0-9]{0,62})+.?"
+        #repd = "http(s)?\:\/\/([a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.)+([a-zA-Z0-9][a-zA-Z0-9]{0,62})+.?"
         tod = "[a-zA-Z]+$"
         repte = "[\?\=\[\]\)\(\*\&\^\%\$\#\@\!\~\`{\}\>\<\,\',\"]+"
         # 检测代理目录格式
@@ -2385,7 +2389,7 @@ server
                     rep = "location.+\(gif[\w\|\$\(\)\n\{\}\s\;\/\~\.\*\\\\\?]+access_log\s+/"
                     ng_conf = re.sub(rep, 'access_log  /', ng_conf)
                     ng_conf = ng_conf.replace("include enable-php-","%s\n" % public.GetMsg("CLEAR_CACHE") +cureCache +"\n\t%s\n\t" % public.GetMsg("NGINX_PROXY_REP") + "include " + ng_proxyfile + ";\n\n\tinclude enable-php-")
-                    #public.writeFile(ng_file,ng_conf)
+                    public.writeFile(ng_file,ng_conf)
 
             else:
                 rep =  "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{66,66}\n+[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg("CLEAR_CACHE")
@@ -2403,7 +2407,7 @@ server
         access_log /dev/null;
     }'''
                 ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
-            public.writeFile(ng_file, ng_conf)
+                public.writeFile(ng_file, ng_conf)
 
     # 设置apache配置
     def SetApache(self,sitename):
@@ -2478,8 +2482,9 @@ server
         self.__write_config(self.__proxyfile, proxyUrl)
         self.SetNginx(get)
         self.SetApache(get.sitename)
-        self.SetProxy(get)
-            # return public.returnMsg(False, '配置冲突')
+        status = self.SetProxy(get)
+        if not status["status"]:
+            return status
         get.version = '00'
         get.siteName = get.sitename
         self.SetPHPVersion(get)
@@ -2526,27 +2531,30 @@ server
         for i in range(len(proxyUrl)):
             if proxyUrl[i]["proxyname"] == get.proxyname and proxyUrl[i]["sitename"] == get.sitename:
                 if int(get.type) != 1:
-                    os.system("mv %s %s_bak" % (ap_conf_file, ap_conf_file))
-                    os.system("mv %s %s_bak" % (ng_conf_file, ng_conf_file))
+                    public.ExecShell("mv %s %s_bak" % (ap_conf_file, ap_conf_file))
+                    public.ExecShell("mv %s %s_bak" % (ng_conf_file, ng_conf_file))
                     proxyUrl[i]["type"] = int(get.type)
                     self.__write_config(self.__proxyfile, proxyUrl)
                     public.serviceReload()
                     return public.returnMsg(True, 'Successfully modified')
                 else:
                     if os.path.exists(ap_conf_file+"_bak"):
-                        os.system("mv %s_bak %s" % (ap_conf_file, ap_conf_file))
-                        os.system("mv %s_bak %s" % (ng_conf_file, ng_conf_file))
+                        public.ExecShell("mv %s_bak %s" % (ap_conf_file, ap_conf_file))
+                        public.ExecShell("mv %s_bak %s" % (ng_conf_file, ng_conf_file))
                     ng_conf = public.readFile(ng_conf_file)
                     # 修改nginx配置
                     ng_conf = re.sub("location\s+%s" % proxyUrl[i]["proxydir"],"location "+get.proxydir,ng_conf)
                     ng_conf = re.sub("proxy_pass\s+%s" % proxyUrl[i]["proxysite"],"proxy_pass "+get.proxysite,ng_conf)
                     ng_conf = re.sub("\sHost\s+%s" % proxyUrl[i]["todomain"]," Host "+get.todomain,ng_conf)
-                    cache_rep = "proxy_cache_valid\s+200\s+304\s+301\s+302\s+"
+                    cache_rep = "proxy_cache_valid\s+200\s+304\s+301\s+302\s+\d+m;((\n|.)+expires\s+\d+m;)*"
                     if int(get.cache) == 1:
                         if re.search(cache_rep,ng_conf):
-                            ng_conf = re.sub(cache_rep+"%sm;" % proxyUrl[i]["cachetime"], "proxy_cache_valid 200 304 301 302 %sm;" % get.cachetime, ng_conf)
+                            expires_rep = "\{\n\s+expires\s+12h;"
+                            ng_conf = re.sub(expires_rep, "{",ng_conf)
+                            ng_conf = re.sub(cache_rep, "proxy_cache_valid 200 304 301 302 {0}m;".format(get.cachetime), ng_conf)
                         else:
                             ng_cache = """
+    proxy_ignore_headers Set-Cookie Cache-Control expires;
     proxy_cache cache_one;
     proxy_cache_key $host$uri$is_args$args;
     proxy_cache_valid 200 304 301 302 %sm;""" % (get.cachetime)
@@ -2554,16 +2562,17 @@ server
                                 cache_rep = '\n\s*#Set\s*Nginx\s*Cache(.|\n)*no-cache;'
                                 ng_conf = re.sub(cache_rep,'\n\t#Set Nginx Cache\n'+ng_cache,ng_conf)
                             else:
-                                cache_rep = '#proxy_set_header\s+Connection\s+"upgrade";'
-                                ng_conf = re.sub(cache_rep, '\n\t#proxy_set_header Connection "upgrade";\n\t#Set Nginx Cache' + ng_cache,
+                                # cache_rep = '#proxy_set_header\s+Connection\s+"upgrade";'
+                                cache_rep = 'proxy_set_header\s+REMOTE-HOST\s+\$remote_addr;'
+                                ng_conf = re.sub(cache_rep, '\n\tproxy_set_header\s+REMOTE-HOST\s+\$remote_addr;\n\t#Set Nginx Cache' + ng_cache,
                                                  ng_conf)
                     else:
                         if self.check_annotate(ng_conf):
-                            rep = '\n\s*#Set\s*Nginx\s*Cache(.|\n)*1m;'
-                            ng_conf = re.sub(rep, "\n\t#Set Nginx Cache\n\tadd_header Cache-Control no-cache;", ng_conf)
+                            rep = '\n\s*#Set\s*Nginx\s*Cache(.|\n)*\d+m;'
+                            ng_conf = re.sub(rep, "\n\t#Set Nginx Cache\n\tproxy_ignore_headers Set-Cookie Cache-Control expires;\n\tadd_header Cache-Control no-cache;", ng_conf)
                         else:
                             rep = '\s+proxy_cache\s+cache_one.*[\n\s\w\_\";\$]+m;'
-                            ng_conf = re.sub(rep, '\n\t#Set Nginx Cache\n\tadd_header Cache-Control no-cache;', ng_conf)
+                            ng_conf = re.sub(rep, '\n\t#Set Nginx Cache\n\tproxy_ignore_headers Set-Cookie Cache-Control expires;\n\tadd_header Cache-Control no-cache;', ng_conf)
 
                     sub_rep = "sub_filter"
                     subfilter = json.loads(get.subfilter)
@@ -2637,20 +2646,24 @@ server
 
         # 构造缓存配置
         ng_cache = """
+    proxy_ignore_headers Set-Cookie Cache-Control expires;
     proxy_cache cache_one;
     proxy_cache_key $host$uri$is_args$args;
     proxy_cache_valid 200 304 301 302 %sm;""" % (cachetime)
-        rep = "(https?://[\w\.]+)"
+        # rep = "(https?://[\w\.]+)"
         # proxysite1 = re.search(rep,get.proxysite).group(1)
         ng_proxy = '''
 #PROXY-START%s
+location  ~* \.(php|jsp|cgi|asp|aspx)$
+{
+    proxy_pass %s;
+    proxy_set_header Host %s;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header REMOTE-HOST $remote_addr;
+}
 location %s
 {
-    expires 12h;
-    if ($request_uri ~* "(php|jsp|cgi|asp|aspx)")
-    {
-         expires 0;
-    }
     proxy_pass %s;
     proxy_set_header Host %s;
     proxy_set_header X-Real-IP $remote_addr;
@@ -2658,17 +2671,13 @@ location %s
     proxy_set_header REMOTE-HOST $remote_addr;
     
     %s
-    #proxy_connect_timeout 30s;
-    #proxy_read_timeout 86400s;
-    #proxy_send_timeout 30s;
-    #proxy_http_version 1.1;
-    #proxy_set_header Upgrade $http_upgrade;
-    #proxy_set_header Connection "upgrade";
+
     add_header X-Cache $upstream_cache_status;
     
     #Set Nginx Cache
     %s
     %s
+    expires 12h;
 }
 
 #PROXY-END%s'''
@@ -2677,7 +2686,7 @@ location %s
         ng_proxyfile = "%s/panel/vhost/nginx/proxy/%s/%s_%s.conf" % (self.setupPath,sitename,proxyname_md5, sitename)
         ng_proxydir = "%s/panel/vhost/nginx/proxy/%s" % (self.setupPath, sitename)
         if not os.path.exists(ng_proxydir):
-            os.system("mkdir -p %s" % ng_proxydir)
+            public.ExecShell("mkdir -p %s" % ng_proxydir)
 
 
         # 构造替换字符串
@@ -2697,17 +2706,17 @@ location %s
         if advanced == 1:
             if type == 1 and cache == 1:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, get.proxydir,get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, ng_cache ,get.proxydir)
+                    get.proxydir, get.proxysite ,get.todomain,get.proxydir,get.proxysite,get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, ng_cache ,get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, get.proxydir, get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter,'\tadd_header Cache-Control no-cache;' ,get.proxydir)
+                    get.proxydir,get.proxysite ,get.todomain, get.proxydir,get.proxysite,get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter,'\tadd_header Cache-Control no-cache;' ,get.proxydir)
         else:
             if type == 1 and cache == 1:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, get.proxydir, get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, ng_cache, get.proxydir)
+                    get.proxydir, get.proxysite ,get.todomain, get.proxydir,get.proxysite,get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, ng_cache, get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, get.proxydir, get.proxysite, get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, '\tadd_header Cache-Control no-cache;', get.proxydir)
+                    get.proxydir, get.proxysite ,get.todomain,get.proxydir,get.proxysite,get.todomain, public.GetMsg("NGINX_PERSISTENCE") ,ng_sub_filter, '\tadd_header Cache-Control no-cache;', get.proxydir)
         public.writeFile(ng_proxyfile, ng_proxy_cache)
 
 
@@ -2716,7 +2725,7 @@ location %s
         ap_proxyfile = "%s/panel/vhost/apache/proxy/%s/%s_%s.conf" % (self.setupPath,get.sitename,proxyname_md5,get.sitename)
         ap_proxydir = "%s/panel/vhost/apache/proxy/%s" % (self.setupPath,get.sitename)
         if not os.path.exists(ap_proxydir):
-            os.system("mkdir -p %s" % ap_proxydir)
+            public.ExecShell("mkdir -p %s" % ap_proxydir)
         ap_proxy = ''
         if type == 1:
             ap_proxy += '''#PROXY-START%s
@@ -2738,6 +2747,7 @@ location %s
             for i in range(len(p_conf)-1,-1,-1):
                 if get.sitename == p_conf[i]["sitename"] and p_conf[i]["proxyname"]:
                     del p_conf[i]
+            self.RemoveProxy(get)
             return public.returnMsg(False, 'ERROR: %s<br><a style="color:red;">' % public.GetMsg("CONFIG_ERROR") + isError.replace("\n",
                                                                                                           '<br>') + '</a>')
         return public.returnMsg(True, 'SUCCESS')
@@ -3296,9 +3306,9 @@ location %s
         s_path = sitePath+old_run_path+"/.user.ini"
         d_path = sitePath + get.runPath+"/.user.ini"
         if s_path != d_path:
-            os.system("chattr -i {}".format(s_path))
-            os.system("mv {} {}".format(s_path,d_path))
-            os.system("chattr +i {}".format(d_path))
+            public.ExecShell("chattr -i {}".format(s_path))
+            public.ExecShell("mv {} {}".format(s_path,d_path))
+            public.ExecShell("chattr +i {}".format(d_path))
 
         public.serviceReload();
         return public.returnMsg(True,'SET_SUCCESS');
@@ -3431,8 +3441,12 @@ location %s
             rep = "#SECURITY-START(\n|.){1,500}#SECURITY-END";
             tmp = re.search(rep,conf).group()
             data['fix'] = re.search("\(.+\)\$",tmp).group().replace('(','').replace(')$','').replace('|',',');
-            data['domains'] = ','.join(re.search("valid_referers\s+none\s+blocked\s+(.+);\n",tmp).groups()[0].split());
+            try:
+                data['domains'] = ','.join(re.search("valid_referers\s+none\s+blocked\s+(.+);\n",tmp).groups()[0].split());
+            except:
+                data['domains'] = ','.join(re.search("valid_referers\s+(.+);\n",tmp).groups()[0].split());
             data['status'] = True;
+            data['none'] = tmp.find('none blocked') != -1
         else:
             data['fix'] = 'jpg,jpeg,gif,png,js,css';
             domains = public.M('domain').where('pid=?',(get.id,)).field('name').select();
@@ -3441,6 +3455,7 @@ location %s
                 tmp.append(domain['name']);
             data['domains'] = ','.join(tmp);
             data['status'] = False
+            data['none'] = False
         return data;
     
     #设置防盗链
@@ -3450,13 +3465,22 @@ location %s
         file = '/www/server/panel/vhost/nginx/' + get.name + '.conf';
         if os.path.exists(file):
             conf = public.readFile(file);
-            if conf.find('SECURITY-START') != -1:
-                rep = "\s{0,4}#SECURITY-START(\n|.){1,500}#SECURITY-END\n?";
-                conf = re.sub(rep,'',conf);
-                public.WriteLog('TYPE_SITE',"SITE_STOP_ANTI_STEALING_LINK",(get.name,))
+            if get.status == '1':
+                r_key = 'valid_referers none blocked'
+                d_key = 'valid_referers'
+                if conf.find(r_key) == -1:
+                    conf = conf.replace(d_key,r_key)
+                else:
+                    if conf.find('SECURITY-START') == -1: return public.returnMsg(False,'请先开启防盗链!')
+                    conf = conf.replace(r_key,d_key)
             else:
-                rconf = '''
-    %s
+
+                if conf.find('SECURITY-START') != -1:
+                    rep = "\s{0,4}#SECURITY-START(\n|.){1,500}#SECURITY-END\n?";
+                    conf = re.sub(rep,'',conf);
+                    public.WriteLog('TYPE_SITE',"SITE_STOP_ANTI_STEALING_LINK",(get.name,))
+                else:
+                    rconf = '''%s
     location ~ .*\.(%s)$
     {
         expires      30d;
@@ -3468,23 +3492,33 @@ location %s
     }
     #SECURITY-END
     include enable-php-''' % (public.GetMsg("SECURITY_START"),get.fix.strip().replace(',','|'),get.domains.strip().replace(',',' '))
-                conf = re.sub("include\s+enable-php-",rconf,conf);
-                public.WriteLog('TYPE_SITE',"SITE_START_ANTI_STEALING_LINK",(get.name,))
+                    conf = re.sub("include\s+enable-php-",rconf,conf);
+                    public.WriteLog('TYPE_SITE',"SITE_START_ANTI_STEALING_LINK",(get.name,))
             public.writeFile(file,conf);
+
         file = '/www/server/panel/vhost/apache/' + get.name + '.conf';
         if os.path.exists(file):
             conf = public.readFile(file);
-            if conf.find('SECURITY-START') != -1:
-                rep = "#SECURITY-START(\n|.){1,500}#SECURITY-END\n";
-                conf = re.sub(rep,'',conf);
+            if get.status == '1':
+                r_key = '#SECURITY-START.*\n    RewriteEngine on\n    RewriteCond %{HTTP_REFERER} !^$ [NC]\n'
+                d_key = '#SECURITY-START.*\n    RewriteEngine on\n'
+                if conf.find(r_key) == -1:
+                    conf = conf.replace(d_key,r_key)
+                else:
+                    if conf.find('SECURITY-START') == -1: return public.returnMsg(False,'请先开启防盗链!')
+                    conf = conf.replace(r_key,d_key)
             else:
-                tmp = "    RewriteCond %{HTTP_REFERER} !{DOMAIN} [NC]";
-                tmps = [];
-                for d in get.domains.split(','):
-                    tmps.append(tmp.replace('{DOMAIN}',d));
-                domains = "\n".join(tmps);
-                rconf = "combined\n    "+ public.GetMsg("SECURITY_START") +"\n    RewriteEngine on\n    RewriteCond %{HTTP_REFERER} !^$ [NC]\n"  + domains + "\n    RewriteRule .("+get.fix.strip().replace(',','|')+") /404.html [R=404,NC,L]\n    #SECURITY-END"
-                conf = conf.replace('combined',rconf)
+                if conf.find('SECURITY-START') != -1:
+                    rep = "#SECURITY-START(\n|.){1,500}#SECURITY-END\n";
+                    conf = re.sub(rep,'',conf);
+                else:
+                    tmp = "    RewriteCond %{HTTP_REFERER} !{DOMAIN} [NC]";
+                    tmps = [];
+                    for d in get.domains.split(','):
+                        tmps.append(tmp.replace('{DOMAIN}',d));
+                    domains = "\n".join(tmps);
+                    rconf = "combined\n    "+ public.GetMsg("SECURITY_START") +"\n    RewriteEngine on\n    RewriteCond %{HTTP_REFERER} !^$ [NC]\n"  + domains + "\n    RewriteRule .("+get.fix.strip().replace(',','|')+") /404.html [R=404,NC,L]\n    #SECURITY-END"
+                    conf = conf.replace('combined',rconf)
             public.writeFile(file,conf);
         public.serviceReload();
         return public.returnMsg(True,'SET_SUCCESS');

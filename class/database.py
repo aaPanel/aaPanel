@@ -101,8 +101,8 @@ class database(datatool.datatools):
         if "1133" in mysqlMsg: return public.returnMsg(False,'DATABASE_ERR_NOT_EXISTS')
         if "libmysqlclient" in mysqlMsg: 
             result = self.rep_lnk()
-            os.system("pip uninstall mysql-python -y")
-            os.system("pip install pymysql")
+            public.ExecShell("pip uninstall mysql-python -y")
+            public.ExecShell("pip install pymysql")
             public.writeFile('data/restart.pl','True')
             return public.returnMsg(False,"MYSQL_FIX_WITH_AUTO_ERR")
         return None
@@ -314,7 +314,7 @@ SetLink
                 result = mysql_obj.query("show databases")
                 isError=self.IsSqlError(result)
                 if  isError != None: 
-                    os.system("cd /www/server/panel && python tools.py root \"" + password + "\"")
+                    public.ExecShell("cd /www/server/panel && python tools.py root \"" + password + "\"")
                     is_modify = False
             if is_modify:
                 m_version = public.readFile(public.GetConfigValue('setup_path') + '/mysql/version.pl')
@@ -346,8 +346,7 @@ SetLink
             name = public.M('databases').where('id=?',(id,)).getField('name');
             
             rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
-            if len(re.search(rep, newpassword).groups()) > 0: return public.returnMsg(False, 'DATABASE_NAME_ERR_T')
-            
+            if  not re.match(rep, newpassword): return public.returnMsg(False, 'DATABASE_NAME_ERR_T')
             #修改MYSQL
             mysql_obj = panelMysql.panelMysql()
             m_version = public.readFile(public.GetConfigValue('setup_path') + '/mysql/version.pl')
@@ -388,15 +387,15 @@ SetLink
         id = get['id']
         name = public.M('databases').where("id=?",(id,)).getField('name')
         root = public.M('config').where('id=?',(1,)).getField('mysql_root');
-        if not os.path.exists(session['config']['backup_path'] + '/database'): os.system('mkdir -p ' + session['config']['backup_path'] + '/database');
+        if not os.path.exists(session['config']['backup_path'] + '/database'): public.ExecShell('mkdir -p ' + session['config']['backup_path'] + '/database');
         if not self.mypass(True, root):return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
         
         fileName = name + '_' + time.strftime('%Y%m%d_%H%M%S',time.localtime()) + '.sql.gz'
         backupName = session['config']['backup_path'] + '/database/' + fileName
         public.ExecShell("/www/server/mysql/bin/mysqldump --default-character-set="+ public.get_database_character(name) +" --force --opt \"" + name + "\" | gzip > " + backupName)
         if not os.path.exists(backupName): return public.returnMsg(False,'BACKUP_ERROR');
-
-        if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
+        
+        self.mypass(False, root)
         
         sql = public.M('backup')
         addTime = time.strftime('%Y-%m-%d %X',time.localtime())
@@ -458,15 +457,15 @@ SetLink
                     isgzip = True
             if not os.path.exists(backupPath + '/' + tmpFile) or tmpFile == '': return public.returnMsg(False, 'FILE_NOT_EXISTS',(tmpFile,))
             if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
-            os.system(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < " +'"'+ backupPath + '/' +tmpFile+'"')
+            public.ExecShell(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < " +'"'+ backupPath + '/' +tmpFile+'"')
             if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
             if isgzip:
-                os.system('cd ' +backupPath+ ' && gzip ' + file.split('/')[-1][:-3]);
+                public.ExecShell('cd ' +backupPath+ ' && gzip ' + file.split('/')[-1][:-3]);
             else:
-                os.system("rm -f " +  backupPath + '/' +tmpFile)
+                public.ExecShell("rm -f " +  backupPath + '/' +tmpFile)
         else:
             if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
-            os.system(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < "+'"' +  file+'"')
+            public.ExecShell(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < "+'"' +  file+'"')
             if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
                 
             
@@ -501,8 +500,8 @@ SetLink
     
     #配置
     def mypass(self,act,root):
-        os.system("sed -i '/user=root/d' /etc/my.cnf")
-        os.system("sed -i '/password=/d' /etc/my.cnf")
+        public.ExecShell("sed -i '/user=root/d' /etc/my.cnf")
+        public.ExecShell("sed -i '/password=/d' /etc/my.cnf")
         if act:
             mycnf = public.readFile('/etc/my.cnf');
             rep = "\[mysqldump\]\nuser=root"
@@ -512,6 +511,7 @@ SetLink
             mycnf = mycnf.replace(sea,subStr)
             if len(mycnf) > 100: public.writeFile('/etc/my.cnf',mycnf);
             return True
+        return True
 
     #添加到服务器
     def ToDataBase(self,find):
@@ -624,16 +624,16 @@ SetLink
     #修改数据库目录
     def SetDataDir(self,get):
         if get.datadir[-1] == '/': get.datadir = get.datadir[0:-1];
-        if not os.path.exists(get.datadir): os.system('mkdir -p ' + get.datadir);
+        if not os.path.exists(get.datadir): public.ExecShell('mkdir -p ' + get.datadir);
         mysqlInfo = self.GetMySQLInfo(get);
         if mysqlInfo['datadir'] == get.datadir: return public.returnMsg(False,'DATABASE_MOVE_RE');
         
-        os.system('/etc/init.d/mysqld stop');
-        os.system('\cp -a -r ' + mysqlInfo['datadir'] + '/* ' + get.datadir + '/');
-        os.system('chown -R mysql.mysql ' + get.datadir);
-        os.system('chmod -R 755 ' + get.datadir);
-        os.system('rm -f ' + get.datadir + '/*.pid');
-        os.system('rm -f ' + get.datadir + '/*.err');
+        public.ExecShell('/etc/init.d/mysqld stop');
+        public.ExecShell('\cp -a -r ' + mysqlInfo['datadir'] + '/* ' + get.datadir + '/');
+        public.ExecShell('chown -R mysql.mysql ' + get.datadir);
+        public.ExecShell('chmod -R 755 ' + get.datadir);
+        public.ExecShell('rm -f ' + get.datadir + '/*.pid');
+        public.ExecShell('rm -f ' + get.datadir + '/*.err');
         
         public.CheckMyCnf();
         myfile = '/etc/my.cnf';
@@ -641,15 +641,15 @@ SetLink
         public.writeFile('/etc/my_backup.cnf',mycnf);
         mycnf = mycnf.replace(mysqlInfo['datadir'],get.datadir);
         public.writeFile(myfile,mycnf);
-        os.system('/etc/init.d/mysqld start');
+        public.ExecShell('/etc/init.d/mysqld start');
         result = public.ExecShell('ps aux|grep mysqld|grep -v grep');
         if len(result[0]) > 10:
             public.writeFile('data/datadir.pl',get.datadir);
             return public.returnMsg(True,'DATABASE_MOVE_SUCCESS');
         else:
-            os.system('pkill -9 mysqld');
+            public.ExecShell('pkill -9 mysqld');
             public.writeFile(myfile,public.readFile('/etc/my_backup.cnf'));
-            os.system('/etc/init.d/mysqld start');
+            public.ExecShell('/etc/init.d/mysqld start');
             return public.returnMsg(False,'DATABASE_MOVE_ERR');
     
     #修改数据库端口
@@ -659,7 +659,7 @@ SetLink
         rep = "port\s*=\s*([0-9]+)\s*\n"
         mycnf = re.sub(rep,'port = ' + get.port + '\n',mycnf);
         public.writeFile(myfile,mycnf);
-        os.system('/etc/init.d/mysqld restart');
+        public.ExecShell('/etc/init.d/mysqld restart');
         return public.returnMsg(True,'EDIT_SUCCESS');
     
     #获取错误日志
@@ -686,8 +686,8 @@ SetLink
             if hasattr(get,'status'): return public.returnMsg(False,'0');
             mycnf = mycnf.replace('#log-bin=mysql-bin','log-bin=mysql-bin')
             mycnf = mycnf.replace('#binlog_format=mixed','binlog_format=mixed')
-            os.system('sync')
-            os.system('/etc/init.d/mysqld restart');
+            public.ExecShell('sync')
+            public.ExecShell('/etc/init.d/mysqld restart');
         else:
             path = self.GetMySQLInfo(get)['datadir'];
             if not os.path.exists(path): return public.returnMsg(False,'数据库目录不存在!')
@@ -702,9 +702,9 @@ SetLink
                 return public.returnMsg(False, "Database directory does not exist")
             mycnf = mycnf.replace('log-bin=mysql-bin','#log-bin=mysql-bin')
             mycnf = mycnf.replace('binlog_format=mixed','#binlog_format=mixed')
-            os.system('sync')
-            os.system('/etc/init.d/mysqld restart');
-            os.system('rm -f ' + path + '/mysql-bin.*')
+            public.ExecShell('sync')
+            public.ExecShell('/etc/init.d/mysqld restart');
+            public.ExecShell('rm -f ' + path + '/mysql-bin.*')
         
         public.writeFile(myfile,mycnf);
         return public.returnMsg(True,'SUCCESS');

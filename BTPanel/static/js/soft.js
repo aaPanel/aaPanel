@@ -18,7 +18,7 @@ var soft = {
         }
         soft.is_install = false;
         bt.soft.get_soft_list(page, type, search, function (rdata) {
-            if (rdata.pro >= 0) {
+            if (rdata.pro < 0) {
                 $("#updata_pro_info").html('');
             } else if (rdata.pro === -2) {
                 $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong>' + lan.soft.pro_expire + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.renew_pro + '" style="margin-left:8px">' + lan.soft.renew_now + '</button>');
@@ -27,19 +27,20 @@ var soft = {
             }
 
             if (type == 10) {
-                $("#updata_pro_info").html('<div class="alert alert-info" style="margin-bottom:15px"><strong>' + lan.soft.bt_developer + '</strong><a class="btn btn-success btn-xs va0" href="https://www.bt.cn/developer/" title="' + lan.soft.free_to_enter + '" style="margin-left: 8px" target="_blank">' + lan.soft.free_to_enter + '</a><a class="btn btn-success btn-xs va0" href="https://www.bt.cn/bbs/forum-40-1.html" title="' + lan.soft.get_third_party_apps + '" style="margin-left: 8px" target="_blank">' + lan.soft.get_third_party_apps + '</a><input type="file" style="display:none;" accept=".zip,.tar.gz" id="update_zip" multiple="multiple"><button class="btn btn-success btn-xs" onclick="soft.update_zip_open()" style="margin-left:8px">' + lan.soft.import_plug + '</button></div>')
+                $("#updata_pro_info").html('<div class="alert alert-danger" style="margin-bottom:15px"><strong>' + lan.soft.bt_developer + '</strong><a class="btn btn-success btn-xs va0" href="https://forum.aapanel.com/d/600-third-party-plug-in-for-aapanel-nginx-free-firewall" title="' + lan.soft.get_third_party_apps + '" style="margin-left: 8px" target="_blank">' + lan.soft.get_third_party_apps + '</a><input type="file" style="display:none;" accept=".zip,.tar.gz" id="update_zip" multiple="multiple"><button class="btn btn-success btn-xs" onclick="soft.update_zip_open()" style="margin-left:8px">' + lan.soft.import_plug + '</button></div>')
             } else if (type == 11) {
                 $("#updata_pro_info").html('<div class="alert alert-info" style="margin-bottom:15px"><strong>'+lan.soft.comingsoon+'</strong></div>')
             }
             var tBody = '';
-            rdata.type.unshift({ icon: 'icon', id: 0, ps: lan.soft.all, sort: 1, title: lan.soft.all })
+            rdata.type.unshift({ icon: 'icon', id: 0, ps: lan.soft.all, sort: 1, title: lan.soft.all },{ icon: 'icon', id: -1, ps: 'Installed', sort: 1, title: 'Installed' })
             for (var i = 0; i < rdata.type.length; i++) {
                 var c = '';
                 if (istype == rdata.type[i].id) {
                     c = 'class="on"';
                 }
                 // 注释软件管理的付费插件，第三方插件，一键部署
-                if (rdata.type[i].id != "11" && rdata.type[i].id != "10" && rdata.type[i].id != "8") {
+                // if (rdata.type[i].id != "11" && rdata.type[i].id != "10" && rdata.type[i].id != "8") {
+                if (rdata.type[i].id != "11" && rdata.type[i].id != "8") {
                     tBody += '<span typeid="' + rdata.type[i].id + '" ' + c + '>' + rdata.type[i].title + '</span>';
                 }
             }
@@ -121,6 +122,11 @@ var soft = {
                             return price;
                         }
                     },
+                    (type ==10?{
+                        field: 'sort', width: 60, title: 'Score', templet: function (item) {
+                            return item.sort !== undefined?('<a href="javascript:;" onclick="score.open_score_view('+ item.pid +',\''+ item.title +'\','+ item.count +')" class="btlink open_sort_view">' + (item.sort <= 0 || item.sort >5?'无评分':item.sort.toFixed(1))  +'</a>'):'--';
+                        }
+                    }:''),
                     {
                         field: 'endtime', width: 120, title: lan.soft.expire_time, templet: function (item) {
                             var endtime = '--';
@@ -161,7 +167,7 @@ var soft = {
                             return path;
                         }
                     },
-                    {
+                    (type !=10?{
                         field: 'status', width: 40, title: lan.soft.status1, templet: function (item) {
                             var status = '';
                             if (item.setup) {
@@ -174,7 +180,7 @@ var soft = {
                             }
                             return status;
                         }
-                    },
+                    }:''),
                     {
                         field: 'index', width: 100, title: lan.soft.display_at_homepage, templet: function (item) {
                             var to_index = '';
@@ -189,8 +195,8 @@ var soft = {
                     },
                     {
                         field: 'opt', width: 180, title: lan.soft.operate, align: 'right', templet: function (item) {
+                            console.log(item)
                             var option = '';
-
                             var pay_opt = '';
                             if (item.endtime < 0 && item.pid > 0) {
                                 var re_msg = '';
@@ -236,7 +242,6 @@ var soft = {
                                                 var min_version = item.versions[i]
                                                 var ret = bt.check_version(item.version, min_version.m_version + '.' + min_version.version);
                                                 if (ret > 0) {
-                                                    if (!min_version.update_msg) min_version.update_msg = '';
                                                     if (ret == 2) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g,"_bt_") + '\')" >' + lan.soft.update + '</a> | ';
                                                     break;
                                                 }
@@ -245,7 +250,6 @@ var soft = {
                                         else {
                                             var min_version = item.versions[0];
                                             var cloud_version = min_version.m_version + '.' + min_version.version;
-                                            if (!min_version.update_msg) min_version.update_msg = '';
                                             if (item.version != cloud_version) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
                                         }
                                         if (item.admin) {
@@ -318,8 +322,7 @@ var soft = {
         $.post('/deployment?action=GetList', pdata, function (rdata) {
             layer.close(loadT)
             var tBody = '';
-            rdata.type.unshift({ icon: 'icon', id: 0, ps: 'All', sort: 1, title: 'All' })
-
+            rdata.type.unshift({ icon: 'icon', id: 0, ps: 'All', sort: 1, title: 'All' },{ icon: 'icon', id: -1, ps: 'Installed', sort: 1, title: 'Installed' });
             for (var i = 0; i < rdata.type.length; i++) {
                 var c = '';
                 if ('11' == rdata.type[i].id) {
@@ -373,6 +376,7 @@ var soft = {
 				                <th>Introduction</th>\
 				                <th>Support for PHP version</th>\
                                 <th>Provider</th>\
+                                <th>Score</th>\
 				                <th style="text-align: right;" width="80">Operate</th>\
 			                </tr>\
 		                </thead>';
@@ -391,6 +395,8 @@ var soft = {
                     + '<td>' + rdata.list[i].ps + '</td>'
                     + '<td>' + rdata.list[i].php + '</td>'
                     + '<td><a class="btlink" target="_blank" href="' + rdata.list[i].official + '">' + (rdata.list[i].author == 'aaPanel' ? rdata.list[i].title : rdata.list[i].author) + '</a></td>'
+                    + '<td>' + (rdata.list[i].sort !== undefined?('<a href="javascript:;" class="btlink open_score_view" onclick="score.open_score_view('+ rdata.list[i].id +',\''+ rdata.list[i].title +'\','+ rdata.list[i].count +')" >' + (rdata.list[i].sort <= 0 || rdata.list[i].sort > 5?'No rating':rdata.list[i].sort.toFixed(1))+'</a>'):'--')
+                    + '</td>'
                     + '<td class="text-right"><a href="javascript:onekeyCodeSite(\'' + rdata.list[i].name + '\',\'' + rdata.list[i].php + '\',\'' + rdata.list[i].title + '\',\'' + rdata.list[i].enable_functions + '\');" class="btlink">One-Click</a>' + remove_opt+'</td>'
                     + '</tr>'
             }
@@ -1410,7 +1416,11 @@ var soft = {
             case 'set_php_config':
 
                 bt.soft.php.get_config(version, function (rdata) {
-                    $(".soft-man-con").empty().append('<div class="divtable" id="phpextdiv" style="margin-right:10px;height: 510px; overflow: auto; margin-right: 0px;"><table id="tab_phpext" class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"></div></div>');
+                    var divObj = document.getElementById('phpextdiv');
+                    var scrollTopNum = 0;
+                    if (divObj) scrollTopNum = divObj.scrollTop;
+
+                    $(".soft-man-con").empty().append('<div class="divtable" id="phpextdiv" style="margin-right:10px;height: 420px; overflow: auto; margin-right: 0px;"><table id="tab_phpext" class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"></div></div>');
 
                     var list = [];
                     for (var i = 0; i < rdata.libs.length; i++) {
@@ -1448,9 +1458,7 @@ var soft = {
                     $(".soft-man-con").append(bt.render_help(helps));
 
                     var divObj = document.getElementById('phpextdiv');
-                    var scrollTopNum = 0;
-                    if (divObj) scrollTopNum = divObj.scrollTop;
-                    document.getElementById('phpextdiv').scrollTop = scrollTopNum;
+                    if (divObj) divObj.scrollTop = scrollTopNum;
                     $('a').click(function () {
                         var _obj = $(this);
                         if (_obj.hasClass('lib-uninstall')) {
@@ -1468,6 +1476,12 @@ var soft = {
                             });
                         }
                     })
+
+                    if ($(".bt-soft-menu .bgw").text() === "Installation extension") {
+                        setTimeout(function () {
+                            soft.get_tab_contents('set_php_config', obj);
+                        }, 3000)
+                    }
                 })
                 break;
             case 'get_phpinfo':
@@ -1637,7 +1651,6 @@ var soft = {
                                 field: 'opt', title: lan.public.action, width: 50, templet: function (item) {
                                     var new_disable_functions = disable_functions.slice()
                                     new_disable_functions.splice($.inArray(item.name, new_disable_functions), 1)
-                                    // console.log(new_disable_functions)
                                     return '<a class="del_functions" style="float:right;" data-val="shell_exec" onclick="set_disable_functions(\'' + version + '\',\'' + new_disable_functions.join(',') + '\')" href="javascript:;">' + lan.soft.del + '</a>';
                                 }
                             }
@@ -1709,7 +1722,6 @@ var soft = {
                         { title: 'max_spare_servers', name: 'max_spare_servers', value: rdata.max_spare_servers, type: 'number', width: '100px', ps: '*' + lan.soft.php_fpm_ps5 },
                         {
                             title: ' ', text: lan.public.save, name: 'btn_children_submit', css: 'btn-success', type: 'button', callback: function (ldata) {
-                                // console.log(ldata)
                                 bt.pub.get_menm(function (memInfo) {
                                     var limit_children = parseInt(memInfo['memTotal'] / 8);
                                     if (limit_children < parseInt(ldata.max_children)) {
@@ -1825,7 +1837,6 @@ var soft = {
                     '</div>');
                     if(res.save_handler == 'files'){
                         bt.soft.php.get_session_count(function(res){
-                            // console.log(res);
                             $('.clear_conter').html('<div class="session_clear_list"><div class="line"><span>' + lan.soft.total_seesion_files + '</span><span>' + res.total + '</span></div><div class="line"><span>' + lan.soft.can_clear_seesion + '</span><span>' + res.oldfile + '</span></div></div><button class="btn btn-success btn-sm clear_session_file">' + lan.soft.clear_seesion_files + '</button>')
                             $('.clear_session_file').click(function(){
                                 bt.soft.php.clear_session_count({
@@ -2221,7 +2232,8 @@ function onekeyCodeSite(codename, versions,title,enable_functions) {
             layer.msg('Missing supported PHP version, please install!', { icon: 5 });
             return;
         }
-
+        var default_path = bt.get_cookie('sites_path');
+        if (!default_path) default_path = '/www/wwwroot';
 
 
         var con = '<form class="bt-form pd20 pb70" id="addweb">\
@@ -2234,7 +2246,7 @@ function onekeyCodeSite(codename, versions,title,enable_functions) {
 						<div class="info-r c4"><input id="Wbeizhu" class="bt-input-text" name="ps" placeholder="Website note" style="width:398px" type="text"> </div>\
 					</div>\
 					<div class="line"><span class="tname">Root Directory</span>\
-						<div class="info-r c4"><input id="inputPath" class="bt-input-text mr5" name="path" value="/www/wwwroot/" placeholder="Website root directory" style="width:398px" type="text"><span class="glyphicon glyphicon-folder-open cursor" onclick="ChangePath(\'inputPath\')"></span> </div>\
+						<div class="info-r c4"><input id="inputPath" class="bt-input-text mr5" name="path" value="'+ default_path+'" placeholder="Website root directory" style="width:398px" type="text"><span class="glyphicon glyphicon-folder-open cursor" onclick="ChangePath(\'inputPath\')"></span> </div>\
 					</div>\
 					<div class="line"><span class="tname">Database</span>\
 						<div class="info-r c4">\
@@ -2289,7 +2301,8 @@ function onekeyCodeSite(codename, versions,title,enable_functions) {
         });
         //FTP账号数据绑定域名
         $('#mainDomain').on('input', function () {
-            var defaultPath = '/www/wwwroot';
+            var default_path = bt.get_cookie('sites_path');
+            if (!default_path) default_path = '/www/wwwroot';
             var array;
             var res, ress;
             var str = $(this).val();
@@ -2333,4 +2346,433 @@ function _getRandomString(len) {
         pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
     }
     return pwd;
+}
+var score = {
+    total:1,
+    type:'',
+    data:[],
+    // 获取评论信息
+    get_score_info:function (obj,callback) {
+        var loadT = layer.msg('<div class="depSpeed">Getting comment information <img src="/static/img/ing.gif"></div>', { icon: 16, time: 0, shade: [0.3, "#000"] });
+        bt.send('get_score','plugin/get_score',{
+            pid:obj.pid,
+            p:obj.p,
+            limit_num:obj.limit_num
+        },function(res){
+            layer.close(loadT);
+            if(res.status === false){
+                layer.msg(res.msg,{icon:2});
+                return false;
+            }
+            if(callback) callback(res);
+        });
+    },
+    render_score_info:function(obj,callback){
+        var config = {pid:obj.pid},_this = this;
+        obj.p == undefined?config.p = 1:config.p = parseInt(obj.p)
+        obj.limit_num == undefined?config.limit_num = '':config.limit_num = obj.limit_num
+        score.get_score_info(config,function(res){
+            var _split_score = res.split.reverse(),_average_score = (_split_score[4]*1+_split_score[3]*2+_split_score[2]*3+_split_score[1]*4 +_split_score[0]*5)/res.total,_data = res.data,_html ='';
+            _this.total = res.total;
+            $('.comment_user_count').text(obj.count);
+            $('.comment_num').text((res.total!==0?_average_score:0).toFixed(1));
+            $('.comment_partake').text(res.total);
+            $('.comment_rate').text(res.total!==0?((((_split_score[0]+_split_score[1])/res.total).toFixed(2)*100)+'%'):'0%');
+            for(var i=0;i<5;i++){
+                $('.comment_star_group:eq('+ i +')').find('.comment_progress .comment_progress_bgw').css('width',((_split_score[i] / res.total).toFixed(2)*100)+'%')
+            }
+            $('.comment_tab span:eq(1)').find('i').text(_split_score[0]+_split_score[1]);
+            $('.comment_tab span:eq(2)').find('i').text(_split_score[2]+_split_score[3]);
+            $('.comment_tab span:eq(3)').find('i').text(_split_score[4]);
+
+            for (var j = 0; j < _data.length; j++){
+                _html += '<div class="comment_box" data-index="'+ ((config.p == 1?'':config.p-1)+(j+'')) +'">\
+                    <div class="comment_box_title">\
+                        <span class="nice_star">\
+                            <span class="glyphicon '+ (_data[j].num >=1?'star_active':'') +' glyphicon-star" aria-hidden="true"></span>\
+                            <span class="glyphicon '+ (_data[j].num >=2?'star_active':'') +' glyphicon-star" aria-hidden="true"></span>\
+                            <span class="glyphicon '+ (_data[j].num >=3?'star_active':'') +' glyphicon-star" aria-hidden="true"></span>\
+                            <span class="glyphicon '+ (_data[j].num >=4?'star_active':'') +' glyphicon-star" aria-hidden="true"></span>\
+                            <span class="glyphicon '+ (_data[j].num >=5?'star_active':'') +' glyphicon-star" aria-hidden="true"></span>\
+                        </span>\
+                        <span class="nice_name" title="'+ _data[j].nickname +'">'+ _data[j].nickname +'</span>\
+                        <span class="nice_time" title="'+ bt.format_data(_data[j].addtime ) +'">'+ timeago(_data[j].addtime * 1000) +'</span>\
+                    </div>\
+                    <div class="comment_box_content">'+ (getLength(_data[j].ps)>65?reBytesStr(_data[j].ps,65)+'...&nbsp;<a href="javascript:;" class="btlink">Details</a>':_data[j].ps) +'</div>\
+                </div>'
+                // console.log(getLength(_data[j].ps)>70?reBytesStr(_data[j].ps,70)+'&nbsp;<a href="javascript:;" class="btlink">详情</a>':_data[j].ps);
+            }
+            _this.data = _this.data.concat(_data);
+            if(res.total > 10 && _data.length === 10){
+                _html += '<div class="comment_box get_next_page"><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>Click for more comments</div>'
+            }
+            $('.comment_content').find('.get_next_page').remove();
+            $('.comment_content').append(_html);
+            if($('.comment_content .comment_box').length > 6){
+                $('.comment_content').addClass('box-shadow');
+            }else{
+                $('.comment_content').removeClass('box-shadow');
+            }
+            if(callback) callback(res);
+        });
+    },
+    // 设置评论信息
+    set_score_info:function (obj,callback){
+        var loadT = layer.msg('<div class="depSpeed">Submitting comment <img src="/static/img/ing.gif"></div>', { icon: 16, time: 0, shade: [0.3, "#000"] });
+        bt.send('set_score','plugin/set_score',{
+            pid:obj.pid,
+            num:obj.num,
+            ps:obj.ps
+        },function(res){
+            layer.close(loadT);
+            if(res.status === false){
+                layer.msg(res.msg,{icon:2});
+                return false;
+            }
+            if(callback) callback(res);
+        });
+    },
+    open_score_view:function(_pid,_name,_count){
+        layer.open({
+            type: 1,
+            title:'[ '+ _name + '] Score',
+            area:['550px','350px'],
+            closeBtn: 2,
+            shadeClose: false,
+            content:'<div class="pd20 score_info_view"><div class="comment_title">\
+                    <div class="comment_left">\
+                        <div class="comment_num">--</div>\
+                        <ul class="comment_num_tips">\
+                            <li>user count&nbsp;<span class="comment_user_count">--</span></li>\
+                            <li>&nbsp;<span class="comment_partake">--</span>&nbsp;people participated in the score</li>\
+                            <li><span class="comment_rate">--</span>&nbsp;Favorable rate</li>\
+                        </ul>\
+                    </div>\
+                    <div class="comment_right">\
+                        <div class="comment_star_group">\
+                            <div class="comment_star">\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                            </div>\
+                            <div class="comment_progress">\
+                                <div class="comment_progress_bgw"></div>\
+                                <div class="comment_progress_speed"></div>\
+                            </div>\
+                        </div>\
+                        <div class="comment_star_group">\
+                            <div class="comment_star">\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                            </div>\
+                            <div class="comment_progress">\
+                                <div class="comment_progress_bgw"></div>\
+                                <div class="comment_progress_speed"></div>\
+                            </div>\
+                        </div>\
+                        <div class="comment_star_group">\
+                            <div class="comment_star">\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                            </div>\
+                            <div class="comment_progress">\
+                                <div class="comment_progress_bgw"></div>\
+                                <div class="comment_progress_speed"></div>\
+                            </div>\
+                        </div>\
+                        <div class="comment_star_group">\
+                            <div class="comment_star">\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                            </div>\
+                            <div class="comment_progress">\
+                                <div class="comment_progress_bgw"></div>\
+                                <div class="comment_progress_speed"></div>\
+                            </div>\
+                        </div>\
+                        <div class="comment_star_group">\
+                            <div class="comment_star">\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_none glyphicon-star" aria-hidden="true"></span>\
+                                <span class="glyphicon star_active glyphicon-star" aria-hidden="true"></span>\
+                            </div>\
+                            <div class="comment_progress">\
+                                <div class="comment_progress_bgw"></div>\
+                                <div class="comment_progress_speed"></div>\
+                            </div>\
+                        </div>\
+                    </div>\
+                </div>\
+                <div class="comment_tab">\
+                    <span class="active" data-num="">All evaluation</span>\
+                    <span data-num="5">Praise&nbsp;<i>--</i>&nbsp;</span>\
+                    <span data-num="3">Average&nbsp;<i>--</i>&nbsp;</span>\
+                    <span data-num="1">Bad review&nbsp;<i>--</i>&nbsp;</span>\
+                </div>\
+                <div class="comment_content">\
+                </div>\
+                <div class="add_score_view">\
+                    <div class="score_icon_group" data-icon="5">\
+                        <span class="glyphicon glyphicon-star active" aria-hidden="true" title="very bad：1 star"></span>\
+                        <span class="glyphicon glyphicon-star active" aria-hidden="true" title="bad：2 star"></span>\
+                        <span class="glyphicon glyphicon-star active" aria-hidden="true" title="general：3 star"></span>\
+                        <span class="glyphicon glyphicon-star active" aria-hidden="true" title="good：4 star"></span>\
+                        <span class="glyphicon glyphicon-star active" aria-hidden="true" title="very good：5 star" ></span>\
+                    </div>\
+                    <div class="score_icon_group_tips">Recommended: 5 points</div>\
+                    <textarea class="score_input bt-input-text" placeholder="Please enter the evaluation content, the number of words is less than 60 words, can be empty." name="score_val"></textarea>\
+                    <span class="score_input_tips pull-right">Can also enter&nbsp;<i>60</i>&nbsp;words</span>\
+                </div>\
+                <div class="edit_view ">\
+                    <span>Participate in the score</span>\
+                </div>\
+            </div>'
+            ,success:function(index,layero){
+                score.data = [];
+                score.render_score_info({pid:_pid,count:_count},function(){
+                    $('.score_info_view').show();
+                });
+                score.score_icon_time = null;
+                $('.score_icon_group span').hover(function(){
+                    var _active = $(this).hasClass('active');
+                    // if($(this).prevAll().length == 0 && $(this).nextAll('.active').length == 0 && _active){
+                    //     $(this).removeClass('active').nextAll().removeClass('active')
+                    //     $('.score_icon_group_tips').html('选择以上图标选择评分等级1-5');
+                    //     $('.score_icon_group').attr('data-icon',0)
+                    // }else{
+                        // $(this).addClass('active').nextAll().removeClass('active');
+                        // $(this).prevAll().addClass('active');
+                        // $('.score_icon_group').attr('data-icon',$(this).prevAll().length +1)
+                        // var _title =  $(this).attr('title');
+                        // $('.score_icon_group_tips').text(_title);
+                    // }
+                });
+                $('.score_icon_group span').click(function(){
+                    var _active = $(this).hasClass('active');
+                    if($(this).prevAll().length == 0 && $(this).nextAll('.active').length == 0 && _active){
+                        $('.edit_view').addClass('active');
+                        $(this).removeClass('active').nextAll().removeClass('active')
+                        $('.score_icon_group_tips').html('Click on the selection icon to rate 1-5 stars');
+                        $('.score_icon_group').attr('data-icon',0)
+                    }else{
+                        $('.edit_view').removeClass('active');
+                        $(this).addClass('active').nextAll().removeClass('active');
+                        $(this).prevAll().addClass('active');
+                        $('.score_icon_group').attr('data-icon',$(this).prevAll().length +1)
+                        var _title =  $(this).attr('title');
+                        $('.score_icon_group_tips').text(_title);
+                    }
+                });
+                $('.comment_tab span').click(function(e){
+                    var _num = $(this).attr('data-num');
+                    $('.comment_content').removeClass('box-shadow');
+                    $(this).addClass('active').siblings().removeClass('active');
+                    $('.comment_content').html('');
+                    score.data = []
+                    score.type = _num;
+                    score.render_score_info({pid:_pid,limit_num:_num,count:_count});
+
+                });
+                $('.comment_content').on('click','.get_next_page',function () {
+                    var _next_page = ($('.comment_content .comment_box').length / 10)+1;
+                    score.render_score_info({pid:_pid,limit_num:score.type,p:_next_page,count:_count});
+                });
+                $('.comment_content').on('click','.comment_box',function(){
+                    if(!$(this).hasClass('get_next_page')){
+                        var _index = $(this).attr('data-index');
+                        layer.open({
+                            type: 1,
+                            title:false,
+                            area:['350px','200px'],
+                            closeBtn: 2,
+                            shadeClose: false,
+                            content: '<div class="score_details" >'+ $(this).html() +'</div>',
+                            success:function(index,layers) {
+                                $('.score_details .comment_box_content').html(score.data[_index]['ps']);
+                            }
+                        });
+                    }
+                });
+                $('.edit_view').click(function(){
+                    if($('.edit_view').hasClass('active')){
+                        // layer.msg('请选择评分等级',{icon:2});
+                        $('.score_icon_group_tips').css('color','red');
+                        setTimeout(function(){
+                            $('.score_icon_group_tips').removeAttr('style')
+                        },1000);
+                        return false
+                    }
+                    var _num = parseInt($('.score_icon_group').attr('data-icon')),_ps = $('.score_input').val();
+                    if(_num == 0){
+                        layer.msg('Rating level cannot be empty',{icon:2});
+                        return false;
+                    }
+                    if(120 - getLength(_ps)<0){
+                        layer.msg('Evaluation information cannot exceed 60 words',{icon:2});
+                        return false;
+                    }
+                    score.set_score_info({pid:_pid,num:_num,ps:_ps == ''?'User did not make any evaluation': _ps},function(res){
+                        layer.msg(res.msg,{icon:1});
+                        score.render_score_info({pid:_pid,limit_num:score.type,count:_count});
+                        soft.flush_cache();
+                        layer.close(index);
+                    });
+                    return false
+                    layer.open({
+                        type: 1,
+                        title:'Add review',
+                        area:['400px','350px'],
+                        closeBtn: 2,
+                        shadeClose: false,
+                        btn:['Confirm','Cancel'],
+                        content:'<div class="add_score_view">\
+                            <div class="score_icon_group" data-icon="0">\
+                                <span class="glyphicon glyphicon-star" aria-hidden="true" title="very bad：1 star"></span>\
+                                <span class="glyphicon glyphicon-star" aria-hidden="true" title="bad：2 star"></span>\
+                                <span class="glyphicon glyphicon-star" aria-hidden="true" title="general：3 star"></span>\
+                                <span class="glyphicon glyphicon-star" aria-hidden="true" title="good：4 star"></span>\
+                                <span class="glyphicon glyphicon-star" aria-hidden="true" title="very good：5 star" ></span>\
+                            </div>\
+                            <div class="score_icon_group_tips">(Click on the icon above to select rating 1-5)</div>\
+                            <textarea class="score_input bt-input-text" placeholder="Please enter the evaluation content, the number of words is less than 60 words, can be empty." name="score_val"></textarea>\
+                            <span class="score_input_tips pull-right">Can also enter&nbsp;<i>60</i>&nbsp;words</span>\
+                        </div>',
+                        success:function(){
+                            $('.score_icon_group span').click(function(){
+                                var _active = $(this).hasClass('active');
+                                if($(this).prevAll().length == 0 && $(this).nextAll('.active').length == 0 && _active){
+                                    $(this).removeClass('active').nextAll().removeClass('active')
+                                    $('.score_icon_group_tips').html('(Click on the icon above to select rating 1-5)');
+                                    $('.score_icon_group').attr('data-icon',0)
+                                }else{
+                                    $(this).addClass('active').nextAll().removeClass('active');
+                                    $(this).prevAll().addClass('active');
+                                    $('.score_icon_group').attr('data-icon',$(this).prevAll().length +1)
+                                    var _title =  $(this).attr('title');
+                                    $('.score_icon_group_tips').text(_title);
+                                }
+                            });
+                            $('.score_input').on('keydown keyup focus click',function(){
+                                var _val = $('.score_input').val(),_size = 120 - getLength(_val);
+                                if(_size > 0){
+                                    $('.score_input_tips i').css('color',_size > 20?'#666':'red').text(parseInt(_size/2));
+                                    $('.score_input').attr('style','');
+                                }else{
+                                    $('.score_input_tips i').text(0)
+                                    $('.score_input').css({'outline-color':'red','border':'1px solid red'});
+                                }
+                            });
+                        },
+                        yes:function(index,layero){
+                            var _num = parseInt($('.score_icon_group').attr('data-icon')),_ps = $('.score_input').val();
+                            if(_num == 0){
+                                layer.msg('Rating level cannot be empty',{icon:2});
+                                return false;
+                            }
+                            if(120 - getLength(_ps)<0){
+                                layer.msg('Evaluation information cannot exceed 60 words',{icon:2});
+                                return false;
+                            }
+                            score.set_score_info({pid:_pid,num:_num,ps:_ps == ''?'User did not make any evaluation': _ps},function(res){
+                                layer.msg(res.msg,{icon:1});
+                                score.render_score_info({pid:_pid,limit_num:score.type,count:_count});
+                                soft.flush_cache();
+                                layer.close(index);
+                            });
+                        }
+                    });
+                });
+            }
+        })
+    }
+}
+
+function timeago(dateTimeStamp){   //dateTimeStamp是一个时间毫秒，注意时间戳是秒的形式，在这个毫秒的基础上除以1000，就是十位数的时间戳。13位数的都是时间毫秒。
+    if(dateTimeStamp.toString().length < 10) dateTimeStamp = dateTimeStamp * 1000
+    var minute = 1000 * 60,
+        hour = minute * 60,
+        day = hour * 24,
+        week = day * 7,
+        halfamonth = day * 15,
+        month = day * 30,
+        now = new Date().getTime(),   //获取当前时间毫秒
+        diffValue = now - dateTimeStamp;//时间差
+    if(diffValue <= 0){return 'Just a moment ago';}
+    var minC = diffValue/minute,  //计算时间差的分，时，天，周，月
+        hourC = diffValue/hour,
+        dayC = diffValue/day,
+        weekC = diffValue/week,
+        monthC = diffValue/month,
+        result ='Just a moment ago';
+    if(monthC >= 1 && monthC <= 3){
+        result = " " + parseInt(monthC) + "month ago"
+    }else if(weekC >= 1 && weekC <= 3){
+        result = " " + parseInt(weekC) + "week ago"
+    }else if(dayC >= 1 && dayC <= 6){
+        result = " " + parseInt(dayC) + "day ago"
+    }else if(hourC >= 1 && hourC <= 23){
+        result = " " + parseInt(hourC) + "hour ago"
+    }else if(minC >= 1 && minC <= 59){
+        result =" " + parseInt(minC) + "minute ago"
+    }else if(diffValue >= 0 && diffValue <= minute){
+        result = "Just a moment ago"
+    }else {
+        var datetime = new Date();
+        datetime.setTime(dateTimeStamp);
+        var Nyear = datetime.getFullYear(),
+            Nmonth = datetime.getMonth() + 1 < 10 ? "0" + (datetime.getMonth() + 1) : datetime.getMonth() + 1,
+            Ndate = datetime.getDate() < 10 ? "0" + datetime.getDate() : datetime.getDate(),
+            Nhour = datetime.getHours() < 10 ? "0" + datetime.getHours() : datetime.getHours(),
+            Nminute = datetime.getMinutes() < 10 ? "0" + datetime.getMinutes() : datetime.getMinutes(),
+            Nsecond = datetime.getSeconds() < 10 ? "0" + datetime.getSeconds() : datetime.getSeconds(),
+            result =  Nmonth + "-" + Ndate
+    }
+    if (!result) result = 'Just a moment ago'
+    return ((result == undefined || result == 'undefined')?'Just a moment ago':result);
+}
+// 规则转码
+function escapeHTML(val) {
+    val = "" + val;
+    return val.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, '&quot;').replace(/'/g, "‘").replace(/\(/g, "&#40;").replace(/\&#60;/g, "&lt;").replace(/\&#62;/g, "&gt;").replace(/`/g, "&#96;").replace(/=/g, "＝");
+}
+function getLength(val) {
+    var str = new String(val);
+    var bytesCount = 0;
+    for (var i = 0 ,n = str.length; i < n; i++) {
+        var c = str.charCodeAt(i);
+        if ((c >= 0x0001 && c <= 0x007e) || (0xff60<=c && c<=0xff9f)) {
+            bytesCount += 1;
+        } else {
+            bytesCount += 2;
+        }
+    }
+    return bytesCount;
+}
+function reBytesStr(str, len) {
+    if ((!str && typeof(str) != 'undefined')) {return '';}
+    var num = 0;
+    var str1 = str;
+    var str = '';
+    for (var i = 0,lens = str1.length; i < lens; i++) {
+        num += ((str1.charCodeAt(i) > 255) ? 2 : 1);
+        if (num > len) {
+            break;
+        } else {
+            str = str1.substring(0, i + 1);
+        }
+    }
+    return str;
 }

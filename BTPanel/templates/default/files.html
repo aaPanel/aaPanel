@@ -68,6 +68,7 @@
             <span class="replaces"><i class="fa fa-random" aria-hidden="true"></i>Replace</span>
             <span class="fontSize"><i class="glyphicon glyphicon-text-width" aria-hidden="true"></i>Font</span>
             <span class="themes"><i class="glyphicon glyphicon-magnet" aria-hidden="true"></i>Theme</span>
+            <span class="setUp"><i class="glyphicon glyphicon-cog" aria-hidden="true"></i>Set</span>
             <span class="helps"><i class="glyphicon glyphicon-question-sign" aria-hidden="true"></i>Help</span>
             <div class="pull-down" title="Hide toolbar"><i class="glyphicon glyphicon-menu-down" aria-hidden="true"></i></div>
         </div>
@@ -77,13 +78,14 @@
                 <div class="ace_catalogue_title">Favorites</div>
                 <div class="ace_catalogue_list">
                     <ul class="cd-accordion-menu animated">
+                        <li class="has-children "><span>Back to previous</span></li>
                         <li class="has-children">
                             <input type="checkbox" name ="group-1" id="group-1" checked>
-                            <label for="group-1">Group 1</label>
+                            <label for="group-1" class="file_fold"><span class="glyphicon glyphicon-menu-right"></span><span><i class="folder_icon"></i>Document list</span></label>
                             <ul>
                                 <li class="has-children">
                                     <input type="checkbox" name ="sub-group-1" id="sub-group-1">
-                                    <label for="sub-group-1">Sub Group 1</label>
+                                    <label for="sub-group-1">Document list</label>
                                     <ul>
                                         <li><a href="#0">Image</a></li>
                                         <li><a href="#0">Image</a></li>
@@ -129,7 +131,6 @@
                         <span data-type="tab"></span>
                         <span data-type="encoding"></span>
                         <span data-type="lang"></span>
-                        <!--<span data-type="history"></span>-->
                     </div>
                 </div>
             </div>
@@ -182,15 +183,15 @@
 </script>
 <script src="/static/js/jquery-ui.min.js"></script>
 <script src="/static/js/jquery.contextify.min.js"></script>
-<script src="/static/js/files.js?date={{g.version}}"></script>
+<script src="/static/js/files.js?date22={{g.version}}"></script>
 <script src="/static/js/upload.js?date={{g.version}}"></script>
 <script type="text/javascript" src="./static/ace/ace.js?date=2"></script>
 <script type="text/javascript" src="./static/ace/ext-language_tools.js?date=2"></script>
 <script type="text/javascript">
 	setTimeout(function(){
-	GetDisk();
-},500);
-var xPath = getCookie('Path');
+		GetDisk();
+	},500);
+	var xPath = getCookie('Path');
 	setTimeout(function(){
 		GetFiles((xPath!=undefined?xPath:'/www/wwwroot'));
 	},800);

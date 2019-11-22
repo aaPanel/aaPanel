@@ -92,7 +92,7 @@ class backupTools:
         if len(mycnf) > 100:
             public.writeFile('/etc/my.cnf',mycnf);
         
-        public.ExecShell("/www/server/mysql/bin/mysqldump --force --opt " + name + " | gzip > " + filename)
+        public.ExecShell("/www/server/mysql/bin/mysqldump --default-character-set="+ public.get_database_character(name) +" --force --opt " + name + " | gzip > " + filename)
         
         if not os.path.exists(filename):
             endDate = time.strftime('%Y/%m/%d %X',time.localtime())
@@ -138,7 +138,7 @@ class backupTools:
         backup_path = sql.table('config').where("id=?",(1,)).getField('backup_path') + '/path';
         if not os.path.exists(backup_path): os.makedirs(backup_path);
         filename= backup_path + "/Path_" + name + "_" + time.strftime('%Y%m%d_%H%M%S',time.localtime()) + '.tar.gz'
-        os.system("cd " + os.path.dirname(path) + " && tar zcvf '" + filename + "' '" + os.path.basename(path) + "' > /dev/null")
+        os.system("cd " + os.path.dirname(path) + " && tar zcvf '" + filename + "' '" + os.path.basename(path) + "'" + self.__exclude + " > /dev/null")
                 
         endDate = time.strftime('%Y/%m/%d %X',time.localtime())
         if not os.path.exists(filename):

@@ -11,7 +11,7 @@
 # 宝塔公共库
 # --------------------------------
 
-import json,os,sys,time,re,socket,importlib,binascii,base64
+import json,os,sys,time,re,socket,importlib,binascii,base64,io
 
 if sys.version_info[0] == 2:
     reload(sys)
@@ -478,33 +478,27 @@ def serviceReload():
 def ExecShell(cmdstring, cwd=None, timeout=None, shell=True):
     a = ''
     e = ''
-    try:
-        #通过管道执行SHELL
-        import shlex
-        import datetime
-        import subprocess
-        import time
+    import subprocess,tempfile
 
-        if shell:
-            cmdstring_list = cmdstring
-        else:
-            cmdstring_list = shlex.split(cmdstring)
-        if timeout:
-            end_time = datetime.datetime.now() + datetime.timedelta(seconds=timeout)
-        sub = subprocess.Popen(cmdstring_list, cwd=cwd, stdin=subprocess.PIPE,shell=shell,bufsize=4096,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        while sub.poll() is None:
-            time.sleep(0.1)
-            if timeout:
-                if end_time <= datetime.datetime.now():
-                    raise Exception("Timeout：%s"%cmdstring)
-        a,e = sub.communicate()
-        try:
-            if type(a) == bytes: a = a.decode('utf-8')
-            if type(e) == bytes: e = e.decode('utf-8')
-        except:pass
+    try:
+        rx = md5(cmdstring)
+        succ_f = tempfile.SpooledTemporaryFile(max_size=4096,mode='wb+',suffix='_succ',prefix='btex_' + rx ,dir='/dev/shm')
+        err_f = tempfile.SpooledTemporaryFile(max_size=4096,mode='wb+',suffix='_err',prefix='btex_' + rx ,dir='/dev/shm')
+        sub = subprocess.Popen(cmdstring, close_fds=True, shell=shell,bufsize=128,stdout=succ_f,stderr=err_f)
+        sub.wait()
+        err_f.seek(0)
+        succ_f.seek(0)
+        a = succ_f.read()
+        e = err_f.read()
+        if not err_f.closed: err_f.close()
+        if not succ_f.closed: succ_f.close()
     except:
-        if not a:
-            a = os.popen(cmdstring).read()
+        print(get_error_info())
+    try:
+        #编码修正
+        if type(a) == bytes: a = a.decode('utf-8')
+        if type(e) == bytes: e = e.decode('utf-8')
+    except:pass
 
     return a,e
 
@@ -1022,7 +1016,7 @@ MySQL_Opt
         mycnf = mycnf.replace('/www/server/data', newPath);
         writeFile('/etc/my.cnf', mycnf);
 
-    os.system(shellStr);
+    ExecShell(shellStr);
     WriteLog('TYPE_SOFE', 'MYSQL_CHECK_ERR');
     return True;
 
@@ -1289,7 +1283,6 @@ def get_page(count, p=1, rows=12, callback='', result='1,2,3,4,5,8'):
 
 # 取面板版本
 def version():
-    from BTPanel import g
     try:
         from BTPanel import g
         return g.version
@@ -1356,11 +1349,9 @@ def set_own(filename, user, group=None):
     from pwd import getpwnam
     try:
         user_info = getpwnam(user)
-        # user_info = getpwnam('www')
         user = user_info.pw_uid
         if group:
             user_info = getpwnam(group)
-            # user_info = getpwnam('www')
         group = user_info.pw_gid
     except:
         # 如果指定用户或组不存在，则使用www
@@ -1438,7 +1429,7 @@ def en_crypt(key,strings):
         result = f.encrypt(strings)
         return result.decode('utf-8')
     except:
-        print(get_error_info())
+        #print(get_error_info())
         return strings
 
 #解密字符串
@@ -1478,7 +1469,7 @@ def check_domain_panel():
             errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
             try:
                 errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_DOMAIN_H1'),getMsg('PAGE_ERR_DOMAIN_P1'),getMsg('PAGE_ERR_DOMAIN_P2'),getMsg('PAGE_ERR_DOMAIN_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
-            except IndexError:pass
+            except:pass
             return errorStr
     return False
 
@@ -1542,7 +1533,7 @@ def sync_date():
         new_time = int(time_str)
         time_arr = time.localtime(new_time)
         date_str = time.strftime("%Y-%m-%d %H:%M:%S", time_arr)
-        os.system('date -s "%s"' % date_str)
+        ExecShell('date -s "%s"' % date_str)
         writeFile(tip_file,str(s_time))
         return True
     except:
@@ -1604,6 +1595,23 @@ def en_hexb(data):
     result = base64.b64decode(binascii.unhexlify(data));
     if type(result) != str: result = result.decode('utf-8')
     return result;
+
+def upload_file_url(filename):
+    try:
+        if os.path.exists(filename):
+            data = ExecShell('/usr/bin/curl https://scanner.baidu.com/enqueue -F archive=@%s' % filename)
+            data = json.loads(data[0])
+            time.sleep(1)
+            import requests
+            default_headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'
+            }
+            data_list = requests.get(url=data['url'], headers=default_headers, verify=False)
+            return (data_list.json())
+        else:
+            return False
+    except:
+        return False
 
 #取通用对象
 class dict_obj:
