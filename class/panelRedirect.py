@@ -454,6 +454,8 @@ class panelRedirect:
         sitename = get.sitename
         redirectname = get.redirectname
         proxyname_md5 = self.__calc_md5(redirectname)
+        if get.webserver == 'openlitespeed':
+            get.webserver = 'apache'
         get.path = "%s/panel/vhost/%s/redirect/%s/%s_%s.conf" % (self.setupPath, get.webserver, sitename,proxyname_md5,sitename)
         for i in conf:
             if redirectname == i["redirectname"] and sitename == i["sitename"] and i["type"] != 1:

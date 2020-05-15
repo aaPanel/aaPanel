@@ -16,7 +16,7 @@
             <span class="ico-system">{{data['lan']['S1']}}</span><span id="info" style="margin-left:10px;"> {{data['lan']['S2']}}</span>&#12288;&#12288;{{data['lan']['S3']}} <span id="running">{{data['lan']['S4']}}</span>
         </div>
         <span class="pull-right f12 c6" style="line-height:52px; margin-right:15px">
-            <!--{{data['pd']|safe}}--> <span id="btversion" style="margin-right:10px"><a onclick="index.open_log()">{{session['version']}}</a></span>
+            <!--{{data['pd']|safe}}--> <span id="btversion" style="margin-right:10px">{{session['version']}}</span>
             <span id="toUpdate"><a class="btlink" href="javascript:index.check_update();">{{data['lan']['UPDATE']}}</a></span>
             <span style="margin:0 10px"><a class="btlink" href="javascript:index.re_panel();">{{data['lan']['FIX']}}</a></span>
             <span style="margin-right:10px"><a class="btlink" href="javascript:index.re_server();">{{data['lan']['RESTART']}}</a></span>
@@ -33,7 +33,7 @@
             <div class="server-circle">
                 <ul class="row" id="systemInfoList">
                     <li class="col-xs-6 col-sm-3 col-md-3 col-lg-2 mtb20 circle-box text-center loadbox">
-                        <h3 class="c9 f15">{{data['lan']['LOAD_STATUS']}}<a href="https://www.bt.cn/bbs/thread-11402-1-1.html" target="_blank" class="bt-ico-ask" style="cursor: pointer;">?</a></h3>
+                        <h3 class="c9 f15">{{data['lan']['LOAD_STATUS']}}<a href="https://forum.aapanel.com/d/1265-what-does-the-data-in-load-status-represent" target="_blank" class="bt-ico-ask" style="cursor: pointer;">?</a></h3>
                         <div class="cicle">
                             <div class="bar bar-left">
                                 <div class="bar-left-an bar-an"></div>
@@ -135,8 +135,9 @@
 
 <script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
-<script type="text/javascript" src="/static/js/index.js?version={{g['version']}}"></script>
-<script type="text/javascript" src="/static/js/soft.js?version={{g['version']}}"></script>
+<script type="text/javascript" src="/static/js/index.js?f2={{g['version']}}"></script>
+<script type="text/javascript" src="/static/js/soft.js?version_20191219={{g['version']}}"></script>
+<script type="text/javascript" src="/static/ace/ace.js?date={{g.version}}"></script>
 <script type="text/javascript">
 	$(".btpro").click(function(){
         layer.confirm(lan.index.change_free, { icon: 3, btn: [lan.index.ubind], closeBtn: 2, title: lan.index.confirm_cancel }, function () {

@@ -64,6 +64,8 @@ class SiteDirAuth:
         '''
         name = get.name
         site_dir = get.site_dir
+        if public.get_webserver() == "openlitespeed":
+            return public.returnMsg(False,"OpenLiteSpeed is currently not supported")
         if not hasattr(get,"password") or not get.password or not hasattr(get,"username") or not get.username:
             return public.returnMsg(False, 'Please enter an account or password')
         if not get.site_dir:

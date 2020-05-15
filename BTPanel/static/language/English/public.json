@@ -71,7 +71,7 @@
 	"PATH_ERROR":"System critical directory cannot be used as site directory",
 	"BACKUP_SUCCESS":"Backup Succeeded!",
 	"UPDATE_SUCCESS":"Update Succeeded!",
-	"PANEL_UPDATE":"Successful to update to{1}",
+	"PANEL_UPDATE":"Successful to update to {1}",
 	"PANEL_UPDATE_ERR_DOWN":"File download failed, please try again or update manually!",
 	"PANEL_UPDATE_ERR_NEW":"Current version is up-to-date!",
 	"PANEL_UPDATE_MSG":"Current version is stable version and already latest. Update cycle of stable version is generally 2 months，while developer version will update every Wednesday!",

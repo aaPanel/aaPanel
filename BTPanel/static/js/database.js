@@ -100,12 +100,12 @@ var database = {
             layer.open({
                 type: 1,
                 title: lan.database.mysql_tools_box+"【" + db_name + "】",
-                area: ['780px', '580px'],
+                area: ['824px', '580px'],
                 closeBtn: 2,
                 shadeClose: false,
-                content: '<div class="pd15">\
+                content: '<div class="plr15 mt10">\
                                 <div class="db_list">\
-                                    <span><a>'+lan.database.db_name+'：'+ db_name + '</a>\
+                                    <span><a style="width: 205px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;vertical-align: bottom;margin-right: 11px;" title="'+ db_name + '">'+lan.database.db_name+'：'+ db_name + '</a>\
                                     <a class="tools_size">'+lan.database.size+'：'+ rdata.data_size + '</a></span>\
                                     <span id="db_tools" style="float: right;"></span>\
                                 </div >\
@@ -118,7 +118,7 @@ var database = {
                                             <th>'+lan.database.tb_name+'</th>\
                                             <th>'+lan.database.engine+'</th>\
                                             <th>'+lan.database.character+'</th>\
-                                            <th>'+lan.database.row_num+'</th>\
+                                            <th  width="80">'+lan.database.row_num+'</th>\
                                             <th>'+lan.database.size+'</th>\
                                             <th style="text-align: right;">'+lan.database.operation+'</th>\
                                         </tr>\
@@ -324,6 +324,7 @@ var database = {
                 $('#btn_data_backup').unbind('click').click(function () {
                     bt.database.backup_data(id, dataname, function (rdata) {
                         if (rdata.status) database.database_detail(id, dataname);
+                        database.get_list();
                     })
                 })
             }, 100)

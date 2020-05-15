@@ -151,6 +151,9 @@ class wxapp(SelfModule, ScanLogin):
             # 是否在白名单ip    sgin 是否正确
             if hasattr(get, 'uid') and hasattr(get, 'sgin') and hasattr(get, 'fun') and get['uid'] in self.user_info.keys():
                 encryption_str = self.user_info[get['uid']]['token']+get['fun']+get['uid']
+                if sys.version_info[0] == 3:
+                    if type(encryption_str) == str:
+                        encryption_str = encryption_str.encode()
             if get['sgin'] == public.md5(binascii.hexlify(base64.b64encode(encryption_str))):
                 if get['client_ip'] in ['118.24.150.167', '103.224.251.67', '125.88.182.170', '47.52.194.186', '39.104.53.226','119.147.144.162']:
                     return True

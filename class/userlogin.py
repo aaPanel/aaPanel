@@ -20,22 +20,25 @@ class userlogin:
         self.error_num(False)
         if self.limit_address('?') < 1: return public.returnJson(False,'LOGIN_ERR_LIMIT'),json_header
         
-        post.username = post.username.strip();
-        password = public.md5(post.password.strip());
-        sql = db.Sql();
-        userInfo = sql.table('users').where("id=?",(1,)).field('id,username,password').find()
-        m_code = cache.get('codeStr')
+        post.username = post.username.strip()
+        password = public.md5(post.password.strip())
+        sql = db.Sql()
+        user_list = sql.table('users').field('id,username,password').select()
+        userInfo = None
+        for u_info in user_list:
+            if u_info['username'] == post.username:
+                userInfo = u_info
         if 'code' in session:
-            if session['code']:
+            if session['code'] and not 'is_verify_password' in session:
                 if not hasattr(post, 'code'): return public.returnMsg(False,'Verification code can not be empty!')
                 if not public.checkCode(post.code):
-                    public.WriteLog('TYPE_LOGIN','LOGIN_ERR_CODE',('****','****',public.GetClientIp()));
+                    public.WriteLog('TYPE_LOGIN','LOGIN_ERR_CODE',('****','****',public.GetClientIp()))
                     return public.returnJson(False,'CODE_ERR'),json_header
         try:
             s_pass = public.md5(public.md5(userInfo['password'] + '_bt.cn'))
             if userInfo['username'] != post.username or s_pass != password:
-                public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()));
-                num = self.limit_address('+');
+                public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()))
+                num = self.limit_address('+')
                 return public.returnJson(False,'LOGIN_USER_ERR',(str(num),)),json_header
             _key_file = "/www/server/panel/data/two_step_auth.txt"
             if hasattr(post,'vcode'):
@@ -43,7 +46,7 @@ class userlogin:
                 import pyotp
                 secret_key = public.readFile(_key_file)
                 if not secret_key:
-                    return public.returnMsg(False, "Did not find the key, please close Google verification on the command line and trun on again")
+                    return public.returnJson(False, "Did not find the key, please close Google verification on the command line and trun on again"),json_header
                 t = pyotp.TOTP(secret_key)
                 result = t.verify(post.vcode)
                 if not result:
@@ -54,13 +57,16 @@ class userlogin:
                 now = int(time.time())
                 public.writeFile("/www/server/panel/data/dont_vcode_ip.txt",json.dumps({"client_ip":public.GetClientIp(),"add_time":now}))
                 self.limit_address('--',v="vcode")
+                self.set_cdn_host(post)
                 return self._set_login_session(userInfo)
 
             acc_client_ip = self.check_two_step_auth()
 
             if not os.path.exists(_key_file) or acc_client_ip:
+                self.set_cdn_host(post)
                 return self._set_login_session(userInfo)
             self.limit_address('-')
+            session['is_verify_password'] = True
             return "1"
         except Exception as ex:
             stringEx = str(ex)
@@ -69,8 +75,8 @@ class userlogin:
                 os.system("rm -f /www/wwwlogs/*log")
                 public.ServiceReload()
                 return public.returnJson(False,'USER_INODE_ERR'),json_header
-            public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()));
-            num = self.limit_address('+');
+            public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()))
+            num = self.limit_address('+')
             return public.returnJson(False,'LOGIN_USER_ERR',(str(num),)),json_header
 
     def request_tmp(self,get):
@@ -82,11 +88,11 @@ class userlogin:
             if (time.time() - data['tmp_time']) > 120: return public.returnJson(False,'EXPIRED_TOKEN'),json_header
             if get.tmp_token != data['tmp_token']: return public.returnJson(False,'INIT_TOKEN_ERR'),json_header
             userInfo = public.M('users').where("id=?",(1,)).field('id,username').find()
-            session['login'] = True;
-            session['username'] = userInfo['username'];
+            session['login'] = True
+            session['username'] = userInfo['username']
             session['tmp_login'] = True
-            public.WriteLog('TYPE_LOGIN','LOGIN_SUCCESS',(userInfo['username'],public.GetClientIp()));
-            self.limit_address('-');
+            public.WriteLog('TYPE_LOGIN','LOGIN_SUCCESS',(userInfo['username'],public.GetClientIp()))
+            self.limit_address('-')
             cache.delete('panelNum')
             cache.delete('dologin')
             sess_input_path = 'data/session_last.pl'
@@ -96,6 +102,7 @@ class userlogin:
             public.writeFile(save_path,json.dumps(data))
             self.set_request_token()
             self.login_token()
+            self.set_cdn_host(get)
             return redirect('/')
         except:
             return public.returnJson(False,'Login failed,' + public.get_error_info()),json_header
@@ -108,7 +115,7 @@ class userlogin:
 
     def request_get(self,get):
         #if os.path.exists('/www/server/panel/install.pl'): raise redirect('/install');
-        if not 'title' in session: session['title'] = public.getMsg('NAME');
+        if not 'title' in session: session['title'] = public.getMsg('NAME')
         domain = public.readFile('data/domain.conf')
         
         if domain:
@@ -121,16 +128,14 @@ class userlogin:
         if os.path.exists('data/limitip.conf'):
             iplist = public.readFile('data/limitip.conf')
             if iplist:
-                iplist = iplist.strip();
+                iplist = iplist.strip()
                 if not public.GetClientIp() in iplist.split(','):
                     errorStr = public.ReadFile('./BTPanel/templates/' + public.GetConfigValue('template') + '/error2.html')
                     try:
                         errorStr = errorStr.format(public.getMsg('PAGE_ERR_TITLE'),public.getMsg('PAGE_ERR_IP_H1'),public.getMsg('PAGE_ERR_IP_P1',(public.GetClientIp(),)),public.getMsg('PAGE_ERR_IP_P2'),public.getMsg('PAGE_ERR_IP_P3'),public.getMsg('NAME'),public.getMsg('PAGE_ERR_HELP'))
                     except IndexError:pass
                     return errorStr
-        
-        sql = db.Sql()
-        
+
         if 'login' in session:
             if session['login'] == True:
                 return redirect('/')
@@ -143,6 +148,17 @@ class userlogin:
     def set_request_token(self):
         session['request_token_head'] = public.GetRandomString(48)
 
+    def set_cdn_host(self,get):
+        try:
+            if not 'cdn_url' in get: return True
+            plugin_path = 'plugin/static_cdn'
+            if not os.path.exists(plugin_path): return True
+            cdn_url = public.get_cdn_url()
+            if not cdn_url or cdn_url == get.cdn_url: return True
+            public.set_cdn_url(get.cdn_url)
+        except:
+            return False
+
     #防暴破
     def error_num(self,s = True):
         nKey = 'panelNum'
@@ -151,56 +167,57 @@ class userlogin:
             cache.set(nKey,1)
             num = 1
         if s: cache.inc(nKey,1)
-        if num > 6: session['code'] = True;
+        if num > 6: session['code'] = True
     
     #IP限制
     def limit_address(self,type,v=""):
         import time
-        clientIp = public.GetClientIp();
+        clientIp = public.GetClientIp()
         numKey = 'limitIpNum_' + v + clientIp
-        limit = 6;
-        outTime = 600;
+        limit = 6
+        outTime = 600
         try:
             #初始化
             num1 = cache.get(numKey)
             if not num1:
-                cache.set(numKey,1,outTime);
-                num1 = 1;
+                cache.set(numKey,1,outTime)
+                num1 = 1
                         
             #计数
             if type == '+':
                 cache.inc(numKey,1)
-                self.error_num();
-                session['code'] = True;
-                return limit - (num1+1);
+                self.error_num()
+                session['code'] = True
+                return limit - (num1+1)
 
             #计数验证器
             if type == '++':
                 cache.inc(numKey,1)
-                self.error_num();
-                session['code'] = False;
-                return limit - (num1+1);
-            
+                self.error_num()
+                session['code'] = False
+                return limit - (num1+1)
+
             #清空
             if type == '-':
-                cache.delete(numKey);
-                session['code'] = False;
-                return 1;
+                cache.delete(numKey)
+                session['code'] = False
+                return 1
 
             #清空验证器
             if type == '--':
-                cache.delete(numKey);
-                session['code'] = False;
-                return 1;
-            return limit - num1;
+                cache.delete(numKey)
+                session['code'] = False
+                return 1
+            return limit - num1
         except:
-            return limit;
+            return limit
 
     # 登录成功设置session
     def _set_login_session(self,userInfo):
         try:
             session['login'] = True
             session['username'] = userInfo['username']
+            session['uid'] = userInfo['id']
             public.WriteLog('TYPE_LOGIN','LOGIN_SUCCESS',(userInfo['username'],public.GetClientIp()))
             self.limit_address('-')
             cache.delete('panelNum')
@@ -218,8 +235,9 @@ class userlogin:
                 public.ServiceReload()
                 return public.returnJson(False,'USER_INODE_ERR'),json_header
             public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()))
-            num = self.limit_address('+');
+            num = self.limit_address('+')
             return public.returnJson(False,'LOGIN_USER_ERR',(str(num),)),json_header
+
 
     # 检查是否需要进行二次验证
     def check_two_step_auth(self):
@@ -236,21 +254,19 @@ class userlogin:
 
     # 清理多余SESSION数据
     def clear_session(self):
-        session_file = '/dev/shm/session.db'
-        if not os.path.exists(session_file): return False
-        s_size = os.path.getsize(session_file)
-        if s_size < 1024 * 512: return False
         try:
-            sid = 'BT_:' + session.sid
-            import db
-            sql = db.Sql()
-            sql._Sql__DB_FILE = session_file
+            session_file = '/dev/shm/session.db'
+            if not os.path.exists(session_file): return False
+            s_size = os.path.getsize(session_file)
+            if s_size < 1024 * 512: return False
             if s_size > 1024 * 1024 * 10:
-                sql.table('session').where('session_id!=?',(sid,)).delete()
-                sql.table('session').execute('VACUUM',())
-            else:
-                sql.table('session').where('session_id!=? AND expiry<?',(sid,public.format_date())).delete()
-            sql.close()
+                from BTPanel import sdb
+                if os.path.exists(session_file): os.remove(session_file)
+                sdb.create_all()
+                if not os.path.exists(session_file):
+                    public.writeFile('/www/server/panel/data/reload.pl','True')
+                    return False
             return True
         except:
             return False
+

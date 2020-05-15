@@ -8,10 +8,9 @@
 # +-------------------------------------------------------------------
 import time,public,db,os,sys,json,re
 os.chdir('/www/server/panel')
-exec_tips = None
-from BTPanel import cache
 
 def control_init():
+    time.sleep(1)
     sql = db.Sql().dbfile('system')
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'load_average')).count():
         csql = '''CREATE TABLE IF NOT EXISTS `load_average` (
@@ -24,8 +23,8 @@ def control_init():
 )'''
         sql.execute(csql,())
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%type_id%')).count():
-        public.M('sites').execute("alter TABLE sites add edate integer DEFAULT '0000-00-00'",());
-        public.M('sites').execute("alter TABLE sites add type_id integer DEFAULT 0",());
+        public.M('sites').execute("alter TABLE sites add edate integer DEFAULT '0000-00-00'",())
+        public.M('sites').execute("alter TABLE sites add type_id integer DEFAULT 0",())
 
     sql = db.Sql()
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_types')).count():
@@ -36,6 +35,33 @@ def control_init():
 )'''
 
         sql.execute(csql,())
+
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'download_token')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `download_token` (
+`id` INTEGER PRIMARY KEY AUTOINCREMENT,
+`token` REAL,
+`filename` REAL,
+`total` INTEGER DEFAULT 0,
+`expire` INTEGER,
+`password` REAL,
+`ps` REAL,
+`addtime` INTEGER
+)'''
+        sql.execute(csql,())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'logs','%username%')).count():
+        public.M('logs').execute("alter TABLE logs add uid integer DEFAULT '1'",())
+        public.M('logs').execute("alter TABLE logs add username TEXT DEFAULT 'system'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%status%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'status' INTEGER DEFAULT 1",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'save' INTEGER DEFAULT 3",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'backupTo' TEXT DEFAULT off",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sName' TEXT",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sBody' TEXT",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sType' TEXT",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'urladdress' TEXT",())
+
 
     filename = '/www/server/nginx/off'
     if os.path.exists(filename): os.remove(filename)
@@ -67,6 +93,84 @@ def control_init():
     remove_tty1()
     clean_hook_log()
     run_new()
+    clean_max_log('/www/server/cron',1024*1024*5,20)
+    #check_firewall()
+    check_dnsapi()
+    clean_php_log()
+    update_py37()
+
+
+#尝试升级到独立环境
+def update_py37():
+    pyenv='/www/server/panel/pyenv/bin/python'
+    pyenv_exists='/www/server/panel/data/pyenv_exists.pl'
+    if os.path.exists(pyenv) or os.path.exists(pyenv_exists): return False
+    download_url = public.get_url()
+    public.ExecShell("nohup curl {}/install/update_panel_en.sh|bash &>/tmp/panelUpdate.pl &".format(download_url))
+    public.writeFile(pyenv_exists,'True')
+    return True
+
+#检查dnsapi
+def check_dnsapi():
+    dnsapi_file = 'config/dns_api.json'
+    tmp = public.readFile(dnsapi_file)
+    if not tmp: return False
+    dnsapi = json.loads(tmp)
+    if tmp.find('CloudFlare') == -1:
+        cloudflare = {
+                        "ps": "Use CloudFlare's API interface to automatically parse and apply for SSL",
+                        "title": "CloudFlare",
+                        "data": [{
+                            "value": "",
+                            "key": "SAVED_CF_MAIL",
+                            "name": "E-Mail"
+                        }, {
+                            "value": "",
+                            "key": "SAVED_CF_KEY",
+                            "name": "API Key"
+                        }],
+                        "help": "CloudFlare Get in the background Global API Key",
+                        "name": "CloudFlareDns"
+                    }
+        dnsapi.insert(0,cloudflare)
+    check_names = {"dns_bt":"Dns_com","dns_dp":"DNSPodDns","dns_ali":"AliyunDns","dns_cx":"CloudxnsDns"}
+    for i in range(len(dnsapi)):
+        if dnsapi[i]['name'] in check_names:
+            dnsapi[i]['name'] = check_names[dnsapi[i]['name']]
+
+    public.writeFile(dnsapi_file,json.dumps(dnsapi))
+    return True
+
+
+
+#检测端口放行是否同步(仅firewalld)
+def check_firewall():
+    try:
+        if not os.path.exists('/usr/sbin/firewalld'): return False
+        data = public.M('firewall').field('port,ps').select()
+        import firewalld,firewalls
+        fs = firewalls.firewalls()
+        accept_ports = firewalld.firewalld().GetAcceptPortList()
+
+        port_list = []
+        for port_info  in accept_ports:
+            if port_info['port'] in port_list:
+                continue
+            port_list.append(port_info['port'])
+
+        n = 0
+        for p in data:
+            if p['port'].find('.') != -1:
+                continue
+            if p['port'] in port_list:
+                continue
+            fs.AddAcceptPortAll(p['port'],p['ps'])
+            n+=1
+        #重载
+        if n: fs.FirewallReload()
+    except:
+        pass
+
 
 #尝试启动新架构
 def run_new():
@@ -91,7 +195,7 @@ def clean_hook_log():
     path = '/www/server/panel/plugin/webhook/script'
     if not os.path.exists(path): return False
     for name in os.listdir(path):
-        if name[-4:] != ".log": continue;
+        if name[-4:] != ".log": continue
         clean_max_log(path+'/' + name,524288)
 
 #清理PHP日志
@@ -99,9 +203,9 @@ def clean_php_log():
     path = '/www/server/panel/php'
     if not os.path.exists(path): return False
     for name in os.listdir(path):
-        filename = path + '/var/log/php-fpm.log'
+        filename = path +'/'+name + '/var/log/php-fpm.log'
         if os.path.exists(filename): clean_max_log(filename)
-        filename = path + '/var/log/slow.log'
+        filename =  path +'/'+name + '/var/log/slow.log'
         if os.path.exists(filename): clean_max_log(filename)
 
 #清理大日志
@@ -161,7 +265,7 @@ def set_crond():
         args_obj = public.dict_obj()
         if not cron_id:
             cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo
-            shell = 'python /www/server/panel/class/panelLets.py renew_lets_ssl'
+            shell = public.get_python_bin() + ' /www/server/panel/class/panelLets.py renew_lets_ssl'
             public.writeFile(cronPath,shell)
             args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("续签Let's Encrypt证书",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
             crontab.crontab().set_cron_status(args_obj)

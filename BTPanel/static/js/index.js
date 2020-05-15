@@ -127,15 +127,15 @@ var index = {
         })
 
         _this.get_data_info(function (loadbox, rdata) {
-            loadbox.hover(function () {
+            loadbox.find('.cicle').hover(function () {
                 var _this = $(this);
                 var d = _this.parents('ul').data('data').load;
-                layer.tips(lan.index.avg_load_atlast_onemin + d.one + '</br>'+ lan.index.avg_load_atlast_fivemin + d.five + '</br>'+ lan.index.avg_load_atlast_fifteenmin + d.fifteen + '', _this.find('.cicle'), { time: 0, tips: [1, '#999'] });
+                layer.tips(lan.index.avg_load_atlast_onemin + d.one + '</br>'+ lan.index.avg_load_atlast_fivemin + d.five + '</br>'+ lan.index.avg_load_atlast_fifteenmin + d.fifteen + '', _this, { time: 0, tips: [1, '#999'] });
             }, function () {
                 layer.closeAll('tips');
             })
 
-            $('.cpubox').hover(function () {
+            $('.cpubox').find('.cicle').hover(function () {
                 var _this = $(this);
                 var d = _this.parents('ul').data('data').cpu;
                 var crs = '';
@@ -511,7 +511,7 @@ var index = {
                     content: '<div class="setchmod bt-form" style="padding-bottom:50px;">\
                                     <div class="update_title"><i class="layui-layer-ico layui-layer-ico0"></i><span>'+lan.index.have_new_version+'</span></div>\
                                     <div class="update_conter">\
-                                        <div class="update_version">'+lan.index.last_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_version_log+'">'+lan.index.bt_linux+ (is_beta === 1 ? lan.index.test_version : lan.index.final_version) + rdata.version + '</a>&nbsp;&nbsp;'+lan.index.update_date + (result.msg.is_beta == 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
+                                        <div class="update_version">'+lan.index.last_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_version_log+'">'+lan.index.bt_linux+ (is_beta === 1 ? lan.index.test_version : lan.index.final_version) + rdata.version + '</a></br>'+lan.index.update_date + (result.msg.is_beta == 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
                                         <div class="update_logs">'+ rdata.updateMsg + '</div>\
                                     </div>\
                                     <!--div class="update_conter">\
@@ -524,7 +524,7 @@ var index = {
                                     </div>\
                                 </div>\
                                 <style>\
-                                    .update_title{overflow: hidden;position: relative;vertical-align: middle;margin-top: 10px;}.update_title .layui-layer-ico{display: block;left: 60px !important;top: 1px !important;}.update_title span{display: inline-block;color: #333;height: 30px;margin-left: 105px;margin-top: 3px;font-size: 20px;}.update_conter{background: #f9f9f9;border-radius: 4px;padding: 20px;margin: 15px 37px;margin-top: 15px;}.update_version{font-size: 13.5px; margin-bottom: 10px;font-weight: 600;}.update_logs{margin-bottom:10px;}.update_tips{font-size: 13px;color:#666;}.update_conter span{display: block;font-size:13px;color:#666}\
+                                    .update_title{overflow: hidden;position: relative;vertical-align: middle;margin-top: 10px;}.update_title .layui-layer-ico{display: block;left: 71px !important;top: 1px !important;}.update_title span{display: inline-block;color: #333;height: 30px;margin-left: 117px;margin-top: 3px;font-size: 20px;}.update_conter{background: #f9f9f9;border-radius: 4px;padding: 20px;margin: 15px 37px;margin-top: 15px;}.update_version{font-size: 13.5px; margin-bottom: 10px;font-weight: 600;}.update_logs{margin-bottom:10px;}.update_tips{font-size: 13px;color:#666;}.update_conter span{display: block;font-size:13px;color:#666}\
                                 </style>'
                 });
             }
@@ -534,7 +534,7 @@ var index = {
         layer.closeAll();
         bt.system.to_update(function (rdata) {
             if (rdata.status) {
-                bt.msg({ msg: lan.index.update_ok, icon: 1 })
+                bt.msg({ msg: rdata.msg, icon: 1 })
                 $("#btversion").html(rdata.version);
                 $("#toUpdate").html('');
                 bt.system.reload_panel();
