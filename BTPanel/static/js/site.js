@@ -1459,12 +1459,11 @@ var site = {
         },
         get_rewrite_list: function(web) {
             var filename = '/www/server/panel/vhost/rewrite/' + web.name + '.conf';
-
             bt.site.get_rewrite_list(web.name, function(rdata) {
-                if (bt.get_cookie('serverType') == 'apache' || bt.get_cookie('serverType') == 'openlitespeed') filename = rdata.sitePath + '/.htaccess';
-                var arrs = [];
+                var arrs = [], webserver = bt.get_cookie('serverType');
+                if (webserver == 'apache' || webserver == 'openlitespeed') filename = rdata.sitePath + '/.htaccess';
+                if (webserver == 'openlitespeed') webserver = 'apache';
                 for (var i = 0; i < rdata.rewrite.length; i++) arrs.push({ title: rdata.rewrite[i], value: rdata.rewrite[i] });
-
                 var datas = [{
                         name: 'rewrite',
                         type: 'select',
@@ -1473,7 +1472,7 @@ var site = {
                         callback: function(obj) {
                             if (bt.os == 'Linux') {
                                 var spath = filename;
-                                if (obj.val() != lan.site.rewritename) spath = '/www/server/panel/rewrite/' + bt.get_cookie('serverType') + '/' + obj.val() + '.conf';
+                                if (obj.val() != lan.site.rewritename) spath = '/www/server/panel/rewrite/' + webserver + '/' + obj.val() + '.conf';
                                 bt.files.get_file_body(spath, function(ret) {
                                     editor.setValue(ret.data);
                                 })

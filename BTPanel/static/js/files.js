@@ -773,7 +773,7 @@ function php_file_webshell(file) {
 }
 
 function auto_table_width() {
-    var oldTable = $(window).height() - $('#tipTools')[0].getBoundingClientRect().height - $('#filePage')[0].getBoundingClientRect().height - $('.footer')[0].getBoundingClientRect().height - 111;
+    var oldTable = $(window).height() - $('#tipTools')[0].getBoundingClientRect().height - $('#filePage')[0].getBoundingClientRect().height - $('.footer')[0].getBoundingClientRect().height - 121;
     var oldTable_heigth = $('.oldTable table').height();
     $('.oldTable thead th').each(function (index, el) {
         var table_th = $('.oldTable thead th').length;

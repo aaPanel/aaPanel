@@ -892,6 +892,7 @@ class config:
 
     # 设置Session缓存方式
     def SetSessionConf(self, get):
+        import glob
         g = get.save_handler
         ip = get.ip
         port = get.port
@@ -910,22 +911,29 @@ class config:
             if re.search(prep, passwd):
                 return public.returnMsg(False, 'SPECIAL_CHARACTRES', ('" ~ ` / = "'))
         filename = '/www/server/php/' + get.version + '/etc/php.ini'
-        filename_ols = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version, get.version[0],
-                                                                                    get.version[1])
-        if os.path.exists('/etc/redhat-release'):
-            filename_ols = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
-        ols_php_os_path = "/usr/local/lsws/lsphp{}/lib/php/20*/".format(get.version)
-        if os.path.exists("/etc/redhat-release"):
-            ols_php_os_path = '/usr/local/lsws/lsphp{}/lib64/php/modules/'.format(get.version)
-        ols_so_list = os.listdir(ols_php_os_path)
+        filename_ols = None
+        if os.path.exists("/usr/local/lsws"):
+            filename_ols = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version, get.version[0],
+                                                                                        get.version[1])
+            if os.path.exists('/etc/redhat-release'):
+                filename_ols = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
+            try:
+                ols_php_os_path = glob.glob("/usr/local/lsws/lsphp{}/lib/php/20*".format(get.version))[0]
+            except:
+                ols_php_os_path = None
+            if os.path.exists("/etc/redhat-release"):
+                ols_php_os_path = '/usr/local/lsws/lsphp{}/lib64/php/modules/'.format(get.version)
+            ols_so_list = os.listdir(ols_php_os_path)
         for f in [filename,filename_ols]:
+            if not f:
+                continue
             phpini = public.readFile(f)
             rep = r'session.save_handler\s*=\s*(.+)\r?\n'
             val = r'session.save_handler = ' + g + '\n'
             phpini = re.sub(rep, val, phpini)
             if g == "memcached":
                 if not re.search("memcached.so", phpini) and "memcached.so" not in ols_so_list:
-                    return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g))
+                    return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g,))
                 rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
                 val = r'\nsession.save_path = "%s:%s" \n' % (ip,port)
                 if re.search(rep, phpini):
@@ -934,7 +942,7 @@ class config:
                     phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
             if g == "memcache":
                 if not re.search("memcache.so", phpini) and "memcache.so" not in ols_so_list:
-                    return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g))
+                    return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g,))
                 rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
                 val = r'\nsession.save_path = "tcp://%s:%s"\n' % (ip, port)
                 if re.search(rep, phpini):
@@ -943,7 +951,7 @@ class config:
                     phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
             if g == "redis":
                 if not re.search("redis.so", phpini) and "redis.so" not in ols_so_list:
-                    return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g))
+                    return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g,))
                 if passwd:
                     passwd = "?auth=" + passwd
                 else:

@@ -479,7 +479,7 @@ var aceEditor = {
                     var _html = '',
                         _arry = ['White', 'Black'];
                     for (var i = 0; i < _this.themeList.length; i++) {
-                        if (_this.themeList[i] != _this.editorTheme) {
+                        if (_this.aceConfig.themeList[i] != _this.aceConfig.aceEditor.editorTheme) {
                             _html += '<li data-value="' + _this.themeList[i] + '">' + _this.themeList[i] + '【' + _arry[i] + '】</li>';
                         } else {
                             _html += '<li data-value="' + _this.themeList[i] + '" class="active">' + _this.themeList[i] + '【' + _arry[i] + '】' + _icon + '</li>';
@@ -906,6 +906,26 @@ var aceEditor = {
         this.setEditorView();
         this.reader_file_dir_menu();
     },
+    // 	设置本地存储，设置类型type：session或local
+	setStorage:function(type,key,val){
+	    if(type != "local" && type != "session")  val = key,key = type,type = 'session';
+	    window[type+'Storage'].setItem(key,val);
+	},
+	//获取指定本地存储，设置类型type：session或local
+	getStorage:function(type,key){
+	    if(type != "local" && type != "session")  key = type,type = 'session';
+	    return window[type+'Storage'].getItem(key);
+	},
+	//删除指定本地存储，设置类型type：session或local
+	removeStorage:function(type,key){
+	    if(type != "local" && type != "session")  key = type,type = 'session';
+	    window[type+'Storage'].removeItem(key);
+	},
+    // 	删除指定类型的所有存储信息
+	clearStorage:function(type){
+	    if(type != "local" && type != "session")  key = type,type = 'session';
+	    window[type+'Storage'].clear();
+	},
     // 新建文件类型
     newly_file_type: function(that) {
         var _type = parseInt($(that).attr('data-type')),
@@ -1480,7 +1500,7 @@ var aceEditor = {
         if (this.editor == null) this.editor = {};
         this.editor['ace_editor_' + obj.id] = {
             ace: ace.edit("ace_editor_" + obj.id, {
-                theme: "ace/theme/" + _this.editorTheme, //主题
+                theme: "ace/theme/" + _this.aceConfig.aceEditor.editorTheme, //主题
                 mode: "ace/mode/" + (obj.fileName != undefined ? obj.mode : 'text'), // 语言类型
                 wrap: _this.aceConfig.aceEditor.wrap,
                 showInvisibles: _this.aceConfig.aceEditor.showInvisibles,
@@ -1717,7 +1737,7 @@ var aceEditor = {
 			tips:true,
 		},function(rdata){
 			layer.close(loadT);
-			setCookie('aceConfig',JSON.stringify(data));
+			_this.setStorage('aceConfig',JSON.stringify(data));
 			if(callback) callback(rdata);
 		});
 	},
@@ -1726,7 +1746,7 @@ var aceEditor = {
         var loadT = layer.msg(lan.public.get_ace_config,{time: 0,icon: 16,shade: [0.3, '#000']}),_this = this;
         this.getFileBody({path:'/www/server/panel/BTPanel/static/ace/ace.editor.config.json'},function(rdata){
 			layer.close(loadT);
-			setCookie('aceConfig',JSON.stringify(rdata.data));
+			_this.setStorage('aceConfig',JSON.stringify(rdata.data));
 			if(callback) callback(JSON.parse(rdata.data));
 		});
     },
@@ -1734,7 +1754,7 @@ var aceEditor = {
 		var loadT = layer.msg(lan.public.get_ace_config,{time: 0,icon: 16,shade: [0.3, '#000']}),_this = this;
 		this.getFileBody({path:'/www/server/panel/BTPanel/static/ace/ace.editor.config.json'},function(rdata){
 			layer.close(loadT);
-			setCookie('aceConfig',JSON.stringify(rdata.data));
+			_this.setStorage('aceConfig',JSON.stringify(rdata.data));
 			if(callback) callback(JSON.parse(rdata.data));
 		});
 	},
@@ -1818,7 +1838,7 @@ function openEditorView(type, path) {
 					aceEditor.setEditorView();
 				});
             }
-            var aceConfig =  getCookie('aceConfig');
+            var aceConfig = aceEditor.getStorage('aceConfig');
 			if(aceConfig == null){
 				// 获取编辑器配置
 				aceEditor.getAceConfig(function(res){
@@ -2905,6 +2925,7 @@ function setSelectChecked(c, d) {
 GetTaskCount();
 
 function RecInstall() {
+	$.getScript('jquery.fly.min.js.js');
     $.post("/ajax?action=GetSoftList", "", function(l) {
         var c = "";
         var g = "";

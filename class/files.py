@@ -785,6 +785,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             public.WriteLog('TYPE_FILE', 'FILE_COPY_SUCCESS',
                             (get.sfile, get.dfile))
             stat = os.stat(get.sfile)
+            os.chmod(get.dfile,stat.st_mode)
             os.chown(get.dfile, stat.st_uid, stat.st_gid)
             return public.returnMsg(True, 'FILE_COPY_SUCCESS')
         except:
@@ -807,6 +808,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         try:
             self.copytree(get.sfile, get.dfile)
             stat = os.stat(get.sfile)
+            os.chmod(get.dfile,stat.st_mode)
             os.chown(get.dfile, stat.st_uid, stat.st_gid)
             public.WriteLog('TYPE_FILE', 'DIR_COPY_SUCCESS',
                             (get.sfile, get.dfile))
@@ -825,8 +827,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if get.sfile == '/www/Recycle_bin':
             return public.returnMsg(False,'You cannot directly operate the recycle bin directory, please press the [Recycle Bin] button in the upper right corner to open')
         if not os.path.exists(get.sfile):
-            return public.returnMsg(False,'FILE_NOT_EXISTS')
-        
+            return public.returnMsg(False, 'FILE_NOT_EXISTS')
+
+        if get.dfile[-1] == '/':
+            get.dfile = get.dfile[:-1]
+
         if get.dfile == get.sfile:
             return public.returnMsg(False,'Meaningless operation')
         
@@ -1330,6 +1335,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 else:
                     os.remove(sfile)
         return True
+
+
+    #创建软链
+    def create_link(self,args):
+        pass
 
     # 复制目录
     def copytree(self, sfile, dfile):

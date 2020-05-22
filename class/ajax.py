@@ -561,6 +561,7 @@ class ajax:
         phplib = json.loads(public.readFile('data/phplib.conf'))
         libs = []
         tasks = public.M('tasks').where("status!=?",('1',)).field('status,name').select()
+        phpini_ols = None
         for lib in phplib:
             lib['task'] = '1'
             for task in tasks:
@@ -574,9 +575,10 @@ class ajax:
             if public.get_webserver() == 'openlitespeed':
                 lib['status'] = False
                 get.php_version = "{}.{}".format(get.version[0],get.version[1])
-                phpini = self.php_info(get)['phpinfo']['modules'].lower()
-                phpini = phpini.split()
-                for i in phpini:
+                if not phpini_ols:
+                    phpini_ols = self.php_info(get)['phpinfo']['modules'].lower()
+                    phpini_ols = phpini_ols.split()
+                for i in phpini_ols:
                     if lib['check'][:-3].lower() == i :
                         lib['status'] = True
                         break
@@ -596,20 +598,37 @@ class ajax:
         
     #获取PHP扩展
     def getCloudPHPExt(self,get):
-        import json
         try:
+            self._process_chinese_ext_description()
             if 'php_ext' in session: return True
-            if not session.get('download_url'): session['download_url'] = 'http://download.bt.cn'
-            download_url = session['download_url'] + '/install/lib/phplib_en.json'
-            tstr = public.httpGet(download_url)
-            data = json.loads(tstr)
-            if not data: return False
-            public.writeFile('data/phplib.conf',json.dumps(data))
+            if not self._get_cloud_phplib():
+                return False
             session['php_ext'] = True
             return True
         except:
             return False
-        
+
+    # 处理PHP插件变描述中文
+    def _process_chinese_ext_description(self):
+        chinese = None
+        phplib = json.loads(public.readFile('data/phplib.conf'))
+        for p in phplib:
+            if "缓存器" in p['type']:
+                chinese = True
+                break
+        if chinese:
+            self._get_cloud_phplib()
+
+    # 下载云端php扩展配置
+    def _get_cloud_phplib(self):
+        if not session.get('download_url'): session['download_url'] = 'http://download.bt.cn'
+        download_url = session['download_url'] + '/install/lib/phplib_en.json'
+        tstr = public.httpGet(download_url)
+        data = json.loads(tstr)
+        if not data: return False
+        public.writeFile('data/phplib.conf', json.dumps(data))
+        return True
+
     #取PHPINFO信息
     def GetPHPInfo(self,get):
         if public.get_webserver() == "openlitespeed":

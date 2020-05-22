@@ -45,6 +45,7 @@ def ExecShell(cmdstring, cwd=None, timeout=None, shell=True):
         import datetime
         import subprocess
         import time
+        subprocess.Popen('echo > ' + logPath, cwd=cwd, stdin=subprocess.PIPE, shell=shell, bufsize=4096)
         sub = subprocess.Popen(cmdstring+' &> '+logPath, cwd=cwd, stdin=subprocess.PIPE,shell=shell,bufsize=4096)
         
         while sub.poll() is None:

@@ -105,7 +105,7 @@ var database = {
                 shadeClose: false,
                 content: '<div class="plr15 mt10">\
                                 <div class="db_list">\
-                                    <span><a style="width: 205px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;vertical-align: bottom;margin-right: 11px;" title="'+ db_name + '">'+lan.database.db_name+'：'+ db_name + '</a>\
+                                    <span><a style="width: 239px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;vertical-align: bottom;margin-right: 11px;" title="'+ db_name + '">'+lan.database.db_name+'：'+ db_name + '</a>\
                                     <a class="tools_size">'+lan.database.size+'：'+ rdata.data_size + '</a></span>\
                                     <span id="db_tools" style="float: right;"></span>\
                                 </div >\

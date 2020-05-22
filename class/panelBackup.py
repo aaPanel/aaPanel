@@ -28,6 +28,7 @@ class backup:
     _inode_min = 10
     _db_mysql = None
     _cloud = None
+    _local_backdir = None
     _is_save_local = not os.path.exists('data/is_save_local_backup.pl')
     def __init__(self,cloud_object = None):
         '''
@@ -194,6 +195,7 @@ class backup:
         self.echo_info('Keep the latest number of backups: {} copies'.format(save))
         num = len(backups) - int(save)
         if  num > 0:
+            self._get_local_backdir()
             self.echo_info('-' * 90)
             for backup in backups:
                 #处理目录备份到远程的情况
@@ -203,7 +205,10 @@ class backup:
                     backup['name'] = tmp[-1]
                 #尝试删除本地文件
                 if os.path.exists(backup['filename']):
-                    os.remove(backup['filename'])
+                    try:
+                        os.remove(self._local_backdir + '/'+ data_type +'/' + backup['name'])
+                    except:
+                        pass
                     self.echo_info("Expired backup files have been cleaned from disk:" + backup['filename'])
                 #尝试删除远程文件
                 if self._cloud:
@@ -214,6 +219,10 @@ class backup:
                 public.M('backup').where('id=?',(backup['id'],)).delete()
                 num -= 1
                 if num < 1: break
+
+    # 获取本地备份目录
+    def _get_local_backdir(self):
+        self._local_backdir = public.M('config').field('backup_path').find()['backup_path']
 
     #压缩目录
     def backup_path_to(self,spath,dfile,exclude = [],siteName = None):
@@ -445,7 +454,7 @@ class backup:
         else:
             backups = public.M('backup').where('type=? and pid=? and filename=?',('1',pid,filename)).field('id,name,filename').select()
 
-
+        self.echo_info(str(backups))
         self.delete_old(backups,save,'database')
         self.echo_end()
         return dfile
