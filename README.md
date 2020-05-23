@@ -52,43 +52,43 @@ _convenient and efficient file manager integration , Support uploading, download
 
 **HomePage:**
 
-![blockchain](https://www.aapanel.com/images/linux-home.png "HomePage")
+![blockchain](https://www.aapanel.com/images/linux-home.png?v=1 "HomePage")
 
 **WebSite Manager:**
 
-![blockchain](http://www.aapanel.com/images/linux-web.png "WebSite")
+![blockchain](https://www.aapanel.com/images/linux-web.png?v=1 "WebSite")
 
 **FTP Manager**
 
-![blockchain](http://www.aapanel.com/images/linux-ftp.png "WebSite")
+![blockchain](https://www.aapanel.com/images/linux-ftp.png?v=1 "WebSite")
 
 **DataBase Manager**
 
-![blockchain](http://www.aapanel.com/images/linux-db.png "DBManager")
+![blockchain](https://www.aapanel.com/images/linux-db.png?v=1 "DBManager")
 
 **File Manager**
 
-![blockchain](http://www.aapanel.com/images/linux-file.png "FileManager")
+![blockchain](https://www.aapanel.com/images/linux-files.png?v=1 "FileManager")
 
 **Cron Manager**
 
-![blockchain](http://www.aapanel.com/images/linux-cron.png "CronManager")
+![blockchain](https://www.aapanel.com/images/linux-cron.png?v=1 "CronManager")
 
 **Monitory**
 
-![blockchain](http://www.aapanel.com/images/linux-monitory.png "Monitory")
+![blockchain](https://www.aapanel.com/images/linux-monitory.png?v=1 "Monitory")
 
 **Security**
 
-![blockchain](http://www.aapanel.com/images/linux-security.png "Security")
+![blockchain](https://www.aapanel.com/images/linux-security.png?v=1 "Security")
 
 **Software**
 
-![blockchain](http://www.aapanel.com/images/linux-software.png "Software")
+![blockchain](https://www.aapanel.com/images/linux-software.png?v=1 "Software")
 
 **Online editor**
 
-![blockchain](http://www.aapanel.com/images/online_editor.png "Onlineeditor")
+![blockchain](https://www.aapanel.com/images/online_editor.png?v=1 "Onlineeditor")
 
 ##### Home Page：https://www.aapanel.com/
 ##### Forum Page：https://forum.aapanel.com/
