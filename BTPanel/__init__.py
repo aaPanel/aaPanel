@@ -144,7 +144,9 @@ admin_path_checks = [
                     '/panel',
                     '/acme',
                     '/down',
-                    '/api'
+                    '/api',
+                    '/tips',
+                    '/message'
                     ]
 if admin_path in admin_path_checks: admin_path = '/bt'
 
@@ -210,7 +212,7 @@ def reload_mod():
 
 @app.before_request
 def request_check():
-    if not public.path_safe_check(request.path): return abort(404)
+    #if not public.path_safe_check(request.path): return abort(404)
     if request.path in ['/service_status']: return
 
     if not request.path in ['/safe','/hook','/public','/mail_sys','/down']:
@@ -218,7 +220,7 @@ def request_check():
         if ip_check: return ip_check
 
     if request.path.find('/static/') != -1 or request.path == '/code':
-        if not 'login' in session and not 'admin_auth' in session:
+        if not 'login' in session and not 'admin_auth' in session and not 'down' in session:
             session.clear()
             return abort(401)
     domain_check = public.check_domain_panel()
@@ -271,6 +273,11 @@ def close():
     data = {}
     data['lan'] = public.getLan('close')
     return render_template('close.html',data=data)
+
+@app.route('/tips',methods=method_get)
+def tips():
+    return render_template('tips.html')
+
 
 route_path = os.path.join(admin_path,'')
 if route_path[-1] == '/': route_path = route_path[:-1]
@@ -395,7 +402,7 @@ def FtpPort():
     try:
         file = public.GetConfigValue('setup_path')+'/pure-ftpd/etc/pure-ftpd.conf'
         conf = public.readFile(file)
-        rep = "\n#?\s*Bind\s+[0-9]+\.[0-9]+\.[0-9]+\.+[0-9]+,([0-9]+)"
+        rep = r"\n#?\s*Bind\s+[0-9]+\.[0-9]+\.[0-9]+\.+[0-9]+,([0-9]+)"
         port = re.search(rep,conf).groups()[0]
     except:
         port='21'
@@ -466,6 +473,15 @@ def acme(pdata = None):
             'get_auths','auth_domain','check_auth_status','download_cert','apply_cert','renew_cert','apply_cert_api','apply_dns_auth')
     return publicObject(acme_v2_object,defs,None,pdata)
 
+@app.route('/message/<action>',methods=method_all)
+def message(action = None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import panelMessage
+    message_object = panelMessage.panelMessage()
+    defs = ('get_messages','get_message_find','create_message','status_message','remove_message','get_messages_all')
+    return publicObject(message_object,defs,action,None)
+
 @app.route('/api',methods=method_all)
 def api(pdata = None):
     comReturn = comm.local()
@@ -520,8 +536,8 @@ def ssh_security(pdata = None):
         return render_template( 'firewall.html',data=data)
     import ssh_security
     firewallObject = ssh_security.ssh_security()
-    defs = ('get_logs','san_ssh_security','set_password','set_sshkey','stop_key','get_config',
-            'stop_password','get_key','return_ip','add_return_ip','del_return_ip','start_jian','stop_jian','get_jian')
+    defs = ('san_ssh_security','set_password','set_sshkey','stop_key','get_config',
+            'stop_password','get_key','return_ip','add_return_ip','del_return_ip','start_jian','stop_jian','get_jian','get_logs')
     return publicObject(firewallObject,defs,None,pdata)
 
 
@@ -612,7 +628,7 @@ def files(pdata = None):
             'CheckExistsFiles','GetExecLog','GetSearch','ExecShell','GetExecShellMsg','exec_git','exec_composer','create_download_url',
             'UploadFile','GetDir','CreateFile','CreateDir','DeleteDir','DeleteFile','get_download_url_list','remove_download_url','modify_download_url',
             'CopyFile','CopyDir','MvFile','GetFileBody','SaveFileBody','Zip','UnZip','get_download_url_find',
-            'SearchFiles','upload','read_history','re_history','auto_save_temp','get_auto_save_body',
+            'SearchFiles','upload','read_history','re_history','auto_save_temp','get_auto_save_body','get_videos',
             'GetFileAccess','SetFileAccess','GetDirSize','SetBatchData','BatchPaste','install_rar','get_path_size',
             'DownloadFile','GetTaskSpeed','CloseLogs','InstallSoft','UninstallSoft','SaveTmpFile','get_composer_version','exec_composer','update_composer',
             'GetTmpFile','del_files_store','add_files_store','get_files_store','del_files_store_types','add_files_store_types','exec_git',
@@ -807,6 +823,13 @@ def plugin(pdata = None):
 @app.route('/public',methods=method_all)
 def panel_public():
     get = get_input()
+    try:
+        import panelWaf
+        panelWaf_data = panelWaf.panelWaf()
+        if panelWaf_data.is_sql(get.__dict__):return 'ERROR'
+        if panelWaf_data.is_xss(get.__dict__):return 'ERROR'
+    except:
+        pass
     get.client_ip = public.GetClientIp()
     if not hasattr(get,'name'): get.name = ''
     if not hasattr(get,'fun'): return abort(404)
@@ -1064,50 +1087,109 @@ def download():
     if filename in ['alioss','qiniu','upyun','txcos','ftp']: return panel_cloud()
     if filename in ['gdrive','gcloud_storage']: return "Google storage products do not currently support downloads"
     if not os.path.exists(filename): return public.ReturnJson(False,"FILE_NOT_EXISTS"),json_header
-    mimetype = "application/octet-stream"
-    extName = filename.split('.')[-1]
-    if extName in ['png','gif','jpeg','jpg']: mimetype = None
-    return send_file(filename,mimetype=mimetype,
-                     as_attachment=True,
-                     attachment_filename=os.path.basename(filename),
-                     cache_timeout=0)
 
-@app.route('/down/<token>',methods=method_all)
-def down(token=None,mdown=None):
-    try:
-        if not token: return abort(404)
-        if len(token) != 12: return abort(404)
-        if not re.match(r"^\w+$",token): return abort(404)
-        find = public.M('download_token').where('token=?',(token,)).find()
-        if not find: return abort(404)
-        if time.time() > int(find['expire']): return abort(404)
-        if not os.path.exists(find['filename']): return abort(404)
-        if find['password']:
-            args = get_input()
-            if 'file_password' in args:
-                if not re.match(r"^\w+$",args.file_password):
-                    return public.ReturnJson(False,'wrong password!'),json_header
-                if not args.file_password == find['password']:
-                    return public.ReturnJson(False,'wrong password!'),json_header
-            else:
-                pdata = {
-                        "password":True,
-                        "filename":find['filename'].split('/')[-1],
-                        "total":find['total'],
-                        "token":find['token'],
-                        "expire":find['expire']
-                    }
-                return render_template('down.html',data = pdata)
-
-        filename = find['filename']
+    if request.args.get('play') == 'true':
+        import panelVideo
+        start, end = panelVideo.get_range(request)
+        return panelVideo.partial_response(filename, start, end)
+    else:
         mimetype = "application/octet-stream"
         extName = filename.split('.')[-1]
         if extName in ['png','gif','jpeg','jpg']: mimetype = None
         return send_file(filename,mimetype=mimetype,
-                        as_attachment=True,
-                        attachment_filename=os.path.basename(filename),
-                        cache_timeout=0)
-    except: return abort(404)
+                         as_attachment=True,
+                         attachment_filename=os.path.basename(filename),
+                         cache_timeout=0)
+
+def get_dir_down(filename,token,find):
+    import files
+    args = public.dict_obj()
+    args.path = filename
+    to_path = filename.replace(find['filename'],'').strip('/')
+
+    if request.args.get('play') == 'true':
+        pdata = files.files().get_videos(args)
+        return public.GetJson(pdata),json_header
+    else:
+        pdata = files.files().GetDir(args)
+        pdata['token'] = token
+        pdata['src_path'] = find['filename']
+        pdata['to_path'] = to_path
+        pdata['expire'] = public.format_date(times=find['expire'])
+        pdata['filename'] = (find['filename'].split('/')[-1] + '/' + to_path).strip('/')
+        return render_template('down.html',data = pdata,to_size=public.to_size)
+
+@app.route('/down/<token>',methods=method_all)
+def down(token=None,fname=None):
+    try:
+        fname = request.args.get('fname')
+        if fname:
+            if(len(fname) > 256): return abort(404)
+        if fname: fname = fname.strip('/')
+        if not token: return abort(404)
+        if len(token) != 12: return abort(404)
+        if not request.args.get('play') in ['true',None,'']:
+            return abort(404)
+
+        if not re.match(r"^\w+$",token): return abort(404)
+        find = public.M('download_token').where('token=?',(token,)).find()
+
+        if not find: return abort(404)
+        if time.time() > int(find['expire']): return abort(404)
+
+        if not os.path.exists(find['filename']): return abort(404)
+        if find['password'] and not token in session:
+            args = get_input()
+            if 'file_password' in args:
+                if not re.match(r"^\w+$",args.file_password):
+                    return public.ReturnJson(False,'Wrong password!'),json_header
+                if re.match(r"^\d+$",args.file_password):
+                    args.file_password += '.0'
+                if args.file_password != str(find['password']):
+                    return public.ReturnJson(False,'Wrong password!'),json_header
+                session[token] = 1
+                session['down'] = True
+            else:
+                pdata = {
+                        "to_path":"",
+                        "src_path": find['filename'],
+                        "password":True,
+                        "filename":find['filename'].split('/')[-1],
+                        "total":find['total'],
+                        "token":find['token'],
+                        "expire":public.format_date(times=find['expire'])
+                    }
+                return render_template('down.html',data = pdata)
+        if not find['password']:
+            session[token] = 1
+
+        if session[token] != 1:
+            return abort(404)
+
+        filename = find['filename']
+        if fname:
+            filename = os.path.join(filename,fname)
+            if not public.path_safe_check(fname,False): return abort(404)
+            if os.path.isdir(filename):
+                return get_dir_down(filename,token,find)
+        else:
+            if os.path.isdir(filename):
+                return get_dir_down(filename,token,find)
+
+        if request.args.get('play') == 'true':
+            import panelVideo
+            start, end = panelVideo.get_range(request)
+            return panelVideo.partial_response(filename, start, end)
+        else:
+            mimetype = "application/octet-stream"
+            extName = filename.split('.')[-1]
+            if extName in ['png','gif','jpeg','jpg']: mimetype = None
+            return send_file(filename,mimetype=mimetype,
+                            as_attachment=True,
+                            attachment_filename=os.path.basename(filename),
+                            cache_timeout=0)
+    except:
+        return abort(404)
 
 
 @app.route('/cloud',methods=method_get)

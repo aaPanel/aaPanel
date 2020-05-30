@@ -239,7 +239,7 @@ def GetJson(data):
     from json import dumps
     if data == bytes: data = data.decode('utf-8')
     try:
-        return dumps(data)
+        return dumps(data,ensure_ascii=False)
     except:
         return dumps(returnMsg(False,"Wrong response: %s" % str(data)))
 
@@ -665,6 +665,7 @@ def getPanelAddr():
 
 # 字节单位转换
 def to_size(size):
+    if not size: return '0.00 b'
     size = float(size)
     d = ('b','KB','MB','GB','TB')
     s = d[0]
@@ -1307,12 +1308,13 @@ def set_own(filename, user, group=None):
     return True
 
 #校验路径安全
-def path_safe_check(path):
-    checks = ['..', './', '\\', '%', '$', '^', '&', '*', '~', '@', '#']
+def path_safe_check(path,force=True):
+    checks = ['..','./','\\','%','$','^','&','*','~','#','"',"'",';','|','{','}','`']
     for c in checks:
         if path.find(c) != -1: return False
-    rep = r"^[\w\s\.\/-]+$"
-    if not re.match(rep,path): return False
+    if force:
+        rep = r"^[\w\s\.\/-]+$"
+        if not re.match(rep,path): return False
     return True
 
 #取数据库字符集
@@ -1629,9 +1631,12 @@ def import_cdn_plugin():
 
 
 def get_cdn_hosts():
-    if import_cdn_plugin(): return []
-    import static_cdn_main
-    return static_cdn_main.static_cdn_main().get_hosts(None)
+    try:
+        if import_cdn_plugin(): return []
+        import static_cdn_main
+        return static_cdn_main.static_cdn_main().get_hosts(None)
+    except:
+        return []
 
 def get_cdn_url():
     try:

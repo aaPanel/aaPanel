@@ -82,6 +82,7 @@ class panelPlugin:
                 names = dep.split('|')
                 for name in names:
                     pluginInfo = self.get_soft_find(name)
+                    if not pluginInfo: return True
                     if pluginInfo['setup'] == True:
                         status = True
                         break
@@ -330,6 +331,7 @@ class panelPlugin:
             if softList: public.writeFile(lcoalTmp,json.dumps(softList))
             public.ExecShell('rm -f /tmp/bmac_*')
             self.getCloudPHPExt(get)
+            self.expire_msg(softList)
         try:
             public.writeFile("/tmp/" + cache.get('p_token'),str(softList['pro']))
         except:pass
@@ -352,6 +354,78 @@ class panelPlugin:
                         tmpList.append(softInfo)
                 softList['list'] = tmpList
         return softList
+
+    #取提醒标记
+    def get_level_msg(self,level,s_time,endtime):
+        '''
+            level 提醒标记
+            s_time 当前时间戳
+            endtime 到期时间戳
+        '''
+        expire_day = (endtime - s_time) / 86400
+        if expire_day < 15 and expire_day > 7:
+            level = level + '15'
+        elif expire_day < 7 and expire_day > 3:
+            level = level + '7'
+        elif expire_day < 3 and expire_day > 0:
+            level = level + '3'
+        return level,expire_day
+
+    #添加到期提醒
+    def add_expire_msg(self,title,level,name,expire_day,pid,endtime):
+        '''
+            title 软件标题
+            level 提醒标记
+            name 软件名称
+            expire_day 剩余天数
+        '''
+        import panelMessage #引用消息提醒模块
+        pm = panelMessage.panelMessage()
+        pm.remove_message_level(level) #删除旧的提醒
+        if expire_day > 15: return False
+        if pm.is_level(level): #是否忽略
+            if level != name: #到期还是即将到期
+                msg_last = '您的【{}】授权还有{}天到期'.format(title,int(expire_day))
+            else:
+                msg_last = '您的【{}】授权已到期'.format(title)
+            pl_msg = 'true'
+            if name in ['pro','ltd']:
+                pl_msg = 'false'
+            renew_msg = '<a class="btlink" onclick="bt.soft.product_pay_view({name:\'%s\',pid:%s,limit:\'%s\',plugin:%s,renew:%s});">立即续费</a>' % (title,pid,name,pl_msg,endtime)
+            pm.create_message(level=level,expire=7,msg="{}，为了不影响您正常使用【{}】功能，请及时续费，{}".format(msg_last,title,renew_msg))
+            return True
+        return False
+
+    #到期提醒
+    def expire_msg(self,data):
+        '''
+            data 插件列表
+        '''
+        s_time = time.time()
+        is_plugin = True
+        #企业版到期提醒
+        if not data['ltd'] in [-1]:
+            level,expire_day = self.get_level_msg('ltd',s_time,data['ltd'])
+            self.add_expire_msg('企业版',level,'ltd',expire_day,100000032,data['ltd'])
+            return True
+
+        #专业版到期提醒
+        if not data['pro'] in [-1,0]:
+            level,expire_day = self.get_level_msg('pro',s_time,data['pro'])
+            self.add_expire_msg('专业版',level,'pro',expire_day,100000011,data['pro'])
+            is_plugin = False
+
+        #单独购买的插件到期提醒
+        for p in data['list']:
+            #跳过非企业版或专业版插件
+            if not p['type'] in [8,12]: continue
+            #已经是专业版的情况下跳过专业版插件
+            if not is_plugin and p['type'] == 8: continue
+            if not p['endtime'] in [-1,0]:
+                level,expire_day = self.get_level_msg(p['name'],s_time,p['endtime'])
+                self.add_expire_msg(p['title'],level,p['name'],expire_day,p['pid'],p['endtime'])
+        return True
+
 
     #提交用户评分
     def set_score(self,args):
@@ -1484,7 +1558,7 @@ class panelPlugin:
         phpport = '888'
         if os.path.exists(configFile):
             conf = public.readFile(configFile)
-            rep = "listen\s+([0-9]+)\s*;"
+            rep = r"listen\s+([0-9]+)\s*;"
             rtmp = re.search(rep,conf)
             if rtmp:
                 phpport = rtmp.groups()[0]
@@ -1494,23 +1568,23 @@ class panelPlugin:
             configFile = setupPath + '/nginx/conf/enable-php.conf'
             if not os.path.exists(configFile): public.writeFile(configFile,public.readFile(setupPath + '/nginx/conf/enable-php-54.conf'))
             conf = public.readFile(configFile)
-            rep = "php-cgi-([0-9]+)\.sock"
+            rep = r"php-cgi-([0-9]+)\.sock"
             rtmp = re.search(rep,conf)
             if rtmp:
                 phpversion = rtmp.groups()[0]
             else:
-                rep = "php-cgi.*\.sock"
+                rep = r"php-cgi.*\.sock"
                 public.writeFile(configFile,conf)
                 phpversion = '54'
         
         configFile = setupPath + '/apache/conf/extra/httpd-vhosts.conf'
         if os.path.exists(configFile):
             conf = public.readFile(configFile)
-            rep = "php-cgi-([0-9]+)\.sock"
+            rep = r"php-cgi-([0-9]+)\.sock"
             rtmp = re.search(rep,conf)
             if rtmp:
                 phpversion = rtmp.groups()[0]
-            rep = "Listen\s+([0-9]+)\s*\n"
+            rep = r"Listen\s+([0-9]+)\s*\n"
             rtmp = re.search(rep,conf)
             if rtmp:
                 phpport = rtmp.groups()[0]
@@ -1572,20 +1646,20 @@ class panelPlugin:
         phpfpm = public.readFile(file)
         data = {}
         try:
-            rep = "upload_max_filesize\s*=\s*([0-9]+)M"
+            rep = r"upload_max_filesize\s*=\s*([0-9]+)M"
             tmp = re.search(rep,phpini).groups()
             data['max'] = tmp[0]
         except:
             data['max'] = '50'
         try:
-            rep = "request_terminate_timeout\s*=\s*([0-9]+)\n"
+            rep = r"request_terminate_timeout\s*=\s*([0-9]+)\n"
             tmp = re.search(rep,phpfpm).groups()
             data['maxTime'] = tmp[0]
         except:
             data['maxTime'] = 0
         
         try:
-            rep = u"\n;*\s*cgi\.fix_pathinfo\s*=\s*([0-9]+)\s*\n"
+            rep = r"\n;*\s*cgi\.fix_pathinfo\s*=\s*([0-9]+)\s*\n"
             tmp = re.search(rep,phpini).groups()
             
             if tmp[0] == '1':

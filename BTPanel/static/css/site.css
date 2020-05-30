@@ -1137,10 +1137,8 @@ html .menu .menu_exit:hover {
 	border-bottom: 1px solid #e6e6e6;
 	color: #666;
 	font-weight: normal;
-	padding: 5px 10px;
-    height: 35px;
+	padding: 8px;
     font-size: 12.5px;
-    box-sizing: content-box;
 }
 .divtable .table_toolbar{
     left: 8px;
@@ -6697,4 +6695,41 @@ select[disabled]{
 }
 .php_info_group:last-child{
 	margin-bottom: 15px;
+}
+
+#btvideo{
+    display: inline-block;
+    height: 360px;
+}
+.video-list{
+    display: inline-block;
+    width: 250px;
+    height: 360px;
+    overflow: auto;
+}
+.video-list .video-avt{
+    background-color: #e8e8e8;
+}
+.movie_pay .layui-layer-content{
+    overflow: hidden !important;
+}
+.video-list .video-avt td a,
+.video-list .video-avt td{
+    color: #20a53a;
+}
+.video-list tr td{
+    border-top: 0px;
+    border-bottom: 1px solid #ddd;
+}
+.video-list tr:hover{
+    cursor: pointer;
+}
+#btvideo video{
+    outline: none;
+    padding: 0;
+    display: block;
+    background-color: #000;
+}
+.minText{
+	white-space: nowrap;
 }

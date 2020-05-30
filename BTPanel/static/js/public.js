@@ -1175,7 +1175,7 @@ var aceEditor = {
             _this = this;
         var loadT = layer.open({
             type: 1,
-            area: ['400px', '180px'],
+            area: ['400px', '200px'],
             title: lan.public.restore_history_files,
             content: '<div class="ace-clear-form">\
 				<div class="clear-icon"></div>\

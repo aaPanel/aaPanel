@@ -226,6 +226,8 @@ class panelSite(panelRedirect):
         urlrewriteFile = urlrewritePath+'/'+self.siteName+'.conf'
         if not os.path.exists(urlrewritePath): os.makedirs(urlrewritePath)
         open(urlrewriteFile,'w+').close()
+        if not os.path.exists(urlrewritePath):
+            public.writeFile(urlrewritePath,'')
         return True
 
     #重新生成nginx配置文件

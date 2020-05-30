@@ -666,9 +666,6 @@ class ajax:
         else:
             conf_file = "/www/server/panel/vhost/apache/phpmyadmin.conf"
             rep = "Listen\s*(\d+)"
-        # else:
-        #     conf_file = "/www/server/panel/vhost/openlitespeed/listen/888.conf"
-        #     rep = "address\s+\*:(\d+)"
         return {"conf_file":conf_file,"rep":rep}
 
     # 设置phpmyadmin路径
@@ -1063,15 +1060,29 @@ class ajax:
     
     #取PHP-FPM日志
     def GetFpmLogs(self,get):
-        path = '/www/server/php/' + get.version + '/var/log/php-fpm.log'
-        if not os.path.exists(path): return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
-        return public.returnMsg(True,public.GetNumLines(path,1000))
+        import re
+        fpm_path = '/www/server/php/' + get.version + '/etc/php-fpm.conf'
+        if not os.path.exists(fpm_path): return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
+        fpm_conf = public.readFile(fpm_path)
+        log_tmp = re.findall(r"error_log\s*=\s*(.+)",fpm_conf)
+        if not log_tmp: return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
+        log_file = log_tmp[0].strip()
+        if log_file.find('var/log') == 0:
+            log_file = '/www/server/php/' +get.version + '/'+ log_file
+        return public.returnMsg(True,public.GetNumLines(log_file,1000))
     
     #取PHP慢日志
     def GetFpmSlowLogs(self,get):
-        path = '/www/server/php/' + get.version + '/var/log/slow.log'
-        if not os.path.exists(path): return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
-        return public.returnMsg(True,public.GetNumLines(path,1000))
+        import re
+        fpm_path = '/www/server/php/' + get.version + '/etc/php-fpm.conf'
+        if not os.path.exists(fpm_path): return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
+        fpm_conf = public.readFile(fpm_path)
+        log_tmp = re.findall(r"slowlog\s*=\s*(.+)",fpm_conf)
+        if not log_tmp: return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
+        log_file = log_tmp[0].strip()
+        if log_file.find('var/log') == 0:
+            log_file = '/www/server/php/' +get.version + '/'+ log_file
+        return public.returnMsg(True,public.GetNumLines(log_file,1000))
     
     #取指定日志
     def GetOpeLogs(self,get):

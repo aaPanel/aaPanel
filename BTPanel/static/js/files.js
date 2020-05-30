@@ -473,7 +473,8 @@ function GetFiles(Path, sort) {
             if (getCookie("rank") == "a") {
                 $("#set_list").addClass("active");
                 $("#set_icon").removeClass("active");
-                Body += "<tr class='folderBoxTr' data-composer='"+fmp[7]+"' data-path='" + rdata.PATH + "/" + fmp[0] + "' filetype='dir'>\
+                if (rdata.PATH=='/') rdata.PATH = '';
+                Body += "<tr class='folderBoxTr' fileshare='"+ fmp[6] +"' data-composer='"+fmp[7]+"' data-path='" + rdata.PATH + "/" + fmp[0] + "' filetype='dir'>\
 						<td><input type='checkbox' name='id' value='" + fmp[0] + "'></td>\
 						<td class='column-name'><span class='cursor' onclick=\"GetFiles('" + rdata.PATH + "/" + fmp[0] + "')\"><span class='ico ico-folder'></span><a class='text' title='" + fmp[0] + fmp[5] + "'>" + cnametext + fileMsg + "</a></span></td>\
 						<td><a class='btlink " + (rdata.PATH + '/' + fmp[0]).replace(/[^\w]/g, '-') + "' onclick=\"get_path_size('" + rdata.PATH + "/" + fmp[0] + "')\">" + lan.files.calc_click + "</a></td>\
@@ -491,7 +492,7 @@ function GetFiles(Path, sort) {
             } else {
                 $("#set_icon").addClass("active");
                 $("#set_list").removeClass("active");
-                Body += "<div class='file folderBox menufolder' data-path='" + rdata.PATH + "/" + fmp[0] + "' filetype='dir' title='" + lan.files.file_name + "：" + fmp[0] + "&#13;" + lan.files.file_size + "：" + ToSize(fmp[1]) + "&#13;" + lan.files.file_etime + "：" + getLocalTime(fmp[2]) + "&#13;" + lan.files.file_auth + "：" + fmp[3] + "&#13;" + lan.files.file_own + "：" + fmp[4] + "'>\
+                Body += "<div class='file folderBox menufolder' fileshare='"+ fmp[6] +"' data-path='" + rdata.PATH + "/" + fmp[0] + "' filetype='dir' title='" + lan.files.file_name + "：" + fmp[0] + "&#13;" + lan.files.file_size + "：" + ToSize(fmp[1]) + "&#13;" + lan.files.file_etime + "：" + getLocalTime(fmp[2]) + "&#13;" + lan.files.file_auth + "：" + fmp[3] + "&#13;" + lan.files.file_own + "：" + fmp[4] + "'>\
 						<input type='checkbox' name='id' value='" + fmp[0] + "'>\
 						<div class='ico ico-folder' ondblclick=\"GetFiles('" + rdata.PATH + "/" + fmp[0] + "')\"></div>\
 						<div class='titleBox' onclick=\"GetFiles('" + rdata.PATH + "/" + fmp[0] + "')\"><span class='tname'>" + fmp[0] + "</span></div>\
@@ -523,6 +524,9 @@ function GetFiles(Path, sort) {
             }
             if (isText(fmp[0])) {
                 bodyZip = "<a class='btlink' href='javascript:;' onclick=\"openEditorView(0,'" + rdata.PATH + "/" + fmp[0] + "')\">" + lan.files.file_menu_edit + "</a> | ";
+            }
+            if (isVideo(fmp[0])) {
+                bodyZip = "<a class='btlink' href='javascript:;' onclick=\"GetPlay('" + rdata.PATH + "/" + fmp[0] + "')\">Play</a> | ";
             }
             if (isImage(fmp[0])) {
                 download = "<a class='btlink' href='javascript:;' onclick=\"GetImage('" + rdata.PATH + "/" + fmp[0] + "')\">" + lan.files.file_menu_img + "</a> | ";
@@ -568,7 +572,7 @@ function GetFiles(Path, sort) {
 						<a class='btlink' href='javascript:;' onclick=\"DeleteFile('" + rdata.PATH + "/" + fmp[0] + "')\">" + lan.files.file_menu_del + "</a>\
 						</span></td></tr>";
             } else {
-                Body += "<div class='file folderBox menufile' data-path='" + rdata.PATH + "/" + fmp[0] + "' filetype='" + fmp[0] + "' title='" + lan.files.file_name + "：" + fmp[0] + "&#13;" + lan.files.file_size + "：" + ToSize(fmp[1]) + "&#13;" + lan.files.file_etime + "：" + getLocalTime(fmp[2]) + "&#13;" + lan.files.file_auth + "：" + fmp[3] + "&#13;" + lan.files.file_own + "：" + fmp[4] + "'>\
+                Body += "<div class='file folderBox menufile' fileshare='"+ fmp[6] +"' data-path='" + rdata.PATH + "/" + fmp[0] + "' filetype='" + fmp[0] + "' title='" + lan.files.file_name + "：" + fmp[0] + "&#13;" + lan.files.file_size + "：" + ToSize(fmp[1]) + "&#13;" + lan.files.file_etime + "：" + getLocalTime(fmp[2]) + "&#13;" + lan.files.file_auth + "：" + fmp[3] + "&#13;" + lan.files.file_own + "：" + fmp[4] + "'>\
 						<input type='checkbox' name='id' value='" + fmp[0] + "'>\
 						<div class='ico ico-" + (GetExtName(fmp[0])) + "'></div>\
 						<div class='titleBox'><span class='tname'>" + fmp[0] + "</span></div>\
@@ -600,11 +604,11 @@ function GetFiles(Path, sort) {
 								<tr>\
 									<th width="30"><input type="checkbox" id="setBox" placeholder=""></th>\
 									<th><a style="cursor: pointer;" class="btlink" onclick="GetFiles(' + p + ',\'name\')">' + lan.files.file_name + ((data['sort'] === 'name' || !data['sort']) ? sort_icon : '') + '</a></th>\
-									<th><a style="cursor: pointer;" class="btlink" onclick="GetFiles(' + p + ',\'size\')">' + lan.files.file_size + ((data['sort'] === 'size') ? sort_icon : '') + '</a></th>\
-									<th><a style="cursor: pointer;" class="btlink" onclick="GetFiles(' + p + ',\'mtime\')">' + lan.files.file_etime + ((data['sort'] === 'mtime') ? sort_icon : '') + '</a></th>\
-									<th><a style="cursor: pointer;" class="btlink" onclick="GetFiles(' + p + ',\'accept\')">' + lan.files.file_auth + ((data['sort'] === 'accept') ? sort_icon : '') + '</a></th>\
-									<th><a style="cursor: pointer;" class="btlink" onclick="GetFiles(' + p + ',\'user\')">' + lan.files.file_own + ((data['sort'] === 'user') ? sort_icon : '') + '</a></th>\
-									<th style="text-align: right;" width="405">' + lan.files.file_act + '</th>\
+									<th><a style="cursor: pointer;display: inline-block;min-width: 58px;" class="btlink" onclick="GetFiles(' + p + ',\'size\')">' + lan.files.file_size + ((data['sort'] === 'size') ? sort_icon : '') + '</a></th>\
+									<th><a style="cursor: pointer;" class="btlink minText" onclick="GetFiles(' + p + ',\'mtime\')">' + lan.files.file_etime + ((data['sort'] === 'mtime') ? sort_icon : '') + '</a></th>\
+									<th><a style="cursor: pointer;" class="btlink minText" onclick="GetFiles(' + p + ',\'accept\')">' + lan.files.file_auth + ((data['sort'] === 'accept') ? sort_icon : '') + '</a></th>\
+									<th><a style="cursor: pointer;" class="btlink minText" onclick="GetFiles(' + p + ',\'user\')">' + lan.files.file_own + ((data['sort'] === 'user') ? sort_icon : '') + '</a></th>\
+									<th style="text-align: right;" width="430">' + lan.files.file_act + '</th>\
 								</tr>\
 							</thead>\
 							<tbody id="filesBody" class="list-list">' + Body + '</tbody>\
@@ -639,7 +643,7 @@ function GetFiles(Path, sort) {
 						<ul class="dropdown-menu">'
 
         for (var i = 0; i < rdata.STORE.length; i++) {
-            shtml += '<li class="file-types" title="' + rdata.STORE[i].path + '"><div style="width:200px"><span class="ico ' + (rdata.STORE[i].type === 'file' ? 'ico-file' : 'ico-folder') + '"></span><a href="javascript:;"  style="display: inline-block;width:150px;overflow: hidden;text-overflow: ellipsis;vertical-align: top;" onclick="' + (rdata.STORE[i].type === 'file' ? 'openEditorView(0,\'' + rdata.STORE[i].path + '\')' : 'GetFiles(\'' + rdata.STORE[i].path + '\')') + '">' + rdata.STORE[i].name + '</a></div>';
+            shtml += '<li class="file-types" title="' + rdata.STORE[i].path + '"><div style="width:200px"><span class="ico ' + (rdata.STORE[i].type === 'file' ? 'ico-file' : 'ico-folder') + '"></span><a href="javascript:;"  style="display: inline-block;width:150px;overflow: hidden;text-overflow: ellipsis;vertical-align: top;white-space: nowrap;" onclick="' + (rdata.STORE[i].type === 'file' ? 'openEditorView(0,\'' + rdata.STORE[i].path + '\')' : 'GetFiles(\'' + rdata.STORE[i].path + '\')') + '">' + rdata.STORE[i].name + '</a></div>';
         }
         shtml += '<li style="text-align: center;"><a href="javascript: ;" onclick="set_file_store(\'' + rdata.PATH + '\')">+ Management</a></li></ul></div>'
 
@@ -723,8 +727,12 @@ function GetFiles(Path, sort) {
             if (e.which == 3) {
                 if (count <= 1) {
                     var a = $(this);
-                    a.contextify(RClick(a.attr("filetype"), a.attr("data-path"), a.find("input").val(), rdata, a.attr('fileshare'),a.attr('data-composer')));
-                } else {
+                    a.contextify(RClick(a.attr("filetype"), a.attr("data-path"), a.find("input").val(), rdata,a.attr('fileshare'),a.attr('data-composer')));
+                    $(this).find('input').prop("checked", true);
+                    $(this).addClass('ui-selected');
+                    $(this).siblings().removeClass('ui-selected').find('input').prop("checked", false);
+                }
+                else {
                     RClickAll(e);
                 }
             }
@@ -773,7 +781,7 @@ function php_file_webshell(file) {
 }
 
 function auto_table_width() {
-    var oldTable = $(window).height() - $('#tipTools')[0].getBoundingClientRect().height - $('#filePage')[0].getBoundingClientRect().height - $('.footer')[0].getBoundingClientRect().height - 121;
+    var oldTable = $(window).height() - $('#tipTools')[0].getBoundingClientRect().height - $('#filePage')[0].getBoundingClientRect().height - $('.footer')[0].getBoundingClientRect().height - 111;
     var oldTable_heigth = $('.oldTable table').height();
     $('.oldTable thead th').each(function (index, el) {
         var table_th = $('.oldTable thead th').length;
@@ -1655,21 +1663,63 @@ function GetImage(fileName) {
     $(".layui-layer").css("top", "30%");
 }
 
+// function GetPlay(fileName) {
+//     var imgUrl = '/download?filename=' + fileName;
+//     layer.open({
+//         type: 1,
+//         closeBtn: 2,
+//         title: 'Play [' + fileName + ']',
+//         area: '500px',
+//         shadeClose: false,
+//         content: '<div class="showpicdiv"><video src="' + imgUrl + '" controls="controls" autoplay="autoplay" width="100%" type="video/mp4">\
+//                     Your browser does not support the video tag.\
+//                     </video></div>'
+//     });
+//     $(".layui-layer").css("top", "30%");
+// }
+function play_file(obj,filename) {
+    console.log($('#btvideo video').attr('data-filename'),filename)
+    if($('#btvideo video').attr('data-filename')== filename) return false;
+    var imgUrl = '/download?filename=' + filename + '&play=true';
+    var v = '<video src="' + imgUrl +'" controls="controls" data-fileName="'+ filename +'" autoplay="autoplay" width="640" height="360">\
+        Your browser does not support Video Tags.\
+                    </video>'
+    $("#btvideo").html(v);
+    var p_tmp = filename.split('/')
+    $(".btvideo-title").html(p_tmp[p_tmp.length-1]);
+    $(".video-avt").removeClass('video-avt');
+    $(obj).parents('tr').addClass('video-avt');
+}
 function GetPlay(fileName) {
+    var old_filename = fileName;
     var imgUrl = '/download?filename=' + fileName;
+    var p_tmp = fileName.split('/')
+    var path = p_tmp.slice(0, p_tmp.length - 1).join('/')
     layer.open({
         type: 1,
         closeBtn: 2,
-        title: 'Play [' + fileName + ']',
-        area: '500px',
+        // maxmin:true,
+        title: 'Playing [<a class="btvideo-title">' + p_tmp[p_tmp.length-1] + '</a>]',
+        area: ["890px","402px"],
         shadeClose: false,
-        content: '<div class="showpicdiv"><video src="' + imgUrl + '" controls="controls" autoplay="autoplay" width="100%" type="video/mp4">\
-                    Your browser does not support the video tag.\
-                    </video></div>'
+        skin:'movie_pay',
+        content: '<div id="btvideo"><video type="" src="' + imgUrl + '&play=true" data-filename="'+ fileName +'" controls="controls" autoplay="autoplay" width="640" height="360">\
+            Your browser does not support Video Tags.\
+                    </video></div><div class="video-list"></div>',
+        success: function () {
+            $.post('/files?action=get_videos', { path: path }, function (rdata) {
+                var video_list = '<table class="table table-hover" style=""><thead style="display: none;"><tr><th style="word-break: break-all;word-wrap:break-word;width:165px;">File name</th><th style="width:65px" style="text-align:right;">Size</th></tr></thead>';
+                for (var i = 0; i < rdata.length; i++) {
+                    var filename = path + '/' + rdata[i].name
+                    video_list += '<tr class="' + ((filename === old_filename) ? 'video-avt' :'') + '"><td style="word-break: break-all;word-wrap:break-word;width:150px" onclick="play_file(this,\'' + filename + '\')" title="File: ' + filename + '\ntype: ' + rdata[i].type + '"><a>'
+                        + rdata[i].name + '</a></td><td style="font-size: 8px;text-align:right;width:65px;">' + ToSize(rdata[i].size) + '</td></tr>';
+                }
+                video_list += '</table>';
+                $('.video-list').html(video_list);
+            });
+        }
     });
-    $(".layui-layer").css("top", "30%");
 }
-
 function GetFileBytes(fileName, fileSize) {
     window.open('/download?filename=' + encodeURIComponent(fileName));
 }
@@ -2648,9 +2698,9 @@ function RClick(type, path, name, file_store, file_share,data_composer) {
             }
         })
     }
-    //else if (isVideo(type)) {
-    //    options.items.push({ text: '播放', onclick: function () { GetPlay(path) } }, { text: lan.files.file_menu_down, onclick: function () { GetFileBytes(path) } }, { text: lan.files.file_menu_del, onclick: function () { DeleteFile(path) } });
-    //}
+    else if (isVideo(type)) {
+        options.items.push({ text: 'Play', onclick: function () { GetPlay(path) } }, { text: lan.files.file_menu_down, onclick: function () { GetFileBytes(path) } }, { text: lan.files.file_menu_del, onclick: function () { DeleteFile(path) } });
+    }
     else if (isText(type)) {
         options.items.push({
             text: lan.files.file_menu_edit,
@@ -2715,15 +2765,21 @@ function RClick(type, path, name, file_store, file_share,data_composer) {
             }
         });
     }
-    if (type !== 'dir') {
-        options.items.push({
-            text: 'Share',
-            onclick: function () {
-                create_download_url(name, path, file_share)
-            }
-        });
-    }
-    
+    // if (type !== 'dir') {
+    //     options.items.push({
+    //         text: 'Share',
+    //         onclick: function () {
+    //             create_download_url(name, path, file_share)
+    //         }
+    //     });
+    // }
+    // if(type !== 'dir'){
+    //     options.items.push({ text: 'Share', onclick: function () { create_download_url(name,path,file_share) } });
+    // }
+
+    options.items.push({ text: 'Share', onclick: function () {
+        create_download_url(name,path,file_share) } });
+
     if( type === 'dir' && data_composer === '1'){
         options.items.push({ text: 'Composer', onclick: function () { exec_composer(name,path) } });
     }
@@ -2839,9 +2895,10 @@ function show_composer_log(){
     });
 }
 
+
 function create_download_url(fileName, path, fileShare) {
     fileShare = parseInt(fileShare);
-    if (fileShare != 0) {
+    if(fileShare != 0) {
         $.post('/files?action=get_download_url_find', {
             id: fileShare
         }, function (rdata) {

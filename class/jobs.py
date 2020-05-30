@@ -49,6 +49,18 @@ def control_init():
 )'''
         sql.execute(csql,())
 
+
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'messages')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `messages` (
+`id` INTEGER PRIMARY KEY AUTOINCREMENT,
+`level` TEXT,
+`msg` TEXT,
+`state` INTEGER DEFAULT 0,
+`expire` INTEGER,
+`addtime` INTEGER
+)'''
+        sql.execute(csql,())
+
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'logs','%username%')).count():
         public.M('logs').execute("alter TABLE logs add uid integer DEFAULT '1'",())
         public.M('logs').execute("alter TABLE logs add username TEXT DEFAULT 'system'",())
