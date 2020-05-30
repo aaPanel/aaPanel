@@ -90,6 +90,18 @@ _convenient and efficient file manager integration , Support uploading, download
 
 ![blockchain](https://www.aapanel.com/images/online_editor.png?v=1 "Onlineeditor")
 
+**Share files with your friends**
+
+![blockchain](https://forum.aapanel.com/assets/files/2020-05-29/1590749878-802908-tmp.png?v=1 "Onlineeditor")
+
+**Send link password or QR code to your friends**
+
+![blockchain](https://forum.aapanel.com/assets/files/2020-05-29/1590750125-428227-tmp.png?v=1 "Onlineeditor")
+
+**Your friend opens the link effect you shared**
+
+![blockchain](https://forum.aapanel.com/assets/files/2020-05-29/1590750281-633474-tmp.png?v=1 "Onlineeditor")
+
 ##### Home Page：https://www.aapanel.com/
 ##### Forum Page：https://forum.aapanel.com/
 ##### Feedback： https://forum.aapanel.com/
