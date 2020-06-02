@@ -102,6 +102,10 @@ _convenient and efficient file manager integration , Support uploading, download
 
 ![blockchain](https://forum.aapanel.com/assets/files/2020-05-29/1590750281-633474-tmp.png?v=1 "Onlineeditor")
 
+
+[User Manual](https://doc.aapanel.com/web/#/3?page_id=117 "User Manual")
+
+
 ##### Home Page：https://www.aapanel.com/
 ##### Forum Page：https://forum.aapanel.com/
 ##### Feedback： https://forum.aapanel.com/
