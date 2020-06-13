@@ -4,7 +4,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 from flask import request, redirect, g
 from BTPanel import session, cache
@@ -34,7 +34,7 @@ class panelSetup:
             ua = ua.lower()
             if ua.find('spider') != -1 or ua.find('bot') != -1:
                 return redirect('https://www.google.com')
-        g.version = '6.7.0'
+        g.version = '6.7.2'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         if not os.path.exists('data/debug.pl'):
@@ -104,12 +104,12 @@ class panelAdmin(panelSetup):
     # 检查Web服务器类型
 
     def checkWebType(self):
-        if os.path.exists(self.setupPath + '/nginx'):
-            session['webserver'] = 'nginx'
+        if os.path.exists('/usr/local/lsws/bin/lswsctrl'):
+            session['webserver'] = 'openlitespeed'
         elif os.path.exists(self.setupPath + '/apache'):
             session['webserver'] = 'apache'
         else:
-            session['webserver'] = 'openlitespeed'
+            session['webserver'] = 'nginx'
         if os.path.exists(self.setupPath+'/'+session['webserver']+'/version.pl'):
             session['webversion'] = public.ReadFile(self.setupPath+'/'+session['webserver']+'/version.pl').strip()
         filename = self.setupPath+'/data/phpmyadminDirName.pl'

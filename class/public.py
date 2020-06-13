@@ -4,7 +4,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 
 # --------------------------------
@@ -1172,6 +1172,13 @@ def to_string(lites):
             m_str += chr(mu)
     return m_str
 
+#解码
+def to_ord(string):
+    o  = []
+    for s in string:
+        o.append(ord(s))
+    return o
+
 #xss 防御
 def xssencode(text):
     import cgi
@@ -1260,7 +1267,7 @@ def write_request_log(reques = None):
         from flask import request
         log_data = []
         log_data.append(getDate())
-        log_data.append(GetClientIp())
+        log_data.append(GetClientIp() + ':' + str(request.environ.get('REMOTE_PORT')))
         log_data.append(request.method)
         log_data.append(request.full_path)
         log_data.append(request.headers.get('User-Agent'))
@@ -1683,6 +1690,38 @@ def aes_decrypt(data,key):
     else:
         aes_obj = panelAes.aescrypt_py3(key)
         return aes_obj.aesdecrypt(data)
+
+#清理大日志文件
+def clean_max_log(log_file,max_size = 100,old_line = 100):
+    if not os.path.exists(log_file): return False
+    max_size = 1024 * 1024 * max_size
+    if os.path.getsize(log_file) > max_size:
+        try:
+            old_body = GetNumLines(log_file,old_line)
+            writeFile(log_file,old_body)
+        except:
+            print(get_error_info())
+
+#获取证书哈希
+def get_cert_data(path):
+    import panelSSL
+    get = dict_obj()
+    get.certPath = path
+    data = panelSSL.panelSSL().GetCertName(get)
+    return data
+
+# 获取系统发行版
+def get_linux_distribution():
+    distribution = 'ubuntu'
+    redhat_file = '/etc/redhat-release'
+    if os.path.exists(redhat_file):
+        try:
+            tmp = readFile(redhat_file).split()[3][0]
+            if int(tmp) > 7:
+                distribution = 'centos8'
+        except:
+            distribution = 'centos7'
+    return distribution
 
 
 #取通用对象

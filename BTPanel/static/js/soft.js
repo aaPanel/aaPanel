@@ -254,6 +254,7 @@ var soft = {
                             var is_php = item.name.indexOf('php-') >= 0,
                             is_php5 = item.name.indexOf('php-5') >= 0,
                             webcache = bt.get_cookie('serverType') == 'openlitespeed' ? true : false,
+                            distribution = bt.get_cookie('distribution'),
                             redhat  = rdata.Redhat;
                             if (rdata.apache22 && is_php && $.inArray(item.name, phps) == -1) {
                                 if (item.setup) {
@@ -316,6 +317,9 @@ var soft = {
                                 } else if (item.name == 'php-5.2'){
                                     option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
                                 }
+                            }
+                            if (distribution=='centos8' && item.name == 'php-7.0') {
+                                option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
                             }
                             return option;
                         }

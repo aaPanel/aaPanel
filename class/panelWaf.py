@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #coding: utf-8
-# Author: <梁凯强>1249648969@qq.com
+# Author: <lkqiang>lkq@bt.cn
 # panelWaf.py
 # code: 面板基础安全类
 # +-------------------------------------------------------------------

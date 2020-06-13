@@ -4,7 +4,7 @@
 #-------------------------------------------------------------------
 # Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
 #-------------------------------------------------------------------
-# Author: 黄文良 <287962566@qq.com>
+# Author: hwliang <hwl@bt.cn>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -687,7 +687,7 @@ SetLink
         if mysqlInfo['datadir'] == get.datadir: return public.returnMsg(False,'DATABASE_MOVE_RE')
         
         public.ExecShell('/etc/init.d/mysqld stop')
-        public.ExecShell('\cp -a -r ' + mysqlInfo['datadir'] + '/* ' + get.datadir + '/')
+        public.ExecShell('\cp -arf ' + mysqlInfo['datadir'] + '/* ' + get.datadir + '/')
         public.ExecShell('chown -R mysql.mysql ' + get.datadir)
         public.ExecShell('chmod -R 755 ' + get.datadir)
         public.ExecShell('rm -f ' + get.datadir + '/*.pid')
@@ -714,7 +714,7 @@ SetLink
     def SetMySQLPort(self,get):
         myfile = '/etc/my.cnf'
         mycnf = public.readFile(myfile)
-        rep = "port\s*=\s*([0-9]+)\s*\n"
+        rep = r"port\s*=\s*([0-9]+)\s*\n"
         mycnf = re.sub(rep,'port = ' + get.port + '\n',mycnf)
         public.writeFile(myfile,mycnf)
         public.ExecShell('/etc/init.d/mysqld restart')
@@ -793,11 +793,19 @@ SetLink
         m_version = public.readFile('/www/server/mysql/version.pl')
         if not m_version: m_version = ''
         for g in gets:
-            if m_version.find('8.') == 0 and g in ['query_cache_type','query_cache_size']: continue
+            if m_version.find('8.') == 0 and g in ['query_cache_type','query_cache_size']:
+                n += 1
+                continue
             s = 'M'
-            if n > 5: s = 'K'
+            if n > 5 and not g in ['key_buffer_size','query_cache_size','tmp_table_size','max_heap_table_size','innodb_buffer_pool_size','innodb_log_buffer_size']: s = 'K'
             if g in emptys: s = ''
-            rep = '\s*'+g+'\s*=\s*\d+(M|K|k|m|G)?\n'
+            if g in ['innodb_log_buffer_size']:
+                s = 'M'
+                if int(get[g]) < 8:
+                    return public.returnMsg(False,'innodb_log_buffer_size cannot be less than 8MB')
+
+            rep = r'\s*'+g+r'\s*=\s*\d+(M|K|k|m|G)?\n'
+
             c = g+' = ' + get[g] + s +'\n'
             if mycnf.find(g) != -1:
                 mycnf = re.sub(rep,'\n'+c,mycnf,1)

@@ -4,7 +4,7 @@
 #-------------------------------------------------------------------
 # Copyright (c) 2015-2019 宝塔软件(http:#bt.cn) All rights reserved.
 #-------------------------------------------------------------------
-# Author: 黄文良 <287962566@qq.com>
+# Author: hwliang <hwl@bt.cn>
 #-------------------------------------------------------------------
 import public,os,sys,json,time,psutil,py_compile,re
 from BTPanel import session,cache
@@ -68,7 +68,9 @@ class panelPlugin:
         for name in mutexs:
             pluginInfo = self.get_soft_find(name)
             if not pluginInfo: continue
-            if pluginInfo['setup'] == True: return False
+            if pluginInfo['setup'] == True:
+                self.mutex_title = pluginInfo['title']
+                return False
         return True
 
     #检查依赖
@@ -322,7 +324,7 @@ class panelPlugin:
             cloudUrl = 'http://www.bt.cn/api/panel/get_soft_list_en?v=6.6.6'
             import panelAuth
             pdata = panelAuth.panelAuth().create_serverid(None)
-            listTmp = public.httpPost(cloudUrl,pdata,10)
+            listTmp = public.httpPost(cloudUrl,pdata,5)
             if not listTmp or len(listTmp) < 200:
                 listTmp = public.readFile(lcoalTmp)
             try:
@@ -331,7 +333,8 @@ class panelPlugin:
             if softList: public.writeFile(lcoalTmp,json.dumps(softList))
             public.ExecShell('rm -f /tmp/bmac_*')
             self.getCloudPHPExt(get)
-            self.expire_msg(softList)
+            # 专业版和企业版到期提醒，aaPanel目前没有先注释
+            # self.expire_msg(softList)
         try:
             public.writeFile("/tmp/" + cache.get('p_token'),str(softList['pro']))
         except:pass
@@ -403,10 +406,15 @@ class panelPlugin:
         '''
         s_time = time.time()
         is_plugin = True
+        import panelMessage #引用消息提醒模块
+        pm = panelMessage.panelMessage()
+        pm.remove_message_all()
+
         #企业版到期提醒
         if not data['ltd'] in [-1]:
             level,expire_day = self.get_level_msg('ltd',s_time,data['ltd'])
             self.add_expire_msg('企业版',level,'ltd',expire_day,100000032,data['ltd'])
+            pm.remove_message_level('pro')
             return True
 
         #专业版到期提醒
@@ -416,14 +424,14 @@ class panelPlugin:
             is_plugin = False
 
         #单独购买的插件到期提醒
-        for p in data['list']:
-            #跳过非企业版或专业版插件
-            if not p['type'] in [8,12]: continue
-            #已经是专业版的情况下跳过专业版插件
-            if not is_plugin and p['type'] == 8: continue
-            if not p['endtime'] in [-1,0]:
-                level,expire_day = self.get_level_msg(p['name'],s_time,p['endtime'])
-                self.add_expire_msg(p['title'],level,p['name'],expire_day,p['pid'],p['endtime'])
+        # for p in data['list']:
+        #     #跳过非企业版或专业版插件
+        #     if not p['type'] in [8,12]: continue
+        #     #已经是专业版的情况下跳过专业版插件
+        #     if not is_plugin and p['type'] == 8: continue
+        #     if not p['endtime'] in [-1,0]:
+        #         level,expire_day = self.get_level_msg(p['name'],s_time,p['endtime'])
+        #         self.add_expire_msg(p['title'],level,p['name'],expire_day,p['pid'],p['endtime'])
         return True
 
 
@@ -472,14 +480,28 @@ class panelPlugin:
         try:
             log_path = 'logs/request'
             if not os.path.exists(log_path): return False
-            limit_num = 7
+            limit_num = 180
             p_logs = sorted(os.listdir(log_path))
             num = len(p_logs) - limit_num
-            if num <= 0: return False
-            for i in range(num):
-                filename = log_path + '/' + p_logs[i]
-                if not os.path.exists(filename): continue
-                os.remove(filename)
+            if num > 0:
+                for i in range(num):
+                    filename = log_path + '/' + p_logs[i]
+                    if not os.path.exists(filename): continue
+                    os.remove(filename)
+
+            today = public.getDate(format='%Y-%m-%d')
+            for fname in os.listdir(log_path):
+                fsplit = fname.split('.')
+                if fsplit[-1] != 'json':
+                    continue
+                if fsplit[0] == today:
+                    continue
+                public.ExecShell("cd {} && gzip {}".format(log_path,fname))
+
+            #清理错误日志
+            public.clean_max_log('/www/server/panel/logs/error.log',10,20)
+            public.clean_max_log('/www/server/panel/logs/socks5.log',10,20)
+            public.clean_max_log('/www/server/panel/logs/oos.log',10,20)
             return True
         except:return False
 
@@ -587,9 +609,13 @@ class panelPlugin:
     #处理分类
     def get_types(self,sList,sType):
         if sType <= 0: return sList
+        if sType != 12:
+            sType = [sType]
+        else:
+            sType = [sType,8]
         newList = []
         for sInfo in sList:
-            if sInfo['type'] == sType: newList.append(sInfo)
+            if sInfo['type'] in sType: newList.append(sInfo)
         return newList
 
     #检查权限
@@ -613,11 +639,11 @@ class panelPlugin:
         args.type = '12'
         p_list = self.get_cloud_list(args)
         for p in p_list['list']:
+            if not p['type'] in [12,'12']: continue
             if p['name'] == get.name:
                 if not 'endtime' in p: continue
                 if p_list['ltd'] < 1 and p['endtime'] < 1: return False
                 break
-
         return True
 
     #取软件列表
@@ -647,9 +673,6 @@ class panelPlugin:
             if public.readFile(check_version_path).find('2.2') == 0: 
                 softList['apache22'] = True
                 softList['apache24'] = False
-        softList['Redhat'] = False
-        if os.path.exists('/etc/redhat-release'):
-            softList['Redhat'] = True
 
         return softList
 

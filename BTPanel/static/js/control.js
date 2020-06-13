@@ -303,7 +303,7 @@ $.get('/ajax?action=GetCpuIo&start='+b+'&end='+e,function(rdata){
 	for(var i = 0; i < rdata.length; i++){
 		xData.push(rdata[i].addtime);
 		//yData.push(rdata[i].pro);
-		zData.push(rdata[i].mem);
+		zData.push(rdata[i].mem.toFixed(2));
 	}
 	option = {
 		tooltip: {

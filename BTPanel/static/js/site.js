@@ -77,7 +77,26 @@ var site = {
                             return "<span class='c9 input-edit'  onclick=\"bt.pub.set_data_by_key('sites','ps',this)\">" + item.ps + "</span>";
                         }
                     },
-
+                    {
+                        field: 'ssl', title: 'SSL certificate', width: 110, templet: function (item) {
+                            var _ssl = '';
+                            if (item.ssl == -1)
+                            {
+                                _ssl = '<a class="ssl_tips btlink" style="color:orange;">Not deployed</a>';
+                            }else{
+                                var ssl_info = "Certificate: "+item.ssl.issuer+"<br>Due date: " + item.ssl.notAfter+"<br>Application date: " + item.ssl.notBefore +"<br>Domain name: " + item.ssl.dns.join("/");
+                                if(item.ssl.endtime < 0){
+                                    _ssl = '<a class="ssl_tips btlink" style="color:red;" data-tips="'+ssl_info+'">Expired</a>';
+                                
+                                }else if(item.ssl.endtime < 20){
+                                    _ssl = '<a class="ssl_tips btlink" style="color:red;" data-tips="'+ssl_info+'">Expire: '+(item.ssl.endtime+' days')+'</a>';
+                                }else{
+                                    _ssl = '<a class="ssl_tips btlink" style="color:green;" data-tips="'+ssl_info+'">Expire: '+item.ssl.endtime+' days</a>';
+                                }
+                            }
+                            return _ssl;
+                        }
+                    },
                     {
                         field: 'opt',
                         width: 260,
@@ -96,7 +115,30 @@ var site = {
                 ],
                 data: data
             })
-
+            var outTime = '';
+            $('.ssl_tips').hover(function(){
+                var that = this,tips = $(that).attr('data-tips');
+                if(!tips) return false;
+                outTime = setTimeout(function(){
+                    layer.tips(tips, $(that), {
+                        tips: [2, '#20a53a'], //还可配置颜色
+                        time:0
+                    });
+                },500);
+            },function(){
+                outTime != ''?clearTimeout(outTime):'';
+                layer.closeAll('tips');
+            })
+            $('.ssl_tips').click(function(){
+                site.web_edit(this);
+                var timeVal = setInterval(function(){
+                    var content = $('#webedit-con').html();
+                    if(content != ''){
+                        $('.site-menu p:eq(9)').click();
+                        clearInterval(timeVal);
+                    }
+                },100);
+            });
             //设置到期时间
             $('a.setTimes').each(function() {
                     var _this = $(this);

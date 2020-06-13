@@ -5,7 +5,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 import sys
 import os
@@ -196,6 +196,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             args.f_name = args.f_name.encode('utf-8')
             args.f_path = args.f_path.encode('utf-8')
 
+        if args.f_path == '/':
+            return public.returnMsg(False,'Cannot upload files to the system root directory!')
+
         if args.f_name.find('./') != -1 or args.f_path.find('./') != -1:
             return public.returnMsg(False, 'Wrong parameter')
         if not os.path.exists(args.f_path):
@@ -333,6 +336,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 try:
                     if sys.version_info[0] == 2:
                         filename = filename.encode('utf-8')
+                    else:
+                        filename.encode('utf-8')
                     filePath = get.path+'/'+filename
                     link = ''
                     if os.path.islink(filePath):
@@ -1350,7 +1355,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             shutil.move(sfile, dfile)
         else:
             self.copytree(sfile, dfile)
-            if os.path.exists(sfile):
+            if os.path.exists(sfile) and os.path.exists(dfile):
                 if is_dir:
                     shutil.rmtree(sfile)
                 else:

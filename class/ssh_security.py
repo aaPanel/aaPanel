@@ -4,7 +4,7 @@
 #-------------------------------------------------------------------
 # Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
 #-------------------------------------------------------------------
-# Author: 梁凯强 <1249648969@qq.com>
+# Author: lkqiang <lkq@bt.cn>
 #-------------------------------------------------------------------
 # SSH 安全类
 #------------------------------
@@ -15,6 +15,7 @@ class ssh_security:
     __SSH_CONFIG='/etc/ssh/sshd_config'
     __ip_data = None
     __ClIENT_IP='/www/server/panel/data/host_login_ip.json'
+    __pyenv = 'python'
     __REPAIR={"1":{"id":1,
                    "type":"file",
                    "harm":"High",
@@ -88,10 +89,16 @@ class ssh_security:
             public.WriteFile(self.__ClIENT_IP,json.dumps([]))
         self.__mail=send_mail.send_mail()
         self.__mail_config=self.__mail.get_settings()
+        self._check_pyenv()
         try:
             self.__ip_data = json.loads(public.ReadFile(self.__ClIENT_IP))
         except:
             self.__ip_data=[]
+
+    def _check_pyenv(self):
+        if os.path.exists('/www/server/panel/pyenv'):
+            self.__pyenv = 'btpython'
+
 
     def check_files(self):
         try:
@@ -248,27 +255,30 @@ class ssh_security:
         if not ip:
             ip = ["127.0.0.1"]
         if len(ip[0])==0:return False
-        if ip[0] in self.__ip_data:
-            public.WriteLog('SSH security', 'The server {} login IP is {}, login user is root'.format(public.GetLocalIp(),ip[0]))
-            return False
-        else:
-            self.send_mail_data('Server {} login alarm'.format(public.GetLocalIp()),'There is a login alarm on the server {}, the login IP is {}, the login user is root'.format(public.GetLocalIp(),ip[0]))
-            public.WriteLog('SSH security','There is a login alarm on the server {}, the login IP is {}, login user is root'.format(public.GetLocalIp(),ip [0]))
-            return True
+        try:
+            if ip[0] in self.__ip_data:
+                public.WriteLog('SSH security', 'The server {} login IP is {}, login user is root'.format(public.GetLocalIp(),ip[0]))
+                return False
+            else:
+                self.send_mail_data('Server {} login alarm'.format(public.GetLocalIp()),'There is a login alarm on the server {}, the login IP is {}, the login user is root'.format(public.GetLocalIp(),ip[0]))
+                public.WriteLog('SSH security','There is a login alarm on the server {}, the login IP is {}, login user is root'.format(public.GetLocalIp(),ip [0]))
+                return True
+        except:
+            pass
 
     #开启监控
     def start_jian(self,get):
         data=public.ReadFile('/etc/bashrc')
-        if not re.search('python /www/server/panel/class/ssh_security.py',data):
-            public.WriteFile('/etc/bashrc',data.strip()+'\npython /www/server/panel/class/ssh_security.py login\n')
+        if not re.search('{}\/www\/server\/panel\/class\/ssh_security.py'.format(".*python\s+"),data):
+            public.WriteFile('/etc/bashrc',data.strip()+'\n{} /www/server/panel/class/ssh_security.py login\n'.format(self.__pyenv))
             return public.returnMsg(True, 'Open successfully')
         return public.returnMsg(False, 'Open failed')
 
     #关闭监控
     def stop_jian(self,get):
         data = public.ReadFile('/etc/bashrc')
-        if re.search('python /www/server/panel/class/ssh_security.py', data):
-            public.WriteFile('/etc/bashrc',data.replace('python /www/server/panel/class/ssh_security.py login',''))
+        if re.search('{}\/www\/server\/panel\/class\/ssh_security.py'.format(".*python\s+"), data):
+            public.WriteFile('/etc/bashrc',re.sub('\n.*python\s+\/www\/server\/panel\/class\/ssh_security.py.*','',data))
             return public.returnMsg(True, 'Closed successfully')
         else:
             return public.returnMsg(True, 'Closed successfully')
@@ -276,7 +286,7 @@ class ssh_security:
     #监控状态
     def get_jian(self,get):
         data = public.ReadFile('/etc/bashrc')
-        if re.search('python /www/server/panel/class/ssh_security.py login', data):
+        if re.search('{}\/www\/server\/panel\/class\/ssh_security.py\s+login'.format(".*python\s+"), data):
             return public.returnMsg(True, '1')
         else:
             return public.returnMsg(False, '1')
@@ -418,7 +428,7 @@ class ssh_security:
         act = 'restart'
         if not os.path.exists('/etc/redhat-release'):
             public.ExecShell('service ssh ' + act)
-        elif version.find(' 7.') != -1:
+        elif version.find(' 7.') != -1 or version.find(' 8.') != -1:
             public.ExecShell("systemctl " + act + " sshd.service")
         else:
             public.ExecShell("/etc/init.d/sshd " + act)

@@ -4,7 +4,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2017 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 import public,re,sys,os,nginx,apache,json,time,ols
 try:
@@ -1039,8 +1039,11 @@ class config:
 
     #获取配置
     def get_config(self,get):
-        if 'config' in session: return session['config']
+        if 'config' in session:
+            session['config']['distribution'] = public.get_linux_distribution()
+            return session['config']
         data = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find()
+        data['distribution'] = public.get_linux_distribution()
         return data
 
 

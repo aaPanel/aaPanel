@@ -145,7 +145,7 @@ var index = {
                     crs += 'CPU-' + i + ": " + d[2][i] + '%' + (n1 % 2 == 0?'</br>':' | ');
 
                 }
-                layer.tips(d[3] + "</br>" + d[5] + " CPU, " + d[4] + " Core, " + d[4]+" Thread</br>"+ crs, _this.find('.cicle'), { time: 0, tips: [1, '#999'] });
+                layer.tips(d[3] + "</br>" + d[5] + " CPU, " + d[4] + " Core, " + d[4]+" Thread</br>"+ crs, _this, { time: 0, tips: [1, '#999'] });
             }, function () {
                 layer.closeAll('tips');
             });
@@ -164,7 +164,8 @@ var index = {
                     $(this).find(".mem-re-min").show();
                 }
                 else {
-                    $(this).find(".mem-re-min").hide();
+                    return false;
+                    //$(this).find(".mem-re-min").hide();
                 }
                 $(this).removeClass("shine_green");
                 $(this).find(".occupy").css({ "color": "#20a53a" });
@@ -172,6 +173,7 @@ var index = {
 				$(this).next().show();
                 //$(this).next().html(bt.get_cookie("mem-before"));
             }).click(function () {
+                if (($(this).hasClass("mem-action"))) return false;
                 var _this = $(this);
                 bt.show_confirm(lan.index.mem_release_sure, '<font style="color:red;">'+lan.index.mem_release_warn+'</font>', function () {
                     if (!(_this.hasClass("mem-action"))) {
@@ -223,17 +225,20 @@ var index = {
         }, 1500)
     },
     get_data_info: function (callback) {
-
+        var _this = $(this);
         bt.system.get_net(function (net) {
 
             var pub_arr = [{ val: 100, color: '#dd2f00' }, { val: 90, color: '#ff9900' }, { val: 70, color: '#20a53a' }, { val: 30, color: '#20a53a' }];
             var load_arr = [{ title: lan.index.run_block, val: 100, color: '#dd2f00' }, { title: lan.index.run_slow, val: 90, color: '#ff9900' }, { title: lan.index.run_normal, val: 70, color: '#20a53a' }, { title: lan.index.run_fluent, val: 30, color: '#20a53a' }];
-            var _cpubox = $('.cpubox'), _membox = $('.membox'), _loadbox = $('.loadbox')
+            var _cpubox = $('.cpubox'), _membox = $('.membox'), _loadbox = $('.loadbox'), _diskbox = $('.diskbox')
 
             index.set_val(_cpubox, { usage: net.cpu[0], title: net.cpu[1]+' '+lan.index.cpu_core, items: pub_arr })
             index.set_val(_membox, { usage: (net.mem.memRealUsed * 100 / net.mem.memTotal).toFixed(1), items: pub_arr, title: net.mem.memRealUsed + '/' + net.mem.memTotal + '(MB)' })
             bt.set_cookie('memSize', net.mem.memTotal)
-
+            for (var i = 0; i < _diskbox.length; i++) {
+                index.set_val(_diskbox.eq(i), { usage: net.disk[i].size[3].split('%')[0], title: net.disk[i].size[1]+'/'+net.disk[0].size[0], items: pub_arr })
+            }
+            
             var _lval = Math.round((net.load.one / net.load.max) * 100);
             if (_lval > 100) _lval = 100;
             index.set_val(_loadbox, { usage: _lval, items: load_arr })
@@ -335,14 +340,13 @@ var index = {
                 html += '<h4 class="c9 f15">' + item.title + '</h4>';
                 html += '</li>';
                 var _li = $(html);
-
                 if (item.masks) {
                     var mask = '';
                     for (var j = 0; j < item.masks.length; j++) mask += item.masks[j].title + ': ' + item.masks[j].value + "<br>";
                     _li.data('mask', mask);
-                    _li.hover(function () {
+                    _li.find('.cicle').hover(function () {
                         var _this = $(this);
-                        layer.tips(_this.data('mask'), _this.find('.cicle'), { time: 0, tips: [1, '#999'] });
+                        layer.tips(_this.parent().data('mask'), _this, { time: 0, tips: [1, '#999'] });
                     }, function () {
                         layer.closeAll('tips');
                     })

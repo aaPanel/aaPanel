@@ -4,7 +4,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 from BTPanel import session,request
 import public,os,json,time,apache,psutil
@@ -430,7 +430,18 @@ class ajax:
             return data
         except:
             return public.returnMsg(False,'AJAX_CONN_ERR')
-    
+
+    def get_other_info(self):
+        other = {}
+        other['ds'] = []
+        ds = public.M('domain').field('name').select()
+        # public.writeFile('/tmp/1.txt',str(ds))
+        for d in ds:
+            other['ds'].append(d['name'])
+
+        return ','.join(other['ds'])
+
+
     def UpdatePanel(self,get):
         try:
             if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK')
@@ -445,7 +456,7 @@ class ajax:
             if 'updateInfo' in session and hasattr(get,'check') == False:
                 updateInfo = session['updateInfo']
             else:
-                logs = ''
+                logs = '' #public.GetClientIp() +':'+ str(request.environ.get('REMOTE_PORT')) + '|' + str(int(time.time()))
                 import psutil,system,sys
                 mem = psutil.virtual_memory()
                 import panelPlugin
@@ -454,6 +465,7 @@ class ajax:
                 mplugin.ROWS = 10000
                 panelsys = system.system()
                 data = {}
+                data['ds'] = ''#self.get_other_info()
                 data['sites'] = str(public.M('sites').count())
                 data['ftps'] = str(public.M('ftps').count())
                 data['databases'] = str(public.M('databases').count())
@@ -514,6 +526,7 @@ class ajax:
             public.ExecShell('rm -rf /www/server/phpinfo/*')
             return public.returnMsg(True,updateInfo)
         except Exception as ex:
+            return public.get_error_info()
             return public.returnMsg(False,"CONNECT_ERR")
          
     #检查是否安装任何

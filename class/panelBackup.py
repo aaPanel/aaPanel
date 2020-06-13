@@ -4,7 +4,7 @@
 #-------------------------------------------------------------------
 # Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 #-------------------------------------------------------------------
-# Author: 黄文良 <287962566@qq.com>
+# Author: hwliang <hwl@bt.cn>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -76,8 +76,8 @@ class backup:
 
     def GetDiskInfo2(self):
         #取磁盘分区信息
-        temp = public.ExecShell("df -T -P|grep '/'|grep -v tmpfs")[0]
-        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs|grep -v '/boot'")[0]
+        temp = public.ExecShell("df -T -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
+        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
         temp1 = temp.split('\n')
         tempInodes1 = tempInodes.split('\n')
         diskInfo = []

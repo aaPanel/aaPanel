@@ -4,7 +4,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 import psutil,time,os,public,re,sys
 try:
@@ -228,7 +228,10 @@ class system:
         return data
     
     def GetLoadAverage(self,get):
-        c = os.getloadavg()
+        try:
+            c = os.getloadavg()
+        except:
+            c = [0,0,0]
         data = {};
         data['one'] = float(c[0]);
         data['five'] = float(c[1]);
@@ -351,8 +354,8 @@ class system:
 
     def GetDiskInfo2(self):
         #取磁盘分区信息
-        temp = public.ExecShell("df -hT -P|grep '/'|grep -v tmpfs")[0]
-        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs")[0]
+        temp = public.ExecShell("df -hT -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
+        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
         temp1 = temp.split('\n')
         tempInodes1 = tempInodes.split('\n')
         diskInfo = []

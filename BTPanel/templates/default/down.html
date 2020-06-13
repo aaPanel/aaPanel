@@ -1145,7 +1145,6 @@ td {
             window.location.href = text.attr('href');
         }
     });
-    
     function submit_pass(){
         var file_password = document.getElementById("file_password").value,
             url = $(this).parent().attr('data-url');
@@ -1153,7 +1152,6 @@ td {
             alert("Incorrect password length!");
             return false;
         }
-        $('.file_password').val('test');
         $.post(url, {file_password:file_password},function (res) {
             if (res.status==false){
                 alert(res.msg);

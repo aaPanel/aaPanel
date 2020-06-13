@@ -138,8 +138,8 @@ var aceEditor = {
         $('.ace_conter_menu').on('click', '.item .icon-tool', function(e) {
             var file_type = $(this).attr('data-file-state');
             var file_title = $(this).attr('data-title');
-            var _path = $(this).parent().attr('title');
-            var _id = $(this).parent().attr('data-id');
+            var _path = $(this).parent().parent().attr('title');
+            var _id = $(this).parent().parent().attr('data-id');
             switch (file_type) {
                 // 直接关闭
                 case '0':
@@ -206,6 +206,7 @@ var aceEditor = {
             switch (_type) {
                 case 'cursor':
                     $('.ace_toolbar_menu').hide();
+                    $('.ace_header .jumpLine').click();
                     break;
                 case 'history':
                     $('.ace_toolbar_menu').hide();
@@ -379,7 +380,7 @@ var aceEditor = {
                     }
                     var loadT = layer.open({
                         type: 1,
-                        area: ['350px', '180px'],
+                        //area: ['350px', '180px'],
                         title: 'Tips',
                         content: '<div class="ace-clear-form">\
 							<div class="clear-icon"></div>\
@@ -476,10 +477,9 @@ var aceEditor = {
                     //主题
                 case 'themes':
                     $('.ace_toolbar_menu').show().find('.menu-themes').show().siblings().hide();
-                    var _html = '',
-                        _arry = ['White', 'Black'];
+                    var _html = '',_arry = ['White', 'Black'];
                     for (var i = 0; i < _this.themeList.length; i++) {
-                        if (_this.aceConfig.themeList[i] != _this.aceConfig.aceEditor.editorTheme) {
+                        if (_this.themeList[i] != _this.aceConfig.aceEditor.editorTheme) {
                             _html += '<li data-value="' + _this.themeList[i] + '">' + _this.themeList[i] + '【' + _arry[i] + '】</li>';
                         } else {
                             _html += '<li data-value="' + _this.themeList[i] + '" class="active">' + _this.themeList[i] + '【' + _arry[i] + '】' + _icon + '</li>';
@@ -489,7 +489,7 @@ var aceEditor = {
                     $('.menu-themes ul li').click(function(){
 						var _theme = $(this).attr('data-value');
                         $(this).addClass('active').append(_icon).siblings().removeClass('active').find('.icon').remove();
-						_this.aceConfig.aceEditor.editorTheme = _theme;
+                        _this.aceConfig.aceEditor.editorTheme = _theme;
 						_this.saveAceConfig(_this.aceConfig,function(res){
 							for(var item in _this.editor){
 								_this.editor[item].ace.setTheme("ace/theme/"+_theme);
@@ -850,7 +850,6 @@ var aceEditor = {
             } else if ($(this).prev().attr('data-type') === 0) {
                 return false;
             }
-            console.log(_type)
             switch (_type) {
                 case 0: //新建文件夹
                     _this.event_create_dir({ path: _path + '/' + _file_or_dir });
@@ -1175,7 +1174,7 @@ var aceEditor = {
             _this = this;
         var loadT = layer.open({
             type: 1,
-            area: ['400px', '200px'],
+            //area: ['400px', '180px'],
             title: lan.public.restore_history_files,
             content: '<div class="ace-clear-form">\
 				<div class="clear-icon"></div>\
@@ -1483,6 +1482,28 @@ var aceEditor = {
         }
         _editor.ace.resize();
     },
+    // currentStatusBar: function(id) {
+    //     var _item = this.editor['ace_editor_' + id];
+	// 	if(_item == undefined){
+	// 		this.removerStatusBar();
+	// 		return false;
+	// 	}
+    //     $('.ace_conter_toolbar [data-type="cursor"]').html(lan.public.row + '<i class="cursor-row">1</i>,'+ lan.public.column +'<i class="cursor-line">0</i>');
+    //     $('.ace_conter_toolbar [data-type="history"]').html(lan.public.history_v + ': <i>' + (_item.historys.length === 0 ? lan.public.empty : _item.historys.length) + '</i>');
+    //     $('.ace_conter_toolbar [data-type="path"]').html(lan.public.dir + ': <i title="' + _item.path + '">' + _item.path + '</i>');
+    //     $('.ace_conter_toolbar [data-type="tab"]').html(_item.softTabs ? lan.public.space + ': <i>' + _item.tabSize + '</i>' : lan.public.tab_length + ': <i>' + _item.tabSize + '</i>');
+    //     $('.ace_conter_toolbar [data-type="encoding"]').html(lan.public.encoding + ': <i>' + _item.encoding.toUpperCase() + '</i>');
+    //     $('.ace_conter_toolbar [data-type="lang"]').html(lan.public.lan + ': <i>' + _item.type + '</i>');
+    //     $('.ace_conter_toolbar span').attr('data-id', id);
+    //     $('.file_fold').removeClass('bg');
+    //     $('[data-menu-path="' + (_item.path) + '"]').find('.file_fold').addClass('bg');
+    //     if (_item.historys_file) {
+    //         $('.ace_conter_toolbar [data-type="history"]').hide();
+    //     } else {
+    //         $('.ace_conter_toolbar [data-type="history"]').show();
+    //     }
+    //     _item.ace.resize();
+    // },
     // 清除状态栏
     removerStatusBar: function() {
         $('.ace_conter_toolbar [data-type="history"]').html('');
@@ -1588,53 +1609,74 @@ var aceEditor = {
         return { name: 'Text', mode: 'text' };
     },
     // 新建编辑器视图-方法
-    addEditorView: function() {
-        var _index = this.editorLength,
-            _id = bt.get_random(8);
-        $('.ace_conter_menu .item').removeClass('active');
-        $('.ace_conter_editor .ace_editors').removeClass('active');
-        $('.ace_conter_menu .ace_editor_add').before('<div class="item active item_tab_' + _id + '" data-type="text" data-id="' + _id + '" data-index="' + _index + '">\
-			<span class="icon_file"><i class="fa fa-code" aria-hidden="true"></i></span>\
-			<span>Untitled-' + _index + '</span>\
-			<i class="fa fa-circle icon-tool" aria-hidden="true" data-file-state="1" data-title="Untitled-' + _index + '"></i>\
-		</div>');
-        $('.ace_conter_editor').append('<div id="ace_editor_' + _id + '" class="ace_editors active"></div>');
-        $('#ace_editor_' + _id).siblings().removeClass('active');
-        this.creationEditor({ id: _id });
-        this.editorLength = this.editorLength + 1;
-    },
+    // addEditorView: function() {
+    //     var _index = this.editorLength,
+    //         _id = bt.get_random(8);
+    //     $('.ace_conter_menu .item').removeClass('active');
+    //     $('.ace_conter_editor .ace_editors').removeClass('active');
+    //     $('.ace_conter_menu .ace_editor_add').before('<div class="item active item_tab_' + _id + '" data-type="text" data-id="' + _id + '" data-index="' + _index + '">\
+	// 		<span class="icon_file"><i class="fa fa-code" aria-hidden="true"></i></span>\
+	// 		<span>Untitled-' + _index + '</span>\
+	// 		<i class="fa fa-circle icon-tool" aria-hidden="true" data-file-state="1" data-title="Untitled-' + _index + '"></i>\
+	// 	</div>');
+    //     $('.ace_conter_editor').append('<div id="ace_editor_' + _id + '" class="ace_editors active"></div>');
+    //     $('#ace_editor_' + _id).siblings().removeClass('active');
+    //     this.creationEditor({ id: _id });
+    //     this.editorLength = this.editorLength + 1;
+    // },
+    addEditorView: function (type,conifg) {
+		if(type == undefined) type = 0
+		var _index = this.editorLength,_id = bt.get_random(8);
+		$('.ace_conter_menu .item').removeClass('active');
+		$('.ace_conter_editor .ace_editors').removeClass('active');
+		$('.ace_conter_menu').append('<li class="item active item_tab_'+_id+'" data-type="shortcutKeys" data-id="'+ _id +'" >\
+			<div class="ace_item_box">\
+				<span class="icon_file"><i class="text-icon"></i></span>\
+				<span>'+ (type?conifg.title:('Untitled-'+ _index)) +'</span>\
+				<i class="glyphicon icon-tool glyphicon-remove" aria-hidden="true" data-file-state="0" data-title="'+ (type?conifg.title:('Untitled-'+ _index)) +'"></i>\
+			</div>\
+		</li>');
+		$('#ace_editor_' + _id).siblings().removeClass('active');
+		$('.ace_conter_editor').append('<div id="ace_editor_'+_id+'" class="ace_editors active">'+ (type?aceShortcutKeys.innerHTML:'') +'</div>');
+		switch(type){
+			case 0:
+				this.creationEditor({ id: _id });
+				this.editorLength = this.editorLength + 1;
+			break;
+			case 1:
+				this.removerStatusBar();
+				this.editorLength = this.editorLength + 1;
+			break;
+		}
+	},
     // 删除编辑器视图-方法
-    removeEditor: function(id) {
-        if ($('.item_tab_' + id).next('.item').length == 0) {
-            $('.item_tab_' + id).prev('.item').addClass('active');
-            $('#ace_editor_' + id).prev('.ace_editor').addClass('active');
-            this.ace_active = $('.item_tab_' + id).prev('.item').attr('data-id');
-        } else {
-            $('.item_tab_' + id).next('.item').addClass('active');
-            $('#ace_editor_' + id).next('.ace_editor').addClass('active');
-            this.ace_active = $('.item_tab_' + id).next('.item').attr('data-id');
+    removeEditor: function (id) {
+        if(id == undefined) id = this.ace_active;
+		if ($('.item_tab_' + id).next('.item').length != 0 && this.editorLength != 1) {
+			$('.item_tab_' + id).next('.item').click();
+		} else if($('.item_tab_' + id).prev('.item').length !=  0 && this.editorLength != 1){
+			$('.item_tab_' + id).prev('.item').click();
         }
-        $('.item_tab_' + id).remove();
-        $('#ace_editor_' + id).remove();
-        for (var i = 0; i < this.pathAarry.length; i++) {
-            if (this.pathAarry[i] == this.editor['ace_editor_' + id].path) {
-                this.pathAarry.splice(i, 1);
-            }
+		$('.item_tab_' + id).remove();
+		$('#ace_editor_' + id).remove();
+		this.editorLength --;
+		if(this.editor['ace_editor_'+id] == undefined) return false;
+		for(var i=0;i<this.pathAarry.length;i++){
+		    if(this.pathAarry[i] == this.editor['ace_editor_'+id].path){
+		        this.pathAarry.splice(i,1);
+		    }
+		}
+		if(!this.editor['ace_editor_'+id].historys_file) $('[data-menu-path="'+ (this.editor['ace_editor_'+id].path) +'"]').find('.file_fold').removeClass('active bg');
+        delete this.editor['ace_editor_'+id];
+		if(this.editorLength === 0){
+			this.ace_active = '';
+			this.pathAarry = [];
+			this.removerStatusBar();
+		}else{
+			this.currentStatusBar(this.ace_active);
         }
-        if (!aceEditor.editor['ace_editor_' + id].historys_file) $('[data-menu-path="' + (aceEditor.editor['ace_editor_' + id].path) + '"]').find('.file_fold').removeClass('active bg');
-        delete this.editor['ace_editor_' + id];
-        this.editorLength--;
-        if (this.editorLength === 0) {
-            this.ace_active = '';
-            this.pathAarry = [];
-            this.removerStatusBar();
-        } else {
-            this.currentStatusBar(this.ace_active);
-        }
-        if (this.ace_active != '') {
-            this.is_file_history(this.editor['ace_editor_' + this.ace_active]);
-        }
-    },
+		if(this.ace_active != '') this.is_file_history(this.editor['ace_editor_'+this.ace_active]);
+	},
     // 打开历史文件文件-方法
 	openHistoryEditorView: function (obj,callback) {
 		// 文件类型（type，列如：JavaScript） 、文件模型（mode，列如：text）、文件标识（id,列如：x8AmsnYn）、文件编号（index,列如：0）、文件路径 (path，列如：/www/root/)
@@ -1658,40 +1700,69 @@ var aceEditor = {
 		});
 	},
     // 打开编辑器文件-方法
-    openEditorView: function(path, callback) {
-        if (path == undefined) return false;
-        // 文件类型（type，列如：JavaScript） 、文件模型（mode，列如：text）、文件标识（id,列如：x8AmsnYn）、文件编号（index,列如：0）、文件路径 (path，列如：/www/root/)
-        var _this = this,
-            paths = path.split('/'),
-            _fileName = paths[paths.length - 1],
-            _fileType = this.getFileType(_fileName),
-            _type = _fileType.name,
-            _mode = _fileType.mode,
-            _id = bt.get_random(8),
-            _index = this.editorLength;
-        _this.is_file_open(path, function(is_state) {
-            if (is_state) {
-                $('.ace_conter_menu').find('[title="' + path + '"]').click();
-            } else {
-                _this.getFileBody({ path: path }, function(res) {
-                    _this.pathAarry.push(path);
-                    $('.ace_conter_menu .item').removeClass('active');
-                    $('.ace_conter_editor .ace_editors').removeClass('active');
-                    $('.ace_conter_menu .ace_editor_add').before('<div class="item active item_tab_' + _id + '" title="' + path + '" data-type="' + _type + '" data-mode="' + _mode + '" data-id="' + _id + '" data-index="' + _index + '" data-fileName="' + _fileName + '">\
-		    			<span class="icon_file"><i class="' + _mode + '-icon"></i></span><span title="' + path + '">' + _fileName + '</span>\
-		    			<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' + _fileName + '"></i>\
-		    		</div>');
-                    $('.ace_conter_editor').append('<div id="ace_editor_' + _id + '" class="ace_editors active"></div>');
-                    $('[data-menu-path="' + path + '"]').find('.file_fold').addClass('active bg');
-                    _this.ace_active = _id;
-                    _this.editorLength = _this.editorLength + 1;
-                    _this.creationEditor({ id: _id, fileName: _fileName, path: path, mode: _mode, encoding: res.encoding, data: res.data, type: _type, historys: res.historys });
-                    if (callback) callback(res);
-                });
-            }
-        });
-        $('.ace_toolbar_menu').hide();
-    },
+    // openEditorView: function(path, callback) {
+    //     if (path == undefined) return false;
+    //     // 文件类型（type，列如：JavaScript） 、文件模型（mode，列如：text）、文件标识（id,列如：x8AmsnYn）、文件编号（index,列如：0）、文件路径 (path，列如：/www/root/)
+    //     var _this = this,
+    //         paths = path.split('/'),
+    //         _fileName = paths[paths.length - 1],
+    //         _fileType = this.getFileType(_fileName),
+    //         _type = _fileType.name,
+    //         _mode = _fileType.mode,
+    //         _id = bt.get_random(8),
+    //         _index = this.editorLength;
+    //     _this.is_file_open(path, function(is_state) {
+    //         if (is_state) {
+    //             $('.ace_conter_menu').find('[title="' + path + '"]').click();
+    //         } else {
+    //             _this.getFileBody({ path: path }, function(res) {
+    //                 _this.pathAarry.push(path);
+    //                 $('.ace_conter_menu .item').removeClass('active');
+    //                 $('.ace_conter_editor .ace_editors').removeClass('active');
+    //                 $('.ace_conter_menu .ace_editor_add').before('<div class="item active item_tab_' + _id + '" title="' + path + '" data-type="' + _type + '" data-mode="' + _mode + '" data-id="' + _id + '" data-index="' + _index + '" data-fileName="' + _fileName + '">\
+	// 	    			<span class="icon_file"><i class="' + _mode + '-icon"></i></span><span title="' + path + '">' + _fileName + '</span>\
+	// 	    			<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' + _fileName + '"></i>\
+	// 	    		</div>');
+    //                 $('.ace_conter_editor').append('<div id="ace_editor_' + _id + '" class="ace_editors active"></div>');
+    //                 $('[data-menu-path="' + path + '"]').find('.file_fold').addClass('active bg');
+    //                 _this.ace_active = _id;
+    //                 _this.editorLength = _this.editorLength + 1;
+    //                 _this.creationEditor({ id: _id, fileName: _fileName, path: path, mode: _mode, encoding: res.encoding, data: res.data, type: _type, historys: res.historys });
+    //                 if (callback) callback(res);
+    //             });
+    //         }
+    //     });
+    //     $('.ace_toolbar_menu').hide();
+    // },
+    openEditorView: function (path,callback) {
+		if(path == undefined) return false;
+		// 文件类型（type，列如：JavaScript） 、文件模型（mode，列如：text）、文件标识（id,列如：x8AmsnYn）、文件编号（index,列如：0）、文件路径 (path，列如：/www/root/)
+	    var _this = this,paths = path.split('/'),_fileName = paths[paths.length - 1],_fileType = this.getFileType(_fileName),_type = _fileType.name,_mode = _fileType.mode,_id = bt.get_random(8),_index = this.editorLength;
+		_this.is_file_open(path,function(is_state){
+			if(is_state){
+				$('.ace_conter_menu').find('[title="'+ path +'"]').click();
+			}else{
+				_this.getFileBody({path: path}, function (res) {
+				    _this.pathAarry.push(path);
+				    $('.ace_conter_menu .item').removeClass('active');
+		    		$('.ace_conter_editor .ace_editors').removeClass('active');
+		    		$('.ace_conter_menu').append('<li class="item active item_tab_' + _id +'" title="'+ path +'" data-type="'+ _type +'" data-mode="'+ _mode +'" data-id="'+ _id +'" data-fileName="'+ _fileName +'">'+
+		    			'<div class="ace_item_box">'+
+			    			'<span class="icon_file"><i class="'+ _mode +'-icon"></i></span><span title="'+ path +'">' + _fileName + '</span>'+
+			    			'<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' + _fileName + '"></i>'+
+			    		'</div>'+
+		    		'</li>');
+		    		$('.ace_conter_editor').append('<div id="ace_editor_'+_id +'" class="ace_editors active" style="font-size:'+ aceEditor.aceConfig.aceEditor.fontSize +'px"></div>');
+					$('[data-menu-path="'+ path +'"]').find('.file_fold').addClass('active bg');
+					_this.ace_active = _id;
+				    _this.editorLength = _this.editorLength + 1;
+					_this.creationEditor({id: _id,fileName: _fileName,path: path,mode:_mode,encoding: res.encoding,data: res.data,type:_type,historys:res.historys});
+					if(callback) callback(res);
+				});
+			}
+		});
+		$('.ace_toolbar_menu').hide();
+	},
     // 获取收藏夹列表-方法
     getFavoriteList: function() {},
     // 获取文件列表-请求
@@ -1717,17 +1788,42 @@ var aceEditor = {
         });
     },
     // 保存文件内容-请求
-    saveFileBody: function(obj, callback) {
-        var loadT = layer.msg(lan.public.save_file_content, { time: 0, icon: 16, shade: [0.3, '#000'] });
-        $.post("/files?action=SaveFileBody", {
-            data:obj.data,
-            encoding:obj.encoding.toLowerCase(),
-            path:obj.path
-        }, function(res) {
-            layer.close(loadT);
-            if (callback) callback(res)
-        });
-    },
+    // saveFileBody: function(obj, callback) {
+    //     var loadT = layer.msg(lan.public.save_file_content, { time: 0, icon: 16, shade: [0.3, '#000'] });
+    //     $.post("/files?action=SaveFileBody", {
+    //         data:obj.data,
+    //         encoding:obj.encoding.toLowerCase(),
+    //         path:obj.path
+    //     }, function(res) {
+    //         layer.close(loadT);
+    //         if (callback) callback(res)
+    //     });
+    // },
+    saveFileBody: function (obj,success,error) {
+		$.ajax({
+			type:'post',
+			url:'/files?action=SaveFileBody',
+			timeout: 7000, //设置保存超时时间
+			data:{
+				data:obj.data,
+				encoding:obj.encoding.toLowerCase(),
+				path:obj.path
+			},
+			complete:function(res,status){
+				if(res.status != 200){
+					if(error) error(res.responseJSON)
+				}else if(res.status == 200){
+					var rdata = res.responseJSON;
+					if(rdata.status){
+						if(success) success(rdata)
+					}else{
+						if(error) error(rdata)
+					}
+					if(!obj.tips) layer.msg(rdata.msg,{icon:rdata.status?1:2});
+				}
+			}
+		});
+	},
     saveAceConfig: function(data,callback){
         var loadT = layer.msg(lan.public.save_ace_config,{time: 0,icon: 16,shade: [0.3, '#000']}),_this = this;
 		this.saveFileBody({
