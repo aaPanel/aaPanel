@@ -98,7 +98,31 @@ var soft = {
                                     click_opt += ' onclick="soft.set_soft_config(\'' + item.name + '\')" ';
                                 }
                             }
-                            if (rdata.apache22 && item.name.indexOf('php-') >= 0 && $.inArray(item.name, phps) == -1) click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                            var is_php5 = item.name.indexOf('php-5') >= 0,
+                            webcache = bt.get_cookie('serverType') == 'openlitespeed' ? true : false,
+                            distribution = bt.get_cookie('distribution');
+                            if (webcache) {
+                                switch (distribution) {
+                                    case 'centos8':
+                                        if (is_php5 || item.name == 'php-7.0') {
+                                            click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                                        }
+                                        break;
+                                    case 'centos7':
+                                        if (item.name == 'php-5.2') {
+                                            click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                                        }
+                                        break;
+                                    default:
+                                        if (is_php5) {
+                                            click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                                        }
+                                        break;
+                                }
+                            }else if (rdata.apache22 && item.name.indexOf('php-') >= 0 && $.inArray(item.name, phps) == -1){
+                                click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                            }
+                            //if (rdata.apache22 && item.name.indexOf('php-') >= 0 && $.inArray(item.name, phps) == -1) click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
                             return '<span ' + click_opt + ' ' + sStyle + ' ><img src="/static/img/soft_ico/ico-' + fName + '.png">' + item.title + ' ' + version + '</span>';
                         }
                     },
@@ -254,72 +278,115 @@ var soft = {
                             var is_php = item.name.indexOf('php-') >= 0,
                             is_php5 = item.name.indexOf('php-5') >= 0,
                             webcache = bt.get_cookie('serverType') == 'openlitespeed' ? true : false,
-                            distribution = bt.get_cookie('distribution'),
-                            redhat  = rdata.Redhat;
-                            if (rdata.apache22 && is_php && $.inArray(item.name, phps) == -1) {
-                                if (item.setup) {
-                                    option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
-                                } else {
+                            distribution = bt.get_cookie('distribution');
+                            if (webcache && is_php) {
+                                if ((is_php5 || item.name == 'php-7.0') && distribution=='centos8') {
                                     option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
-                                }
-                            } else if (rdata.apache24 && item.name == 'php-5.2') {
-                                if (item.setup) {
-                                    option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
-                                } else {
+                                }else if (distribution=='centos7'&&item.name == 'php-5.2') {
                                     option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
-                                }
-                            } else {
-                                if (item.setup && item.task == '1') {
-                                    if (pay_opt == '') {
-                                        if (item.versions.length > 1) {
-                                            for (var i = 0; i < item.versions.length; i++) {
-                                                var min_version = item.versions[i]
-                                                var ret = bt.check_version(item.version, min_version.m_version + '.' + min_version.version);
-                                                if (ret > 0) {
-                                                    if (ret == 2) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
-                                                    break;
+                                }else{
+                                    if (is_php5) {
+                                        option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
+                                    } else {
+                                        if (item.setup && item.task == '1') {
+                                            if (pay_opt == '') {
+                                                if (item.versions.length > 1) {
+                                                    for (var i = 0; i < item.versions.length; i++) {
+                                                        var min_version = item.versions[i]
+                                                        var ret = bt.check_version(item.version, min_version.m_version + '.' + min_version.version);
+                                                        if (ret > 0) {
+                                                            if (ret == 2) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
+                                                            break;
+                                                        }
+                                                    }
+                                                } else {
+                                                    var min_version = item.versions[0];
+                                                    var cloud_version = min_version.m_version + '.' + min_version.version;
+                                                    if (item.version != cloud_version) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
                                                 }
+                                                if (item.admin) {
+                                                    option += '<a class="btlink" onclick="bt.soft.set_lib_config(\'' + item.name + '\',\'' + item.title + '\')">' + lan.soft.setup + '</a> | ';
+                                                } else {
+                                                    option += '<a class="btlink" onclick="soft.set_soft_config(\'' + item.name + '\')">' + lan.soft.setup + '</a> | ';
+                                                }
+                                            } else {
+                                                option = pay_opt + ' | ' + option;
+                                            }
+                                            option += '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
+                                        } else if (item.task == '-1') {
+                                            option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.installing + '</a>';
+                                            soft.is_install = true;
+                                        } else if (item.task == '0') {
+                                            option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.wait_install + '</a>';
+                                            soft.is_install = true;
+                                        } else if (item.task == '-2') {
+                                            option = '<a class="btlink" onclick="messagebox()"  >Updating</a>';
+                                            soft.is_install = true;
+                                        } else {
+                                            if (pay_opt) {
+                                                option = pay_opt;
+                                            } else {
+                                                option = '<a class="btlink" onclick="bt.soft.install(\'' + item.name + '\')"  >' + lan.soft.install + '</a>';
+                                            }
+                                        }
+                                    }
+                                }
+                            }else {
+                                if (rdata.apache22 && is_php && $.inArray(item.name, phps) == -1) {
+                                    if (item.setup) {
+                                        option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
+                                    } else {
+                                        option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
+                                    }
+                                } else if (rdata.apache24 && item.name == 'php-5.2') {
+                                    if (item.setup) {
+                                        option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
+                                    } else {
+                                        option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
+                                    }
+                                } else {
+                                    if (item.setup && item.task == '1') {
+                                        if (pay_opt == '') {
+                                            if (item.versions.length > 1) {
+                                                for (var i = 0; i < item.versions.length; i++) {
+                                                    var min_version = item.versions[i]
+                                                    var ret = bt.check_version(item.version, min_version.m_version + '.' + min_version.version);
+                                                    if (ret > 0) {
+                                                        if (ret == 2) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
+                                                        break;
+                                                    }
+                                                }
+                                            } else {
+                                                var min_version = item.versions[0];
+                                                var cloud_version = min_version.m_version + '.' + min_version.version;
+                                                if (item.version != cloud_version) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
+                                            }
+                                            if (item.admin) {
+                                                option += '<a class="btlink" onclick="bt.soft.set_lib_config(\'' + item.name + '\',\'' + item.title + '\')">' + lan.soft.setup + '</a> | ';
+                                            } else {
+                                                option += '<a class="btlink" onclick="soft.set_soft_config(\'' + item.name + '\')">' + lan.soft.setup + '</a> | ';
                                             }
                                         } else {
-                                            var min_version = item.versions[0];
-                                            var cloud_version = min_version.m_version + '.' + min_version.version;
-                                            if (item.version != cloud_version) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
+                                            option = pay_opt + ' | ' + option;
                                         }
-                                        if (item.admin) {
-                                            option += '<a class="btlink" onclick="bt.soft.set_lib_config(\'' + item.name + '\',\'' + item.title + '\')">' + lan.soft.setup + '</a> | ';
+                                        option += '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
+                                    } else if (item.task == '-1') {
+                                        option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.installing + '</a>';
+                                        soft.is_install = true;
+                                    } else if (item.task == '0') {
+                                        option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.wait_install + '</a>';
+                                        soft.is_install = true;
+                                    } else if (item.task == '-2') {
+                                        option = '<a class="btlink" onclick="messagebox()"  >Updating</a>';
+                                        soft.is_install = true;
+                                    } else {
+                                        if (pay_opt) {
+                                            option = pay_opt;
                                         } else {
-                                            option += '<a class="btlink" onclick="soft.set_soft_config(\'' + item.name + '\')">' + lan.soft.setup + '</a> | ';
+                                            option = '<a class="btlink" onclick="bt.soft.install(\'' + item.name + '\')"  >' + lan.soft.install + '</a>';
                                         }
-                                    } else {
-                                        option = pay_opt + ' | ' + option;
-                                    }
-                                    option += '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
-                                } else if (item.task == '-1') {
-                                    option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.installing + '</a>';
-                                    soft.is_install = true;
-                                } else if (item.task == '0') {
-                                    option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.wait_install + '</a>';
-                                    soft.is_install = true;
-                                } else if (item.task == '-2') {
-                                    option = '<a class="btlink" onclick="messagebox()"  >Updating</a>';
-                                    soft.is_install = true;
-                                } else {
-                                    if (pay_opt) {
-                                        option = pay_opt;
-                                    } else {
-                                        option = '<a class="btlink" onclick="bt.soft.install(\'' + item.name + '\')"  >' + lan.soft.install + '</a>';
                                     }
                                 }
-                            }
-                            if (webcache && is_php5) {
-                                if (!redhat) {
-                                    option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
-                                } else if (item.name == 'php-5.2'){
-                                    option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
-                                }
-                            }
-                            if (distribution=='centos8' && item.name == 'php-7.0') {
-                                option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
                             }
                             return option;
                         }
@@ -2747,13 +2814,15 @@ var soft = {
                                     type: 'button',
                                     width: '62px',
                                     callback: function(ldata) {
-                                        var datal = {};
+                                        var datal = {},
+                                        loadP = bt.load();
                                         delete ldata.btn_fresh;
                                         delete ldata.btn_save;
                                         ldata['enableGzipCompress']=$("#enableGzipCompress").prop('checked')?1:0;
                                         ldata = JSON.stringify(ldata);
                                         datal = { array: ldata };
                                         bt.send('set_ols_value', 'config/set_ols_value', datal, function(res) {
+                                            loadP.close();
                                             soft.get_tab_contents(key, obj);
                                             bt.msg(res);
                                         });
@@ -2877,7 +2946,7 @@ function soft_td_width_auto() {
     } else {
         thead_width = winWidth / 3.5;
     }
-    $('#softList thead th:eq(2)').width(thead_width);
+    //$('#softList thead th:eq(2)').width(thead_width);
     $('#softList tbody tr td:nth-child(8n+2)>span').width(thead_width + 75);
 }
 

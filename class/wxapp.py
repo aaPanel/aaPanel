@@ -15,7 +15,7 @@ import json
 import time
 import binascii 
 import base64
-from BTPanel import session,cache
+from BTPanel import session,cache,request
 
 class ScanLogin(object):
     # 扫码登录面板
@@ -32,15 +32,25 @@ class ScanLogin(object):
                 self.app_path+'login.pl').split(':')
             if time.time() - float(init_time) < 60:
                 return public.returnMsg(True, key)
+        session_id = public.get_session_id()
+        if cache.get(session_id) == 'True':
+            return public.returnMsg(True, 'Scan QRCORE successfully')
         return public.returnMsg(False, '')
 
     # 返回二维码地址
     def login_qrcode(self, get):
-        qrcode_str = 'https://app.bt.cn/app.html?&panel_url='+public.getPanelAddr()+'&v=' + public.GetRandomString(3)+'?login';
+        tid = public.GetRandomString(12)
+        qrcode_str = 'https://app.bt.cn/app.html?&panel_url='+public.getPanelAddr()+'&v=' + public.GetRandomString(3)+'?login&tid=' + tid
+        cache.set(tid,public.get_session_id(),360)
+        cache.set(public.get_session_id(),tid,360)
         return public.returnMsg(True, qrcode_str)
 
     # 设置登录状态
     def set_login(self, get):
+        session_id = public.get_session_id()
+        if cache.get(session_id) == 'True':
+            return self.check_app_login(get)
+
         if os.path.exists(self.app_path+"login.pl"):
             data = public.readFile(self.app_path+'login.pl')
             public.ExecShell('rm ' + self.app_path+"login.pl")
@@ -53,10 +63,32 @@ class ScanLogin(object):
                 session['username'] = userInfo['username']
                 cache.delete('panelNum')
                 cache.delete('dologin')
-                public.WriteLog('TYPE_LOGIN', 'LOGIN_SUCCESS1',
-                                (public.GetMsg("WECHAT_SCAN_QRCORE"), public.GetClientIp()))
-                return public.returnMsg(True, 'LOGIN_SUCCESS')
-        return public.returnMsg(False, 'LOGIN_FAIL')
+                public.WriteLog('TYPE_LOGIN', 'LOGIN_SUCCESS',
+                                ('WeChat scan code login', public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
+                login_type = 'data/app_login.pl'
+                public.writeFile(login_type,'True')
+                return public.returnMsg(True, 'login successful')
+        return public.returnMsg(False, 'Login failed')
+
+
+     #验证APP是否登录成功
+    def check_app_login(self,get):
+        session_id = public.get_session_id()
+        if cache.get(session_id) != 'True':
+            return public.returnMsg(False,'Wait for the app to scan the code and log in')
+        cache.delete(session_id)
+        userInfo = public.M('users').where("id=?",(1,)).field('id,username').find()
+        session['login'] = True
+        session['username'] = userInfo['username']
+        session['tmp_login'] = True
+        public.WriteLog('TYPE_LOGIN','APP scan code login, account: {}, login IP: {}'.format(userInfo['username'],public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
+        cache.delete('panelNum')
+        cache.delete('dologin')
+        sess_input_path = 'data/session_last.pl'
+        public.writeFile(sess_input_path,str(int(time.time())))
+        login_type = 'data/app_login.pl'
+        public.writeFile(login_type,'True')
+        return public.returnMsg(True,'login successful!')
 
 class SelfModule():
     '''

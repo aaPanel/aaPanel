@@ -118,6 +118,7 @@ ssl-key=/www/server/data/server-key.pem
         if "ssl-ca" not in conf:
             conf = re.sub('\[mysqld\]','[mysqld]'+ssl_conf,conf)
         public.writeFile(conf_file,conf)
+        public.ExecShell('chown mysql.mysql /www/server/data/*.pem')
         return public.returnMsg(True,"Open successfully, take effect after manually restarting the database")
 
     # 检查mysqlssl状态
@@ -646,6 +647,11 @@ SetLink
     
     #设置数据库权限
     def SetDatabaseAccess(self,get):
+        ssl = ""
+        if hasattr(get,'ssl'):
+            ssl = get.ssl
+        if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get):
+            return public.returnMsg(False,'SSL is not enabled in the database, please open it in the Mysql manager first')
         name = get['name']
         db_name = public.M('databases').where('username=?',(name,)).getField('name')
         access = get['access']
@@ -657,9 +663,6 @@ SetLink
         users = mysql_obj.query("select Host from mysql.user where User='" + name + "' AND Host!='localhost'")
         for us in users:
             mysql_obj.execute("drop user '" + name + "'@'" + us[0] + "'")
-        ssl = ""
-        if hasattr(get,'ssl'):
-            ssl = get.ssl
         self.__CreateUsers(db_name,name,password,access,ssl)
         return public.returnMsg(True, 'SET_SUCCESS')
 

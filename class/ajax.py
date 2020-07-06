@@ -654,7 +654,7 @@ class ajax:
         public.writeFile(p_file,'<?php phpinfo(); ?>')
         phpinfo = public.request_php(get.version,'/phpinfo.php',p_file,'')
         if os.path.exists(p_file): os.remove(p_file)
-        return phpinfo.decode();
+        return phpinfo.decode()
 
     #清理日志
     def delClose(self,get):
@@ -868,7 +868,7 @@ class ajax:
             if get.port in rulePort:
                 return public.returnMsg(False,'AJAX_PHPMYADMIN_PORT_ERR')
             if public.get_webserver() == 'nginx':
-                rep = "listen\s+([0-9]+)\s*;"
+                rep = r"listen\s+([0-9]+)\s*;"
                 oldPort = re.search(rep,conf).groups()[0]
                 conf = re.sub(rep,'listen ' + get.port + ';\n',conf)
             elif public.get_webserver() == 'apache':
@@ -937,7 +937,7 @@ class ajax:
             return public.returnMsg(True,'SOFT_PHPMYADMIN_STATUS',(msg,))
         #except:
             #return public.returnMsg(False,'ERROR');
-            
+
     def ToPunycode(self,get):
         import re;
         get.domain = get.domain.encode('utf8')

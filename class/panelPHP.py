@@ -90,7 +90,8 @@ class panelPHP:
             shutil.copy(src_php_ini,php_ini)
             #解除所有禁用函数
             php_ini_body = public.readFile(php_ini)
-            php_ini_body = re.sub("disable_functions\s*=.*","disable_functions = ",php_ini_body)
+            php_ini_body = re.sub(r"disable_functions\s*=.*","disable_functions = ",php_ini_body)
+            php_ini_body = re.sub(r".*bt_filter.+","",php_ini_body)
             public.writeFile(php_ini,php_ini_body)
         return php_path + php_v + '/bin/php -c ' + php_ini
             

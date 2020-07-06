@@ -30,7 +30,7 @@ class userlogin:
                 userInfo = u_info
         if 'code' in session:
             if session['code'] and not 'is_verify_password' in session:
-                if not hasattr(post, 'code'): return public.returnMsg(False,'Verification code can not be empty!')
+                if not hasattr(post, 'code'): return public.returnJson(False,'Verification code can not be empty!')
                 if not public.checkCode(post.code):
                     public.WriteLog('TYPE_LOGIN','LOGIN_ERR_CODE',('****','****',public.GetClientIp()))
                     return public.returnJson(False,'CODE_ERR'),json_header
@@ -218,7 +218,7 @@ class userlogin:
             session['login'] = True
             session['username'] = userInfo['username']
             session['uid'] = userInfo['id']
-            public.WriteLog('TYPE_LOGIN','LOGIN_SUCCESS',(userInfo['username'],public.GetClientIp()))
+            public.WriteLog('TYPE_LOGIN','LOGIN_SUCCESS',(userInfo['username'],public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
             self.limit_address('-')
             cache.delete('panelNum')
             cache.delete('dologin')
@@ -226,6 +226,9 @@ class userlogin:
             public.writeFile(sess_input_path,str(int(time.time())))
             self.set_request_token()
             self.login_token()
+            login_type = 'data/app_login.pl'
+            if os.path.exists(login_type):
+                os.remove(login_type)
             return public.returnJson(True,'LOGIN_SUCCESS'),json_header
         except Exception as ex:
             stringEx = str(ex)

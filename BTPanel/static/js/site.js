@@ -1404,11 +1404,11 @@ var site = {
                     }
                 });
                 $('#ols').on('click', function() {
-                    private.toggle();
-                    checked = private.is(':hidden') ? false : true;
+                    var loadT = bt.load();
                     bt.send('switch_ols_private_cache', 'config/switch_ols_private_cache', { id: web.id }, function(res) {
-                        var loadT = bt.load();
                         loadT.close();
+                        private.toggle();
+                        checked = private.is(':hidden') ? false : true;
                         bt.msg(res);
                         if (checked) {
                             bt.send('get_ols_private_cache', 'config/get_ols_private_cache', { id: web.id }, function(fdata) {
@@ -1514,7 +1514,7 @@ var site = {
                         callback: function(obj) {
                             if (bt.os == 'Linux') {
                                 var spath = filename;
-                                if (obj.val() != lan.site.rewritename) spath = '/www/server/panel/rewrite/' + webserver + '/' + obj.val() + '.conf';
+                                if (obj.val() != lan.site.rewritename) spath = '/www/server/panel/rewrite/' + (webserver == 'openlitespeed'?'apache':webserver) + '/' + obj.val() + '.conf';
                                 bt.files.get_file_body(spath, function(ret) {
                                     editor.setValue(ret.data);
                                 })
@@ -1635,7 +1635,8 @@ var site = {
 					<li>This is primary configuration file of the site, do NOT modify it at will if you do not know configuration rules.</li>\
 				</ul>';
             $("#webedit-con").html(con);
-            var config = bt.aceEditor({ el: 'siteConfigBody', path: '/www/server/panel/vhost/' + bt.get_cookie('serverType') + '/' + web.name + '.conf' })
+            var webserve = bt.get_cookie('serverType'),
+            config = bt.aceEditor({ el: 'siteConfigBody', path: '/www/server/panel/vhost/' + (webserve == 'openlitespeed' ? (webserve + '/detail') : webserve) + '/' + web.name + '.conf' });
             $("#OnlineEditFileBtn").click(function(e) {
                 bt.saveEditor(config);
             });
@@ -3141,7 +3142,7 @@ var site = {
             content: "<div class='bt-form'><div class='bt-w-menu site-menu pull-left' style='height: 100%;'></div><div id='webedit-con' class='bt-w-con webedit-con pd15'></div></div>"
         })
         setTimeout(function() {
-            var webcache = bt.get_cookie('serverType') == 'openlitespeed' ? { title: 'LSCache', callback: site.edit.ols_cache } : '';
+            var webcache = bt.get_cookie('serverType') == 'openlitespeed' ? { title: 'LS-Cache', callback: site.edit.ols_cache } : '';
             var menus = [
                 { title: lan.site.domain_man, callback: site.edit.set_domains },
                 { title: lan.site.site_menu_1, callback: site.edit.set_dirbind },

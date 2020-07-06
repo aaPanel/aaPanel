@@ -533,19 +533,43 @@ def phpReload(version):
     else:
         ExecShell('/etc/init.d/php-fpm-' + version + ' reload')
 
+def get_timeout(url,timeout=3):
+    try:
+        start = time.time()
+        result = int(httpGet(url,timeout))
+        return result,int((time.time() - start) * 1000 - 500)
+    except: return 0,False
+
 def get_url(timeout = 0.5):
     import json
     try:
         nodeFile = 'data/node.json'
         node_list = json.loads(readFile(nodeFile))
-        mnode = None
+        mnode1 = []
+        mnode2 = []
+        mnode3 = []
         for node in node_list:
-            node['ping'] = get_timeout(node['protocol'] + node['address'] + ':' + node['port'] + '/check.txt')
+            node['net'],node['ping'] = get_timeout(node['protocol'] + node['address'] + ':' + node['port'] + '/net_test',1)
             if not node['ping']: continue
-            if not mnode: mnode = node
-            if node['ping'] < mnode['ping']: mnode = node
-            if mnode['ping'] < 50: break
-        return mnode['protocol'] + mnode['address'] + ':' + mnode['port']
+            if node['ping'] < 100:      #当响应时间<100ms且可用带宽大于1500KB时
+                if node['net'] > 1500:
+                    mnode1.append(node)
+                elif node['net'] > 1000:
+                    mnode3.append(node)
+            else:
+                if node['net'] > 1000:  #当响应时间>=100ms且可用带宽大于1000KB时
+                    mnode2.append(node)
+            if node['ping'] < 100:
+                if node['net'] > 3000: break #有节点可用带宽大于3000时，不再检查其它节点
+        if mnode1: #优选低延迟高带宽
+            mnode = sorted(mnode1,key= lambda  x:x['net'],reverse=True)
+        elif mnode3: #备选低延迟，中等带宽
+            mnode = sorted(mnode3,key= lambda  x:x['net'],reverse=True)
+        else: #终选中等延迟，中等带宽
+            mnode = sorted(mnode2,key= lambda  x:x['ping'],reverse=False)
+
+        if not mnode: return 'http://download.bt.cn'
+        return mnode[0]['protocol'] + mnode[0]['address'] + ':' + mnode[0]['port']
     except:
         return 'http://download.bt.cn'
 
@@ -839,14 +863,6 @@ def IsRestart():
 def hasPwd(password):
     import crypt
     return crypt.crypt(password,password)
-
-def get_timeout(url,timeout=3):
-    try:
-        start = time.time()
-        result = httpGet(url,timeout)
-        if result != 'True': return False
-        return int((time.time() - start) * 1000)
-    except: return False
 
 def getDate(format='%Y-%m-%d %X'):
     # 取格式时间
@@ -1723,6 +1739,30 @@ def get_linux_distribution():
             distribution = 'centos7'
     return distribution
 
+def long2ip(ips):
+    '''
+        @name 将整数转换为IP地址
+        @author hwliang<2020-06-11>
+        @param ips string(ip地址整数)
+        @return ipv4
+    '''
+    i1 = int(ips / (2 ** 24))
+    i2 = int((ips - i1 * ( 2 ** 24 )) / ( 2 ** 16 ))
+    i3 = int(((ips - i1 * ( 2 ** 24 )) - i2 * ( 2 ** 16 )) / ( 2 ** 8))
+    i4 = int(((ips - i1 * ( 2 ** 24 )) - i2 * ( 2 ** 16 )) - i3 * ( 2 ** 8))
+    return "{}.{}.{}.{}".format(i1,i2,i3,i4)
+
+def ip2long(ip):
+    '''
+        @name 将IP地址转换为整数
+        @author hwliang<2020-06-11>
+        @param ip string(ipv4)
+        @return long
+    '''
+    ips = ip.split('.')
+    if len(ips) != 4: return 0
+    iplong = 2 ** 24 * int(ips[0]) + 2 ** 16 * int(ips[1])  + 2 ** 8 * int(ips[2])  + int(ips[3])
+    return iplong
 
 #取通用对象
 class dict_obj:

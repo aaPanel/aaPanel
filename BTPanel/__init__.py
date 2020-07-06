@@ -304,6 +304,7 @@ def login():
         if session['login'] != False:
             session['login'] = False
             cache.set('dologin',True)
+            public.WriteLog('User LogOut','Client: {}, has manually exited the panel'.format(public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
             session.clear()
             session_path = r'/dev/shm/session_py' + str(sys.version_info[0])
             if os.path.exists(session_path): public.ExecShell("rm -f " + session_path + '/*')
@@ -337,6 +338,7 @@ def login():
                 data['hosts'] = '[]'
             else:
                 data['hosts'] = json.dumps(data['hosts'])
+        data['app_login'] = os.path.exists('data/app_login.pl')
         return render_template(
             'login.html',
             data=data
@@ -435,10 +437,10 @@ def database(pdata = None):
 def get_phpmyadmin_dir():
         path = public.GetConfigValue('setup_path') + '/phpmyadmin'
         if not os.path.exists(path): return None
-        
+
         phpport = '888'
         try:
-            import re;
+            import re
             if session['webserver'] == 'nginx':
                 filename =public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf'
                 conf = public.readFile(filename)
@@ -446,10 +448,18 @@ def get_phpmyadmin_dir():
                 rtmp = re.search(rep,conf)
                 if rtmp:
                     phpport = rtmp.groups()[0]
-            else:
+            if session['webserver'] == 'apache':
                 filename = public.GetConfigValue('setup_path') + '/apache/conf/extra/httpd-vhosts.conf'
                 conf = public.readFile(filename)
                 rep = "Listen\s+([0-9]+)\s*\n"
+                rtmp = re.search(rep,conf)
+                if rtmp:
+                    phpport = rtmp.groups()[0]
+            if session['webserver'] == 'openlitespeed':
+                filename = public.GetConfigValue('setup_path') + '/panel/vhost/openlitespeed/listen/888.conf'
+                public.writeFile('/tmp/2',filename)
+                conf = public.readFile(filename)
+                rep = "address\s*\*\:\s*(\d+)"
                 rtmp = re.search(rep,conf)
                 if rtmp:
                     phpport = rtmp.groups()[0]
@@ -488,7 +498,7 @@ def api(pdata = None):
     if comReturn: return comReturn
     import panelApi
     api_object = panelApi.panelApi()
-    defs = ('get_token','check_bind','get_bind_status','get_apps','add_bind_app','remove_bind_app','set_token','get_tmp_token','get_app_bind_status')
+    defs = ('get_token','check_bind','get_bind_status','get_apps','add_bind_app','remove_bind_app','set_token','get_tmp_token','get_app_bind_status','login_for_app')
     return publicObject(api_object,defs,None,pdata)
 
 @app.route('/get_app_bind_status',methods=method_all)
@@ -1309,7 +1319,7 @@ def get_pd():
                                     34, 98, 116, 46, 115, 111, 102, 116, 46, 117, 112, 100, 97, 116, 97, 95,
                                     112, 114, 111, 40, 41, 34, 62, 32493, 36153, 60, 47, 97, 62, 60,
                                     47, 115, 112, 97, 110, 62])
-        elif tmp >= 0:
+        if tmp >= 0 and ltd in [-1,-2]:
             if tmp == 0:
                 tmp2 = public.to_string([27704,20037,25480,26435])
                 tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,

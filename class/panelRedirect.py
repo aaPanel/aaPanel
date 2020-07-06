@@ -154,11 +154,9 @@ class panelRedirect:
             #检测名称是否重复
             if sys.version_info.major < 3:
                 if len(get.redirectname) < 3 or len(get.redirectname) > 15:
-                    print("NAME_LEN")
                     return public.returnMsg(False, 'NAME_LEN')
             else:
                 if len(get.redirectname.encode("utf-8")) < 3 or len(get.redirectname.encode("utf-8")) > 15:
-                    print("NAME_LEN")
                     return public.returnMsg(False, 'NAME_LEN')
             if self.__CheckRedirect(get.sitename,get.redirectname):
                 return public.returnMsg(False, 'REDIRECT_EXIST')

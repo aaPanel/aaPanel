@@ -30,6 +30,17 @@ class panelApi:
         del(data['key'])
         return data
 
+
+    def login_for_app(self,get):
+        from BTPanel import cache
+        tid = get.tid
+        if(len(tid) != 12): return public.returnMsg(False,'Invalid login key')
+        session_id = cache.get(tid)
+        if not session_id: return public.returnMsg(False,'The specified key does not exist or has expired')
+        if(len(session_id) != 64): return public.returnMsg(False,'Invalid login key')
+        cache.set(session_id,'True',120)
+        return public.returnMsg(True,'Scan code successfully, log in!')
+
     def get_api_config(self):
         tmp = public.ReadFile(self.save_path)
         if not tmp or not os.path.exists(self.save_path):

@@ -87,7 +87,7 @@ var fileDrop = {
                         clearTimeout(time);
                         return false;
                     }
-                    if(/^\.\w*/.test(filesAndDirs[i].name) ||/\/\.\w*/g.test(path)) continue; //排查隐藏文件目录和文件
+                    // if(/^\.\w*/.test(filesAndDirs[i].name) ||/\/\.\w*/g.test(path)) continue; //排查隐藏文件目录和文件
                     fileDrop.filesList.push({
                         file:filesAndDirs[i],
                         path:bt.get_file_path(path +'/'+ filesAndDirs[i].name).replace('//','/'),
@@ -160,7 +160,7 @@ var fileDrop = {
                         $('<input type="file" multiple="true" autocomplete="off" '+ (type == 'dir'?'webkitdirectory=""':'') +' />').change(function(e){
                             var files = e.target.files,arry = [];
                             for(var i=0;i<files.length;i++){
-                                if(/^\.\w*/.test(files[i].name) || /\/\.\w*/g.test(files[i].webkitRelativePath)) continue;
+                                // if(/^\.\w*/.test(files[i].name) || /\/\.\w*/g.test(files[i].webkitRelativePath)) continue;
                                 var config = {
                                     file:files[i],
                                     path: bt.get_file_path('/' + files[i].webkitRelativePath).replace('//','/') ,
@@ -928,7 +928,7 @@ function GetFiles(Path, sort) {
             if (getCookie("rank") == "a") {
                 $("#set_list").addClass("active");
                 $("#set_icon").removeClass("active");
-                if (rdata.PATH=='/') rdata.PATH = '';
+                //if (rdata.PATH=='/') rdata.PATH = '';
                 Body += "<tr class='folderBoxTr' fileshare='"+ fmp[6] +"' data-composer='"+fmp[7]+"' data-path='" + rdata.PATH + "/" + fmp[0] + "' filetype='dir'>\
 						<td><input type='checkbox' name='id' value='" + fmp[0] + "'></td>\
 						<td class='column-name'><span class='cursor' onclick=\"GetFiles('" + rdata.PATH + "/" + fmp[0] + "')\"><span class='ico ico-folder'></span><a class='text' title='" + fmp[0] + fmp[5] + "'>" + cnametext + fileMsg + "</a></span></td>\
@@ -2037,7 +2037,7 @@ function UnZip(fileName, type) {
     type = (type == 1) ? 'tar' : 'zip'
     var umpass = '';
     if (type == 'zip') {
-        umpass = '<div class="line"><span class="tname">' + lan.files.zip_pass_title + '</span><input type="text" class="bt-input-text" id="unpass" value="" placeholder="' + lan.files.zip_pass_msg + '" style="width:330px" /></div>'
+        umpass = '<div class="line"><span class="tname" style="width:110px">' + lan.files.zip_pass_title + '</span><input type="text" class="bt-input-text" id="unpass" value="" placeholder="' + lan.files.zip_pass_msg + '" style="width:330px" /></div>'
     }
     var layers = layer.open({
         type: 1,
@@ -2047,9 +2047,9 @@ function UnZip(fileName, type) {
         title: lan.files.unzip_title,
         content: '<div class="bt-form pd20 pb70">' +
             '<div class="line unzipdiv">' +
-            '<span class="tname">' + lan.files.unzip_name + '</span><input type="text" class="bt-input-text" id="sfile" value="' + fileName + '" placeholder="' + lan.files.unzip_name_title + '" style="width:330px" /></div>' +
-            '<div class="line"><span class="tname">' + lan.files.unzip_to + '</span><input type="text" class="bt-input-text" id="dfile" value="' + path + '" placeholder="' + lan.files.unzip_to + '" style="width:330px" /></div>' + umpass +
-            '<div class="line"><span class="tname">' + lan.files.unzip_coding + '</span><select class="bt-input-text" name="coding">' +
+            '<span class="tname" style="width:110px">' + lan.files.unzip_name + '</span><input type="text" class="bt-input-text" id="sfile" value="' + fileName + '" placeholder="' + lan.files.unzip_name_title + '" style="width:330px" /></div>' +
+            '<div class="line"><span class="tname" style="width:110px">' + lan.files.unzip_to + '</span><input type="text" class="bt-input-text" id="dfile" value="' + path + '" placeholder="' + lan.files.unzip_to + '" style="width:330px" /></div>' + umpass +
+            '<div class="line"><span class="tname" style="width:110px">' + lan.files.unzip_coding + '</span><select class="bt-input-text" name="coding">' +
             '<option value="UTF-8">UTF-8</option>' +
             '<option value="gb18030">GBK</option>' +
             '</select>' +

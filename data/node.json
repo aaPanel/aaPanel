@@ -1,8 +1,44 @@
 [
   {
     "protocol": "http://",
+    "address": "128.1.164.196",
+    "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "http://",
     "address": "103.224.251.67",
     "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "http://",
+    "address": "45.76.53.20",
+    "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "http://",
+    "address": "dg2.bt.cn",
+    "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "http://",
+    "address": "dg1.bt.cn",
+    "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "http://",
+    "address": "125.88.182.172",
+    "port": "5880",
+    "ping": 500
+  },
+  {
+    "protocol": "http://",
+    "address": "123.129.198.197",
+    "port": "5880",
     "ping": 500
   },
   {
@@ -13,13 +49,13 @@
   },
   {
     "protocol": "http://",
-    "address": "45.32.116.160",
-    "port": "80",
+    "address": "113.107.111.78",
+    "port": "5880",
     "ping": 500
   },
   {
     "protocol": "http://",
-    "address": "128.1.164.196",
+    "address": "45.32.116.160",
     "port": "80",
     "ping": 500
   }

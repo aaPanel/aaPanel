@@ -45,34 +45,36 @@ class data:
         return result
 
     def get_site_ssl_info(self,siteName):
-        s_file = 'vhost/nginx/{}.conf'.format(siteName)
-        is_apache = False
-        if not os.path.exists(s_file):
-            s_file = 'vhost/apache/{}.conf'.format(siteName)
-            is_apache = True
+        try:
+            s_file = 'vhost/nginx/{}.conf'.format(siteName)
+            is_apache = False
+            if not os.path.exists(s_file):
+                s_file = 'vhost/apache/{}.conf'.format(siteName)
+                is_apache = True
 
-        if not os.path.exists(s_file):
-            return -1
+            if not os.path.exists(s_file):
+                return -1
 
-        s_conf = public.readFile(s_file)
-        if not s_conf: return -1
-        ssl_file = None
-        if is_apache:
-            if s_conf.find('SSLCertificateFile') == -1:
-                return -1
-            s_tmp = re.findall(r"SSLCertificateFile\s+(.+\.pem)",s_conf)
-            if not s_tmp: return -1
-            ssl_file = s_tmp[0]
-        else:
-            if s_conf.find('ssl_certificate') == -1:
-                return -1
-            s_tmp = re.findall(r"ssl_certificate\s+(.+\.pem);",s_conf)
-            if not s_tmp: return -1
-            ssl_file = s_tmp[0]
-        ssl_info = public.get_cert_data(ssl_file)
-        if not ssl_info: return -1
-        ssl_info['endtime'] = int(int(time.mktime(time.strptime(ssl_info['notAfter'], "%Y-%m-%d")) - time.time()) / 86400)
-        return ssl_info
+            s_conf = public.readFile(s_file)
+            if not s_conf: return -1
+            ssl_file = None
+            if is_apache:
+                if s_conf.find('SSLCertificateFile') == -1:
+                    return -1
+                s_tmp = re.findall(r"SSLCertificateFile\s+(.+\.pem)",s_conf)
+                if not s_tmp: return -1
+                ssl_file = s_tmp[0]
+            else:
+                if s_conf.find('ssl_certificate') == -1:
+                    return -1
+                s_tmp = re.findall(r"ssl_certificate\s+(.+\.pem);",s_conf)
+                if not s_tmp: return -1
+                ssl_file = s_tmp[0]
+            ssl_info = public.get_cert_data(ssl_file)
+            if not ssl_info: return -1
+            ssl_info['endtime'] = int(int(time.mktime(time.strptime(ssl_info['notAfter'], "%Y-%m-%d")) - time.time()) / 86400)
+            return ssl_info
+        except: return -1
         #return "{}:{}".format(ssl_info['issuer'],ssl_info['notAfter'])
 
 

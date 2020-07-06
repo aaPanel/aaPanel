@@ -651,7 +651,7 @@ var aceEditor = {
 		$('.ace_dir_tools').on('click','.upper_level',function(){
 			var _paths = $(this).attr('data-menu-path');
 			_this.reader_file_dir_menu({path:_paths,is_empty:true});
-			$('.ace_catalogue_title').html('目录：'+ _paths).attr('title',_paths);
+			$('.ace_catalogue_title').html('Directory: '+ _paths).attr('title',_paths);
 		});
 		// 新建文件（文件目录主菜单）
 		$('.ace_dir_tools').on('click','.new_folder',function(e){

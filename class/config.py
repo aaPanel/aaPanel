@@ -415,6 +415,8 @@ class config:
             ols_php_path = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
         if not os.path.exists(filename): return public.returnMsg(False,'PHP_NOT_EXISTS')
         for file in [filename,ols_php_path]:
+            if not os.path.exists(file):
+                continue
             phpini = public.readFile(file)
             rep = r"disable_functions\s*=\s*.*\n"
             phpini = re.sub(rep, 'disable_functions = ' + get.disable_functions + "\n", phpini)

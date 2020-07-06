@@ -1742,27 +1742,27 @@ cd %s
         self.set_store_data(data)
         return public.returnMsg(True,'Successfully deleted!')
 
-    #单文件木马扫描
-    def file_webshell_check(self,get):
-        if not 'filename' in get: return public.returnMsg(True, 'file does not exist!')
-        import webshell_check
-        if webshell_check.webshell_check().upload_file_url(get.filename.strip()):
-            return public.returnMsg(False,'This file is webshell [ %s ]'%get.filename.strip().split('/')[-1])
-        else:
-            return public.returnMsg(True, 'no risk')
-
-    #目录扫描木马
-    def dir_webshell_check(self,get):
-        if not 'path' in get: return public.returnMsg(False, 'Please enter a valid directory!')
-        path=get.path.strip()
-        if os.path.exists(path):
-            #启动消息队列
-            exec_shell = public.get_python_bin() + ' /www/server/panel/class/webshell_check.py dir %s mail'%path
-            task_name = "Scan Trojan files for directory %s"%path
-            import panelTask
-            task_obj = panelTask.bt_task()
-            task_obj.create_task(task_name, 0, exec_shell)
-            return public.returnMsg(True, 'Starting Trojan killing process. Details will be in the panel security log')
+    # #单文件木马扫描
+    # def file_webshell_check(self,get):
+    #     if not 'filename' in get: return public.returnMsg(True, 'file does not exist!')
+    #     import webshell_check
+    #     if webshell_check.webshell_check().upload_file_url(get.filename.strip()):
+    #         return public.returnMsg(False,'This file is webshell [ %s ]'%get.filename.strip().split('/')[-1])
+    #     else:
+    #         return public.returnMsg(True, 'no risk')
+    #
+    # #目录扫描木马
+    # def dir_webshell_check(self,get):
+    #     if not 'path' in get: return public.returnMsg(False, 'Please enter a valid directory!')
+    #     path=get.path.strip()
+    #     if os.path.exists(path):
+    #         #启动消息队列
+    #         exec_shell = public.get_python_bin() + ' /www/server/panel/class/webshell_check.py dir %s mail'%path
+    #         task_name = "Scan Trojan files for directory %s"%path
+    #         import panelTask
+    #         task_obj = panelTask.bt_task()
+    #         task_obj.create_task(task_name, 0, exec_shell)
+    #         return public.returnMsg(True, 'Starting Trojan killing process. Details will be in the panel security log')
 
     # 获取下载地址列表
     def get_download_url_list(self, get):

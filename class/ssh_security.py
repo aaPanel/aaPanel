@@ -244,6 +244,12 @@ class ssh_security:
             'addtime desc').select()
         return data
 
+    def get_server_ip(self):
+        if os.path.exists('/www/server/panel/data/iplist.txt'):
+            data=public.ReadFile('/www/server/panel/data/iplist.txt')
+            return data.strip()
+        else:return '127.0.0.1'
+
 
     #登陆的情况下
     def login(self):
@@ -256,10 +262,14 @@ class ssh_security:
             ip = ["127.0.0.1"]
         if len(ip[0])==0:return False
         try:
+            import time
+            mDate = time.strftime('%Y-%m-%d %X', time.localtime())
             if ip[0] in self.__ip_data:
+                if public.M('logs').where('type=? addtime', ('SSH security',mDate,)).count():return False
                 public.WriteLog('SSH security', 'The server {} login IP is {}, login user is root'.format(public.GetLocalIp(),ip[0]))
                 return False
             else:
+                if public.M('logs').where('type=? addtime', ('SSH security', mDate,)).count(): return False
                 self.send_mail_data('Server {} login alarm'.format(public.GetLocalIp()),'There is a login alarm on the server {}, the login IP is {}, the login user is root'.format(public.GetLocalIp(),ip[0]))
                 public.WriteLog('SSH security','There is a login alarm on the server {}, the login IP is {}, login user is root'.format(public.GetLocalIp(),ip [0]))
                 return True
@@ -438,7 +448,9 @@ if __name__ == '__main__':
     import sys
     type = sys.argv[1]
     if type=='login':
-        aa = ssh_security()
-        aa.login()
+        try:
+            aa = ssh_security()
+            aa.login()
+        except:pass
     else:
         pass

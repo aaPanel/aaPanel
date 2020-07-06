@@ -100,7 +100,7 @@ def control_init():
     public.ExecShell(c)
     p_file = 'class/plugin2.so'
     if os.path.exists(p_file): public.ExecShell("rm -f class/*.so")
-    public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config")
+    public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config;chown -R root:root /www/server/phpmyadmin;chmod -R 755 /www/server/phpmyadmin")
     #disable_putenv('putenv')
     clean_session()
     #set_crond()

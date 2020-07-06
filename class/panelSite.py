@@ -329,7 +329,7 @@ extprocessor BTSITENAME {
 }
 
 phpIniOverride  {
-php_admin_value open_basedir "/tmp:$VH_ROOT"
+php_admin_value open_basedir "/tmp/:BT_RUN_PATH"
 }
 
 expires {
@@ -346,6 +346,10 @@ rewrite  {
 }
 include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 '''
+        open_base_path = self.sitePath
+        if self.sitePath[-1] != '/':
+            open_base_path = self.sitePath + '/'
+        conf = conf.replace('BT_RUN_PATH',open_base_path)
         conf = conf.replace('BT_EXTP_NAME',self.siteName)
         conf = conf.replace('BTPHPV',self.phpVersion)
         conf = conf.replace('BTSITENAME',self.siteName)
@@ -1128,7 +1132,7 @@ listener Default%s{
         result = self.GetSiteRunPath(get)
         if 'runPath' in result:
             return result['runPath']
-        return False
+        return result
 
 
     # 创建Let's Encrypt免费证书
@@ -2109,20 +2113,6 @@ listener SSL443 {
             public.writeFile(file,conf301)
         else:
             public.ExecShell('rm -f {}*'.format(file))
-        # mconf = public.readFile(filename)
-        # if mconf == False: return public.returnMsg(False,'The specified configuration file does not exist!')
-        # if type == '1':
-        #     if(srcDomain == 'all'):
-        #         conf301 = "\n\t#301-START\n\tRewriteEngine on\n\tRewriteRule ^(.*)$ "+toDomain+"$1 [L,R=301]\n\t#301-END\n"
-        #     else:
-        #         conf301 = "\n\t#301-START\n\tRewriteEngine on\n\tRewriteCond %{HTTP_HOST} ^"+srcDomain+" [NC]\n\tRewriteRule ^(.*) "+toDomain+"$1 [L,R=301]\n\t#301-END\n"
-        #     rep = "autoLoadHtaccess\s*1"
-        #     mconf = mconf.replace(rep,rep + "\n\t" + conf301)
-        # else:
-        #     rep = "\n\s+#301-START(.|\n){1,300}#301-END\n*"
-        #     mconf = re.sub(rep, '\n\n', mconf,1)
-        #     mconf = re.sub(rep, '\n\n', mconf,1)
-        # public.writeFile(filename,mconf)
 
         isError = public.checkWebConfig()
         if(isError != True):
@@ -2501,10 +2491,12 @@ server
             public.writeFile(file,conf)
 
         # OLS
-        file = self.setupPath + '/panel/vhost/apache/' + Name + '.conf'
+        file = self.setupPath + '/panel/vhost/openlitespeed/' + Name + '.conf'
         conf = public.readFile(file)
         if conf:
-            sitname = Path.split('/')[-2]
+            reg = 'vhRoot.*'
+            conf = re.sub(reg,'vhRoot '+Path,conf)
+            public.writeFile(file,conf)
 
         #创建basedir
         userIni = Path + '/.user.ini'
@@ -3026,11 +3018,6 @@ extprocessor %s {
 }
 """ % (get.proxyname,get.proxysite)
         public.writeFile(file_path,reverse_proxy_conf)
-        # detail_file = "%s/panel/vhost/openlitespeed/detail/%s.conf" % (self.setupPath,get.sitename)
-        # detail_conf = public.readFile(detail_file)
-        # if detail_conf:
-        #     include_conf = "\ninclude %s/panel/vhost/openlitespeed/proxy/%s/*.conf" % (self.setupPath,get.sitename)
-        #     public.writeFile(detail_file,include_conf,"a+")
         # 添加urlrewrite
         dir_path = "%s/panel/vhost/openlitespeed/proxy/%s/urlrewrite/" % (self.setupPath, get.sitename)
         if not os.path.exists(dir_path):
@@ -3040,16 +3027,6 @@ extprocessor %s {
 RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
 """ % (get.proxydir,get.proxyname,get.todomain)
         public.writeFile(file_path,reverse_urlrewrite_conf)
-        # detail_file = "%s/panel/vhost/openlitespeed/detail/%s.conf" % (self.setupPath,get.sitename)
-        # detail_conf = public.readFile(detail_file)
-        # if detail_conf:
-        #     include_conf = "\n  include %s/panel/vhost/openlitespeed/proxy/%s/urlrewrite/*.conf" % (self.setupPath,get.sitename)
-        #     rep = "autoLoadHtaccess\s+1"
-        #     tmp = re.search(rep,detail_conf).group()
-        #     tmp = tmp + include_conf
-        #     detail_conf = re.sub(rep,tmp,detail_conf)
-        #     public.writeFile(detail_file,detail_conf)
-
 
     # 检查伪静态、主配置文件是否有location冲突
     def CheckLocation(self,get):

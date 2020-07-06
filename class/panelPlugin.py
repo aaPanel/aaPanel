@@ -153,26 +153,6 @@ class panelPlugin:
         check_result = self.check_install_limit(get)
         if check_result:
             return check_result
-        # p_node = '/www/server/panel/install/public.sh'
-        # if os.path.exists(p_node):
-        #     if len(public.readFile(p_node)) < 100: os.remove(p_node)
-        # if not pluginInfo: return public.returnMsg(False,'INIT_PLUGIN_NOT_EXISTS')
-        # if not self.check_mutex(pluginInfo['mutex']): return public.returnMsg(False,'UNINSTALL_FIRST' , (pluginInfo['mutex'],))
-        # if not hasattr(get,'id'):
-        #     if not self.check_dependnet(pluginInfo['dependnet']): return public.returnMsg(False,'DEP_PAGE' , (pluginInfo['dependnet'],))
-        # if 'version' in get:
-        #     for versionInfo in pluginInfo['versions']:
-        #         if versionInfo['m_version'] != get.version: continue
-        #         if not 'type' in get: get.type = '0'
-        #         if int(get.type) > 4: get.type = '0'
-        #         if get.type == '0':
-        #             if not self.check_cpu_limit(versionInfo['cpu_limit']): return public.returnMsg(False,'At least [{0}] CPU cores are required to install'.format(versionInfo['cpu_limit']))
-        #             if not self.check_mem_limit(versionInfo['mem_limit']): return public.returnMsg(False,'At least [{0} MB] memory is required to install'.format(versionInfo['mem_limit']))
-        #         if not self.check_os_limit(versionInfo['os_limit']):
-        #             m_ps = {0:public.GetMsg("ALL"),1:"Centos",2:"Ubuntu/Debian"}
-        #             return public.returnMsg(False,'ONLY_SUP_SYS' , (m_ps[int(versionInfo['os_limit'])],))
-        #         if not hasattr(get,'id'):
-        #             if not self.check_dependnet(versionInfo['dependnet']): return public.returnMsg(False,'DEP_PAGE' , (versionInfo['dependnet'],))
         
         if pluginInfo['type'] != 5:
             result = self.install_sync(pluginInfo,get)
@@ -235,7 +215,7 @@ class panelPlugin:
             if get.version == '1.8': return public.returnMsg(False,'NOT_SUP_NG1.8')
         if get.sName.find('php-') != -1:get.sName = get.sName.split('-')[0]
         ols_execstr = ""
-        if "php" == get.sName:
+        if "php" == get.sName and os.path.exists('/usr/local/lsws'):
             ols_sName = 'php-ols'
             ols_version = get.version.replace('.','')
             ols_execstr = " &> /tmp/panelExec.log && /bin/bash install_soft.sh {} {} " + ols_sName + " " + ols_version
@@ -255,7 +235,7 @@ class panelPlugin:
             ols_execstr = ols_execstr.format(get.type,mtype)
         execstr = "cd /www/server/panel/install && /bin/bash install_soft.sh {} {} {} {} {}".format(get.type,mtype,get.sName,get.version,ols_execstr)
         if get.sName == "phpmyadmin":
-            execstr += "&> /tmp/panelExec.log && /usr/local/lsws/bin/lswsctrl restart"
+            execstr += "&> /tmp/panelExec.log && sleep 1 && /usr/local/lsws/bin/lswsctrl restart"
         public.M('tasks').add('id,name,type,status,addtime,execstr',(None, mmsg + '['+get.sName+'-'+get.version+']','execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
         cache.delete('install_task')
         public.writeFile('/tmp/panelTask.pl','True')
@@ -700,16 +680,21 @@ class panelPlugin:
         if not os.path.exists(self.__index): public.writeFile(self.__index,'[]')
         indexList = json.loads(public.ReadFile(self.__index))
         if sName in indexList: return public.returnMsg(False,'DONT_ADD_AGAIN')
-
         if len(indexList) >= 12:
             softList = self.get_cloud_list(get)['list']
             for softInfo in softList:
+                # return softList
+                if softInfo['name'] == 'php':
+                    for i in softInfo['versions']:
+                        php_v = 'php-'+ i['m_version']
+                        if not os.path.exists('/www/server/php/{}'.format(i['m_version']))\
+                                and php_v in indexList:
+                            indexList.remove(php_v)
                 if softInfo['name'] in indexList:
                     new_softInfo = self.check_status(softInfo)
                     if not new_softInfo['setup']: indexList.remove(softInfo['name'])
             public.writeFile(self.__index,json.dumps(indexList))
             if len(indexList) >= 12: return public.returnMsg(False,'HP_DIS_MOST')
-
         indexList.append(sName)
         public.writeFile(self.__index,json.dumps(indexList))
         return public.returnMsg(True,'ADD_SUCCESS')
