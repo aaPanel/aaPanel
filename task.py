@@ -45,7 +45,6 @@ def ExecShell(cmdstring, cwd=None, timeout=None, shell=True):
         import datetime
         import subprocess
         import time
-        subprocess.Popen('echo > ' + logPath, cwd=cwd, stdin=subprocess.PIPE, shell=shell, bufsize=4096)
         sub = subprocess.Popen(cmdstring+' &> '+logPath, cwd=cwd, stdin=subprocess.PIPE,shell=shell,bufsize=4096)
         
         while sub.poll() is None:
@@ -434,7 +433,6 @@ def check502Task():
 
 # 检查面板证书是否有更新
 def check_panel_ssl():
-    # info_file=""
     try:
         while True:
             lets_info = public.readFile("/www/server/panel/ssl/lets.info")

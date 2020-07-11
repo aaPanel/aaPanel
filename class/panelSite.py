@@ -409,7 +409,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         #表单验证
         if not files.files().CheckDir(self.sitePath) or not self.__check_site_path(self.sitePath): return public.returnMsg(False,'PATH_ERROR')
         if len(self.phpVersion) < 2: return public.returnMsg(False,'SITE_ADD_ERR_PHPEMPTY')
-        reg = "^([\w\-\*]{1,100}\.){1,4}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
+        reg = r"^([\w\-\*]{1,100}\.){1,4}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
         if not re.match(reg, self.siteName): return public.returnMsg(False,'SITE_ADD_ERR_DOMAIN')
         if self.siteName.find('*') != -1: return public.returnMsg(False,'SITE_ADD_ERR_DOMAIN_TOW')
         
@@ -2501,7 +2501,7 @@ server
         #创建basedir
         userIni = Path + '/.user.ini'
         if os.path.exists(userIni): public.ExecShell("chattr -i "+userIni)
-        public.writeFile(userIni, 'open_basedir='+Path+'/:/tmp/:/proc/')
+        public.writeFile(userIni, 'open_basedir='+Path+'/:/tmp/')
         public.ExecShell('chmod 644 ' + userIni)
         public.ExecShell('chown root:root ' + userIni)
         public.ExecShell('chattr +i '+userIni)
@@ -2677,6 +2677,7 @@ server
         # sitename = path.split('/')[-1]
         f = "/www/server/panel/vhost/openlitespeed/detail/{}.conf".format(sitename)
         c = public.readFile(f)
+        if not c: return False
         if f:
             rep = '\nphp_admin_value\s*open_basedir.*'
             result = re.search(rep, c)

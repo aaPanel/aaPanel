@@ -50,54 +50,74 @@ class system:
         serviceName = 'nginx'
         tmp['setup'] = False
         phpversion = "54"
-        phpport = '888';
-        pstatus = False;
-        pauth = False;
+        phpport = '888'
+        pstatus = False
+        pauth = False
         if os.path.exists(self.setupPath+'/nginx'): 
             data['webserver'] = 'nginx'
             serviceName = 'nginx'
-            tmp['setup'] = os.path.exists(self.setupPath +'/nginx/sbin/nginx');
-            configFile = self.setupPath + '/nginx/conf/nginx.conf';
+            tmp['setup'] = os.path.exists(self.setupPath +'/nginx/sbin/nginx')
+            configFile = self.setupPath + '/nginx/conf/nginx.conf'
             try:
                 if os.path.exists(configFile):
-                    conf = public.readFile(configFile);
-                    rep = "listen\s+([0-9]+)\s*;";
-                    rtmp = re.search(rep,conf);
+                    conf = public.readFile(configFile)
+                    rep = "listen\s+([0-9]+)\s*;"
+                    rtmp = re.search(rep,conf)
                     if rtmp:
-                        phpport = rtmp.groups()[0];
+                        phpport = rtmp.groups()[0]
                     
                     if conf.find('AUTH_START') != -1: pauth = True;
                     if conf.find(self.setupPath + '/stop') == -1: pstatus = True;
-                    configFile = self.setupPath + '/nginx/conf/enable-php.conf';
-                    conf = public.readFile(configFile);
-                    rep = "php-cgi-([0-9]+)\.sock";
-                    rtmp = re.search(rep,conf);
+                    configFile = self.setupPath + '/nginx/conf/enable-php.conf'
+                    conf = public.readFile(configFile)
+                    rep = "php-cgi-([0-9]+)\.sock"
+                    rtmp = re.search(rep,conf)
                     if rtmp:
-                        phpversion = rtmp.groups()[0];
+                        phpversion = rtmp.groups()[0]
             except:
                 pass;
             
         elif os.path.exists(self.setupPath+'/apache'):
             data['webserver'] = 'apache'
             serviceName = 'httpd'
-            tmp['setup'] = os.path.exists(self.setupPath +'/apache/bin/httpd');
-            configFile = self.setupPath + '/apache/conf/extra/httpd-vhosts.conf';
+            tmp['setup'] = os.path.exists(self.setupPath +'/apache/bin/httpd')
+            configFile = self.setupPath + '/apache/conf/extra/httpd-vhosts.conf'
             try:
                 if os.path.exists(configFile):
-                    conf = public.readFile(configFile);
-                    rep = "php-cgi-([0-9]+)\.sock";
-                    rtmp = re.search(rep,conf);
+                    conf = public.readFile(configFile)
+                    rep = "php-cgi-([0-9]+)\.sock"
+                    rtmp = re.search(rep,conf)
                     if rtmp:
-                        phpversion = rtmp.groups()[0];
-                    rep = "Listen\s+([0-9]+)\s*\n";
-                    rtmp = re.search(rep,conf);
+                        phpversion = rtmp.groups()[0]
+                    rep = "Listen\s+([0-9]+)\s*\n"
+                    rtmp = re.search(rep,conf)
                     if rtmp:
-                        phpport = rtmp.groups()[0];
+                        phpport = rtmp.groups()[0]
                     if conf.find('AUTH_START') != -1: pauth = True;
                     if conf.find(self.setupPath + '/stop') == -1: pstatus = True;
             except:
                 pass
-                
+        elif os.path.exists('/usr/local/lsws/bin/lswsctrl'):
+            data['webserver'] = 'openlitespeed'
+            serviceName = 'openlitespeed'
+            tmp['setup'] = os.path.exists(self.setupPath +'/apache/bin/httpd')
+            configFile = '/usr/local/lsws/bin/lswsctrl'
+            try:
+                if os.path.exists(configFile):
+                    conf = public.readFile('/www/server/panel/vhost/openlitespeed/detail/phpmyadmin.conf')
+                    rep = "/usr/local/lsws/lsphp(\d+)/bin/lsphp"
+                    rtmp = re.search(rep,conf)
+                    if rtmp:
+                        phpversion = rtmp.groups()[0]
+                    conf = public.readFile('/www/server/panel/vhost/openlitespeed/listen/888.conf')
+                    rep = "address\s+\*\:(\d+)"
+                    rtmp = re.search(rep,conf)
+                    if rtmp:
+                        phpport = rtmp.groups()[0]
+                    if conf.find('AUTH_START') != -1: pauth = True
+                    if conf.find(self.setupPath + '/stop') == -1: pstatus = True
+            except:
+                pass
                 
         tmp['type'] = data['webserver']
         tmp['version'] = public.readFile(self.setupPath + '/'+data['webserver']+'/version.pl');

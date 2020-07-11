@@ -59,7 +59,7 @@ class config:
     #添加接受邮件地址
     def add_mail_address(self, get):
         if not hasattr(get, 'email'): return public.returnMsg(False, 'Please input your email')
-        emailformat = re.compile('[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
+        emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
         if not emailformat.search(get.email): return public.returnMsg(False, 'Please enter your vaild email')
         # 测试发送邮件
         if get.email.strip() in self.__mail_list: return public.returnMsg(True, 'Email already exists')
@@ -96,7 +96,7 @@ class config:
     # 用户自定义邮件发送
     def user_stmp_mail_send(self, get):
         if not (hasattr(get, 'email')): return public.returnMsg(False, 'Please fill in the email address')
-        emailformat = re.compile('[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
+        emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
         if not emailformat.search(get.email): return public.returnMsg(False, 'Please enter your vaild email')
         # 测试发送邮件
         if not get.email.strip() in self.__mail_list: return public.returnMsg(True, 'The mailbox does not exist, please add it to the mailbox list')
@@ -173,7 +173,7 @@ class config:
     def setPassword(self,get):
         if get.password1 != get.password2: return public.returnMsg(False,'USER_PASSWORD_CHECK')
         if len(get.password1) < 5: return public.returnMsg(False,'USER_PASSWORD_LEN')
-        public.M('users').where("username=?",(session['username'],)).setField('password',public.md5(get.password1.strip()))
+        public.M('users').where("username=?",(session['username'],)).setField('password',public.password_salt(public.md5(get.password1.strip()),username=session['username']))
         public.WriteLog('TYPE_PANEL','USER_PASSWORD_SUCCESS',(session['username'],))
         self.reload_session()
         return public.returnMsg(True,'USER_PASSWORD_SUCCESS')
@@ -189,7 +189,7 @@ class config:
 
     #取用户列表
     def get_users(self,args):
-        data = public.M('users').field('username').select()
+        data = public.M('users').field('id,username').select()
         return data
 
     # 创建新用户
@@ -199,7 +199,7 @@ class config:
         if len(args.password) < 8: return public.returnMsg(False,'Password must be at least 8 characters')
         pdata = {
             "username": args.username.strip(),
-            "password": public.md5(args.password.strip())
+            "password": public.password_salt(public.md5(args.password.strip()),username=args.username.strip())
         }
 
         if(public.M('users').where('username=?',(pdata['username'],)).count()):
@@ -233,7 +233,7 @@ class config:
         if 'password' in args:
             if args.password:
                 if len(args.password) < 8: return public.returnMsg(False,'Password must be at least 8 characters')
-                pdata['password'] = public.md5(args.password.strip())
+                pdata['password'] = public.password_salt(public.md5(args.password.strip()),username=username)
 
         if(public.M('users').where('id=?',(args.id,)).update(pdata)):
             public.WriteLog('User Management',"Edit user{}".format(username))
@@ -651,8 +651,8 @@ class config:
     #设置面板SSL
     def SetPanelSSL(self,get):
         if hasattr(get,"email"):
-            # rep_mail = "^[a-zA-Z0-9_-\.]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
-            rep_mail = "[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
+            #rep_mail = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
+            rep_mail = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
             if not re.search(rep_mail,get.email):
                 return public.returnMsg(False,'The E-Mail format is illegal')
             import setPanelLets

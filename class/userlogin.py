@@ -7,7 +7,7 @@
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 
-import public,os,sys,db,time,json
+import public,os,sys,db,time,json,re
 from BTPanel import session,cache,json_header
 from flask import request,redirect,g
 
@@ -19,14 +19,13 @@ class userlogin:
         
         self.error_num(False)
         if self.limit_address('?') < 1: return public.returnJson(False,'LOGIN_ERR_LIMIT'),json_header
-        
         post.username = post.username.strip()
-        password = public.md5(post.password.strip())
+
         sql = db.Sql()
-        user_list = sql.table('users').field('id,username,password').select()
+        user_list = sql.table('users').field('id,username,password,salt').select()
         userInfo = None
         for u_info in user_list:
-            if u_info['username'] == post.username:
+            if public.md5(u_info['username']) == post.username:
                 userInfo = u_info
         if 'code' in session:
             if session['code'] and not 'is_verify_password' in session:
@@ -35,14 +34,18 @@ class userlogin:
                     public.WriteLog('TYPE_LOGIN','LOGIN_ERR_CODE',('****','****',public.GetClientIp()))
                     return public.returnJson(False,'CODE_ERR'),json_header
         try:
-            s_pass = public.md5(public.md5(userInfo['password'] + '_bt.cn'))
-            if userInfo['username'] != post.username or s_pass != password:
+            if not userInfo['salt']:
+                public.chdck_salt()
+                userInfo = sql.table('users').where('id=?',(userInfo['id'],)).field('id,username,password,salt').find()
+
+            password = public.md5(post.password.strip() + userInfo['salt'])
+            if public.md5(userInfo['username']) != post.username or userInfo['password'] != password:
                 public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()))
                 num = self.limit_address('+')
                 return public.returnJson(False,'LOGIN_USER_ERR',(str(num),)),json_header
             _key_file = "/www/server/panel/data/two_step_auth.txt"
             if hasattr(post,'vcode'):
-                if self.limit_address('?',v="vcode") < 1: return public.returnJson(False,'您多次验证失败，禁止10分钟'),json_header
+                if self.limit_address('?',v="vcode") < 1: return public.returnJson(False,'You have failed verification many times, forbidden for 10 minutes'),json_header
                 import pyotp
                 secret_key = public.readFile(_key_file)
                 if not secret_key:
@@ -82,6 +85,8 @@ class userlogin:
     def request_tmp(self,get):
         try:
             if not hasattr(get,'tmp_token'): return public.returnJson(False,'INIT_ARGS_ERR'),json_header
+            if len(get.tmp_token) != 64: return public.returnJson(False,'INIT_ARGS_ERR'),json_header
+            if not re.match(r"^\w+$",get.tmp_token):return public.returnJson(False,'INIT_ARGS_ERR'),json_header
             save_path = '/www/server/panel/config/api.json'
             data = json.loads(public.ReadFile(save_path))
             if not 'tmp_token' in data or not 'tmp_time' in data: return public.returnJson(False,'VERIFICATION_FAILED'),json_header
@@ -91,7 +96,7 @@ class userlogin:
             session['login'] = True
             session['username'] = userInfo['username']
             session['tmp_login'] = True
-            public.WriteLog('TYPE_LOGIN','LOGIN_SUCCESS',(userInfo['username'],public.GetClientIp()))
+            public.WriteLog('TYPE_LOGIN','LOGIN_SUCCESS',(userInfo['username'],public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
             self.limit_address('-')
             cache.delete('panelNum')
             cache.delete('dologin')

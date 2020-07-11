@@ -827,13 +827,15 @@ SetLink
         try:
             if data[0] == 1045:
                 return public.returnMsg(False,'MYSQL_PASS_ERR')
-        except:pass
-        for d in data:
-            for g in gets:
-                try:
-                    if d[0] == g: result[g] = d[1]
-                except:
-                    pass
+            for d in data:
+                for g in gets:
+                    try:
+                        if d[0] == g: result[g] = d[1]
+                    except:
+                        pass
+        except:
+            return public.returnMsg(False,str(data))
+
         if not 'Run' in result and result:
             result['Run'] = int(time.time()) - int(result['Uptime'])
         tmp = panelMysql.panelMysql().query('show master status')

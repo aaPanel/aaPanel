@@ -4925,11 +4925,11 @@ select[disabled]{
 ::-webkit-scrollbar {
 	/*滚动条整体样式*/
 	width : 10px;  /*高宽分别对应横竖滚动条的尺寸*/
-	height: 10px;
+	height: 5px;
 }
 ::-webkit-scrollbar-thumb {
 	/*滚动条里面小方块*/
-	border-radius: 0;
+	border-radius: 10px;
 	box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.2);
 	background   : #999;
 }
@@ -5382,7 +5382,7 @@ select[disabled]{
 .ace_catalogue_list::-webkit-scrollbar {
 	/*滚动条整体样式*/
 	width: 9px;  /*高宽分别对应横竖滚动条的尺寸*/
-	height: 10px;
+	height: 1px;
 }
 .ace_catalogue_list::-webkit-scrollbar-thumb {
 	/*滚动条里面小方块*/
@@ -5465,19 +5465,20 @@ select[disabled]{
 }
 .ace_scrollbar::-webkit-scrollbar {
 	/*滚动条整体样式*/
-	width : 10px;  /*高宽分别对应横竖滚动条的尺寸*/
+	width : 15px;  /*高宽分别对应横竖滚动条的尺寸*/
 	height: 10px;
 }
 .ace_scrollbar::-webkit-scrollbar-thumb {
 	/*滚动条里面小方块*/
 	box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
 	background: #777;
+	border-radius: 0;
 }
 .ace_scrollbar::-webkit-scrollbar-track{
 	/*滚动条里面轨道*/
 	box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
 	background: #333;
-	border-radius: 10px;
+	border-radius: 0;
 }
 .ace_editors.active {
 	display: block;
@@ -6768,7 +6769,7 @@ select[disabled]{
 .dropUpLoadFile::-webkit-scrollbar {
 	/*滚动条整体样式*/
 	width : 15px;  /*高宽分别对应横竖滚动条的尺寸*/
-	height: 10px;
+	height: 1px;
 }
 .dropUpLoadFile::-webkit-scrollbar-thumb {
 	/*滚动条里面小方块*/

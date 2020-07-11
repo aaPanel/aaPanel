@@ -18,7 +18,6 @@ sys.path.insert(0,'class/')
 import public
 from flask import Flask,current_app,session,render_template,send_file,request,redirect,g,url_for,make_response,render_template_string,abort
 from flask_session import Session
-
 try:
     from werkzeug.contrib.cache import SimpleCache
 except:
@@ -32,7 +31,6 @@ from flask_compress import Compress
 app = Flask(__name__,template_folder="templates/" + public.GetConfigValue('template'))
 Compress(app)
 sockets = Sockets(app)
-
 
 import common
 import db
@@ -150,7 +148,7 @@ admin_path_checks = [
                     ]
 if admin_path in admin_path_checks: admin_path = '/bt'
 
-@app.route('/service_status',methods = method_get)
+@app.route('/service_status',methods = method_all)
 def service_status():
     return 'True'
 
@@ -176,7 +174,7 @@ def webssh(ws):
     session['ssh_obj'].run(ws,session['ssh_info'])
 
 
-@app.route('/term_open',methods=method_all)
+@app.route('/term_open',methods=method_get)
 def term_open():
     comReturn = comm.local()
     if comReturn: return comReturn
@@ -212,8 +210,17 @@ def reload_mod():
 
 @app.before_request
 def request_check():
-    #if not public.path_safe_check(request.path): return abort(404)
+    #路由和URI长度过滤
+    if len(request.path) > 64: return abort(403)
+    if len(request.url) > 256: return abort(403)
     if request.path in ['/service_status']: return
+
+    #POST参数过滤
+    if request.path in ['/login','/safe','/hook','/public','/down','/get_app_bind_status','/check_bind']:
+        pdata = request.form.to_dict()
+        for k in pdata.keys():
+            if len(k) > 32: return abort(403)
+            if len(pdata[k]) > 128: return abort(403)
 
     if not request.path in ['/safe','/hook','/public','/mail_sys','/down']:
         ip_check = public.check_ip_panel()
@@ -291,6 +298,29 @@ def login():
     is_auth_path = False
     if admin_path != '/bt' and os.path.exists(admin_path_file) and  not 'admin_auth' in session:
         is_auth_path = True
+
+    #登录输入验证
+    if request.method == method_post[0]:
+        v_list = ['username','password','code','vcode','cdn_url']
+        for v in v_list:
+            pv = request.form.get(v,'').strip()
+            if v == 'cdn_url':
+                if len(pv) > 32: return public.returnMsg(False,'Wrong parameter length!')
+                continue
+
+            if not pv: continue
+            p_len = 32
+            if v == 'code': p_len = 4
+            if v == 'vcode': p_len = 6
+            if len(pv) != p_len:
+                return public.returnJson(False,'Wrong parameter length'),json_header
+            if not re.match(r"^\w+$",pv):
+                return public.returnJson(False,'Wrong parameter format'),json_header
+
+        for n in request.form.keys():
+            if not n in v_list:
+                return public.returnJson(False,'You cannot have extra parameters in the login parameters'),json_header
+
     get = get_input()
     import userlogin
     if hasattr(get,'tmp_token'):
@@ -840,6 +870,10 @@ def panel_public():
         if panelWaf_data.is_xss(get.__dict__):return 'ERROR'
     except:
         pass
+
+    if len("{}".format(get.__dict__)) > 1024 * 32:
+        return 'ERROR'
+
     get.client_ip = public.GetClientIp()
     if not hasattr(get,'name'): get.name = ''
     if not hasattr(get,'fun'): return abort(404)
@@ -1093,6 +1127,8 @@ def download():
     comReturn = comm.local()
     if comReturn: return comReturn
     filename = request.args.get('filename')
+    if filename.find('|') != -1:
+        filename = filename.split('|')[1]
     if not filename: return public.ReturnJson(False,"INIT_ARGS_ERR"),json_header
     if filename in ['alioss','qiniu','upyun','txcos','ftp']: return panel_cloud()
     if filename in ['gdrive','gcloud_storage']: return "Google storage products do not currently support downloads"
@@ -1210,17 +1246,24 @@ def panel_cloud():
     comReturn = comm.local()
     if comReturn: return comReturn
     get = get_input()
-    if not os.path.exists('plugin/' + get.filename + '/' + get.filename+'_main.py'):
-        return public.returnJson(False,'INIT_PLUGIN_NOT_EXISTS'),json_header
-    sys.path.append('plugin/' + get.filename)
-    plugin_main = __import__(get.filename+'_main')
-    reload(plugin_main)
-    tmp = eval("plugin_main.%s_main()" % get.filename)
-    if not hasattr(tmp,'download_file'): return public.returnJson(False,'INIT_PLUGIN_NOT_DOWN_FUN'),json_header
-    if get.filename == 'ftp':
-        download_url = tmp.getFile(get.name)
+    _filename = get.filename
+    plugin_name = ""
+    if _filename.find('|') != -1:
+        plugin_name = get.filename.split('|')[1]
     else:
-        download_url = tmp.download_file(get.name)
+        plugin_name = get.filename
+
+    if not os.path.exists('plugin/' + plugin_name + '/' + plugin_name+'_main.py'):
+        return public.returnJson(False,'INIT_PLUGIN_NOT_EXISTS'),json_header
+    sys.path.append('plugin/' + plugin_name)
+    plugin_main = __import__(plugin_name+'_main')
+    public.mod_reload(plugin_main)
+    tmp = eval("plugin_main.%s_main()" % plugin_name)
+    if not hasattr(tmp,'download_file'): return public.returnJson(False,'INIT_PLUGIN_NOT_DOWN_FUN'),json_header
+    download_url = tmp.download_file(get.name)
+    if plugin_name == 'ftp':
+        if download_url.find("ftp") != 0:download_url = "ftp://" + download_url
+    else:
         if download_url.find('http') != 0:download_url = 'http://' + download_url
     return redirect(download_url)
 

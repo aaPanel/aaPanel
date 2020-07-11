@@ -34,7 +34,7 @@ class panelSetup:
             ua = ua.lower()
             if ua.find('spider') != -1 or ua.find('bot') != -1:
                 return redirect('https://www.google.com')
-        g.version = '6.7.5'
+        g.version = '6.7.6'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         if not os.path.exists('data/debug.pl'):

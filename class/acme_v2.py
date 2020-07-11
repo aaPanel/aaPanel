@@ -403,6 +403,9 @@ class acme_v2:
         write_log("|-Verify the dir：{}".format(acme_path))
         if not os.path.exists(acme_path): return True
         public.ExecShell("rm -f {}/*".format(acme_path))
+        acme_path = '/www/server/stop/.well-known/acme-challenge'
+        if os.path.exists(acme_path):
+            public.ExecShell("rm -f {}/*".format(acme_path))
 
     # 写验证文件
     def write_auth_file(self, auth_to, token, acme_keyauthorization):
@@ -414,9 +417,19 @@ class acme_v2:
             wellknown_path = '{}/{}'.format(acme_path, token)
             public.writeFile(wellknown_path, acme_keyauthorization)
             public.set_own(wellknown_path, 'www')
+
+            acme_path = '/www/server/stop/.well-known/acme-challenge'
+            if not os.path.exists(acme_path):
+                os.makedirs(acme_path)
+                public.set_own(acme_path, 'www')
+            wellknown_path = '{}/{}'.format(acme_path,token)
+            public.writeFile(wellknown_path,acme_keyauthorization)
+            public.set_own(wellknown_path, 'www')
             return True
         except:
-            raise Exception("Writing verification file failed: {}".format(public.get_error_info()))
+            err = public.get_error_info()
+            print(err)
+            raise Exception("Writing verification file failed: {}".format(err))
 
     # 解析域名
     def create_dns_record(self, auth_to, domain, dns_value):
@@ -574,6 +587,8 @@ class acme_v2:
             return "The verification timed out. Please check if the domain name is resolved correctly. If it is resolved correctly, the connection between the server and Let'sEncrypt may be abnormal. Please try again later!"
         elif error.find('Cannot issue for') != -1:
             return "Cannot issue a certificate for {}, cannot apply for a wildcard certificate with a domain name suffix directly!".format(re.findall(r'for\s+"(.+)"',error))
+        elif error.find('too many failed authorizations recently'):
+            return 'The account has more than 5 failed orders within 1 hour, please wait 1 hour and try again!'
         elif error.find("Error creating new order") != -1:
             return "Order creation failed, please try again later!"
         elif error.find("Too Many Requests") != -1:
@@ -1257,12 +1272,25 @@ fullchain.pem       Paste into certificate input box
         import panelSite
         s = panelSite.panelSite()
         if args.auth_type in ['http','tls']:
-            if not 'siteName' in args:
-                args.siteName = public.M('sites').where('id=?',(args.id,)).getField('name')
-            args.sitename = args.siteName
-            if s.GetRedirectList(args): return public.returnMsg(False, 'SITE_SSL_ERR_301')
-            if s.GetProxyList(args): return public.returnMsg(False,'Sites with reverse proxy turned on cannot apply for SSL!')
-                        
+            try:
+                if not 'siteName' in args:
+                    args.siteName = public.M('sites').where('id=?',(args.id,)).getField('name')
+                args.sitename = args.siteName
+                data = s.GetRedirectList(args)
+                if type(data) == list:
+                    for x in data:
+                        if x['type']: return public.returnMsg(False, 'SITE_SSL_ERR_301')
+                data = s.GetProxyList(args)
+                if type(data) == list:
+                    for x in data:
+                        if s.GetProxyList(args): return public.returnMsg(False,
+                                                                         'Sites with reverse proxy turned on cannot apply for SSL!')
+
+                #判断是否强制HTTPS
+                if s.IsToHttps(args.siteName):
+                    return public.returnMsg(False, 'After configuring Force HTTPS, you cannot use [File Verification] to apply for a certificate!')
+            except:
+                return False
         else:          
             if args.auth_to.find('Dns_com') != -1:
                 if not os.path.exists('plugin/dns/dns_main.py'):
@@ -1317,10 +1345,9 @@ fullchain.pem       Paste into certificate input box
                     if 'cert' in self._config['orders'][i]:
                         self._config['orders'][i]['cert_timeout'] = self._config['orders'][i]['cert']['cert_timeout']
                     if not 'cert_timeout' in self._config['orders'][i]:
-                        continue
+                        self._config['orders'][i]['cert_timeout'] = int(time.time())
                     if self._config['orders'][i]['cert_timeout'] > s_time or self._config['orders'][i]['auth_to'] == 'dns':
                         continue
-                    write_log(self._config['orders'][i]['cert_timeout'])
                     order_index.append(i)
 
             if not order_index:
@@ -1335,26 +1362,30 @@ fullchain.pem       Paste into certificate input box
                 write_log("|-Renewing certificate number of {}，domain: {}..".format(n,
                                                          self._config['orders'][index]['domains']))
                 write_log("|-Creating order...")
-                index = self.create_order(
-                    self._config['orders'][index]['domains'],
-                    self._config['orders'][index]['auth_type'],
-                    self._config['orders'][index]['auth_to'],
-                    index
-                )
-                write_log("|-Getting verification information..")
-                self.get_auths(index)
-                write_log("|-Verifying domain name..")
-                self.auth_domain(index)
-                write_log("|-Sending CSR..")
-                self.remove_dns_record()
-                self.send_csr(index)
-                write_log("|-Downloading certificate..")
-                cert = self.download_cert(index)
-                self._config['orders'][index]['renew_time'] = int(time.time())
-                self.save_config()
-                cert['status'] = True
-                cert['msg'] = 'Renewed successfully!'
-                write_log("|-Renewed successfully!")
+                try:
+                    index = self.create_order(
+                        self._config['orders'][index]['domains'],
+                        self._config['orders'][index]['auth_type'],
+                        self._config['orders'][index]['auth_to'],
+                        index
+                    )
+                    write_log("|-Getting verification information..")
+                    self.get_auths(index)
+                    write_log("|-Verifying domain name..")
+                    self.auth_domain(index)
+                    write_log("|-Sending CSR..")
+                    self.remove_dns_record()
+                    self.send_csr(index)
+                    write_log("|-Downloading certificate..")
+                    cert = self.download_cert(index)
+                    self._config['orders'][index]['renew_time'] = int(time.time())
+                    self.save_config()
+                    cert['status'] = True
+                    cert['msg'] = 'Renewed successfully!'
+                    write_log("|-Renewed successfully!")
+                except Exception as e:
+                    write_log("|-" + str(e).split('>>>>')[0])
+                write_log("-" * 70)
             return cert
         except Exception as ex:
             self.remove_dns_record()

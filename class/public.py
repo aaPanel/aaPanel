@@ -21,16 +21,25 @@ if sys.version_info[0] == 2:
     sys.setdefaultencoding('utf8')
 
 def M(table):
+    """
+        @name 访问面板数据库
+        @author hwliang<hwl@bt.cn>
+        @table 被访问的表名(必需)
+        @return db.Sql object
+
+        ps: 默认访问data/default.db
+    """
     import db
     sql = db.Sql()
     return sql.table(table)
 
 def HttpGet(url,timeout = 6,headers = {}):
     """
-    发送GET请求
-    @url 被请求的URL地址(必需)
-    @timeout 超时时间默认60秒
-    return string
+        @name 发送GET请求
+        @author hwliang<hwl@bt.cn>
+        @url 被请求的URL地址(必需)
+        @timeout 超时时间默认60秒
+        @return string
     """
     if is_local(): return False
     home = 'www.bt.cn'
@@ -53,6 +62,16 @@ def HttpGet(url,timeout = 6,headers = {}):
     return s_body
 
 def http_get_home(url,timeout,ex):
+    """
+        @name Get方式使用优选节点访问官网
+        @author hwliang<hwl@bt.cn>
+        @param url 当前官网URL地址
+        @param timeout 用于测试超时时间
+        @param ex 上一次错误的响应内容
+        @return string 响应内容
+
+        如果已经是优选节点，将直接返回ex
+    """
     try:
         home = 'www.bt.cn'
         if url.find(home) == -1: return ex
@@ -72,6 +91,12 @@ def http_get_home(url,timeout,ex):
 
 
 def set_home_host(host):
+    """
+        @name 设置官网hosts
+        @author hwliang<hwl@bt.cn>
+        @param host IP地址
+        @return void
+    """
     ExecShell('sed -i "/www.bt.cn/d" /etc/hosts')
     ExecShell("echo '' >> /etc/hosts")
     ExecShell("echo '%s www.bt.cn' >> /etc/hosts" % host)
@@ -82,11 +107,11 @@ def httpGet(url,timeout=6):
 
 def HttpPost(url,data,timeout = 6,headers = {}):
     """
-    发送POST请求
-    @url 被请求的URL地址(必需)
-    @data POST参数，可以是字符串或字典(必需)
-    @timeout 超时时间默认60秒
-    return string
+        发送POST请求
+        @url 被请求的URL地址(必需)
+        @data POST参数，可以是字符串或字典(必需)
+        @timeout 超时时间默认60秒
+        return string
     """
     if is_local(): return False
     home = 'www.bt.cn'
@@ -110,7 +135,18 @@ def HttpPost(url,data,timeout = 6,headers = {}):
     return s_body
 
 
-def http_post_home(url, data, timeout, ex):
+def http_post_home(url,data,timeout,ex):
+    """
+        @name POST方式使用优选节点访问官网
+        @author hwliang<hwl@bt.cn>
+        @param url(string) 当前官网URL地址
+        @param data(dict) POST数据
+        @param timeout(int) 用于测试超时时间
+        @param ex(string) 上一次错误的响应内容
+        @return string 响应内容
+
+        如果已经是优选节点，将直接返回ex
+    """
     try:
         home = 'www.bt.cn'
         if url.find(home) == -1: return ex
@@ -128,17 +164,26 @@ def http_post_home(url, data, timeout, ex):
         return ex
     except: return ex
 
-def httpPost(url, data, timeout=6):
-    return HttpPost(url, data, timeout)
+def httpPost(url,data,timeout=6):
+    """
+        @name 发送POST请求
+        @author hwliang<hwl@bt.cn>
+        @param url 被请求的URL地址(必需)
+        @param data POST参数，可以是字符串或字典(必需)
+        @param timeout 超时时间默认60秒
+        @return string
+    """
+    return HttpPost(url,data,timeout)
 
 def check_home():
     return True
 
 def Md5(strings):
     """
-    生成MD5
-    @strings 要被处理的字符串
-    return string(32)
+        @name 生成MD5
+        @author hwliang<hwl@bt.cn>
+        @param strings 要被处理的字符串
+        @return string(32)
     """
     if type(strings) == str:
         strings = strings.encode()
@@ -152,9 +197,10 @@ def md5(strings):
 
 def FileMd5(filename):
     """
-    生成文件的MD5
-    @filename 文件名
-    return string(32) or False
+        @name 生成文件的MD5
+        @author hwliang<hwl@bt.cn>
+        @param filename 文件名
+        @return string(32) or False
     """
     if not os.path.isfile(filename): return False
     import hashlib
@@ -171,9 +217,10 @@ def FileMd5(filename):
 
 def GetRandomString(length):
     """
-       取随机字符串
-       @length 要获取的长度
-       return string(length)
+       @name 取随机字符串
+       @author hwliang<hwl@bt.cn>
+       @param length 要获取的长度
+       @return string(length)
     """
     from random import Random
     strings = ''
@@ -186,17 +233,32 @@ def GetRandomString(length):
 
 def ReturnJson(status,msg,args=()):
     """
-    取通用Json返回
-    @status  返回状态
-    @msg  返回消息
-    return string(json)
+        @name 取通用Json返回
+        @author hwliang<hwl@bt.cn>
+        @param status  返回状态
+        @param msg  返回消息
+        @return string(json)
     """
     return GetJson(ReturnMsg(status, msg, args))
 
 def returnJson(status,msg,args=()):
+    """
+        @name 取通用Json返回
+        @author hwliang<hwl@bt.cn>
+        @param status  返回状态
+        @param msg  返回消息
+        @return string(json)
+    """
     return ReturnJson(status,msg,args)
 
 def ReturnMsg(status,msg,args = ()):
+    """
+        @name 取通用dict返回
+        @author hwliang<hwl@bt.cn>
+        @param status  返回状态
+        @param msg  返回消息
+        @return dict  {"status":bool,"msg":string}
+    """
     log_message = json.loads(ReadFile('BTPanel/static/language/' + GetLanguage() + '/public.json'))
     keys = log_message.keys()
     if type(msg) == str:
@@ -208,11 +270,23 @@ def ReturnMsg(status,msg,args = ()):
     return {'status':status,'msg':msg}
 
 def returnMsg(status,msg,args = ()):
+    """
+        @name 取通用dict返回
+        @author hwliang<hwl@bt.cn>
+        @param status  返回状态
+        @param msg  返回消息
+        @return dict  {"status":bool,"msg":string}
+    """
     return ReturnMsg(status,msg,args)
 
 
 def GetFileMode(filename):
-    '''取文件权限'''
+    """
+        @name 取文件权限字符串
+        @author hwliang<hwl@bt.cn>
+        @param filename  文件全路径
+        @return string  如：644/777/755
+    """
     stat = os.stat(filename)
     accept = str(oct(stat.st_mode)[-3:])
     return accept
@@ -1332,7 +1406,8 @@ def set_own(filename, user, group=None):
 
 #校验路径安全
 def path_safe_check(path,force=True):
-    checks = ['..','./','\\','%','$','^','&','*','~','#','"',"'",';','|','{','}','`']
+    if len(path) > 256: return False
+    checks = ['..','./','\\','%','$','^','&','*','~','"',"'",';','|','{','}','`']
     for c in checks:
         if path.find(c) != -1: return False
     if force:
@@ -1573,22 +1648,22 @@ def en_hexb(data):
     if type(result) != str: result = result.decode('utf-8')
     return result
 
-def upload_file_url(filename):
-    try:
-        if os.path.exists(filename):
-            data = ExecShell('/usr/bin/curl https://scanner.baidu.com/enqueue -F archive=@%s' % filename)
-            data = json.loads(data[0])
-            time.sleep(1)
-            import requests
-            default_headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'
-            }
-            data_list = requests.get(url=data['url'], headers=default_headers, verify=False)
-            return (data_list.json())
-        else:
-            return False
-    except:
-        return False
+# def upload_file_url(filename):
+#     try:
+#         if os.path.exists(filename):
+#             data = ExecShell('/usr/bin/curl https://scanner.baidu.com/enqueue -F archive=@%s' % filename)
+#             data = json.loads(data[0])
+#             time.sleep(1)
+#             import requests
+#             default_headers = {
+#                 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'
+#             }
+#             data_list = requests.get(url=data['url'], headers=default_headers, verify=False)
+#             return (data_list.json())
+#         else:
+#             return False
+#     except:
+#         return False
 
 #直接请求到PHP-FPM
 #version php版本
@@ -1763,6 +1838,46 @@ def ip2long(ip):
     if len(ips) != 4: return 0
     iplong = 2 ** 24 * int(ips[0]) + 2 ** 16 * int(ips[1])  + 2 ** 8 * int(ips[2])  + int(ips[3])
     return iplong
+
+#获取sessionid
+def get_session_id():
+    from BTPanel import request
+    return request.cookies.get('BT_PANEL_6')
+
+def chdck_salt():
+    '''
+        @name 检查所有用户密码是否加盐，若没有则自动加上
+        @author hwliang<2020-07-08>
+        @return void
+    '''
+
+    if not M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'users','%salt%')).count():
+        M('users').execute("ALTER TABLE 'users' ADD 'salt' TEXT",())
+    u_list = M('users').where('salt is NULL',()).field('id,username,password,salt').select()
+    for u_info in u_list:
+        salt = GetRandomString(12) #12位随机
+        pdata = {}
+        pdata['password'] = md5(md5(u_info['password']+'_bt.cn') + salt)
+        pdata['salt'] = salt
+        M('users').where('id=?',(u_info['id'],)).update(pdata)
+
+
+def password_salt(password,username=None,uid=None):
+    '''
+        @name 为指定密码加盐
+        @author hwliang<2020-07-08>
+        @param password string(被md5加密一次的密码)
+        @param username string(用户名) 可选
+        @param uid int(uid) 可选
+        @return string
+    '''
+    chdck_salt()
+    if not uid:
+        if not username:
+            raise Exception('username或uid必需传一项')
+        uid = M('users').where('username=?',(username,)).getField('id')
+    salt = M('users').where('id=?',(uid,)).getField('salt')
+    return md5(md5(password+'_bt.cn')+salt)
 
 #取通用对象
 class dict_obj:

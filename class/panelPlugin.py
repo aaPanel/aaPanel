@@ -128,8 +128,9 @@ class panelPlugin:
         if os.path.exists(p_node):
             if len(public.readFile(p_node)) < 100: os.remove(p_node)
         if not pluginInfo: return public.returnMsg(False, 'INIT_PLUGIN_NOT_EXISTS')
+        self.mutex_title = pluginInfo['mutex']
         if not self.check_mutex(pluginInfo['mutex']): return public.returnMsg(False, 'UNINSTALL_FIRST',
-                                                                              (pluginInfo['mutex'],))
+                                                                              (self.mutex_title,))
         if not hasattr(get, 'id'):
             if not self.check_dependnet(pluginInfo['dependnet']): return public.returnMsg(False, 'DEP_PAGE',
                                                                                           (pluginInfo['dependnet'],))
@@ -143,7 +144,15 @@ class panelPlugin:
                         return public.returnMsg(False,'At least [{0}] CPU cores are required to install'.format(versionInfo['cpu_limit']))
                     if not self.check_mem_limit(versionInfo['mem_limit']):
                         return public.returnMsg(False,'At least [{0} MB] memory is required to install'.format(versionInfo['mem_limit']))
-                
+                if not self.check_os_limit(versionInfo['os_limit']):
+                    m_ps = {0: "All", 1: "Centos", 2: "Ubuntu/Debian"}
+                    return public.returnMsg(False, '仅支持[%s]系统' % m_ps[int(versionInfo['os_limit'])])
+                if not hasattr(get, 'id'):
+                    if not self.check_dependnet(versionInfo['dependnet']): return public.returnMsg(False,
+                                                                                                   'Depend on the following software, please install first [%s]' %
+                                                                                                   versionInfo[
+                                                                                                       'dependnet'])
+
     #安装插件
     def install_plugin(self,get):
         if not self.check_sys_write(): return public.returnMsg(False,'CANT_WRITE_SYS_DIR')
@@ -368,7 +377,7 @@ class panelPlugin:
         if expire_day > 15: return False
         if pm.is_level(level): #是否忽略
             if level != name: #到期还是即将到期
-                msg_last = '您的【{}】授权还有{}天到期'.format(title,int(expire_day))
+                msg_last = '您的【{}】授权还有{}天到期'.format(title,int(expire_day) + 1)
             else:
                 msg_last = '您的【{}】授权已到期'.format(title)
             pl_msg = 'true'
@@ -1119,14 +1128,17 @@ class panelPlugin:
     #下载图标
     def download_icon(self,name,iconFile,downFile):
         srcIcon =  'plugin/' + name + '/icon.png'
+        skey = name+'_icon'
+        if cache.get(skey): return None
         if os.path.exists(srcIcon):
-            public.ExecShell("\cp  -a -r " + srcIcon + " " + iconFile)
+            public.ExecShell(r"\cp  -a -r " + srcIcon + " " + iconFile)
         else:
             if downFile:
                 public.ExecShell('wget -O ' + iconFile + ' ' + public.GetConfigValue('home') + downFile + '&')
             else:
                 public.ExecShell('wget -O ' + iconFile + ' ' + public.get_url() + '/install/plugin/' + name + '/icon.png &')
-                
+        cache.set(skey,1,86400)
+
     
     #取分页
     def GetPage(self,data,get):

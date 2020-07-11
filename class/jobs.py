@@ -74,8 +74,13 @@ def control_init():
         public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sType' TEXT",())
         public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'urladdress' TEXT",())
 
-
     public.M('users').where('email=? or email=?',('287962566@qq.com','amw_287962566@qq.com')).setField('email','test@message.com')
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'users','%salt%')).count():
+        public.M('users').execute("ALTER TABLE 'users' ADD 'salt' TEXT",())
+
+    public.chdck_salt()
+
 
 
     filename = '/www/server/nginx/off'

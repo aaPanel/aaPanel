@@ -19,7 +19,7 @@ import time
 os.chdir('/www/server/panel')
 sys.path.insert(0,'class/')
 import public
-_VERSION = 1.4
+_VERSION = 1.5
 
 class backup:
     _path = None
@@ -323,7 +323,7 @@ class backup:
 
         #清理多余备份
         if not self._cloud:
-            backups = public.M('backup').where("type=? and pid=? and filename LIKE '%/%'",('0',pid)).field('id,name,filename').select()
+            backups = public.M('backup').where("type=? and pid=? and filename NOT LIKE '%|%'",('0',pid)).field('id,name,filename').select()
         else:
             backups = public.M('backup').where('type=? and pid=? and filename LIKE "%{}%"'.format(self._cloud._name),('0',pid)).field('id,name,filename').select()
 
@@ -449,7 +449,7 @@ class backup:
 
         #清理多余备份
         if not self._cloud:
-            backups = public.M('backup').where("type=? and pid=? and filename LIKE '%/%'",('1',pid)).field('id,name,filename').select()
+            backups = public.M('backup').where("type=? and pid=? and filename NOT LIKE '%|%'",('1',pid)).field('id,name,filename').select()
         else:
             backups = public.M('backup').where('type=? and pid=? and filename LIKE "%{}%"'.format(self._cloud._name),('1',pid)).field('id,name,filename').select()
         self.delete_old(backups,save,'database')

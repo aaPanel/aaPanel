@@ -67,7 +67,7 @@ echo "The root password set ${pwd}  successuful"''';
 def set_panel_pwd(password,ncli = False):
     import db
     sql = db.Sql()
-    result = sql.table('users').where('id=?',(1,)).setField('password',public.md5(password))
+    result = sql.table('users').where('id=?',(1,)).setField('password',public.password_salt(public.md5(password),uid=1))
     username = sql.table('users').where('id=?',(1,)).getField('username')
     if ncli:
         print("|-%s: " % public.GetMsg("USER_NAME") + username)
@@ -159,12 +159,30 @@ history -c
 '''
     os.system(command)
     print('\t\033[1;32m[done]\033[0m')
-    public.writeFile('/www/server/panel/install.pl',"True")
+
+
+    print("|-Please select user initialization method:")
+    print("="*50)
+    print(" (1) Display the initialization page when accessing the panel page")
+    print(" (2) A new account password is automatically generated randomly when first started")
+    print("="*50)
+    p_input = input("Please select the initialization method (default: 1):")
+    print(p_input)
+    if p_input in [2,'2']:
+        public.writeFile('/www/server/panel/aliyun.pl',"True")
+        s_file = '/www/server/panel/install.pl'
+        if os.path.exists(s_file): os.remove(s_file)
+        public.M('config').where("id=?",('1',)).setField('status',1)
+    else:
+        public.writeFile('/www/server/panel/install.pl',"True")
+        public.M('config').where("id=?",('1',)).setField('status',0)
     port = public.readFile('data/port.pl').strip()
-    public.M('config').where("id=?",('1',)).setField('status',0)
     print('========================================================')
-    print('\033[1;32m|-'+public.GetMsg("PANEL_TIPS")+'\033[0m')
-    print('\033[1;41m|-'+public.GetMsg("PANEL_INIT_ADD")+': http://{SERVERIP}:'+port+'/install\033[0m')
+    print('\033[1;32m|-The panel packaging is successful, please do not log in to the panel to do any other operations!\033[0m')
+    if not p_input in [2,'2']:
+        print('\033[1;41m|-Panel initialization address:http://{SERVERIP}:'+port+'/install\033[0m')
+    else:
+        print('\033[1;41m|-Get the initial account password command:bt default \033[0m')
 
 #清空正在执行的任务
 def CloseTask():
