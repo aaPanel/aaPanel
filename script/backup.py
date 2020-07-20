@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #coding: utf-8
 #-----------------------------
-# 宝塔Linux面板网站备份工具
+# Pagoda Linux panel website backup tool
 #-----------------------------
 
 import sys,os
@@ -20,7 +20,7 @@ class backupTools(panelBackup.backup):
     def backupDatabase(self,name,count):
         self.backup_database(name,save=count)
     
-    #备份指定目录
+    #Backup specified directory
     def backupPath(self,path,count):
         self.backup_path(path,save=count)
         
