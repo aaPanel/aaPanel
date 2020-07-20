@@ -1,109 +1,53 @@
-**Introduction:**
+SA-CP ist die internationale Version für das BAOTA-Panel (www.bt.cn) und eine ableitung vom aaPanel. Seit 2014 haben in China Millionen Server das BAOTA-Panel installiert.
+aaPanel, ein einfaches, aber leistungsstarkes Control Panel, kann den Webserver über eine webbasierte Benutzeroberfläche (Graphical User Interface) verwalten.
+aaPanel bietet die Ein-Klick-Funktion, z. B. die Installation von LNMP / LAMP-Entwicklungsumgebung und -Software mit einem Klick.
+Unser Hauptziel ist es, den Benutzern zu helfen, die Zeit für die Bereitstellung zu sparen. Daher konzentrieren sich die Benutzer nur auf ihr eigenes Projekt, das in Ordnung ist.
 
-aaPanel is the International version for BAOTA panel(www.bt.cn) There have millions servers had installed BAOTA panel since 2014 in China.
-aaPanel, a simple but powerful control panel, can manage the web server through web-based GUI(Graphical User Interface).
-aaPanel provides the one-click function such as one-click install LNMP/LAMP developing environment and software.
-Our main goal is helping users to save the time of deploying, thus users just focus on their own project that is fine.
+**Geschichte:**
 
-**History:**
+_Das Team besteht aus 12 Ehrenamtlichen Mitarbeitern / Programmieren, die alle weit über 20 Jahre Erfahrung in der Programmierung und IT Branchen verfügen._
 
-_The founding R & D team of BaoTa has 5 people, all of whom have 5 to 10 years of experience in idc related industries._ 
+_Wenn alle gemeinsam diskutieren und im Zeitplan oder in ihrer eigenen Verwendung arbeiten, stellen sie fest, dass es auf dem Gebiet der Server so etwas nicht gibt._
 
-_When everyone discusses together and works in the schedule or their own use, they find that there is no such thing in the field of servers._ 
+_Das Unternehmen ist auf die Entwicklung relevanter Software für normale Benutzer spezialisiert, insbesondere für diejenigen, die nicht viel über Technologie wissen._
 
-_The company specializes in developing relevant software for ordinary users, especially those who do not know much about technology._ 
+_Wir haben festgestellt, dass es für viele Benutzer nicht einfach ist, den Server zu bedienen. Es ist notwendig, andere zu konsultieren, sich Zeit zu nehmen, um nach Antworten zu suchen und sogar für einfache Fragen zu bezahlen._
 
-_We found that for many users, operating the server is not easy, it is necessary to consult others, take time to search for answers, and even pay for simple questions._ 
+_Es werden viele Gruben mit den Kosten verbunden sein. Einige Hilfssoftware selbst ist schwieriger als die Verwendung des Servers.
 
-_There will be many pits involved in the cost. Some auxiliary software itself is more difficult than using the server._ 
+Selbst diese Art von schmerzhaftem Punkt ist Juckreiz. Mit der Entwicklung von Cloud-Servern hat sich die Anzahl der Serverbenutzer um mehrere Größenordnungen erhöht.
 
-_Even this kind of painful point is itchiness. With the development of cloud servers, the number of server users has increased by several orders of magnitude._ 
+_Seit den Jahre 2017 bis heute sind wir, mit der Entwicklung und Erprobung von SA-CP und Intergrationen verschiedener Software beschäftigt._
 
-_The preparatory work for the establishment of the pagoda began at the end of 2014, and began to develop and test software in the first half of 2015._ 
-
-_At this stage, the pagoda brand was officially launched in 2016 and bt.cn was used as the official website._
-
-_In 2017, BaoTa tried to enter the overseas market, but because the number of people could not keep up, he decided to temporarily abandon the overseas market and focus on China._
-
-_In 2019, due to the gradual growth of BaoTa users, which has become the hosting control panel used by the most webmasters in China, it is decided to enter the overseas market and develop related plug-ins that are suitable for foreign friends___
-
-**What can it do:**
-
-_aaPanel is a server management software that supports the Linux system._ 
-
-_It can easily manage the server through the Web terminal, improving the operation and maintenance efficiency._ 
-
-**For example:** 
+Ab diesem Zeitpunkt wird die Marke SA-CP offiziell eingeführt und auf unserer Webseite VSECSERVER.de Presentiert.
 
 
-_create and manage websites, FTP, and databases, with visual file manager, visual software manager, visual CPU, memory, flow monitoring chart, scheduled tasks and other functions._
 
-_aaPanel has extremely fast and convenient one-key configuration and management, one-click configuration of server environment (LAMP / LNMP / Tomcat / Node.js /OpenLiteSpeed), one-click deployment of SSL, remote backup;_ 
+**Was kann ich tun:**
 
-_provide SSH open and close services, SSH port changes, ping prohibited , Firewall port release and operation log viewing; CPU, memory, disk IO, network IO data monitoring, you can set the number of days to record and save and view the data of a certain day;_
+_SA-CP ist eine Serververwaltungssoftware, die das Linux-System unterstützt.
+
+_Es kann den Server einfach über das Web-Terminal verwalten und so die Betriebs- und Wartungseffizienz verbessern._
+
+**Beispielsweise:**
+
+
+_Erstellen und verwalten Sie Websites, FTP und Datenbanken mit visuellem Dateimanager, visuellem Softwaremanager, visueller CPU, Speicher, Flussüberwachungsdiagramm, geplanten Aufgaben und anderen Funktionen._
+
+_SA-CP bietet extrem schnelle und bequeme Ein-Schlüssel-Konfiguration und -Verwaltung, Ein-Klick-Konfiguration der Serverumgebung (LAMP / LNMP / Tomcat / Node.js / OpenLiteSpeed), One-Click-Bereitstellung von SSL, Remote-Backup; _
+
+_ Bereitstellung von SSH-Öffnungs- und Schließdiensten, Änderungen des SSH-Ports, Ping verboten, Freigabe des Firewall-Ports und Anzeige des Betriebsprotokolls; CPU-, Speicher-, Festplatten-E / A-, Netzwerk-E / A-Datenüberwachung: Sie können die Anzahl der Tage festlegen, an denen die Daten eines bestimmten Tages aufgezeichnet, gespeichert und angezeigt werden sollen. _
  
-_scheduled tasks can be added and executed periodically, support SHELL script, provide website, database backup And log cutting, and support one-click backup to another cloud storage space, or other cloud storage space; through the web interface, you can easily manage the server software used for installation, as well as practical extension plug-ins;_ 
+_geplante Aufgaben können regelmäßig hinzugefügt und ausgeführt werden, unterstützen das SHELL-Skript, stellen Websites, Datenbanksicherungen und Protokollschnitte bereit und unterstützen die Sicherung mit einem Klick auf einem anderen Cloud-Speicherplatz oder einem anderen Cloud-Speicherplatz. Über die Weboberfläche können Sie die für die Installation verwendete Serversoftware sowie praktische Erweiterungs-Plug-Ins einfach verwalten. _
 
-_convenient and efficient file manager integration , Support uploading, downloading, packaging, decompression and file editing and viewing._
-
-
-
-**Over 2,100,000 servers have installed aaPanel in Asia**
-
-**HomePage:**
-
-![blockchain](https://www.aapanel.com/images/linux-home.png?v=1 "HomePage")
-
-**WebSite Manager:**
-
-![blockchain](https://www.aapanel.com/images/linux-web.png?v=1 "WebSite")
-
-**FTP Manager**
-
-![blockchain](https://www.aapanel.com/images/linux-ftp.png?v=1 "WebSite")
-
-**DataBase Manager**
-
-![blockchain](https://www.aapanel.com/images/linux-db.png?v=1 "DBManager")
-
-**File Manager**
-
-![blockchain](https://www.aapanel.com/images/linux-files.png?v=1 "FileManager")
-
-**Cron Manager**
-
-![blockchain](https://www.aapanel.com/images/linux-cron.png?v=1 "CronManager")
-
-**Monitory**
-
-![blockchain](https://www.aapanel.com/images/linux-monitory.png?v=1 "Monitory")
-
-**Security**
-
-![blockchain](https://www.aapanel.com/images/linux-security.png?v=1 "Security")
-
-**Software**
-
-![blockchain](https://www.aapanel.com/images/linux-software.png?v=1 "Software")
-
-**Online editor**
-
-![blockchain](https://www.aapanel.com/images/online_editor.png?v=1 "Onlineeditor")
-
-**Share files with your friends**
-
-![blockchain](https://forum.aapanel.com/assets/files/2020-05-29/1590749878-802908-tmp.png?v=1 "Onlineeditor")
-
-**Send link password or QR code to your friends**
-
-![blockchain](https://forum.aapanel.com/assets/files/2020-05-29/1590750125-428227-tmp.png?v=1 "Onlineeditor")
-
-**Your friend opens the link effect you shared**
-
-![blockchain](https://forum.aapanel.com/assets/files/2020-05-29/1590750281-633474-tmp.png?v=1 "Onlineeditor")
+_bequeme und effiziente Integration des Dateimanagers, Unterstützung beim Hochladen, Herunterladen, Verpacken, Dekomprimieren sowie Bearbeiten und Anzeigen von Dateien._
 
 
-[User Manual](https://doc.aapanel.com/web/#/3?page_id=117 "User Manual")
+
+** Seit Einführung haben hier in Europa  **
+
+**Startseite:**
+
 
 
 ##### Home Page：https://www.aapanel.com/
