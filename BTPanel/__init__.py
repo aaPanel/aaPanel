@@ -13,10 +13,11 @@ import time
 import re
 import uuid
 import threading
+import socket
 os.chdir('/www/server/panel/')
 sys.path.insert(0,'class/')
 import public
-from flask import Flask,current_app,session,render_template,send_file,request,redirect,g,url_for,make_response,render_template_string,abort
+from flask import Flask,current_app,session,render_template,send_file,request,redirect,g,url_for,make_response,render_template_string,abort,stream_with_context,Response as Resp
 from flask_session import Session
 try:
     from werkzeug.contrib.cache import SimpleCache
@@ -79,7 +80,7 @@ except:
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'BT_:'
-app.config['SESSION_COOKIE_NAME'] = "BT_PANEL_6"
+app.config['SESSION_COOKIE_NAME'] = "SESSIONID"
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400
 Session(app)
 
@@ -144,19 +145,60 @@ admin_path_checks = [
                     '/down',
                     '/api',
                     '/tips',
-                    '/message'
+                    '/message',
+                    '/warning'
                     ]
 if admin_path in admin_path_checks: admin_path = '/bt'
 
-@app.route('/service_status',methods = method_all)
+@app.route('/service_status',methods = method_get)
 def service_status():
     return 'True'
+
+@app.route('/phpmyadmin',methods = method_all)
+@app.route('/phpmyadmin/',methods = method_all)
+@app.route('/phpmyadmin/<path:puri>',methods = method_all)
+def phpmyadmin(puri = None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import panelPHP
+    p = panelPHP.panelPHP()
+    document_root = '/www/server/phpmyadmin/pma/'
+    sock = p.start(puri,document_root,'/phpmyadmin/')
+
+    #如果是响应体则直接返回
+    if isinstance(sock,Resp):
+        return sock
+
+    headers_data = p.get_header_data(sock)
+    status,headers,bdata = p.format_header_data(headers_data)
+    return Response(p.resp_sock(sock,bdata),headers=headers,status=status)
+
+
+@app.route('/adminer',methods = method_all)
+@app.route('/adminer/',methods = method_all)
+@app.route('/adminer/<path:puri>',methods = method_all)
+def adminer(puri = None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import panelPHP
+    p = panelPHP.panelPHP()
+    document_root = '/www/server/adminer/'
+
+    sock = p.start(puri,document_root,'/adminer/')
+
+    #如果是响应体则直接返回
+    if isinstance(sock,Resp):return sock
+
+    headers_data = p.get_header_data(sock)
+    status,headers,bdata = p.format_header_data(headers_data)
+    return Response(p.resp_sock(sock,bdata),headers=headers,status=status)
+
 
 @sockets.route('/webssh')
 def webssh(ws):
     if not check_login():
         session.clear()
-        ws.send('server_response',"Panel session is lost, please re-login panel!")
+        ws.send('server_response',"SSH_ERROR")
         return None
     if not 'ssh_obj' in session:
         import ssh_terminal
@@ -174,7 +216,7 @@ def webssh(ws):
     session['ssh_obj'].run(ws,session['ssh_info'])
 
 
-@app.route('/term_open',methods=method_get)
+@app.route('/term_open',methods=method_all)
 def term_open():
     comReturn = comm.local()
     if comReturn: return comReturn
@@ -183,7 +225,7 @@ def term_open():
         key = 'ssh_' + args['host']
         if key in session:
             return public.getJson(session[key]),json_header
-        return public.returnMsg(False,'Acquisition failed!')
+        return public.returnMsg(False,'SSH_INFO_ERROR')
     session['ssh_info'] = json.loads(args.data)
     key = 'ssh_' + session['ssh_info']['host']
     session[key] = session['ssh_info']
@@ -194,7 +236,7 @@ def term_open():
     else:
         if os.path.exists(s_file): os.remove(s_file)
     if 'ssh_obj' in session: session['ssh_obj']._ssh_info = session['ssh_info']
-    return public.returnJson(True,'Successful setup!')
+    return public.returnJson(True,'SET_SUCCESS')
 
 @app.route('/reload_mod',methods=method_all)
 def reload_mod():
@@ -206,21 +248,28 @@ def reload_mod():
         mod_name = args.mod_name
     result = public.reload_mod(mod_name)
     if result: return public.returnJson(True,result),json_header
-    return public.returnJson(False,'Reload failure!'),json_header
+    return public.returnJson(False,'INIT_RELOAD_ERR'),json_header
+
 
 @app.before_request
 def request_check():
     #路由和URI长度过滤
-    if len(request.path) > 64: return abort(403)
-    if len(request.url) > 256: return abort(403)
+    if request.path.find('/adminer/') != -1:
+        return
+    if request.path.find('/phpmyadmin/') == -1:
+        if len(request.path) > 128: return abort(403)
+        if len(request.url) > 1024: return abort(403)
+    else:
+        if len(request.path) > 512: return abort(403)
+        return
     if request.path in ['/service_status']: return
 
     #POST参数过滤
     if request.path in ['/login','/safe','/hook','/public','/down','/get_app_bind_status','/check_bind']:
         pdata = request.form.to_dict()
         for k in pdata.keys():
-            if len(k) > 32: return abort(403)
-            if len(pdata[k]) > 128: return abort(403)
+            if len(k) > 48: return abort(403)
+            if len(pdata[k]) > 256: return abort(403)
 
     if not request.path in ['/safe','/hook','/public','/mail_sys','/down']:
         ip_check = public.check_ip_panel()
@@ -235,7 +284,7 @@ def request_check():
     if public.is_local():
         not_networks = ['uninstall_plugin','install_plugin','UpdatePanel']
         if request.args.get('action') in not_networks: 
-            return public.returnJson(False,'This feature is not available in offline mode!'),json_header
+            return public.returnJson(False,'INIT_REQUEST_CHECK_LOCAL_ERR'),json_header
 
     if app.config['BASIC_AUTH_OPEN']:
         if request.path in ['/public','/download','/mail_sys','/hook','/down','/check_bind','/get_app_bind_status']: return
@@ -270,7 +319,6 @@ def home():
     data['ftpCount'] = public.M('ftps').count()
     data['databaseCount'] = public.M('databases').count()
     data['lan'] = public.GetLan('index')
-    data['724'] = public.format_date("%m%d") == '0724'
     public.auto_backup_panel()
     return render_template( 'index.html',data = data)
 
@@ -305,7 +353,8 @@ def login():
         for v in v_list:
             pv = request.form.get(v,'').strip()
             if v == 'cdn_url':
-                if len(pv) > 32: return public.returnMsg(False,'Wrong parameter length!')
+                if len(pv) > 32: return public.returnMsg(False,'INPUT_ARGS_ERR'),json_header
+                if not re.match(r"^[\w\.-]+$",pv): public.returnJson(False,'INPUT_ARGS_ERR'),json_header
                 continue
 
             if not pv: continue
@@ -313,13 +362,14 @@ def login():
             if v == 'code': p_len = 4
             if v == 'vcode': p_len = 6
             if len(pv) != p_len:
-                return public.returnJson(False,'Wrong parameter length'),json_header
+                if v == 'code': return public.returnJson(False,'V_CODE_LEN_ERR'),json_header
+                return public.returnJson(False,'INPUT_ARGS_ERR'),json_header
             if not re.match(r"^\w+$",pv):
-                return public.returnJson(False,'Wrong parameter format'),json_header
+                return public.returnJson(False,'INPUT_ARGS_ERR'),json_header
 
         for n in request.form.keys():
             if not n in v_list:
-                return public.returnJson(False,'You cannot have extra parameters in the login parameters'),json_header
+                return public.returnJson(False,'EXTRA_PARAMETER'),json_header
 
     get = get_input()
     import userlogin
@@ -334,10 +384,16 @@ def login():
         if session['login'] != False:
             session['login'] = False
             cache.set('dologin',True)
-            public.WriteLog('User LogOut','Client: {}, has manually exited the panel'.format(public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
+            public.WriteLog('TYPE_LOGOUT','MANUALLY_LOGOUT', (format(public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))),))
             session.clear()
             session_path = r'/dev/shm/session_py' + str(sys.version_info[0])
             if os.path.exists(session_path): public.ExecShell("rm -f " + session_path + '/*')
+            sess_file = 'data/sess_files/' + public.get_sess_key()
+            if os.path.exists(sess_file):
+                try:
+                    os.remove(sess_file)
+                except:
+                    pass
             return redirect(login_path)
     
     if is_auth_path:
@@ -351,8 +407,6 @@ def login():
 
     if request.method == method_post[0]:
         result = userlogin.userlogin().request_post(get)
-        if result == "1":
-            return result
         return is_login(result)
 
     if request.method == method_get[0]:
@@ -474,14 +528,14 @@ def get_phpmyadmin_dir():
             if session['webserver'] == 'nginx':
                 filename =public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf'
                 conf = public.readFile(filename)
-                rep = "listen\s+([0-9]+)\s*;"
+                rep = r"listen\s+([0-9]+)\s*;"
                 rtmp = re.search(rep,conf)
                 if rtmp:
                     phpport = rtmp.groups()[0]
             if session['webserver'] == 'apache':
                 filename = public.GetConfigValue('setup_path') + '/apache/conf/extra/httpd-vhosts.conf'
                 conf = public.readFile(filename)
-                rep = "Listen\s+([0-9]+)\s*\n"
+                rep = r"Listen\s+([0-9]+)\s*\n"
                 rtmp = re.search(rep,conf)
                 if rtmp:
                     phpport = rtmp.groups()[0]
@@ -489,7 +543,7 @@ def get_phpmyadmin_dir():
                 filename = public.GetConfigValue('setup_path') + '/panel/vhost/openlitespeed/listen/888.conf'
                 public.writeFile('/tmp/2',filename)
                 conf = public.readFile(filename)
-                rep = "address\s*\*\:\s*(\d+)"
+                rep = r"address\s*\*\:\s*(\d+)"
                 rtmp = re.search(rep,conf)
                 if rtmp:
                     phpport = rtmp.groups()[0]
@@ -630,6 +684,16 @@ def panel_password(pdata=None):
     return publicObject(dataObject, defs, None, pdata)
 
 
+@app.route('/warning', methods=method_all)
+def panel_warning(pdata=None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import panelWarning
+    dataObject = panelWarning.panelWarning()
+    defs = ('get_list', 'set_ignore', 'check_find')
+    return publicObject(dataObject, defs, None, pdata)
+
+
 @app.route('/bak', methods=method_all)
 def backup_bak(pdata=None):
     comReturn = comm.local()
@@ -664,7 +728,7 @@ def files(pdata = None):
         return render_template('files.html',data=data)
     import files
     filesObject = files.files()
-    defs = ('fix_permissions','get_all_back','restore_path_permissions','del_path_premissions','get_path_premissions','back_path_permissions',
+    defs = ('get_progress','restore_website','fix_permissions','get_all_back','restore_path_permissions','del_path_premissions','get_path_premissions','back_path_permissions',
             'CheckExistsFiles','GetExecLog','GetSearch','ExecShell','GetExecShellMsg','exec_git','exec_composer','create_download_url',
             'UploadFile','GetDir','CreateFile','CreateDir','DeleteDir','DeleteFile','get_download_url_list','remove_download_url','modify_download_url',
             'CopyFile','CopyDir','MvFile','GetFileBody','SaveFileBody','Zip','UnZip','get_download_url_find',
@@ -727,8 +791,8 @@ def config(pdata = None):
         if c_obj.get_ipv6_listen(None): data['ipv6'] = 'checked'
         if c_obj.get_token(None)['open']: data['api'] = 'checked'
         data['basic_auth'] = c_obj.get_basic_auth_stat(None)
-        data['basic_auth']['value'] = public.GetMsg("CLOSE")
-        if data['basic_auth']['open']: data['basic_auth']['value'] = public.GetMsg("OPEN")
+        data['basic_auth']['value'] = public.getMsg('CLOSED')
+        if data['basic_auth']['open']: data['basic_auth']['value'] = public.getMsg('OPENED')
         data['debug'] = ''
         if app.config['DEBUG']: data['debug'] = 'checked'
         data['is_local'] = ''
@@ -898,7 +962,7 @@ def panel_public():
         if type(checks) != bool or not checks: return public.getJson(checks),json_header
         data = public.getJson(eval('pluwx.'+get.fun+'(get)'))
         return data,json_header
-    
+
     if get.name != 'app': return abort(404)
     import panelPlugin
     plu = panelPlugin.panelPlugin()
@@ -941,9 +1005,9 @@ def panel_other(name=None,fun = None,stype=None):
 
     if not name: name = 'coll'
     if not public.path_safe_check("%s/%s/%s" % (name,fun,stype)): return abort(404)
-    if name.find('./') != -1 or not re.match("^[\w-]+$",name): return abort(404)
-    if not name: return public.returnJson(False,public.GetMsg("PLUGIN_INPUT_A")),json_header
-    p_path = '/www/server/panel/plugin/' + name
+    if name.find('./') != -1 or not re.match(r"^[\w-]+$",name): return abort(404)
+    if not name: return public.returnJson(False,'PLUGIN_INPUT_ERR'),json_header
+    p_path = os.path.join('/www/server/panel/plugin/', name)
     if not os.path.exists(p_path): return abort(404)
 
     #是否响插件应静态文件
@@ -951,7 +1015,7 @@ def panel_other(name=None,fun = None,stype=None):
         if stype.find('./') != -1 or not os.path.exists(p_path + '/static'): return abort(404)
         s_file = p_path + '/static/' + stype
         if s_file.find('..') != -1: return abort(404)
-        if not re.match("^[\w\./-]+$",s_file): return abort(404)
+        if not re.match(r"^[\w\./-]+$",s_file): return abort(404)
         if not public.path_safe_check(s_file): return abort(404)
         if not os.path.exists(s_file): return abort(404)
         return send_file(s_file,conditional=True,add_etags=True)
@@ -1067,12 +1131,16 @@ def install():
     elif request.method == method_post[0]:
         if not os.path.exists('install.pl'): return redirect(ret_login)
         get = get_input()
-        if not hasattr(get,'bt_username'): return public.GetMsg("LOGIN_USER_EMPTY")
-        if not get.bt_username: return public.GetMsg("LOGIN_USER_EMPTY")
-        if not hasattr(get,'bt_password1'): return public.GetMsg("LOGIN_USER_EMPTY")
-        if not get.bt_password1: return public.GetMsg("LOGIN_USER_EMPTY")
-        if get.bt_password1 != get.bt_password2: return public.GetMsg("USER_PASSWORD_CHECK")
-        public.M('users').where("id=?",(1,)).save('username,password',(get.bt_username,public.md5(get.bt_password1.strip())))
+        if not hasattr(get,'bt_username'): return public.getMsg('INSTALL_USER_EMPTY')
+        if not get.bt_username: return public.getMsg('INSTALL_USER_EMPTY')
+        if not hasattr(get,'bt_password1'): return public.getMsg('INSTALL_PASS_EMPTY')
+        if not get.bt_password1: return public.getMsg('INSTALL_PASS_EMPTY')
+        if get.bt_password1 != get.bt_password2: return public.getMsg('INSTALL_PASS_CHECK')
+        public.M('users').where("id=?",(1,)).save('username,password',
+                                                  (get.bt_username,
+                                                   public.password_salt(public.md5(get.bt_password1.strip()),uid=1)
+                                                   )
+                                                  )
         os.remove('install.pl')
         public.M('config').where("id=?",('1',)).setField('status',1)
         data = {}
@@ -1161,7 +1229,10 @@ def get_dir_down(filename,token,find):
         pdata['token'] = token
         pdata['src_path'] = find['filename']
         pdata['to_path'] = to_path
-        pdata['expire'] = public.format_date(times=find['expire'])
+        if find['expire'] > (time.time() + (86400 * 365 * 10)):
+            pdata['expire'] = public.format_date(times=find['expire'])
+        else:
+            pdata['expire'] = public.getMsg('NEVER_EXPIRES')
         pdata['filename'] = (find['filename'].split('/')[-1] + '/' + to_path).strip('/')
         return render_template('down.html',data = pdata,to_size=public.to_size)
 
@@ -1188,11 +1259,11 @@ def down(token=None,fname=None):
             args = get_input()
             if 'file_password' in args:
                 if not re.match(r"^\w+$",args.file_password):
-                    return public.ReturnJson(False,'Wrong password!'),json_header
+                    return public.ReturnJson(False,'WRONG_PASSWD'),json_header
                 if re.match(r"^\d+$",args.file_password):
                     args.file_password += '.0'
                 if args.file_password != str(find['password']):
-                    return public.ReturnJson(False,'Wrong password!'),json_header
+                    return public.ReturnJson(False,'WRONG_PASSWD'),json_header
                 session[token] = 1
                 session['down'] = True
             else:
@@ -1280,7 +1351,7 @@ def check_csrf():
 
 def publicObject(toObject,defs,action=None,get = None):
     if 'request_token' in session and 'login' in session:
-        if not check_csrf(): return public.ReturnJson(False,'Csrf-Token error.'),json_header
+        if not check_csrf(): return public.ReturnJson(False,'INIT_CSRF_ERR'),json_header
 
     if not get: get = get_input()
     if action: get.action = action
@@ -1296,8 +1367,7 @@ def publicObject(toObject,defs,action=None,get = None):
         get.dfile = get.dfile.replace('//','/').replace('\\','/')
 
     if hasattr(toObject,'site_path_check'):
-        if not toObject.site_path_check(get): return public.ReturnJson(False,'Excessive operation!'),json_header
-
+        if not toObject.site_path_check(get): return public.ReturnJson(False,'INIT_ACCEPT_NOT'),json_header
     p = run_exec()
     result =  p.run(toObject,defs,get)
     del p
@@ -1317,7 +1387,9 @@ def get_pd():
     tmp = -1
     try:
         import panelPlugin
-        tmp1 = panelPlugin.panelPlugin().get_cloud_list()
+        get = public.dict_obj()
+        get.init = 1
+        tmp1 = panelPlugin.panelPlugin().get_cloud_list(get)
     except:
         tmp1 = None
     if tmp1:
@@ -1409,17 +1481,19 @@ def get_pd():
 
 @app.errorhandler(404)
 def notfound(e):
-    errorStr = public.ReadFile('./BTPanel/templates/' + public.GetConfigValue('template') + '/error.html')
-    try:
-        errorStr = errorStr.format(public.getMsg('PAGE_ERR_404_TITLE'),
-                                   public.getMsg('PAGE_ERR_404_H1'),
-                                   public.getMsg('PAGE_ERR_404_P1'),
-                                   public.getMsg('NAME'),
-                                   public.getMsg('PAGE_ERR_HELP'))
-    except IndexError: pass
-    return errorStr,404
+    errorStr = '''<html>
+<head><title>404 Not Found</title></head>
+<body>
+<center><h1>404 Not Found</h1></center>
+<hr><center>server</center>
+</body>
+</html>'''
+    headers={
+        "Content-Type":"text/html"
+    }
+    return Response(errorStr,status=404,headers=headers)
   
-@app.errorhandler(500)
+#@app.errorhandler(500)
 def internalerror(e):
     #if str(e).find('Permanent Redirect') != -1: return e
     errorStr = public.ReadFile('./BTPanel/templates/' + public.GetConfigValue('template') + '/error.html')
@@ -1431,7 +1505,10 @@ def internalerror(e):
                                        public.getMsg('NAME'),
                                        public.getMsg('PAGE_ERR_HELP'))
         else:
-            errorStr = errorStr.format(public.getMsg('PAGE_ERR_500_TITLE'),str(e),'<pre>'+public.get_error_info() + '</pre>','The above debugging information is only displayed in developer mode','Version: ' + public.version())
+            errorStr = errorStr.format(public.getMsg('PAGE_ERR_500_TITLE'),
+                                       str(e),
+                                       '<pre>'+public.get_error_info() + '</pre>',
+                                       public.getMsg('INIT_DEBUG_INFO'),public.getMsg('INIT_VERSION_LAST') + public.version())
     except IndexError:pass
     return errorStr,500
 
@@ -1443,9 +1520,17 @@ def get_input():
     for key in request.args.keys():
         data[key] = str(request.args.get(key,''))
     try:
+        x_token = request.headers.get('x-http-token')
+        if x_token:
+            aes_pwd = x_token[:8] + x_token[40:48]
+
         for key in request.form.keys():
             if key in exludes: continue
             data[key] = str(request.form.get(key,''))
+            if x_token:
+                if len(data[key]) > 5:
+                    if data[key][:6] == 'BT-CRT':
+                        data[key] = public.aes_decrypt(data[key][6:],aes_pwd)
     except:
         try:
             post = request.form.to_dict()
@@ -1484,4 +1569,11 @@ class run_exec:
             result = public.ReturnJson(False,'ARGS_ERR'),json_header
         if g.is_aes:
             result = public.aes_encrypt(result[0],g.aes_key),json_header
+        else:
+            if os.path.exists('pyenv/bin/python'):
+                if not os.path.exists('data/debug.pl'):
+                    x_token = request.headers.get('x-http-token')
+                    if x_token:
+                        aes_pwd = x_token[:8] + x_token[40:48]
+                        result = "BT-CRT"+public.aes_encrypt(result[0],aes_pwd),{'Content-Type':'text/plain; charset=utf-8'}
         return result

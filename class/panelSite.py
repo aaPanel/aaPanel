@@ -264,6 +264,7 @@ setUIDMode 0
 }
 #VHOST_TYPE BT_SITENAME END
 """
+        self.old_name = self.siteName
         if hasattr(get,"dirName"):
             self.siteName = self.siteName + "_" + get.dirName
             # sub_dir = self.sitePath + "/" + get.dirName
@@ -311,8 +312,8 @@ scripthandler  {
 extprocessor BTSITENAME {
   type                    lsapi
   address                 UDS://tmp/lshttpd/BT_EXTP_NAME.sock
-  maxConns                10
-  env                     LSAPI_CHILDREN=10
+  maxConns                20
+  env                     LSAPI_CHILDREN=20
   initTimeout             600
   retryTimeout            0
   persistConn             1
@@ -364,10 +365,10 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         public.writeFile(file, conf)
 
         # 生成伪静态文件
-        urlrewritePath = self.setupPath + '/panel/vhost/rewrite'
-        urlrewriteFile = urlrewritePath + '/' + self.siteName + '.conf'
-        if not os.path.exists(urlrewritePath): os.makedirs(urlrewritePath)
-        open(urlrewriteFile, 'w+').close()
+        # urlrewritePath = self.setupPath + '/panel/vhost/rewrite'
+        # urlrewriteFile = urlrewritePath + '/' + self.siteName + '.conf'
+        # if not os.path.exists(urlrewritePath): os.makedirs(urlrewritePath)
+        # open(urlrewriteFile, 'w+').close()
         return True
      
     #添加站点
@@ -442,7 +443,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         self.DelUserInI(self.sitePath)
         userIni = self.sitePath+'/.user.ini'
         if not os.path.exists(userIni):
-            public.writeFile(userIni, 'open_basedir='+self.sitePath+'/:/tmp/:/proc/')
+            public.writeFile(userIni, 'open_basedir='+self.sitePath+'/:/tmp/')
             public.ExecShell('chmod 644 ' + userIni)
             public.ExecShell('chown root:root ' + userIni)
             public.ExecShell('chattr +i '+userIni)
@@ -1132,7 +1133,7 @@ listener Default%s{
         result = self.GetSiteRunPath(get)
         if 'runPath' in result:
             return result['runPath']
-        return result
+        return False
 
 
     # 创建Let's Encrypt免费证书
@@ -2359,15 +2360,14 @@ server
         public.serviceReload()
         public.WriteLog('TYPE_SITE', 'SITE_BINDING_DEL_SUCCESS',(siteName,binding['path']))
         return public.returnMsg(True,'DEL_SUCCESS')
-    
-    #取默认文档
+
     #取子目录Rewrite
     def GetDirRewrite(self,get):
         id = get.id
         find = public.M('binding').where("id=?",(id,)).field('id,pid,domain,path').find()
         site = public.M('sites').where("id=?",(find['pid'],)).field('id,name,path').find()
         
-        if(public.get_webserver() == 'apache'):
+        if(public.get_webserver() != 'nginx'):
             filename = site['path']+'/'+find['path']+'/.htaccess'
         else:
             filename = self.setupPath + '/panel/vhost/rewrite/'+site['name']+'_'+find['path']+'.conf'
@@ -2389,7 +2389,10 @@ server
             data['status'] = True
             data['data'] = public.readFile(filename)
             data['rlist'] = []
-            for ds in os.listdir('rewrite/' + public.get_webserver()):
+            webserver = public.get_webserver()
+            if webserver == "openlitespeed":
+                webserver = "apache"
+            for ds in os.listdir('rewrite/' + webserver):
                 if ds == 'list.txt': continue
                 data['rlist'].append(ds[0:len(ds)-5])
             data['filename'] = filename
@@ -2590,9 +2593,10 @@ server
             conf = public.readFile(file)
             if conf:
                 rep = 'lsphp\d+'
-                tmp = re.search(rep, conf).group()
-                conf = conf.replace(tmp, 'lsphp' + version)
-                public.writeFile(file, conf)
+                tmp = re.search(rep, conf)
+                if tmp:
+                    conf = conf.replace(tmp.group(), 'lsphp' + version)
+                    public.writeFile(file, conf)
             public.serviceReload()
             public.WriteLog("TYPE_SITE", "SITE_PHPVERSION_SUCCESS",(siteName,version))
             return public.returnMsg(True,'SITE_PHPVERSION_SUCCESS',(siteName,version))
@@ -2661,15 +2665,15 @@ server
             if conf and "session.save_path" in conf:
                 rep = "session.save_path\s*=\s*(.*)"
                 s_path = re.search(rep,conf).groups(1)[0]
-                public.writeFile(filename, conf + '\nopen_basedir={}/:/tmp/:/proc/:{}'.format(path,s_path))
+                public.writeFile(filename, conf + '\nopen_basedir={}/:/tmp/:{}'.format(path,s_path))
             else:
-                public.writeFile(filename,'open_basedir={}/:/tmp/:/proc/'.format(path))
+                public.writeFile(filename,'open_basedir={}/:/tmp/'.format(path))
             public.ExecShell("chattr +i " + filename)
             public.serviceReload()
             return public.returnMsg(True,'SITE_BASEDIR_OPEN_SUCCESS')
         except Exception as e:
             public.ExecShell("chattr +i " + filename)
-            return e
+            return str(e)
 
     def _set_ols_open_basedir(self,get):
         # 设置ols
@@ -2924,7 +2928,8 @@ server
             self.CheckProxy(get)
             ng_conf = public.readFile(ng_file)
             if not p_conf:
-                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.+[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg("CLEAR_CACHE")
+                # rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.+[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg("CLEAR_CACHE")
+                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg("CLEAR_CACHE")
                 ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
                 oldconf = '''location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$
     {
@@ -2938,7 +2943,8 @@ server
         error_log off;
         access_log off;
     }'''
-                ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
+                if "(gif|jpg|jpeg|png|bmp|swf)$" not in ng_conf:
+                    ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
                 public.writeFile(ng_file, ng_conf)
                 return
             sitenamelist = []
@@ -2954,7 +2960,7 @@ server
                     public.writeFile(ng_file,ng_conf)
 
             else:
-                rep =  "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{66,66}\n+[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg("CLEAR_CACHE")
+                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg("CLEAR_CACHE")
                 ng_conf = re.sub(rep,'include enable-php-',ng_conf)
                 oldconf = '''location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$
     {
@@ -2968,7 +2974,8 @@ server
         error_log off;
         access_log off;
     }'''
-                ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
+                if "(gif|jpg|jpeg|png|bmp|swf)$" not in ng_conf:
+                    ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
                 public.writeFile(ng_file, ng_conf)
 
     # 设置apache配置
@@ -3143,7 +3150,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     ng_conf = re.sub("location\s+%s" % conf[i]["proxydir"],"location "+get.proxydir,ng_conf)
                     ng_conf = re.sub("proxy_pass\s+%s" % conf[i]["proxysite"],"proxy_pass "+get.proxysite,ng_conf)
                     ng_conf = re.sub("\sHost\s+%s" % conf[i]["todomain"]," Host "+get.todomain,ng_conf)
-                    cache_rep = "proxy_cache_valid\s+200\s+304\s+301\s+302\s+\d+m;((\n|.)+expires\s+\d+m;)*"
+                    cache_rep = r"proxy_cache_valid\s+200\s+304\s+301\s+302\s+\d+m;((\n|.)+expires\s+\d+m;)*"
                     if int(get.cache) == 1:
                         if re.search(cache_rep,ng_conf):
                             expires_rep = "\{\n\s+expires\s+12h;"
@@ -3160,16 +3167,16 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                                 ng_conf = re.sub(cache_rep,'\n\t#Set Nginx Cache\n'+ng_cache,ng_conf)
                             else:
                                 # cache_rep = '#proxy_set_header\s+Connection\s+"upgrade";'
-                                cache_rep = 'proxy_set_header\s+REMOTE-HOST\s+\$remote_addr;'
-                                ng_conf = re.sub(cache_rep, '\n\tproxy_set_header\s+REMOTE-HOST\s+\$remote_addr;\n\t#Set Nginx Cache' + ng_cache,
+                                cache_rep = r"proxy_set_header\s+REMOTE-HOST\s+\$remote_addr;"
+                                ng_conf = re.sub(cache_rep, r"\n\tproxy_set_header\s+REMOTE-HOST\s+\$remote_addr;\n\t#Set Nginx Cache" + ng_cache,
                                                  ng_conf)
                     else:
                         if self.check_annotate(ng_conf):
-                            rep = '\n\s*#Set\s*Nginx\s*Cache(.|\n)*\d+m;'
+                            rep = r'\n\s*#Set\s*Nginx\s*Cache(.|\n)*\d+m;'
                             ng_conf = re.sub(rep, "\n\t#Set Nginx Cache\n\tproxy_ignore_headers Set-Cookie Cache-Control expires;\n\tadd_header Cache-Control no-cache;", ng_conf)
                         else:
-                            rep = '\s+proxy_cache\s+cache_one.*[\n\s\w\_\";\$]+m;'
-                            ng_conf = re.sub(rep, '\n\t#Set Nginx Cache\n\tproxy_ignore_headers Set-Cookie Cache-Control expires;\n\tadd_header Cache-Control no-cache;', ng_conf)
+                            rep = r"\s+proxy_cache\s+cache_one.*[\n\s\w\_\";\$]+m;"
+                            ng_conf = re.sub(rep, r"\n\t#Set Nginx Cache\n\tproxy_ignore_headers Set-Cookie Cache-Control expires;\n\tadd_header Cache-Control no-cache;", ng_conf)
 
                     sub_rep = "sub_filter"
                     subfilter = json.loads(get.subfilter)

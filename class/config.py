@@ -12,7 +12,7 @@ try:
 except:
     public.ExecShell("pip install pyotp &")
 try:
-    from BTPanel import session,admin_path_checks
+    from BTPanel import session,admin_path_checks,g
     from flask import request
     import send_mail
 except:pass
@@ -168,7 +168,40 @@ class config:
         userInfo = public.M('users').where("id=?",(1,)).field('username,password').find()
         token = public.Md5(userInfo['username'] + '/' + userInfo['password'])
         public.writeFile('/www/server/panel/data/login_token.pl',token)
+
+        sess_path = 'data/sess_files'
+        if not os.path.exists(sess_path):
+            os.makedirs(sess_path,384)
+        self.clean_sess_files(sess_path)
+        sess_key = public.get_sess_key()
+        sess_file = os.path.join(sess_path,sess_key)
+        public.writeFile(sess_file,str(int(time.time()+86400)))
+        public.set_mode(sess_file,'600')
         session['login_token'] = token
+
+    def clean_sess_files(self,sess_path):
+        '''
+            @name 清理过期的sess_file
+            @auther hwliang<2020-07-25>
+            @param sess_path(string) sess_files目录
+            @return void
+        '''
+        s_time = time.time()
+        for fname in os.listdir(sess_path):
+            try:
+                if len(fname) != 32: continue
+                sess_file = os.path.join(sess_path,fname)
+                if not os.path.isfile(sess_file): continue
+                sess_tmp = public.ReadFile(sess_file)
+                if not sess_tmp:
+                    if os.path.exists(sess_file):
+                        os.remove(sess_file)
+                if s_time > int(sess_tmp):
+                    os.remove(sess_file)
+            except:
+                pass
+
+
 
     def setPassword(self,get):
         if get.password1 != get.password2: return public.returnMsg(False,'USER_PASSWORD_CHECK')
@@ -837,7 +870,7 @@ class config:
         ols_php_path = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version, get.version[0],get.version[1])
         if os.path.exists('/etc/redhat-release'):
             ols_php_path = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
-        reload_ols_str = '/usr/local/lsws/bin/lswsctl reload'
+        reload_ols_str = '/usr/local/lsws/bin/lswsctrl restart'
         for p in [filename,ols_php_path]:
             if not p:
                 continue

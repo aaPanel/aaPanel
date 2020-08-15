@@ -106,7 +106,7 @@ var site = {
                             var opt = '';
                             var _check = ' onclick="site.site_waf(\'' + item.name + '\')"';
 
-                            if (bt.os == 'Linux') opt += '<a href="javascript:;" ' + _check + ' class="btlink ">' + lan.site.firewalld + '</a> | ';
+                            //if (bt.os == 'Linux') opt += '<a href="javascript:;" ' + _check + ' class="btlink ">' + lan.site.firewalld + '</a> | ';
                             opt += '<a href="javascript:;" class="btlink" onclick="site.web_edit(this)">' + lan.site.set + ' </a> | ';
                             opt += '<a href="javascript:;" class="btlink" onclick="site.del_site(' + item.id + ',\'' + item.name + '\')" title="' + lan.site.del_site + '">' + lan.site.del + '</a>';
                             return opt;
@@ -232,7 +232,7 @@ var site = {
                     closeBtn: 2,
                     shift: 5,
                     shadeClose: false,
-                    content: "<div class='divtable pd15 style='padding-bottom: 0'><button id='btn_data_backup' class='btn btn-success btn-sm' type='button' style='margin-bottom:10px'>" + lan.database.backup + "</button><table width='100%' id='SiteBackupList' class='table table-hover'></table><div class='page sitebackup_page'></div></div>"
+                    content: "<div class='divtable pd15 style='padding-bottom: 0'><button id='btn_data_backup' class='btn btn-success btn-sm' type='button' style='margin-bottom:10px'>" + lan.database.backup + "</button><table width='100%' id='SiteBackupList' class='table table-hover'></table><ul class='help-info-text c7'><li>Before restoring data, all data in the root dir of the website  will be moved to the panel recycle bin.</li></ul><div class='page sitebackup_page'></div></div>"
                 });
             }
             setTimeout(function() {
@@ -254,7 +254,8 @@ var site = {
                             title: lan.site.operate,
                             align: 'right',
                             templet: function(item) {
-                                var _opt = '<a class="btlink" href="/download?filename=' + item.filename + '&amp;name=' + item.name + '" target="_blank">' + lan.site.download + '</a> | ';
+                                var _opt = '<a class="btlink restore" site-id="' + id + '" backup-name="' + item.name + '">Restore</a> | ';
+                                _opt += '<a class="btlink" href="/download?filename=' + item.filename + '&amp;name=' + item.name + '" target="_blank">' + lan.site.download + '</a> | ';
                                 _opt += '<a class="btlink" herf="javascrpit:;" onclick="bt.site.del_backup(\'' + item.id + '\',\'' + id + '\',\'' + siteName + '\')">' + lan.site.del + '</a>'
                                 return _opt;
                             }
@@ -268,9 +269,47 @@ var site = {
                         if (rdata.status) site.site_detail(id, siteName);
                         site.get_list();
                     });
+                });
+                $('#SiteBackupList .restore').unbind('click').click(function() {
+                    var data = {};
+                        data.file_name = $(this).attr('backup-name');
+                        data.site_id = $(this).attr('site-id');
+                    layer.confirm('Are you sure to restore backup file?', {
+                        icon: 0,
+                        closeBtn: 2,
+						title: 'Restore backup file',
+					}, function (index) {
+                        $.post('/files?action=restore_website', data, function(rdata) {
+                            layer.close(index);
+                            site.backup_output_stop = true;
+                            layer.msg(rdata.msg, {icon: rdata.status ? 1 : 2});
+                        });
+                        site.backup_output_logs();
+					});
                 })
             }, 100)
         });
+    },
+    backup_output_stop: false,
+    //实时显示过程
+    backup_output_logs: function () {
+        var layerT = layer.open({
+            type: 1,
+            area: '590px',
+            title: 'Recovering the backup...',
+            closeBtn: 0,
+            content: '<div><div><pre class="backup_logs" style="height: 390px;background: #000;color: #fff;margin-bottom: 0;"></pre></div></div>',
+        });
+        var show_output = setInterval(function(){
+            $.post('/files?action=get_progress', function(rdata){
+                if(site.backup_output_stop) {
+                    layer.close(layerT);
+                    clearInterval(show_output);
+                }
+                $('.backup_logs').html(rdata.msg);
+                $('.backup_logs').scrollTop($('.backup_logs')[0].scrollHeight);
+            })
+        }, 1000);
     },
     add_site: function() {
         bt.site.add_site(function(rdata) {
@@ -1090,7 +1129,7 @@ var site = {
                                             width: '130px',
                                             items: arrs,
                                             callback: function(obj) {
-                                                var spath = '/www/server/panel/rewrite/' + bt.get_cookie('serverType') + '/' + obj.val() + '.conf';
+                                                var spath = '/www/server/panel/rewrite/' + (bt.get_cookie('serverType')=='openlitespeed'?'apache':bt.get_cookie('serverType')) + '/' + obj.val() + '.conf';
                                                 bt.files.get_file_body(spath, function(sdata) {
                                                     $('.dir_config').text(sdata.data);
                                                 })
@@ -1258,7 +1297,7 @@ var site = {
                             ]
                             for (var i = 0; i < dpwds.length; i++) {
                                 var _from_pwd = bt.render_form_line(dpwds[i]);
-                                _div.append("<div class='line'>" + _from_pwd.html + "</div>");
+                                _div.append("<div>" + _from_pwd.html + "</div>");
                                 bt.render_clicks(_from_pwd.clicks);
                             }
                         } else {
@@ -1516,22 +1555,26 @@ var site = {
                                 var spath = filename;
                                 if (obj.val() != lan.site.rewritename) spath = '/www/server/panel/rewrite/' + (webserver == 'openlitespeed'?'apache':webserver) + '/' + obj.val() + '.conf';
                                 bt.files.get_file_body(spath, function(ret) {
-                                    editor.setValue(ret.data);
+                                    aceEditor.ACE.setValue(ret.data);
+                                    aceEditor.ACE.moveCursorTo(0, 0); 
+                                    aceEditor.path = spath;
                                 })
                             }
                         }
                     },
-                    { items: [{ name: 'config', type: 'textarea', value: rdata.data, widht: '340px', height: '200px' }] },
+                    { items: [{ name: 'config', type: 'div', value: rdata.data, widht: '340px', height: '200px' }] },
                     {
                         items: [{
                                 name: 'btn_save',
                                 text: lan.site.save,
                                 type: 'button',
                                 callback: function(ldata) {
-                                    bt.files.set_file_body(filename, editor.getValue(), 'utf-8', function(ret) {
-                                        if (ret.status) site.reload(4)
-                                        bt.msg(ret);
-                                    })
+                                    // bt.files.set_file_body(filename, editor.getValue(), 'utf-8', function(ret) {
+                                    //     if (ret.status) site.reload(4)
+                                    //     bt.msg(ret);
+                                    // })
+                                    aceEditor.path = filename;
+                                    bt.saveEditor(aceEditor);
                                 }
                             },
                             {
@@ -1582,23 +1625,22 @@ var site = {
                 $('#webedit-con').append(_html);
                 bt.render_clicks(clicks);
 
-                $('textarea.config').attr('id', 'config_rewrite');
-                var editor = CodeMirror.fromTextArea(document.getElementById("config_rewrite"), {
-                    extraKeys: { "Ctrl-Space": "autocomplete" },
-                    lineNumbers: true,
-                    matchBrackets: true,
-                });
+                // $('textarea.config').attr('id', 'config_rewrite');
+                // var editor = CodeMirror.fromTextArea(document.getElementById("config_rewrite"), {
+                //     extraKeys: { "Ctrl-Space": "autocomplete" },
+                //     lineNumbers: true,
+                //     matchBrackets: true,
+                // });
 
-                $(".CodeMirror-scroll").css({ "height": "340px", "margin": 0, "padding": 0 });
-                $(".soft-man-con .CodeMirror").css({ "height": "342px" });
-                setTimeout(function() {
-                    editor.refresh();
-                }, 250);
+                // $(".CodeMirror-scroll").css({ "height": "340px", "margin": 0, "padding": 0 });
+                // $(".soft-man-con .CodeMirror").css({ "height": "342px" });
+                // setTimeout(function() {
+                //     editor.refresh();
+                // }, 250);
+                $('div.config').attr('id', 'config_rewrite').css({'height':'360px','width':'540px'})
+                var aceEditor = bt.aceEditor({el:'config_rewrite',content:rdata.data});
 
-                $('select.rewrite').trigger('change')
-
-
-
+                $('select.rewrite').trigger('change');
             })
         },
         set_default_index: function(web) {
@@ -2141,7 +2183,7 @@ var site = {
                                         { field: 'issuer', width: '150px', title: lan.site.brand },
                                         {
                                             field: 'opt',
-                                            width: '75px',
+                                            width: '100px',
                                             align: 'right',
                                             title: lan.site.operate,
                                             templet: function(item) {

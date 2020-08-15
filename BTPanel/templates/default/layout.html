@@ -8,9 +8,9 @@
     <meta name="renderer" content="webkit">
     <title>{{g.title}}</title>
     <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon" />
-    <link href="/static/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="/static/css/site.css?20191127={{g['version']}}" rel="stylesheet" />
-    <link href="/static/codemirror/lib/codemirror.css?20191127={{g['version']}}" rel="stylesheet" />
+    <link href="{{g.cdn_url}}/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="{{g.cdn_url}}/css/site.css?20191127={{g['version']}}" rel="stylesheet" />
+    <link href="{{g.cdn_url}}/codemirror/lib/codemirror.css?20191127={{g['version']}}" rel="stylesheet" />
     <!--[if lte IE 9]>
     	<script src="/static/js/requestAnimationFrame.js"></script>
     <![endif]-->
@@ -68,6 +68,7 @@
 <body>
     <div class="bt-warp bge6">
         <div class="top-tips">The current version of IE browser is too low, some functions cannot be displayed, please change to other browsers!</div>
+        <a style="display:none;" id="panel_debug" data="{{g['debug']}}"></a>
         <a style="display:none;" id="request_token_head" token="{{session['request_token_head']}}"></a>
         <div id="container" class="container-fluid">
             <div class="sidebar-scroll">
@@ -89,23 +90,64 @@
             <a style="display: none;" id="defaultPath">{{session['config']['sites_path']}}</a> {% block content %}{% endblock %}
             <div class="footer bgw">{{session['brand']}}{{session['product']}} &copy;2014-{{session['yaer']}} {{session['brand']}} (bt.cn)
             	<!--<a style="margin-left:20px;color:#20a53a;" href="http://www.bt.cn/bbs" target="_blank">求助|建议请上宝塔论坛</a>-->
-            	<a style="margin-left:20px;color:#20a53a;" href="https://forum.aapanel.com" target="_blank">{{session['bt_help']}}</a>
+            	<a style="margin-left:20px;color:#20a53a;" href="http://forum.aapanel.com" target="_blank">{{session['bt_help']}}</a>
                 <a style="margin-left:20px;color:#20a53a;" href="https://doc.aapanel.com/web/#/3?page_id=117" target="_blank">User manual</a>
             </div>
         </div>
-        <script src="/static/js/jquery-1.10.2.min.js"></script>
-        <script src="/static/js/bootstrap.min.js"></script>
-        <script src="/static/language/{{session['lan']}}/lan.js?date={{g['version']}}"></script>
-        <script src="/static/layer/layer.js?date={{g['version']}}"></script>
-        <script src="/static/js/public.js?version={{g['version']}}"></script>
-        <script src="/static/js/public_backup.js?version={{g['version']}}"></script>
-        <script src="/static/codemirror/lib/codemirror.js?version={{g['version']}}"></script>
+        <script src="{{g.cdn_url}}/js/aes.js?version={{g['version']}}"></script>
+        <script src="{{g.cdn_url}}/js/jquery-1.10.2.min.js"></script>
+        <script src="{{g.cdn_url}}/js/bootstrap.min.js"></script>
+        <script src="{{g.cdn_url}}/language/{{session['lan']}}/lan.js?date={{g['version']}}"></script>
+        <script src="{{g.cdn_url}}/layer/layer.js?date={{g['version']}}"></script>
+        <script src="{{g.cdn_url}}/js/public.js?version={{g['version']}}"></script>
+        <script src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}"></script>
+        <script src="{{g.cdn_url}}/codemirror/lib/codemirror.js?version={{g['version']}}"></script>
         {% block scripts %}{% endblock %}
         <script type="text/javascript">
             if (navigator.appName == "Microsoft Internet Explorer" && parseInt(navigator.appVersion.split(";")[1].replace(/[ ]/g, "").replace("MSIE", "")) < 9) {
                 $(".main-content").css("margin-top", "50px");
                 $('.top-tips').show();
             }
+            function IEVersion() {
+            // 取得浏览器的userAgent字符串
+            var userAgent = navigator.userAgent;
+            // 判断是否为小于IE11的浏览器
+            var isLessIE11 = userAgent.indexOf('compatible') > -1 && userAgent.indexOf('MSIE') > -1;
+            // 判断是否为IE的Edge浏览器
+            var isEdge = userAgent.indexOf('Edge') > -1 && !isLessIE11;
+            // 判断是否为IE11浏览器
+            var isIE11 = userAgent.indexOf('Trident') > -1 && userAgent.indexOf('rv:11.0') > -1;
+            if (isLessIE11) {
+                var IEReg = new RegExp('MSIE (\\d+\\.\\d+);');
+                // 正则表达式匹配浏览器的userAgent字符串中MSIE后的数字部分，，这一步不可省略！！！
+                IEReg.test(userAgent);
+                // 取正则表达式中第一个小括号里匹配到的值
+                var IEVersionNum = parseFloat(RegExp['$1']);
+                if (IEVersionNum === 7) {// IE7
+                    return 7
+                } else if (IEVersionNum === 8) {// IE8
+                    return 8
+                } else if (IEVersionNum === 9) {// IE9
+                    return 9
+                } else if (IEVersionNum === 10) { // IE10
+                    
+                    return 10
+                } else {// IE版本<7
+                    return 6
+                }
+            } else if (isEdge) { // edge
+               
+                return 'edge'
+            } else if (isIE11) {// IE11
+                return 11
+            } else {// 不是ie浏览器
+                return -1
+            }
+        }
+        if(IEVersion() != -1 && IEVersion() < 9){
+            $(".main-content").css("margin-top", "50px");
+            $('.top-tips').show();
+        }
             $("#setBox").click(function() {
                 if ($(this).prop("checked")) {
                     $("input[name=id]").prop("checked", true);
@@ -223,9 +265,9 @@
                 });
             }
             loadScript([
-                '/static/laydate/laydate.js',
-                '/static/js/jquery.qrcode.min.js',
-                '/static/js/clipboard.min.js'
+                '{{g.cdn_url}}/laydate/laydate.js',
+                '{{g.cdn_url}}/js/jquery.qrcode.min.js',
+                '{{g.cdn_url}}/js/clipboard.min.js'
             ], function(e) {
 
             });

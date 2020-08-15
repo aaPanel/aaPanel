@@ -363,7 +363,7 @@ class system:
         #取磁盘分区信息
         diskIo = psutil.disk_partitions()
         diskInfo = []
-        cuts = ['/mnt/cdrom','/boot','/boot/efi','/dev','/dev/shm','/run/lock','/run','/run/shm','/run/user'];
+        cuts = ['/mnt/cdrom','/boot','/boot/efi','/dev','/dev/shm','/run/lock','/run','/run/shm','/run/user']
         for disk in diskIo:
             if not cuts: continue
             tmp = {}

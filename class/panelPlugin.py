@@ -297,6 +297,9 @@ class panelPlugin:
         except:
             if os.path.exists(lcoalTmp): os.remove(lcoalTmp)
 
+        if 'init' in get:
+            if softList: return softList
+
         focre  = 0
         if hasattr(get,'force'): focre = int(get.force)
         if 'focre_cloud' in session:
@@ -310,7 +313,8 @@ class panelPlugin:
 
         if not softList or focre > 0:
             self.clean_panel_log()
-            cloudUrl = 'http://www.bt.cn/api/panel/get_soft_list_en?v=6.6.6'
+            # cloudUrl = public.GetConfigValue('home') + '/api/panel/get_soft_list'
+            cloudUrl = 'https://console.aapanel.com/api/panel/get_soft_list'
             import panelAuth
             pdata = panelAuth.panelAuth().create_serverid(None)
             listTmp = public.httpPost(cloudUrl,pdata,5)
@@ -638,7 +642,7 @@ class panelPlugin:
     #取软件列表
     def get_soft_list(self,get = None):
         softList = self.get_cloud_list(get)
-        if not softList: 
+        if not softList:
             get.force = 1
             softList = self.get_cloud_list(get)
             if not softList: return public.returnMsg(False,'GET_SOFTLIST_FAIL',"401")
@@ -691,6 +695,7 @@ class panelPlugin:
         if sName in indexList: return public.returnMsg(False,'DONT_ADD_AGAIN')
         if len(indexList) >= 12:
             softList = self.get_cloud_list(get)['list']
+            softList = self.set_coexist(softList)
             for softInfo in softList:
                 # return softList
                 if softInfo['name'] == 'php':
@@ -822,12 +827,16 @@ class panelPlugin:
         else:
             softInfo['version'] = ""
         if softInfo['version_coexist'] == 1:
-            self.get_icon(softInfo['name'].split('-')[0])
+            if softInfo['id'] != 10000:
+                self.get_icon(softInfo['name'].split('-')[0])
         else:
             if 'min_image' in softInfo: 
-                self.get_icon(softInfo['name'],softInfo['min_image'])
+                if softInfo['id'] != 10000:
+                    self.get_icon(softInfo['name'],softInfo['min_image'])
             else:
-                self.get_icon(softInfo['name'])
+                if softInfo['id'] != 10000:
+                    self.get_icon(softInfo['name'])
+
         if softInfo['name'].find('php-') != -1: 
             v2= softInfo['versions'][0]['m_version'].replace('.','')
             softInfo['fpm'] = os.path.exists('/www/server/php/' + v2 + '/sbin/php-fpm')
@@ -877,7 +886,11 @@ class panelPlugin:
         for softInfo in softList:
             if softInfo['name'] == sName: 
                 if sName == 'phpmyadmin':
+                    from BTPanel import get_phpmyadmin_dir
+                    pmd = get_phpmyadmin_dir()
                     softInfo['ext'] = self.getPHPMyAdminStatus()
+                    if softInfo['ext'] and pmd:
+                        softInfo['ext']['url'] = 'http://' + public.GetHost() + ':'+ pmd[1] + '/' + pmd[0]
                 if "php-" in sName:
                     v = softInfo["versions"][0]["m_version"]
                     v1 = v.replace(".", "")
@@ -973,7 +986,7 @@ class panelPlugin:
     def get_pids(self):
         pids = []
         for pid in os.listdir('/proc'):
-            if re.match("^\d+$",pid): pids.append(pid)
+            if re.match(r"^\d+$",pid): pids.append(pid)
         return pids
 
 
@@ -1094,7 +1107,8 @@ class panelPlugin:
                     
                 tmp = []
                 for d in data:
-                    self.get_icon(d['name'])
+                    if d['id'] != 10000:
+                        self.get_icon(d['name'])
                     if display:
                         if d['display'] == 0: continue
                     i=0
@@ -1118,7 +1132,6 @@ class panelPlugin:
     #获取图标
     def get_icon(self,name,downFile = None):
         iconFile = 'BTPanel/static/img/soft_ico/ico-' + name + '.png'
-
         if not os.path.exists(iconFile):
             self.download_icon(name,iconFile,downFile)
         else:
@@ -1134,9 +1147,9 @@ class panelPlugin:
             public.ExecShell(r"\cp  -a -r " + srcIcon + " " + iconFile)
         else:
             if downFile:
-                public.ExecShell('wget -O ' + iconFile + ' ' + public.GetConfigValue('home') + downFile + '&')
+                public.ExecShell('wget -O ' + iconFile + ' ' + public.GetConfigValue('home') + downFile)
             else:
-                public.ExecShell('wget -O ' + iconFile + ' ' + public.get_url() + '/install/plugin/' + name + '/icon.png &')
+                public.ExecShell('wget -O ' + iconFile + ' ' + public.get_url() + '/install/plugin/' + name + '/icon.png')
         cache.set(skey,1,86400)
 
     
@@ -1878,7 +1891,8 @@ class panelPlugin:
                     return panelPHP.panelPHP(get.name).exec_php_script(get)
                 return public.returnMsg(False,'PLUGIN_INPUT_B')
             if not self.check_accept(get):return public.returnMsg(False,public.to_string([24744, 26410, 36141, 20080, 91, 37, 115, 93, 25110, 25480, 26435, 24050, 21040, 26399, 33]) % (self.get_title_byname(get),))
-            sys.path.append(path)
+            if not path in sys.path:
+                sys.path.insert(0,path)
             plugin_main = __import__(get.name+'_main')
             try:
                 reload(plugin_main)
@@ -1887,7 +1901,7 @@ class panelPlugin:
             if not hasattr(pluginObject,get.s): return public.returnMsg(False,'PLUGIN_INPUT_C',(get.s,))
             execStr = 'pluginObject.' + get.s + '(get)'
             return eval(execStr)
-        except Exception as ex:
+        except:
             import traceback
             errorMsg = traceback.format_exc()
             public.writeFile('logs/done.log',errorMsg)

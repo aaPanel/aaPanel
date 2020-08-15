@@ -17,6 +17,7 @@ var soft = {
             return;
         }
         soft.is_install = false;
+        console.log(type)
         bt.soft.get_soft_list(page, type, search, function(rdata) {
             if (rdata.pro < 0) {
                 $("#updata_pro_info").html('');
@@ -285,7 +286,7 @@ var soft = {
                                 }else if (distribution=='centos7'&&item.name == 'php-5.2') {
                                     option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
                                 }else{
-                                    if (is_php5) {
+                                    if (distribution!='centos7'&&is_php5) {
                                         option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
                                     } else {
                                         if (item.setup && item.task == '1') {
@@ -973,11 +974,30 @@ var soft = {
                     ]
                     if (data.name == 'phpmyadmin') {
                         status_list = [status_list[0]];
+                    }else{
+                        var btns = $('<div class="sfm-opt"></div>');
+                        for (var i = 0; i < status_list.length; i++)  btns.append('<button class="btn btn-default btn-sm" onclick="bt.pub.set_server_status(\'' + data.name + '\',\'' + status_list[i].opt + '\')">' + status_list[i].title + '</button>');
+                        tabCon.append('<p class="status">' + lan.soft.status + '：<span>' + (data.status ? lan.soft.on : lan.soft.off) + '</span><span style="color: ' + (data.status ? '#20a53a;' : 'red;') + ' margin-left: 3px;" class="glyphicon ' + (data.status ? 'glyphicon glyphicon-play' : 'glyphicon-pause') + '"></span></p');
+                        tabCon.append(btns);
                     }
-                    var btns = $('<div class="sfm-opt"></div>');
-                    for (var i = 0; i < status_list.length; i++) btns.append('<button class="btn btn-default btn-sm" onclick="bt.pub.set_server_status(\'' + data.name + '\',\'' + status_list[i].opt + '\')">' + status_list[i].title + '</button>');
-                    tabCon.append('<p class="status">' + lan.soft.status + '：<span>' + (data.status ? lan.soft.running : lan.soft.stop) + '</span><span style="color: ' + (data.status ? '#20a53a;' : 'red;') + ' margin-left: 3px;" class="glyphicon ' + (data.status ? 'glyphicon glyphicon-play' : 'glyphicon-pause') + '"></span></p');
-                    tabCon.append(btns);
+
+                    // var btns = $('<div class="sfm-opt"></div>');
+                    // for (var i = 0; i < status_list.length; i++) btns.append('<button class="btn btn-default btn-sm" onclick="bt.pub.set_server_status(\'' + data.name + '\',\'' + status_list[i].opt + '\')">' + status_list[i].title + '</button>');
+                    // tabCon.append('<p class="status">' + lan.soft.status + '：<span>' + (data.status ? lan.soft.running : lan.soft.stop) + '</span><span style="color: ' + (data.status ? '#20a53a;' : 'red;') + ' margin-left: 3px;" class="glyphicon ' + (data.status ? 'glyphicon glyphicon-play' : 'glyphicon-pause') + '"></span></p');
+                    // tabCon.append(btns);
+
+                    if (data.name == 'phpmyadmin') {
+                        tabCon.append('<div style="padding-top:25px;">\
+                        <div class="info-r "><input type="checkbox" class="status" '+(data.status?'checked':'')+' id="pma_status" name="status" onclick="bt.pub.set_server_status(\'' + data.name + '\',\'' + (data.status?'stop':'start') + '\')" style="vertical-align: top;margin-right: 10px;"><label class="mr20" for="pma_status" style="font-weight:normal;vertical-align: sub;">Enable public access</label></div>\
+                        <p style="margin-top:5px;"><span>Public access address: </span><a class="btlink" href="' + data.ext.url + '" target="_blank">' + data.ext.url + '</a></p>\
+                        </div>');
+                        tabCon.append('<ul class="help-info-text c7 mtb15" style="padding-top:30px">\
+                            <li>PhpMyAdmin enabling public access may have security risks. It is recommended not to enable it unnecessarily!</li>\
+                            <li>The current version of phpmyadin no longer relies on Nginx / Apache without requiring public access.</li>\
+                            <li>The service state of phpMyAdmin does not affect access to phpMyAdmin through the panel (non-public).</li>\
+                            <li>If the public access right is not turned on, the panel will take over the access right, that is, you need to log in to the panel to access.</li>\
+                        </ul>');
+                    }
 
                     var help = '<ul class="help-info-text c7 mtb15" style="padding-top:30px"><li>' + lan.soft.mysql_mem_err + '</li></ul>';
                     if (name == 'mysqld') tabCon.append(help);
@@ -1920,16 +1940,16 @@ var soft = {
                                     <button class="btn btn-success btn-sm ssl_port_button" >Save</button>\
                                 </div>\
                                 <div class="user_pw_tit">\
-                                    <span class="tit">' + lan.soft.pma_pass + '</span>\
+                                    <span class="tit" style="width: 160px;padding-right: 20px;">' + lan.soft.pma_pass + '</span>\
                                     <span class="btswitch-p"><input class="btswitch btswitch-ios" id="phpmyadminsafe" type="checkbox" ' + (sdata.ext.auth ? 'checked' : '') + '>\
                                     <label class="btswitch-btn phpmyadmin-btn phpmyadmin_safe" for="phpmyadminsafe" ></label>\
                                     </span>\
                                 </div>\
-                                <div class="user_pw">\
-                                    <p><span>' + lan.soft.pma_user + '</span><input id="username_get" class="bt-input-text" name="username_get" value="" type="text" placeholder="' + lan.soft.edit_empty + '"></p>\
-                                    <p><span>' + lan.soft.pma_pass1 + '</span><input id="password_get_1" class="bt-input-text" name="password_get_1" value="" type="password" placeholder="' + lan.soft.edit_empty + '"></p>\
-                                    <p><span>' + lan.soft.pma_pass2 + '</span><input id="password_get_2" class="bt-input-text" name="password_get_1" value="" type="password" placeholder="' + lan.soft.edit_empty + '"></p>\
-                                    <p><button class="btn btn-success btn-sm phpmyadmin_safe_save" >' + lan.public.save + '</button></p>\
+                                <div class="user_pw" style="margin-top:5px;">\
+                                    <p><span style="width: 160px;padding-right: 20px;">' + lan.soft.pma_user + '</span><input id="username_get" class="bt-input-text" name="username_get" value="" type="text" placeholder="' + lan.soft.edit_empty + '"></p>\
+                                    <p><span style="width: 160px;padding-right: 20px;">' + lan.soft.pma_pass1 + '</span><input id="password_get_1" class="bt-input-text" name="password_get_1" value="" type="password" placeholder="' + lan.soft.edit_empty + '"></p>\
+                                    <p><span style="width: 160px;padding-right: 20px;">' + lan.soft.pma_pass2 + '</span><input id="password_get_2" class="bt-input-text" name="password_get_1" value="" type="password" placeholder="' + lan.soft.edit_empty + '"></p>\
+                                    <p><button class="btn btn-success btn-sm phpmyadmin_safe_save" style="margin-left:160px;">' + lan.public.save + '</button></p>\
                                 </div>\
                                 <ul class="help-info-text c7"><li>' + lan.soft.pma_ps + '</li></ul>';
 

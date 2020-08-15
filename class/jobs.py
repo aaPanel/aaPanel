@@ -105,11 +105,19 @@ def control_init():
     public.ExecShell(c)
     p_file = 'class/plugin2.so'
     if os.path.exists(p_file): public.ExecShell("rm -f class/*.so")
-    public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config;chown -R root:root /www/server/phpmyadmin;chmod -R 755 /www/server/phpmyadmin")
+    # public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config;chown -R www:www /www/server/phpmyadmin;chmod -R 700 /www/server/phpmyadmin")
+    if os.path.exists("/www/server/mysql"):
+        public.ExecShell("chown mysql:mysql /etc/my.cnf;chmod 600 /etc/my.cnf")
+    stop_path = '/www/server/stop'
+    if not os.path.exists(stop_path):
+        os.makedirs(stop_path)
+    public.ExecShell("chown -R root:root {path};chmod -R 755 {path}".format(path=stop_path))
+    public.ExecShell('chmod 755 /www;chmod 755 /www/server')
     #disable_putenv('putenv')
     clean_session()
     #set_crond()
     clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
+    clean_max_log('/var/log/rsyncd.log',1024*1024*10)
     clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
     remove_tty1()
     clean_hook_log()
@@ -119,6 +127,55 @@ def control_init():
     check_dnsapi()
     clean_php_log()
     #update_py37()
+    files_set_mode()
+
+
+#设置文件权限
+def files_set_mode():
+    rr = {True:'-R',False:''}
+    m_paths = [
+        ["/www/server/total","/*.lua","root",755,False],
+        ["/www/server/total","/*.json","root",755,False],
+        ["/www/server/total/logs","","www",755,True],
+        ["/www/server/total/total","","www",755,True],
+        ["/www/server/speed","/*.lua","root",755,False],
+        ["/www/server/speed/total","","www",755,True],
+        ["/www/server/btwaf","/*.lua","root",755,False],
+
+        ["/www/server/panel/class","","root",600,True],
+        ["/www/server/panel/data","","root",600,True],
+        ["/www/server/panel/plugin","","root",600,False],
+        ["/www/server/panel/BTPanel","","root",600,True],
+        ["/www/server/panel/vhost","","root",600,True],
+        ["/www/server/panel/rewrite","","root",600,True],
+        ["/www/server/panel/config","","root",600,True],
+        ["/www/server/panel/backup","","root",600,True],
+        ["/www/server/panel/package","","root",600,True],
+        ["/www/server/panel/script","","root",700,True],
+        ["/www/server/panel/temp","","root",600,True],
+        ["/www/server/panel/tmp","","root",600,True],
+        ["/www/server/panel/ssl","","root",600,True],
+        ["/www/server/panel/install","","root",600,True],
+        ["/www/server/panel/logs","","root",600,True],
+        ["/www/server/panel/BT-Panel","","root",700,False],
+        ["/www/server/panel/BT-Task","","root",700,False],
+        ["/www/server/panel","/*.py","root",600,False],
+        ["/dev/shm/session.db","","root",600,False],
+        ["/dev/shm/session_py3","","root",600,True],
+        ["/dev/shm/session_py2","","root",600,True],
+
+        ["/www/server/adminer","","www",700,True]
+    ]
+
+    for m in m_paths:
+        if not os.path.exists(m[0]): continue
+        path = m[0] + m[1]
+        public.ExecShell("chown {R} {U}:{U} {P}".format(P=path,U=m[2],R=rr[m[4]]))
+        public.ExecShell("chmod {R} {M} {P}".format(P=path,M=m[3],R=rr[m[4]]))
+        if m[1]:
+            public.ExecShell("chown {U}:{U} {P}".format(P=m[0],U=m[2],R=rr[m[4]]))
+            public.ExecShell("chmod {M} {P}".format(P=m[0],M=m[3],R=rr[m[4]]))
+
 
 
 #尝试升级到独立环境

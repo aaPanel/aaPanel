@@ -194,7 +194,7 @@ class panelRedirect:
             for d in json.loads(get.redirectdomain):
                 tu = self.GetToDomain(get.tourl)
                 if d == tu:
-                    return public.GetMsg("DOMAIN_SAMEAS_URL",(d,))
+                    return public.returnMsg(False,public.GetMsg("DOMAIN_SAMEAS_URL",(d,)))
 
         if get.domainorpath == "path":
             domains = self.GetAllDomain(get.sitename)

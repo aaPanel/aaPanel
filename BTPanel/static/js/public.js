@@ -283,12 +283,19 @@ var aceEditor = {
             var _val = $(this).attr('data-value'),
                 _item = _this.editor['ace_editor_' + _this.ace_active];
             if ($(this).parent().hasClass('tabsType')) {
-                _item.ace.getSession().setUseSoftTabs(_val == 'nbsp');
+                //_item.ace.getSession().setUseSoftTabs(_val == 'nbsp');
+                _this.aceConfig.aceEditor.useSoftTabs = _val == 'nbsp';
                 _item.softTabs = _val == 'nbsp';
             } else {
-                _item.ace.getSession().setTabSize(_val);
+                //_item.ace.getSession().setTabSize(_val);
+                _this.aceConfig.aceEditor.tabSize = _val;
                 _item.tabSize = _val;
             }
+            _this.saveAceConfig(_this.aceConfig,function(res){
+                if(res.status){
+                    layer.msg('Successful setup', {icon: 1});
+                }
+            });
             $(this).siblings().removeClass('active').find('.icon').remove();
             $(this).addClass('active').append(_icon);
             _this.currentStatusBar(_item.id);
@@ -1809,18 +1816,16 @@ var aceEditor = {
 				encoding:obj.encoding.toLowerCase(),
 				path:obj.path
 			},
-			complete:function(res,status){
-				if(res.status != 200){
-					if(error) error(res.responseJSON)
-				}else if(res.status == 200){
-					var rdata = res.responseJSON;
-					if(rdata.status){
-						if(success) success(rdata)
-					}else{
-						if(error) error(rdata)
-					}
-					if(!obj.tips) layer.msg(rdata.msg,{icon:rdata.status?1:2});
+			success:function(rdata){
+				if(rdata.status){
+					if(success) success(rdata)
+				}else{
+					if(error) error(rdata)
 				}
+				if(!obj.tips) layer.msg(rdata.msg,{icon:rdata.status?1:2});
+			},
+			error:function(err){
+			    if(error) error(err)
 			}
 		});
 	},
@@ -2003,11 +2008,97 @@ function openEditorView(type, path) {
                     return false;
                 }
             }
+        },
+        end:function(){
+            aceEditor.ace_active = '';
             aceEditor.editor = null;
             aceEditor.pathAarry = [];
-            aceEditor.editorLength = 0;
+            aceEditor.menu_path = '';
         }
     });
+}
+
+/**
+ * AES加密
+ * @param {string} s_text 等待加密的字符串
+ * @param {string} s_key 16位密钥
+ * @param {array} ctx 可选，默认为 { mode: CryptoJS.mode.ECB,padding: CryptoJS.pad.ZeroPadding }
+ * @return {string} 
+ */
+function aes_encrypt(s_text,s_key,ctx){
+	if(ctx == undefined) ctx = { mode: CryptoJS.mode.ECB,padding: CryptoJS.pad.ZeroPadding }
+	var key = CryptoJS.enc.Utf8.parse(s_key);
+	var encrypt_data = CryptoJS.AES.encrypt(s_text,key,ctx);
+	return encrypt_data.toString();
+}
+
+/**
+ * AES解密
+ * @param {string} s_text 等待解密的密文
+ * @param {string} s_key 16位密钥
+ * @param {array} ctx 可选，默认为 { mode: CryptoJS.mode.ECB,padding: CryptoJS.pad.ZeroPadding }
+ * @return {string}
+ */
+function aes_decrypt(s_text,s_key,ctx){
+	if(ctx == undefined) ctx = { mode: CryptoJS.mode.ECB,padding: CryptoJS.pad.ZeroPadding }
+	var key = CryptoJS.enc.Utf8.parse(s_key);
+	var decrypt_data = CryptoJS.AES.decrypt(s_text,key,ctx);
+	return decrypt_data.toString(CryptoJS.enc.Utf8);
+}
+
+/**
+ * ajax内容解密
+ * @param {string} data 加密的响应数据
+ * @param {string} stype ajax中定义的数据类型
+ * @return {string} 解密后的响应数据
+ */
+function ajax_decrypt(data,stype){
+	if(!data) return data;
+	if(data.substring(0,6) == "BT-CRT"){
+		var token = $("#request_token_head").attr("token")
+		var pwd = token.substring(0,8) + token.substring(40,48)
+		data = aes_decrypt(data.substring(6),pwd);
+		if(stype == undefined){
+			stype = '';
+		}
+		if(stype.toLowerCase() != 'json'){
+			data =  JSON.parse(data);
+		}
+	}
+	return data
+}
+/**
+ * 格式化form_data数据，并加密
+ * @param {string} form_data 加密前的form_data数据
+ * @return {string} 加密后的form_data数据
+ */
+function format_form_data(form_data){
+	var data_tmp = form_data.split('&');
+	var form_info = {}
+	var token = $("#request_token_head").attr("token")
+	if(!token) return form_data;
+	var pwd = token.substring(0,8) + token.substring(40,48)
+	for(var i=0;i<data_tmp.length;i++){
+		var tmp = data_tmp[i].split('=');
+		if(tmp.length < 2) continue
+		// if(!tmp[1]) continue;
+		var val = decodeURIComponent(tmp[1].replace(/\+/g,'%20'));
+		if(val.length > 3){
+			form_info[tmp[0]] = 'BT-CRT' + aes_encrypt(val,pwd);
+		}else{
+			form_info[tmp[0]] = val;
+		}
+		
+	}
+	return $.param(form_info);
+}
+
+function ajax_encrypt(request){
+	if(!this.type || !this.data || !this.contentType) return;
+	if($("#panel_debug").attr("data") == 'True') return;
+	if(this.type == 'POST' && this.data.length > 1){
+		this.data = format_form_data(this.data);
+	}
 }
 
 function ajaxSetup() {
@@ -2025,7 +2116,11 @@ function ajaxSetup() {
     }
 
     if (my_headers) {
-        $.ajaxSetup({ headers: my_headers });
+        $.ajaxSetup({ 
+			headers: my_headers,
+			dataFilter: ajax_decrypt,
+			beforeSend: ajax_encrypt
+		});
     }
 }
 ajaxSetup();

@@ -82,17 +82,21 @@
             </div>
             <div class="system-info-con mtb20">
                 <ul class="clearfix text-center">
-                    <li class="sys-li-box col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                    <li class="sys-li-box ccol-xs-4 col-sm-4 col-md-4 col-lg-3">
                         <p class="name f15 c9">{{data['lan']['N1']}}</p>
                         <div class="val"><a class="btlink" href="/site">{{data['siteCount']}}</a></div>
                     </li>
-                    <li class="sys-li-box col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                    <li class="sys-li-box ccol-xs-4 col-sm-4 col-md-4 col-lg-3">
                         <p class="name f15 c9">{{data['lan']['N3']}}</p>
                         <div class="val"><a class="btlink" href="/ftp">{{data['ftpCount']}}</a></div>
                     </li>
-                    <li class="sys-li-box col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                    <li class="sys-li-box ccol-xs-4 col-sm-4 col-md-4 col-lg-3">
                         <p class="name f15 c9">{{data['lan']['N2']}}</p>
                         <div class="val"><a class="btlink" href="/database">{{data['databaseCount']}}</a></div>
+                    </li>
+                    <li class="sys-li-box ccol-xs-4 col-sm-4 col-md-4 col-lg-3">
+                        <p class="name f15 c9">{{data['lan']['N4']}}</p>
+                        <div class="val"><a class="btlink warning_num" href="javascript:;" onclick="index.reader_warning_view()">0</a></div>
                     </li>
                 </ul>
             </div>
@@ -148,7 +152,8 @@
                 },2000);
             });
         });
-	})
+    });
+    bt.set_cookie('serverType', "{{session['webserver']}}");
 </script>
 
 {% endblock %}

@@ -45,6 +45,10 @@ class ScanLogin(object):
         cache.set(public.get_session_id(),tid,360)
         return public.returnMsg(True, qrcode_str)
 
+    #生成request_token
+    def set_request_token(self):
+        session['request_token_head'] = public.GetRandomString(48)
+
     # 设置登录状态
     def set_login(self, get):
         session_id = public.get_session_id()
@@ -66,6 +70,9 @@ class ScanLogin(object):
                 public.WriteLog('TYPE_LOGIN', 'LOGIN_SUCCESS',
                                 ('WeChat scan code login', public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
                 login_type = 'data/app_login.pl'
+                self.set_request_token()
+                import config
+                config.config().reload_session()
                 public.writeFile(login_type,'True')
                 return public.returnMsg(True, 'login successful')
         return public.returnMsg(False, 'Login failed')
@@ -87,6 +94,9 @@ class ScanLogin(object):
         sess_input_path = 'data/session_last.pl'
         public.writeFile(sess_input_path,str(int(time.time())))
         login_type = 'data/app_login.pl'
+        self.set_request_token()
+        import config
+        config.config().reload_session()
         public.writeFile(login_type,'True')
         return public.returnMsg(True,'login successful!')
 

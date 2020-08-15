@@ -372,17 +372,17 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if get.reverse == 'False':
                 reverse = False
             for file_info in self.__list_dir(get.path, get.sort, reverse):
-                filename = os.path.join(get.path, file_info['name'])
-                if not os.path.exists(filename):
-                    continue
+                filename = os.path.join(get.path, file_info[0])
                 if search:
-                    if file_info['name'].lower().find(search) == -1:
+                    if file_info[0].lower().find(search) == -1:
                         continue
                 i += 1
                 if n >= page.ROW:
                     break
                 if i < page.SHIFT:
                     continue
+                if not os.path.exists(filename): continue
+                file_info = self.__format_stat(filename, get.path)
                 r_file = file_info['name'] + ';' + str(file_info['size']) + ';' + str(file_info['mtime']) + ';' + str(
                     file_info['accept']) + ';' + file_info['user'] + ';' + file_info['link']+';' + self.get_download_id(filename) + ';' + self.is_composer_json(filename)
                 if os.path.isdir(filename):
@@ -402,34 +402,46 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         return data
 
     def __list_dir(self, path, my_sort='name', reverse=False):
+        '''
+            @name 获取文件列表，并排序
+            @author hwliang<2020-08-01>
+            @param path<string> 路径
+            @param my_sort<string> 排序字段
+            @param reverse<bool> 是否降序
+            @param list
+        '''
         if not os.path.exists(path):
             return []
         py_v = sys.version_info[0]
         tmp_files = []
-        tmp_dirs = []
+
         for f_name in os.listdir(path):
+            if py_v == 2:
+                f_name = f_name.encode('utf-8')
+
+            #使用.join拼接效率更高
+            filename = "/".join((path,f_name))
+            sort_key = 1
+            sort_val = None
+            #此处直接做异常处理比先判断文件是否存在更高效
             try:
-                if py_v == 2:
-                    f_name = f_name.encode('utf-8')
-                filename = os.path.join(path, f_name)
-                if not os.path.exists(filename):
-                    continue
-                file_info = self.__format_stat(filename, path)
-                if not file_info:
-                    continue
-                if os.path.isdir(filename):
-                    tmp_dirs.append(file_info)
-                else:
-                    tmp_files.append(file_info)
+                if my_sort == 'name':
+                    sort_key = 0
+                elif my_sort == 'size':
+                    sort_val = os.stat(filename).st_size
+                elif my_sort == 'mtime':
+                    sort_val =  os.stat(filename).st_mtime
+                elif my_sort == 'accept':
+                    sort_val = os.stat(filename).st_mode
+                elif my_sort == 'user':
+                    sort_val =  os.stat(filename).st_uid
             except:
                 continue
-        tmp_dirs = sorted(tmp_dirs, key=lambda x: x[my_sort], reverse=reverse)
-        tmp_files = sorted(
-            tmp_files, key=lambda x: x[my_sort], reverse=reverse)
+            #使用list[tuple]排序效率更高
+            tmp_files.append((f_name,sort_val))
 
-        for f in tmp_files:
-            tmp_dirs.append(f)
-        return tmp_dirs
+        tmp_files = sorted(tmp_files, key=lambda x: x[sort_key], reverse=reverse)
+        return tmp_files
 
     def __format_stat(self, filename, path):
         try:
@@ -923,7 +935,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return public.returnMsg(False,'The file format does not support online editing!')
         if os.path.getsize(get.path) > 3145928:
             return public.returnMsg(False,'CANT_EDIT_ONLINE_FILE')
-        if not os.path.isfile(get.path):
+        if os.path.isdir(get.path):
             return public.returnMsg(False,'This is not a file!')
         fp = open(get.path,'rb')
         data = {}
@@ -1856,8 +1868,10 @@ cd %s
             "password":str(get.password), #提取密码
             "addtime": mtime #添加时间
         }
-        # 更新 or 插入
-        token = public.M(my_table).where('filename=?', (get.filename,)).getField('token')
+        if len(pdata['password']) < 4 and len(pdata['password']) > 0:
+            return public.returnMsg(False,'The extract password length cannot be less than 4 bits')
+        #更新 or 插入
+        token = public.M(my_table).where('filename=?',(get.filename,)).getField('token')
         if token:
             return public.returnMsg(False, 'Already shared!')
             # pdata['token'] = token
@@ -2001,13 +2015,17 @@ cd %s
 
     # 操作数据库
     def _operate_db(self,q_sql,permissions_tb=None):
-        self._get_sqlite_connect()
-        c = self.sqlite_connection.cursor()
-        table = "index_tb"
-        if permissions_tb:
-            table = permissions_tb
-        sql_data = q_sql.replace("TB_NAME",table)
-        return c.execute(sql_data)
+        try:
+            self._get_sqlite_connect()
+            c = self.sqlite_connection.cursor()
+            table = "index_tb"
+            if permissions_tb:
+                table = permissions_tb
+            sql_data = q_sql.replace("TB_NAME",table)
+            return c.execute(sql_data)
+        except:
+            self._create_index_tb()
+            self._operate_db(q_sql,permissions_tb)
 
     # 判断文件个数
     def _get_file_total(self,path,num,date):
@@ -2037,6 +2055,18 @@ CREATE TABLE {}(
    date CHAR,
    type CHAR 
 );""".format(tb_name)
+        self.sqlite_connection.execute(sql)
+
+    def _create_index_tb(self):
+        self._get_sqlite_connect()
+        sql = """
+CREATE TABLE index_tb(
+   id INTEGER  PRIMARY KEY AUTOINCREMENT,
+   permissions_tb CHAR ,
+   date CHAR,
+   remark CHAR,
+   first_path CHAR
+);"""
         self.sqlite_connection.execute(sql)
 
     # 获取权限表名
@@ -2302,3 +2332,23 @@ CREATE TABLE {}(
             except:
                 print(public.get_error_info())
         return public.returnMsg(True,"Permission repair succeeded")
+
+    def restore_website(self,args):
+        """
+            @name 恢复站点文件
+            @author zhwen<zhw@bt.cn>
+            @parma file_name 备份得文件名
+            @parma site_id 网站id
+        """
+        import panel_restore
+        pr=panel_restore.panel_restore()
+        return pr.restore_website_backup(args)
+
+    def get_progress(self,args):
+        """
+            @name 获取进度日志
+            @author zhwen<zhw@bt.cn>
+        """
+        import panel_restore
+        pr=panel_restore.panel_restore()
+        return pr.get_progress(args)

@@ -681,6 +681,12 @@ var bt = {
                         var _width = _obj.width ? _obj.width : '330px';
                         _html += "<input name='" + _name + "' " + (_obj.disabled ? 'disabled' : '') + " class='bt-input-text mr5 " + _name + bs + "' " + (_placeholder ? ' placeholder="' + _placeholder + '"' : "") + " type='password' style='width:" + _width + "' value='" + (_obj.value ? _obj.value : '') + "' />";
                         break;
+                    case 'div':
+                    	var _width = _obj.width ? _obj.width : '330px';
+                        var _height = _obj.height ? _obj.height : '100px';
+                        _html += '<div class="bt-input-text ace_config_editor_scroll mr20 ' + _name + bs + '" name="' + _name + '" style="width:' + _width + ';height:' + _height + ';line-height:22px">' + (_obj.value ? _obj.value : '') + '</div>';
+                        if (_placeholder) _html += '<div class="placeholder c9" style="top: 15px; left: 15px; display: block;">' + _placeholder + '</div>';
+                        break;
                     case 'switch':
                         _html += '<div style="display: inline-block;vertical-align: middle;">\
                             <input type="checkbox" id="' + _name + '" ' + (_obj.value==true?'checked':'') + ' class="btswitch btswitch-ios">\
@@ -1022,6 +1028,27 @@ var bt = {
         } else {
             ace.saveCallback(ace.ACE.getValue());
         }
+    },
+    /**
+     * @description 遍历数组和对象
+     * @param {Array|Object} obj 遍历数组|对象
+     * @param {Function} fn 遍历对象或数组
+     * @return 当前对象
+     */
+    each: function (obj, fn) {
+        var key, that = this;
+        if (typeof fn !== 'function') return that;
+        obj = obj || [];
+        if (obj.constructor === Object) {
+            for (key in obj) {
+                if (fn.call(obj[key], key, obj[key])) break;
+            }
+        } else {
+            for (key = 0; key < obj.length; key++) {
+                if (fn.call(obj[key], key, obj[key])) break;
+            }
+        }
+        return that;
     }
 };
 
@@ -3992,6 +4019,22 @@ bt.soft = {
             }
         })
     },
+    //遍历数组和对象
+	each:function(obj, fn){
+		var key,that = this;
+		if(typeof fn !== 'function') return that;
+		obj = obj || [];
+		if(obj.constructor === Object){
+			for(key in obj){
+			if(fn.call(obj[key], key, obj[key])) break;
+			}
+		} else {
+			for(key = 0; key < obj.length; key++){
+			if(fn.call(obj[key], key, obj[key])) break;
+			}
+		}
+		return that;
+	},
     del_make_args: function (name, args_name) {
         name = bt.soft.get_name(name);
         bt.confirm({ msg: 'Confirm delete[' + name + ':' + args_name + ']module？', title: 'Delete[' + name + ':' + args_name + ']module!' }, function () {
@@ -4468,21 +4511,60 @@ bt.database = {
             bt.msg(rdata);
         })
     },
-    open_phpmyadmin: function(name, username, password) {
-        if ($("#toPHPMyAdmin").attr('action').indexOf('phpmyadmin') == -1) {
-            layer.msg(lan.database.phpmyadmin_err, { icon: 2, shade: [0.3, '#000'] })
-            setTimeout(function() { window.location.href = '/soft'; }, 3000);
-            return;
-        }
-        var murl = $("#toPHPMyAdmin").attr('action');
-        $("#pma_username").val(username);
-        $("#pma_password").val(password);
-        $("#db").val(name);
-        layer.msg(lan.database.phpmyadmin, { icon: 16, shade: [0.3, '#000'], time: 1000 });
-        setTimeout(function() {
-            $("#toPHPMyAdmin").submit();
-        }, 200);
-    },
+    // open_phpmyadmin: function(name, username, password) {
+    //     if ($("#toPHPMyAdmin").attr('action').indexOf('phpmyadmin') == -1) {
+    //         layer.msg(lan.database.phpmyadmin_err, { icon: 2, shade: [0.3, '#000'] })
+    //         setTimeout(function() { window.location.href = '/soft'; }, 3000);
+    //         return;
+    //     }
+    //     var murl = $("#toPHPMyAdmin").attr('action');
+    //     $("#pma_username").val(username);
+    //     $("#pma_password").val(password);
+    //     $("#db").val(name);
+    //     layer.msg(lan.database.phpmyadmin, { icon: 16, shade: [0.3, '#000'], time: 1000 });
+    //     setTimeout(function() {
+    //         $("#toPHPMyAdmin").submit();
+    //     }, 200);
+    // },
+    open_phpmyadmin:function(name,username,password){
+		if($("#toPHPMyAdmin").attr('action').indexOf('phpmyadmin') == -1){
+		    layer.msg(lan.database.phpmyadmin_err,{icon:2,shade: [0.3, '#000']})
+		    setTimeout(function(){ window.location.href = '/soft'; },3000);
+			return;
+		}
+		layer.open({
+			type: 1,
+			title: "Please select how to access phpMyAdmin",
+			area: '600px',
+			closeBtn: 2,
+			shadeClose: false,
+			content: '<div class="change-default pd20">\
+			<button class="btn btn-default btn-sm " onclick="bt.database.submit_phpmyadmin(\''+name+'\',\''+username+'\',\''+password+'\',false)">Secure access through panel</button>\
+			<button style="margin-left: 145px;" class="btn btn-default btn-sm" onclick="bt.database.submit_phpmyadmin(\''+name+'\',\''+username+'\',\''+password+'\',true)">Access by Nginx/Apche/OLS</button>\
+			<ul class="help-info-text c7 plr20">\
+				<li>【Secure access by panel】No need to install Nginx/Apache. The security authentication is performed by the panel. Need to log in to the panel to access it</li>\
+				<li>【Access by Nginx/Apche/OLS】Through the web server access, phpMyAdmin for security authentication</li>\
+				<li>If used【Secure access through panel】that some features cannot be used, please try another access method</li>\
+			</ul>\
+			</div>'
+		});
+	},
+	submit_phpmyadmin: function(name,username,password,pub){
+		if(pub === true){
+			$("#toPHPMyAdmin").attr('action',$("#toPHPMyAdmin").attr('public-data'))
+		}else{
+			$("#toPHPMyAdmin").attr('action','/phpmyadmin/index.php')
+		}
+		var murl = $("#toPHPMyAdmin").attr('action');
+		$("#pma_username").val(username);
+		$("#pma_password").val(password);
+		$("#db").val(name);
+		layer.msg(lan.database.phpmyadmin,{icon:16,shade: [0.3, '#000'],time:1000});
+		setTimeout(function(){
+			$("#toPHPMyAdmin").submit();
+			layer.closeAll();
+		},200);
+	},
     input_sql: function(fileName, dataName) {
         bt.confirm({ msg: lan.database.input_confirm, title: lan.database.input_title }, function(index) {
             var loading = bt.load(lan.database.input_the);

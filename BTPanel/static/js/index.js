@@ -3,6 +3,8 @@ bt.pub.check_install(function (rdata) {
 })
 var interval_stop = false;
 var index = {
+    warning_list:[],
+    warning_num:0,
     interval: {
         limit: 10,
         count: 0,
@@ -91,9 +93,9 @@ var index = {
     },
     get_init: function () {
         var _this = this;
-        setTimeout(function () { _this.get_disk_list(); }, 500)
-        setTimeout(function () { _this.get_server_info(); }, 1000)
-
+        setTimeout(function () { _this.get_disk_list(); }, 10);
+        setTimeout(function () { _this.get_warning_list(); }, 20);
+        setTimeout(function () { _this.get_server_info(); }, 30);
 
         bt.pub.get_user_info(function (rdata) {
             if (rdata.status) {
@@ -200,13 +202,13 @@ var index = {
                 })
             })
         });
-        setTimeout(function () { _this.interval.start(); }, 1600)
-        setTimeout(function () { index.get_index_list(); }, 1200)
+        setTimeout(function () { _this.interval.start(); }, 40)
+        setTimeout(function () { index.get_index_list(); }, 50)
 
 
         setTimeout(function () {
             _this.net.init();
-        }, 200);
+        }, 60);
 
         setTimeout(function () {
             bt.system.check_update(function (rdata) {
@@ -222,7 +224,7 @@ var index = {
                 // }
 
             }, false)
-        }, 1500)
+        }, 70)
     },
     get_data_info: function (callback) {
         var _this = $(this);
@@ -236,7 +238,7 @@ var index = {
             index.set_val(_membox, { usage: (net.mem.memRealUsed * 100 / net.mem.memTotal).toFixed(1), items: pub_arr, title: net.mem.memRealUsed + '/' + net.mem.memTotal + '(MB)' })
             bt.set_cookie('memSize', net.mem.memTotal)
             for (var i = 0; i < _diskbox.length; i++) {
-                index.set_val(_diskbox.eq(i), { usage: net.disk[i].size[3].split('%')[0], title: net.disk[i].size[1]+'/'+net.disk[0].size[0], items: pub_arr })
+                index.set_val(_diskbox.eq(i), { usage: net.disk[i].size[3].split('%')[0], title: net.disk[i].size[1]+'/'+net.disk[i].size[0], items: pub_arr })
             }
             
             var _lval = Math.round((net.load.one / net.load.max) * 100);
@@ -366,6 +368,7 @@ var index = {
                         color = '#dd2f00'
                         break;
                 }
+                
                 index.set_val(_li, { usage: item.rate, color: color })
                 _tab.append(_li);
             }
@@ -468,28 +471,34 @@ var index = {
                     bt.msg(rdata);
                     return;
                 }
-                var loading = bt.open({
+                var result = rdata,
+                is_beta = rdata.msg.is_beta,
+                loading = bt.open({
                     type: 1,
                     title: '[Linux' + (rdata.msg.is_beta == 1 ? lan.index.test_version : lan.index.final_version) + ']-'+lan.index.update_log,
-                    area: '520px',
+                    area: '550px',
                     shadeClose: false,
                     skin: 'layui-layer-dialog',
                     closeBtn: 2,
                     content: '<div class="setchmod bt-form">\
                                 <div class="update_title"><i class="layui-layer-ico layui-layer-ico1"></i><span>'+lan.index.last_version_now+'</span></div>\
-                                <div class="update_version">'+lan.index.this_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_this_version_log+'">'+lan.index.bt_linux+ (rdata.msg.is_beta == 1 ? lan.index.test_version+' ' + rdata.msg.beta.version : lan.index.final_version+' ' + rdata.msg.version) + '</a>&nbsp;&n'+ lan.index.release_time + (rdata.msg.is_beta == 1 ? rdata.msg.beta.uptime : rdata.msg.uptime) + '</div>\
+                                <div class="update_version">'+lan.index.this_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_this_version_log+'">'+lan.index.bt_linux+ (rdata.msg.is_beta == 1 ? lan.index.test_version+' ' + rdata.msg.beta.version : lan.index.final_version+' ' + rdata.msg.version) + '</a>&nbsp;&nbsp;'+ lan.index.release_time + (rdata.msg.is_beta == 1 ? rdata.msg.beta.uptime : rdata.msg.uptime) + '</div>\
+                                <div class="update_conter">\
+                                        <div class="update_tips">'+ (is_beta != 1 ? lan.index.test_version : lan.index.final_version) + lan.index.last_version_is + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
+                                        '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">'+lan.index.change_final+'</a></span>') + '\
+                                    </div>\
                                 <div class="bt-form-submit-btn">\
                                     <button type="button" class="btn btn-danger btn-sm btn-title" onclick="layer.closeAll()">'+ lan.public.cancel + '</button>\
                                     <button type="button" class="btn btn-success btn-sm btn-title btn_update_panel" onclick="layer.closeAll()">'+ lan.public.know + '</button>\
                                 </div>\
                             </div>\
                             <style>\
-                                .setchmod{padding-bottom:50px;}\
+                                .setchmod{padding-bottom:40px;padding-top: 0;}\
                                 .update_title{overflow: hidden;position: relative;vertical-align: middle;margin-top: 10px;}\
-                                .update_title .layui-layer-ico{display: block;left: 60px !important;top: 1px !important;}\
-                                .update_title span{display: inline-block;color: #333;height: 30px;margin-left: 105px;margin-top: 3px;font-size: 20px;}\
+                                .update_title .layui-layer-ico{display: block;left: 10px !important;top: 1px !important;}\
+                                .update_title span{display: inline-block;color: #333;height: 30px;margin-left: 45px;margin-top: 3px;font-size: 20px;}\
                                 .update_conter{background: #f9f9f9;border-radius: 4px;padding: 20px;margin: 15px 37px;margin-top: 15px;}\
-                                .update_version{font-size: 12px;margin:15px 0 10px 85px}\
+                                .update_version{font-size: 12px;margin:15px 0 10px 60px}\
                                 .update_logs{margin-bottom:10px;border-bottom:1px solid #ececec;padding-bottom:10px;}\
                                 .update_tips{font-size: 13px;color: #666;font-weight: 600;}\
                                 .update_tips span{padding-top: 5px;display: block;font-weight: 500;}\
@@ -518,10 +527,10 @@ var index = {
                                         <div class="update_version">'+lan.index.last_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_version_log+'">'+lan.index.bt_linux+ (is_beta === 1 ? lan.index.test_version : lan.index.final_version) + rdata.version + '</a></br>'+lan.index.update_date + (result.msg.is_beta == 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
                                         <div class="update_logs">'+ rdata.updateMsg + '</div>\
                                     </div>\
-                                    <!--div class="update_conter">\
+                                    <div class="update_conter">\
                                         <div class="update_tips">'+ (is_beta !== 1 ? lan.index.test_version : lan.index.final_version) + lan.index.last_version_is + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
                                         '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">'+lan.index.change_final+'</a></span>') + '\
-                                    </div-->\
+                                    </div>\
                                     <div class="bt-form-submit-btn">\
                                         <button type="button" class="btn btn-danger btn-sm btn-title" onclick="layer.closeAll()">'+ lan.public.cancel + '</button>\
                                         <button type="button" class="btn btn-success btn-sm btn-title btn_update_panel" onclick="index.to_update()" >'+ lan.index.update_go + '</button>\
@@ -538,7 +547,7 @@ var index = {
         layer.closeAll();
         bt.system.to_update(function (rdata) {
             if (rdata.status) {
-                bt.msg({ msg: rdata.msg, icon: 1 })
+                bt.msg({ msg: lan.index.update_ok, icon: 1 })
                 $("#btversion").html(rdata.version);
                 $("#toUpdate").html('');
                 bt.system.reload_panel();
@@ -631,13 +640,14 @@ var index = {
             });
             $('.btn_update_panel_beta').click(function () {
                 bt.show_confirm(lan.index.update_test_version, lan.index.check_test_version_detail, function () {
-
+                    var loading = bt.load();
                     bt.send('apple_beta', 'ajax/apple_beta', {}, function (rdata) {
                         if (rdata.status === false) {
                             bt.msg(rdata);
                             return;
                         }
-                        bt.system.check_update(function (rdata) {
+                        bt.system.check_update(function (res) {
+                            loading.close();
                             index.to_update();
                         });
                     });
@@ -768,6 +778,220 @@ var index = {
     get_cloud_list: function () {
         $.post('/plugin?action=get_soft_list', { type: 8, p: 1, force: 1, cache: 1 }, function (rdata) {
             console.log(lan.index.get_soft_list_success);
+        });
+    },
+    // 获取安全风险列表
+    get_warning_list:function(active,callback){
+        var that = this,obj = {};
+        if(active == true) obj = {force:1}
+        bt.send('get_list','warning/get_list',obj,function(res){
+            if(res.status !== false){
+                that.warning_list = res;
+                that.warning_num = res.risk.length;
+                $('.warning_num').css('color',(that.warning_num > 0?'red':'#20a53a')).html(that.warning_num);
+                $('.warning_scan_ps').html(that.warning_num>0?('This scan check <i>'+ that.warning_num +'</i> risks, please repair them in time!'):'There is no risk item detected in this scan, please keep it!');
+                if(callback) callback(res);
+            }
+        });
+    },
+    /**
+     * @description 获取时间简化缩写
+     * @param {Numbre} dateTimeStamp 需要转换的时间戳
+     * @return {String} 简化后的时间格式
+    */
+    get_simplify_time:function(dateTimeStamp){
+        if(dateTimeStamp === 0) return 'Just';
+        if(dateTimeStamp.toString().length == 10)  dateTimeStamp = dateTimeStamp * 1000
+        var minute = 1000 * 60,hour = minute * 60,day = hour * 24,halfamonth = day * 15,month = day * 30,now = new Date().getTime(),diffValue = now - dateTimeStamp;  
+        if(diffValue < 0) return  'Just';
+        var monthC = diffValue / month,weekC = diffValue / (7 * day),dayC = diffValue / day,hourC = diffValue / hour,minC = diffValue / minute;  
+        if(monthC >= 1) {  
+            result = "" + parseInt(monthC) + "month ago";  
+        } else if(weekC >= 1) {  
+            result = "" + parseInt(weekC) + "weeks ago";  
+        } else if(dayC >= 1) {  
+            result = "" + parseInt(dayC) + "days ago";  
+        } else if(hourC >= 1) {  
+            result = "" + parseInt(hourC) + "hours ago";  
+        } else if(minC >= 1) {  
+            result = "" + parseInt(minC) + "minutes ago";  
+        } else{  
+            result = "Just";  
+        }     
+        return result;
+    },
+    /**
+     * @description 渲染安全模块视图
+     * @return 无返回值
+    */
+    reader_warning_view:function(){
+        var that = this;
+        function reader_warning_list(data){
+            var html = '',scan_time = '',arry =  [['risk','Risk'],['security','Security'],['ignore','Ignore']],level = [['Low risk','#e8d544'],['Medium risk','#E6A23C'],['High risk','red']]
+            bt.each(arry,function(index,item){
+                var data_item = data[item[0]],data_title = item[1];
+                html += '<li class="module_item '+ item[0] +'">'+
+                        '<div class="module_head">'+
+                            '<span class="module_title">'+ data_title +'</span>'+
+                            '<span class="module_num">'+ data_item.length +'</span>'+
+                            '<span class="module_cut_show">'+ (item[index] == 'risk' && that.warning_num > 0?'<i>Collapse</i><span class="glyphicon glyphicon-menu-up" aria-hidden="false"></span>':'<i>Details</i><span class="glyphicon glyphicon-menu-down" aria-hidden="false"></span>') +'</span>'+
+                        '</div>'+
+                        (function(index,item){
+                            var htmls = '<ul class="module_details_list '+ (item[0] == 'risk' && that.warning_num > 0?'active':'') +'">';
+                            bt.each(data_item,function(indexs,items){
+                                scan_time = items.check_time;
+                                htmls += '<li class="module_details_item">'+
+                                    '<div class="module_details_head">'+
+                                        '<span class="module_details_title">'+ items.ps +'<i>（Checked: '+ (that.get_simplify_time(items.check_time) || 'Just') +', time: '+ ( items.taking>1?( items.taking +'Sec'):((items.taking * 1000).toFixed(2) +'ms')) +'）</i></span>'+
+                                        '<span class="operate_tools">'+ (item[0] != 'security'?('<a href="javascript:;" class="btlink cut_details">Detail</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" data-model="'+ items.m_name +'" data-title="'+ items.title +'" '+ (item[0]=='ignore'?'class=\"btlink\"':'') +' data-type="'+item[0]+'">'+ (item[0] != 'ignore'?'Ignore':'Remove') +'</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" data-model="'+ items.m_name +'" data-title="'+ items.title +'">Check</a>'):'<a href="javascript:;" class="btlink cut_details">Detail</a>') +'</span>' +
+                                    '</div>'+
+                                    '<div class="module_details_body">'+
+                                        '<div class="module_details_line">'+
+                                            '<div class="module_details_block"><span class="line_title">Test type: </span><span class="line_content">'+ items.title +'</span></div>'+
+                                            '<div class="module_details_block"><span class="line_title">Risk level: </span><span class="line_content" style="color:'+ level[items.level-1][1] +'">'+ level[items.level-1][0] +'</span></div>'+
+                                        '</div>'+
+                                        '<div class="module_details_line"><span class="line_title">Risk detail: </span><span class="line_content">'+ items.msg +'</span></div>'+
+                                        '<div class="module_details_line"><span class="line_title">'+ (item[0] != 'security'?'Solution: ':'Suggest: ') +'</span><span class="line_content">'+ 
+                                        (function(){
+                                            var htmlss = '';
+                                            bt.each(items.tips,function(indexss,itemss){
+                                                htmlss +='<i>'+ (indexss+1) +'、'+ itemss  +'</i></br>';
+                                            });
+                                            return htmlss;
+                                        }()) +'</span></div>'+
+                                        (items.help != ''?('<div class="module_details_line"><span class="line_title">Help: </span><span class="line_content"><a href="'+ items.help +'" target="_blank" class="btlink">'+items.help +'</span></div>'):'') +
+                                    '</div>'+
+                                '</li>';
+                            });
+                            htmls += '</ul>';
+                            return htmls;
+                        }(index,item))
+                    +'</li>'
+            });
+            $('.warning_scan_body').html(html);
+            $('.warning_scan_time').html('Checked: &nbsp;'+ bt.format_data(scan_time));
+        }
+        bt.open({
+            type:'1',
+            title:'Security risk',
+            area:['850px','700px'],
+            skin:'warning_scan_view',
+            content:'<div class="warning_scan_view">'+
+                '<div class="warning_scan_head">'+
+                    '<span class="warning_scan_ps">'+ (that.warning_num>0?('This scan check <i>'+ that.warning_num +'</i> risks, please repair them in time!'):'This scan check no risks, please keep it!') +'</span>'+
+                    '<span class="warning_scan_time"></span>'+
+                    '<button class="warning_again_scan">Retest</button>'+
+                '</div>'+
+                '<ol class="warning_scan_body"></ol>'+
+            '</div>',
+            success:function(){
+                $('.warning_again_scan').click(function(){
+                    var loadT = layer.msg('Re detecting security risks, please wait...',{icon:16});
+                    that.get_warning_list(true,function(){
+                        layer.msg('Scan succeeded',{icon:1});
+                        reader_warning_list(that.warning_list);
+                    });
+                });
+                $('.warning_scan_body').on('click','.module_item .module_head',function(){
+                    var _parent = $(this).parent(),_parent_index = _parent.index(),_list = $(this).next();
+                    if(parseInt($(this).find('.module_num').text()) > 0){
+                        if(_list.hasClass('active')){
+                            _list.css('height',0);
+                            $(this).find('.module_cut_show i').text('Detail').next().removeClass('glyphicon-menu-up').addClass('glyphicon-menu-down');
+                            setTimeout(function(){  
+                                _list.removeClass('active').removeAttr('style');
+                            },500);
+                        }else{
+                            $(this).find('.module_cut_show i').text('Collapse').next().removeClass('glyphicon-menu-down').addClass('glyphicon-menu-up');
+                            _list.addClass('active');
+                            var details_list = _list.parent().siblings().find('.module_details_list');
+                            details_list.removeClass('active');
+                            details_list.prev().find('.module_cut_show i').text('Detail').next().removeClass('glyphicon-menu-up').addClass('glyphicon-menu-down')
+                        }
+                    }
+                });
+                $('.warning_scan_body').on('click','.operate_tools a',function(){
+                    var index = $(this).index(),data = $(this).data();
+                    switch(index){
+                        case 0:
+                            if($(this).hasClass('active')){
+                                $(this).parents('.module_details_head').next().hide();
+                                $(this).removeClass('active').text('Detail');
+                            }else{
+                                var item = $(this).parents('.module_details_item'),indexs = item.index();
+                                $(this).addClass('active').text('Collapse');
+                                item.siblings().find('.module_details_body').hide();
+                                item.siblings().find('.operate_tools a:eq(0)').removeClass('active').text('Detail');
+                                $(this).parents('.module_details_head').next().show();
+                                $('.module_details_list').scrollTop(indexs * 41);
+                            }
+                        break;
+                        case 1:
+                            if(data.type != 'ignore'){
+                                bt.confirm({title:'Ignore risk',msg:'Confirm to ignore【'+ data.title +'】risk?'},function(){
+                                    that.warning_set_ignore(data.model,function(res){
+                                        that.get_warning_list(false,function(){
+                                            bt.msg(res)
+                                            reader_warning_list(that.warning_list);
+                                        });
+                                    });
+                                }); 
+                            }else{
+                                that.warning_set_ignore(data.model,function(res){
+                                    that.get_warning_list(false,function(){
+                                        bt.msg(res)
+                                        reader_warning_list(that.warning_list);
+                                        setTimeout(function(){
+                                            $('.module_item.ignore').click();
+                                        },100)
+                                    });
+                                });  
+                            }
+                        break;
+                        case 2:
+                            that.waring_check_find(data.model,function(res){
+                                that.get_warning_list(false,function(){
+                                    bt.msg(res)
+                                    reader_warning_list(that.warning_list);
+                                });
+                            });
+                        break;
+                    }
+                });
+                reader_warning_list(that.warning_list);
+            }
+        })
+    },
+    /**
+     * @description 安全风险指定模块检查
+     * @param {String} model_name 模块名称
+     * @param {Function} callback 成功后的回调
+     * @return 无返回值
+    */
+    waring_check_find:function(model_name,callback){
+        var loadT = layer.msg('Detecting the specified module, please wait...',{icon:16,time:0});
+        bt.send('check_find','warning/check_find',{m_name:model_name},function(res){
+            bt.msg(res);
+            if(res.status !== false){
+                if(callback) callback(res);
+            }
+        });
+        
+    },
+
+    /**
+     * @description 安全风险指定模块是否忽略
+     * @param {String} model_name 模块名称
+     * @param {Function} callback 成功后的回调
+     * @return 无返回值
+    */
+    warning_set_ignore:function(model_name,callback){
+        var loadT = layer.msg('Setting the specified module, please wait...',{icon:16,time:0});
+        bt.send('set_ignore','warning/set_ignore',{m_name:model_name},function(res){
+            bt.msg(res);
+            if(res.status !== false){
+                if(callback) callback(res);
+            }
         });
     }
 }

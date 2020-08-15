@@ -29,15 +29,16 @@ class dict_obj:
 
 class panelSetup:
     def init(self):
-        ua = request.headers.get('User-Agent')
+        ua = request.headers.get('User-Agent','')
         if ua:
             ua = ua.lower()
             if ua.find('spider') != -1 or ua.find('bot') != -1:
                 return redirect('https://www.google.com')
-        g.version = '6.7.6'
+        g.version = '6.8.2'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
-        if not os.path.exists('data/debug.pl'):
+        g.debug = os.path.exists('data/debug.pl')
+        if not g.debug:
             g.cdn_url = public.get_cdn_url()
             if not g.cdn_url:
                 g.cdn_url = '/static'
@@ -98,7 +99,7 @@ class panelAdmin(panelSetup):
         if not 'lan' in session:
             session['lan'] = public.GetLanguage()
         if not 'home' in session:
-            session['home'] = 'http://www.aapanel.com';
+            session['home'] = 'http://www.aapanel.com'
         return None
 
     # 检查Web服务器类型
@@ -159,6 +160,11 @@ class panelAdmin(panelSetup):
                     if session['login_token'] != token:
                         session.clear()
                         return redirect('/login?dologin=True')
+            if api_check:
+                filename = 'data/sess_files/' + public.get_sess_key()
+                if not os.path.exists(filename):
+                    session.clear()
+                    return redirect('/login?dologin=True')
         except:
             return public.returnMsg(False,public.get_error_info())
             session.clear()

@@ -19,6 +19,8 @@ _LAN_TEMPLATE = None
 if sys.version_info[0] == 2:
     reload(sys)
     sys.setdefaultencoding('utf8')
+else:
+    from importlib import reload
 
 def M(table):
     """
@@ -125,7 +127,7 @@ def HttpPost(url,data,timeout = 6,headers = {}):
     import http_requests
     res = http_requests.post(url,data=data,timeout=timeout,headers = headers)
     if res.status_code == 0:
-        WriteLog('Request error',res.text)
+        # WriteLog('Request error',res.text)
         if old_url.find(home) != -1: return http_post_home(old_url,data,timeout,res.text)
         if headers: return False
         s_body = res.text
@@ -185,7 +187,7 @@ def Md5(strings):
         @param strings 要被处理的字符串
         @return string(32)
     """
-    if type(strings) == str:
+    if type(strings) != bytes:
         strings = strings.encode()
     import hashlib
     m = hashlib.md5()
@@ -854,9 +856,9 @@ def checkWebConfig():
     if not os.path.exists(f2 + 'btwaf'):
         f3 = f1 + 'nginx/btwaf.conf'
         if os.path.exists(f3): os.remove(f3)
-    if not os.path.exists(f2 + 'btwaf_httpd'):
-        f3 = f1 + 'apache/btwaf.conf'
-        if os.path.exists(f3): os.remove(f3)
+    # if not os.path.exists(f2 + 'btwaf_httpd'):
+    #     f3 = f1 + 'apache/btwaf.conf'
+    #     if os.path.exists(f3): os.remove(f3)
 
     if not os.path.exists(f2 + 'total'):
         f3 = f1 + 'apache/total.conf'
@@ -1554,9 +1556,8 @@ def auto_backup_panel():
 
 
 #检查端口状态
-def check_port_stat(port):
+def check_port_stat(port,localIP = '127.0.0.1'):
     import socket
-    localIP = '127.0.0.1'
     temp = {}
     temp['port'] = port
     temp['local'] = True
@@ -1671,22 +1672,11 @@ def en_hexb(data):
 #filename 要执行的php文件
 #args 请求参数
 #method 请求方式
-def request_php(version,uri,filename,args,method='GET',pdata='',timeout=3000):
-    import fastcgi_client
-    client= fastcgi_client.fastcgi_client('/tmp/php-cgi-'+version+'.sock',None, timeout, 0)
-    if type(args) == dict: args = url_encode(args)
+def request_php(version,uri,document_root,method='GET',pdata=b''):
+    import panelPHP
     if type(pdata) == dict: pdata = url_encode(pdata)
-    params = {
-                'REQUEST_METHOD': method,
-                'SCRIPT_FILENAME': filename,
-                'SCRIPT_NAME': uri,
-                'SERVER_PROTOCOL': 'HTTP/1.1',
-                'GATEWAY_INTERFACE': 'CGI/1.1',
-                'QUERY_STRING': args,
-                'CONTENT_TYPE': 'application/x-www-form-urlencoded',
-                'CONTENT_LENGTH': len(pdata)
-            }
-    result = client.request(params,pdata)
+    p = panelPHP.FPM('/tmp/php-cgi-'+version+'.sock',document_root)
+    result = p.load_url_public(uri,pdata,method)
     return result
 
 
@@ -1697,6 +1687,15 @@ def url_encode(data):
         pdata = urllib.parse.urlencode(data).encode('utf-8')
     else:
         pdata = urllib.urlencode(data)
+    return pdata
+
+def url_decode(data):
+    if type(data) == str: return data
+    import urllib
+    if sys.version_info[0] != 2:
+        pdata = urllib.parse.urldecode(data).encode('utf-8')
+    else:
+        pdata = urllib.urldecode(data)
     return pdata
 
 
@@ -1810,6 +1809,8 @@ def get_linux_distribution():
             tmp = readFile(redhat_file).split()[3][0]
             if int(tmp) > 7:
                 distribution = 'centos8'
+            else:
+                distribution = 'centos7'
         except:
             distribution = 'centos7'
     return distribution
@@ -1839,10 +1840,15 @@ def ip2long(ip):
     iplong = 2 ** 24 * int(ips[0]) + 2 ** 16 * int(ips[1])  + 2 ** 8 * int(ips[2])  + int(ips[3])
     return iplong
 
+#获取debug日志
+def get_debug_log():
+    from BTPanel import request
+    return GetClientIp() +':'+ str(request.environ.get('REMOTE_PORT')) + '|' + str(int(time.time())) + '|' + get_error_info()
+
 #获取sessionid
 def get_session_id():
     from BTPanel import request
-    return request.cookies.get('BT_PANEL_6')
+    return request.cookies.get('SESSIONID','')
 
 def chdck_salt():
     '''
@@ -1862,6 +1868,16 @@ def chdck_salt():
         M('users').where('id=?',(u_info['id'],)).update(pdata)
 
 
+def get_login_token():
+    token_s = readFile('/www/server/panel/data/login_token.pl')
+    if not token_s: return GetRandomString(32)
+    return token_s
+
+def get_sess_key():
+    from BTPanel import request
+    return md5(get_login_token() + request.headers.get('User-Agent',''))
+
+
 def password_salt(password,username=None,uid=None):
     '''
         @name 为指定密码加盐
@@ -1879,6 +1895,32 @@ def password_salt(password,username=None,uid=None):
     salt = M('users').where('id=?',(uid,)).getField('salt')
     return md5(md5(password+'_bt.cn')+salt)
 
+# 备份配置文件
+def back_file(file, act=None):
+    """
+        @name 备份配置文件
+        @author zhwen<zhw@bt.cn>
+        @param file 需要备份的文件
+        @param act 如果存在，则备份一份作为默认配置
+    """
+    file_type = "_bak"
+    if act:
+        file_type = "_def"
+    ExecShell("/usr/bin/cp -p {0} {1}".format(file, file + file_type))
+
+# 还原配置文件
+def restore_file(file, act=None):
+    """
+        @name 还原配置文件
+        @author zhwen<zhw@bt.cn>
+        @param file 需要还原的文件
+        @param act 如果存在，则还原默认配置
+    """
+    file_type = "_bak"
+    if act:
+        file_type = "_def"
+    ExecShell("/usr/bin/cp -p {1} {0}".format(file, file + file_type))
+
 #取通用对象
 class dict_obj:
     def __contains__(self, key):
@@ -1888,4 +1930,87 @@ class dict_obj:
     def __delitem__(self,key): delattr(self,key)
     def __delattr__(self, key): delattr(self,key)
     def get_items(self): return self
+
+
+
+#实例化定目录下的所有模块
+class get_modules:
+
+    def __contains__(self, key):
+        return self.get_attr(key)
+
+    def __setitem__(self, key, value):
+        setattr(self,key,value)
+
+    def get_attr(self,key):
+        '''
+            尝试获取模块，若为字符串，则尝试实例化模块，否则直接返回模块对像
+        '''
+        res = getattr(self,key)
+        if isinstance(res,str):
+            try:
+                tmp_obj = __import__(key)
+                reload(tmp_obj)
+                setattr(self,key,tmp_obj)
+                return tmp_obj
+            except:
+                raise Exception(get_error_info())
+        return res
+
+    def __getitem__(self, key):
+        return self.get_attr(key)
+
+    def __delitem__(self,key):
+        delattr(self,key)
+
+    def __delattr__(self, key):
+        delattr(self,key)
+
+    def get_items(self):
+        return self
+
+    def __init__(self,path = "class",limit = None):
+        '''
+            @name 加载指定目录下的模块
+            @author hwliang<2020-08-03>
+            @param path<string> 指定目录，可指定绝对目录，也可指定相对于/www/server/panel的相对目录 默认加载class目录
+            @param limit<string/list/tuple> 指定限定加载的模块名称，默认加载path目录下的所有模块
+            @param object
+
+            @example
+                p = get_modules('class')
+                if 'public' in p:
+                    md5_str = p.public.md5('test')
+                    md5_str = p['public'].md5('test')
+                    md5_str = getattr(p['public'],'md5')('test')
+                else:
+                    print(p.__dict__)
+        '''
+        os.chdir('/www/server/panel')
+        exp_files = ['__init__.py','__pycache__']
+        if not path in sys.path:
+            sys.path.insert(0,path)
+        for fname in os.listdir(path):
+            if fname in exp_files: continue
+            filename = '/'.join([path,fname])
+            if os.path.isfile(filename):
+                if not fname[-3:] in ['.py','.so']: continue
+                mod_name = fname[:-3]
+            else:
+                c_file = '/'.join((filename,'__init__.py'))
+                if not os.path.exists(c_file):
+                    continue
+                mod_name = fname
+
+            if limit:
+                if not isinstance(limit,list) and not isinstance(limit,tuple):
+                    limit = (limit,)
+                if not mod_name in limit:
+                    continue
+
+            setattr(self,mod_name,mod_name)
+
+
+
+
 

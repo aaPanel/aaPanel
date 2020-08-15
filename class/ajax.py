@@ -31,10 +31,10 @@ class ajax:
             for proc in psutil.process_iter():
                 if proc.name() == "nginx":
                     self.GetProcessCpuPercent(proc.pid,process_cpu)
-            time.sleep(0.5)
+            time.sleep(0.1)
             #取Nginx负载状态
             self.CheckStatusConf()
-            result = public.ExecShell('/usr/local/curl/bin/curl -Ss http://127.0.0.1/nginx_status')[0]
+            result = public.httpGet('http://127.0.0.1/nginx_status')
             tmp = result.split()
             data = {}
             if "request_time" in tmp:
@@ -57,22 +57,22 @@ class ajax:
             data['workermen'] = "%s%s" % (int(workermen), "MB")
             return data
         except Exception as ex:
-            public.WriteLog('Get Info',"Nginx load status acquisition failed:%s" % ex)
-            return public.returnMsg(False,'Data acquisition failed!')
+            public.WriteLog('GET_INFO','NGINX_LOAD_ERR',(ex,))
+            return public.returnMsg(False,'GET_DATA_ERR')
     
     def GetPHPStatus(self,get):
         #取指定PHP版本的负载状态
         try:
             version = get.version
-            uri = "/phpfpm_"+version+"_status"
-            result = public.request_php(version,uri,uri,'json')
+            uri = "/phpfpm_"+version+"_status?json"
+            result = public.request_php(version,uri,'')
             tmp = json.loads(result)
             fTime = time.localtime(int(tmp['start time']))
             tmp['start time'] = time.strftime('%Y-%m-%d %H:%M:%S',fTime)
             return tmp
         except Exception as ex:
-            public.WriteLog('Get Info',"PHP load status acquisition failed: %s" % ex)
-            return public.returnMsg(False,'PHP load status acquisition failed!')
+            public.WriteLog('GET_INFO',"PHP_LOAD_ERR",(public.get_error_info(),))
+            return public.returnMsg(False,'PHP_LOAD_ERR1')
         
     def CheckStatusConf(self):
         if public.get_webserver() != 'nginx': return
@@ -152,7 +152,7 @@ class ajax:
         if status == public.GetMsg("NOT_INSTALL"):
             optStr = '<a class="link" href="javascript:InstallLib(\''+libName+'\');">'+public.GetMsg("INSTALL")+'</a>'
         else:
-            libConfig = public.GetMsg("配置")
+            libConfig = public.GetMsg("CONF")
             if(libName == 'beta'): libConfig = public.GetMsg("CLOSE_BETA")
                                   
             optStr = '<a class="link" href="javascript:SetLibConfig(\''+libName+'\');">'+libConfig+'</a> | <a class="link" href="javascript:UninstallLib(\''+libName+'\');">'+public.GetMsg("UNINSTALL")+'</a>';
@@ -182,7 +182,7 @@ class ajax:
         if result[0].find("ERROR:") == -1: 
             public.WriteLog("PLUG_MAM","SET_PLUG[" +info['name']+ "]AS!")
             return public.returnMsg(True, 'SET_SUCCESS')
-        return public.returnMsg(False,'AK_SK_CONNECT_ERROR'+info['name']+',Please check if the [AK/SK/Storage] setting is correct.')
+        return public.returnMsg(False,'AK_SK_CONNECT_ERROR',(info['name'],))
     
     #设置内测
     def SetBeta(self,get):
@@ -383,27 +383,31 @@ class ajax:
     #申请内测版
     def apple_beta(self,get):
         try:
-            userInfo = json.loads(public.ReadFile('data/userInfo.json'))
-            p_data = {}
-            p_data['uid'] = userInfo['uid']
-            p_data['access_key'] = userInfo['access_key']
-            p_data['username'] = userInfo['username']
-            result = public.HttpPost(public.GetConfigValue('home') + '/api/panel/apple_beta',p_data,5)
+            # userInfo = json.loads(public.ReadFile('data/userInfo.json'))
+            # p_data = {}
+            # p_data['uid'] = userInfo['uid']
+            # p_data['access_key'] = userInfo['access_key']
+            # p_data['username'] = userInfo['username']
+            # result = public.HttpPost(public.GetConfigValue('home') + '/api/panel/apple_beta',p_data,5)
+            public.writeFile('/www/server/panel/data/is_beta.pl','true')
             try:
-                return json.loads(result)
+                return {'status': True, 'msg': "Successful application!"}
             except: return public.returnMsg(False,'AJAX_CONN_ERR')
         except: return public.returnMsg(False,'AJAX_USER_BINDING_ERR')
 
     def to_not_beta(self,get):
         try:
-            userInfo = json.loads(public.ReadFile('data/userInfo.json'))
-            p_data = {}
-            p_data['uid'] = userInfo['uid']
-            p_data['access_key'] = userInfo['access_key']
-            p_data['username'] = userInfo['username']
-            result = public.HttpPost(public.GetConfigValue('home') + '/api/panel/to_not_beta',p_data,5)
+            # userInfo = json.loads(public.ReadFile('data/userInfo.json'))
+            # p_data = {}
+            # p_data['uid'] = userInfo['uid']
+            # p_data['access_key'] = userInfo['access_key']
+            # p_data['username'] = userInfo['username']
+            # result = public.HttpPost(public.GetConfigValue('home') + '/api/panel/to_not_beta',p_data,5)
             try:
-                return json.loads(result)
+                beta_file = '/www/server/panel/data/is_beta.pl'
+                if os.path.exists(beta_file):
+                    os.remove(beta_file)
+                return {"status": True, "msg": "Successful application!"}
             except: return public.returnMsg(False,'AJAX_CONN_ERR')
         except: return public.returnMsg(False,'AJAX_USER_BINDING_ERR')
 
@@ -426,7 +430,8 @@ class ajax:
     #获取最新的5条测试版更新日志
     def get_beta_logs(self,get):
         try:
-            data = json.loads(public.HttpGet(public.GetConfigValue('home') + '/api/panel/get_beta_logs_en'))
+            # data = json.loads(public.HttpGet(public.GetConfigValue('home') + '/api/panel/get_beta_logs_en'))
+            data = json.loads(public.HttpGet('https://console.aapanel.com/api/panel/get_beta_logs_en'))
             return data
         except:
             return public.returnMsg(False,'AJAX_CONN_ERR')
@@ -435,28 +440,27 @@ class ajax:
         other = {}
         other['ds'] = []
         ds = public.M('domain').field('name').select()
-        # public.writeFile('/tmp/1.txt',str(ds))
         for d in ds:
             other['ds'].append(d['name'])
-
         return ','.join(other['ds'])
+
+
 
 
     def UpdatePanel(self,get):
         try:
             if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK')
             import json
-            if int(session['config']['status']) == 0:
-                # public.HttpGet(public.GetConfigValue('home')+'/Api/SetupCount?type=Linux')
-                public.HttpGet('https://www.aapanel.com/Api/SetupCount?type=Linux')
+            conf_status = public.M('config').where("id=?",('1',)).field('status').find()
+            if int(session['config']['status']) == 0 and int(conf_status['status']) == 0:
+                public.HttpGet(public.GetConfigValue('home')+'/Api/SetupCount?type=Linux')
                 public.M('config').where("id=?",('1',)).setField('status',1)
-                session['config']['status'] = 1
             
             #取回远程版本信息
             if 'updateInfo' in session and hasattr(get,'check') == False:
                 updateInfo = session['updateInfo']
             else:
-                logs = '' #public.GetClientIp() +':'+ str(request.environ.get('REMOTE_PORT')) + '|' + str(int(time.time()))
+                logs = public.get_debug_log()
                 import psutil,system,sys
                 mem = psutil.virtual_memory()
                 import panelPlugin
@@ -480,11 +484,13 @@ class ajax:
                 data['o'] = ''
                 filename = '/www/server/panel/data/o.pl'
                 if os.path.exists(filename): data['o'] = str(public.readFile(filename))
-                sUrl = public.GetConfigValue('home') + '/api/panel/updateLinuxEn'
-                # sUrl = 'https://www.aapanel.com/api/panel/updateLinuxEn'
+                # sUrl = public.GetConfigValue('home') + '/api/panel/updateLinuxEn'
+                sUrl = 'https://console.aapanel.com/api/panel/updateLinuxEn'
                 updateInfo = json.loads(public.httpPost(sUrl,data))
                 if not updateInfo: return public.returnMsg(False,"CONNECT_ERR")
                 #updateInfo['msg'] = msg;
+                if os.path.exists('/www/server/panel/data/is_beta.pl'):
+                    updateInfo['is_beta'] = 1
                 session['updateInfo'] = updateInfo
                 
             #检查是否需要升级
@@ -652,7 +658,7 @@ class ajax:
             public.ExecShell("rm -rf " + sPath)
         p_file = '/dev/shm/phpinfo.php'
         public.writeFile(p_file,'<?php phpinfo(); ?>')
-        phpinfo = public.request_php(get.version,'/phpinfo.php',p_file,'')
+        phpinfo = public.request_php(get.version,'/phpinfo.php','/dev/shm')
         if os.path.exists(p_file): os.remove(p_file)
         return phpinfo.decode()
 
@@ -665,8 +671,11 @@ class ajax:
         return public.returnMsg(True,'LOG_CLOSE')
 
     def __get_webserver_conffile(self):
-        if public.get_webserver() == 'nginx':
+        webserver = public.get_webserver()
+        if webserver == 'nginx':
             filename = public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf'
+        elif webserver == 'openlitespeed':
+            filename = public.GetConfigValue('setup_path') + "/panel/vhost/openlitespeed/detail/phpmyadmin.conf"
         else:
             filename = public.GetConfigValue('setup_path') + '/apache/conf/extra/httpd-vhosts.conf'
         return filename
@@ -675,10 +684,10 @@ class ajax:
     def get_phpmyadmin_conf(self):
         if public.get_webserver() == "nginx":
             conf_file = "/www/server/panel/vhost/nginx/phpmyadmin.conf"
-            rep = "listen\s*(\d+)"
+            rep = r"listen\s*(\d+)"
         else:
             conf_file = "/www/server/panel/vhost/apache/phpmyadmin.conf"
-            rep = "Listen\s*(\d+)"
+            rep = r"Listen\s*(\d+)"
         return {"conf_file":conf_file,"rep":rep}
 
     # 设置phpmyadmin路径
@@ -708,36 +717,36 @@ class ajax:
     # 修改php ssl端口
     def change_phpmyadmin_ssl_port(self,get):
         if public.get_webserver() == "openlitespeed":
-            return public.returnMsg(False, 'The current web server is openlitespeed. This function is not supported yet.')
+            return public.returnMsg(False, 'NOT_SUPPORT_OLS')
         import re
         try:
             port = int(get.port)
             if 1 > port > 65535:
-                return public.returnMsg(False, 'Port range is incorrect')
+                return public.returnMsg(False, 'PORT_CHECK_RANGE')
         except:
-            return public.returnMsg(False, 'The port format is incorrect')
+            return public.returnMsg(False, 'PORT_FORMAT_ERR')
         for i in ["nginx","apache"]:
             file = "/www/server/panel/vhost/{}/phpmyadmin.conf".format(i)
             conf = public.readFile(file)
             if not conf:
-                return public.returnMsg(False,"Did not find the {} configuration file, please try to close the ssl port settings before opening".format(i))
+                return public.returnMsg(False,"PHPMYADMIN_SSL_ERR",(i,))
             rulePort = ['80', '443', '21', '20', '8080', '8081', '8089', '11211', '6379']
             if get.port in rulePort:
                 return public.returnMsg(False, 'AJAX_PHPMYADMIN_PORT_ERR')
             if i == "nginx":
                 if not os.path.exists("/www/server/panel/vhost/apache/phpmyadmin.conf"):
-                    return public.returnMsg(False, "Did not find the apache phpmyadmin ssl configuration file, please try to close the ssl port settings before opening")
+                    return public.returnMsg(False, "PHPMYADMIN_SSL_ERR1")
                 rep = "listen\s*([0-9]+)\s*.*;"
                 oldPort = re.search(rep, conf)
                 if not oldPort:
-                    return public.returnMsg(False, 'Did not detect the port that nginx phpmyadmin listens, please confirm whether the file has been manually modified.')
+                    return public.returnMsg(False, 'PHPMYADMIN_SSL_ERR2')
                 oldPort = oldPort.groups()[0]
                 conf = re.sub(rep, 'listen ' + get.port + ' ssl;', conf)
             else:
                 rep = "Listen\s*([0-9]+)\s*\n"
                 oldPort = re.search(rep, conf)
                 if not oldPort:
-                    return public.returnMsg(False, 'Did not detect the port that apache phpmyadmin listens, please confirm whether the file has been manually modified.')
+                    return public.returnMsg(False, 'PHPMYADMIN_SSL_ERR3')
                 oldPort = oldPort.groups()[0]
                 conf = re.sub(rep, "Listen " + get.port + "\n", conf, 1)
                 rep = "VirtualHost\s*\*:[0-9]+"
@@ -757,13 +766,38 @@ class ajax:
                 fw.DelAcceptPort(get)
         return public.returnMsg(True, 'SET_PORT_SUCCESS')
 
+    def _get_phpmyadmin_auth(self):
+        import re
+        nginx_conf = '/www/server/nginx/conf/nginx.conf'
+        reg = '#AUTH_START(.|\n)*#AUTH_END'
+        if os.path.exists(nginx_conf):
+            nginx_conf = public.readFile(nginx_conf)
+            auth_tmp = re.search(reg, nginx_conf)
+            if auth_tmp:
+                return True
+        apache_conf = '/www/server/apache/conf/extra/httpd-vhosts.conf'
+        if os.path.exists(apache_conf):
+            apache_conf = public.readFile(apache_conf)
+            auth_tmp = re.search(reg, apache_conf)
+            if auth_tmp:
+                return True
+
     # 设置phpmyadmin ssl
     def set_phpmyadmin_ssl(self,get):
         if public.get_webserver() == "openlitespeed":
-            return public.returnMsg(False, 'The current web server is openlitespeed. This function is not supported yet.')
+            return public.returnMsg(False, 'NOT_SUPPORT_OLS')
         if not os.path.exists("/www/server/panel/ssl/certificate.pem"):
-            return public.returnMsg(False,'The panel certificate does not exist. Please apply for the panel certificate and try again.')
+            return public.returnMsg(False,'PHPMYADMIN_SSL_ERR4')
         if get.v == "1":
+            # 获取auth信息
+            auth = ""
+            if self._get_phpmyadmin_auth():
+                auth = """
+        #AUTH_START
+        auth_basic "Authorization";
+        auth_basic_user_file /www/server/pass/phpmyadmin.pass;
+        #AUTH_END
+"""
         # nginx配置文件
             ssl_conf = """server
     {
@@ -782,6 +816,7 @@ class ajax:
         ssl_session_timeout 10m;
         error_page 497  https://$host$request_uri;
         #SSL-END
+        %s
         include enable-php.conf;
         location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
         {
@@ -796,12 +831,20 @@ class ajax:
             deny all;
         }
         access_log  /www/wwwlogs/access.log;
-    }"""
+    }""" % auth
             public.writeFile("/www/server/panel/vhost/nginx/phpmyadmin.conf",ssl_conf)
             import panelPlugin
             get.sName = "phpmyadmin"
             v = panelPlugin.panelPlugin().get_soft_find(get)
-            public.writeFile("/tmp/2",str(v["ext"]["phpversion"]))
+            if self._get_phpmyadmin_auth():
+                auth = """
+        #AUTH_START
+        AuthType basic
+        AuthName "Authorization "
+        AuthUserFile /www/server/pass/phpmyadmin.pass
+        Require user jose
+        #AUTH_END
+            """
             # apache配置
             ssl_conf = '''Listen 887
 <VirtualHost *:887>
@@ -833,13 +876,14 @@ class ajax:
     
     #PATH
     <Directory "/www/wwwroot/bt.youbadbad.cn/">
+{}
        SetOutputFilter DEFLATE
        Options FollowSymLinks
        AllowOverride All
        Require all granted
        DirectoryIndex index.php index.html index.htm default.php default.html default.htm
     </Directory>
-</VirtualHost>'''.format(v["ext"]["phpversion"])
+</VirtualHost>'''.format(v["ext"]["phpversion"],auth)
             public.writeFile("/www/server/panel/vhost/apache/phpmyadmin.conf", ssl_conf)
         else:
             if os.path.exists("/www/server/panel/vhost/nginx/phpmyadmin.conf"):
@@ -847,9 +891,9 @@ class ajax:
             if os.path.exists("/www/server/panel/vhost/apache/phpmyadmin.conf"):
                 os.remove("/www/server/panel/vhost/apache/phpmyadmin.conf")
             public.serviceReload()
-            return public.returnMsg(True, 'Closed successfully')
+            return public.returnMsg(True, 'SET_SUCCESS')
         public.serviceReload()
-        return public.returnMsg(True,'Open successfully, please manually release phpmyadmin ssl port')
+        return public.returnMsg(True,'PHPMYADMIN_SSL_ERR5')
 
 
     #设置PHPMyAdmin
@@ -872,15 +916,15 @@ class ajax:
                 oldPort = re.search(rep,conf).groups()[0]
                 conf = re.sub(rep,'listen ' + get.port + ';\n',conf)
             elif public.get_webserver() == 'apache':
-                rep = "Listen\s+([0-9]+)\s*\n"
+                rep = r"Listen\s+([0-9]+)\s*\n"
                 oldPort = re.search(rep,conf).groups()[0]
                 conf = re.sub(rep,"Listen " + get.port + "\n",conf,1)
-                rep = "VirtualHost\s+\*:[0-9]+"
+                rep = r"VirtualHost\s+\*:[0-9]+"
                 conf = re.sub(rep,"VirtualHost *:" + get.port,conf,1)
             else:
                 filename = '/www/server/panel/vhost/openlitespeed/listen/888.conf'
                 conf = public.readFile(filename)
-                reg = "address\s+\*:(\d+)"
+                reg = r"address\s+\*:(\d+)"
                 tmp = re.search(reg,conf)
                 if tmp:
                     oldPort = tmp.groups(1)
@@ -903,13 +947,13 @@ class ajax:
             if public.get_webserver() == 'nginx':
                 filename = public.GetConfigValue('setup_path') + '/nginx/conf/enable-php.conf'
                 conf = public.readFile(filename)
-                rep = "php-cgi.*\.sock"
+                rep = r"php-cgi.*\.sock"
                 conf = re.sub(rep,'php-cgi-' + get.phpversion + '.sock',conf,1)
             elif public.get_webserver() == 'apache':
-                rep = "php-cgi.*\.sock"
+                rep = r"php-cgi.*\.sock"
                 conf = re.sub(rep,'php-cgi-' + get.phpversion + '.sock',conf,1)
             else:
-                reg = '/usr/local/lsws/lsphp\d+/bin/lsphp'
+                reg = r'/usr/local/lsws/lsphp\d+/bin/lsphp'
                 conf = re.sub(reg,'/usr/local/lsws/lsphp{}/bin/lsphp'.format(get.phpversion),conf)
             public.writeFile(filename,conf)
             public.serviceReload()
@@ -917,7 +961,7 @@ class ajax:
             return public.returnMsg(True,'SOFT_PHPVERSION_SET')
         
         if hasattr(get,'password'):
-            import panelSite;
+            import panelSite
             if(get.password == 'close'):
                 return panelSite.panelSite().CloseHasPwd(get)
             else:
@@ -1150,7 +1194,7 @@ class ajax:
 
     #取指定行
     def get_lines(self,args):
-        if not os.path.exists(args.filename): return public.returnMsg(False,'The specified log file does not exist!')
+        if not os.path.exists(args.filename): return public.returnMsg(False,'LOG_EMPTY')
         s_body = public.ExecShell("tail -n {} {}".format(args.num,args.filename))[0]
         return public.returnMsg(True,s_body)
 

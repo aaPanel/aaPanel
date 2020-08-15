@@ -275,6 +275,3 @@ class data:
             return fields[tableName]
         except:
             return ''
-        
-    
-    

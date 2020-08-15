@@ -473,8 +473,14 @@ class bt_task:
 
     # 设置权限
     def set_file_accept(self, filename):
-        public.ExecShell('chown -R www:www ' + filename)
-        public.ExecShell('chmod -R 755 ' + filename)
+        # public.ExecShell('chown -R www:www ' + filename)
+        # public.ExecShell('chmod -R 755 ' + filename)
+        import files
+        from collections import namedtuple
+        get = namedtuple('get',['path'])
+        get.path = filename
+        public.writeFile('/tmp/2',str(get.path))
+        files.files().fix_permissions(get)
 
     # 检查敏感目录
     def check_dir(self, path):

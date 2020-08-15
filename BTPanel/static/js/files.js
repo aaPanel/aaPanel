@@ -671,7 +671,7 @@ function Recycle_bin(type) {
 								<th>' + lan.files.recycle_bin_th2 + '</th>\
 								<th>' + lan.files.recycle_bin_th3 + '</th>\
 								<th width="150">' + lan.files.recycle_bin_th4 + '</th>\
-								<th style="text-align: right;" width="110">' + lan.files.recycle_bin_th5 + '</th>\
+								<th style="text-align: right;" width="199">' + lan.files.recycle_bin_th5 + '</th>\
 							</tr>\
 						</thead>\
 					<tbody id="RecycleBody" class="list-list">' + body + '</tbody>\
