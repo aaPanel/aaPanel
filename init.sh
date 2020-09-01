@@ -304,6 +304,7 @@ case "$1" in
         		$pythonV $panel_path/tools.py cli $2
         		;;
         'default')
+                LOCAL_IP=$(ip addr | grep -E -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -E -v "^127\.|^255\.|^0\." | head -n 1)
                 port=$(cat $panel_path/data/port.pl)
                 password=$(cat $panel_path/default.pl)
                 if [ -f $panel_path/data/domain.conf ];then
@@ -322,7 +323,8 @@ case "$1" in
                 echo -e "=================================================================="
                 echo -e "\033[32maaPanel default info!\033[0m"
                 echo -e "=================================================================="
-                echo  "Bt-Panel-URL: $pool://$address:$port$auth_path"
+                echo  "aaPanel Internet Address: $pool://$address:$port$auth_path"
+                echo  "aaPanel Internal Address: $pool://${LOCAL_IP}:$port$auth_path"
                 echo -e `$pythonV $panel_path/tools.py username`
                 echo -e "password: $password"
                 echo -e "\033[33mWarning:\033[0m"

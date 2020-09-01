@@ -250,7 +250,7 @@ var soft = {
                     },
                     {
                         field: 'opt',
-                        width: 180,
+                        width: 190,
                         title: lan.soft.operate,
                         align: 'right',
                         templet: function(item) {
@@ -1201,7 +1201,7 @@ var soft = {
                         var title11 = ((1 - rdata.Key_reads / rdata.Key_read_requests) * 100).toFixed(2);
                         var title12 = ((1 - rdata.Innodb_buffer_pool_reads / rdata.Innodb_buffer_pool_read_requests) * 100).toFixed(2);
                         var title14 = ((rdata.Created_tmp_disk_tables / rdata.Created_tmp_tables) * 100).toFixed(2);
-                        var Con = '<div class="divtable"><table class="table table-hover table-bordered" style="width: 590px;margin-bottom:10px;background-color:#fafafa">\
+                        var Con = '<div class="divtable"><table class="table table-hover table-bordered" style="margin-bottom:10px;background-color:#fafafa">\
 								<tbody>\
 									<tr><th>' + lan.soft.mysql_status_title1 + '</th><td>' + getLocalTime(rdata.Run) + '</td><th>' + lan.soft.mysql_status_title5 + '</th><td>' + parseInt(rdata.Questions / rdata.Uptime) + '</td></tr>\
 									<tr><th>' + lan.soft.mysql_status_title2 + '</th><td>' + rdata.Connections + '</td><th>' + lan.soft.mysql_status_title6 + '</th><td>' + parseInt((parseInt(rdata.Com_commit) + parseInt(rdata.Com_rollback)) / rdata.Uptime) + '</td></tr>\
@@ -1209,7 +1209,7 @@ var soft = {
 									<tr><th>' + lan.soft.mysql_status_title4 + '</th><td>' + ToSize(rdata.Bytes_received) + '</td><th>' + lan.soft.mysql_status_title8 + '</th><td>' + rdata.Position + '</td></tr>\
 								</tbody>\
 								</table>\
-								<table class="table table-hover table-bordered" style="width: 490px;margin-bottom: 10px;">\
+								<table class="table table-hover table-bordered" style="margin-bottom: 10px;">\
 								<thead style="display:none;"><th></th><th></th><th></th><th></th></thead>\
 								<tbody>\
 									<tr><th>' + lan.soft.mysql_status_title9 + '</th><td>' + rdata.Threads_running + '/' + rdata.Max_used_connections + '</td><td colspan="2">' + lan.soft.mysql_status_ps1 + '</td></tr>\

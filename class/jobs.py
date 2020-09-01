@@ -10,7 +10,21 @@ import time,public,db,os,sys,json,re
 os.chdir('/www/server/panel')
 
 def control_init():
+    dirPath = '/www/server/phpmyadmin/pma'
+    if os.path.exists(dirPath):
+        public.ExecShell("rm -rf {}".format(dirPath))
+
+    dirPath = '/www/server/adminer'
+    if os.path.exists(dirPath):
+        public.ExecShell("rm -rf {}".format(dirPath))
+
+    dirPath = '/www/server/panel/adminer'
+    if os.path.exists(dirPath):
+        public.ExecShell("rm -rf {}".format(dirPath))
+
+
     time.sleep(1)
+
     sql = db.Sql().dbfile('system')
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'load_average')).count():
         csql = '''CREATE TABLE IF NOT EXISTS `load_average` (
@@ -105,7 +119,7 @@ def control_init():
     public.ExecShell(c)
     p_file = 'class/plugin2.so'
     if os.path.exists(p_file): public.ExecShell("rm -f class/*.so")
-    # public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config;chown -R www:www /www/server/phpmyadmin;chmod -R 700 /www/server/phpmyadmin")
+    public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config;chown -R root:root /www/server/phpmyadmin;chmod -R 755 /www/server/phpmyadmin")
     if os.path.exists("/www/server/mysql"):
         public.ExecShell("chown mysql:mysql /etc/my.cnf;chmod 600 /etc/my.cnf")
     stop_path = '/www/server/stop'
@@ -113,6 +127,14 @@ def control_init():
         os.makedirs(stop_path)
     public.ExecShell("chown -R root:root {path};chmod -R 755 {path}".format(path=stop_path))
     public.ExecShell('chmod 755 /www;chmod 755 /www/server')
+    if os.path.exists('/www/server/phpmyadmin/pma'):
+        public.ExecShell("rm -rf /www/server/phpmyadmin/pma")
+    if os.path.exists("/www/server/adminer"):
+        public.ExecShell("rm -rf /www/server/adminer")
+    if os.path.exists("/www/server/panel/adminer"):
+        public.ExecShell("rm -rf /www/server/panel/adminer")
+    if os.path.exists('/dev/shm/session.db'):
+        os.remove('/dev/shm/session.db')
     #disable_putenv('putenv')
     clean_session()
     #set_crond()
@@ -141,7 +163,15 @@ def files_set_mode():
         ["/www/server/speed","/*.lua","root",755,False],
         ["/www/server/speed/total","","www",755,True],
         ["/www/server/btwaf","/*.lua","root",755,False],
-
+        ["/www/backup","","root",600,True],
+        ["/www/wwwlogs","","www",700,True],
+        ["/www/enterprise_backup","","root",600,True],
+        ["/www/server/cron","","root",700,True],
+        ["/www/server/cron","/*.log","root",600,True],
+        ["/www/server/stop","","root",755,True],
+        ["/www/server/redis","","redis",700,True],
+        ["/www/server/redis/redis.conf","","redis",600,False],
+        ["/www/Recycle_bin","","root",600,True],
         ["/www/server/panel/class","","root",600,True],
         ["/www/server/panel/data","","root",600,True],
         ["/www/server/panel/plugin","","root",600,False],
@@ -163,8 +193,8 @@ def files_set_mode():
         ["/dev/shm/session.db","","root",600,False],
         ["/dev/shm/session_py3","","root",600,True],
         ["/dev/shm/session_py2","","root",600,True],
-
-        ["/www/server/adminer","","www",700,True]
+        ["/www/server/phpmyadmin","","root",755,True],
+        ["/www/server/coll","","root",700,True]
     ]
 
     for m in m_paths:

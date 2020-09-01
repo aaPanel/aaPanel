@@ -12,8 +12,7 @@ try:
 except:
     public.ExecShell("pip install pyotp &")
 try:
-    from BTPanel import session,admin_path_checks,g
-    from flask import request
+    from BTPanel import session,admin_path_checks,g,request
     import send_mail
 except:pass
 class config:

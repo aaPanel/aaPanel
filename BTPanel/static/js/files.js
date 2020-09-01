@@ -3,6 +3,10 @@ var fileDrop = {
     endTime:0,
     uploadLength:0, //上传数量
     splitSize: 1024 * 1024 * 2, //文件上传分片大小
+    splitEndTime: 0,
+    splitStartTime:0,
+    fileSize:0,
+    speedLastTime:0,
     filesList:[], // 文件列表数组
     errorLength:0, //上传失败文件数量
     isUpload:true, //上传状态，是否可以上传
@@ -10,6 +14,7 @@ var fileDrop = {
     isUploadNumber:800,//限制单次上传数量
     uploadAllSize:0, // 上传文件总大小
     uploadedSize:0, // 已上传文件大小
+    updateedSizeLast:0,
     topUploadedSize:0, // 上一次文件上传大小
     uploadExpectTime:0, // 预计上传时间
     initTimer:0, // 初始化计时
@@ -17,10 +22,14 @@ var fileDrop = {
     timerSpeed:0, //速度
     isLayuiDrop:false, //是否是小窗口拖拽
     uploading:false,
+    is_webkit:(function(){
+        if(navigator.userAgent.indexOf('WebKit') > -1) return true;
+        return false;
+    })(),
     init:function(){
         if($('#mask_layer').length == 0) {
-             window.UploadFiles = function(){ fileDrop.dialog_view()};
-            $("body").append($('<div class="mask_layer" id="mask_layer" style="position:fixed;top:0;left:0;right:0;bottom:0; background:rgba(255,255,255,0.6);border:3px #ccc dashed;z-index:99999999;display:none;color:#999;font-size:40px;text-align:center;overflow:hidden;"><span style="position: absolute;top: 50%;left: 50%;margin-left: -200px;margin-top: -40px;">Upload files to the current directory</span></div>'));
+            window.UploadFiles = function(){ fileDrop.dialog_view()};
+            $("body").append($('<div class="mask_layer" id="mask_layer" style="position:fixed;top:0;left:0;right:0;bottom:0; background:rgba(255,255,255,0.6);border:3px #ccc dashed;z-index:99999999;display:none;color:#999;font-size:40px;text-align:center;overflow:hidden;"><span style="position: absolute;top: 50%;left: 50%;margin-left: -300px;margin-top: -40px;">Upload files to the current directory'+ (!this.is_webkit?'<i style="font-size:20px;font-style:normal;display:block;margin-top:15px;color:red;">This browser not support drag upload. Please choose Chrome or WebKit kernel browser.</i>':'') +'</span></div>'));
             this.event_relation(document.querySelector('#container'),document,document.querySelector('#mask_layer'));
         }
     },
@@ -36,8 +45,8 @@ var fileDrop = {
             }
         }
         leave.el.addEventListener("dragleave",(leave.callback != null)?leave.callback:function(e){
-            e.preventDefault();
             if(e.x == 0 && e.y == 0) $('#mask_layer').hide();
+            e.preventDefault();
         },false);
         enter.el.addEventListener("dragenter", (enter.callback != null)?enter.callback:function(e){
             if(e.dataTransfer.items[0].kind == 'string') return false
@@ -50,6 +59,10 @@ var fileDrop = {
     },
     // 事件触发
     ev_drop:function(e){
+        if(!this.is_webkit){
+            $('#mask_layer').hide();
+            return false;
+        }
         e.preventDefault();
         if(fileDrop.uploading){
         	layer.msg('Uploading, please wait...');
@@ -114,24 +127,6 @@ var fileDrop = {
 		}
         
     },
-    // 获取上传速度
-    get_timer_speed:function(speed){
-        var that = this,num = 0;
-        if(speed == undefined) speed = 1000
-        that.speedInterval = setInterval(function(){
-            if(that.uploadedSize - that.topUploadedSize === 0){
-                that.timerSpeed = that.timerSpeed == 0 ? 0:(parseInt(that.timerSpeed / num));
-                num += 1;
-            }else{
-                that.timerSpeed = that.uploadedSize - that.topUploadedSize;
-                num = 0;
-            }
-            that.topUploadedSize = that.uploadedSize;
-            $('.file_upload_info .uploadSpeed').text(that.to_size(isNaN(that.timerSpeed)?0:that.timerSpeed)+'/s');
-            var estimateTime = that.time(parseInt(((that.uploadAllSize - that.uploadedSize) / that.timerSpeed) * 1000))
-            if(!isNaN(that.timerSpeed)) $('.file_upload_info .uploadEstimate').text(estimateTime.indexOf('NaN') == -1?estimateTime:'0sec');
-        },speed);
-    },
     // 上传视图
     dialog_view:function(config){
         var that = this,html = '';
@@ -150,7 +145,7 @@ var fileDrop = {
                 btn:['Start upload','Cancel upload'],
                 title: 'Upload files to【'+ bt.get_cookie('Path')  +'】--- Support breakpoint renewal',
                 skin:'file_dir_uploads',
-                content:'<div style="padding:15px 15px 10px 15px;"><div class="upload_btn_groud"><div class="btn-group"><button type="button" class="btn btn-primary btn-sm upload_file_btn">Upload file</button><button type="button" class="btn btn-primary  btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span><span class="sr-only">Toggle Dropdown</span></button><ul class="dropdown-menu"><li><a href="#" data-type="file">Upload file</a></li><li><a href="#" data-type="dir">Upload directory</a></li></ul></div><div class="file_upload_info" style="display:none;"><span>Total process&nbsp;<i class="uploadProgress"></i>,&nbsp;&nbsp; Uploading&nbsp;<i class="uploadNumber"></i>,</span><span style="display:none">Upload failed&nbsp;<i class="uploadError"></i></span><span>Upload speed&nbsp;<i class="uploadSpeed">Getting</i>,</span><span>Expect time&nbsp;<i class="uploadEstimate">Getting</i></span><i></i></div></div><div class="upload_file_body '+ (html==''?'active':'') +'">'+ (html!=''?('<ul class="dropUpLoadFileHead" style="padding-right:'+ (is_show?'15':'0') +'px"><li class="fileTitle"><span class="filename">File name</span><span class="filesize">File size</span><span class="fileStatus">File status</span></li></ul><ul class="dropUpLoadFile list-list">'+ html +'</ul>'):'<span>Please drag the file here</span>') +'</div></div>',
+                content:'<div style="padding:15px 15px 10px 15px;"><div class="upload_btn_groud"><div class="btn-group"><button type="button" class="btn btn-primary btn-sm upload_file_btn">Upload file</button><button type="button" class="btn btn-primary  btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span><span class="sr-only">Toggle Dropdown</span></button><ul class="dropdown-menu"><li><a href="#" data-type="file">Upload file</a></li><li><a href="#" data-type="dir">Upload directory</a></li></ul></div><div class="file_upload_info" style="display:none;"><span>Total process&nbsp;<i class="uploadProgress"></i>,&nbsp;&nbsp; Uploading&nbsp;<i class="uploadNumber"></i>,</span><span style="display:none">Upload failed&nbsp;<i class="uploadError"></i></span><span>Upload speed&nbsp;<i class="uploadSpeed">Getting</i>,</span><span>Expect time&nbsp;<i class="uploadEstimate">Getting</i></span><i></i></div></div><div class="upload_file_body '+ (html==''?'active':'') +'">'+ (html!=''?('<ul class="dropUpLoadFileHead" style="padding-right:'+ (is_show?'15':'0') +'px"><li class="fileTitle"><span class="filename">File name</span><span class="filesize">File size</span><span class="fileStatus">File status</span></li></ul><ul class="dropUpLoadFile list-list">'+ html +'</ul>'):'<span>Please drag the file here'+ (!that.is_webkit?'<i style="display: block;font-style: normal;margin-top: 10px;color: red;font-size: 17px;">This browser not support drag upload.<br>Please choose Chrome or WebKit kernel browser.</i>':'') +'</span>') +'</div></div>',
                 success:function(){
                     $('#mask_layer').hide();
                     $('.file_dir_uploads .layui-layer-max').hide();
@@ -213,7 +208,7 @@ var fileDrop = {
                         that.upload_file();
                         that.initTimer = new Date();
                         that.uploading = true;
-                        that.get_timer_speed();
+                        //that.get_timer_speed();
                     }
                 },
                 btn2:function (index, layero){
@@ -363,9 +358,14 @@ var fileDrop = {
             return false;
         }
         var that = this;
+        that.splitEndTime = new Date().getTime()
+        that.get_timer_speed()
+
+        that.splitStartTime = new Date().getTime()
         var item = this.filesList[index],fileEnd = '';
         if(item == undefined) return false;
         fileEnd = Math.min(item.file.size, fileStart + this.splitSize),
+        that.fileSize = fileEnd - fileStart
         form = new FormData();
         if(fileStart == 0){
             that.startTime = new Date();
@@ -417,7 +417,41 @@ var fileDrop = {
                 that.upload_file(fileStart,index)
             }
         });
-    }, 
+    },
+    // 获取上传速度
+    // get_timer_speed:function(speed){
+    //     var that = this,num = 0;
+    //     if(speed == undefined) speed = 1000
+    //     that.speedInterval = setInterval(function(){
+    //         if(that.uploadedSize - that.topUploadedSize === 0){
+    //             that.timerSpeed = that.timerSpeed == 0 ? 0:(parseInt(that.timerSpeed / num));
+    //             num += 1;
+    //         }else{
+    //             that.timerSpeed = that.uploadedSize - that.topUploadedSize;
+    //             num = 0;
+    //         }
+    //         that.topUploadedSize = that.uploadedSize;
+    //         $('.file_upload_info .uploadSpeed').text(that.to_size(isNaN(that.timerSpeed)?0:that.timerSpeed)+'/s');
+    //         var estimateTime = that.time(parseInt(((that.uploadAllSize - that.uploadedSize) / that.timerSpeed) * 1000))
+    //         if(!isNaN(that.timerSpeed)) $('.file_upload_info .uploadEstimate').text(estimateTime.indexOf('NaN') == -1?estimateTime:'0sec');
+    //     },speed);
+    // },
+    get_timer_speed:function(speed){
+        var done_time = new Date().getTime()
+        if(done_time - this.speedLastTime > 1000){
+            var that = this,num = 0;
+            if(speed == undefined) speed = 200
+            var s_time = (that.splitEndTime - that.splitStartTime) / 1000;
+            that.timerSpeed = (that.fileSize / s_time).toFixed(2)
+            that.updateedSizeLast = that.uploadedSize
+            if(that.timerSpeed < 2) return;
+
+            $('.file_upload_info .uploadSpeed').text(that.to_size(isNaN(that.timerSpeed)?0:that.timerSpeed)+'/s');
+            var estimateTime = that.time(parseInt(((that.uploadAllSize - that.uploadedSize) / that.timerSpeed) * 1000))
+            if(!isNaN(that.timerSpeed)) $('.file_upload_info .uploadEstimate').text(estimateTime.indexOf('NaN') == -1?estimateTime:'0sec');
+            this.speedLastTime = done_time;
+        }
+    },
     time:function(date){
         var hours = Math.floor(date / (60 * 60 * 1000));
         var minutes = Math.floor(date / (60 * 1000));

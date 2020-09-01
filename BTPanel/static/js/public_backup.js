@@ -224,12 +224,20 @@ var bt = {
             var num = min + Math.round(rand * range); //四舍五入
             return num;
         },
-    set_cookie: function(key, val) {
-        var Days = 30;
-        var exp = new Date();
-        exp.setTime(exp.getTime() + Days * 24 * 60 * 60 * 1000);
-        document.cookie = key + "=" + escape(val) + ";expires=" + exp.toGMTString();
-    },
+	set_cookie : function(key,val,time)
+	{
+		if(time != undefined){
+			var exp = new Date();
+			exp.setTime(exp.getTime() + time);
+			time = exp.toGMTString();
+		}else{
+			var Days = 30;
+			var exp = new Date();
+			exp.setTime(exp.getTime() + Days*24*60*60*1000);
+			time = exp.toGMTString();
+		}
+		document.cookie = key + "="+ escape (val) + ";expires=" + time;
+	},
     get_cookie: function(key) {
         var arr, reg = new RegExp("(^| )" + key + "=([^;]*)(;|$)");
         if (arr = document.cookie.match(reg)) {
@@ -645,10 +653,11 @@ var bt = {
                 if (_obj.name) _name = _obj.name;
                 if (_obj.placeholder) _placeholder = _obj.placeholder;
                 if (_obj.title) _html += '<span class=" mr5">' + _obj.title + "  ";
+                var _add_class = _obj.add_class ? (' '+_obj.add_class) : "";
                 switch (_obj.type) {
                     case 'select':
                         var _width = _obj.width ? _obj.width : '100px';
-                        _html += '<select ' + (_obj.disabled ? 'disabled' : '') + ' class="bt-input-text mr5 ' + _name + bs + '" name="' + _name + '" style="width:' + _width + '">';
+                        _html += '<select ' + (_obj.disabled ? 'disabled' : '') + ' class="bt-input-text mr5 ' + _name + bs + _add_class +'" name="' + _name + '" style="width:' + _width + '">';
                         for (var j = 0; j < _obj.items.length; j++) {
                             _html += '<option ' + (_obj.value == _obj.items[j].value ? 'selected' : '') + ' value="' + _obj.items[j].value + '">' + _obj.items[j].title + '</option>';
                         }
@@ -657,12 +666,12 @@ var bt = {
                     case 'textarea':
                         var _width = _obj.width ? _obj.width : '330px';
                         var _height = _obj.height ? _obj.height : '100px';
-                        _html += '<textarea class="bt-input-text mr20 ' + _name + bs + '" name="' + _name + '" style="width:' + _width + ';height:' + _height + ';line-height:22px">' + (_obj.value ? _obj.value : '') + '</textarea>';
+                        _html += '<textarea class="bt-input-text mr20 ' + _name + bs + _add_class +'" name="' + _name + '" style="width:' + _width + ';height:' + _height + ';line-height:22px">' + (_obj.value ? _obj.value : '') + '</textarea>';
                         if (_placeholder) _html += '<div class="placeholder c9" style="top: 15px; left: 15px; display: block;">' + _placeholder + '</div>';
                         break;
                     case 'button':
                         var _width = _obj.width ? _obj.width : '330px';
-                        _html += '<button name=\'' + _name + '\' class="btn btn-success btn-sm mr5 ml5 ' + _name + bs + '">' + _obj.text + '</button>';
+                        _html += '<button name=\'' + _name + '\' class="btn btn-success btn-sm mr5 ml5 ' + _name + bs + _add_class +'">' + _obj.text + '</button>';
                         break;
                     case 'radio':
                         var _v = _obj.value === true ? 'checked' : ''
@@ -674,7 +683,7 @@ var bt = {
                         break;
                     case 'number':
                         var _width = _obj.width ? _obj.width : '330px';
-                        _html += "<input name='" + _name + "' " + (_obj.disabled ? 'disabled' : '') + " class='bt-input-text mr5 " + _name + bs + "' " + (_placeholder ? ' placeholder="' + _placeholder + '"' : "") + " type='number' style='width:" + _width + "' value='" + (_obj.value ? _obj.value : '0') + "' />";
+                        _html += "<input name='" + _name + "' " + (_obj.disabled ? 'disabled' : '') + " class='bt-input-text mr5 " + _name + bs + _add_class +"' " + (_placeholder ? ' placeholder="' + _placeholder + '"' : "") + " type='number' style='width:" + _width + "' value='" + (_obj.value ? _obj.value : '0') + "' />";
                         _html += _obj.unit ? _obj.unit : '';
                         break;
                     case 'password':
@@ -684,7 +693,7 @@ var bt = {
                     case 'div':
                     	var _width = _obj.width ? _obj.width : '330px';
                         var _height = _obj.height ? _obj.height : '100px';
-                        _html += '<div class="bt-input-text ace_config_editor_scroll mr20 ' + _name + bs + '" name="' + _name + '" style="width:' + _width + ';height:' + _height + ';line-height:22px">' + (_obj.value ? _obj.value : '') + '</div>';
+                        _html += '<div class="bt-input-text ace_config_editor_scroll mr20 ' + _name + bs + _add_class +'" name="' + _name + '" style="width:' + _width + ';height:' + _height + ';line-height:22px">' + (_obj.value ? _obj.value : '') + '</div>';
                         if (_placeholder) _html += '<div class="placeholder c9" style="top: 15px; left: 15px; display: block;">' + _placeholder + '</div>';
                         break;
                     case 'switch':
@@ -696,7 +705,7 @@ var bt = {
                     default:
                         var _width = _obj.width ? _obj.width : '330px';
 
-                        _html += "<input name='" + _name + "' " + (_obj.disabled ? 'disabled' : '') + " class='bt-input-text mr5 " + _name + bs + "' " + (_placeholder ? ' placeholder="' + _placeholder + '"' : "") + " type='text' style='width:" + _width + "' value='" + (_obj.value ? _obj.value : '') + "' />";
+                        _html += "<input name='" + _name + "' " + (_obj.disabled ? 'disabled' : '') + " class='bt-input-text mr5 " + _name + bs + _add_class +"' " + (_placeholder ? ' placeholder="' + _placeholder + '"' : "") + " type='text' style='width:" + _width + "' value='" + (_obj.value ? _obj.value : '') + "' />";
                         break;
                 }
                 if (_obj.title) _html += '</span>';
@@ -4511,43 +4520,23 @@ bt.database = {
             bt.msg(rdata);
         })
     },
-    // open_phpmyadmin: function(name, username, password) {
-    //     if ($("#toPHPMyAdmin").attr('action').indexOf('phpmyadmin') == -1) {
-    //         layer.msg(lan.database.phpmyadmin_err, { icon: 2, shade: [0.3, '#000'] })
-    //         setTimeout(function() { window.location.href = '/soft'; }, 3000);
-    //         return;
-    //     }
-    //     var murl = $("#toPHPMyAdmin").attr('action');
-    //     $("#pma_username").val(username);
-    //     $("#pma_password").val(password);
-    //     $("#db").val(name);
-    //     layer.msg(lan.database.phpmyadmin, { icon: 16, shade: [0.3, '#000'], time: 1000 });
-    //     setTimeout(function() {
-    //         $("#toPHPMyAdmin").submit();
-    //     }, 200);
-    // },
     open_phpmyadmin:function(name,username,password){
+
 		if($("#toPHPMyAdmin").attr('action').indexOf('phpmyadmin') == -1){
-		    layer.msg(lan.database.phpmyadmin_err,{icon:2,shade: [0.3, '#000']})
-		    setTimeout(function(){ window.location.href = '/soft'; },3000);
+		layer.msg(lan.database.phpmyadmin_err,{icon:2,shade: [0.3, '#000']})
+		setTimeout(function(){ window.location.href = '/soft'; },3000);
 			return;
 		}
-		layer.open({
-			type: 1,
-			title: "Please select how to access phpMyAdmin",
-			area: '600px',
-			closeBtn: 2,
-			shadeClose: false,
-			content: '<div class="change-default pd20">\
-			<button class="btn btn-default btn-sm " onclick="bt.database.submit_phpmyadmin(\''+name+'\',\''+username+'\',\''+password+'\',false)">Secure access through panel</button>\
-			<button style="margin-left: 145px;" class="btn btn-default btn-sm" onclick="bt.database.submit_phpmyadmin(\''+name+'\',\''+username+'\',\''+password+'\',true)">Access by Nginx/Apche/OLS</button>\
-			<ul class="help-info-text c7 plr20">\
-				<li>【Secure access by panel】No need to install Nginx/Apache. The security authentication is performed by the panel. Need to log in to the panel to access it</li>\
-				<li>【Access by Nginx/Apche/OLS】Through the web server access, phpMyAdmin for security authentication</li>\
-				<li>If used【Secure access through panel】that some features cannot be used, please try another access method</li>\
-			</ul>\
-			</div>'
-		});
+		$("#toPHPMyAdmin").attr('action',$("#toPHPMyAdmin").attr('public-data'))
+		var murl = $("#toPHPMyAdmin").attr('action');
+		$("#pma_username").val(username);
+		$("#pma_password").val(password);
+		$("#db").val(name);
+		layer.msg(lan.database.phpmyadmin,{icon:16,shade: [0.3, '#000'],time:1000});
+		setTimeout(function(){
+			$("#toPHPMyAdmin").submit();
+			layer.closeAll();
+		},200);
 	},
 	submit_phpmyadmin: function(name,username,password,pub){
 		if(pub === true){

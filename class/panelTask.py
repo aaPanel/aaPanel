@@ -17,15 +17,16 @@ import public
 import sys
 import os
 import re
-sys.path.insert(0, '/www/server/panel/class')
 os.chdir('/www/server/panel')
-
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
 
 class bt_task:
     __table = 'task_list'
     __task_tips = '/dev/shm/bt_task_now.pl'
     __task_path = '/www/server/panel/tmp/'
     down_log_total_file = '/tmp/download_total.pl'
+    not_web = False
     def __init__(self):
 
         # 创建数据表
@@ -66,7 +67,7 @@ class bt_task:
         data = sql.field('id,name,type,shell,other,status,exectime,endtime,addtime').order(
             'id asc').limit('10').select()
         if type(data) == str:
-            public.WriteLog('Task queue',data)
+            public.WriteLog('TASK_QUEUE',data)
             return []
         if not 'num' in get:
             get.num = 15
@@ -139,7 +140,7 @@ class bt_task:
                     "kill -9 $(ps aux|grep '"+task_info['shell']+"'|grep -v grep|awk '{print $2}')")
 
             public.ExecShell("/etc/init.d/bt start")
-        return public.returnMsg(True, '任务已取消!')
+        return public.returnMsg(True, 'TASK_CANCEL')
 
     # 取一条任务
     def get_task_find(self, id):
@@ -219,7 +220,9 @@ class bt_task:
         log_file = self.__task_path + str(id) + '.log'
         if not os.path.exists(log_file):
             data = ''
-            if(task_type == '1'): data = {'name':public.GetMsg("DOWNLOAD_FILE"),'total':0,'used':0,'pre':0,'speed':0}
+            if(task_type == '1'):
+                data = {'name': public.GetMsg("DOWNLOAD_FILE"), 'total': 0, 'used': 0,
+                        'pre': 0, 'speed': 0, 'time': 0}
             return data
 
         if(task_type == '1'):
@@ -245,7 +248,7 @@ class bt_task:
             speed_total = re.findall(
                 r"([\d\.]+[BbKkMmGg]).+\s+(\d+)%\s+([\d\.]+[KMBGkmbg])\s+(\w+[sS])", speed_tmp)
             if not speed_total:
-                data = {'name':'download file {}'.format(filename),'total':0,'used':0,'pre':0,'speed':0,'time':0}
+                data = {'name':public.getMsg('DOWNLOAD_FILE1',(filename,)),'total':0,'used':0,'pre':0,'speed':0,'time':0}
             else:
                 speed_total = speed_total[0]
                 used = speed_total[0]
@@ -312,7 +315,7 @@ class bt_task:
             return public.returnMsg(False,'NOT_SUP_COMP_FORMAT')
 
         self.set_file_accept(dfile)
-        public.WriteLog("TYPE_FILE", 'ZIP_SUCCESS', (sfiles, dfile))
+        public.WriteLog("TYPE_FILE", 'ZIP_SUCCESS', (sfiles, dfile),not_web = self.not_web)
         return public.returnMsg(True, 'ZIP_SUCCESS')
 
     # 文件解压
@@ -356,7 +359,7 @@ class bt_task:
                 user = pwd.getpwuid(os.stat(dfile).st_uid).pw_name
                 public.ExecShell("chown %s:%s %s" % (user, user, dfile))
 
-        public.WriteLog("TYPE_FILE", 'UNZIP_SUCCESS', (sfile, dfile))
+        public.WriteLog("TYPE_FILE", 'UNZIP_SUCCESS', (sfile, dfile),not_web = self.not_web)
         return public.returnMsg(True, 'UNZIP_SUCCESS')
 
     # 备份网站
@@ -378,7 +381,7 @@ class bt_task:
 
         sql = public.M('backup').add('type,name,pid,filename,size,addtime',
                                      (0, fileName, find['id'], zipName, 0, public.getDate()))
-        public.WriteLog('TYPE_SITE', 'SITE_BACKUP_SUCCESS', (find['name'],))
+        public.WriteLog('TYPE_SITE', 'SITE_BACKUP_SUCCESS', (find['name'],),not_web = self.not_web)
         return public.returnMsg(True, 'BACKUP_SUCCESS')
 
     # 备份数据库
@@ -405,7 +408,7 @@ class bt_task:
         addTime = time.strftime('%Y-%m-%d %X', time.localtime())
         sql.add('type,name,pid,filename,size,addtime',
                 (1, fileName, id, backupName, 0, addTime))
-        public.WriteLog("TYPE_DATABASE", "DATABASE_BACKUP_SUCCESS", (name,))
+        public.WriteLog("TYPE_DATABASE", "DATABASE_BACKUP_SUCCESS", (name,),not_web = self.not_web)
         return public.returnMsg(True, 'BACKUP_SUCCESS')
 
     # 导入数据库
@@ -454,7 +457,7 @@ class bt_task:
                 'setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < " + file)
             self.mypass(False, root)
 
-        public.WriteLog("TYPE_DATABASE", 'DATABASE_INPUT_SUCCESS', (name,))
+        public.WriteLog("TYPE_DATABASE", 'DATABASE_INPUT_SUCCESS', (name,),not_web = self.not_web)
         return public.returnMsg(True, 'DATABASE_INPUT_SUCCESS')
 
     # 配置
@@ -479,7 +482,6 @@ class bt_task:
         from collections import namedtuple
         get = namedtuple('get',['path'])
         get.path = filename
-        public.writeFile('/tmp/2',str(get.path))
         files.files().fix_permissions(get)
 
     # 检查敏感目录

@@ -146,6 +146,14 @@
 	"GET_INFO": "Get Info",
 	"NGINX_LOAD_ERR": "Nginx load status acquisition failed:{1}",
 	"GET_DATA_ERR": "Data acquisition failed!",
-	"PHP_LOAD_ERR": "PHP load status acquisition failed: {1}"
-
+	"PHP_LOAD_ERR": "PHP load status acquisition failed: {1}",
+	"MODIFY_SSH_INFO": "Modify the SSH information of HOST: {1}",
+	"ADD_SSH_INFO": "Add the SSH information of HOST: {1}",
+	"DEL_SSH_INFO": "Delete the SSH information of HOST: {1}",
+	"TYPE_TERMINAL": "aaPanel terminal",
+	"ADD_COMMAND_COMMAND": "Add common commands [{1}]",
+	"EDIT_COMMAND_COMMAND": "Modify common commands [{1}]",
+	"DEL_COMMAND_COMMAND": "Delete common commands [{1}]",
+	"OPEN_FILE": "Open File",
+	"TASK_QUEUE": "Task queue"
 }

@@ -171,6 +171,8 @@ class panelPlugin:
             if 'status' in result:
                 if result['status']:
                     public.httpPost(public.GetConfigValue('home') + '/api/panel/plugin_total',{"pid":pluginInfo['id'],'p_name':pluginInfo['name']},3)
+            get.force = 1
+            self.get_cloud_list(get)
         except:pass
         return result
     
@@ -1891,8 +1893,7 @@ class panelPlugin:
                     return panelPHP.panelPHP(get.name).exec_php_script(get)
                 return public.returnMsg(False,'PLUGIN_INPUT_B')
             if not self.check_accept(get):return public.returnMsg(False,public.to_string([24744, 26410, 36141, 20080, 91, 37, 115, 93, 25110, 25480, 26435, 24050, 21040, 26399, 33]) % (self.get_title_byname(get),))
-            if not path in sys.path:
-                sys.path.insert(0,path)
+            public.package_path_append(path)
             plugin_main = __import__(get.name+'_main')
             try:
                 reload(plugin_main)

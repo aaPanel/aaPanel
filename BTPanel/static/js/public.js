@@ -3813,7 +3813,36 @@ var Term = {
     term: null,
     term_box: null,
     ssh_info: null,
-
+    last_body:false,
+	last_cd:null,
+	config:{
+	   cols:0,
+	   rows:0,
+	   fontSize:12
+	},
+	
+	// 	缩放尺寸
+    detectZoom:(function(){
+        var ratio = 0,
+          screen = window.screen,
+          ua = navigator.userAgent.toLowerCase();
+        if (window.devicePixelRatio !== undefined) {
+          ratio = window.devicePixelRatio;
+        }
+        else if (~ua.indexOf('msie')) {
+          if (screen.deviceXDPI && screen.logicalXDPI) {
+            ratio = screen.deviceXDPI / screen.logicalXDPI;
+          }
+        }
+        else if (window.outerWidth !== undefined && window.innerWidth !== undefined) {
+          ratio = window.outerWidth / window.innerWidth;
+        }
+    
+        if (ratio){
+          ratio = Math.round(ratio * 100);
+        }
+        return ratio;
+    })(),
     //连接websocket
     connect: function() {
         if (!Term.bws || Term.bws.readyState == 3 || Term.bws.readyState == 2) {
@@ -3827,39 +3856,85 @@ var Term = {
             Term.bws.addEventListener('message', Term.on_message);
             Term.bws.addEventListener('close', Term.on_close);
             Term.bws.addEventListener('error', Term.on_error);
+            Term.bws.addEventListener('open',Term.on_open);
 
-            if (Term.ssh_info) Term.send(JSON.stringify(Term.ssh_info))
+            //if (Term.ssh_info) Term.send(JSON.stringify(Term.ssh_info))
         }
     },
+    //连接服务器成功
+	on_open:function(ws_event){
+		Term.send(JSON.stringify(Term.ssh_info || {}))
+		Term.term.FitAddon.fit();
+		Term.resize();
+		var f_path = $("#fileInputPath").val();
+		if(f_path){
+			Term.last_cd = "cd " + f_path;
+			Term.send(Term.last_cd  + "\n");
+		}
+	},
 
     //服务器消息事件
-    on_message: function(ws_event) {
-        result = ws_event.data;
-        if (result === "\r'Server connection failed'!\r" || result === "\rWrong user name or password!\r") {
-            show_ssh_login(result);
+    // on_message: function(ws_event) {
+    //     result = ws_event.data;
+    //     if (result === "\r'Server connection failed'!\r" || result === "\rWrong user name or password!\r") {
+    //         show_ssh_login(result);
+    //         Term.close();
+    //         return;
+    //     }
+    //     Term.term.write(result);
+
+    //     if (result == '\r\n登出\r\n' || result == '登出\r\n' || result == '\r\nlogout\r\n' || result == 'logout\r\n') {
+    //         setTimeout(function() {
+    //             layer.close(Term.term_box);
+    //         }, 500);
+    //         Term.close();
+    //         Term.bws = null;
+    //     }
+    // },
+    on_message: function (ws_event) {
+		result = ws_event.data;
+		if(Term.last_cd){
+			if(result.indexOf(Term.last_cd) != -1 && result.length - Term.last_cd.length < 3) {
+				Term.last_cd = null;
+				return;
+			}
+		}
+        if (result === "\rServer connection failed!\r" || result == "\rWrong user name or password!\r") {
             Term.close();
             return;
-        }
+		}
+		if(result.length > 1 && Term.last_body === false){
+			Term.last_body = true;
+		}
         Term.term.write(result);
-
-        if (result == '\r\n登出\r\n' || result == '登出\r\n' || result == '\r\nlogout\r\n' || result == 'logout\r\n') {
-            setTimeout(function() {
-                layer.close(Term.term_box);
+        if (result == '\r\n登出\r\n' || result == '\r\n注销\r\n' || result == '注销\r\n' || result == '登出\r\n' || result == '\r\nlogout\r\n' || result == 'logout\r\n') {
+            setTimeout(function () {
+				layer.close(Term.term_box);
+				Term.term.dispose();
             }, 500);
             Term.close();
             Term.bws = null;
         }
-    },
+	},
     //websocket关闭事件
     on_close: function(ws_event) {
         Term.bws = null;
     },
 
     //websocket错误事件
-    on_error: function(ws_event) {
-        if(ws_event.target.readyState === 3){
-			var msg = 'Error: unable to create websocket connection, please close 【Developer mode】 on the settings page';
-			layer.msg(msg,{time:5000})
+    // on_error: function(ws_event) {
+    //     if(ws_event.target.readyState === 3){
+	// 		var msg = 'Error: unable to create websocket connection, please close 【Developer mode】 on the settings page';
+	// 		layer.msg(msg,{time:5000})
+	// 		if(Term.state === 3) return
+	// 		Term.term.write(msg)
+	// 		Term.state = 3;
+	// 	}else{
+	// 		console.log(ws_event)
+	// 	}
+    // },
+    on_error: function (ws_event) {
+		if(ws_event.target.readyState === 3){
 			if(Term.state === 3) return
 			Term.term.write(msg)
 			Term.state = 3;
@@ -3869,18 +3944,28 @@ var Term = {
     },
 
     //关闭连接
-    close: function() {
-        Term.bws.close();
-    },
+    close: function () {
+		if(Term.bws){
+			Term.bws.close();
+		}
+	},
 
-    resize: function() {
-        var m_width = 100;
-        var m_height = 34;
-        Term.term.resize(m_width, m_height);
-        Term.term.scrollToBottom();
-        Term.term.focus();
-        Term.send('new_terminal');
+    resize: function () {
+		setTimeout(function(){
+			$("#term").height($(".term_box_all .layui-layer-content").height()-18)
+			Term.term.FitAddon.fit()
+			Term.send(JSON.stringify({resize:1,rows:Term.term.rows,cols:Term.term.cols}));
+	    	Term.term.focus();
+		},200)
     },
+    // resize: function() {
+    //     var m_width = 100;
+    //     var m_height = 34;
+    //     Term.term.resize(m_width, m_height);
+    //     Term.term.scrollToBottom();
+    //     Term.term.focus();
+    //     Term.send('new_terminal');
+    // },
 
     //发送数据
     //@param event 唯一事件名称
@@ -3904,86 +3989,112 @@ var Term = {
             }
         }
     },
-    run: function (ssh_info) {
-        var termCols = 100;
-        var termRows = 34;
-        var loadT = layer.msg('It is loading the files required by the terminal. Please wait...', { icon: 16, time: 0, shade: 0.3 });
-        loadScript([
-            "/static/build/xterm.min.js",
-            "/static/build/addons/attach/attach.min.js",
-            "/static/build/addons/fit/fit.min.js",
-            "/static/build/addons/fullscreen/fullscreen.min.js",
-            "/static/build/addons/search/search.min.js",
-            "/static/build/addons/winptyCompat/winptyCompat.js"
-        ], function () {
-            layer.close(loadT);
-            Term.term = new Terminal({ cols: termCols, rows: termRows, screenKeys: true, useStyle: true });
-            Term.term.setOption('cursorBlink', true);
-            Term.term_box = layer.open({
-                type: 1,
-                title: lan.public.terminal,
-                area: ['920px', '630px'],
-                closeBtn: 2,
-                shadeClose: false,
-                content: '<link rel="stylesheet" href="/static/build/xterm.min.css" />\
-						<link rel="stylesheet" href="/static/build/addons/fullscreen/fullscreen.min.css" />\
-	            <a class="btlink" onclick="show_ssh_login(1)" style="position: fixed;margin-left: 83px;margin-top: -30px;">[' + lan.public.set + ']</a>\
-	            <div class="term-box" style="background-color:#000"><div id="term"></div></div>',
-                cancel: function () {
-                    Term.term.destroy();
-                },
-                success: function () {
-                    Term.term.open(document.getElementById('term'));
-                    Term.resize();
-                }
-            });
-            Term.term.on('data', function (data) {
-                try {
-                    Term.bws.send(data)
-                } catch (e) {
-                    Term.term.write('\r\nThe connection is lost and you are trying to reconnect!\r\n')
-                    Term.connect()
-                }
-            });
-            if (ssh_info) Term.ssh_info = ssh_info
-            Term.connect();
-        })
-
-    },
-    // run: function(ssh_info) {
+    // run: function (ssh_info) {
     //     var termCols = 100;
     //     var termRows = 34;
-    //     Term.term = new Terminal({ cols: termCols, rows: termRows, screenKeys: true, useStyle: true });
-    //     Term.term.setOption('cursorBlink', true);
+    //     var loadT = layer.msg('It is loading the files required by the terminal. Please wait...', { icon: 16, time: 0, shade: 0.3 });
+    //     loadScript([
+    //         "/static/build/xterm.min.js",
+    //         "/static/build/addons/attach/attach.min.js",
+    //         "/static/build/addons/fit/fit.min.js",
+    //         "/static/build/addons/fullscreen/fullscreen.min.js",
+    //         "/static/build/addons/search/search.min.js",
+    //         "/static/build/addons/winptyCompat/winptyCompat.js"
+    //     ], function () {
+    //         layer.close(loadT);
+    //         Term.term = new Terminal({ cols: termCols, rows: termRows, screenKeys: true, useStyle: true });
+    //         Term.term.setOption('cursorBlink', true);
+    //         Term.term_box = layer.open({
+    //             type: 1,
+    //             title: lan.public.terminal,
+    //             area: ['920px', '630px'],
+    //             closeBtn: 2,
+    //             shadeClose: false,
+    //             content: '<link rel="stylesheet" href="/static/build/xterm.min.css" />\
+	// 					<link rel="stylesheet" href="/static/build/addons/fullscreen/fullscreen.min.css" />\
+	//             <a class="btlink" onclick="show_ssh_login(1)" style="position: fixed;margin-left: 83px;margin-top: -30px;">[' + lan.public.set + ']</a>\
+	//             <div class="term-box" style="background-color:#000"><div id="term"></div></div>',
+    //             cancel: function () {
+    //                 Term.term.destroy();
+    //             },
+    //             success: function () {
+    //                 Term.term.open(document.getElementById('term'));
+    //                 Term.resize();
+    //             }
+    //         });
+    //         Term.term.on('data', function (data) {
+    //             try {
+    //                 Term.bws.send(data)
+    //             } catch (e) {
+    //                 Term.term.write('\r\nThe connection is lost and you are trying to reconnect!\r\n')
+    //                 Term.connect()
+    //             }
+    //         });
+    //         if (ssh_info) Term.ssh_info = ssh_info
+    //         Term.connect();
+    //     })
 
-    //     Term.term_box = layer.open({
-    //         type: 1,
-    //         title: lan.public.terminal,
-    //         area: ['920px', '630px'],
-    //         closeBtn: 2,
-    //         shadeClose: false,
-    //         content: '<a class="btlink" onclick="show_ssh_login(1)" style="position: fixed;margin-left: 140px;margin-top: -30px;">[' + lan.public.set + ']</a><div class="term-box" style="background-color:#000"><div id="term"></div></div>',
-    //         cancel: function() {
-    //             Term.term.destroy();
-
-    //         },
-    //         success: function() {
-    //             Term.term.open(document.getElementById('term'));
-    //             Term.resize();
-    //         }
-    //     });
-
-    //     Term.term.on('data', function(data) {
-    //         try {
-    //             Term.bws.send(data)
-    //         } catch (e) {
-    //             Term.term.write('\r\nThe connection is lost and you are trying to reconnect!\r\n')
-    //             Term.connect()
-    //         }
-    //     });
-    //     if (ssh_info) Term.ssh_info = ssh_info
-    //     Term.connect();
     // },
+    run: function (ssh_info) {
+		if($("#panel_debug").attr("data") == 'True') {
+			layer.msg('Error: unable to create websocket connection, please close 【Developer mode】 on the settings page!',{icon:2,time:5000});
+			return;
+		}
+        var loadT = layer.msg('It is loading the files required by the terminal. Please wait...', { icon: 16, time: 0, shade: 0.3 });
+        loadScript([
+        	"/static/js/xterm.js"
+        ],function(){
+        	layer.close(loadT);
+        	Term.term = new Terminal({
+				rendererType: "canvas",
+				cols: 100, 
+				rows: 34,
+				fontSize:15, 
+				screenKeys: true, 
+				useStyle: true ,
+				});
+			Term.term.setOption('cursorBlink', true);
+			Term.last_body = false;
+	        Term.term_box = layer.open({
+	            type: 1,
+	            title: lan.public.terminal,
+	            area: ['920px', '630px'],
+	            closeBtn: 2,
+	            shadeClose: false,
+	            skin:'term_box_all',
+	            content: '<link rel="stylesheet" href="/static/css/xterm.css" />\
+	            <div class="term-box" style="background-color:#000" id="term"></div>',
+	            cancel: function (index,lay) {
+					bt.confirm({msg:'Closing the SSH session, the command in progress in the current command line session may be aborted. Continute?',title: "Cofirm to close the SSH session?"},function(ix){
+						Term.term.dispose();
+						layer.close(index);
+						layer.close(ix);
+						Term.close();
+					});
+					return false;
+	            },
+	            success: function () {
+	                $('.term_box_all').css('background-color','#000');
+					Term.term.open(document.getElementById('term'));
+					Term.term.FitAddon = new FitAddon.FitAddon();
+					Term.term.loadAddon(Term.term.FitAddon);
+					Term.term.WebLinksAddon = new WebLinksAddon.WebLinksAddon()
+					Term.term.loadAddon(Term.term.WebLinksAddon)
+	            }
+	        });
+	        Term.term.onData(function (data) {
+	            try {
+	                Term.bws.send(data)
+	            } catch (e) {
+	                Term.term.write('\r\nThe connection is lost and you are trying to reconnect!\r\n')
+	                Term.connect()
+	            }
+	        });
+	        if (ssh_info) Term.ssh_info = ssh_info
+	        Term.connect();
+        });
+
+    },
     reset_login: function() {
         var ssh_info = {
             data: JSON.stringify({

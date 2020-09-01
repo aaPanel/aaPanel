@@ -574,8 +574,14 @@ var index = {
         });
     },
     beta_msg: function () {
+        var new_load = bt.load();
         bt.send('get_beta_logs', 'ajax/get_beta_logs', {}, function (data) {
             var my_list = '';
+            new_load.close();
+            if(data.status === false){
+                layer.msg(data.msg,{icon: 2});
+                return false;
+            }
             for (var i = 0; i < data.list.length; i++) {
                 my_list += '<div class="item_list">\
                                             <span class="index_acive"></span>\

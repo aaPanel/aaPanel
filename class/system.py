@@ -12,19 +12,19 @@ try:
 except:
     pass
 class system:
-    setupPath = None;
+    setupPath = None
     ssh = None
     shell = None
     
     def __init__(self):
-        self.setupPath = public.GetConfigValue('setup_path');
+        self.setupPath = public.GetConfigValue('setup_path')
     
     def GetConcifInfo(self,get=None):
         #取环境配置信息
         if not 'config' in session:
-            session['config'] = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find();
+            session['config'] = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find()
         if not 'email' in session['config']:
-            session['config']['email'] = public.M('users').where("id=?",('1',)).getField('email');
+            session['config']['email'] = public.M('users').where("id=?",('1',)).getField('email')
         data = {}
         data = session['config']
         data['webserver'] = session['config']['webserver']
@@ -66,8 +66,8 @@ class system:
                     if rtmp:
                         phpport = rtmp.groups()[0]
                     
-                    if conf.find('AUTH_START') != -1: pauth = True;
-                    if conf.find(self.setupPath + '/stop') == -1: pstatus = True;
+                    if conf.find('AUTH_START') != -1: pauth = True
+                    if conf.find(self.setupPath + '/stop') == -1: pstatus = True
                     configFile = self.setupPath + '/nginx/conf/enable-php.conf'
                     conf = public.readFile(configFile)
                     rep = "php-cgi-([0-9]+)\.sock"
@@ -75,7 +75,7 @@ class system:
                     if rtmp:
                         phpversion = rtmp.groups()[0]
             except:
-                pass;
+                pass
             
         elif os.path.exists(self.setupPath+'/apache'):
             data['webserver'] = 'apache'
@@ -93,8 +93,8 @@ class system:
                     rtmp = re.search(rep,conf)
                     if rtmp:
                         phpport = rtmp.groups()[0]
-                    if conf.find('AUTH_START') != -1: pauth = True;
-                    if conf.find(self.setupPath + '/stop') == -1: pstatus = True;
+                    if conf.find('AUTH_START') != -1: pauth = True
+                    if conf.find(self.setupPath + '/stop') == -1: pstatus = True
             except:
                 pass
         elif os.path.exists('/usr/local/lsws/bin/lswsctrl'):
@@ -480,10 +480,16 @@ class system:
             
         ntime = time.time()
         networkInfo = {}
+        up = cache.get('up')
+        down = cache.get('down')
+        if not up:
+            up = networkIo[0]
+        if not down:
+            down = networkIo[1]
         networkInfo['upTotal']   = networkIo[0]
         networkInfo['downTotal'] = networkIo[1]
-        networkInfo['up']        = round(float(networkIo[0] -  cache.get("up")) / 1024 / (ntime - otime),2)
-        networkInfo['down']      = round(float(networkIo[1] -  cache.get("down")) / 1024 / (ntime -  otime),2)
+        networkInfo['up']        = round(float(networkIo[0] -  up) / 1024 / (ntime - otime),2)
+        networkInfo['down']      = round(float(networkIo[1] - down) / 1024 / (ntime -  otime),2)
         networkInfo['downPackets'] =networkIo[3]
         networkInfo['upPackets']   =networkIo[2]
             

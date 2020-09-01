@@ -1030,7 +1030,7 @@ var site = {
                     columns: [
                         { field: 'name', title: lan.site.domain, templet: function(item) { return "<a title='" + lan.site.click_access + "' target='_blank' href='http://" + item.name + ":" + item.port + "' class='btlinkbed'>" + item.name + "</a>" } },
                         { field: 'port', width: '70px', title: lan.site.port },
-                        { field: 'opt', width: '50px', title: lan.site.operate, templet: function(item) { return '<a class="table-btn-del domain_del" href="javascript:;"><span class="glyphicon glyphicon-trash"></span></a>'; } }
+                        { field: 'opt', width: '50px', align: 'center', title: lan.site.operate, templet: function(item) { return '<a class="table-btn-del domain_del" href="javascript:;"><span class="glyphicon glyphicon-trash"></span></a>'; } }
                     ],
                     data: rdata
                 })
@@ -1224,7 +1224,7 @@ var site = {
                         {
                             title: '',
                             items: [
-                                { name: 'path', title: lan.site.site_menu_2, width: '50%', value: path, event: { css: 'glyphicon-folder-open', callback: function(obj) { bt.select_path(obj); } } },
+                                { name: 'path', title: lan.site.site_menu_2, width: '50%', value: path, add_class: 'ml5', event: { css: 'glyphicon-folder-open', callback: function(obj) { bt.select_path(obj); } } },
                                 {
                                     name: 'btn_site_path',
                                     type: 'button',
@@ -1241,7 +1241,7 @@ var site = {
                         {
                             title: '',
                             items: [
-                                { title: lan.site.run_dir, width: '50%', value: rdata.runPath.runPath, name: 'dirName', type: 'select', items: dirs },
+                                { title: lan.site.run_dir, width: '50%', value: rdata.runPath.runPath, name: 'dirName', type: 'select',add_class: 'ml5 mr20', items: dirs },
                                 {
                                     name: 'btn_run_path',
                                     type: 'button',
@@ -1263,6 +1263,7 @@ var site = {
                         _html.append($(_form_data.html).addClass('line mtb10'));
                         clicks = clicks.concat(_form_data.clicks);
                     }
+                    _html.find('input[name="path"]').parent().css('padding-left','27px');
                     _html.find('input[type="checkbox"]').parent().addClass('label-input-group ptb10');
                     _html.find('button[name="btn_run_path"]').addClass('ml45');
                     _html.find('button[name="btn_site_path"]').addClass('ml33');
@@ -1621,7 +1622,7 @@ var site = {
                     _html.find('.info-r').append(_other)
                     clicks = clicks.concat(_form_data.clicks);
                 }
-                _html.append(bt.render_help([lan.site.rewrite_tips, lan.site.edit_rewrite]));
+                _html.append(bt.render_help([lan.site.rewrite_tips_1,lan.site.rewrite_tips_2, lan.site.edit_rewrite]));
                 $('#webedit-con').append(_html);
                 bt.render_clicks(clicks);
 
@@ -1673,8 +1674,9 @@ var site = {
         set_config: function(web) {
             var con = '<p style="color: #666; margin-bottom: 7px">Tips：Ctrl+F Search keywords，Ctrl+S Save，Ctrl+H Search and replace</p><div class="bt-input-text ace_config_editor_scroll" style="height: 400px; line-height:18px;" id="siteConfigBody"></div>\
 				<button id="OnlineEditFileBtn" class="btn btn-success btn-sm" style="margin-top:10px;">Save</button>\
-				<ul class="c7 ptb15">\
-					<li>This is primary configuration file of the site, do NOT modify it at will if you do not know configuration rules.</li>\
+				<ul class="help-info-text c7">\
+                    <li>This is primary configuration file of the site.</li>\
+                    <li>Do not modify it at will if you do not know configuration rules.</li>\
 				</ul>';
             $("#webedit-con").html(con);
             var webserve = bt.get_cookie('serverType'),
@@ -1684,7 +1686,7 @@ var site = {
             });
         },
         set_ssl: function(web) {
-            $('#webedit-con').html("<div id='ssl_tabs'></div><div class=\"tab-con\" style=\"padding:10px 0px;\"></div>");
+            $('#webedit-con').html("<div id='ssl_tabs'></div><div class=\"tab-con\" style=\"padding:10px 0px;width: 100%;\"></div>");
             bt.site.get_site_ssl(web.name, function(rdata) {
                 var _tabs = [
                     // {
@@ -1803,18 +1805,18 @@ var site = {
                             if (rdata.status && rdata.type == 1) {
                                 var cert_info = '';
                                 if (rdata.cert_data['notBefore']) {
-                                    cert_info = '<div style="margin-bottom: 10px;" class="alert alert-success">\
+                                    cert_info = '<div style="margin-bottom: 10px;padding: 10px;" class="alert alert-success">\
                                         <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.deploy_success_cret + '</b>' + lan.site.try_renew_cret + '</span>\
                                         <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;">\
                                         <b>' + lan.site.cert_brand + '</b>' + rdata.cert_data.issuer + '</span>\
                                         <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.auth_domain + '</b> ' + rdata.cert_data.dns.join('、') + '</span>\
                                         <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.expire_time + '</b> ' + rdata.cert_data.notAfter + '</span></div>'
                                 }
-                                robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:175px">' + lan.site.ssl_crt + '</span></div></div>');
+                                robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:190px">' + lan.site.ssl_crt + '</span></div></div>');
                                 var datas = [{
                                         items: [
-                                            { name: 'key', width: '45%', height: '220px', type: 'textarea', value: rdata.key },
-                                            { name: 'csr', width: '45%', height: '220px', type: 'textarea', value: rdata.csr }
+                                            { name: 'key', width: '48%', height: '220px', type: 'textarea', value: rdata.key },
+                                            { name: 'csr', width: '48%', height: '220px', type: 'textarea', value: rdata.csr }
                                         ]
                                     },
                                     {
@@ -1844,7 +1846,8 @@ var site = {
                                     robj.append(_form_data.html);
                                     bt.render_clicks(_form_data.clicks);
                                 }
-                                robj.find('textarea').css('background-color', '#f6f6f6').attr('readonly', true);
+                                robj.find('textarea').css({'background-color':'#f6f6f6','resize':'none'}).attr('readonly', true);
+                                robj.find('[name=csr]').css('margin-right', '0');
                                 var helps = [
                                     lan.site.ssl_tips1,
                                     lan.site.ssl_tips2,
@@ -1923,7 +1926,7 @@ var site = {
                                                         class: 'checks_line',
                                                         items: [{
                                                             name: 'dns_select',
-                                                            width: '120px',
+                                                            width: 'auto',
                                                             type: 'select',
                                                             items: arrs_list,
                                                             callback: function(obj) {
@@ -2090,17 +2093,17 @@ var site = {
                         callback: function(robj) {
                             var cert_info = '';
                             if (rdata.cert_data['notBefore']) {
-                                cert_info = '<div style="margin-bottom: 10px;" class="alert alert-success">\
+                                cert_info = '<div style="margin-bottom: 10px;padding: 10px;" class="alert alert-success">\
                                         <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;">' + (rdata.status ? lan.site.deploy_success_tips : lan.site.not_deploy_and_save) + '</span>\
                                         <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.cert_brand + '</b>' + rdata.cert_data.issuer + '</span>\
                                         <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.auth_domain + '</b> ' + rdata.cert_data.dns.join('、') + '</span>\
                                         <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.expire_time + '</b> ' + rdata.cert_data.notAfter + '</span></div>'
                             }
-                            robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:171px">' + lan.site.ssl_crt + '</span></div></div>');
+                            robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:190px">' + lan.site.ssl_crt + '</span></div></div>');
                             var datas = [{
                                     items: [
-                                        { name: 'key', width: '45%', height: '220px', type: 'textarea', value: rdata.key },
-                                        { name: 'csr', width: '45%', height: '220px', type: 'textarea', value: rdata.csr }
+                                        { name: 'key', width: '48%', height: '220px', type: 'textarea', value: rdata.key },
+                                        { name: 'csr', width: '48%', height: '220px', type: 'textarea', value: rdata.csr }
                                     ]
                                 },
                                 {
@@ -2139,7 +2142,9 @@ var site = {
                                 lan.site.ssl_tips5,
                             ]
                             robj.append(bt.render_help(helps));
-
+                            robj.find(".help-info-text").css('margin-top','0');
+                            robj.find('textarea').css('resize','none');
+                            robj.find('[name=csr]').css('margin-right', '0');
                         }
                     },
                     {
@@ -2274,7 +2279,7 @@ var site = {
                     _html.append(bt.render_help([lan.site.switch_php_help1, lan.site.switch_php_help2, lan.site.switch_php_help3]));
                     $('#webedit-con').append(_html);
                     bt.render_clicks(_form_data.clicks);
-                    $('#webedit-con').append('<div class="user_pw_tit" style="margin-top: 2px;padding-top: 11px;border-top: #ccc 1px dashed;"><span class="tit">' + lan.site.session_off + '</span><span class="btswitch-p"style="display: inline-flex;"><input class="btswitch btswitch-ios" id="session_switch" type="checkbox"><label class="btswitch-btn session-btn" for="session_switch" ></label></span></div><div class="user_pw" style="margin-top: 10px; display: block;"></div>' + bt.render_help([lan.site.independent_storage]));
+                    $('#webedit-con').append('<div class="user_pw_tit" style="margin-top: 2px;padding-top: 11px;border-top: #ccc 1px dashed;"><span class="tit">' + lan.site.session_off + '</span><span class="btswitch-p ml5" style="margin-bottom: 0;display: inline-block;vertical-align: middle;"><input class="btswitch btswitch-ios" id="session_switch" type="checkbox"><label class="btswitch-btn session-btn" for="session_switch" ></label></span></div><div class="user_pw" style="margin-top: 10px; display: block;"></div>' + bt.render_help([lan.site.independent_storage]));
 
                     function get_session_status() {
                         var loading = bt.load('Getting session status...');
@@ -2336,7 +2341,7 @@ var site = {
                         "<div class='info-r  ml0 mt5' >" +
                         "<input class='btswitch btswitch-ios' id='type' type='checkbox' name='type' " + (obj.type == 1 ? 'checked="checked"' : '') + " /><label class='btswitch-btn phpmyadmin-btn' for='type' style='float:left'></label>" +
                         "<div style='display: inline-block;'>" +
-                        "<span class='tname' style='margin-left:10px;position: relative;top: -5px; width:150px;'>" + lan.site.reserve_url + "</span>" +
+                        "<span class='tname' style='margin-left:51px;position: relative;top: -5px; width:150px;'>" + lan.site.reserve_url + "</span>" +
                         "<input class='btswitch btswitch-ios' id='holdpath' type='checkbox' name='holdpath' " + (obj.holdpath == 1 ? 'checked="checked"' : '') + " /><label class='btswitch-btn phpmyadmin-btn' for='holdpath' style='float:left'></label>" +
                         "</div>" +
                         "</div>" +
@@ -2354,10 +2359,12 @@ var site = {
                         "</div>" +
                         "<div class='line redirectdomain' style='display:" + (obj.domainorpath == 'domain' ? 'block' : 'none') + "'>" +
                         "<span class='tname'>" + lan.site.redirect_domain + "</span>" +
-                        "<div class='info-r  ml0'>" +
+                        "<div class='info-r  ml0' style='height: 35px;'>" +
                         "<select id='usertype' name='redirectdomain' data-actions-box='true' class='selectpicker show-tick form-control' multiple data-live-search='false'>" + domain_html + "</select>" +
-                        "<span class='tname' style='width:90px'>" + lan.site.target_url + "</span>" +
-                        "<input  name='tourl' class='bt-input-text mr5' type='text' style='width:200px;padding-left: 9px;' value='" + obj.tourl + "'>" +
+                        "</div>" +
+                        "<span class='tname'>" + lan.site.target_url + "</span>" +
+                        "<div class='info-r  ml0'>" +
+                        "<input  name='tourl' class='bt-input-text mr5' type='text' style='width:200px;padding-left: 9px;' value='" + obj.tourl + "'>"+
                         "</div>" +
                         "</div>" +
                         "<div class='line redirectpath' style='display:" + (obj.domainorpath == 'path' ? 'block' : 'none') + "'>" +
@@ -2739,29 +2746,34 @@ var site = {
                     "<input class='btswitch btswitch-ios' id='openNginx' type='checkbox' name='cache' " + (obj.cache == 1 ? 'checked="checked"' : '') + "'><label class='btswitch-btn phpmyadmin-btn' for='openNginx'></label>" +
                     "</div>" +
                     "<div style='display: inline-block;'>" +
-                    "<span class='tname' style='margin-left:10px;position: relative;top: -5px;width:150px;'>" + lan.site.proxy_adv + "</span>" +
+                    "<span class='tname' style='position: relative;top: -5px;width:150px;padding-right: 10px;'>" + lan.site.proxy_adv + "</span>" +
                     "<input class='btswitch btswitch-ios' id='openAdvanced' type='checkbox' name='advanced' " + (obj.advanced == 1 ? 'checked="checked"' : '') + "'><label class='btswitch-btn phpmyadmin-btn' for='openAdvanced'></label>" +
                     "</div>" +
                     "</div>" +
                     "</div>" +
                     "<div class='line' style='clear:both;'>" +
                     "<span class='tname'>" + lan.site.proxy_name + "</span>" +
-                    "<div class='info-r  ml0'><input name='proxyname'" + (type ? "" : "readonly='readonly'") + " class='bt-input-text mr5 " + (type ? "" : " disabled") + "' type='text' style='width:200px' value='" + obj.proxyname + "'></div>" +
+                    "<div class='info-r  ml0'><input name='proxyname'" + (type ? "" : "readonly='readonly'") + " class='bt-input-text mr5 " + (type ? "" : " disabled") + "' type='text' style='width:220px' value='" + obj.proxyname + "'></div>" +
                     "</div>" +
                     "<div class='line cachetime' style='display:" + (obj.cache == 1 ? 'block' : 'none') + "'>" +
                     "<span class='tname'>" + lan.site.cache_time + "</span>" +
-                    "<div class='info-r  ml0'><input name='cachetime'class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.cachetime + "'>" + lan.site.minute + "</div>" +
+                    "<div class='info-r  ml0'><input name='cachetime'class='bt-input-text mr5' type='text' style='width:220px' value='" + obj.cachetime + "'>" + lan.site.minute + "</div>" +
                     "</div>" +
                     "<div class='line advanced'  style='display:" + (obj.advanced == 1 ? 'block' : 'none') + "'>" +
                     "<span class='tname'>" + lan.site.proxy_dir + "</span>" +
-                    "<div class='info-r  ml0'><input id='proxydir' name='proxydir' class='bt-input-text mr5' type='text' style='width:200px' value='" + obj.proxydir + "'>" +
+                    "<div class='info-r  ml0'><input id='proxydir' name='proxydir' class='bt-input-text mr5' type='text' style='width:220px' value='" + obj.proxydir + "'>" +
                     "</div>" +
                     "</div>" +
                     "<div class='line'>" +
                     "<span class='tname'>" + lan.site.target_url + "</span>" +
                     "<div class='info-r  ml0'>" +
-                    "<input name='proxysite' class='bt-input-text mr10' type='text' style='width:200px' value='" + obj.proxysite + "'>" +
-                    "<span class='mlr15'>" + lan.site.proxy_domain + "</span><input name='todomain' class='bt-input-text ml10' type='text' style='width:200px' value='" + obj.todomain + "'>" +
+                    "<input name='proxysite' class='bt-input-text mr10' type='text' style='width:220px' value='" + obj.proxysite + "'>" +
+                    "</div>" +
+                    "</div>" +
+                    "<div class='line'>" +
+                    "<span class='tname'>" + lan.site.proxy_domain + "</span>" +
+                    "<div class='info-r  ml0'>" +
+                    "<input name='todomain' class='bt-input-text ml10' type='text' style='width:220px' value='" + obj.todomain + "'>"+
                     "</div>" +
                     "</div>" +
                     "<div class='line replace_conter' style='display:" + (bt.get_cookie('serverType') == 'nginx' ? 'block' : 'none') + "'>" +
@@ -3056,6 +3068,7 @@ var site = {
                     robj.append(_form_data.html);
                     bt.render_clicks(_form_data.clicks);
                 }
+                robj.find("#none").css('margin-top','10px')
                 $("#none").before("</br>");
                 var helps = [lan.site.access_empty_ref_default, lan.site.multi_url, lan.site.trigger_return_404]
                 robj.append(bt.render_help(helps));
@@ -3094,9 +3107,10 @@ var site = {
         get_site_logs: function(web) {
             bt.site.get_site_logs(web.name, function(rdata) {
                 var robj = $('#webedit-con');
-                var logs = { class: 'bt-logs', items: [{ name: 'site_logs', height: '520px', value: rdata.msg, width: '100%', type: 'textarea' }] };
+                var logs = { class: 'bt-logs', items: [{ name: 'site_logs', height: '592px', value: rdata.msg, width: '100%', type: 'textarea' }] };
                 var _form_data = bt.render_form_line(logs);
                 robj.append(_form_data.html);
+                robj.find('.site_logs').css('resize','none');
                 bt.render_clicks(_form_data.clicks);
                 $('textarea[name="site_logs"]').attr('readonly', true);
                 $('textarea[name="site_logs"]').scrollTop(100000000000)

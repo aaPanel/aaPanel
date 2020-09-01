@@ -164,7 +164,8 @@ class panel_restore:
             result = self._restore_backup(self._local_file, site_info, args)
         else:
             return public.ExecShell(False,'Currently only supports restoring local, Google storage and AWS S3 backups')
-        os.remove(self._local_file)
+        if os.path.exists(self._local_file):
+            os.remove(self._local_file)
         if result:
             self._progress_rewrite('Recovery failed: {}'.format(str(site_info['site_path'])))
             return result

@@ -821,7 +821,7 @@ function GetPanelApi() {
                             <span class="tname">'+lan.config.int_sk+'</span>\
                             <div class="info-r">\
                                 <input readonly="readonly" name="panel_token_value" class="bt-input-text mr5 disable" type="text" style="width: 310px" value="'+rdata.token+'" disable>\
-                                <button class="btn btn-xs btn-success btn-sm" style="margin-left: -50px;" onclick="SetPanelApi(1)">'+lan.config.reset+'</button>\
+                                <button class="btn btn-xs btn-success btn-sm" style="margin-left: -57px;" onclick="SetPanelApi(1)">'+lan.config.reset+'</button>\
                             </div>\
                         </div>\
                         <div class="line ">\
@@ -834,7 +834,7 @@ function GetPanelApi() {
                         <ul class="help-info-text c7">\
                             <li>'+lan.config.help1+'</li>\
                             <li>'+lan.config.help2+'</li>\
-                            <li>'+lan.config.help3+'：<a class="btlink" href="https://www.bt.cn/bbs/thread-20376-1-1.html" target="_blank">https://www.bt.cn/bbs/thread-20376-1-1.html</a></li>\
+                            <li>'+lan.config.help3+'：<a class="btlink" href="https://forum.aapanel.com/d/482-api-interface-tutorial" target="_blank">https://forum.aapanel.com/d/482-api-interface-tutorial</a></li>\
                         </ul>\
                     </div>'
         })

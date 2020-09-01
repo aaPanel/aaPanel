@@ -164,7 +164,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     # 上传文件
     def UploadFile(self, get):
         from werkzeug.utils import secure_filename
-        from flask import request
+        from BTPanel import request
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
         if not os.path.exists(get.path):

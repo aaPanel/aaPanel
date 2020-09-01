@@ -32,8 +32,9 @@ def M(table):
         ps: 默认访问data/default.db
     """
     import db
-    sql = db.Sql()
-    return sql.table(table)
+    with db.Sql() as sql:
+        #sql = db.Sql()
+        return sql.table(table)
 
 def HttpGet(url,timeout = 6,headers = {}):
     """
@@ -317,7 +318,7 @@ def GetJson(data):
     try:
         return dumps(data,ensure_ascii=False)
     except:
-        return dumps(returnMsg(False,"Wrong response: %s" % str(data)))
+        return dumps(returnMsg(False,"WRONG_RESPONSE", (str(data))))
 
 def getJson(data):
     return GetJson(data)
@@ -341,10 +342,10 @@ def ReadFile(filename,mode = 'r'):
                 f_body = fp.read()
                 fp.close()
             except Exception as ex2:
-                WriteLog('Open File',str(ex2))
+                WriteLog('OPEN_FILE',str(ex2))
                 return False
         else:
-            WriteLog('Open File',str(ex))
+            WriteLog('OPEN_FILE',str(ex))
             return False
     return f_body
 
@@ -375,19 +376,20 @@ def WriteFile(filename,s_body,mode='w+'):
 def writeFile(filename,s_body,mode='w+'):
     return WriteFile(filename,s_body,mode)
 
-def WriteLog(type,logMsg,args=()):
+def WriteLog(type,logMsg,args=(),not_web = False):
     #写日志
     #try:
     import time,db,json
     username = 'system'
     uid = 1
-    try:
-        from BTPanel import session
-        if 'username' in session:
-            username = session['username']
-            uid = session['uid']
-    except:
-        pass
+    if not not_web:
+        try:
+            from BTPanel import session
+            if 'username' in session:
+                username = session['username']
+                uid = session['uid']
+        except:
+            pass
     global _LAN_LOG
     if not _LAN_LOG:
         _LAN_LOG = json.loads(ReadFile('BTPanel/static/language/' + GetLanguage() + '/log.json'))
@@ -624,8 +626,10 @@ def get_url(timeout = 0.5):
         mnode1 = []
         mnode2 = []
         mnode3 = []
+        new_node_list = {}
         for node in node_list:
             node['net'],node['ping'] = get_timeout(node['protocol'] + node['address'] + ':' + node['port'] + '/net_test',1)
+            new_node_list[node['address']] = node['ping']
             if not node['ping']: continue
             if node['ping'] < 100:      #当响应时间<100ms且可用带宽大于1500KB时
                 if node['net'] > 1500:
@@ -645,6 +649,16 @@ def get_url(timeout = 0.5):
             mnode = sorted(mnode2,key= lambda  x:x['ping'],reverse=False)
 
         if not mnode: return 'http://download.bt.cn'
+
+        new_node_keys = new_node_list.keys()
+        for i in range(len(node_list)):
+            if node_list[i]['address'] in new_node_keys:
+                node_list[i]['ping'] = new_node_list[node_list[i]['address']]
+            else:
+                node_list[i]['ping'] = 500
+
+        new_node_list = sorted(node_list,key=lambda x: x['ping'],reverse=False)
+        writeFile(nodeFile,json.dumps(new_node_list))
         return mnode[0]['protocol'] + mnode[0]['address'] + ':' + mnode[0]['port']
     except:
         return 'http://download.bt.cn'
@@ -1356,7 +1370,7 @@ def write_request_log(reques = None):
         log_file = getDate(format='%Y-%m-%d') + '.json'
         if not os.path.exists(log_path): os.makedirs(log_path)
 
-        from flask import request
+        from BTPanel import request
         log_data = []
         log_data.append(getDate())
         log_data.append(GetClientIp() + ':' + str(request.environ.get('REMOTE_PORT')))
@@ -1364,6 +1378,7 @@ def write_request_log(reques = None):
         log_data.append(request.full_path)
         log_data.append(request.headers.get('User-Agent'))
         WriteFile(log_path + '/' + log_file,json.dumps(log_data) + "\n",'a+')
+        rep_sys_path()
     except: pass
 
 # 重载模块
@@ -1545,6 +1560,7 @@ def auto_backup_panel():
         shutil.copytree(panel_paeh + '/data',backup_path + '/data')
         shutil.copytree(panel_paeh + '/config',backup_path + '/config')
         shutil.copytree(panel_paeh + '/vhost',backup_path + '/vhost')
+        ExecShell("chmod -R 600 {path};chown -R root.root {path}".format(paht=b_path))
         time_now = time.time() - (86400 * 15)
         for f in os.listdir(b_path):
             try:
@@ -1723,7 +1739,7 @@ def import_cdn_plugin():
     try:
         import static_cdn_main
     except:
-        sys.path.insert(0,plugin_path)
+        package_path_append(plugin_path)
         import static_cdn_main
 
 
@@ -1737,6 +1753,8 @@ def get_cdn_hosts():
 
 def get_cdn_url():
     try:
+        if os.path.exists('plugin/static_cdn/not_open.pl'):
+            return False
         from BTPanel import cache
         cdn_url = cache.get('cdn_url')
         if cdn_url: return cdn_url
@@ -1920,6 +1938,74 @@ def restore_file(file, act=None):
     if act:
         file_type = "_def"
     ExecShell("/usr/bin/cp -p {1} {0}".format(file, file + file_type))
+
+
+def package_path_append(path):
+    if not path in sys.path:
+        sys.path.insert(0, path)
+
+
+def rep_sys_path():
+    sys_path = []
+    for p in sys.path:
+        if p in sys_path: continue
+        sys_path.append(p)
+    sys.path = sys_path
+
+
+def get_ssh_port():
+    '''
+        @name 获取本机SSH端口
+        @author hwliang<2020-08-07>
+        @return int
+    '''
+    s_file = '/etc/ssh/sshd_config'
+    conf = readFile(s_file)
+    if not conf: conf = ''
+    rep = r"#*Port\s+([0-9]+)\s*\n"
+    tmp1 = re.search(rep, conf)
+    ssh_port = 22
+    if tmp1:
+        ssh_port = int(tmp1.groups(0)[0])
+    return ssh_port
+
+def set_error_num(key,empty = False,expire=3600):
+    '''
+        @name 设置失败次数(每调用一次+1)
+        @author hwliang<2020-08-21>
+        @param key<string> 索引
+        @param empty<bool> 是否清空计数
+        @param expire<int> 计数器生命周期(秒)
+        @return bool
+    '''
+    from BTPanel import cache
+    num = cache.get(key)
+    if not num:
+        num = 0
+    else:
+        if empty:
+            cache.delete(key)
+            return True
+    cache.set(key,num + 1,expire)
+    return True
+
+def get_error_num(key,limit=False):
+    '''
+        @name 获取失败次数
+        @author hwliang<2020-08-21>
+        @param key<string> 索引
+        @param limit<False or int> 如果为False，则直接返回失败次数，否则与失败次数比较，若大于失败次数返回True，否则返回False
+        @return int or bool
+    '''
+    from BTPanel import cache
+    num = cache.get(key)
+    if not num: num = 0
+    if not limit:
+        return num
+    if limit > num:
+        return True
+    return False
+
 
 #取通用对象
 class dict_obj:

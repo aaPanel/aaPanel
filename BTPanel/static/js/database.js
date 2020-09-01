@@ -48,7 +48,7 @@ var database = {
                         }
                     },
                     {
-                        field: 'opt', width: 280, title: lan.database.operation, align: 'right', templet: function (item) {
+                        field: 'opt', width: 300, title: lan.database.operation, align: 'right', templet: function (item) {
                             var option = "<a href=\"javascript:;\" class=\"btlink\" onclick=\"bt.database.open_phpmyadmin('" + item.name + "','" + item.username + "','" + item.password + "')\" title=\""+lan.database.admin_title+"\">"+lan.database.admin+"</a> | ";
                             option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"database.rep_tools('" + item.name + "')\" title=\""+lan.database.mysql_tools+"\">"+lan.database.tools+"</a> | ";
                             option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"bt.database.set_data_access('" + item.username + "')\" title=\""+lan.database.set_db_auth+"\">"+lan.database.auth+"</a> | ";
@@ -76,7 +76,7 @@ var database = {
                 if (!types[rdata.tables[i].type]) continue;
                 tbody += '<tr>\
                         <td><input value="dbtools_' + rdata.tables[i].table_name + '" class="check" onclick="database.selected_tools(null,\'' + db_name + '\');" type="checkbox"></td>\
-                        <td><span style="width:220px;"> ' + rdata.tables[i].table_name + '</span></td>\
+                        <td><span style="width:150px;"> ' + rdata.tables[i].table_name + '</span></td>\
                         <td>' + rdata.tables[i].type + '</td>\
                         <td><span style="width:90px;"> ' + rdata.tables[i].collation + '</span></td>\
                         <td>' + rdata.tables[i].rows_count + '</td>\
@@ -100,7 +100,7 @@ var database = {
             layer.open({
                 type: 1,
                 title: lan.database.mysql_tools_box+"【" + db_name + "】",
-                area: ['824px', '580px'],
+                area: ['850px', '580px'],
                 closeBtn: 2,
                 shadeClose: false,
                 content: '<div class="plr15 mt10">\
