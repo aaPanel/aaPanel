@@ -1,5 +1,4 @@
 {% extends "layout.html" %}
-
 {% block content %}
 <div class="main-content">
     <div class="container-fluid" style="padding-bottom:50px">
@@ -20,7 +19,7 @@
                                 <label for="search_all">{{data['lan']['CONTAIN_SUBDIR']}}</label>
                             </div>
                             <form target="hid" onsubmit='GetFiles(1)'>
-                                <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="" />
+                                <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="" style="padding-right: 159px;" />
                                 <button type="button" class="ser-sub pull-left" onclick='GetFiles(1)'></button>
                             </form>
                             <iframe name='hid' id="hid" style="display:none"></iframe>
@@ -31,7 +30,7 @@
                     <button class="btn btn-default btn-sm pull-left" onclick="UploadFiles()">{{data['lan']['BTN3']}}</button>
                     <button class="btn btn-default btn-sm pull-left" onclick="DownloadFile()" title="{{data['lan']['TI1']}}" style="margin:0 5px">{{data['lan']['BTN4']}}</button>
                     <span id='BarTools'></span>
-                    <span id='Batch' style="background-color:#fff;position:absolute;right:190px;z-index:10"></span>
+                    <span id='Batch' style="background-color:#fff;position:absolute;right:217px;z-index:10"></span>
                     <span id='comlist' class="comlist"></span>
                     <div class="btn-group btn-group-sm pull-right" style="margin-right:5px;">
                         <button id="set_icon" title="{{data['lan']['TI2']}}" type="button" class="btn btn-default">
@@ -57,79 +56,85 @@
     <li onclick="javascript:Batch(3);"><a style="cursor: pointer;">{{data['lan']['L4']}}</a></li>
     <li onclick="javascript:Batch(4);"><a style="cursor: pointer;">{{data['lan']['L5']}}</a></li>
 </ul>
-    <!--<link rel="stylesheet" href="./static/ace/font-awesome/css/font-awesome.min.css">-->
+<link rel="stylesheet" href="./static/ace/styles/icons.css">
 <script type="text/tmplate" id="aceTmplate">
     <div id="ace_conter">
         <div class="ace_header">
             <span class="saveFile"><i class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></i>Save</span>
             <span class="saveFileAll"><i class="glyphicon glyphicon-duplicate" aria-hidden="true"></i>Save All</span>
             <span class="refreshs"><i class="glyphicon glyphicon-refresh" aria-hidden="true"></i>Refresh</span>
-            <!-- <span class="searchs"><i class="fa fa-search" aria-hidden="true"></i>搜索</span>
-            <span class="replaces"><i class="fa fa-random" aria-hidden="true"></i>替换</span>
-            <span class="fontSize"><i class="fa fa-text-height" aria-hidden="true"></i>字体</span> -->
-            <!-- <span class="themes"><i class="fa fa-tachometer" aria-hidden="true"></i>主题</span> -->
+            <span class="searchs"><i class="glyphicon glyphicon-search" aria-hidden="true"></i>Search</span>
+            <span class="replaces"><i class="glyphicon glyphicon-retweet" aria-hidden="true"></i>Replace</span>
+            <span class="jumpLine"><i class="glyphicon glyphicon-pushpin" aria-hidden="true"></i>JumpLine</span>
+            <span class="fontSize"><i class="glyphicon glyphicon-text-width" aria-hidden="true"></i>Font</span>
+            <span class="themes"><i class="glyphicon glyphicon-magnet" aria-hidden="true"></i>Theme</span>
+            <span class="setUp"><i class="glyphicon glyphicon-cog" aria-hidden="true"></i>Set</span>
             <span class="helps"><i class="glyphicon glyphicon-question-sign" aria-hidden="true"></i>Help</span>
             <div class="pull-down" title="Hide toolbar"><i class="glyphicon glyphicon-menu-down" aria-hidden="true"></i></div>
         </div>
-        <div class="ace_overall">
+        <div class="ace_overall" style="top: 35px;">
             <!-- 编辑器目录 -->
             <div class="ace_catalogue">
-                <div class="ace_catalogue_title">Favorites</div>
+                <div class="ace_catalogue_title">Directory<div class="dir-menu-right"><span class="glyphicon glyphicon-minus" aria-hidden="true"></span></div></div>
+                <div class="ace_dir_tools">
+            		<div class="upper_level"  title="Back">
+            			<i class="glyphicon glyphicon-share-alt" aria-hidden="true"></i>
+            			<span>Back</span>
+            		</div>
+            		<div class="search_file" title="Search">
+            			<i class="glyphicon glyphicon-search" aria-hidden="true"></i>
+            			<span>Search</span>
+            		</div>
+            		<div class="new_folder" title="New Folder/File">
+            			<i class="glyphicon glyphicon-plus"  aria-hidden="true"></i>
+            			<span>New</span>
+            			<ul class="folder_down_up">
+            				<li data-type="2"><i class="folder-icon"></i>New Folder</li>
+	                    	<li data-type="3"><i class="text-icon"></i>New File</li>
+            			</ul>
+            		</div>
+            		<div class="refresh_dir" title="ReFresh">
+            			<span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+            			<span>ReFresh</span>
+            		</div>
+            		<span class="ace_editor_main_storey"></span>
+            	</div>
                 <div class="ace_catalogue_list">
-                    <ul class="cd-accordion-menu animated">
-                        <li class="has-children">
-                            <input type="checkbox" name ="group-1" id="group-1" checked>
-                            <label for="group-1">Group 1</label>
-                            <ul>
-                                <li class="has-children">
-                                    <input type="checkbox" name ="sub-group-1" id="sub-group-1">
-                                    <label for="sub-group-1">Sub Group 1</label>
-                                    <ul>
-                                        <li><a href="#0">Image</a></li>
-                                        <li><a href="#0">Image</a></li>
-                                        <li><a href="#0">Image</a></li>
-                                    </ul>
-                                </li>
-                                <li class="has-children">
-                                    <input type="checkbox" name ="sub-group-2" id="sub-group-2">
-                                    <label for="sub-group-2">Sub Group 2</label>
-                                    <ul>
-                                        <li class="has-children">
-                                            <input type="checkbox" name ="sub-group-level-3" id="sub-group-level-3">
-                                            <label for="sub-group-level-3">Sub Group Level 3</label>
-                                            <ul>
-                                                <li><a href="#0">Image</a></li>
-                                                <li><a href="#0">Image</a></li>
-                                            </ul>
-                                        </li>
-                                        <li><a href="#0">Image</a></li>
-                                    </ul>
-                                </li>
-                                <li><a href="#0">Image</a></li>
-                                <li><a href="#0">Image</a></li>
-                            </ul>
-                        </li>
-                    </ul>
+                    <ul class="cd-accordion-menu"></ul>
+                    <ul class="ace_catalogue_menu">
+                    	<li data-type="0"><i class="glyphicon glyphicon-refresh" aria-hidden="true"></i><span>Refresh</span></li>
+                    	<li data-type="1"><i class="glyphicon glyphicon-folder-open" aria-hidden="true"></i><span>Subdirectory</span></li>
+	                    <li data-type="2"><i class="folder-icon"></i><span>New Folder</span></li>
+	                    <li data-type="3"><i class="text-icon"></i><span>New File</span></li>
+	                    <li data-type="4"><i class="rename-icon img-icon"></i><span>Rename</span></li>
+	                    <li data-type="5"><i class="down-icon img-icon"></i><span>Download</span></li>
+	                    <li data-type="6"><i class="del-icon img-icon"></i><span>Delete</span></li>
+	                </ul>
                 </div>
+                <div class="ace_catalogue_drag_icon">
+                    <div class="drag_icon_conter"></div>
+                    <span class="fold_icon_conter" title="Hide Directory"></span>
+                </div>
+
             </div>
             <!-- 编辑内容 -->
-            <!-- <div class="ace_catalogue_sidebar"><img src="/static/img/col-resize.png" /></div> -->
             <div class="ace_editor_main">
                 <div class="ace_conter_menu">
                     <div class="ace_editor_add" style="display:none;"><i class="fa fa-plus-square" aria-hidden="true"></i></div>
                 </div>
+                <div class="ace_conter_tips"><div class="tips"></div></div>
                 <div class="ace_editor_main_storey"></div>
                 <div class="ace_conter_editor"></div>
                 <div class="ace_conter_toolbar">
-                    <div class="pull-left">
-                        <span data-type="path"></span>
+                    <div class="pull-left size_ellipsis">
+                        <span data-type="path" class="size_ellipsis"></span>
                     </div>
                     <div class="pull-right">
                         <span data-type="cursor"></span>
+                        <span data-type="history"></span>
                         <span data-type="tab"></span>
                         <span data-type="encoding"></span>
                         <span data-type="lang"></span>
-                        <!--<span data-type="history"></span>-->
                     </div>
                 </div>
             </div>
@@ -148,8 +153,6 @@
                         <li data-value="4">4</li>
                         <li data-value="5">5</li>
                         <li data-value="6">6</li>
-                        <li data-value="7">7</li>
-                        <li data-value="8">8</li>
                     </ul>
                 </div>
                 <div class="menu-item menu-encoding" style="display: none;">
@@ -157,25 +160,72 @@
                     <ul></ul>
                 </div>
                 <div class="menu-item menu-files" style="display: none;">
-                    <div class="menu-conter"><input type="text" class="menu-input" placeholder="Input language mode"><i class="fa fa-close" aria-hidden="true"></i></div>
+                    <div class="menu-conter">
+                    	<input type="text" class="menu-input" placeholder="Input language mode">
+                    	<i class="fa fa-close" aria-hidden="true"></i>
+                    </div>
                     <div class="menu-title">Set file language association</div>
                     <ul></ul>
+                </div>
+                <div class="menu-item menu-fontSize" style="display: none;">
+                    <div class="menu-title">Set editor font size</div>
+                    <div class="menu-conter">
+                        <div class="set_font_size">
+                            <input type="number" min="12" max="45"/>
+                            <span class="tips error">Font setting range 12-45</span>
+                            <button class="btn-save">Save</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-item menu-jumpLine" style="display: none;">
+                    <div class="menu-title">Jump to specified line</div>
+                    <div class="menu-conter">
+                        <div class="set_jump_line">
+                            <input type="number" min="0"/>
+                            <button class="btn-save">Jump</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-item menu-themes" style="display: none;">
+                    <div class="menu-title">Set editor theme</div>
+                    <ul></ul>
+                </div>
+                <div class="menu-item menu-history" style="display: none;">
+                    <div class="menu-title">History version</div>
+                    <ul></ul>
+                </div>
+                <div class="menu-item menu-setUp"  style="display: none;">
+                	<div class="menu-title">Editor setting【Some settings need to be restart editor】</div>
+                	<ul class="editor_menu">
+                		<li data-type="wrap">Auto wrap</li>
+                		<li data-type="enableLiveAutocompletion">Code autocomplete</li>
+                		<li data-type="enableSnippets">Enable snippets</li>
+                		<li data-type="showInvisibles">Show hidden characters</li>
+                		<li data-type="showLineNumbers">Show line numbers</li>
+                		
+                	</ul>
                 </div>
             </div>
         </div>
     </div>
 </script>
-<script src="/static/js/jquery-ui.min.js"></script>
-<script src="/static/js/jquery.contextify.min.js"></script>
-<script src="/static/js/files.js?date={{g.version}}"></script>
-<script src="/static/js/upload.js?date={{g.version}}"></script>
-<script type="text/javascript" src="./static/ace/ace.js"></script>
-<script type="text/javascript" src="./static/ace/ext-language_tools.js"></script>
+{% endblock %}
+{% block scripts %}
+<!--<link rel="stylesheet" type="text/css" href="https://at.alicdn.com/t/font_1628000_cso2y4bz1wk.css">-->
+<script type="text/javascript" src="/static/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery.contextify.min.js"></script>
+<script type="text/javascript" src="/static/js/files.js?date20191219={{g.version}}"></script>
+<!-- <script type="text/javascript" src="/static/js/bt_upload.js?version={{g['version']}}"></script> -->
+<script type="text/javascript" src="/static/ace/ace.js?date={{g.version}}"></script>
+<script type="text/javascript" src="/static/ace/ext-language_tools.js?date={{g.version}}"></script>
+<script type="text/javascript" src="/static/js/clipboard.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
+<script type="text/javascript" src="/static/js/polyfill.js"></script>
 <script type="text/javascript">
 	setTimeout(function(){
-	GetDisk();
-},500);
-var xPath = getCookie('Path');
+		GetDisk();
+	},500);
+	var xPath = getCookie('Path');
 	setTimeout(function(){
 		GetFiles((xPath!=undefined?xPath:'/www/wwwroot'));
 	},800);
@@ -196,9 +246,9 @@ var xPath = getCookie('Path');
 		$(this).addClass("active");
 		$("#set_icon").removeClass("active");
 		GetFiles(getCookie('Path'));
-	})
+	});
 	$(".refreshBtn").click(function(){
 		GetFiles(getCookie('Path'));
-	})
+    });
 </script>
 {% endblock %}

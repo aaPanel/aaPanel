@@ -4,7 +4,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <2879625666@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 
 #------------------------------
@@ -216,7 +216,6 @@ def ClearSystem():
     count += tmp_count;
     total += tmp_total;
     print('=======================================================================')
-    # print('\033[1;32m|-系统垃圾清理完成，共删除['+str(count)+']个文件,释放磁盘空间['+ToSize(total)+']\033[0m');
     print('\033[1;32m|-%s\033[0m' % public.GetMsg("CLEAR_RUBBISH",(str(count),ToSize(total))));
 
 #清理邮件日志
@@ -242,12 +241,10 @@ def ClearMail():
                 os.remove(filename)
             print('\t\033[1;32m[OK]\033[0m')
             num += 1
-        # print('|-已清理['+dpath+'],删除['+str(num)+']个文件,共释放磁盘空间['+ToSize(size)+']');
         print(public.GetMsg("CLEAR_RUBBISH1",(dpath,str(num),ToSize(size))))
         total += size;
         count += num;
     print('=======================================================================')
-    # print('|-已完成spool的清理，删除['+str(count)+']个文件,共释放磁盘空间['+ToSize(total)+']');
     print(public.GetMsg('CLEAR_RUBBISH2',(str(count),ToSize(total))))
     return total,count
 
@@ -269,7 +266,6 @@ def ClearSession():
             os.remove(filename)
         print('\t\033[1;32m[OK]\033[0m')
         count += 1;
-    # print('|-已完成php_session的清理，删除[' + str(count) + ']个文件,共释放磁盘空间[' + ToSize(total) + ']');
     print(public.GetMsg("CLEAR_PHP_SESSION1",(str(count),ToSize(total))))
     return total,count
 
@@ -307,7 +303,6 @@ def ClearOther():
             count += 1;
     public.serviceReload();
     os.system('sleep 1 && /etc/init.d/bt reload > /dev/null &');
-    # print('|-已完成临时文件及网站日志的清理，删除['+str(count)+']个文件,共释放磁盘空间['+ToSize(total)+']');
     print(public.GetMsg("CLEAR_RUBBISH4",(str(count),ToSize(total))))
     return total,count
 

@@ -27,51 +27,32 @@ $(".st").hover(function(){
 $(".searcTime .gt").click(function(){
 	$(this).addClass("on").siblings().removeClass("on");
 })
-$(".loadbtn").click(function(){
-	$(this).parents(".searcTime").find("span").removeClass("on");
+$('.time_range_submit').click(function(){
+    $(this).parents(".searcTime").find("span").removeClass("on");
 	$(this).parents(".searcTime").find(".st").addClass("on");
 	var b = (new Date($(this).parent().find(".btime").val()).getTime())/1000;
 	var e = (new Date($(this).parent().find(".etime").val()).getTime())/1000;
 	b = Math.round(b);
 	e = Math.round(e);
-	getload(b,e)
-})
-$(".cpubtn").click(function(){
-	$(this).parents(".searcTime").find("span").removeClass("on");
-	$(this).parents(".searcTime").find(".st").addClass("on");
-	var b = (new Date($(this).parent().find(".btime").val()).getTime())/1000;
-	var e = (new Date($(this).parent().find(".etime").val()).getTime())/1000;
-	b = Math.round(b);
-	e = Math.round(e);
-	cpu(b,e)
-})
-$(".membtn").click(function(){
-	$(this).parents(".searcTime").find("span").removeClass("on");
-	$(this).parents(".searcTime").find(".st").addClass("on");
-	var b = (new Date($(this).parent().find(".btime").val()).getTime())/1000;
-	var e = (new Date($(this).parent().find(".etime").val()).getTime())/1000;
-	b = Math.round(b);
-	e = Math.round(e);
-	mem(b,e)
-})
-$(".diskbtn").click(function(){
-	$(this).parents(".searcTime").find("span").removeClass("on");
-	$(this).parents(".searcTime").find(".st").addClass("on");
-	var b = (new Date($(this).parent().find(".btime").val()).getTime())/1000;
-	var e = (new Date($(this).parent().find(".etime").val()).getTime())/1000;
-	b = Math.round(b);
-	e = Math.round(e);
-	disk(b,e)
-})
-$(".networkbtn").click(function(){
-	$(this).parents(".searcTime").find("span").removeClass("on");
-	$(this).parents(".searcTime").find(".st").addClass("on");
-	var b = (new Date($(this).parent().find(".btime").val()).getTime())/1000;
-	var e = (new Date($(this).parent().find(".etime").val()).getTime())/1000;
-	b = Math.round(b);
-	e = Math.round(e);
-	network(b,e)
-})
+    console.log(b,e);
+	switch ($(this).attr('data-type')) {
+		case 'getload':
+			getload(b,e);
+			break;
+		case 'cpu':
+			cpu(b,e);
+			break;
+		case 'mem':
+			mem(b,e);
+		break;
+		case 'disk':
+			disk(b,e);
+		break;
+		case 'network':
+			network(b,e);
+		break;
+	}
+});
 //指定天数
 function Wday(day,name){
 	var now = (new Date().getTime())/1000;
@@ -303,7 +284,7 @@ $.get('/ajax?action=GetCpuIo&start='+b+'&end='+e,function(rdata){
 	for(var i = 0; i < rdata.length; i++){
 		xData.push(rdata[i].addtime);
 		//yData.push(rdata[i].pro);
-		zData.push(rdata[i].mem);
+		zData.push(rdata[i].mem.toFixed(2));
 	}
 	option = {
 		tooltip: {
@@ -392,8 +373,8 @@ function disk(b, e) {
         //var zData = [];
 
         for (var i = 0; i < rdata.length; i++) {
-            rData.push((rdata[i].read_bytes / 1024 / 60).toFixed(3));
-            wData.push((rdata[i].write_bytes / 1024 / 60).toFixed(3));
+            rData.push((rdata[i].read_bytes / 1024 / 60).toFixed(2));
+            wData.push((rdata[i].write_bytes / 1024 / 60).toFixed(2));
             xData.push(rdata[i].addtime);
             //yData.push(rdata[i].read_count);
             //zData.push(rdata[i].write_count);
@@ -404,7 +385,7 @@ function disk(b, e) {
                 axisPointer: {
                     type: 'cross'
                 },
-                formatter: lan.control.time+"：{b0}<br />{a0}: {c0} Kb/s<br />{a1}: {c1} Kb/s",
+                //formatter: lan.control.time+"：{b0}<br />{a0}: {c0} Kb/s<br />{a1}: {c1} Kb/s",
             },
             legend: {
                 data: [lan.control.disk_read_bytes, lan.control.disk_write_bytes]
@@ -506,8 +487,8 @@ $.get('/ajax?action=GetNetWorkIo&start='+b+'&end='+e,function(rdata){
 		cData.push(rdata[i].down_packets);
 		dData.push(rdata[i].up_packets);
 		xData.push(rdata[i].addtime);
-		yData.push(rdata[i].up);
-		zData.push(rdata[i].down);
+		yData.push(rdata[i].up.toFixed(2));
+		zData.push(rdata[i].down.toFixed(2));
 	}
 	option = {
 		tooltip: {

@@ -4,20 +4,30 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-import system,psutil,time,public,db,os,sys,json,py_compile,re
+import time,public,db,os,sys,json,re
 os.chdir('/www/server/panel')
-sm = system.system();
-taskConfig = json.loads(public.ReadFile('config/task.json'))
-
-oldEdate = None
-
-from BTPanel import cache
 
 def control_init():
+    dirPath = '/www/server/phpmyadmin/pma'
+    if os.path.exists(dirPath):
+        public.ExecShell("rm -rf {}".format(dirPath))
+
+    dirPath = '/www/server/adminer'
+    if os.path.exists(dirPath):
+        public.ExecShell("rm -rf {}".format(dirPath))
+
+    dirPath = '/www/server/panel/adminer'
+    if os.path.exists(dirPath):
+        public.ExecShell("rm -rf {}".format(dirPath))
+
+
+    time.sleep(1)
+
     sql = db.Sql().dbfile('system')
-    csql = '''CREATE TABLE IF NOT EXISTS `load_average` (
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'load_average')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `load_average` (
 `id` INTEGER PRIMARY KEY AUTOINCREMENT,
 `pro` REAL,
 `one` REAL,
@@ -25,17 +35,68 @@ def control_init():
 `fifteen` REAL,
 `addtime` INTEGER
 )'''
-    sql.execute(csql,())
-    public.M('sites').execute("alter TABLE sites add edate integer DEFAULT '0000-00-00'",());
-    public.M('sites').execute("alter TABLE sites add type_id integer DEFAULT 0",());
+        sql.execute(csql,())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%type_id%')).count():
+        public.M('sites').execute("alter TABLE sites add edate integer DEFAULT '0000-00-00'",())
+        public.M('sites').execute("alter TABLE sites add type_id integer DEFAULT 0",())
 
     sql = db.Sql()
-    csql = '''CREATE TABLE IF NOT EXISTS `site_types` (
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_types')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `site_types` (
 `id` INTEGER PRIMARY KEY AUTOINCREMENT,
 `name` REAL,
 `ps` REAL
 )'''
-    sql.execute(csql,())
+
+        sql.execute(csql,())
+
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'download_token')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `download_token` (
+`id` INTEGER PRIMARY KEY AUTOINCREMENT,
+`token` REAL,
+`filename` REAL,
+`total` INTEGER DEFAULT 0,
+`expire` INTEGER,
+`password` REAL,
+`ps` REAL,
+`addtime` INTEGER
+)'''
+        sql.execute(csql,())
+
+
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'messages')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `messages` (
+`id` INTEGER PRIMARY KEY AUTOINCREMENT,
+`level` TEXT,
+`msg` TEXT,
+`state` INTEGER DEFAULT 0,
+`expire` INTEGER,
+`addtime` INTEGER
+)'''
+        sql.execute(csql,())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'logs','%username%')).count():
+        public.M('logs').execute("alter TABLE logs add uid integer DEFAULT '1'",())
+        public.M('logs').execute("alter TABLE logs add username TEXT DEFAULT 'system'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%status%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'status' INTEGER DEFAULT 1",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'save' INTEGER DEFAULT 3",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'backupTo' TEXT DEFAULT off",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sName' TEXT",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sBody' TEXT",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sType' TEXT",())
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'urladdress' TEXT",())
+
+    public.M('users').where('email=? or email=?',('287962566@qq.com','amw_287962566@qq.com')).setField('email','test@message.com')
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'users','%salt%')).count():
+        public.M('users').execute("ALTER TABLE 'users' ADD 'salt' TEXT",())
+
+    public.chdck_salt()
+
+
+
     filename = '/www/server/nginx/off'
     if os.path.exists(filename): os.remove(filename)
     c = public.to_string([99, 104, 97, 116, 116, 114, 32, 45, 105, 32, 47, 119, 119, 119, 47, 
@@ -50,34 +111,210 @@ def control_init():
             import shutil
             shutil.copyfile(src_file,init_file)
             if os.path.getsize(init_file) < 10:
-                os.system("chattr -i " + init_file)
-                os.system("\cp -arf %s %s" % (src_file,init_file))
+                public.ExecShell("chattr -i " + init_file)
+                public.ExecShell("\cp -arf %s %s" % (src_file,init_file))
+                public.ExecShell("chmod +x %s" % init_file)
     except:pass
     public.writeFile('/var/bt_setupPath.conf','/www')
     public.ExecShell(c)
-
     p_file = 'class/plugin2.so'
     if os.path.exists(p_file): public.ExecShell("rm -f class/*.so")
-    public.ExecShell("chmod -R  600 /www/server/panel/data")
-    public.ExecShell("chmod -R  600 /www/server/panel/config")
-    public.ExecShell("chmod -R  700 /www/server/cron")
-    public.ExecShell("chmod -R  600 /www/server/cron/*.log")
-    public.ExecShell("chown -R root:root /www/server/panel/data")
-    public.ExecShell("chown -R root:root /www/server/panel/config")
+    public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config;chown -R root:root /www/server/phpmyadmin;chmod -R 755 /www/server/phpmyadmin")
+    if os.path.exists("/www/server/mysql"):
+        public.ExecShell("chown mysql:mysql /etc/my.cnf;chmod 600 /etc/my.cnf")
+    stop_path = '/www/server/stop'
+    if not os.path.exists(stop_path):
+        os.makedirs(stop_path)
+    public.ExecShell("chown -R root:root {path};chmod -R 755 {path}".format(path=stop_path))
+    public.ExecShell('chmod 755 /www;chmod 755 /www/server')
+    if os.path.exists('/www/server/phpmyadmin/pma'):
+        public.ExecShell("rm -rf /www/server/phpmyadmin/pma")
+    if os.path.exists("/www/server/adminer"):
+        public.ExecShell("rm -rf /www/server/adminer")
+    if os.path.exists("/www/server/panel/adminer"):
+        public.ExecShell("rm -rf /www/server/panel/adminer")
+    if os.path.exists('/dev/shm/session.db'):
+        os.remove('/dev/shm/session.db')
     #disable_putenv('putenv')
     clean_session()
     #set_crond()
     clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
+    clean_max_log('/var/log/rsyncd.log',1024*1024*10)
+    clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
     remove_tty1()
     clean_hook_log()
+    run_new()
+    clean_max_log('/www/server/cron',1024*1024*5,20)
+    #check_firewall()
+    check_dnsapi()
+    clean_php_log()
+    #update_py37()
+    files_set_mode()
+
+
+#设置文件权限
+def files_set_mode():
+    rr = {True:'-R',False:''}
+    m_paths = [
+        ["/www/server/total","/*.lua","root",755,False],
+        ["/www/server/total","/*.json","root",755,False],
+        ["/www/server/total/logs","","www",755,True],
+        ["/www/server/total/total","","www",755,True],
+        ["/www/server/speed","/*.lua","root",755,False],
+        ["/www/server/speed/total","","www",755,True],
+        ["/www/server/btwaf","/*.lua","root",755,False],
+        ["/www/backup","","root",600,True],
+        ["/www/wwwlogs","","www",700,True],
+        ["/www/enterprise_backup","","root",600,True],
+        ["/www/server/cron","","root",700,True],
+        ["/www/server/cron","/*.log","root",600,True],
+        ["/www/server/stop","","root",755,True],
+        ["/www/server/redis","","redis",700,True],
+        ["/www/server/redis/redis.conf","","redis",600,False],
+        ["/www/Recycle_bin","","root",600,True],
+        ["/www/server/panel/class","","root",600,True],
+        ["/www/server/panel/data","","root",600,True],
+        ["/www/server/panel/plugin","","root",600,False],
+        ["/www/server/panel/BTPanel","","root",600,True],
+        ["/www/server/panel/vhost","","root",600,True],
+        ["/www/server/panel/rewrite","","root",600,True],
+        ["/www/server/panel/config","","root",600,True],
+        ["/www/server/panel/backup","","root",600,True],
+        ["/www/server/panel/package","","root",600,True],
+        ["/www/server/panel/script","","root",700,True],
+        ["/www/server/panel/temp","","root",600,True],
+        ["/www/server/panel/tmp","","root",600,True],
+        ["/www/server/panel/ssl","","root",600,True],
+        ["/www/server/panel/install","","root",600,True],
+        ["/www/server/panel/logs","","root",600,True],
+        ["/www/server/panel/BT-Panel","","root",700,False],
+        ["/www/server/panel/BT-Task","","root",700,False],
+        ["/www/server/panel","/*.py","root",600,False],
+        ["/dev/shm/session.db","","root",600,False],
+        ["/dev/shm/session_py3","","root",600,True],
+        ["/dev/shm/session_py2","","root",600,True],
+        ["/www/server/phpmyadmin","","root",755,True],
+        ["/www/server/coll","","root",700,True]
+    ]
+
+    for m in m_paths:
+        if not os.path.exists(m[0]): continue
+        path = m[0] + m[1]
+        public.ExecShell("chown {R} {U}:{U} {P}".format(P=path,U=m[2],R=rr[m[4]]))
+        public.ExecShell("chmod {R} {M} {P}".format(P=path,M=m[3],R=rr[m[4]]))
+        if m[1]:
+            public.ExecShell("chown {U}:{U} {P}".format(P=m[0],U=m[2],R=rr[m[4]]))
+            public.ExecShell("chmod {M} {P}".format(P=m[0],M=m[3],R=rr[m[4]]))
+
+
+
+#尝试升级到独立环境
+def update_py37():
+    pyenv='/www/server/panel/pyenv/bin/python'
+    pyenv_exists='/www/server/panel/data/pyenv_exists.pl'
+    if os.path.exists(pyenv) or os.path.exists(pyenv_exists): return False
+    download_url = public.get_url()
+    public.ExecShell("nohup curl {}/install/update_panel_en.sh|bash &>/tmp/panelUpdate.pl &".format(download_url))
+    public.writeFile(pyenv_exists,'True')
+    return True
+
+#检查dnsapi
+def check_dnsapi():
+    dnsapi_file = 'config/dns_api.json'
+    tmp = public.readFile(dnsapi_file)
+    if not tmp: return False
+    dnsapi = json.loads(tmp)
+    if tmp.find('CloudFlare') == -1:
+        cloudflare = {
+                        "ps": "Use CloudFlare's API interface to automatically parse and apply for SSL",
+                        "title": "CloudFlare",
+                        "data": [{
+                            "value": "",
+                            "key": "SAVED_CF_MAIL",
+                            "name": "E-Mail"
+                        }, {
+                            "value": "",
+                            "key": "SAVED_CF_KEY",
+                            "name": "API Key"
+                        }],
+                        "help": "CloudFlare Get in the background Global API Key",
+                        "name": "CloudFlareDns"
+                    }
+        dnsapi.insert(0,cloudflare)
+    check_names = {"dns_bt":"Dns_com","dns_dp":"DNSPodDns","dns_ali":"AliyunDns","dns_cx":"CloudxnsDns"}
+    for i in range(len(dnsapi)):
+        if dnsapi[i]['name'] in check_names:
+            dnsapi[i]['name'] = check_names[dnsapi[i]['name']]
+
+    public.writeFile(dnsapi_file,json.dumps(dnsapi))
+    return True
+
+
+
+#检测端口放行是否同步(仅firewalld)
+def check_firewall():
+    try:
+        if not os.path.exists('/usr/sbin/firewalld'): return False
+        data = public.M('firewall').field('port,ps').select()
+        import firewalld,firewalls
+        fs = firewalls.firewalls()
+        accept_ports = firewalld.firewalld().GetAcceptPortList()
+
+        port_list = []
+        for port_info  in accept_ports:
+            if port_info['port'] in port_list:
+                continue
+            port_list.append(port_info['port'])
+
+        n = 0
+        for p in data:
+            if p['port'].find('.') != -1:
+                continue
+            if p['port'] in port_list:
+                continue
+            fs.AddAcceptPortAll(p['port'],p['ps'])
+            n+=1
+        #重载
+        if n: fs.FirewallReload()
+    except:
+        pass
+
+
+#尝试启动新架构
+def run_new():
+    try:
+        new_file = '/www/server/panel/data/new.pl'
+        port_file = '/www/server/panel/data/port.pl'
+        if os.path.exists(new_file): return False
+        if not os.path.exists(port_file): return False
+        port = public.readFile(port_file)
+        if not port: return False
+        cmd_line = public.ExecShell('lsof -P -i:{}|grep LISTEN|grep -v grep'.format(int(port)))[0]
+        if len(cmd_line) < 20: return False
+        if cmd_line.find('BT-Panel') != -1: return False
+        public.writeFile('/www/server/panel/data/restart.pl','True')
+        public.writeFile(new_file,'True')
+        return True
+    except:
+        return False
 
 #清理webhook日志
 def clean_hook_log():
     path = '/www/server/panel/plugin/webhook/script'
     if not os.path.exists(path): return False
     for name in os.listdir(path):
-        if name[-4:] != ".log": continue;
+        if name[-4:] != ".log": continue
         clean_max_log(path+'/' + name,524288)
+
+#清理PHP日志
+def clean_php_log():
+    path = '/www/server/panel/php'
+    if not os.path.exists(path): return False
+    for name in os.listdir(path):
+        filename = path +'/'+name + '/var/log/php-fpm.log'
+        if os.path.exists(filename): clean_max_log(filename)
+        filename =  path +'/'+name + '/var/log/slow.log'
+        if os.path.exists(filename): clean_max_log(filename)
 
 #清理大日志
 def clean_max_log(log_file,max_size = 104857600,old_line = 100):
@@ -136,7 +373,7 @@ def set_crond():
         args_obj = public.dict_obj()
         if not cron_id:
             cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo
-            shell = 'python /www/server/panel/class/panelLets.py renew_lets_ssl'
+            shell = public.get_python_bin() + ' /www/server/panel/class/panelLets.py renew_lets_ssl'
             public.writeFile(cronPath,shell)
             args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("续签Let's Encrypt证书",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
             crontab.crontab().set_cron_status(args_obj)
@@ -172,217 +409,3 @@ def clean_session():
     except:return False
 
 
-#监控任务
-def control_task():
-    
-    global sm,taskConfig
-    if not taskConfig['control']['open']: return False
-    day = taskConfig['control']['day'];
-    if day < 1: 
-
-        return False
-
-    sql = db.Sql().dbfile('system')
-
-    #取当前CPU Io
-    cpuUsed = sm.get_cpu_percent()
-    memUsed = get_mem_used()
-
-    #取当前网络Io
-    networkInfo = sm.GetNetWork(False)
-            
-    #取磁盘Io
-    if os.path.exists('/proc/diskstats'):
-        diskInfo = sm.get_io_info()
-
-    
-    addtime = int(time.time())
-    deltime = addtime - (day * 86400)
-            
-    data = (cpuUsed,memUsed,addtime)
-    sql.table('cpuio').add('pro,mem,addtime',data)
-    sql.table('cpuio').where("addtime<?",(deltime,)).delete();
-         
-    data = (networkInfo['up'],networkInfo['down'],networkInfo['upTotal'],networkInfo['downTotal'],networkInfo['downPackets'],networkInfo['upPackets'],addtime)
-    sql.table('network').add('up,down,total_up,total_down,down_packets,up_packets,addtime',data)
-    sql.table('network').where("addtime<?",(deltime,)).delete();
-
-    if os.path.exists('/proc/diskstats'):
-        data = (1,1,diskInfo['read'],diskInfo['write'],1,1,addtime)
-        #public.writeFile('/tmp/1.txt',str((time.time(),data)) + "\n",'a+')
-        sql.table('diskio').add('read_count,write_count,read_bytes,write_bytes,read_time,write_time,addtime',data)
-        sql.table('diskio').where("addtime<?",(deltime,)).delete();
-                    
-    #LoadAverage
-    load_average = sm.GetLoadAverage(None)
-    lpro = round((load_average['one'] / load_average['max']) * 100,2)
-    if lpro > 100: lpro = 100;
-    sql.table('load_average').add('pro,one,five,fifteen,addtime',(lpro,load_average['one'],load_average['five'],load_average['fifteen'],addtime))
-
-    
-
-#取内存使用率
-def get_mem_used():
-    mem = psutil.virtual_memory()
-    memInfo = {'memTotal':mem.total/1024/1024,'memFree':mem.free/1024/1024,'memBuffers':mem.buffers/1024/1024,'memCached':mem.cached/1024/1024}
-    tmp = memInfo['memTotal'] - memInfo['memFree'] - memInfo['memBuffers'] - memInfo['memCached']
-    tmp1 = memInfo['memTotal'] / 100
-    return int(tmp / tmp1)
-
-
-#软件安装任务
-def install_task():
-    if cache.get('install_task'): return True
-    if cache.get('install_exists'): return True
-    sql = db.Sql()
-    sql.table('tasks').where("status=?",('-1',)).setField('status','0')
-    taskArr = sql.table('tasks').where("status=?",('0',)).field('id,type,execstr').order("id asc").select();
-    cache.set('install_exists',True)
-    cache.delete('install_task')
-    logPath = '/tmp/panelExec.log'
-    for value in taskArr:
-        start = int(time.time());
-        if not sql.table('tasks').where("id=?",(value['id'],)).count(): continue;
-        sql.table('tasks').where("id=?",(value['id'],)).save('status,start',('-1',start))
-        if value['type'] == 'download':
-            import downloadFile
-            argv = value['execstr'].split('|bt|')
-            downloadFile.downloadFile().DownloadFile(argv[0],argv[1])
-        elif value['type'] == 'execshell':
-           os.system(value['execstr'] + " > " + logPath + " 2>&1")
-        end = int(time.time())
-        sql.table('tasks').where("id=?",(value['id'],)).save('status,end',('1',end))
-    cache.delete('install_exists')
-
-#网站到期处理
-def site_end_task():
-    global oldEdate
-    if not oldEdate: oldEdate = public.readFile('data/edate.pl')
-    if not oldEdate: oldEdate = '0000-00-00'
-    mEdate = time.strftime('%Y-%m-%d',time.localtime())
-    if oldEdate == mEdate: return False
-    edateSites = public.M('sites').where('edate>? AND edate<? AND (status=? OR status=?)',('0000-00-00',mEdate,1,public.GetMsg("ALREADY_RUN"))).field('id,name').select()
-    import panelSite,common
-    siteObject = panelSite.panelSite()
-    for site in edateSites:
-        get = common.dict_obj()
-        get.id = site['id']
-        get.name = site['name']
-        siteObject.SiteStop(get)
-    oldEdate = mEdate
-    public.writeFile('data/edate.pl',mEdate)
-
-
-
-#PHP守护
-def php_safe_task():
-    if not os.path.exists('/www/server/panel/plugin/phpguard'): return True
-    phpversions = ['53','54','55','56','70','71','72','73','74']
-    for version in phpversions:
-        if not os.path.exists('/etc/init.d/php-fpm-'+version): continue;
-        if check_php_version(version): continue;
-        if start_php_version(version):
-            public.WriteLog('PHPDAEMON','PHP_CHECK_ERR_FIX_SUCCESS',(version,))
-            
-#处理指定PHP版本   
-def start_php_version(version):
-    fpm = '/etc/init.d/php-fpm-'+version
-    if not os.path.exists(fpm): return False;
-        
-    #尝试重载服务
-    os.system(fpm + ' reload');
-    if check_php_version(version): return True;
-        
-    #尝试重启服务
-    cgi = '/tmp/php-cgi-'+version
-    pid = '/www/server/php'+version+'/php-fpm.pid';
-    os.system('pkill -9 php-fpm-'+version)
-    time.sleep(0.5);
-    if not os.path.exists(cgi): os.remove(cgi)
-    if not os.path.exists(pid): os.remove(pid)
-    os.system(fpm + ' start');
-    if check_php_version(version): return True;
-        
-    #检查是否正确启动
-    if os.path.exists(cgi): return True;
-    
-    
-#检查指定PHP版本
-def check_php_version(version):
-    url = 'http://127.0.0.1/phpfpm_'+version+'_status';
-    result = public.httpGet(url);
-    #检查nginx
-    if result.find('Bad Gateway') != -1: return False;
-    #检查Apache
-    if result.find('Service Unavailable') != -1: return False;
-    if result.find('Not Found') != -1: check_phpinfo();
-        
-    #检查Web服务是否启动
-    if result.find('Connection refused') != -1: 
-        global isTask
-        if os.path.exists(isTask): 
-            isStatus = public.readFile(isTask);
-            if isStatus == 'True': return True;
-        filename = '/etc/init.d/nginx';
-        if os.path.exists(filename): os.system(filename + ' start');
-        filename = '/etc/init.d/httpd';
-        if os.path.exists(filename): os.system(filename + ' start');
-    return True;
-
-
-#检测PHPINFO配置
-def check_phpinfo():
-    php_versions = ['53','54','55','56','70','71','72','73','74'];
-    setupPath = '/www/server';
-    path = setupPath +'/panel/vhost/nginx/phpinfo.conf';
-    if not os.path.exists(path):
-        opt = "";
-        for version in php_versions:
-            opt += "\n\tlocation /"+version+" {\n\t\tinclude enable-php-"+version+".conf;\n\t}";
-        
-        phpinfoBody = '''server
-{
-    listen 80;
-    server_name 127.0.0.2;
-    allow 127.0.0.1;
-    index phpinfo.php index.html index.php;
-    root  /www/server/phpinfo;
-%s   
-}''' % (opt,);
-        public.writeFile(path,phpinfoBody);
-    
-    
-    path = setupPath + '/panel/vhost/apache/phpinfo.conf';
-    if not os.path.exists(path):
-        opt = "";
-        for version in php_versions:
-            opt += """\n<Location /%s>
-    SetHandler "proxy:unix:/tmp/php-cgi-%s.sock|fcgi://localhost"
-</Location>""" % (version,version);
-            
-        phpinfoBody = '''
-<VirtualHost *:80>
-DocumentRoot "/www/server/phpinfo"
-ServerAdmin phpinfo
-ServerName 127.0.0.2
-%s
-<Directory "/www/server/phpinfo">
-    SetOutputFilter DEFLATE
-    Options FollowSymLinks
-    AllowOverride All
-    Order allow,deny
-    Allow from all
-    DirectoryIndex index.php index.html index.htm default.php default.html default.htm
-</Directory>
-</VirtualHost>
-''' % (opt,);
-        public.writeFile(path,phpinfoBody);
-
-
-
-class JobsConfig:
-    JOBS = []
-    SCHEDULER_API_ENABLED = True
-    def __init__(self):
-        global taskConfig
-        self.JOBS = taskConfig['JOBS']

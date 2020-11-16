@@ -52,6 +52,13 @@
                         <label class='btswitch-btn' for='panelLocal' onclick="set_local()"></label>
                     </div>
                 </div>
+                <div class="ss-text pull-left mr50">
+                    <em title="User login authentication based on Google Authenticator"><a href="javascript:;" class="btlink open_two_verify_view">Google authentication</a></em>
+                    <div class='ssh-item'>
+                        <input class='btswitch btswitch-ios' id='panel_verification' type='checkbox'/>
+                        <label class='btswitch-btn' for='panel_verification'></label>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="setbox bgw mtb15">
@@ -70,15 +77,18 @@
 						<span class="set-info c7">{{data['lan']['CY1']}}</span>
 					</div>
 					<div class="mtb15">
-						<span class="set-tit text-right" title="{{data['lan']['CT2']}}">{{data['lan']['CT2']}}</span>
-						<input id="banport" name="port" class="inputtxt bt-input-text" type="number" value="{{data['panel']['port']}}" maxlength="5">
-						<span class="set-info c7">{{data['lan']['CY2']}}</span>
+                        <span class="set-tit text-right" title="{{data['lan']['CT2']}}">{{data['lan']['CT2']}}</span>
+                        <div class="btn_tips">
+						    <input id="banport" name="port" class="inputtxt bt-input-text disable" type="number" value="{{data['panel']['port']}}" maxlength="5" disabled>
+                            <span class="modify btn btn-xs btn-success" onclick="modify_port_val({{data['panel']['port']}})">{{data['lan']['CY10']}}</span>
+                        </div>
+                        <span class="set-info c7">{{data['lan']['CY2']}}, <a style="color:red;">{{data['lan']['S_PORT_TIPS']}}</a></span>
 					</div>
-					<div class="mtb15">
-						<span class="set-tit text-right" title="{{data['lan']['panel_performance']}}">{{data['lan']['concurrent_thread']}}</span>
-						<input name="workers" class="inputtxt bt-input-text" type="number" min="1" max="1024" value="{{data['workers']}}">
-						<span class="set-info c7">{{data['lan']['thread_ps']}}</span>
-					</div>
+<!--					<div class="mtb15">-->
+<!--						<span class="set-tit text-right" title="{{data['lan']['panel_performance']}}">{{data['lan']['concurrent_thread']}}</span>-->
+<!--						<input name="workers" class="inputtxt bt-input-text" type="number" min="1" max="1024" value="{{data['workers']}}">-->
+<!--						<span class="set-info c7">{{data['lan']['thread_ps']}}</span>-->
+<!--					</div>-->
 					<div class="mtb15">
 						<span class="set-tit text-right" title="{{data['lan']['LOGINTIMEOUT']}}">{{data['lan']['TIMEOUT']}}</span>
 						<input name="session_timeout" class="inputtxt bt-input-text" type="number" value="{{data['session_timeout']}}">
@@ -94,11 +104,14 @@
 					</div>
 					<div class="mtb15">
 						<span class="set-tit text-right" title="{{data['lan']['BASICAUTH_TIPS1']}}">{{data['lan']['BASICAUTH']}}</span>
-						<div class="btn_tips">
-                            <input id="basic_auth" name="basic_auth" class="inputtxt bt-input-text disable" type="text" value="{{data['basic_auth']['value']}}" disabled>
-                            <span class="modify btn btn-xs btn-success basic_auth" onclick="modify_basic_auth()">{{data['lan']['CONFIG']}}</span>
-                        </div>
-						<span class="set-info c7">{{data['lan']['BASICAUTH_TIPS1']}}</span>
+					    <input id="basic_auth" name="basic_auth" class="inputtxt bt-input-text disable" type="text" value="{{data['basic_auth']['value']}}" disabled>
+                        <span class="modify btn btn-xs btn-success basic_auth" onclick="modify_basic_auth()" style="    margin-left: -38px;">{{data['lan']['CONFIG']}}</span>
+						<span class="set-info c7" style="margin-left: 25px;">{{data['lan']['BASICAUTH_TIPS1']}}</span>
+					</div>
+					<div class="mtb15">
+						<span class="set-tit text-right" title="Message channel">Message channel</span>
+						<input id="channel_auth" name="channel_auth" class="inputtxt bt-input-text disable" type="text" value="" disabled>
+						<span class="modify btn btn-xs btn-success channel_auth" style="margin-left: -38px;" onclick="open_three_channel_auth()">Set</span>
 					</div>
 					<div class="mtb15">
 						<span class="set-tit text-right" title="{{data['lan']['CT3']}}">{{data['lan']['CT3']}}</span>
@@ -257,35 +270,108 @@
         height: 100%;
     }
 
-        .personalDetails .userList .addweChat {
-            height: 50px;
-            text-align: center;
-            padding-top: 20px;
-            color: #20a53a;
-            font-size: 16px;
-        }
+    .personalDetails .userList .addweChat {
+        height: 50px;
+        text-align: center;
+        padding-top: 20px;
+        color: #20a53a;
+        font-size: 16px;
+    }
 
-            .personalDetails .userList .addweChat:hover {
-            }
+    .personalDetails .userList .item {
+        height: 70px;
+        padding: 10px 15px;
+        border: 1px solid #ececec;
+        margin: 15px 65px;
+        border-radius: 5px;
+    }
 
-        .personalDetails .userList .item {
-            height: 70px;
-            padding: 10px 15px;
-            border: 1px solid #ececec;
-            margin: 15px 65px;
-            border-radius: 5px;
-        }
+    .personalDetails .userList .cancelBind {
+        height: 50px;
+        width: 60px;
+        float: right;
+        line-height: 50px;
+        text-align: center;
+    }
+    .verify_title{
+        color: #555;
+        text-align: center;
+        font-size: 20px;
+        height: 40px;
+        line-height: 40px;
+        margin-bottom: 20px;
+    }
+    .verify_item{
+        padding: 0 35px;
+    }
+    .verify_item .verify_vice_title{
+        font-size: 15.5px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    .verify_tips{
+        margin: 0 15px;
+        margin-top: 25px;
+        padding: 20px 25px;
+        font-size: 14px;
+        color: #666;
+        border-top: 1px solid #ececec;
+    }
+    .verify_tips p{
+        margin-bottom: 10px;
+    }
+    .verify_box{
+        background: #f8f8f8;
+        padding: 15px 25px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        /* width: 200px; */
+    }
+    .verify_box .verify_box_line{
+        height: 25px;
+        line-height: 25px;
+        font-size: 14px;
+        color: #444;
+        font-weight: 500;
+    }
+    .verify_box .verify_box_line span{
+        color: #666;
+    }
+    .google_verify ul li{
+    	height: auto;
+    	line-height: 18px;
+    	margin-bottom: 5px;
+    }
+    .risk_form{
+        
+    }
 
-        .personalDetails .userList .cancelBind {
-            height: 50px;
-            width: 60px;
-            float: right;
-            line-height: 50px;
-            text-align: center;
-        }
+    .risk_form ul{
+        border: 1px solid #ececec;
+        border-radius: 10px;
+        font-size:12px; 
+        margin: 0px auto;
+        margin:15px 0; 
+        margin-top: 20px;
+        margin-bottom: 20px;
+        background: #f7f7f7;
+        width: 100%;
+        padding: 25px 40px;
+        list-style-type: inherit;
+    }
+    .risk_form ul li{
+        line-height: 18px;
+        margin-bottom: 6px;
+    }
+    .risk_tilte{
+        margin: 0 0 10px 35px;
+        font-size: 22px;
+    }
+
 </style>
-<script type="text/javascript" src="/static/js/jquery.qrcode.min.js"></script>
-<script src="/static/js/config.js?date={{g['version']}}"></script>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/config.js?date12222={{g['version']}}"></script>
 <script type="text/javascript">
 	setCookie('serverType',"{{session['webserver']}}");
 </script>

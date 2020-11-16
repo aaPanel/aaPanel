@@ -4,7 +4,7 @@
 #  + -------------------------------------------------------------------
 # | Copyright (c) 2015-2016 宝塔软件(http:#bt.cn) All rights reserved.
 #  + -------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 #  + -------------------------------------------------------------------
 import public,db,re,os,firewalls
 from BTPanel import session
@@ -18,6 +18,7 @@ class ftp:
     #添加FTP
     def AddUser(self,get):
         try:
+            if not os.path.exists('/www/server/pure-ftpd/sbin/pure-ftpd'): return public.returnMsg(False,'Please install the Pure-FTPd service in the software store first.')
             import files,time
             fileObj=files.files()
             if re.search("\W + ",get['ftp_username']): return {'status':False,'code':501,'msg':public.getMsg('FTP_USERNAME_ERR_T')}
@@ -29,7 +30,7 @@ class ftp:
             get.path = get['path'].replace(' ','')
             get.path = get.path.replace("\\", "/")
             fileObj.CreateDir(get)
-            os.system('chown www.www ' + get.path)
+            public.ExecShell('chown www.www ' + get.path)
             public.ExecShell(self.__runPath + '/pure-pw useradd ' + username + ' -u www -d ' + get.path + '<<EOF \n' + password + '\n' + password + '\nEOF')
             self.FtpReload()
             ps=get['ps']

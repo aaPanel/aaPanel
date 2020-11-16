@@ -4,11 +4,11 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2016 宝塔软件(http:#bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-import sys
+import sys,os,re,time
 sys.path.append("class/")
-import db,public,re
+import db,public
 import json
 
 class data:
@@ -20,30 +20,66 @@ class data:
      * @return Bool 
     '''
     def setPs(self,get):
-        id = get.id;
+        id = get.id
         if public.M(get.table).where("id=?",(id,)).setField('ps',get.ps):
-            return public.returnMsg(True,'EDIT_SUCCESS');    
-        return public.returnMsg(False,'EDIT_ERROR');
+            return public.returnMsg(True,'EDIT_SUCCESS')
+        return public.returnMsg(False,'EDIT_ERROR')
     
     #端口扫描
     def CheckPort(self,port):
         import socket
-        localIP = '127.0.0.1';
+        localIP = '127.0.0.1'
         temp = {}
-        temp['port'] = port;
-        temp['local'] = True;
+        temp['port'] = port
+        temp['local'] = True
         try:
             s = socket.socket()
             s.settimeout(0.15)
             s.connect((localIP,port))
             s.close()
         except:
-            temp['local'] = False;
+            temp['local'] = False
         
-        result = 0;
-        if temp['local']: result +=2;
-        return result;
-    
+        result = 0
+        if temp['local']: result +=2
+        return result
+
+    def get_site_ssl_info(self,siteName):
+        try:
+            s_file = 'vhost/nginx/{}.conf'.format(siteName)
+            is_apache = False
+            if not os.path.exists(s_file):
+                s_file = 'vhost/apache/{}.conf'.format(siteName)
+                is_apache = True
+
+            if not os.path.exists(s_file):
+                return -1
+
+            s_conf = public.readFile(s_file)
+            if not s_conf: return -1
+            ssl_file = None
+            if is_apache:
+                if s_conf.find('SSLCertificateFile') == -1:
+                    return -1
+                s_tmp = re.findall(r"SSLCertificateFile\s+(.+\.pem)",s_conf)
+                if not s_tmp: return -1
+                ssl_file = s_tmp[0]
+            else:
+                if s_conf.find('ssl_certificate') == -1:
+                    return -1
+                s_tmp = re.findall(r"ssl_certificate\s+(.+\.pem);",s_conf)
+                if not s_tmp: return -1
+                ssl_file = s_tmp[0]
+            ssl_info = public.get_cert_data(ssl_file)
+            if not ssl_info: return -1
+            ssl_info['endtime'] = int(int(time.mktime(time.strptime(ssl_info['notAfter'], "%Y-%m-%d")) - time.time()) / 86400)
+            return ssl_info
+        except: return -1
+        #return "{}:{}".format(ssl_info['issuer'],ssl_info['notAfter'])
+
+
+
+
     '''
      * 取数据列表
      * @param String _GET['tab'] 数据库表名
@@ -53,9 +89,9 @@ class data:
     '''
     def getData(self,get):
         try:
-            table = get.table;
-            data = self.GetSql(get);
-            SQL = public.M(table);
+            table = get.table
+            data = self.GetSql(get)
+            SQL = public.M(table)
         
             if table == 'backup':
                 import os
@@ -71,17 +107,18 @@ class data:
                 if table == 'sites':
                     for i in range(len(data['data'])):
                         data['data'][i]['domain'] = SQL.table('domain').where("pid=?",(data['data'][i]['id'],)).count()
+                        data['data'][i]['ssl'] = self.get_site_ssl_info(data['data'][i]['name'])
             elif table == 'firewall':
                 for i in range(len(data['data'])):
                     if data['data'][i]['port'].find(':') != -1 or data['data'][i]['port'].find('.') != -1 or data['data'][i]['port'].find('-') != -1:
-                        data['data'][i]['status'] = -1;
+                        data['data'][i]['status'] = -1
                     else:
-                        data['data'][i]['status'] = self.CheckPort(int(data['data'][i]['port']));
+                        data['data'][i]['status'] = self.CheckPort(int(data['data'][i]['port']))
                 
             #返回
-            return data;
+            return data
         except:
-            return public.get_error_info();
+            return public.get_error_info()
     
     '''
      * 取数据库行
@@ -93,10 +130,10 @@ class data:
         tableName = get.table
         id = get.id
         field = self.GetField(get.table)
-        SQL = public.M(tableName);
-        where = "id=?";
-        find = SQL.where(where,(id,)).field(field).find();
-        return find;
+        SQL = public.M(tableName)
+        where = "id=?"
+        find = SQL.where(where,(id,)).field(field).find()
+        return find
     
     
     '''
@@ -107,13 +144,13 @@ class data:
      * @return String 
     '''
     def getKey(self,get):
-        tableName = get.table;
-        keyName = get.key;
-        id = get.id;
-        SQL = db.Sql().table(tableName);
-        where = "id=?";
-        retuls = SQL.where(where,(id,)).getField(keyName);
-        return retuls;
+        tableName = get.table
+        keyName = get.key
+        id = get.id
+        SQL = db.Sql().table(tableName)
+        where = "id=?"
+        retuls = SQL.where(where,(id,)).getField(keyName)
+        return retuls
     
         
         
@@ -136,21 +173,25 @@ class data:
             limit = int(get.limit)
         
         if hasattr(get,'result'): 
-            result = get.result;
+            result = get.result
             
-        SQL = db.Sql();
+        SQL = db.Sql()
         data = {}
         #取查询条件
         where = ''
         if hasattr(get,'search'):
             if sys.version_info[0] == 2: get.search = get.search.encode('utf-8')
-            where = self.GetWhere(get.table,get.search);
+            where = self.GetWhere(get.table,get.search)
             if get.table == 'backup':
-                where += " and type='" + get.type+"'";
+                where += " and type='" + get.type+"'"
             
             if get.table == 'sites' and get.search:
-                pid = SQL.table('domain').where('name=?',(get.search,)).getField('pid');
-                if pid: where = "id=" + str(pid);
+                pid = SQL.table('domain').where("name LIKE '%"+get.search+"%'",()).getField('pid')
+                if pid:
+                    if where:
+                        where += " or id=" + str(pid)
+                    else:
+                        where += "id=" + str(pid)
 
         if get.table == 'sites' and hasattr(get,'type'):
             if get.type != '-1':
@@ -170,12 +211,12 @@ class data:
             return data
         
         #取总行数
-        count = SQL.table(get.table).where(where,()).count();
+        count = SQL.table(get.table).where(where,()).count()
         #get.uri = get
         #包含分页类
         import page
         #实例化分页类
-        page = page.Page();
+        page = page.Page()
         
         info = {}
         info['count'] = count
@@ -189,25 +230,25 @@ class data:
         if hasattr(get,'tojs'):
             info['return_js']   = get.tojs
         
-        data['where'] = where;
+        data['where'] = where
         
         #获取分页数据
         data['page'] = page.GetPage(info,result)
         #取出数据
         data['data'] = SQL.table(get.table).where(where,()).order(order).field(field).limit(str(page.SHIFT)+','+str(page.ROW)).select()
-        return data;
+        return data
     
     #获取条件
     def GetWhere(self,tableName,search): 
         if not search: return ""
 
         if type(search) == bytes: search = search.encode('utf-8').strip()
-        search = re.search(u"[\w\x80-\xff]+",search).group();
+        search = re.search(r"[\w\x80-\xff\.]+",search).group()
         wheres = {
             'sites'     :   "id='"+search+"' or name like '%"+search+"%' or status like '%"+search+"%' or ps like '%"+search+"%'",
             'ftps'      :   "id='"+search+"' or name like '%"+search+"%' or ps like '%"+search+"%'",
             'databases' :   "id='"+search+"' or name like '%"+search+"%' or ps like '%"+search+"%'",
-            'logs'      :   "type like '%"+search+"%' or log like '%"+search+"%' or addtime like '%"+search+"%'",
+            'logs'      :   "uid='"+search+"' or username='"+search+"' or type like '%"+search+"%' or log like '%"+search+"%' or addtime like '%"+search+"%'",
             'backup'    :   "pid="+search+"",
             'users'     :   "id='"+search+"' or username='"+search+"'",
             'domain'    :   "pid='"+search+"' or name='"+search+"'",
@@ -223,7 +264,7 @@ class data:
             'sites'     :   "id,name,path,status,ps,addtime,edate",
             'ftps'      :   "id,pid,name,password,status,ps,addtime,path",
             'databases' :   "id,pid,name,username,password,accept,ps,addtime",
-            'logs'      :   "id,type,log,addtime",
+            'logs'      :   "id,uid,username,type,log,addtime",
             'backup'    :   "id,pid,name,filename,addtime,size",
             'users'     :   "id,username,phone,email,login_ip,login_time",
             'firewall'  :   "id,port,ps,addtime",
@@ -234,6 +275,3 @@ class data:
             return fields[tableName]
         except:
             return ''
-        
-    
-    

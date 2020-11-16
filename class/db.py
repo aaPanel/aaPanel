@@ -2,13 +2,17 @@
 # +-------------------------------------------------------------------
 # | 宝塔Linux面板
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <287962566@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 
 import sqlite3
-import os,re,public
+import os,time,sys
+os.chdir('/www/server/panel')
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
+import public
 
 class Sql():
     #------------------------------
@@ -22,10 +26,17 @@ class Sql():
     __OPT_ORDER  = ""              # order条件
     __OPT_FIELD  = "*"             # field条件
     __OPT_PARAM  = ()              # where值
-    
+    __LOCK = '/dev/shm/sqlite_lock.pl'
+
     def __init__(self):
         self.__DB_FILE = 'data/default.db'
-    
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self,exc_type,exc_value,exc_trackback):
+        self.close()
+
     def __GetConn(self): 
         #取数据库对象
         try:
@@ -91,7 +102,7 @@ class Sql():
             sql = "SELECT " + self.__OPT_FIELD + " FROM " + self.__DB_TABLE + self.__OPT_WHERE + self.__OPT_ORDER + self.__OPT_LIMIT
             result = self.__DB_CONN.execute(sql,self.__OPT_PARAM)
             data = result.fetchall()
-            #构造字曲系列
+            #构造字典系列
             if self.__OPT_FIELD != "*":
                 fields = self.__format_field(self.__OPT_FIELD.split(','))
                 tmp = []
@@ -99,7 +110,7 @@ class Sql():
                     i=0
                     tmp1 = {}
                     for key in fields:
-                        tmp1[key] = row[i]
+                        tmp1[key.strip('`')] = row[i]
                         i += 1
                     tmp.append(tmp1)
                     del(tmp1)
@@ -120,9 +131,10 @@ class Sql():
         return self.select()
 
     def __format_field(self,field):
+        import re
         fields = []
         for key in field:
-            s_as = re.search('\s+as\s+',key,flags=re.IGNORECASE)
+            s_as = re.search(r'\s+as\s+',key,flags=re.IGNORECASE)
             if s_as:
                 as_tip = s_as.group()
                 key = key.split(as_tip)[1]
@@ -134,13 +146,13 @@ class Sql():
             tmp_cols = self.query('PRAGMA table_info('+self.__DB_TABLE+')',())
             cols = []
             for col in tmp_cols:
-                if len(col) > 2: cols.append(col[1])
+                if len(col) > 2: cols.append('`' + col[1] + '`')
             if len(cols) > 0: self.__OPT_FIELD = ','.join(cols)
 
     def getField(self,keyName):
         #取回指定字段
         try:
-            result = self.field(keyName).select();
+            result = self.field(keyName).select()
             if len(result) != 0:
                 return result[0][keyName]
             return result
@@ -174,18 +186,20 @@ class Sql():
     
     def add(self,keys,param):
         #插入数据
+        self.write_lock()
         self.__GetConn()
         self.__DB_CONN.text_factory = str
         try:
             values=""
             for key in keys.split(','):
                 values += "?,"
-            values = values[0:len(values)-1];
+            values = values[0:len(values)-1]
             sql = "INSERT INTO "+self.__DB_TABLE+"("+keys+") "+"VALUES("+values+")"
             result = self.__DB_CONN.execute(sql,self.__to_tuple(param))
             id = result.lastrowid
             self.__close()
             self.__DB_CONN.commit()
+            self.rm_lock()
             return id
         except Exception as ex:
             return "error: " + str(ex)
@@ -212,6 +226,7 @@ class Sql():
 
     def addAll(self,keys,param):
         #插入数据
+        self.write_lock()
         self.__GetConn()
         self.__DB_CONN.text_factory = str
         try:
@@ -221,6 +236,7 @@ class Sql():
             values = values[0:len(values)-1]
             sql = "INSERT INTO "+self.__DB_TABLE+"("+keys+") "+"VALUES("+values+")"
             result = self.__DB_CONN.execute(sql,self.__to_tuple(param))
+            self.rm_lock()
             return True
         except Exception as ex:
             return "error: " + str(ex)
@@ -232,6 +248,7 @@ class Sql():
     
     def save(self,keys,param):
         #更新数据
+        self.write_lock()
         self.__GetConn()
         self.__DB_CONN.text_factory = str
         try:
@@ -249,12 +266,14 @@ class Sql():
             result = self.__DB_CONN.execute(sql,self.__OPT_PARAM)
             self.__close()
             self.__DB_CONN.commit()
+            self.rm_lock()
             return result.rowcount
         except Exception as ex:
             return "error: " + str(ex)
     
     def delete(self,id=None):
         #删除数据
+        self.write_lock()
         self.__GetConn()
         try:
             if id:
@@ -264,6 +283,7 @@ class Sql():
             result = self.__DB_CONN.execute(sql,self.__OPT_PARAM)
             self.__close()
             self.__DB_CONN.commit()
+            self.rm_lock()
             return result.rowcount
         except Exception as ex:
             return "error: " + str(ex)
@@ -271,15 +291,35 @@ class Sql():
     
     def execute(self,sql,param = ()):
         #执行SQL语句返回受影响行
+        self.write_lock()
         self.__GetConn()
         try:
-
             result = self.__DB_CONN.execute(sql,self.__to_tuple(param))
             self.__DB_CONN.commit()
+            self.rm_lock()
             return result.rowcount
         except Exception as ex:
             return "error: " + str(ex)
-    
+
+    #是否有锁
+    def is_lock(self):
+        n = 0
+        while os.path.exists(self.__LOCK):
+            n+=1
+            if n > 100:
+                self.rm_lock()
+                break
+            time.sleep(0.01)
+    #写锁
+    def write_lock(self):
+        self.is_lock()
+        with open(self.__LOCK,'wb+') as f:
+            f.close()
+
+    #解锁
+    def rm_lock(self):
+        if os.path.exists(self.__LOCK):
+            os.remove(self.__LOCK)
     
     def query(self,sql,param = ()):
         #执行SQL语句返回数据集
@@ -294,20 +334,22 @@ class Sql():
         
     def create(self,name):
         #创建数据表
+        self.write_lock()
         self.__GetConn()
-        import public
         script = public.readFile('data/' + name + '.sql')
         result = self.__DB_CONN.executescript(script)
         self.__DB_CONN.commit()
+        self.rm_lock()
         return result.rowcount
         
     def fofile(self,filename):
         #执行脚本
+        self.write_lock()
         self.__GetConn()
-        import public
         script = public.readFile(filename)
         result = self.__DB_CONN.executescript(script)
         self.__DB_CONN.commit()
+        self.rm_lock()
         return result.rowcount
         
     def __close(self):
@@ -317,7 +359,8 @@ class Sql():
         self.__OPT_ORDER = ""
         self.__OPT_LIMIT = ""
         self.__OPT_PARAM = ()
-    
+
+
     def close(self):
         #释放资源
         try:

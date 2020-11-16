@@ -64,7 +64,7 @@ function getCronData(){
 						<td>"+s_status+"</td>\
 						<td>"+rdata[i].type+"</td>\
 						<td>"+rdata[i].cycle+"</td>\
-						<td>"+(rdata[i].save?rdata[i].save+'份':'-')+"</td>\
+						<td>"+(rdata[i].save?rdata[i].save:'-')+"</td>\
 						<td>"+optName+"</td>\
 						<td>"+rdata[i].addtime+"</td>\
 						<td>\
@@ -135,6 +135,9 @@ function edit_task_info(id){
 							if(obj.from['backupTo'] == obj['backupsArray'][i]['value'])  backupsName  = obj['backupsArray'][i]['name'];
 							backupsDom += '<li><a role="menuitem"  href="javascript:;" value="'+ obj['backupsArray'][i]['value'] +'">'+ obj['backupsArray'][i]['name'] +'</a></li>';
 						}
+						if(obj.from.sType == 'webshell'){
+							edit_message_channel(obj.from.urladdress)
+						}
 						callback();
 					});
 				}else{
@@ -146,7 +149,7 @@ function edit_task_info(id){
 			layer.open({
 				type:1,
 				title:lan.crontab.crontab_edit+'-['+rdata.name+']',
-				area: ['850px','450px'], 
+				area: ['866px','500px'], 
 				skin:'layer-create-content',
 				shadeClose:false,
 				closeBtn:2,
@@ -214,8 +217,8 @@ function edit_task_info(id){
 									</div>\
 								</div>\
 								<div class="clearfix plan ptb10"  style="display:'+ ((obj.from.sType == "toShell" || obj.from.sType == 'site' || obj.from.sType == 'path')?'block;':'none') +'">\
-									<span class="typename controls c4 pull-left f14 text-right mr20">'+lan.crontab.shell_content+'</span>\
-									<div style="line-height:34px"><textarea style="line-height:22px" class="txtsjs bt-input-text sBody_create" name="sBody">'+ obj.from.sBody +'</textarea></div>\
+									<span class="typename controls c4 pull-left f14 text-right mr20">'+ (obj.from.sType == "toShell" ?'Script content':'Exclusion rule')+'</span>\
+									<div style="line-height:22px"><textarea style="line-height:22px" class="txtsjs bt-input-text sBody_create" name="sBody">'+ obj.from.sBody +'</textarea></div>\
 								</div>\
 								<div class="clearfix plan ptb10" style="display:'+ (obj.from.sType == "rememory"?'block;':'none') +'">\
 									<span class="typename controls c4 pull-left f14 text-right mr20">'+lan.crontab.tips+'</span>\
@@ -228,6 +231,23 @@ function edit_task_info(id){
 								<div class="clearfix plan ptb10">\
 									<div class="bt-submit plan-submits " style="margin-left: 141px;">'+lan.crontab.edit_save+'</div>\
 								</div>\
+								</div>\
+								<div class="clearfix plan ptb10" style="display:'+ (obj.from.sType == "webshell"?'none':'none') +'">\
+									<span class="typename controls c4 pull-left f14 text-right mr20">Scan site</span>\
+									<div class="dropdown pull-left mr20 sName_btn">\
+										<button class="btn btn-default dropdown-toggle" type="button"  data-toggle="dropdown" style="width:auto" disabled="disabled">\
+											<b id="sName" val="'+ obj.from.sName +'">'+ sNameName +'</b>\
+											<span class="caret"></span>\
+										</button>\
+										<ul class="dropdown-menu" role="menu" aria-labelledby="sName">'+ sNameDom +'</ul>\
+									</div>\
+									<p class="clearfix plan">\
+										<div class="textname pull-left mr20" style="margin-left: 63px; font-size: 14px;">Message channel</div>\
+										<div class="dropdown planBackupTo pull-left mr20 message_start" style="line-height: 34px;"></div>\
+									</p>\
+								<div class="clearfix plan ptb10">\
+									<div class="bt-submit plan-submits " style="margin-left: 141px;">'+lan.crontab.edit_save+'</div>\
+								</div>\
 							</div>'
 			});
 			setTimeout(function(){
@@ -236,6 +256,8 @@ function edit_task_info(id){
 				}else if(obj.from.sType == 'rememory'){
 					$('.site_list').hide();
 				}else if( obj.from.sType == 'toUrl'){
+					$('.site_list').hide();
+				}else if( obj.from.sType == 'webshell'){
 					$('.site_list').hide();
 				}else{
 					$('.site_list').show();
@@ -361,6 +383,8 @@ function edit_task_info(id){
 					}else if(obj.from.type == 'minute-n'){
 						obj.from.where1 = obj.from.minute;
 						obj.from.minute = '';
+					}else if(obj.from.sType == 'webshell'){
+						obj.from.urladdress = $(".message_start input:checked").val()
 					}
 					layer.msg(lan.crontab.saving,{icon:16,time:0,shade: [0.3, '#000']});
 					$.post('/crontab?action=modify_crond',obj.from,function(rdata){
@@ -374,12 +398,39 @@ function edit_task_info(id){
 	});
 
 }
+// 修改木马查杀  消息通道
+function edit_message_channel(type){
+	$.post('/config?action=get_settings',function(res){
+		var tMess = "";
+		if(res.user_mail.user_name && !res.dingding.dingding){
+			tMess = '<div class="check_alert" style="margin-right:20px;display: inline-block;">\
+				<input type="radio" name="alert" title="Email" value="mail" checked="">\
+				<label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">Email</label>\
+			</div>'
+		}else if(!res.user_mail.user_name && res.dingding.dingding){
+			tMess = '<div class="check_alert" style="display: inline-block;">\
+				<input type="radio" name="alert" title="dingding" value="dingding" checked="">\
+				<label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">dingding</label>\
+			</div>'
+		}else{
+			tMess ='<div class="check_alert" style="margin-right:20px;display: inline-block;">\
+				<input type="radio" name="alert" title="Email" value="mail" '+ (type == 'mail'? 'checked' : '') +'>\
+				<label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">Email</label>\
+			</div>\
+			<div class="check_alert" style="display: inline-block;">\
+				<input type="radio" name="alert" title="dingding" value="dingding" '+ (type == 'dingding'? 'checked' : '') +'>\
+				<label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">dingding</label>\
+			</div>'
+		}
+		$(".message_start").html(tMess);
+	})
+
+}
 
 // 设置计划任务状态
 function set_task_status(id,status){
 	var confirm = layer.confirm(status == '0'?lan.crontab.crontab_stop_will:lan.crontab.disable_change_crontab_start, {title:lan.crontab.tips,icon:3,closeBtn:2},function(index) {
 		if (index > 0) {
-			var loadT = layer.msg(lan.crontab.setting_status,{icon:16,time:0,shade: [0.3, '#000']});
 			$.post('/crontab?action=set_cron_status',{id:id},function(rdata){
 				layer.closeAll();
 				layer.close(confirm);
@@ -440,6 +491,25 @@ function allDeleteCron(){
 	SafeMessage(lan.crontab.del_task_all_title,"<a style='color:red;'>"+lan.get('del_all_task',[dataList.length])+"</a>",function(){
 		layer.closeAll();
 		syncDeleteCron(dataList,0,'');
+	});
+}
+//批量执行和批量清除日志
+function allCron(type){
+	var message = type=='log' ? 'Confirm to delete the logs of the selected task?' : 'Confirm to execute the selected task?',
+	tit = type=='log' ? 'Confirm Delete' : 'Confirm Execute',
+	url = type=='log' ? '/crontab?action=DelLogs' : '/crontab?action=StartTask',
+	confirm = layer.confirm(message, {title:tit,icon:3,closeBtn:2},function() {
+		var checkList = $("input[name=id]");
+		for(var i=0;i<checkList.length;i++){
+			if(!checkList[i].checked) continue;
+			var data = 'id='+checkList[i].value;
+			$.post(url,data,function(rdata){
+				if(i==checkList.length){
+					layer.close(confirm);
+					layer.msg(rdata.msg,{icon:rdata.status?1:2});
+				}
+			});
+		}
 	});
 }
 
@@ -607,6 +677,9 @@ function planAdd(){
 	var data= $("#set-Config").serialize() + '&sBody='+sBody + '&urladdress=' + urladdress_1;
 	if(data.indexOf('sType=path') > -1){
 		data = data.replace('&sName=&','&sName='+ encodeURIComponent($('#inputPath').val()) +'&')
+	}else if(data.indexOf('sType=webshell') > -1){
+		data = $("#set-Config").serialize() + '&urladdress=' + _radiox;
+		data = data.replace('&sName=&','&sName='+ encodeURIComponent($('#filePath').val()) +'&')
 	}
 
 	$.post('/crontab?action=AddCrontab',data,function(rdata){
@@ -735,6 +808,9 @@ $(".dropdown ul li a").click(function(){
 			toUrl();
 			$(".controls").html(lan.crontab.url_address);
 			break;
+		case 'webshell':
+			webShell();
+			break;
 	}
 
 })
@@ -767,6 +843,7 @@ function toBackup(type){
 		if(type != 'path'){
 			var sOpt = "",sOptBody = '';
 			if(rdata.data.length == 0){
+				$(".planname input[name='name']").val('');
 				layer.msg(lan.public.list_empty,{icon:2})
 				return
 			}
@@ -819,11 +896,11 @@ function toBackup(type){
 					<span><input type="number" name="save" id="save" value="3" maxlength="4" max="100" min="1"></span>\
 					<span class="name">'+lan.crontab.save_num+'</span>\
 					</div>';
-        if (sType == 'sites') {
+        if (sType == 'sites' && sMsg !== lan.crontab.backup_log) {
             sBody += '<p class="clearfix plan">\
-                    <div class="textname pull-left mr20" style="margin-left: 63px; font-size: 14px;">'+lan.public.exclusion_rule+'</div>\
+                    <div class="textname pull-left mr20" style="margin-left: 29px; font-size: 14px;">'+lan.crontab.exclusion_rule+'</div>\
                     <div class="dropdown planBackupTo pull-left mr20">\
-                        <span><textarea style=" height: 100px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
+                        <span><textarea style=" height: 112px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
                     </div>\
                 </p>';
         }
@@ -837,10 +914,23 @@ function toBackup(type){
 		if(type == "path"){
 			$('.planname input').attr('readonly',false).removeAttr('style');
 		}
+		$("#exclude").focus(function(){
+			var _this = $(this), tips = _this.attr('placeholder'),
+			tipss = ''+lan.crontab.exclusion_rule_tips+'</br>data/config.php</br>static/upload</br> *.log</br>';
+			_this.attr('placeholder', '');
+			var loadT = layer.tips(tipss, _this, {
+				tips: [1, '#20a53a'],
+				time: 0,
+				area: _this[0].clientWidth + 'px'
+			});
+			$(this).one('blur', function () {
+				$(this).attr('placeholder', tips);
+				layer.close(loadT);
+			});
+		});
 	});
 
 }
-
 
 //下拉菜单名称
 function getselectname(){
@@ -910,13 +1000,116 @@ function toFile(){
 
 //从脚本
 function toShell(){
-	var tBody = "<textarea class='txtsjs bt-input-text' name='sBody'></textarea>";
+	var shell_body = '';
+	var shell_name = '';
+	if($("b[val='toShell']").text() === 'synchronised time'){
+		shell_name = 'Periodically synchronize server time';
+		shell_body = 'echo "|-Trying to synchronize time from 0.pool.bt.cn..";\n\
+ntpdate -u 0.pool.bt.cn\n\
+if [ $? = 1 ];then\n\
+	echo "|-Trying to synchronize time from 1.pool.bt.cn..";\n\
+	ntpdate -u 1.pool.bt.cn\n\
+fi\n\
+if [ $? = 1 ];then\n\
+	echo "|-Trying to sync time from 0.asia.pool.ntp.org..";\n\
+	ntpdate -u 0.asia.pool.ntp.org\n\
+fi\n\
+if [ $? = 1 ];then\n\
+	echo "|-Trying to sync time from www.bt.cn..";\n\
+	getBtTime=$(curl -sS --connect-timeout 3 -m 60 http://www.bt.cn/api/index/get_time)\n\
+	if [ "${getBtTime}" ];then	\n\
+		date -s "$(date -d @$getBtTime +"%Y-%m-%d %H:%M:%S")"\n\
+	fi\n\
+fi\n\
+echo "|-Trying to write current system time to hardware..";\n\
+hwclock -w\n\
+date\n\
+echo "|-Time synchronization completed!";'
+	}
+	var tBody = "<textarea class='txtsjs bt-input-text' name='sBody' style='margin: 0px; width: 445px; height: 90px;line-height: 16px;'>"+shell_body+"</textarea>";
 	$("#implement").html(tBody);
-	$(".planname input[name='name']").removeAttr('readonly style').val("");
+	$(".planname input[name='name']").removeAttr('readonly style').val(shell_name);
 }
 
 function toPath() {
 
+}
+//木马查杀
+function webShell(){
+	var sOpt = "",sOptBody = '';
+	$.post('/crontab?action=GetDataList&type=sites',function(rdata){
+		$(".planname input[name='name']").attr('readonly','true').css({"background-color":"#f6f6f6","color":"#666"});
+		if(rdata.data.length == 0){
+			layer.msg(lan.public.list_empty,{icon:2})
+			return
+		}
+		for(var i=0;i<rdata.data.length;i++){
+			if(i==0){
+				$(".planname input[name='name']").val("木马查杀"+'['+rdata.data[i].name+']');
+			}
+			sOpt += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="'+rdata.data[i].name+'">'+rdata.data[i].name+'['+rdata.data[i].ps+']</a></li>';
+		}
+		sOptBody ='<div class="dropdown pull-left mr20">\
+				  <button class="btn btn-default dropdown-toggle" type="button" id="backdata" data-toggle="dropdown" style="width:auto">\
+					<b id="sName" val="'+rdata.data[0].name+'">'+rdata.data[0].name+'['+rdata.data[0].ps+']</b> <span class="caret"></span>\
+				  </button>\
+				  <ul class="dropdown-menu" role="menu" aria-labelledby="backdata">'+sOpt+'</ul>\
+                </div>'
+		setCookie('default_dir_path','/www/wwwroot/');
+		setCookie('path_dir_change','/www/wwwroot/');
+		setInterval(function(){
+			if(getCookie('path_dir_change') != getCookie('default_dir_path')){
+				var  path_dir_change = getCookie('path_dir_change')
+				$(".planname input").val('Trojan kill ['+getCookie('path_dir_change')+']');
+				setCookie('default_dir_path',path_dir_change);
+			}
+			$(".check_alert").click(function(){
+				 _radiox = $(this).find("input[name=alert]").val();
+			})
+		},500);
+		sOptBody += '<p class="clearfix plan">\
+            <div class="textname pull-left mr20" style="margin-left: 63px; font-size: 14px;">Message channel</div>\
+            <div class="dropdown planBackupTo pull-left mr20 message_start"></div>\
+        </p>';
+		$("#implement").html(sOptBody);
+		message_channel_start();
+		$("#implement").siblings(".controls").html("Scan site");
+		getselectname();
+		$(".dropdown ul li a").click(function(){
+			var sName = $("#sName").attr("val");
+			if(!sName) return;
+			$(".planname input[name='name']").val("Trojan kill "+'['+sName+']');
+		});
+	})
+}
+function message_channel_start(){
+	$.post('/config?action=get_settings',function(res){
+		var wBody = "";
+		if(!res.user_mail.user_name && !res.dingding.dingding){
+			wBody = '<span style="color:red;">No message channel is set, please go to panel settings to add a message channel configuration<a href="https://www.bt.cn/bbs/thread-42312-1-1.html" target="_blank" class="bt-ico-ask" style="cursor: pointer;">?</a></span>';
+			$(".plan-submit").css({"pointer-events":"none","background-color":"#e6e6e6","color":"#333"});
+		}else if(res.user_mail.user_name && !res.dingding.dingding){
+			wBody = '<div class="check_alert" style="margin-right:20px;display: inline-block;">\
+				<input type="radio" name="alert" title="Email" value="mail" checked="">\
+				<label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">Email</label>\
+			</div>'
+		}else if(!res.user_mail.user_name && res.dingding.dingding){
+			wBody = '<div class="check_alert" style="display: inline-block;">\
+				<input type="radio" name="alert" title="dingding" value="dingding" checked="">\
+				<label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">dingding</label>\
+			</div>'
+		}else{
+			wBody ='<div class="check_alert" style="margin-right:20px;display: inline-block;">\
+				<input type="radio" name="alert" title="Email" value="mail" checked="">\
+				<label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">Email</label>\
+			</div>\
+			<div class="check_alert" style="display: inline-block;">\
+				<input type="radio" name="alert" title="dingding" value="dingding">\
+				<label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">dingding</label>\
+			</div>'
+		}
+		$(".message_start").html(wBody);
+	})
 }
 //从url
 function toUrl(){

@@ -4,7 +4,7 @@
 #-------------------------------------------------------------------
 # Copyright (c) 2015-2018 宝塔软件(http:#bt.cn) All rights reserved.
 #-------------------------------------------------------------------
-# Author: 黄文良 <287962566@qq.com>
+# Author: hwliang <hwl@bt.cn>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -154,11 +154,9 @@ class panelRedirect:
             #检测名称是否重复
             if sys.version_info.major < 3:
                 if len(get.redirectname) < 3 or len(get.redirectname) > 15:
-                    print("NAME_LEN")
                     return public.returnMsg(False, 'NAME_LEN')
             else:
                 if len(get.redirectname.encode("utf-8")) < 3 or len(get.redirectname.encode("utf-8")) > 15:
-                    print("NAME_LEN")
                     return public.returnMsg(False, 'NAME_LEN')
             if self.__CheckRedirect(get.sitename,get.redirectname):
                 return public.returnMsg(False, 'REDIRECT_EXIST')
@@ -196,7 +194,7 @@ class panelRedirect:
             for d in json.loads(get.redirectdomain):
                 tu = self.GetToDomain(get.tourl)
                 if d == tu:
-                    return public.GetMsg("DOMAIN_SAMEAS_URL",(d,))
+                    return public.returnMsg(False,public.GetMsg("DOMAIN_SAMEAS_URL",(d,)))
 
         if get.domainorpath == "path":
             domains = self.GetAllDomain(get.sitename)
@@ -244,22 +242,23 @@ class panelRedirect:
         }
 """
             pathstr = """
-        rewrite ^%s(.*) %s/%s %s;
+        rewrite ^%s(.*) %s%s %s;
 """
             rconf = "#REWRITE-START"
+            tourl = get.tourl
+            # if tourl[-1] == "/":
+            #     tourl = tourl[:-1]
             if get.domainorpath == "domain":
                 domains = json.loads(get.redirectdomain)
-                tu = get.tourl
                 holdpath = int(get.holdpath)
                 if holdpath == 1:
                     for sd in domains:
-                        rconf += domainstr % (sd,get.redirecttype,tu,"$request_uri")
+                        rconf += domainstr % (sd,get.redirecttype,tourl,"$request_uri")
                 else:
                     for sd in domains:
-                        rconf += domainstr % (sd,get.redirecttype,tu,"")
+                        rconf += domainstr % (sd,get.redirecttype,tourl,"")
             if get.domainorpath == "path":
                 redirectpath = get.redirectpath
-                tourl = get.tourl
                 if get.redirecttype == "301":
                     redirecttype = "permanent"
                 else:
@@ -298,17 +297,17 @@ class panelRedirect:
                 holdpath = int(get.holdpath)
                 if holdpath == 1:
                     for sd in domains:
-                        rconf += domainstr % ("%",sd,get.tourl,"$1",get.redirecttype)
+                        rconf += domainstr % ("%",sd,tourl,"$1",get.redirecttype)
                 else:
                     for sd in domains:
-                        rconf += domainstr % ("%",sd,get.tourl,"",get.redirecttype)
+                        rconf += domainstr % ("%",sd,tourl,"",get.redirecttype)
 
             if get.domainorpath == "path":
                 holdpath = int(get.holdpath)
                 if holdpath == 1:
-                    rconf += pathstr % (get.redirectpath,get.tourl,"$1",get.redirecttype)
+                    rconf += pathstr % (get.redirectpath,tourl,"$1",get.redirecttype)
                 else:
-                    rconf += pathstr % (get.redirectpath,get.tourl,"",get.redirecttype)
+                    rconf += pathstr % (get.redirectpath,tourl,"",get.redirecttype)
             rconf += "#REWRITE-END"
             apacherconf = rconf
 
@@ -318,7 +317,7 @@ class panelRedirect:
                 redirectdir = "%s/panel/vhost/%s/redirect/%s" % (self.setupPath,w,get.sitename)
 
                 if not os.path.exists(redirectdir):
-                    os.system("mkdir -p %s" % redirectdir)
+                    public.ExecShell("mkdir -p %s" % redirectdir)
                 if w == "nginx":
                     public.writeFile(redirectfile,nginxrconf)
                 else:
@@ -371,8 +370,8 @@ class panelRedirect:
         for i in range(len(redirectconf)):
             if redirectconf[i]["sitename"] == sitename and redirectconf[i]["redirectname"] == redirectname:
                 proxyname_md5 = self.__calc_md5(redirectconf[i]["redirectname"])
-                os.system("rm -f %s/panel/vhost/nginx/redirect/%s/%s_%s.conf" % (self.setupPath,redirectconf[i]["sitename"],proxyname_md5,redirectconf[i]["sitename"]))
-                os.system("rm -f %s/panel/vhost/apache/redirect/%s/%s_%s.conf" % (self.setupPath,redirectconf[i]["sitename"],proxyname_md5, redirectconf[i]["sitename"]))
+                public.ExecShell("rm -f %s/panel/vhost/nginx/redirect/%s/%s_%s.conf" % (self.setupPath,redirectconf[i]["sitename"],proxyname_md5,redirectconf[i]["sitename"]))
+                public.ExecShell("rm -f %s/panel/vhost/apache/redirect/%s/%s_%s.conf" % (self.setupPath,redirectconf[i]["sitename"],proxyname_md5, redirectconf[i]["sitename"]))
                 del redirectconf[i]
                 self.__write_config(self.__redirectfile,redirectconf)
                 self.SetRedirectNginx(get)
@@ -384,39 +383,39 @@ class panelRedirect:
         redirectconf = self.__read_config(self.__redirectfile)
         sitename = get.sitename
 
-        conf_path = "%s/panel/vhost/nginx/%s.conf" % (self.setupPath, get.sitename)
-        old_conf = public.readFile(conf_path)
-        # print (old_conf)
-        rep = "#301-START\n+[\s\w\:\/\.\;\$\(\)\'\^\~\{\}]+#301-END"
-        url_rep = "return\s(\d+)\s(https?\:\/\/[\w\.]+)\$"
-        host_rep = "\$host\s~\s'\^(.*)'"
-        if re.search(rep, old_conf):
-            # 构造代理配置
-            get.host = ""
-            if re.search(host_rep, old_conf):
-                get.host += str(re.search(host_rep, old_conf).group(1))
-            get.redirecttype = str(re.search(url_rep, old_conf).group(1))
-            get.tourl = str(re.search(url_rep, old_conf).group(2))
-
-            get.redirectpath = ""
-            if get.host:
-                get.domainorpath = "domain"
-                get.redirectdomain = "[\"%s\"]" % get.host
-            else:
-                get.domainorpath = "path"
-                get.redirectpath = "/"
-                get.redirectdomain = "[]"
-            get.sitename = sitename
-            get.redirectname = public.GetMsg("OLD_CONF")
-            get.type = 1
-            get.holdpath = 1
+        # conf_path = "%s/panel/vhost/nginx/%s.conf" % (self.setupPath, get.sitename)
+        # old_conf = public.readFile(conf_path)
+        # # print (old_conf)
+        # rep = "#301-START\n+[\s\w\:\/\.\;\$\(\)\'\^\~\{\}]+#301-END"
+        # url_rep = "return\s(\d+)\s(https?\:\/\/[\w\.]+)\$"
+        # host_rep = "\$host\s~\s'\^(.*)'"
+        # if re.search(rep, old_conf):
+        #     # 构造代理配置
+        #     get.host = ""
+        #     if re.search(host_rep, old_conf):
+        #         get.host += str(re.search(host_rep, old_conf).group(1))
+        #     get.redirecttype = str(re.search(url_rep, old_conf).group(1))
+        #     get.tourl = str(re.search(url_rep, old_conf).group(2))
+        #
+        #     get.redirectpath = ""
+        #     if get.host:
+        #         get.domainorpath = "domain"
+        #         get.redirectdomain = "[\"%s\"]" % get.host
+        #     else:
+        #         get.domainorpath = "path"
+        #         get.redirectpath = "/"
+        #         get.redirectdomain = "[]"
+        #     get.sitename = sitename
+        #     get.redirectname = public.GetMsg("OLD_CONF")
+        #     get.type = 1
+        #     get.holdpath = 1
 
             # 备份并替换老虚拟主机配置文件
-            if not os.path.exists(conf_path + "_bak"):
-                os.system("cp %s %s_bak" % (conf_path, conf_path))
+            # if not os.path.exists(conf_path + "_bak"):
+            #     public.ExecShell("cp %s %s_bak" % (conf_path, conf_path))
             # conf = re.sub(rep, "", old_conf)
             # public.writeFile(conf_path, conf)
-            self.CreateRedirect(get)
+            #self.CreateRedirect(get)
             # 写入代理配置
             #proxypath = "%s/panel/vhost/%s/proxy/%s/%s_%s.conf" % (
             #self.setupPath, w, get.sitename, proxyname_md5, get.sitename)
@@ -453,6 +452,8 @@ class panelRedirect:
         sitename = get.sitename
         redirectname = get.redirectname
         proxyname_md5 = self.__calc_md5(redirectname)
+        if get.webserver == 'openlitespeed':
+            get.webserver = 'apache'
         get.path = "%s/panel/vhost/%s/redirect/%s/%s_%s.conf" % (self.setupPath, get.webserver, sitename,proxyname_md5,sitename)
         for i in conf:
             if redirectname == i["redirectname"] and sitename == i["sitename"] and i["type"] != 1:

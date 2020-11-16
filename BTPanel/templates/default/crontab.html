@@ -36,6 +36,9 @@
                             <li>
                                 <a role="menuitem" tabindex="-1" href="javascript:;" value="path">{{data['lan']['BACKDIR']}}</a>
                             </li>
+                            <!-- <li>
+                                <a role="menuitem" tabindex="-1" href="javascript:;" value="webshell">Trojan Scan</a>
+                            </li> -->
                             <li>
                                 <a role="menuitem" tabindex="-1" href="javascript:;" value="rememory">{{data['lan']['TT5']}}</a>
                             </li>
@@ -147,6 +150,12 @@
                 <span id="allDelete" style="float: right;display: none;">
                     <button onclick="allDeleteCron();" class="btn btn-default btn-sm">{{data['lan']['BTN1']}}</button>
                 </span>
+                <span id="allExecute" style="float: right;display: none; margin: 0 15px;">
+                    <button onclick="allCron('execute');" class="btn btn-default btn-sm">Execute</button>
+                </span>
+                <span id="allLog" style="float: right;display: none;">
+                    <button onclick="allCron('log');" class="btn btn-default btn-sm">Clear Log</button>
+                </span>
             </div>
             <div class="setting-con divtable pd15">
                 <table class="table table-hover">
@@ -178,7 +187,7 @@
 {% endblock %}
 
 {% block scripts %}
-	<script src="/static/js/crontab.js?date={{g['version']}}"></script>
+	<script src="/static/js/crontab.js?date20200106={{g['version']}}"></script>
 	<script type="text/javascript">
 	    setCookie('serverType',"{{session['webserver']}}");
 		toWeek();

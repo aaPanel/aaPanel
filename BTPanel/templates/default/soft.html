@@ -30,9 +30,9 @@
 				</div>
                 <div class="divtable pd15 relative">
                     <button class="btn btn-default btn-sm" onclick="soft.flush_cache()" title="{{data['lan']['UPDATE_FROM_CLOUD']}}" style="position:absolute;top:-49px;right:15px">{{data['lan']['UPDATE_APP_LIST']}}</button>
-                    <!--<div id="updata_pro_info">-->
-                        <!--<div class="alert alert-success" style="margin-bottom:15px"><strong>{{data['lan']['PS']}}</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="{{data['lan']['UPDATE_PRO_NOW']}}" style="margin-left:8px">"{{data['lan']['UPDATE_NOW']}}"</button></div>-->
-                    <!--</div>-->
+                    <div id="updata_pro_info">
+                        <div class="alert alert-success" style="margin-bottom:15px"><strong>{{data['lan']['PS']}}</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="{{data['lan']['UPDATE_PRO_NOW']}}" style="margin-left:8px">"{{data['lan']['UPDATE_NOW']}}"</button></div>
+                    </div>
                     <table id="softList" class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"></table>
                     <div id='softPage' class="dataTables_paginate paging_bootstrap page">
 
@@ -49,9 +49,13 @@
 
 <script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
 <script type="text/javascript" src="/static/laydate/laydate.js?date=20180301"></script>
-<script type="text/javascript" src="/static/js/soft.js?version={{g['version']}}"></script>
+<script type="text/javascript" src="/static/ace/ace.js?date={{g.version}}"></script>
+<script type="text/javascript" src="/static/js/soft.js?version_20200109={{g['version']}}"></script>
+
 <script type="text/javascript">
+    bt.set_cookie('sites_path', "{{session['config']['sites_path']}}");
     bt.set_cookie('serverType', "{{session['webserver']}}");
+    bt.set_cookie('distribution', "{{session['config']['distribution']}}");
     $(document).ready(function () {
         soft.get_list();
         setTimeout(function () {

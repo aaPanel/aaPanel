@@ -16,13 +16,13 @@
             <span class="ico-system">{{data['lan']['S1']}}</span><span id="info" style="margin-left:10px;"> {{data['lan']['S2']}}</span>&#12288;&#12288;{{data['lan']['S3']}} <span id="running">{{data['lan']['S4']}}</span>
         </div>
         <span class="pull-right f12 c6" style="line-height:52px; margin-right:15px">
-            <!--{{data['pd']|safe}}--> <span id="btversion" style="margin-right:10px"><a onclick="index.open_log()">{{session['version']}}</a></span>
+            <!--{{data['pd']|safe}}--> <span id="btversion" style="margin-right:10px">{{session['version']}}</span>
             <span id="toUpdate"><a class="btlink" href="javascript:index.check_update();">{{data['lan']['UPDATE']}}</a></span>
             <span style="margin:0 10px"><a class="btlink" href="javascript:index.re_panel();">{{data['lan']['FIX']}}</a></span>
             <span style="margin-right:10px"><a class="btlink" href="javascript:index.re_server();">{{data['lan']['RESTART']}}</a></span>
         </span>
     </div>
-    <div class="container-fluid" style="padding-bottom: 66px;">
+    <div class="container-fluid" style="padding-bottom: 66px;padding-left: 15px;">
         <div class="danger-tips">
             <div class="important-title" id="messageError" style="display: none; margin-top:15px"></div>
         </div>
@@ -33,7 +33,7 @@
             <div class="server-circle">
                 <ul class="row" id="systemInfoList">
                     <li class="col-xs-6 col-sm-3 col-md-3 col-lg-2 mtb20 circle-box text-center loadbox">
-                        <h3 class="c9 f15">{{data['lan']['LOAD_STATUS']}}<a href="https://www.bt.cn/bbs/thread-11402-1-1.html" target="_blank" class="bt-ico-ask" style="cursor: pointer;">?</a></h3>
+                        <h3 class="c9 f15">{{data['lan']['LOAD_STATUS']}}<a href="https://forum.aapanel.com/d/1265-what-does-the-data-in-load-status-represent" target="_blank" class="bt-ico-ask" style="cursor: pointer;">?</a></h3>
                         <div class="cicle">
                             <div class="bar bar-left">
                                 <div class="bar-left-an bar-an"></div>
@@ -76,30 +76,34 @@
                 </ul>
             </div>
         </div>
-        <div class="conter-box system-info bgw clearfix mtb15">
+        <div class="system-info bgw clearfix mtb15">
             <div class="title c6 f16 plr15">
                 {{data['lan']['Overview']}}
             </div>
             <div class="system-info-con mtb20">
                 <ul class="clearfix text-center">
-                    <li class="sys-li-box col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                    <li class="sys-li-box ccol-xs-4 col-sm-4 col-md-4 col-lg-3">
                         <p class="name f15 c9">{{data['lan']['N1']}}</p>
                         <div class="val"><a class="btlink" href="/site">{{data['siteCount']}}</a></div>
                     </li>
-                    <li class="sys-li-box col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                    <li class="sys-li-box ccol-xs-4 col-sm-4 col-md-4 col-lg-3">
                         <p class="name f15 c9">{{data['lan']['N3']}}</p>
                         <div class="val"><a class="btlink" href="/ftp">{{data['ftpCount']}}</a></div>
                     </li>
-                    <li class="sys-li-box col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                    <li class="sys-li-box ccol-xs-4 col-sm-4 col-md-4 col-lg-3">
                         <p class="name f15 c9">{{data['lan']['N2']}}</p>
                         <div class="val"><a class="btlink" href="/database">{{data['databaseCount']}}</a></div>
+                    </li>
+                    <li class="sys-li-box ccol-xs-4 col-sm-4 col-md-4 col-lg-3">
+                        <p class="name f15 c9">{{data['lan']['N4']}}</p>
+                        <div class="val"><a class="btlink warning_num" href="javascript:;" onclick="index.reader_warning_view()">0</a></div>
                     </li>
                 </ul>
             </div>
         </div>
         <div class="col-xs-12 col-sm-12 col-md-6 pull-left pd0">
             <div class="pr8">
-                <div class="bgw conter-box">
+                <div class="bgw">
                     <div class="title c6 f16 plr15">{{data['lan']['P4']}}</div>
                     <div class="setting-con" style="padding:0; height:442px; margin-right: -4px; overflow: hidden;">
                         <div class="container-fluid soft-man">
@@ -112,7 +116,7 @@
         </div>
         <div class="col-xs-12 col-sm-12 col-md-6 pull-left pd0">
             <div class="pl7">
-                <div class="bgw conter-box" style="height:491px">
+                <div class="bgw" style="height:491px">
                     <div class="title c6 f16 plr15">{{data['lan']['FLOW']}}</div>
                     <div class="bw-info">
                         <div class="col-sm-6 col-md-3"><p class="c9"><span class="ico-up"></span>{{data['lan']['UPLOAD']}}</p><a id="upSpeed">{{data['lan']['S2']}}</a></div>
@@ -135,8 +139,9 @@
 
 <script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
-<script type="text/javascript" src="/static/js/index.js?version={{g['version']}}"></script>
-<script type="text/javascript" src="/static/js/soft.js?version={{g['version']}}"></script>
+<script type="text/javascript" src="/static/js/index.js?f2={{g['version']}}"></script>
+<script type="text/javascript" src="/static/js/soft.js?version_20191219={{g['version']}}"></script>
+<script type="text/javascript" src="/static/ace/ace.js?date={{g.version}}"></script>
 <script type="text/javascript">
 	$(".btpro").click(function(){
         layer.confirm(lan.index.change_free, { icon: 3, btn: [lan.index.ubind], closeBtn: 2, title: lan.index.confirm_cancel }, function () {
@@ -147,7 +152,8 @@
                 },2000);
             });
         });
-	})
+    });
+    bt.set_cookie('serverType', "{{session['webserver']}}");
 </script>
 
 {% endblock %}

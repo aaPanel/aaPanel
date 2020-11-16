@@ -1,6 +1,7 @@
 {
 	"TYPE_SITE":"Site manager",
 	"TYPE_LOGIN":"Login",
+	"TYPE_LOGOUT":"Logout",
 	"TYPE_DATABASE":"Database manager",
 	"TYPE_FTP":"FTP manager",
 	"TYPE_FILE":"File manager",
@@ -140,5 +141,19 @@
 	"SITE_STOP_ANTI_STEALING_LINK": "Hotlink Protection for site [{1}] disabled!",
 	"SITE_START_ANTI_STEALING_LINK": "Hotlink Protection for site [{1}] enabled!",
 	"SET_PHP_CLI":"Set the PHP-CLI version to: {1}",
-	"SET_BASICAUTH_STATUS":"Set the BasicAuth status to: {1}"
+	"SET_BASICAUTH_STATUS":"Set the BasicAuth status to: {1}",
+	"MANUALLY_LOGOUT": "Client: {1}, has manually exited the panel",
+	"GET_INFO": "Get Info",
+	"NGINX_LOAD_ERR": "Nginx load status acquisition failed:{1}",
+	"GET_DATA_ERR": "Data acquisition failed!",
+	"PHP_LOAD_ERR": "PHP load status acquisition failed: {1}",
+	"MODIFY_SSH_INFO": "Modify the SSH information of HOST: {1}",
+	"ADD_SSH_INFO": "Add the SSH information of HOST: {1}",
+	"DEL_SSH_INFO": "Delete the SSH information of HOST: {1}",
+	"TYPE_TERMINAL": "aaPanel terminal",
+	"ADD_COMMAND_COMMAND": "Add common commands [{1}]",
+	"EDIT_COMMAND_COMMAND": "Modify common commands [{1}]",
+	"DEL_COMMAND_COMMAND": "Delete common commands [{1}]",
+	"OPEN_FILE": "Open File",
+	"TASK_QUEUE": "Task queue"
 }

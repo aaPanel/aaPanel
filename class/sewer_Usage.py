@@ -156,6 +156,7 @@ class ACMEclient(object):
         )
 
     def get_acme_endpoints(self):
+        print("Get _acme_ endpoint")
         headers = {"User-Agent": self.User_Agent}
         i = 0
         while i < 3:
@@ -173,7 +174,6 @@ class ACMEclient(object):
         if get_acme_endpoints.status_code not in [200, 201]:
             raise ValueError(
                 "{acme}: status_code={status_code} response={response}".format(
-                    acme=public.GetMsg("ACME_ERR4"),
                     status_code=get_acme_endpoints.status_code,
                     response=self.log_response(get_acme_endpoints),
                 )
@@ -181,6 +181,7 @@ class ACMEclient(object):
         return get_acme_endpoints
 
     def create_certificate_key(self):
+        print("Create certificate_key")
         return self.create_key().decode()
 
     def create_account_key(self):
@@ -194,6 +195,7 @@ class ACMEclient(object):
         return private_key
 
     def create_csr(self):
+        print("Create _csr")
         X509Req = OpenSSL.crypto.X509Req()
         X509Req.get_subject().CN = self.domain_name
 
@@ -220,6 +222,7 @@ class ACMEclient(object):
         return OpenSSL.crypto.dump_certificate_request(OpenSSL.crypto.FILETYPE_ASN1, X509Req)
 
     def acme_register(self):
+        print("acme registration")
         if self.PRIOR_REGISTERED:
             payload = {"onlyReturnExisting": True}
         elif self.contact_email:
@@ -235,18 +238,17 @@ class ACMEclient(object):
             public.WriteFile(os.path.join(ssl_home_path, "apply_for_cert_issuance_response"), acme_register_response.text, mode="w")
             raise ValueError(
                 "{ssl_register}： status_code={status_code} response={response}".format(
-                    ssl_register=public.GetMsg("SSL_REGISTER_ERR"),
                     status_code=acme_register_response.status_code,
                     response=self.log_response(acme_register_response),
                 )
             )
         kid = acme_register_response.headers["Location"]
         setattr(self, "kid", kid)
-        print("acme_注册_成功")
+        print("acme_register_success")
         return acme_register_response
 
     def apply_for_cert_issuance(self):
-        print("申请颁发证书")
+        print("Apply for a certificate")
         identifiers = []
         for domain_name in self.all_domain_names:
             identifiers.append({"type": "dns", "value": domain_name})
@@ -257,7 +259,6 @@ class ACMEclient(object):
             public.WriteFile(os.path.join(ssl_home_path, "apply_for_cert_issuance_response"), apply_for_cert_issuance_response.text, mode="w")
             raise ValueError(
                 "{ssl_accept_err}: status_code={status_code} response={response}".format(
-                    ssl_accept_err=public.GetMsg("SSL_ACCEPT_ERR"),
                     status_code=apply_for_cert_issuance_response.status_code,
                     response=self.log_response(apply_for_cert_issuance_response),
                 )
@@ -265,11 +266,11 @@ class ACMEclient(object):
         apply_for_cert_issuance_response_json = apply_for_cert_issuance_response.json()
         finalize_url = apply_for_cert_issuance_response_json["finalize"]
         authorizations = apply_for_cert_issuance_response_json["authorizations"]
-        print("申请颁发证书成功")
+        print("Successful application for certificate")
         return authorizations, finalize_url
 
     def get_identifier_authorization(self, url):
-        print("获得标识符授权")
+        print("Get identifier authorization")
         headers = {"User-Agent": self.User_Agent}
         i = 0
         while i < 3:
@@ -287,7 +288,6 @@ class ACMEclient(object):
         if get_identifier_authorization_response.status_code not in [200, 201]:
             raise ValueError(
                 "{ssl_accept_err1}: status_code={status_code} response={response}".format(
-                    ssl_accept_err1=public.GetMsg("SSL_ACCEPT_ERR1"),
                     status_code=get_identifier_authorization_response.status_code,
                     response=self.log_response(get_identifier_authorization_response),
                 )
@@ -310,13 +310,13 @@ class ACMEclient(object):
             "dns_challenge_url": dns_challenge_url,
         }
         print(
-            "获取标识符授权成功. identifier_auth={0}".format(identifier_auth)
+            "Get identifier authorization successfully. identifier_auth={0}".format(identifier_auth)
         )
 
         return identifier_auth
 
     def get_keyauthorization(self, dns_token):
-        print("获得密钥授权")
+        print("Get key authorization")
         acme_header_jwk_json = json.dumps(
             self.get_acme_header("GET_THUMBPRINT")["jwk"], sort_keys=True, separators=(",", ":")
         )
@@ -333,7 +333,7 @@ class ACMEclient(object):
         """
         检查授权的状态，验证dns有没有添加txt解析记录
         """
-        print("检查授权状态")
+        print("Check authorization status")
         time.sleep(self.ACME_AUTH_STATUS_WAIT_PERIOD)  # 等待
         desired_status = desired_status or ["pending", "valid"]
         number_of_checks = 0
@@ -363,19 +363,19 @@ class ACMEclient(object):
             if authorization_status in desired_status:
                 break
             else:
-                print("验证dns txt 失败等待{}秒重新验证dns，返回的信息：".format(self.ACME_AUTH_STATUS_WAIT_PERIOD))
+                print("Failed to verify dns txt wait {} seconds to re-verify dns, returned information：".format(self.ACME_AUTH_STATUS_WAIT_PERIOD))
                 print(check_authorization_status_response.json())
                 public.WriteFile(os.path.join(ssl_home_path, "check_authorization_status_response"), check_authorization_status_response.text, mode="w")
                 # 等待
                 time.sleep(self.ACME_AUTH_STATUS_WAIT_PERIOD)
-        print("检查授权状态结束")
+        print("End of checking authorization status")
         return check_authorization_status_response
 
     def respond_to_challenge(self, acme_keyauthorization, dns_challenge_url):
-        print("回应challenge")
+        print("Response challenge")
         payload = {"keyAuthorization": acme_keyauthorization}
         respond_to_challenge_response = self.make_signed_acme_request(dns_challenge_url, payload)
-        print("回应challenge_成功")
+        print("Response challenge_ success")
         return respond_to_challenge_response
 
     def send_csr(self, finalize_url):
@@ -386,7 +386,6 @@ class ACMEclient(object):
         if send_csr_response.status_code not in [200, 201]:
             raise ValueError(
                 "{send_csr_err}: status_code={status_code} response={response}".format(
-                    send_csr_err=public.GetMsg("SSL_SEND_CSR_ERR"),
                     status_code=send_csr_response.status_code,
                     response=self.log_response(send_csr_response),
                 )
@@ -397,20 +396,19 @@ class ACMEclient(object):
         return certificate_url
 
     def download_certificate(self, certificate_url):
-        print("下载证书")
+        print("Download the certificate")
         download_certificate_response = self.make_signed_acme_request(
             certificate_url, payload="DOWNLOAD_Z_CERTIFICATE"
         )
         if download_certificate_response.status_code not in [200, 201]:
             raise ValueError(
                 "{get_cert_err}: status_code={status_code} response={response}".format(
-                    get_cert_err=public.GetMsg("SSL_GET_CERT_ERR"),
                     status_code=download_certificate_response.status_code,
                     response=self.log_response(download_certificate_response),
                 )
             )
         pem_certificate = download_certificate_response.content.decode("utf-8")
-        print("下载证书成功")
+        print("Download certificate successful")
         return pem_certificate
 
     def sign_message(self, message):
@@ -487,7 +485,7 @@ class ACMEclient(object):
         return header
 
     def make_signed_acme_request(self, url, payload):
-        print("签署acme请求")
+        print("Sign acme request")
         headers = {"User-Agent": self.User_Agent}
         payload = self.stringfy_items(payload)
         if payload in ["GET_Z_CHALLENGE", "DOWNLOAD_Z_CERTIFICATE"]:
@@ -562,7 +560,7 @@ class ACMEclient(object):
         # 1
         if self.Manual == 1:
 
-            print("请添加txt解析")
+            print("Please add txt parsing")
             print(domain_txt_dns_value)
             public.WriteFile(os.path.join(ssl_home_path, "domain_txt_dns_value.json"), json.dumps(domain_txt_dns_value), mode="w")
             public.WriteFile(os.path.join(ssl_home_path, "Confirmation_verification"), "", mode="w")
@@ -902,7 +900,7 @@ class Dns_com(object):
     def create_dns_record(self, domain_name, domain_dns_value):
         root, _, acme_txt = extract_zone(domain_name)
         print("create_dns_record,", acme_txt, domain_dns_value)
-        result = public.ExecShell('''python /www/server/panel/plugin/dns/dns_main.py add_txt {} {}'''.format(acme_txt + '.' + root, domain_dns_value))
+        result = public.ExecShell('''{} /www/server/panel/plugin/dns/dns_main.py add_txt {} {}'''.format(public.get_python_bin(),acme_txt + '.' + root, domain_dns_value))
         if result[0].strip() == "False":
             sys.exit(json.dumps({"data": public.GetMsg("BT_DNSRES_ERR")}))
         print("create_dns_record_end")
@@ -910,7 +908,7 @@ class Dns_com(object):
     def delete_dns_record(self, domain_name, domain_dns_value):
         root, _, acme_txt = extract_zone(domain_name)
         print("delete_dns_record start: ", acme_txt, domain_dns_value)
-        public.ExecShell('''python /www/server/panel/plugin/dns/dns_main.py remove_txt {} {}'''.format(acme_txt + '.' + root, domain_dns_value))
+        public.ExecShell('''{} /www/server/panel/plugin/dns/dns_main.py remove_txt {} {}'''.format(public.get_python_bin() ,acme_txt + '.' + root, domain_dns_value))
         print("delete_dns_record_success")
 
 

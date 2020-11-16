@@ -1,0 +1,77 @@
+#!/www/server/panel/pyenv/bin/python
+#coding: utf-8
+# +-------------------------------------------------------------------
+# | 宝塔Linux面板 
+# +-------------------------------------------------------------------
+# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# +-------------------------------------------------------------------
+# | Author: hwliang <hwl@bt.cn>
+# +-------------------------------------------------------------------
+from gevent import monkey
+monkey.patch_all()
+import os,sys,ssl
+if os.path.exists("/www/server/panel/class/BTPanel"):
+    os.system("rm -rf /www/server/panel/class/BTPanel")
+os.chdir('/www/server/panel')
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
+from BTPanel import app,sys,public
+
+if __name__ == '__main__':
+    pid = os.fork()
+    if pid: sys.exit(0)
+
+    os.setsid()
+
+    _pid = os.fork()
+    if _pid:
+        public.writeFile('logs/panel.pid',str(_pid))
+        sys.exit(0)
+
+    sys.stdout.flush()
+    sys.stderr.flush()
+
+    f = open('data/port.pl')
+    PORT = int(f.read())
+    HOST = '0.0.0.0'
+    if os.path.exists('data/ipv6.pl'):
+        HOST = "0:0:0:0:0:0:0:0"
+    f.close()
+    
+    is_debug = os.path.exists('data/debug.pl')
+    keyfile = 'ssl/privateKey.pem'
+    certfile = 'ssl/certificate.pem'
+    is_ssl = False
+    if os.path.exists('data/ssl.pl') and os.path.exists(keyfile) and os.path.exists(certfile):
+        is_ssl = True
+
+    if not is_ssl or is_debug:
+        err_f = open('logs/error.log','a+')
+        os.dup2(err_f.fileno(),sys.stderr.fileno())
+        err_f.close()
+
+    import threading
+    import jobs
+
+    job = threading.Thread(target=jobs.control_init)
+    job.setDaemon(True)
+    job.start()
+
+    if is_debug:
+        ssl_context = None
+        if is_ssl: ssl_context=(certfile,keyfile)
+        app.run(host=HOST,port=PORT,threaded=True,debug=True,ssl_context=ssl_context)
+    else:
+        from  gevent.pywsgi import WSGIServer
+        from geventwebsocket.handler import WebSocketHandler
+
+        if is_ssl:
+            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_context.load_cert_chain(certfile=certfile,keyfile=keyfile)
+            ssl_context.options |= (ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3)
+            ssl_context.set_ciphers("ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE")
+            http_server = WSGIServer((HOST, PORT), app,handler_class=WebSocketHandler,ssl_context = ssl_context)
+        else:
+            http_server = WSGIServer((HOST, PORT), app,handler_class=WebSocketHandler)
+
+        http_server.serve_forever()

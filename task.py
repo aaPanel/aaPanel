@@ -5,15 +5,23 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <2879625666@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 
 #------------------------------
 # 计划任务
 #------------------------------
-import sys,os,json,psutil
+
+import sys
+import os
+import logging
+from json import dumps,loads
+from psutil import Process,pids,cpu_count,cpu_percent,net_io_counters,disk_io_counters,virtual_memory
 sys.path.insert(0,"/www/server/panel/class/")
-import db,public,time,panelTask
+import db
+import public
+import time
+import panelTask
 global pre,timeoutCount,logPath,isTask,oldEdate,isCheck
 pre = 0
 timeoutCount = 0
@@ -22,32 +30,23 @@ oldEdate = None
 logPath = '/tmp/panelExec.log'
 isTask = '/tmp/panelTask.pl'
 
-class MyBad():
-    _msg = None
-    def __init__(self,msg):
-        self._msg = msg
-    def __repr__(self):
-        return self._msg
-        
+def get_python_bin():
+    bin_file = '/www/server/panel/pyenv/bin/python'
+    if os.path.exists(bin_file):
+        return bin_file
+    return '/usr/bin/python'
 
-def ExecShell(cmdstring, cwd=None, timeout=None, shell=True):
-    try:
-        global logPath
-        import shlex
-        import datetime
-        import subprocess
-        import time
-    
-        if timeout:
-            end_time = datetime.datetime.now() + datetime.timedelta(seconds=timeout)
-        sub = subprocess.Popen(cmdstring+' &> '+logPath, cwd=cwd, stdin=subprocess.PIPE,shell=shell,bufsize=4096)
-        
-        while sub.poll() is None:
-            time.sleep(0.1)
-                
-        return sub.returncode
-    except:
-        return None
+def ReadFile(filename,mode = 'r'):
+    """
+    读取文件内容
+    @filename 文件名
+    return string(bin) 若文件不存在，则返回None
+    """
+    if not os.path.exists(filename): return False
+    f_body = None
+    with open(filename, mode) as fp:
+        f_body = fp.read()
+    return f_body
 
 #下载文件
 def DownloadFile(url,filename):
@@ -55,7 +54,7 @@ def DownloadFile(url,filename):
         import urllib,socket
         socket.setdefaulttimeout(10)
         urllib.urlretrieve(url,filename=filename ,reporthook= DownloadHook)
-        os.system('chown www.www ' + filename);
+        os.system('chown www.www ' + filename)
         WriteLogs('done')
     except:
         WriteLogs('done')
@@ -70,90 +69,104 @@ def DownloadHook(count, blockSize, totalSize):
     if pre == pre1:
         return
     speed = {'total':totalSize,'used':used,'pre':pre}
-    WriteLogs(json.dumps(speed))
+    WriteLogs(dumps(speed))
     pre = pre1
 
 #写输出日志
 def WriteLogs(logMsg):
     try:
         global logPath
-        fp = open(logPath,'w+');
-        fp.write(logMsg)
-        fp.close()
+        with open(logPath,'w+') as fp:
+            fp.write(logMsg)
+            fp.close()
     except:
-        pass;
+        pass
 
-#任务队列 
+
+def ExecShell(cmdstring, cwd=None, timeout=None, shell=True):
+    try:
+        global logPath
+        import shlex
+        import datetime
+        import subprocess
+        import time
+        sub = subprocess.Popen(cmdstring+' &> '+logPath, cwd=cwd, stdin=subprocess.PIPE,shell=shell,bufsize=4096)
+
+        while sub.poll() is None:
+            time.sleep(0.1)
+
+        return sub.returncode
+    except:
+        return None
+
+
+#任务队列
 def startTask():
     global isTask
-    import time,public
     try:
         while True:
             try:
                 if os.path.exists(isTask):
-                    sql = db.Sql()
-                    sql.table('tasks').where("status=?",('-1',)).setField('status','0')
-                    taskArr = sql.table('tasks').where("status=?",('0',)).field('id,type,execstr').order("id asc").select();
-                    for value in taskArr:
-                        start = int(time.time());
-                        if not sql.table('tasks').where("id=?",(value['id'],)).count(): continue;
-                        sql.table('tasks').where("id=?",(value['id'],)).save('status,start',('-1',start))
-                        if value['type'] == 'download':
-                            argv = value['execstr'].split('|bt|')
-                            DownloadFile(argv[0],argv[1])
-                        elif value['type'] == 'execshell':
-                            ExecShell(value['execstr'])
-                        end = int(time.time())
-                        sql.table('tasks').where("id=?",(value['id'],)).save('status,end',('1',end))
-                        if(sql.table('tasks').where("status=?",('0')).count() < 1): os.system('rm -f ' + isTask);
+                    with db.Sql() as sql:
+                        sql.table('tasks').where("status=?",('-1',)).setField('status','0')
+                        taskArr = sql.table('tasks').where("status=?",('0',)).field('id,type,execstr').order("id asc").select()
+                        for value in taskArr:
+                            start = int(time.time())
+                            if not sql.table('tasks').where("id=?",(value['id'],)).count(): continue
+                            sql.table('tasks').where("id=?",(value['id'],)).save('status,start',('-1',start))
+                            if value['type'] == 'download':
+                                argv = value['execstr'].split('|bt|')
+                                DownloadFile(argv[0],argv[1])
+                            elif value['type'] == 'execshell':
+                                ExecShell(value['execstr'])
+                            end = int(time.time())
+                            sql.table('tasks').where("id=?",(value['id'],)).save('status,end',('1',end))
+                            if(sql.table('tasks').where("status=?",('0')).count() < 1):
+                                if os.path.exists(isTask): os.remove(isTask)
+                                #ExecShell('rm -f ' + isTask)
+                        sql.close()
+                        taskArr = None
             except:
                 pass
-            siteEdate();
+            siteEdate()
             time.sleep(2)
-    except:
-        time.sleep(60);
-        startTask();
+    except Exception as ex:
+        logging.debug(ex)
+        time.sleep(60)
+        startTask()
         
 #网站到期处理
 def siteEdate():
     global oldEdate
     try:
-        if not oldEdate: oldEdate = public.readFile('data/edate.pl');
-        if not oldEdate: oldEdate = '0000-00-00';
+        if not oldEdate: oldEdate = ReadFile('data/edate.pl')
+        if not oldEdate: oldEdate = '0000-00-00'
         mEdate = time.strftime('%Y-%m-%d',time.localtime())
-        if oldEdate == mEdate: return False;
-        edateSites = public.M('sites').where('edate>? AND edate<? AND (status=? OR status=?)',('0000-00-00',mEdate,1,u'正在运行')).field('id,name').select();
-        import panelSite;
-        siteObject = panelSite.panelSite();
-        for site in edateSites:
-            get = MyBad('');
-            get.id = site['id'];
-            get.name = site['name'];
-            siteObject.SiteStop(get);
-        oldEdate = mEdate;
-        public.writeFile('data/edate.pl',mEdate);
-    except:
-         pass;
+        if oldEdate == mEdate: return False
+        os.system(get_python_bin() + " /www/server/panel/script/site_task.py > /dev/null")
+    except Exception as ex:
+        logging.debug(ex)
+        pass
 
 def GetLoadAverage():
     c = os.getloadavg()
-    data = {};
-    data['one'] = float(c[0]);
-    data['five'] = float(c[1]);
-    data['fifteen'] = float(c[2]);
-    data['max'] = psutil.cpu_count() * 2;
-    data['limit'] = data['max'];
-    data['safe'] = data['max'] * 0.75;
-    return data;
+    data = {}
+    data['one'] = float(c[0])
+    data['five'] = float(c[1])
+    data['fifteen'] = float(c[2])
+    data['max'] = cpu_count() * 2
+    data['limit'] = data['max']
+    data['safe'] = data['max'] * 0.75
+    return data
          
 
 #系统监控任务
 def systemTask():
     try:
-        import psutil,time
-        filename = 'data/control.conf';
-        sql = db.Sql().dbfile('system')
-        csql = '''CREATE TABLE IF NOT EXISTS `load_average` (
+        filename = 'data/control.conf'
+        with db.Sql() as sql:
+            sql = sql.dbfile('system')
+            csql = '''CREATE TABLE IF NOT EXISTS `load_average` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
   `pro` REAL,
   `one` REAL,
@@ -161,30 +174,30 @@ def systemTask():
   `fifteen` REAL,
   `addtime` INTEGER
 )'''
-        sql.execute(csql,())
-        cpuIo = cpu = {}
-        cpuCount = psutil.cpu_count()
-        used = count = 0
+            sql.execute(csql,())
+            sql.close()
+
+        count = 0
         reloadNum=0
         network_up = network_down = diskio_1 = diskio_2 = networkInfo = cpuInfo = diskInfo = None
         while True:
             if not os.path.exists(filename):
-                time.sleep(10);
-                continue;
+                time.sleep(10)
+                continue
             
-            day = 30;
+            day = 30
             try:
-                day = int(public.readFile(filename));
+                day = int(ReadFile(filename))
                 if day < 1:
                     time.sleep(10)
-                    continue;
+                    continue
             except:
                 day  = 30
             
             
             tmp = {}
             #取当前CPU Io     
-            tmp['used'] = psutil.cpu_percent(interval=1)
+            tmp['used'] = cpu_percent(interval=1)
             
             if not cpuInfo:
                 tmp['mem'] = GetMemUsed()
@@ -197,7 +210,7 @@ def systemTask():
             
             
             #取当前网络Io
-            networkIo = psutil.net_io_counters()[:4]
+            networkIo = net_io_counters()[:4]
             if not network_up:
                 network_up   =  networkIo[0]
                 network_down =  networkIo[1]
@@ -219,7 +232,7 @@ def systemTask():
             disk_ios = True
             try:
                 if os.path.exists('/proc/diskstats'):
-                    diskio_2 = psutil.disk_io_counters()
+                    diskio_2 = disk_io_counters()
                     if not diskio_1: diskio_1 = diskio_2
                     tmp = {}
                     tmp['read_count']   = diskio_2.read_count - diskio_1.read_count
@@ -240,78 +253,83 @@ def systemTask():
                         diskInfo['write_time']   += tmp['write_time']
                 
                     diskio_1 = diskio_2
-            except:disk_ios = False
+            except:
+                logging.info(public.get_error_info())
+                disk_ios = False
 
             
             #print diskInfo
             
             if count >= 12:
                 try:
+                    sql = db.Sql().dbfile('system')
                     addtime = int(time.time())
                     deltime = addtime - (day * 86400)
                     
                     data = (cpuInfo['used'],cpuInfo['mem'],addtime)
                     sql.table('cpuio').add('pro,mem,addtime',data)
-                    sql.table('cpuio').where("addtime<?",(deltime,)).delete();
+                    sql.table('cpuio').where("addtime<?",(deltime,)).delete()
                     
                     data = (networkInfo['up'] / 5,networkInfo['down'] / 5,networkInfo['upTotal'],networkInfo['downTotal'],networkInfo['downPackets'],networkInfo['upPackets'],addtime)
                     sql.table('network').add('up,down,total_up,total_down,down_packets,up_packets,addtime',data)
-                    sql.table('network').where("addtime<?",(deltime,)).delete();
+                    sql.table('network').where("addtime<?",(deltime,)).delete()
                     if os.path.exists('/proc/diskstats') and disk_ios:
                         data = (diskInfo['read_count'],diskInfo['write_count'],diskInfo['read_bytes'],diskInfo['write_bytes'],diskInfo['read_time'],diskInfo['write_time'],addtime)
                         sql.table('diskio').add('read_count,write_count,read_bytes,write_bytes,read_time,write_time,addtime',data)
-                        sql.table('diskio').where("addtime<?",(deltime,)).delete();
+                        sql.table('diskio').where("addtime<?",(deltime,)).delete()
                     
                     #LoadAverage
                     load_average = GetLoadAverage()
                     lpro = round((load_average['one'] / load_average['max']) * 100,2)
-                    if lpro > 100: lpro = 100;
+                    if lpro > 100: lpro = 100
                     sql.table('load_average').add('pro,one,five,fifteen,addtime',(lpro,load_average['one'],load_average['five'],load_average['fifteen'],addtime))
-                    
+                    sql.close()
+
                     lpro = None
                     load_average = None
                     cpuInfo = None
                     networkInfo = None
                     diskInfo = None
+                    data = None
                     count = 0
-                    reloadNum += 1;
+                    reloadNum += 1
                     if reloadNum > 1440:
-                        reloadNum = 0;
+                        reloadNum = 0
                 except Exception as ex:
-                    print(str(ex))
+                    logging.debug(str(ex))
             del(tmp)
             
-            time.sleep(5);
+            time.sleep(5)
             count +=1
-    except:
-        time.sleep(30);
-        systemTask();
+    except Exception as ex:
+        logging.debug(ex)
+        time.sleep(30)
+        systemTask()
             
 
 #取内存使用率
 def GetMemUsed():
     try:
-        import psutil
-        mem = psutil.virtual_memory()
+        mem = virtual_memory()
         memInfo = {'memTotal':mem.total/1024/1024,'memFree':mem.free/1024/1024,'memBuffers':mem.buffers/1024/1024,'memCached':mem.cached/1024/1024}
         tmp = memInfo['memTotal'] - memInfo['memFree'] - memInfo['memBuffers'] - memInfo['memCached']
         tmp1 = memInfo['memTotal'] / 100
         return (tmp / tmp1)
     except:
-        return 1;
+        return 1
 
 #检查502错误 
 def check502():
     try:
-        phpversions = ['53','54','55','56','70','71','72','73','74']
+        phpversions = ['53','54','55','56','70','71','72','73','74','80']
         for version in phpversions:
             php_path = '/www/server/php/' + version + '/sbin/php-fpm'
-            if not os.path.exists(php_path): continue;
-            if checkPHPVersion(version): continue;
+            if not os.path.exists(php_path): continue
+            if checkPHPVersion(version): continue
             if startPHPVersion(version):
-                public.WriteLog('PHP守护程序','检测到PHP-' + version + '处理异常,已自动修复!')
-    except:
-        pass;
+                public.WriteLog('PHP daemon','PHP-' + version + 'processing exception was detected and has been automatically fixed!',not_web = True)
+    except Exception as ex:
+        logging.info(ex)
             
 #处理指定PHP版本   
 def startPHPVersion(version):
@@ -320,113 +338,69 @@ def startPHPVersion(version):
         php_path = '/www/server/php/' + version + '/sbin/php-fpm'
         if not os.path.exists(php_path): 
             if os.path.exists(fpm): os.remove(fpm)
-            return False;
+            return False
         
         #尝试重载服务
-        os.system(fpm + ' reload');
-        if checkPHPVersion(version): return True;
+        os.system(fpm + ' reload')
+        if checkPHPVersion(version): return True
         
         #尝试重启服务
         cgi = '/tmp/php-cgi-'+version + '.sock'
-        pid = '/www/server/php/'+version+'/var/run/php-fpm.pid';
+        pid = '/www/server/php/'+version+'/var/run/php-fpm.pid'
         os.system('pkill -9 php-fpm-'+version)
-        time.sleep(0.5);
-        if not os.path.exists(cgi): os.system('rm -f ' + cgi);
-        if not os.path.exists(pid): os.system('rm -f ' + pid);
-        os.system(fpm + ' start');
-        if checkPHPVersion(version): return True;
+        time.sleep(0.5)
+        if not os.path.exists(cgi): os.system('rm -f ' + cgi)
+        if not os.path.exists(pid): os.system('rm -f ' + pid)
+        os.system(fpm + ' start')
+        if checkPHPVersion(version): return True
         
         #检查是否正确启动
-        if os.path.exists(cgi): return True;
-    except:
-        return True;
+        if os.path.exists(cgi): return True
+    except Exception as ex:
+        logging.debug(ex)
+        return True
     
     
 #检查指定PHP版本
 def checkPHPVersion(version):
     try:
-        url = 'http://127.0.0.1/phpfpm_'+version+'_status';
-        result = public.httpGet(url);
-        #检查nginx
-        if result.find('Bad Gateway') != -1: return False;
-        #检查Apache
-        if result.find('Service Unavailable') != -1: return False;
-        if result.find('Not Found') != -1: CheckPHPINFO();
-        
-        #检查Web服务是否启动
-        if result.find('Connection refused') != -1: 
-            global isTask
-            if os.path.exists(isTask): 
-                isStatus = public.readFile(isTask);
-                if isStatus == 'True': return True;
-            filename = '/etc/init.d/nginx';
-            if os.path.exists(filename): os.system(filename + ' start');
-            filename = '/etc/init.d/httpd';
-            if os.path.exists(filename): os.system(filename + ' start');
-            
-        return True;
+        uri = "/phpfpm_"+version+"_status?json"
+        result = public.request_php(version,uri,'')
+        loads(result)
+        return True
     except:
-        return True;
+        logging.info("PHP-{} unreachable detected".format(version))
+        return False
 
-
-#检测PHPINFO配置
-def CheckPHPINFO():
-    php_versions = ['53','54','55','56','70','71','72','73','74'];
-    setupPath = '/www/server';
-    path = setupPath +'/panel/vhost/nginx/phpinfo.conf';
-    if not os.path.exists(path):
-        opt = "";
-        for version in php_versions:
-            opt += "\n\tlocation /"+version+" {\n\t\tinclude enable-php-"+version+".conf;\n\t}";
-        
-        phpinfoBody = '''server
-{
-    listen 80;
-    server_name 127.0.0.2;
-    allow 127.0.0.1;
-    index phpinfo.php index.html index.php;
-    root  /www/server/phpinfo;
-%s   
-}''' % (opt,);
-        public.writeFile(path,phpinfoBody);
-    
-    
-    path = setupPath + '/panel/vhost/apache/phpinfo.conf';
-    if not os.path.exists(path):
-        opt = "";
-        for version in php_versions:
-            opt += """\n<Location /%s>
-    SetHandler "proxy:unix:/tmp/php-cgi-%s.sock|fcgi://localhost"
-</Location>""" % (version,version);
-            
-        phpinfoBody = '''
-<VirtualHost *:80>
-DocumentRoot "/www/server/phpinfo"
-ServerAdmin phpinfo
-ServerName 127.0.0.2
-%s
-<Directory "/www/server/phpinfo">
-    SetOutputFilter DEFLATE
-    Options FollowSymLinks
-    AllowOverride All
-    Order allow,deny
-    Allow from all
-    DirectoryIndex index.php index.html index.htm default.php default.html default.htm
-</Directory>
-</VirtualHost>
-''' % (opt,);
-        public.writeFile(path,phpinfoBody);
 
 #502错误检查线程
 def check502Task():
     try:
         while True:
-            if os.path.exists('/www/server/panel/data/502Task.pl'): check502();
-            time.sleep(600);
+            if os.path.exists('/www/server/panel/data/502Task.pl'): check502()
+            sess_expire()
+            time.sleep(600)
     except:
-        time.sleep(600);
-        check502Task();
+        time.sleep(600)
+        check502Task()
 
+# 检查面板证书是否有更新
+def check_panel_ssl():
+    try:
+        while True:
+            lets_info = public.readFile("/www/server/panel/ssl/lets.info")
+            if not lets_info:
+                time.sleep(600)
+                continue
+            lets_info = loads(lets_info)
+            if setPanelLets.setPanelLets().check_cert_update(lets_info['domain']):
+                strTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
+                public.writeFile("/tmp/panelSSL.pl","{} Panel certificate updated successfully\n".format(strTime),"a+")
+                public.writeFile('/www/server/panel/data/reload.pl',"1")
+            time.sleep(60)
+    except:
+        e = public.get_error_info()
+        public.writeFile("/tmp/panelSSL.pl", str(e),"a+")
 
 #监控面板状态
 def panel_status():
@@ -435,24 +409,26 @@ def panel_status():
     pool = 'http://'
     if os.path.exists(panel_path + '/data/ssl.pl'): pool = 'https://'
     port = '8888'
-    if os.path.exists(panel_path + '/data/port.pl'): port = public.readFile(panel_path + '/data/port.pl').strip()
+    if os.path.exists(panel_path + '/data/port.pl'): port = ReadFile(panel_path + '/data/port.pl').strip()
     panel_url = pool + '127.0.0.1:' + port + '/service_status'
     panel_pid = get_panel_pid()
     n = 0
     s = 0
     v = 0
     while True:
-        time.sleep(1)
+        time.sleep(5)
         if not panel_pid: panel_pid = get_panel_pid()
-        if not panel_pid: run_panel()
+        if not panel_pid: service_panel('start')
+
         try:
-            if psutil.Process(panel_pid).cmdline()[-1] != 'runserver:app': 
-                run_panel()
+            f = Process(panel_pid).cmdline()[-1]
+            if f.find('runserver') == -1 and f.find('BT-Panel') == -1:
+                service_panel('start')
                 time.sleep(3)
                 panel_pid = get_panel_pid()
                 continue
         except:
-            run_panel()
+            service_panel('start')
             time.sleep(3)
             panel_pid = get_panel_pid()
             continue
@@ -467,33 +443,39 @@ def panel_status():
                 e_body = public.GetNumLines(log_path,10)
                 if e_body:
                     if e_body.find('PyWSGIServer.do_close') != -1 or e_body.find('Expected GET method:')!=-1 or e_body.find('Invalid HTTP method:') != -1 or e_body.find('table session') != -1:
-                        result = public.httpGet(panel_url)
+                        result = HttpGet(panel_url)
                         if result != 'True':
                             if e_body.find('table session') != -1:
                                 sess_file = '/dev/shm/session.db'
                                 if os.path.exists(sess_file): os.remove(sess_file)
-                            os.system("/etc/init.d/bt reload &")
+                            os.system("bash /www/server/panel/init.sh reload &")
                             time.sleep(10)
-                            result = public.httpGet(panel_url)
+                            result = HttpGet(panel_url)
                             if result == 'True':
-                                public.WriteLog('TYPE_SOFE','Checked to panel service exception, has been automatically restored!')
+                                public.WriteLog('TYPE_SOFE','Checked to panel service exception, has been automatically restored!',not_web = True)
 
         if n > 18000:
             n = 0
-            result = public.httpGet(panel_url)
+            result = HttpGet(panel_url)
             if result == 'True':
                 time.sleep(10)
                 continue
-            os.system("/etc/init.d/bt reload &")
-            result = public.httpGet(panel_url)
+            update_panel()
+            result = HttpGet(panel_url)
             if result == 'True':
-                public.WriteLog('TYPE_SOFE','Checked to panel service exception, has been automatically restored!')
+                public.WriteLog('TYPE_SOFE','Checked to panel service exception, has been automatically restored!',not_web = True)
                 time.sleep(10)
                 continue
 
 
-def run_panel():
-    os.system("/etc/init.d/bt start &")
+def update_panel():
+    public.ExecShell("curl http://download.bt.cn/install/update6_en.sh|bash &")
+
+def service_panel(action = 'reload'):
+    if not os.path.exists('/www/server/panel/init.sh'):
+        update_panel()
+    else:
+        os.system("bash /www/server/panel/init.sh {} &".format(action))
 
 #重启面板服务
 def restart_panel_service():
@@ -502,50 +484,86 @@ def restart_panel_service():
     while True:
         if os.path.exists(rtips):
             os.remove(rtips)
-            os.system("/etc/init.d/bt restart &")
+            service_panel('restart')
         if os.path.exists(reload_tips):
             os.remove(reload_tips)
-            os.system("/etc/init.d/bt reload &")
+            service_panel('reload')
         time.sleep(1)
 
 #取面板pid
 def get_panel_pid():
-    for pid in psutil.pids():
+    pid = ReadFile('/www/server/panel/logs/panel.pid')
+    if pid: return int(pid)
+    for pid in pids():
         try:
-            p = psutil.Process(pid)
-            if p.cmdline()[-1] == 'runserver:app': return pid
+            p = Process(pid)
+            n = p.cmdline()[-1]
+            if n.find('runserver') != -1 or n.find('BT-Panel') != -1: return pid
         except: pass
     return None
 
-#执行后台程序
-def panel_task_run():
+
+def HttpGet(url,timeout = 6,headers = {}):
+    if sys.version_info[0] == 2:
+        try:
+            import urllib2
+            req = urllib2.Request(url, headers = headers)
+            response = urllib2.urlopen(req,timeout = timeout,)
+            return response.read()
+        except Exception as ex:
+            logging.debug(str(ex))
+            return str(ex)
+    else:
+        try:
+            import urllib.request
+            req = urllib.request.Request(url,headers = headers)
+            response = urllib.request.urlopen(req,timeout = timeout)
+            result = response.read()
+            if type(result) == bytes: result = result.decode('utf-8')
+            return result
+        except Exception as ex:
+            logging.debug("URL: {}  => {}".format(url,ex))
+            return str(ex)
+
+
+#定时任务去检测邮件信息
+def send_mail_time():
+    p_path = '/www/server/panel/data/'
+    p_reload = p_path + '/send_to_user.pl'
+    if not os.path.exists(p_path):
+        return
     while True:
-        panel_task_start()
-        time.time(3)
+        try:
+            if os.path.exists(p_reload):
+                os.system(get_python_bin() + " /www/server/panel/script/mail_task.py > /dev/null")
+                os.remove(p_reload)
+            time.sleep(60)
+        except:
+            time.sleep(180)
+            send_mail_time()
 
-def panel_task_start():
-    pass
+def main():
+    main_pid = 'logs/task.pid'
+    if os.path.exists(main_pid):
+        os.system("kill -9 $(cat {}) &> /dev/null".format(main_pid))
+    pid = os.fork()
+    if pid: sys.exit(0)
 
-#自动结束异常进程
-def btkill():
-    import btkill
-    b = btkill.btkill()
-    b.start();
+    #os.umask(0)
+    os.setsid()
 
-if __name__ == "__main__":
-    os.system('rm -rf /www/server/phpinfo/*');
-    if os.path.exists('/www/server/nginx/sbin/nginx'):
-        pfile = '/www/server/nginx/conf/enable-php-72.conf';
-        if not os.path.exists(pfile):
-            pconf = '''location ~ [^/]\.php(/|$)
-{
-    try_files $uri =404;
-    fastcgi_pass  unix:/tmp/php-cgi-72.sock;
-    fastcgi_index index.php;
-    include fastcgi.conf;
-    include pathinfo.conf;
-}'''
-            public.writeFile(pfile,pconf);
+    _pid = os.fork()
+    if _pid:
+        public.writeFile(main_pid,str(_pid))
+        sys.exit(0)
+
+    sys.stdout.flush()
+    sys.stderr.flush()
+    task_log_file='logs/task.log'
+
+    logging.basicConfig(level = logging.DEBUG,format = '%(asctime)s [%(levelname)s] at %(lineno)d: %(message)s',datefmt = '%Y-%m-%d(%a)%H:%M:%S',filename = task_log_file,filemode = 'a+')
+    logging.info('Service started')
+
     import threading
     t = threading.Thread(target=systemTask)
     t.setDaemon(True)
@@ -563,12 +581,22 @@ if __name__ == "__main__":
     p.setDaemon(True)
     p.start()
 
+    p = threading.Thread(target=check_panel_ssl)
+    p.setDaemon(True)
+    p.start()
+
+    p = threading.Thread(target=send_mail_time)
+    p.setDaemon(True)
+    p.start()
+
     task_obj = panelTask.bt_task()
+    task_obj.not_web = True
     p = threading.Thread(target=task_obj.start_task)
     p.setDaemon(True)
     p.start()
 
-    #public.check_home()
-
     startTask()
+
+if __name__ == "__main__":
+    main()
 

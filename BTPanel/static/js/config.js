@@ -1,3 +1,73 @@
+function modify_port_val(port){
+	layer.open({
+		type: 1,
+		area: '400px',
+		title: 'Change Panel Port',
+		closeBtn:2,
+		shadeClose: false,
+		btn:['Confirm','Cancel'],
+		content: '<div class="bt-form pd20 pd70" style="padding:20px 35px;">\
+				<ul style="margin-bottom:10px;color:red;width: 100%;background: #f7f7f7;padding: 10px;border-radius: 5px;font-size: 12px;">\
+					<li style="color:red;font-size:13px;">1. Have a security group server, please release the new port in the security group in advance.</li>\
+					<li style="color:red;font-size:13px;">2. If the panel is inaccessible after modifying the port, change the original port to the SSH command line by using the bt command.</li>\
+				</ul>\
+				<div class="line">\
+	                <span class="tname" style="width: 70px;">Port</span>\
+	                <div class="info-r" style="margin-left:70px">\
+	                    <input name="portss" class="bt-input-text mr5" type="text" style="width:200px" value="'+ port +'">\
+	                </div>\
+                </div>\
+                <div class="details" style="margin-top:5px;padding-left: 3px;">\
+					<input type="checkbox" id="check_port">\
+					<label style="font-weight: 400;margin: 3px 5px 0px;" for="check_port">I already understand</label>,<a target="_blank" class="btlink" href="https://forum.aapanel.com/d/599-how-to-release-the-aapanel-port">How to release the port?</a>\
+				</div>\
+			</div>',
+		yes:function(index,layero){
+			var check_port = $('#check_port').prop('checked'),_tips = '';
+			if(!check_port){
+				_tips = layer.tips('Please tick the one I already know', '#check_port', {tips:[1,'#ff0000'],time:5000});
+				return false;
+			}
+			layer.close(_tips);
+			$('#banport').val($('[name="portss"]').val());
+			var _data = $("#set-Config").serializeObject();
+			_data['port'] = $('[name="portss"]').val();
+			var loadT = layer.msg(lan.config.config_save,{icon:16,time:0,shade: [0.3, '#000']});
+			$.post('/config?action=setPanel',_data,function(rdata){
+				layer.close(loadT);
+				layer.msg(rdata.msg,{icon:rdata.status?1:2});
+				if(rdata.status){
+					layer.close(index);
+					setTimeout(function(){
+						window.location.href = ((window.location.protocol.indexOf('https') != -1)?'https://':'http://') + rdata.host + window.location.pathname;
+					},4000);
+				}
+			});
+		},
+		success:function(){
+			$('#check_port').click(function(){
+				layer.closeAll('tips');
+			});
+		}
+	});
+}
+$.fn.serializeObject = function(){
+   var o = {};
+   var a = this.serializeArray();
+   $.each(a, function() {
+       if (o[this.name]) {
+           if (!o[this.name].push) {
+               o[this.name] = [o[this.name]];
+           }
+           o[this.name].push(this.value || '');
+       } else {
+           o[this.name] = this.value || '';
+       }
+   });
+   return o;
+};
+
+
 //关闭面板
 function ClosePanel(){
 	layer.confirm(lan.config.close_panel_msg,{title:lan.config.close_panel_title,closeBtn:2,icon:13,cancel:function(){
@@ -22,9 +92,181 @@ function SetPanelAutoUpload(){
 }
 
 
+
+
+$('#panel_verification').click(function(){
+	var _checked = $(this).prop('checked');
+	if(_checked){
+		layer.open({
+			type: 1,
+			area: ['600px','420px'],
+			title: 'Google authentication binding',
+			closeBtn: 2,
+			shift: 5,
+			shadeClose: false,
+			content: '<div class="bt-form pd20 pd70 ssl_cert_from google_verify" style="padding:20px 35px;">\
+				<div class="">\
+					<i class="layui-layer-ico layui-layer-ico3"></i>\
+					<h3>Warning! Do not understand this feature, do not open!</h3>\
+					<ul style="width:91%;margin-bottom:10px;margin-top:10px;">\
+						<li style="color:red;">You must use and understand this feature to decide if you want to open it!</li>\
+						<li style="color:red;">If it is not possible to verify, enter "bt 24" on the command line to cancel Google authentication.</li>\
+						<li>Once the service is turned on, bind it immediately to avoid the panel being inaccessible.</li>\
+						<li>After opening, the panel will not be accessible. You can click the link below to find out the solution.</li>\
+					</ul>\
+				</div>\
+				<div class="details" style="width: 90%;margin-bottom:10px;">\
+					<input type="checkbox" id="check_verification">\
+					<label style="font-weight: 400;margin: 3px 5px 0px;" for="check_verification">I already know the details and are willing to take risks</label>\
+					<a target="_blank" class="btlink" href="https://forum.aapanel.com/d/357-how-to-use-google-authenticator-in-the-aapanel">Learn more</a>\
+				</div>\
+				<div class="bt-form-submit-btn">\
+					<button type="button" class="btn btn-sm btn-danger close_verify">Close</button>\
+					<button type="button" class="btn btn-sm btn-success submit_verify">Confirm</button>\
+				</div>\
+			</div>',
+			success:function(layers,index){
+				$('.submit_verify').click(function(e){
+					var check_verification = $('#check_verification').prop('checked');
+					if(!check_verification){
+						layer.msg('Please check the consent risk first.',{icon:0});
+						return false;
+					}
+					var loadT = layer.msg('Opening Google authentication, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+					set_two_step_auth({act:_checked},function(rdata){
+						layer.close(loadT);
+						if (rdata.status) layer.closeAll();
+						layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+						if(rdata.status && _checked){
+							$('.open_two_verify_view').click();
+						}
+					});
+				});
+				$('.close_verify').click(function(){
+					layer.closeAll();
+					$('#panel_verification').prop('checked',!_checked);
+				});
+			},cancel:function () {
+				layer.closeAll();
+				$('#panel_verification').prop('checked',!_checked);
+			}
+		});
+	}else{
+		bt.confirm({
+			title: 'Google authentication',
+			msg: 'Turn off Google authentication, do you want to continue?',
+			cancel: function () {
+				$('#panel_verification').prop('checked',!_checked);
+			}}, function () {
+				var loadT = layer.msg('Google authentication is being turned off, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+				set_two_step_auth({act:_checked},function(rdata){
+					layer.close(loadT);
+					if (rdata.status) layer.closeAll();
+					layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+					if(rdata.status && _checked){
+						$('.open_two_verify_view').click();
+					}
+				});
+			},function () {
+				$('#panel_verification').prop('checked',!_checked);
+		   });
+	}
+
+	// console.log(_data);
+
+});
+
+$('.open_two_verify_view').click(function(){
+	var _checked = $('#panel_verification').prop('checked');
+	if(!_checked){
+		layer.msg('Please turn on Google authentication first.',{icon:0});
+		return false;
+	}
+	layer.open({
+        type: 1,
+        area: ['600px','670px'],
+        title: 'Google authentication binding',
+        closeBtn: 2,
+        shift: 5,
+        shadeClose: false,
+        content: '<div class="bt-form pd20" style="padding:20px 35px;">\
+					<div class="verify_title">Login authentication based on Google Authenticator</div>\
+					<div class="verify_item">\
+						<div class="verify_vice_title">1. Key binding</div>\
+						<div class="verify_conter">\
+							<div class="verify_box">\
+								<div class="verify_box_line">Account：<span class="username"></sapn></div>\
+								<div class="verify_box_line">Key：<span class="userkey"></sapn></div>\
+								<div class="verify_box_line">Type：<span class="usertype">Time based</sapn></div>\
+							</div>\
+						</div>\
+					</div>\
+					<div class="verify_item">\
+						<div class="verify_vice_title">2. Scan code binding (Using Google Authenticator APP scan)</div>\
+						<div class="verify_conter" style="text-align:center;padding-top:10px;">\
+							<div id="verify_qrcode"></div>\
+						</div>\
+					</div>\
+					<div class="verify_tips">\
+						<p>Tips: Please use the "Google Authenticator APP" binding to support Android, IOS system.<a href="https://forum.aapanel.com/d/357-how-to-use-google-authenticator-in-the-aapanel" class="btlink" target="_blank">Use tutorial</a></p>\
+						<p style="color:red;">Once you have turned on the service, use the Google Authenticator app binding now to avoid having to sign in.</p>\
+					</div>\
+				</div>',
+		success:function(e){
+			get_two_verify(function(res){
+				$('.verify_box_line .username').html(res.username);
+				$('.verify_box_line .userkey').html(res.key);
+			});
+			get_qrcode_data(function(res){
+				jQuery('#verify_qrcode').qrcode({
+					render: "canvas",
+					text: res,
+					height:150,
+					width:150
+				});
+			});
+		}
+    });
+});
+
+(function(){
+	check_two_step(function(res){
+		$('#panel_verification').prop('checked',res.status);
+	});
+	get_three_channel(function(res){
+		$('#channel_auth').val(!res.user_mail.user_name && !res.dingding.dingding ? 'Email is not set':(res.user_mail.user_name? 'Email is set':(res.dingding.dingding? 'dingding is set': '')))
+	});
+})()
+
+function get_three_channel(callback){
+	$.post('/config?action=get_settings',function(res){
+		if(callback) callback(res);
+	});
+}
+
+function check_two_step(callback){
+	$.post('/config?action=check_two_step',function(res){
+		if(callback) callback(res);
+	});
+}
+function get_qrcode_data(callback){
+	$.post('/config?action=get_qrcode_data',function(res){
+		if(callback) callback(res);
+	});
+}
+function get_two_verify(callback){
+	$.post('/config?action=get_key',function(res){
+		if(callback) callback(res);
+	});
+}
+function set_two_step_auth(obj,callback){
+	$.post('/config?action=set_two_step_auth',{act:obj.act?1:0},function(res){
+		if(callback) callback(res);
+	});
+}
+
 $(".set-submit").click(function(){
 	var data = $("#set-Config").serialize();
-	console.log(data)
 	layer.msg(lan.config.config_save,{icon:16,time:0,shade: [0.3, '#000']});
 	$.post('/config?action=setPanel',data,function(rdata){
 		layer.closeAll();
@@ -35,7 +277,7 @@ $(".set-submit").click(function(){
 			},1500);
 		}
 	});
-	
+
 });
 
 
@@ -62,8 +304,8 @@ function modify_auth_path() {
     })
 
 
-    
-    
+
+
 
 }
 
@@ -100,7 +342,7 @@ function Set502(){
 	$.post('/config?action=Set502','',function(rdata){
 		layer.close(loadT);
 		layer.msg(rdata.msg,{icon:rdata.status?1:2});
-	});	
+	});
 }
 
 //绑定修改宝塔账号
@@ -153,7 +395,7 @@ function apiSetup(){
 	var loadT = layer.msg(lan.config.token_get,{icon:16,time:0,shade: [0.3, '#000']});
 	$.get('/api?action=GetToken',function(rdata){
 		layer.close(loadT);
-		
+
 	});
 }
 
@@ -496,7 +738,7 @@ var weChat = {
 			});
 		},
 	}
-	
+
 function open_wxapp(){
 	var rhtml = '<div class="boxConter" style="display: none">\
 					<div class="iconCode" >\
@@ -515,7 +757,7 @@ function open_wxapp(){
 						<ul class="userList"></ul>\
 					</div>\
 				</div>'
-	
+
 	layer.open({
 		type: 1,
 		title: lan.config.bind_wechat,
@@ -524,7 +766,7 @@ function open_wxapp(){
 		shadeClose: false,
 		content:rhtml
 	});
-	
+
 	weChat.init();
 }
 
@@ -546,7 +788,7 @@ $(function () {
 
 function bt_init() {
     var btName = $("input[name='btusername']").val();
-    console.log(btName);
+    //console.log(btName);
     if (!btName) {
         $('.wxapp_p .inputtxt').val(lan.config.no_bind_bt_account);
         $('.wxapp_p .modify').attr("onclick", "");
@@ -579,7 +821,7 @@ function GetPanelApi() {
                             <span class="tname">'+lan.config.int_sk+'</span>\
                             <div class="info-r">\
                                 <input readonly="readonly" name="panel_token_value" class="bt-input-text mr5 disable" type="text" style="width: 310px" value="'+rdata.token+'" disable>\
-                                <button class="btn btn-xs btn-success btn-sm" style="margin-left: -50px;" onclick="SetPanelApi(1)">'+lan.config.reset+'</button>\
+                                <button class="btn btn-xs btn-success btn-sm" style="margin-left: -57px;" onclick="SetPanelApi(1)">'+lan.config.reset+'</button>\
                             </div>\
                         </div>\
                         <div class="line ">\
@@ -592,36 +834,58 @@ function GetPanelApi() {
                         <ul class="help-info-text c7">\
                             <li>'+lan.config.help1+'</li>\
                             <li>'+lan.config.help2+'</li>\
-                            <li>'+lan.config.help3+'：<a class="btlink" href="https://www.bt.cn/bbs/thread-20376-1-1.html" target="_blank">https://www.bt.cn/bbs/thread-20376-1-1.html</a></li>\
+                            <li>'+lan.config.help3+'：<a class="btlink" href="https://forum.aapanel.com/d/482-api-interface-tutorial" target="_blank">https://forum.aapanel.com/d/482-api-interface-tutorial</a></li>\
                         </ul>\
                     </div>'
         })
     });
 }
+function showPawApi(){
+	layer.msg('The panel API key only supports one-time display, please keep it safe. <br>To display the panel API key, click the reset button to regain the new API key.<br><span style="color:red;">Note: After the key is reset, the associated key product will be invalid. Please re-add the new key to the product.</span>',{icon:0,time:0,shadeClose:true,shade:0.1});
+}
 
 
-function SetPanelApi(t_type) {
+function SetPanelApi(t_type,index) {
     var pdata = {}
     pdata['t_type'] = t_type
     if (t_type == 3) {
         pdata['limit_addr'] = $("textarea[name='api_limit_addr']").val()
     }
-    var loadT = layer.msg(lan.config.is_submitting, { icon: 16, time: 0, shade: [0.3, '#000'] });
-    $.post('/config?action=set_token', pdata, function (rdata) {
-        if (t_type == 1) {
-            if (rdata.status) {
-                $("input[name='panel_token_value']").val(rdata.msg);
-                layer.msg(lan.config.create_int_key_success, { icon: 1 });
-                return;
-            }
-        }
-        
-        layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+    if(t_type == 1){
+    	var bdinding = layer.confirm('Are you sure you want to reset your current key?<br><span style="color:red;">After the key is reset, the associated key product will be invalid. Please re-add the new key to the product.</span>',{
+			btn:['Confirm','Cancel'],
+			icon:3,
+			closeBtn: 2,
+			title:'Reset key'
+		},function(){
+		    var loadT = layer.msg(lan.config.is_submitting, { icon: 16, time: 0, shade: [0.3, '#000'] });
+		    set_token_req(pdata,function(rdata){
+	    		if (rdata.status) {
+	                $("input[name='panel_token_value']").val(rdata.msg);
+	                layer.msg(lan.config.create_int_key_success, { icon: 1, time: 0, shade: 0.3, shadeClose:true,closeBtn:2});
+	            }else{
+	            	layer.msg(rdata.msg, { icon: 2});
+	            }
+	            return false;
+		    });
+		});
+		return false
+    }
+    set_token_req(pdata,function(rdata){
+    	layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
         if (rdata.msg == lan.config.open_successfully) {
-            GetPanelApi();
+            if(t_type == 2 && index != '0') GetPanelApi();
         }
-    })
+    });
 }
+
+function set_token_req(pdata,callback){
+	$.post('/config?action=set_token', pdata, function (rdata) {
+		if(callback) callback(rdata);
+	});
+}
+
+
 
 function SetIPv6() {
     var loadT = layer.msg(lan.config.setting_up, { icon: 16, time: 0, shade: [0.3, '#000'] });
@@ -654,14 +918,317 @@ function modify_basic_auth() {
     var loadT = layer.msg(lan.config.setting_basicauth, { icon: 16, time: 0, shade: [0.3, '#000'] });
     $.post('/config?action=get_basic_auth_stat', {}, function (rdata) {
         layer.close(loadT);
-        layer.open({
-            type: 1,
-            area: "500px",
-            title: lan.config.set_basicauth,
-            closeBtn: 2,
-            shift: 5,
-            shadeClose: false,
-            content: ' <div class="bt-form bt-form" style="padding:15px 25px">\
+        if (rdata.open) {
+            show_basic_auth(rdata);
+        } else {
+            m_html = '<div class="risk_form"><i class="layui-layer-ico layui-layer-ico3"></i>'
+                + '<h3 class="risk_tilte">Warning! Do not understand this feature, do not open!</h3>'
+                + '<ul style="border: 1px solid #ececec;border-radius: 10px; margin: 0px auto;margin-top: 20px;margin-bottom: 20px;background: #f7f7f7; width: 100 %;padding: 33px;list-style-type: inherit;">'
+					+ '<li style="color:red;">You must use and understand this feature to decide if you want to open it!</li>'
+					+ '<li>After opening, access the panel in any way, you will be asked to enter the BasicAuth username and password first.</li>'
+					+ '<li>After being turned on, it can effectively prevent the panel from being scanned and found, but it cannot replace the account password of the panel itself.</li>'
+					+ '<li>Please remember the BasicAuth password, but forget that you will not be able to access the panel.</li>'
+					+ '<li>If you forget your password, you can disable BasicAuth authentication by using the bt command in SSH.</li>'
+                + '</ul></div>'
+                + '<div class="details">'
+                + '<input type="checkbox" id="check_basic"><label style="font-weight: 400;margin: 3px 10px 0px;font-size:12px;" for="check_basic">I already know the details and are willing to take risks</label>'
+                + '<a target="_blank" style="font-size:12px;" class="btlink" href="https://www.bt.cn/bbs/thread-34374-1-1.html">What is BasicAuth authentication?</a><p></p></div>'
+            var loadT = layer.confirm(m_html, { title: "Risk reminder", area: "600px",closeBtn:2 }, function () {
+                if (!$("#check_basic").prop("checked")) {
+                    layer.msg("Please read the precautions carefully and check to agree to take risks!");
+                    setTimeout(function () { modify_basic_auth();},3000)
+                    return;
+                }
+                layer.close(loadT)
+                show_basic_auth(rdata);
+            });
+
+        }
+    });
+}
+function open_three_channel_auth(){
+	get_channel_settings(function(rdata){
+		var isOpen = rdata.dingding.info.msg.isAtAll == 'True' ? 'checked': '';
+		var isDing = rdata.dingding.info.msg == 'No information'? '': rdata.dingding.info.msg.dingding_url;
+		layer.open({
+			type: 1,
+	        area: "600px",
+	        title: "Setting up a message channel",
+	        closeBtn: 2,
+	        shift: 5,
+	        shadeClose: false,
+	        content: '<div class="bt-form mes_channel">\
+	        			<div class="bt-w-main">\
+					        <div class="bt-w-menu">\
+					            <p class="bgw">Email</p>\
+					        </div>\
+					        <div class="bt-w-con pd15">\
+					            <div class="plugin_body">\
+	                				<div class="conter_box active" >\
+	                					<div class="bt-form">\
+	                						<div class="line">\
+	                							<button class="btn btn-success btn-sm" onclick="add_receive_info()">Add recipient</button>\
+	                							<button class="btn btn-default btn-sm" onclick="sender_info_edit()">Sender settings</button>\
+	                						</div>\
+					                        <div class="line">\
+						                        <div class="divtable">\
+						                        	<table class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"><thead><tr><th>Email</th><th width="80px">Operating</th></tr></thead></table>\
+						                        	<table class="table table-hover"><tbody id="receive_table"></tbody></table>\
+						                        </div>\
+					                        </div>\
+				                        </div>\
+	                				</div>\
+	                				<div class="conter_box" style="display:none">\
+		                				<div class="bt-form">\
+		                					<div class="line">\
+												<span class="tname">Notice all</span>\
+												<div class="info-r" style="height:28px; margin-left:125px">\
+													<input class="btswitch btswitch-ios" id="panel_alert_all" type="checkbox" '+ isOpen+'>\
+													<label style="position: relative;top: 5px;" class="btswitch-btn" for="panel_alert_all"></label>\
+												</div>\
+											</div>\
+						        			<div class="line">\
+					                            <span class="tname">DingDing URL</span>\
+					                            <div class="info-r">\
+					                                <textarea name="channel_dingding_value" class="bt-input-text mr5" type="text" style="width: 300px; height:90px; line-height:20px">'+isDing+'</textarea>\
+					                            </div>\
+					                            <button class="btn btn-success btn-sm" onclick="SetChannelDing()" style="margin: 10px 0 0 125px;">Save</button>\
+					                        </div>\
+				                        </div>\
+		            				</div>\
+	                			</div>\
+	                		</div>\
+                		</div>\
+                	  </div>'
+		})
+		$(".bt-w-menu p").click(function () {
+            var index = $(this).index();
+            $(this).addClass('bgw').siblings().removeClass('bgw');
+            $('.conter_box').eq(index).show().siblings().hide();
+        });
+		get_receive_list();
+	})
+}
+function sender_info_edit(){
+	var loadT = layer.msg('Getting profile, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+	$.post('/config?action=get_settings',function(rdata){
+		layer.close(loadT);
+		var qq_mail = rdata.user_mail.info.msg.qq_mail == undefined ? '' : rdata.user_mail.info.msg.qq_mail,
+			qq_stmp_pwd = rdata.user_mail.info.msg.qq_stmp_pwd == undefined? '' : rdata.user_mail.info.msg.qq_stmp_pwd,
+			hosts = rdata.user_mail.info.msg.hosts == undefined? '' : rdata.user_mail.info.msg.hosts,
+			port = rdata.user_mail.info.msg.port == undefined? '' : rdata.user_mail.info.msg.port;
+		layer.open({
+		type: 1,
+        area: "485px",
+        title: "Set sender email information",
+        closeBtn: 2,
+        shift: 5,
+        shadeClose: false,
+        content: '<div class="bt-form pd20 pb70">\
+        	<div class="line">\
+                <span class="tname">Sender email</span>\
+                <div class="info-r">\
+                    <input name="channel_email_value" class="bt-input-text mr5" type="text" style="width: 300px" value="'+qq_mail+'">\
+                </div>\
+            </div>\
+            <div class="line">\
+                <span class="tname">smtp password</span>\
+                <div class="info-r">\
+                    <input name="channel_email_password" class="bt-input-text mr5" type="password" style="width: 300px" value="'+qq_stmp_pwd+'">\
+                </div>\
+            </div>\
+            <div class="line">\
+                <span class="tname">smtp server</span>\
+                <div class="info-r">\
+                    <input name="channel_email_server" class="bt-input-text mr5" type="text" style="width: 300px" value="'+hosts+'">\
+                </div>\
+			</div>\
+			<div class="line">\
+                <span class="tname">smtp port</span>\
+                <div class="info-r">\
+                    <select class="bt-input-text mr5" id="port_select" style="width:'+(select_port(port)?'300px':'100px')+'"></select>\
+                    <input name="channel_email_port" class="bt-input-text mr5" type="Number" style="display:'+(select_port(port)? 'none':'inline-block')+'; width: 190px" value="'+port+'">\
+                </div>\
+            </div>\
+            <ul class="help-info-text c7">\
+            	<li>465 port is recommended, the protocol is SSL/TLS</li>\
+            	<li>Port 25 is SMTP protocol, port 587 is STARTTLS protocol</li>\
+            </ul>\
+            <div class="bt-form-submit-btn">\
+	            <button type="button" class="btn btn-danger btn-sm smtp_closeBtn">Close</button>\
+	            <button class="btn btn-success btn-sm SetChannelEmail">Save</button></div>\
+        	</div>',
+        success:function(layers,index){
+			var _option = '';
+        	if(select_port(port)){
+        		if(port == '465' || port == ''){
+        			_option = '<option value="465" selected="selected">465</option><option value="25">25</option><option value="587">587</option><option value="other">Customize</option>'
+        		}else if(port == '25'){
+        			_option = '<option value="465">465</option><option value="25" selected="selected">25</option><option value="587">587</option><option value="other">Customize</option>'
+        		}else{
+        			_option = '<option value="465">465</option><option value="25">25</option><option value="587" selected="selected">587</option><option value="other">Customize</option>'
+        		}
+        	}else{
+        		_option = '<option value="465">465</option><option value="25">25</option><option value="587" >587</option><option value="other" selected="selected">Customize</option>'
+        	}
+        	$("#port_select").html(_option)
+        	$("#port_select").change(function(e){
+        		if(e.target.value == 'other'){
+        			$("#port_select").css("width","100px");
+					$('input[name=channel_email_port]').css("display","inline-block");
+        		}else{
+        			$("#port_select").css("width","300px");
+					$('input[name=channel_email_port]').css("display","none");
+        		}
+        	})
+			$(".SetChannelEmail").click(function(){
+				var _email = $('input[name=channel_email_value]').val();
+				var _passW = $('input[name=channel_email_password]').val();
+				var _server = $('input[name=channel_email_server]').val();
+				if($('#port_select').val() == 'other'){
+					_port = $('input[name=channel_email_port]').val();
+				}else{
+					_port = $('#port_select').val()
+				}
+				if(_email == ''){
+					return layer.msg('Email address cannot be empty！',{icon:2});
+				}else if(_passW == ''){
+					return layer.msg('STMP password cannot be empty！',{icon:2});
+				}else if(_server == ''){
+					return layer.msg('STMP server address cannot be empty！',{icon:2});
+				}else if(_port == ''){
+					return layer.msg('STMP server port cannot be empty！',{icon:2});
+				}
+				var loadT = layer.msg('Please wait while generating mailbox channel...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+				layer.close(index)
+				$.post('/config?action=user_mail_send',{email:_email,stmp_pwd:_passW,hosts:_server,port:_port},function(rdata){
+					layer.close(loadT);
+					layer.msg(rdata.msg,{icon:rdata.status?1:2})
+				})
+			})
+			$(".smtp_closeBtn").click(function(){
+				layer.close(index)
+			})
+		}
+	})
+	});
+}
+function select_port(port){
+	switch(port){
+		case '25':
+			return true;
+		case '465':
+			return true;
+		case '587':
+			return true;
+		case '':
+			return true;
+		default:
+			return false
+	}
+}
+function get_channel_settings(callback){
+	var loadT = layer.msg('Getting profile, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+	$.post('/config?action=get_settings',function(rdata){
+		layer.close(loadT);
+        if (callback) callback(rdata);
+	})
+}
+function add_receive_info(){
+	layer.open({
+		type: 1,
+        area: "400px",
+        title: "Add recipient email",
+        closeBtn: 2,
+        shift: 5,
+        shadeClose: false,
+        content: '<div class="bt-form pd20 pb70">\
+	        <div class="line">\
+	            <span class="tname">Recipient mailbox</span>\
+	            <div class="info-r">\
+	                <input name="creater_email_value" class="bt-input-text mr5" type="text" style="width: 240px" value="">\
+	            </div>\
+	        </div>\
+	        <div class="bt-form-submit-btn">\
+	            <button type="button" class="btn btn-danger btn-sm smtp_closeBtn">Close</button>\
+	            <button class="btn btn-success btn-sm CreaterReceive">Create</button>\
+	        </div>\
+	        </div>',
+        success:function(layers,index){
+        	$(".CreaterReceive").click(function(){
+        		var _receive = $('input[name=creater_email_value]').val(),_that = this;
+				if(_receive != ''){
+					var loadT = layer.msg('Please wait while creating recipient list...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+					layer.close(index)
+					$.post('/config?action=add_mail_address',{email:_receive},function(rdata){
+						layer.close(loadT);
+						// 刷新收件列表
+						get_receive_list();
+						layer.msg(rdata.msg,{icon:rdata.status?1:2});
+					})
+				}else{
+					layer.msg('Recipient mailbox cannot be empty！',{icon:2});
+				}
+        	})
+
+			$(".smtp_closeBtn").click(function(){
+				layer.close(index)
+			})
+		}
+	})
+}
+function get_receive_list(){
+	$.post('/config?action=get_settings',function(rdata){
+		var _html = '',_list = rdata.user_mail.mail_list;
+		if(_list.length > 0){
+			for(var i= 0; i<_list.length;i++){
+				_html += '<tr>\
+					<td>'+ _list[i] +'</td>\
+					<td width="80px"><a onclick="del_email(\''+ _list[i] + '\')" href="javascript:;" style="color:#20a53a">Del</a></td>\
+					</tr>'
+			}
+		}else{
+			_html = '<tr>No Data</tr>'
+		}
+		$('#receive_table').html(_html);
+	})
+
+}
+
+function del_email(mail){
+	var loadT = layer.msg('Deleting ['+ mail +'], please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] }),_this = this;
+	$.post('/config?action=del_mail_list',{email:mail},function(rdata){
+		layer.close(loadT);
+		layer.msg(rdata.msg,{icon:rdata.status?1:2})
+		_this.get_receive_list()
+	})
+}
+// 设置钉钉
+function SetChannelDing(){
+	var _url = $('textarea[name=channel_dingding_value]').val();
+	var _all = $('#panel_alert_all').prop("checked");
+	if(_url != ''){
+		var loadT = layer.msg('Please wait while generating dingding channel...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+		$.post('/config?action=set_dingding',{url:_url,atall:_all == true? 'True':'False'},function(rdata){
+			layer.close(loadT);
+			layer.msg(rdata.msg,{icon:rdata.status?1:2})
+		})
+	}else{
+		layer.msg('Please enter the dingding URL',{icon:2})
+	}
+}
+
+
+
+function show_basic_auth(rdata) {
+    layer.open({
+        type: 1,
+        area: "500px",
+        title: "Configure BasicAuth authentication",
+        closeBtn: 2,
+        shift: 5,
+        shadeClose: false,
+        content: ' <div class="bt-form bt-form" style="padding:15px 25px">\
 						<div class="line">\
 							<span class="tname">'+lan.public.server_status+'</span>\
 							<div class="info-r" style="height:28px;">\
@@ -674,13 +1241,13 @@ function modify_basic_auth() {
                         <div class="line">\
                             <span class="tname">'+lan.public.username+'</span>\
                             <div class="info-r">\
-                                <input name="basic_user" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_user?lan.crontab.not_modified:lan.crontab.set_username) +'">\
+                                <input name="basic_user" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_user?lan.config.not_modified:lan.config.set_username) +'">\
                             </div>\
                         </div>\
                         <div class="line">\
                             <span class="tname">'+lan.public.pass+'</span>\
                             <div class="info-r">\
-                                <input name="basic_pwd" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_pwd ? lan.crontab.not_modified : lan.crontab.set_passwd) +'">\
+                                <input name="basic_pwd" class="bt-input-text mr5" type="text" style="width: 310px" value="" placeholder="'+ (rdata.basic_pwd ? lan.config.not_modified : lan.config.set_passwd) +'">\
                             </div>\
                         </div>\
                         <span><button class="btn btn-success btn-sm" style="    margin-left: 340px;" onclick="modify_basic_auth_to()">'+lan.public.save+'</button></span>\
@@ -690,6 +1257,5 @@ function modify_basic_auth() {
                             <li>'+lan.config.basic_auth_tips3+'</li>\
                         </ul>\
                     </div>'
-        })
-    });
+    })
 }

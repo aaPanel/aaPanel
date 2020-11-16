@@ -4,17 +4,18 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 黄文良 <2879625666@qq.com>
+# | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
 
 #------------------------------
 # 工具箱
 #------------------------------
 import sys,os
-panelPath = '/www/server/panel/';
+panelPath = '/www/server/panel/'
 os.chdir(panelPath)
-sys.path.append(panelPath + "class/")
+sys.path.insert(0,panelPath + "class/")
 import public,time,json
+if sys.version_info[0] == 3: raw_input = input
 
 #设置MySQL密码
 def set_mysql_root(password):
@@ -29,17 +30,26 @@ pwd=$1
 mysqld_safe --skip-grant-tables&
 echo 'Changing password...';
 sleep 6
-m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.1.|5.5.|5.6.|mariadb|10.)")
+m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.1.|5.5.|5.6.|10.0|10.1)")
 if [ "$m_version" != "" ];then
     mysql -uroot -e "UPDATE mysql.user SET password=PASSWORD('${pwd}') WHERE user='root'";
 else
-    mysql -uroot -e "UPDATE mysql.user SET authentication_string='' WHERE user='root'";
-    mysql -uroot -e "FLUSH PRIVILEGES";
-    mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${pwd}';";
+    m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.7.|8.0.)")
+    if [ "$m_version" != "" ];then
+        mysql -uroot -e "FLUSH PRIVILEGES;update mysql.user set authentication_string='' where user='root';alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
+    else
+        mysql -uroot -e "update mysql.user set authentication_string=password('${pwd}') where user='root';"
+    fi
+    m_version=$(cat /www/server/mysql/version.pl|grep -E "10.4.")
+    if [ "$m_version" != "" ];then
+        mysql -uroot -e "flush privileges;ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${pwd}');ALTER USER root@127.0.0.1 IDENTIFIED VIA mysql_native_password USING PASSWORD('${pwd}');"
+        echo 1
+    fi
 fi
 mysql -uroot -e "FLUSH PRIVILEGES";
 pkill -9 mysqld_safe
 pkill -9 mysqld
+pkill -9 mysql
 sleep 2
 /etc/init.d/mysqld start
 
@@ -51,17 +61,17 @@ echo "The root password set ${pwd}  successuful"''';
     os.system("rm -f mysql_root.sh")
     
     result = sql.table('config').where('id=?',(1,)).setField('mysql_root',password)
-    print(result);
+    print(result)
 
 #设置面板密码
 def set_panel_pwd(password,ncli = False):
     import db
     sql = db.Sql()
-    result = sql.table('users').where('id=?',(1,)).setField('password',public.md5(password))
+    result = sql.table('users').where('id=?',(1,)).setField('password',public.password_salt(public.md5(password),uid=1))
     username = sql.table('users').where('id=?',(1,)).getField('username')
     if ncli:
-        print("|-%s: " % public.GetMsg("USER_NAME") + username);
-        print("|-%s: " % public.GetMsg("NEW_PASS") + password);
+        print("|-%s: " % public.GetMsg("USER_NAME") + username)
+        print("|-%s: " % public.GetMsg("NEW_PASS") + password)
     else:
         print(username)
 
@@ -92,7 +102,7 @@ echo 'Successful'
 echo '---------------------------------------------------------------------'
 echo "Has changed the MySQL storage directory to: $newDir"
 echo '---------------------------------------------------------------------'
-''';
+'''
 
     public.writeFile('mysql_dir.sh',mysql_dir)
     os.system("/bin/bash mysql_dir.sh " + path)
@@ -103,19 +113,19 @@ echo '---------------------------------------------------------------------'
 def PackagePanel():
     print('========================================================')
     print('|-'+public.GetMsg("CLEARING_LOG")+'...'),
-    public.M('logs').where('id!=?',(0,)).delete();
+    public.M('logs').where('id!=?',(0,)).delete()
     print('\t\t\033[1;32m[done]\033[0m')
     print('|-'+public.GetMsg("CLEARING_TASK_HISTORY")+'...'),
-    public.M('tasks').where('id!=?',(0,)).delete();
+    public.M('tasks').where('id!=?',(0,)).delete()
     print('\t\t\033[1;32m[done]\033[0m')
     print('|-'+public.GetMsg("CLEARING_NET_MO")+'...'),
-    public.M('network').dbfile('system').where('id!=?',(0,)).delete();
+    public.M('network').dbfile('system').where('id!=?',(0,)).delete()
     print('\t\033[1;32m[done]\033[0m')
     print('|-'+public.GetMsg("CLEARING_CPU_MO")+'...'),
-    public.M('cpuio').dbfile('system').where('id!=?',(0,)).delete();
+    public.M('cpuio').dbfile('system').where('id!=?',(0,)).delete()
     print('\t\033[1;32m[done]\033[0m')
     print('|-'+public.GetMsg("CLEARING_DISK_MO")+'...'),
-    public.M('diskio').dbfile('system').where('id!=?',(0,)).delete();
+    public.M('diskio').dbfile('system').where('id!=?',(0,)).delete()
     print('\t\033[1;32m[done]\033[0m')
     print('|-'+public.GetMsg("CLEARING_IP")+'...'),
     os.system('rm -f /www/server/panel/data/iplist.txt')
@@ -147,21 +157,39 @@ cat /dev/null > /var/log/wtmp
 cat /dev/null > /var/log/yum.log
 history -c
 '''
-    os.system(command);
+    os.system(command)
     print('\t\033[1;32m[done]\033[0m')
-    public.writeFile('/www/server/panel/install.pl',"True");
-    port = public.readFile('data/port.pl').strip();
-    public.M('config').where("id=?",('1',)).setField('status',0);
+
+
+    print("|-Please select user initialization method:")
+    print("="*50)
+    print(" (1) Display the initialization page when accessing the panel page")
+    print(" (2) A new account password is automatically generated randomly when first started")
+    print("="*50)
+    p_input = input("Please select the initialization method (default: 1):")
+    print(p_input)
+    if p_input in [2,'2']:
+        public.writeFile('/www/server/panel/aliyun.pl',"True")
+        s_file = '/www/server/panel/install.pl'
+        if os.path.exists(s_file): os.remove(s_file)
+        public.M('config').where("id=?",('1',)).setField('status',1)
+    else:
+        public.writeFile('/www/server/panel/install.pl',"True")
+        public.M('config').where("id=?",('1',)).setField('status',0)
+    port = public.readFile('data/port.pl').strip()
     print('========================================================')
-    print('\033[1;32m|-'+public.GetMsg("PANEL_TIPS")+'\033[0m')
-    print('\033[1;41m|-'+public.GetMsg("PANEL_INIT_ADD")+': http://{SERVERIP}:'+port+'/install\033[0m')
+    print('\033[1;32m|-The panel packaging is successful, please do not log in to the panel to do any other operations!\033[0m')
+    if not p_input in [2,'2']:
+        print('\033[1;41m|-Panel initialization address:http://{SERVERIP}:'+port+'/install\033[0m')
+    else:
+        print('\033[1;41m|-Get the initial account password command:bt default \033[0m')
 
 #清空正在执行的任务
 def CloseTask():
-    ncount = public.M('tasks').where('status!=?',(1,)).delete();
-    os.system("kill `ps -ef |grep 'python panelSafe.pyc'|grep -v grep|grep -v panelExec|awk '{print $2}'`");
-    os.system("kill `ps -ef |grep 'install_soft.sh'|grep -v grep|grep -v panelExec|awk '{print $2}'`");
-    os.system('/etc/init.d/bt restart');
+    ncount = public.M('tasks').where('status!=?',(1,)).delete()
+    os.system("kill `ps -ef |grep 'python panelSafe.pyc'|grep -v grep|grep -v panelExec|awk '{print $2}'`")
+    os.system("kill `ps -ef |grep 'install_soft.sh'|grep -v grep|grep -v panelExec|awk '{print $2}'`")
+    os.system('/etc/init.d/bt restart')
     print(public.GetMsg("CLEAR_TASK",(int(ncount),)))
     
 #自签证书
@@ -171,7 +199,7 @@ def CreateSSL():
     key.generate_key( OpenSSL.crypto.TYPE_RSA, 2048 )
     cert = OpenSSL.crypto.X509()
     cert.set_serial_number(0)
-    cert.get_subject().CN = public.GetLocalIp();
+    cert.get_subject().CN = public.GetLocalIp()
     cert.set_issuer(cert.get_subject())
     cert.gmtime_adj_notBefore( 0 )
     cert.gmtime_adj_notAfter( 10*365*24*60*60 )
@@ -179,17 +207,21 @@ def CreateSSL():
     cert.sign( key, 'md5' )
     cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
     private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+    if isinstance(cert_ca,bytes):
+        cert_ca = bytes.decode(cert_ca)
+        private_key = bytes.decode(private_key)
     if len(cert_ca) > 100 and len(private_key) > 100:
         public.writeFile('ssl/certificate.pem',cert_ca)
         public.writeFile('ssl/privateKey.pem',private_key)
-        print('success');
-        return;
-    print('error');
+        public.writeFile('/www/server/panel/data/ssl.pl','')
+        print('success')
+        return
+    print('error')
 
 #创建文件
 def CreateFiles(path,num):
-    if not os.path.exists(path): os.system('mkdir -p ' + path);
-    import time;
+    if not os.path.exists(path): os.system('mkdir -p ' + path)
+    import time
     for i in range(num):
         filename = path + '/' + str(time.time()) + '__' + str(i)
         open(path,'w+').close()
@@ -197,7 +229,7 @@ def CreateFiles(path,num):
 #计算文件数量
 def GetFilesCount(path):
     i=0
-    for name in os.listdir(path): i += 1;
+    for name in os.listdir(path): i += 1
     return i
 
 
@@ -225,7 +257,7 @@ def ClearMail():
     import shutil
     con = ['cron','anacron','mail']
     for d in os.listdir(rpath):
-        if d in con: continue;
+        if d in con: continue
         dpath = rpath + '/' + d
         print('|-Cleaning up' + dpath + ' ...')
         time.sleep(0.2)
@@ -255,7 +287,7 @@ def ClearSession():
     import shutil
     print(public.GetMsg("CLEAR_PHP_SESSION"))
     for d in os.listdir(spath):
-        if d.find('sess_') == -1: continue;
+        if d.find('sess_') == -1: continue
         filename = spath + '/' + d
         fsize = os.path.getsize(filename)
         print('|---['+ToSize(fsize)+'] del ' + filename),
@@ -286,21 +318,21 @@ def ClearOther():
                  {'path':'/www/server/panel/install','find':'.gz'}
                  ]
     
-    total = count = 0;
+    total = count = 0
     print(public.GetMsg("CLEAR_RUBBISH3"))
     for c in clearPath:
         for d in os.listdir(c['path']):
-            if d.find(c['find']) == -1: continue;
-            filename = c['path'] + '/' + d;
+            if d.find(c['find']) == -1: continue
+            filename = c['path'] + '/' + d
             if os.path.isdir(filename): continue
-            fsize = os.path.getsize(filename);
+            fsize = os.path.getsize(filename)
             print('|---['+ToSize(fsize)+'] del ' + filename),
             total += fsize
             os.remove(filename)
             print('\t\033[1;32m[OK]\033[0m')
-            count += 1;
-    public.serviceReload();
-    os.system('sleep 1 && /etc/init.d/bt reload > /dev/null &');
+            count += 1
+    public.serviceReload()
+    os.system('sleep 1 && /etc/init.d/bt reload > /dev/null &')
     print(public.GetMsg("CLEAR_RUBBISH4",(str(count),ToSize(total))))
     return total,count
 
@@ -309,23 +341,23 @@ def CloseLogs():
     try:
         paths = ['/usr/lib/python2.7/site-packages/web/httpserver.py','/usr/lib/python2.6/site-packages/web/httpserver.py']
         for path in paths:
-            if not os.path.exists(path): continue;
-            hsc = public.readFile(path);
-            if hsc.find('500 Internal Server Error') != -1: continue;
+            if not os.path.exists(path): continue
+            hsc = public.readFile(path)
+            if hsc.find('500 Internal Server Error') != -1: continue
             rstr = '''def log(self, status, environ):
-        if status != '500 Internal Server Error': return;''';
+        if status != '500 Internal Server Error': return;'''
             hsc = hsc.replace("def log(self, status, environ):",rstr)
-            if hsc.find('500 Internal Server Error') == -1: return False;
+            if hsc.find('500 Internal Server Error') == -1: return False
             public.writeFile(path,hsc)
-    except:pass;
+    except:pass
 
 #字节单位转换
 def ToSize(size):
     ds = ['b','KB','MB','GB','TB']
     for d in ds:
-        if size < 1024: return str(size)+d;
-        size = size / 1024;
-    return '0b';
+        if size < 1024: return str(size)+d
+        size = size / 1024
+    return '0b'
 
 #随机面板用户名
 def set_panel_username(username = None):
@@ -388,10 +420,10 @@ def update_to6():
         if not os.path.isdir('plugin/' + pname): continue
         if pname in exlodes: continue
         print("|-upgrading【%s】..." % pname),
-        download_url = download_address + '/install/plugin/' + pname + '/install.sh';
+        download_url = download_address + '/install/plugin/' + pname + '/install.sh'
         to_file = '/tmp/%s.sh' % pname
-        public.downloadFile(download_url,to_file);
-        os.system('/bin/bash ' + to_file + ' install &> /tmp/plugin_update.log 2>&1');
+        public.downloadFile(download_url,to_file)
+        os.system('/bin/bash ' + to_file + ' install &> /tmp/plugin_update.log 2>&1')
         print("    \033[32m[success]\033[0m")
     print("====================================================")
     print("\033[32m"+public.GetMsg("PLUG_UPDATE_TO_6")+"\033[0m")
@@ -411,6 +443,8 @@ def bt_cli(u_input = 0):
         print("(7) %s     (14) %s"% (public.GetMsg("CHANGE_MYSQL_PASS_FORCE"),public.GetMsg("GET_PANEL_DEFAULT_MSG")))
         print("(22) %s                (15) %s"% ("Display panel error log",public.GetMsg("CLEAR_SYS_RUBBISH")))
         print("(23) %s      (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
+        print("(24) Turn off Google Authenticator          (17) Set log cutting on/off compression")
+        print("(25) Set whether to back up the panel automatically  (18) Set whether to save a historical copy of the file")
         print("(0) Cancel")
         print(raw_tip)
         try:
@@ -418,7 +452,7 @@ def bt_cli(u_input = 0):
             if sys.version_info[0] == 3: u_input = int(u_input)
         except: u_input = 0
 
-    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,22,23]
+    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25]
     if not u_input in nums:
         print(raw_tip)
         print(public.GetMsg("CANCELLED"))
@@ -527,7 +561,28 @@ def bt_cli(u_input = 0):
     elif u_input == 15:
         ClearSystem()
     elif u_input == 16:
+        os.system("/www/server/panel/pyenv/bin/pip install cachelib")
         os.system("curl http://download.bt.cn/install/update6_en.sh|bash")
+    elif u_input == 17:
+        l_path = '/www/server/panel/data/log_not_gzip.pl'
+        if os.path.exists(l_path):
+            print("|-Detected that gzip compression is turned off and is being turned on...")
+            os.remove(l_path)
+            print("|-Gzip compression is turned on")
+        else:
+            print("|-Detected that gzip compression is turned on, closing ...")
+            public.writeFile(l_path,'True')
+            print("|-Gzip compression turned off")
+    elif u_input == 18:
+        l_path = '/www/server/panel/data/not_auto_backup.pl'
+        if os.path.exists(l_path):
+            print("|-Detected that the panel auto backup function is turned off and is being turned on...")
+            os.remove(l_path)
+            print("|-Panel auto backup function is turned on")
+        else:
+            print("|-Detected that the panel automatic backup function is turned on and is closing...")
+            public.writeFile(l_path,'True')
+            print("|-Panel auto-backup function turned off")
     elif u_input == 22:
         os.system('tail -100 /www/server/panel/logs/error.log')
     elif u_input == 23:
@@ -535,11 +590,25 @@ def bt_cli(u_input = 0):
         if os.path.exists(filename): os.remove(filename)
         os.system('bt reload')
         print("|-BasicAuth authentication has been turned off")
+    elif u_input == 24:
+        filename = '/www/server/panel/data/two_step_auth.txt'
+        if os.path.exists(filename): os.remove(filename)
+        print("|-Google authentication turned off")
+    elif u_input == 25:
+        l_path = '/www/server/panel/data/not_file_history.pl'
+        if os.path.exists(l_path):
+            print("|-Detected that the file copy function is turned off and is being turned on...")
+            os.remove(l_path)
+            print("|-Document copy function turned on")
+        else:
+            print("|-Detected that the file copy function is turned on and is closing...")
+            public.writeFile(l_path,'True')
+            print("|-File copy function turned off")
 
 
 
 if __name__ == "__main__":
-    type = sys.argv[1];
+    type = sys.argv[1]
     if type == 'root':
         set_mysql_root(sys.argv[2])
     elif type == 'panel':
@@ -550,18 +619,14 @@ if __name__ == "__main__":
         setup_idc()
     elif type == 'mysql_dir':
         set_mysql_dir(sys.argv[2])
-    elif type == 'to':
-        panel2To3()
     elif type == 'package':
-        PackagePanel();
+        PackagePanel()
     elif type == 'ssl':
-        CreateSSL();
-    elif type == 'port':
-        CheckPort();
+        CreateSSL()
     elif type == 'clear':
-        ClearSystem();
+        ClearSystem()
     elif type == 'closelog':
-        CloseLogs();
+        CloseLogs()
     elif type == 'update_to6':
         update_to6()
     elif type == "cli":

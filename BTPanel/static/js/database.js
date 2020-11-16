@@ -2,6 +2,7 @@
 var database = {
     get_list: function (page, search) {
         if (page == undefined) page = 1;
+        if (!search) search = $("#SearchValue").val();
         bt.database.get_list(page, search, function (rdata) {
             $('#databasePage').html(rdata.page);
             var _tab = bt.render({
@@ -47,7 +48,7 @@ var database = {
                         }
                     },
                     {
-                        field: 'opt', width: 280, title: lan.database.operation, align: 'right', templet: function (item) {
+                        field: 'opt', width: 300, title: lan.database.operation, align: 'right', templet: function (item) {
                             var option = "<a href=\"javascript:;\" class=\"btlink\" onclick=\"bt.database.open_phpmyadmin('" + item.name + "','" + item.username + "','" + item.password + "')\" title=\""+lan.database.admin_title+"\">"+lan.database.admin+"</a> | ";
                             option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"database.rep_tools('" + item.name + "')\" title=\""+lan.database.mysql_tools+"\">"+lan.database.tools+"</a> | ";
                             option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"bt.database.set_data_access('" + item.username + "')\" title=\""+lan.database.set_db_auth+"\">"+lan.database.auth+"</a> | ";
@@ -75,7 +76,7 @@ var database = {
                 if (!types[rdata.tables[i].type]) continue;
                 tbody += '<tr>\
                         <td><input value="dbtools_' + rdata.tables[i].table_name + '" class="check" onclick="database.selected_tools(null,\'' + db_name + '\');" type="checkbox"></td>\
-                        <td><span style="width:220px;"> ' + rdata.tables[i].table_name + '</span></td>\
+                        <td><span style="width:150px;"> ' + rdata.tables[i].table_name + '</span></td>\
                         <td>' + rdata.tables[i].type + '</td>\
                         <td><span style="width:90px;"> ' + rdata.tables[i].collation + '</span></td>\
                         <td>' + rdata.tables[i].rows_count + '</td>\
@@ -99,12 +100,12 @@ var database = {
             layer.open({
                 type: 1,
                 title: lan.database.mysql_tools_box+"【" + db_name + "】",
-                area: ['780px', '580px'],
+                area: ['850px', '580px'],
                 closeBtn: 2,
                 shadeClose: false,
-                content: '<div class="pd15">\
+                content: '<div class="plr15 mt10">\
                                 <div class="db_list">\
-                                    <span><a>'+lan.database.db_name+'：'+ db_name + '</a>\
+                                    <span><a style="width: 239px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;vertical-align: bottom;margin-right: 11px;" title="'+ db_name + '">'+lan.database.db_name+'：'+ db_name + '</a>\
                                     <a class="tools_size">'+lan.database.size+'：'+ rdata.data_size + '</a></span>\
                                     <span id="db_tools" style="float: right;"></span>\
                                 </div >\
@@ -117,7 +118,7 @@ var database = {
                                             <th>'+lan.database.tb_name+'</th>\
                                             <th>'+lan.database.engine+'</th>\
                                             <th>'+lan.database.character+'</th>\
-                                            <th>'+lan.database.row_num+'</th>\
+                                            <th  width="80">'+lan.database.row_num+'</th>\
                                             <th>'+lan.database.size+'</th>\
                                             <th style="text-align: right;">'+lan.database.operation+'</th>\
                                         </tr>\
@@ -323,6 +324,7 @@ var database = {
                 $('#btn_data_backup').unbind('click').click(function () {
                     bt.database.backup_data(id, dataname, function (rdata) {
                         if (rdata.status) database.database_detail(id, dataname);
+                        database.get_list();
                     })
                 })
             }, 100)
@@ -369,7 +371,7 @@ var database = {
     },
     input_database: function (name) {
         var path = bt.get_cookie('backup_path') + "/database";
-        bt.files.get_files(path, '', function (rdata) {
+        bt.send('get_files', 'files/GetDir', 'reverse=True&sort=mtime&tojs=GetFiles&p=1&showRow=100&path=' + path, function (rdata) {
             var data = [];
             for (var i = 0; i < rdata.FILES.length; i++) {
                 if (rdata.FILES[i] == null) continue;
@@ -383,7 +385,7 @@ var database = {
                     type: 1,
                     skin: 'demo-class',
                     area: '600px',
-                    title: lan.database.input_title_file,
+                    title: lan.database.input_title_file+'['+name+']',
                     closeBtn: 2,
                     shift: 5,
                     shadeClose: false,
@@ -410,8 +412,8 @@ var database = {
                             }
                         },
                         {
-                            field: 'opt', title: lan.database.operation, align: 'right', templet: function (item) {
-                                return '<a class="btlink" herf="javascrpit:;" onclick="bt.database.input_sql(\'' + bt.rtrim(rdata.PATH, '/') + "/" + item.name + '\',\'' + name + '\')">'+lan.database.input+'</a>  ';;
+                            field: 'opt', title: 'Operating', align: 'right', templet: function (item) {
+                                return '<a class="btlink" herf="javascrpit:;" onclick="bt.database.input_sql(\'' + bt.rtrim(rdata.PATH, '/') + "/" + item.name + '\',\'' + name + '\')">'+lan.database.input+'</a>  | <a class="btlink" onclick="database.remove_input_file(\'' + bt.rtrim(rdata.PATH, '/') + "/" + item.name + '\',\'' + name + '\')">Del</a>';
                             }
                         },
                     ],
@@ -419,5 +421,15 @@ var database = {
                 });
             }, 100)
         })
+    },
+    remove_input_file: function (fileName,name) {
+        layer.confirm(lan.get('recycle_bin_confirm', [fileName]), { title: lan.files.del_file, closeBtn: 2, icon: 3 }, function (index) {
+            layer.msg(lan.public.the, { icon: 16, time: 0, shade: [0.3, '#000'] });
+            $.post('/files?action=DeleteFile', 'path=' + encodeURIComponent(fileName), function (rdata) {
+                layer.close(index);
+                layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+                database.input_database(name);
+            });
+        });
     }
 }
