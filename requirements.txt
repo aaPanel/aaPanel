@@ -3,7 +3,7 @@ paramiko>=2.6.0
 flask-socketio>=4.1.0
 python-socketio>=4.2.0
 Werkzeug>=0.15.1
-Pillow==5.4.1
+Pillow==7.1.0
 requests>=2.20
 cffi>=1.12.3
 psutil>=5.2.0
