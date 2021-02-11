@@ -1,9 +1,9 @@
 **Introduction:**
 
-aaPanel is the International version for BAOTA panel(www.bt.cn) There have millions servers had installed BAOTA panel since 2014 in China.
+aaPanel is the International version for BAOTA panel(www.bt.cn) There have millions of servers had installed BAOTA panel since 2014 in China.
 aaPanel, a simple but powerful control panel, can manage the web server through web-based GUI(Graphical User Interface).
 aaPanel provides the one-click function such as one-click install LNMP/LAMP developing environment and software.
-Our main goal is helping users to save the time of deploying, thus users just focus on their own project that is fine.
+Our main goal is to help users to save the time of deploying, thus users just focus on their own project that is fine.
 
 **History:**
 
@@ -19,7 +19,7 @@ _There will be many pits involved in the cost. Some auxiliary software itself is
 
 _Even this kind of painful point is itchiness. With the development of cloud servers, the number of server users has increased by several orders of magnitude._ 
 
-_The preparatory work for the establishment of the pagoda began at the end of 2014, and began to develop and test software in the first half of 2015._ 
+_The preparatory work for the establishment of the pagoda began at the end of 2014 and began to develop and test software in the first half of 2015._ 
 
 _At this stage, the pagoda brand was officially launched in 2016 and bt.cn was used as the official website._
 
@@ -36,15 +36,15 @@ _It can easily manage the server through the Web terminal, improving the operati
 **For example:** 
 
 
-_create and manage websites, FTP, and databases, with visual file manager, visual software manager, visual CPU, memory, flow monitoring chart, scheduled tasks and other functions._
+_Create and manage websites, FTP, and databases, with visual file manager, visual software manager, visual CPU, memory, flow monitoring chart, scheduled tasks, and other functions._
 
 _aaPanel has extremely fast and convenient one-key configuration and management, one-click configuration of server environment (LAMP / LNMP / Tomcat / Node.js /OpenLiteSpeed), one-click deployment of SSL, remote backup;_ 
 
-_provide SSH open and close services, SSH port changes, ping prohibited , Firewall port release and operation log viewing; CPU, memory, disk IO, network IO data monitoring, you can set the number of days to record and save and view the data of a certain day;_
+_Provide SSH open and close services, SSH port changes, ping prohibited, Firewall port release and operation log viewing; CPU, memory, disk IO, network IO data monitoring, you can set the number of days to record and save and view the data of a certain day;_
  
-_scheduled tasks can be added and executed periodically, support SHELL script, provide website, database backup And log cutting, and support one-click backup to another cloud storage space, or other cloud storage space; through the web interface, you can easily manage the server software used for installation, as well as practical extension plug-ins;_ 
+_Scheduled tasks can be added and executed periodically, support SHELL script, provide website, database backup, And log cutting, and support one-click backup to another cloud storage space, or other cloud storage space; through the web interface, you can easily manage the server software used for installation, as well as practical extension plug-ins;_ 
 
-_convenient and efficient file manager integration , Support uploading, downloading, packaging, decompression and file editing and viewing._
+_Convenient and efficient file manager integration, Support uploading, downloading, packaging, decompression, and file editing and viewing._
 
 
 
