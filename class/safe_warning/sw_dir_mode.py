@@ -56,7 +56,6 @@ def check_run():
         ['/var/spool/cron/crontabs/root',600,'root'],
         ['/www',755,'root'],
         ['/www/server',755,'root'],
-        ['/www/wwwroot',755,'root'],
         ['/root',550,'root'],
         ['/mnt',755,'root'],
         ['/home',755,'root'],

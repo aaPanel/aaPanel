@@ -288,7 +288,7 @@ class ssh_security:
     def stop_jian(self,get):
         data = public.ReadFile('/etc/bashrc')
         if re.search('{}\/www\/server\/panel\/class\/ssh_security.py'.format(".*python\s+"), data):
-            public.WriteFile('/etc/bashrc',re.sub('\n.*python\s+\/www\/server\/panel\/class\/ssh_security.py.*','',data))
+            public.WriteFile('/etc/bashrc',data.replace('python /www/server/panel/class/ssh_security.py login',''))
             return public.returnMsg(True, 'Closed successfully')
         else:
             return public.returnMsg(True, 'Closed successfully')

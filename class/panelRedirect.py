@@ -362,8 +362,33 @@ class panelRedirect:
         public.serviceReload()
         return public.returnMsg(True, 'EDIT_SUCCESS')
 
+    def del_redirect_multiple(self,get):
+        '''
+            @name 批量删除重定向
+            @author zhwen<2020-11-21>
+            @param site_id 1
+            @param redirectnames test,baohu
+        '''
+        redirectnames = get.redirectnames.split(',')
+        del_successfully = []
+        del_failed = {}
+        get.sitename = public.M('sites').where("id=?", (get.site_id,)).getField('name')
+        for redirectname in redirectnames:
+            get.redirectname = redirectname
+            try:
+                get.multiple = 1
+                result = self.DeleteRedirect(get,multiple=1)
+                if not result['status']:
+                    del_failed[redirectname] = result['msg']
+                    continue
+                del_successfully.append(redirectname)
+            except:
+                del_failed[redirectname]=public.getMsg('DEL_ERROR1')
+        public.serviceReload()
+        return {'status': True, 'msg': public.getMsg('DEL_REDIRECT_MULTIPLE',(','.join(del_successfully),)), 'error': del_failed,
+                'success': del_successfully}
 
-    def DeleteRedirect(self,get):
+    def DeleteRedirect(self,get,multiple=None):
         redirectconf = self.__read_config(self.__redirectfile)
         sitename = get.sitename
         redirectname = get.redirectname
@@ -376,7 +401,8 @@ class panelRedirect:
                 self.__write_config(self.__redirectfile,redirectconf)
                 self.SetRedirectNginx(get)
                 self.SetRedirectApache(get.sitename)
-                public.serviceReload()
+                if not multiple:
+                    public.serviceReload()
                 return public.returnMsg(True, 'DEL_SUCCESS')
 
     def GetRedirectList(self,get):

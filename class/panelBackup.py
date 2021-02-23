@@ -17,7 +17,8 @@ import re
 import time
 
 os.chdir('/www/server/panel')
-sys.path.insert(0,'class/')
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
 import public
 _VERSION = 1.5
 
@@ -46,12 +47,12 @@ class backup:
 
     def echo_start(self):
         print("="*90)
-        print("★Start backup[{}]".format(public.format_date()))
+        print("★"+public.getMsg('START_BACKUP')+"[{}]".format(public.format_date()))
         print("="*90)
 
     def echo_end(self):
         print("="*90)
-        print("☆Backup completed[{}]".format(public.format_date()))
+        print("☆"+public.getMsg('BACKUP_COMPLETED')+"[{}]".format(public.format_date()))
         print("="*90)
         print("\n")
 
@@ -129,7 +130,7 @@ class backup:
     def backup_path(self,spath,dfile = None,exclude=[],save=3):
         self.echo_start()
         if not os.path.exists(spath):
-            self.echo_error('The specified directory {} does not exist!'.format(spath))
+            self.echo_error(public.getMsg('BACKUP_DIR_NOT_EXIST',(spath,)))
             return False
 
         if spath[-1] == '/':
@@ -145,11 +146,11 @@ class backup:
             return False
 
         if self._cloud:
-            self.echo_info("Uploading to {}, please wait ...".format(self._cloud._title))
+            self.echo_info(public.getMsg("BACKUP_UPLOADING",(self._cloud._title,)))
             if self._cloud.upload_file(dfile,'path'):
-                self.echo_info("Successfully uploaded to {}".format(self._cloud._title))
+                self.echo_info(public.getMsg("BACKUP_UPLOAD_SUCCESS",(self._cloud._title,)))
             else:
-                self.echo_error('Error: File upload failed, skip this backup!')
+                self.echo_error(public.getMsg('BACKUP_UPLOAD_FAILED'))
                 if os.path.exists(dfile):
                     os.remove(dfile)
                 return False
@@ -174,7 +175,7 @@ class backup:
             if not self._is_save_local:
                 if os.path.exists(dfile):
                     os.remove(dfile)
-                    self.echo_info("User settings do not retain local backups, deleted {}".format(dfile))
+                    self.echo_info(public.getMsg("BACKUP_DEL",(dfile,)))
 
         if not self._cloud:
             backups = public.M('backup').where("type=? and pid=? and name=? and filename NOT LIKE '%|%'",('2',0,spath)).field('id,name,filename').select()
@@ -189,9 +190,9 @@ class backup:
     #清理过期备份文件
     def delete_old(self,backups,save,data_type = None):
         if type(backups) == str:
-            self.echo_info('Failed to clean expired backup, error: {}'.format(backups))
+            self.echo_info(public.getMsg('BACKUP_CLEAN_ERR',(backups,)))
             return
-        self.echo_info('Keep the latest number of backups: {} copies'.format(save))
+        self.echo_info(public.getMsg('BACKUP_KEEP',(str(save),)))
         num = len(backups) - int(save)
         if  num > 0:
             self._get_local_backdir()
@@ -208,11 +209,11 @@ class backup:
                         os.remove(self._local_backdir + '/'+ data_type +'/' + backup['name'])
                     except:
                         pass
-                    self.echo_info("Expired backup files have been cleaned from disk:" + backup['filename'])
+                    self.echo_info(public.getMsg("BACKUP_CLEAN",(backup['filename'],)))
                 #尝试删除远程文件
                 if self._cloud:
                     self._cloud.delete_file(backup['name'],data_type)
-                    self.echo_info("Expired backup files have been cleaned from {}: {}".format(self._cloud._title,backup['name']))
+                    self.echo_info(public.getMsg("BACKUP_CLEAN_REMOVE",(self._cloud._title,backup['name'])))
 
                 #从数据库清理
                 public.M('backup').where('id=?',(backup['id'],)).delete()
@@ -226,7 +227,7 @@ class backup:
     #压缩目录
     def backup_path_to(self,spath,dfile,exclude = [],siteName = None):
         if not os.path.exists(spath):
-            self.echo_error('The specified directory {} does not exist!'.format(spath))
+            self.echo_error(public.getMsg('BACKUP_DIR_NOT_EXIST',(spath,)))
             return False
 
         if spath[-1] == '/':
@@ -244,39 +245,55 @@ class backup:
             exclude_config = "Not set"
         
         if siteName:
-            self.echo_info('Backup site: {}'.format(siteName))
-            self.echo_info('Website root directory: {}'.format(spath))
+            self.echo_info(public.getMsg('BACKUP_SITE',(siteName)))
+            self.echo_info(public.getMsg('WEBSITE_DIR',(spath,)))
         else:
-            self.echo_info('Backup directory: {}'.format(spath))
+            self.echo_info(public.getMsg('BACKUP_DIR',(spath)))
         
-        self.echo_info("Directory size: {}".format(public.to_size(p_size)))
-        self.echo_info('Exclusion setting: {}'.format(exclude_config))
+        self.echo_info(public.getMsg(
+            "DIR_SIZE",
+            (str(public.to_size(p_size),))
+        ))
+        self.echo_info(public.getMsg('BACKUP_EXCLUSION',(exclude_config,)))
         disk_path,disk_free,disk_inode = self.get_disk_free(dfile)
-        self.echo_info("Partition {} available disk space is: {}, available Inode is: {}".format(disk_path,public.to_size(disk_free),disk_inode))
+        self.echo_info(public.getMsg(
+            "PARTITION_INFO",
+            (disk_path,str(public.to_size(disk_free)),str(disk_inode))
+        ))
         if disk_path:
             if disk_free < p_size:
-                self.echo_error("The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(public.to_size(p_size)))
+                self.echo_error(public.getMsg(
+                    "PARTITION_LESS_THEN",
+                    (str(public.to_size(p_size)),)
+                ))
                 return False
 
             if disk_inode < self._inode_min:
-                self.echo_error("The available Inode of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(self._inode_min))
+                self.echo_error(public.getMsg(
+                    "INODE_LESS_THEN",
+                    (str(self._inode_min,))
+                ))
                 return False
 
         stime = time.time()
-        self.echo_info("Start compressing files: {}".format(public.format_date(times=stime)))
+        self.echo_info(public.getMsg("START_COMPRESS",(public.format_date(times=stime),)))
         if os.path.exists(dfile):
             os.remove(dfile)
         public.ExecShell("cd " + os.path.dirname(spath) + " && tar zcvf '" + dfile + "' " + self._exclude + " '" + dirname + "' 2>{err_log} 1> /dev/null".format(err_log = self._err_log))
         tar_size = os.path.getsize(dfile)
         if tar_size < 1:
-            self.echo_error("Data compression failed")
+            self.echo_error(public.getMsg('ZIP_ERR'))
             self.echo_info(public.readFile(self._err_log))
             return False
-        self.echo_info("File compression completed, took {:.2f} seconds, compressed package size: {}".format(time.time() - stime,public.to_size(tar_size)))
+        compression_time = str('{:.2f}'.format(time.time() - stime))
+        self.echo_info(public.getMsg(
+            'COMPRESS_TIME',
+            (compression_time,str(public.to_size(tar_size)))
+        ))
         if siteName:
-            self.echo_info("Site backed up to: {}".format(dfile))
+            self.echo_info(public.getMsg("WEBSITE_BACKUP_TO",(dfile,)))
         else:
-            self.echo_info("Directory has been backed up to: {}".format(dfile))
+            self.echo_info(public.getMsg("DIR_BACKUP_TO",(dfile,)))
         if os.path.exists(self._err_log):
             os.remove(self._err_log)
         return dfile
@@ -293,11 +310,11 @@ class backup:
             return False
 
         if self._cloud:
-            self.echo_info("Uploading to {}, please wait ...".format(self._cloud._title))
+            self.echo_info(public.getMsg("BACKUP_UPLOADING",(self._cloud._title,)))
             if self._cloud.upload_file(dfile,'site'):
-                self.echo_info("Successfully uploaded to {}".format(self._cloud._title))
+                self.echo_info(public.getMsg("BACKUP_UPLOAD_SUCCESS",(self._cloud._title,)))
             else:
-                self.echo_error('Error: File upload failed, skip this backup!')
+                self.echo_error('BACKUP_UPLOAD_FAILED')
                 if os.path.exists(dfile):
                     os.remove(dfile)
                 return False
@@ -319,7 +336,7 @@ class backup:
             if not self._is_save_local:
                 if os.path.exists(dfile):
                     os.remove(dfile)
-                    self.echo_info("User settings do not retain local backups, deleted {}".format(dfile))
+                    self.echo_info(public.getMsg("BACKUP_DEL",(dfile,)))
 
         #清理多余备份
         if not self._cloud:
@@ -341,15 +358,25 @@ class backup:
     #配置
     def mypass(self,act):
         conf_file = '/etc/my.cnf'
+        conf_file_bak = '/etc/my.cnf.bak'
+        if os.path.getsize(conf_file) > 2:
+            public.writeFile(conf_file_bak,public.readFile(conf_file))
+            public.set_mode(conf_file_bak,600)
+            public.set_own(conf_file_bak,'mysql')
+        elif os.path.getsize(conf_file_bak) > 2:
+            public.writeFile(conf_file,public.readFile(conf_file_bak))
+            public.set_mode(conf_file,600)
+            public.set_own(conf_file,'mysql')
+
         public.ExecShell("sed -i '/user=root/d' {}".format(conf_file))
         public.ExecShell("sed -i '/password=/d' {}".format(conf_file))
         if act:
             password = public.M('config').where('id=?',(1,)).getField('mysql_root')
             mycnf = public.readFile(conf_file)
-            src_dump = "[mysqldump]\n"
-            sub_dump = src_dump + "user=root\npassword=\"{}\"\n".format(password)
             if not mycnf: return False
-            mycnf = mycnf.replace(src_dump,sub_dump)
+            src_dump_re = r"\[mysqldump\][^.]"
+            sub_dump = "[mysqldump]\nuser=root\npassword=\"{}\"\n".format(password)
+            mycnf = re.sub(src_dump_re, sub_dump, mycnf)
             if len(mycnf) > 100: public.writeFile(conf_file,mycnf)
             return True
         return True
@@ -380,44 +407,65 @@ class backup:
         p_size = self.map_to_list(d_tmp)[0][0]
         
         if p_size == None:
-            self.echo_error('The specified database [ {} ] has no data!'.format(db_name))
+            self.echo_error(public.getMsg('DB_BACKUP_ERR',(db_name,)))
             return
 
         character = public.get_database_character(db_name)
 
-        self.echo_info('Backup database:{}'.format(db_name))
-        self.echo_info("Database size: {}".format(public.to_size(p_size)))
-        self.echo_info("Database character set: {}".format(character))
+        self.echo_info(public.getMsg('DB_BACKUP',(db_name,)))
+        self.echo_info(public.getMsg("DB_SIZE",(public.to_size(p_size),)))
+        self.echo_info(public.getMsg("DB_CHARACTER",(character,)))
         disk_path,disk_free,disk_inode = self.get_disk_free(dfile)
-        self.echo_info("Partition {} available disk space is: {}, available Inode is: {}".format(disk_path,public.to_size(disk_free),disk_inode))
+        self.echo_info(public.getMsg(
+            "PARTITION_INFO",(
+                disk_path,str(public.to_size(disk_free)),str(disk_inode)
+            )
+        ))
         if disk_path:
             if disk_free < p_size:
-                self.echo_error("The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(public.to_size(p_size)))
+                self.echo_error(
+                    public.getMsg("PARTITION_LESS_THEN",(
+                        str(public.to_size(p_size),)
+                    )))
                 return False
 
             if disk_inode < self._inode_min:
-                self.echo_error("The available Inode of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(self._inode_min))
+                self.echo_error(public.getMsg("INODE_LESS_THEN",(self._inode_min,)))
                 return False
         
         stime = time.time()
-        self.echo_info("Start exporting database: {}".format(public.format_date(times=stime)))
+        self.echo_info(public.getMsg("EXPORT_DB",(public.format_date(times=stime),)))
         if os.path.exists(dfile):
             os.remove(dfile)
-        self.mypass(True)
-        public.ExecShell("/www/server/mysql/bin/mysqldump --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " 2>"+self._err_log+"| gzip > " + dfile)
-        self.mypass(False)
+        #self.mypass(True)
+        try:
+            password = public.M('config').where('id=?',(1,)).getField('mysql_root')
+            os.environ["MYSQL_PWD"] = password
+            backup_cmd = "/www/server/mysql/bin/mysqldump -E -R --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " -u root" + " 2>"+self._err_log+"| gzip > " + dfile
+            public.ExecShell(backup_cmd)
+        except Exception as e:
+            raise
+        finally:
+            os.environ["MYSQL_PWD"] = ""
+        #public.ExecShell("/www/server/mysql/bin/mysqldump --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " 2>"+self._err_log+"| gzip > " + dfile)
+        #self.mypass(False)
         gz_size = os.path.getsize(dfile)
         if gz_size < 400:
-            self.echo_error("Database export failed!")
+            self.echo_error(public.getMsg("EXPORT_DB_ERR"))
             self.echo_info(public.readFile(self._err_log))
             return False
-        self.echo_info("Database backup completed, took {:.2f} seconds, compressed package size: {}".format(time.time() - stime,public.to_size(gz_size)))
+        compressed_time = str('{:.2f}'.format(time.time() - stime))
+        self.echo_info(
+            public.getMsg("COMPRESS_TIME",(str(compressed_time),
+            str(public.to_size(gz_size))
+            ))
+        )
         if self._cloud:
-            self.echo_info("Uploading to {}, please wait ...".format(self._cloud._title))
+            self.echo_info(public.getMsg("BACKUP_UPLOADING",(self._cloud._title,)))
             if self._cloud.upload_file(dfile, 'database'):
-                self.echo_info("Successfully uploaded to {}".format(self._cloud._title))
+                self.echo_info(public.getMsg("BACKUP_UPLOAD_SUCCESS",(self._cloud._title,)))
             else:
-                self.echo_error('Error: File upload failed, skip this backup!')
+                self.echo_error('BACKUP_UPLOAD_FAILED')
                 if os.path.exists(dfile):
                     os.remove(dfile)
                 return False
@@ -425,7 +473,7 @@ class backup:
         filename = dfile
         if self._cloud:
             filename = dfile + '|' + self._cloud._name + '|' + fname
-        self.echo_info("Database has been backed up to: {}".format(dfile))
+        self.echo_info(public.getMsg("DB_BACKUP_TO",(dfile,)))
         if os.path.exists(self._err_log):
             os.remove(self._err_log)
 
@@ -445,7 +493,7 @@ class backup:
             if not self._is_save_local:
                 if os.path.exists(dfile):
                     os.remove(dfile)
-                    self.echo_info("User settings do not retain local backups, deleted {}".format(dfile))
+                    self.echo_info(public.getMsg("BACKUP_DEL",(dfile)))
 
         #清理多余备份
         if not self._cloud:

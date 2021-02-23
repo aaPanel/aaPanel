@@ -1,6 +1,12 @@
 [
   {
     "protocol": "http://",
+    "address": "node.aapanel.com",
+    "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "http://",
     "address": "128.1.164.196",
     "port": "80",
     "ping": 500
@@ -26,30 +32,6 @@
   {
     "protocol": "http://",
     "address": "dg1.bt.cn",
-    "port": "80",
-    "ping": 500
-  },
-  {
-    "protocol": "http://",
-    "address": "123.129.198.197",
-    "port": "5880",
-    "ping": 500
-  },
-  {
-    "protocol": "http://",
-    "address": "119.188.210.21",
-    "port": "5880",
-    "ping": 500
-  },
-  {
-    "protocol": "http://",
-    "address": "113.107.111.78",
-    "port": "5880",
-    "ping": 500
-  },
-  {
-    "protocol": "http://",
-    "address": "45.32.116.160",
     "port": "80",
     "ping": 500
   }

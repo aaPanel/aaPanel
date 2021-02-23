@@ -7,45 +7,33 @@ var soft = {
         if (search == undefined || search == 'null' || search == 'undefined' || search == '') search = undefined;
         var _this = this;
         var istype = getCookie('softType');
-        if (istype == 'undefined' || istype == 'null' || !istype) {
+        if(istype == 'undefined' || istype == 'null' || !istype){
             istype = 0;
         }
         if (type == 0) type = bt.get_cookie('softType');
         if (page == 0) page = bt.get_cookie('p' + type);
-        if (type == '11') {
-            soft.get_dep_list(1)
+        if (type == '11'){
+            soft.get_dep_list(1);
             return;
         }
         soft.is_install = false;
-        console.log(type)
         bt.soft.get_soft_list(page, type, search, function(rdata) {
-            if (rdata.pro < 0) {
-                $("#updata_pro_info").html('');
-            } else if (rdata.pro === -2) {
-                $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong>' + lan.soft.pro_expire + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.renew_pro + '" style="margin-left:8px">' + lan.soft.renew_now + '</button>');
-            } else if (rdata.pro === -1) {
-                $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong > ' + lan.soft.upgrade_pro + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.upgrade_pro_now + '" style="margin-left:8px">' + lan.soft.upgrade_now + '</button>\</div>');
-            }
+            soft.set_soft_tips('#updata_pro_info',type);
+            // if (rdata.pro < 0) {
+            //     $("#updata_pro_info").html('');
+            // } else if (rdata.pro === -2) {
+            //     $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong>' + lan.soft.pro_expire + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.renew_pro + '" style="margin-left:8px">' + lan.soft.renew_now + '</button>');
+            // } else if (rdata.pro === -1) {
+            //     $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong > ' + lan.soft.upgrade_pro + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.upgrade_pro_now + '" style="margin-left:8px">' + lan.soft.upgrade_now + '</button>\</div>');
+            // }
 
-            if (type == 10) {
-                $("#updata_pro_info").html('<div class="alert alert-danger" style="margin-bottom:15px"><strong>' + lan.soft.bt_developer + '</strong><a class="btn btn-success btn-xs va0" href="https://www.aapanel.com" title="' + lan.soft.get_third_party_apps + '" style="margin-left: 8px" target="_blank">' + lan.soft.get_third_party_apps + '</a><input type="file" style="display:none;" accept=".zip,.tar.gz" id="update_zip" multiple="multiple"><button class="btn btn-success btn-xs" onclick="soft.update_zip_open()" style="margin-left:8px">' + lan.soft.import_plug + '</button></div>')
-            } else if (type == 11) {
-                $("#updata_pro_info").html('<div class="alert alert-info" style="margin-bottom:15px"><strong>' + lan.soft.comingsoon + '</strong></div>')
-            }
+            // if (type == 10) {
+            //     $("#updata_pro_info").html('<div class="alert alert-danger" style="margin-bottom:15px"><strong>' + lan.soft.bt_developer + '</strong><a class="btn btn-success btn-xs va0" href="https://www.aapanel.com" title="' + lan.soft.get_third_party_apps + '" style="margin-left: 8px" target="_blank">' + lan.soft.get_third_party_apps + '</a><input type="file" style="display:none;" accept=".zip,.tar.gz" id="update_zip" multiple="multiple"><button class="btn btn-success btn-xs" onclick="soft.update_zip_open()" style="margin-left:8px">' + lan.soft.import_plug + '</button></div>')
+            // } else if (type == 11) {
+            //     $("#updata_pro_info").html('<div class="alert alert-info" style="margin-bottom:15px"><strong>' + lan.soft.comingsoon + '</strong></div>')
+            // }
             var tBody = '';
-            rdata.type.unshift({
-                icon: 'icon',
-                id: 0,
-                ps: lan.soft.all,
-                sort: 1,
-                title: lan.soft.all
-            }, {
-                icon: 'icon',
-                id: -1,
-                ps: 'Installed',
-                sort: 1,
-                title: 'Installed'
-            })
+            rdata.type.unshift({icon: 'icon',id: 0,ps: lan.soft.all,sort: 1,title: lan.soft.all}, {icon: 'icon',id: -1,ps: 'Installed',sort: 1,title: 'Installed'})
             for (var i = 0; i < rdata.type.length; i++) {
                 var c = '';
                 if (istype == rdata.type[i].id) {
@@ -53,7 +41,7 @@ var soft = {
                 }
                 // 注释软件管理的付费插件，第三方插件，一键部署
                 // if (rdata.type[i].id != "11" && rdata.type[i].id != "10" && rdata.type[i].id != "8") {
-                if (rdata.type[i].id != "11" && rdata.type[i].id != "8") {
+                if (rdata.type[i].id != "11") {
                     tBody += '<span typeid="' + rdata.type[i].id + '" ' + c + '>' + rdata.type[i].title + '</span>';
                 }
             }
@@ -130,7 +118,7 @@ var soft = {
                     {
                         field: 'price',
                         title: 'Developer',
-                        width: 92,
+                        width: 110,
                         templet: function(item) {
                             if (!item.author) return 'official'
                             return item.author;
@@ -164,17 +152,17 @@ var soft = {
                         templet: function(item) {
                             var price = lan.soft.free;
                             if (item.price > 0) {
-                                price = '<span style="color:#fc6d26">￥' + item.price + '</span>';
+                                price = '<span style="color:#fc6d26">$' + item.price + '</span>';
                             }
                             return price;
                         }
                     },
                     (type == 10 ? {
                         field: 'sort',
-                        width: 60,
-                        title: 'Score',
+                        width: 80,
+                        title: 'Rated',
                         templet: function(item) {
-                            return item.sort !== undefined ? ('<a href="javascript:;" onclick="score.open_score_view(' + item.pid + ',\'' + item.title + '\',' + item.count + ')" class="btlink open_sort_view">' + (item.sort <= 0 || item.sort > 5 ? '无评分' : item.sort.toFixed(1)) + '</a>') : '--';
+                            return item.sort !== undefined ? ('<a href="javascript:;" onclick="score.open_score_view(' + item.pid + ',\'' + item.title + '\',' + item.count + ')" class="btlink open_sort_view">' + (item.sort <= 0 || item.sort > 5 ? lan.soft.not_rated : item.sort.toFixed(1)) + '</a>') : '--';
                         }
                     } : ''),
                     {
@@ -186,9 +174,9 @@ var soft = {
                             if (item.pid > 0) {
                                 if (item.endtime > 0) {
                                     if (item.type != 10) {
-                                        endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') + '<a class="btlink" onclick="bt.soft.re_plugin_pay(\'' + item.title + '\',\'' + item.pid + '\',1)"> (' + lan.soft.renew + ')</a>';
+                                        endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') ;
                                     } else {
-                                        endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') + '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',1,' + item.price + ')"> (' + lan.soft.renew + ')</a>';
+                                        endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') ;
                                     }
                                 } else if (item.endtime === 0) {
                                     endtime = lan.soft.permanent;
@@ -196,9 +184,9 @@ var soft = {
                                     endtime = lan.soft.not_open;
                                 } else if (item.endtime === -2) {
                                     if (item.type != 10) {
-                                        endtime = lan.soft.already_expire + '<a class="btlink" onclick="bt.soft.re_plugin_pay(\'' + item.title + '\',\'' + item.pid + '\',1)"> (' + lan.soft.renew + ')</a>';
+                                        endtime = lan.soft.already_expire ;
                                     } else {
-                                        endtime = lan.soft.already_expire + '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',1,' + item.price + ')"> (' + lan.soft.renew + ')</a>';
+                                        endtime = lan.soft.already_expire ;
                                     }
                                 }
                             }
@@ -270,7 +258,7 @@ var soft = {
                                         break;
                                 }
                                 if (item.type != 10) {
-                                    pay_opt = '<a class="btlink" onclick="bt.soft.re_plugin_pay(\'' + item.title + '\',\'' + item.pid + '\',' + re_status + ')">' + re_msg + '</a>';
+                                    pay_opt = '<a class="btlink" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,plugin:true,renew:item.endtime}) +')\'>' + re_msg + '</a>';
                                 } else {
                                     pay_opt = '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',' + re_status + ',' + item.price + ')">' + re_msg + '</a>';
                                 }
@@ -404,6 +392,191 @@ var soft = {
                 }, 3000);
             }
         })
+    },
+    // 渲染列表
+    render_promote_list:function(data){
+        if($('#soft_recom_list').length > 0) $('#soft_recom_list').remove();
+        var html = $('<ul id="soft_recom_list" class="recom_list"></ul>'),that = this;
+        for(var i=0;i< data.length;i++){
+            var type = '', item = data[i];
+            (function(item){
+                switch (item.type) {
+                    case 'link': // 链接推荐
+                        type = $('<a href="'+ item.data +'" target="_blank" title="'+ (item.title || '') +'"><span>'+ (item.title || '') +'</span></a>');
+                        break;
+                    case 'soft': // 软件推荐
+                    case 'other': // 第三方推荐
+                    case 'onekey': // 一键部署推荐
+                        type = $('<a href="javascript:;" class="btlink" title="'+ (item.title || '') +'"><span>'+ (item.title || '') +'</span></a>').click(function(){
+                            that.render_promote_view(item);
+                        });
+                    break;
+                }
+                html.append($('<li></li>').append(type));
+            }(item))
+            // html.append($('<li><img src="'+ item.image +'"></li>').append(type));
+        }
+        $('#updata_pro_info').before(html);
+    },
+    // 渲染软件列表
+    render_promote_view:function(find){
+        var that = this,is_single_product = find.data.length > 1,find_data = find.data;
+        if(is_single_product){
+            layer.open({
+                title:find.title,
+                area:'800px',
+                btn:false,
+                closeBtn:2,
+                shadeClose:false,
+                content: (function(){
+                    var html = '';
+                    for(var i=0;i<find_data.length;i++){
+                        var item = find_data[i],thtml = '';
+                        if(!item.setup){
+                            thtml = '<button type="button" class="btn btn-success btn-xs" onclick="bt.soft.install(\''+ item.name +'\',this)">Install</button>';
+                        }else{
+                            if(item.pid != 0){
+                                if(item.endtime == 0){ //永久
+                                    thtml = '<button type="button" class="btn btn-success btn-xs" onclick="bt.soft.set_lib_config(\''+ item.name +'\',\''+ item.title +'\')">Setting</button>';
+                                }else if(item.endtime > 0){ //已购买
+                                    thtml = '<button type="button" class="btn btn-success btn-xs" onclick="bt.soft.set_lib_config(\''+ item.name +'\',\''+ item.title +'\')">Setting</button>';
+                                }else if(item.endtime == -1){  //未购买
+                                    thtml = '<button type="button" class="btn btn-success btn-xs" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,pulgin:true,renew:item.endtime}) +');\'>Upgrade now</button>';
+                                }else if(item.endtime  == -2){ //已过期
+                                    thtml = '<button type="button" class="btn btn-success btn-xs" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,pulgin:true,renew:item.endtime}) +');\'>立即续费</button>';
+                                }
+                            }else{
+                                thtml = '<button type="button" class="btn btn-success btn-xs" onclick="bt.soft.set_lib_config(\''+ item.name +'\',\''+ item.title +'\')">Setting</button>';
+                            }
+                        }
+                        html += '<div class="recom_item_box">' +
+                            '<div class="recom_item_left">' +
+                                '<div class="recom_item_images"><img src="/static/img/'+(find.type == 'onekey'?'dep_ico':'soft_ico')+'/ico-'+ item.name +'.png" /></div>' +
+                                '<div class="recom_item_pay"><a href="javascript:;" class="btlink" style="color:'+(item.setup?'#20a53a':'#666')+'">'+ (item.setup?'Installed':'Not installed') +'</a></div>'+
+                            '</div>' +
+                            '<div class="recom_item_right">' +
+                                '<div class="recom_item_title">' +
+                                    '<div class="recom_item_text">'+ item.title + '&nbsp;v'+ item.version +'</div>' +
+                                    '<div class="recom_item_price">$<span>'+ item.price +'</span>/month</div>' +
+                                '</div>' +
+                                '<div class="recom_item_info" title="'+ item.ps +'">'+ item.ps +'</div>'+
+                                '<div class="recom_item_btn">'+ thtml +'</div>'+
+                            '</div>' +
+                        '</div>'
+                    }
+                    return html;
+                })(),
+            });
+        }
+    },
+    set_soft_tips:function(el,type){
+        var tips_info = $('<div class="alert" style="margin-bottom:15px"><div class="soft_tips_text"></div><div class="btn-ground" style="display:inline-block;"></div></div>'), explain = tips_info.find('.soft_tips_text'), btn_ground = tips_info.find('.btn-ground');
+        $(el).empty();
+        type = parseInt(type);
+        if(type != 11) $(el).next('.onekey-menu-sub').remove();
+        if(type == 10){
+            explain.text('Security Reminder: aaPanel officially conducted a security audit before the third-party plug-in was put on the shelves, but there may be security risks. Please check it out before using it in the production environment.');
+            btn_ground = soft.render_tips_btn(btn_ground,[
+                //{title:'免费入驻',href:'https://www.bt.cn/developer/',rel:'noreferrer noopener',target:'_blank',btn:'免费入驻',class:'btn btn-success btn-xs va0',style:"margin-left:10px;"},
+                {title:'Get third-party apps',rel:'noreferrer noopener',href:'https://www.bt.cn/bbs/forum-40-1.html',target:'_blank',btn:'Get third-party apps',class:'btn btn-success btn-xs va0 ml15',style:"margin-left:10px;"},
+                {title:'Import plugins',href:'javascript:;',btn:'Import plugins','class':'btn btn-success btn-xs va0 ml15','style':"margin-left:10px;",click:function(e){
+                    var input = $('<input type="file" style="display:none;" accept=".zip,.tar.gz" id="update_zip" multiple="multiple">').change(function (e) {
+                        var files =$(this)[0].files;
+                        if (files.length == 0) return;
+                        soft.update_zip(files[0]);
+                    }).click();
+                }}
+            ]);
+            $(el).append(tips_info.addClass('alert-danger'));
+        }else if(type == 11){
+            explain.text('BT one click宝塔一键部署已上线，诚邀全球优秀项目入驻(限项目官方) ');
+            btn_ground = soft.render_tips_btn(btn_ground,[
+                {title:'免费入驻',href:'https://www.bt.cn/bbs/thread-33063-1-1.html',rel:'noreferrer noopener',target:'_blank',btn:'免费入驻',class:'btn btn-success btn-xs va0',style:"margin-left:10px;"},
+                {title:'导入项目',href:'javascript:;',rel:'noreferrer noopener',btn:'导入项目',class:'btn btn-success btn-xs va0',style:"margin-left:10px;",click:soft.input_package}
+            ]);
+            $(el).append(tips_info.addClass('alert-info'));
+        }else{
+            var ltd = parseInt(bt.get_cookie('ltd_end')),pro = parseInt(bt.get_cookie('pro_end')),todayDate = parseInt(new Date().getTime()/1000),_ltd = null;
+            if((ltd > 0 && (ltd == pro || pro < 0)) || (ltd < 0 && pro >= 0) || (ltd > 0 && pro >= 0)){
+                _ltd = ((ltd > 0 && (ltd == pro || pro < 0)) || (ltd > 0 && pro >= 0))?1:0;
+                explain.html('当前为'+ (_ltd?'Pro':'专业版') +'，'+ (_ltd?'Pro':'专业版') +'可以免费使用'+ (_ltd?'专业版及企业版插件':'专业版插件') + (!(pro == 0 && ltd < 0)?('，过期时间：'+ (bt.format_data((_ltd?ltd:pro),'yyyy/MM/dd') ) +''+((((_ltd?ltd:pro) - todayDate) <= 15*24*60*60)?('，<span style="color:red">距离过期仅剩'+ Math.round(((_ltd?ltd:pro) - todayDate) / (24*60*60)) +'天</span>'):'')):'，过期时间：<span style="color: #fc6d26;font-weight: bold;">永久授权</span>'));
+            }else if(ltd == -1 && pro == -1){
+                explain.html('Upgrade to Pro edition, all plugins, free to use!');
+            }else if(pro == 0 && ltd < 0){
+                _ltd = 2;
+                explain.html('当前为专业版，专业版可以免费使用专业版插件，过期时间：永久授权。'+(type == 12?'&nbsp;&nbsp;<span style="color:#af8e48">升级企业版，企业可以免费试用企业版插件及专业版插件。</span>':''));
+                if(type == 12){
+                    btn_ground  = soft.render_tips_btn(btn_ground,{title:'立即升级',href:'javascript:;',btn:'立即升级','class':'btn btn-success btn-xs va0 ml15','style':"margin-left:10px;",click:bt.soft.updata_ltd});
+                }
+            }else if(ltd == -2 || pro == -2){
+                _ltd = (ltd == -2)?1:0;
+                explain.html('当前为'+ (_ltd?'企业版':'专业版') +'，'+ (_ltd?'企业版':'专业版') +'可以免费使用'+ (_ltd?'专业版及企业版插件':'专业版插件') +'，<span style="color:red">'+ (_ltd?'企业版':'专业版') +'已过期</span>');
+            }
+            var btn_config = {title:null,href:'javascript:;',btn:null,'class':'btn btn-success btn-xs va0 ml15','style':"margin-left:10px;",click:null};
+            var set_btn_style = function(res){
+                if(!res.status || !res){
+                    $.extend(btn_config,{title:'立即登录',btn:'立即登录',click:function(){
+                        bt.pub.bind_btname(function(){
+                            window.location.reload();
+                        });
+                    }});
+                }else{
+                    if(type == 12 && (ltd < 0 && pro >=0)){
+                        explain.html('企业版可以免费使用专业版及企业版插件，了解专业版和企业版的区别，请点击<a href="https://www.bt.cn/download/linux.html" target="_blank" class="btlink ml5">查看详情</a>。<a href="https://www.bt.cn/bbs/forum.php?mod=viewthread&tid=50342&page=1&extra=#pid179211" target="_blank" class="btlink ml5">《专业版升级企业版教程》</a>');
+                        $(el).append(tips_info.addClass('alert-ltd-success'));
+                        return false;
+                    }else{
+                        if(_ltd != 2){
+                            var fun = '';
+                            switch(_ltd){
+                                case null:
+                                    fun = bt.soft.updata_commercial_view
+                                    break;
+                                case 1:
+                                    fun = bt.soft.updata_ltd
+                                    break;
+                                case 0:
+                                    fun = bt.soft.updata_pro
+                                    break;
+                            }
+                            $.extend(btn_config,{title:_ltd == null?'Upgrade now':'立即续费',btn:_ltd == null?'Upgrade now':'立即续费',click:fun})
+                        }
+                    }
+                }
+                if(_ltd != 2){
+                    if(!(pro == 0 && ltd < 0)){
+                        btn_ground  = soft.render_tips_btn(btn_ground,btn_config);
+                    }
+                }
+                $(el).append(tips_info.addClass(_ltd == 1?'alert-ltd-success':'alert-success'));
+            }
+            var bt_user_info = bt.get_cookie('bt_user_info');
+            if(!bt_user_info){
+                bt.pub.get_user_info(function(res){
+                    if(!res.status){
+                         set_btn_style(false);
+                        return false;
+                    }
+                    bt.set_cookie('bt_user_info',JSON.stringify(res),300000);
+                    set_btn_style(res);
+                });
+            }else{
+                set_btn_style(JSON.parse(bt.get_cookie('bt_user_info')));
+            }
+        }
+    },
+    render_tips_btn:function(node,arry){
+        if(!Array.isArray(arry)) arry = [arry]
+        for(var i=0;i<arry.length;i++){
+            var item = arry[i], btn = '<a ';
+            for(var key in item){ if(key != 'click' && key != 'btn') btn += item[key]?(key+'="'+item[key]+'" '):'' }
+            btn += '>'+item['btn'] +'</a>';
+            if(item.click){
+                btn = $(btn).on('click',item.click)
+            }
+            node.append(btn);
+        }
+        return node
     },
     get_dep_list: function(p) {
         var loadT = layer.msg('Getting list <img src="/static/img/ing.gif">', {
@@ -784,6 +957,10 @@ var soft = {
                             title: lan.soft.nginx_status
                         },
                         {
+                            type: 'apache_format_log',
+                            title: 'Logs format'
+                        },
+                        {
                             type: 'log',
                             title: lan.soft.run_log
                         }
@@ -795,6 +972,10 @@ var soft = {
                         {
                             type: 'nginx_status',
                             title: lan.soft.nginx_status
+                        },
+                        {
+                            type: 'nginx_format_log',
+                            title: 'Logs format'
                         },
                         {
                             type: 'log',
@@ -865,6 +1046,10 @@ var soft = {
                             val: ver,
                             title: lan.soft.php_main4
                         },
+                        {   type: 'fpm_config', 
+                            val: ver, 
+                            title: 'FPM profile' 
+                        },
                         {
                             type: 'set_dis_fun',
                             val: ver,
@@ -912,14 +1097,14 @@ var soft = {
                         }
                     ]
 
-                    var phpSort = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+                    var phpSort = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                     webcache = bt.get_cookie('serverType') == 'openlitespeed' ? true : false;
                     for (var i = 0; i < phpSort.length; i++) {
                         var item = opt_list[i];
                         if (item) {
                             if (item.os == undefined || item['os'] == bt.os) {
                                 if (name.indexOf("5.2") >= 0 && item.php53) continue;
-                                if (webcache && item.type=='set_fpm_config' || item.type=='get_php_status') continue;
+                                if (webcache && (item.type=='set_fpm_config' || item.type=='get_php_status')) continue;
                                 var apache24 = item.apache24 ? 'class="apache24"' : '';
                                 menu.append($('<p data-id="' + i + '" ' + apache24 + ' onclick="soft.get_tab_contents(\'' + item.type + '\',this)" >' + item.title + '</p>').data('item', item))
                             }
@@ -1036,6 +1221,23 @@ var soft = {
                             bt.soft.save_config(fileName, editor.getValue())
                         });
                     })
+                    break;
+                case 'fpm_config':
+                    var tabCon = $(".soft-man-con").empty();
+                    tabCon.append('<p style="color: #666; margin-bottom: 7px">' + lan.bt.edit_ps + '</p>');
+                    tabCon.append('<div class="bt-input-text ace_config_editor_scroll" style="line-height:18px;" id="textBody"></div>')
+                    tabCon.append('<button id="OnlineEditFileBtn" class="btn btn-success btn-sm" style="margin-top:10px;">' + lan.public.save + '</button>')
+                    var _arry = ['If you do not understand the php-fpm configuration file, please do not modify it!'];
+                    tabCon.append(bt.render_help(_arry))
+                    $('.return_php_info').click(function(){
+                        $('.bt-soft-menu p:eq(12)').click();
+                    });
+                    var fileName = bt.soft.get_config_path(version).replace('php.ini','php-fpm.conf');
+                    var loadT = bt.load(lan.soft.get);
+                    var config = bt.aceEditor({el:'textBody',path:fileName});
+                    $("#OnlineEditFileBtn").click(function () {
+                        bt.saveEditor(config);
+                    });
                     break;
                 case 'change_version':
                     var _list = [];
@@ -1201,7 +1403,7 @@ var soft = {
                         var title11 = ((1 - rdata.Key_reads / rdata.Key_read_requests) * 100).toFixed(2);
                         var title12 = ((1 - rdata.Innodb_buffer_pool_reads / rdata.Innodb_buffer_pool_read_requests) * 100).toFixed(2);
                         var title14 = ((rdata.Created_tmp_disk_tables / rdata.Created_tmp_tables) * 100).toFixed(2);
-                        var Con = '<div class="divtable"><table class="table table-hover table-bordered" style="margin-bottom:10px;background-color:#fafafa">\
+                        var Con = '<div class="divtable"><table class="table table-hover table-bordered" style="background-color:#fafafa">\
 								<tbody>\
 									<tr><th>' + lan.soft.mysql_status_title1 + '</th><td>' + getLocalTime(rdata.Run) + '</td><th>' + lan.soft.mysql_status_title5 + '</th><td>' + parseInt(rdata.Questions / rdata.Uptime) + '</td></tr>\
 									<tr><th>' + lan.soft.mysql_status_title2 + '</th><td>' + rdata.Connections + '</td><th>' + lan.soft.mysql_status_title6 + '</th><td>' + parseInt((parseInt(rdata.Com_commit) + parseInt(rdata.Com_rollback)) / rdata.Uptime) + '</td></tr>\
@@ -1209,20 +1411,20 @@ var soft = {
 									<tr><th>' + lan.soft.mysql_status_title4 + '</th><td>' + ToSize(rdata.Bytes_received) + '</td><th>' + lan.soft.mysql_status_title8 + '</th><td>' + rdata.Position + '</td></tr>\
 								</tbody>\
 								</table>\
-								<table class="table table-hover table-bordered" style="margin-bottom: 10px;">\
-								<thead style="display:none;"><th></th><th></th><th></th><th></th></thead>\
+								<table class="table table-hover table-bordered">\
+								<thead style="visibility: hidden;"><th width="225"></th><th></th><th></th></thead>\
 								<tbody>\
-									<tr><th>' + lan.soft.mysql_status_title9 + '</th><td>' + rdata.Threads_running + '/' + rdata.Max_used_connections + '</td><td colspan="2">' + lan.soft.mysql_status_ps1 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title10 + '</th><td>' + (!isNaN(title10) ? title10 : '0') + '%</td><td colspan="2">' + lan.soft.mysql_status_ps2 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title11 + '</th><td>' + (!isNaN(title11) ? title11 : '0') + '%</td><td colspan="2">' + lan.soft.mysql_status_ps3 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title12 + '</th><td>' + (!isNaN(title12) ? title12 : '0') + '%</td><td colspan="2">' + lan.soft.mysql_status_ps4 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title13 + '</th><td>' + cache_size + '</td><td colspan="2">' + lan.soft.mysql_status_ps5 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title14 + '</th><td>' + (!isNaN(title14) ? title14 : '0') + '%</td><td colspan="2">' + lan.soft.mysql_status_ps6 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title15 + '</th><td>' + rdata.Open_tables + '</td><td colspan="2">' + lan.soft.mysql_status_ps7 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title16 + '</th><td>' + rdata.Select_full_join + '</td><td colspan="2">' + lan.soft.mysql_status_ps8 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title17 + '</th><td>' + rdata.Select_range_check + '</td><td colspan="2">' + lan.soft.mysql_status_ps9 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title18 + '</th><td>' + rdata.Sort_merge_passes + '</td><td colspan="2">' + lan.soft.mysql_status_ps10 + '</td></tr>\
-									<tr><th>' + lan.soft.mysql_status_title19 + '</th><td>' + rdata.Table_locks_waited + '</td><td colspan="2">' + lan.soft.mysql_status_ps11 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title9 + '</th><td>' + rdata.Threads_running + '/' + rdata.Max_used_connections + '</td><td>' + lan.soft.mysql_status_ps1 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title10 + '</th><td>' + (!isNaN(title10) ? title10 : '0') + '%</td><td>' + lan.soft.mysql_status_ps2 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title11 + '</th><td>' + (!isNaN(title11) ? title11 : '0') + '%</td><td>' + lan.soft.mysql_status_ps3 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title12 + '</th><td>' + (!isNaN(title12) ? title12 : '0') + '%</td><td>' + lan.soft.mysql_status_ps4 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title13 + '</th><td>' + cache_size + '</td><td>' + lan.soft.mysql_status_ps5 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title14 + '</th><td>' + (!isNaN(title14) ? title14 : '0') + '%</td><td>' + lan.soft.mysql_status_ps6 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title15 + '</th><td>' + rdata.Open_tables + '</td><td>' + lan.soft.mysql_status_ps7 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title16 + '</th><td>' + rdata.Select_full_join + '</td><td>' + lan.soft.mysql_status_ps8 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title17 + '</th><td>' + rdata.Select_range_check + '</td><td>' + lan.soft.mysql_status_ps9 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title18 + '</th><td>' + rdata.Sort_merge_passes + '</td><td>' + lan.soft.mysql_status_ps10 + '</td></tr>\
+									<tr><th>' + lan.soft.mysql_status_title19 + '</th><td>' + rdata.Table_locks_waited + '</td><td>' + lan.soft.mysql_status_ps11 + '</td></tr>\
 								<tbody>\
 						</table></div>'
                         $(".soft-man-con").html(Con);
@@ -1646,6 +1848,451 @@ var soft = {
                         arrs[lan.bt.nginx_workermen] = rdata.workermen;
                         bt.render_table("tab-nginx-status", arrs);
                     })
+                    break;
+                case 'nginx_format_log':
+                    var loadT = bt.load();
+                    bt.send('get_nginx_access_log_format', 'config/get_nginx_access_log_format', {}, function(rdata) {
+                        $(".soft-man-con").html("<button class='btn btn-success btn-sm mb15 table-add-format'>Add format</button><div class='divtable' style='max-height: 570px;overflow: auto;'><table id='tab-nginx-logs-format' class='table table-hover'><thead><tr><th width='15%'>Name</th><th>Format</th><th width='120' style='text-align:right;'>Opt</th></tr></thead><tbody></tbody></table></div>");
+                        bt.send('get_nginx_access_log_format_parameter', 'config/get_nginx_access_log_format_parameter', {}, function(res) {
+                            loadT.close();
+                            var _format_ul = '<ul class="bt-select-list">';
+                            Object.keys(res).map(function(key){
+                                _format_ul += '<li data-val="'+key+'">'+key+'&nbsp;:&nbsp;'+res[key]+'</li>';
+                            })
+                            _format_ul += '</ul>';
+                            for (const j in rdata) {
+                                if (rdata.hasOwnProperty(j)) {
+                                    const result = rdata[j];
+                                    var _format = result.map(function(item, index){
+                                        return Object.keys(item)[0];
+                                    });
+                                    var element = '<span class="nginx-one-format">' + _format.join('</span><span class="nginx-one-format">') + '</span>',
+                                    _td = '<tr><td>'+j+'</td>\
+                                    <td>'+element+'</td>\
+                                    <td align="right"  data-name="'+j+'"><a class="btlink table-apply-format">Apply</a> | <a class="btlink table-set-format">Set</a> | <a class="btlink table-del-format">Del</a></td></tr>';
+                                    $("#tab-nginx-logs-format tbody").append(_td);
+                                    //表格头固定
+                                    $('#tab-nginx-logs-format').parent().on('scroll', function () {
+                                        var scrollTop = $('#tab-nginx-logs-format').parent().scrollTop();
+                                        $('#tab-nginx-logs-format thead').css({"transform":"translateY("+scrollTop+"px)","position":"relative","z-index":"1"});
+                                    });
+                                }
+                            }
+                            $('.table-add-format, .table-set-format').click(function() {                               
+                                if($(this).hasClass('table-set-format')) {
+                                    var format_title = 'Set format',
+                                    first_format = '',
+                                    add_type = 'edit',
+                                    td_format = $(this).parent().prev().find('.nginx-one-format');
+                                    format_name = $(this).parent().attr('data-name');
+                                    for (var i = 0; i < td_format.length; i++) {
+                                        first_format += '<div class="line">\
+                                            <div class="bt-select">\
+                                                <div class="bt-select-input plr10">\
+                                                    <div class="bt-select-val" data-active="'+td_format.eq(i).text()+'">'+td_format.eq(i).text()+'</div>\
+                                                    <span class="bt-down-icon"></span>\
+                                                </div>\
+                                            </div>\
+                                            <a href="javascript:;" class="del-format">Del</a>\
+                                        </div>';
+                                    }
+                                }else{
+                                    var format_title = 'Add format',
+                                    format_name = '',
+                                    add_type = 'add',
+                                    first_format = '',
+                                    format_list = ['$http_x_forwarded_for','$remote_addr','-','[$time_local]','$request','$status','$body_bytes_sent','$http_referer','$http_user_agent'];
+                                    for (var i = 0; i < format_list.length; i++) {
+                                        first_format += '<div class="line">\
+                                            <div class="bt-select">\
+                                                <div class="bt-select-input plr10">\
+                                                    <div class="bt-select-val" data-active="'+format_list[i]+'">'+format_list[i]+'</div>\
+                                                    <span class="bt-down-icon"></span>\
+                                                </div>\
+                                            </div>\
+                                            <a href="javascript:;" class="del-format">Del</a>\
+                                        </div>';
+                                    }
+
+                                }
+                                layer.open({
+                                    type: 1,
+                                    title: format_title,
+                                    closeBtn: 2,
+                                    area: '375px',
+                                    btn: ['Confirm', 'Cancel'],
+                                    content: '<div class="bt-form pd20 nginx-add-format" style="position: relative;">\
+                                        <div class="line" style="font-size: 13px;">\
+                                            <span style="text-align: right;display: inline-block;margin-right: 7px;width: 50px;">Name: </span>\
+                                            <input name="log_format_name" class="bt-input-text" type="text" style="width:274px" placeholder = "Please enter the format name.">\
+                                        </div>\
+                                        <span style="position: absolute;top: 70px;left: 25px;">Format:</span>\
+                                        <div style="position: relative;margin-left: 60px;">\
+                                            <div class="format-table">'+first_format+'</div>\
+                                            '+_format_ul+'\
+                                        </div>\
+                                        <button class="btn btn-success btn-sm btn-title btn-add-format" type="button" style="margin-top: 10px;margin-left: 60px;"><span class="glyphicon cursor glyphicon-plus mr5"></span>Add parameter</button>\
+                                        <ul class="help-info-text c7"><li>The format are executed in the order of parameters.</li></ul>\
+                                    </div>',
+                                    success: function(index, layero) {
+                                        $('.nginx-add-format [name=log_format_name]').val(format_name);
+                                        $('.nginx-add-format').parents('.layui-layer-content').css('overflow','inherit');
+                                        $('.nginx-add-format').on('click', '.bt-select-input', function (e) {
+                                            if($(this).hasClass('active')){
+                                                $('.nginx-add-format .bt-select-list').removeClass('active');
+                                                $(this).removeClass('active').find('.bt-down-icon').css('transform','rotate(-45deg)');
+                                            }else{
+                                                var _choose = $(this).find('.bt-select-val').text();
+                                                $('.bt-select-list li').removeClass('active');
+                                                $('.active.bt-select-input').removeClass('active').find('.bt-down-icon').css('transform','rotate(-45deg)')
+                                                $('.bt-select-list li:contains('+_choose+')').addClass('active');
+                                                $('.nginx-add-format .bt-select-list').addClass('active').css('top',$(this).offset().top-$('.format-table').offset().top+33);
+                                                $(this).addClass('active').find('.bt-down-icon').css('transform','rotate(135deg)');
+                                            }
+                                            e.stopPropagation();
+                                            $(document).click(function(e){
+                                                $('.active.bt-select-list').removeClass('active');
+                                                $(this).find('.bt-down-icon').css('transform','rotate(-45deg)');
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                            });
+                                        });
+                                        $('.nginx-add-format').on('click', '.bt-select-list li', function (e) {
+                                            var _value = $(this).attr('data-val');
+                                            $('.active.bt-select-input').find('.bt-select-val').attr('data-active',_value).text(_value);
+                                            $('.nginx-add-format .bt-select-list,.active.bt-select-input').removeClass('active');
+                                        });
+                                        $('.btn-add-format').click(function (e) {
+                                            var _new_line = '<div class="line">\
+                                                <div class="bt-select">\
+                                                    <div class="bt-select-input plr10">\
+                                                        <div class="bt-select-val" data-active="$server_name">$server_name</div>\
+                                                        <span class="bt-down-icon" ></span>\
+                                                    </div>\
+                                                </div>\
+                                                <a href="javascript:;" class="del-format">Del</a>\
+                                            </div>';
+                                            $('.format-table').append(_new_line);
+                                            $('.format-table').scrollTop(10000000)
+                                        });
+                                        $('.nginx-add-format').on('click', '.del-format', function (e) {
+                                            if ($('.del-format').length == 1) {
+                                                layer.msg('This is the last parameter.', {icon: 2});
+                                                return false;
+                                            }
+                                            $(this).parent().remove();
+                                        });
+                                    },
+                                    yes: function(index, layero) {
+                                        if ($('.nginx-add-format [name=log_format_name]').val()=='') {
+                                            layer.msg('The format name cannot be empty!', {icon: 2});
+                                            return false;
+                                        }
+                                        var log_format = [];
+                                        $(".nginx-add-format .format-table .bt-select-val").each(function(){
+                                            log_format.push($(this).attr("data-active"));
+                                        });                                    
+                                        var format_data = {
+                                            "log_format_name": $('.nginx-add-format [name=log_format_name]').val(),
+                                            "log_format": JSON.stringify(log_format),
+                                            "act": add_type
+                                        }
+                                        bt.send('add_nginx_access_log_format', 'config/add_nginx_access_log_format', format_data, function(res) {
+                                            layer.close(index);
+                                            $('.bt-soft-menu p:contains("Logs format")').click();
+                                            layer.msg(res.msg, {icon: res.status ? 1 : 2});
+                                        })
+                                    }
+                                })
+                            });
+                            $('#tab-nginx-logs-format').on('click', '.table-del-format', function (e) {
+                                var log_format_name = $(this).parent().attr('data-name'),
+                                loadP = layer.confirm('Confirm to delete【'+log_format_name+'】this logs format?', {
+                                    title: 'Confirm Delete?',
+                                    closeBtn: 2
+                                }, function() {
+                                    layer.close(loadP);
+                                    bt.send('del_nginx_access_log_format', 'config/del_nginx_access_log_format', {'log_format_name': log_format_name}, function(res) {
+                                        if(res.status) $('.bt-soft-menu p:contains("Logs format")').click();
+                                        layer.msg(res.msg, {icon: res.status ? 1 : 2});
+                                    });
+                                });
+                            });
+                            $('#tab-nginx-logs-format').on('click', '.table-apply-format', function (e) {
+                                var log_format_name = $(this).parent().attr('data-name');
+                                bt.send('get_nginx_access_log_format_parameter', 'config/get_nginx_access_log_format_parameter', {'log_format_name':log_format_name}, function(res) {
+                                    if (Object.keys(res.site_list).length == 0) {
+                                        layer.msg('There is no site can apply!', {icon: 2});
+                                        return false;
+                                    }
+                                    var _site_ul = '<ul class="format-site-list">';
+                                    Object.keys(res.site_list).map(function(key){
+                                        _site_ul += '<li style="padding: 10px"><div class="bt_checkbox_groups'+(res.site_list[key]?' active':'')+'" data-val="'+key+'"></div>'+key+'</li>';
+                                    });
+                                    _site_ul += '</ul>';
+                                    layer.open({
+                                        type: 1,
+                                        title: 'Website apply format',
+                                        closeBtn: 2,
+                                        btn: ['Confirm', 'Cancel'],
+                                        content: '<div class="bt-form pd20 nginx-add-site" style="font-size: 13px;">\
+                                            <div class="line">\
+                                                <span style="text-align: right;display: inline-block;position: absolute;">Site: </span>\
+                                                '+_site_ul+'\
+                                            </div>\
+                                            <div class="line c7">The checked site would used the format.</div>\
+                                        </div>',
+                                        success: function(index, layero) {
+                                            $('.nginx-add-site').on('click', '.format-site-list li', function (e) {
+                                                if ($(this).find('.bt_checkbox_groups').hasClass('active')) {
+                                                    $(this).find('.bt_checkbox_groups').removeClass('active');
+                                                } else {
+                                                    $(this).find('.bt_checkbox_groups').addClass('active');
+                                                }
+                                            });
+                                        },
+                                        yes: function(index, layero) {
+                                            var sites = [];
+                                            $(".nginx-add-site .format-site-list .bt_checkbox_groups.active").each(function(){
+                                                sites.push($(this).attr("data-val"));
+                                            });                                    
+                                            var format_data = {
+                                                "log_format_name": log_format_name,
+                                                "sites": JSON.stringify(sites)
+                                            }
+                                            bt.send('set_format_log_to_website', 'config/set_format_log_to_website', format_data, function(res) {
+                                                layer.close(index);
+                                                if(res.status) $('.bt-soft-menu p:contains("Logs format")').click();
+                                                layer.msg(res.msg, {icon: res.status ? 1 : 2});
+                                            })
+                                        }
+                                    })
+                                });
+                            });
+                        });
+                    });
+                    break;
+                case 'apache_format_log':
+                    var loadT = bt.load();
+                    bt.send('get_httpd_access_log_format', 'config/get_httpd_access_log_format', {}, function(rdata) {
+                        $(".soft-man-con").html("<button class='btn btn-success btn-sm mb15 table-add-format'>Add format</button><div class='divtable' style='max-height: 570px;overflow: auto;'><table id='tab-nginx-logs-format' class='table table-hover'><thead><tr><th width='15%'>Name</th><th>Format</th><th width='120' style='text-align:right;'>Opt</th></tr></thead><tbody></tbody></table></div>");
+                        bt.send('get_httpd_access_log_format_parameter', 'config/get_httpd_access_log_format_parameter', {}, function(res) {
+                            loadT.close();
+                            var _format_ul = '<ul class="bt-select-list">';
+                            Object.keys(res).map(function(key){
+                                _format_ul += '<li data-val="'+key+'">'+key+'&nbsp;:&nbsp;'+res[key]+'</li>';
+                            })
+                            _format_ul += '</ul>';
+                            for (const j in rdata) {
+                                if (rdata.hasOwnProperty(j)) {
+                                    const result = rdata[j];
+                                    var _format = result.map(function(item, index){
+                                        return Object.keys(item)[0];
+                                    });
+                                    var element = '<span class="nginx-one-format">' + _format.join('</span><span class="nginx-one-format">') + '</span>',
+                                    _td = '<tr><td>'+j+'</td>\
+                                    <td>'+element+'</td>\
+                                    <td align="right"  data-name="'+j+'"><a class="btlink table-apply-format">Apply</a> | <a class="btlink table-set-format">Set</a> | <a class="btlink table-del-format">Del</a></td></tr>';
+                                    $("#tab-nginx-logs-format tbody").append(_td);
+                                    //表格头固定
+                                    $('#tab-nginx-logs-format').parent().on('scroll', function () {
+                                        var scrollTop = $('#tab-nginx-logs-format').parent().scrollTop();
+                                        $('#tab-nginx-logs-format thead').css({"transform":"translateY("+scrollTop+"px)","position":"relative","z-index":"1"});
+                                    });
+                                }
+                            }
+                            $('.table-add-format, .table-set-format').click(function() {                               
+                                if($(this).hasClass('table-set-format')) {
+                                    var format_title = 'Set format',
+                                    first_format = '',
+                                    add_type = 'edit',
+                                    td_format = $(this).parent().prev().find('.nginx-one-format');
+                                    format_name = $(this).parent().attr('data-name');
+                                    for (var i = 0; i < td_format.length; i++) {
+                                        first_format += '<div class="line">\
+                                            <div class="bt-select">\
+                                                <div class="bt-select-input plr10">\
+                                                    <div class="bt-select-val" data-active="'+td_format.eq(i).text()+'">'+td_format.eq(i).text()+'</div>\
+                                                    <span class="bt-down-icon"></span>\
+                                                </div>\
+                                            </div>\
+                                            <a href="javascript:;" class="del-format">Del</a>\
+                                        </div>';
+                                    }
+                                }else{
+                                    var format_title = 'Add format',
+                                    format_name = '',
+                                    add_type = 'add',
+                                    first_format = '',
+                                    format_list = ['%{X-Forwarded-For}i','%h','%l','%u','%t','%r','%>s','%b','%{Referer}i','%{User-agent}i'];
+                                    for (var i = 0; i < format_list.length; i++) {
+                                        first_format += '<div class="line">\
+                                            <div class="bt-select">\
+                                                <div class="bt-select-input plr10">\
+                                                    <div class="bt-select-val" data-active="'+format_list[i]+'">'+format_list[i]+'</div>\
+                                                    <span class="bt-down-icon"></span>\
+                                                </div>\
+                                            </div>\
+                                            <a href="javascript:;" class="del-format">Del</a>\
+                                        </div>';
+                                    }
+                                }
+                                layer.open({
+                                    type: 1,
+                                    title: format_title,
+                                    closeBtn: 2,
+                                    area: '375px',
+                                    btn: ['Confirm', 'Cancel'],
+                                    content: '<div class="bt-form pd20 nginx-add-format" style="position: relative;">\
+                                        <div class="line" style="font-size: 13px;">\
+                                            <span style="text-align: right;display: inline-block;margin-right: 7px;width: 50px;">Name: </span>\
+                                            <input name="log_format_name" class="bt-input-text" type="text" style="width:274px" placeholder = "Please enter the format name.">\
+                                        </div>\
+                                        <span style="position: absolute;top: 70px;left: 25px;">Format:</span>\
+                                        <div style="position: relative;margin-left: 60px;">\
+                                            <div class="format-table">'+first_format+'</div>\
+                                            '+_format_ul+'\
+                                        </div>\
+                                        <button class="btn btn-success btn-sm btn-title btn-add-format" type="button" style="margin-top: 10px;margin-left: 60px;"><span class="glyphicon cursor glyphicon-plus mr5"></span>Add parameter</button>\
+                                        <ul class="help-info-text c7"><li>The format are executed in the order of parameters.</li></ul>\
+                                    </div>',
+                                    success: function(index, layero) {
+                                        $('.nginx-add-format [name=log_format_name]').val(format_name);
+                                        $('.nginx-add-format').parents('.layui-layer-content').css('overflow','inherit');
+                                        $('.nginx-add-format').on('click', '.bt-select-input', function (e) {
+                                            if($(this).hasClass('active')){
+                                                $('.nginx-add-format .bt-select-list').removeClass('active');
+                                                $(this).removeClass('active').find('.bt-down-icon').css('transform','rotate(-45deg)');
+                                            }else{
+                                                var _choose = $(this).find('.bt-select-val').text();
+                                                $('.bt-select-list li').removeClass('active');
+                                                $('.active.bt-select-input').removeClass('active').find('.bt-down-icon').css('transform','rotate(-45deg)')
+                                                $('.bt-select-list li:contains('+_choose+')').addClass('active');
+                                                $('.nginx-add-format .bt-select-list').addClass('active').css('top',$(this).offset().top-$('.format-table').offset().top+33);
+                                                $(this).addClass('active').find('.bt-down-icon').css('transform','rotate(135deg)');
+                                            }
+                                            e.stopPropagation();
+                                            $(document).click(function(e){
+                                                $('.active.bt-select-list').removeClass('active');
+                                                $(this).find('.bt-down-icon').css('transform','rotate(-45deg)');
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                            });
+                                        });
+                                        $('.nginx-add-format').on('click', '.bt-select-list li', function (e) {
+                                            var _value = $(this).attr('data-val');
+                                            $('.active.bt-select-input').find('.bt-select-val').attr('data-active',_value).text(_value);
+                                            $('.nginx-add-format .bt-select-list,.active.bt-select-input').removeClass('active');
+                                        });
+                                        $('.btn-add-format').click(function (e) {
+                                            var _new_line = '<div class="line">\
+                                                <div class="bt-select">\
+                                                    <div class="bt-select-input plr10">\
+                                                        <div class="bt-select-val" data-active="%>s">%>s</div>\
+                                                        <span class="bt-down-icon" ></span>\
+                                                    </div>\
+                                                </div>\
+                                                <a href="javascript:;" class="del-format">Del</a>\
+                                            </div>';
+                                            $('.format-table').append(_new_line);
+                                            $('.format-table').scrollTop(10000000)
+                                        });
+                                        $('.nginx-add-format').on('click', '.del-format', function (e) {
+                                            if ($('.del-format').length == 1) {
+                                                layer.msg('This is the last parameter.', {icon: 2});
+                                                return false;
+                                            }
+                                            $(this).parent().remove();
+                                        });
+                                    },
+                                    yes: function(index, layero) {
+                                        if ($('.nginx-add-format [name=log_format_name]').val()=='') {
+                                            layer.msg('The format name cannot be empty!', {icon: 2});
+                                            return false;
+                                        }
+                                        var log_format = [];
+                                        $(".nginx-add-format .format-table .bt-select-val").each(function(){
+                                            log_format.push($(this).attr("data-active"));
+                                        });                                    
+                                        var format_data = {
+                                            "log_format_name": $('.nginx-add-format [name=log_format_name]').val(),
+                                            "log_format": JSON.stringify(log_format),
+                                            'act':add_type
+                                        }
+                                        bt.send('add_httpd_access_log_format', 'config/add_httpd_access_log_format', format_data, function(res) {
+                                            layer.close(index);
+                                            if(res.status) $('.bt-soft-menu p:contains("Logs format")').click();
+                                            layer.msg(res.msg, {icon: res.status ? 1 : 2});
+                                        })
+                                    }
+                                })
+                            });
+                            $('#tab-nginx-logs-format').on('click', '.table-del-format', function (e) {
+                                var log_format_name = $(this).parent().attr('data-name'),
+                                loadP = layer.confirm('Confirm to delete【'+log_format_name+'】this logs format?', {
+                                    title: 'Confirm Delete?',
+                                    closeBtn: 2
+                                }, function() {
+                                    layer.close(loadP);
+                                    bt.send('del_httpd_access_log_format', 'config/del_httpd_access_log_format', {'log_format_name': log_format_name}, function(res) {
+                                        if(res.status) $('.bt-soft-menu p:contains("Logs format")').click();
+                                        layer.msg(res.msg, {icon: res.status ? 1 : 2});
+                                    });
+                                });
+                            });
+                            $('#tab-nginx-logs-format').on('click', '.table-apply-format', function (e) {
+                                var log_format_name = $(this).parent().attr('data-name');
+                                bt.send('get_httpd_access_log_format_parameter', 'config/get_httpd_access_log_format_parameter', {'log_format_name':log_format_name}, function(res) {
+                                    if (Object.keys(res.site_list).length == 0) {
+                                        layer.msg('There is no site can apply!', {icon: 2});
+                                        return false;
+                                    }
+                                    var _site_ul = '<ul class="format-site-list">';
+                                    Object.keys(res.site_list).map(function(key){
+                                        _site_ul += '<li style="padding: 10px"><div class="bt_checkbox_groups'+(res.site_list[key]?' active':'')+'" data-val="'+key+'"></div>'+key+'</li>';
+                                    });
+                                    _site_ul += '</ul>';
+                                    layer.open({
+                                        type: 1,
+                                        title: 'Website apply format',
+                                        closeBtn: 2,
+                                        btn: ['Confirm', 'Cancel'],
+                                        content: '<div class="bt-form pd20 nginx-add-site" style="font-size: 13px;">\
+                                            <div class="line">\
+                                                <span style="text-align: right;display: inline-block;position: absolute;">Site: </span>\
+                                                '+_site_ul+'\
+                                            </div>\
+                                            <div class="line c7">The checked site would used the format.</div>\
+                                        </div>',
+                                        success: function(index, layero) {
+                                            $('.nginx-add-site').on('click', '.format-site-list li', function (e) {
+                                                if ($(this).find('.bt_checkbox_groups').hasClass('active')) {
+                                                    $(this).find('.bt_checkbox_groups').removeClass('active');
+                                                } else {
+                                                    $(this).find('.bt_checkbox_groups').addClass('active');
+                                                }
+                                            });
+                                        },
+                                        yes: function(index, layero) {
+                                            var sites = [];
+                                            $(".nginx-add-site .format-site-list .bt_checkbox_groups.active").each(function(){
+                                                sites.push($(this).attr("data-val"));
+                                            });                                    
+                                            var format_data = {
+                                                "log_format_name": log_format_name,
+                                                "sites": JSON.stringify(sites)
+                                            }
+                                            bt.send('set_httpd_format_log_to_website', 'config/set_httpd_format_log_to_website', format_data, function(res) {
+                                                layer.close(index);
+                                                if(res.status) $('.bt-soft-menu p:contains("Logs format")').click();
+                                                layer.msg(res.msg, {icon: res.status ? 1 : 2});
+                                            })
+                                        }
+                                    })
+                                });
+                            });
+                        });
+                    });
                     break;
                 case 'apache_status':
                     var loadT = bt.load();
@@ -2199,10 +2846,10 @@ var soft = {
                                 bt.open({
                                     type: 1,
                                     title: "PHP-" + version + "-PHPINFO",
-                                    area: ['70%', '90%'],
+                                    area: ['73%', '90%'],
                                     closeBtn: 2,
                                     shadeClose: true,
-                                    content: '<div style="white-space: pre-wrap;">'+content+'</div>'
+                                    content: '<div style="white-space: pre-wrap;padding:0 10px;">'+content+'</div>'
                                 })
                             })
                         })
@@ -2475,6 +3122,17 @@ var soft = {
                                 }
                             },
                             {
+                                title: 'Connection', 
+                                name: 'listen', 
+                                value: rdata.unix, 
+                                type: 'select', 
+                                items: [
+                                    { title: 'UNIX socket', value: 'unix' },
+                                    { title: 'TCP socket', value: 'tcp' }
+                                ], 
+                                ps: '* UNIX socket recommended' 
+                            },
+                            {
                                 title: lan.soft.php_fpm_model,
                                 name: 'pm',
                                 value: rdata.pm,
@@ -2587,14 +3245,14 @@ var soft = {
                             clicks = clicks.concat(_form.clicks);
                         }
                         _c_form.append('<ul class="help-info-text c7">\
-                                        <li>[Max num of child processes] The larger the number, the stronger the concurrency, but max_children should not exceed 5000</li>\
-                                        <li>[Ram] Each PHP child process needs about 20MB of Ram, too large max_children will cause server instability</li>\
-                                        <li>[Static mode] In the static mode, the set number of child processes is always maintained, which has a large Ram overhead, but has a good concurrency capability.</li>\
-                                        <li>[Dynamic mode] will recover the process according to the set max number of idle processes, the Ram overhead is small, it is recommended to use a small Ram machine</li>\
+                                        <li>[Max num of child processes] The larger the number, the stronger the concurrency,<br>&nbsp;&nbsp;&nbsp;&nbsp; but max_children should not exceed 5000.</li>\
+                                        <li>[Ram] Each PHP child process needs about 20MB of Ram,<br>&nbsp;&nbsp;&nbsp;&nbsp; too large max_children will cause server instability.</li>\
+                                        <li>[Static mode] In the static mode, the set number of child processes is always maintained,<br>&nbsp;&nbsp;&nbsp;&nbsp; which has a large Ram overhead, but has a good concurrency capability.</li>\
+                                        <li>[Dynamic mode] will recover the process according to the set max number of idle processes,<br>&nbsp;&nbsp;&nbsp;&nbsp; the Ram overhead is small, it is recommended to use a small Ram machine.</li>\
                                         <li>[64GB Ram recommended value] max_children <= 1000, start / min_spare = 50, max_spare <= 200</li>\
-                                        <li>[Multi-PHP Version] If you have installed multiple PHP versions and are using them, it is recommended to reduce the concurrent configuration appropriately.</li>\
-                                        <li>[No database] If no database such as mysql is installed, it is recommended to set 2 times the recommended concurrency</li>\
-                                        <li>[Note] The above are the recommended configuration instructions. The online projects are complex and diverse. Please adjust according to actual conditions.</li>\
+                                        <li>[Multi-PHP Version] If you have installed multiple PHP versions and are using them,<br>&nbsp;&nbsp;&nbsp;&nbsp; it is recommended to reduce the concurrent configuration appropriately.</li>\
+                                        <li>[No database] If no database such as mysql is installed,<br>&nbsp;&nbsp;&nbsp;&nbsp; it is recommended to set 2 times the recommended concurrency.</li>\
+                                        <li>[Note] The above are the recommended configuration instructions.<br>&nbsp;&nbsp;&nbsp;&nbsp; The online projects are complex and diverse. Please adjust according to actual conditions.</li>\
                                     </ul>')
                         tabCon.append(_c_form);
 
@@ -2932,26 +3590,17 @@ var soft = {
         });
     },
 
-    input_zip: function(plugin_name, tmp_path) {
-        bt.soft.show_speed_window('Installing, this may take a few minutes...', function() {
-            $.post('/plugin?action=input_zip', {
-                plugin_name: plugin_name,
-                tmp_path: tmp_path
-            }, function(rdata) {
+    input_zip: function (plugin_name,tmp_path,data) {
+        bt.soft.show_speed_window({title:'Installing, this may take a few minutes...',status:true},function(){
+            $.post('/plugin?action=input_zip', { plugin_name: plugin_name, tmp_path: tmp_path }, function (rdata) {
                 layer.closeAll()
                 if (rdata.status) {
                     soft.get_list();
                 }
-                setTimeout(function() {
-                    layer.msg(rdata.msg, {
-                        icon: rdata.status ? 1 : 2
-                    })
-                }, 1000);
+                setTimeout(function () { layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 }) }, 1000);
             });
         });
     }
-
-
 };
 
 function soft_td_width_auto() {

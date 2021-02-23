@@ -27,6 +27,7 @@ class crontab:
         
         data=[]
         for i in range(len(cront)):
+            tmp = {}
             tmp=cront[i]
             if cront[i]['type']=="day":
                 tmp['type']=public.getMsg('CRONTAB_TODAY')
@@ -50,6 +51,10 @@ class crontab:
             elif cront[i]['type']=="month":
                 tmp['type']=public.getMsg('CRONTAB_MONTH')
                 tmp['cycle']=public.getMsg('CRONTAB_MONTH_CYCLE',(str(cront[i]['where1']),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+
+            log_file = '/www/server/cron/{}.log'.format(tmp['echo'])
+            if os.path.exists(log_file):
+                tmp['addtime'] = public.format_date(times=int(os.path.getmtime(log_file)))
             data.append(tmp)
         return data
 
@@ -196,7 +201,9 @@ class crontab:
             (get['name'],get['type'],get['where1'],get['hour'],get['minute'],cronName,time.strftime('%Y-%m-%d %X',time.localtime()),1,get['save'],get['backupTo'],get['sType'],get['sName'],get['sBody'],get['urladdress'])
             )
         if addData>0:
-             return public.returnMsg(True,'ADD_SUCCESS')
+            result = public.returnMsg(True,'ADD_SUCCESS')
+            result['id'] = addData
+            return result
         return public.returnMsg(False,'ADD_ERROR')
     
     #构造周期
@@ -316,12 +323,15 @@ class crontab:
 
     #从crond删除
     def remove_for_crond(self,echo):
-        u_file = '/var/spool/cron/crontabs/root'
         file = self.get_cron_file()
         conf=public.readFile(file)
+        if conf.find(str(echo)) == -1: return True
         rep = ".+" + str(echo) + ".+\n"
         conf = re.sub(rep, "", conf)
-        if not public.writeFile(file,conf): return False
+        try:
+            if not public.writeFile(file,conf): return False
+        except:
+            return False
         self.CrondReload()
         return True
     
@@ -333,8 +343,7 @@ class crontab:
             shell=param.sFile
         else :
             head="#!/bin/bash\nPATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin\nexport PATH\n"
-
-            python_bin = public.get_python_bin()
+            python_bin = "{} -u".format(public.get_python_bin())
             if public.get_webserver()=='nginx':
                 log='.log'
             elif public.get_webserver()=='apache':
@@ -439,10 +448,11 @@ echo "--------------------------------------------------------------------------
         cron_path = c_file
         if not os.path.exists(u_path):
             cron_path=c_file
-        if os.path.exists('/usr/bin/yum'):
-            cron_path = c_file
-        elif os.path.exists("/usr/bin/apt-get"):
+
+        if os.path.exists("/usr/bin/apt-get"):
             cron_path = u_file
+        elif os.path.exists('/usr/bin/yum'):
+            cron_path = c_file
 
         if cron_path == u_file:
             if not os.path.exists(u_path):

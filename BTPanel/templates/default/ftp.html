@@ -1,6 +1,15 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<style>
+    #ftpData .webPath,#ftpData .webNote,#ftpData .ftpStatus{
+        white-space: nowrap;
+        display: inline-block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: auto;
+    }
+</style>
 <div class="main-content pb55">
     <div class="container-fluid">
         <div class="pos-box bgw mtb15">
@@ -26,7 +35,7 @@
             </span>
             <div class="divtable mtb10">
                 <div class="tablescroll">
-                    <table id="ftpData" class="table table-hover" style="min-width: 900px;border: 0 none;">                 
+                    <table id="ftpData" class="table table-hover" style="min-width: 700px;border: 0 none;">                 
                     </table>
                 </div>
                 <div class="dataTables_paginate paging_bootstrap page">
@@ -58,7 +67,7 @@
 							return _html;
 						}},
 						{ field: 'status', title: lan.ftp.status,templet:function(item){
-							var _status = '<a href="javascript:;" title="'+lan.ftp.ftp_user+'"';
+							var _status = '<a class="ftpStatus" href="javascript:;" title="'+lan.ftp.ftp_user+'"';
 							if(item.status=='1'){
 								_status+=' onclick="ftp.stop_user('+item.id+',\''+item.name+'\') " >';
 								_status+='<span style="color:#5CB85C">'+lan.ftp.start+' </span><span style="color:#5CB85C" class="glyphicon glyphicon-play"></span>';
@@ -73,10 +82,10 @@
 						}},
 						{ field: 'path', title: lan.ftp.add_path,templet:function(item){
 							var _path = bt.format_path(item.path);							
-							return '<a class="btlink" title="'+lan.ftp.open_path+'" href="javascript:openPath(\''+_path+'\');">'+_path+'</a>';
+							return '<a class="btlink webPath" title="'+lan.ftp.open_path+'" href="javascript:openPath(\''+_path+'\');">'+_path+'</a>';
 						}},
 						{ field: 'ps', title: lan.ftp.add_ps,templet : function(item){
-							return "<span class='c9 input-edit' onclick=\"bt.pub.set_data_by_key('ftps','ps',this)\">"+item.ps+ "</span>";
+							return "<span class='c9 input-edit webNote' onclick=\"bt.pub.set_data_by_key('ftps','ps',this)\">"+item.ps+ "</span>";
 						}},
 						{ field: 'opt',width:130, title: lan.ftp.operate,align:'right',templet:function(item){
 							var option = "<a href=\"javascript:;\" class=\"btlink\" onclick=\"ftp.set_password("+item.id+",'"+item.name+"','"+item.password+"')\" title="+lan.ftp.change_pass+">"+lan.ftp.edit_pass+"</a> | ";
@@ -85,8 +94,9 @@
 						}},
 					],
 					data:rdata.data
-				})		
-			})			
+				});
+				ftp.forSize();	
+			});	
 		},
 		batch_ftp:function(type,arr,result){
 			if(arr == undefined){
@@ -160,15 +170,26 @@
 			bt.ftp.set_status(id,username,1,function(rdata){
 				if(rdata.status) ftp.get_list();
 			})
+		},
+		//浏览器窗口大小变化时调整内容宽度
+		forSize:function(){
+			var ticket_with = $('#ftpData').parent().width(),
+			td_width = ticket_with*0.6-160-$('#ftpData th:eq(3)').width(),
+			path_width = td_width/2 > $('#ftpData th:eq(4)').width() ? $('#ftpData th:eq(4)').width() : td_width/2;
+			$('#ftpData .webPath').css('max-width',path_width);
+			$('#ftpData .webNote').css('max-width',td_width-$('#ftpData .webPath').width());
 		}
-
 	}
 	bt.set_cookie('sites_path',"{{session['config']['sites_path']}}");
+	$(window).resize(function() {
+		ftp.forSize();
+	});
     {% if not data['isSetup'] %}
 		layer.msg('{{data["lan"]["JS1"]}}<a href="/soft" style="color:#20a53a; float: right;">{{data["lan"]["JS2"]}}</a>',{icon:7,time:0,shade: [0.3, '#000']});
-        $(".layui-layer-shade").css("margin-left", "180px");
+		$(".layui-layer-shade").css("margin-left", "180px");
     {% else %}
-    	ftp.get_list();
+		ftp.get_list();
+		
     {% endif %}	
 </script>
 {% endblock %}

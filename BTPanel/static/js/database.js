@@ -18,26 +18,27 @@ var database = {
                         }
                     },
                     {
-                        field: 'password', width: '15%', title: lan.database.add_pass, templet: function (item) {
-                            var _html = '<span class="password" data-pw="' + item.password + '">**********</span>';
+                        field: 'password', title: lan.database.add_pass, templet: function (item) {
+                            var _html = '<span class="dataBase"><span class="password" data-pw="' + item.password + '">**********</span>';
                             _html += '<span onclick="bt.pub.show_hide_pass(this)" class="glyphicon glyphicon-eye-open cursor pw-ico" style="margin-left:10px"></span>';
-                            _html += '<span class="ico-copy cursor btcopy" style="margin-left:10px" title="'+lan.database.copy_pass+'" data-pw="' + item.password + '" onclick="bt.pub.copy_pass(\'' + item.password + '\')"></span>';
+                            _html += '<span class="ico-copy cursor btcopy" style="margin-left:10px" title="'+lan.database.copy_pass+'" data-pw="' + item.password + '" onclick="bt.pub.copy_pass(\'' + item.password + '\')"></span></span>';
                             return _html;
                         }
                     },
                     {
                         field: 'backup', title: lan.database.backup, templet: function (item) {
-                            var backup = '';
+                            var backup = '<span class="dataBase">';
                             var _msg = lan.database.backup_empty;
                             if (item.backup_count > 0) _msg = lan.database.backup_ok;
-                            backup = "<a href='javascript:;' class='btlink' onclick=\"database.database_detail('" + item.id + "','" + item.name + "')\">" + _msg + "</a> | "
+                            backup += "<a href='javascript:;' class='btlink' onclick=\"database.database_detail('" + item.id + "','" + item.name + "')\">" + _msg + "</a> | "
                             backup += "<a class='btlink' href=\"javascript:database.input_database('" + item.name + "');\" title='" + lan.database.input_title + "'>" + lan.database.input + "</a>";
+                            backup += '</span>';
                             return backup;
                         }
                     },
                     {
                         field: 'ps', title: lan.database.add_ps, templet: function (item) {
-                            var _ps = "<span class='c9 input-edit' onclick=\"bt.pub.set_data_by_key('databases','ps',this)\" >"
+                            var _ps = "<span class='c9 input-edit webNote' onclick=\"bt.pub.set_data_by_key('databases','ps',this)\" >"
                             if (item.password) {
                                 _ps += item.ps
                             } else {
@@ -48,18 +49,22 @@ var database = {
                         }
                     },
                     {
-                        field: 'opt', width: 300, title: lan.database.operation, align: 'right', templet: function (item) {
-                            var option = "<a href=\"javascript:;\" class=\"btlink\" onclick=\"bt.database.open_phpmyadmin('" + item.name + "','" + item.username + "','" + item.password + "')\" title=\""+lan.database.admin_title+"\">"+lan.database.admin+"</a> | ";
+                        field: 'opt', title: lan.database.operation, align: 'right', templet: function (item) {
+                            var option = "<span class=\"dataBase\"><a href=\"javascript:;\" class=\"btlink\" onclick=\"bt.database.open_phpmyadmin('" + item.name + "','" + item.username + "','" + item.password + "')\" title=\""+lan.database.admin_title+"\">"+lan.database.admin+"</a> | ";
                             option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"database.rep_tools('" + item.name + "')\" title=\""+lan.database.mysql_tools+"\">"+lan.database.tools+"</a> | ";
                             option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"bt.database.set_data_access('" + item.username + "')\" title=\""+lan.database.set_db_auth+"\">"+lan.database.auth+"</a> | ";
                             option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"database.set_data_pass(" + item.id + ",'" + item.username + "','" + item.password + "')\" title=\""+lan.database.edit_pass_title+"\">"+lan.database.edit_pass+"</a> | ";
-                            option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"database.del_database(" + item.id + ",'" + item.name + "')\" title=\""+lan.database.del_title+"\">"+lan.database.del+"</a>";
+                            option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"database.del_database(" + item.id + ",'" + item.name + "')\" title=\""+lan.database.del_title+"\">"+lan.database.del+"</a></span>";
                             return option;
                         }
                     },
                 ],
                 data: rdata.data
-            })
+            });
+            $(window).resize(function() {
+                database.forSize();
+            });
+            database.forSize();
         })
     },
     rep_tools: function (db_name, res) {
@@ -303,7 +308,11 @@ var database = {
                 var _tab = bt.render({
                     table: '#DataBackupList',
                     columns: [
-                        { field: 'name', title: lan.database.backup_name },
+                        { field: 'name', title: lan.database.backup_name, templet: function (item) {
+                                var _opt = '<span class="btlink" style="display: inline-block;max-width: 265px;">'+item.name+'</span>'
+                                return _opt;
+                            }
+                        },
                         {
                             field: 'size', title: lan.database.backup_size, templet: function (item) {
                                 return bt.format_size(item.size);
@@ -325,6 +334,7 @@ var database = {
                     bt.database.backup_data(id, dataname, function (rdata) {
                         if (rdata.status) database.database_detail(id, dataname);
                         database.get_list();
+                        if (!rdata.status) layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
                     })
                 })
             }, 100)
@@ -431,5 +441,11 @@ var database = {
                 database.input_database(name);
             });
         });
+    },
+    //浏览器窗口大小变化时调整内容宽度
+    forSize:function(){
+        var ticket_with = $('#DataBody').parent().width(),
+        td_width = ticket_with*0.8-30-$('#DataBody th:eq(2)').width()-$('#DataBody th:eq(3)').width()-$('#DataBody th:eq(4)').width()-$('#DataBody th:eq(6)').width();
+        $('#DataBody .webNote').css('max-width',td_width);
     }
 }

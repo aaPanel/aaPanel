@@ -47,7 +47,8 @@ import logging
 from hashlib import sha1
 
 os.chdir("/www/server/panel")
-sys.path.append("class/")
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
 import public
 caa_value = '0 issue "letsencrypt.org"'
 
@@ -201,7 +202,7 @@ class CloudFlareDns(BaseDns):
         super(CloudFlareDns, self).__init__()
 
     def find_dns_zone(self, domain_name):
-        url = urljoin(self.CLOUDFLARE_API_BASE_URL, "zones?status=active")
+        url = urljoin(self.CLOUDFLARE_API_BASE_URL, "zones?status=active&name={0}".format(domain_name))
         headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
         find_dns_zone_response = requests.get(url, headers=headers, timeout=self.HTTP_TIMEOUT)
         if find_dns_zone_response.status_code != 200:

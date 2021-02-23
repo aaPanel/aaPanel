@@ -39,7 +39,7 @@ class panelPHP:
     def exec_php_script(self,args):
         #取PHP执行文件和CLI配置参数
         php_bin = self.__get_php_bin()
-        if not php_bin: return public.returnMsg(False,'No compatible PHP version found, please install first')
+        if not php_bin: return public.returnMsg(False,'PHP_NOT_FOUND')
         #是否将参数写到文件
         self.__write_args(args)
         result = os.popen("cd " + self.__plugin_path + " && %s /www/server/panel/class/panel_php_run.php --args_tmp=\"%s\" --plugin_name=\"%s\" --fun=\"%s\"" % 

@@ -1,6 +1,6 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板 
+# | 宝塔Linux面板
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
@@ -11,7 +11,8 @@
 # 宝塔公共库
 # --------------------------------
 
-import json,os,sys,time,re,socket,importlib,binascii,base64,io
+import json,os,sys,time,re,socket,importlib,binascii,base64,io,string
+from random import choice
 _LAN_PUBLIC = None
 _LAN_LOG = None
 _LAN_TEMPLATE = None
@@ -128,13 +129,11 @@ def HttpPost(url,data,timeout = 6,headers = {}):
     import http_requests
     res = http_requests.post(url,data=data,timeout=timeout,headers = headers)
     if res.status_code == 0:
-        # WriteLog('Request error',res.text)
         if old_url.find(home) != -1: return http_post_home(old_url,data,timeout,res.text)
         if headers: return False
         s_body = res.text
         return s_body
     s_body = res.text
-    del res
     return s_body
 
 
@@ -262,7 +261,10 @@ def ReturnMsg(status,msg,args = ()):
         @param msg  返回消息
         @return dict  {"status":bool,"msg":string}
     """
-    log_message = json.loads(ReadFile('BTPanel/static/language/' + GetLanguage() + '/public.json'))
+    try:
+        log_message = json.loads(ReadFile('BTPanel/static/language/' + GetLanguage() + '/public.json'))
+    except:
+        log_message = {}
     keys = log_message.keys()
     if type(msg) == str:
         if msg in keys:
@@ -342,10 +344,8 @@ def ReadFile(filename,mode = 'r'):
                 f_body = fp.read()
                 fp.close()
             except Exception as ex2:
-                WriteLog('OPEN_FILE',str(ex2))
                 return False
         else:
-            WriteLog('OPEN_FILE',str(ex))
             return False
     return f_body
 
@@ -382,12 +382,14 @@ def WriteLog(type,logMsg,args=(),not_web = False):
     import time,db,json
     username = 'system'
     uid = 1
+    tmp_msg = ''
     if not not_web:
         try:
             from BTPanel import session
             if 'username' in session:
                 username = session['username']
                 uid = session['uid']
+                if session.get('debug') == 1: return
         except:
             pass
     global _LAN_LOG
@@ -402,7 +404,7 @@ def WriteLog(type,logMsg,args=(),not_web = False):
     if type in keys: type = _LAN_LOG[type]
     sql = db.Sql()
     mDate = time.strftime('%Y-%m-%d %X',time.localtime())
-    data = (uid,username,type,logMsg,mDate)
+    data = (uid,username,type,logMsg + tmp_msg,mDate)
     result = sql.table('logs').add('uid,username,type,log,addtime',data)
     #except:
         #pass
@@ -549,7 +551,7 @@ def GetLocalIp():
         return ipaddress
     except:
         try:
-            url = GetConfigValue('home') + '/Api/getIpAddress'
+            url = 'https://brandnew.aapanel.com/api/common/getClientIP'
             return HttpGet(url)
         except:
             return GetHost()
@@ -621,6 +623,9 @@ def get_timeout(url,timeout=3):
 def get_url(timeout = 0.5):
     import json
     try:
+        pkey = 'node_url'
+        node_url =  cache_get(pkey)
+        if node_url: return node_url
         nodeFile = 'data/node.json'
         node_list = json.loads(readFile(nodeFile))
         mnode1 = []
@@ -648,7 +653,7 @@ def get_url(timeout = 0.5):
         else: #终选中等延迟，中等带宽
             mnode = sorted(mnode2,key= lambda  x:x['ping'],reverse=False)
 
-        if not mnode: return 'http://download.bt.cn'
+        if not mnode: return 'https://node.aapanel.com'
 
         new_node_keys = new_node_list.keys()
         for i in range(len(node_list)):
@@ -659,9 +664,11 @@ def get_url(timeout = 0.5):
 
         new_node_list = sorted(node_list,key=lambda x: x['ping'],reverse=False)
         writeFile(nodeFile,json.dumps(new_node_list))
-        return mnode[0]['protocol'] + mnode[0]['address'] + ':' + mnode[0]['port']
+        node_url = mnode[0]['protocol'] + mnode[0]['address'] + ':' + mnode[0]['port']
+        cache_set(pkey,node_url,86400)
+        return node_url
     except:
-        return 'http://download.bt.cn'
+        return 'https://node.aapanel.com'
 
 
 #过滤输入
@@ -831,13 +838,19 @@ def getSpeed():
 def downloadFile(url,filename):
     try:
         if sys.version_info[0] == 2:
-            import urllib
-            urllib.urlretrieve(url, filename=filename, reporthook=downloadHook)
+            import requests
+            headers = {'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'}
+            r = requests.get(url, headers=headers)
+            with open(filename,"wb") as f:
+                f.write(r.content)
         else:
             import urllib.request
+            opener = urllib.request.build_opener()
+            opener.addheaders = [('User-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36')]
+            urllib.request.install_opener(opener)
             urllib.request.urlretrieve(url, filename=filename, reporthook=downloadHook)
     except:
-        return False
+        return get_error_info()
 
 def downloadHook(count, blockSize, totalSize):
     speed = {'total':totalSize,'block':blockSize,'count':count}
@@ -981,12 +994,12 @@ def CheckMyCnf():
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 
-CN='125.88.182.172'
+CF='node.aapanel.com'
 HK='download.bt.cn'
 HK2='103.224.251.67'
 US='128.1.164.196'
 sleep 0.5;
-CN_PING=`ping -c 1 -w 1 $CN|grep time=|awk '{print $7}'|sed "s/time=//"`
+CN_PING=`ping -c 1 -w 1 $CF|grep time=|awk '{print $7}'|sed "s/time=//"`
 HK_PING=`ping -c 1 -w 1 $HK|grep time=|awk '{print $7}'|sed "s/time=//"`
 HK2_PING=`ping -c 1 -w 1 $HK2|grep time=|awk '{print $7}'|sed "s/time=//"`
 US_PING=`ping -c 1 -w 1 $US|grep time=|awk '{print $7}'|sed "s/time=//"`
@@ -994,10 +1007,10 @@ US_PING=`ping -c 1 -w 1 $US|grep time=|awk '{print $7}'|sed "s/time=//"`
 echo "$HK_PING $HK" > ping.pl
 echo "$HK2_PING $HK2" >> ping.pl
 echo "$US_PING $US" >> ping.pl
-echo "$CN_PING $CN" >> ping.pl
+echo "$CF_PING $CF" >> ping.pl
 nodeAddr=`sort -V ping.pl|sed -n '1p'|awk '{print $2}'`
 if [ "$nodeAddr" == "" ];then
-    nodeAddr=$HK
+    nodeAddr=$CF
 fi
 
 Download_Url=http://$nodeAddr:5880
@@ -1366,17 +1379,30 @@ def get_path_size(path):
 #写关键请求日志
 def write_request_log(reques = None):
     try:
+        from BTPanel import request,g,session
+        if session.get('debug') == 1: return
+        if request.path in ['/service_status','/favicon.ico','/task','/system','/ajax','/control','/data','/ssl']:
+            return False
+
         log_path = '/www/server/panel/logs/request'
         log_file = getDate(format='%Y-%m-%d') + '.json'
         if not os.path.exists(log_path): os.makedirs(log_path)
 
-        from BTPanel import request
         log_data = []
         log_data.append(getDate())
         log_data.append(GetClientIp() + ':' + str(request.environ.get('REMOTE_PORT')))
         log_data.append(request.method)
         log_data.append(request.full_path)
         log_data.append(request.headers.get('User-Agent'))
+        if request.method == 'POST':
+            args = str(request.form.to_dict())
+            if len(args) < 2048 and args.find('pass') == -1 and args.find('user') == -1:
+                log_data.append(args)
+            else:
+                log_data.append('{}')
+        else:
+            log_data.append('{}')
+        log_data.append(int((time.time() - g.request_time) * 1000))
         WriteFile(log_path + '/' + log_file,json.dumps(log_data) + "\n",'a+')
         rep_sys_path()
     except: pass
@@ -1691,9 +1717,178 @@ def en_hexb(data):
 def request_php(version,uri,document_root,method='GET',pdata=b''):
     import panelPHP
     if type(pdata) == dict: pdata = url_encode(pdata)
-    p = panelPHP.FPM('/tmp/php-cgi-'+version+'.sock',document_root)
+    fpm_address = get_fpm_address(version)
+    p = panelPHP.FPM(fpm_address,document_root)
     result = p.load_url_public(uri,pdata,method)
     return result
+
+
+def get_fpm_address(php_version):
+    '''
+        @name 获取FPM请求地址
+        @author hwliang<2020-10-23>
+        @param php_version string PHP版本
+        @return tuple or string
+    '''
+    fpm_address = '/tmp/php-cgi-{}.sock'.format(php_version)
+    php_fpm_file = '/www/server/php/{}/etc/php-fpm.conf'.format(php_version)
+    try:
+        fpm_conf = readFile(php_fpm_file)
+        tmp = re.findall(r"listen\s*=\s*(.+)",fpm_conf)
+        if not tmp: return fpm_address
+        if tmp[0].find('sock') != -1: return fpm_address
+        if tmp[0].find(':') != -1:
+            listen_tmp = tmp[0].split(':')
+            fpm_address = ('127.0.0.1',int(listen_tmp[1]))
+        else:
+            fpm_address = ('127.0.0.1',int(tmp[0]))
+        return fpm_address
+    except:
+        return fpm_address
+
+
+def get_php_proxy(php_version,webserver = 'nginx'):
+    '''
+        @name 获取PHP代理地址
+        @author hwliang<2020-10-24>
+        @param php_version string php版本  (52|53|54|55|56|70|71|72|73|74)
+        @param webserver string web服务器类型 (nginx|apache|ols)
+        return string
+    '''
+    php_address = get_fpm_address(php_version)
+    if isinstance(php_address,str):
+        if webserver == 'nginx':
+            return 'unix:{}'.format(php_address)
+        elif webserver == 'apache':
+            return 'unix:{}|fcgi://localhost'.format(php_address)
+    else:
+        if webserver == 'nginx':
+            return '{}:{}'.format(php_address[0],php_address[1])
+        elif webserver == 'apache':
+            return 'fcgi://{}:{}'.format(php_address[0],php_address[1])
+
+def get_php_version_conf(conf):
+    '''
+        @name 从指定配置文件获取PHP版本
+        @author hwliang<2020-10-24>
+        @param conf string 配置文件内容
+        @return string
+    '''
+    if not conf: return '00'
+    if conf.find('enable-php-') != -1:
+        rep = r"enable-php-([0-9]{2,3})\.conf"
+        tmp = re.findall(rep,conf)
+        if not tmp: return '00'
+    elif conf.find('/usr/local/lsws/lsphp') != -1:
+        rep = r"path\s*/usr/local/lsws/lsphp(\d+)/bin/lsphp"
+        tmp = re.findall(rep,conf)
+        if not tmp: return '00'
+    else:
+        rep = r"php-cgi-([0-9]{2,3})\.sock"
+        tmp = re.findall(rep,conf)
+        if not tmp:
+            rep = r'127.0.0.1:10(\d{2,2})1'
+            tmp = re.findall(rep,conf)
+            if not tmp:
+                return '00'
+    return tmp[0]
+
+
+def get_site_php_version(siteName):
+    '''
+        @name 获取指定网站当前使用的PHP版本
+        @author hwliang<2020-10-24>
+        @param siteName string 网站名称
+        @return string
+    '''
+    web_server = get_webserver()
+    conf = readFile('/www/server/panel/vhost/'+web_server+'/'+siteName+'.conf')
+    if web_server == 'openlitespeed':
+        conf = readFile('/www/server/panel/vhost/' + web_server + '/detail/' + siteName + '.conf')
+    return get_php_version_conf(conf)
+
+
+def sub_php_address(conf_file,rep,tsub,php_version):
+    '''
+        @name 替换新的PHP配置到配置文件
+        @author hwliang<2020-10-24>
+        @param conf_file string 配置文件全路径
+        @param rep string 用于查找目标替换内容的正则表达式
+        @param tsub string 新的内容
+        @param php_version string 指定PHP版本
+        @return bool
+    '''
+    if not os.path.exists(conf_file): return False
+    conf = readFile(conf_file)
+    if not conf: return False
+    #if conf.find('#PHP') == -1 and conf.find('pathinfo.conf') == -1: return False
+    phpv = get_php_version_conf(conf)
+    if phpv != php_version: return False
+    tmp = re.search(rep,conf)
+    if not tmp: return False
+    if tmp.group() == tsub: return False
+    conf = conf.replace(tmp.group(),tsub) #re.sub(rep,php_proxy,conf)
+    writeFile(conf_file,conf)
+    return True
+
+
+def sync_all_address():
+    '''
+        @name 同步所有PHP版本配置到配置文件
+        @author hwliang<2020-10-24>
+        @return void
+    '''
+    php_versions = ['52','53','54','55','56','70','71','72','73','74','75','80','81']
+    for phpv in php_versions:
+        sync_php_address(phpv)
+
+def sync_php_address(php_version):
+    '''
+        @name 同步PHP版本配置到所有配置文件
+        @author hwliang<2020-10-24>
+        @param php_version string PHP版本
+        @return void
+    '''
+    if not os.path.exists('/www/server/php/{}/bin/php'.format(php_version)): # 指定PHP版本是否安装
+        return False
+    ngx_rep = r"(unix:/tmp/php-cgi.*\.sock|127.0.0.1:\d+)"
+    apa_rep = r"(unix:/tmp/php-cgi.*\.sock\|fcgi://localhost|fcgi://127.0.0.1:\d+)"
+    ngx_proxy = get_php_proxy(php_version,'nginx')
+    apa_proxy = get_php_proxy(php_version,'apache')
+    is_write = False
+
+    #nginx的PHP配置文件
+    nginx_conf_path = '/www/server/nginx/conf'
+
+    if os.path.exists(nginx_conf_path):
+        for f_name in os.listdir(nginx_conf_path):
+            if f_name.find('enable-php') != -1:
+                conf_file = '/'.join((nginx_conf_path,f_name))
+                if sub_php_address(conf_file,ngx_rep,ngx_proxy,php_version):
+                    is_write = True
+    #nginx的phpmyadmin
+    # conf_file = '/www/server/nginx/conf/nginx.conf'
+    # if os.path.exists(conf_file):
+    #     if sub_php_address(conf_file,ngx_rep,ngx_proxy,php_version):
+    #         is_write = True
+
+    #apache的网站配置文件
+    apache_conf_path = '/www/server/panel/vhost/apache'
+    if os.path.exists(apache_conf_path):
+        for f_name in os.listdir(apache_conf_path):
+            conf_file = '/'.join((apache_conf_path,f_name))
+            if sub_php_address(conf_file,apa_rep,apa_proxy,php_version):
+                is_write = True
+    #apache的phpmyadmin
+    conf_file = '/www/server/apache/conf/extra/httpd-vhosts.conf'
+    if os.path.exists(conf_file):
+        if sub_php_address(conf_file,apa_rep,apa_proxy,php_version):
+            is_write = True
+
+    if is_write: serviceReload()
+    return True
+
+
 
 
 def url_encode(data):
@@ -1866,7 +2061,33 @@ def get_debug_log():
 #获取sessionid
 def get_session_id():
     from BTPanel import request
-    return request.cookies.get('SESSIONID','')
+    session_id =  request.cookies.get('SESSIONID','')
+    if not re.findall(r"^([\w\.-]{64,64})$",session_id): return GetRandomString(64)
+    return session_id
+
+#尝试自动恢复面板数据库
+def rep_default_db():
+    db_path = '/www/server/panel/data/'
+    db_file = db_path + 'default.db'
+    db_tmp_backup = db_path + 'default_' + format_date("%Y%m%d_%H%M%S") + ".db"
+
+    panel_backup = '/www/backup/panel'
+    bak_list = os.listdir(panel_backup)
+    if not bak_list: return False
+    bak_list = sorted(bak_list,reverse=True)
+    db_bak_file = ''
+    for d_name in bak_list:
+        db_bak_file = panel_backup + '/' + d_name + '/data/default.db'
+        if not os.path.exists(db_bak_file): continue
+        if os.path.getsize(db_bak_file) < 17408: continue
+        break
+
+    if not db_bak_file: return False
+    ExecShell("\cp -arf {} {}".format(db_file,db_tmp_backup))
+    ExecShell("\cp -arf {} {}".format(db_bak_file,db_file))
+    return True
+
+
 
 def chdck_salt():
     '''
@@ -1878,6 +2099,13 @@ def chdck_salt():
     if not M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'users','%salt%')).count():
         M('users').execute("ALTER TABLE 'users' ADD 'salt' TEXT",())
     u_list = M('users').where('salt is NULL',()).field('id,username,password,salt').select()
+    if isinstance(u_list,str):
+        if u_list.find('no such table: users') != -1:
+            rep_default_db()
+            if not M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'users','%salt%')).count():
+                M('users').execute("ALTER TABLE 'users' ADD 'salt' TEXT",())
+            u_list = M('users').where('salt is NULL',()).field('id,username,password,salt').select()
+
     for u_info in u_list:
         salt = GetRandomString(12) #12位随机
         pdata = {}
@@ -1892,8 +2120,8 @@ def get_login_token():
     return token_s
 
 def get_sess_key():
-    from BTPanel import request
-    return md5(get_login_token() + request.headers.get('User-Agent',''))
+    from BTPanel import session
+    return md5(get_login_token() + session.get('request_token_head',''))
 
 
 def password_salt(password,username=None,uid=None):
@@ -1979,6 +2207,7 @@ def set_error_num(key,empty = False,expire=3600):
         @return bool
     '''
     from BTPanel import cache
+    key = md5(key)
     num = cache.get(key)
     if not num:
         num = 0
@@ -1998,6 +2227,7 @@ def get_error_num(key,limit=False):
         @return int or bool
     '''
     from BTPanel import cache
+    key = md5(key)
     num = cache.get(key)
     if not num: num = 0
     if not limit:
@@ -2005,6 +2235,221 @@ def get_error_num(key,limit=False):
     if limit > num:
         return True
     return False
+
+
+def get_menus():
+    '''
+        @name 获取菜单列表
+        @author hwliang<2020-08-31>
+        @return list
+    '''
+    from BTPanel import session
+    data = json.loads(ReadFile('config/menu.json'))
+    hide_menu = ReadFile('config/hide_menu.json')
+    debug = session.get('debug')
+    if hide_menu:
+        hide_menu = json.loads(hide_menu)
+        show_menu = []
+        for i in range(len(data)):
+            if data[i]['id'] in hide_menu: continue
+            if data[i]['id'] == "memuAxterm":
+                if debug: continue
+            show_menu.append(data[i])
+        data = show_menu
+        del(hide_menu)
+        del(show_menu)
+    menus = sorted(data, key=lambda x: x['sort'])
+    return menus
+
+
+#取CURL路径
+def get_curl_bin():
+    '''
+        @name 取CURL执行路径
+        @author hwliang<2020-09-01>
+        @return string
+    '''
+    c_bin = ['/usr/local/curl2/bin/curl','/usr/local/curl/bin/curl','/usr/bin/curl']
+    for cb in c_bin:
+        if os.path.exists(cb): return cb
+    return 'curl'
+
+
+#设置防跨站配置
+def set_open_basedir():
+    try:
+        fastcgi_file = '/www/server/nginx/conf/fastcgi.conf'
+        if os.path.exists(fastcgi_file):
+            fastcgi_body = readFile(fastcgi_file)
+            if fastcgi_body.find('bt_safe_dir') == -1:
+                fastcgi_body = fastcgi_body + "\n"+'fastcgi_param  PHP_ADMIN_VALUE    "$bt_safe_dir=$bt_safe_open";'
+                writeFile(fastcgi_file,fastcgi_body)
+
+        proxy_file = '/www/server/nginx/conf/proxy.conf'
+        if os.path.exists(proxy_file):
+            proxy_body = readFile(proxy_file)
+            if proxy_body.find('bt_safe_dir') == -1:
+                proxy_body = proxy_body + "\n"+'''map "baota_dir" $bt_safe_dir {
+    default "baota_dir";
+}
+map "baota_open" $bt_safe_open {
+    default "baota_open";
+} '''
+                writeFile(proxy_file,proxy_body)
+
+        open_basedir_path = '/www/server/panel/vhost/open_basedir/nginx'
+        if not os.path.exists(open_basedir_path):
+            os.makedirs(open_basedir_path,384)
+
+        site_list = M('sites').field('id,name,path').select()
+        for site_info in site_list:
+            set_site_open_basedir_nginx(site_info['name'])
+    except: return
+
+
+#处理指定站点的防跨站配置 for Nginx
+def set_site_open_basedir_nginx(siteName):
+    try:
+        return
+        open_basedir_path = '/www/server/panel/vhost/open_basedir/nginx'
+        if not os.path.exists(open_basedir_path):
+            os.makedirs(open_basedir_path,384)
+        config_file = '/www/server/panel/vhost/nginx/{}.conf'.format(siteName)
+        open_basedir_file = "/".join(
+            (open_basedir_path,'{}.conf'.format(siteName))
+        )
+        if not os.path.exists(config_file): return
+        if not os.path.exists(open_basedir_file):
+            writeFile(open_basedir_file,'')
+        config_body = readFile(config_file)
+        if config_body.find(open_basedir_path) == -1:
+            config_body = config_body.replace("include enable-php","include {};\n\t\tinclude enable-php".format(open_basedir_file))
+            writeFile(config_file,config_body)
+
+        root_path = re.findall(r"root\s+(.+);",config_body)[0]
+        if not root_path: return
+        userini_file = root_path + '/.user.ini'
+        if not os.path.exists(userini_file):
+            writeFile(open_basedir_file,'')
+            return
+        userini_body = readFile(userini_file)
+        if not userini_body: return
+        if userini_body.find('open_basedir') == -1:
+            writeFile(open_basedir_file,'')
+            return
+
+        open_basedir_conf = re.findall("open_basedir=(.+)",userini_body)
+        if not open_basedir_conf: return
+        open_basedir_conf = open_basedir_conf[0]
+        open_basedir_body = '''set $bt_safe_dir "open_basedir";
+set $bt_safe_open "{}";'''.format(open_basedir_conf)
+        writeFile(open_basedir_file,open_basedir_body)
+    except: return
+
+
+def run_thread(fun,args = (),daemon=False):
+    '''
+        @name 使用线程执行指定方法
+        @author hwliang<2020-10-27>
+        @param fun {def} 函数对像
+        @param args {tuple} 参数元组
+        @param daemon {bool} 是否守护线程
+        @return bool
+    '''
+    import threading
+    p = threading.Thread(target=fun,args=args)
+    p.setDaemon(daemon)
+    p.start()
+    return True
+
+
+def send_file(data,fname='',mimetype = ''):
+    '''
+        @name 以文件流的形式返回
+        @author heliang<2020-10-27>
+        @param data {bytes|string} 文件数据或路径
+        @param mimetype {string} 文件类型
+        @param fname {string} 文件名
+        @return Response
+    '''
+    d_type = type(data)
+    from io import BytesIO,StringIO
+    from flask import send_file as send_to
+    if d_type == bytes:
+        fp = BytesIO(data)
+    else:
+        if len(data) < 128:
+            if os.path.exists(data):
+                fp = data
+                if not fname:
+                    fname = os.path.basename(fname)
+            else:
+                fp = StringIO(data)
+        else:
+            fp = StringIO(data)
+
+    if not mimetype: mimetype = "application/octet-stream"
+    if not fname: fname = 'doan.txt'
+
+    return send_to(fp,
+                    mimetype=mimetype,
+                    as_attachment=True,
+                    add_etags=True,
+                    conditional=True,
+                    attachment_filename=fname,
+                    cache_timeout=0)
+
+def gen_password(length=8,chars=string.ascii_letters+string.digits):
+    return ''.join([choice(chars) for i in range(length)])
+
+def get_ipaddress():
+    '''
+        @name 获取本机IP地址
+        @author hwliang<2020-11-24>
+        @return list
+    '''
+    ipa_tmp = ExecShell("ip a |grep inet|grep -v inet6|grep -v 127.0.0.1|grep -v 'inet 192.168.'|grep -v 'inet 10.'|awk '{print $2}'|sed 's#/[0-9]*##g'")[0].strip()
+    iplist = ipa_tmp.split('\n')
+    return iplist
+
+def fetch_disk_SN():
+    r,e = ExecShell("fdisk -l |grep 'Disk identifier' |awk {'print $3'}")
+    if r:
+        return r.split('\n')[0]
+
+def fetch_cpu_ID():
+    r, e = ExecShell("cat /proc/cpuinfo|grep microcode|awk -F':' '{print $2}'")
+    if r:
+        return r.split('\n')[0]
+
+def get_hostname():
+    import socket
+    return socket.getfqdn(socket.gethostname())
+
+def get_platform():
+    import platform
+    return platform.version()
+
+def get_memory():
+    import psutil
+    return psutil.virtual_memory().total
+
+def fetch_env_info():
+    import panelAuth
+    userInfo = panelAuth.panelAuth().create_serverid(None)
+    try:
+        return {'ip': GetLocalIp(),
+         'is_ipv6': 0,
+         'os': get_platform(),
+         'mac': get_mac_address(),
+         'hdid': fetch_disk_SN(),
+         'ramid': get_memory(),
+         'cpuid': fetch_cpu_ID(),
+         'server_name': get_hostname(),
+         'install_code': userInfo['server_id']
+         }
+    except:
+        return {}
 
 
 #取通用对象
@@ -2096,7 +2541,37 @@ class get_modules:
 
             setattr(self,mod_name,mod_name)
 
-
-
+#检查App和小程序的绑定
+def check_app(check='app'):
+    path='/www/server/panel/'
+    if check=='app':
+        try:
+            if not os.path.exists(path+'data/user.json') and os.path.exists(path+'config/api.json') and not os.path.exists(path+'plugin/app/user.json'):return False
+            if os.path.exists(path+'plugin/app/user.json'):
+                wxapp = json.loads(readFile(path+'plugin/app/user.json'))
+                if wxapp:return True
+            if os.path.exists(path+'data/user.json'):
+                app_info = json.loads(readFile(path+'data/user.json'))
+                if app_info:return True
+            if os.path.exists(path+'config/api.json'):
+                btapp_info = json.loads(readFile(path+'config/api.json'))
+                if not  btapp_info['open']:return False
+                if not 'apps' in btapp_info:return False
+                if not btapp_info['apps']:return False
+                return True
+            return False
+        except:
+            return False
+    elif check=='app_bind':
+        if not os.path.exists(path + 'config/api.json'):return False
+        btapp_info = json.loads(readFile(path +'config/api.json'))
+        if not btapp_info: return False
+        if not btapp_info['open']: return False
+        return True
+    elif check=='wxapp':
+        if not os.path.exists(path+'plugin/app/user.json'):return False
+        app_info = json.loads(readFile(path+'plugin/app/user.json'))
+        if not app_info: return False
+        return True
 
 

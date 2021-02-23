@@ -31,19 +31,17 @@ mysqld_safe --skip-grant-tables&
 echo 'Changing password...';
 sleep 6
 m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.1.|5.5.|5.6.|10.0|10.1)")
+m2_version=$(cat /www/server/mysql/version.pl|grep -E "(10.5.|10.4.)")
 if [ "$m_version" != "" ];then
     mysql -uroot -e "UPDATE mysql.user SET password=PASSWORD('${pwd}') WHERE user='root'";
+elif [ "$m2_version" != "" ];then
+    mysql -uroot -e "FLUSH PRIVILEGES;alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
 else
     m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.7.|8.0.)")
     if [ "$m_version" != "" ];then
-        mysql -uroot -e "FLUSH PRIVILEGES;update mysql.user set authentication_string='' where user='root';alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
+        mysql -uroot -e "FLUSH PRIVILEGES;update mysql.user set authentication_string='' where user='root' and (host='127.0.0.1' or host='localhost');alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
     else
         mysql -uroot -e "update mysql.user set authentication_string=password('${pwd}') where user='root';"
-    fi
-    m_version=$(cat /www/server/mysql/version.pl|grep -E "10.4.")
-    if [ "$m_version" != "" ];then
-        mysql -uroot -e "flush privileges;ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${pwd}');ALTER USER root@127.0.0.1 IDENTIFIED VIA mysql_native_password USING PASSWORD('${pwd}');"
-        echo 1
     fi
 fi
 mysql -uroot -e "FLUSH PRIVILEGES";
@@ -364,7 +362,7 @@ def set_panel_username(username = None):
     import db
     sql = db.Sql()
     if username:
-        if len(username) < 5:
+        if len(username) < 3:
             print(public.GetMsg("USER_NAME_LEN_ERR"))
             return;
         if username in ['admin','root']:
@@ -399,7 +397,7 @@ def setup_idc():
         tFile = panelPath + '/data/title.pl'
         titleNew = (pInfo['brand'] + public.GetMsg("PANEL")).encode('utf-8')
         if os.path.exists(tFile):
-            title = public.readFile(tFile).strip()
+            title = public.GetConfigValue('title')
             if title == '宝塔Linux面板' or title == '': 
                 public.writeFile(tFile,titleNew)
                 public.SetConfigValue('title',titleNew)
@@ -536,8 +534,9 @@ def bt_cli(u_input = 0):
         print(public.GetMsg("CHANGE_PORT_SUCCESS",(input_port,)))
         print(public.GetMsg("CLOUD_RELEASE_PORT",(input_port,)))
     elif u_input == 9:
-        sess_file = '/dev/shm/session.db'
-        if os.path.exists(sess_file): os.remove(sess_file)
+        sess_file = '/www/server/panel/data/session'
+        if os.path.exists(sess_file):
+            os.system("rm -f {}/*".format(sess_file))
         os.system("/etc/init.d/bt reload")
     elif u_input == 10:
         os.system("/etc/init.d/bt reload")

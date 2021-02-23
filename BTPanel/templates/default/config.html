@@ -103,15 +103,19 @@
 						<span class="set-info c7">{{data['lan']['CY15']}}</span>
 					</div>
 					<div class="mtb15">
-						<span class="set-tit text-right" title="{{data['lan']['BASICAUTH_TIPS1']}}">{{data['lan']['BASICAUTH']}}</span>
-					    <input id="basic_auth" name="basic_auth" class="inputtxt bt-input-text disable" type="text" value="{{data['basic_auth']['value']}}" disabled>
-                        <span class="modify btn btn-xs btn-success basic_auth" onclick="modify_basic_auth()" style="    margin-left: -38px;">{{data['lan']['CONFIG']}}</span>
+                        <span class="set-tit text-right" title="{{data['lan']['BASICAUTH_TIPS1']}}">{{data['lan']['BASICAUTH']}}</span>
+                        <div class="btn_tips">
+                            <input id="basic_auth" name="basic_auth" class="inputtxt bt-input-text disable" type="text" value="{{data['basic_auth']['value']}}" disabled>
+                            <span class="modify btn btn-xs btn-success basic_auth" onclick="modify_basic_auth()" style="margin-left: -38px;">{{data['lan']['CONFIG']}}</span>
+                        </div>
 						<span class="set-info c7" style="margin-left: 25px;">{{data['lan']['BASICAUTH_TIPS1']}}</span>
 					</div>
 					<div class="mtb15">
-						<span class="set-tit text-right" title="Message channel">Message channel</span>
-						<input id="channel_auth" name="channel_auth" class="inputtxt bt-input-text disable" type="text" value="" disabled>
-						<span class="modify btn btn-xs btn-success channel_auth" style="margin-left: -38px;" onclick="open_three_channel_auth()">Set</span>
+                        <span class="set-tit text-right" title="Message channel">Message channel</span>
+                        <div class="btn_tips">
+                            <input id="channel_auth" name="channel_auth" class="inputtxt bt-input-text disable" type="text" value="" disabled>
+                            <span class="modify btn btn-xs btn-success channel_auth" style="margin-left: -38px;" onclick="open_three_channel_auth()">Set</span>
+                        </div>
 					</div>
 					<div class="mtb15">
 						<span class="set-tit text-right" title="{{data['lan']['CT3']}}">{{data['lan']['CT3']}}</span>
@@ -160,7 +164,28 @@
 							<input name="password_" class="inputtxt bt-input-text disable" type="text" value="******" disabled>
 							<span class="modify btn btn-xs btn-success" onclick="setPassword()">{{data['lan']['CY10']}}</span>
 						</div>
-					</div>
+                    </div>
+                    <div class="mtb15">
+						<span class="set-tit text-right" title="{{data['lan']['CT10']}}">{{data['lan']['CT11']}}</span>
+						<div class="btn_tips">
+							<input name="btusername" class="inputtxt bt-input-text disable" type="text" value="" disabled>
+							<span class="modify btn btn-xs btn-success mr5" onclick="bindBTName(2,'b')">{{data['lan']['CY11']}}</span>
+						</div>
+                    </div>
+                    <div class="mtb15">
+						<span class="set-tit text-right">Menu bar hidden</span>
+						<div class="btn_tips">
+                            <input class="inputtxt bt-input-text disable" id="panel_menu_hide" type="text" disabled>
+                            <span class="modify btn btn-xs btn-success" onclick="set_panel_ground()" style="margin-left: -35px;">Set</span>
+						</div>
+                    </div>
+                    <div class="mtb15">
+						<span class="set-tit text-right">Temporary login</span>
+						<div class="btn_tips">
+                            <input class="inputtxt bt-input-text disable" type="text" value="Temporary authorization for vistor" disabled>
+                            <span class="modify btn btn-xs btn-success" onclick="get_temp_login_view()">Modify</span>
+						</div>
+                    </div>
 
 					<!--<p class="mtb15"><span class="set-tit text-right" title="{{data['lan']['CT11']}}">{{data['lan']['CT11']}}</span><input name="btusername" class="inputtxt bt-input-text disable" type="text" value="" disabled><span class="modify btn btn-xs btn-success mr5" onclick="bindBTName(2,'b')">{{data['lan']['CY11']}}</span></p>-->
 					<!--<p class="mtb15 wxapp_p"><span class="set-tit text-right">{{data['lan']['WECHAT']}}</span><input class="inputtxt bt-input-text disable" type="text" value="{{data['wx']}}" disabled><span class="modify btn btn-xs btn-success mr5" onclick="open_wxapp()">{{data['lan']['CY11']}}</span></p>-->
@@ -366,6 +391,20 @@
     .risk_tilte{
         margin: 0 0 10px 35px;
         font-size: 22px;
+    }
+    #panel_menu_tab .table>tbody>tr>td{
+        height: auto;
+        padding: 8px;
+    }
+    .create_temp_view{
+        padding:15px 20px;
+    }
+    .create_temp_view .line .tname{
+        text-align: left;
+        float: inherit;
+    }
+    .create_temp_view .info-r {
+        margin: 0;
     }
 
 </style>

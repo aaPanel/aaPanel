@@ -9,7 +9,7 @@
     <title>{{g.title}}</title>
     <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon" />
     <link href="{{g.cdn_url}}/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="{{g.cdn_url}}/css/site.css?20191127={{g['version']}}" rel="stylesheet" />
+    <link href="{{g.cdn_url}}/css/site.css?version={{g['version']}}&repair={{data['js_random']}}" rel="stylesheet" />
     <link href="{{g.cdn_url}}/codemirror/lib/codemirror.css?20191127={{g['version']}}" rel="stylesheet" />
     <!--[if lte IE 9]>
     	<script src="/static/js/requestAnimationFrame.js"></script>
@@ -68,7 +68,7 @@
 <body>
     <div class="bt-warp bge6">
         <div class="top-tips">The current version of IE browser is too low, some functions cannot be displayed, please change to other browsers!</div>
-        <a style="display:none;" id="panel_debug" data="{{g['debug']}}"></a>
+        <a style="display:none;" id="panel_debug" data="{{g['debug']}}" data-pyversion="{{g['pyversion']}}"></a>
         <a style="display:none;" id="request_token_head" token="{{session['request_token_head']}}"></a>
         <div id="container" class="container-fluid">
             <div class="sidebar-scroll">
@@ -76,11 +76,13 @@
                     <div id="task" class="task cw" onclick="messagebox()">0</div>
                     <h3 class="mypcip"><span class="f14 cw">{{session['address']}}</span></h3>
                     <ul class="menu">
-                        {% for menu in session['menus'] %} {% if menu['href'] == g.uri %}
-                        <li id="{{menu['id']}}" class="current"> <a class="{{menu['class']}}" href="{{menu['href']}}">{{menu['title']}}</a></li>
-                        {% else %}
-                        <li id="{{menu['id']}}"> <a class="{{menu['class']}}" href="{{menu['href']}}">{{menu['title']}}</a></li>
-                        {% endif %} {% endfor %}
+                        {% for menu in g['menus'] %}
+                            {% if menu['href'] == g.uri %}
+                            <li id="{{menu['id']}}" class="current"> <a class="{{menu['class']}}" href="{{menu['href']}}">{{menu['title']}}</a></li>
+                            {% else %}
+                            <li id="{{menu['id']}}"> <a class="{{menu['class']}}" href="{{menu['href']}}">{{menu['title']}}</a></li>
+                            {% endif %}
+                        {% endfor %}
                     </ul>
                     <div id="newbtpc"></div>
                     <div class="btpc-plus" onclick="bindBTPanel(0,'b')">+</div>
@@ -94,14 +96,19 @@
                 <a style="margin-left:20px;color:#20a53a;" href="https://doc.aapanel.com/web/#/3?page_id=117" target="_blank">User manual</a>
             </div>
         </div>
-        <script src="{{g.cdn_url}}/js/aes.js?version={{g['version']}}"></script>
         <script src="{{g.cdn_url}}/js/jquery-1.10.2.min.js"></script>
-        <script src="{{g.cdn_url}}/js/bootstrap.min.js"></script>
-        <script src="{{g.cdn_url}}/language/{{session['lan']}}/lan.js?date={{g['version']}}"></script>
-        <script src="{{g.cdn_url}}/layer/layer.js?date={{g['version']}}"></script>
-        <script src="{{g.cdn_url}}/js/public.js?version={{g['version']}}"></script>
-        <script src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}"></script>
-        <script src="{{g.cdn_url}}/codemirror/lib/codemirror.js?version={{g['version']}}"></script>
+	<script src="{{g.cdn_url}}/layer/layer.js?version={{g['version']}}"></script>
+	<script src="{{g.cdn_url}}/language/{{session['lan']}}/lan.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+    <script src="{{g.cdn_url}}/js/clipboard.min.js" defer></script>
+    <script src="{{g.cdn_url}}/laydate/laydate.js" defer></script>
+	<script src="{{g.cdn_url}}/js/jquery.qrcode.min.js" defer></script>
+	<!-- 以下文件未来将被剔除 -->
+	<script src="{{g.cdn_url}}/js/bootstrap.min.js"></script>
+	<script src="{{g.cdn_url}}/js/public.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+	<script src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+	<script src="{{g.cdn_url}}/codemirror/lib/codemirror.js" defer></script>
+	<!-- End -->
+	<script type="text/javascript" src="{{g.cdn_url}}/js/tools.min.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
         {% block scripts %}{% endblock %}
         <script type="text/javascript">
             if (navigator.appName == "Microsoft Internet Explorer" && parseInt(navigator.appVersion.split(";")[1].replace(/[ ]/g, "").replace("MSIE", "")) < 9) {

@@ -73,8 +73,8 @@ class SiteDirAuth:
         if not get.name:
             return public.returnMsg(False, 'Please enter the Name')
 
-        if site_dir[0] != "/" or site_dir[-1] != "/":
-            return public.returnMsg(False, 'Directory format is incorrect')
+        # if site_dir[0] != "/" or site_dir[-1] != "/":
+        #     return public.returnMsg(False, 'Directory format is incorrect')
             # site_dir = site_dir[1:]
             # if site_dir[-1] == "/":
             #     site_dir = site_dir[:-1]
@@ -249,8 +249,9 @@ class SiteDirAuth:
                 os.remove(file_path)
             if not conf:
                 self.set_conf(site_name,"delete")
-            public.serviceReload()
-            return public.returnMsg(True,"Deleted successfully")
+            if not hasattr(get,'multiple'):
+                public.serviceReload()
+            return public.returnMsg(True,"DEL_SUCCESS")
 
     # 修改目录保护密码
     def modify_dir_auth_pass(self,get):
@@ -270,7 +271,7 @@ class SiteDirAuth:
         auth_file = '{setup_path}/pass/{site_name}/{name}.pass'.format(setup_path=self.setup_path,site_name=site_name,name=name)
         public.writeFile(auth_file,auth)
         public.serviceReload()
-        return public.returnMsg(True,"Modify successfully")
+        return public.returnMsg(True,"EDIT_SUCCESS")
 
     # 获取目录保护列表
     def get_dir_auth(self,get):

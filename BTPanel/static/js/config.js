@@ -376,7 +376,7 @@ function bindBTName(a,type){
 		closeBtn: 2,
 		shift: 5,
 		shadeClose: false,
-		content: "<div class='bt-form pd20 pb70'><div class='line'><span class='tname'>"+lan.public.user+"</span><div class='info-r'><input class='bt-input-text' type='text' name='username' id='p1' value='' placeholder='"+lan.config.user_bt+"' style='width:100%'/></div></div><div class='line'><span class='tname'>"+lan.public.pass+"</span><div class='info-r'><input class='bt-input-text' type='password' name='password' id='p2' value='' placeholder='"+lan.config.pass_bt+"' style='width:100%'/></div></div><div class='bt-form-submit-btn'><button type='button' class='btn btn-danger btn-sm' onclick=\"layer.closeAll()\">"+lan.public.cancel+"</button> "+btn+"</div></div>"
+		content: "<div class='bt-form pd20 pb70'><div class='line'><span class='tname' style='width:100px;'>"+lan.public.user+"</span><div class='info-r' style='margin-left:100px;'><input class='bt-input-text' type='text' name='username' id='p1' value='' placeholder='"+lan.config.user_bt+"' style='width:100%'/></div></div><div class='line'><span class='tname' style='width:100px;'>"+lan.public.pass+"</span><div class='info-r' style='margin-left:100px;'><input class='bt-input-text' type='password' name='password' id='p2' value='' placeholder='"+lan.config.pass_bt+"' style='width:100%'/></div></div><div class='bt-form-submit-btn'><button type='button' class='btn btn-danger btn-sm' onclick=\"layer.closeAll()\">"+lan.public.cancel+"</button> "+btn+"</div></div>"
 	})
 }
 //解除绑定宝塔账号
@@ -385,7 +385,10 @@ function UnboundBt(){
 	layer.confirm(lan.config.binding_un_msg,{closeBtn:2,icon:3,title:lan.config.binding_un},function(){
 		$.get("/ssl?action=DelToken",function(b){
 			layer.msg(b.msg,{icon:b.status? 1:2})
-			$("input[name='btusername']").val('');
+			if(b.status){
+			    window.location.reload();
+			    $("input[name='btusername']").val('');
+			}
 		})
 	})
 }
@@ -574,11 +577,11 @@ function SavePanelSSL(){
 }
 
 function SetDebug() {
-    var status_s = {false:'Open',true:'Close'}
+    var status_s = {false:'open',true:'close'}
     var debug_stat = $("#panelDebug").prop('checked');
     bt.confirm({
-		title: status_s[debug_stat] + "Developer mode",
-		msg: "Do you really want "+ status_s[debug_stat]+" developer mode?",
+		title: (debug_stat?'Open':'Close') + " developer mode",
+		msg: "Do you confirm to "+ (debug_stat?'open':'close') +" developer mode?",
 		cancel: function () {
 			$("#panelDebug").prop('checked',debug_stat);
     	}}, function () {
@@ -772,11 +775,11 @@ function open_wxapp(){
 
 $(function () {
 
-    $.get("/ssl?action=GetUserInfo", function (b) {
+     $.get("/ssl?action=GetUserInfo", function (b) {
         if (b.status) {
             $("input[name='btusername']").val(b.data.username);
-            $("input[name='btusername']").next().text(lan.public.edit).attr("onclick", "bindBTName(2,'c')").css({ "margin-left": "-82px" });
-            $("input[name='btusername']").next().after('<span class="btn btn-xs btn-success" onclick="UnboundBt()" style="vertical-align: 0px;">' + lan.config.binding_un + '</span>');
+            $("input[name='btusername']").next().text(lan.public.edit).attr("onclick", "bindBTName(2,'c')").css({ "right": "57px" });
+            $("input[name='btusername']").next().after('<span class="modify btn btn-xs btn-success" onclick="UnboundBt()" style="vertical-align: 0px;">' + lan.config.binding_un + '</span>');
         }
         else {
             $("input[name='btusername']").next().text(lan.config.binding).attr("onclick", "bindBTName(2,'b')").removeAttr("style");
@@ -804,7 +807,7 @@ function GetPanelApi() {
         isOpen = rdata.open ? 'checked' : '';
         layer.open({
             type: 1,
-            area: "500px",
+            area: "522px",
             title: lan.config.set_api,
             closeBtn: 2,
             shift: 5,
@@ -814,7 +817,7 @@ function GetPanelApi() {
 							<span class="tname">'+lan.config.api+'</span>\
 							<div class="info-r" style="height:28px;">\
 								<input class="btswitch btswitch-ios" id="panelApi_s" type="checkbox" '+ isOpen+'>\
-								<label style="position: relative;top: 5px;" class="btswitch-btn" for="panelApi_s" onclick="SetPanelApi(2)"></label>\
+								<label style="position: relative;top: 5px;" class="btswitch-btn" for="panelApi_s" onclick="SetPanelApi(2,1)"></label>\
 							</div>\
 						</div>\
                         <div class="line">\
@@ -872,10 +875,12 @@ function SetPanelApi(t_type,index) {
 		return false
     }
     set_token_req(pdata,function(rdata){
-    	layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
-        if (rdata.msg == lan.config.open_successfully) {
-            if(t_type == 2 && index != '0') GetPanelApi();
-        }
+		layer.close(layer.index);
+        if (rdata.msg == 'Open success!') {
+            if(t_type == 2 && index != '1') GetPanelApi();
+		}
+		if(t_type == 2) $('#panelApi').prop('checked',rdata.msg == 'Open success!'?true:false);
+		layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
     });
 }
 
@@ -1258,4 +1263,330 @@ function show_basic_auth(rdata) {
                         </ul>\
                     </div>'
     })
+}
+function get_panel_hide_list(){
+	var loadT = bt.load('Getting panel menu bar, please wait...'),arry = [];
+	$.post('/config?action=get_menu_list',function(rdata){
+		loadT.close();
+		$.each(rdata,function(index,item){
+			if(!item.show) arry.push(item.title)
+		});
+		$('#panel_menu_hide').val(arry.length > 0?arry.join('/'):'No hidden bar');
+	});
+
+}
+
+get_panel_hide_list();
+
+// 设置面板菜单显示功能
+function set_panel_ground(){
+	var loadT = bt.load('Getting panel menu bar, please wait...');
+	$.post('/config?action=get_menu_list',function(rdata){
+		var html = '',arry = ["dologin","memuAconfig","memuAsoft","memuA"],is_option = '';
+		loadT.close();
+		$.each(rdata,function(index,item){
+			is_option = '<div class="index-item" style="float:right;"><input class="btswitch btswitch-ios" id="'+ item.id +'0000" name="'+ item.id +'" type="checkbox" '+ (item.show?'checked':'') +'><label class="btswitch-btn" for="'+ item.id +'0000"></label></div>'
+			
+			if(item.id == 'dologin' || item.id == 'memuAconfig' || item.id == 'memuAsoft' || item.id == 'memuA') is_option = 'Inoperable';
+			html += '<tr><td>'+ item.title +'</td><td><div style="float:right;">'+ is_option +'</div></td></tr>';
+		});
+		layer.open({
+			type:1,
+			title:'Manage panel menu bar',
+			area:['350px','536px'],
+			shadeClose:false,
+			closeBtn:2,
+			content:'<div class="divtable softlist" id="panel_menu_tab" style="padding: 20px 15px;"><table class="table table-hover"><thead><tr><th>Menu bar</th><th style="text-align:right;width:120px;">Display</th></tr></thead><tbody>'+ html +'</tbody></table></div>',
+			success:function(){
+				$('#panel_menu_tab input').click(function(){
+					var arry = [];
+					$(this).parents('tr').siblings().each(function(index,el){
+						if($(this).find('input').length >0 && !$(this).find('input').prop('checked')){
+							arry.push($(this).find('input').attr('name'));
+						}
+					});
+					if(!$(this).prop('checked')){
+						arry.push($(this).attr('name'));
+					}
+					var loadT = bt.load('Setting panel menu bar display status, please wait...');
+					$.post('/config?action=set_hide_menu_list',{hide_list:JSON.stringify(arry)},function(rdata){
+						loadT.close();
+						bt.msg(rdata);
+					});
+				});
+			}
+		});
+	});
+}
+
+
+/**
+ * @description 获取临时授权列表
+ * @param {Function} callback 回调函数列表
+ * @returns void
+ */
+function get_temp_login(data,callback){
+	var loadT = bt.load('Get temporary authorization list, please wait...');
+	bt.send('get_temp_login','config/get_temp_login',data,function(res){
+		if(res.status === false){
+			layer.closeAll();
+			bt.msg(res);
+			return false;
+		}
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+
+/**
+ * @description 设置临时链接
+ * @param {Function} callback 回调函数列表
+ * @returns void
+ */
+function set_temp_login(callback){
+	var loadT = bt.load('Setting temporary links, please wait...');
+	bt.send('set_temp_login','config/set_temp_login',{},function(res){
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+
+/**
+ * @description 设置临时链接
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function remove_temp_login(data,callback){
+	var loadT = bt.load('Deleting temporary authorization record, please wait...');
+	bt.send('remove_temp_login','config/remove_temp_login',{id:data.id},function(res){
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+/**
+ * @description 强制用户登出
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function clear_temp_login(data,callback){
+	var loadT = bt.load('Forcing user to log out, please wait...');
+	bt.send('clear_temp_login','config/clear_temp_login',{id:data.id},function(res){
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+
+/**
+ * @description 渲染授权管理列表
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function reader_temp_list(data,callback){
+	if(typeof data == 'function') callback = data,data = {p:1};
+	get_temp_login(data,function(rdata){
+		var html = '';
+		$.each(rdata.data,function(index,item){
+			html += '<tr><td>'+ (item.login_addr || 'Not login') +'</td><td>'+ (function(){
+				switch(item.state){
+					case 0:
+						return 'Not login';
+					break;
+					case 1:
+						return 'Logged in';
+					break;
+					case -1:
+						return 'Expired';
+					break;
+				}
+			}()) +'</td><td >'+ (item.login_time == 0?'Not login':bt.format_data(item.login_time)) +'</td><td>'+ bt.format_data(item.expire) +'</td><td style="text-align:right;">'+ (function(){
+				if(item.state != 1){
+					return '<a href="javascript:;" class="btlink remove_temp_login" data-ip="'+ item.login_addr +'" data-id="'+ item.id +'">Del</a>';
+				}
+				if(item.online_state){
+					return '<a href="javascript:;" class="btlink clear_temp_login" style="color:red" data-ip="'+ item.login_addr +'" data-id="'+ item.id +'">Force logout </a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink logs_temp_login" data-ip="'+ item.login_addr +'" data-id="'+ item.id +'">Logs</a>';
+				}
+				return '<a href="javascript:;" class="btlink logs_temp_login" data-ip="'+ item.login_addr +'" data-id="'+ item.id +'">Logs</a>';
+			}()) +'</td></tr>';
+		});
+		$('#temp_login_view_tbody').html(html);
+		$('.temp_login_view_page').html(rdata.page);
+		if(callback) callback()
+	});
+}
+
+
+
+
+/**
+ * @description 获取操作日志
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function get_temp_login_logs(data,callback){
+	var loadT = bt.load('Getting operation log, please wait...');
+	bt.send('clear_temp_login','config/get_temp_login_logs',{id:data.id},function(res){
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+
+/**
+ * @description 渲染操作日志
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function reader_temp_login_logs(data,callback){
+	get_temp_login_logs(data,function(res){
+		var html = '';
+		$.each(res,function(index,item){
+			html += '<tr><td>'+ item.type +'</td><td>'+ item.addtime +'</td><td><span title="'+ item.log +'" style="white-space: pre;">'+ item.log +'</span></td></tr>';
+		});
+		if(callback) callback({tbody:html,data:res});
+	})
+}
+
+
+
+
+/**
+ * @description 设置临时链接
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function get_temp_login_view(){
+	layer.open({
+		type: 1,
+        area:["700px",'600px'],
+        title: "Temporary authorization management",
+        closeBtn: 2,
+        shift: 5,
+		shadeClose: false,
+		content:'<div class="login_view_table pd15">'+
+			'<button class="btn btn-success btn-sm va0 create_temp_login" >Create authorization</button>'+
+			'<div class="divtable mt10">'+
+				'<table class="table table-hover">'+
+					'<thead><tr><th>Login IP</th><th>Status</th><th>Login time</th><th>Expiration time</th><th style="text-align:right;">Opt</th></tr></thead>'+
+					'<tbody id="temp_login_view_tbody"></tbody>'+
+				'</table>'+
+				'<div class="temp_login_view_page page"></div>'+
+			'</div>'+
+		'</div>',
+		success:function(){
+			reader_temp_list();
+			// 创建临时授权
+			$('.create_temp_login').click(function(){
+				bt.confirm({title:'Risk tips',msg:'<span style="color:red">Note 1: Abuse of temporary authorization may lead to security risks.</br>Note 2: Not publish temporary authorized connections in public</span></br>Temporary authorization connection is about to be created. Continue?'},function(){
+					layer.open({
+						type: 1,
+						area:'570px',
+						title: "Create temporary authorization",
+						closeBtn: 2,
+						shift: 5,
+						shadeClose: false,
+						content:'<div class="bt-form create_temp_view">'+
+							'<div class="line"><span class="tname" style="width: auto;">Temporary authorized address</span><div class="info-r ml0"><textarea id="temp_link" class="bt-input-text mr20" style="margin: 0px;width: 500px;height: 50px;line-height: 19px;"></textarea></div></div>'+
+							'<div class="line"><button type="submit" class="btn btn-success btn-sm btn-copy-temp-link" data-clipboard-text="">Copy address</button></div>'+
+							'<ul class="help-info-text c7"><li>The temporary authorization is valid within 1 hour after it is generated. It is a one-time authorization and will be invalid immediately after use</li><li>Use temporary authorization to log in to the panel within 1 hour. Do not publish temporary authorization connection in public</li><li>The authorized connection information is only displayed here once. If you forget it before use, please regenerate it</li></ul>'+
+						'</div>',
+						success:function(){
+							set_temp_login(function(res){
+								if(res.status){
+									var temp_link = location.origin+ '/login?tmp_token=' + res.token;
+									$('#temp_link').val(temp_link);
+									$('.btn-copy-temp-link').attr('data-clipboard-text',temp_link);
+								}
+							});
+							var clipboard = new ClipboardJS('.btn');
+							clipboard.on('success', function(e) {
+								bt.msg({status:true,msg:'Copy succeeded!'});
+								e.clearSelection();
+							});
+							clipboard.on('error', function(e) {
+								bt.msg({status:false,msg:'Copy failed, please copy address manually'});
+							});
+						},
+						end:function(){
+							reader_temp_list();
+						}
+					});
+				});
+			});
+			// 操作日志
+			$('#temp_login_view_tbody').on('click','.logs_temp_login',function(){
+				var id = $(this).data('id'),ip = $(this).data('ip');
+				layer.open({
+					type: 1,
+					area:['700px','550px'],
+					title:'Operation logs ['+ ip +']',
+					closeBtn: 2,
+					shift: 5,
+					shadeClose: false,
+					content:'<div class="pd15">'+
+						'<button class="btn btn-default btn-sm va0 refresh_login_logs">Refresh logs</button>'+
+						'<div class="divtable mt10 tablescroll" style="max-height: 420px;overflow-y: auto;border:none">'+
+							'<table class="table table-hover" id="logs_login_view_table">'+
+								'<thead><tr><th width="90px">Operation</th><th width="150px">Time</th><th>logs</th></tr></thead>'+
+								'<tbody ></tbody>'+
+							'</table>'+
+						'</div>'+
+					'</div>',
+					success:function(){
+						reader_temp_login_logs({id:id},function(data){
+							$('#logs_login_view_table tbody').html(data.tbody);
+						});
+						$('.refresh_login_logs').click(function(){
+							reader_temp_login_logs({id:id},function(data){
+								$('#logs_login_view_table tbody').html(data.tbody);
+							});
+						});
+						bt.fixed_table('logs_login_view_table');
+					}
+				});
+			});
+
+			
+
+			//删除授权记录，仅未使用的授权记录
+			$('#temp_login_view_tbody').on('click','.remove_temp_login',function(){
+				var id = $(this).data('id');
+				bt.confirm({
+					title:'Remove unused licenses',
+					msg:'Delete unused authorization record, continue?'
+				},function(){
+					remove_temp_login({id:id},function(res){
+						reader_temp_list(function(){
+							bt.msg(res);
+						})
+					})
+				})
+			});
+			//强制下线，强制登录的用户下线
+			$('#temp_login_view_tbody').on('click','.clear_temp_login',function(){
+				var id = $(this).data('id'),ip= $(this).data('ip');
+				bt.confirm({
+					title:'Force logout [ '+ ip +' ]',
+					msg:'Confirm to force logout [ '+ ip +' ]?'
+				},function(){
+					clear_temp_login({id:id},function(res){
+						reader_temp_list(function(){
+							bt.msg(res);
+						});
+					});
+				})
+			});
+			// 分页操作
+			$('.temp_login_view_page').on('click','a',function(ev){
+				var href = $(this).attr('href'),reg = /([0-9]*)$/,page = reg.exec(href)[0];
+				reader_temp_list({p:page});
+				ev.stopPropagation();
+				ev.preventDefault();
+			});
+		}
+	});
+
 }

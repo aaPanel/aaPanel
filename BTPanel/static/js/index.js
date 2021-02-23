@@ -1,6 +1,11 @@
 bt.pub.check_install(function (rdata) {
     if (rdata === false) bt.index.rec_install();
 })
+$("select[name='network-io']").change(function(){
+    var net_key = $(this).val();
+    if(net_key == 'all') net_key = '';
+    bt.set_cookie('network_io_key',net_key);
+});
 var interval_stop = false;
 var index = {
     warning_list:[],
@@ -245,7 +250,25 @@ var index = {
             if (_lval > 100) _lval = 100;
             index.set_val(_loadbox, { usage: _lval, items: load_arr })
             _loadbox.parents('ul').data('data', net);
+            var net_key = bt.get_cookie('network_io_key');
+            if(net_key){
+                console.log(net_key,net.network[net_key])
+                net.up = net.network[net_key].up;
+                net.down = net.network[net_key].down;
+                net.downTotal = net.network[net_key].downTotal;
+                net.upTotal = net.network[net_key].upTotal;
+                net.downPackets = net.network[net_key].downPackets;
+                net.upPackets = net.network[net_key].upPackets;
+                net.downAll = net.network[net_key].downTotal;
+                net.upAll = net.network[net_key].upTotal;
+            }
+            var net_option = '<option value="all">All</option>';
+            $.each(net.network,function(k,v){
+                var act = (k == net_key)?'selected':'';
+                net_option += '<option value="'+k+'" '+act+'>'+k+'</option>';
+            });
 
+            $('select[name="network-io"]').html(net_option);
             //刷新流量
             $("#upSpeed").html(net.up + ' KB');
             $("#downSpeed").html(net.down + ' KB');
@@ -484,8 +507,8 @@ var index = {
                                 <div class="update_title"><i class="layui-layer-ico layui-layer-ico1"></i><span>'+lan.index.last_version_now+'</span></div>\
                                 <div class="update_version">'+lan.index.this_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_this_version_log+'">'+lan.index.bt_linux+ (rdata.msg.is_beta == 1 ? lan.index.test_version+' ' + rdata.msg.beta.version : lan.index.final_version+' ' + rdata.msg.version) + '</a>&nbsp;&nbsp;'+ lan.index.release_time + (rdata.msg.is_beta == 1 ? rdata.msg.beta.uptime : rdata.msg.uptime) + '</div>\
                                 <div class="update_conter">\
-                                        <div class="update_tips">'+ (is_beta != 1 ? lan.index.test_version : lan.index.final_version) + lan.index.last_version_is + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
-                                        '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">'+lan.index.change_final+'</a></span>') + '\
+                                        <div class="update_tips">'+ (is_beta != 1 ? lan.index.test_version : lan.index.final_version) + lan.index.last_version_is + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
+                                        '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">&nbsp;&nbsp;'+lan.index.change_final+'</a></span>') + '\
                                     </div>\
                                 <div class="bt-form-submit-btn">\
                                     <button type="button" class="btn btn-danger btn-sm btn-title" onclick="layer.closeAll()">'+ lan.public.cancel + '</button>\
@@ -547,7 +570,7 @@ var index = {
         layer.closeAll();
         bt.system.to_update(function (rdata) {
             if (rdata.status) {
-                bt.msg({ msg: lan.index.update_ok, icon: 1 })
+                bt.msg({ msg: rdata.msg, icon: 1 })
                 $("#btversion").html(rdata.version);
                 $("#toUpdate").html('');
                 bt.system.reload_panel();
@@ -578,7 +601,7 @@ var index = {
         bt.send('get_beta_logs', 'ajax/get_beta_logs', {}, function (data) {
             var my_list = '';
             new_load.close();
-            if(data.status === false){
+            if(data.status == false){
                 layer.msg(data.msg,{icon: 2});
                 return false;
             }

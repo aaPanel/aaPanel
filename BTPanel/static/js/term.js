@@ -35,7 +35,14 @@ Terms.prototype = {
     //服务器消息事件
     on_message: function (ws_event){
         result = ws_event.data;
-        if (result === "\rServer connection failed!\r" || result == "\rWrong user name or password!\r") {
+        if(!result) return;
+        // if (result === "\rServer connection failed!\r" || result == "\rWrong user name or password!\r") {
+        //     this.close();
+        //     return;
+        // }
+        if ((result.indexOf("@127.0.0.1:") != -1 || result.indexOf("@localhost:") != -1) && result.indexOf('Authentication failed') != -1) {
+            this.term.write(result);
+            host_trem.localhost_login_form(result);
             this.close();
             return;
         }
@@ -102,7 +109,6 @@ Terms.prototype = {
         if (!this.bws || this.bws.readyState == 3 || this.bws.readyState == 2) {
             this.connect();
         }
-
         //判断当前连接状态,如果!=1，则100ms后尝试重新发送
         if (this.bws.readyState === 1) {
             this.bws.send(data);
@@ -158,6 +164,7 @@ var host_trem = {
     host_list:[],
     command_list:[],
     sort_time:null,
+    is_full:false,
     command_form:{
         title:'',
         shell:'',
@@ -172,22 +179,69 @@ var host_trem = {
     },
     init:function(){
         var that = this,isMousemove = true;
-        $(window).resize(function(){
-            var win = $(window)[0],win_width = win.innerHeight,win_height = win.innerHeight;
-            $('.main-content .safe').height(win_height - 105);
-            $('#term_box_view,.term_tootls').height(win_height - 105);
-            $('.tootls_commonly_list').height(win_height - 563);
+        Object.defineProperty(host_trem,'is_full',{
+            get:function(val){
+                return val;
+            },
+            set:function(newValue) {
+                if(newValue){
+                    $('body').addClass('full_term_view');
+                    var win = $(window)[0],win_width = win.innerHeight,win_height = win.innerHeight;
+                    $('.main-content .safe').height(win_height);
+                    $('#term_box_view,.term_tootls').height(win_height);
+                    $('.tootls_host_list').height((win_height - 80) * .75);
+                    $('.tootls_commonly_list').height((win_height - 80) * .25);
+                    $('.tab_tootls .glyphicon').removeClass('glyphicon-resize-full').addClass('glyphicon-resize-small').attr('title','Exit full screen');
+                }else{
+                    $('body').removeClass('full_term_view');
+                    $('.tab_tootls .glyphicon').removeClass('glyphicon-resize-small').addClass('glyphicon-resize-full').attr('title','Full Screen');
+                }
+            }
+        });
+        document.onkeydown = function(e){
+            e = e || window.event;
+            if ((e.metaKey && e.keyCode == 82) || e.keyCode == 116){
+                return false;
+            }
+            if(that.is_full && e.keyCode == 27){
+                return false;
+            }
+        }
+        $(window).resize(function(ev){
+            var win = $(window)[0],win_width = win.innerHeight,win_height = win.innerHeight,host_commonly = win_height - 185;
+            if(that.isFullScreen()){
+                $('.main-content .safe').height(win_height);
+                $('#term_box_view,.term_tootls').height(win_height);
+                $('.tootls_host_list').height((win_height - 80) * .75);
+                $('.tootls_commonly_list').height((win_height - 80) * .25);
+            }else{
+                $('.main-content .safe').height(win_height - 105);
+                $('#term_box_view,.term_tootls').height(win_height - 105);
+                $('.tootls_host_list').height(host_commonly * .75);
+                $('.tootls_commonly_list').height(host_commonly * .25);
+            }
             var id = $('.term_item_tab .active').data('id');
             var item_term = that.host_term[id].term;
             item_term.FitAddon.fit();
             that.host_term[id].resize({cols:item_term.cols, rows:item_term.rows});
         });
+        $('.tab_tootls').on('click','.glyphicon-resize-full',function(){
+            $(this).removeClass('glyphicon-resize-full').addClass('glyphicon-resize-small').attr('title','Exit full Screen');
+            $('body').addClass('full_term_view');
+            that.requestFullScreen();
+        });
+        $('.tab_tootls').on('click','.glyphicon-resize-small',function(){
+            $(this).removeClass('glyphicon-resize-small').addClass('glyphicon-resize-full').attr('title','Full Screen');
+            $('body').removeClass('full_term_view');
+            that.exitFullscreen();
+        });
 
         $(document).ready(function (e) {
-            var win = $(window)[0],win_width = win.innerHeight,win_height = win.innerHeight;
+            var win = $(window)[0],win_width = win.innerHeight,win_height = win.innerHeight,host_commonly = win_height - 185;
             $('.main-content .safe').height(win_height - 105);
             $('#term_box_view,.term_tootls').height(win_height - 105);
-            $('.tootls_commonly_list').height(win_height - 563);
+            $('.tootls_host_list').height(host_commonly * .75);
+            $('.tootls_commonly_list').height(host_commonly * .25);
             that.open_term_view();
         });
 
@@ -360,6 +414,134 @@ var host_trem = {
         });
         this.reader_host_list();
         this.reader_command_list();
+    },
+     // 判断全屏状态
+    isFullScreen:function() {
+        var is_full = document.isFullScreen || document.mozIsFullScreen || document.webkitIsFullScreen;
+        this.is_full = is_full
+        return is_full;
+    },
+
+    // 进入全屏
+    requestFullScreen:function(element){
+        if(element == undefined) element = document.documentElement;
+        // 判断各种浏览器，找到正确的方法
+        var requestMethod = element.requestFullScreen || //W3C
+            element.webkitRequestFullScreen || //FireFox
+            element.mozRequestFullScreen || //Chrome等
+            element.msRequestFullScreen; //IE11
+        if (requestMethod) {
+            requestMethod.call(element);
+        } else if (typeof window.ActiveXObject !== "undefined") { //for Internet Explorer
+            var wscript = new ActiveXObject("WScript.Shell");
+            if (wscript !== null) {
+                wscript.SendKeys("{F11}");
+            }
+        }
+        this.is_full = true;
+    },
+    // 退出全屏
+    exitFullscreen:function(element) {
+        if(element == undefined) element = document.documentElement;
+        // 判断各种浏览器，找到正确的方法
+        var exitMethod = document.exitFullscreen || //W3C
+            document.mozCancelFullScreen || //FireFox
+            document.webkitExitFullscreen || //Chrome等
+            document.webkitExitFullscreen; //IE11
+        if (exitMethod) {
+            exitMethod.call(document);
+        } else if (typeof window.ActiveXObject !== "undefined") { //for Internet Explorer
+            var wscript = new ActiveXObject("WScript.Shell");
+            if (wscript !== null) {
+                wscript.SendKeys("{F11}");
+            }
+        }
+        this.is_full = false;
+    },
+    
+    /**
+     * @name 本地服务器登录表单 
+     * @author chudong<2020-08-10>
+     * @return void
+    */
+    localhost_login_form:function(result){
+        var that = this,form = $(this.render_template({html:host_form_view.innerHTML,data:{form:$.extend(that.host_form,{host:'127.0.0.1'})}})),id = $('.localhost_item').data('id')
+        form.find('.ssh_ps_tips').remove();
+        form.prepend('<div class="localhost-form-title"><i class="localhost-form_tip"></i><span style="vertical-align: middle;">Login failed, please fill the local server information!</span></div>');
+        form.append('<button type="submit" class="btn btn-sm btn-success">Login</button>');
+        $('#'+id).append('<div class="localhost-form-shade"><div class="localhost-form-view bt-form-2x">'+ form[0].innerHTML +'</div></div>');
+        if(result){
+            if(result.indexOf('@127.0.0.1') != -1){
+                var user = result.split('@')[0].split(',')[1];
+                var port = result.split('1:')[1]
+                $("input[name='username']").val(user);
+                $("input[name='port']").val(port);
+                
+            }
+            
+        }
+        $('.auth_type_checkbox').click(function(){
+            var index = $(this).index();
+            $(this).addClass('btn-success').removeClass('btn-default').siblings().removeClass('btn-success').addClass('btn-default')
+            switch(index){
+                case 0:
+                    $('.c_password_view').addClass('show').removeClass('hidden');
+                    $('.c_pkey_view').addClass('hidden').removeClass('show').find('input').val('');
+                break;
+                case 1:
+                    $('.c_password_view').addClass('hidden').removeClass('show').find('input').val('');
+                    $('.c_pkey_view').addClass('show').removeClass('hidden');
+                break;
+            }
+        });
+        $('.localhost-form-view > button').click(function(){
+            var form = {};
+            $('.localhost-form-view input,.localhost-form-view textarea').each(function(index,el){
+                var name = $(this).attr('name'),value = $(this).val();
+                form[name] = value;
+                switch(name){
+                    case 'port':
+                        if(!bt.check_port(value)){
+                            bt.msg({status:false,msg:'Server port format error!'});
+                            return false;
+                        }
+                    break;
+                    case 'username':
+                        if(value == ''){
+                            bt.msg({status:false,msg:'Server user name cannot be empty!'});
+                            return false;
+                        }
+                    break;
+                    case 'password':
+                        if(value == '' && $('.c_password_view').hasClass('show')){
+                            bt.msg({status:false,msg:'Server password cannot be empty!'});
+                            return false;
+                        }
+                    break;   
+                    case 'pkey':
+                        if(value == '' && $('.c_pkey_view').hasClass('show')){
+                            bt.msg({status:false,msg:'The server key cannot be empty!'});
+                            return false;
+                        }
+                    break;
+                }
+            });
+            delete form.sort
+            form.ps = 'Local server';
+            that.create_host(form,function(res){
+                bt.msg(res);
+                if(res.status){
+                    bt.msg({status:true,msg:'Login successful!'});
+                    $('.localhost_item .icon-trem-close').click();
+                    that.open_term_view();
+                }
+            });
+        });
+        $('.localhost-form-view [name="password"]').keyup(function(e){
+            if(e.keyCode == 13){
+                $('.localhost-form-view > button').click();
+            }
+        }).focus();
     },
     
     reader_right_menu:function(config,callback){
@@ -612,7 +794,7 @@ var host_trem = {
         tab_content.find('.term_item').removeClass('active').siblings().removeClass('active');
         tab_content.append('<div class="term_item active" id="'+ random +'" data-host="'+ info.host +'"></div>');
         item_list.find('.item').removeClass('active');
-        item_list.append('<span class="active item" data-host="'+ info.host +'" data-id="'+ random +'"><i class="icon icon-sucess"></i><div class="content"><span>'+ info.ps +'</span></div><span class="icon-trem-close"></span></span>');
+        item_list.append('<span class="active item '+ (info.host =='127.0.0.1'?'localhost_item':'') +'" data-host="'+ info.host +'" data-id="'+ random +'"><i class="icon icon-sucess"></i><div class="content"><span>'+ info.ps +'</span></div><span class="icon-trem-close"></span></span>');
         this.host_term[random] = new Terms('#'+random,{ssh_info:{host:info.host,ps:info.ps,id:random}});
     },
     /**

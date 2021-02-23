@@ -1,8 +1,329 @@
+var site_table = bt_tools.table({
+    el:'#bt_site_table',
+    url:'/data?action=getData',
+    cookiePrefix:'site_table', // cookie前缀，用于状态存储，如果不设置，着所有状态不存储，
+    param:{table:'sites'}, //参数
+    minWidth:'1000px',
+    autoHeight:true,
+    default:"Site list is empty", // 数据为空时的默认提示
+    beforeRequest:function(param){
+        param.type = bt.get_cookie('site_type') || -1;
+        return param;
+    },
+    column:[
+        {type:'checkbox',class:'',width:20},
+        {fid:'name',title:lan.site.site_name,sort:true,sortValue:'asc',type:'link',event:function(row,index,ev){
+            site.web_edit(row,true);
+        }},
+        {fid:'status',title:lan.site.status,sort:true,width:85,config:{icon:true,list:[['1',lan.site.running_text,'bt_success','glyphicon-play'],['0',lan.site.stopped,'bt_danger','glyphicon-pause']]},type:'status',event:function(row,index,ev,key,that){
+            bt.site[parseInt(row.status)?'stop':'start'](row.id,row.name,function(res){
+                if(res.status) that.$modify_row_data({status:parseInt(row.status)?'0':'1'});
+            });
+        }},
+        {fid:'backup_count',title:lan.site.backup,width:80,type:'link',template:function(row,index){
+            var backup = lan.site.backup_no,_class = "bt_warning";
+            if (row.backup_count > 0) backup = lan.site.backup_yes,_class = "bt_success";
+            return '<a href="javascript:;" class="btlink  '+ _class +'">'+ backup + (row.backup_count >0?('('+ row.backup_count +')'):'') +'</a>';
+        },event:function(row,index){
+            site.site_detail(row.id,row.name);
+        }},
+        {fid:'path',title:lan.site.root_dir,tips:'Open path',type:'link',event:function(row,index,ev){
+            openPath(row.path);
+        }},
+        {fid:'edate',title:lan.site.endtime,width:115,class:'set_site_edate',sort:true,type:'link',template:function(row,index){
+            var _endtime = '';
+            if (row.edate) _endtime = row.edate;
+            if (row.endtime) _endtime = row.endtime;
+            _endtime = (_endtime === "0000-00-00") ? lan.site.web_end_time : _endtime;
+            return  _endtime;
+        },event:function(row){}}, //模拟点击误删
+        {fid:'ps',title:lan.site.note,type:'input',blur:function(row,index,ev){
+            bt.pub.set_data_ps({id:row.id,table:'sites',ps:ev.target.value},function(res){
+                if(!res.status) layer.msg(res.msg,{status:2});
+            });
+        },keyup:function(row,index,ev){
+            if(ev.keyCode === 13){
+                $(this).blur();
+            }
+        }},
+        {fid:'php_version',title:'PHP',tips:'Selete php version',width:57,type:'link',template:function(row,index){
+            if(row.php_version.indexOf('static') > -1) return  row.php_version;
+            return row.php_version;
+        },event:function(row,index){
+            site.web_edit(row);
+            setTimeout(function(){
+                $('.site-menu p:eq(9)').click();
+            },500);
+        }},
+        {fid:'ssl',title:'SSL',tips:'Deployment certificate',width:110,type:'text',template:function(row,index){
+            var _ssl = row.ssl,_info = '',_arry = [['issuer','Certificate'],['notAfter','Due date'],['notBefore','Application date'],['dns','Domain name']];
+            for(var i=0;i<_arry.length;i++){
+                var item = _ssl[_arry[i][0]];
+                _info += _arry[i][1]+':'+ item + (_arry.length-1 != i?'\n':'');
+            }
+            return row.ssl === -1?'<a class="btlink" href="javascript:;" style="color:orange;">Not Set</a>':'<a class="btlink" href="javascript:;" title="'+ _info +'">Expire: '+ row.ssl.endtime +'days</a>';
+        },event:function(row,index,ev,key,that){
+            site.web_edit(row);
+            setTimeout(function(){
+                $('.site-menu p:eq(8)').click();
+            },500);
+        }},
+        {title:lan.site.operate,type:'group',width:95,align:'right',group:[
+        // {
+        //     title:'防火墙',
+        //     event:function(row,index,ev,key,that){
+        //         site.site_waf(row.name);
+        //     }
+        // },
+        {
+            title:lan.site.set,
+            event:function(row,index,ev,key,that){
+                site.web_edit(row,true);
+            }
+        },{
+            title:'Del',
+            event:function(row,index,ev,key,that){
+                site.del_site(row.id,row.name,function(){
+                    that.$refresh_table_list(true);
+                });
+            }
+        }]}
+    ],
+    sortParam:function(data){
+        return {'order':data.name +' '+ data.sort};
+    },
+    // 表格渲染完成后
+    success:function(that){
+        $('.event-edate-'+ that.random).each(function(){
+            var $this = $(this);
+            laydate.render({
+                elem: $this[0] //指定元素
+                , min: bt.get_date(1)
+                , max: '2099-12-31'
+                , vlue: bt.get_date(365)
+                , type: 'date'
+                , format: 'yyyy-MM-dd'
+                , trigger: 'click'
+                , btns: ['perpetual', 'confirm']
+                , theme: '#20a53a'
+                , ready:function(){
+                    $this.click();
+                }
+                , done: function (date) {
+                    var item = that.event_rows_model.rows;
+                    bt.site.set_endtime(item.id, date,function(res){
+                        if(res.status){
+                            layer.msg(res.msg);
+                            return false;
+                        }
+                        bt.msg(res);
+                    });
+                }
+            });
+        });
+    },
+    // 渲染完成
+    tootls:[{ // 按钮组
+        type:'group',
+        positon:['left','top'],
+        list:[
+            {title:'Add site',active:true, event:function(ev){ site.add_site(function(){ 
+                site_table.$refresh_table_list(true) });
+                bt.set_cookie('site_type','-1');
+            }},
+            {title:'Default Page',event:function(ev){ site.set_default_page() }},
+            {title:'Default Website',event:function(ev){ site.set_default_site() }},
+            {title:'PHP CLI version',event:function(ev){ site.get_cli_version()}},
+            {title:'Category manager',group:true,init:function(className){
+                bt.site.get_type(function(res){
+                    var html = '';
+                    $.each(res,function(index,item){
+                        html += '<li><a href="javascript:;" data-id="'+ item.id +'">'+ item.name +'</a></li>';
+                    });
+                    html += '<li role="separator" class="divider"></li><li><a href="javascript:;" data-id="type_sets">Category set</a></li>';
+                    $('.' + className).next().html(html);
+                    $('.' + className).next('ul').on('click','li a',function(){
+                        var id = $(this).data('id');
+                        if(id == 'type_sets'){
+                            site.set_class_type();
+                        }else{
+                            bt.set_cookie('site_type',id);
+                            site_table.$refresh_table_list(true);
+                        }
+                    });
+                });
+            }}
+        ]
+    },{ // 搜索内容
+        type:'search',
+        positon:['right','top'],
+        placeholder:'Please enter domain or remarks',
+        searchParam:'search', //搜索请求字段，默认为 search
+        value:'',// 当前内容,默认为空
+    },{ // 批量操作
+        type:'batch',//batch_btn
+        positon:['left','bottom'],
+        placeholder:'Select batch operation',
+        buttonValue:'Execute',
+        disabledSelectValue:'Select the website to execute!',
+        selectList:[
+            {
+                group:[{title:lan.site.enable_website,param:{status:1}},{title:'Disable website',param:{status:0}}],
+                url:'/site?action=set_site_status_multiple',
+                confirmVerify:false, //是否提示验证方式
+                paramName:'sites_id', //列表参数名,可以为空
+                paramId:'id', // 需要传入批量的id
+                theadName:'Name'
+            },{
+                title:lan.site.backup_website,
+                url:'/site?action=ToBackup',
+                paramId:'id',
+                load:true,
+                theadName:'Name',
+                callback:function(that){ // 手动执行,data参数包含所有选中的站点
+                    that.start_batch({},function(list){
+                        var html = '';
+                        for(var i=0;i<list.length;i++){
+                            var item = list[i];
+                            html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ item.request.msg +'</span></div></td></tr>';
+                        }
+                        site_table.$batch_success_table({title:'Batch backup',th:'Site name',html:html});
+                        site_table.$refresh_table_list(true);
+                    });
+                }
+            },{
+                title:lan.site.set_expired,
+                url:'/site?action=set_site_etime_multiple',
+                paramName:'sites_id', //列表参数名,可以为空
+                paramId:'id', // 需要传入批量的id
+                theadName:'Name',
+                confirm:{
+                    title:'Batch set expired date',
+                    content:'<div class="line"><span class="tname">Expired date</span><div class="info-r "><input name="edate" id="site_edate" class="bt-input-text mr5" placeholder="yyyy-MM-dd" type="text"></div></div>',
+                    success:function(){
+                        laydate.render({
+                            elem: '#site_edate'
+                            ,min: bt.format_data(new Date().getTime(),'yyyy-MM-dd')
+                            ,max: '2099-12-31'
+                            ,vlue: bt.get_date(365)
+                            ,type: 'date'
+                            ,format: 'yyyy-MM-dd'
+                            ,trigger: 'click'
+                            ,btns: ['perpetual','confirm']
+                            ,theme: '#20a53a'
+                        });
+                    },
+                    yes:function(index,layers,request){
+                        var site_edate = $('#site_edate'),site_edate_val = site_edate.val();
+                        if(site_edate_val != ''){
+                            request({'edate':site_edate_val==='Forever'?'0000-00-00':site_edate_val});
+                        }else{
+                            layer.tips('Input expired date','#site_edate',{tips:['1','red']});
+                            $('#site_edate').css('border-color','red');
+                            $('#site_edate').click();
+                            setTimeout(function(){
+                                $('#site_edate').removeAttr('style');
+                            },3000);
+                            return false;
+                        }
+                    }
+                }
+            },{
+                title:lan.site.set_php_version,
+                url:'/site?action=set_site_php_version_multiple',
+                paramName:'sites_id', //列表参数名,可以为空
+                paramId:'id', // 需要传入批量的id
+                theadName:'Name',
+                confirm:{
+                    title:'Batch set php version',
+                    area:'420px',
+                    content:'<div class="line"><span class="tname">PHP version</span><div class="info-r"><select class="bt-input-text mr5 versions" name="versions" style="width:150px"></select></span></div><ul class="help-info-text c7" style="font-size:11px"><li>Please select the version according to your program requirements.</li><li>If not necessary, please try not to use PHP 5.2, which will reduce your server security.</li><li>PHP 7 does not support mysql extension, mysqli and mysql_pdo will be installed by default.</li></ul></div>',
+                    success:function(){
+                        bt.site.get_all_phpversion(function(res){
+                            var html = '';
+                            $.each(res,function(index,item){
+                                html += '<option value="'+ item.version +'">'+ item.name +'</option>';
+                            });
+                            $('[name="versions"]').html(html);
+                        });
+                    },
+                    yes:function(index,layers,request){
+                        request({version:$('[name="versions"]').val()});
+                    }
+                }
+            },{
+                title:lan.site.set_category,
+                url:'/site?action=set_site_type',
+                paramName:'site_ids', //列表参数名,可以为空
+                paramId:'id', // 需要传入批量的id
+                beforeRequest:function(list){
+                    var arry = [];
+                    $.each(list,function(index,item){
+                        arry.push(item.id);
+                    });
+                    return JSON.stringify(arry);
+                },
+                confirm:{
+                    title:'Batch set category',
+                    content:'<div class="line"><span class="tname">Site category</span><div class="info-r"><select class="bt-input-text mr5 site_types" name="site_types" style="width:150px"></select></span></div></div>',
+                    success:function(){
+                        bt.site.get_type(function(res){
+                            var html = '';
+                            $.each(res,function(index,item){
+                                html += '<option value="'+ item.id +'">'+ item.name +'</option>';
+                            });
+                            $('[name="site_types"]').html(html);
+                        });
+                    },
+                    yes:function(index,layers,request){
+                        request({id:$('[name="site_types"]').val()});
+                    }
+                },
+                tips:false,
+                success:function(res,list,that){
+                    var html = '';
+                    $.each(list,function(index,item){
+                        html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (res.status?'#20a53a':'red') +'">'+ res.msg +'</span></div></td></tr>';
+                    });
+                    that.$batch_success_table({title:'Batch set category',th:'Site name',html:html});
+                    that.$refresh_table_list(true);
+                }
+            },{
+                title:lan.site.del_website,
+                url:'/site?action=delete_website_multiple',
+                paramName:'sites_id', //列表参数名,可以为空
+                paramId:'id', //需要传入批量的id
+                theadName:'Name',
+                confirm:function(config,callback){
+                    bt.show_confirm("Delete site","Confirm delete the FTP、database、root path of the selected site with the same name", function(){
+                        var param = {};
+                        $('.bacth_options input[type=checkbox]').each(function(){
+                            var checked = $(this).is(":checked");
+                            if(checked) param[$(this).attr('name')] = checked?1:0;
+                        })
+                        if(callback) callback(param);
+                    },"<div class='options bacth_options'><span class='item'><label><input type='checkbox' name='ftp'><span>FTP</span></label></span><span class='item'><label><input type='checkbox' name='database'><span>" + lan.site.database + "</span></label></span><span class='item'><label><input type='checkbox' name='path'><span>" + lan.site.root_dir + "</span></label></span></div>");
+                }
+            }
+        ],
+    },{ //分页显示
+        type:'page',
+        positon:['right','bottom'], // 默认在右下角
+        pageParam:'p', //分页请求字段,默认为 : p
+        page:1, //当前分页 默认：1
+        numberParam:'limit',　//分页数量请求字段默认为 : limit
+        number:20,　//分页数量默认 : 20条
+        numberList:[10,20,50,100,200], // 分页显示数量列表
+        numberStatus:true, //　是否支持分页数量选择,默认禁用
+        jump:true, //是否支持跳转分页,默认禁用
+    }]
+});
+
 var site = {
     get_list: function(page, search, type) {
         if (page == undefined) page = 1;
         if (type == '-1' || type == undefined) {
-            type = $('.site_type select').val();
+            type = bt.get_cookie('site_type');
         }
         if (!search) search = $("#SearchValue").val();
         bt.site.get_list(page, search, type, function(rdata) {
@@ -35,8 +356,7 @@ var site = {
                                 _status += '<span style="color:red">' + lan.site.stopped + '  </span><span style="color:red" class="glyphicon glyphicon-pause"></span>';
                             }
                             return _status;
-                        },
-                        sort: function() { site.get_list(); }
+                        },sort: function() { site.get_list(); }
                     },
                     {
                         field: 'backup',
@@ -51,16 +371,15 @@ var site = {
                     {
                         field: 'path',
                         title: lan.site.root_dir,
-                        width: '26%',
                         templet: function(item) {
                             var _path = bt.format_path(item.path);
-                            return '<a class="btlink" title="' + lan.site.open_dir + '" href="javascript:openPath(\'' + _path + '\');">' + _path + '</a>';
+                            return '<a class="btlink webPath" title="' + _path + '" href="javascript:openPath(\'' + _path + '\');">' + _path + '</a>';
                         }
                     },
                     {
                         field: 'edate',
                         title: lan.site.endtime,
-                        width: 125,
+                        width: 127,
                         templet: function(item) {
                             var _endtime = '';
                             if (item.edate) _endtime = item.edate;
@@ -74,15 +393,21 @@ var site = {
                         field: 'ps',
                         title: lan.site.note,
                         templet: function(item) {
-                            return "<span class='c9 input-edit'  onclick=\"bt.pub.set_data_by_key('sites','ps',this)\">" + item.ps + "</span>";
+                            return "<span class='c9 input-edit webPath'  onclick=\"bt.pub.set_data_by_key('sites','ps',this)\">" + item.ps + "</span>";
                         }
                     },
                     {
-                        field: 'ssl', title: 'SSL certificate', width: 110, templet: function (item) {
+                        field: 'php_version',width:70, title: 'PHP', templet: function (item) {
+                            
+                            return  '<a class="phpversion_tips btlink">'+item.php_version+'</a>';
+                        }
+                    },
+                    {
+                        field: 'ssl', title: 'SSL', templet: function (item) {
                             var _ssl = '';
                             if (item.ssl == -1)
                             {
-                                _ssl = '<a class="ssl_tips btlink" style="color:orange;">Not deployed</a>';
+                                _ssl = '<a class="ssl_tips btlink" style="color:orange;">Not Set</a>';
                             }else{
                                 var ssl_info = "Certificate: "+item.ssl.issuer+"<br>Due date: " + item.ssl.notAfter+"<br>Application date: " + item.ssl.notBefore +"<br>Domain name: " + item.ssl.dns.join("/");
                                 if(item.ssl.endtime < 0){
@@ -99,7 +424,7 @@ var site = {
                     },
                     {
                         field: 'opt',
-                        width: 260,
+                        width: 90,
                         title: lan.site.operate,
                         align: 'right',
                         templet: function(item) {
@@ -134,10 +459,29 @@ var site = {
                 var timeVal = setInterval(function(){
                     var content = $('#webedit-con').html();
                     if(content != ''){
-                        $('.site-menu p:eq(9)').click();
+                        $('.site-menu p:contains("SSL")').click();
                         clearInterval(timeVal);
                     }
                 },100);
+            });
+            $('.phpversion_tips').click(function(){
+                site.web_edit(this);
+                var timeVal = setInterval(function(){
+                    var content = $('#webedit-con').html();
+                    if(content != ''){
+                        $('.site-menu p:contains("PHP version")').click();
+                        clearInterval(timeVal);
+                    }
+                },100);
+            });
+            //浏览器窗口大小变化时调整内容宽度
+            var ticket_with = $('#webBody').width(),
+            td_width = (ticket_with-667-$('#webBody th:contains("SSL")').width())/2;
+            $('#webBody .webPath').css('max-width',td_width);
+            $(window).resize(function() {
+                var ticket_with = $('#webBody').width(),
+                td_width = (ticket_with-667-$('#webBody th:contains("SSL")').width())/2;
+                $('#webBody .webPath').css('max-width',td_width);
             });
             //设置到期时间
             $('a.setTimes').each(function() {
@@ -145,8 +489,7 @@ var site = {
                     var _tr = _this.parents('tr');
                     var id = _this.attr('id');
                     laydate.render({
-                        elem: '#' + id //指定元素
-                            ,
+                        elem: '#' + id, //指定元素
                         lang: 'en',
                         min: bt.get_date(1),
                         max: '2099-12-31',
@@ -186,15 +529,19 @@ var site = {
     get_types: function(callback) {
         bt.site.get_type(function(rdata) {
             var optionList = '';
+            var t_val = bt.get_cookie('site_type');
             for (var i = 0; i < rdata.length; i++) {
-                optionList += '<option value="' + rdata[i].id + '">' + rdata[i].name + '</option>'
+                optionList += '<button class="btn btn-'+(t_val == rdata[i].id?'success':'default')+' btn-sm" value="' + rdata[i].id + '">' + rdata[i].name + '</button>'
             }
             if ($('.dataTables_paginate').next().hasClass('site_type')) $('.site_type').remove();
-            $('.dataTables_paginate').after('<div class="site_type"><span>' + lan.site.site_classification + ':</span><select class="bt-input-text mr5"  style="width:auto"><option value="-1">' + lan.site.all_classification + '</option>' + optionList + '</select></div>');
-            $('.site_type select').change(function() {
-                var val = $(this).val();
-                site.get_list(0, '', val);
+            $('.dataTables_paginate').after('<div class="site_type"><button class="btn btn-'+(t_val == '-1'?'success':'default')+' btn-sm" value="-1">' + lan.site.all_classification + '</button>' + optionList + '</div>');
+            $('.site_type button').click(function () {
+                var val = $(this).attr('value');
                 bt.set_cookie('site_type', val);
+                site.get_list(0,'', val);
+                $(".site_type button").removeClass('btn-success').addClass('btn-default');
+                $(this).addClass('btn-success');
+                
             })
             if (callback) callback(rdata);
         });
@@ -240,7 +587,12 @@ var site = {
                 var _tab = bt.render({
                     table: '#SiteBackupList',
                     columns: [
-                        { field: 'name', title: lan.site.filename ,width: 250 ,word:'break-word'},
+                        {   field: 'name', title: lan.site.filename ,
+                            templet: function(item) {
+                                var _opt = '<span style="display: inline-block;max-width: 259px;overflow: hidden;text-overflow: ellipsis;" title="' + item.name + '">' + item.name + '</span>'
+                                return _opt;
+                            }
+                        },
                         {
                             field: 'size',
                             title: lan.site.filesize,
@@ -263,7 +615,6 @@ var site = {
                     ],
                     data: frdata.data
                 });
-                $('#SiteBackupList tbody td').css('word-break','break-word');
                 $('#btn_data_backup').unbind('click').click(function() {
                     bt.site.backup_data(id, function(rdata) {
                         if (rdata.status) site.site_detail(id, siteName);
@@ -311,52 +662,541 @@ var site = {
             })
         }, 1000);
     },
-    add_site: function() {
-        bt.site.add_site(function(rdata) {
-            if (rdata.siteStatus) {
-                site.get_list();
-                var html = '';
-                var ftpData = '';
-                if (rdata.ftpStatus) {
-                    var list = [];
-                    list.push({ title: lan.site.user, val: rdata.ftpUser });
-                    list.push({ title: lan.site.password, val: rdata.ftpPass });
-                    var item = {};
-                    item.title = lan.site.ftp;
-                    item.list = list;
-                    ftpData = bt.render_ps(item);
-                }
-                var sqlData = '';
-                if (rdata.databaseStatus) {
-                    var list = [];
-                    list.push({ title: lan.site.database_name, val: rdata.databaseUser });
-                    list.push({ title: lan.site.user, val: rdata.databaseUser });
-                    list.push({ title: lan.site.password, val: rdata.databasePass });
-                    var item = {};
-                    item.title = lan.site.database_txt;
-                    item.list = list;
-                    sqlData = bt.render_ps(item);
-                }
-                if (ftpData == '' && sqlData == '') {
-                    bt.msg({ msg: lan.site.success_txt, icon: 1 })
-                } else {
-                    bt.open({
-                        type: 1,
-                        area: '600px',
-                        title: lan.site.success_txt,
-                        closeBtn: 2,
-                        shadeClose: false,
-                        content: "<div class='success-msg'><div class='pic'><img src='/static/img/success-pic.png'></div><div class='suc-con'>" + ftpData + sqlData + "</div></div>",
-                    });
+    // add_site: function(callback) {
+    //     bt.site.add_site(function(rdata) {
+    //         if (rdata.siteStatus) {
+    //             if(callback) callback(rdata);
+    //             //site.get_list();
+    //             var html = '';
+    //             var ftpData = '';
+    //             if (rdata.ftpStatus) {
+    //                 var list = [];
+    //                 list.push({ title: lan.site.user, val: rdata.ftpUser });
+    //                 list.push({ title: lan.site.password, val: rdata.ftpPass });
+    //                 var item = {};
+    //                 item.title = lan.site.ftp;
+    //                 item.list = list;
+    //                 ftpData = bt.render_ps(item);
+    //             }
+    //             var sqlData = '';
+    //             if (rdata.databaseStatus) {
+    //                 var list = [];
+    //                 list.push({ title: lan.site.database_name, val: rdata.databaseUser });
+    //                 list.push({ title: lan.site.user, val: rdata.databaseUser });
+    //                 list.push({ title: lan.site.password, val: rdata.databasePass });
+    //                 var item = {};
+    //                 item.title = lan.site.database_txt;
+    //                 item.list = list;
+    //                 sqlData = bt.render_ps(item);
+    //             }
+    //             if (ftpData == '' && sqlData == '') {
+    //                 bt.msg({ msg: lan.site.success_txt, icon: 1 })
+    //             } else {
+    //                 bt.open({
+    //                     type: 1,
+    //                     area: '600px',
+    //                     title: lan.site.success_txt,
+    //                     closeBtn: 2,
+    //                     shadeClose: false,
+    //                     content: "<div class='success-msg'><div class='pic'><img src='/static/img/success-pic.png'></div><div class='suc-con'>" + ftpData + sqlData + "</div></div>"
+    //                 });
 
-                    if ($(".success-msg").height() < 150) {
-                        $(".success-msg").find("img").css({ "width": "150px", "margin-top": "30px" });
+    //                 if ($(".success-msg").height() < 150) {
+    //                     $(".success-msg").find("img").css({ "width": "150px", "margin-top": "30px" });
+    //                 }
+    //             }
+    //         } else {
+    //             bt.msg(rdata);
+    //         }
+    //     })
+    // },
+    add_site: function (callback) {
+        var add_web = bt_tools.form({
+            data:{}, //用于存储初始值和编辑时的赋值内容
+            class:'',
+            form:[{
+                    label: lan.site.add_site.domain,
+                    group:[{
+                        type:'textarea', //当前表单的类型 支持所有常规表单元素、和复合型的组合表单元素
+                        name:'webname', //当前表单的name
+                        style:{'width':'440px','height':'100px','line-height':'22px'},
+                        tips:{ //使用hover的方式显示提示
+                            text: lan.site.domain_help,
+                            style:{top:'15px',left:'15px'},
+                        },
+                        keyup:function(value,form,that,config,ev){  //键盘事件
+                            var array = value.webname.split("\n"),ress = array[0].split(":")[0],
+                            oneVal = bt.strim(ress.replace(new RegExp(/([-.])/g), '_')),defaultPath = $('#defaultPath').text(),is_oneVal = ress.length > 0;
+                            that.$set_find_value(is_oneVal?{
+                                'ftp_username':'ftp_'+ oneVal,'ftp_password':bt.get_random(16),
+                                'datauser':is_oneVal?('sql_'+ oneVal.substr(0, 16)):'','datapassword':bt.get_random(16),
+                                'ps':oneVal,
+                                'path':bt.rtrim(defaultPath,'/') + '/'+ ress
+                            }:{'ftp_username':'','ftp_password':'','datauser':'','datapassword':'','ps':'','path':bt.rtrim(defaultPath,'/')});
+                            if(bt.check_domain(ress)){
+                                form['redirect'].parents('.block').removeClass('hide');
+                                if(ress.indexOf('www.') !== 0){
+                                    form['redirect'].next().find('span').text('www.'+ress)
+                                }else if(ress.indexOf('www.') === 0){
+                                    form['redirect'].next().find('span').text(ress.replace(/^www\./,''))
+                                }
+                            }else{
+                                form['tourl'].parents('.line').addClass('hide');
+                                form['redirect'].parents('.block').addClass('hide');
+                            }
+                        }
+                    },{
+                        type:'checkbox',
+                        block:true,
+                        block_class: 'redirect_check',
+                        hide:true,
+                        name:'redirect',
+                        label_tips:'Add [<span></span>] domain name to the main domain name',
+                        event:function(value,form,that,config,ev){
+                            var domain = form['redirect'].next().find('span').text(),
+                                domain_textarea = form['webname'],
+                                domainList = domain_textarea.val().split('\n'),
+                                domain_one = domainList[0].split(":")[0];
+                            if(value['redirect'] == 'on'){
+                                domain_textarea.val(domain_textarea.val() + '\r' + domain);
+                                form['tourl'].parents('.line').removeClass('hide');
+                                var radio_list = form['tourl'].parents('.line').find('.redirect_tourl');
+                                $(".redirect_tourl:eq(1)").find('label').html('Redirect the main domain name [<span title="'+ domain_one +'"> '+ domain_one +'</span>] to [<span title="'+ domain +'">'+ domain +'</span>] domain name');
+                                $(".redirect_tourl:eq(2)").find('label').html('Redirect the [<span title="'+ domain +'">'+ domain +'</span>] domain name to the main domain [<span title="'+ domain_one +'">'+ domain_one +'</span>]');
+                            }else{
+                                for(var i = domainList.length-1;i >= 0;i--){
+                                    if(domainList[i] === domain) domainList.splice(i,1);
+                                }
+                                domain_textarea.val(domainList.join('\n'));
+                                form['tourl'].parents('.line').addClass('hide');
+                            }
+                        }
+                    }]
+                },{
+                    label:'Redirect',
+                    hide:true,
+                    group:[{
+                        type:'radio',
+                        name:'tourl',
+                        block:true,
+                        block_class: 'redirect_tourl',
+                        label_tips:['No',
+                        'Redirect the main domain name [<span title=""></span>] to [<span title=""></span>] domain name',
+                        'Redirect the [<span title=""></span>] domain name to the main domain [<span title=""></span>]'],
+                    }]
+                },{
+                    label:lan.site.add_site.description,
+                    group:{
+                        type:'text',
+                        name:'ps',
+                        width:'400px',
+                        placeholder:lan.note_ph, //默认标准备注提示
                     }
+                },{
+                    label:lan.site.add_site.root,
+                    group:{
+                        type:'text',
+                        width:'400px',
+                        name:'path',
+                        icon:{
+                            type:'glyphicon-folder-open',
+                            event:function(ev){
+                            }
+                        },
+                        value:'/www/wwwroot',
+                        placeholder:lan.site.add_site.root_ph,
+                    }
+                },{
+                    label:lan.site.add_site.ftp,
+                    group:[{
+                        type:'select',
+                        name:'ftp',
+                        width:'135px',
+                        disabled:(function(){
+                            if(bt.config['pure-ftpd']) return !bt.config['pure-ftpd'].setup;
+                            return true;
+                        }()),
+                        list:[
+                            {title:lan.site.add_site.dont_create,value:false},
+                            {title:lan.site.add_site.create,value:true}
+                        ],
+                        change:function(value,form,that,config,ev){
+                            if(value['ftp'] === 'true'){
+                                form['ftp_username'].parents('.line').removeClass('hide');
+                            }else{
+                                form['ftp_username'].parents('.line').addClass('hide');
+                            }
+                        }
+                    },(function(){
+                        if(bt.config['pure-ftpd']['setup']) return {};
+                        return {
+                            type:'link',
+                            title:'FTP is not installed, click Install',
+                            event:function(ev){
+                                bt.soft.install('pureftpd');
+                            }
+                        }
+                    }())]
+                },{
+                    label:lan.site.add_site.ftp_set,
+                    hide:true,
+                    group:[
+                        {type:'text',name:'ftp_username',placeholder:lan.site.add_site.ftp_ph,width:'175px',style:{'margin-right':'15px'}},
+                        {label:lan.site.add_site.password,type:'text',placeholder:lan.site.add_site.ftp_password,name:'ftp_password',width:'175px'}
+                    ],
+                    help:{
+                        list:[lan.site.ftp_help],
+                    }
+                },{
+                    label:lan.site.add_site.database,
+                    group:[{
+                        type:'select',
+                        name:'sql',
+                        width:'135px',
+                        disabled:(function(){
+                            if(bt.config['mysql']) return !bt.config['mysql'].setup;
+                            return true;
+                        }()),
+                        list:[
+                            {title:lan.site.add_site.dont_create,value:false},
+                            {title:'MySQL',value:'MySQL'},
+                            {title:'SQLServer',value:'SQLServer',disabled:true,tips:lan.public_backup.unsupport_sqlserver}
+                        ],
+                        change:function(value,form,that,config,ev){
+                            if(value['sql'] === 'MySQL'){
+                                form['datauser'].parents('.line').removeClass('hide');
+                                form['codeing'].parents('.bt_select_updown').removeClass('hide');
+                            }else{
+                                form['datauser'].parents('.line').addClass('hide');
+                                form['codeing'].parents('.bt_select_updown').addClass('hide');
+                            }
+                        }
+                    },(function(){
+                        if(bt.config.mysql.setup) return {};
+                        return {
+                            type:'link',
+                            title:'Database not installed, click Install',
+                            event:function(ev){
+                                bt.soft.install('pureftpd');
+                            }
+                        }
+                    }()),{
+                        type:'select',
+                        name:'codeing',
+                        hide:true,
+                        width:'135px',
+                        list:[
+                            {title:'utf8',value:'utf8'},
+                            {title:'utf8mb4',value:'utf8mb4'},
+                            {title:'gbk',value:'gbk'},
+                            {title:'big5',value:'big5'}
+                        ]
+                    }]
+                },{
+                    label:lan.site.add_site.database_set,
+                    hide:true,
+                    group:[
+                        {type:'text',name:'datauser',placeholder:lan.site.add_site.database_ph,width:'175px',style:{'margin-right':'15px'}},
+                        {label:lan.site.add_site.password,type:'text',placeholder:lan.site.add_site.database_password,name:'datapassword',width:'175px'}
+                    ],
+                    help:{
+                        class:'',
+                        style:'',
+                        list:[lan.site.database_help],
+                    }
+                },{
+                    label:lan.site.add_site.php_version,
+                    group:[
+                        {
+                            type:'select',
+                            name:'version',
+                            width:'135px',
+                            list:{
+                                url:'/site?action=GetPHPVersion',
+                                dataFilter:function(res){
+                                    var arry = [];
+                                    for(var i = res.length-1; i>=0;i--){
+                                        var item = res[i];
+                                        arry.push({title:item.name,value:item.version});
+                                    }
+                                    return arry;
+                                }
+                            }
+                        }
+                    ]
+                },{
+                    label:lan.site.add_site.category,
+                    group:[
+                        {
+                            type:'select',
+                            name:'type_id',
+                            width:'135px',
+                            list:{
+                                url:'/site?action=get_site_types',
+                                dataFilter:function(res){
+                                    var arry = [];
+                                    $.each(res,function(index,item){
+                                        arry.push({title:item.name,value:item.id});
+                                    });
+                                    return arry;
+                                }
+                            }
+                        }
+                    ]
+                },{
+                    label:'SSL',
+                    class:'ssl_checkbox',
+                    help:{
+                        style:'color: red;line-height: 17px;',
+                        list:['If you need to apply for SSL, please make sure that the domain name has added A record resolution for the domain name'],
+                    },
+                    group:[{
+                        type:'checkbox',
+                        name:'set_ssl',
+                        label_tips:'Apply for SSL',
+                        event:function(value,form,that,config,ev){
+                            var set_ssl = $(this).is(':checked');
+                            if(!set_ssl) $('input[name=set_ssl],input[name=force_ssl]').prop('checked',set_ssl);
+                        }
+                    },{
+                        type:'checkbox',
+                        name:'force_ssl',
+                        label_tips:'HTTP redirect to HTTPS',
+                        event:function(value,form,that,config,ev){
+                            var force_ssl = $(this).is(':checked');
+                            if(force_ssl) $('input[name=set_ssl]').prop('checked',force_ssl);
+                        }
+                    }]
                 }
-            } else {
-                bt.msg(rdata);
+            ]
+        });
+        var bath_web = bt_tools.form({
+            class:'plr10',
+            form:[{
+                line_style:{'position':'relative'},
+                group:{
+                    type:'textarea', //当前表单的类型 支持所有常规表单元素、和复合型的组合表单元素
+                    name:'bath_code', //当前表单的name
+                    style:{'width':'560px','height':'180px','line-height':'22px','font-size':'13px'},
+                    value:lan.site.add_site.bath_code_ph,
+                }
+            },{
+                group:{
+                    type:'help',
+                    style:{'margin-top':'0'},
+                    class:'none-list-style',
+                    list:[
+                        lan.site.add_site.bath_tips1,
+                        lan.site.add_site.bath_tips2,
+                        lan.site.add_site.bath_tips3,
+                        lan.site.add_site.bath_tips4,
+                        lan.site.add_site.bath_tips5,
+                        lan.site.add_site.bath_tips6,
+                        lan.site.add_site.bath_tips7,
+                        lan.site.add_site.bath_tips8,
+                    ]
+                }
+            }]
+        });
+        var web_tab = bt_tools.tab({
+            class:'pd20',
+            type:0,
+            theme:{nav:'mlr20'},
+            active:1, //激活TAB下标
+            list:[{
+                title:lan.site.add_site.create_site,
+                name:'createSite',
+                content:add_web.$reader_content(),
+                success:function(){
+                    add_web.$event_bind();
+                }
+            },{
+                title:lan.site.add_site.batch_creat,
+                name:'batchCreation',
+                content:bath_web.$reader_content(),
+                success:function(){
+                    bath_web.$event_bind();
+                }
+            }],
+            success:function(){
+                
             }
-        })
+        });
+        bt_tools.open({
+            title:lan.site.add_site.add_site_title,
+            skin:'custom_layer',
+            btn:[lan.public.submit,lan.site.no],
+            content:web_tab.$reader_content(),
+            success:function(){
+                web_tab.$init();
+            },
+            yes:function(indexs){
+                var formValue = !web_tab.active?add_web.$get_form_value():bath_web.$get_form_value();
+                if(!web_tab.active){  // 创建站点
+                    var loading = bt.load();
+                    add_web.$get_form_element(true);
+                    if(formValue.webname === ''){
+                        add_web.form_element.webname.focus();
+                        bt_tools.msg(lan.public.domain_format_not_right,2);
+                        return ;
+                    }
+                    var webname = bt.replace_all(formValue.webname,'http[s]?:\\/\\/',''),web_list = webname.split('\n'),
+                    param = {webname:{domain:'',domainlist:[],count:0},type:'PHP',port:80},arry = ['ps',['path',lan.site.site_menu_2],'type_id','version','ftp','sql','ftp_username','ftp_password','datauser','datapassword','codeing']
+                    for(var i=0;i<web_list.length;i++){
+                        var temps = web_list[i].replace(/\r\n/,'').split(':');
+                        if(i === 0){
+                            param['webname']['domain'] = web_list[i];
+                            if(typeof temps[1] != 'undefined') param['port'] = temps[1]
+                        }else{
+                            param['webname']['domainlist'].push(web_list[i]);
+                        }
+                    }
+                    param['webname']['count'] = param['webname']['domainlist'].length;
+                    param['webname'] = JSON.stringify(param['webname']);
+                    $.each(arry,function(index,item){
+                        if(formValue[item] == '' && Array.isArray(item)){
+                            bt_tools.msg(item[1] + lan.site.add_site.empty_ps,2);
+                            return false;
+                        }
+                        Array.isArray(item)? item = item[0]:'';
+                        if(formValue['ftp'] === 'false' && (item === 'ftp_username' || item === 'ftp_password')) return true; 
+                        if(formValue['sql'] === 'false' && (item === 'datauser' || item === 'datapassword')) return true;
+                        param[item] = formValue[item];
+                    });
+                    param['set_ssl'] = $('input[name=set_ssl]').is(':checked')?1:0;
+                    param['force_ssl'] = $('input[name=force_ssl]').is(':checked')?1:0;
+                    var is_redirect = $('.redirect_check').hasClass('hide');
+                    if(!is_redirect){
+                        var redirect_check = $('.redirect_check input[name=redirect]').is(':checked');
+                        if(redirect_check){
+                            var domains =  $('.redirect_tourl input[name=tourl]:checked').next().find('span');
+                            if(domains.length != 0){
+                                param.redirect = $(domains[0]).text();
+                                param.tourl = $(domains[1]).text();
+                            }
+                        }
+                    }
+                    bt.send('AddSite','site/AddSite',param,function(rdata){
+                        loading.close();
+                        if (rdata.siteStatus){
+                            layer.close(indexs);
+                            if(callback) callback(rdata);
+                            var html = '',ftpData = '',sqlData = ''
+                            if (rdata.ftpStatus) {
+                                var list = [];
+                                list.push({ title: lan.site.user, val: rdata.ftpUser });
+                                list.push({ title: lan.site.password, val: rdata.ftpPass });
+                                var item = {};
+                                item.title = lan.site.ftp;
+                                item.list = list;
+                                ftpData = bt.render_ps(item);
+                            }
+                            if (rdata.databaseStatus) {
+                                var list = [];
+                                list.push({ title: lan.site.database_name, val: rdata.databaseUser });
+                                list.push({ title: lan.site.user, val: rdata.databaseUser });
+                                list.push({ title: lan.site.password, val: rdata.databasePass });
+                                var item = {};
+                                item.title = lan.site.database_txt;
+                                item.list = list;
+                                sqlData = bt.render_ps(item);
+                            }
+                            if (ftpData == '' && sqlData == '') {
+                                bt.msg({ msg: lan.site.success_txt, icon: 1 })
+                            }else {
+                                bt.open({
+                                    type: 1,
+                                    area: '600px',
+                                    title: lan.site.success_txt,
+                                    closeBtn: 2,
+                                    shadeClose: false,
+                                    content: "<div class='success-msg'><div class='pic'><img src='/static/img/success-pic.png'></div><div class='suc-con'>" + ftpData + sqlData + "</div></div>"
+                                });
+            
+                                if ($(".success-msg").height() < 150) {
+                                    $(".success-msg").find("img").css({ "width": "150px", "margin-top": "30px" });
+                                }
+                            }
+                        }else {
+                            bt.msg(rdata);
+                        }
+                    });
+                }else{ //批量创建
+                    var loading = bt.load();
+                    if(formValue.bath_code === ''){
+                        bt_tools.msg(lan.site.add_site.batch_site_ps,2);
+                        return false;
+                    }else{
+                        var arry = formValue.bath_code.split("\n"),config = '',_list = [];
+                        for(var i=0; i < arry.length;i++){
+                            var item = arry[i],params = item.split("|"),_arry = [];
+                            if(item === '') continue;
+                            for(var j=0;j<params.length;j++){
+                                var line = i+1,items = bt.strim(params[j]);
+                                _arry.push(items);
+                                switch(j){
+                                    case 0: //参数一:域名
+                                        var domainList = items.split(",");
+                                        for(var z=0;z<domainList.length;z++){
+                                            var domain_info = domainList[z],_domain = domain_info.split(":");
+                                            if(!bt.check_domain(_domain[0])){
+                                                bt_tools.msg(lan.site.add_site.error_line + line + lan.site.add_site.domain_error +'【'+ domain_info +'】',2);
+                                                return false;
+                                            }
+                                            if(typeof _domain[1] !== "undefined"){
+                                                if(!bt.check_port(_domain[1])){
+                                                    bt_tools.msg(lan.site.add_site.error_line + line + lan.site.add_site.port_error +'【'+ _domain[1] +'】',2);
+                                                    return false;
+                                                }
+                                            }
+                                        }
+                                    break;
+                                    case 1: //参数二:站点目录
+                                        if(items !== '1'){
+                                            if(items.indexOf('/') < -1){
+                                                bt_tools.msg(lan.site.add_site.error_line + line + lan.site.add_site.port_error + '【'+ items +'】',2);
+                                                return false;
+                                            }
+                                        }
+                                    break;
+                                }
+                            }
+                            _list.push(_arry.join('|').replace(/\r|\n/,''));
+                        }
+                    }
+                    bt.send('create_type','site/create_website_multiple',{create_type:'txt',websites_content:JSON.stringify(_list)},function(rdata){
+                        loading.close();
+                        if(rdata.status){
+                            var _html = '';
+                            layer.close(indexs);
+                            if(callback) callback(rdata);
+                            $.each(rdata.error,function(key,item){
+                                _html += '<tr><td>'+ key +'</td><td>--</td><td>--</td><td style="text-align: right;"><span style="color:red">'+ item +'</td></td></tr>';
+                            });
+                            $.each(rdata.success,function(key,item){
+                                _html += '<tr><td>'+ key +'</td><td>'+ (item.ftp_status?'<span style="color:#20a53a">'+lan.site.add_site.success +'</span>':'<span>'+lan.site.add_site.not_created +'</span>') +'</td><td>'+ (item.db_status?'<span style="color:#20a53a">'+lan.site.add_site.success +'</span>':'<span>'+lan.site.add_site.not_created +'</span>') +'</td><td  style="text-align: right;"><span style="color:#20a53a">'+lan.site.add_site.created +'</span></td></tr>';
+                            });
+                            bt.open({
+                                type:1,
+                                title:lan.site.add_site.batch_add_site,
+                                area:['500px','450px'],
+                                shadeClose:false,
+                                closeBtn:2,
+                                content:'<div class="fiexd_thead divtable" style="margin: 15px 30px 15px 30px;overflow: auto;height: 360px;"><table class="table table-hover"><thead><tr><th>'+lan.site.add_site.site_name +'</th><th>FTP</th><th>'+lan.site.add_site.database +'</th><th style="text-align:right;width:150px;">'+lan.site.add_site.opt_result +'</th></tr></thead><tbody>'+ _html +'</tbody></table></div>',
+                                success:function(){
+                                    $('.fiexd_thead').scroll(function(){
+                                        var scrollTop = this.scrollTop;
+                                        this.querySelector('thead').style.transform = 'translateY(' + scrollTop + 'px)';
+                                    });
+                                }
+                            });
+                        }else{
+                            bt.msg(rdata);
+                        }
+                    });
+                }
+            }
+        });
     },
     set_default_page: function() {
         bt.open({
@@ -447,21 +1287,21 @@ var site = {
             layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
         });
     },
-    del_site: function(wid, wname) {
+    del_site: function(wid, wname,callback) {
         var thtml = "<div class='options' style='width: 320px'><label><input type='checkbox' id='delftp' name='ftp'><span>FTP</span></label><label><input type='checkbox' id='deldata' name='data'><span>" + lan.site.database + "</span></label><label><input type='checkbox' id='delpath' name='path'><span>" + lan.site.root_dir + "</span></label></div>";
         bt.show_confirm(lan.site.site_del_title + "[" + wname + "]", lan.site.site_del_info, function() {
             var ftp = '',
                 data = '',
-                path = '';
-            var data = { id: wid, webname: wname }
+                path = '',
+                data = { id: wid, webname: wname }
             if ($("#delftp").is(":checked")) data.ftp = 1;
             if ($("#deldata").is(":checked")) data.database = 1;
             if ($("#delpath").is(":checked")) data.path = 1;
 
             bt.site.del_site(data, function(rdata) {
-                if (rdata.status) site.get_list();
+                if(rdata.status) callback?callback(rdata):site.get_list();
                 bt.msg(rdata);
-            })
+            });
 
         }, thtml);
     },
@@ -728,13 +1568,13 @@ var site = {
                 content: '<div class="bt-form bt-form pd20 pb70 ">\
                             <div class="line ">\
                                 <span class="tname" style="width: 125px;">' + dnsapi.data[0].key + '</span>\
-                                <div class="info-r" style="margin-left:120px">\
+                                <div class="info-r" style="margin-left:135px">\
                                     <input name="' + dnsapi.data[0].name + '" class="bt-input-text mr5 dnsapi-key" type="text" style="width:330px" value="' + dnsapi.data[0].value + '">\
                                 </div>\
                             </div>\
                             <div class="line ">\
                                 <span class="tname" style="width: 125px;">' + dnsapi.data[1].key + '</span>\
-                                <div class="info-r" style="margin-left:120px">\
+                                <div class="info-r" style="margin-left:135px">\
                                     <input name="' + dnsapi.data[1].name + '" class="bt-input-text mr5 dnsapi-token" type="text" style="width:330px" value="' + dnsapi.data[1].value + '">\
                                 </div>\
                             </div>\
@@ -945,11 +1785,16 @@ var site = {
                 if (rdata.status) site.reload(7);
             })
         },
-        set_ssl_status: function(action, siteName) {
-            bt.site.set_ssl_status(action, siteName, function(rdata) {
+        set_ssl_status: function (action, siteName, ssl_id) {
+            bt.site.set_ssl_status(action, siteName, function (rdata) {
                 bt.msg(rdata);
                 if (rdata.status) {
                     site.reload(7);
+                    if(ssl_id != undefined){
+                        setTimeout(function(){
+                            $('#ssl_tabs span:eq('+ ssl_id +')').click();
+                        },1000)
+                    } 
                     if (action == 'CloseSSLConf') {
                         layer.msg(lan.site.ssl_close_info, { icon: 1, time: 5000 });
                     }
@@ -979,7 +1824,6 @@ var site = {
     edit: {
         set_domains: function(web) {
             var _this = this;
-            bt.site.get_domains(web.id, function(rdata) {
                 var list = [{
                     items: [
                         { name: 'newdomain', width: '400px', type: 'textarea', placeholder: lan.site.domain_help },
@@ -998,120 +1842,118 @@ var site = {
                         }
                     ]
                 }]
-                var _form_data = bt.render_form_line(list[0]);
-                $('#webedit-con').html(_form_data.html + "<div class='divtable mtb15' style='height:350px;overflow:auto'><table id='domain_table' class='table table-hover' width='100%'></table></div>");
+                var _form_data = bt.render_form_line(list[0]),loadT = null,placeholder = null;
+                $('#webedit-con').html(_form_data.html + "<div class='bt_table' id='domain_table' style='height:350px;overflow:auto'></div>");
                 bt.render_clicks(_form_data.clicks);
-                $('.placeholder').css({ 'width': '340px', 'heigth': '100px', 'left': '0px', 'top': '0px', 'padding-top': '10px', 'padding-left': '15px' });
-                $('.btn_submit_domain').addClass('pull-right').css("margin", "30px 35px 0 0")
-                $(".placeholder").click(function() {
+                $('.btn_submit_domain').addClass('pull-right').css("margin", "30px 35px 0 0");
+                placeholder = $(".placeholder");
+                placeholder.click(function () {
                     $(this).hide();
                     $('.newdomain').focus();
-                })
-                $('.domains').focus(function() { $(".placeholder").hide(); });
-                $('.domains').blur(function() {
-                    if ($(this).val().length == 0) $(".placeholder").show();
-                });
-                $('textarea[name="newdomain"]').focus(function(){
-                    var _this = $(this), tips = $('div.placeholder').html();
-                    _this.attr('placeholder', '');
-                    var loadT = layer.tips(tips, _this, {
-                        tips: [1, '#20a53a'],
-                        time: 0,
-                        area: _this[0].clientWidth + 'px'
-                    });
-                    $(this).one('blur', function () {
-                        $('div.placeholder').show();
-                        layer.close(loadT);
-                    });
+                }).css({ 'width':'340px', 'heigth':'100px','left': '0px', 'top': '0px',  'padding-top': '10px','padding-left': '15px'})
+                $('.newdomain').focus(function(){ 
+                    placeholder.hide();
+                    console.log(placeholder)
+                    loadT = layer.tips(placeholder.html(),$(this),{tips:[1,'#20a53a'],time:0,area:$(this).width()});
+                }).blur(function(){
+                    if($(this).val().length == 0) placeholder.show();
+                    layer.close(loadT);
                 });
 
-                bt.render({
-                    table: '#domain_table',
-                    columns: [
-                        { field: 'name', title: lan.site.domain, templet: function(item) { return "<a title='" + lan.site.click_access + "' target='_blank' href='http://" + item.name + ":" + item.port + "' class='btlinkbed'>" + item.name + "</a>" } },
-                        { field: 'port', width: '70px', title: lan.site.port },
-                        { field: 'opt', width: '50px', align: 'center', title: lan.site.operate, templet: function(item) { return '<a class="table-btn-del domain_del" href="javascript:;"><span class="glyphicon glyphicon-trash"></span></a>'; } }
-                    ],
-                    data: rdata
-                })
-                setTimeout(function() {
-                    $('.domain_del').click(function() {
-                        if ($(this).parents('tbody').find('tr').length == 1) {
-                            bt.msg({ msg: lan.site.domain_last_cannot, icon: 2 });
-                            return;
-                        }
-                        var item = $(this).parents('tr').data('item');
-                        bt.confirm({ title: lan.site.del_domain + '【' + item.name + '】', msg: lan.site.domain_del_confirm }, function() {
-                            bt.site.del_domain(web.id, web.name, item.name, item.port, function(ret) {
-                                if (ret.status) site.reload(0)
-                            })
-                        })
-                    })
-                }, 100)
-            })
-        },
-        set_dirbind: function(web) {
-            var _this = this;
-            bt.site.get_dirbind(web.id, function(rdata) {
-                var dirs = [];
-                for (var n = 0; n < rdata.dirs.length; n++) dirs.push({ title: rdata.dirs[n], value: rdata.dirs[n] });
-                var data = {
-                    title: '',
-                    items: [
-                        { title: lan.site.domain, width: '140px', name: 'domain' },
-                        { title: lan.site.subdirectories, name: 'dirName', type: 'select', items: dirs },
-                        {
-                            text: lan.site.add,
-                            type: 'button',
-                            name: 'btn_add_subdir',
-                            callback: function(sdata) {
-                                if (!sdata.domain || !sdata.dirName) {
-                                    layer.msg(lan.site.d_s_empty, { icon: 2 });
-                                    return;
+                bt_tools.table({
+                    el:'#domain_table',
+                    url:'/data?action=getData',
+                    param:{table:'domain',list:'True',search:web.id},
+                    dataFilter:function(res){
+                        return {data:res};
+                    },
+                    column:[
+                        {type:'checkbox',width:20,keepNumber:1},
+                        {fid:'name',title: lan.site.domain, template:function(row){
+                            return '<a href="http://' + row.name + ':' + row.port + '" target="_blank" class="btlink">'+ row.name +'</a>';
+                        }},
+                        {fid:'port',title: lan.site.port,width:50,type:'text'},
+                        {title:'opt',width:80,type:'group',align:'right',group:[{
+                            title:'Del',
+                            template:function(row,that){
+                                return that.data.length === 1?'<span>Inoperable</span>':'Del';
+                            },
+                            event:function(row,index,ev,key,that){
+                                if(that.data.length === 1){
+                                    bt.msg({status:false,msg:'The last domain name cannot be deleted!'});
+                                    return false;
                                 }
-                                bt.site.add_dirbind(web.id, sdata.domain, sdata.dirName, function(ret) {
-                                    layer.msg(ret.msg, { icon: ret.status ? 1 : 2 });
-                                    if (ret.status) site.reload(1)
-                                })
+                                bt.confirm({title:'Delete domain【'+ row.name +'】', msg: lan.site.domain_del_confirm }, function () {
+                                    bt.site.del_domain(web.id,web.name,row.name,row.port,function(res){
+                                        if(res.status) that.$delete_table_row(index);
+                                        bt.msg(res);
+                                    });
+                                });
                             }
+                        }]
+                    }],
+                    tootls:[{ // 批量操作
+                        type:'batch',
+                        positon:['left','bottom'],
+                        config:{
+                            title:' delete',
+                            url:'/site?action=delete_domain_multiple',
+                            param:{id:web.id},
+                            paramId:'id',
+                            paramName:'domains_id',
+                            theadName:'Domain',
+                            confirmVerify:false //是否提示验证方式
                         }
-                    ]
-                }
-                var _form_data = bt.render_form_line(data);
-                $('#webedit-con').html(_form_data.html + '<div class="divtable mtb15" style="height:450px;overflow:auto"><table id="sub_dir_table" class="table table-hover" width="100%" style="margin-bottom:0"></table></div>');
-                bt.render_clicks(_form_data.clicks);
-                bt.render({
-                    table: '#sub_dir_table',
-                    columns: [
-                        { field: 'domain', title: lan.site.domain },
-                        { field: 'port', width: '70px', title: lan.site.port },
-                        { field: 'path', width: '100px', title: lan.site.subdirectories },
-                        {
-                            field: 'opt',
-                            width: '150px',
-                            align: 'right',
-                            title: lan.site.operate,
-                            templet: function(item) {
-                                return '<a class="btlink rewrite" href="javascript:;">' + lan.site.site_menu_4 + '</a> | <a class="btlink del" href="javascript:;">' + lan.site.del + '</a>';
+                    }]
+                });
+                $('#domain_table>.divtable').css('max-height','350px');
+        },
+        set_dirbind: function (web) {
+            var _this = this;
+            $('#webedit-con').html('<div id="sub_dir_table"></div>');
+            bt_tools.table({
+                el:'#sub_dir_table',
+                url:'/site?action=GetDirBinding',
+                param:{id:web.id},
+                dataFilter:function(res){
+                    if($('#webedit-con').children().length === 2) return {data:res.binding}
+                    var dirs = [];
+                    for (var n = 0; n < res.dirs.length; n++) dirs.push({ title: res.dirs[n], value: res.dirs[n] });
+                    var data = {
+                        title: '',class:'mb0',items: [
+                            { title: lan.site.domain, width: '140px', name: 'domain'},
+                            { title: lan.site.subdirectories, name: 'dirName', type: 'select', items: dirs },
+                            {
+                                text: lan.site.add, type: 'button', name: 'btn_add_subdir', callback: function (sdata) {
+                                    if (!sdata.domain || !sdata.dirName) {
+                                        layer.msg(lan.site.d_s_empty, { icon: 2 });
+                                        return;
+                                    }
+                                    bt.site.add_dirbind(web.id, sdata.domain, sdata.dirName, function (ret) {
+                                        layer.msg(ret.msg, { icon: ret.status ? 1 : 2 });
+                                        if (ret.status) site.reload(1)
+                                    })
+                                }
                             }
-                        }
-                    ],
-                    data: rdata.binding
-                })
-                setTimeout(function() {
-                    $('#sub_dir_table td a').click(function() {
-                        var item = $(this).parents('tr').data('item');
-                        if ($(this).hasClass('del')) {
-                            bt.confirm({ msg: lan.site.s_bin_del }, function() {
-                                bt.site.del_dirbind(item.id, item.domain, function(ret) {
-                                    if (ret.status) site.reload(1)
-                                })
-                            })
-                        } else {
-                            bt.site.get_dir_rewrite({ id: item.id }, function(ret) {
+                        ]
+                    }
+                    var _form_data = bt.render_form_line(data);
+                    $('#webedit-con').prepend(_form_data.html);
+                    bt.render_clicks(_form_data.clicks);
+                    return {data:res.binding};
+                },
+                column:[
+                    {type:'checkbox',width:20,keepNumber:1},
+                    {fid:'domain',title:lan.site.domain,type:'text'},
+                    {fid:'port',title:lan.site.port,width:70,type:'text'},
+                    {fid:'path',title:lan.site.subdirectories,width:70,type:'text'},
+                    {title:'Opt',width:130,type:'group',align:'right',group:[{
+                        title:'URL rewirte',
+                        event:function(row,index,ev,key,that){
+                            bt.site.get_dir_rewrite({ id: row.id }, function (ret) {
                                 if (!ret.status) {
-                                    var confirmObj = layer.confirm(lan.site.url_rewrite_alter, { icon: 3, closeBtn: 2 }, function() {
-                                        bt.site.get_dir_rewrite({ id: item.id, add: 1 }, function(ret) {
+                                    var confirmObj = layer.confirm(lan.site.url_rewrite_alter, { icon: 3, closeBtn: 2 }, function () {
+                                        bt.site.get_dir_rewrite({ id: row.id, add: 1 }, function (ret) {
                                             layer.close(confirmObj);
                                             show_dir_rewrite(ret);
                                         });
@@ -1119,67 +1961,95 @@ var site = {
                                     return;
                                 }
                                 show_dir_rewrite(ret);
-
-                                function show_dir_rewrite(ret) {
-                                    var arrs = [];
-                                    for (var i = 0; i < ret.rlist.length; i++) arrs.push({ title: ret.rlist[i], value: ret.rlist[i] });
-                                    var datas = [{
-                                            name: 'dir_rewrite',
-                                            type: 'select',
-                                            width: '130px',
-                                            items: arrs,
-                                            callback: function(obj) {
-                                                var spath = '/www/server/panel/rewrite/' + (bt.get_cookie('serverType')=='openlitespeed'?'apache':bt.get_cookie('serverType')) + '/' + obj.val() + '.conf';
-                                                bt.files.get_file_body(spath, function(sdata) {
-                                                    $('.dir_config').text(sdata.data);
-                                                })
-                                            }
-                                        },
-                                        { items: [{ name: 'dir_config', type: 'textarea', value: ret.data, width: '470px', height: '260px' }] },
-                                        {
-                                            items: [{
-                                                name: 'btn_save',
-                                                text: lan.site.save,
-                                                type: 'button',
-                                                callback: function(ldata) {
-                                                    bt.files.set_file_body(ret.filename, ldata.dir_config, 'utf-8', function(sdata) {
-                                                        if (sdata.status) load_form.close();
-                                                        bt.msg(sdata);
-                                                    })
-                                                }
-                                            }]
-                                        }
-                                    ]
+                                function get_rewrite_file(name){
+                                    var spath = '/www/server/panel/rewrite/' + (bt.get_cookie('serverType') == 'openlitespeed'?'apache':bt.get_cookie('serverType')) + '/' + name + '.conf';
+                                    if(bt.get_cookie('serverType') == 'nginx'){
+                                        if(name == 'default') spath = '/www/server/panel/vhost/rewrite/'+ web.name +'_'+row['path'] + '.conf';
+                                    }else{
+                                        if(name == 'default') spath = '/www/wwwroot/'+ web.name +'/'+row['path'] + '.htaccess';
+                                    }
+                                    bt.files.get_file_body(spath, function(sdata){
+                                        $('.dir_config').text(sdata.data);
+                                    });
+                                }
+                                function show_dir_rewrite(ret){
                                     var load_form = bt.open({
                                         type: 1,
-                                        area: '510px',
+                                        area: ['510px','530px'],
                                         title: lan.site.config_url,
                                         closeBtn: 2,
                                         shift: 5,
                                         skin: 'bt-w-con',
                                         shadeClose: true,
-                                        content: "<div class='bt-form webedit-dir-box dir-rewrite-man-con'></div>"
-                                    });
-
-                                    setTimeout(function() {
-                                        var _html = $(".webedit-dir-box")
-                                        var clicks = [];
-                                        for (var i = 0; i < datas.length; i++) {
-                                            var _form_data = bt.render_form_line(datas[i]);
-                                            _html.append(_form_data.html);
-                                            var _other = (bt.os == 'Linux' && i == 0) ? '<span>' + lan.site.rewrite_change_tools + '：<a href="https://www.bt.cn/Tools" target="_blank" style="color:#20a53a">' + lan.site.ap_change_ng + '</a></span>' : '';
-                                            _html.find('.info-r').append(_other)
-                                            clicks = clicks.concat(_form_data.clicks);
+                                        content: "<div class='bt-form webedit-dir-box dir-rewrite-man-con'></div>",
+                                        success:function(){
+                                            var _html = $(".webedit-dir-box"),arrs = [];
+                                            for (var i = 0; i < ret.rlist.length; i++){
+                                                if(i == 0){
+                                                    arrs.push({ title: ret.rlist[i], value: 'default'});
+                                                }else{
+                                                    arrs.push({ title: ret.rlist[i], value: ret.rlist[i] });
+                                                }
+                                            } 
+                                            var datas = [{
+                                                name: 'dir_rewrite', type: 'select', width: '130px', items: arrs, callback: function (obj) {
+                                                    get_rewrite_file(obj.val());
+                                                }
+                                            },
+                                            { items: [{ name: 'dir_config', type: 'textarea', value: ret.data, width: '470px', height: '260px' }] },
+                                            {
+                                                items: [{
+                                                    name: 'btn_save', text: 'Save', type: 'button', callback: function (ldata) {
+                                                        console.log(ret)
+                                                        bt.files.set_file_body(ret.filename, ldata.dir_config, 'utf-8', function (sdata) {
+                                                            if (sdata.status) load_form.close();
+                                                            bt.msg(sdata);
+                                                        })
+                                                    }
+                                                }]
+                                            }]
+                                            var clicks = [];
+                                            for (var i = 0; i < datas.length; i++) {
+                                                var _form_data = bt.render_form_line(datas[i]);
+                                                _html.append(_form_data.html);
+                                                var _other = (bt.os == 'Linux' && i == 0) ? '<span>Rewrite rule converter：<a href="https://www.bt.cn/Tools" target="_blank" style="color:#20a53a">Apache to Nginx</a></span>' : '';
+                                                _html.find('.info-r').append(_other)
+                                                clicks = clicks.concat(_form_data.clicks);
+                                            }
+                                            _html.append(bt.render_help(['Please select your application.', 'If the site cannot be accessed after the rewrite rules set, please try to reset to default.','You are able to modify rewrite rules, just save it after modification.']));
+                                            bt.render_clicks(clicks);
+                                            get_rewrite_file($('.dir_rewrite option:eq(0)').val());
                                         }
-                                        _html.append(bt.render_help([lan.site.rewrite_tips, lan.site.edit_rewrite]));
-                                        bt.render_clicks(clicks);
-                                    }, 100)
+                                    });
                                 }
                             })
                         }
-                    })
-                }, 100)
-            })
+                    },{
+                        title:'Del',
+                        event:function(row,index,ev,key,that){
+                            bt.confirm({title:'Are you sure to delete this【'+ row.path +'】 subdirectory binding?', msg: lan.site.s_bin_del }, function () {
+                                bt.site.del_dirbind(row.id, function (res) {
+                                    if(res.status) that.$delete_table_row(index);
+                                    bt.msg(res);
+                                })
+                            });
+                        }
+                    }]
+                }],
+                tootls:[{ // 批量操作
+                    type:'batch',
+                    positon:['left','bottom'],
+                    config:{
+                        title:' execute',
+                        url:'/site?action=delete_dir_bind_multiple',
+                        param:{id:web.id},
+                        paramId:'id',
+                        paramName:'bind_ids',
+                        theadName:'Domain',
+                        confirmVerify:false //是否提示验证方式
+                    }
+                }]
+            });
         },
         set_dirpath: function(web) {
             var loading = bt.load();
@@ -1224,7 +2094,7 @@ var site = {
                         {
                             title: '',
                             items: [
-                                { name: 'path', title: lan.site.site_menu_2, width: '50%', value: path, add_class: 'ml5', event: { css: 'glyphicon-folder-open', callback: function(obj) { bt.select_path(obj); } } },
+                                { name: 'path', title: lan.site.site_menu_2, width: '240px', value: path, add_class: 'ml5', event: { css: 'glyphicon-folder-open', callback: function(obj) { bt.select_path(obj); } } },
                                 {
                                     name: 'btn_site_path',
                                     type: 'button',
@@ -1241,7 +2111,7 @@ var site = {
                         {
                             title: '',
                             items: [
-                                { title: lan.site.run_dir, width: '50%', value: rdata.runPath.runPath, name: 'dirName', type: 'select',add_class: 'ml5 mr20', items: dirs },
+                                { title: lan.site.run_dir, width: '240px', value: rdata.runPath.runPath, name: 'dirName', type: 'select',add_class: 'ml5 mr20', items: dirs },
                                 {
                                     name: 'btn_run_path',
                                     type: 'button',
@@ -1313,53 +2183,119 @@ var site = {
             })
         },
         set_dirguard: function(web) {
-            String.prototype.myReplace = function(f, e) { //吧f替换成e
-                var reg = new RegExp(f, "g"); //创建正则RegExp对象
-                return this.replace(reg, e);
-            }
-            bt.site.get_dir_auth(web.id, function(res) {
-                var datas = {
-                    items: [{ name: 'add_dir_guard', text: lan.site.add_dir_guard, type: 'button', callback: function(data) { site.edit.template_Dir(web.id, true) } }]
+            $('#webedit-con').html('<div id="set_dirguard"></div>');
+            var tab = '<div class="tab-nav mlr20">\
+                    <span class="on">Limit access</span><span class="">Deny access</span>\
+                    </div>\
+                    <div id="dir_dirguard" class="pd20"></div>\
+                    <div id="php_dirguard" class="pd20" style="display:none;"></div>';
+            $("#set_dirguard").html(tab);
+            bt_tools.table({
+                el:'#dir_dirguard',
+                url:'/site?action=get_dir_auth',
+                param:{id:web.id},
+                dataFilter:function(res){
+                    return {data:res[web.name]};
+                },
+                column:[
+                    {type:'checkbox',width:20},
+                    {fid:'name',title:lan.site.name,type:'text'},
+                    {fid:'site_dir',title:'Path',type:'text'},
+                    {title:lan.site.operate,width:110,type:'group',align:'right',group:[{
+                        title:lan.site.edit,
+                        event:function(row,index,ev,key,that){
+                            site.edit.template_Dir(web.id,false,row);
+                        }
+                    },{
+                        title:lan.site.del,
+                        event:function(row,index,ev,key,that){
+                            bt.site.delete_dir_guard(web.id,row.name,function(res){
+                                if(res.status) that.$delete_table_row(index);
+                                bt.msg(res);
+                            });
+                        }
+                    }],
+                }],
+                tootls:[{ // 按钮组
+                    type:'group',
+                    positon:['left','top'],
+                    list:[{title:'Add limit access',active:true, event:function(ev){ 
+                        site.edit.template_Dir(web.id,true);
+                    }}]
+                },{ // 批量操作
+                    type:'batch',
+                    positon:['left','bottom'],
+                    config:{
+                        title:' delete',
+                        url:'/site?action=delete_dir_auth_multiple',
+                        param:{site_id:web.id},
+                        paramId:'name',
+                        paramName:'names',
+                        theadName:'Name',
+                        confirmVerify:false //是否提示验证方式
+                    }
+                }]
+            });
+            bt_tools.table({
+                el:'#php_dirguard',
+                url:'/config?action=get_file_deny',
+                param:{website:web.name},
+                dataFilter:function(res){
+                    return {data:res};
+                },
+                column:[
+                    //{type:'checkbox',width:20},
+                    {fid:'name',title:lan.site.name,type:'text'},
+                    {fid:'dir',title:'Path',type:'text', template:function(row){
+                        return '<span title="' + row.dir + '" style="max-width: 250px;" class="limit-text-length">' + row.dir + '</span>';
+                    }},
+                    {fid: 'suffix', title: 'Suffix', template:function(row){
+                        return '<span title="' + row.suffix + '" style="max-width: 85px;" class="limit-text-length">' + row.suffix + '</span>';
+                    }},
+                    {title:lan.site.operate,width:110,type:'group',align:'right',group:[{
+                        title:lan.site.edit,
+                        event:function(row,index,ev,key,that){
+                            site.edit.template_php(web.name,row);
+                        }
+                    },{
+                        title:lan.site.del,
+                        event:function(row,index,ev,key,that){
+                            site.edit.del_php_deny(web.name,row.name,function(res){
+                                if(res.status) that.$delete_table_row(index);
+                                bt.msg(res);
+                            });
+                        }
+                    }],
+                }],
+                tootls:[{ // 按钮组
+                    type:'group',
+                    positon:['left','top'],
+                    list:[{title:'Add deny access',active:true, event:function(ev){
+                        site.edit.template_php(web.name);
+                    }}]
+                }]
+            });
+            $('#dir_dirguard>.divtable,#php_dirguard>.divtable').css('max-height','340px');
+            $('#dir_dirguard').append("<ul class='help-info-text c7'>\
+                <li>After the path is protected, you need to enter the account password to access it.</li>\
+                <li>For example, if I set the limit path /test/ , then I need to enter the account password to access http://aaa.com/test/</li>\
+            </ul>");
+            $('#php_dirguard').append("<ul class='help-info-text c7'>\
+                <li>Suffix: Indicates the suffix that is not allowed to access, if there are more than one, separate with'|'.</li>\
+                <li>Path: Quote rules in this directory.</li>\
+                <li>For Example, if you want to deny http://test.com/a/index.php</li>\
+                <li>Please fill in [ /a/ ]</li>\
+            </ul>");
+            $("#set_dirguard").on('click', '.tab-nav span',function () {
+                var index = $(this).index();
+                $(this).addClass('on').siblings().removeClass('on');
+                if (index == 0) {
+                    $("#dir_dirguard").show();
+                    $("#php_dirguard").hide();
+                } else {
+                    $("#php_dirguard").show();
+                    $("#dir_dirguard").hide();
                 }
-                var form_line = bt.render_form_line(datas);
-                $('#webedit-con').append(form_line.html);
-                bt.render_clicks(form_line.clicks);
-                $('#webedit-con').addClass('divtable').append('<table id="dir_guard" class="table table-hover"></table>');
-                setTimeout(function() {
-                    var data = [];
-                    var _tab = bt.render({
-                        table: '#dir_guard',
-                        columns: [{
-                                field: 'name',
-                                title: lan.site.name,
-                                template: function(item) {
-                                    return '<span style="width:60px;" title="' + item.name + '">' + item.name + '</span>'
-                                }
-                            },
-                            {
-                                field: 'site_dir',
-                                title: lan.public.dir_name,
-                                template: function(item) {
-                                    return '<span style="width:60px;" title="' + item.site_dir + '">' + item.site_dir + '</span>'
-                                }
-                            },
-                            {
-                                field: 'dname',
-                                title: lan.site.operate,
-                                align: 'right',
-                                templet: function(item) {
-                                    var dirName = item.name
-                                    item = JSON.stringify(item).myReplace('"', '\'');
-                                    var conter = '<a class="btlink" onclick="site.edit.template_Dir(\'' + web.id + '\',false,' + item + ')" href="javascript:;">' + lan.site.edit + '</a> ' +
-                                        '| <a class="btlink" onclick="bt.site.delete_dir_guard(\'' + web.id + '\',\'' + dirName + '\',function(rdata){if(rdata.status)site.reload()})" href="javascript:;">' + lan.site.del + '</a>';
-                                    return conter
-                                }
-                            }
-                        ],
-                        data: res[web.name] || []
-                    })
-
-                })
             });
         },
         ols_cache: function(web) {
@@ -1556,6 +2492,10 @@ var site = {
                                 var spath = filename;
                                 if (obj.val() != lan.site.rewritename) spath = '/www/server/panel/rewrite/' + (webserver == 'openlitespeed'?'apache':webserver) + '/' + obj.val() + '.conf';
                                 bt.files.get_file_body(spath, function(ret) {
+                                    if (ret.status == false) {
+                                        layer.msg(ret.msg,{icon: 2});
+                                        return false;
+                                    }
                                     aceEditor.ACE.setValue(ret.data);
                                     aceEditor.ACE.moveCursorTo(0, 0); 
                                     aceEditor.path = spath;
@@ -1596,7 +2536,7 @@ var site = {
                                                 name: 'submit',
                                                 css: 'btn-success',
                                                 callback: function(rdata, load, callback) {
-                                                    bt.site.set_rewrite_tel(rdata.tempname, editor.getValue(), function(rRet) {
+                                                    bt.site.set_rewrite_tel(rdata.tempname, aceEditor.ACE.getValue(), function(rRet) {
                                                         if (rRet.status) {
                                                             load.close();
                                                             site.reload(4)
@@ -2292,11 +3232,9 @@ var site = {
                     $('#session_switch').click(function() {
                         var val = $(this).prop('checked');
                         bt.send('set_php_session_path', 'config/set_php_session_path', { id: web.id, act: val ? 1 : 0 }, function(rdata) {
-                            bt.msg(rdata)
-                        })
-                        setTimeout(function() {
                             get_session_status();
-                        }, 500)
+                            bt.msg(rdata)
+                        });
                     })
                 })
             })
@@ -2376,7 +3314,7 @@ var site = {
                         "</div>" +
                         "</div>" +
                         "<ul class='help-info-text c7'>" + bt.render_help(helps) + '</ul>' +
-                        "<div class='bt-form-submit-btn'><button type='button' class='btn btn-sm btn-danger btn-colse-prosy'>" + lan.site.turn_off + "</button><button type='button' class='btn btn-sm btn-success btn-submit-redirect'>" + (types ? " " + lan.site.submit : lan.site.save) + "</button></div>" +
+                        "<div class='bt-form-submit-btn'><button type='button' class='btn btn-sm btn-danger btn-colse-prosy'>" + lan.site.no + "</button><button type='button' class='btn btn-sm btn-success btn-submit-redirect'>" + (types ? " " + lan.site.submit : lan.site.save) + "</button></div>" +
                         "</form>"
                 });
                 setTimeout(function() {
@@ -2461,19 +3399,19 @@ var site = {
             var form_directory = bt.open({
                 type: 1,
                 skin: 'demo-class',
-                area: '550px',
-                title: type ? lan.bt.adddir : lan.bt.editdir,
+                area: '475px',
+                title: type ? 'Add limit access' : 'Edit limit access',
                 closeBtn: 2,
                 shift: 5,
                 shadeClose: false,
-                content: "<form id='form_dir' class='divtable pd15' style='padding: 40px 0 90px 60px'>" +
+                content: "<form id='form_dir' class='divtable pd15' style='padding: 20px 0 60px 0'>" +
                     "<div class='line'>" +
                     "<span class='tname'>" + lan.bt.task_name + "</span>" +
                     "<div class='info-r ml0'><input name='dir_name' class='bt-input-text mr10' type='text' style='width:270px' value='" + obj.name + "'>" +
                     "</div></div>" +
                     "<div class='line'>" +
-                    "<span class='tname'>" + lan.bt.sitedir + "</span>" +
-                    "<div class='info-r ml0'><input name='dir_sitedir' placeholder='Enter the directory guard: /text/' class='bt-input-text mr10' type='text' style='width:270px' value='" + obj.sitedir + "'>" +
+                    "<span class='tname'>Path</span>" +
+                    "<div class='info-r ml0'><input name='dir_sitedir' placeholder='Enter the path: /text/，/test/api' class='bt-input-text mr10' type='text' style='width:270px' value='" + obj.sitedir + "'>" +
                     "</div></div>" +
                     "<div class='line'>" +
                     "<span class='tname'>" + lan.bt.panel_user + "</span>" +
@@ -2484,7 +3422,7 @@ var site = {
                     "<div class='info-r ml0'><input name='dir_password' AUTOCOMPLETE='off' class='bt-input-text mr10' type='text' style='width:270px' value='" + obj.password + "'>" +
                     "</div></div>" +
                     "<ul class='help-info-text c7 plr20'>" +
-                    "<li>After the directory setting is protected, you need to enter the account password to access it.</li>" +
+                    "<li>After the path is protected, you need to enter the account password to access it.</li>" +
                     "<li>For example, if I set the protection directory /test/ , then I need to enter the account password to access http://aaa.com/test/</li>" +
                     "</ul>" +
                     "<div class='bt-form-submit-btn'><button type='button' class='btn btn-sm btn-danger btn-colse-guard'>" + lan.site.turn_off + "</button><button type='button' class='btn btn-sm btn-success btn-submit-guard'>" + (type ? " " + lan.site.submit : lan.site.save) + "</button></div></form>"
@@ -2525,6 +3463,72 @@ var site = {
             }, 500)
 
         },
+        template_php: function(website,obj) {
+            var _type = 'add', _name = '', _bggrey = '';
+            if (obj == undefined) {
+                obj = { "name": "", "suffix": "php|jsp", "dir": "" };
+            } else {
+                obj = { "name": obj.name, "suffix": obj.suffix, "dir": obj.dir };
+                _type = 'edit';
+                _name = ' readonly';
+                _bggrey = 'background: #eee;'
+            }
+            var form_directory = bt.open({
+                type: 1,
+                area: '440px',
+                title: 'Deny access',
+                closeBtn: 2,
+                btn: ['Save','Cancel'],
+                content: "<form class='mt10 php_deny'>" +
+                    "<div class='line'>" +
+                    "<span class='tname' style='width: 100px;'>Name</span>" +
+                    "<div class='info-r ml0' style='margin-left: 100px;'><input name='deny_name' placeholder='The rule name' "+_name+" class='bt-input-text mr10' type='text' style='width:270px;" + _bggrey + "' value='" + obj.name + "'>" +
+                    "</div></div>" +
+                    "<div class='line'>" +
+                    "<span class='tname' style='width: 100px;'>Suffix</span>" +
+                    "<div class='info-r ml0' style='margin-left: 100px;'><input name='suffix' placeholder='Suffixes that are not allowed' class='bt-input-text mr10' type='text' style='width:270px' value='" + obj.suffix + "'>" +
+                    "</div></div>" +
+                    "<div class='line'>" +
+                    "<span class='tname' style='width: 100px;'>Path</span>" +
+                    "<div class='info-r ml0' style='margin-left: 100px;'><input name='dir' placeholder='Quote rules in this directory' class='bt-input-text mr10' type='text' style='width:270px' value='" + obj.dir + "'>" +
+                    "</div></div></form>" +
+                    "<ul class='help-info-text c7 plr20'>" +
+                    "<li>Name:The rule name.</li>" +
+                    "<li>Suffix: Indicates the suffix that is not allowed to access, if there are more than one, separate with'|'</li>" +
+                    "<li>Path: Quote rules in this directory. </li>" +
+                    "<li>For Example, if you want to deny http://test.com/a/index.php</li>" +
+                    "<li>Please fill in [ /a/ ]" +
+                    "</ul>",
+                yes: function () {
+                    var dent_data = $('.php_deny').serializeObject();
+                    dent_data.act = _type;
+                    dent_data.website = website;
+                    bt.site.edit_php_deny(dent_data, function(rdata) {
+                        if (rdata.status) {
+                            form_directory.close();
+                            site.reload();
+                            $("#set_dirguard .tab-nav span:eq(1)").click()
+                        }
+                        bt.msg(rdata);
+                    });
+                }
+            });
+        },
+        del_php_deny: function(website,deny_name) {
+            layer.confirm('Are you sure to delete [ '+deny_name+' ] this deny?', {
+                icon: 0,
+                closeBtn: 2,
+                title: 'Delete deny',
+            }, function (index) {
+                bt.site.del_php_deny({website:website,deny_name:deny_name}, function(rdata) {
+                    if (rdata.status) {
+                        layer.close(index);
+                        site.reload()
+                    }
+                    bt.msg(rdata);
+                });
+            });
+        },
         set_301_old: function(web) {
             bt.site.get_domains(web.id, function(rdata) {
                 var domains = [{ title: lan.site.site, value: 'all' }];
@@ -2560,151 +3564,134 @@ var site = {
                 })
             })
         },
-        set_301: function(web) {
-            bt.site.get_redirect_list(web.name, function(rdata) {
-                var datas = {
-                    items: [{ name: 'add_proxy', text: lan.site.add_redirect, type: 'button', callback: function(data) { site.edit.templet_301(web.name, web.id, true) } }]
-                }
-                var form_line = bt.render_form_line(datas);
-                $('#webedit-con').append(form_line.html);
-                bt.render_clicks(form_line.clicks);
-                $('#webedit-con').addClass('divtable').append('<table id="proxy_list" class="table table-hover"></table>');
-                setTimeout(function() {
-                    var _tab = bt.render({
-                        table: '#proxy_list',
-                        columns: [
-                            // { field: 'redirectname', title: '名称' },
-                            {
-                                field: '',
-                                title: lan.site.redirect_type,
-                                templet: function(item) {
-                                    var conter = '';
-                                    if (item.domainorpath == 'path') {
-                                        conter = item.redirectpath;
-                                    } else {
-                                        conter = item.redirectdomain ? item.redirectdomain.join('、') : lan.site.empty
-                                    }
-                                    return '<span style="width:100px;" title="' + conter + '">' + conter + '</span>';
-                                }
-                            },
-                            { field: 'redirecttype', title: lan.site.redirect_mode },
-                            {
-                                field: 'holdpath',
-                                index: true,
-                                title: lan.site.reserve_url,
-                                templet: function(item) {
-                                    return '<a href="javascript:;" class="btlink set_path_state" style="display:" data-stuats="' + (item.holdpath == 1 ? 0 : 1) + '">' + (item.holdpath == 1 ? '<span style="color:#20a53a;" class="set_path_state">' + lan.site.turn_on + '</span>' : '<span style="color:red;" class="set_path_state">' + lan.site.turn_off + '</span>') + '</a>';
-                                }
-                            },
-                            {
-                                field: 'type',
-                                title: lan.site.status,
-                                index: true,
-                                templet: function(item) {
-                                    return '<a href="javascript:;" class="set_type_state" style="display:" data-stuats="' + (item.type == 1 ? 0 : 1) + '">' + (item.type == 1 ? '<span style="color:#20a53a;">' + lan.site.running_text + '</span><span style="color:#5CB85C" class="glyphicon glyphicon-play"></span>' : '<span style="color:red;">' + lan.site.already_stop + '</span><span style="color:red" class="glyphicon glyphicon-pause"></span>') + '</a>'
-                                }
-                            },
-                            {
-                                field: '',
-                                title: lan.site.operate,
-                                align: 'right',
-                                index: true,
-                                templet: function(item) {
-                                    var redirectname = item.redirectname;
-                                    var sitename = item.sitename;
-                                    var conter = '<a class="btlink open_config_file" href="javascript:;">' + lan.site.site_menu_6 + '</a> ' +
-                                        '| <a class="btlink edit_redirect"  href="javascript:;">' + lan.site.edit + '</a> ' +
-                                        '| <a class="btlink" onclick="bt.site.remove_redirect(\'' + sitename + '\',\'' + redirectname + '\',function(rdata){if(rdata.status)site.reload(11)})" href="javascript:;">' + lan.site.del + '</a>';
-                                    return conter
-                                }
-                            }
-                        ],
-                        data: rdata
-                    });
-
-                    $('.edit_redirect').click(function() {
-                        var index = parseInt($(this).parent().attr('data-index'));
-                        site.edit.templet_301(web.name, web.id, false, rdata[index]);
-                    });
-                    $('.open_config_file').click(function() {
-                        var index = $(this).parent().attr('data-index');
-                        var sitename = web.name;
-                        var redirectname = rdata[index].redirectname;
-                        var redirect_config = '';
-                        bt.site.get_redirect_config({
-                            sitename: sitename,
-                            redirectname: redirectname,
-                            webserver: bt.get_cookie('serverType')
-                        }, function(rdata) {
-                            if (typeof rdata == 'object' && rdata.constructor == Array) {
-                                if (!rdata[0].status) bt.msg(rdata)
-                            } else {
-                                if (!rdata.status) bt.msg(rdata)
-                            }
-                            var datas = [
-                                { items: [{ name: 'redirect_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
-                                {
-                                    name: 'btn_config_submit',
-                                    text: lan.site.save,
-                                    type: 'button',
-                                    callback: function(ddata) {
-                                        bt.site.save_redirect_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function(ret) {
-                                            if (ret.status) {
-                                                site.reload(11);
-                                                redirect_config.close();
-                                            }
-                                            bt.msg(ret);
-                                        })
-                                    }
-                                }
-                            ]
-                            redirect_config = bt.open({
-                                type: 1,
-                                area: ['550px', '550px'],
-                                title: lan.site.edit_conf + '[' + redirectname + ']',
-                                closeBtn: 2,
-                                shift: 0,
-                                content: "<div class='bt-form'><div id='redirect_config_con' class='pd15'></div></div>"
-                            })
-                            var robj = $('#redirect_config_con');
-                            for (var i = 0; i < datas.length; i++) {
-                                var _form_data = bt.render_form_line(datas[i]);
-                                robj.append(_form_data.html);
-                                bt.render_clicks(_form_data.clicks);
-                            }
-                            robj.append(bt.render_help([lan.site.load_conf]));
-                            $('textarea.redirect_configs').attr('id', 'configBody');
-                            var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
-                                extraKeys: { "Ctrl-Space": "autocomplete" },
-                                lineNumbers: true,
-                                matchBrackets: true
+        set_301: function (web){
+            $('#webedit-con').html('<div id="redirect_list"></div>');
+            bt_tools.table({
+                el:'#redirect_list',
+                url:'/site?action=GetRedirectList',
+                param:{sitename:web.name},
+                dataFilter:function(res){
+                    return {data:res};
+                },
+                column:[
+                    {type:'checkbox',width:20},
+                    {fid:'sitename',title:lan.site.redirect_type,type:'text',template:function(row){
+                        if (row.domainorpath == 'path') {
+                            conter = row.redirectpath;
+                        } else {
+                            conter = row.redirectdomain ? row.redirectdomain.join('、') : lan.site.empty
+                        }
+                        return '<span class="limit-text-length" style="max-width:125px;" title="' + conter + '">' + conter + '</span>';
+                    }},
+                    {fid:'redirecttype',title:lan.site.redirect_mode,type:'text'},
+                    {fid:'holdpath',title:lan.site.reserve_url,config:{icon:false,list:[[1,lan.site.turn_on,'bt_success'],[0,lan.site.turn_off,'bt_danger']]},type:'status',
+                        event:function(row,index,ev,key,that){
+                            row.holdpath = !row.holdpath?1:0;
+                            row.redirectdomain = JSON.stringify(row['redirectdomain']);
+                            bt.site.modify_redirect(row,function (res){
+                                row.redirectdomain = JSON.parse(row['redirectdomain']);
+                                that.$modify_row_data({holdpath:row.holdpath});
+                                bt.msg(res);
                             });
-                            $(".CodeMirror-scroll").css({ "height": "350px", "margin": 0, "padding": 0 });
-                            setTimeout(function() {
-                                editor.refresh();
-                            }, 250);
-                        });
-                    });
-                    $('.set_path_state').click(function() {
-                        type_edit_redirect($(this), 'holdpath')
-                    });
-                    $('.set_type_state').click(function() {
-                        type_edit_redirect($(this), 'type');
-                    });
-
-                    function type_edit_redirect(_this, type) {
-                        var index = _this.parent().attr('data-index');
-                        var status = _this.attr('data-stuats');
-                        var item = rdata[index];
-                        item[type] = status;
-                        item['redirectdomain'] = JSON.stringify(item['redirectdomain']);
-                        // item['redirectdomain'] = JSON.stringify(['redirectdomain']);
-                        bt.site.modify_redirect(item, function(res) {
-                            if (res.status) site.reload(11);
-                            bt.msg(res);
-                        });
+                        }
+                    },
+                    {fid:'type',title:lan.site.status,config:{icon:true,list:[[1,lan.site.running_text,'bt_success','glyphicon-play'],[0,lan.site.already_stop,'bt_danger','glyphicon-pause']]},type:'status',
+                        event:function(row,index,ev,key,that){
+                            row.type = !row.type?1:0;
+                            row.redirectdomain = JSON.stringify(row['redirectdomain']);
+                            bt.site.modify_redirect(row,function (res){
+                                row.redirectdomain = JSON.parse(row['redirectdomain']);
+                                that.$modify_row_data({holdpath:row.type});
+                                bt.msg(res);
+                            });
+                        }
+                    },{title:lan.site.operate,width:129,type:'group',align:'right',group:[{
+                        title:'Conf',
+                        event:function(row,index,ev,key,that){
+                            bt.site.get_redirect_config({
+                                sitename: web.name,
+                                redirectname: row.redirectname,
+                                webserver: bt.get_cookie('serverType')
+                            }, function (rdata) {
+                                if (typeof rdata == 'object' && rdata.constructor == Array) {
+                                    if (!rdata[0].status) bt.msg(rdata)
+                                } else {
+                                    if (!rdata.status) bt.msg(rdata)
+                                }
+                                var datas = [
+                                    { items: [{ name: 'redirect_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
+                                    {
+                                        name: 'btn_config_submit', text: 'Save', type: 'button', callback: function (ddata) {
+                                            bt.site.save_redirect_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function (ret) {
+                                                if (ret.status) {
+                                                    site.reload(11);
+                                                    redirect_config.close();
+                                                }
+                                                bt.msg(ret);
+                                            })
+                                        }
+                                    }
+                                ]
+                                redirect_config = bt.open({
+                                    type: 1,
+                                    area: ['550px', '550px'],
+                                    title: 'Edit profile [' + row.redirectname + ']',
+                                    closeBtn: 2,
+                                    shift: 0,
+                                    content: "<div class='bt-form'><div id='redirect_config_con' class='pd15'></div></div>"
+                                })
+                                var robj = $('#redirect_config_con');
+                                for (var i = 0; i < datas.length; i++) {
+                                    var _form_data = bt.render_form_line(datas[i]);
+                                    robj.append(_form_data.html);
+                                    bt.render_clicks(_form_data.clicks);
+                                }
+                                robj.append(bt.render_help(['This is the configuration file of the load balancing. Not modify if you do not understand the configuration rules.']));
+                                $('textarea.redirect_configs').attr('id', 'configBody');
+                                var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
+                                    extraKeys: { "Ctrl-Space": "autocomplete" },
+                                    lineNumbers: true,
+                                    matchBrackets: true
+                                });
+                                $(".CodeMirror-scroll").css({ "height": "350px", "margin": 0, "padding": 0 });
+                                setTimeout(function () {
+                                    editor.refresh();
+                                }, 250);
+                            });
+                        }
+                    },{
+                        title:lan.site.edit,
+                        event:function(row,index,ev,key,that){
+                            site.edit.templet_301(web.name,web.id,false,row);
+                        }
+                    },{
+                        title:lan.site.del,
+                        event:function(row,index,ev,key,that){
+                            bt.site.remove_redirect(web.name,row.redirectname,function(rdata){
+                                if(rdata.status) that.$delete_table_row(index);
+                            });
+                        }
+                    }]
+                }],
+                tootls:[{ //按钮组
+                    type:'group',
+                    positon:['left','top'],
+                    list:[{title:'Add redirection',active:true, event:function(ev){ 
+                        site.edit.templet_301(web.name,web.id,true);
+                    }}]
+                },{ //批量操作
+                    type:'batch',
+                    positon:['left','bottom'],
+                    config:{
+                        title:' delete',
+                        url:'/site?action=del_redirect_multiple',
+                        param:{site_id:web.id},
+                        paramId:'redirectname',
+                        paramName:'redirectnames',
+                        theadName:'Name',
+                        confirmVerify:false // 是否提示验证方式
                     }
-                }, 100);
+                }]
             });
         },
         templet_proxy: function(sitename, type, obj) {
@@ -2877,162 +3864,154 @@ var site = {
                 }
             });
         },
-        set_proxy: function(web) {
-            String.prototype.myReplace = function(f, e) { //吧f替换成e
-                var reg = new RegExp(f, "g"); //创建正则RegExp对象
+        set_proxy: function (web) {
+            var limit_len = bt.get_cookie('serverType') == 'nginx'?'proxy_list_limit_4':'proxy_list_limit_3';
+            $('#webedit-con').html('<div id="proxy_list" class="'+limit_len+'"></div>');
+            String.prototype.myReplace = function (f, e) {//吧f替换成e
+                var reg = new RegExp(f, "g"); //创建正则RegExp对象   
                 return this.replace(reg, e);
             }
-            bt.site.get_proxy_list(web.name, function(rdata) {
-                var datas = {
-                    items: [{ name: 'add_proxy', text: lan.site.add_proxy, type: 'button', callback: function(data) { site.edit.templet_proxy(web.name, true) } }]
-                }
-                var form_line = bt.render_form_line(datas);
-                $('#webedit-con').append(form_line.html);
-                bt.render_clicks(form_line.clicks);
-                $('#webedit-con').addClass('divtable').append('<table id="proxy_list" class="table table-hover"></table>');
-                setTimeout(function() {
-                    var _tab = bt.render({
-                        table: '#proxy_list',
-                        columns: [{
-                                field: 'proxyname',
-                                title: lan.site.name,
-                                templet: function(item) {
-                                    return '<span style="width:47px;" title="' + item.proxyname + '">' + item.proxyname + '</span>'
-                                }
-                            },
-                            {
-                                field: 'proxydir',
-                                title: lan.site.proxy_dir,
-                                templet: function(item) {
-                                    return '<span style="width:47px;" title="' + item.proxydir + '">' + item.proxydir + '</span>'
-                                }
-                            },
-                            {
-                                field: 'proxysite',
-                                title: lan.site.target_url,
-                                templet: function(item) {
-                                    return '<span style="width:115px;" title="' + item.proxysite + '">' + item.proxysite + '</span>'
-                                }
-                            },
-                            bt.get_cookie('serverType') == 'nginx' ? {
-                                field: 'cache',
-                                title: lan.site.cache,
-                                index: true,
-                                templet: function(item, index) {
-                                    return '<a href="javascript:;" class="btlink set_nginx_state" data-stuats="' + (item.cache == 1 ? 0 : 1) + '">' + (item.cache == 1 ? '<span style="color:#20a53a;">' + lan.site.already_open + '</span>' : '<span style="color:red;">' + lan.site.already_close + '</span>') + '</a>'
-                                }
-                            } : '',
-                            {
-                                field: 'type',
-                                title: lan.site.status,
-                                index: true,
-                                templet: function(item) {
-                                    return '<a href="javascript:;" class="set_type_state" style="display:" data-stuats="' + (item.type == 1 ? 0 : 1) + '">' + (item.type == 1 ? '<span style="color:#20a53a;">' + lan.site.running_text + '</span><span style="color:#5CB85C" class="glyphicon glyphicon-play"></span>' : '<span style="color:red;">' + lan.site.already_stop + '</span><span style="color:red" class="glyphicon glyphicon-pause"></span>') + '</a>'
-                                }
-                            },
-                            {
-                                field: 'dname',
-                                title: lan.site.operate,
-                                align: 'right',
-                                templet: function(item) {
-                                    var proxyname = item.proxyname;
-                                    var sitename = item.sitename;
-                                    item = JSON.stringify(item).myReplace('"', '\'');
-                                    var conter = '<a class="btlink open_config_file" data-name="' + sitename + '" data-proxyname="' + proxyname + '" href="javascript:;">' + lan.site.site_menu_6 + '</a> ' +
-                                        '| <a class="btlink" onclick="site.edit.templet_proxy(\'' + web.name + '\',false,' + item + ')" href="javascript:;">' + lan.site.edit + '</a> ' +
-                                        '| <a class="btlink" onclick="bt.site.remove_proxy(\'' + web.name + '\',\'' + proxyname + '\',function(rdata){if(rdata.status)site.reload(12)})" href="javascript:;">' + lan.site.del + '</a>';
-                                    return conter
-                                }
-                            }
-                        ],
-                        data: rdata
-                    });
-                    $('.open_config_file').click(function() {
-                        var sitename = $(this).attr('data-name');
-                        var proxyname = $(this).attr('data-proxyname');
-                        var proxy_config = '';
-                        bt.site.get_proxy_config({
-                            sitename: sitename,
-                            proxyname: proxyname,
-                            webserver: bt.get_cookie('serverType')
-                        }, function(rdata) {
-                            if (typeof rdata == 'object' && rdata.constructor == Array) {
-                                if (!rdata[0].status) bt.msg(rdata)
-                            } else {
-                                if (!rdata.status) bt.msg(rdata)
-                            }
-                            var datas = [
-                                { items: [{ name: 'proxy_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
-                                {
-                                    name: 'btn_config_submit',
-                                    text: lan.site.save,
-                                    type: 'button',
-                                    callback: function(ddata) {
-                                        bt.site.save_proxy_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function(ret) {
-                                            if (ret.status) {
-                                                site.reload(12);
-                                                proxy_config.close();
-                                            }
-                                            bt.msg(ret);
-                                        })
-                                    }
-                                }
-                            ]
-                            proxy_config = bt.open({
-                                type: 1,
-                                area: ['550px', '550px'],
-                                title: lan.site.edit_conf + '[' + proxyname + ']',
-                                closeBtn: 2,
-                                shift: 0,
-                                content: "<div class='bt-form'><div id='proxy_config_con' class='pd15'></div></div>"
-                            })
-                            var robj = $('#proxy_config_con');
-                            for (var i = 0; i < datas.length; i++) {
-                                var _form_data = bt.render_form_line(datas[i]);
-                                robj.append(_form_data.html);
-                                bt.render_clicks(_form_data.clicks);
-                            }
-                            robj.append(bt.render_help([lan.site.load_conf]));
-                            $('textarea.proxy_configs').attr('id', 'configBody');
-                            var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
-                                extraKeys: { "Ctrl-Space": "autocomplete" },
-                                lineNumbers: true,
-                                matchBrackets: true
-                            });
-                            $(".CodeMirror-scroll").css({ "height": "350px", "margin": 0, "padding": 0 });
-                            setTimeout(function() {
-                                editor.refresh();
-                            }, 250);
-                        });
-                    });
-                    $('.set_nginx_state').click(function() {
-                        type_edit_proxy($(this), 'cache')
-                    });
-                    $('.set_type_state').click(function() {
-                        type_edit_proxy($(this), 'type');
-                    });
-
-                    function type_edit_proxy(_this, type) {
-                        var index = _this.parent().attr('data-index');
-                        var status = _this.attr('data-stuats');
-                        var item = rdata[index];
-                        item[type] = status;
-                        item['subfilter'] = JSON.stringify(item['subfilter']);
-                        bt.site.modify_proxy(item, function(rdata) {
-                            if (rdata.status) site.reload(12);
+            bt_tools.table({
+                el:'#proxy_list',
+                url:'/site?action=GetProxyList',
+                param:{sitename:web.name},
+                dataFilter:function(res){
+                    return {data:res};
+                },
+                column:[
+                    {type:'checkbox',width:20},
+                    {fid:'proxyname',title:lan.site.name,template:function (row,index) {
+                        return '<span class="limit-text-length" style="max-width: 50px" title="'+ row.proxyname +'">'+ row.proxyname +'</span>';
+                    }},
+                    {fid:'proxydir',title:lan.site.proxy_dir,template:function (row,index) {
+                        return '<span class="limit-text-length" style="max-width: 40px" title="'+ row.proxydir +'">'+ row.proxydir +'</span>';
+                    }},
+                    {fid:'proxysite',title:lan.site.target_url,type:'link',href:true},
+                    bt.get_cookie('serverType') == 'nginx' ? {fid:'cache',title:lan.site.cache,config:{icon:false,list:[[1,lan.site.already_open,'bt_success'],[0,lan.site.already_close,'bt_danger']]},type:'status',event:function(row,index,ev,key,that) {
+                        row['cache'] = !row['cache']?1:0;
+                        row['subfilter'] = JSON.stringify(row['subfilter']);
+                        bt.site.modify_proxy(row, function (rdata) {
+                            row['subfilter'] = JSON.parse(row['subfilter']);
+                            if (rdata.status) that.$modify_row_data({cache:row['cache']});
                             bt.msg(rdata);
                         });
+                    }}: {},
+                    {fid:'type',title:lan.site.status,config:{icon:true,list:[[1,lan.site.running_text,'bt_success','glyphicon-play'],[0,lan.site.already_stop,'bt_danger','glyphicon-pause']]},type:'status',event:function(row,index,ev,key,that){
+                        row['type'] = !row['type']?1:0;
+                        row['subfilter'] = JSON.stringify(row['subfilter']);
+                        bt.site.modify_proxy(row, function (rdata) {
+                            row['subfilter'] = JSON.parse(row['subfilter']);
+                            if (rdata.status) that.$modify_row_data({type:row['type']});
+                            bt.msg(rdata);
+                        });
+                    }},
+                    {title:lan.site.operate,width:115,type:'group',align:'right',group:[{
+                        title:'Conf',
+                        event:function(row,index,ev,key,that){
+                            bt.site.get_proxy_config({
+                                sitename: web.name,
+                                proxyname: row.proxyname,
+                                webserver: bt.get_cookie('serverType')
+                            }, function (rdata) {
+                                if (typeof rdata == 'object' && rdata.constructor == Array) {
+                                    if (!rdata[0].status) bt.msg(rdata)
+                                } else {
+                                    if (!rdata.status) bt.msg(rdata)
+                                }
+                                var datas = [
+                                    { items: [{ name: 'proxy_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
+                                    {
+                                        name: 'btn_config_submit', text: 'Save', type: 'button', callback: function (ddata) {
+                                            bt.site.save_proxy_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function (ret) {
+                                                if (ret.status) {
+                                                    site.reload(12);
+                                                    proxy_config.close();
+                                                }
+                                                bt.msg(ret);
+                                            })
+                                        }
+                                    }
+                                ]
+                                proxy_config = bt.open({
+                                    type: 1,
+                                    area: ['550px', '550px'],
+                                    title: 'Edit profile [' + row.proxyname + ']',
+                                    closeBtn: 2,
+                                    shift: 0,
+                                    content: "<div class='bt-form'><div id='proxy_config_con' class='pd15'></div></div>"
+                                })
+                                var robj = $('#proxy_config_con');
+                                for (var i = 0; i < datas.length; i++) {
+                                    var _form_data = bt.render_form_line(datas[i]);
+                                    robj.append(_form_data.html);
+                                    bt.render_clicks(_form_data.clicks);
+                                }
+                                robj.append(bt.render_help(['This is the configuration file of the load balancing. Not modify if you do not understand the configuration rules.']));
+                                $('textarea.proxy_configs').attr('id', 'configBody');
+                                var editor = CodeMirror.fromTextArea(document.getElementById("configBody"), {
+                                    extraKeys: { "Ctrl-Space": "autocomplete" },
+                                    lineNumbers: true,
+                                    matchBrackets: true
+                                });
+                                $(".CodeMirror-scroll").css({ "height": "350px", "margin": 0, "padding": 0 });
+                                setTimeout(function () {
+                                    editor.refresh();
+                                }, 250);
+                            });
+                        }
+                    },{
+                        title:'Edit',
+                        event:function(row,index,ev,key,that){
+                            site.edit.templet_proxy(web.name,false,row);
+                        }
+                    },{
+                        title:'Del',
+                        event:function(row,index,ev,key,that){
+                            bt.site.remove_proxy(web.name,row.proxyname,function(rdata){
+                                if(rdata.status) that.$delete_table_row(index);
+                            })
+                        }
+                    }]
+                }],
+                tootls:[{ //按钮组
+                    type:'group',
+                    positon:['left','top'],
+                    list:[{title:'Add reverse proxy',active:true, event:function(ev){ 
+                        site.edit.templet_proxy(web.name, true)
+                    }}]
+                },{ //批量操作
+                    type:'batch',
+                    positon:['left','bottom'],
+                    config:{
+                        title:' delete',
+                        url:'/site?action=del_proxy_multiple',
+                        param:{site_id:web.id},
+                        paramId:'proxyname',
+                        paramName:'proxynames',
+                        theadName:'Name',
+                        confirmVerify:false // 是否提示验证方式
                     }
-                }, 100);
+                }]
             });
         },
         set_security: function(web) {
             bt.site.get_site_security(web.id, web.name, function(rdata) {
                 var robj = $('#webedit-con');
                 var datas = [
-                    { title: lan.site.url_suffix, name: 'sec_fix', value: rdata.fix, disabled: rdata.status, width: '360px' },
-                    { title: lan.site.access_domain1, name: 'sec_domains', value: rdata.domains, disabled: rdata.status, width: '360px' },
-
+                    { title: lan.site.url_suffix, name: 'sec_fix', value: rdata.fix, disabled: rdata.status, width: '300px' },
+                    {
+                        title: lan.site.access_domain1,
+                        items: [{
+                                text: lan.site.start_anti_leech,
+                                name: 'sec_domains',
+                                width: '300px',
+                                height:'210px',
+                                disabled: rdata.status,
+                                value: rdata.domains.replace(/,/g,"\n"),
+                                type: 'textarea'
+                        }]
+                    },
+                    { title: 'Response', name: 'return_rule', value: rdata.return_rule, disabled: rdata.status, width: '300px' },
                     {
                         title: ' ',
                         class: 'label-input-group',
@@ -3042,7 +4021,7 @@ var site = {
                                 value: rdata.status,
                                 type: 'checkbox',
                                 callback: function(sdata) {
-                                    bt.site.set_site_security(web.id, web.name, sdata.sec_fix, sdata.sec_domains, sdata.status, function(ret) {
+                                    bt.site.set_site_security(web.id, web.name, sdata.sec_fix, sdata.sec_domains.split("\n").join(','), sdata.status, sdata.return_rule,function(ret) {
                                         if (ret.status) site.reload(13)
                                         bt.msg(ret);
                                     })
@@ -3054,7 +4033,7 @@ var site = {
                                 value: rdata.none,
                                 type: 'checkbox',
                                 callback: function(sdata) {
-                                    bt.site.set_site_security(web.id, web.name, sdata.sec_fix, sdata.sec_domains, '1', function(ret) {
+                                    bt.site.set_site_security(web.id, web.name, sdata.sec_fix, sdata.sec_domains.split("\n").join(','), '1',sdata.return_rule, function(ret) {
                                         if (ret.status) site.reload(13)
                                         bt.msg(ret);
                                     })
@@ -3063,6 +4042,7 @@ var site = {
                         ]
                     }
                 ]
+
                 for (var i = 0; i < datas.length; i++) {
                     var _form_data = bt.render_form_line(datas[i]);
                     robj.append(_form_data.html);
@@ -3106,15 +4086,26 @@ var site = {
         },
         get_site_logs: function(web) {
             bt.site.get_site_logs(web.name, function(rdata) {
-                var robj = $('#webedit-con');
-                var logs = { class: 'bt-logs', items: [{ name: 'site_logs', height: '592px', value: rdata.msg, width: '100%', type: 'textarea' }] };
+                var robj = $('#webedit-con'),_form_data;
+                var logs = { class: 'bt-logs', items: [{ name: 'site_logs', height: '547px', value: rdata.msg, width: '100%', type: 'textarea' }] };
                 var _form_data = bt.render_form_line(logs);
                 robj.append(_form_data.html);
                 robj.find('.site_logs').css('resize','none');
                 bt.render_clicks(_form_data.clicks);
                 $('textarea[name="site_logs"]').attr('readonly', true);
-                $('textarea[name="site_logs"]').scrollTop(100000000000)
-
+                $('textarea[name="site_logs"]').scrollTop(100000000000);
+                var tabs = '<div id="logs_tabs" class="tab-nav" style="margin-bottom: 10px;"><span class="on" data-url="GetSiteLogs">accesslog</span><span data-url="get_site_err_log">errorlog</span></div>';
+                $('textarea[name="site_logs"]').before(tabs);
+                $('#logs_tabs').on('click','span' ,function () {
+                    var url = $(this).attr('data-url'),
+                    loadT = bt.load();
+                    if(!$(this).hasClass('on')) $(this).addClass('on').siblings().removeClass('on');
+                    bt.send(url, 'site/'+url,{siteName:web.name}, function(rdata) {
+                        loadT.close();
+                        var _text = (rdata.msg=='')?'Currently no logs':rdata.msg;
+                        $('textarea[name="site_logs"]').val(_text);
+                    });
+                });
             })
         }
     },
@@ -3188,7 +4179,7 @@ var site = {
     },
     web_edit: function(obj) {
         var _this = this;
-        var item = $(obj).parents('tr').data('item');
+        var item = obj;
         bt.open({
             type: 1,
             area: ['757px', '683px'],
@@ -3203,7 +4194,7 @@ var site = {
                 { title: lan.site.domain_man, callback: site.edit.set_domains },
                 { title: lan.site.site_menu_1, callback: site.edit.set_dirbind },
                 { title: lan.site.site_menu_2, callback: site.edit.set_dirpath },
-                { title: lan.site.site_menu_13, callback: site.edit.set_dirguard },
+                { title: 'Limit access', callback: site.edit.set_dirguard },
                 { title: lan.site.site_menu_3, callback: site.edit.limit_network },
                 { title: lan.site.site_menu_4, callback: site.edit.get_rewrite_list },
                 { title: lan.site.site_menu_5, callback: site.edit.set_default_index },
@@ -3211,7 +4202,7 @@ var site = {
                 { title: lan.site.site_menu_7, callback: site.edit.set_ssl },
                 { title: lan.site.php_ver, callback: site.edit.set_php_version },
                 // { title: lan.site.site_menu_9, callback: site.edit.set_tomact },
-                { title: lan.site.redirect, callback: site.edit.set_301_old },
+                // { title: lan.site.redirect, callback: site.edit.set_301_old },
                 { title: lan.site.redirect_test, callback: site.edit.set_301 },
                 { title: lan.site.site_menu_11, callback: site.edit.set_proxy },
                 { title: lan.site.site_menu_12, callback: site.edit.set_security },
@@ -3235,3 +4226,17 @@ var site = {
     }
 }
 site.get_types();
+
+$.prototype.serializeObject = function() {
+	var a, o, h, i, e;
+	a = this.serializeArray();
+	o = {};
+	h = o.hasOwnProperty;
+	for (i = 0; i < a.length; i++) {
+		e = a[i];
+		if (!h.call(o, e.name)) {
+			o[e.name] = e.value;
+		}
+	}
+	return o;
+};

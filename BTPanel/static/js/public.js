@@ -1,7 +1,103 @@
-$(document).ready(function() {
-    $(".sub-menu a.sub-menu-a").click(function() {
-        $(this).next(".sub").slideToggle("slow").siblings(".sub:visible").slideUp("slow");
+$(function(){
+    $.fn.extend({
+        fixedThead:function(options){
+            var _that = $(this);
+            console.log(_that);
+            var option = {
+                height:400,
+                shadow:true,
+                resize:true
+            };
+            options = $.extend(option,options);
+            if($(this).find('table').length === 0){
+                return false;
+            }
+            var _height = $(this)[0].style.height,_table_config = _height.match(/([0-9]+)([%\w]+)/);
+            if(_table_config === null){
+                _table_config = [null,options.height,'px'];
+            }else{
+                $(this).css({
+                    'boxSizing': 'content-box',
+                    'paddingBottom':$(this).find('thead').height()
+                });
+            }
+            $(this).css({'position':'relative'});
+            var _thead = $(this).find('thead')[0].outerHTML,
+                _tbody = $(this).find('tbody')[0].outerHTML,
+                _thead_div = $('<div class="thead_div"><table class="table table-hover mb0"></table></div>'),
+                _shadow_top = $('<div class="tbody_shadow_top"></div>'),
+                _tbody_div = $('<div class="tbody_div" style="height:'+ _table_config[1] + _table_config[2] +';"><table class="table table-hover mb0" style="margin-top:-'+ $(this).find('thead').height() +'px"></table></div>'),
+                _shadow_bottom = $('<div class="tbody_shadow_bottom"></div>');
+            _thead_div.find('table').append(_thead);
+            _tbody_div.find('table').append(_thead);
+            _tbody_div.find('table').append(_tbody);
+            $(this).html('');
+            $(this).append(_thead_div);
+            $(this).append(_shadow_top);
+            $(this).append(_tbody_div);
+            $(this).append(_shadow_bottom);
+            var _table_width = _that.find('.thead_div table')[0].offsetWidth,
+                _body_width = _that.find('.tbody_div table')[0].offsetWidth,
+                _length = _that.find('tbody tr:eq(0)>td').length;
+            $(this).find('tbody tr:eq(0)>td').each(function(index,item){
+                var _item = _that.find('thead tr:eq(0)>th').eq(index);
+                if(index === (_length-1)){
+                	_item.attr('width',$(item)[0].clientWidth + (_table_width - _body_width));
+                }else{
+                	_item.attr('width',$(item)[0].offsetWidth);
+                }
+            });
+            if(options.resize){
+                $(window).resize(function(){
+            		var _table_width = _that.find('.thead_div table')[0].offsetWidth,
+	                _body_width = _that.find('.tbody_div table')[0].offsetWidth,
+	                _length = _that.find('tbody tr:eq(0)>td').length;
+		            _that.find('tbody tr:eq(0)>td').each(function(index,item){
+		                var _item = _that.find('thead tr:eq(0)>th').eq(index);
+		                if(index === (_length-1)){
+		                	_item.attr('width',$(item)[0].clientWidth + (_table_width - _body_width));
+		                }else{
+		                	_item.attr('width',$(item)[0].offsetWidth);
+		                }
+		            });
+	            });	
+            }
+            if(options.shadow){
+                var table_body = $(this).find('.tbody_div')[0];
+                if(_table_config[1] >= table_body.scrollHeight){
+                    $(this).find('.tbody_shadow_top').hide();
+                    $(this).find('.tbody_shadow_bottom').hide();
+                }else{
+                    $(this).find('.tbody_shadow_top').hide();
+                    $(this).find('.tbody_shadow_bottom').show();
+                }
+                $(this).find('.tbody_div').scroll(function(e){
+                    var _scrollTop = $(this)[0].scrollTop,
+                        _scrollHeight  = $(this)[0].scrollHeight,
+                        _clientHeight = $(this)[0].clientHeight,
+                        _shadow_top = _that.find('.tbody_shadow_top'),
+                        _shadow_bottom = _that.find('.tbody_shadow_bottom');
+                    if(_scrollTop == 0){
+                        _shadow_top.hide();
+                        _shadow_bottom.show();
+                    }else if(_scrollTop > 0 && _scrollTop < (_scrollHeight - _clientHeight)){
+                        _shadow_top.show();
+                        _shadow_bottom.show();
+                    }else if(_scrollTop == (_scrollHeight - _clientHeight)){
+                        _shadow_top.show();
+                        _shadow_bottom.hide();
+                    }
+                })
+            }
+        }
+        
     });
+}(jQuery))
+
+$(document).ready(function() {
+	$(".sub-menu a.sub-menu-a").click(function() {
+		$(this).next(".sub").slideToggle("slow").siblings(".sub:visible").slideUp("slow");
+	});
 });
 var aceEditor = {
     layer_view: '',
@@ -83,57 +179,67 @@ var aceEditor = {
     // 事件编辑器-方法，事件绑定
     eventEditor: function() {
         var _this = this,_icon = '<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>';
-        $(window).resize(function() {
-            var _id = $('.ace_conter_menu .active').attr('data-id');
-            if (_id != undefined) {
-                aceEditor.editor['ace_editor_' + _id].ace.resize();
-                //_this.setEditorView()
+        $(window).resize(function(){
+			if(_this.ace_active != undefined) _this.setEditorView()
+			if( $('.aceEditors .layui-layer-maxmin').length >0){
+            	$('.aceEditors').css({
+                	'top':0,
+                	'left':0,
+                	'width':$(this)[0].innerWidth,
+                	'height':$(this)[0].innerHeight
+                });
             }
-        });
-        $('.ace_editor_main').on('click',function(){
+		})
+        $(document).click(function(e){
+			$('.ace_toolbar_menu').hide();
+			$('.ace_conter_editor .ace_editors').css('fontSize', _this.aceConfig.aceEditor.fontSize + 'px');
+			$('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
+		});
+		$('.ace_editor_main').on('click',function(){
             $('.ace_toolbar_menu').hide();
         });
-        $(document).click(function(e) {
-                $('.ace_toolbar_menu').hide();
-                $('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
-            })
-            // 显示工具条
-        $('.ace_header .pull-down').click(function() {
-            if ($(this).find('i').hasClass('glyphicon-menu-down')) {
-                $('.ace_header').css({ 'marginTop': '-35px', 'height': '0' });
-                $(this).css({ 'top': '35px', 'height': '40px', 'line-height': '40px' });
-                $(this).find('i').addClass('glyphicon-menu-up').removeClass('glyphicon-menu-down');
-            } else {
-                $('.ace_header').removeAttr('style');
+		$('.ace_toolbar_menu').click(function(e){
+			e.stopPropagation();
+			e.preventDefault();
+		});
+        // 显示工具条
+        $('.ace_header .pull-down').click(function(){
+			if($(this).find('i').hasClass('glyphicon-menu-down')){
+                $('.ace_header').css({'top':'-35px'});
+                $('.ace_overall').css({'top':'0'});
+                $(this).css({'top':'35px','height':'40px','line-height':'40px'});
+				$(this).find('i').addClass('glyphicon-menu-up').removeClass('glyphicon-menu-down');
+			}else{
+				$('.ace_header').css({'top':'0'});
+                $('.ace_overall').css({'top':'35px'});
                 $(this).removeAttr('style');
-                $(this).find('i').addClass('glyphicon-menu-down').removeClass('glyphicon-menu-up');
-            }
-            _this.setEditorView();
-        });
+				$(this).find('i').addClass('glyphicon-menu-down').removeClass('glyphicon-menu-up');
+			}
+			_this.setEditorView();
+		});
         // 切换TAB视图
-        $('.ace_conter_menu').on('click', '.item', function(e) {
-            var _id = $(this).attr('data-id'),
-                _item = _this.editor['ace_editor_' + _id]
-            $('.item_tab_' + _id).addClass('active').siblings().removeClass('active');
-            $('#ace_editor_' + _id).addClass('active').siblings().removeClass('active');
-            _this.ace_active = _id;
-            _this.currentStatusBar(_id);
-            _this.is_file_history(_item);
-        });
-        // 移上TAB按钮变化，仅文件被修改后
-        $('.ace_conter_menu').on('mouseover', '.item .icon-tool', function() {
-            var type = $(this).attr('data-file-state');
-            if (type != '0') {
-                $(this).removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
-            }
-        });
-        // 移出tab按钮变化，仅文件被修改后
-        $('.ace_conter_menu').on('mouseout', '.item .icon-tool', function() {
-            var type = $(this).attr('data-file-state');
-            if (type != '0') {
-                $(this).removeClass('glyphicon-remove').addClass('glyphicon-exclamation-sign');
-            }
-        });
+		$('.ace_conter_menu').on('click', '.item', function (e) {
+			var _id = $(this).attr('data-id'),_item = _this.editor['ace_editor_' + _id];
+			$('.item_tab_'+ _id).addClass('active').siblings().removeClass('active');
+			$('#ace_editor_'+ _id).addClass('active').siblings().removeClass('active');
+			_this.ace_active = _id;
+			_this.currentStatusBar(_id);
+			_this.is_file_history(_item);
+		});
+		// 移上TAB按钮变化，仅文件被修改后
+		$('.ace_conter_menu').on('mouseover', '.item .icon-tool', function () {
+			var type = $(this).attr('data-file-state');
+			if (type != '0') {
+				$(this).removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+			}
+		});
+		// 移出tab按钮变化，仅文件被修改后
+		$('.ace_conter_menu').on('mouseout', '.item .icon-tool', function () {
+			var type = $(this).attr('data-file-state');
+			if (type != '0') {
+				$(this).removeClass('glyphicon-remove').addClass('glyphicon-exclamation-sign');
+			}
+		});
         // 关闭编辑视图
         $('.ace_conter_menu').on('click', '.item .icon-tool', function(e) {
             var file_type = $(this).attr('data-file-state');
@@ -192,8 +298,16 @@ var aceEditor = {
                     });
                     break;
             }
-            e.stopPropagation();
+            $('.ace_toolbar_menu').hide();
+			$('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
+			e.stopPropagation();
+			e.preventDefault();
         });
+        $(window).keyup(function(e){
+			if(e.keyCode === 116 && $('#ace_conter').length == 1){
+				layer.msg('Unable to refresh in editor mode. Please close and try again');
+			}
+		});
         // 新建编辑器视图
         $('.ace_editor_add').click(function() {
             _this.addEditorView();
@@ -327,7 +441,7 @@ var aceEditor = {
             _this.searchRelevance()
         });
         // 顶部状态栏
-        $('.ace_header span').click(function(e) {
+        $('.ace_header>span').click(function(e) {
             var type = $(this).attr('class'),
                 editor_item = _this.editor['ace_editor_' + _this.ace_active];
             var _icon = '<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>';
@@ -2095,7 +2209,8 @@ function format_form_data(form_data){
 
 function ajax_encrypt(request){
 	if(!this.type || !this.data || !this.contentType) return;
-	if($("#panel_debug").attr("data") == 'True') return;
+    if($("#panel_debug").attr("data") == 'True') return;
+    if($("#panel_debug").attr("data-pyversion") == '2') return;
 	if(this.type == 'POST' && this.data.length > 1){
 		this.data = format_form_data(this.data);
 	}
@@ -2118,8 +2233,8 @@ function ajaxSetup() {
     if (my_headers) {
         $.ajaxSetup({ 
 			headers: my_headers,
-			dataFilter: ajax_decrypt,
-			beforeSend: ajax_encrypt
+			// dataFilter: ajax_decrypt,
+			// beforeSend: ajax_encrypt
 		});
     }
 }
@@ -2269,6 +2384,11 @@ function GetDiskList(b) {
     var a = "";
     var c = "path=" + b + "&disk=True";
     $.post("/files?action=GetDir", c, function(h) {
+        if(h.status == false) {
+            layer.close(layer.index);
+            layer.msg(h.msg,{icon: 2});
+            return false;
+        }
         if (h.DISK != undefined) {
             for (var f = 0; f < h.DISK.length; f++) {
                 a += "<dd onclick=\"GetDiskList('" + h.DISK[f].path + "')\"><span class='glyphicon glyphicon-hdd'></span>&nbsp;" + h.DISK[f].path + "</dd>"
@@ -2995,7 +3115,7 @@ function setUserName(a) {
         var checks = ['admin', 'root', 'admin123', '123456'];
 
         if ($.inArray(p1, checks) >= 0) {
-            layer.msg(lan.index.usually_username_ban, {
+            layer.msg(lan.public.usually_username_ban, {
                 icon: 2
             });
             return;
@@ -3812,7 +3932,7 @@ var Term = {
     route: '/webssh', //被访问的方法
     term: null,
     term_box: null,
-    ssh_info: null,
+    ssh_info: {},
     last_body:false,
 	last_cd:null,
 	config:{
@@ -3864,8 +3984,8 @@ var Term = {
     //连接服务器成功
 	on_open:function(ws_event){
 		Term.send(JSON.stringify(Term.ssh_info || {}))
-		Term.term.FitAddon.fit();
-		Term.resize();
+// 		Term.term.FitAddon.fit();
+// 		Term.resize();
 		var f_path = $("#fileInputPath").val();
 		if(f_path){
 			Term.last_cd = "cd " + f_path;
@@ -3892,7 +4012,13 @@ var Term = {
     //     }
     // },
     on_message: function (ws_event) {
-		result = ws_event.data;
+        result = ws_event.data;
+        if ((result.indexOf("@127.0.0.1:") != -1 || result.indexOf("@localhost:") != -1) && result.indexOf('Authentication failed') != -1) {
+            Term.term.write(result);
+            Term.localhost_login_form(result);
+            Term.close();
+            return;
+        }
 		if(Term.last_cd){
 			if(result.indexOf(Term.last_cd) != -1 && result.length - Term.last_cd.length < 3) {
 				Term.last_cd = null;
@@ -3956,7 +4082,7 @@ var Term = {
 			Term.term.FitAddon.fit()
 			Term.send(JSON.stringify({resize:1,rows:Term.term.rows,cols:Term.term.cols}));
 	    	Term.term.focus();
-		},200)
+		},100)
     },
     // resize: function() {
     //     var m_width = 100;
@@ -4046,26 +4172,26 @@ var Term = {
         ],function(){
         	layer.close(loadT);
         	Term.term = new Terminal({
-				rendererType: "canvas",
-				cols: 100, 
-				rows: 34,
-				fontSize:15, 
-				screenKeys: true, 
-				useStyle: true ,
-				});
+    			rendererType: "canvas",
+    			cols: 100, 
+    			rows: 31,
+    			fontSize:15, 
+    			screenKeys: true, 
+    			useStyle: true ,
+			});
 			Term.term.setOption('cursorBlink', true);
 			Term.last_body = false;
 	        Term.term_box = layer.open({
 	            type: 1,
 	            title: lan.public.terminal,
-	            area: ['920px', '630px'],
+	            area: ['925px', '630px'],
 	            closeBtn: 2,
 	            shadeClose: false,
 	            skin:'term_box_all',
 	            content: '<link rel="stylesheet" href="/static/css/xterm.css" />\
-	            <div class="term-box" style="background-color:#000" id="term"></div>',
+	            <div class="term-box" style="background-color:#000;padding-top: 7px;" id="term"></div>',
 	            cancel: function (index,lay) {
-					bt.confirm({msg:'Closing the SSH session, the command in progress in the current command line session may be aborted. Continute?',title: "Cofirm to close the SSH session?"},function(ix){
+					bt.confirm({msg:'<div style="word-break: break-word;">Closing the SSH session, the command in progress in the current command line session may be aborted. Continute?</div>',title: "Cofirm to close the SSH session?"},function(ix){
 						Term.term.dispose();
 						layer.close(index);
 						layer.close(ix);
@@ -4080,6 +4206,7 @@ var Term = {
 					Term.term.loadAddon(Term.term.FitAddon);
 					Term.term.WebLinksAddon = new WebLinksAddon.WebLinksAddon()
 					Term.term.loadAddon(Term.term.WebLinksAddon)
+					Term.term.focus();
 	            }
 	        });
 	        Term.term.onData(function (data) {
@@ -4114,7 +4241,121 @@ var Term = {
             Term.term.scrollToBottom();
             Term.term.focus();
         });
+    },
+    localhost_login_form:function(result){
+        var template = '<div class="localhost-form-shade"><div class="localhost-form-view bt-form-2x"><div class="localhost-form-title"><i class="localhost-form_tip"></i><span style="vertical-align: middle;">Login failed, please fill the local server information!</span></div>\
+        <div class="line input_group">\
+            <span class="tname">Server IP</span>\
+            <div class="info-r">\
+                <input type="text" name="host" class="bt-input-text mr5" style="width:240px" placeholder="Server IP" value="127.0.0.1" autocomplete="off" />\
+                <input type="text" name="port" class="bt-input-text mr5" style="width:60px" placeholder="Port" value="22" autocomplete="off"/>\
+            </div>\
+        </div>\
+        <div class="line">\
+            <span class="tname">SSH account</span>\
+            <div class="info-r">\
+                <input type="text" name="username" class="bt-input-text mr5" style="width:305px" placeholder="SSH account" value="root" autocomplete="off"/>\
+            </div>\
+        </div>\
+        <div class="line">\
+            <span class="tname">Verification</span>\
+            <div class="info-r ">\
+                <div class="btn-group">\
+                    <button type="button" tabindex="-1" class="btn btn-sm auth_type_checkbox btn-success" data-ctype="0">Password</button>\
+                    <button type="button" tabindex="-1" class="btn btn-sm auth_type_checkbox btn-default data-ctype="1">Server key</button>\
+                </div>\
+            </div>\
+        </div>\
+        <div class="line c_password_view show">\
+            <span class="tname">Password</span>\
+            <div class="info-r">\
+                <input type="text" name="password" class="bt-input-text mr5" placeholder="SSH Password" style="width:305px;" value="" autocomplete="off"/>\
+            </div>\
+        </div>\
+        <div class="line c_pkey_view hidden">\
+            <span class="tname">Private key</span>\
+            <div class="info-r">\
+                <textarea rows="4" name="pkey" class="bt-input-text mr5" placeholder="SSH server key" style="width:305px;height: 80px;line-height: 18px;padding-top:10px;"></textarea>\
+            </div>\
+        </div><button type="submit" class="btn btn-sm btn-success">Login</button></div></div>';
+        $('.term-box').after(template);
+        $('.auth_type_checkbox').click(function(){
+            var index = $(this).index();
+            $(this).addClass('btn-success').removeClass('btn-default').siblings().removeClass('btn-success').addClass('btn-default')
+            switch(index){
+                case 0:
+                    $('.c_password_view').addClass('show').removeClass('hidden');
+                    $('.c_pkey_view').addClass('hidden').removeClass('show').find('input').val('');
+                break;
+                case 1:
+                    $('.c_password_view').addClass('hidden').removeClass('show').find('input').val('');
+                    $('.c_pkey_view').addClass('show').removeClass('hidden');
+                break;
+            }
+        });
+        $('.localhost-form-view > button').click(function(){
+            var form = {};
+            $('.localhost-form-view input,.localhost-form-view textarea').each(function(index,el){
+                var name = $(this).attr('name'),value = $(this).val();
+                form[name] = value;
+                switch(name){
+                    case 'port':
+                        if(!bt.check_port(value)){
+                            bt.msg({status:false,msg:'Server port format error!'});
+                            return false;
+                        }
+                    break;
+                    case 'username':
+                        if(value == ''){
+                            bt.msg({status:false,msg:'Server user name cannot be empty!'});
+                            return false;
+                        }
+                    break;
+                    case 'password':
+                        if(value == '' && $('.c_password_view').hasClass('show')){
+                            bt.msg({status:false,msg:'Server password cannot be empty!'});
+                            return false;
+                        }
+                    break;   
+                    case 'pkey':
+                        if(value == '' && $('.c_pkey_view').hasClass('show')){
+                            bt.msg({status:false,msg:'The server key cannot be empty!'});
+                            return false;
+                        }
+                    break;
+                }
+            });
+			form.ps = 'Local server';
+			
+			if(result){
+				if(result.indexOf('@127.0.0.1') != -1){
+					var user = result.split('@')[0].split(',')[1];
+					var port = result.split('1:')[1]
+					$("input[name='username']").val(user);
+					$("input[name='port']").val(port);
+				}
+			}
+            var loadT = bt.load('Adding server information, please wait...');
+            bt.send('create_host','xterm/create_host',form,function(res){
+                loadT.close();
+                 bt.msg(res);
+                if(res.status){
+                    bt.msg({status:true,msg:'Login successful!'});
+                    $('.layui-layer-shade').remove();
+                    $('.term_box_all').remove();
+                    Term.term.dispose();
+    				Term.close();
+    				web_shell();
+                }
+            });
+        });
+        $('.localhost-form-view [name="password"]').keyup(function(e){
+            if(e.keyCode == 13){
+                $('.localhost-form-view > button').click();
+            }
+        }).focus()
     }
+    
 }
 
 function web_shell() {

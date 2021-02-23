@@ -299,7 +299,7 @@
 		show: false,
 		showBottom: true,
 		btns: ["clear", "now", "confirm"],
-		lang: "cn",
+		lang: "en",
 		theme: "default",
 		position: null,
 		calendar: false,
@@ -1424,7 +1424,7 @@
 						}
 					} else {
 						if(lay(btn).hasClass(DISABLED)) {
-							return that.hint("不在有效日期或时间范围内")
+							return that.hint("Not in the valid date or time range!")
 						}
 					}
 					that.done();

@@ -14,6 +14,7 @@ import public,db,re,time,os,sys,panelMysql
 from BTPanel import session
 import datatool
 class database(datatool.datatools):
+    sqlite_connection = None
 
     # 检查mysql是否存在空用户密码
     def _check_empty_user_passwd(self):
@@ -28,11 +29,11 @@ class database(datatool.datatools):
             if hasattr(get,"ssl"):
                 ssl = get.ssl
             if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get):
-                return public.returnMsg(False,'SSL is not enabled in the database, please open it in the Mysql manager first')
+                return public.returnMsg(False,'MYSQL_SSL_ERR')
             data_name = get['name'].strip()
             if self.CheckRecycleBin(data_name): return public.returnMsg(False,'DATABASE_DEL_RECYCLE_BIN',(data_name,))
             if len(data_name) > 64: return public.returnMsg(False, 'DATABASE_NAME_LEN')
-            reg = "^[\w\.-]+$"
+            reg = r"^[\w\.-]+$"
             if not re.match(reg, data_name): return public.returnMsg(False,'DATABASE_NAME_ERR_T')
             if not hasattr(get,'db_user'): get.db_user = data_name
             username = get.db_user.strip()
@@ -44,7 +45,8 @@ class database(datatool.datatools):
                 data_pwd = public.md5(str(time.time()))[0:8]
             
             sql = public.M('databases')
-            if sql.where("name=? or username=?",(data_name,username)).count(): return public.returnMsg(False,'DATABASE_NAME_EXISTS')
+            if sql.where("name=?",(data_name)).count(): return public.returnMsg(False,'DATABASE_NAME_EXISTS')
+            if sql.where("username=?", (username)).count(): return public.returnMsg(False, 'DATABASE_USERNAME_EXISTS')
             address = get['address'].strip()
             user = '是'
             password = data_pwd
@@ -60,6 +62,9 @@ class database(datatool.datatools):
             codeStr=wheres[codeing]
             #添加MYSQL
             mysql_obj = panelMysql.panelMysql()
+            #从MySQL验证是否存在
+            if self.database_exists_for_mysql(mysql_obj,data_name):  return public.returnMsg(False,'DB_EXIST1')
+
             result = mysql_obj.execute("create database `" + data_name + "` DEFAULT CHARACTER SET " + codeing + " COLLATE " + codeStr)
             isError = self.IsSqlError(result)
             if  isError != None: return isError
@@ -108,18 +113,18 @@ ssl-key=/www/server/data/server-key.pem
         conf_file = "/etc/my.cnf"
         conf = public.readFile(conf_file)
         if not conf:
-            return public.returnMsg(False,"No database configuration file found")
+            return public.returnMsg(False,"CONF_FILE_NOT_EXISTS")
         if self.check_mysql_ssl_status(get):
             reg = "ssl-ca=/www.*\n.*\n.*server-key.pem\n"
             conf = re.sub(reg,"",conf)
             public.writeFile(conf_file,conf)
-            return public.returnMsg(True,"Setup successfully")
+            return public.returnMsg(True,"SET_SUCCESS")
         self._create_mysql_ssl()
         if "ssl-ca" not in conf:
             conf = re.sub('\[mysqld\]','[mysqld]'+ssl_conf,conf)
         public.writeFile(conf_file,conf)
         public.ExecShell('chown mysql.mysql /www/server/data/*.pem')
-        return public.returnMsg(True,"Open successfully, take effect after manually restarting the database")
+        return public.returnMsg(True,"MYSQL_SSL_OPEN_SUCCESS")
 
     # 检查mysqlssl状态
     def check_mysql_ssl_status(self,get):
@@ -127,6 +132,17 @@ ssl-key=/www/server/data/server-key.pem
         result = mysql_obj.query("show variables like 'have_ssl';")
         if result and result[0][1] == "YES":
             return True
+        return False
+
+    #判断数据库是否存在—从MySQL
+    def database_exists_for_mysql(self,mysql_obj,dataName):
+        databases_tmp = self.map_to_list(mysql_obj.query('show databases'))
+        if not isinstance(databases_tmp,list):
+            return True
+
+        for i in databases_tmp:
+            if i[0] == dataName:
+                return True
         return False
 
     #创建用户
@@ -358,7 +374,7 @@ SetLink
     def SetupPassword(self,get):
         password = get['password'].strip()
         try:
-            if not password: return public.returnMsg(False,'Root password cannot be empty')
+            if not password: return public.returnMsg(False,'MYSQL_ROOT_PASSWD_EMTPY_ERR')
             rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
             if not re.match(rep, password): return public.returnMsg(False, 'DATABASE_NAME_ERR_T')
             mysql_root = public.M('config').where("id=?",(1,)).getField('mysql_root')
@@ -378,10 +394,15 @@ SetLink
             if is_modify:
                 m_version = public.readFile(public.GetConfigValue('setup_path') + '/mysql/version.pl')
                 
-                if m_version.find('5.7') == 0  or m_version.find('8.0') == 0 or m_version.find('10.4.') != -1:
-                    panelMysql.panelMysql().execute("UPDATE mysql.user SET authentication_string='' WHERE user='root'")
-                    panelMysql.panelMysql().execute("ALTER USER 'root'@'localhost' IDENTIFIED BY '%s'" % password)
-                    panelMysql.panelMysql().execute("ALTER USER 'root'@'127.0.0.1' IDENTIFIED BY '%s'" % password)
+                if m_version.find('5.7') == 0  or m_version.find('8.0') == 0:
+                    accept = self.map_to_list(mysql_obj.query("select Host from mysql.user where User='root'"))
+                    for my_host in accept:
+                        mysql_obj.execute("UPDATE mysql.user SET authentication_string='' WHERE User='root' and Host='{}'".format(my_host[0]))
+                        mysql_obj.execute("ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % ('root',my_host[0],password))
+                elif m_version.find('10.5.') != -1 or m_version.find('10.4.') != -1:
+                    accept = self.map_to_list(mysql_obj.query("select Host from mysql.user where User='root'"))
+                    for my_host in accept:
+                        mysql_obj.execute("ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % ('root',my_host[0],password))
                 else:
                     result = mysql_obj.execute("update mysql.user set Password=password('" + password + "') where User='root'")
                 mysql_obj.execute("flush privileges")
@@ -401,7 +422,7 @@ SetLink
             newpassword = get['password']
             username = get['name']
             id = get['id']
-            if not newpassword: return public.returnMsg(False,'Database [%s] password cannot be empty' % username)
+            if not newpassword: return public.returnMsg(False,'DB_PASSWD_EMPTY_ERR', (username,))
             name = public.M('databases').where('id=?',(id,)).getField('name')
             
             rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
@@ -409,9 +430,14 @@ SetLink
             #修改MYSQL
             mysql_obj = panelMysql.panelMysql()
             m_version = public.readFile(public.GetConfigValue('setup_path') + '/mysql/version.pl')
-            if m_version.find('5.7') == 0  or m_version.find('8.0') == 0 or m_version.find('10.4.') != -1:
+            if m_version.find('5.7') == 0  or m_version.find('8.0') == 0 :
                 accept = self.map_to_list(panelMysql.panelMysql().query("select Host from mysql.user where User='" + name + "' AND Host!='localhost'"))
                 mysql_obj.execute("update mysql.user set authentication_string='' where User='" + username + "'")
+                result = mysql_obj.execute("ALTER USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username,newpassword))
+                for my_host in accept:
+                    mysql_obj.execute("ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % (username,my_host[0],newpassword))
+            elif m_version.find('10.5.') != -1 or m_version.find('10.4.') != -1:
+                accept = self.map_to_list(panelMysql.panelMysql().query("select Host from mysql.user where User='" + name + "' AND Host!='localhost'"))
                 result = mysql_obj.execute("ALTER USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username,newpassword))
                 for my_host in accept:
                     mysql_obj.execute("ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % (username,my_host[0],newpassword))
@@ -447,11 +473,20 @@ SetLink
         name = public.M('databases').where("id=?",(id,)).getField('name')
         root = public.M('config').where('id=?',(1,)).getField('mysql_root')
         if not os.path.exists(session['config']['backup_path'] + '/database'): public.ExecShell('mkdir -p ' + session['config']['backup_path'] + '/database')
-        if not self.mypass(True, root):return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
+        if not self.mypass(True, root):return public.returnMsg(False, 'MYSQL_CONF_ERR')
         
         fileName = name + '_' + time.strftime('%Y%m%d_%H%M%S',time.localtime()) + '.sql.gz'
         backupName = session['config']['backup_path'] + '/database/' + fileName
-        public.ExecShell("/www/server/mysql/bin/mysqldump --default-character-set="+ public.get_database_character(name) +" --force --opt \"" + name + "\" | gzip > " + backupName)
+
+        try:
+            password = public.M('config').where('id=?',(1,)).getField('mysql_root')
+            os.environ["MYSQL_PWD"] = password
+            public.ExecShell("/www/server/mysql/bin/mysqldump -R -E --default-character-set="+ public.get_database_character(name) +" --force --opt \"" + name + "\"  -u root | gzip > " + backupName)
+        except Exception as e:
+            raise
+        finally:
+            os.environ["MYSQL_PWD"] = ""
+
         if not os.path.exists(backupName): return public.returnMsg(False,'BACKUP_ERROR')
         
         self.mypass(False, root)
@@ -485,49 +520,66 @@ SetLink
             return public.returnMsg(False,'DEL_ERROR')
     
     #导入
-    def InputSql(self,get):
-        #try:
+    def InputSql(self, get):
+        # try:
         result = panelMysql.panelMysql().execute("show databases")
-        isError=self.IsSqlError(result)
+        isError = self.IsSqlError(result)
         if isError: return isError
         name = get['name']
         file = get['file']
-        root = public.M('config').where('id=?',(1,)).getField('mysql_root')
+        if "|" in file:
+            file = file.split('|')[-1]
+        root = public.M('config').where('id=?', (1,)).getField('mysql_root')
         tmp = file.split('.')
-        exts = ['sql','gz','zip']
-        ext = tmp[len(tmp) -1]
+        exts = ['sql', 'gz', 'zip']
+        ext = tmp[len(tmp) - 1]
         if ext not in exts:
             return public.returnMsg(False, 'DATABASE_INPUT_ERR_FORMAT')
-            
         isgzip = False
         if ext != 'sql':
+            import panel_restore
             tmp = file.split('/')
-            tmpFile = tmp[len(tmp)-1]
+            tmpFile = tmp[len(tmp) - 1]
             tmpFile = tmpFile.replace('.sql.' + ext, '.sql')
             tmpFile = tmpFile.replace('.' + ext, '.sql')
             tmpFile = tmpFile.replace('tar.', '')
+            # return tmpFile
             backupPath = session['config']['backup_path'] + '/database'
+            panel_restore.panel_restore().restore_db_backup(get)
             if ext == 'zip':
                 public.ExecShell("cd "  +  backupPath  +  " && unzip " + '"'+file+'"')
             else:
                 public.ExecShell("cd "  +  backupPath  +  " && tar zxf " +  '"'+file+'"')
-                if not os.path.exists(backupPath  +  "/"  +  tmpFile): 
+                if not os.path.exists(backupPath  +  "/"  +  tmpFile):
                     public.ExecShell("cd "  +  backupPath  +  " && gunzip -q " +  '"'+file+'"')
                     isgzip = True
             if not os.path.exists(backupPath + '/' + tmpFile) or tmpFile == '': return public.returnMsg(False, 'FILE_NOT_EXISTS',(tmpFile,))
-            if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
-            public.ExecShell(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < " +'"'+ backupPath + '/' +tmpFile+'"')
-            if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
+
+            try:
+                password = public.M('config').where('id=?',(1,)).getField('mysql_root')
+                os.environ["MYSQL_PWD"] = password
+                public.ExecShell(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < " +'"'+ backupPath + '/' +tmpFile+'"')
+            except Exception as e:
+                raise
+            finally:
+                os.environ["MYSQL_PWD"] = ""
+
+
+
             if isgzip:
                 public.ExecShell('cd ' +backupPath+ ' && gzip ' + file.split('/')[-1][:-3])
             else:
                 public.ExecShell("rm -f " +  backupPath + '/' +tmpFile)
         else:
-            if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
-            public.ExecShell(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < "+'"' +  file+'"')
-            if not self.mypass(True, root): return public.returnMsg(False, 'Database configuration file failed to get checked, please check if MySQL configuration file exists')
-                
-            
+            try:
+                password = public.M('config').where('id=?',(1,)).getField('mysql_root')
+                os.environ["MYSQL_PWD"] = password
+                public.ExecShell(public.GetConfigValue('setup_path') + "/mysql/bin/mysql -uroot -p" + root + " --force \"" + name + "\" < "+'"' +  file+'"')
+            except Exception as e:
+                raise
+            finally:
+                os.environ["MYSQL_PWD"] = ""
+
         public.WriteLog("TYPE_DATABASE", 'DATABASE_INPUT_SUCCESS',(name,))
         return public.returnMsg(True, 'DATABASE_INPUT_SUCCESS')
         #except Exception as ex:
@@ -558,16 +610,27 @@ SetLink
         return public.returnMsg(True,'DATABASE_SYNC_SUCCESS',(str(n),))
     
     #配置
-    def mypass(self,act,root):
+    def mypass(self,act,password = None):
         conf_file = '/etc/my.cnf'
+        conf_file_bak = '/etc/my.cnf.bak'
+        if os.path.getsize(conf_file) > 2:
+            public.writeFile(conf_file_bak,public.readFile(conf_file))
+            public.set_mode(conf_file_bak,600)
+            public.set_own(conf_file_bak,'mysql')
+        elif os.path.getsize(conf_file_bak) > 2:
+            public.writeFile(conf_file,public.readFile(conf_file_bak))
+            public.set_mode(conf_file,600)
+            public.set_own(conf_file,'mysql')
+
         public.ExecShell("sed -i '/user=root/d' {}".format(conf_file))
         public.ExecShell("sed -i '/password=/d' {}".format(conf_file))
         if act:
+            password = public.M('config').where('id=?',(1,)).getField('mysql_root')
             mycnf = public.readFile(conf_file)
-            src_dump = "[mysqldump]\n"
-            sub_dump = src_dump + "user=root\npassword=\"{}\"\n".format(root)
             if not mycnf: return False
-            mycnf = mycnf.replace(src_dump,sub_dump)
+            src_dump_re = r"\[mysqldump\][^.]"
+            sub_dump = "[mysqldump]\nuser=root\npassword=\"{}\"\n".format(password)
+            mycnf = re.sub(src_dump_re, sub_dump, mycnf)
             if len(mycnf) > 100: public.writeFile(conf_file,mycnf)
             return True
         return True
@@ -751,7 +814,7 @@ SetLink
             public.ExecShell('/etc/init.d/mysqld restart')
         else:
             path = self.GetMySQLInfo(get)['datadir']
-            if not os.path.exists(path): return public.returnMsg(False,'数据库目录不存在!')
+            if not os.path.exists(path): return public.returnMsg(False,'MYSQL_DATA_DIR_ERR')
             if hasattr(get,'status'):
                 dsize = 0
                 for n in os.listdir(path):
@@ -760,7 +823,7 @@ SetLink
                         dsize += os.path.getsize(path + '/' + n)
                 return public.returnMsg(True,dsize)
             if os.path.exists(masterslaveconf):
-                return public.returnMsg(False, "Database directory does not exist")
+                return public.returnMsg(False, "MYSQL_BINLOG_ERR")
             mycnf = mycnf.replace('log-bin=mysql-bin','#log-bin=mysql-bin')
             mycnf = mycnf.replace('binlog_format=mixed','#binlog_format=mixed')
             public.ExecShell('sync')
@@ -805,7 +868,7 @@ SetLink
             if g in ['innodb_log_buffer_size']:
                 s = 'M'
                 if int(get[g]) < 8:
-                    return public.returnMsg(False,'innodb_log_buffer_size cannot be less than 8MB')
+                    return public.returnMsg(False,'MYSQL_PARAMETER_ERR')
 
             rep = r'\s*'+g+r'\s*=\s*\d+(M|K|k|m|G)?\n'
 
@@ -868,9 +931,8 @@ SetLink
     #修复表信息
     def ReTable(self,get):
         m_version = public.readFile(public.GetConfigValue('setup_path') + '/mysql/version.pl')
-        if m_version.find('5.1.')!=-1:return public.returnMsg(False,"nonsupport mysql5.1!")
+        if m_version.find('5.1.')!=-1:return public.returnMsg(False,"NONSUPPORT51")
         info=self.RepairTable(get)
-
         if info:
             return public.returnMsg(True,"REPAIR_SUCCESS")
         else:
@@ -891,3 +953,50 @@ SetLink
             return public.returnMsg(True,"CHANGE_SUCCESS")
         else:
             return public.returnMsg(False,"CHANVE_FAIL")
+
+    # 检查用户管理表是否存在
+    def _check_table_exist(self):
+        result = public.M('sqlite_master').where("name=?", ('mysql_user',)).getField('name')
+        if not result:
+            self._create_mysql_user_tb()
+
+    # 数据库对象
+    def _get_sqlite_connect(self):
+        import sqlite3
+        try:
+            if not self.sqlite_connection:
+                self.sqlite_connection = sqlite3.connect('data/default.db')
+        except Exception as ex:
+            return "error: " + str(ex)
+
+    # 创多用户表
+    def _create_mysql_user_tb(self):
+        self._get_sqlite_connect()
+        sql="""
+CREATE TABLE mysql_user(
+   id INTEGER  PRIMARY KEY AUTOINCREMENT,
+   pid INTEGER ,
+   username CHAR,
+   password CHAR,
+   accept CHAR,
+   ps CHAR,
+   addtime CHAR
+);"""
+        self.sqlite_connection.execute(sql)
+
+    # 根据id获取用户列表
+    def get_mysql_user(self,get):
+        self._create_mysql_user_tb()
+        result = public.M('mysql_user').where("pid=?", (get.id,)).select()
+        return result
+
+    def add_mysql_user(self,get):
+        '''
+         * 添加mysql用户
+         * @param get.id 面板数据库id
+         * @param get.username 添加的用户
+         * @param get.password 添加的用户密码
+         * @param get.permission 添加的用户权限
+         * @param get.host 允许在哪里访问
+         * @return Bool
+        '''

@@ -1,6 +1,15 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<style>
+    #DataBody .dataBase,#DataBody .webNote{
+        white-space: nowrap;
+        display: inline-block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: auto;
+    }
+</style>
 <div class="main-content pb55">
     <div class="container-fluid">
         <div class="pos-box bgw mtb15">
@@ -22,7 +31,7 @@
             <button onclick="database.add_database()" title="{{data['lan']['BTNT1']}}" class="btn btn-success btn-sm" type="button" style="margin-right: 5px;">{{data['lan']['BTN1']}}</button>
             <button onclick="bt.database.set_root()" title="{{data['lan']['BTNT2']}}" class="btn btn-default btn-sm" type="button" style="margin-right: 5px;">{{data['lan']['BTN2']}}</button>
             <button onclick="bt.database.open_phpmyadmin('','root','{{data['mysql_root']}}')" title="{{data['lan']['BTNT3']}}" class="btn btn-default btn-sm" type="button" style="margin-right: 5px;">{{data['lan']['BTN3']}}</button>
-            <!-- <a href="/adminer/index.php" target="_blank" title="Lightweight database management tool that supports remote database management" class="btn btn-default btn-sm" type="button" style="margin-right: 5px;">Adminer</a> -->
+            <!--<a href="/adminer/index.php" target="_blank" title="Lightweight database management tool that supports remote database management" class="btn btn-default btn-sm" type="button" style="margin-right: 5px;">Adminer</a>-->
             <span style="float:right">
                 <button batch="true" style="float: right;display: none;margin-left:10px;" onclick="database.batch_database('del');" title="{{data['lan']['BTNT4']}}" class="btn btn-default btn-sm">{{data['lan']['BTN4']}}</button>
                 <button onclick="bt.recycle_bin.open_recycle_bin(6)" id="dataRecycle" title="{{data['lan']['BTNT4']}}" class="btn btn-default btn-sm" style="margin-left: 5px;"><span class="glyphicon glyphicon-trash" style="margin-right: 5px;"></span>{{data['lan']['RECYCLE_BIN']}}</button>

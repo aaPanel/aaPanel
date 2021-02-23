@@ -257,8 +257,7 @@ class bt_task:
                         float(speed_total[0].lower().replace('k', '')) * 1024)
                     u_time = speed_total[3].replace(
                         'h', 'Hour').replace('m', 'Minute').replace('s', 'Second')
-                data = {'name': '下载文件{}'.format(
-                    filename), 'total': total, 'used': used, 'pre': speed_total[1], 'speed': speed_total[2], 'time': u_time}
+                data = {'name': public.getMsg('DOWNLOAD_FILE1',(filename,)),'total': total, 'used': used, 'pre': speed_total[1], 'speed': speed_total[2], 'time': u_time}
         else:
             data = public.ExecShell("tail -n {} {}".format(num, log_file))[0]
             if type(data) == list:
@@ -315,7 +314,7 @@ class bt_task:
             return public.returnMsg(False,'NOT_SUP_COMP_FORMAT')
 
         self.set_file_accept(dfile)
-        public.WriteLog("TYPE_FILE", 'ZIP_SUCCESS', (sfiles, dfile),not_web = self.not_web)
+        #public.WriteLog("TYPE_FILE", 'ZIP_SUCCESS', (sfiles, dfile),not_web = self.not_web)
         return public.returnMsg(True, 'ZIP_SUCCESS')
 
     # 文件解压
@@ -359,7 +358,7 @@ class bt_task:
                 user = pwd.getpwuid(os.stat(dfile).st_uid).pw_name
                 public.ExecShell("chown %s:%s %s" % (user, user, dfile))
 
-        public.WriteLog("TYPE_FILE", 'UNZIP_SUCCESS', (sfile, dfile),not_web = self.not_web)
+        #public.WriteLog("TYPE_FILE", 'UNZIP_SUCCESS', (sfile, dfile),not_web = self.not_web)
         return public.returnMsg(True, 'UNZIP_SUCCESS')
 
     # 备份网站

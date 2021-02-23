@@ -51,65 +51,65 @@ class config:
         if emial in self.__mail_list:
             self.__mail_list.remove(emial)
             public.writeFile(self.__mail_list_data, json.dumps(self.__mail_list))
-            return public.returnMsg(True, 'Successfully deleted')
+            return public.returnMsg(True, 'DEL_SUCCESS')
         else:
-            return public.returnMsg(True, 'Email does not exist')
+            return public.returnMsg(True, 'EMAIL_NOT_EXISTS')
 
     #添加接受邮件地址
     def add_mail_address(self, get):
-        if not hasattr(get, 'email'): return public.returnMsg(False, 'Please input your email')
+        if not hasattr(get, 'email'): return public.returnMsg(False, 'INPUT_EMAIL')
         emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
-        if not emailformat.search(get.email): return public.returnMsg(False, 'Please enter your vaild email')
+        if not emailformat.search(get.email): return public.returnMsg(False, 'EMAIL_ERR')
         # 测试发送邮件
-        if get.email.strip() in self.__mail_list: return public.returnMsg(True, 'Email already exists')
+        if get.email.strip() in self.__mail_list: return public.returnMsg(True, 'EMAIL_EXISTS')
         self.__mail_list.append(get.email.strip())
         public.writeFile(self.__mail_list_data, json.dumps(self.__mail_list))
-        return public.returnMsg(True, 'Added successfully')
+        return public.returnMsg(True, 'SET_SUCCESS')
 
     # 添加自定义邮箱地址
     def user_mail_send(self, get):
         if not (hasattr(get, 'email') or hasattr(get, 'stmp_pwd') or hasattr(get, 'hosts') or hasattr(get, 'port')):
-            return public.returnMsg(False, 'Please complete the information')
+            return public.returnMsg(False, 'COMPLETE_INFO')
         # 自定义邮件
         self.mail.qq_stmp_insert(get.email.strip(), get.stmp_pwd.strip(), get.hosts.strip(),get.port.strip())
         # 测试发送
-        if self.mail.qq_smtp_send(get.email.strip(), 'aaPanel Alert Test Email', 'aaPanel Alert Test Email'):
+        if self.mail.qq_smtp_send(get.email.strip(), public.getMsg('TEST_MAIL_TITLE'), public.getMsg('TEST_MAIL_CONTENT')):
             if not get.email.strip() in self.__mail_list:
                 self.__mail_list.append(get.email.strip())
                 public.writeFile(self.__mail_list_data, json.dumps(self.__mail_list))
-            return public.returnMsg(True, 'Added successfully')
+            return public.returnMsg(True, 'SET_SUCCESS')
         else:
             ret = []
             public.writeFile(self.__mail_config, json.dumps(ret))
-            return public.returnMsg(False, 'Email sending failed, please check if the STMP password is correct or the hosts are correct')
+            return public.returnMsg(False, 'TEST_MAIL_SEND_ERR')
 
     # 查看自定义邮箱配置
     def get_user_mail(self, get):
         qq_mail_info = json.loads(public.ReadFile(self.__mail_config))
         if len(qq_mail_info) == 0:
-            return public.returnMsg(False, 'No Data')
+            return public.returnMsg(False, 'NO_DATA')
         if not 'port' in qq_mail_info:qq_mail_info['port']=465
         return public.returnMsg(True, qq_mail_info)
 
 
     # 用户自定义邮件发送
     def user_stmp_mail_send(self, get):
-        if not (hasattr(get, 'email')): return public.returnMsg(False, 'Please fill in the email address')
+        if not (hasattr(get, 'email')): return public.returnMsg(False, 'INPUT_EMAIL')
         emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
-        if not emailformat.search(get.email): return public.returnMsg(False, 'Please enter your vaild email')
+        if not emailformat.search(get.email): return public.returnMsg(False, 'EMAIL_ERR')
         # 测试发送邮件
-        if not get.email.strip() in self.__mail_list: return public.returnMsg(True, 'The mailbox does not exist, please add it to the mailbox list')
-        if not (hasattr(get, 'title')): return public.returnMsg(False, 'Please fill in the message header')
-        if not (hasattr(get, 'body')): return public.returnMsg(False, 'Please enter the message content')
+        if not get.email.strip() in self.__mail_list: return public.returnMsg(True, 'MAILBOX_NOT_EXIST')
+        if not (hasattr(get, 'title')): return public.returnMsg(False, 'EMAIL_TITLE')
+        if not (hasattr(get, 'body')): return public.returnMsg(False, 'EMAIL_CONTENT_ERR')
         # 先判断是否存在stmp信息
         qq_mail_info = json.loads(public.ReadFile(self.__mail_config))
         if len(qq_mail_info) == 0:
-            return public.returnMsg(False, 'STMP information was not found, please re-add custom mail STMP information in the settings')
+            return public.returnMsg(False, 'SMTP_INFO_ERR')
         if self.mail.qq_smtp_send(get.email.strip(), get.title.strip(), get.body):
             # 发送成功
-            return public.returnMsg(True, 'Sent successfully')
+            return public.returnMsg(True, 'SEND_SUCCESS')
         else:
-            return public.returnMsg(False, 'Failed to send')
+            return public.returnMsg(False, 'SEND_FAILED')
 
     # 查看能使用的告警通道
     def get_settings(self, get):
@@ -130,22 +130,22 @@ class config:
     # 设置钉钉报警
     def set_dingding(self, get):
         if not (hasattr(get, 'url') or hasattr(get, 'atall')):
-            return public.returnMsg(False, 'Please complete the information')
+            return public.returnMsg(False, 'COMPLETE_INFO')
         if get.atall:
             get.atall = 'True'
         else: get.atall = 'False'
         self.mail.dingding_insert(get.url.strip(), get.atall)
-        if self.mail.dingding_send('aaPanel alarm test'):
-            return public.returnMsg(True, 'Added successfully')
+        if self.mail.dingding_send(public.getMsg('ALARM_TEST')):
+            return public.returnMsg(True, 'SET_SUCCESS')
         else:
             ret = []
             public.writeFile(self.__dingding_config, json.dumps(ret))
-            return public.returnMsg(False, 'Add failed, please check if the URL is correct')
+            return public.returnMsg(False, 'MAIL_ADD_FAILED')
     # 查看钉钉
     def get_dingding(self, get):
         qq_mail_info = json.loads(public.ReadFile(self.__dingding_config))
         if len(qq_mail_info) == 0:
-            return public.returnMsg(False, 'No Data')
+            return public.returnMsg(False, 'NO_DATA')
         return public.returnMsg(True, qq_mail_info)
 
     # 使用钉钉发送消息
@@ -155,9 +155,9 @@ class config:
             return public.returnMsg(False, 'The configuration information of the nails you configured was not found, please add in the settings')
         if not (hasattr(get, 'content')): return public.returnMsg(False, 'Please enter the data you need to send')
         if self.mail.dingding_send(get.content):
-            return public.returnMsg(True, 'Sent successfully')
+            return public.returnMsg(True, 'SEND_SUCCESS')
         else:
-            return public.returnMsg(False, 'Failed to send')
+            return public.returnMsg(False, 'SEND_FAILED')
 
 
     def getPanelState(self,get):
@@ -226,51 +226,51 @@ class config:
 
     # 创建新用户
     def create_user(self,args):
-        if session['uid'] != 1: return public.returnMsg(False,'Permission denied!')
-        if len(args.username) < 2: return public.returnMsg(False,'User name must be at least 2 characters')
-        if len(args.password) < 8: return public.returnMsg(False,'Password must be at least 8 characters')
+        if session['uid'] != 1: return public.returnMsg(False,'PERMISSION_DENIED')
+        if len(args.username) < 2: return public.returnMsg(False,'USERNAME_ERR')
+        if len(args.password) < 8: return public.returnMsg(False,'PASSWORD_ERR')
         pdata = {
             "username": args.username.strip(),
             "password": public.password_salt(public.md5(args.password.strip()),username=args.username.strip())
         }
 
         if(public.M('users').where('username=?',(pdata['username'],)).count()):
-            return public.returnMsg(False,'The specified username already exists!')
+            return public.returnMsg(False,'USERNAME_EXIST')
 
         if(public.M('users').insert(pdata)):
-            public.WriteLog('User Management','Create new user {}'.format(pdata['username']))
-            return public.returnMsg(True,'Create new user {} success!'.format(pdata['username']))
-        return public.returnMsg(False,'Create new user failed!')
+            public.WriteLog('USER_MANAGE','CREATE_USER',(pdata['username'],))
+            return public.returnMsg(True,'CREATE_USER_SUCCESS',(pdata['username'],))
+        return public.returnMsg(False,'CREATE_USER_FAILED')
 
     # 删除用户
     def remove_user(self,args):
-        if session['uid'] != 1: return public.returnMsg(False,'Permission denied!')
-        if int(args.id) == 1: return public.returnMsg(False,'Cannot delete initial default user!')
+        if session['uid'] != 1: return public.returnMsg(False,'PERMISSION_DENIED')
+        if int(args.id) == 1: return public.returnMsg(False,'DEL_USER_ERR')
         username = public.M('users').where('id=?',(args.id,)).getField('username')
-        if not username: return public.returnMsg(False,'The specified user does not exist!')
+        if not username: return public.returnMsg(False,'USERNAME_NOT_EXIST')
         if(public.M('users').where('id=?',(args.id,)).delete()):
-            public.WriteLog('User Management','delete users[{}]'.format(username))
-            return public.returnMsg(True,'Delete user {} success!'.format(username))
-        return public.returnMsg(False,'User deletion failed!')
+            public.WriteLog('USER_MANAGE','DEL_USER',(username))
+            return public.returnMsg(True,'DEL_USER_SUCCESS',(username,))
+        return public.returnMsg(False,'DEL_USER_FAILED')
 
     # 修改用户
     def modify_user(self,args):
-        if session['uid'] != 1: return public.returnMsg(False,'Permission denied!')
+        if session['uid'] != 1: return public.returnMsg(False,'PERMISSION_DENIED')
         username = public.M('users').where('id=?',(args.id,)).getField('username')
         pdata = {}
         if 'username' in args:
-            if len(args.username) < 2: return public.returnMsg(False,'User name must be at least 2 characters')
+            if len(args.username) < 2: return public.returnMsg(False,'USERNAME_ERR')
             pdata['username'] = args.username.strip()
 
         if 'password' in args:
             if args.password:
-                if len(args.password) < 8: return public.returnMsg(False,'Password must be at least 8 characters')
+                if len(args.password) < 8: return public.returnMsg(False,'PASSWORD_ERR')
                 pdata['password'] = public.password_salt(public.md5(args.password.strip()),username=username)
 
         if(public.M('users').where('id=?',(args.id,)).update(pdata)):
-            public.WriteLog('User Management',"Edit user{}".format(username))
-            return public.returnMsg(True,'Successfully modified!')
-        return public.returnMsg(False,'No changes submitted!')
+            public.WriteLog('USER_MANAGE',"EDIT_USER",(username,))
+            return public.returnMsg(True,'EDIT_SUCCESS')
+        return public.returnMsg(False,'NO_CHANGE_SUBMITTED')
 
     def setPanel(self,get):
         if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK')
@@ -522,6 +522,9 @@ class config:
         rep = r"\s*pm\s*=\s*(\w+)\s*"
         tmp = re.search(rep, conf).groups()
         data['pm'] = tmp[0]
+        data['unix'] = 'unix'
+        if not isinstance(public.get_fpm_address(version),str):
+            data['unix'] = 'tcp'
 
         return data
 
@@ -535,7 +538,7 @@ class config:
         max_spare_servers = get.max_spare_servers
         pm = get.pm
         if not pm in ['static','dynamic','ondemand']:
-            return public.returnMsg(False,'Wrong operating mode!')
+            return public.returnMsg(False,'WRONG_MODE')
         file = public.GetConfigValue('setup_path')+"/php/"+version+"/etc/php-fpm.conf"
         conf = public.readFile(file)
 
@@ -558,8 +561,18 @@ class config:
                 rep = r"\s*listen\.backlog\s*=\s*([0-9-]+)\s*"
                 conf = re.sub(rep, "\nlisten.backlog = 8192\n", conf)
 
+        if get.listen == 'unix':
+            listen = '/tmp/php-cgi-{}.sock'.format(version)
+        else:
+            listen = '127.0.0.1:10{}1'.format(version)
+
+
+        rep = r'\s*listen\s*=\s*.+\s*'
+        conf = re.sub(rep, "\nlisten = "+listen+"\n", conf)
+
         public.writeFile(file,conf)
         public.phpReload(version)
+        public.sync_php_address(version)
         public.WriteLog("TYPE_PHP",'PHP_CHILDREN', (version,max_children,start_servers,min_spare_servers,max_spare_servers))
         return public.returnMsg(True, 'SET_SUCCESS')
 
@@ -686,7 +699,7 @@ class config:
             #rep_mail = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
             rep_mail = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
             if not re.search(rep_mail,get.email):
-                return public.returnMsg(False,'The E-Mail format is illegal')
+                return public.returnMsg(False,'EMAIL_FORMAT_ERR')
             import setPanelLets
             sp = setPanelLets.setPanelLets()
             sps = sp.set_lets(get)
@@ -875,7 +888,7 @@ class config:
                 continue
             if not os.path.exists(p):
                 continue
-            phpini = public.readFile(filename)
+            phpini = public.readFile(p)
             for g in gets:
                 try:
                     rep = g + r'\s*=\s*(.+)\r?\n'
@@ -946,7 +959,7 @@ class config:
                 return public.returnMsg(False, 'SPECIAL_CHARACTRES', ('" ~ ` / = "'))
         filename = '/www/server/php/' + get.version + '/etc/php.ini'
         filename_ols = None
-        if os.path.exists("/usr/local/lsws"):
+        if os.path.exists("/usr/local/lsws/bin/lswsctrl"):
             filename_ols = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version, get.version[0],
                                                                                         get.version[1])
             if os.path.exists('/etc/redhat-release'):
@@ -958,6 +971,8 @@ class config:
             if os.path.exists("/etc/redhat-release"):
                 ols_php_os_path = '/usr/local/lsws/lsphp{}/lib64/php/modules/'.format(get.version)
             ols_so_list = os.listdir(ols_php_os_path)
+        else:
+            ols_so_list = []
         for f in [filename,filename_ols]:
             if not f:
                 continue
@@ -1075,8 +1090,11 @@ class config:
     def get_config(self,get):
         if 'config' in session:
             session['config']['distribution'] = public.get_linux_distribution()
+            session['webserver'] = public.get_webserver()
+            session['config']['webserver'] = session['webserver']
             return session['config']
         data = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find()
+        data['webserver'] = public.get_webserver()
         data['distribution'] = public.get_linux_distribution()
         return data
 
@@ -1186,7 +1204,7 @@ class config:
         import panelSite
         php_versions = panelSite.panelSite().GetPHPVersion(get)
         if len(php_versions)==0:
-            return public.returnMsg(False,'Failed to get php version!')
+            return public.returnMsg(False,'GET_PHP_VER_ERR')
         del(php_versions[0])
         for v in php_versions:
             if link_re.find(v['version']) != -1: return {"select":v,"versions":php_versions}
@@ -1287,9 +1305,9 @@ class config:
         else:
             t_str = 'Open'
             public.writeFile(debug_path,'True')
-        public.WriteLog('TYPE_PANEL','%s Developer mode(debug)' % t_str)
+        public.WriteLog('TYPE_PANEL','DEVELOPER_MODE',(t_str,))
         public.restart_panel()
-        return public.returnMsg(True,'Successful setup!')
+        return public.returnMsg(True,'SET_SUCCESS')
 
 
     #设置离线模式
@@ -1301,8 +1319,8 @@ class config:
         else:
             t_str = 'Open'
             public.writeFile(d_path,'True')
-        public.WriteLog('TYPE_PANEL','%s Offline mode' % t_str)
-        return public.returnMsg(True,'Successful setup!')
+        public.WriteLog('TYPE_PANEL','OFFLINE_MODE',(t_str,))
+        return public.returnMsg(True,'SET_SUCCESS')
 
     # 修改.user.ini文件
     def _edit_user_ini(self,file,s_conf,act,session_path):
@@ -1330,12 +1348,13 @@ class config:
         :return:
         '''
         if public.get_webserver() == 'openlitespeed':
-            return public.returnMsg(False, "This feature does not currently support openlitespeed")
+            return public.returnMsg(False, "NOT_SUPPORT_OLS")
         import panelSite
         site_info = public.M('sites').where('id=?', (get.id,)).field('name,path').find()
         session_path = "/www/php_session/{}".format(site_info["name"])
-        if os.path.exists(session_path):
+        if not os.path.exists(session_path):
             os.makedirs(session_path)
+            public.ExecShell('chown www.www {}'.format(session_path))
         run_path = panelSite.panelSite().GetSiteRunPath(get)["runPath"]
         user_ini_file = "{site_path}{run_path}/.user.ini".format(site_path=site_info["path"], run_path=run_path)
         conf = "session.save_path={}/\nsession.save_handler = files".format(session_path)
@@ -1343,12 +1362,12 @@ class config:
             if not os.path.exists(user_ini_file):
                 public.writeFile(user_ini_file,conf)
                 public.ExecShell("chattr +i {}".format(user_ini_file))
-                return public.returnMsg(True,"Successful setup")
+                return public.returnMsg(True,"SET_SUCCESS")
             self._edit_user_ini(user_ini_file,conf,get.act,session_path)
-            return public.returnMsg(True, "Successful setup")
+            return public.returnMsg(True, "SET_SUCCESS")
         else:
             self._edit_user_ini(user_ini_file,conf,get.act,session_path)
-            return public.returnMsg(True, "Successful setup")
+            return public.returnMsg(True, "SET_SUCCESS")
 
     # 获取php_session是否存放到独立文件夹
     def get_php_session_path(self,get):
@@ -1371,9 +1390,9 @@ class config:
         key = public.readFile(self._key_file)
         username = public.readFile(self._username_file)
         if not key:
-            return public.returnMsg(False, "The key does not exist. Please turn on and try again.")
+            return public.returnMsg(False, "KEY_NOT_EXIST")
         if not username:
-            return public.returnMsg(False, "The username does not exist. Please turn on and try again.")
+            return public.returnMsg(False, "USERNAME_NOT_EXIST1")
         return {"key":key,"username":username}
 
     def get_random(self):
@@ -1387,7 +1406,7 @@ class config:
 
     def set_two_step_auth(self,get):
         if not hasattr(get,"act") or not get.act:
-            return public.returnMsg(False, "Please enter the operation mode")
+            return public.returnMsg(False, "SELECT_MODE")
         if get.act == "1":
             if not os.path.exists(self._core_fle_path):
                 os.makedirs(self._core_fle_path)
@@ -1402,37 +1421,264 @@ class config:
             username = public.readFile(self._username_file)
             local_ip = public.GetLocalIp()
             if not secret_key:
-                return public.returnMsg(False,"Failed to generate key or username. Please check if the hard disk space is insufficient or the directory cannot be written.[ {} ]".format(self._setup_path+"/data/"))
+                return public.returnMsg(False,"GENERATE_KEY_ERR",(self._setup_path+"/data/",))
             try:
-                data = pyotp.totp.TOTP(secret_key).provisioning_uri(username, issuer_name=local_ip)
+                try:
+                    panel_name = json.loads(public.readFile(self._setup_path+'/config/config.json'))['title']
+                except:
+                    panel_name = 'aaPanel'
+                data = pyotp.totp.TOTP(secret_key).provisioning_uri(username, issuer_name='{}--{}'.format(panel_name,local_ip))
                 public.writeFile(self._core_fle_path+'/qrcode.txt',str(data))
-                return public.returnMsg(True, "Open successfully")
+                return public.returnMsg(True, "OPEN_SUCCESSFUL")
             except Exception as e:
                 return public.returnMsg(False, e)
         else:
             if os.path.exists(self._key_file):
                 os.rename(self._key_file,self._bk_key_file)
-            return public.returnMsg(True, "Closed successfully")
+            return public.returnMsg(True, "CLOSE_SUCCESS")
 
     # 检测是否开启双因素验证
     def check_two_step(self,get):
         secret_key = public.readFile(self._key_file)
         if not secret_key:
-            return public.returnMsg(False, "Did not open Google authentication")
-        return public.returnMsg(True, "Google authentication has been turned on")
+            return public.returnMsg(False, "GOOGLE_AUTH_ERR")
+        return public.returnMsg(True, "TURN_ON_GOOGLE_AUTH")
 
     # 读取二维码data
     def get_qrcode_data(self,get):
         data = public.readFile(self._core_fle_path + '/qrcode.txt')
         if data:
             return data
-        return public.returnMsg(True, "No QR code data, please re-open")
+        return public.returnMsg(True, "QR_CODE_ERR")
 
     # 设置是否云控打开
     def set_coll_open(self,get):
-        if not 'coll_show' in get: return public.returnMsg(False,'Parameter error!')
+        if not 'coll_show' in get: return public.returnMsg(False,'INIT_ARGS_ERR')
         if get.coll_show == 'True':
             session['tmp_login'] = True
         else:
             session['tmp_login'] = False
-        return public.returnMsg(True,'Successful setup!')
+        return public.returnMsg(True,'SET_SUCCESS')
+
+    # 获取菜单列表
+    def get_menu_list(self, get):
+        '''
+            @name 获取菜单列表
+            @author hwliang<2020-08-31>
+            @param get<dict_obj>
+            @return list
+        '''
+        menu_file = 'config/menu.json'
+        hide_menu_file = 'config/hide_menu.json'
+        data = json.loads(public.ReadFile(menu_file))
+        if not os.path.exists(hide_menu_file):
+            public.writeFile(hide_menu_file, '[]')
+        hide_menu = public.ReadFile(hide_menu_file)
+        if not hide_menu:
+            hide_menu = []
+        else:
+            hide_menu = json.loads(hide_menu)
+        result = []
+        for d in data:
+            tmp = {}
+            tmp['id'] = d['id']
+            tmp['title'] = d['title']
+            tmp['show'] = not d['id'] in hide_menu
+            tmp['sort'] = d['sort']
+            result.append(tmp)
+
+        menus = sorted(result, key=lambda x: x['sort'])
+        return menus
+
+    # 设置隐藏菜单列表
+    def set_hide_menu_list(self, get):
+        '''
+            @name 设置隐藏菜单列表
+            @author hwliang<2020-08-31>
+            @param get<dict_obj> {
+                hide_list: json<list> 所有不显示的菜单ID
+            }
+            @return dict
+        '''
+        hide_menu_file = 'config/hide_menu.json'
+        not_hide_id = ["dologin", "memuAconfig", "memuAsoft", "memuA"]  # 禁止隐藏的菜单
+
+        hide_list = json.loads(get.hide_list)
+        hide_menu = []
+        for h in hide_list:
+            if h in not_hide_id: continue
+            hide_menu.append(h)
+        public.writeFile(hide_menu_file, json.dumps(hide_menu))
+        public.WriteLog('TYPE_CONFIG', 'EDIT_MENU_SUCCESS')
+        return public.returnMsg(True, 'SET_SUCCESS')
+
+    # 获取临时登录列表
+    def get_temp_login(self, args):
+        '''
+            @name 获取临时登录列表
+            @author hwliang<2020-09-2>
+            @return dict
+        '''
+        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        public.M('temp_login').where('state=? and expire<?', (0, int(time.time()))).setField('state', -1)
+        callback = ''
+        if 'tojs' in args:
+            callback = args.tojs
+        p = 1
+        if 'p' in args:
+            p = int(args.p)
+        rows = 12
+        if 'rows' in args:
+            rows = int(args.rows)
+        count = public.M('temp_login').count()
+        data = {}
+        page_data = public.get_page(count, p, rows, callback)
+        data['page'] = page_data['page']
+        data['data'] = public.M('temp_login').limit(page_data['shift'] + ',' + page_data['row']).order('id desc').field(
+            'id,addtime,expire,login_time,login_addr,state').select()
+        for i in range(len(data['data'])):
+            data['data'][i]['online_state'] = os.path.exists('data/session/{}'.format(data['data'][i]['id']))
+        return data
+
+    # 设置临时登录
+    def set_temp_login(self, args):
+        '''
+            @name 设置临时登录
+            @author hwliang<2020-09-2>
+            @return dict
+        '''
+        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        s_time = int(time.time())
+        public.M('temp_login').where('state=? and expire>?', (0, s_time)).delete()
+        token = public.GetRandomString(48)
+        salt = public.GetRandomString(12)
+
+        pdata = {
+            'token': public.md5(token + salt),
+            'salt': salt,
+            'state': 0,
+            'login_time': 0,
+            'login_addr': '',
+            'expire': s_time + 3600,
+            'addtime': s_time
+        }
+
+        if not public.M('temp_login').count():
+            pdata['id'] = 101
+
+        if public.M('temp_login').insert(pdata):
+            public.WriteLog('TYPE_CONFIG', 'TMP_LOGIN',(public.format_date(times=pdata['expire']),))
+            return {'status': True, 'msg': public.getMsg('TMP_LOGIN1'), 'token': token, 'expire': pdata['expire']}
+        return public.returnMsg(False, 'TMP_LOGIN2')
+
+    # 删除临时登录
+    def remove_temp_login(self, args):
+        '''
+            @name 删除临时登录
+            @author hwliang<2020-09-2>
+            @param args<dict_obj>{
+                id: int<临时登录ID>
+            }
+            @return dict
+        '''
+        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        id = int(args.id)
+        if public.M('temp_login').where('id=?', (id,)).delete():
+            public.WriteLog('TYPE_CONFIG', 'TMP_LOGIN3')
+            return public.returnMsg(True, 'DEL_SUCCESS')
+        return public.returnMsg(False, 'DEL_ERROR')
+
+    # 强制弹出指定临时登录
+    def clear_temp_login(self, args):
+        '''
+            @name 强制登出
+            @author hwliang<2020-09-2>
+            @param args<dict_obj>{
+                id: int<临时登录ID>
+            }
+            @return dict
+        '''
+        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        id = int(args.id)
+        s_file = 'data/session/{}'.format(id)
+        if os.path.exists(s_file):
+            os.remove(s_file)
+            public.WriteLog('TYPE_CONFIG', 'LOGOUT_TMP_UESR',(str(id),))
+            return public.returnMsg(True, 'LOGOUT_TMP_USER',(str(id),))
+        public.returnMsg(False, 'TMP_USER_NOT_LOGIN')
+
+    # 查看临时授权操作日志
+    def get_temp_login_logs(self, args):
+        '''
+            @name 查看临时授权操作日志
+            @author hwliang<2020-09-2>
+            @param args<dict_obj>{
+                id: int<临时登录ID>
+            }
+            @return dict
+        '''
+        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        id = int(args.id)
+        data = public.M('logs').where('uid=?', (id,)).order('id desc').select()
+        return data
+
+    def add_nginx_access_log_format(self,args):
+        n = nginx.nginx()
+        return n.add_nginx_access_log_format(args)
+
+    def del_nginx_access_log_format(self,args):
+        n = nginx.nginx()
+        return n.del_nginx_access_log_format(args)
+
+    def get_nginx_access_log_format(self,args):
+        n = nginx.nginx()
+        return n.get_nginx_access_log_format(args)
+
+    def set_format_log_to_website(self,args):
+        n = nginx.nginx()
+        return n.set_format_log_to_website(args)
+
+    def get_nginx_access_log_format_parameter(self,args):
+        n = nginx.nginx()
+        return n.get_nginx_access_log_format_parameter(args)
+
+    def add_httpd_access_log_format(self,args):
+        a = apache.apache()
+        return a.add_httpd_access_log_format(args)
+
+    def del_httpd_access_log_format(self,args):
+        a = apache.apache()
+        return a.del_httpd_access_log_format(args)
+
+    def get_httpd_access_log_format(self,args):
+        a = apache.apache()
+        return a.get_httpd_access_log_format(args)
+
+    def set_httpd_format_log_to_website(self,args):
+        a = apache.apache()
+        return a.set_httpd_format_log_to_website(args)
+
+    def get_httpd_access_log_format_parameter(self,args):
+        a = apache.apache()
+        return a.get_httpd_access_log_format_parameter(args)
+
+    def get_file_deny(self,args):
+        import file_execute_deny
+        p = file_execute_deny.FileExecuteDeny()
+        return p.get_file_deny(args)
+
+    def set_file_deny(self,args):
+        import file_execute_deny
+        p = file_execute_deny.FileExecuteDeny()
+        return p.set_file_deny(args)
+
+    def del_file_deny(self,args):
+        import file_execute_deny
+        p = file_execute_deny.FileExecuteDeny()
+        return p.del_file_deny(args)
+
+    def get_panel_ssl_status(self,get):
+        import os
+        if os.path.exists('/www/server/panel/data/ssl.pl'):
+            return public.returnMsg(True,'success')
+        return public.returnMsg(False,'false')

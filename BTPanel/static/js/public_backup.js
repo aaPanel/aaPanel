@@ -42,6 +42,9 @@ var bt = {
         if (extName == 'gz' || extName == 'tgz') return 1;
         return -1;
     },
+    clear_cookie:function(key){
+	    this.set_cookie(key,'',new Date());
+	},
     check_text: function(fileName) {
         var exts = ['rar', 'zip', 'tar.gz', 'gz', 'iso', 'xsl', 'doc', 'xdoc', 'jpeg', 'jpg', 'png', 'gif', 'bmp', 'tiff', 'exe', 'so', '7z', 'bz'];
         return bt.check_exts(fileName, exts) ? false : true;
@@ -224,6 +227,50 @@ var bt = {
             var num = min + Math.round(rand * range); //四舍五入
             return num;
         },
+    /**
+     * @description 设置本地存储，local和session
+     * @param {String} type 存储类型，可以为空，默认为session类型。
+     * @param {String} key 存储键名
+     * @param {String} val 存储键值
+     * @return 无返回值
+     */
+    set_storage: function (type, key, val) {
+        if (type != "local" && type != "session") val = key, key = type, type = 'local';
+        window[type + 'Storage'].setItem(key, val);
+    },
+
+
+    /**
+     * @description 获取本地存储，local和session
+     * @param {String} type 存储类型，可以为空，默认为session类型。
+     * @param {String} key 存储键名
+     * @return {String} 返回存储键值
+     */
+    get_storage: function (type, key) {
+        if (type != "local" && type != "session") key = type, type = 'local';
+        return window[type + 'Storage'].getItem(key);
+    },
+
+    /**
+     * @description 删除指定本地存储，local和session
+     * @param {String} type 类型，可以为空，默认为session类型。
+     * @param {String} key 键名
+     * @return 无返回值
+     */
+    remove_storage: function (type, key) {
+        if (type != "local" && type != "session") key = type, type = 'local';
+        window[type + 'Storage'].removeItem(key);
+    },
+
+    /**
+     * @description 删除指定类型的所有存储信息储，local和session
+     * @param {String} type 类型，可以为空，默认为session类型。
+     * @return 无返回值
+     */
+    clear_storage: function (type) {
+        if (type != "local" && type != "session") key = type, type = 'local';
+        window[type + 'Storage'].clear();
+    },
 	set_cookie : function(key,val,time)
 	{
 		if(time != undefined){
@@ -441,7 +488,6 @@ var bt = {
             data = bt.win_format_param(data);
             var url = '/' + modelTmp[0] + '?action=' + modelTmp[1];
             $.post(url, data, function(rdata) {
-
                 //会话失效时自动跳转到登录页面
                 if (typeof(rdata) == 'string') {
                     if ((rdata.indexOf('/static/favicon.ico') != -1 && rdata.indexOf('/static/img/qrCode.png') != -1) || rdata.indexOf('<!DOCTYPE html>') === 0) {
@@ -638,7 +684,7 @@ var bt = {
             _html += '<span class="tname">' + item.title + '</span>';
             is_title_css = '';
         }
-        _html += "<div class='info-r " + is_title_css + "'>";
+        _html += "<div class='info-r "+ item.class +" " + is_title_css + (item.hide?'hide':'')  +"'>";
 
         var _name = item.name;
         var _placeholder = item.placeholder;
@@ -652,7 +698,7 @@ var bt = {
                 if (_obj.hide) continue;
                 if (_obj.name) _name = _obj.name;
                 if (_obj.placeholder) _placeholder = _obj.placeholder;
-                if (_obj.title) _html += '<span class=" mr5">' + _obj.title + "  ";
+                if (_obj.title) _html += '<div class="inlineBlock mr5"><span class=" mr5">' + _obj.title + "</span>  ";
                 var _add_class = _obj.add_class ? (' '+_obj.add_class) : "";
                 switch (_obj.type) {
                     case 'select':
@@ -664,22 +710,27 @@ var bt = {
                         _html += '</select>';
                         break;
                     case 'textarea':
-                        var _width = _obj.width ? _obj.width : '330px';
-                        var _height = _obj.height ? _obj.height : '100px';
+                        var _width = _obj.width ? _obj.width : '330px',_height = _obj.height ? _obj.height : '100px';
                         _html += '<textarea class="bt-input-text mr20 ' + _name + bs + _add_class +'" name="' + _name + '" style="width:' + _width + ';height:' + _height + ';line-height:22px">' + (_obj.value ? _obj.value : '') + '</textarea>';
-                        if (_placeholder) _html += '<div class="placeholder c9" style="top: 15px; left: 15px; display: block;">' + _placeholder + '</div>';
+                        if (_placeholder) _html += '<div class="placeholder c9" style="top: 12px; left: 14px; display: block;">' + _placeholder + '</div>';
                         break;
                     case 'button':
                         var _width = _obj.width ? _obj.width : '330px';
-                        _html += '<button name=\'' + _name + '\' class="btn btn-success btn-sm mr5 ml5 ' + _name + bs + _add_class +'">' + _obj.text + '</button>';
+                        _html += '<button name=\'' + _name + '\' class="btn btn-success btn-sm mr5 ml5 ' + _name + bs + (_obj.class?_obj.class:'') +'">' + _obj.text + '</button>';
                         break;
                     case 'radio':
-                        var _v = _obj.value === true ? 'checked' : ''
-                        _html += '<input type="radio" class="' + _name + '" id="' + _name + '" name="' + _name + '"  ' + _v + '><label class="mr20" for="' + _name + '" style="font-weight:normal">' + _obj.text + '</label>'
+                        var _v = _obj.value === true ? 'checked' : '';
+                        _html += '<input type="radio" class="' + _name + bs + '" id="' + _name + '" name="' + _name + '"  ' + _v + '><label class="mr20" for="' + _name + '" style="font-weight:normal">' + _obj.text + '</label>'
+                        break;
+                    case 'radio_group':
+                        $.each(_obj.list,function(index,item){
+                            var id = _name + '_' + index,_v = _obj.value === item.value ? 'checked' : '';
+                            _html += '<div class="radio_item"><input type="radio" class="' + _name + bs + '" id="' + id + '" name="' + _name + '"  ' + _v + ' value="'+  item.value +'"><label class="mr20" for="' + id + '" style="font-weight:normal">' + item.text + '</label></div>'
+                        });
                         break;
                     case 'checkbox':
-                        var _v = _obj.value === true ? 'checked' : ''
-                        _html += '<input type="checkbox" class="' + _name + '" id="' + _name + '" name="' + _name + '"  ' + _v + '><label class="mr20" for="' + _name + '" style="font-weight:normal">' + _obj.text + '</label>'
+                        var _v = _obj.value === true ? 'checked' : '';
+                        _html += '<input type="checkbox" class="' + _name + bs + '" id="' + _name + '" name="' + _name + '" '+ (_obj.disabled?'disabled':'') +'  ' + _v + '><label class="mr20" for="' + _name + '" style="font-weight:normal">' + _obj.text + '</label>';
                         break;
                     case 'number':
                         var _width = _obj.width ? _obj.width : '330px';
@@ -691,8 +742,7 @@ var bt = {
                         _html += "<input name='" + _name + "' " + (_obj.disabled ? 'disabled' : '') + " class='bt-input-text mr5 " + _name + bs + "' " + (_placeholder ? ' placeholder="' + _placeholder + '"' : "") + " type='password' style='width:" + _width + "' value='" + (_obj.value ? _obj.value : '') + "' />";
                         break;
                     case 'div':
-                    	var _width = _obj.width ? _obj.width : '330px';
-                        var _height = _obj.height ? _obj.height : '100px';
+                    	var _width = _obj.width ? _obj.width : '330px',_height = _obj.height ? _obj.height : '100px';
                         _html += '<div class="bt-input-text ace_config_editor_scroll mr20 ' + _name + bs + _add_class +'" name="' + _name + '" style="width:' + _width + ';height:' + _height + ';line-height:22px">' + (_obj.value ? _obj.value : '') + '</div>';
                         if (_placeholder) _html += '<div class="placeholder c9" style="top: 15px; left: 15px; display: block;">' + _placeholder + '</div>';
                         break;
@@ -702,13 +752,15 @@ var bt = {
                             <label class="btswitch-btn" for="' + _name + '" style="margin-top:5px;"></label>\
                         </div>';
                         break;
+                    case 'html':
+                        _html += _obj.html;
+                        break;
                     default:
                         var _width = _obj.width ? _obj.width : '330px';
-
                         _html += "<input name='" + _name + "' " + (_obj.disabled ? 'disabled' : '') + " class='bt-input-text mr5 " + _name + bs + _add_class +"' " + (_placeholder ? ' placeholder="' + _placeholder + '"' : "") + " type='text' style='width:" + _width + "' value='" + (_obj.value ? _obj.value : '') + "' />";
                         break;
                 }
-                if (_obj.title) _html += '</span>';
+                if (_obj.title) _html += '</div>';
                 if (_obj.callback) clicks.push({ bind: _name + bs, callback: _obj.callback });
                 if (_obj.event) {
                     _html += '<span data-id="' + _name + bs + '" class="glyphicon cursor mr5 ' + _obj.event.css + ' icon_' + _name + bs + '" ></span>';
@@ -718,6 +770,7 @@ var bt = {
                 if (_obj.ps_help) _html += "<span class='bt-ico-ask "+_obj.name+"_help' tip='"+_obj.ps_help+"'>?</span>";
             }
             if (item.ps) _html += " <span class='c9 mt10'>" + item.ps + "</span>";
+            if (item.ps_help) _html += "<span class='bt-ico-ask "+item.name+"_help' tip='"+item.ps_help+"'>?</span>";
         } else {
             switch (item.type) {
                 case 'select':
@@ -744,6 +797,12 @@ var bt = {
                     var _width = item.width ? item.width : '330px';
                     _html += "<input name='" + _name + "' " + (item.disabled ? 'disabled' : '') + " class='bt-input-text mr5 " + _name + bs + "' " + (_placeholder ? ' placeholder="' + _placeholder + '"' : "") + " type='password' style='width:" + _width + "' value='" + (item.value ? item.value : '') + "' />";
                     break;
+                case 'textarea':
+                    var _width = item.width ? item.width : '330px';
+                    var _height = item.height ? item.height : '100px';
+                    _html += '<textarea class="bt-input-text mr20 ' + _name + bs + '"  ' + (item.disabled ? 'disabled' : '')+'  name="' + _name + '" style="width:' + _width + ';height:' + _height + ';line-height:22px">' + (item.value ? item.value : '') + '</textarea>';
+                    if (_placeholder) _html += '<div class="placeholder c9" style="top: 15px; left: 15px; display: block;">' + _placeholder + '</div>';
+                    break;
                 default:
                     var _width = item.width ? item.width : '330px';
 
@@ -752,6 +811,7 @@ var bt = {
             }
             if (item.callback) clicks.push({ bind: _name + bs, callback: item.callback });
             if (item.ps) _html += " <span class='c9 mt10 mr5'>" + item.ps + "</span>";
+            if (item.ps_help) _html += "<span class='bt-ico-ask "+item.name+"_help' tip='"+item.ps_help+"'>?</span>";
         }
         _html += '</div>';
         if (!item.class) item.class = '';
@@ -1144,9 +1204,10 @@ bt.pub = {
             if (callback) callback(rdata)
         })
     },
-    get_task_count: function() {
+    get_task_count: function(callback) {
         bt.send('GetTaskCount', 'ajax/GetTaskCount', {}, function(rdata) {
-            $(".task").text(rdata)
+            $(".task").text(rdata);
+            if(callback) callback(rdata);
         })
     },
     check_install: function(callback) {
@@ -1202,7 +1263,7 @@ bt.pub = {
             area: ['420px', '360px'],
             closeBtn: 2,
             shadeClose: false,
-            content: '<div class="libLogin pd20" ><div class="bt-form text-center"><div class="line mb15"><h3 class="c2 f16 text-center mtb20">' + lan.public_backup.bind_bt_account + '</h3></div><div class="line"><input class="bt-input-text" name="username2" type="text" placeholder="' + lan.public_backup.mobile_phone + '" id="p1"></div><div class="line"><input autocomplete="new-password" class="bt-input-text" type="password" name="password2"  placeholder="' + lan.public_backup.pass + '" id="p2"></div><div class="line"><input class="login-button" value="' + lan.public_backup.login + '" type="button" ></div><p class="text-right"><a class="btlink" href="https://www.bt.cn/register.html" target="_blank">' + lan.public_backup.no_account + '</a></p></div></div>'
+            content: '<div class="libLogin pd20" ><div class="bt-form text-center"><div class="line mb15"><h3 class="c2 f16 text-center mtb20">' + lan.public_backup.bind_bt_account + '</h3></div><div class="line"><input class="bt-input-text" name="username2" type="text" placeholder="' + lan.public_backup.mobile_phone_or_email + '" id="p1"></div><div class="line"><input autocomplete="new-password" class="bt-input-text" type="password" name="password2"  placeholder="' + lan.public_backup.pass + '" id="p2"></div><div class="line"><input class="login-button" value="' + lan.public_backup.login + '" type="button" ></div><p class="text-right"><a class="btlink" href="https://brandnew.aapanel.com/user_admin/login" target="_blank">' + lan.public_backup.no_account + '</a></p></div></div>'
         });
         setTimeout(function() {
             $('.login-button').click(function() {
@@ -1366,7 +1427,7 @@ bt.index = {
                 var m = "<input id='data_" + l[h].name + "' data-info='" + l[h].name + " " + l[h].versions[0].version + "' type='checkbox' checked>";
                 for (var b = 0; b < l[h].versions.length; b++) {
                     var d = "";
-                    if ((l[h].name == "PHP" && (l[h].versions[b].version == "5.6" || l[h].versions[b].version == "5.6")) || (l[h].name == "MySQL" && l[h].versions[b].version == "5.6") || (l[h].name == "phpMyAdmin" && l[h].versions[b].version == "4.4")) {
+                    if ((l[h].name == "PHP" && (l[h].versions[b].version == "7.4" || l[h].versions[b].version == "7.4")) || (l[h].name == "MySQL" && l[h].versions[b].version == "5.7") || (l[h].name == "phpMyAdmin" && l[h].versions[b].version == "5.0")) {
                         d = "selected";
                         m = "<input id='data_" + l[h].name + "' data-info='" + l[h].name + " " + l[h].versions[b].version + "' type='checkbox' checked>"
                     }
@@ -1390,181 +1451,209 @@ bt.index = {
             var k = layer.open({
                 type: 1,
                 title: lan.bt.install_title,
-                area: ["666px", "473px"],
+                area: ["670px", "510px"],
                 closeBtn: 2,
                 shadeClose: false,
-                content: "<div class='rec-install'><div class='important-title'><p><span class='glyphicon glyphicon-alert' style='color: #f39c12; margin-right: 10px;'></span>" + lan.bt.install_ps + " <a href='javascript:jump()' style='color:#20a53a'>" + lan.bt.install_s + "</a> " + lan.bt.install_s1 + "</p></div><div class='rec-box'><h3>" + lan.bt.install_lnmp + "</h3><div class='rec-box-con'><ul class='rec-list'>" + c + "</ul><p class='fangshi'>" + lan.bt.install_type + "：<label data-title='" + lan.bt.install_rpm_title + "' style='margin-right:0;'>" + lan.bt.install_rpm + "<input style='width: 15px;height: 15px;display: inline-block;' type='checkbox' checked></label><label data-title='" + lan.bt.install_src_title + "'>" + lan.bt.install_src + "<input type='checkbox'></label></p><div class='onekey'>" + lan.bt.install_key + "</div></div></div><div class='rec-box' style='margin-left:16px'><h3>LAMP</h3><div class='rec-box-con'><ul class='rec-list'>" + g + "</ul><p class='fangshi'>" + lan.bt.install_type + "：<label data-title='" + lan.bt.install_rpm_title + "' style='margin-right:0'>" + lan.bt.install_rpm + "<input type='checkbox' style='width: 15px;height: 15px;display: inline-block;' checked></label><label data-title='" + lan.bt.install_src_title + "'>" + lan.bt.install_src + "<input type='checkbox'></label></p><div class='onekey'>" + lan.public_backup.oneclick_install + "</div></div></div></div>"
-            });
-
-            $('.layui-layer-content').css("heigth", "425px");
-
-            $(".fangshi input").click(function() {
-                $(this).attr("checked", "checked").parent().siblings().find("input").removeAttr("checked")
-            });
-
+                content: "<div class='rec-install'><div class='important-title'><p><span class='glyphicon glyphicon-alert' style='color: #f39c12; margin-right: 10px;'></span>" + lan.bt.install_ps + " <a href='javascript:jump()' style='color:#20a53a'>" + lan.bt.install_s + "</a> " + lan.bt.install_s1 + "</p></div><div class='rec-box'><h3>" + lan.bt.install_lnmp + "</h3><div class='rec-box-con'><ul class='rec-list'>" + c + "</ul><p class='fangshi1'>" + lan.bt.install_type + "：<label data-title='" + lan.bt.install_rpm_title + "'><span>" + lan.bt.install_rpm + "</span><input type='checkbox' checked></label><label data-title='" + lan.bt.install_src_title + "'><span>" + lan.bt.install_src + "</span><input type='checkbox'></label></p><div class='onekey'>" + lan.bt.install_key + "</div></div></div><div class='rec-box' style='margin-left:16px'><h3>LAMP</h3><div class='rec-box-con'><ul class='rec-list'>" + g + "</ul><p class='fangshi1'>" + lan.bt.install_type + "：<label data-title='" + lan.bt.install_rpm_title + "'><span>" + lan.bt.install_rpm + "</span><input type='checkbox' checked></label><label data-title='" + lan.bt.install_src_title + "'><span>" + lan.bt.install_src + "</span><input type='checkbox'></label></p><div class='onekey'>"+lan.bt.install_key +"</div></div></div></div>",
+                success:function(){
+                	form_group.select_all([
+                		'#select_Nginx',
+                		'#select_MySQL',
+                		'#select_Pure-Ftpd',
+                		'#select_PHP',
+                		'#select_phpMyAdmin',
+                		'#apache_select_Apache',
+                		'#apache_select_MySQL',
+                		'#apache_select_Pure-Ftpd',
+                		'#apache_select_PHP',
+                		'#apache_select_phpMyAdmin'
+                	]);
+                	form_group.checkbox();
+                	$('.layui-layer-content').css('overflow','inherit');
+                	$('.fangshi1 label').click(function(){
+                	    var input = $(this).find('input'),siblings_label = input.parents('label').siblings()
+                	    input.prop('checked','checked').next().addClass('active');
+                	    siblings_label.find('input').removeAttr('checked').next().removeClass('active');
+                	});
+		            var loadT = '';
+					$('.fangshi1 label').hover(function(){
+						var _title = $(this).attr('data-title'),_that = $(this);
+						loadT = setTimeout(function(){
+							layer.tips(_title,_that[0], {
+							  tips: [1, '#20a53a'], //还可配置颜色
+							  time:0
+							});
+						},500);
+					},function(){
+						clearTimeout(loadT);
+						layer.closeAll('tips');
+					});
+                }
+			});
             $(".sl-s-info").change(function() {
-                var p = $(this).find("option:selected").text();
-                var n = $(this).attr("id");
-                p = p.toLowerCase();
-                $(this).parents("li").find("input").attr("data-info", p)
-            });
-            $("#apache_select_PHP").change(function() {
-                var n = $(this).val();
-                j(n, "apache_select_", "apache_")
-            });
-            $("#select_PHP").change(function() {
-                var n = $(this).val();
-                j(n, "select_", "data_")
-            });
-
-            function j(p, r, q) {
-                var n = "4.4";
-                switch (p) {
-                    case "5.2":
-                        n = "4.0";
-                        break;
-                    case "5.3":
-                        n = "4.0";
-                        break;
-                    case "5.4":
-                        n = "4.4";
-                        break;
-                    case "5.5":
-                        n = "4.4";
-                        break;
-                    default:
-                        n = "4.7"
-                }
-                $("#" + r + "phpMyAdmin option[value='" + n + "']").attr("selected", "selected").siblings().removeAttr("selected");
-                $("#" + q + "phpMyAdmin").attr("data-info", "phpmyadmin " + n)
-            }
-            $("#select_MySQL,#apache_select_MySQL").change(function() {
-                var n = $(this).val();
-                a(n)
-            });
-
-            $("#apache_select_Apache").change(function() {
-                var apacheVersion = $(this).val();
-                if (apacheVersion == '2.2') {
-                    layer.msg(lan.bt.install_apache22);
-                } else {
-                    layer.msg(lan.bt.install_apache24);
-                }
-            });
-
-            $("#apache_select_PHP").change(function() {
-                var apacheVersion = $("#apache_select_Apache").val();
-                var phpVersion = $(this).val();
-                if (apacheVersion == '2.2') {
-                    if (phpVersion != '5.2' && phpVersion != '5.3' && phpVersion != '5.4') {
-                        layer.msg(lan.bt.insatll_s22 + 'PHP-' + phpVersion, { icon: 5 });
-                        $(this).val("5.4");
-                        $("#apache_PHP").attr('data-info', 'php 5.4');
-                        return false;
-                    }
-                } else {
-                    if (phpVersion == '5.2') {
-                        layer.msg(lan.bt.insatll_s24 + 'PHP-' + phpVersion, { icon: 5 });
-                        $(this).val("5.4");
-                        $("#apache_PHP").attr('data-info', 'php 5.4');
-                        return false;
-                    }
-                }
-            });
-
-            function a(n) {
-                memSize = bt.get_cookie("memSize");
-                max = 64;
-                msg = "64M";
-                switch (n) {
-                    case "5.1":
-                        max = 256;
-                        msg = "256M";
-                        break;
-                    case "5.7":
-                        max = 1500;
-                        msg = "2GB";
+				var p = $(this).find("option:selected").text();
+				var n = $(this).attr("id");
+				p = p.toLowerCase();
+				$(this).parents("li").find("input").attr("data-info", p)
+			});
+			$("#apache_select_PHP").change(function() {
+				var n = $(this).val();
+				j(n, "apache_select_", "apache_")
+			});
+			$("#select_PHP").change(function() {
+				var n = $(this).val();
+				j(n, "select_", "data_")
+			});
+	
+			function j(p, r, q) {
+				var n = "4.4";
+				switch(p) {
+					case "5.2":
+						n = "4.0";
+						break;
+					case "5.3":
+						n = "4.0";
+						break;
+					case "5.4":
+						n = "4.4";
+						break;
+					case "5.5":
+						n = "4.4";
+						break;
+					default:
+						n = "4.9"
+				}
+				$("#" + r + "phpMyAdmin option[value='" + n + "']").attr("selected", "selected").siblings().removeAttr("selected");
+				$("#"+q+"phpMyAdmin").attr("data-info", "phpmyadmin " + n)
+			}
+			$("#select_MySQL,#apache_select_MySQL").change(function() {
+				var n = $(this).val();
+				a(n)
+			});
+			
+			$("#apache_select_Apache").change(function(){
+				var apacheVersion = $(this).val();
+				if(apacheVersion == '2.2'){
+					layer.msg(lan.bt.install_apache22);
+				}else{
+					layer.msg(lan.bt.install_apache24);
+				}
+			});
+			
+			$("#apache_select_PHP").change(function(){
+				var apacheVersion = $("#apache_select_Apache").val();
+				var phpVersion = $(this).val();
+				if(apacheVersion == '2.2'){
+					if(phpVersion != '5.2' && phpVersion != '5.3' && phpVersion != '5.4'){
+						layer.msg(lan.bt.insatll_s22+'PHP-' + phpVersion,{icon:5});
+						$(this).val("5.4");
+						$("#apache_PHP").attr('data-info','php 5.4');
+						return false;
+					}
+				}else{
+					if(phpVersion == '5.2'){
+						layer.msg(lan.bt.insatll_s24+'PHP-' + phpVersion,{icon:5});
+						$(this).val("5.4");
+						$("#apache_PHP").attr('data-info','php 5.4');
+						return false;
+					}
+				}
+			});
+	
+			function a(n) {
+				memSize = bt.get_cookie("memSize");
+				max = 64;
+				msg = "64M";
+				switch(n) {
+					case "5.1":
+						max = 256;
+						msg = "256M";
+						break;
+					case "5.7":
+						max = 1500;
+						msg = "2GB";
                         break;
                     case "8.0":
                         max = 5000;
                         msg = "6GB";
                         break;
-                    case "5.6":
-                        max = 800;
-                        msg = "1GB";
-                        break;
-                    case "AliSQL":
-                        max = 800;
-                        msg = "1GB";
-                        break;
-                    case "mariadb_10.0":
-                        max = 800;
-                        msg = "1GB";
-                        break;
-                    case "mariadb_10.1":
-                        max = 1500;
-                        msg = "2GB";
-                        break
-                }
-                if (memSize < max) {
-                    layer.msg(lan.bt.insatll_mem.replace("{1}", msg).replace("{2}", n), {
-                        icon: 5
-                    })
-                }
-            }
-            var de = null;
-            $(".onekey").click(function() {
-                if (de) return;
-                var v = $(this).prev().find("input").eq(0).prop("checked") ? "1" : "0";
-                var r = $(this).parents(".rec-box-con").find(".rec-list li").length;
-                var n = "";
-                var q = "";
-                var p = "";
-                var x = "";
-                var s = "";
-                de = true;
-                for (var t = 0; t < r; t++) {
-                    var w = $(this).parents(".rec-box-con").find("ul li").eq(t);
-                    var u = w.find("input");
-                    if (u.prop("checked")) {
-                        n += u.attr("data-info") + ","
-                    }
-                }
-                q = n.split(",");
-                loadT = layer.msg(lan.bt.install_to, {
-                    icon: 16,
-                    time: 0,
-                    shade: [0.3, "#000"]
-                });
-
-                install_plugin(q);
-
-                function install_plugin(q) {
-                    if (!q[0]) return;
-                    p = q[0].split(" ")[0].toLowerCase();
-                    x = q[0].split(" ")[1];
-                    if (p == 'pure-ftpd') p = 'pureftpd';
-                    if (p == 'php') p = 'php-' + x;
-
+					case "5.6":
+						max = 800;
+						msg = "1GB";
+						break;
+					case "AliSQL":
+						max = 800;
+						msg = "1GB";
+						break;
+					case "mariadb_10.0":
+						max = 800;
+						msg = "1GB";
+						break;
+					case "mariadb_10.1":
+						max = 1500;
+						msg = "2GB";
+						break
+				}
+				if(memSize < max) {
+					layer.msg( lan.bt.insatll_mem.replace("{1}",msg).replace("{2}",n), {
+						icon: 5
+					})
+				}
+			}
+			var de = null;
+			$(".onekey").click(function() {
+				if(de) return;
+				var v = $(this).prev().find("input").eq(0).prop("checked") ? "1" : "0";
+				var r = $(this).parents(".rec-box-con").find(".rec-list li").length;
+				var n = "";
+				var q = "";
+				var p = "";
+				var x = "";
+				var s = "";
+				de = true;
+				for(var t = 0; t < r; t++) {
+					var w = $(this).parents(".rec-box-con").find("ul li").eq(t);
+					var u = w.find("input");
+					if(u.prop("checked")) {
+						n += u.attr("data-info") + ","
+					}
+				}
+				q = n.split(",");
+				loadT = layer.msg(lan.bt.install_to, {
+					icon: 16,
+					time: 0,
+					shade: [0.3, "#000"]
+				});
+				
+				install_plugin(q);
+				
+				function install_plugin(q){
+					if(!q[0]) return;
+					p = q[0].split(" ")[0].toLowerCase();
+					x = q[0].split(" ")[1];
+					if(p=='pure-ftpd') p = 'pureftpd';
+					if(p=='php') p = 'php-'+x;
+					
                     s = "sName=" + p + "&version=" + x + "&type=" + v + "&id=" + (t + 1);
-                    bt.send('install_plugin', 'plugin/install_plugin', s, function() {
-                        q.splice(0, 1);
-                        install_plugin(q);
-                    });
-                }
-
-                layer.close(loadT);
-                layer.close(k);
-                setTimeout(function() {
-                    GetTaskCount()
-                }, 2000);
-                layer.msg(lan.bt.install_ok, {
-                    icon: 1
-                });
-                setTimeout(function() {
-                    task()
-                }, 1000)
+					bt.send('install_plugin','plugin/install_plugin',s,function(){
+						q.splice(0,1);
+						install_plugin(q);
+					});
+				}
+				
+				layer.close(loadT);
+				layer.close(k);
+				setTimeout(function() {
+					GetTaskCount()
+				}, 2000);
+				layer.msg(lan.bt.install_ok, {
+					icon: 1
+				});
+				setTimeout(function() {
+					task()
+				}, 1000)
             });
+            
             //InstallTips();
             fly("onekey")
         })
@@ -2862,7 +2951,7 @@ bt.config = {
             closeBtn: 2,
             shift: 5,
             shadeClose: false,
-            content: "<div class='bt-form pd20 pb70'><div class='line'><span class='tname'>" + lan.bt.user + "</span><div class='info-r'><input class='bt-input-text' type='text' name='password1' id='p1' value='' placeholder='" + lan.bt.user_new + "' style='width:100%'/></div></div><div class='line'><span class='tname'>" + lan.bt.pass_re + "</span><div class='info-r'><input class='bt-input-text' type='text' name='password2' id='p2' value='' placeholder='" + lan.bt.pass_re_title + "' style='width:100%'/></div></div><div class='bt-form-submit-btn'><button type='button' class='btn btn-danger btn-sm' onclick=\"layer.closeAll()\">" + lan.public.close + "</button> <button type='button' class='btn btn-success btn-sm' onclick=\"bt.config.set_username(1)\">" + lan.public.edit + "</button></div></div>"
+             content: "<div class='bt-form pd20 pb70'><div class='line'><span class='tname' style='width:100px;'>" + lan.bt.user + "</span><div class='info-r' style='margin-left:100px;'><input class='bt-input-text' type='text' name='password1' id='p1' value='' placeholder='" + lan.bt.user_new + "' style='width:100%'/></div></div><div class='line'><span class='tname' style='width:100px;'>" + lan.bt.pass_re + "</span><div class='info-r' style='margin-left:100px;'><input class='bt-input-text' type='text' name='password2' id='p2' value='' placeholder='" + lan.bt.pass_re_title + "' style='width:100%'/></div></div><div class='bt-form-submit-btn'><button type='button' class='btn btn-danger btn-sm' onclick=\"layer.closeAll()\">" + lan.public.close + "</button> <button type='button' class='btn btn-success btn-sm' onclick=\"bt.config.set_username(1)\">" + lan.public.edit + "</button></div></div>"
         })
     },
     set_password: function(type) {
@@ -3246,6 +3335,7 @@ bt.firewall = {
 }
 
 bt.soft = {
+    SSL_flag : false,
     pub: {
         wxpayTimeId: 0
     },
@@ -3417,6 +3507,24 @@ bt.soft = {
                 case "day":
                     unit = lan.public_backup.day;
                     break;
+                case "1month":
+                    unit = lan.public_backup.month;
+                    break;
+                case "3month":
+                    unit = lan.public_backup.month3;
+                    break;
+                case "6month":
+                    unit = lan.public_backup.month6;
+                    break;
+                case "1year":
+                    unit = lan.public_backup.year1;
+                    break;
+                case "2year":
+                    unit = lan.public_backup.year2;
+                    break;
+                case "3year":
+                    unit = lan.public_backup.year3;
+                    break;
                 case "1":
                     unit = lan.public_backup.month1;
                     break;
@@ -3474,10 +3582,15 @@ bt.soft = {
                 })
             }
         },
-        create_order_voucher: function(pid, code, callback) {
+         get_check_out_info: function(order_no, callback) {
+            bt.send('get_stripe_session_id', 'auth/get_stripe_session_id', {order_no:order_no}, function(rdata) {
+                if (callback) callback(rdata);
+            })
+        },
+        create_order_voucher: function(pid, code, coupon_id, cycle, cycle_unit, charge_type,callback) {
             var loading = bt.load();
             if (pid) {
-                bt.send('create_order_voucher_plugin', 'auth/create_order_voucher_plugin', { pid: pid, code: code }, function(rdata) {
+                bt.send('create_order_voucher_plugin', 'auth/create_order_voucher_plugin', { pid: pid, coupon_id:coupon_id, cycle:cycle, cycle_unit:cycle_unit, charge_type:charge_type}, function(rdata) {
                     loading.close();
                     if (callback) callback(rdata);
                     bt.msg(rdata);
@@ -3492,49 +3605,619 @@ bt.soft = {
                     }
                 })
             }
+            
+           
         },
-        create_order: function(pid, cycle, callback) {
-            if (pid) {
-                bt.send('get_buy_code', 'auth/get_buy_code', { pid: pid, cycle: cycle }, function(rdata) {
-                    if (callback) callback(rdata);
-                })
+        create_order: function(data, callback) {
+            if (data.pid) {
+                var loadO = bt.load("Getting product information!")
+                bt.soft.get_panel_ssl_status(function(res){
+                    loadO.close()
+                    if(res.status==true){
+                    var _cycle_unit = $('#libPay-content .li-con .active  span').attr("data-unit").indexOf("year")>-1?"year":"month";
+                    data.cycle_unit = _cycle_unit,data.charge_type = 1;
+                    bt.send('get_buy_code', 'auth/get_buy_code', data, function(rdata) {
+                        loadO.close()
+                        //rdata = {"status": true, "msg": "weixin://wxpay/bizpayurl?pr=lR6zKqTzz", "ali_msg": "https://qr.alipay.com/bax08320q6rajjt4tytr20f6", "data": {"wxoid": 4533185, "oid": 102639743, "old_id": 0, "ptype": 1, "attach": "161155796024137", "pid": 100000045, "openid": "", "uid": 233152, "transaction_id": "", "cash_fee": 9900, "out_trade_no": "161155796033618", "msg": "宝塔面板", "status": 0, "addtime": 1611557960, "endtime": 0, "idc_code": "", "is_fapiao": 0, "is_pro": 0, "is_activity": 0, "source": 2, "update_at": "2021-01-25 14:59:20", "update_reason": "", "invite_user": 0, "agent_level": 1, "coupon_type": 0, "create_reason": "", "create_at": "2021-01-25 14:59:20", "product_cycle": 0, "product_cycle_unit": "month", "auth_serial": "", "parent_id": 0, "pay_info": null, "order_title": "", "coupon_id": 0, "station_count": 1, "buyer_ip": "", "pay_way": 1}}
+                        if (callback) callback(rdata);
+                    })
+                }else{
+                     $('#libPay-content').empty()
+                    $('#libPay-pay').empty().append('<div style="font-size: 18px;position: relative;top: 25px;text-align: center;">Please apply for SSL before purchasing!</div>')
+                    return false;
+                }
+            });  
             } else {
-                bt.send('create_order', 'auth/create_order', { cycle: cycle }, function(rdata) {
+                bt.send('create_order', 'auth/create_order', { cycle: data.cycle }, function(rdata) {
                     if (callback) callback(rdata);
                 })
             }
         }
     },
-    updata_pro: function() {
-        bt.pub.get_user_info(function(rdata) {
-            if (!rdata.status) {
-                bt.pub.bind_btname(0, function(rdata) {
-                    if (rdata.status) bt.soft.updata_pro();
-                })
-                return;
-            }
-            var payhtml = '<div class="libPay" style="padding:15px 30px 30px 30px">\
-					<div class="libpay-con">\
+    updata_commercial_view:function(){
+		layer.closeAll();
+		var html = '<div class="business-edition">\
+			<div class="price-compare-item">\
+				<div class="price-header">Pro<san class="recommend-tips"></span></div>\
+				<div class="title-wrap">\
+					<p class="title-info">推荐5人以上或企事业单位购买</p>\
+				</div>\
+				<div class="title-desc">\
+					<p>包含所有<b>专业版</b>功能和：</p>\
+					<p>1、提供在线客服工单协助</p>\
+					<p>2、多用户管理插件（仅可查看日志）</p>\
+					<p>3、后期还会有10+企业版专用插件</p>\
+					<p>4、官方跟进响应的QQ群（需年付）</p>\
+					<p>4、官方跟进响应的QQ群（需年付）</p>\
+					<p>5、不定期线上运维培训（需年付）</p>\
+				</div>\
+				<div class="price-wrap">\
+					<div class="month">\
+						<span class="price-unit">￥</span>\
+						<span class="price-value">148</span>\
+						<span class="price-ext">/月</span>\
 					</div>\
-					<p style="position:absolute;bottom:17px;left:0;width:100%;text-align:center;color:red">' + lan.public_backup.buy_multiplev_bt_pro + '<a class="btlink" href="https://www.bt.cn/download/linuxpro.html#price" target="_blank">' + lan.public_backup.goto_bt + '</a></p>\
-				</div>';
-
-            bt.open({
-                type: 1,
-                title: lan.public_backup.up_pro_use_allplug_free,
-                area: ['616px', '540px'],
-                closeBtn: 2,
-                shadeClose: false,
-                content: payhtml
-            });
-            setTimeout(function() {
-                bt.soft.get_product_discount('', 0);
-                $(".pay-btn-group > li").click(function() {
-                    $(this).addClass("active").siblings().removeClass("active");
+					<div class="div-line"></div>\
+					<div class="year">\
+						<span class="price-unit">￥</span>\
+						<span class="price-value">999</span>\
+						<span class="price-ext">/年</span>\
+					</div>\
+				</div>\
+				<button class="btn-price" data-type="ltd">Upgrade</button>\
+			</div>\
+		</div>';
+		layer.open({
+			type: 1 
+			,closeBtn:2
+			,area: '500px'
+			,title: lan.public_backup.up_pro_use_allplug_free
+			,shade: 0.6 
+			,anim: 0
+			,content:html,
+			success:function(layero,index){
+				$('.btn-price').click(function(){
+					var _type = $(this).attr('data-type');
+					if(_type == 'pro'){
+						bt.soft.updata_pro();
+						layer.close(index);
+					}else{
+						bt.soft.updata_ltd();
+						layer.close(index);
+					}
+				})
+			}
+		})
+	},
+	get_index_renew:function(){
+	 	bt.soft.get_product_renew(function(res){
+            var html = $('<div><div>');
+            if(res.length >0){
+                bt.soft.each(res,function(index,item){
+                    html.append($('<p><span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px;"></span>' + item.msg +'&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:;" class="set_messages_status" style="color:#777">[ 忽略提示 ]</a></p>').data(item))
                 });
-            }, 100)
-        })
+                $('#messageError').show().html(html);
+                $('.set_messages_status').click(function(){
+                    var data = $(this).parent().data(),that = this;
+                    bt.soft.set_product_renew_status({id:data.id,state:0},function(rdata){
+                        if(!res.status){
+                            console.log(that);
+                            $(that).parent().remove();
+                        }
+                        bt.msg(rdata);
+                    });
+                })
+            }  
+
+	 	});
+	},
+	// 获取产品续费状态
+	get_product_renew:function(callback){
+	    $.get('/message/get_messages',function(res){
+	        if(res.status === false){
+	            layer.msg(res.msg,{icon:2});
+	            return false;
+	        }
+            if(callback) callback(res)
+        });
+	},
+	//获取产品ssl
+	get_panel_ssl_status:function(callback){
+	    $.post('/config?action=get_panel_ssl_status',function(res){
+            if(callback) callback(res)
+        });
+	},
+	set_product_renew_status:function(data,callback){
+	    $.post('/message/status_message',{id:data.id,state:data.state},function(res){
+	        if(res.status === false){
+	            layer.msg(res.msg,{icon:2});
+	            return false;
+	        }
+            if(callback) callback(res)
+        });
+	},
+	// 产品支付视图(配置参数)
+	product_pay_view:function(config){
+	    if(!bt.get_cookie('bt_user_info')){
+	        bt.pub.bind_btname(function(){
+                window.location.reload();
+            });
+	        return false;
+	    }
+		if(typeof config == "string") config = JSON.parse(config);
+		config = $.extend({
+			plugin:null,
+			renew:null,
+			active:'',
+			type:'',
+			pro: parseInt(bt.get_cookie('pro_end')),
+			ltd: parseInt(bt.get_cookie('ltd_end'))}
+			,config);
+		var title = '',that = this,endTime = null;
+		if(!config.is_alone){
+			if(config.plugin){ // 条件：当前为插件
+				title = (config.renew == -1?'Buy ':'续费') + config.name;
+				ndTime = config.renew != -1?config.renew:null
+			}else if(config.pro == -1 && config.ltd == -1){  // 条件：专业版和企业版都没有购买过
+				title = 'Upgrade to Pro, all plugins are free to use';
+			}else if(config.ltd > 0){  // 条件：企业版续费
+				title = '续费' +(config.name == ''?'宝塔专业版':config.name);
+				endTime = config.ltd;
+			}else if(config.pro > 0 || config.pro == -2){  // 条件：专业版续费
+				title = '续费' + (config.name == ''?'宝塔专业版':config.name);
+				endTime = config.pro;
+			}else if(config.ltd == -2){
+				title = '续费' + (config.name == ''?'宝塔专业版':config.name);
+				endTime = config.ltd;
+			}
+		}else{
+			title = (config.ltd>0?'续费':'购买')+'宝塔企业版';
+		}
+		bt.open({
+			type:1,
+			title:title,
+			area:['650px','760px'],
+			shadeClose:false,
+			content:'\
+			<div class="libPay plr15" id="pay_product_view">\
+				<div class="libPay-item" style="margin-bottom:20px">\
+					<span class="bindUser">Account: <span></span></span>\
+					<span class="endTime">Expire date：<span></span></span>\
+				</div>\
+				<div class="libPay-item" id="libPay-type">\
+					<div class="li-tit c3">Type</div>\
+					<div class="li-con c5"></div>\
+				</div>\
+				<div class="libPay-item" id="libPay-mode">\
+					<div class="li-tit c4">Payment method</div>\
+					<div class="li-con c5"></div>\
+				</div>\
+				<div class="libPay-item" id="libPay-content">\
+					<div class="li-tit c4">Choose your plan</div>\
+					<div class="li-con c5"></div>\
+				</div>\
+				<div class="libPay-item" id="libPay-pay"></div>\
+				<div class="libPay-mask"></div>\
+			</div>',
+			success:function(indexs,layers){
+			    var bt_user_info = bt.get_cookie('bt_user_info');
+			    if(!bt_user_info){
+			        bt.pub.get_user_info(function(res){
+			            $('.bindUser span').html(res.data.username +'<a href="javascript:;" class="btlink ml5">Change</a>');
+			        });
+			    }else{
+			        $('.bindUser span').html(JSON.parse(bt_user_info).data.username +'<a href="javascript:;" class="btlink ml5">Change</a>');
+			    }
+				endTime != null?$('.endTime span').html(endTime > parseInt(new Date().getTime() /1000)?bt.format_data(endTime):'<i style="color:red;font-style:inherit">Expired</i>'):$('.endTime').hide();
+				$('.bindUser').on('click','a',function(){
+					bt.pub.bind_btname(function(){
+					 	bt.soft.product_pay_view(config);
+					 });
+				});
+                var arry = [];
+                //config.name = '堡塔企业级防篡改';
+				if(config.plugin) arry.push({title:config.name,name:config.name,ps:'Plug-in only',pid:config.pid,active:((config.pro < 0 && config.ltd < 0) || (config.type == 12 && config.ltd<0)?true:false)});
+				// if((((config.pro > 0  || config.pro == -2 || config.ltd < 0) && ((config.ltd > 0 && config.ltd != config.pro) || config.ltd < 0) && config.type != 12) || config.limit == 'pro' || (config.ltd < 0 && config.pro == -1)) && config.type != 12 && ((config.ltd < 0 && config.pro > 0) || (config.ltd < 0 && config.pro < 0))){
+				// 	arry.push({title:'<span class="pro-font-icon"></span>',name:'',pid:'',ps:'推荐个人购买',active:  (((config.type == 8 && !config.plugin) || config.limit == 'pro' || (config.pro > 0 || config.pro == -2)) && config.ltd < 0 && (config.ltd == -2?(config.pro == -2?false:true):true))});
+				// }
+			
+				// if((((config.ltd > 0 || config.ltd == -2 || config.pro == -2) || (config.ltd == -1 && config.pro == -1) || config.limit == 'ltd') && (config.pro < 0 || (config.pro >= 0 && config.ltd >0))) || (config.is_alone && config.pid == 100000032)){
+				// 	arry.push({title:'<span class="ltd-font-icon"></span>',name:'宝塔面板企业版',ps:'推荐企业购买',pid:100000032,recommend:true,active:((config.type == 12 && !config.plugin && config.ltd > 0) || config.limit == 'ltd' || (config.renew == config.ltd && config.ltd > 0)? true:false)});
+				// }
+				// if(config.type == 12 && config.pro >= 0 && config.ltd < 0) $('.pro-tips').html('温馨提示：专业版升级企业版需要手动结算当前专业版授权，<a href="https://www.bt.cn/bbs/thread-50342-1-1.html" target="_blank" class="btlink">《专业版和企业版切换教程》</a>').css('color','red');
+				$('#libPay-type .li-con').append(that.product_pay_swicth('type',arry));
+				if(config.source) bt.set_cookie('pay_source',config.source);
+				that.each(arry,function(index,item){ 
+					if(item.active){
+						that.product_pay_page_refresh($.extend({condition:1},item));
+					}
+				});
+			},
+			end:function(){
+				clearInterval(bt.soft.pub.wxpayTimeId);
+				bt.clear_cookie('pay_source');
+			}
+		});
+	},
+    product_cache:{}, //产品周期缓存
+    order_cache:{},
+    // 获取产品周期 ，并进行对象缓存
+    get_product_discount_cache:function(config,callback){
+        var that = this;
+        if(typeof this.product_cache[config.pid] != "undefined"){
+            if(callback) callback(this.product_cache[config.pid]);
+        }else{
+            bt.soft.pro.get_product_discount_by(config.name,function(rdata){
+                //rdata = {"36": {"discount": 1, "did": 0, "price": 3564, "name": "正常", "sprice": 3564}, "24": {"discount": 1, "did": 0, "price": 2376, "name": "正常", "sprice": 2376}, "12": {"discount": 1, "did": 0, "price": 1188, "name": "正常", "sprice": 1188}, "6": {"discount": 1, "did": 0, "price": 594, "name": "正常", "sprice": 594}, "3": {"discount": 1, "did": 0, "price": 297, "name": "正常", "sprice": 297}, "1": {"discount": 1, "did": 0, "price": 99, "name": "正常", "sprice": 99}, "pid": "100000045"};
+                if(typeof rdata.status === "boolean"){
+                    if(!rdata.status) return false;
+                }
+                that.product_cache[config.pid] = rdata;
+                setTimeout(function(){ delete that.product_cache[config.pid] },60000);
+                if(callback) callback(rdata);
+            });
+        }
     },
+    // 产品页面刷新
+    product_pay_page_refresh: function (config){
+        var condition = config.condition, that = this;
+        switch (condition){
+            case 1:
+                var loadT = bt.load();
+                 bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
+                    bt.soft.pro.get_voucher(config.pid, function (rdata) {
+                        loadT.close();
+                        var _arry = [{ title: '微信支付', condition: 2 },{ title: 'Stripe', condition: 3 }, { title: 'voucher', condition: 4 },{title: "Authorization", condition: 7}];
+                        if(res == null) res = [];
+                        if (rdata == null) rdata = [];
+                        _arry[res.length > 0? '3' :(rdata.length > 0 ? '2' : '1')].active = true;
+                        $('#libPay-mode .li-con').empty().append(
+                            that.product_pay_swicth('payment', {
+                                name: config.name,
+                                pid: config.pid,
+                                data: _arry,
+                                voucher_data: rdata
+                            })
+                        );
+                        config.condition = (res.length > 0?7:(rdata.length > 0?4:2))
+                        if (rdata.length > 0) config.voucher_data = rdata;
+                        if(res.length > 0) config.voucher_data = res;
+                        that.product_pay_page_refresh(config);
+                    });
+                });
+                break;
+            case 2:
+            case 3:
+                $('#libPay-content .li-tit').text('Choose your plan');
+                config.pay = condition;
+                if (config.pid == '100000030') {
+                    $('#libPay-tips').show();
+                } else {
+                    $('#libPay-tips').hide();
+                }
+                var loadT = bt.load();
+                bt.soft.get_product_discount_cache(config,function (rdata){
+                    loadT.close();
+					var _arry = [],index = $('#libPay-content .pay-cycle-btn.active').index() || 3;
+					if(index < 0) index = 3
+                    try {
+                        delete rdata.pid
+                    } catch (error) {
+                        console.log(rdata.pid);
+                    }
+                    that.each(rdata, function (key, item) {
+                        _arry.push($.extend({ cycle: parseInt(key) }, item));
+                    });
+                    _arry[index].active = true;
+                    $('#libPay-content .li-con').empty().append(
+                        that.product_pay_swicth('time',{ name: config.name, pid: config.pid, data: _arry})
+                    );
+                    config.condition = 5;
+                    config = $.extend(config, _arry[index]);
+                    that.product_pay_page_refresh(config);
+                });
+                break;
+            case 4:
+                var loadP = bt.load("Getting deduction volume information!")
+                clearInterval(bt.soft.pub.wxpayTimeId);
+                $('#libPay-content .li-tit').text('Vouchers');
+                $('#libPay-pay').removeAttr('data-qecode');
+                $('#libPay-tips').hide();
+                function callback(rdata) {
+                    loadP.close()
+                    if(rdata == null)  rdata = [];
+                    if(rdata.length == 0){
+                        $('#libPay-content .li-con').empty()
+                        that.product_pay_page_refresh({ condition: 6, pid: '', code: false });
+                        return false;
+                    }
+                    rdata[0].active = true;
+                    $('#libPay-content .li-con').empty().append(
+                        that.product_pay_swicth('voucher', {
+                            name: config.name,
+                            pid: config.pid,
+                            data: rdata
+                        })
+                    );
+                    config.condition = 6;
+                    that.product_pay_page_refresh($.extend(config, rdata[0]));
+                }
+                if (config.voucher_data) {
+                    callback(config.voucher_data);
+                } else {
+                    bt.soft.pro.get_voucher(config.pid, function (rdata) {
+                        callback(rdata);
+                    });
+                }
+                break;
+            case 5:
+                $('#libPay-content .li-con').css('height', 'auto');
+                $('.libPay-mask').show();
+                if($('#libPay-pay').attr('data-qecode')) {
+                var qcode = $('#libPay-content li').eq(config.dom_index).data('qrcode-url');
+                $('#libPay-pay').find('.sale-price').html((config.price).toFixed(2));
+                $('#libPay-pay').find('.cost-price').css('display', (config.sprice > config.price ? 'inline-block' : 'none')).html('$ '+(config.sprice).toFixed(2));
+                $('#libPay-pay').find('#PayQcode').html('<div class="loading">Loading, please wait!</div>');
+                if (qcode) {
+                        $('#libPay-pay').find('#PayQcode').empty().qrcode(qcode);
+                        that.product_pay_monitor({ pid: config.pid, name: config.name });
+                        $('.libPay-mask').hide();
+                        return false;
+                    }
+                }else{
+                    $('#libPay-pay').html('<div class="cloading">Loading, please wait!</div>');
+				}
+				var paream = {pid:config.pid,cycle:config.cycle},pay_source = bt.get_cookie('pay_source');
+				if(pay_source) paream.source = bt.get_cookie('pay_source');
+				if(!paream.pid) delete paream.pid;
+                that.pro.create_order(paream,function (rdata){
+                    if (rdata.status === false){
+                        bt.set_cookie('force', 1);
+                        if (soft) soft.flush_cache();
+                        layer.msg(rdata.msg, { icon: 2 });
+                        return;
+                    }
+                    config.pay = parseInt($('#libPay-mode .pay-cycle-btn.active').data('condition'));
+                    // 二维码显示界面
+                    $('#libPay-pay').empty().append(that.product_pay_swicth((config.pay == 2?'wechat':'alipay'),$.extend({ order_no:rdata.order_no,stripe_publishable_key:rdata.stripe_publishable_key}, config)));
+                });
+                 $("#libPay-pay").on('click','#checkout-button',function(){
+                    var loadO = bt.load("Getting the session ID,Please waiting!")
+                    var stripe = Stripe($(this).data('keys'));
+                    that.pro.get_check_out_info($(this).data('code'),function(res){
+                        loadO.close()
+                        if(res.id){
+                            stripe.redirectToCheckout({ sessionId: res.id });
+                        }else{
+                            layer.msg("Payment order failed, please contact administrator!", { icon: 2 });
+                        }
+                    })
+                 })
+                break;
+            case 6:
+                var _html = $('<div class="paymethod-submit text-center"></div>'), _button = $('<button class="btn btn-success btn-sm f16 ' + (config.serial_no ? '' : 'disabled') + '" style="width: 200px; height: 40px;">' + (config.serial_no ? 'Pay' : 'No vouchers') + '</button>');
+                _button.click(function (ev) {
+                    if (!config.serial_no){
+                        layer.msg('No vouchers');
+                        return false;
+                    }
+                    bt.soft.pro.create_order_voucher(config.pid, config.code, config.id, config.cycle, config.cycle_unit , config.charge_type,function (rdata) {
+                        layer.closeAll();
+                        bt.set_cookie('force', 1);
+                        if (soft) soft.flush_cache();
+                        bt.msg(rdata.res);
+                    });
+                });
+                $('#libPay-pay').empty().append(_html.append(_button));
+                break;
+            case 7:
+                var loadA = bt.load("Obtaining authorization information!")
+                $('#libPay-content .li-tit').text('Authorization information');
+                bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
+                    loadA.close();
+                    if(res.status==false){
+                         layer.msg(res.msg, { icon: res.status ? 1 : 2 });
+                         return false;
+                    }
+                    _html = $('<ul class="pay-btn-group"></ul>');
+                    
+                    if(res.length==0){
+                         _html.append($('<li class="pay-cycle-btn" id="no_authorization" style="width:180px;cursor: default;" disabled="disabled"><span> No authorization</span></li>'));
+                            
+                    }
+                    $.each(res, function (index, item) {
+                        _html.append($('<li class="pay-cycle-btn  ' + (index==0 ? 'active' : '') + '" data-id="' + item.serial_no + '" style="width:180px"><span>' + bt.format_data(item.end_time) + '</span></li>'));
+                    });
+                    $('#libPay-content .li-con').empty().append(_html);
+                    $('#libPay-pay').empty().append($('<div class="lib-price-box text-center"><button type="button" id="authorization" style="margin-top:30px" class="btn btn-success ">Authorization</button></div>'));
+                    //授权
+                    $('#authorization').unbind();
+                    if($('#libPay-content .li-con ul li  span').html().indexOf("No authorization")>0){
+                        $('#authorization').attr("disabled","disabled");
+                    }else{
+                        $('#authorization').removeAttr("disabled");
+                        $('#authorization').on('click',function(e){
+                        var loadU = bt.load("Under licensing!")
+                        var _serial_no = $('#libPay-content .active').attr('data-id');
+                        if(typeof _serial_no ==undefined) return false;
+                        bt.send('auth_activate', 'auth/auth_activate', { serial_no: _serial_no }, function(res) {
+                            loadU.close()
+                            if(res){
+                                layer.msg(res.msg, { icon: res.status ? 1 : 2 });
+                                if(res.status){
+                                    window.location.reload();
+                                }
+                            }
+                        });
+                    })
+                    }
+                });
+                break;
+            
+        }
+    },
+    // 产品购买，渲染方法
+    product_pay_swicth: function (type,config){
+        var _html = '', that = this;
+        switch (type) {
+            case 'type': // 产品类型（配置参数）
+                _html = $('<ul class="li-c-item"></ul>');
+                this.each(config, function (index, item) {
+                    _html.append($('<li class="pay-cycle-btn ' + (item.active ? 'active' : '') + '">' +
+                        (item.recommend ? '<span class="recommend-pay-icon"></span>' : '') +
+                        '<span class="item-name pull-left">' + item.title + '</span>' +
+                        '<span class="item-info f12 pull-right c7">' + item.ps + '</span>' +
+                        '</li>').data(item).click(function(ev){
+                            var data = $(this).data();
+                            if (!$(this).hasClass('active')) that.product_pay_page_refresh($.extend({ condition: 1 }, data));
+                            $(this).addClass('active').siblings().removeClass('active');
+
+                        }));
+                });
+                break;
+           case 'payment':// 产品付款方式
+                _html = $('<ul class="pay-btn-group"></ul>');
+                this.each(config.data, function (index, item) {
+                    if(item.title !="微信支付"){
+                        _html.append($('<li class="pay-cycle-btn ' + (item.active ? 'active' : '') + '" data-condition="' + item.condition + '"><span>' + item.title + '</span></li>').data($.extend({ pid: config.pid, name: config.name }, item)).click(function (ev) {
+                            var data = $(this).data();
+                            if (!$(this).hasClass('active')) that.product_pay_page_refresh($.extend({ condition: $(this).attr('data-condition') }, data));
+                            $(this).addClass('active').siblings().removeClass('active');
+                        }));
+                    }
+                });
+                break;
+            case 'time': // 产品开通时长（配置参数）
+                _html = $('<ul class="pay-btn-group"></ul>');
+                this.each(config.data, function (index, item) {
+                    _html.append($('<li class="pay-cycle-btn ' + (item.active ? 'active' : '') + '"><span data-unit='+item.cycle_unit+'>' + that.pro.conver_unit(item.cycle + item.cycle_unit) + '</span>' + (item.discount_rate != 1 ? '<em style="width:50px">' + (100-item.discount_rate * 100) + '% off</em>' : '') + '</li>').data($.extend({ pid: config.pid, dom_index: index }, item)).click(function (ev) {
+                        var data = $(this).data();
+                        if (!$(this).hasClass('active')) that.product_pay_page_refresh($.extend({ condition: 5 }, data));
+                        $(this).addClass('active').siblings().removeClass('active');
+                    }));
+                });
+                break;
+            case 'voucher':// 产品抵扣卷（配置参数）
+                _html = $('<ul class="pay-btn-group"></ul>');
+                this.each(config.data, function (index, item){
+                    _html.append($('<li class="pay-cycle-btn ' + (item.active ? 'active' : '') + '"><span>' + (item.cycle_unit == 'month' && item.cycle == 999 ? '永久' : (item.cycle + that.pro.conver_unit(item.cycle_unit))) + '</span></li>').data($.extend({ pid: config.pid }, item)).click(function (ev) {
+                        var data = $(this).data();
+                        $(this).addClass('active').siblings().removeClass('active');
+                        that.product_pay_page_refresh($.extend({ condition: 6 }, data));
+                    }));
+                });
+                break;
+            case 'wechat':
+            case 'alipay':
+                // console.log(config)
+                _html = $('<div class="lib-price-box text-center">' +
+                    '<span class="lib-price-name f14"><b>Total</b></span>' +
+                    '<span class="price-txt"><b class="sale-price">$' + (config.price).toFixed(2) + '</b></span>' +
+                    '<s class="cost-price" style="display: ' + (config.market_price > config.price ? 'inline-block' : 'none') + ';">$ ' + (config.market_price).toFixed(2) + '</s></div>' +
+                    '<div class="lib-price-box text-center">' +
+                    '<button type="button" id="checkout-button" style="margin-top:30px" class="btn btn-success " data-code="'+config.order_no+'" data-keys="'+config.stripe_publishable_key+'">Checkout</button>'
+                );
+                // $(_html).find('#PayQcode').qrcode(config.data);
+                $('.libPay-mask').hide();
+                // that.product_pay_monitor({ pid: config.pid, name: config.name });
+                break;
+        }
+        return _html;
+    },
+
+	// 支付状态监听
+	product_pay_monitor:function(config){
+		var that = this;
+		function callback(rdata){
+			if(rdata.status){
+				clearInterval(bt.soft.pub.wxpayTimeId);
+				layer.closeAll();
+				var title = '';
+				if(config.pid == 100000032 || config.pid === ''){
+					title = config.pid === ''?'专业版支付成功！':'企业版支付成功！';
+					setTimeout(function(){
+						bt.set_cookie('force',1);
+						if(soft) soft.flush_cache();
+						location.reload(true);
+					},2000);   // 需要重服务端重新获取软件列表，并刷新软件管理浏览器页面
+				}else{
+					title = config.name + '插件支付成功！';
+					setTimeout(function(){
+						bt.set_cookie('force',1);
+						if(soft) soft.flush_cache();
+						location.reload(true);
+					},2000);   // 需要重服务端重新获取软件列表，
+				}
+				bt.msg({ msg:title, icon: 1,shade: [0.3, "#000"] });
+			}
+		}
+		clearInterval(bt.soft.pub.wxpayTimeId);
+		function intervalFun(){
+			if(config.pid){
+				that.pro.get_plugin_coupon(config.pid,callback);
+			}else{
+				that.pro.get_re_order_status(callback);
+			}
+		}
+		intervalFun();
+		bt.soft.pub.wxpayTimeId = setInterval(function () {
+			intervalFun();
+		},2500);
+	},
+	updata_ltd:function(is_alone){
+		var param = {name:'宝塔面板企业版',pid:100000032,limit:'ltd'};
+		if(is_alone || false) $.extend(param,{source:5,is_alone:true});
+		bt.soft.product_pay_view(param);
+	},
+    //遍历数组和对象
+	each:function(obj, fn){
+		var key,that = this;
+		if(typeof fn !== 'function') return that;
+		obj = obj || [];
+		if(obj.constructor === Object){
+			for(key in obj){
+			if(fn.call(obj[key], key, obj[key])) break;
+			}
+		} else {
+			for(key = 0; key < obj.length; key++){
+			if(fn.call(obj[key], key, obj[key])) break;
+			}
+		}
+		return that;
+    },
+    updata_pro:function(){
+		bt.soft.product_pay_view({name:'',pid:'',limit:'pro'});
+	},
+    // updata_pro: function() {
+    //     bt.pub.get_user_info(function(rdata) {
+    //         if (!rdata.status) {
+    //             bt.pub.bind_btname(0, function(rdata) {
+    //                 if (rdata.status) bt.soft.updata_pro();
+    //             })
+    //             return;
+    //         }
+    //         var payhtml = '<div class="libPay" style="padding:15px 30px 30px 30px">\
+	// 				<div class="libpay-con">\
+	// 				</div>\
+	// 				<p style="position:absolute;bottom:17px;left:0;width:100%;text-align:center;color:red">' + lan.public_backup.buy_multiplev_bt_pro + '<a class="btlink" href="https://www.bt.cn/download/linuxpro.html#price" target="_blank">' + lan.public_backup.goto_bt + '</a></p>\
+	// 			</div>';
+
+    //         bt.open({
+    //             type: 1,
+    //             title: lan.public_backup.up_pro_use_allplug_free,
+    //             area: ['616px', '540px'],
+    //             closeBtn: 2,
+    //             shadeClose: false,
+    //             content: payhtml
+    //         });
+    //         setTimeout(function() {
+    //             bt.soft.get_product_discount('', 0);
+    //             $(".pay-btn-group > li").click(function() {
+    //                 $(this).addClass("active").siblings().removeClass("active");
+    //             });
+    //         }, 100)
+    //     })
+    // },
     re_plugin_pay: function(pluginName, pid, type) {
         bt.pub.get_user_info(function(rdata) {
             if (!rdata.status) {
@@ -3690,7 +4373,7 @@ bt.soft = {
                         if (rdata[i].cycle == 999) {
                             cyc = lan.public_backup.permanent
                         }
-                        con += '<li class="pay-cycle-btn" data-code="' + rdata[i].code + '"><span>' + cyc + '</span></li>';
+                        con += '<li class="pay-cycle-btn" data-coupon-id ="' + rdata[i].id + '" data-charge-type ="' + rdata[i].charge_type + '"  data-code="' + rdata[i].code + '"><span>' + cyc + '</span></li>';
                     }
                 }
                 $("#couponlist").html('<ul class="pay-btn-group">' + con + '</ul>');
@@ -3699,15 +4382,21 @@ bt.soft = {
                     $(".paymethod-submit button").css({ "background-color": "#20a53a", "border-color": "#20a53a" });
                 });
                 $(".paymethod-submit button").click(function() {
-                    var code = $("#couponlist .pay-btn-group .active").attr("data-code");
+                    var _active = $("#couponlist .pay-btn-group .active"),
+                    code = _active.attr("data-code"),
+                    coupon_id = _active.attr("data-coupon-id"),
+                    charge_type = _active.attr("data-charge-type");
+                    
+                    var  _span = $("#couponlist .pay-btn-group .active span"),
+                    cycle = parseInt(_span.html()),cycle_unit = _span.html.indexOf("Month")?"month":"year";
                     if (code == undefined) {
                         layer.msg(lan.public_backup.choose_cash_coupon);
                     } else {
-                        bt.soft.pro.create_order_voucher(pid, code, function(rdata) {
+                        bt.soft.pro.create_order_voucher(pid, code, coupon_id, cycle, cycle_unit, charge_type,function(rdata) {
                             layer.closeAll();
                             bt.set_cookie('force', 1);
                             if (soft) soft.flush_cache();
-                            bt.msg(rdata);
+                            bt.msg(rdata.res);
                         });
                     }
                 })
@@ -3855,6 +4544,8 @@ bt.soft = {
         bt.send('get_soft_list', 'plugin/get_soft_list', { p: p, type: type, tojs: 'soft.get_list', force: force, query: search }, function(rdata) {
             if (loading) loading.close();
             bt.set_cookie('force', 0);
+            bt.set_cookie('ltd_end',rdata.ltd);
+			bt.set_cookie('pro_end',rdata.pro);
             if (callback) callback(rdata);
         })
     },
@@ -4095,13 +4786,16 @@ bt.soft = {
         }
         return name
     },
-    install: function(name) {
-        _this = this;
+    install: function(name,that) {
+        var _this = this;
+        if(bt.soft.is_install){
+			layer.msg('Installing other software, please operate later!',{icon:0});
+			return false;
+		}
         _this.get_soft_find(name, function(rdata) {
             var arrs = ['apache', 'nginx', 'mysql'];
             if ($.inArray(name, arrs) >= 0 || name.indexOf('php-') >= 0) {
-                var SelectVersion = '',
-                    shtml = name;
+                var SelectVersion = '', shtml = name;
                 if (rdata.versions.length > 1) {
                     for (var i = 0; i < rdata.versions.length; i++) {
                         var item = rdata.versions[i];
@@ -4164,9 +4858,8 @@ bt.soft = {
                     if (rdata.versions.length > 1) {
                         _this.install_soft(rdata, version, type);
                     } else {
-                        _this.install_soft(rdata, rdata.versions[0].m_version, type);
+                        _this.install_soft(rdata, rdata.versions[0].m_version, type,that);
                     }
-
                 });
             } else if (rdata.versions.length > 1) {
                 var SelectVersion = '';
@@ -4191,10 +4884,10 @@ bt.soft = {
                     var info = $("#SelectVersion").val().toLowerCase();
                     name = info.split(" ")[0];
                     version = info.split(" ")[1];
-                    _this.install_soft(rdata, version);
+                    _this.install_soft(rdata, version,0,that);
                 });
             } else {
-                _this.install_soft(rdata, rdata.versions[0].m_version);
+                _this.install_soft(rdata, rdata.versions[0].m_version,0,that);
             }
         })
     },
@@ -4215,46 +4908,109 @@ bt.soft = {
     loadT: null,
     speed_msg: "<pre style='margin-bottom: 0px;height:250px;text-align: left;background-color: #000;color: #fff;white-space: pre-wrap;' id='install_show'>[MSG]</pre>",
     //显示进度窗口
-    show_speed_window: function(msg, callback) {
-        bt.soft.loadT = layer.open({
-            title: false,
-            type: 1,
-            closeBtn: 0,
-            shade: 0.3,
-            area: "500px",
-            offset: "30%",
-            content: bt.soft.speed_msg.replace('[MSG]', msg),
-            success: function(layers, index) {
-                setTimeout(function() {
-                    bt.soft.show_speed();
-                }, 1000);
-                if (callback) callback();
-            }
-        });
-    },
-    install_soft: function(item, version, type) { //安装单版本	
+    // show_speed_window: function(msg, callback) {
+    //     bt.soft.loadT = layer.open({
+    //         title: false,
+    //         type: 1,
+    //         closeBtn: 0,
+    //         shade: 0.3,
+    //         area: "500px",
+    //         offset: "30%",
+    //         content: bt.soft.speed_msg.replace('[MSG]', msg),
+    //         success: function(layers, index) {
+    //             setTimeout(function() {
+    //                 bt.soft.show_speed();
+    //             }, 1000);
+    //             if (callback) callback();
+    //         }
+    //     });
+    // },
+    show_speed_window: function(config,callback){
+		if(!config.soft) config['soft'] = {type:10}
+		if(config.soft.type == 5){ //使用消息盒子安装
+			if (callback) callback();
+			return false;
+		}else if(config.soft.type == 10 && !config.status){ //第三方安装, 非安装，仅下载安装脚本
+			if (callback) callback();
+			return false;
+		}
+		layer.closeAll();
+		bt.soft.loadT = layer.open({
+			title: config.title || 'Executing setup script, please wait...',
+			type:1,
+			closeBtn:false,
+			maxmin:true,
+			shade:false,
+			skin:'install_soft',
+			area:["500px",'300px'],
+			content: "<pre style='width:500px;margin-bottom: 0px;height:100%;border-radius:0px; text-align: left;background-color: #000;color: #fff;white-space: pre-wrap;' id='install_show'>"+ config.msg +"</pre>",
+			success:function(layers,index){
+				$(config.event).removeAttr('onclick').html('Installing');
+				$('.layui-layer-max').hide();
+				bt.soft.is_loop_speed = true;
+				bt.soft.is_install = true;
+				bt.soft.show_speed();
+				if (callback) callback();
+			},
+			end:function(){
+				bt.soft.is_install = false;
+				bt.soft.is_loop_speed = false;
+			},
+			min:function(){
+				$('.layui-layer-max').show();
+			},
+			restore:function(){
+				$('.layui-layer-max').hide();
+			}
+		});
+	},
+    // install_soft: function(item, version, type,that) { //安装单版本	
+    //     if (type == undefined) type = 0;
+    //     item.title = bt.replace_all(item.title, '-' + version, '');
+    //     var msg = item.type != 5 ? lan.soft.lib_insatll_confirm.replace('{1}', item.title) : lan.get('install_confirm', [item.title, version]);
+
+    //     bt.confirm({ msg: '<div style="word-break: break-word;">'+msg+'</div>', title: item.type != 5 ? lan.soft.lib_install : lan.soft.install_title }, function() {
+    //         bt.soft.show_speed_window(lan.soft.lib_install_the, function() {
+    //             bt.send('install_plugin', 'plugin/install_plugin', { sName: item.name, version: version, type: type }, function(rdata) {
+
+    //                 if (rdata.size) {
+    //                     layer.close(bt.soft.loadT);
+    //                     _this.install_other(rdata)
+    //                     return;
+    //                 }
+    //                 layer.close(bt.soft.loadT);
+    //                 bt.pub.get_task_count();
+    //                 if (soft) soft.get_list();
+    //                 bt.msg(rdata);
+    //             })
+    //         })
+    //     })
+    // },
+    install_soft: function (item, version, type,that) { //安装单版本
         if (type == undefined) type = 0;
-        item.title = bt.replace_all(item.title, '-' + version, '');
-        var msg = item.type != 5 ? lan.soft.lib_insatll_confirm.replace('{1}', item.title) : lan.get('install_confirm', [item.title, version]);
-
-        bt.confirm({ msg: msg, title: item.type != 5 ? lan.soft.lib_install : lan.soft.install_title }, function() {
-            bt.soft.show_speed_window(lan.soft.lib_install_the, function() {
-                bt.send('install_plugin', 'plugin/install_plugin', { sName: item.name, version: version, type: type }, function(rdata) {
-
-                    if (rdata.size) {
-                        layer.close(bt.soft.loadT);
-                        _this.install_other(rdata)
-                        return;
-                    }
-                    layer.close(bt.soft.loadT);
-                    bt.pub.get_task_count();
-                    if (soft) soft.get_list();
-                    bt.msg(rdata);
-                })
-            })
-        })
+        var loadT = '';
+		item.title = bt.replace_all(item.title,'-' + version,'');
+		layer.confirm(item.type!=5?lan.soft.lib_insatll_confirm.replace('{1}',item.title):lan.get('install_confirm',[item.title,version]),{ title:item.type!=5?lan.soft.lib_install:lan.soft.install_title,icon:0,closeBtn:2},function(){
+				layer.closeAll();
+				bt.soft.show_speed_window({title:'Installing '+ item.title +', please wait...',msg:lan.soft.lib_install_the,soft:item,event:that},function(){
+					if(item.type == 10) loadT = layer.msg('Getting third party installation information, please wait<img src="/static/img/ing.gif">', { icon: 16, time: 0, shade: [0.3, '#000'] });
+					bt.send('install_plugin', 'plugin/install_plugin', { sName: item.name, version: version, type: type }, function (rdata) {
+						if (rdata.size) {
+							layer.close(loadT);
+							bt.soft.install_other(rdata,status);
+							return;
+						}
+						layer.close(bt.soft.loadT);
+						bt.pub.get_task_count(function(rdata){
+							if(rdata > 0 && item.type === 5) messagebox();
+						});
+						if(typeof soft != "undefined") soft.get_list();
+						bt.msg(rdata);
+					})
+				})
+		})
     },
-    install_other: function(data) {
+    install_other: function (data) {
         layer.closeAll();
         var loadT = layer.open({
             type: 1,
@@ -4263,8 +5019,9 @@ bt.soft = {
             closeBtn: 2,
             shift: 5,
             shadeClose: false,
+            btn:[data.update ? lan.public_backup.update : lan.public_backup.install,lan.public_backup.cancel],
             content: '<style>\
-                        .install_three_plugin{padding:25px;padding-bottom:70px}\
+                        .install_three_plugin{padding:25px;}\
                         .plugin_user_info p { font-size: 14px;}\
                         .plugin_user_info {padding: 15px 30px;line-height: 26px;background: #f5f6fa;border-radius: 5px;border: 1px solid #efefef;}\
                         .btn-content{text-align: center;margin-top: 25px;}\
@@ -4279,31 +5036,49 @@ bt.soft = {
                             <p><b>' + lan.public_backup.source + '</b><a class="btlink" href="' + data.home + '" target="_blank">' + data.home + '</a></p>\
                         </div>\
                         <ul class="help-info-text c7">\
-                            ' + (data.update ? "<li>" + lan.public_backup.update_wait + "</li>" : "<li>" + lan.public_backup.install_wait + "</li><li>" + lan.public_backup.exist_cover + "</li>") + '\
+                            '+ (data.update ? "<li>" + lan.public_backup.update_wait + "</li>" : "<li>" + lan.public_backup.install_wait + "</li><li>" + lan.public_backup.exist_cover + "</li>")+'\
                         </ul>\
-                        <div class="bt-form-submit-btn"><button type="button" class="btn btn-sm btn-danger mr5" onclick="layer.closeAll()">' + lan.public_backup.cancel + '</button><button type="button" class="btn btn-sm btn-success" onclick="soft.input_zip(\'' + data.name + '\',\'' + data.tmp_path + '\')">' + lan.public_backup.confirm + (data.update ? lan.public_backup.update : lan.public_backup.install) + '</button></div>\
-                    </div>'
+                    </div>',
+            yes:function(index,event){
+            	soft.input_zip(data.name,data.tmp_path,data);
+            }
         });
     },
-    update_soft: function(name, title, version, min_version, update_msg) {
+    update_soft: function(name, title, version, min_version, update_msg,type) {
         var _this = this;
         var msg = "<li>" + lan.public_backup.update_tips + "</li>";
         if (name == 'mysql') msg = "<ul style='color:red;'><li>" + lan.public_backup.db_update_tips + "</li><li>" + lan.public_backup.update_tips1 + "</li><li>" + lan.public_backup.update_tips + "</li></ul>";
         if (update_msg) msg += '<div style="    margin-top: 10px;"><span style="font-size: 14px;font-weight: 900;">Update description: </span><hr style="margin-top: 5px; margin-bottom: 5px;" /><pre>' + update_msg.replace(/(_bt_)/g, "\n") + '</pre><hr style="margin-top: -5px; margin-bottom: -5px;" /></div>';
         bt.show_confirm(lan.public_backup.update + '[' + title + ']', lan.public_backup.update_tips2.replace('{1}', title).replace('{2}', version).replace('{3}', min_version), function() {
-            bt.soft.show_speed_window('Updating to [' + title + '-' + version + '.' + min_version + '],Please wait...', function() {
-                bt.send('install_plugin', 'plugin/install_plugin', { sName: name, version: version, upgrade: version }, function(rdata) {
-                    if (rdata.size) {
-                        _this.install_other(rdata)
-                        return;
-                    }
-                    layer.close(bt.soft.loadT);
-                    bt.pub.get_task_count();
-                    if (soft) soft.get_list();
-                    if (rdata.status === true && rdata.msg.indexOf('queue') === -1) rdata.msg = 'Update completed!';
-                    bt.msg(rdata);
-                })
-            })
+            // bt.soft.show_speed_window('Updating to [' + title + '-' + version + '.' + min_version + '],Please wait...', function() {
+            //     bt.send('install_plugin', 'plugin/install_plugin', { sName: name, version: version, upgrade: version }, function(rdata) {
+            //         if (rdata.size) {
+            //             _this.install_other(rdata)
+            //             return;
+            //         }
+            //         layer.close(bt.soft.loadT);
+            //         bt.pub.get_task_count(function(rdata){
+			// 			if(rdata > 0 && item.type === 5) messagebox();
+			// 		});
+            //         if (soft) soft.get_list();
+            //         if (rdata.status === true && rdata.msg.indexOf('queue') === -1) rdata.msg = 'Update completed!';
+            //         bt.msg(rdata);
+            //     })
+            // })
+            bt.soft.show_speed_window({title:'Updating to [' + title+'-'+version+'.'+min_version+'],Please wait...',status:true,soft:{type:parseInt(type)}},function(){
+				bt.send('install_plugin', 'plugin/install_plugin', { sName: name, version: version, upgrade: version }, function (rdata) {
+					if (rdata.size) {
+						_this.install_other(rdata)
+						return;
+					}
+					layer.close(bt.soft.loadT);	
+					bt.pub.get_task_count(function(rdata){
+						if(rdata > 0 && item.type === 5) messagebox();
+					});
+					if(typeof soft != "undefined") soft.get_list();
+					bt.msg(rdata);	
+				})
+			})
         }, msg);
     },
     un_install: function(name) {
@@ -4685,9 +5460,9 @@ bt.site = {
             if (callback) callback(rdata);
         })
     },
-    del_dirbind: function(id, webname, callback) {
+    del_dirbind: function(id, callback) {
         var loading = bt.load();
-        bt.send('DelDirBinding', 'site/DelDirBinding', { id: id , webname: webname}, function(rdata) {
+        bt.send('DelDirBinding', 'site/DelDirBinding', { id: id}, function(rdata) {
             loading.close();
             if (callback) callback(rdata);
         })
@@ -4948,9 +5723,9 @@ bt.site = {
             if (callback) callback(rdata);
         })
     },
-    set_site_security: function(id, name, fix, domains, status, callback) {
+    set_site_security: function(id, name, fix, domains, status, return_rule, callback) {
         var loading = bt.load(lan.site.the_msg);
-        bt.send('SetSecurity', 'site/SetSecurity', { id: id, name: name, fix: fix, domains: domains, status: status }, function(rdata) {
+        bt.send('SetSecurity', 'site/SetSecurity', { id: id, name: name, fix: fix, domains: domains, status: status, return_rule:return_rule }, function(rdata) {
             loading.close();
             if (callback) callback(rdata);
         })
@@ -5177,6 +5952,14 @@ bt.site = {
                         layer.close(loadT);
                     });
                 });
+                $(".line").on("mouseenter", ".bt-ico-ask", function () {
+                    var idd = $(this).attr('class').split(" ")[1], tip = $(this).attr('tip');
+                    layer.tips(tip, '.' + idd + '', { tips: [1, '#d4d4d4'], time: 0, area: '300px'});
+                });
+                $(".line").on("mouseleave", ".bt-ico-ask", function () {
+                    layer.closeAll('tips');
+                });
+                $(".domain_textarea").parents(".bt-form").css({'max-height': '565px','overflow': 'auto'});
             })
         })
     },
@@ -5190,25 +5973,33 @@ bt.site = {
             if (callback) callback(rdata);
         })
     },
-    stop: function(id, name) {
+    stop: function(id, name, callback) {
         bt.confirm({ title: lan.public_backup.stop_site + ' 【' + name + '】', msg: lan.site.site_stop_txt }, function(index) {
             if (index > 0) {
                 var loadT = bt.load();
                 bt.send('SiteStop', 'site/SiteStop', { id: id, name: name }, function(ret) {
                     loadT.close();
-                    if (site) site.get_list();
+                    if(site && typeof callback == "undefined"){
+						site.get_list();
+					}else{
+						if(callback) callback(ret);
+					}
                     bt.msg(ret);
                 });
             }
         });
     },
-    start: function(id, name) {
+    start: function(id, name,callback) {
         bt.confirm({ title: lan.public_backup.start_site + ' 【' + name + '】', msg: lan.site.site_start_txt }, function(index) {
             if (index > 0) {
                 var loadT = bt.load();
                 bt.send('SiteStart', 'site/SiteStart', { id: id, name: name }, function(ret) {
                     loadT.close();
-                    if (site) site.get_list();
+                    if(site && typeof callback == "undefined"){
+						site.get_list();
+					}else{
+						if(callback) callback(ret);
+					}
                     bt.msg(ret);
                 });
             }
@@ -5234,10 +6025,11 @@ bt.site = {
             });
         });
     },
-    set_endtime: function(id, dates) {
+    set_endtime: function(id, dates,callback) {
         var loadT = bt.load(lan.site.saving_txt);
         bt.send('SetEdate', 'site/SetEdate', { id: id, edate: dates }, function(rdata) {
             loadT.close();
+            if(callback) callback(rdata);
         });
     },
     get_default_path: function(type, callback) {
@@ -5279,6 +6071,27 @@ bt.site = {
     get_dir_auth: function(id, callback) {
         var loading = bt.load();
         bt.send('get_dir_auth', 'site/get_dir_auth', { id: id }, function(rdata) {
+            loading.close();
+            if (callback) callback(rdata);
+        })
+    },
+    get_php_deny: function(website, callback) {
+        var loading = bt.load();
+        bt.send('get_file_deny', 'config/get_file_deny', { website: website }, function(rdata) {
+            loading.close();
+            if (callback) callback(rdata);
+        })
+    },
+    edit_php_deny: function(data, callback) {
+        var loading = bt.load();
+        bt.send('set_file_deny', 'config/set_file_deny', data, function(rdata) {
+            loading.close();
+            if (callback) callback(rdata);
+        })
+    },
+    del_php_deny: function(data, callback) {
+        var loading = bt.load();
+        bt.send('del_file_deny', 'config/del_file_deny', data, function(rdata) {
             loading.close();
             if (callback) callback(rdata);
         })
@@ -5519,26 +6332,27 @@ bt.data = {
             list: [{
                     title: lan.public_backup.domain,
                     name: 'webname',
+                    class:"domain_textarea",
                     items: [{
                         type: 'textarea',
                         width: '420px',
+                        height:'80px',
+                        style:'padding:10px;line-height: 15px;',
                         callback: function(obj) {
                             var array = obj.val().split("\n");
                             var ress = array[0].split(":")[0];
                             var res = bt.strim(ress.replace(new RegExp(/([-.])/g), '_'));
                             var ftp_user = res;
                             var data_user = res;
-                            if (!isNaN(res.substr(0, 1))) {
+                            if (!isNaN(res.substr(0, 1))){
                                 ftp_user = 'ftp_' + ftp_user;
                                 data_user = 'sql_' + data_user;
                             }
                             if (data_user.length > 16) data_user = data_user.substr(0, 16)
                             obj.data('ftp', ftp_user);
                             obj.data('database', data_user);
-
                             $('.ftp_username').val(ftp_user);
                             $('.datauser').val(data_user);
-
                             var _form = obj.parents('div.bt-form');
                             var _path_obj = _form.find('input[name="path"]');
                             var path = _path_obj.val();
@@ -5546,8 +6360,60 @@ bt.data = {
                             var dPath = bt.rtrim(defaultPath, '/');
                             if (path.substr(0, dPath.length) == dPath) _path_obj.val(dPath + '/' + ress);
                             _form.find('input[name="ps"]').val(ress);
+                            clearTimeout(bt.setTimeouts);
+                            bt.setTimeouts =  setTimeout(function(){
+                                if(bt.check_domain(ress)){
+                                    if(ress.indexOf('www.') !== 0){
+                                        $('.redirect_checkbox label').html('Add [<span>www.'+ ress +'</span>] domain name to the main domain name');
+                                    }else if(ress.indexOf('www.') === 0){
+                                        $('.redirect_checkbox label').html('Add <span>'+ ress.replace(/^www\./,'') +'</span> to the main domain');
+                                    }
+                                    $('.redirect_checkbox').show();
+                                }else{
+                                    $('.redirect_checkbox,redirect_tourl').hide();
+                                }
+                            },100);
                         },
                         placeholder: lan.public_backup.domian_tips
+                    }]
+                },{
+                    title:'',
+                    name:'redirect',
+                    class:'redirect_checkbox',
+                    hide:true,
+                    items:[{
+                        type:'checkbox',
+                        text:'',
+                        callback:function(obj){
+                            var domain = $('.redirect_checkbox').find('span').text(),
+                                domain_textarea = $('.domain_textarea textarea'),
+                                domainList = domain_textarea.val().split('\n'),
+                                domain_one = domainList[0].split(":")[0];
+                            if(obj.redirect){
+                                domain_textarea.val(domain_textarea.val() + '\r' + domain);
+                                var line = $(bt.render_form_line({
+                                    title:"Redirect",
+                                    name:'tourl',
+                                    class:'redirect_tourl',
+                                    items:[{
+                                        type:'radio_group',
+                                        value:0,
+                                        list:[
+                                            {value:0,text:'No'},
+                                            {value:1,text:'Redirect the main domain name [<span title="'+ domain_one +'"> '+ domain_one +'</span>] to [<span title="'+ domain +'">'+ domain +'</span>] domain name'},
+                                            {value:2,text:'Redirect the [<span title="'+ domain +'">'+ domain +'</span>] domain name to the main domain [<span title="'+ domain_one +'">'+ domain_one +'</span>]'}
+                                        ]
+                                    }],
+                                }).html);
+                                $('.redirect_checkbox.line').after(line);
+                            }else{
+                                for(var i = domainList.length-1;i >= 0;i--){
+                                    if(domainList[i] === domain) domainList.splice(i,1);
+                                }
+                                domain_textarea.val(domainList.join('\n'));
+                                $('.redirect_checkbox').next('.redirect_tourl').remove();
+                            }
+                        }
                     }]
                 },
                 { title: lan.public_backup.ps, name: 'ps', placeholder: lan.public_backup.site_ps },
@@ -5575,15 +6441,17 @@ bt.data = {
                                 var ftp_user = $('textarea[name="webname"]').data('ftp');
                                 var item = {
                                     title: lan.public_backup.set_ftp,
+                                    class: 'pb0',
+                                    name: 'ftp_tips',
                                     items: [
-                                        { name: 'ftp_username', title: lan.public_backup.user_name, width: '173px', value: ftp_user },
-                                        { name: 'ftp_password', title: lan.public_backup.pass, width: '173px', value: bt.get_random(16) }
+                                        { name: 'ftp_username', title: lan.public_backup.user_name, width: '160px', value: ftp_user },
+                                        { name: 'ftp_password', title: lan.public_backup.pass, width: '160px', value: bt.get_random(16) }
                                     ],
-                                    ps: lan.public_backup.ftp_tips
+                                    ps_help: lan.public_backup.ftp_tips
                                 }
                                 var _tr = bt.render_form_line(item)
 
-                                obj.parents('div.line').append('<div class="line" id=' + subid + '>' + _tr.html + '</div>');
+                                obj.parents('div.line').append('<div class="line pb0" id=' + subid + '>' + _tr.html + '</div>');
                             }
                         }
                     }]
@@ -5611,14 +6479,16 @@ bt.data = {
                                     var data_user = $('textarea[name="webname"]').data('database');
                                     var item = {
                                         title: lan.public_backup.db_set,
+                                        class: 'pb0',
+                                        name: 'sql_tips',
                                         items: [
-                                            { name: 'datauser', title: lan.public_backup.user_name, width: '173px', value: data_user },
-                                            { name: 'datapassword', title: lan.public_backup.pass, width: '173px', value: bt.get_random(16) }
+                                            { name: 'datauser', title: lan.public_backup.user_name, width: '160px', value: data_user },
+                                            { name: 'datapassword', title: lan.public_backup.pass, width: '160px', value: bt.get_random(16) }
                                         ],
-                                        ps: lan.public_backup.create_site_tips
+                                        ps_help: lan.public_backup.create_site_tips
                                     }
                                     var _tr = bt.render_form_line(item)
-                                    obj.parents('div.line').append('<div class="line" id=' + subid + '>' + _tr.html + '</div>');
+                                    obj.parents('div.line').append('<div class="line pb0" id=' + subid + '>' + _tr.html + '</div>');
                                 }
                             }
                         },
@@ -5667,6 +6537,31 @@ bt.data = {
                     items: [
 
                     ]
+                }, {
+                    title:'SSL',
+                    class:'ssl_checkbox',
+                    items:[{
+                        type:'checkbox',
+                        name:'set_ssl',
+                        text:'Apply for SSL',
+                        callback:function(obj){
+                            if(!obj.set_ssl){
+                                $('[name="force_ssl"]').prop('checked',false);
+                            }
+                        }
+                    },{
+                        type:'checkbox',
+                        name:'force_ssl',
+                        text:'HTTP redirect to HTTPS',
+                        callback:function(obj){
+                            if(obj.force_ssl){
+                                $('[name="set_ssl"]').prop('checked',true);
+                            }
+                        }
+                    },{
+                        type:'html',
+                        html:'<ul class="help-info-text c7" style="color:red;margin-top:0;"><li style="line-height: 17px;">If you need to apply for SSL, please make sure that the domain name has added A record resolution for the domain name</li></ul>'
+                    }]
                 }
             ],
             btns: [
@@ -5710,6 +6605,23 @@ bt.data = {
                         domain['count'] = list.length;
                         rdata.webname = JSON.stringify(domain);
                         rdata.port = port;
+                        rdata.tourl = parseInt($('[name="tourl"]:checked').val());
+                        if(rdata.redirect){
+                            if(rdata.tourl){
+                                var domains =  $('#tourl_'+ rdata.tourl).next().find('span');
+                                rdata.redirect = $(domains[0]).text();
+                                rdata.tourl = $(domains[1]).text();
+                            }else{
+                                console.log(rdata.tourl);
+                                delete rdata.redirect;
+                                delete rdata.tourl;
+                            }
+                        }else {
+                            delete rdata.redirect;
+                            delete rdata.tourl;
+                        }
+                        rdata.set_ssl = rdata.set_ssl?1:0
+                        rdata.force_ssl = rdata.force_ssl?1:0
                         bt.send('AddSite', 'site/AddSite', rdata, function(rRet) {
                             loading.close();
                             if (rRet.siteStatus) load.close();
@@ -5829,4 +6741,86 @@ bt.data = {
             ]
         }
     }
+}
+var form_group = {
+	select_all:function(_arry){
+		for(var j=0;j<_arry.length;j++){
+			this.select(_arry[j]);
+		}
+	},
+    select:function(elem){
+        $(elem).after('<div class="bt_select_group"><div class="bt_select_active"><span class="select_val default">请选择</span><span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span> </div><ul class="bt_select_ul"></ul></div>');
+		var _html = '',select_el = $(elem),select_group= select_el.next(),select_ul = select_group.find('.bt_select_ul'),select_val = select_group.find('.select_val'),select_icon = select_group.find('.glyphicon');
+		select_el.find('option').each(function(index,el){
+			var active = select_el.val() === $(el).val(),_val = $(el).val(),_name = $(el).text();
+			_html += '<li data-val="'+ _val +'" class="'+ (active?'active':'') +'">'+ _name +'</li>';
+			if(active){
+				select_val.text(_name);
+				_val !== ''?select_val.removeClass('default'):select_val.addClass('default');
+			}
+		});
+		select_el.hide();
+		select_ul.html(_html);
+		$(elem).next('.bt_select_group').find('.bt_select_active').unbind('click').click(function(e){
+			if(!$(this).next().hasClass('active')){
+				$(this).parents().find('li').siblings().find('.bt_select_ul.active').each(function(){
+					is_show_slect_parent(this);
+				});
+				$(this).parents('.rec-box').siblings().find('.bt_select_ul.active').each(function(){
+					is_show_slect_parent(this);
+					console.log(this);
+				});
+			}
+			is_show_select_ul($(this).next().hasClass('active'));
+			$(document).click(function(ev){
+				is_show_select_ul(true);
+				$(this).unbind('click');
+				ev.stopPropagation();
+				ev.preventDefault();
+			});
+			e.stopPropagation();
+			e.preventDefault();
+		});
+		$(elem).next('.bt_select_group').find('.bt_select_ul li').unbind('click').click(function(){
+			var _val = $(this).attr('data-val'),_name = $(this).text();
+			$(this).addClass('active').siblings().removeClass('active');
+			_val !== ''?select_val.removeClass('default'):select_val.addClass('default');
+			select_val.text(_name);
+			select_el.val(_val);
+			$(elem).find('option[value="'+ _val +'"]').change();
+			is_show_select_ul(true);
+		});
+		function is_show_slect_parent(that){
+			$(that).removeClass('active fadeInUp animated');
+			$(that).prev().find('.glyphicon').removeAttr('style');
+			$(that).parent().removeAttr('style');
+		}
+		function is_show_select_ul(active){
+			if(active){
+				select_group.removeAttr('style');
+				select_icon.css({'transform':'rotate(0deg)'});
+				select_ul.removeClass('active fadeInUp animated');
+			}else{
+				select_group.css('borderColor','#20a53a');
+				select_icon.css({'transform':'rotate(180deg)'});
+				select_ul.addClass('active fadeInUp animated');
+			}
+		}
+	},
+	checkbox:function(){
+		$('input[type="checkbox"]').each(function(index,el){
+			$(el).hide();
+			$(el).after('<div class="bt_checkbox_group '+ ($(this).prop("checked")?'active':'default') +'"></div>');
+		});
+		$('.bt_checkbox_group').click(function(){
+			$(this).prev().click();
+			if($(this).hasClass('active')){
+				$(this).removeClass('active');
+				$(this).prev().removeAttr('checked');
+			}else{
+				$(this).addClass('active');
+				$(this).prev().attr('checked','checked');
+			}
+		});
+	}
 }

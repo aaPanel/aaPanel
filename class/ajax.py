@@ -9,6 +9,7 @@
 from BTPanel import session,request
 import public,os,json,time,apache,psutil
 class ajax:
+    __official_url = 'https://brandnew.aapanel.com'
 
     def GetApacheStatus(self,get):
         a = apache.apache()
@@ -18,13 +19,13 @@ class ajax:
         try:
             pp = psutil.Process(i)
             if pp.name() not in process_cpu.keys():
-                process_cpu[pp.name()] = float(pp.cpu_percent(interval=0.1))
-            process_cpu[pp.name()] += float(pp.cpu_percent(interval=0.1))
+                process_cpu[pp.name()] = float(pp.cpu_percent(interval=0.01))
+            process_cpu[pp.name()] += float(pp.cpu_percent(interval=0.01))
         except:
             pass
     def GetNginxStatus(self,get):
         try:
-            if not os.path.exists('/www/server/nginx/sbin/nginx'): return public.returnMsg(False,'nginx is not install')
+            if not os.path.exists('/www/server/nginx/sbin/nginx'): return public.returnMsg(False,'NGINX_NOT_INSTALL')
             process_cpu = {}
             worker = int(public.ExecShell("ps aux|grep nginx|grep 'worker process'|wc -l")[0])-1
             workermen = int(public.ExecShell("ps aux|grep nginx|grep 'worker process'|awk '{memsum+=$6};END {print memsum}'")[0]) / 1024
@@ -36,6 +37,9 @@ class ajax:
             self.CheckStatusConf()
             result = public.httpGet('http://127.0.0.1/nginx_status')
             tmp = result.split()
+            if len(tmp) < 15:
+                result = public.ExecShell('curl http://127.0.0.1/nginx_status')[0]
+                tmp = result.split()
             data = {}
             if "request_time" in tmp:
                 data['accepts']  = tmp[8]
@@ -310,7 +314,7 @@ class ajax:
     def GetNetWorkIo(self,get):
         #取指定时间段的网络Io
         data =  public.M('network').dbfile('system').where("addtime>=? AND addtime<=?",(get.start,get.end)).field('id,up,down,total_up,total_down,down_packets,up_packets,addtime').order('id asc').select()
-        return self.ToAddtime(data)
+        return self.ToAddtime(data,None)
     
     def GetDiskIo(self,get):
         #取指定时间段的磁盘Io
@@ -342,7 +346,10 @@ class ajax:
             for i in range(length):
                 data[i]['addtime'] = time.strftime('%m/%d %H:%M',time.localtime(float(data[i]['addtime'])))
                 if tomem and data[i]['mem'] > 100: data[i]['mem'] = data[i]['mem'] / mPre
-            
+                if tomem in [None]:
+                    if type(data[i]['down_packets']) == str:
+                        data[i]['down_packets'] = json.loads(data[i]['down_packets'])
+                        data[i]['up_packets'] = json.loads(data[i]['up_packets'])
             return data
         else:
             count = 0
@@ -353,6 +360,10 @@ class ajax:
                     continue
                 value['addtime'] = time.strftime('%m/%d %H:%M',time.localtime(float(value['addtime'])))
                 if tomem and value['mem'] > 100: value['mem'] = value['mem'] / mPre
+                if tomem in [None]:
+                    if type(value['down_packets']) == str:
+                        value['down_packets'] = json.loads(value['down_packets'])
+                        value['up_packets'] = json.loads(value['up_packets'])
                 tmp.append(value)
                 count = 0
             return tmp
@@ -430,8 +441,8 @@ class ajax:
     #获取最新的5条测试版更新日志
     def get_beta_logs(self,get):
         try:
-            # data = json.loads(public.HttpGet(public.GetConfigValue('home') + '/api/panel/get_beta_logs_en'))
-            data = json.loads(public.HttpGet('https://console.aapanel.com/api/panel/get_beta_logs_en'))
+            # data = json.loads(public.HttpGet('https://console.aapanel.com/api/panel/get_beta_logs_en'))
+            data = json.loads(public.HttpGet('{}/api/panel/getBetaVersionLogs'.format(self.__official_url)))
             return data
         except:
             return public.returnMsg(False,'AJAX_CONN_ERR')
@@ -453,7 +464,7 @@ class ajax:
             import json
             conf_status = public.M('config').where("id=?",('1',)).field('status').find()
             if int(session['config']['status']) == 0 and int(conf_status['status']) == 0:
-                public.HttpGet(public.GetConfigValue('home')+'/Api/SetupCount?type=Linux')
+                public.HttpGet('{}/api/setupCount/setupPanel?type=Linux'.format(self.__official_url))
                 public.M('config').where("id=?",('1',)).setField('status',1)
             
             #取回远程版本信息
@@ -484,8 +495,8 @@ class ajax:
                 data['o'] = ''
                 filename = '/www/server/panel/data/o.pl'
                 if os.path.exists(filename): data['o'] = str(public.readFile(filename))
-                # sUrl = public.GetConfigValue('home') + '/api/panel/updateLinuxEn'
-                sUrl = 'https://console.aapanel.com/api/panel/updateLinuxEn'
+                # sUrl = 'https://console.aapanel.com/api/panel/updateLinuxEn'
+                sUrl = '{}/api/panel/updateLinuxEn'.format(self.__official_url)
                 updateInfo = json.loads(public.httpPost(sUrl,data))
                 if not updateInfo: return public.returnMsg(False,"CONNECT_ERR")
                 #updateInfo['msg'] = msg;
@@ -665,7 +676,10 @@ class ajax:
     #清理日志
     def delClose(self,get):
         if not 'uid' in session: session['uid'] = 1
-        if session['uid'] != 1: return public.returnMsg(False,'Permission denied!')
+        if session['uid'] != 1: return public.returnMsg(False,'PERMISSION_DENIED')
+        if 'tmp_login_id' in session:
+            return public.returnMsg(False,'PERMISSION_DENIED')
+
         public.M('logs').where('id>?',(0,)).delete()
         public.WriteLog('TYPE_CONFIG','LOG_CLOSE')
         return public.returnMsg(True,'LOG_CLOSE')
@@ -865,7 +879,7 @@ class ajax:
     
     #PHP
     <FilesMatch \.php$>
-           SetHandler "proxy:unix:/tmp/php-cgi-{}.sock|fcgi://localhost"
+           SetHandler "proxy:{}"
     </FilesMatch>
     
     #DENY FILES
@@ -883,7 +897,7 @@ class ajax:
        Require all granted
        DirectoryIndex index.php index.html index.htm default.php default.html default.htm
     </Directory>
-</VirtualHost>'''.format(v["ext"]["phpversion"],auth)
+</VirtualHost>'''.format(public.get_php_proxy(v["ext"]["phpversion"],'apache'),auth)
             public.writeFile("/www/server/panel/vhost/apache/phpmyadmin.conf", ssl_conf)
         else:
             if os.path.exists("/www/server/panel/vhost/nginx/phpmyadmin.conf"):
@@ -947,11 +961,11 @@ class ajax:
             if public.get_webserver() == 'nginx':
                 filename = public.GetConfigValue('setup_path') + '/nginx/conf/enable-php.conf'
                 conf = public.readFile(filename)
-                rep = r"php-cgi.*\.sock"
-                conf = re.sub(rep,'php-cgi-' + get.phpversion + '.sock',conf,1)
+                rep = r"(unix:/tmp/php-cgi.*\.sock|127.0.0.1:\d+)"
+                conf = re.sub(rep,public.get_php_proxy(get.phpversion,'nginx'),conf,1)
             elif public.get_webserver() == 'apache':
-                rep = r"php-cgi.*\.sock"
-                conf = re.sub(rep,'php-cgi-' + get.phpversion + '.sock',conf,1)
+                rep = r"(unix:/tmp/php-cgi.*\.sock\|fcgi://localhost|fcgi://127.0.0.1:\d+)"
+                conf = re.sub(rep,public.get_php_proxy(get.phpversion,'apache'),conf,1)
             else:
                 reg = r'/usr/local/lsws/lsphp\d+/bin/lsphp'
                 conf = re.sub(reg,'/usr/local/lsws/lsphp{}/bin/lsphp'.format(get.phpversion),conf)
@@ -983,7 +997,7 @@ class ajax:
             #return public.returnMsg(False,'ERROR');
 
     def ToPunycode(self,get):
-        import re;
+        import re
         get.domain = get.domain.encode('utf8')
         tmp = get.domain.split('.')
         newdomain = ''
@@ -1148,6 +1162,7 @@ class ajax:
     
     #检查用户绑定是否正确
     def check_user_auth(self,get):
+        import requests
         m_key = 'check_user_auth'
         if m_key in session: return session[m_key]
         u_path = 'data/userInfo.json'
@@ -1156,16 +1171,15 @@ class ajax:
         except: 
             if os.path.exists(u_path): os.remove(u_path)
             return public.returnMsg(False,'AJAX_USER_BE_OVERDUE')
-        pdata = {'access_key':userInfo['access_key'],'secret_key':userInfo['secret_key']}
-        result = public.HttpPost(public.GetConfigValue('home') + '/api/panel/check_auth_key',pdata,3)
-        if result == '0': 
+        url_headers = {"authorization":"bt {}".format(userInfo['token'])}
+        resp = requests.post('{}/api/user/verifyToken'.format(self.__official_url),headers=url_headers)
+        resp = resp.json()
+        if not resp['success']:
             if os.path.exists(u_path): os.remove(u_path)
             return public.returnMsg(False,'AJAX_USER_BE_OVERDUE')
-        if result == '1':
-            session[m_key] = public.returnMsg(True,'AJAX_USER_IS_VALID!')
+        else:
+            session[m_key] = public.returnMsg(True,'AJAX_USER_IS_VALID')
             return session[m_key]
-        return public.returnMsg(True,result)
-
 
     #PHP探针
     def php_info(self,args):
@@ -1178,6 +1192,8 @@ class ajax:
         if not os.path.exists('/etc/redhat-release'):
             php_ini = php_path + php_version + '/etc/php/'+args.php_version+'/litespeed/php.ini'
         tmp = public.ExecShell(php_bin + ' /www/server/panel/class/php_info.php')[0]
+        if tmp.find('Warning: JIT is incompatible') != -1:
+            tmp = tmp.strip().split('\n')[-1]
         result = json.loads(tmp)
         result['phpinfo'] = {}
         result['phpinfo']['php_version'] = result['php_version']

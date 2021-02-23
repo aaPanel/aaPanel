@@ -8,7 +8,8 @@
 # +-------------------------------------------------------------------
 import os
 import sys
-sys.path.append("class/")
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
 import public
 import db
 import json
@@ -197,7 +198,7 @@ class wxapp(SelfModule, ScanLogin):
                     if type(encryption_str) == str:
                         encryption_str = encryption_str.encode()
             if get['sgin'] == public.md5(binascii.hexlify(base64.b64encode(encryption_str))):
-                if get['client_ip'] in ['118.24.150.167', '103.224.251.67', '125.88.182.170', '47.52.194.186', '39.104.53.226','119.147.144.162']:
+                if public.GetClientIp() in ['118.24.150.167', '103.224.251.67', '125.88.182.170', '47.52.194.186', '39.104.53.226','119.147.144.162']:
                     return True
             return public.returnMsg(False, 'UNAUTHORIZED')
 

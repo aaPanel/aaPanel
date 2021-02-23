@@ -12,13 +12,13 @@ import os
 import time
 import re
 import uuid
-import threading
-import socket
-os.chdir('/www/server/panel')
+if not os.name in ['nt']:
+    os.chdir('/www/server/panel')
 if not 'class/' in sys.path:
     sys.path.insert(0,'class/')
 
-from flask import Flask,session,render_template,send_file,request,redirect,g,make_response,render_template_string,abort,Response as Resp
+from flask import Config, Flask, session, render_template, send_file, request, redirect, g, make_response, \
+    render_template_string, abort, Response as Resp
 from cachelib import SimpleCache
 from werkzeug.wrappers import Response
 from flask_session import Session
@@ -27,8 +27,9 @@ from flask_sockets import Sockets
 
 cache = SimpleCache()
 import public
-#初始化Flask应用
-app = Flask(__name__,template_folder="templates/" + public.GetConfigValue('template'))
+
+# 初始化Flask应用
+app = Flask(__name__, template_folder="templates/{}".format(public.GetConfigValue('template')))
 Compress(app)
 sockets = Sockets(app)
 
@@ -57,12 +58,9 @@ app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'BT_:'
 app.config['SESSION_COOKIE_NAME'] = "SESSIONID"
-app.config['PERMANENT_SESSION_LIFETIME'] = 86400
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30
 Session(app)
 
-
-from datetime import datetime
-import socket
 import common
 
 #初始化路由
@@ -130,6 +128,7 @@ if admin_path in admin_path_checks: admin_path = '/bt'
 #Flask请求勾子
 @app.before_request
 def request_check():
+    g.request_time = time.time()
     #路由和URI长度过滤
     if len(request.path) > 128: return abort(403)
     if len(request.url) > 1024: return abort(403)
@@ -171,9 +170,14 @@ def request_check():
 #Flask 请求结束勾子
 @app.teardown_request
 def request_end(reques = None):
+    if request.path in ['/service_status']: return
     not_acts = ['GetTaskSpeed','GetNetWork','check_pay_status','get_re_order_status','get_order_stat']
     key = request.args.get('action')
-    if not key in not_acts and request.full_path.find('/static/') == -1: public.write_request_log()
+    if not key in not_acts and request.full_path.find('/static/') == -1:
+        public.write_request_log()
+        if 'api_request' in g:
+            if g.api_request:
+                session.clear()
 
 #Flask 404页面勾子
 @app.errorhandler(404)
@@ -190,31 +194,11 @@ def notfound(e):
     }
     return Response(errorStr,status=404,headers=headers)
 
-#@app.errorhandler(500)
-# def internalerror(e):
-#     public.submit_error()
-#     errorStr = public.ReadFile('./BTPanel/templates/' + public.GetConfigValue('template') + '/error.html')
-#     try:
-#         if not app.config['DEBUG']:
-#             errorStr = errorStr.format(public.getMsg('PAGE_ERR_500_TITLE'),
-#                                        public.getMsg('PAGE_ERR_500_H1'),
-#                                        public.getMsg('PAGE_ERR_500_P1'),
-#                                        public.getMsg('NAME'),
-#                                        public.getMsg('PAGE_ERR_HELP'))
-#         else:
-#             errorStr = errorStr.format(public.getMsg('PAGE_ERR_500_TITLE'),
-#                                        str(e),
-#                                        '<pre>'+public.get_error_info() + '</pre>',
-#                                        public.getMsg('INIT_DEBUG_INFO'),public.getMsg('INIT_VERSION_LAST') + public.version())
-#     except IndexError:pass
-#     return errorStr,500
-
-#===================================Flask HOOK========================#
+# ===================================Flask HOOK========================#
 
 
-
-#===================================普通路由区========================#
-@app.route('/',methods=method_all)
+# ===================================普通路由区========================#
+@app.route('/', methods=method_all)
 def home():
     #面板首页
     comReturn = comm.local()
@@ -225,6 +209,7 @@ def home():
     data['ftpCount'] = public.M('ftps').count()
     data['databaseCount'] = public.M('databases').count()
     data['lan'] = public.GetLan('index')
+    data['js_random'] = get_js_random()
     public.auto_backup_panel()
     return render_template( 'index.html',data = data)
 
@@ -297,9 +282,11 @@ def site(pdata = None):
     comReturn = comm.local()
     if comReturn: return comReturn
     if request.method == method_get[0] and not pdata:
-        data = {}
+        import system
+        data = system.system().GetConcifInfo()
         data['isSetup'] = True
         data['lan'] = public.getLan('site')
+        data['js_random'] = get_js_random()
         if os.path.exists(public.GetConfigValue('setup_path')+'/nginx') == False \
             and os.path.exists(public.GetConfigValue('setup_path')+'/apache') == False \
                 and os.path.exists(public.GetConfigValue('openlitespeed_path')+'/lsws') == False:
@@ -308,7 +295,10 @@ def site(pdata = None):
     import panelSite
     siteObject = panelSite.panelSite()
         
-    defs = ('get_site_domains','GetRedirectFile','SaveRedirectFile','DeleteRedirect','GetRedirectList','CreateRedirect','ModifyRedirect',
+    defs = ('upload_csv','create_website_multiple','del_redirect_multiple','del_proxy_multiple','delete_dir_auth_multiple',
+            'delete_dir_bind_multiple','delete_domain_multiple','set_site_etime_multiple','set_site_php_version_multiple',
+            'delete_website_multiple','set_site_status_multiple','get_site_err_log','get_site_domains','GetRedirectFile',
+            'SaveRedirectFile','DeleteRedirect','GetRedirectList','CreateRedirect','ModifyRedirect',
             'set_dir_auth','delete_dir_auth','get_dir_auth','modify_dir_auth_pass',
             'GetSiteLogs','GetSiteDomains','GetSecurity','SetSecurity','ProxyCache','CloseToHttps','HttpToHttps','SetEdate',
             'SetRewriteTel','GetCheckSafe','CheckSafe','GetDefaultSite','SetDefaultSite','CloseTomcat','SetTomcat','apacheAddPort',
@@ -329,6 +319,7 @@ def ftp(pdata = None):
         FtpPort()
         data = {}
         data['isSetup'] = True
+        data['js_random'] = get_js_random()
         if os.path.exists(public.GetConfigValue('setup_path') + '/pure-ftpd') == False: data['isSetup'] = False
         data['lan'] = public.GetLan('ftp')
         return render_template('ftp.html',data=data)
@@ -354,10 +345,11 @@ def database(pdata = None):
         data['isSetup'] = os.path.exists(public.GetConfigValue('setup_path') + '/mysql/bin')
         data['mysql_root'] = public.M('config').where('id=?',(1,)).getField('mysql_root')
         data['lan'] = public.GetLan('database')
+        data['js_random'] = get_js_random()
         return render_template('database.html',data=data)
     import database
     databaseObject = database.database()
-    defs = ('check_mysql_ssl_status','write_ssl_to_mysql','GetdataInfo','GetInfo','ReTable','OpTable','AlTable','GetSlowLogs','GetRunStatus',
+    defs = ('get_mysql_user','check_mysql_ssl_status','write_ssl_to_mysql','GetdataInfo','GetInfo','ReTable','OpTable','AlTable','GetSlowLogs','GetRunStatus',
             'SetDbConf','GetDbStatus','BinLog','GetErrorLog','GetMySQLInfo','SetDataDir','SetMySQLPort',
             'AddDatabase','DeleteDatabase','SetupPassword','ResDatabasePassword','ToBackup','DelBackup',
             'InputSql','SyncToDatabases','SyncGetDatabases','GetDatabaseAccess','SetDatabaseAccess')
@@ -374,7 +366,6 @@ def acme(pdata = None):
     defs = ('get_orders','remove_order','get_order_find','revoke_order','create_order','get_account_info','set_account_info','update_zip','get_cert_init_api',
             'get_auths','auth_domain','check_auth_status','download_cert','apply_cert','renew_cert','apply_cert_api','apply_dns_auth')
     return publicObject(acme_v2_object,defs,None,pdata)
-
 
 @app.route('/message/<action>',methods=method_all)
 def message(action = None):
@@ -404,6 +395,7 @@ def control(pdata = None):
     if request.method == method_get[0]:
         data = {}
         data['lan'] = public.GetLan('control')
+        data['js_random'] = get_js_random()
         return render_template( 'control.html',data=data)
 
 @app.route('/firewall',methods=method_all)
@@ -414,6 +406,7 @@ def firewall(pdata = None):
     if request.method == method_get[0] and not pdata:
         data = {}
         data['lan'] = public.GetLan('firewall')
+        data['js_random'] = get_js_random()
         return render_template( 'firewall.html',data=data)
     import firewalls
     firewallObject = firewalls.firewalls()
@@ -429,29 +422,13 @@ def ssh_security(pdata = None):
     if request.method == method_get[0] and not pdata:
         data = {}
         data['lan'] = public.GetLan('firewall')
+        data['js_random'] = get_js_random()
         return render_template( 'firewall.html',data=data)
     import ssh_security
     firewallObject = ssh_security.ssh_security()
     defs = ('san_ssh_security','set_password','set_sshkey','stop_key','get_config',
             'stop_password','get_key','return_ip','add_return_ip','del_return_ip','start_jian','stop_jian','get_jian','get_logs')
     return publicObject(firewallObject,defs,None,pdata)
-
-
-# @app.route('/firewall_new',methods=method_all)
-# def firewall_new(pdata = None):
-#     comReturn = comm.local()
-#     if comReturn: return comReturn
-#     if request.method == method_get[0] and not pdata:
-#         data = {}
-#         data['lan'] = public.GetLan('firewall')
-#         return render_template( 'firewall_new.html',data=data)
-#     import firewall_new
-#     firewallObject = firewall_new.firewalls()
-#     defs = ('GetList','AddDropAddress','DelDropAddress','FirewallReload','SetFirewallStatus',
-#             'AddAcceptPort','DelAcceptPort','SetSshStatus','SetPing','SetSshPort','GetSshInfo',
-#             'AddSpecifiesIp','DelSpecifiesIp'
-#             )
-#     return publicObject(firewallObject,defs,None,pdata)
 
 
 @app.route('/monitor', methods=method_all)
@@ -535,13 +512,14 @@ def files(pdata = None):
         data = {}
         data['recycle_bin'] = os.path.exists('data/recycle_bin.pl')
         data['lan'] = public.GetLan('files')
+        data['js_random'] = get_js_random()
         return render_template('files.html',data=data)
     import files
     filesObject = files.files()
     defs = ('get_progress','restore_website','fix_permissions','get_all_back','restore_path_permissions','del_path_premissions','get_path_premissions','back_path_permissions',
             'CheckExistsFiles','GetExecLog','GetSearch','ExecShell','GetExecShellMsg','exec_git','exec_composer','create_download_url',
             'UploadFile','GetDir','CreateFile','CreateDir','DeleteDir','DeleteFile','get_download_url_list','remove_download_url','modify_download_url',
-            'CopyFile','CopyDir','MvFile','GetFileBody','SaveFileBody','Zip','UnZip','get_download_url_find',
+            'CopyFile','CopyDir','MvFile','GetFileBody','SaveFileBody','Zip','UnZip','get_download_url_find','set_file_ps',
             'SearchFiles','upload','read_history','re_history','auto_save_temp','get_auto_save_body','get_videos',
             'GetFileAccess','SetFileAccess','GetDirSize','SetBatchData','BatchPaste','install_rar','get_path_size',
             'DownloadFile','GetTaskSpeed','CloseLogs','InstallSoft','UninstallSoft','SaveTmpFile','get_composer_version','exec_composer','update_composer',
@@ -559,6 +537,7 @@ def crontab(pdata = None):
     if request.method == method_get[0] and not pdata:
         data = {}
         data['lan'] = public.GetLan('crontab')
+        data['js_random'] = get_js_random()
         return render_template( 'crontab.html',data=data)
     import crontab
     crontabObject = crontab.crontab()
@@ -575,6 +554,7 @@ def soft(pdata = None):
     if request.method == method_get[0] and not pdata:
         data={}
         data['lan'] = public.GetLan('soft')
+        data['js_random'] = get_js_random()
         return render_template( 'soft.html',data=data)
 
 @app.route('/config',methods=method_all)
@@ -595,9 +575,6 @@ def config(pdata = None):
         data['ipv6'] = ''
         sess_out_path = 'data/session_timeout.pl'
         if not os.path.exists(sess_out_path): public.writeFile(sess_out_path,'86400')
-        workers_p = 'data/workers.pl'
-        if not os.path.exists(workers_p): public.writeFile(workers_p,'1')
-        data['workers'] = int(public.readFile(workers_p))
         s_time_tmp = public.readFile(sess_out_path)
         if not s_time_tmp: s_time_tmp = '0'
         data['session_timeout'] = int(s_time_tmp)
@@ -607,25 +584,32 @@ def config(pdata = None):
         data['basic_auth']['value'] = public.getMsg('CLOSED')
         if data['basic_auth']['open']: data['basic_auth']['value'] = public.getMsg('OPENED')
         data['debug'] = ''
+        data['js_random'] = get_js_random()
         if app.config['DEBUG']: data['debug'] = 'checked'
         data['is_local'] = ''
         if public.is_local(): data['is_local'] = 'checked'
         return render_template( 'config.html',data=data)
     import config
-    defs = ('get_ols_private_cache_status','get_ols_value','set_ols_value','get_ols_private_cache','get_ols_static_cache','set_ols_static_cache','switch_ols_private_cache','set_ols_private_cache',
-            'set_coll_open','get_qrcode_data','check_two_step','set_two_step_auth','create_user','remove_user','modify_user',
-            'get_key','get_php_session_path','set_php_session_path','get_cert_source','get_users',
-            'set_local','set_debug','get_panel_error_logs','clean_panel_error_logs',
-            'get_basic_auth_stat','set_basic_auth','get_cli_php_version','get_tmp_token',
-            'set_cli_php_version','DelOldSession', 'GetSessionCount', 'SetSessionConf',
-            'GetSessionConf','get_ipv6_listen','set_ipv6_status','GetApacheValue','SetApacheValue',
-            'GetNginxValue','SetNginxValue','get_token','set_token','set_admin_path','is_pro',
-            'get_php_config','get_config','SavePanelSSL','GetPanelSSL','GetPHPConf','SetPHPConf',
-            'GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL',
-            'SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize',
-            'getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl',
-            'ClosePanel','AutoUpdatePanel','SetPanelLock','return_mail_list','del_mail_list','add_mail_address','user_mail_send','get_user_mail','set_dingding','get_dingding','get_settings','user_stmp_mail_send','user_dingding_send'
-            )
+    defs = (
+        'get_panel_ssl_status','set_file_deny', 'del_file_deny', 'get_file_deny',
+        'get_httpd_access_log_format_parameter','set_httpd_format_log_to_website','get_httpd_access_log_format',
+        'del_httpd_access_log_format','add_httpd_access_log_format','get_nginx_access_log_format_parameter',
+        'set_format_log_to_website','get_nginx_access_log_format','del_nginx_access_log_format',
+        'add_nginx_access_log_format','get_ols_private_cache_status','get_ols_value','set_ols_value',
+        'get_ols_private_cache','get_ols_static_cache','set_ols_static_cache','switch_ols_private_cache','set_ols_private_cache',
+        'set_coll_open','get_qrcode_data','check_two_step','set_two_step_auth','create_user','remove_user','modify_user',
+        'get_key','get_php_session_path','set_php_session_path','get_cert_source','get_users',
+        'set_local','set_debug','get_panel_error_logs','clean_panel_error_logs','get_menu_list','set_hide_menu_list',
+        'get_basic_auth_stat','set_basic_auth','get_cli_php_version','get_tmp_token','get_temp_login','set_temp_login','remove_temp_login','clear_temp_login','get_temp_login_logs',
+        'set_cli_php_version','DelOldSession', 'GetSessionCount', 'SetSessionConf',
+        'GetSessionConf','get_ipv6_listen','set_ipv6_status','GetApacheValue','SetApacheValue',
+        'GetNginxValue','SetNginxValue','get_token','set_token','set_admin_path','is_pro',
+        'get_php_config','get_config','SavePanelSSL','GetPanelSSL','GetPHPConf','SetPHPConf',
+        'GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL',
+        'SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize',
+        'getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl',
+        'ClosePanel','AutoUpdatePanel','SetPanelLock','return_mail_list','del_mail_list','add_mail_address','user_mail_send','get_user_mail','set_dingding','get_dingding','get_settings','user_stmp_mail_send','user_dingding_send'
+        )
     return publicObject(config.config(),defs,None,pdata)
 
 @app.route('/ajax',methods=method_all)
@@ -686,7 +670,7 @@ def ssl(pdata = None):
     if comReturn: return comReturn
     import panelSSL
     toObject = panelSSL.panelSSL()
-    defs = ('RemoveCert','renew_lets_ssl','SetCertToSite','GetCertList','SaveCert','GetCert','GetCertName',
+    defs = ('check_url_txt','RemoveCert','renew_lets_ssl','SetCertToSite','GetCertList','SaveCert','GetCert','GetCertName','again_verify',
             'DelToken','GetToken','GetUserInfo','GetOrderList','GetDVSSL','Completed','SyncOrder','download_cert','set_cert','cancel_cert_order',
             'get_order_list','get_order_find','apply_order_pay','get_pay_status','apply_order','get_verify_info','get_verify_result','get_product_list','set_verify_info',
             'GetSSLInfo','downloadCRT','GetSSLProduct','Renew_SSL','Get_Renew_SSL')
@@ -746,7 +730,7 @@ def auth(pdata = None):
     if comReturn: return comReturn
     import panelAuth
     toObject = panelAuth.panelAuth()
-    defs = ('get_re_order_status_plugin','create_plugin_other_order','get_order_stat',
+    defs = ('auth_activate','get_product_auth','get_stripe_session_id','get_re_order_status_plugin','create_plugin_other_order','get_order_stat',
             'get_voucher_plugin','create_order_voucher_plugin','get_product_discount_by',
             'get_re_order_status','create_order_voucher','create_order','get_order_status',
             'get_voucher','flush_pay_status','create_serverid','check_serverid',
@@ -766,7 +750,7 @@ def download():
     if filename.find('|') != -1:
         filename = filename.split('|')[1]
     if not filename: return public.ReturnJson(False,"INIT_ARGS_ERR"),json_header
-    if filename in ['alioss','qiniu','upyun','txcos','ftp']: return panel_cloud()
+    if filename in ['alioss','qiniu','upyun','txcos','ftp','msonedrive','gcloud_storage', 'gdrive', 'aws_s3']: return panel_cloud()
     if not os.path.exists(filename): return public.ReturnJson(False,"FILE_NOT_EXISTS"),json_header
 
     if request.args.get('play') == 'true':
@@ -779,6 +763,8 @@ def download():
         if extName in ['png','gif','jpeg','jpg']: mimetype = None
         return send_file(filename,mimetype=mimetype,
                          as_attachment=True,
+                         add_etags=True,
+                         conditional=True,
                          attachment_filename=os.path.basename(filename),
                          cache_timeout=0)
 
@@ -831,15 +817,15 @@ def login():
     if admin_path != '/bt' and os.path.exists(admin_path_file) and  not 'admin_auth' in session:
         is_auth_path = True
     num_key = public.md5(public.GetClientIp() + '_auth_path')
-    if not public.get_error_num(num_key,20): return public.returnMsg(False,'连续20次安全入口验证失败，禁止1小时')
+    if not public.get_error_num(num_key,20): return public.returnMsg(False,'AUTH_FAILED1')
     #登录输入验证
     if request.method == method_post[0]:
         v_list = ['username','password','code','vcode','cdn_url']
         for v in v_list:
             pv = request.form.get(v,'').strip()
             if v == 'cdn_url':
-                if len(pv) > 32: return public.returnMsg(False,'错误的参数长度!'),json_header
-                if not re.match(r"^[\w\.-]+$",pv): public.returnJson(False,'错误的参数格式'),json_header
+                if len(pv) > 32: return public.returnMsg(False,'PARAMETER_LEN_ERR'),json_header
+                if not re.match(r"^[\w\.-]+$",pv): public.returnJson(False,'PARAMETER_FORMAT_ERR'),json_header
                 continue
 
             if not pv: continue
@@ -847,14 +833,14 @@ def login():
             if v == 'code': p_len = 4
             if v == 'vcode': p_len = 6
             if len(pv) != p_len:
-                if v == 'code': return public.returnJson(False,'验证码长度错误'),json_header
-                return public.returnJson(False,'错误的参数长度'),json_header
+                if v == 'code': return public.returnJson(False,'VCODE_LEN_ERR'),json_header
+                return public.returnJson(False,'PARAMETER_LEN_ERR'),json_header
             if not re.match(r"^\w+$",pv):
-                return public.returnJson(False,'错误的参数格式'),json_header
+                return public.returnJson(False,'PARAMETER_FORMAT_ERR'),json_header
 
         for n in request.form.keys():
             if not n in v_list:
-                return public.returnJson(False,'登录参数中不能有多余参数'),json_header
+                return public.returnJson(False,'EXTRA_PARAMETER_ERR'),json_header
 
     get = get_input()
     import userlogin
@@ -869,10 +855,12 @@ def login():
         if session['login'] != False:
             session['login'] = False
             cache.set('dologin',True)
-            public.WriteLog('用户登出','客户端：{}，已手动退出面板'.format(public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
+            public.WriteLog('TYPE_LOGOUT','MANUALLY_LOGOUT',(public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT')),))
+            if 'tmp_login_expire' in session:
+                s_file = 'data/session/{}'.format(session['tmp_login_id'])
+                if os.path.exists(s_file):
+                    os.remove(s_file)
             session.clear()
-            session_path = r'/dev/shm/session_py' + str(sys.version_info[0])
-            if os.path.exists(session_path): public.ExecShell("rm -f " + session_path + '/*')
             sess_file = 'data/sess_files/' + public.get_sess_key()
             if os.path.exists(sess_file):
                 try:
@@ -883,11 +871,17 @@ def login():
 
     if is_auth_path:
         if route_path != request.path and route_path + '/' != request.path:
-            public.set_error_num(num_key)
-            #return abort(404)
-            data = {}
-            data['lan'] = public.getLan('close')
-            return render_template('autherr.html',data=data)
+            referer =  request.headers.get('Referer','err')
+            referer_tmp = referer.split('/')
+            referer_path = referer_tmp[-1]
+            if referer_path == '':
+                referer_path = referer_tmp[-2]
+            if route_path != '/'+referer_path:
+                public.set_error_num(num_key)
+                #return abort(404)
+                data = {}
+                data['lan'] = public.getLan('close')
+                return render_template('autherr.html',data=data)
     session['admin_auth'] = True
     public.set_error_num(num_key,True)
     comReturn = common.panelSetup().init()
@@ -929,16 +923,19 @@ def tips():
     return render_template('tips.html')
 
 
-@app.route('/get_app_bind_status',methods=method_all)
-def get_app_bind_status(pdata = None):
-    #APP绑定状态查询
+@app.route('/get_app_bind_status', methods=method_all)
+def get_app_bind_status(pdata=None):
+    # APP绑定状态查询
+    if not public.check_app('app_bind'):return public.returnMsg(False, 'API_DISABLED')
     import panelApi
     api_object = panelApi.panelApi()
     return json.dumps(api_object.get_app_bind_status(get_input())),json_header
 
-@app.route('/check_bind',methods=method_all)
-def check_bind(pdata = None):
-    #APP绑定查询
+
+@app.route('/check_bind', methods=method_all)
+def check_bind(pdata=None):
+    # APP绑定查询
+    if not public.check_app('app_bind'):return public.returnMsg(False, 'API_DISABLED')
     import panelApi
     api_object = panelApi.panelApi()
     return json.dumps(api_object.check_bind(get_input())),json_header
@@ -1098,6 +1095,7 @@ def panel_public():
         return data,json_header
 
     if get.name != 'app': return abort(404)
+    if not public.check_app('wxapp'): return public.returnMsg(False, 'UNBOUND_USER')
     import panelPlugin
     plu = panelPlugin.panelPlugin()
     get.s = '_check'
@@ -1126,6 +1124,10 @@ def send_favicon():
 @app.route('/service_status',methods = method_get)
 def service_status():
     #检查面板当前状态
+    try:
+        if not 'login' in session: session.clear()
+    except:
+        pass
     return 'True'
 
 @app.route('/coll',methods=method_all)
@@ -1140,7 +1142,7 @@ def panel_other(name=None,fun = None,stype=None):
         args = None
     else:
         args = get_input()
-        args_list = ['mail_from','password','mail_to','subject','content','subtype']
+        args_list = ['mail_from','password','mail_to','subject','content','subtype','data']
         for k in args.__dict__:
             if not k in args_list: return abort(404)
 
@@ -1256,6 +1258,7 @@ def panel_hook():
 @app.route('/install',methods=method_all)
 def install():
     #初始化面板接口
+    if not os.path.exists('install.pl'): return redirect('/login')
     if public.M('config').where("id=?",('1',)).getField('status') == 1:
         if os.path.exists('install.pl'): os.remove('install.pl')
         session.clear()
@@ -1311,7 +1314,8 @@ def get_dir_down(filename,token,find):
     import files
     args = public.dict_obj()
     args.path = filename
-    to_path = filename.replace(find['filename'],'').strip('/')
+    args.share = True
+    to_path = filename.replace(find['filename'], '').strip('/')
 
     if request.args.get('play') == 'true':
         pdata = files.files().get_videos(args)
@@ -1322,7 +1326,7 @@ def get_dir_down(filename,token,find):
         pdata['token'] = token
         pdata['src_path'] = find['filename']
         pdata['to_path'] = to_path
-        if find['expire'] > (time.time() + (86400 * 365 * 10)):
+        if find['expire'] < (time.time() + (86400 * 365 * 10)):
             pdata['expire'] = public.format_date(times=find['expire'])
         else:
             pdata['expire'] = public.getMsg('NEVER_EXPIRES')
@@ -1380,6 +1384,8 @@ class run_exec:
                     result =  eval(fun)
                 else:
                     result = eval(fun)
+                    r_type = type(result)
+                    if r_type == Resp: return result
                     result =  public.GetJson(result),json_header
                 break
         if not result:
@@ -1387,12 +1393,12 @@ class run_exec:
         if g.is_aes:
             result = public.aes_encrypt(result[0],g.aes_key),json_header
         else:
-            if os.path.exists('pyenv/bin/python') and sys.version_info[0] == 3:
-                if not os.path.exists('data/debug.pl'):
-                    x_token = request.headers.get('x-http-token')
-                    if x_token:
-                        aes_pwd = x_token[:8] + x_token[40:48]
-                        result = "BT-CRT"+public.aes_encrypt(result[0],aes_pwd),{'Content-Type':'text/plain; charset=utf-8'}
+            # if os.path.exists('pyenv/bin/python') and sys.version_info[0] == 3:
+            #     if not os.path.exists('data/debug.pl'):
+            #         x_token = request.headers.get('x-http-token')
+            #         if x_token:
+            #             aes_pwd = x_token[:8] + x_token[40:48]
+            #             result = "BT-CRT"+public.aes_encrypt(result[0],aes_pwd),{'Content-Type':'text/plain; charset=utf-8'}
             pass
         return result
 
@@ -1430,10 +1436,7 @@ def publicObject(toObject,defs,action=None,get = None):
 
     if hasattr(toObject,'site_path_check'):
         if not toObject.site_path_check(get): return public.ReturnJson(False,'INIT_ACCEPT_NOT'),json_header
-    p = run_exec()
-    result =  p.run(toObject,defs,get)
-    del p
-    return result
+    return run_exec().run(toObject,defs,get)
 
 
 
@@ -1578,6 +1581,14 @@ def is_login(result):
             result.set_cookie('request_token',request_token,max_age=86400*30)
     return result
 
+# js随机数模板使用，用于不更新版本号时更新前端文件不需要用户强制刷新浏览器
+def get_js_random():
+    js_random = public.readFile('data/js_random.pl')
+    if not js_random or js_random == '1':
+        js_random = public.GetRandomString(16)
+    public.writeFile('data/js_random.pl',js_random)
+    return js_random
+
 #获取输入数据
 def get_input():
     data = public.dict_obj()
@@ -1585,17 +1596,17 @@ def get_input():
     for key in request.args.keys():
         data[key] = str(request.args.get(key,''))
     try:
-        x_token = request.headers.get('x-http-token')
-        if x_token:
-            aes_pwd = x_token[:8] + x_token[40:48]
+        # x_token = request.headers.get('x-http-token')
+        # if x_token:
+        #     aes_pwd = x_token[:8] + x_token[40:48]
 
         for key in request.form.keys():
             if key in exludes: continue
             data[key] = str(request.form.get(key,''))
-            if x_token:
-                if len(data[key]) > 5:
-                    if data[key][:6] == 'BT-CRT':
-                        data[key] = public.aes_decrypt(data[key][6:],aes_pwd)
+            # if x_token:
+            #     if len(data[key]) > 5:
+            #         if data[key][:6] == 'BT-CRT':
+            #             data[key] = public.aes_decrypt(data[key][6:],aes_pwd)
     except:
         try:
             post = request.form.to_dict()
@@ -1608,7 +1619,6 @@ def get_input():
     if 'form_data' in g:
         for k in g.form_data.keys():
             data[k] = str(g.form_data[k])
-
 
     if not hasattr(data,'data'): data.data = []
     return data
