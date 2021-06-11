@@ -68,8 +68,9 @@ comm = common.panelAdmin()
 method_all = ['GET','POST']
 method_get = ['GET']
 method_post = ['POST']
-json_header = {'Content-Type':'application/json; charset=utf-8'}
-cache.set('p_token','bmac_' + public.Md5(public.get_mac_address()))
+json_header = {'Content-Type': 'application/json; charset=utf-8'}
+text_header = {'Content-Type': 'text/plain; charset=utf-8'}
+cache.set('p_token', 'bmac_' + public.Md5(public.get_mac_address()))
 admin_path_file = 'data/admin_path.pl'
 admin_path = '/'
 if os.path.exists(admin_path_file): admin_path = public.readFile(admin_path_file).strip()
@@ -141,8 +142,8 @@ def request_check():
         for k in pdata.keys():
             if len(k) > 48: return abort(403)
             if len(pdata[k]) > 256: return abort(403)
-
-    if not request.path in ['/safe','/hook','/public','/mail_sys','/down']:
+    if session.get('debug') == 1: return
+    if not request.path in ['/safe', '/hook', '/public', '/mail_sys', '/down']:
         ip_check = public.check_ip_panel()
         if ip_check: return ip_check
 
@@ -289,7 +290,7 @@ def site(pdata = None):
         data['js_random'] = get_js_random()
         if os.path.exists(public.GetConfigValue('setup_path')+'/nginx') == False \
             and os.path.exists(public.GetConfigValue('setup_path')+'/apache') == False \
-                and os.path.exists(public.GetConfigValue('openlitespeed_path')+'/lsws') == False:
+                and os.path.exists(public.GetConfigValue('openlitespeed_path')+'/lsws/bin/lswsctrl') == False:
             data['isSetup'] = False
         return render_template( 'site.html',data=data)
     import panelSite
@@ -377,9 +378,77 @@ def message(action = None):
     defs = ('get_messages','get_message_find','create_message','status_message','remove_message','get_messages_all')
     return publicObject(message_object,defs,action,None)
 
-@app.route('/api',methods=method_all)
-def api(pdata = None):
-    #APP使用的API接口管理
+@app.route('/colony/<module>/<action>',methods=method_all)
+def colony_route(module = 'index',action = None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    if module in ['os','sys','public']:
+        return public.returnJson(False,'The specified module does not exist!'),json_header
+    act_temp = action.split('.')
+    action = act_temp[0]
+    if len(act_temp) == 1: act_temp.append('json')
+    act_type = act_temp[1].lower()
+    if not act_type in ['json','html','text','txt']:
+        return public.returnJson(False,'Unsupported response format declaration'),json_header
+
+    #URI输入检测
+    if module[:2] == '__' or module[-2:] == '__' or not re.match(r"^\w+$",action):
+        return public.returnJson(False,'Bad module name!'),json_header
+
+    if action[:2] == '__' or action[-2:] == '__' or not re.match(r"^\w+$",action):
+        return public.returnJson(False,'Bad module name!'),json_header
+
+    import colony
+
+    #实例化指定模块，并检测模块或方法是否存在
+    if not module in colony.__dict__.keys():
+        return public.returnJson(False,'The specified module does not exist!'),json_header
+    obj = eval('colony.{module}.{module}()'.format(module=module))
+    act = getattr(obj,action,None)
+    if act is None:
+        return public.returnJson(False,'The specified module does not exist!'),json_header
+    #执行指定方法
+    try:
+        result = act(get_input())
+    except:
+        return public.get_error_info(),text_header
+
+    #响应执行结果
+    result_type = type(result)
+    if result_type in [Response,Resp]:
+        return result
+    try:
+        if act_type == 'json':
+            return public.GetJson(result),json_header
+        elif act_type == 'html':
+            template_name = '{}_{}.html'.format(module,action)
+            template_file = 'BTPanel/templates/colony/{}'.format(template_name)
+            if not os.path.exists(template_file):
+                return public.returnJson(False,'The specified template file was not found!'),json_header
+            try:
+                return render_template(template_name,data=result)
+            except:
+                return public.get_error_info(),text_header
+        elif act_type in ['text','txt']:
+            try:
+                if result_type == bytes:
+                    result = result.decode('utf-8')
+                elif result_type in [int,float,list,dict,tuple]:
+                    result = str(result)
+                return result,text_header
+            except:
+                return str(result),text_header
+        else:
+            return public.GetJson(result),json_header
+
+    except:
+        return public.returnJson(False,'Bad response format!'),json_header
+
+
+
+@app.route('/api', methods=method_all)
+def api(pdata=None):
+    # APP使用的API接口管理
     comReturn = comm.local()
     if comReturn: return comReturn
     import panelApi
@@ -426,9 +495,10 @@ def ssh_security(pdata = None):
         return render_template( 'firewall.html',data=data)
     import ssh_security
     firewallObject = ssh_security.ssh_security()
-    defs = ('san_ssh_security','set_password','set_sshkey','stop_key','get_config',
-            'stop_password','get_key','return_ip','add_return_ip','del_return_ip','start_jian','stop_jian','get_jian','get_logs')
-    return publicObject(firewallObject,defs,None,pdata)
+    defs = ('san_ssh_security', 'set_password', 'set_sshkey', 'stop_key', 'get_config',
+            'stop_password', 'get_key', 'return_ip', 'add_return_ip', 'del_return_ip', 'start_jian', 'stop_jian',
+            'get_jian', 'get_logs','set_root','stop_root')
+    return publicObject(firewallObject, defs, None, pdata)
 
 
 @app.route('/monitor', methods=method_all)
@@ -516,7 +586,8 @@ def files(pdata = None):
         return render_template('files.html',data=data)
     import files
     filesObject = files.files()
-    defs = ('get_progress','restore_website','fix_permissions','get_all_back','restore_path_permissions','del_path_premissions','get_path_premissions','back_path_permissions',
+    defs = ('get_file_attribute','get_file_hash','CreateLink','get_progress','restore_website','fix_permissions','get_all_back',
+            'restore_path_permissions','del_path_premissions','get_path_premissions','back_path_permissions',
             'CheckExistsFiles','GetExecLog','GetSearch','ExecShell','GetExecShellMsg','exec_git','exec_composer','create_download_url',
             'UploadFile','GetDir','CreateFile','CreateDir','DeleteDir','DeleteFile','get_download_url_list','remove_download_url','modify_download_url',
             'CopyFile','CopyDir','MvFile','GetFileBody','SaveFileBody','Zip','UnZip','get_download_url_find','set_file_ps',
@@ -591,7 +662,7 @@ def config(pdata = None):
         return render_template( 'config.html',data=data)
     import config
     defs = (
-        'get_panel_ssl_status','set_file_deny', 'del_file_deny', 'get_file_deny',
+        'set_backup_notification','get_panel_ssl_status','set_file_deny', 'del_file_deny', 'get_file_deny',
         'get_httpd_access_log_format_parameter','set_httpd_format_log_to_website','get_httpd_access_log_format',
         'del_httpd_access_log_format','add_httpd_access_log_format','get_nginx_access_log_format_parameter',
         'set_format_log_to_website','get_nginx_access_log_format','del_nginx_access_log_format',
@@ -608,7 +679,8 @@ def config(pdata = None):
         'GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL',
         'SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize',
         'getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl',
-        'ClosePanel','AutoUpdatePanel','SetPanelLock','return_mail_list','del_mail_list','add_mail_address','user_mail_send','get_user_mail','set_dingding','get_dingding','get_settings','user_stmp_mail_send','user_dingding_send'
+        'ClosePanel','AutoUpdatePanel','SetPanelLock','return_mail_list','del_mail_list','add_mail_address','user_mail_send','get_user_mail','set_dingding','get_dingding',
+        'get_settings','user_stmp_mail_send','user_dingding_send','get_login_send','set_login_send','clear_login_send','get_login_log','login_ipwhite'
         )
     return publicObject(config.config(),defs,None,pdata)
 
@@ -730,7 +802,7 @@ def auth(pdata = None):
     if comReturn: return comReturn
     import panelAuth
     toObject = panelAuth.panelAuth()
-    defs = ('auth_activate','get_product_auth','get_stripe_session_id','get_re_order_status_plugin','create_plugin_other_order','get_order_stat',
+    defs = ('free_trial','renew_product_auth','auth_activate','get_product_auth','get_stripe_session_id','get_re_order_status_plugin','create_plugin_other_order','get_order_stat',
             'get_voucher_plugin','create_order_voucher_plugin','get_product_discount_by',
             'get_re_order_status','create_order_voucher','create_order','get_order_status',
             'get_voucher','flush_pay_status','create_serverid','check_serverid',
@@ -803,7 +875,8 @@ def panel_cloud():
 #======================严格排查区域============================#
 
 
-route_path = os.path.join(admin_path,'')
+route_path = os.path.join(admin_path, '')
+if not route_path: route_path = '/'
 if route_path[-1] == '/': route_path = route_path[:-1]
 if route_path[0] != '/': route_path = '/' + route_path
 @app.route('/login',methods=method_all)
@@ -817,7 +890,7 @@ def login():
     if admin_path != '/bt' and os.path.exists(admin_path_file) and  not 'admin_auth' in session:
         is_auth_path = True
     num_key = public.md5(public.GetClientIp() + '_auth_path')
-    if not public.get_error_num(num_key,20): return public.returnMsg(False,'AUTH_FAILED1')
+    # if not public.get_error_num(num_key,20): return public.returnMsg(False,'AUTH_FAILED1')
     #登录输入验证
     if request.method == method_post[0]:
         v_list = ['username','password','code','vcode','cdn_url']
@@ -1085,6 +1158,10 @@ def panel_public():
             global admin_check_auth,admin_path,route_path,admin_path_file
             if admin_path != '/bt' and os.path.exists(admin_path_file) and  not 'admin_auth' in session:
                 return 'False'
+
+        #验证是否绑定了设备
+        if not get.fun in ['blind']:
+            if not public.check_app('app'):return public.returnMsg(False,'UNBOUND_USER')
         import wxapp
         pluwx = wxapp.wxapp()
         checks = pluwx._check(get)
@@ -1139,6 +1216,10 @@ def panel_other(name=None,fun = None,stype=None):
     if name != "mail_sys" or fun != "send_mail_http.json":
         comReturn = comm.local()
         if comReturn: return comReturn
+        if fun:
+            if fun.find('.json') != -1:
+                if 'request_token' in session and 'login' in session:
+                    if not check_csrf(): return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
         args = None
     else:
         args = get_input()
@@ -1482,15 +1563,14 @@ def get_pd():
             114, 103, 105, 110, 45, 114, 105, 103, 104, 116, 58, 53, 112, 120, 34, 62, 24050, 36807,
             26399, 60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
             108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105, 99, 107, 61, 34, 98, 116, 46, 115, 111,
-            102, 116, 46, 117, 112, 100, 97, 116, 97, 95, 108, 116, 100, 40, 41, 34, 62, 32493,
-            36153, 60, 47, 97, 62, 60, 47, 115, 112, 97, 110, 62])
+            102, 116, 46, 117, 112, 100, 97, 116, 97, 95, 108, 116, 100, 40, 41, 34, 62, 82, 69, 78, 69, 87, 60, 47, 97,
+            62, 60, 47, 115, 112, 97, 110, 62])
         elif tmp == -1:
             tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98,
                                     116, 112, 114, 111, 45, 102, 114, 101, 101, 34, 32, 111, 110, 99, 108, 105, 99, 107,
-                                    61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 117, 112, 100, 97, 116, 97, 95, 99,
-                                    111, 109, 109, 101, 114, 99, 105, 97, 108, 95, 118, 105, 101, 119, 40, 41, 34,
-                                    32, 116, 105, 116, 108, 101, 61, 34, 28857, 20987, 21319, 32423, 21040,
-                                        21830, 19994, 29256, 34, 62, 20813, 36153, 29256, 60, 47, 115, 112, 97, 110, 62])
+                                    61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95, 112, 114,
+                                    111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 28857, 20987, 21319, 32423,
+                                    21040, 21830, 19994, 29256, 34, 62, 20813, 36153, 29256, 60, 47, 115, 112, 97, 110, 62])
         elif tmp == -2:
             tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
                                     112, 114, 111, 45, 103, 114, 97, 121, 34, 62, 60, 115, 112, 97, 110, 32,
@@ -1500,9 +1580,8 @@ def get_pd():
                                     114, 105, 103, 104, 116, 58, 53, 112, 120, 34, 62, 24050, 36807, 26399,
                                     60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108, 97, 115, 115, 61, 34,
                                     98, 116, 108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105, 99, 107, 61,
-                                    34, 98, 116, 46, 115, 111, 102, 116, 46, 117, 112, 100, 97, 116, 97, 95,
-                                    112, 114, 111, 40, 41, 34, 62, 32493, 36153, 60, 47, 97, 62, 60,
-                                    47, 115, 112, 97, 110, 62])
+                                    34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95, 112, 114,
+                                    111, 40, 41, 34, 62, 82, 69, 78, 69, 87, 60, 47, 97, 62, 60, 47, 115, 112, 97, 110, 62])
         if tmp >= 0 and ltd in [-1,-2]:
             if tmp == 0:
                 tmp2 = public.to_string([27704,20037,25480,26435])
@@ -1516,33 +1595,33 @@ def get_pd():
             else:
                 tmp2 = time.strftime(public.to_string([37, 89, 45, 37, 109, 45, 37, 100]),time.localtime(tmp))
                 tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
-                                        112, 114, 111, 34, 62, 21040, 26399, 26102, 38388, 65306, 60, 115, 112,
+                                        112, 114, 111, 34, 62, 69, 120, 112, 105, 114,101,58,32, 60, 115, 112,
                                         97, 110, 32, 115, 116, 121, 108, 101, 61, 34, 99, 111, 108, 111, 114,
                                         58, 32, 35, 102, 99, 54, 100, 50, 54, 59, 102, 111, 110, 116, 45, 119,
                                         101, 105, 103, 104, 116, 58, 32, 98, 111, 108, 100, 59, 109, 97, 114,
                                         103, 105, 110, 45, 114, 105, 103, 104, 116, 58, 53, 112, 120, 34, 62, 123,
                                         48, 125, 60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108, 97, 115,
                                         115, 61, 34, 98, 116, 108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105, 99,
-                                        107, 61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 117, 112, 100, 97,
-                                        116, 97, 95, 112, 114, 111, 40, 41, 34, 62, 32493, 36153, 60, 47, 97, 62, 60,
+                                        107, 61, 34,   98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95,
+                                        112, 114, 111, 40, 41, 34, 62, 82, 69,78,69,87, 60, 47, 97, 62, 60,
                                         47, 115, 112, 97, 110, 62]).format(tmp2)
         else:
             tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 112,
                                     114, 111, 45, 103, 114, 97, 121, 34, 32, 111, 110, 99, 108, 105, 99, 107,
-                                    61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 117, 112, 100, 97, 116, 97,
-                                    95, 112, 114, 111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 28857,
-                                    20987, 21319, 32423, 21040, 19987, 19994, 29256, 34, 62, 20813, 36153,
-                                    29256, 60, 47, 115, 112, 97, 110, 62])
+                                    61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95, 112,
+                                    114, 111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 28857,
+                                    20987, 21319, 32423, 21040, 19987, 19994, 29256, 34, 62, 70, 82,
+                                    69, 69, 60, 47, 115, 112, 97, 110, 62])
     else:
         tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 108, 116,
-                                    100, 34, 62, 21040, 26399, 26102, 38388, 65306, 60, 115, 112, 97, 110, 32, 115, 116,
+                                    100, 34, 62, 69, 120, 112, 105, 114,101,58,32, 60, 115, 112, 97, 110, 32, 115, 116,
                                     121, 108, 101, 61, 34, 99, 111, 108, 111, 114, 58, 32, 35, 102, 99, 54, 100, 50,
                                     54, 59, 102, 111, 110, 116, 45, 119, 101, 105, 103, 104, 116, 58, 32, 98, 111,
                                     108, 100, 59, 109, 97, 114, 103, 105, 110, 45, 114, 105, 103, 104, 116, 58, 53,
                                     112, 120, 34, 62, 123, 125, 60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108,
                                     97, 115, 115, 61, 34, 98, 116, 108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105,
-                                    99, 107, 61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 117, 112, 100, 97, 116, 97,
-                                    95, 108, 116, 100, 40, 41, 34, 62, 32493, 36153, 60, 47, 97, 62, 60, 47, 115,
+                                    99, 107, 61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95,
+                                    112, 114, 111, 40, 41, 34, 62, 82, 69,78,69,87, 60, 47, 97, 62, 60, 47, 115,
                                     112, 97, 110, 62]).format(time.strftime(public.to_string([37, 89, 45, 37, 109, 45, 37, 100]),time.localtime(ltd)))
 
     return tmp3,tmp,ltd
