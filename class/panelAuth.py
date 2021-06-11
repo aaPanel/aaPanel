@@ -12,7 +12,7 @@
 #------------------------------
 
 import public,time,json,os,requests
-from BTPanel import session
+from BTPanel import session,cache
 
 class panelAuth:
     __product_list_path = 'data/product_list.pl'
@@ -63,11 +63,16 @@ class panelAuth:
     def get_plugin_price(self, get):
         try:
             userPath = 'data/userInfo.json'
-            if not 'pluginName' in get: return public.returnMsg(False,'INIT_ARGS_ERR')
+            if not 'pluginName' in get and not 'product_id' in get: return public.returnMsg(False,'INIT_ARGS_ERR')
             if not os.path.exists(userPath): return public.returnMsg(False,'LOGIN_FIRST')
             params = {}
-            params['product_id'] = self.get_plugin_info(get.pluginName)['id']
+            if not hasattr(get,'product_id'):
+                params['product_id'] = self.get_plugin_info(get.pluginName)['id']
+            else:
+                params['product_id'] = get.product_id
             data = self.send_cloud('{}/api/product/prices'.format(self.__official_url), params)
+            if len(data['res']) > 3:
+                return data['res'][-3:]
             return data['res']
         except:
             del(session['get_product_list'])
@@ -292,3 +297,37 @@ class panelAuth:
         if not data['success']: return public.returnMsg(False,'Activate Failed')
         session['focre_cloud'] = True
         return public.returnMsg(True,'Activate successfully')
+
+    def renew_product_auth(self,get):
+        params = {}
+        params['serial_no'] = get.serial_no
+        params['pay_channel'] = get.pay_channel
+        params['cycle'] = get.cycle
+        params['cycle_unit'] = get.cycle_unit
+        params['src'] = 2
+        params['environment_info'] = json.dumps(public.fetch_env_info())
+        if hasattr(get,'coupon_id') and get.pay_channel == '10':
+            params['coupon_id'] = get.coupon_id
+        data = self.send_cloud('{}/api/authorize/product/renew'.format(self.__official_url), params)
+        session['focre_cloud'] = True
+        # 使用抵扣券续费直接返回续费结果
+        if get.pay_channel == '10':
+            if not data['success']:
+                return public.returnMsg(False, 'Renew Failed')
+            return public.returnMsg(True,'Renew successfully')
+        # 使用支付续费返回stripe的请求数据
+        return data['res']
+
+    def free_trial(self,get):
+        """
+        每个账号有一次免费试用专业版15天的机会
+        :return:
+        """
+        params = {}
+        params['environment_info'] = json.dumps(public.fetch_env_info())
+        data = self.send_cloud('{}/api/product/obtainProfessionalMemberFree'.format(self.__official_url), params)
+        session['focre_cloud'] = True
+        # 使用抵扣券续费直接返回续费结果
+        if not data['success']:
+            return public.returnMsg(False, 'Apply Failed')
+        return public.returnMsg(True,'Apply successfully')

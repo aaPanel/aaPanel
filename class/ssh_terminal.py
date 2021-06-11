@@ -94,7 +94,6 @@ class ssh_terminal:
 
         try:
             self._tp.start_client()
-            self.debug(self._pkey)
             if not self._pass and not self._pkey:
                 self.set_sshd_config(True)
                 return public.returnMsg(False,'SSH_LOGIN_INFO_ERR',(self._host,str(self._port)))
@@ -449,7 +448,7 @@ class ssh_terminal:
                 resp_line = self._ssh.recv(1024)
                 if not resp_line:
                     if not self._tp.is_active():
-                        self.debug('SSH_LOGIN_ERR14')
+                        self.debug(public.getMsg('SSH_LOGIN_ERR14'))
                         self._ws.send(public.getMsg('RECONNECT_SSH'))
                         self.close()
                         return
@@ -480,7 +479,7 @@ class ssh_terminal:
                 self.debug(public.getMsg('SSH_LOGIN_ERR15',(str(e),)))
 
         if self._ws.closed:
-            self.debug('SSH_LOGIN_INFO1')
+            self.debug(public.getMsg('SSH_LOGIN_INFO1'))
         self.close()
 
     def send(self):
@@ -513,7 +512,7 @@ class ssh_terminal:
                 self.debug(public.getMsg('SSH_LOGIN_ERR17',(str(ex),)))
 
         if self._ws.closed:
-            self.debug('SSH_LOGIN_INFO1')
+            self.debug(public.getMsg('SSH_LOGIN_INFO1'))
         self.close()
 
 

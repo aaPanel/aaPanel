@@ -34,29 +34,23 @@ Terms.prototype = {
     },
     //服务器消息事件
     on_message: function (ws_event){
-        result = ws_event.data;
+        result= ws_event.data;
         if(!result) return;
-        // if (result === "\rServer connection failed!\r" || result == "\rWrong user name or password!\r") {
-        //     this.close();
-        //     return;
-        // }
+        that = this;
         if ((result.indexOf("@127.0.0.1:") != -1 || result.indexOf("@localhost:") != -1) && result.indexOf('Authentication failed') != -1) {
-            this.term.write(result);
+            that.term.write(result);
             host_trem.localhost_login_form(result);
-            this.close();
+            that.close();
             return;
         }
-        if(result.length > 1 && this.last_body === false){
-            this.last_body = true;
+        if(result.length > 1 && that.last_body === false){
+            that.last_body = true;
         }
-        this.term.write(result);
-        this.set_term_icon(1);
-        if (result == '\r\nLog out\r\n' || result == 'Log out\r\n' || result == '\r\nlogout\r\n' || result == 'logout\r\n') {
-            // setTimeout(function () {
-                // layer.close(Term.term_box);
-            // }, 500);
-            this.close();
-            this.bws = null;
+        that.term.write(result);
+        that.set_term_icon(1);
+        if (result == '\r\n登出\r\n' || result == '登出\r\n' || result == '\r\nlogout\r\n' || result == 'logout\r\n') {
+            that.close();
+            that.bws = null;
             
         }
     },
@@ -130,7 +124,6 @@ Terms.prototype = {
         if(this.bws){
             size['resize'] = 1;
             this.send(JSON.stringify(size));
-            this.term
         }
         
     },
@@ -175,10 +168,10 @@ var host_trem = {
         username:'root',
         password:'',
         pkey: '',
-        ps: '' 
+        ps: ''
     },
     init:function(){
-        var that = this,isMousemove = true;
+        var that = this;
         Object.defineProperty(host_trem,'is_full',{
             get:function(val){
                 return val;
@@ -207,23 +200,13 @@ var host_trem = {
                 return false;
             }
         }
+        //本地存储
+        var _tool_status = localStorage.getItem("tool_status");
+        _tool_host_height = localStorage.getItem("hostHeight"),
+        _tool_commonly_height = localStorage.getItem("commonlyHeight");
+        if(_tool_commonly_height <= 100 )_tool_commonly_height=100;
         $(window).resize(function(ev){
-            var win = $(window)[0],win_width = win.innerHeight,win_height = win.innerHeight,host_commonly = win_height - 185;
-            if(that.isFullScreen()){
-                $('.main-content .safe').height(win_height);
-                $('#term_box_view,.term_tootls').height(win_height);
-                $('.tootls_host_list').height((win_height - 80) * .75);
-                $('.tootls_commonly_list').height((win_height - 80) * .25);
-            }else{
-                $('.main-content .safe').height(win_height - 105);
-                $('#term_box_view,.term_tootls').height(win_height - 105);
-                $('.tootls_host_list').height(host_commonly * .75);
-                $('.tootls_commonly_list').height(host_commonly * .25);
-            }
-            var id = $('.term_item_tab .active').data('id');
-            var item_term = that.host_term[id].term;
-            item_term.FitAddon.fit();
-            that.host_term[id].resize({cols:item_term.cols, rows:item_term.rows});
+            that.on_resize(that);
         });
         $('.tab_tootls').on('click','.glyphicon-resize-full',function(){
             $(this).removeClass('glyphicon-resize-full').addClass('glyphicon-resize-small').attr('title','Exit full Screen');
@@ -240,8 +223,13 @@ var host_trem = {
             var win = $(window)[0],win_width = win.innerHeight,win_height = win.innerHeight,host_commonly = win_height - 185;
             $('.main-content .safe').height(win_height - 105);
             $('#term_box_view,.term_tootls').height(win_height - 105);
-            $('.tootls_host_list').height(host_commonly * .75);
-            $('.tootls_commonly_list').height(host_commonly * .25);
+            if(_tool_host_height !=0&&_tool_commonly_height !=0){
+                $(".tootls_host_list").css("height",_tool_host_height+"px"),
+                $(".tootls_commonly_list").css("height", _tool_commonly_height+"px");
+            }else{
+                 $('.tootls_host_list').height(host_commonly * .75);
+                $('.tootls_commonly_list').height(host_commonly * .25);
+            }
             that.open_term_view();
         });
 
@@ -266,8 +254,72 @@ var host_trem = {
                 item.term.FitAddon.fit();
                 item.resize({cols:item.term.cols, rows:item.term.rows});
             }
-            
+
         });
+        //通过本地存储获取显示设置
+        if(_tool_status==0){
+            $(".term-tool-button").empty();
+            $(".term-tool-button").append('<span class="glyphicon glyphicon-menu-right"></span>').addClass("tool-hide").removeClass("tool-show");
+            $(".term_box").css("margin-right","260px");
+            $(".term_tootls").css("display","block");
+            if(_tool_host_height !=0&&_tool_commonly_height !=0){
+                $(".tootls_host_list").css("height",_tool_host_height+"px"),
+                $(".tootls_commonly_list").css("height", _tool_commonly_height+"px");
+            }
+        }else{
+            $(".term-tool-button").empty();
+            $(".term-tool-button").append('<span class="glyphicon glyphicon-menu-left"></span>').addClass("tool-show").removeClass("tool-hide");
+            $(".term_box").css("margin-right","0px");
+            $(".term_tootls").css("display","none");
+        }
+
+        //终端工具栏显示
+        $('.term_content_tab').on('click','.tool-show',function(){
+            $(this).empty();
+            $(this).append('<span class="glyphicon glyphicon-menu-right"></span>').addClass("tool-hide").removeClass("tool-show");
+            $(".term_box").css("margin-right","260px");
+            $(".term_tootls").css("display","block");
+            localStorage.setItem("tool_status",0);
+            that.on_resize(that);
+        });
+
+        //终端工具栏隐藏
+        $('.term_content_tab').on('click','.tool-hide',function(){
+            $(this).empty();
+            $(this).append('<span class="glyphicon glyphicon-menu-left"></span>').addClass("tool-show").removeClass("tool-hide");
+            $(".term_box").css("margin-right","0px");
+            $(".term_tootls").css("display","none");
+            localStorage.setItem("tool_status",1);
+            that.on_resize(that);
+        });
+
+        $(".term-move-border").on('mousedown', function (e) {
+            var hostbox_height = parseInt($(".tootls_host_list").css("height")),
+            commonlybox_height = parseInt($(".tootls_commonly_list").css("height")),
+            max_height = hostbox_height + commonlybox_height+38,
+            move_y = e.clientY;
+            $(document).on('mousemove', function (ev) {
+                var offsetY = ev.clientY - move_y,
+                _host = hostbox_height+offsetY;
+                _commonly = commonlybox_height-offsetY;
+                if(_host <= 300){
+                    _host = 300;_commonly = max_height-_host-38;
+                }else
+                if(_commonly <= 100){
+                    _commonly = 100;_host = max_height-_commonly-38;
+                }
+                $(".tootls_host_list").css("height",_host+"px"),$(".tootls_commonly_list").css("height",_commonly+"px");
+             });
+            $(document).on('mouseup', function (ev) {
+                var _host_height = parseInt($(".tootls_host_list").css("height")),
+                _commonly_height = parseInt($(".tootls_commonly_list").css("height"));
+                localStorage.setItem("hostHeight",_host_height);
+                localStorage.setItem("commonlyHeight",_commonly_height);
+                $(this).unbind('mousemove mouseup');
+            });
+            e.stopPropagation();
+        });
+
         $('.term_item_tab').on('click','.icon-trem-close',function(){
             var id = $(this).parent().data('id');
             that.remove_term_view(id);
@@ -379,7 +431,7 @@ var host_trem = {
         // $('.tootls_host_list').on('mouseup','li',function(e){
         //     if(e.button == 0){
         //         if(clientX == e.clientX && clientY == e.clientY){
-                    
+
         //         }
         //     }
         // });
@@ -458,7 +510,26 @@ var host_trem = {
         }
         this.is_full = false;
     },
-    
+
+    on_resize:function(that){
+        var win = $(window)[0],win_width = win.innerHeight,win_height = win.innerHeight,host_commonly = win_height - 185;
+        if(that.isFullScreen()){
+            $('.main-content .safe').height(win_height);
+            $('#term_box_view,.term_tootls').height(win_height);
+            $('.tootls_host_list').height((win_height - 80) * .75);
+            $('.tootls_commonly_list').height((win_height - 80) * .25);
+        }else{
+            $('.main-content .safe').height(win_height - 105);
+            $('#term_box_view,.term_tootls').height(win_height - 105);
+            $('.tootls_host_list').height(host_commonly * .75);
+            $('.tootls_commonly_list').height(host_commonly * .25);
+        }
+        var id = $('.term_item_tab .active').data('id');
+        var item_term = that.host_term[id].term;
+        item_term.FitAddon.fit();
+        that.host_term[id].resize({cols:item_term.cols, rows:item_term.rows});
+    },
+
     /**
      * @name 本地服务器登录表单 
      * @author chudong<2020-08-10>
@@ -686,7 +757,7 @@ var host_trem = {
                             break;
                         }
                     });
-                    if(!obj.form.host){
+                    if(!obj.form.sort){
                         delete form.sort;
                         that.create_host(form,function(res){
                             if(res.status){
@@ -698,7 +769,8 @@ var host_trem = {
                             }
                         });
                     }else{
-                        form.new_host = obj.form.host;
+                        form.new_host = form.host;
+                        form.host = obj.form.host;
                         that.modify_host(form,function(res){
                             if(res.status){
                                 layer.close(indexs)

@@ -246,9 +246,29 @@ class apache:
             return public.returnMsg(False, 'CONF_FILE_NOT_EXISTS')
         reg = '\s*#LOG_FORMAT_BEGIN_{n}(\n|.)+#LOG_FORMAT_END_{n}\n?'.format(n=args.log_format_name)
         conf = re.sub(reg,'',conf)
+        self._del_format_log_of_website(args.log_format_name)
         public.writeFile(self.httpdconf,conf)
         public.serviceReload()
         return public.returnMsg(True, 'SET_SUCCESS')
+
+    def _del_format_log_of_website(self,log_format_name):
+        site_format_log_status = self._get_format_log_to_website(log_format_name)
+        try:
+            for s in site_format_log_status.keys():
+                if not site_format_log_status[s]:
+                    continue
+                website_conf_file = '/www/server/panel/vhost/apache/{}.conf'.format(s)
+                format_exist_reg = 'CustomLog\s+"/www.*"\s+{}'.format(log_format_name)
+                conf = public.readFile(website_conf_file)
+                if not conf:continue
+                if not re.search(format_exist_reg,conf):continue
+                access_log = re.search(format_exist_reg,conf).group().split()
+                access_log = access_log[0] + ' ' +access_log[1] + 'combined'
+                conf = re.sub(format_exist_reg,access_log,conf)
+                public.writeFile(website_conf_file,conf)
+            return True
+        except:
+            return False
 
     def get_httpd_access_log_format_parameter(self,args=None):
         data = {

@@ -84,18 +84,26 @@ class setPanelLets:
         pssl = panelSSL.panelSSL()
         gcl = pssl.GetCertList(get)
         for i in gcl:
-            if get.domain in i.values():
-                time_array = time.strptime(i['notAfter'],"%Y-%m-%d")
-                time_stamp = int(time.mktime(time_array))
-                now = time.time()
-                if time_stamp > int(now):
-                    return i
+            for v in i.values():
+                if get.domain in v:
+                    try:
+                        time_stamp = int(i['notAfter'])
+                    except:
+                        time_array = time.strptime(i['notAfter'],"%Y-%m-%d")
+                        time_stamp = int(time.mktime(time_array))
+                    now = time.time()
+                    if time_stamp > int(now):
+                        return i
 
     # 读取可用站点证书
     def __read_site_cert(self,domain_cert):
-        key_file = "{path}{domain}/{key}".format(path=self.__vhost_cert_path,domain=domain_cert["subject"],key="privkey.pem")
-        cert_file = "{path}{domain}/{cert}".format(path=self.__vhost_cert_path, domain=domain_cert["subject"],
+        try:
+            key_file = "{path}{domain}/{key}".format(path=self.__vhost_cert_path,domain=domain_cert["subject"],key="privkey.pem")
+            cert_file = "{path}{domain}/{cert}".format(path=self.__vhost_cert_path, domain=domain_cert["subject"],
                                                    cert="fullchain.pem")
+        except:
+            key_file = "/www/server/panel/{}/privkey.pem".format(domain_cert['save_path'])
+            cert_file  = "/www/server/panel/{}/fullchain.pem".format(domain_cert['save_path'])
         if not os.path.exists(key_file):
             key_file = "{path}{domain}/{key}".format(path="/www/server/panel/vhost/ssl/",domain=domain_cert["subject"],key="privkey.pem")
             cert_file = "{path}{domain}/{cert}".format(path="/www/server/panel/vhost/ssl/", domain=domain_cert["subject"],

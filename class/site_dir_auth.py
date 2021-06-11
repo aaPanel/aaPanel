@@ -139,6 +139,16 @@ class SiteDirAuth:
         site_info = public.M('sites').where('id=?', (id,)).field('name,path').find()
         return {"site_name":site_info["name"],"site_path":site_info["path"]}
 
+    def change_dir_auth_file_nginx_phpver(self,site_name,phpv,auth_name):
+        file_path = "{setup_path}/panel/vhost/nginx/dir_auth/{site_name}/{auth_name}.conf".format(
+            setup_path=self.setup_path,site_name=site_name,auth_name=auth_name)
+        conf = public.readFile(file_path)
+        if not conf:
+            return False
+        rep = "include\s+enable-php-\d+\.conf;"
+        conf = re.sub(rep,'include enable-php-{}.conf;'.format(phpv),conf)
+        public.writeFile(file_path,conf)
+
     # 设置独立认证文件
     def set_dir_auth_file(self,site_path,site_name,name,username,site_dir,auth_file):
         php_ver = self.get_site_php_version(site_name)
@@ -277,11 +287,15 @@ class SiteDirAuth:
     def get_dir_auth(self,get):
         '''
         get.id
+        get.sitename
         :param get:
         :return:
         '''
-        site_info = self.get_site_info(get.id)
-        site_name = site_info["site_name"]
+        if not hasattr(get, 'siteName'):
+            site_info = self.get_site_info(get.id)
+            site_name = site_info["site_name"]
+        else:
+            site_name = get.siteName
         conf = self._read_conf()
         if site_name in conf:
             return {site_name:conf[site_name]}

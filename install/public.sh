@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US:en
 
 get_node_url(){
-	nodes=(http://183.235.223.101:3389 http://125.88.182.172:5880 http://128.1.164.196 http://103.224.251.67 http://download.bt.cn);
+	nodes=(http://183.235.223.101:3389 http://125.88.182.172:5880 http://128.1.164.196 http://103.224.251.67:5880 http://download.bt.cn);
 	i=1;
 	for node in ${nodes[@]};
 	do
@@ -78,6 +78,6 @@ else
 fi
 GetPackManager
 if [ ! $NODE_URL ];then
-	echo '正在选择下载节点...';
+	echo 'Selecting download node...';
 	get_node_url
 fi

@@ -142,7 +142,7 @@ class nginx:
             log_format = loads(args.log_format)
             data = """
         #LOG_FORMAT_BEGIN_{n}
-        log_format {n} '{c};'
+        log_format {n} '{c}';
         #LOG_FORMAT_END_{n}
 """.format(n=args.log_format_name,c=' '.join(log_format))
             data = data.replace('$http_user_agent','"$http_user_agent"')
@@ -171,6 +171,7 @@ class nginx:
             return public.returnMsg(False, 'NGINX_CONF_NOT_EXISTS')
         reg = '\s*#LOG_FORMAT_BEGIN_{n}(\n|.)+#LOG_FORMAT_END_{n}\n?'.format(n=args.log_format_name)
         conf = re.sub(reg,'',conf)
+        self._del_format_log_of_website(args.log_format_name)
         public.writeFile(self.nginxconf,conf)
         public.serviceReload()
         return public.returnMsg(True, 'SET_SUCCESS')
@@ -245,7 +246,10 @@ class nginx:
                 if not conf:
                     return public.returnMsg(False, 'NGINX_CONF_NOT_EXISTS')
                 format_exist_reg = '(access_log\s+/www.*\.log).*;'
-                access_log = re.search(format_exist_reg, conf).groups()[0] + ' ' + args.log_format_name + ';'
+                access_log = self.get_nginx_access_log(conf)
+                if not access_log:
+                    continue
+                access_log = 'access_log '+ access_log + ' ' + args.log_format_name + ';'
                 if site['name'] not in sites and re.search(format_exist_reg,conf):
                     access_log = ' '.join(access_log.split()[:-1])+';'
                     conf = re.sub(reg, access_log, conf)
@@ -256,6 +260,22 @@ class nginx:
             return public.returnMsg(True, 'SET_SUCCESS')
         except:
             return public.returnMsg(False, str(public.get_error_info()))
+
+    def get_nginx_access_log(self,nginx_conf):
+        try:
+            reg = 'access_log\s+(.*\.log)'
+            log_path = re.findall(reg, nginx_conf)
+            if not log_path:
+                return False
+            for i in log_path:
+                if 'purge_cache' in i:
+                    continue
+                if not os.path.exists(i):
+                    continue
+                return i
+            return False
+        except:
+            return False
 
     def _get_format_log_to_website(self,log_format_name):
         tmp = public.M('sites').field('name').select()
@@ -272,3 +292,22 @@ class nginx:
             else:
                 data[i['name']] = False
         return data
+
+    def _del_format_log_of_website(self,log_format_name):
+        site_format_log_status = self._get_format_log_to_website(log_format_name)
+        try:
+            for s in site_format_log_status.keys():
+                if not site_format_log_status[s]:
+                    continue
+                website_conf_file = '/www/server/panel/vhost/nginx/{}.conf'.format(s)
+                format_exist_reg = 'access_log\s+/www.*\.log\s+{};'.format(log_format_name)
+                conf = public.readFile(website_conf_file)
+                if not conf:continue
+                if not re.search(format_exist_reg,conf):continue
+                access_log = re.search(format_exist_reg,conf).group().split()
+                access_log = access_log[0] + ' ' +access_log[1] +';'
+                conf = re.sub(format_exist_reg,access_log,conf)
+                public.writeFile(website_conf_file,conf)
+            return True
+        except:
+            return False

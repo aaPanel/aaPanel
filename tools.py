@@ -443,6 +443,7 @@ def bt_cli(u_input = 0):
         print("(23) %s      (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
         print("(24) Turn off Google Authenticator          (17) Set log cutting on/off compression")
         print("(25) Set whether to back up the panel automatically  (18) Set whether to save a historical copy of the file")
+        print("(26) Keep/Remove local backup when backing up to cloud storage")
         print("(0) Cancel")
         print(raw_tip)
         try:
@@ -450,7 +451,7 @@ def bt_cli(u_input = 0):
             if sys.version_info[0] == 3: u_input = int(u_input)
         except: u_input = 0
 
-    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25]
+    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25,26]
     if not u_input in nums:
         print(raw_tip)
         print(public.GetMsg("CANCELLED"))
@@ -603,6 +604,14 @@ def bt_cli(u_input = 0):
             print("|-Detected that the file copy function is turned on and is closing...")
             public.writeFile(l_path,'True')
             print("|-File copy function turned off")
+    elif u_input == 26:
+        keep_local = "/www/server/panel/data/is_save_local_backup.pl"
+        if os.path.exists(keep_local):
+            print("|-The local file retention setting is turned off")
+            os.remove(keep_local)
+        else:
+            print("|-The local file retention setting is turned on")
+            os.mknod(keep_local)
 
 
 

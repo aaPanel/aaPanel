@@ -12,7 +12,7 @@
 # MySQL端口安全检测
 # -------------------------------------------------------------------
 
-import os,sys,re,public
+import os,sys,re,public,json
 
 _title = 'MySQL security'
 _version = 1.0                              # 版本
@@ -50,9 +50,17 @@ def check_run():
         return True,'MySQL is not installed'
     if not public.ExecShell("lsof -i :{}".format(port_tmp[0]))[0]:
         return True,'MySQL is not installed'
-    result = public.check_port_stat(int(port_tmp[0]),public.GetClientIp())
+    result = public.check_port_stat(int(port_tmp[0]),public.GetLocalIp())
     if result == 0:
         return True,'Risk-free'
 
-    return False,'The current MySQL port: {}, which can be accessed by any server, which may cause MySQL to be cracked by brute force, posing security risks'.format(port_tmp[0])
-    
+    fail2ban_file = '/www/server/panel/plugin/fail2ban/config.json'
+    if os.path.exists(fail2ban_file):
+        try:
+            fail2ban_config = json.loads(public.readFile(fail2ban_file))
+            if 'mysql' in fail2ban_config.keys():
+                if fail2ban_config['mysql']['act'] == 'true':
+                    return True,'Fail2ban is enabled'
+        except: pass
+
+    return False,'当前MySQL端口: {}，可被任意服务器访问，这可能导致MySQL被暴力破解，存在安全隐患'.format(port_tmp[0])

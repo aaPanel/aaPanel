@@ -153,7 +153,6 @@ class panelPlugin:
                                                                                                    'Depend on the following software, please install first [%s]' %
                                                                                                    versionInfo[
                                                                                                        'dependent'])
-
     #安装插件
     def install_plugin(self,get):
         if not self.check_sys_write(): return public.returnMsg(False,'CANT_WRITE_SYS_DIR')
@@ -163,6 +162,8 @@ class panelPlugin:
         check_result = self.check_install_limit(get)
         if check_result:
             return check_result
+        if pluginInfo['name'] in ['dns_manager','mail_sys']:
+            pluginInfo['type'] = 5
         if pluginInfo['type'] != 5:
             result = self.install_sync(pluginInfo,get)
         else:
@@ -170,15 +171,20 @@ class panelPlugin:
         try:
             if 'status' in result:
                 if result['status']:
-                    public.httpPost('{}/api/setupCount/setupPlugin'.format(self.__official_url),{"pid":pluginInfo['id'],'p_name':pluginInfo['name']},3)
-            get.force = 1
-            self.get_cloud_list(get)
+                    public.arequests('post','{}/api/setupCount/setupPlugin'.format(self.__official_url),data={"pid":pluginInfo['id'],'p_name':pluginInfo['name']},timeout=3)
+            # get.force = 1
+            # self.get_cloud_list(get)
         except:pass
         return result
     
     #同步安装
     def install_sync(self,pluginInfo,get):
         import panelAuth
+        try:
+            token = panelAuth.panelAuth().create_serverid(None)['token']
+        except:
+            # return public.returnMsg(False,'Please log in as aaPanel account first')
+            token = None
         if 'download' in pluginInfo['versions'][0]:
             tmp_path = '/www/server/panel/temp'
             if not os.path.exists(tmp_path): os.makedirs(tmp_path,mode=384)
@@ -187,14 +193,14 @@ class panelPlugin:
             public.downloadFile('{}/api/plugin/download?filename={}&token={}'.format(
                 self.__official_url,
                 pluginInfo['versions'][0]['download'],
-                panelAuth.panelAuth().create_serverid(None)['token']
+                token
                 ),toFile)
             if public.FileMd5(toFile) != pluginInfo['versions'][0]['md5']: return public.returnMsg(False,'CHECK_FILE_HASH')
             update = False
             if os.path.exists(pluginInfo['install_checks']): update =pluginInfo['versions'][0]['version_msg']
             return self.update_zip(None,toFile,update)
         else:
-            download_url = public.get_url() + '/install/plugin/' + pluginInfo['name'] + '/install.sh'
+            download_url = public.get_url() + '/install/plugin/' + pluginInfo['name'] + '_en/install.sh'
             toFile = '/tmp/%s.sh' % pluginInfo['name']
             public.downloadFile(download_url,toFile)
             self.set_pyenv(toFile)
@@ -418,30 +424,23 @@ class panelPlugin:
         is_plugin = True
         import panelMessage #引用消息提醒模块
         pm = panelMessage.panelMessage()
-        pm.remove_message_all()
-
         #企业版到期提醒
-        if not data['ltd'] in [-1]:
-            level,expire_day = self.get_level_msg('ltd',s_time,data['ltd'])
-            self.add_expire_msg('企业版',level,'ltd',expire_day,100000032,data['ltd'])
-            pm.remove_message_level('pro')
-            return True
+        if not data['ltd'] in [-1] :
+
+            if data['pro'] < 0 or  (data['pro'] - s_time) / 86400 < 15 :
+                level,expire_day = self.get_level_msg('ltd',s_time,data['ltd'])
+                print(level,expire_day)
+                self.add_expire_msg('企业版',level,'ltd',expire_day,100000046,data['ltd'])
+                pm.remove_message_level('pro')
+                return True
 
         #专业版到期提醒
         if not data['pro'] in [-1,0]:
             level,expire_day = self.get_level_msg('pro',s_time,data['pro'])
-            self.add_expire_msg('专业版',level,'pro',expire_day,100000011,data['pro'])
+            self.add_expire_msg('专业版',level,'pro',expire_day,100000030,data['pro'])
+            pm.remove_message_level('ltd')
             is_plugin = False
 
-        #单独购买的插件到期提醒
-        # for p in data['list']:
-        #     #跳过非企业版或专业版插件
-        #     if not p['type'] in [8,12]: continue
-        #     #已经是专业版的情况下跳过专业版插件
-        #     if not is_plugin and p['type'] == 8: continue
-        #     if not p['endtime'] in [-1,0]:
-        #         level,expire_day = self.get_level_msg(p['name'],s_time,p['endtime'])
-        #         self.add_expire_msg(p['title'],level,p['name'],expire_day,p['pid'],p['endtime'])
         return True
 
 
@@ -1672,10 +1671,11 @@ class panelPlugin:
             if conf.find('/www/server/stop') == -1: pstatus = True
         if os.path.exists('/usr/local/lsws/bin/lswsctrl'):
             result = self._get_ols_myphpadmin_info()
-            phpversion = result['php_version']
-            phpport = result['php_port']
-            pauth = result['pauth']
-            pstatus = result['pstatus']
+            if result:
+                phpversion = result['php_version']
+                phpport = result['php_port']
+                pauth = result['pauth']
+                pstatus = result['pstatus']
         try:
             vfile = setupPath + '/phpmyadmin/version.pl'
             if os.path.exists(vfile):
@@ -1699,6 +1699,7 @@ class panelPlugin:
     def _get_ols_myphpadmin_info(self):
         filename = "/www/server/panel/vhost/openlitespeed/detail/phpmyadmin.conf"
         conf = public.readFile(filename)
+        if not conf:return False
         reg = '/usr/local/lsws/lsphp(\d+)/bin/lsphp'
         php_v = re.search(reg,conf)
         phpversion = '73'
@@ -2050,6 +2051,13 @@ class panelPlugin:
         p_info = public.ReadFile(plugin_path + '/info.json')
         public.ExecShell("rm -rf /www/server/panel/temp/*")
         if p_info:
+            #----- 增加图标复制 hwliang<2021-03-23> -----#
+            icon_sfile = plugin_path + '/icon.png'
+            icon_dfile = '/www/server/panel/BTPanel/static/img/soft_ico/ico-{}.png'.format(get.plugin_name)
+            if os.path.exists(plugin_path + '/icon.png'):
+                import shutil
+                shutil.copyfile(icon_sfile,icon_dfile)
+            #----- 增加图标复制 END -----#
             public.WriteLog('TYPE_SOFT','INSTALL_THIRD_PARDY_PLUG' ,(json.loads(p_info)['title'],))
             return public.returnMsg(True,'PLUGIN_INSTALL_SUCCESS')
         public.ExecShell("rm -rf " + plugin_path)

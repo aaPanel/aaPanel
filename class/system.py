@@ -25,7 +25,6 @@ class system:
             session['config'] = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find()
         if not 'email' in session['config']:
             session['config']['email'] = public.M('users').where("id=?",('1',)).getField('email')
-        data = {}
         data = session['config']
         data['webserver'] = public.get_webserver()
         #PHP版本
@@ -100,7 +99,7 @@ class system:
         elif os.path.exists('/usr/local/lsws/bin/lswsctrl'):
             data['webserver'] = 'openlitespeed'
             serviceName = 'openlitespeed'
-            tmp['setup'] = os.path.exists(self.setupPath +'/apache/bin/httpd')
+            tmp['setup'] = os.path.exists('/usr/local/lsws/bin/lswsctrl')
             configFile = '/usr/local/lsws/bin/lswsctrl'
             try:
                 if os.path.exists(configFile):
@@ -234,18 +233,18 @@ class system:
     
     def GetSystemTotal(self,get,interval = 1):
         #取系统统计信息
-        data = self.GetMemInfo();
-        cpu = self.GetCpuInfo(interval);
-        data['cpuNum'] = cpu[1];
-        data['cpuRealUsed'] = cpu[0];
-        data['time'] = self.GetBootTime();
-        data['system'] = self.GetSystemVersion();
-        data['isuser'] = public.M('users').where('username=?',('admin',)).count();
+        data = self.GetMemInfo()
+        cpu = self.GetCpuInfo(interval)
+        data['cpuNum'] = cpu[1]
+        data['cpuRealUsed'] = cpu[0]
+        data['time'] = self.GetBootTime()
+        data['system'] = self.GetSystemVersion()
+        data['isuser'] = public.M('users').where('username=?',('admin',)).count()
         try:
             data['isport'] = public.GetHost(True) == '8888'
         except:data['isport'] = False
 
-        data['version'] = session['version'];
+        data['version'] = session['version']
         return data
     
     def GetLoadAverage(self,get):
@@ -253,14 +252,14 @@ class system:
             c = os.getloadavg()
         except:
             c = [0,0,0]
-        data = {};
-        data['one'] = float(c[0]);
-        data['five'] = float(c[1]);
-        data['fifteen'] = float(c[2]);
-        data['max'] = psutil.cpu_count() * 2;
-        data['limit'] = data['max'];
-        data['safe'] = data['max'] * 0.75;
-        return data;
+        data = {}
+        data['one'] = float(c[0])
+        data['five'] = float(c[1])
+        data['fifteen'] = float(c[2])
+        data['max'] = psutil.cpu_count() * 2
+        data['limit'] = data['max']
+        data['safe'] = data['max'] * 0.75
+        return data
     
     def GetAllInfo(self,get):
         data = {}
@@ -306,7 +305,7 @@ class system:
         days = math.floor(hours / 24)
         hours = math.floor(hours - (days * 24))
         min = math.floor(min - (days * 60 * 24) - (hours * 60))
-        sys_time = "{} Days".format(int(days))
+        sys_time = "{} Day(s)".format(int(days))
         cache.set(key,sys_time,1800)
         return sys_time
         #return public.getMsg('SYS_BOOT_TIME',(str(int(days)),str(int(hours)),str(int(min))))
@@ -328,6 +327,7 @@ class system:
 
         used_all = psutil.cpu_percent(percpu=True)
         cpu_name = public.getCpuType() + " * {}".format(cpuW)
+
         return used,cpuCount,used_all,cpu_name,cpuNum,cpuW
 
     def get_cpu_percent_thead(self,interval):
@@ -408,7 +408,7 @@ class system:
             n += 1
             try:
                 inodes = tempInodes1[n-1].split()
-                disk = re.findall(r"^(.+)\s+([\w\.]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\d%]{2,4})\s+(/.{0,50})$",tmp.strip())
+                disk = re.findall(r"^(.+)\s+([\w\.]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\d%]{2,4})\s+(/.{0,100})$",tmp.strip())
                 if disk: disk = disk[0]
                 if len(disk) < 6: continue
                 if disk[2].find('M') != -1: continue
@@ -420,7 +420,7 @@ class system:
                 arr = {}
                 arr['filesystem'] = disk[0].strip()
                 arr['type'] = disk[1].strip()
-                arr['path'] = disk[6]
+                arr['path'] = disk[6].replace('/usr/local/lighthouse/softwares/btpanel','/www')
                 tmp1 = [disk[2],disk[3],disk[4],disk[5]]
                 arr['size'] = tmp1
                 arr['inodes'] = [inodes[1],inodes[2],inodes[3],inodes[4]]
@@ -430,6 +430,63 @@ class system:
                 continue
         cache.set(key,diskInfo,360)
         return diskInfo
+
+
+    # 获取磁盘IO开销数据
+    def get_disk_iostat(self):
+        iokey = 'iostat'
+        diskio = cache.get(iokey)
+        mtime = int(time.time())
+        if not diskio:
+            diskio = {}
+            diskio['info'] = None
+            diskio['time'] = mtime
+        diskio_1 = diskio['info']
+        stime = mtime - diskio['time']
+        if not stime: stime = 1
+        diskInfo = {}
+        diskInfo['ALL'] = {}
+        diskInfo['ALL']['read_count'] = 0
+        diskInfo['ALL']['write_count'] = 0
+        diskInfo['ALL']['read_bytes'] = 0
+        diskInfo['ALL']['write_bytes'] = 0
+        diskInfo['ALL']['read_time'] = 0
+        diskInfo['ALL']['write_time'] = 0
+        diskInfo['ALL']['read_merged_count'] = 0
+        diskInfo['ALL']['write_merged_count'] = 0
+        try:
+            if os.path.exists('/proc/diskstats'):
+                diskio_2 = psutil.disk_io_counters(perdisk=True)
+                if not diskio_1:
+                    diskio_1 = diskio_2
+                for disk_name in diskio_2.keys():
+                    diskInfo[disk_name] = {}
+                    diskInfo[disk_name]['read_count']   = int((diskio_2[disk_name].read_count - diskio_1[disk_name].read_count) / stime)
+                    diskInfo[disk_name]['write_count']  = int((diskio_2[disk_name].write_count - diskio_1[disk_name].write_count) / stime)
+                    diskInfo[disk_name]['read_bytes']   = int((diskio_2[disk_name].read_bytes - diskio_1[disk_name].read_bytes) / stime)
+                    diskInfo[disk_name]['write_bytes']  = int((diskio_2[disk_name].write_bytes - diskio_1[disk_name].write_bytes) / stime)
+                    diskInfo[disk_name]['read_time']    = int((diskio_2[disk_name].read_time - diskio_1[disk_name].read_time) / stime)
+                    diskInfo[disk_name]['write_time']   = int((diskio_2[disk_name].write_time - diskio_1[disk_name].write_time) / stime)
+                    diskInfo[disk_name]['read_merged_count'] = int((diskio_2[disk_name].read_merged_count - diskio_1[disk_name].read_merged_count) / stime)
+                    diskInfo[disk_name]['write_merged_count'] = int((diskio_2[disk_name].write_merged_count - diskio_1[disk_name].write_merged_count) / stime)
+
+                    diskInfo['ALL']['read_count'] += diskInfo[disk_name]['read_count']
+                    diskInfo['ALL']['write_count'] += diskInfo[disk_name]['write_count']
+                    diskInfo['ALL']['read_bytes'] += diskInfo[disk_name]['read_bytes']
+                    diskInfo['ALL']['write_bytes'] += diskInfo[disk_name]['write_bytes']
+                    if diskInfo['ALL']['read_time'] < diskInfo[disk_name]['read_time']:
+                        diskInfo['ALL']['read_time'] = diskInfo[disk_name]['read_time']
+                    if diskInfo['ALL']['write_time'] < diskInfo[disk_name]['write_time']:
+                        diskInfo['ALL']['write_time'] = diskInfo[disk_name]['write_time']
+                    diskInfo['ALL']['read_merged_count'] += diskInfo[disk_name]['read_merged_count']
+                    diskInfo['ALL']['write_merged_count'] += diskInfo[disk_name]['write_merged_count']
+
+                cache.set(iokey,{'info':diskio_2,'time':mtime})
+        except:
+            public.writeFile('/tmp/2',str(public.get_error_info()))
+            return diskInfo
+        return diskInfo
+
 
     #清理系统垃圾
     def ClearSystem(self,get):
@@ -545,6 +602,7 @@ class system:
 
         if get != False:
             networkInfo['cpu'] = self.GetCpuInfo(1)
+            networkInfo['cpu_times'] = self.get_cpu_times()
             networkInfo['load'] = self.GetLoadAverage(get)
             networkInfo['mem'] = self.GetMemInfo(get)
             networkInfo['version'] = session['version']
@@ -561,9 +619,41 @@ class system:
         networkInfo['user_info'] = panelSSL.panelSSL().GetUserInfo(None)
         networkInfo['up'] = round(float(networkInfo['up']),2)
         networkInfo['down'] = round(float(networkInfo['down']),2)
+        networkInfo['iostat'] = self.get_disk_iostat()
 
         return networkInfo
-        
+
+
+    def get_cpu_times(self):
+        data = {}
+        try:
+            cpu_times_p  = psutil.cpu_times_percent()
+            data['user'] = cpu_times_p.user
+            data['nice'] = cpu_times_p.nice
+            data['system'] = cpu_times_p.system
+            data['idle'] = cpu_times_p.idle
+            data['iowait'] = cpu_times_p.iowait
+            data['irq'] = cpu_times_p.irq
+            data['softirq'] = cpu_times_p.softirq
+            data['steal'] = cpu_times_p.steal
+            data['guest'] = cpu_times_p.guest
+            data['guest_nice'] = cpu_times_p.guest_nice
+            data['total_processes'] = 0
+            data['active_processes'] = 0
+            for pid in psutil.pids():
+                try:
+                    p = psutil.Process(pid)
+                    if p.status() == 'running':
+                        data['active_processes'] += 1
+                except:
+                    continue
+                data['total_processes'] += 1
+
+        except: pass
+        return data
+
+
+
     
     def GetNetWorkApi(self,get=None):
         return self.GetNetWork()
@@ -852,9 +942,9 @@ class system:
                     self.ssh.connect('localhost', public.GetSSHPort())
                 except:
                     return False
-            import firewalls,common
+            import firewalls
             fw = firewalls.firewalls()
-            get = common.dict_obj()
+            get = public.dict_obj()
             get.status = '0'
             fw.SetSshStatus(get)
             self.ssh.connect('127.0.0.1', public.GetSSHPort())

@@ -201,9 +201,16 @@ class CloudFlareDns(BaseDns):
             self.CLOUDFLARE_API_BASE_URL = CLOUDFLARE_API_BASE_URL
         super(CloudFlareDns, self).__init__()
 
+    def get_headers(self):
+        if os.path.exists('/www/server/panel/data/cf_limit_api.pl'):
+            headers = {"Authorization": "Bearer "+self.CLOUDFLARE_API_KEY}
+        else:
+            headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        return headers
+
     def find_dns_zone(self, domain_name):
         url = urljoin(self.CLOUDFLARE_API_BASE_URL, "zones?status=active&name={0}".format(domain_name))
-        headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        headers = self.get_headers()
         find_dns_zone_response = requests.get(url, headers=headers, timeout=self.HTTP_TIMEOUT)
         if find_dns_zone_response.status_code != 200:
             raise ValueError(
@@ -231,7 +238,11 @@ class CloudFlareDns(BaseDns):
             self.CLOUDFLARE_API_BASE_URL,
             "zones/{0}/dns_records".format(self.CLOUDFLARE_DNS_ZONE_ID),
         )
-        headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        # if '_' in self.CLOUDFLARE_API_KEY or '-' in self.CLOUDFLARE_API_KEY:
+        #     headers = {"Authorization": "Bearer "+self.CLOUDFLARE_API_KEY}
+        # else:
+        #     headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        headers = self.get_headers()
         body = {
             "type": s_type,
             "name": domain_name,
@@ -257,7 +268,11 @@ class CloudFlareDns(BaseDns):
             self.CLOUDFLARE_API_BASE_URL,
             "zones/{0}/dns_records".format(self.CLOUDFLARE_DNS_ZONE_ID),
         )
-        headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        # if '_' in self.CLOUDFLARE_API_KEY or '-' in self.CLOUDFLARE_API_KEY:
+        #     headers = {"Authorization": "Bearer "+self.CLOUDFLARE_API_KEY}
+        # else:
+        #     headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        headers = self.get_headers()
         body = {
             "type": "TXT",
             "name": "_acme-challenge" + "." + domain_name + ".",
@@ -278,8 +293,11 @@ class CloudFlareDns(BaseDns):
 
 
     def remove_record(self,domain_name,dns_name,s_type):
-        headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
-
+        # if '_' in self.CLOUDFLARE_API_KEY or '-' in self.CLOUDFLARE_API_KEY:
+        #     headers = {"Authorization": "Bearer "+self.CLOUDFLARE_API_KEY}
+        # else:
+        #     headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        headers = self.get_headers()
         list_dns_payload = {"type": s_type, "name": dns_name}
         list_dns_url = urljoin(
             self.CLOUDFLARE_API_BASE_URL,
@@ -296,7 +314,6 @@ class CloudFlareDns(BaseDns):
                 self.CLOUDFLARE_API_BASE_URL,
                 "zones/{0}/dns_records/{1}".format(self.CLOUDFLARE_DNS_ZONE_ID, dns_record_id),
             )
-            headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
             requests.delete(
                 url, headers=headers, timeout=self.HTTP_TIMEOUT
             )
@@ -447,7 +464,7 @@ class CloudxnsDns(object):
         headers = self.get_headers(url)
         req = requests.get(url=url, headers=headers,verify=False)
         req = req.json()
-        
+
         return req
 
     def get_domain_id(self, domain_name):

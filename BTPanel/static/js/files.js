@@ -214,12 +214,13 @@ var bt_file = {
                     closeBtn: 1,
                     maxmin:true,
                     area: ['550px','505px'],
-                    btn:['Upload','Cancel'],
+                    btn:['Upload','Cancel','Clear'],
                     title: 'Upload files to【'+ bt.get_cookie('Path')  +'】--- Support breakpoint renewal',
                     skin:'file_dir_uploads',
                     content:'<div style="padding:15px 15px 10px 15px;"><div class="upload_btn_groud"><div class="btn-group"><button type="button" class="btn btn-primary btn-sm upload_file_btn">Upload file</button><button type="button" class="btn btn-primary  btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span><span class="sr-only">Toggle Dropdown</span></button><ul class="dropdown-menu"><li><a href="#" data-type="file">Upload file</a></li><li><a href="#" data-type="dir">Upload path</a></li></ul></div><div class="file_upload_info" style="display:none;"><span>Total process&nbsp;<i class="uploadProgress"></i>, uploading&nbsp;<i class="uploadNumber"></i>,</span><span style="display:none">Upload fail&nbsp;<i class="uploadError"></i></span><span>Speed&nbsp;<i class="uploadSpeed">Getting</i>,</span><span>Expect time&nbsp;<i class="uploadEstimate">Getting</i></span><i></i></div></div><div class="upload_file_body '+ (html==''?'active':'') +'">'+ (html!=''?('<ul class="dropUpLoadFileHead" style="padding-right:'+ (is_show?'15':'0') +'px"><li class="fileTitle"><span class="filename">File name</span><span class="filesize">File size</span><span class="fileStatus">File status</span></li></ul><ul class="dropUpLoadFile list-list">'+ html +'</ul>'):'<span>Please drag the file here'+ (!that.is_webkit?'<i style="display: block;font-style: normal;margin-top: 10px;color: red;font-size: 17px;">The current browser does not support drag upload. Commend to use Chrome browser or WebKit kernel for browsing</i>':'') +'</span>') +'</div></div>',
-                    success:function(){
+                    success:function(layers){
                         $('#mask_layer').hide();
+                        layers.find('.layui-layer-btn2').css('margin', '0 300px 0 0');
                         $('.file_dir_uploads .layui-layer-max').hide();
                         $('.upload_btn_groud .upload_file_btn').click(function(){$('.upload_btn_groud .dropdown-menu [data-type=file]').click()});
                         $('.upload_btn_groud .dropdown-menu a').click(function(){
@@ -293,15 +294,17 @@ var bt_file = {
                             layer.close(index);
                         }
                     },
-                    cancel:function(index, layero){
+                    btn3:function(index, layero){
                         if(that.uploading){
                             layer.confirm('Do you want to cancel the upload of files? It need to delete the uploaded files manually. Continue?',{title:'Cancel file upload',icon:0},function(indexs){
-                                layer.close(index);
-                                layer.close(indexs);
+                               $('.upload_file_body').addClass('active').html('<span>Please drag the file here</span>')
+                               that.filesList.length = 0
                             });
                             return false;
                         }else{
-                            layer.close(index);
+                            $('.upload_file_body').addClass('active').html('<span>Please drag the file here</span>')
+                            that.filesList.length = 0
+                            return false;
                         }
                     },
                     end:function (){
@@ -330,7 +333,7 @@ var bt_file = {
                 }else{
                     $('.dropUpLoadFile').append('<li><div class="fileItem"><span class="filename" title="File path:'+ (config.path + '/' + config.name).replace('//','/') +'&#10;File type:'+ config.type +'&#10;Size:'+ config.size +'"><i class="ico ico-'+ config.icon + '"></i>'+ (config.path + '/' + config.name).replace('//','/') +'</span><span class="filesize">'+ config.size +'</span><span class="fileStatus">'+ that.is_upload_status(config.upload) +'</span></div><div class="fileLoading"></div></li>');
                 }
-    
+
             }
         },
         // 上传单文件状态
@@ -339,10 +342,10 @@ var bt_file = {
             switch(status){
                 case -1:
                     return '<span class="upload_info upload_error" title="Fail'+ (val != ''?','+val:'') +'">Fail'+ (val != ''?','+val:'') +'</span>';
-                break;                    
+                break;
                 case 0:
                     return '<span class="upload_info upload_primary">Waiting to upload</span>';
-                break;   
+                break;
                 case 1:
                     return '<span class="upload_info upload_success">Uploaded</span>';
                 break;
@@ -395,7 +398,7 @@ var bt_file = {
                         $('.file_upload_info').hide().prev().show();
                     }));
                 } catch (e) {
-                    
+
                 }
             }
             $('.layui-layer-btn0').removeAttr('style data-upload').text(lan.upload.upload);
@@ -431,7 +434,7 @@ var bt_file = {
             var that = this;
             that.splitEndTime = new Date().getTime()
             that.get_timer_speed()
-    
+
             that.splitStartTime = new Date().getTime()
             var item = this.filesList[index],fileEnd = '';
             if(item == undefined) return false;
@@ -461,9 +464,9 @@ var bt_file = {
                         if(fileEnd != data){
                             that.uploadedSize += data;
                         }else{
-                            that.uploadedSize += parseInt(fileEnd - fileStart);  
+                            that.uploadedSize += parseInt(fileEnd - fileStart);
                         }
-    
+
                         that.upload_file(data,index);
                     }else{
                         if(data.status){
@@ -476,7 +479,7 @@ var bt_file = {
                             that.errorLength ++;
                         }
                     }
-                    
+
                 },
                 error:function(e){
                     if(that.filesList[index].req_error === undefined) that.filesList[index].req_error = 1
@@ -488,11 +491,11 @@ var bt_file = {
                     }
                     that.filesList[index].req_error += 1;
                     that.upload_file(fileStart,index)
-    
-                    
+
+
                 }
             });
-        }, 
+        },
         // 获取上传速度
         get_timer_speed:function(speed){
             var done_time = new Date().getTime()
@@ -503,7 +506,7 @@ var bt_file = {
                 that.timerSpeed = (that.fileSize / s_time).toFixed(2)
                 that.updateedSizeLast = that.uploadedSize
                 if(that.timerSpeed < 2) return;
-    
+
                 $('.file_upload_info .uploadSpeed').text(that.to_size(isNaN(that.timerSpeed)?0:that.timerSpeed)+'/s');
                 var estimateTime = that.time(parseInt(((that.uploadAllSize - that.uploadedSize) / that.timerSpeed) * 1000))
                 if(!isNaN(that.timerSpeed)) $('.file_upload_info .uploadEstimate').text(estimateTime.indexOf('NaN') == -1?estimateTime:'0 '+lan.bt.s);
@@ -534,7 +537,7 @@ var bt_file = {
             }
             return result
         },
-        
+
         to_size: function (a) {
             var d = [" B", " KB", " MB", " GB", " TB", " PB"];
             var e = 1024;
@@ -547,7 +550,7 @@ var bt_file = {
             }
         }
     },
-    init:function(){        
+    init:function(){
         if (bt.get_cookie('rank') == undefined || bt.get_cookie('rank') == null || bt.get_cookie('rank') == 'a' || bt.get_cookie('rank') == 'b') {
             bt.set_cookie('rank', 'list');
         }
@@ -731,11 +734,15 @@ var bt_file = {
 
         // 新建文件夹或文件
         $('.file_nav_view .create_file_or_dir li').on('click',function(e){
+            if($(this).index() > 1){
+              that.file_groud_event({open:'soft_link'});
+              return false;
+            }
             var type = $(this).data('type'),nav_down_list = $('.create_file_or_dir .nav_down_list');
             nav_down_list.css({'display':function(){
                 setTimeout(function(){nav_down_list.removeAttr('style')},100)
                 return 'none';
-            }});    
+            }});
             if(!that.is_editor){
                 that.is_editor = true;
                 // 首位创建“新建文件夹、文件”
@@ -811,7 +818,7 @@ var bt_file = {
         $('.terminal_view').on('click',function(){
             web_shell();
         });
-        
+
         // 分享列表
         $('.share_file_list').on('click',function(){
             that.open_share_view();
@@ -827,7 +834,7 @@ var bt_file = {
             disk_list.css({'display':function(){
                 setTimeout(function(){disk_list.removeAttr('style')},100)
                 return 'none';
-            }});   
+            }});
             that.reader_file_list({path:path,is_operating:true});
         });
 
@@ -934,7 +941,7 @@ var bt_file = {
             that.calculate_table_active();
             e.stopPropagation();
         });
-        
+
         // 文件列表滚动条事件
         $('.file_list_content').scroll(function(e){
             if($(this).scrollTop() == ($(this)[0].scrollHeight - $(this)[0].clientHeight)){
@@ -961,7 +968,7 @@ var bt_file = {
         // 打开文件的分享、收藏状态
         $('.file_table_view .file_list_content').on('click','.file_name .iconfont',function(e){
             var file_tr = $(this).parents('.file_tr'),index = file_tr.data('index'),data = that.file_list[index];
-            data['index'] = index 
+            data['index'] = index
             if($(this).hasClass('icon-share1')){that.info_file_share(data);}
             if($(this).hasClass('icon-favorites')){that.cancel_file_favorites(data);}
             e.stopPropagation();
@@ -995,7 +1002,7 @@ var bt_file = {
                 }
             }
             e.stopPropagation();
-            e.preventDefault(); 
+            e.preventDefault();
         });
 
         // 打开文件夹或文件 --- 文件名单击
@@ -1052,7 +1059,7 @@ var bt_file = {
             bt.set_cookie('showRow',val)
             that.reader_file_list({showRow:val,p:1,is_operating:false});
         });
-        
+
         // 页码跳转
         $('.filePage').on('click','div:nth-child(2) a',function(e){
             var num = $(this).attr('href').match(/p=([0-9]+)$/)[1];
@@ -1073,7 +1080,7 @@ var bt_file = {
         // 获取目录总大小
         $('.filePage').on('click','#file_all_size',function(e){
             if(that.file_path === '/'){
-                layer.tips('The current directory is root directory (/),calculate size will occupy<span class="bt_danger">massive server IO</span>,continue?',this,{tips:[1,'red'],time:5000});
+                layer.tips('The current directory is document root (/),calculate size will occupy<span class="bt_danger">massive server IO</span>,continue?',this,{tips:[1,'red'],time:5000});
                 return false;
             }
             that.get_dir_size({path:that.file_path});
@@ -1081,7 +1088,7 @@ var bt_file = {
         // 文件区域【鼠标按下】
         $('.file_list_content').on('mousedown',function(ev){
             if(
-                $(ev.target).hasClass('file_checkbox') || 
+                $(ev.target).hasClass('file_checkbox') ||
                 $(ev.target).hasClass('file_check') ||
                 $(ev.target).hasClass('icon-share1') ||
                 $(ev.target).hasClass('icon-favorites') ||
@@ -1105,17 +1112,17 @@ var bt_file = {
                 con_t = container.offset().top,             //选区偏移上
                 con_l = container.offset().left             //选区偏移左
             var startPos = {  //初始位置
-                top: ev.clientY - $(this).offset().top,   
-                left: ev.clientX - $(this).offset().left 
+                top: ev.clientY - $(this).offset().top,
+                left: ev.clientX - $(this).offset().left
             };
             // 鼠标按下后拖动
             $(document).unbind('mousemove').mousemove(function(ev){
                 // 鼠标按下后移动到的位置
-                var endPos = {  
-                    top:  ev.clientY - con_t > 0 && ev.clientY - con_t < container.height() ? ev.clientY - con_t : (ev.clientY - (con_t+container.height()) > 1 ?container.height():0),   
+                var endPos = {
+                    top:  ev.clientY - con_t > 0 && ev.clientY - con_t < container.height() ? ev.clientY - con_t : (ev.clientY - (con_t+container.height()) > 1 ?container.height():0),
                     left: ev.clientX - con_l > 0 && ev.clientX - con_l < container.width() ? ev.clientX - con_l : (ev.clientX - (con_l+container.width()) > 1 ?container.width():0)
-                }; 
-                var fixedPoint = { // 设置定点  
+                };
+                var fixedPoint = { // 设置定点
                     top: endPos.top > startPos.top ? startPos.top : endPos.top,
                     left: endPos.left > startPos.left ? startPos.left : endPos.left
                 };
@@ -1123,7 +1130,7 @@ var bt_file = {
                     fixedPoint.top = fixedPoint.top + 40
                 }
                 // 拖拽范围的宽高
-                var w = Math.min(Math.abs(endPos.left - startPos.left), con_l + container.width() - fixedPoint.left);  
+                var w = Math.min(Math.abs(endPos.left - startPos.left), con_l + container.width() - fixedPoint.left);
                 var h = Math.min(Math.abs(endPos.top - startPos.top), con_t + container.height() - fixedPoint.top);
 
                 // 超出选区上时
@@ -1149,14 +1156,14 @@ var bt_file = {
                 // 设置拖拽盒子位置
                 that.enter_files_box().show().css({
                     left: fixedPoint.left+'px',
-                    top: fixedPoint.top+'px',  
+                    top: fixedPoint.top+'px',
                     width: w+'px',
                     height: h+'px'
                 });
-                
-                var box_offset_top = that.enter_files_box().offset().top;  
-                var box_offset_left = that.enter_files_box().offset().left;  
-                var box_offset_w = that.enter_files_box().offset().left + that.enter_files_box().width();  
+
+                var box_offset_top = that.enter_files_box().offset().top;
+                var box_offset_left = that.enter_files_box().offset().left;
+                var box_offset_w = that.enter_files_box().offset().left + that.enter_files_box().width();
                 var box_offset_h = that.enter_files_box().offset().top + that.enter_files_box().height();
                 $(container).find('.file_tr').each(function(i,item){
                     var offset_top = $(item).offset().top;
@@ -1170,7 +1177,7 @@ var bt_file = {
                             $(item).removeClass('active')
                         }
                     }else{// 为List模式时
-                        if (offset_w >= box_offset_left && offset_h >= box_offset_top && offset_top <= box_offset_h ) { 
+                        if (offset_w >= box_offset_left && offset_h >= box_offset_top && offset_top <= box_offset_h ) {
                             $(item).addClass('active')
                         }else{
                             $(item).removeClass('active')
@@ -1178,13 +1185,13 @@ var bt_file = {
                     }
                 });
             })
-            
+
             // 鼠标抬起
             $(document).on('mouseup',function(){
                 var _move_array = [];
-                var box_offset_top = that.enter_files_box().offset().top;  
-                var box_offset_left = that.enter_files_box().offset().left;  
-                var box_offset_w = that.enter_files_box().offset().left + that.enter_files_box().width();  
+                var box_offset_top = that.enter_files_box().offset().top;
+                var box_offset_left = that.enter_files_box().offset().left;
+                var box_offset_w = that.enter_files_box().offset().left + that.enter_files_box().width();
                 var box_offset_h = that.enter_files_box().offset().top + that.enter_files_box().height();
                 $(container).find('.file_tr').each(function(i,item){
                     var offset_top = $(item).offset().top;
@@ -1197,7 +1204,7 @@ var bt_file = {
                             _move_array.push($(item).data('index'))
                         }
                     }else{// 为List模式时
-                        if (offset_w >= box_offset_left && offset_h >= box_offset_top && offset_top <= box_offset_h ) { 
+                        if (offset_w >= box_offset_left && offset_h >= box_offset_top && offset_top <= box_offset_h ) {
                             _move_array.push($(item).data('index'))
                         }
                     }
@@ -1217,7 +1224,7 @@ var bt_file = {
                 $(_this).data('value',nval);
             },{tips:'Set ps',tips:true});
         });
-        // 备注回车事件 
+        // 备注回车事件
         $('.file_list_content').on('keyup','.set_file_ps',function(ev){
             if(ev.keyCode == 13){
                 $(this).blur();
@@ -1265,10 +1272,10 @@ var bt_file = {
     enter_files_box:function(){
         if($('#web_mouseDrag').length == 0){
             $('<div></div>',{id:'web_mouseDrag', style: [
-                'position:absolute; top:0; left:0;',  
-                'border:1px solid #072246; background-color: #cce8ff;',  
-                'filter:Alpha(Opacity=15); opacity:0.15;',  
-                'overflow:hidden;display:none;z-index:9;'  
+                'position:absolute; top:0; left:0;',
+                'border:1px solid #072246; background-color: #cce8ff;',
+                'filter:Alpha(Opacity=15); opacity:0.15;',
+                'overflow:hidden;display:none;z-index:9;'
             ].join('')}).appendTo('.file_table_view');
         }
         return $('#web_mouseDrag');
@@ -1395,7 +1402,7 @@ var bt_file = {
         }
         disk_list_width = parseInt(disk_list.attr('data-width'));
         batch_list_width = parseInt(batch_list.attr('data-width'));
-        $('.file_nav_view>.nav_group').not('.mount_disk_list').each(function(){ 
+        $('.file_nav_view>.nav_group').not('.mount_disk_list').each(function(){
             _width += $(this).innerWidth();
         });
         _width += $('.menu-header-foot').innerWidth();
@@ -1473,13 +1480,13 @@ var bt_file = {
             </div>',
             success:function(){
                 that.render_share_list();
-                
+
                 // 分享列表详情操作
                 $('.download_url_list').on('click','.info_down',function(){
                     var indexs = $(this).attr('data-index');
                     that.file_share_view(that.file_share_list[indexs],'list');
                 });
-                
+
                 // 分页
                 $('.download_table .download_url_page').on('click','a',function(e){
                     var _href =  $(this).attr('href').match(/p=([0-9]+)$/)[1]
@@ -1530,7 +1537,7 @@ var bt_file = {
     /**
      * @description 删除选中数据
      * @param {Array} arry
-     * @param {*} value 
+     * @param {*} value
      * @return void
     */
     remove_check_file:function(arry,key,value){
@@ -1594,7 +1601,7 @@ var bt_file = {
      * @description 设置样式文件
      * @param {String} type 表头类型
      * @param {Number} width 宽度
-     * @return void 
+     * @return void
      */
     set_style_width: function (type, width) {
         var _content = bt.get_cookie('formHeader') || $('#file_list_info').html(),_html = '',_reg = new RegExp("\\.file_" + type + "\\s?\\{width\\s?\\:\\s?(\\w+)\\s\\!important;\\}","g"),_defined_config = {name:150,type:80,size:80,mtime:150,accept:80,user:80,ps:150};
@@ -1611,7 +1618,7 @@ var bt_file = {
     set_file_table_width:function(){
         var that = this,file_header_width = $('.file_table_view')[0].offsetWidth,auto_num = 0,width = 0,auto_all_width = 0,css = '',_width = 0,tr_heigth = 45,other = '',config ={};
         $.each(this.file_header,function(key,item){
-            if(item == 'auto'){ 
+            if(item == 'auto'){
                 auto_num ++;
                 config[key] = 0;
             }else{
@@ -1699,10 +1706,10 @@ var bt_file = {
     reader_file_list:function (data, callback){
         var that = this,select_page_num = '',next_path = '',model = bt.get_cookie('rank'),isPaste = bt.get_cookie('record_paste_type');
         if(isPaste != 'null' && isPaste != undefined){//判断是否显示粘贴
-            $('.file_nav_view .file_all_paste').removeClass('hide');  
+            $('.file_nav_view .file_all_paste').removeClass('hide');
         }else{
-            $('.file_nav_view .file_all_paste').addClass('hide'); 
-        } 
+            $('.file_nav_view .file_all_paste').addClass('hide');
+        }
         $('.file_table_view').removeClass('.list_view,.icon_view').addClass(model == 'list'?'list_view':'icon_view');
         $('.cut_view_model:nth-child('+(model == 'list'?'2':'1')+')').addClass('active').siblings().removeClass('active');
         this.file_images_list = [];
@@ -1828,7 +1835,7 @@ var bt_file = {
         })
         that.calculate_table_active();
     },
-    /** 
+    /**
      * @descripttion 渲染收藏夹列表
      * @return: 无返回值
      */
@@ -1843,7 +1850,7 @@ var bt_file = {
             })
             html+='<li data-manage="favorites" onclick="bt_file.set_favorites_manage()"><span class="iconfont icon-shezhi1"></span><span>Management</span></li>'
         }else{html = '<li data-null style="width: 150px;"><i></i><span>(Empty)</span></li>'}
-        
+
         $('.favorites_file_path .nav_down_list').html(html)
     },
     /**
@@ -1870,7 +1877,7 @@ var bt_file = {
                 setTimeout(function(){
                     $(layers).css('top',($(window).height() - $(layers).height()) /2);
                 },50)
-                
+
             },
             cancel:function(){
                 that.reader_file_list({path:that.file_path})
@@ -1966,7 +1973,7 @@ var bt_file = {
                 '<div class="file_td file_name">'+
                     '<div class="file_ico_type"><i class="file_icon '+ (item.type == 'dir'?'file_folder':(item.ext == ''?'':'file_'+item.ext).replace('//','/')) +'"></i></div>'+
                     '<span class="file_title file_'+ item.type +'_status" '+(bt.get_cookie('rank') == 'icon'?'':'title="' + path + '"')+'><i>'+ item.filename+item.soft_link +'</i></span>'+ (item.caret?'<span class="iconfont icon-favorites" style="'+ (item.down_id != 0?'right:30px':'') +'" title="'+lan.files.file_has_been_favorite+'"></span>':'') + (item.down_id != 0?'<span class="iconfont icon-share1" title="'+lan.files.file_has_been_shared+'"></span>':'') +
-                '</div>'+ 
+                '</div>'+
                 '<div class="file_td file_type hide"><span title="'+ (item.type == 'dir'?'directory':that.ext_type_tips(item.ext)) +'">'+ (item.type == 'dir'?'directory':that.ext_type_tips(item.ext)) +'</span></div>'+
                 '<div class="file_td file_accept"><span>' + item.user +' / '+item.root_level + '</span></div>'+
                 '<div class="file_td file_size"><span>'+ (item.type == 'dir'?'<a class="btlink folder_size" href="javascript:;" data-path="'+ path +'">Calculate</a>':bt.format_size(item.size)) +'</span></div>'+
@@ -1994,7 +2001,7 @@ var bt_file = {
         });
         $('.file_list_content').html(_html);
         if(callback) callback({is_dir_num:is_dir_num})
-        
+
         that.clear_table_active(); // 清除表格选中内容
     },
 
@@ -2022,65 +2029,78 @@ var bt_file = {
      * @param {Object} ev 事件event对象
      * @param {Object} el 事件对象DOM
      * @return void
-    */
-    render_file_groud_menu: function (ev,el){
-        var that = this,index = $(el).data('index'),_openTitle = 'Open',data = that.file_list[index],config_group = [['open',_openTitle],['split',''],['download','Download'],['share','Share file/directory'],['cancel_share','Cancel share'],['favorites','Favorites file/directory'],['cancel_favorites','Cancel favorites'],['split',''],['dir_kill','目录查杀'],['authority','Permission'],['split',''],['copy','Copy'],['shear','Cut'],['rename','Rename'],['del','Del'],['split',''],['compress','Compress'],['unzip','Decompress']],compression = ['zip','rar','gz','war','tgz','bz2'],offsetNum = 0;
-        // 文件类型判断
-        switch(that.determine_file_type(data.ext)){
-            case 'images':
-                _openTitle = 'Preview';
+     */
+    render_file_groud_menu: function(ev, el) {
+      var that = this,
+        index = $(el).data('index'),
+        _openTitle = 'Open',
+        data = that.file_list[index],
+        compression = ['zip', 'rar', 'gz', 'war', 'tgz', 'bz2'],
+        offsetNum = 0,
+        config = {
+          open:_openTitle,
+          split_0:true,
+          download:'Download',
+          share:'Share file',
+          cancel_share:'Cancel share',
+          favorites:'Favorites file',
+          cancel_favorites:'Cancel favorites',
+          split_1:true,
+          // dir_kill:'目录查杀',
+          authority:'Permission',
+          split_2:true,
+          copy:'Copy',
+          shear:'Cut',
+          rename:'Rename',
+          del:'Delete',
+          split_3:true,
+          compress:'Compress',
+          unzip:'Unzip',
+          open_find_dir:'Open file location',
+          split_4:true,
+          property:'Properties'
+        };
+      // 文件类型判断
+      switch (that.determine_file_type(data.ext)) {
+          case 'images':
+            _openTitle = 'Preview';
             break;
-            case 'video':
-                _openTitle = 'Play';
+          case 'video':
+            _openTitle = 'Play';
             break;
-            default:
-                _openTitle = 'Edit';
+          default:
+            _openTitle = 'Edit';
             break;
-        }
-        config_group[0][1] = (data.type == 'dir'?'Open':_openTitle);
-        if(data.type == 'dir'){ // 判断是否为目录，目录不可下载
-            config_group.splice(2,1);
-            offsetNum ++;
-        }
-        if(data.open_type == 'compress'){ //判断是否为压缩类型，不可编辑
-            config_group.splice(0,2);
-            offsetNum = offsetNum + 2;
-        }
-        if(data.down_id != 0){ //判断是否分享
-            config_group.splice(3-offsetNum,1);
-            offsetNum ++;
-        }else{
-            config_group.splice(4-offsetNum,1);
-            config_group[3-offsetNum][1] = (data.type == 'dir'?'Share directory':'Share file');
-            offsetNum ++;
-        }
-        if(data.caret !== false){ // 判断是否收藏
-            config_group.splice((5-offsetNum),1);
-            offsetNum ++;
-        }else{
-            config_group.splice((6-offsetNum),1);
-            config_group[5-offsetNum][1] = (data.type == 'dir'?'Favorites directory':'Favorites file');
-            offsetNum ++;
-        }
-        //if(data.ext == 'php') config_group[8-offsetNum][1] = '文件查杀';
-        //if(data.ext != 'php' && data.type != 'dir'){ // 判断是否为php，非php文件（排除目录）无法扫描
-            config_group.splice((8-offsetNum),1);
-            offsetNum ++;
-        //}
-        var num = 0;
-        $.each(compression,function(index,item){
-            if(item == data.ext) num ++;
-        });
-        if(num == 0){
-            config_group.splice((17-offsetNum),1);
-            offsetNum ++;
-        }
-        if(data.filename.indexOf('/') == -1 ||  data.type != 'dir'){
-            config_group.splice((18-offsetNum),1);
-            offsetNum ++;
-        }
-        that.file_selection_operating = config_group;
-        that.reader_menu_list({el:$('.selection_right_menu'),ev:ev,data:data,list:config_group});
+      }
+      config['open'] = (data.type == 'dir' ? 'Open' : _openTitle);
+      if(data.type === 'dir') delete config['download']; // 判断是否文件或文件夹,禁用下载
+      if(data.open_type == 'compress') delete config['open']; // 判断是否压缩文件,禁用操作
+      if(data.down_id != 0){
+        delete config['share']; //已分享
+      }else{
+        delete config['cancel_share']; //未分享
+        config['share'] = (data.type == 'dir' ? 'Share dir' : 'Share file');
+      }
+      if (data.caret !== false) {
+        delete config['favorites']; // 已分享
+      }else{
+        delete config['cancel_favorites']; // 未分享
+        config['favorites'] =  (data.type == 'dir' ? 'Favorites dir' : 'Favorites file');
+      }
+      if (data.ext == 'php') config['dir_kill'] = '文件查杀';
+      if (data.ext != 'php' && data.type != 'dir') delete config['dir_kill'];
+      var num = 0;
+      $.each(compression, function(index, item) { // 判断压缩文件
+        if (item == data.ext) num++;
+      });
+      if(num == 0) delete config['unzip'];
+      if(!data.is_search){
+        delete config['open_find_dir']; // 判断是否为搜索文件，提供打开目录操作
+      }else{
+        config['open_find_dir'] = (data.type == 'dir' ? 'Open dir' : 'Open file location');
+      }
+      that.file_selection_operating = config;
+      that.reader_menu_list({ el: $('.selection_right_menu'), ev: ev, data: data, list: config });
     },
 
     /**
@@ -2088,14 +2108,29 @@ var bt_file = {
      * @param {Object} ev 事件event对象
      * @param {Object} el 事件对象DOM
      * @return void
-    */
-    render_file_all_menu:function (ev,el) {
-        var that = this,config_group = [['refresh','Refresh'],['split',''],['upload','Upload'],['create','New file/directory',[['create_dir','New directory'],['create_files','New file']]],['web_shell','Terminal'],['split',''],['paste','Paste']],offsetNum = 0,isPaste = bt.get_cookie('record_paste_type');
-        if( isPaste == 'null' || isPaste == undefined){
-            config_group.splice(5,2);   
-            offsetNum ++;
-        }
-        that.reader_menu_list({el:$('.selection_right_menu'),ev:ev,data:{},list:config_group});
+     */
+    render_file_all_menu: function(ev, el) {
+      var that = this,
+          config = {
+            refresh:'Refresh',
+            split_0:true,
+            upload:'Upload',
+            create:['New file/folder',{
+              create_dir:'New folder',
+              create_files:'New file',
+              soft_link:'Softlink'
+            }],
+            web_shell:'Terminal',
+            split_1:true,
+            paste:'Paste'
+          },
+          offsetNum = 0,
+          isPaste = bt.get_cookie('record_paste_type');
+      if (isPaste == 'null' || isPaste == undefined) {
+        delete config['split_1']
+        delete config['paste']
+      }
+      that.reader_menu_list({ el: $('.selection_right_menu'), ev: ev, data: {}, list: config });
     },
     /**
      * @descripttion 文件多选时菜单
@@ -2132,74 +2167,80 @@ var bt_file = {
             e.preventDefault();
         });
     },
-    
+
     /**
-    * @description 渲染菜单列表
-    * @param {Object} el 菜单DOM 
-    * @param {Object} config 菜单配置列表和数据
-    * @returns void
-    */
-    reader_menu_list:function(config){
-        var that = this,el = config.el.find('ul'),el_height = 0,el_width = el.width(),left = config.ev.clientX - ((this.area[0] - config.ev.clientX) < el_width?el_width:0),top =0;
-        el.empty();
-        $.each(config.list,function(index,item){
-            var $children = null,$children_list = null;
-            if(item[0] == 'split'){
-                el.append('<li class="separate"></li>');
-            }else{
-                if(Array.isArray(item[2])){
-                    $children = $('<div class="file_menu_down"><span class="glyphicon glyphicon-triangle-right" aria-hidden="true"></span><ul class="set_group"></ul></div>');
-                    $children_list = $children.find('.set_group');
-                    $.each(item[2],function(indexs,items) {
-                        $children_list.append($('<li><i class="file_menu_icon '+ items[0] +'_file_icon"></i><span>'+ items[1] +'</span></li>').on('click',{type:items[0],data:config.data},function(ev){
-                            that.file_groud_event($.extend(ev.data.data,{
-                                open:ev.data.type,
-                                index:parseInt($(config.ev.currentTarget).data('index')),
-                                element:config.ev.currentTarget,
-                                type_tips:config.data.type == 'dir'?'directory':'file'
-                            }));
-                            config.el.removeAttr('style');
-                            ev.stopPropagation();
-                            ev.preventDefault();
-                        }))
-                    });
+     * @description 渲染菜单列表
+     * @param {Object} el 菜单DOM
+     * @param {Object} config 菜单配置列表和数据
+     * @returns void
+     */
+     reader_menu_list: function(config) {
+      var that = this,
+        el = config.el.find('ul'),
+        el_height = 0,
+        el_width = el.width(),
+        left = config.ev.clientX - ((this.area[0] - config.ev.clientX) < el_width ? el_width : 0),
+        top = 0;
+      el.empty();
+      $.each(config.list, function(key, item){
+          var $children = null,
+              $children_list = null;
+          if (typeof item == "boolean") {
+              el.append('<li class="separate"></li>');
+          } else {
+              if (Array.isArray(item)) {
+                $children = $('<div class="file_menu_down"><span class="glyphicon glyphicon-triangle-right" aria-hidden="true"></span><ul class="set_group"></ul></div>');
+                $children_list = $children.find('.set_group');
+                $.each(item[1], function(keys, items) {
+                    $children_list.append($('<li><i class="file_menu_icon ' + keys + '_file_icon"></i><span>' + items + '</span></li>').on('click', { type: keys, data: config.data }, function(ev) {
+                        that.file_groud_event($.extend(ev.data.data, {
+                            open: ev.data.type,
+                            index: parseInt($(config.ev.currentTarget).data('index')),
+                            element: config.ev.currentTarget,
+                            type_tips: config.data.type == 'dir' ? 'folder' : 'file'
+                        }));
+                        config.el.removeAttr('style');
+                        ev.stopPropagation();
+                        ev.preventDefault();
+                    }))
+                });
+              }
+              el.append($('<li><i class="file_menu_icon ' + key + '_file_icon ' + (function(type) {
+                switch (type) {
+                    case 'share':
+                    case 'cancel_share':
+                        return 'iconfont icon-share1';
+                    case 'dir_kill':
+                        return 'iconfont icon-dir_kill';
+                    case 'authority':
+                        return 'iconfont icon-authority';
                 }
-                el.append($('<li><i class="file_menu_icon '+ item[0] +'_file_icon '+ (function(type){
-                    switch(type){
-                        case 'share':
-                        case 'cancel_share':
-                            return 'iconfont icon-share1';
-                        case 'dir_kill':
-                            return 'iconfont icon-dir_kill';
-                        case 'authority':
-                            return 'iconfont icon-authority';
-                    }
-                    return '';
-                }(item[0])) +'"></i><span>'+ item[1] +'</span></li>').append($children).on('click',{type:item[0],data:config.data},function(ev){
-                    that.file_groud_event($.extend(ev.data.data,{
-                        open:ev.data.type,
-                        index:parseInt($(config.ev.currentTarget).data('index')),
-                        element:config.ev.currentTarget,
-                        type_tips:config.data.type == 'dir'?'directory':'file'
-                    }));
-                    // 有子级拉下时不删除样式，其余删除
-                    if(item[0] != 'compress' && item[0] != 'create'){config.el.removeAttr('style');}
-                    ev.stopPropagation();
-                    ev.preventDefault();
-                }));
-            }
-        });
-        el_height = el.innerHeight();
-        top = config.ev.clientY - ((this.area[1] - config.ev.clientY) < el_height?el_height:0);
-        var element = $(config.ev.target);
-        if(element.hasClass('foo_menu_title') || element.parents().hasClass('foo_menu_title')){
-            left = config.ev.clientX - el_width;
-            top = ((this.area[1] - config.ev.clientY) < el_height)?(config.ev.clientY - el_height -20):(config.ev.clientY + 15);
-        }
-        config.el.css({
-            left: (left+10),
-            top: top
-        }).removeClass('left_menu right_menu').addClass(this.area[0] - (left + el_width) < 230?'left_menu':'right_menu');
+                return '';
+              }(key)) + '"></i><span>' + (Array.isArray(item)?item[0]:item) + '</span></li>').append($children).on('click', { type: key, data: config.data }, function(ev) {
+                  that.file_groud_event($.extend(ev.data.data, {
+                      open: ev.data.type,
+                      index: parseInt($(config.ev.currentTarget).data('index')),
+                      element: config.ev.currentTarget,
+                      type_tips: config.data.type == 'dir' ? 'folder' : 'file'
+                  }));
+                  // 有子级拉下时不删除样式，其余删除
+                  if (key != 'compress' && key != 'create') { config.el.removeAttr('style'); }
+                  ev.stopPropagation();
+                  ev.preventDefault();
+              }));
+          }
+      });
+      el_height = el.innerHeight();
+      top = config.ev.clientY - ((this.area[1] - config.ev.clientY) < el_height ? el_height : 0);
+      var element = $(config.ev.target);
+      if (element.hasClass('foo_menu_title') || element.parents().hasClass('foo_menu_title')) {
+          left = config.ev.clientX - el_width;
+          top = ((this.area[1] - config.ev.clientY) < el_height) ? (config.ev.clientY - el_height - 20) : (config.ev.clientY + 15);
+      }
+      config.el.css({
+          left: (left + 10),
+          top: top
+      }).removeClass('left_menu right_menu').addClass(this.area[0] - (left + el_width) < 230 ? 'left_menu' : 'right_menu');
     },
 
     /**
@@ -2211,10 +2252,10 @@ var bt_file = {
         var config = {ai:"Adobe Illustrator format",apk:"Android package",asp:"Dynamic web file",bat:"Shell File",bin:"Bin File",bas:"BASIC File",bak:"Backup File",css:'CSS',cad:"备份文件",cxx:"C++",crt:"Certificate file",cpp:"C++ File",conf:"Configuration file",dat:"",der:"Certification file",doc:"Microsoft Office Word 97-2003",docx:"Microsoft Office Word 2007",exe:"",gif:"Graphic file",go:"Golang source files",htm:"Hypertext document",html:"Hypertext document",ico:"",java:"Java source files",access:'Database file',jsp:"HTML Page",jpe:"Graphic file",jpeg:"Graphic file",jpg:"Graphic file",log:"Log file",link:"Shortcut file",js:"Javascript source files",mdb:"Microsoft Access database",mp3:"Audio file",ape:'CloudMusic.ape',mp4:"Video",avi:'Video',mkv:'Video',rm:'Video',mov:'Video',mpeg:'Video',mpg:'Video',rmvb:'Video',webm:'Video',wma:'Video',wmv:'Video',swf:'Shockwave Flash Object',mng:"Multi-image network graphics",msi:"Windows package",png:"Graphic file",py:"Python source file",pyc:"Python Bytecode file",pdf:"pdf",ppt:"Microsoft Powerpoint 97-2003",pptx:"Microsoft Powerpoint2007",psd:"Adobe photoshop",pl:"Perl Scripting language",rar:"RAR compressed package",reg:"Registry file",sys:"System Files",sql:"Database file",sh:"Shell script file",txt:"text format",vb:"Visual Basic",xml:"",xls:"Microsoft Office Excel 97-2003",xlsx:"Microsoft Office Excel 2007",gz:"Compressed file",zip:"ZIP compressed file",z:"","7z":"7Z Compressed file",json:'JSON',php:'PHP',mht:'MHTML',bmp:'BMP',webp:'WEBP',cdr:'CDR'};
         return typeof config[ext] != "undefined"?config[ext]:('Unknown file');
     },
-    
+
     /**
      * @description 文件类型判断，或返回格式类型(不传入type)
-     * @param {String} ext 
+     * @param {String} ext
      * @param {String} type
      * @return {Boolean|Object} 返回类型或类型是否支持
     */
@@ -2261,104 +2302,110 @@ var bt_file = {
 
     /**
      * @description 右键菜单事件组
-     * @param {Object} data 当前文件或文件夹右键点击的数据和数组下标，以及Dom元素 
-     * @return void 
+     * @param {Object} data 当前文件或文件夹右键点击的数据和数组下标，以及Dom元素
+     * @return void
     */
-    file_groud_event:function(data){ 
-        var that = this;
-        switch(data.open){
-            case 'open': // 打开目录、文件编辑、预览图片、播放视频
-                if(data.type == 'dir'){
-                    this.reader_file_list({path:data.path});
-                }else{
-                    switch(data.open_type){
-                        case 'text':
-                            openEditorView(0,data.path)
-                        break;
-                        case 'video':
-                            this.open_video_play(data);
-                        break;
-                        case 'images':
-                            this.open_images_preview(data);
-                        break;
-                    }
+    file_groud_event:function(data){
+      var that = this;
+      switch(data.open){
+        case 'open': // 打开目录、文件编辑、预览图片、播放视频
+          if(data.type == 'dir'){
+              this.reader_file_list({path:data.path});
+          }else{
+              switch(data.open_type){
+              case 'text':
+                  openEditorView(0,data.path)
+              break;
+              case 'video':
+                  this.open_video_play(data);
+              break;
+              case 'images':
+                  this.open_images_preview(data);
+              break;
+            }
+          }
+        break;
+        case 'download': //下载
+            this.down_file_req(data);
+        break;
+        case 'share': // 添加分享文件
+            this.set_file_share(data);
+        break;
+        case 'cancel_share': // 取消分享文件
+            this.info_file_share(data);
+        break;
+        case 'favorites': //添加收藏夹
+            this.$http('add_files_store',{path:data.path},function(res){
+                if(res.status){
+                    that.file_list[data.index] = $.extend(that.file_list[data.index],{caret:true});
+                    that.reader_file_list_content(that.file_list);
+                    that.load_favorites_index_list();
                 }
+                layer.msg(res.msg,{icon:res.status?1:2})
+            })
+        break;
+        case 'cancel_favorites': //取消收藏
+            this.cancel_file_favorites(data);
+        break;
+        case 'authority': // 权限
+            this.set_file_authority(data);
+        break;
+        case 'dir_kill': //目录查杀
+            this.set_dir_kill(data);
+        break;
+        case 'copy': // 复制内容
+            this.copy_file_or_dir(data);
+        break;
+        case 'shear': // 剪切内容
+            this.cut_file_or_dir(data);
+        break;
+        case 'rename': // 重命名
+            this.rename_file_or_dir(data);
+        break;
+        case'compress':
+            data['open'] = 'tar_gz';
+            this.compress_file_or_dir(data);
+        break;
+        case 'tar_gz': // 压缩gzip文件
+        case 'rar': // 压缩rar文件
+        case 'zip': // 压缩zip文件
+            this.compress_file_or_dir(data);
+        break;
+        case 'unzip':
+        case 'folad':  //解压到...
+            this.unpack_file_to_path(data)
             break;
-            case 'download': //下载
-                this.down_file_req(data);
-            break;
-            case 'share': // 添加分享文件
-                this.set_file_share(data);
-            break;
-            case 'cancel_share': // 取消分享文件
-                this.info_file_share(data);
-            break;
-            case 'favorites': //添加收藏夹
-                this.$http('add_files_store',{path:data.path},function(res){
-                    if(res.status){
-                        that.file_list[data.index] = $.extend(that.file_list[data.index],{caret:true});
-                        that.reader_file_list_content(that.file_list);
-                        that.load_favorites_index_list();
-                    } 
-                    layer.msg(res.msg,{icon:res.status?1:2})
-                })
-            break;
-            case 'cancel_favorites': //取消收藏
-                this.cancel_file_favorites(data);
-            break;
-            case 'authority': // 权限
-                this.set_file_authority(data);
-            break;
-            case 'dir_kill': //目录查杀
-                this.set_dir_kill(data);
-            break;
-            case 'copy': // 复制内容
-                this.copy_file_or_dir(data);
-            break;
-            case 'shear': // 剪切内容
-                this.cut_file_or_dir(data);
-            break;
-            case 'rename': // 重命名
-                this.rename_file_or_dir(data);
-            break;
-            case'compress':
-                data['open'] = 'tar_gz';
-                this.compress_file_or_dir(data);
-            break;
-            case 'tar_gz': // 压缩gzip文件
-            case 'rar': // 压缩rar文件
-            case 'zip': // 压缩zip文件
-                this.compress_file_or_dir(data);
-            break;
-            case 'unzip': 
-            case 'folad':  //解压到...
-                this.unpack_file_to_path(data)
-                break;
-            case 'refresh': // 刷新文件列表
-                $('.file_path_refresh').click();
-            break;
-            case 'upload': //上传文件
-                this.file_drop.dialog_view();
-            break;
-            case 'create_dir': // 新建文件目录
-                $('.file_nav_view .create_file_or_dir li').eq(0).click();
-            break;
-            case 'create_files': // 新建文件列表
-                $('.file_nav_view .create_file_or_dir li').eq(1).click();
-            break;
-            case 'del': //删除
-                this.del_file_or_dir(data);
-            break;
-            case 'paste': //粘贴
-                this.paste_file_or_dir();
-            break;
-            case 'web_shell': // 终端
-                web_shell()
-            break;
-            case 'open_find_dir': // 打开文件所在目录
-                this.reader_file_list({path: this.retrun_prev_path(data.path)});
-            break;
-        }
+        case 'refresh': // 刷新文件列表
+            $('.file_path_refresh').click();
+        break;
+        case 'upload': //上传文件
+            this.file_drop.dialog_view();
+        break;
+        case 'soft_link': //软链接创建
+            this.set_soft_link();
+        break;
+        case 'create_dir': // 新建文件目录
+            $('.file_nav_view .create_file_or_dir li').eq(0).click();
+        break;
+        case 'create_files': // 新建文件列表
+            $('.file_nav_view .create_file_or_dir li').eq(1).click();
+        break;
+        case 'del': //删除
+            this.del_file_or_dir(data);
+        break;
+        case 'paste': //粘贴
+            this.paste_file_or_dir();
+        break;
+        case 'web_shell': // 终端
+            web_shell()
+        break;
+        case 'open_find_dir': // 打开文件所在目录
+            this.reader_file_list({path: this.retrun_prev_path(data.path)});
+        break;
+        case 'property':
+          this.open_property_view(data)
+        break;
+      }
     },
     /**
      * @descripttion 列表批量处理
@@ -2406,7 +2453,7 @@ var bt_file = {
                 that.clear_table_active();
                 $('.nav_group.multi').addClass('hide');
                 $('.file_menu_tips').removeClass('hide');
-                $('.file_nav_view .file_all_paste').removeClass('hide'); 
+                $('.file_nav_view .file_all_paste').removeClass('hide');
             }
             layer.msg(res.msg,{icon:res.status?1:2})
         });
@@ -2422,14 +2469,14 @@ var bt_file = {
         if(this.is_recycle){
             layer.confirm(lan.files.del_to_recycle_bin,{title:lan.files.del_in_bulk,closeBtn:2,icon:3},function(){
                 that.$http('SetBatchData',obj,function(res){
-                    if(res.status) that.reader_file_list({path:that.file_path})  
+                    if(res.status) that.reader_file_list({path:that.file_path})
                     layer.msg(res.msg,{icon:res.status?1:2})
                 });
             })
         }else{
             bt.show_confirm(lan.files.del_in_bulk,'<span><i style="font-size: 15px;font-style: initial;color: red;">'+lan.files.recycle_bin_warning+'</i></span>',function(){
                 that.$http('SetBatchData',obj,function(res){
-                    if(res.status) that.reader_file_list({path:that.file_path})  
+                    if(res.status) that.reader_file_list({path:that.file_path})
                     layer.msg(res.msg,{icon:res.status?1:2})
                 });
             })
@@ -2468,7 +2515,7 @@ var bt_file = {
                     layer.msg(rdata.msg,{icon:rdata.status?1:2})
                 })
             }
-            
+
         })
     },
     /**
@@ -2488,8 +2535,8 @@ var bt_file = {
                     <div style="margin-left: 3px;" class="ss-text">\
                         <em>'+ lan.files.recycle_bin_on + '</em>\
                         <div class="ssh-item">\
-                                <input class="btswitch btswitch-ios" id="Set_Recycle_bin" type="checkbox">\
-                                <label class="btswitch-btn" for="Set_Recycle_bin" onclick="bt_file.Set_Recycle_bin()"></label>\
+                          <input class="btswitch btswitch-ios" id="Set_Recycle_bin" type="checkbox">\
+                          <label class="btswitch-btn" for="Set_Recycle_bin" onclick="bt_file.Set_Recycle_bin()"></label>\
                         </div>\
                         <em style="margin-left: 20px;">'+ lan.files.recycle_bin_on_db + '</em>\
                         <div class="ssh-item">\
@@ -2557,15 +2604,15 @@ var bt_file = {
                         if (shortwebname.length > 20) shortwebname = shortwebname.substring(0, 20) + "...";
                         if (shortpath.length > 20) shortpath = shortpath.substring(0, 20) + "...";
                         body += '<tr>\
-                                    <td><span class=\'ico ico-folder\'></span><span class="tname" title="'+ rdata.dirs[i].name + '">' + shortwebname + '</span></td>\
-                                    <td><span title="'+ rdata.dirs[i].dname + '">' + shortpath + '</span></td>\
-                                    <td>'+ ToSize(rdata.dirs[i].size) + '</td>\
-                                    <td>'+ getLocalTime(rdata.dirs[i].time) + '</td>\
-                                    <td style="text-align: right;">\
-                                        <a class="btlink" href="javascript:;" onclick="bt_file.ReRecycleBin(\'' + rdata.dirs[i].rname.replace(/'/, "\\'") + '\',this)">' + lan.files.recycle_bin_re + '</a>\
-                                        | <a class="btlink" href="javascript:;" onclick="bt_file.DelRecycleBin(\'' + rdata.dirs[i].rname.replace(/'/, "\\'") + '\',this)">' + lan.files.recycle_bin_del + '</a>\
-                                    </td>\
-                                </tr>';
+                          <td><span class=\'ico ico-folder\'></span><span class="tname" title="'+ rdata.dirs[i].name + '">' + shortwebname + '</span></td>\
+                          <td><span title="'+ rdata.dirs[i].dname + '">' + shortpath + '</span></td>\
+                          <td>'+ ToSize(rdata.dirs[i].size) + '</td>\
+                          <td>'+ getLocalTime(rdata.dirs[i].time) + '</td>\
+                          <td style="text-align: right;">\
+                              <a class="btlink" href="javascript:;" onclick="bt_file.ReRecycleBin(\'' + rdata.dirs[i].rname.replace(/'/, "\\'") + '\',this)">' + lan.files.recycle_bin_re + '</a>\
+                              | <a class="btlink" href="javascript:;" onclick="bt_file.DelRecycleBin(\'' + rdata.dirs[i].rname.replace(/'/, "\\'") + '\',this)">' + lan.files.recycle_bin_del + '</a>\
+                          </td>\
+                        </tr>';
                     }
                     for (var i = 0; i < rdata.files.length; i++) {
                         if (rdata.files[i].name.indexOf('BTDB_') != -1) {
@@ -2725,11 +2772,226 @@ var bt_file = {
                 }
                 return false;
             }
-                    
+
             $('#RecycleBody').html(body);
 
         })
 
+    },
+
+    /**
+     * @description 回收站视图
+     * @return void
+    */
+    recycle_bin_view: function() {
+      var that = this;
+      layer.open({
+          title:lan.files.recycle_bin_title,
+          type:1,
+          skin:'recycle_view',
+          area:['80%','672px'],
+          closeBtn:2,
+          content:'<div class="recycle_bin_view">\
+              <div class="re-head">\
+                  <div style="margin-left: 3px;" class="ss-text">\
+                      <em>' + lan.files.recycle_bin_on + '</em>\
+                      <div class="ssh-item">\
+                              <input class="btswitch btswitch-ios" id="Set_Recycle_bin" type="checkbox">\
+                              <label class="btswitch-btn" for="Set_Recycle_bin" onclick="bt_file.Set_Recycle_bin()"></label>\
+                      </div>\
+                      <em style="margin-left: 20px;">' + lan.files.recycle_bin_on_db + '</em>\
+                      <div class="ssh-item">\
+                              <input class="btswitch btswitch-ios" id="Set_Recycle_bin_db" type="checkbox">\
+                              <label class="btswitch-btn" for="Set_Recycle_bin_db" onclick="bt_file.Set_Recycle_bin(1)"></label>\
+                      </div>\
+                  </div>\
+                  <span style="line-height: 32px; margin-left: 30px;">' + lan.files.recycle_bin_ps + '</span>\
+                  <button style="float: right" class="btn btn-default btn-sm" onclick="bt_file.CloseRecycleBin();">' + lan.files.recycle_bin_close + '</button>\
+              </div>\
+              <div class="re-con">\
+                  <div class="re-con-menu">\
+                      <p class="on" data-type="1">' + lan.files.recycle_bin_type1 + '</p>\
+                      <p data-type="2">' + lan.files.recycle_bin_type2 + '</p>\
+                      <p data-type="3">' + lan.files.recycle_bin_type3 + '</p>\
+                      <p data-type="4">' + lan.files.recycle_bin_type4 + '</p>\
+                      <p data-type="5">' + lan.files.recycle_bin_type5 + '</p>\
+                      <p data-type="6">' + lan.files.recycle_bin_type6 + '</p>\
+                  </div>\
+                  <div class="re-con-con pd15" id="recycle_table"></div>\
+              </div>\
+          </div>',
+          success:function(){
+              if (window.location.href.indexOf("database") != -1) {
+                  $(".re-con-menu p:last-child").addClass("on").siblings().removeClass("on");
+                  $(".re-con-menu p:eq(5)").click();
+              } else {
+                  $(".re-con-menu p:eq(0)").click();
+              }
+              var render_recycle = that.render_recycle_list();
+              $(".re-con-menu").on('click', 'p', function() {
+                  var _type = $(this).data('type');
+                  $(this).addClass("on").siblings().removeClass("on");
+                  render_recycle.$refresh_table_list(true);
+              });
+          }
+      })
+    },
+    /**
+     * @description 回收站渲染列表
+     * @return void
+    */
+    render_recycle_list: function() {
+      var that = this;
+      $('#recycle_table').empty()
+      var recycle_list = bt_tools.table({
+        el:'#recycle_table',
+        url:'/files?action=Get_Recycle_bin',
+        height:480,
+        dataFilter:function(res){
+          var files = [];
+          switch($('.re-con-menu p.on').index()){
+            case 0:
+                for (let i = 0; i < res.dirs.length; i++){
+                    const item = res.dirs[i];
+                    files.push($.extend(item,{type:'folder'}));
+                }
+                for (let j = 0; j < res.files.length; j++){
+                    const item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
+                    if(item.name.indexOf('BTDB_') > -1) {
+                        item.dname = item.dname.replace('BTDB_', '');
+                        item.name = item.name.replace('BTDB_', '');
+                        files.push($.extend(item,{type:'files'}));
+                    }else if(ext == 'images'){
+                        files.push($.extend(item,{type:ext}));
+                    }else{
+                        files.push($.extend(item,{type:'files'}));
+                    }
+                }
+            break;
+            case 1:
+                for (let i = 0; i < res.dirs.length; i++){
+                    const item = res.dirs[i];
+                    files.push($.extend(item,{type:'files'}));
+                }
+            break;
+            case 2:
+                for (let j = 0; j < res.files.length; j++){
+                    const item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
+                    if(item.name.indexOf('BTDB') == -1) files.push($.extend(item,{type:ext}));
+                }
+            break;
+            case 3:
+                for (let j = 0; j < res.files.length; j++){
+                    const item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
+                    if(ext == 'images') files.push($.extend(item,{type:ext}));
+                }
+
+            break;
+            case 4:
+                for (let j = 0; j < res.files.length; j++){
+                    const item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
+                    if(ext != 'images' && ext != 'compress' && ext != 'video' && item.name.indexOf('BTDB') == -1) files.push($.extend(item,{type:ext}));
+                }
+            break;
+            case 5:
+                for (let j = 0; j < res.files.length; j++){
+                    const item = res.files[j];
+                    if(item.name.indexOf('BTDB_') > -1){
+                        item.dname = item.dname.replace('BTDB_','');
+                        item.name = item.name.replace('BTDB_','');
+                        console.log()
+                        files.push($.extend(item,{type:'files'}));
+                    }
+                }
+            break;
+        }
+        $('#Set_Recycle_bin').attr('checked', res.status);
+        $('#Set_Recycle_bin_db').attr('checked', res.status_db);
+        return {data:files}
+      },
+      column:[
+        {type:'checkbox',class:'',width:18},
+        {fid:'name',title:lan.files.recycle_bin_th1,width:155,template:function(row){
+            return '<div class="text-overflow" style="width:150px" title="'+ row.name +'"><i class="file_icon file_'+ row.type +'"></i><span style="width:100px">'+ row.name +'</span></div>';
+        }},
+        {fid:'dname',title:lan.files.recycle_bin_th2,template:function(row){
+            return '<span class="text-overflow" style="min-width:150px" title="'+ row.dname +'">'+ row.dname +'</span>';
+        }},
+        {fid:'size',title:lan.files.recycle_bin_th3,width:85,template:function(row){
+            return '<span class="text-overflow"  title="'+ row.size +'">'+ bt.format_size(row.size) +'</span>';
+        }},
+        {fid:'time',title:lan.files.recycle_bin_th4,width:180,template:function(row, index){
+            return '<span title="'+ row.time +'">'+ bt.format_data(row.time) + '</span>'
+        }},
+        {type:'group',align:'right',width:250,title:lan.files.recycle_bin_th5,group:[{
+            title:lan.files.recycle_bin_re,
+            event:function(row, index, ev, key, that){
+              bt_file.ReRecycleBin(row.rname,function(){
+                  that.$delete_table_row(index);
+              });
+            }
+        },{
+            title:lan.files.recycle_bin_del,
+            event:function(row, index, ev, key, that){
+                bt_file.DelRecycleBin(row.rname,function(){
+                    that.$delete_table_row(index);
+                });
+            }
+        }]}
+      ],
+      tootls: [{ // 批量操作
+        type: 'batch',//batch_btn
+        positon: ['left', 'bottom'],
+        placeholder: 'Please Choose',
+        buttonValue: 'Execute',
+        disabledSelectValue: 'Please select the port that needs batch operation!',
+        selectList:[{
+          title:"Restore",
+          url:'/files?action=Re_Recycle_bin',
+          load:true,
+          param:function(row){
+            return {path:row.rname};
+          },
+          callback:function(that){
+            bt.confirm({title:'Restore files',msg:'Batch restore selected files, do you want to continue?',icon:0},function(index){
+              layer.close(index);
+              that.start_batch({},function(list){
+                var html = '';
+                for(var i=0;i<list.length;i++){
+                  var item = list[i];
+                  html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ (item.request.status?'Successful recovery':'Recovery failed') +'</span></div></td></tr>';
+                }
+                recycle_list.$batch_success_table({title:'Restore files',th:'File name',html:html});
+                recycle_list.$refresh_table_list(true);
+              });
+            });
+          }
+        },{
+            title:"Delete files permanently",
+            url:'/files?action=Del_Recycle_bin',
+            load:true,
+            param:function(row){
+              return {path:row.rname};
+            },
+            callback:function(that){
+              bt.confirm({title:'Delete selected files',msg:'Delete the selected file. The file will be completely deleted and cannot be recovered. Do you want to continue?',icon:0},function(index){
+                layer.close(index);
+                that.start_batch({},function(list){
+                  var html = '';
+                  for(var i=0;i<list.length;i++){
+                    var item = list[i];
+                    html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ (item.request.status?'Successfully deleted':'Failed to delete') +'</span></div></td></tr>';
+                  }
+                  recycle_list.$batch_success_table({title:'Delete multiple files',th:'File name',html:html});
+                  recycle_list.$refresh_table_list(true);
+                });
+              });
+            }
+          }]
+        }]
+      });
+      bt_tools.$fixed_table_thead('#recycle_table .divtable');
+      return recycle_list;
     },
     // 回收站开关
     Set_Recycle_bin:function(db) {
@@ -2770,17 +3032,167 @@ var bt_file = {
     },
     //清空回收站
     CloseRecycleBin:function(){
-        layer.confirm(lan.files.recycle_bin_close_msg, { title: lan.files.recycle_bin_close, closeBtn: 2, icon: 3 }, function () {
-            var loadT = layer.msg("<div class='myspeed'>" + lan.files.recycle_bin_close_the + "</div>", { icon: 16, time: 0, shade: [0.3, '#000'] });
-            setTimeout(function () {
-                getSpeed('.myspeed');
-            }, 1000);
-            $.post('/files?action=Close_Recycle_bin', '', function (rdata) {
-                layer.close(loadT);
-                layer.msg(rdata.msg, { icon: rdata.status ? 1 : 5 });
-                $("#RecycleBody").html('');
-            });
+      var _this = this;
+      layer.confirm(lan.files.recycle_bin_close_msg, { title: lan.files.recycle_bin_close, closeBtn: 2, icon: 3 }, function () {
+        var loadT = layer.msg("<div class='myspeed'>" + lan.files.recycle_bin_close_the + "</div>", { icon: 16, time: 0, shade: [0.3, '#000'] });
+        setTimeout(function () {
+            getSpeed('.myspeed');
+        }, 1000);
+        $.post('/files?action=Close_Recycle_bin', '', function (rdata) {
+            layer.close(loadT);
+            layer.msg(rdata.msg, { icon: rdata.status ? 1 : 5 });
+            _this.render_recycle_list()
         });
+      });
+    },
+        /**
+     * @description 打开属性视图
+     * @param {Object} data 当前文件的数据对象
+     * @return void
+    */
+    open_property_view:function (data) {
+      console.log(data)
+      var _this = this;
+      _this.$http('get_file_attribute',{filename:data.path},function (res) {
+        layer.open({
+          type: 1,
+          closeBtn: 2,
+          title: '[ ' + data.filename +' ] - '+ (data.is_dir?'Folder':'File') +' properties',
+          area: ["580px", "500px"],
+          shadeClose: false,
+          // btn:['确认','取消'],
+          content:'<div class="bt-property-setting pd15">\
+            <div class="tab-nav">\
+              <span class="on">General</span>\
+              <span>Detail</span>\
+              <span>History</span>\
+            </div>\
+            <div class="tab-con">\
+              <div class="property-box file_list_content  active">\
+                <div class="attr-box">\
+                  <div class="attr-name" style="height: 60px;line-height: 60px;"><i class="file_icon file_'+ (res.is_link?'link':(res.is_dir?'folder':res.st_type))  +'"></i></div>\
+                  <div class="attr-content" style="height: 60px;line-height: 60px;"><input type="text" disabled value="'+ data.filename +'" /></div>\
+                </div>\
+                <div class="dividing"></div>\
+                <div class="attr-box" >\
+                  <div class="attr-name">Type:</div>\
+                  <div class="attr-content">'+ ((res.is_dir || res.is_link)?res.st_type:_this.ext_type_tips(res.st_type)) +'</div>\
+                </div>\
+                <div class="attr-box" >\
+                  <div class="attr-name">Location:</div>\
+                  <div class="attr-content"><span title="'+ res.path +'">'+ res.path +'</span></div>\
+                </div>\
+                <div class="attr-box" >\
+                  <div class="attr-name">Size:</div>\
+                  <div class="attr-content">'+ bt.format_size(res.st_size) +' ('+(_this.font_thousandth(res.st_size) + ' byte')+')'+'</div>\
+                </div>\
+                <div class="dividing"></div>\
+                <div class="attr-box">\
+                  <div class="attr-name">Permissions:</div>\
+                  <div class="attr-content">'+ res.mode +'</div>\
+                </div>\
+                <div class="attr-box">\
+                  <div class="attr-name">Group:</div>\
+                  <div class="attr-content">'+ res.group +'</div>\
+                </div>\
+                <div class="attr-box">\
+                  <div class="attr-name">User:</div>\
+                  <div class="attr-content">'+ res.user +'</div>\
+                </div>\
+                <div class="dividing"></div>\
+                <div class="attr-box">\
+                  <div class="attr-name">Visit time:</div>\
+                  <div class="attr-content">'+ bt.format_data(res.st_atime) +'</div>\
+                </div>\
+                <div class="attr-box">\
+                  <div class="attr-name">Modified time:</div>\
+                  <div class="attr-content">'+ bt.format_data(res.st_mtime) +'</div>\
+                </div>\
+              </div>\
+              <div class="property-box details_box_view">\
+                <table>\
+                  <thead><tr><th><div style="width:100px">Properties</div></th><th><div style="width:400px">Value</div></th></tr></thead>\
+                  <tbody class="details_list"></tbody>\
+                </table>\
+              </div>\
+              <div class="property-box history_box_view" >\
+                <table>\
+                  <thead><tr><th><div style="width:140px;">Modified time</div></th><th><div style="width:85px;">Size</div></th><th><div >MD5</div></th><th><div style="width:90px;text-align:right;">OPT</div></th></tr></thead>\
+                  <tbody class="history_list"></tbody>\
+                </table>\
+              </div>\
+            </div>\
+          </div>',
+          success:function(layero,index){
+            $('.bt-property-setting .tab-nav span').click(function () {
+              var index =  $(this).index();
+              $(this).addClass('on').siblings().removeClass('on');
+              $('.property-box:eq('+index +')').addClass('active').siblings().removeClass('active');
+            })
+            $('.history_box_view').on('click','.open_history_file',function(){
+              var _history = $(this).attr('data-time');
+              openEditorView(0,data.path)
+              setTimeout(function () {
+                aceEditor.openHistoryEditorView({filename:data.path,history:_history},function(){
+                  layer.close(index)
+                  $('.ace_conter_tips').show();
+                  $('.ace_conter_tips .tips').html('Read-only file, the file is '+ _item.path +', historic version [ '+ bt.format_data(new Number(_history)) +' ]<a href="javascript:;" class="ml35 btlink" data-path="'+ _item.path +'" data-history="'+ _history +'">Click to restore</a>');
+                });
+              },500)
+            });
+            $('.history_box_view').on('click','.recovery_file_historys',function(){
+              aceEditor.event_ecovery_file(this);
+            });
+            var config = {
+              filename:['Name',data.filename],
+              type:['Type',(res.is_dir || res.is_link)?res.st_type:_this.ext_type_tips(res.st_type)],
+              path:'Location',
+              st_size:['Size',bt.format_size(res.st_size) +' ('+(_this.font_thousandth(res.st_size) + ' byte')+')'],
+              st_atime:['Visit time',bt.format_data(res.st_atime)],st_mtime:['Modified time',bt.format_data(res.st_mtime)],st_ctime:['Metadata modification time',bt.format_data(res.st_ctime)],
+              md5:'MD5',sha1:'sha1',
+              user:'User',group:'Group',mode:'Permissions',
+              st_uid:'UID',st_gid:'GID',
+              st_nlink:'Num of inode links',st_ino:'inode node num',st_mode:'inode protection mode',st_dev:'inode resident device',
+            },html = '',html2= '';
+            for (var key in config) {
+              if (Object.hasOwnProperty.call(config, key)) {
+                var element = config[key],value = ($.isArray(element)?element[1]:res[key]);
+                html += '<tr><td><div style="width:110px">'+ ($.isArray(element)?element[0]:element) +'</div></td><td><div class="ellipsis" style="width:400px" title="'+ value +'">'+ value +'</div></td></tr>';
+              }
+            }
+            for (let i = 0; i < res.history.length; i++) {
+              const item = res.history[i];
+              html2 += '<tr><td><div style="width:140px;">'+ bt.format_data(item.st_mtime) +'</div></td><td><div style="width:85px;">'+ bt.format_size(item.st_size) +'</div></td><td><div>'+ item.md5 +'</div></td><td><div style="width:90px;text-align:right;"><a href="javascript:;" class="btlink open_history_file" data-time="'+ item.st_mtime +'">view</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink recovery_file_historys" data-history="'+ item.st_mtime +'" data-path="'+ data.path +'">restore</a></div></td></tr>'
+            }
+            if(html2 === '') html2 += '<tr><td colspan="4"><div style="text-align: center;">No historical version</div></td></tr>'
+            $('.details_list').html(html);
+            $('.history_list ').html(html2);
+            _this.fixed_table_thead('.details_box_view');
+            _this.fixed_table_thead('.history_box_view ');
+          }
+        })
+      })
+    },
+    /**
+      * @description 固定表头
+      * @param {string} el DOM选择器
+      * @return void
+    */
+    fixed_table_thead:function(el) {
+      $(el).scroll(function () {
+          var scrollTop = this.scrollTop;
+          this.querySelector('thead').style.transform = 'translateY(' + scrollTop + 'px)';
+      })
+    },
+    /**
+      * @description 字符千分隔符
+      * @param {string} el DOM选择器
+      * @return void
+    */
+    font_thousandth:function(num) {
+      var source = String(num).split(".");//按小数点分成2部分
+        source[0] = source[0].replace(new RegExp('(\\d)(?=(\\d{3})+$)','ig'),"$1,");//只将整数部分进行都好分割
+      return source.join(".");//再将小数部分合并进来
     },
     /**
      * @description 打开图片预览
@@ -3045,14 +3457,14 @@ var bt_file = {
     },
     /**
      * @description 切换播放
-     * @param {String} obj  
+     * @param {String} obj
      * @param {String} filename 文件名
      * @return void
     */
     play_file:function(obj,filename) {
         if($('#btvideo video').attr('data-filename')== filename) return false;
         var imgUrl = '/download?filename=' + filename + '&play=true';
-        var v = '<video src="' + imgUrl +'" controls="controls" data-fileName="'+ filename +'" autoplay="autoplay" width="640" height="360">您的浏览器不支持 video 标签。</video>'
+        var v = '<video src="' + imgUrl +'" controls="controls" data-fileName="'+ filename +'" autoplay="autoplay" width="640" height="360">Your browser does not support the [video] tag.</video>'
         $("#btvideo").html(v);
         var p_tmp = filename.split('/')
         $(".btvideo-title").html(p_tmp[p_tmp.length-1]);
@@ -3070,7 +3482,7 @@ var bt_file = {
         $('.file_all_paste').removeClass('hide');
         layer.msg('Copy successfully. Please click [Paste] or Ctrl + V to paste');
     },
-    
+
     /**
      * @description 剪切文件和目录
      * @param {Object} data 当前文件的数据对象
@@ -3346,7 +3758,7 @@ var bt_file = {
                 });
             })
         }
-        
+
     },
 
     /**
@@ -3368,7 +3780,64 @@ var bt_file = {
             })
         });
     },
-    
+    /**
+     * @description 创建软链接
+     * @param {Object} data 当前文件的数据对象
+    */
+    set_soft_link:function(data){
+      var that = this;
+      bt_tools.open({
+          title:'Create Softlink',
+          area:'520px',
+          content:{
+              class:'pd20',
+              formLabelWidth:'110px',
+              form:[{
+                  label:'Source file',
+                  group:{
+                      type:'text',
+                      name:'sfile',
+                      width:'280px',
+                      placeholder:'Please select the folder and file to be linked',
+                      icon:{type:'glyphicon-folder-open',event:function(ev){},select:'all'},
+                      value:'',
+                      input:function(ev){}
+                  }
+              },{
+                label: "Softlink name",
+                group: {
+                    type: "text",
+                    name: "name",
+                    width: "280px",
+                    placeholder: "Please enter the name of the softlink",
+                    value: ""
+                }
+            }]
+          },
+          init: function() {
+            var e = null, t = setInterval(function() {
+              if ($('input[name="sfile"]').length < 1 && clearInterval(t),e != $('input[name="sfile"]').val()){
+                e = $('input[name="sfile"]').val();
+                var i = e.split("/");
+                i.length > 1 && $('[name="name"]').val(i[i.length - 1])
+              }
+            }, 100)
+          },
+          yes:function(e, i, a){
+            e = $.extend(e, {dfile: that.file_path + "/" + e.name}),
+            delete e.name,
+            bt_tools.send("files/CreateLink", e, function(e) {
+                e.status && (layer.close(i),
+                bt.msg(e),
+                that.reader_file_list())
+            }, {
+                tips: "Create Softlink"
+            })
+          }
+      });
+    },
+
+
     /**
      * @description 设置文件权限 - ok
      * @param {Object} data 当前文件的数据对象
@@ -3782,7 +4251,7 @@ var bt_file = {
     get_present_task_view:function(){
         this.file_present_task = layer.open({
             type: 1,
-            title: "实时任务队列",
+            title: "Real-time task queue",
             area: '500px',
             closeBtn: 2,
             skin:'present_task_list',

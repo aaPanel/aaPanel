@@ -1,15 +1,63 @@
-bt.pub.check_install(function (rdata) {
-    if (rdata === false) bt.index.rec_install();
-})
+// bt.pub.check_install(function (rdata) {
+//     if (rdata === false) bt.index.rec_install();
+// })
 $("select[name='network-io']").change(function(){
     var net_key = $(this).val();
     if(net_key == 'all') net_key = '';
     bt.set_cookie('network_io_key',net_key);
 });
+$("select[name='network-io'],select[name='disk-io']").change(function(){
+  var key = $(this).val(),type = $(this).attr('name')
+  if(type == 'network-io'){
+    if(key == 'all') key = '';
+    bt.set_cookie('network_io_key',key);
+  }else{
+    bt.set_cookie('disk_io_key',key);
+  }
+});
+$('.tabs-nav span').click(function () {
+  var indexs = $(this).index();
+  $(this).addClass('active').siblings().removeClass('active')
+  $('.tabs-content .tabs-item:eq('+ indexs +')').addClass('tabs-active').siblings().removeClass('tabs-active')
+  $('.tabs-down select:eq('+ indexs +')').removeClass('hide').siblings().addClass('hide')
+  switch(indexs){
+    case 0:
+      index.net.table.resize();
+    break;
+    case 1:
+      index.iostat.table.resize();
+    break;
+  }
+})
 var interval_stop = false;
 var index = {
     warning_list:[],
     warning_num:0,
+    warning_list:[],
+    warning_num:0,
+    series_option:{},// 配置项
+    chart_json:{}, // 所有图表echarts对象
+    chart_view:{}, // 磁盘echarts对象
+    disk_view:[], // 释放内存标记
+    chart_result:null,
+    release:false,
+    load_config:[{
+      title: lan.index.run_block,
+      val: 90,
+      color: '#dd2f00'
+    },{
+        title: lan.index.run_slow,
+      val: 80,
+      color: '#ff9900'
+    },{
+        title: lan.index.run_normal,
+      val: 70,
+      color: '#20a53a'
+    },{
+        title: lan.index.run_fluent,
+      val: 30,
+      color: '#20a53a'
+    }],
     interval: {
         limit: 10,
         count: 0,
@@ -23,7 +71,7 @@ var index = {
                     return;
                 }
                 _this.count++;
-                if (!interval_stop) index.get_data_info();
+                if (!interval_stop) index.reander_system_info();
             }, 3000)
         },
         reload: function () {
@@ -48,8 +96,8 @@ var index = {
             obj.tData = index.net.data.aData;
 
             obj.list = [];
-            obj.list.push({ name: lan.index.net_up, data: index.net.data.uData, circle: 'circle', itemStyle: { normal: { color: '#f7b851' } }, areaStyle: { normal: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(255, 140, 0,0.5)' }, { offset: 1, color: 'rgba(255, 140, 0,0.8)' }], false) } }, lineStyle: { normal: { width: 1, color: '#aaa' } } });
-            obj.list.push({ name: lan.index.net_down, data: index.net.data.dData, circle: 'circle', itemStyle: { normal: { color: '#52a9ff' } }, areaStyle: { normal: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(30, 144, 255,0.5)' }, { offset: 1, color: 'rgba(30, 144, 255,0.8)' }], false) } }, lineStyle: { normal: { width: 1, color: '#aaa' } } });
+            obj.list.push({ name: lan.index.net_up, data: index.net.data.uData, circle: 'circle', itemStyle: { normal: { color: '#f7b851' } }, areaStyle: { normal: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(255, 140, 0,1)' }, { offset: 1, color: 'rgba(255, 140, 0,.4)' }], false) } }, lineStyle: { normal: { width: 1, color: '#f7b851' } } });
+            obj.list.push({ name: lan.index.net_down, data: index.net.data.dData, circle: 'circle', itemStyle: { normal: { color: '#52a9ff' } }, areaStyle: { normal: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(30, 144, 255,1)' }, { offset: 1, color: 'rgba(30, 144, 255,.4)' }], false) } }, lineStyle: { normal: { width: 1, color: '#52a9ff' } } });
             option = bt.control.format_option(obj)
 
             index.net.table.setOption(option);
@@ -70,6 +118,64 @@ var index = {
             _net.data.dData.push(down);
             _net.data.aData.push(d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds());
         }
+    },
+    iostat: {
+      table: null,
+      data: {
+          uData: [],
+          dData: [],
+          aData: [],
+          tipsData:[]
+      },
+      init: function () {
+          //流量图表
+          index.iostat.table = echarts.init(document.getElementById('IoStat'));
+          var obj = {};
+          obj.dataZoom = [];
+          obj.unit = lan.index.unit + ':MB/s';
+          obj.tData = index.iostat.data.aData;
+          obj.formatter = function(config){
+            var _config = config,_tips = "Time："+ _config[0].axisValue +"<br />",options =  {
+              read_bytes:  'Read Bytes',
+              read_count:  'Read Count ',
+              read_merged_count: 'Read Merged Count',
+              read_time: 'Read Wait',
+              write_bytes:  'Write Bytes',
+              write_count:  'Write Count',
+              write_merged_count: 'Write Merged Count',
+              write_time: 'Write Wait',
+            },data = index.iostat.data.tipsData[config[0].dataIndex],list = ['read_count','write_count','read_merged_count','write_merged_count','read_time','write_time',]
+            for(var i=0;i < config.length;i++){
+              if(typeof config[i].data == "undefined") return false
+              _tips +=  '<span style="display: inline-block;width: 10px;height: 10px;border-radius: 50%;background: '+ config[i].color +';"></span>&nbsp;&nbsp;<span>'+ config[i].seriesName +'：'+ (parseFloat(config[i].data)).toFixed(2) + ' MB/s' + '</span><br />'
+            }
+            $.each(list,function(index,item){
+              _tips += '<span style="display: inline-block;width: 10px;height: 10px;"></span>&nbsp;&nbsp;<span style="'+ (item.indexOf('time') > -1?('color:'+ ((data[item] > 100 && data[item] < 1000)?'#ff9900':(data[item] >= 1000?'red':'#20a53a'))):'') +'">'+  options[item] +'：' +   data[item]  + (item.indexOf('time') > -1 ?' ms':' per sec')  +  '</span><br />'
+            })
+            return _tips;
+          }
+          obj.list = [];
+          obj.list.push({ name: 'Read Bytes', data: index.iostat.data.uData, circle: 'circle', itemStyle: { normal: { color: '#FF4683' } }, areaStyle: { normal: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(255,70,131,1)' }, { offset: 1, color: 'rgba(255,70,131,.4' }], false) } }, lineStyle: { normal: { width: 1, color: '#FF4683' } } });
+          obj.list.push({ name: 'Write Bytes', data: index.iostat.data.dData, circle: 'circle', itemStyle: { normal: { color: '#6CC0CF' } }, areaStyle: { normal: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(108,192,207,1)' }, { offset: 1, color: 'rgba(108,192,207,.4)' }], false) } }, lineStyle: { normal: { width: 1, color: '#6CC0CF' } } });
+          option = bt.control.format_option(obj)
+          index.iostat.table.setOption(option);
+          window.addEventListener("resize", function () {
+            index.iostat.table.resize();
+          });
+      },
+      add: function (read, write,data) {
+        var _disk = this;
+        var limit = 8;
+        var d = new Date()
+        if (_disk.data.uData.length >= limit) _disk.data.uData.splice(0, 1);
+        if (_disk.data.dData.length >= limit) _disk.data.dData.splice(0, 1);
+        if (_disk.data.aData.length >= limit) _disk.data.aData.splice(0, 1);
+        if (_disk.data.tipsData.length >= limit) _disk.data.tipsData.splice(0, 1);
+        _disk.data.uData.push(read);
+        _disk.data.dData.push(write);
+        _disk.data.tipsData.push(data);
+        _disk.data.aData.push(d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds());
+      }
     },
     mem: {
         status: 1,
@@ -98,121 +204,136 @@ var index = {
     },
     get_init: function () {
         var _this = this;
-        setTimeout(function () { _this.get_disk_list(); }, 10);
+        // setTimeout(function () { _this.get_disk_list(); }, 10);
         setTimeout(function () { _this.get_warning_list(); }, 20);
-        setTimeout(function () { _this.get_server_info(); }, 30);
+        // setTimeout(function () { _this.get_server_info(); }, 30);
+        _this.reander_system_info(function(rdata){
+          // 负载悬浮事件
+          $('#loadChart').hover(function () {
+            var arry = [
+              [lan.index.avg_load_atlast_onemin,rdata.load.one],
+              [lan.index.avg_load_atlast_fivemin,rdata.load.five],
+              [lan.index.avg_load_atlast_fifteenmin,rdata.load.fifteen]
+            ],tips = '';
+            $.each(arry || [],function (index,item){
+              tips += item[0]+'：'+ item[1] +'</br>';
+            })
+            $.each(rdata.cpu_times || {},function (key,item){
+              tips += key +'：'+ item +'</br>';
+            })
+            // '最近1分钟平均负载：' + rdata.load.one + '</br>最近5分钟平均负载：' + rdata.load.five + '</br>最近15分钟平均负载：' + rdata.load.fifteen + ''
+            layer.tips(tips, this, { time: 0, tips: [1, '#999'] });
+          }, function(){
+              layer.closeAll('tips');
+          })
 
-        bt.pub.get_user_info(function (rdata) {
-            if (rdata.status) {
-                $(".bind-user").html(rdata.data.username);
-                bt.send('check_user_auth', 'ajax/check_user_auth', {}, function (rd) {
-                    if (!rd.status) bt.msg(rd);
-                });
-                bt.weixin.get_user_info(function (rdata) {
-                    if (!rdata.status) {
-                        bt.msg(rdata);
-                        return;
-                    }
-                    if (JSON.stringify(rdata.msg) != '{}') {
-                        var datas = rdata.msg;
-                        for (var key in datas) {
-                            var item = datas[key];
-                            item.nickName
-                            $(".bind-weixin a").text(item.nickName);
-                            break;
-                        }
-                    }
-                });
-
+          // cpu悬浮事件
+          $('#cpuChart').hover(function () {
+              var cpuText = '';
+            for (var i = 1; i < rdata.cpu[2].length + 1; i++) {
+              var cpuUse = parseFloat(rdata.cpu[2][i - 1] == 0 ? 0 : rdata.cpu[2][i - 1]).toFixed(1)
+              if (i % 2 != 0) {
+                cpuText += 'CPU-' + i + '：' + cpuUse + '%&nbsp;|&nbsp;'
+              } else {
+                cpuText += 'CPU-' + i + '：' + cpuUse + '%'
+                cpuText += `\n`
+              }
             }
-            else {
-                $(".bind-weixin a").attr("href", "javascript:;");
-                $(".bind-weixin a").click(function () {
-                    bt.msg({ msg: lan.index.bind_bt_account_first, icon: 2 });
+
+              layer.tips(rdata.cpu[3] + "</br>" + rdata.cpu[5] + " CPU，" + (rdata.cpu[4]) + " Physical core, " + rdata.cpu[1]+" Logical core</br>"+ cpuText, this, { time: 0, tips: [1, '#999'] });
+          }, function(){
+              layer.closeAll('tips');
+          })
+
+          $('#memChart').hover(function(){
+              $(this).append('<div class="mem_mask shine_green" title="Click to free RAM"><div class="men_inside_mask"></div><div class="mem-re-con" style="display:block"></div></div>');
+              $(this).find('.mem_mask .mem-re-con').animate({top:'5px'},400);
+              $(this).next().hide();
+          },function(){
+              $(this).find('.mem_mask').remove()
+              $(this).next().show();
+          }).click(function(){
+              var that = $(this);
+              var data = _this.chart_result.mem;
+              bt.show_confirm(lan.index.mem_release_sure, '<font style="color:red;">'+lan.index.mem_release_warn+'</font>', function () {
+                  _this.release = true
+                  var option = JSON.parse(JSON.stringify(_this.series_option));
+                  // 释放中...
+                var count = ''
+                var setInter = setInterval(function(){
+                    if(count == '...'){
+                        count = '.'
+                    }else{
+                        count += '.'
+                    }
+                    option.series[0].detail.formatter = lan.index.memre_ok_0 + count
+                    option.series[0].detail.fontSize = 15
+                    option.series[0].data[0].value = 0
+                    _this.chart_view.mem.setOption(option, true)
+                    that.next().hide()
+                },400)
+                // 释放接口请求
+                bt.system.re_memory(function (res) {
+                    that.next().show()
+                    clearInterval(setInter)
+                    option.series[0].detail = $.extend(option.series[0].detail,{
+                        formatter:lan.index.memre_ok_1+"\n"+ bt.format_size(data.memRealUsed - res.memRealUsed),
+                        lineHeight:18,
+                        padding:[5,0]
+                    })
+                    _this.chart_view.mem.setOption(option,true)
+                    setTimeout(function() {
+                        _this.release = false;
+                        _this.chart_result.mem = res;
+                        _this.chart_active('mem');
+                    }, 2000);
                 })
-            }
+              })
+          })
+
+          // 磁盘悬浮事件
+          for(var i = 0; i < rdata.disk.length; i++){
+              var disk = rdata.disk[i],texts = "<strong>"+lan.index.base_info+"</strong></br>"
+              texts += "Partition: " + disk.filesystem + "</br>"
+              texts += "Type: " + disk.type + "</br>"
+              texts += "Mount point: " + disk.path + "</br></br>"
+              texts += "<strong>"+ lan.index.inode_info +":</strong></br>"
+              texts += lan.index.total+": " + disk.inodes[0] + "</br>"
+              texts += lan.index.already_use+": " + disk.inodes[1] + "</br>"
+              texts += lan.index.available+": " + disk.inodes[2] + "</br>"
+              texts += lan.index.inode_percent+": " + disk.inodes[3] + "</br></br>"
+              texts += "<strong>"+lan.index.capacity_info+"</strong></br>"
+              texts += lan.index.capacity+": " + disk.size[0] + "</br>"
+              texts += lan.index.already_use+": " + disk.size[1] + "</br>"
+              texts += lan.index.available+": " + disk.size[2] + "</br>"
+              texts += lan.index.usage_rate+": " + disk.size[3] + "</br>"
+              $("#diskChart" + i).data('title',texts).hover(function () {
+                  layer.tips($(this).data('title'), this, { time: 0, tips: [1, '#999'] });
+              }, function(){
+                  layer.closeAll('tips');
+              })
+          }
+          _this.get_server_info(rdata);
+          if(rdata.installed === false) bt.index.rec_install();
+          if (rdata.user_info.status) {
+              var rdata_data = rdata.user_info.data;
+              bt.set_cookie('bt_user_info',JSON.stringify(rdata.user_info));
+              $(".bind-user").html(rdata_data.username);
+          }
+          else {
+              $(".bind-weixin a").attr("href", "javascript:;");
+              $(".bind-weixin a").click(function () {
+                  bt.msg({ msg: '请先绑定宝塔账号!', icon: 2 });
+              })
+          }
         })
-
-        _this.get_data_info(function (loadbox, rdata) {
-            loadbox.find('.cicle').hover(function () {
-                var _this = $(this);
-                var d = _this.parents('ul').data('data').load;
-                layer.tips(lan.index.avg_load_atlast_onemin + d.one + '</br>'+ lan.index.avg_load_atlast_fivemin + d.five + '</br>'+ lan.index.avg_load_atlast_fifteenmin + d.fifteen + '', _this, { time: 0, tips: [1, '#999'] });
-            }, function () {
-                layer.closeAll('tips');
-            })
-
-            $('.cpubox').find('.cicle').hover(function () {
-                var _this = $(this);
-                var d = _this.parents('ul').data('data').cpu;
-                var crs = '';
-                var n1 = 0;
-                for (var i = 0; i < d[2].length; i++) {
-                    n1++;
-                    crs += 'CPU-' + i + ": " + d[2][i] + '%' + (n1 % 2 == 0?'</br>':' | ');
-
-                }
-                layer.tips(d[3] + "</br>" + d[5] + " CPU, " + d[4] + " Core, " + d[4]+" Thread</br>"+ crs, _this, { time: 0, tips: [1, '#999'] });
-            }, function () {
-                layer.closeAll('tips');
-            });
-
-            $(".mem-release").hover(function () {
-                $(this).addClass("shine_green");
-                if (!($(this).hasClass("mem-action"))) {
-                    $(this).find(".mem-re-min").hide();
-                    $(this).find(".occupy").css({ "color": "#d2edd8" });
-                    $(this).find(".mem-re-con").css({ "display": "block" });
-                    $(this).find(".mem-re-con").animate({ "top": "0", opacity: 1 });
-                }
-				$(this).next().hide();
-            }, function () {
-                if (!($(this).hasClass("mem-action"))) {
-                    $(this).find(".mem-re-min").show();
-                }
-                else {
-                    return false;
-                    //$(this).find(".mem-re-min").hide();
-                }
-                $(this).removeClass("shine_green");
-                $(this).find(".occupy").css({ "color": "#20a53a" });
-                $(this).find(".mem-re-con").css({ "top": "15px", opacity: 1, "display": "none" });
-				$(this).next().show();
-                //$(this).next().html(bt.get_cookie("mem-before"));
-            }).click(function () {
-                if (($(this).hasClass("mem-action"))) return false;
-                var _this = $(this);
-                bt.show_confirm(lan.index.mem_release_sure, '<font style="color:red;">'+lan.index.mem_release_warn+'</font>', function () {
-                    if (!(_this.hasClass("mem-action"))) {
-						_this.next().hide();
-						_this.find('.mem-re-min').hide();
-                        var data = _this.parents('ul').data('data').mem;
-                        index.mem.set_status(_this, 2); //释放中
-                        bt.system.re_memory(function (nData) {
-                            index.mem.set_status(_this, lan.index.memre_ok);
-							
-							_this.next().show();
-                            setTimeout(function () {
-                                var t = nData.memFree - data.memFree;
-                                var m = lan.index.memre_ok_2;
-                                if (t > 0) m = lan.index.memre_ok_1 + "<br>" + t + "MB";
-                                index.mem.set_status(_this, m);
-                            }, 200);
-                            setTimeout(function () { 
-								index.mem.set_status(_this, 1, (nData.memRealUsed * 100 / nData.memTotal).toFixed(1)); 
-								_this.find('.mem-re-min').show();
-							}, 1200);
-                        })
-                    }
-                })
-            })
-        });
         setTimeout(function () { _this.interval.start(); }, 40)
         setTimeout(function () { index.get_index_list(); }, 50)
-
-
         setTimeout(function () {
-            _this.net.init();
+           _this.net.init();
+        }, 60);
+        setTimeout(function () {
+          _this.iostat.init()
         }, 60);
 
         setTimeout(function () {
@@ -231,123 +352,43 @@ var index = {
             }, false)
         }, 70)
     },
-    get_data_info: function (callback) {
-        var _this = $(this);
-        bt.system.get_net(function (net) {
+    get_server_info: function (info) {
+      var memFree = info.memTotal - info.memRealUsed;
+      if (memFree < 64) {
+          $("#messageError").show();
+          $("#messageError").append('<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;">' + lan.index.mem_warning + '</span> </p>')
+      }
 
-            var pub_arr = [{ val: 100, color: '#dd2f00' }, { val: 90, color: '#ff9900' }, { val: 70, color: '#20a53a' }, { val: 30, color: '#20a53a' }];
-            var load_arr = [{ title: lan.index.run_block, val: 100, color: '#dd2f00' }, { title: lan.index.run_slow, val: 90, color: '#ff9900' }, { title: lan.index.run_normal, val: 70, color: '#20a53a' }, { title: lan.index.run_fluent, val: 30, color: '#20a53a' }];
-            var _cpubox = $('.cpubox'), _membox = $('.membox'), _loadbox = $('.loadbox'), _diskbox = $('.diskbox')
+      if (info.isuser > 0) {
+          $("#messageError").show();
+          $("#messageError").append('<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;"></span>' + lan.index.user_warning + '<span class="c7 mr5" title="'+lan.index.safe_problem_cant_ignore+'" style="cursor:no-drop"> ['+lan.index.cant_ignore+']</span><a class="btlink" href="javascript:setUserName();"> ['+lan.index.edit_now+']</a></p>')
+      }
 
-            index.set_val(_cpubox, { usage: net.cpu[0], title: net.cpu[1]+' '+lan.index.cpu_core, items: pub_arr })
-            index.set_val(_membox, { usage: (net.mem.memRealUsed * 100 / net.mem.memTotal).toFixed(1), items: pub_arr, title: net.mem.memRealUsed + '/' + net.mem.memTotal + '(MB)' })
-            bt.set_cookie('memSize', net.mem.memTotal)
-            for (var i = 0; i < _diskbox.length; i++) {
-                index.set_val(_diskbox.eq(i), { usage: net.disk[i].size[3].split('%')[0], title: net.disk[i].size[1]+'/'+net.disk[i].size[0], items: pub_arr })
-            }
-            
-            var _lval = Math.round((net.load.one / net.load.max) * 100);
-            if (_lval > 100) _lval = 100;
-            index.set_val(_loadbox, { usage: _lval, items: load_arr })
-            _loadbox.parents('ul').data('data', net);
-            var net_key = bt.get_cookie('network_io_key');
-            if(net_key){
-                console.log(net_key,net.network[net_key])
-                net.up = net.network[net_key].up;
-                net.down = net.network[net_key].down;
-                net.downTotal = net.network[net_key].downTotal;
-                net.upTotal = net.network[net_key].upTotal;
-                net.downPackets = net.network[net_key].downPackets;
-                net.upPackets = net.network[net_key].upPackets;
-                net.downAll = net.network[net_key].downTotal;
-                net.upAll = net.network[net_key].upTotal;
-            }
-            var net_option = '<option value="all">All</option>';
-            $.each(net.network,function(k,v){
-                var act = (k == net_key)?'selected':'';
-                net_option += '<option value="'+k+'" '+act+'>'+k+'</option>';
-            });
-
-            $('select[name="network-io"]').html(net_option);
-            //刷新流量
-            $("#upSpeed").html(net.up + ' KB');
-            $("#downSpeed").html(net.down + ' KB');
-            $("#downAll").html(bt.format_size(net.downTotal));
-            $("#upAll").html(bt.format_size(net.upTotal));
-            index.net.add(net.up, net.down);
-            if (index.net.table) index.net.table.setOption({ xAxis: { data: index.net.data.aData }, series: [{ name: lan.index.net_up, data: index.net.data.uData }, { name: lan.index.net_down, data: index.net.data.dData }] });
-
-            if (callback) callback(_loadbox, net);
-        })
-    },
-    get_server_info: function () {
-        bt.system.get_total(function (info) {
-            var memFree = info.memTotal - info.memRealUsed;
-            if (memFree < 64) {
-                $("#messageError").show();
-                $("#messageError").append('<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;">' + lan.index.mem_warning + '</span> </p>')
-            }
-
-            if (info.isuser > 0) {
-                $("#messageError").show();
-                $("#messageError").append('<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;"></span>' + lan.index.user_warning + '<span class="c7 mr5" title="'+lan.index.safe_problem_cant_ignore+'" style="cursor:no-drop"> ['+lan.index.cant_ignore+']</span><a class="btlink" href="javascript:setUserName();"> ['+lan.index.edit_now+']</a></p>')
-            }
-
-            if (info.isport === true) {
-                $("#messageError").show();
-                $("#messageError").append('<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;"></span>'+lan.index.panel_port_tips+'<span class="c7 mr5" title="'+lan.index.panel_port_tip1+'" style="cursor:no-drop"> ['+lan.index.panel_port_tip2+']</span><a class="btlink" href="/config"> ['+lan.index.panel_port_tip3+']</a></p>')
-            }
-            var _system = info.system;
-            $("#info").html(_system);
-            $("#running").html(info.time);
-            if (_system.indexOf("Windows") != -1) {
-                $(".ico-system").addClass("ico-windows");
-            }
-            else if (_system.indexOf("CentOS") != -1) {
-                $(".ico-system").addClass("ico-centos");
-            }
-            else if (_system.indexOf("Ubuntu") != -1) {
-                $(".ico-system").addClass("ico-ubuntu");
-            }
-            else if (_system.indexOf("Debian") != -1) {
-                $(".ico-system").addClass("ico-debian");
-            }
-            else if (_system.indexOf("Fedora") != -1) {
-                $(".ico-system").addClass("ico-fedora");
-            }
-            else {
-                $(".ico-system").addClass("ico-linux");
-            }
-        })
-    },
-    get_disk_list: function () {
-        bt.system.get_disk_list(function (rdata) {
-            if (rdata) {
-                var data = { table: '#systemInfoList', items: [] };
-                for (var i = 0; i < rdata.length; i++) {
-                    var item = rdata[i];
-                    var obj = {};
-                    obj.name = item.path;
-                    obj.title = item.size[1] + '/' + item.size[0];
-                    obj.rate = item.size[3].replace('%', '');
-                    obj.free = item.size[2];
-                    var arr = [];
-                    arr.push({ title: lan.index.inode_info, value: '' })
-                    arr.push({ title: lan.index.total, value: item.inodes[0] })
-                    arr.push({ title: lan.index.already_use, value: item.inodes[1] })
-                    arr.push({ title: lan.index.available, value: item.inodes[2] })
-                    arr.push({ title: lan.index.inode_percent, value: item.inodes[3] })
-                    arr.push({ title: '<b>Capacity information</b>', value: '' })
-                    arr.push({ title: 'Capacity', value: item.size[0] })
-                    arr.push({ title: 'Used', value: item.size[1] })
-                    arr.push({ title: 'Available', value: item.size[2] })
-                    arr.push({ title: 'Usage rate', value: item.size[3] })
-                    obj.masks = arr;
-                    data.items.push(obj)
-                }
-                index.render_disk(data);
-            }
-        })
+      if (info.isport === true) {
+          $("#messageError").show();
+          $("#messageError").append('<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;"></span>'+lan.index.panel_port_tips+'<span class="c7 mr5" title="'+lan.index.panel_port_tip1+'" style="cursor:no-drop"> ['+lan.index.panel_port_tip2+']</span><a class="btlink" href="/config"> ['+lan.index.panel_port_tip3+']</a></p>')
+      }
+      var _system = info.system;
+      $("#info").html(_system);
+      $("#running").html(info.time);
+      if (_system.indexOf("Windows") != -1) {
+          $(".ico-system").addClass("ico-windows");
+      }
+      else if (_system.indexOf("CentOS") != -1) {
+          $(".ico-system").addClass("ico-centos");
+      }
+      else if (_system.indexOf("Ubuntu") != -1) {
+          $(".ico-system").addClass("ico-ubuntu");
+      }
+      else if (_system.indexOf("Debian") != -1) {
+          $(".ico-system").addClass("ico-debian");
+      }
+      else if (_system.indexOf("Fedora") != -1) {
+          $(".ico-system").addClass("ico-fedora");
+      }
+      else {
+          $(".ico-system").addClass("ico-linux");
+      }
     },
     render_disk: function (data) {
         if (data.items.length > 0) {
@@ -391,7 +432,7 @@ var index = {
                         color = '#dd2f00'
                         break;
                 }
-                
+
                 index.set_val(_li, { usage: item.rate, color: color })
                 _tab.append(_li);
             }
@@ -430,6 +471,252 @@ var index = {
         if (obj.title) _li.find('h4').text(obj.title);
         _li.find('.occupy span').html(obj.usage);
     },
+
+    /**
+     * @description 渲染系统信息
+     * @param callback 回调函数
+     *
+    */
+    reander_system_info:function(callback){
+      var _this = this;
+      bt.system.get_net(function (res){
+            _this.chart_result = res
+            // 动态添加磁盘，并赋值disk_view
+            if(_this.chart_view.disk == undefined){
+    	        for (var i = 0; i < res.disk.length; i++) {
+    	            var diskHtml = "<li class='rank col-xs-6 col-sm-3 col-md-3 col-lg-2 mtb20 circle-box text-center'><div id='diskName" + i +"'></div><div class='chart-li' id='diskChart" + i +"'></div><div id='disk" + i +"'></div></li>";
+    	            $("#systemInfoList").append(diskHtml);
+    	            _this.disk_view.push(echarts.init(document.querySelector("#diskChart" + i)));
+    	        }
+            }
+
+            // 负载
+    		var loadCount = Math.round((res.load.one / res.load.max) * 100) > 100 ? 100 : Math.round((res.load.one / res.load.max) * 100);
+    		loadCount = loadCount < 0 ? 0 : loadCount;
+    		var loadInfo = _this.chart_color_active(loadCount);
+
+            // cpu
+    		var cpuCount = res.cpu[0];
+            var cpuInfo = _this.chart_color_active(cpuCount);
+
+            // 内存
+    	    var memCount = Math.round((res.mem.memRealUsed / res.mem.memTotal) * 1000) / 10; // 返回 memRealUsed 占 memTotal 的百分比
+    	    var memInfo = _this.chart_color_active(memCount);
+            bt.set_cookie('memSize',res.mem.memTotal)
+
+    	    // 磁盘
+    	    var diskList = res.disk;
+    	    var diskJson = [];
+    		for (var i = 0; i < diskList.length; i++) {
+
+    			var ratio = diskList[i].size[3];
+    			ratio = parseFloat(ratio.substring(0, ratio.lastIndexOf("%")));
+    			var diskInfo = _this.chart_color_active(ratio)
+              diskJson.push(diskInfo)
+
+    		}
+
+            // chart_json存储最新数据
+    	  _this.chart_json['load'] = loadInfo;
+        _this.chart_json['cpu'] = cpuInfo;
+        _this.chart_json['mem'] = memInfo;
+    		_this.chart_json['disk'] = diskJson
+            // 初始化 || 刷新
+            if(_this.chart_view.disk == undefined) {
+                _this.init_chart_view()
+            } else {
+                _this.set_chart_data()
+            }
+            $('.rank .titles').show()
+
+                        var net_key = bt.get_cookie('network_io_key');
+            if(net_key){
+                res.up = res.network[net_key].up;
+                res.down = res.network[net_key].down;
+                res.downTotal = res.network[net_key].downTotal;
+                res.upTotal = res.network[net_key].upTotal;
+                res.downPackets = res.network[net_key].downPackets;
+                res.upPackets = res.network[net_key].upPackets;
+                res.downAll = res.network[net_key].downTotal;
+                res.upAll = res.network[net_key].upTotal;
+            }
+            var net_option = '<option value="all">All</option>';
+            $.each(res.network,function(k,v){
+                var act = (k == net_key)?'selected':'';
+                net_option += '<option value="'+k+'" '+act+'>'+k+'</option>';
+            });
+
+            $('select[name="network-io"]').html(net_option);
+            //刷新流量
+            $("#upSpeed").html(res.up.toFixed(2) + ' KB');
+            $("#downSpeed").html(res.down.toFixed(2) + ' KB');
+            $("#downAll").html(bt.format_size(res.downTotal));
+            $("#upAll").html(bt.format_size(res.upTotal));
+            index.net.add(res.up, res.down);
+            var disk_key = bt.get_cookie('disk_io_key') || 'ALL', disk_io_data = res.iostat[disk_key || 'ALL'],mb = 1048576,ioTime = disk_io_data.write_time>disk_io_data.read_time?disk_io_data.write_time:disk_io_data.read_time
+            $('#readBytes').html(bt.format_size(disk_io_data.read_bytes))
+            $('#writeBytes').html(bt.format_size(disk_io_data.write_bytes))
+            $('#diskIops').html((disk_io_data.read_count + disk_io_data.write_count))
+            $('#diskTime').html(ioTime +' ms').css({'color':ioTime > 100 && ioTime < 1000?'#ff9900':ioTime >= 1000?'red':'#20a53a'})
+
+            index.iostat.add((disk_io_data.read_bytes / mb).toFixed(2), (disk_io_data.write_bytes / mb).toFixed(2),disk_io_data);
+
+
+            var disk_option = '';
+            $.each(res.iostat,function(k,v){
+                disk_option += '<option value="'+k+'" '+ (k == disk_key?'selected':'') +'>'+ (k == 'ALL'?'All':k) +'</option>';
+            });
+            $('select[name="disk-io"]').html(disk_option);
+
+            if (index.net.table) index.net.table.setOption({ xAxis: { data: index.net.data.aData }, series: [{ name: lan.index.net_up, data: index.net.data.uData }, { name: lan.index.net_down, data: index.net.data.dData }] });
+            if (index.iostat.table) index.iostat.table.setOption({ xAxis: { data: index.iostat.data.aData }, series: [{ name: 'Read Bytes', data: index.iostat.data.uData }, { name: 'Write Bytes', data: index.iostat.data.dData }] });
+            if(callback) callback(res)
+        });
+    },
+    /**
+     * @description 渲染画布视图
+    */
+    init_chart_view:function(){
+         // 所有图表对象装进chart_view
+        this.chart_view['load'] = echarts.init(document.querySelector("#loadChart"))
+        this.chart_view['cpu'] = echarts.init(document.querySelector("#cpuChart"))
+        this.chart_view['mem'] = echarts.init(document.querySelector("#memChart"))
+        this.chart_view['disk'] = this.disk_view
+
+        // 图表配置项
+        this.series_option = {
+    		series: [{
+    			type: 'gauge',
+    			startAngle: 90,
+    			endAngle: -270,
+          animationDuration: 1500,
+          animationDurationUpdate: 1000,
+    			radius: '99%',
+    			pointer: {
+    				show: false
+    			},
+    			progress: {
+    				show: true,
+    				overlap: false,
+    				roundCap: true,
+    				clip: false,
+    			    itemStyle: {
+    				    borderWidth: 1,
+    				    borderColor: '#20a53a'
+    			    }
+    			},
+    			axisLine: {
+    				lineStyle: {
+    					width: 7,
+    					color: [[0, "rgba(204,204,204,0.5)"], [1, "rgba(204,204,204,0.5)"]]
+    				}
+    			},
+    			splitLine: {
+    				show: false,
+    				distance: 0,
+    				length: 10
+    			},
+    			axisTick: {
+    				show: false
+    			},
+    			axisLabel: {
+    				show: false,
+    				distance: 50
+    			},
+    			data: [{
+    				value: 0,
+    				detail: {
+    					offsetCenter: ['0%', '0%']
+    				},
+    				itemStyle: {
+    					color: '#20a53a',
+    					borderColor: '#20a53a'
+    				},
+    			}],
+    			detail: {
+    				width: 50,
+    				height: 15,
+            lineHeight:15,
+    				fontSize: 17,
+    				color: '#20a53a',
+    				formatter: '{value}%',
+    				fontWeight:'normal'
+    			}
+    		}]
+    	};
+    	this.set_chart_data()
+    },
+    /**
+     * @description 赋值chart的数据
+     *
+    */
+    set_chart_data:function(){
+        this.chart_active("load")
+    	this.chart_active("cpu")
+    	if(!this.release){
+            this.chart_active("mem")
+        }
+    	for(var i = 0; i < this.chart_view.disk.length; i++){
+    	    this.series_option.series[0].data[0].value = this.chart_json.disk[i].val
+    	    this.series_option.series[0].data[0].itemStyle.color = this.chart_json.disk[i].color
+    	    this.series_option.series[0].data[0].itemStyle.borderColor = this.chart_json.disk[i].color
+    	    this.series_option.series[0].progress.itemStyle.borderColor = this.chart_json.disk[i].color
+    	    this.series_option.series[0].detail.color = this.chart_json.disk[i].color
+    	    this.chart_view.disk[i].setOption(this.series_option, true)
+    	    $("#disk" + i).text(this.chart_result.disk[i].size[1] + " / " + this.chart_result.disk[i].size[0])
+    	    $("#diskName" + i).text(this.chart_result.disk[i].path)
+    	}
+    },
+    /**
+     * @description 赋值chart的数据
+     *
+    */
+    chart_active:function(name){
+      // 图表数据
+      this.series_option.series[0].data[0].value = this.chart_json[name].val
+      this.series_option.series[0].data[0].itemStyle.color = this.chart_json[name].color
+      this.series_option.series[0].data[0].itemStyle.borderColor = this.chart_json[name].color
+    	this.series_option.series[0].progress.itemStyle.borderColor = this.chart_json[name].color
+    	this.series_option.series[0].detail.color = this.chart_json[name].color
+
+    	this.chart_view[name].setOption(this.series_option, true)
+
+        // 文字
+    	var val = ""
+    	switch (name) {
+    	    case 'load':
+    	        val = this.chart_json[name].title
+    	        break;
+    	    case 'cpu':
+    	        val = this.chart_result.cpu[1] + ' '+lan.index.cpu_core
+    	        break;
+    	    case 'mem':
+    	        val = this.chart_result.mem.memRealUsed + " / " + this.chart_result.mem.memTotal + "(MB)"
+    	        break;
+    	}
+
+    	$("#" + name).text(val)
+    },
+    /**
+     * @description 赋值chart的颜色
+     *
+    */
+    chart_color_active:function(number){
+        var activeInfo = {};
+    	for (var i = 0; i < this.load_config.length; i++) {
+    		if (number >= this.load_config[i].val) {
+    			activeInfo = JSON.parse(JSON.stringify(this.load_config[i]));
+    			break;
+    		} else if (number <= 30) {
+    			activeInfo = JSON.parse(JSON.stringify(this.load_config[3]));
+    			break;
+    		}
+    	}
+        activeInfo.val = number;
+    	return activeInfo;
+    },
+
+
     get_index_list: function () {
         bt.soft.get_index_list(function (rdata) {
             var con = '';

@@ -228,18 +228,37 @@ $('.open_two_verify_view').click(function(){
 		}
     });
 });
-
+var three_channel_status = {};
 (function(){
 	check_two_step(function(res){
 		$('#panel_verification').prop('checked',res.status);
 	});
 	get_three_channel(function(res){
+		three_channel_status = res;
 		$('#channel_auth').val(!res.user_mail.user_name && !res.dingding.dingding ? 'Email is not set':(res.user_mail.user_name? 'Email is set':(res.dingding.dingding? 'dingding is set': '')))
 	});
+	get_login_send(function(rdata){
+		$('#panel_report').val(!rdata.status ? 'Email is not set':(rdata.msg.mail? 'Already set':'Not set'))
+	})
 })()
 
 function get_three_channel(callback){
 	$.post('/config?action=get_settings',function(res){
+		if(callback) callback(res);
+	});
+}
+function get_login_send(callback){
+    var loadS = bt.load('Getting login information, please wait...')
+    $.post('/config?action=get_login_send',function(res){
+        loadS.close()
+		if(callback) callback(res);
+	});
+}
+function login_ipwhite(obj,callback){
+    var loadY = bt.load('Getting IP lists, please wait...')
+    $.post('/config?action=login_ipwhite',obj,function(res){
+        loadY.close()
+		if(!res.status) return layer.msg(res.msg,{icon:res.status?1:2})
 		if(callback) callback(res);
 	});
 }
@@ -360,6 +379,7 @@ function bindBTName(a,type){
 		p2 = $("#p2").val();
 		var loadT = layer.msg(lan.config.token_get,{icon:16,time:0,shade: [0.3, '#000']});
 		$.post(" /ssl?action=GetToken", "username=" + p1 + "&password=" + p2, function(b){
+      bt.clear_cookie('bt_user_info')
 			layer.close(loadT);
 			layer.msg(b.msg, {icon: b.status?1:2});
 			if(b.status) {
@@ -385,6 +405,7 @@ function UnboundBt(){
 	layer.confirm(lan.config.binding_un_msg,{closeBtn:2,icon:3,title:lan.config.binding_un},function(){
 		$.get("/ssl?action=DelToken",function(b){
 			layer.msg(b.msg,{icon:b.status? 1:2})
+      bt.clear_cookie('bt_user_info')
 			if(b.status){
 			    window.location.reload();
 			    $("input[name='btusername']").val('');
@@ -918,7 +939,177 @@ function modify_basic_auth_to() {
     });
 
 }
-
+function set_panel_report(){
+	if(!three_channel_status.user_mail.user_name) return layer.msg('Please set up the [ Notification ] first',{icon:2})
+	get_login_send(function(rdata){
+		layer.open({
+			type: 1,
+			area:'700px',
+			title: "Login panel alarm",
+			closeBtn: 2,
+			shift: 5,
+			shadeClose: false,
+			content: '<div class="bt-form">\
+						<div class="bt-w-main">\
+							<div class="bt-w-menu" style="width: 140px;">\
+								<p class="bgw">Alarm settings</p>\
+								<p>IP whitelist</p>\
+							</div>\
+							<div class="bt-w-con pd15" style="margin-left: 140px;">\
+								<div class="plugin_body">\
+									<div class="conter_box active" >\
+										<div class="bt-form" style="height:500px">\
+											<div class="line">\
+												<span class="set-tit" style="display:inline-block;vertical-align: top;margin: 3px;color:#666" title="Notification email">Send to mailbox</span>\
+												<div class="mail" name="server_input" style="display:inline-block;margin:0px 10px 0px 0px">\
+													<input class="btswitch btswitch-ios" id="mail" type="checkbox" '+(!rdata.status?"":(rdata.msg.mail?"checked":""))+' >\
+													 <label class="btswitch-btn" for="mail"></label>\
+												</div>\
+											</div>\
+											<div class="line" style="max-height:400px;height:auto;overflow:auto">\
+												<div class="divtable">\
+													<table class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"><thead><tr><th width="75%">login info</th><th width="25%" style="text-align:right">time</th></tr></thead>\
+													 <tbody id="server_table"></tbody>\
+													</table>\
+												</div>\
+											</div>\
+											<div class="page" id="server_table_page"></div>\
+										</div>\
+										<ul class="mtl0 c7" style="font-size: 13px;position:absolute;bottom:0;padding-right: 40px;">\
+										   <li style="list-style:inside disc">xxxxxxxxxxxxxxxxxxx</li>\
+										</ul>\
+									</div>\
+									<div class="conter_box" style="display:none;height:500px">\
+										<div class="bt-form">\
+											<div class="line" style="display:inline-block">\
+												<input name="ip_write" class="bt-input-text mr5" type="text" style="width: 220px;" placeholder="Please enter the IP">\
+												<button class="btn btn-success btn-sm add_ip_write" style="padding: 4px 15px">Add</button>\
+											</div>\
+											<div class="line" style="float:right">\
+												<button class="btn btn-default btn-sm clear_all" style="padding: 4px 15px;text-align:right">Clean all</button>\
+											</div>\
+											 <div class="line" style="max-height:400px;height:auto;overflow:auto">\
+												<div class="divtable">\
+													<table class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"><thead><tr><th width="60%">IP</th><th width="40%" style="text-align:right">Opt</th></tr></thead>\
+													 <tbody id="ip_write_table"></tbody>\
+													</table>\
+												</div>\
+											</div>\
+										</div>\
+										  <ul class="mtl0 c7" style="font-size: 13px;position:absolute;bottom:0;padding-right: 40px;">\
+										   <li style="list-style:inside disc">Only allow to set ipv4 whitelist</li>\
+										</ul>\
+									</div>\
+								</div>\
+							</div>\
+						</div>\
+					  </div>',
+			success:function(index,layers){
+				get_log_table();
+				get_ip_write_table()
+				$(".bt-w-menu p").click(function () {
+					var index = $(this).index();
+					$(this).addClass('bgw').siblings().removeClass('bgw');
+					console.log(index,'111');
+					switch(index){
+						case 0:
+							get_log_table();
+							break;
+						case 1:
+							get_ip_write_table()
+							break;
+					}
+					$('.conter_box').eq(index).show().siblings().hide();
+				});
+				//设置告警
+				$('#mail').on('click',function(){
+					var _checked = $(this).prop('checked');
+					if(_checked){
+						$.post('/config?action=set_login_send',{type:'mail'},function(res){
+							layer.msg(res.msg,{icon:res.status?1:2});
+						});
+					}else{
+						$.post('/config?action=clear_login_send',{type:'mail'},function(res){
+							layer.msg(res.msg,{icon:res.status?1:2});
+						});
+					}
+				});
+				//添加
+				$('.add_ip_write').on('click',function(){
+					var _ip = $('[name="ip_write"]').val();
+					if(!bt.check_ip(_ip)) return layer.msg('Please enter the correct IP',{icon:2})
+					login_ipwhite({ip:_ip,type:'add'},function(res){
+						if(res.status) get_ip_write_table()
+						layer.msg(res.msg,{icon:res.status?1:2});
+					})
+				})
+				//删除ip白名单
+				$('#ip_write_table').on('click','.del_ip_write',function(){
+					var _ip = $(this).parents('tr').data().data;
+					login_ipwhite({ip:_ip,type:'del'},function(res){
+						if(res.status) get_ip_write_table()
+						layer.msg(res.msg,{icon:res.status?1:2});
+					})
+				});
+				//清空全部
+				$('.clear_all').on('click',function(){
+					layer.confirm('Whether to clear the IP whitelist', {title:'Tips',btn: ['Confirm','Cancel'],icon:0,closeBtn:2}, function() {
+						login_ipwhite({type:'clear'},function(res){
+							if(res.status) get_ip_write_table()
+							layer.msg(res.msg,{icon:res.status?1:2});
+						})
+					})
+				})
+				//分页操作
+				$('#server_table_page').on('click','a',function(e){
+					e.stopPropagation();
+					e.preventDefault();
+					var _p = $(this).attr('href').match(/p=([0-9]*)/)[1];
+					get_log_table({p:_p});
+				})
+			},
+			cancel:function(){
+				$('#panel_report').val( $('#mail').prop('checked') ? 'Already set' : 'Not set');
+			}
+		})
+	})
+}
+function get_log_table(obj){
+    if(!obj) obj = {p:1}
+    var loadT = bt.load('Getting Logs list, please wait')
+	$.post('/config?action=get_login_log',obj,function(res){
+		loadT.close()
+        $('#server_table').empty()
+		if(res.data.length > 0){
+			$.each(res.data,function(index,item){
+				$('#server_table').append($('<tr>\
+					<td>'+ item.log +'</td>\
+					<td style="text-align:right">'+ item.addtime +'</td>\
+					</tr>').data({data:item,index:index}))
+			});
+		}else{
+			$('#server_table').html('<tr><td colspan="2" style="text-align:center">None Data</td></tr>')
+		}
+		$('#server_table_page').html(res.page)
+	});
+}
+function get_ip_write_table(){
+    $('#ip_write_table').empty()
+    login_ipwhite({type:'get'},function(res){
+		if(res.msg.length > 0){
+			$.each(res.msg,function(index,item){
+				$('#ip_write_table').append($('<tr>\
+					<td>'+ item +'</td>\
+					<td style="text-align:right">\
+						<a href="javascript:;" class="btlink del_ip_write" >Del</a>\
+					</td>\
+					</tr>').data({data:item,index:index}))
+			});
+		}else{
+			$('#ip_write_table').html('<tr><td colspan="2" style="text-align:center">None Data</td></tr>')
+		}
+    })
+}
 function modify_basic_auth() {
     var loadT = layer.msg(lan.config.setting_basicauth, { icon: 16, time: 0, shade: [0.3, '#000'] });
     $.post('/config?action=get_basic_auth_stat', {}, function (rdata) {
@@ -958,7 +1149,7 @@ function open_three_channel_auth(){
 		layer.open({
 			type: 1,
 	        area: "600px",
-	        title: "Setting up a message channel",
+	        title: "Setting up notification",
 	        closeBtn: 2,
 	        shift: 5,
 	        shadeClose: false,
@@ -1096,15 +1287,15 @@ function sender_info_edit(){
 					_port = $('#port_select').val()
 				}
 				if(_email == ''){
-					return layer.msg('Email address cannot be empty！',{icon:2});
+					return layer.msg('Email address cannot be empty!',{icon:2});
 				}else if(_passW == ''){
-					return layer.msg('STMP password cannot be empty！',{icon:2});
+					return layer.msg('STMP password cannot be empty!',{icon:2});
 				}else if(_server == ''){
-					return layer.msg('STMP server address cannot be empty！',{icon:2});
+					return layer.msg('STMP server address cannot be empty!',{icon:2});
 				}else if(_port == ''){
-					return layer.msg('STMP server port cannot be empty！',{icon:2});
+					return layer.msg('STMP server port cannot be empty!',{icon:2});
 				}
-				var loadT = layer.msg('Please wait while generating mailbox channel...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+				var loadT = layer.msg('The notification is being generated, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
 				layer.close(index)
 				$.post('/config?action=user_mail_send',{email:_email,stmp_pwd:_passW,hosts:_server,port:_port},function(rdata){
 					layer.close(loadT);

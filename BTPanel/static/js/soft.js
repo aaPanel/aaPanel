@@ -1,5 +1,9 @@
 var soft = {
     is_install: false,
+    trail:0,//是否试用
+    is_setup:false,
+    is_setup_name:"",
+    refresh_data:[],
     get_list: function(page, type, search) {
         if (page == undefined || page == 'null' || page == 'undefined') page = 0;
         if (type == undefined || type == 'null' || type == 'undefined') type = 0;
@@ -18,321 +22,326 @@ var soft = {
         }
         soft.is_install = false;
         bt.soft.get_soft_list(page, type, search, function(rdata) {
-            soft.set_soft_tips('#updata_pro_info',type);
-            // if (rdata.pro < 0) {
-            //     $("#updata_pro_info").html('');
-            // } else if (rdata.pro === -2) {
-            //     $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong>' + lan.soft.pro_expire + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.renew_pro + '" style="margin-left:8px">' + lan.soft.renew_now + '</button>');
-            // } else if (rdata.pro === -1) {
-            //     $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong > ' + lan.soft.upgrade_pro + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.upgrade_pro_now + '" style="margin-left:8px">' + lan.soft.upgrade_now + '</button>\</div>');
-            // }
+          _this.trail = rdata.trail
+          // if (rdata.pro < 0) {
+          //   // $("#updata_pro_info").html('');
+          // } else
+          // if (rdata.pro === -2) {
+          //   $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong>' + lan.soft.pro_expire + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.renew_pro + '" style="margin-left:8px">' + lan.soft.renew_now + '</button>');
+          // } else if (rdata.pro === -1) {
+          //   $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong > ' + lan.soft.upgrade_pro + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.upgrade_pro_now + '" style="margin-left:8px">' + lan.soft.upgrade_now + '</button>\</div>');
+          // }
+          soft.set_soft_tips('#updata_pro_info',type);
 
-            // if (type == 10) {
-            //     $("#updata_pro_info").html('<div class="alert alert-danger" style="margin-bottom:15px"><strong>' + lan.soft.bt_developer + '</strong><a class="btn btn-success btn-xs va0" href="https://www.aapanel.com" title="' + lan.soft.get_third_party_apps + '" style="margin-left: 8px" target="_blank">' + lan.soft.get_third_party_apps + '</a><input type="file" style="display:none;" accept=".zip,.tar.gz" id="update_zip" multiple="multiple"><button class="btn btn-success btn-xs" onclick="soft.update_zip_open()" style="margin-left:8px">' + lan.soft.import_plug + '</button></div>')
-            // } else if (type == 11) {
-            //     $("#updata_pro_info").html('<div class="alert alert-info" style="margin-bottom:15px"><strong>' + lan.soft.comingsoon + '</strong></div>')
-            // }
-            var tBody = '';
-            rdata.type.unshift({icon: 'icon',id: 0,ps: lan.soft.all,sort: 1,title: lan.soft.all}, {icon: 'icon',id: -1,ps: 'Installed',sort: 1,title: 'Installed'})
-            for (var i = 0; i < rdata.type.length; i++) {
-                var c = '';
-                if (istype == rdata.type[i].id) {
-                    c = 'class="on"';
-                }
-                // 注释软件管理的付费插件，第三方插件，一键部署
-                // if (rdata.type[i].id != "11" && rdata.type[i].id != "10" && rdata.type[i].id != "8") {
-                if (rdata.type[i].id != "11") {
-                    tBody += '<span typeid="' + rdata.type[i].id + '" ' + c + '>' + rdata.type[i].title + '</span>';
-                }
-            }
-            if (page) bt.set_cookie('p' + type, page);
-            $(".softtype").html(tBody);
-            $(".menu-sub span").click(function() {
-                var _type = $(this).attr('typeid');
-                bt.set_cookie('softType', _type);
-                $(this).addClass("on").siblings().removeClass("on");
-                if (_type !== '11') {
-                    soft.get_list(0, _type);
-                } else {
-                    soft.get_dep_list(0);
-                }
+          // if (type == 10) {
+          //   $("#updata_pro_info").html('<div class="alert alert-danger" style="margin-bottom:15px"><strong>' + lan.soft.bt_developer + '</strong><a class="btn btn-success btn-xs va0" href="https://www.aapanel.com" title="' + lan.soft.get_third_party_apps + '" style="margin-left: 8px" target="_blank">' + lan.soft.get_third_party_apps + '</a><input type="file" style="display:none;" accept=".zip,.tar.gz" id="update_zip" multiple="multiple"><button class="btn btn-success btn-xs" onclick="soft.update_zip_open()" style="margin-left:8px">' + lan.soft.import_plug + '</button></div>')
+          // } else if (type == 11) {
+          //   $("#updata_pro_info").html('<div class="alert alert-info" style="margin-bottom:15px"><strong>' + lan.soft.comingsoon + '</strong></div>')
+          // }
+          var tBody = '';
+          rdata.type.unshift({icon: 'icon',id: 0,ps: lan.soft.all,sort: 1,title: lan.soft.all}, {icon: 'icon',id: -1,ps: 'Installed',sort: 1,title: 'Installed'})
+          for (var i = 0; i < rdata.type.length; i++) {
+              var c = '';
+              if (istype == rdata.type[i].id) {
+                  c = 'class="on"';
+              }
+              // 注释软件管理的付费插件，第三方插件，一键部署
+              // if (rdata.type[i].id != "11" && rdata.type[i].id != "10" && rdata.type[i].id != "8") {
+              if (rdata.type[i].id != "11") {
+                  tBody += '<span typeid="' + rdata.type[i].id + '" ' + c + '>' + rdata.type[i].title + '</span>';
+              }
+          }
+          if (page) bt.set_cookie('p' + type, page);
+          $(".softtype").html(tBody);
+          $(".menu-sub span").click(function() {
+              var _type = $(this).attr('typeid');
+              bt.set_cookie('softType', _type);
+              $(this).addClass("on").siblings().removeClass("on");
+              if (_type !== '11') {
+                  soft.get_list(0, _type);
+              } else {
+                  soft.get_dep_list(0);
+              }
 
-            })
-            var data = rdata.list.data;
-            $('#softPage').html(rdata.list.page);
-            var phps = ['php-5.2', 'php-5.3', 'php-5.4'];
-            var _tab = bt.render({
+          })
+          var data = rdata.list.data;
+          $('#softPage').html(rdata.list.page);
+            if(data.length>0){
+              for(var i = 0; i < data.length; i++){
+                  if(data[i].task =='-1'){
+                      soft.is_setup = true;
+                      soft.is_setup_name = data[i].name;
+                      break;
+                  }else{
+                      soft.is_setup = false;
+                      soft.is_install = false;
+                      soft.is_setup_name = "";
+                  }
+              }
+          }
+          if(soft.is_setup==true&&soft.is_setup_name != ""){
+              _this.soft_setup_find();
+          }
+          if(soft.refresh_data.length==0){
+              _this.refresh_table(page, type, search, rdata);
+              soft.refresh_data = data;
+          }else
+          if(JSON.stringify(data) !=JSON.stringify(soft.refresh_data)){
+              _this.refresh_table(page, type, search, rdata);
+              soft.refresh_data = data;
+          }
+          bt.set_cookie('load_page', (page+'').split('not_load')[0])
+          bt.set_cookie('load_type', type)
+          bt.set_cookie('load_search', search)
+          if (soft.is_install&& soft.is_setup==false) {
+              setTimeout(function () {
+                  soft.get_list(bt.get_cookie('load_page') + 'not_load', bt.get_cookie('load_type'), bt.get_cookie('load_search'));
+              }, 3000);
+              soft.is_install = false;
+          }
+          // if(rdata.recommend){
+          //     _this.render_promote_list(rdata.recommend);
+          // }
+      })
+    },
+      // 查找正在安装软件的状态
+    soft_setup_find:function(){
+        var _this = this;
+        if(soft.is_setup==true&&soft.is_setup_name != ""){
+            $.post("plugin?action=get_soft_find",{sName:soft.is_setup_name},function(rdata){
+                if(rdata.task=="-1"){
+                    setTimeout(function () {
+                      _this.soft_setup_find();
+                    }, 3000);
+                }else{
+                    soft.is_install=true;
+                    setTimeout(function () {
+                        soft.get_list(bt.get_cookie('load_page') + 'not_load', bt.get_cookie('load_type'), bt.get_cookie('load_search'));
+                    }, 3000);
+                }
+            });
+        }
+    },
+    // 刷新列表
+    refresh_table:function(page, type, search, rdata){
+        var _this = this;
+        var phps = ['php-5.2', 'php-5.3', 'php-5.4'];
+        var data = rdata.list.data;
+        var _tab = bt.render({
                 table: '#softList',
                 columns: [{
-                        field: 'title',
-                        title: lan.soft.app_name,
-                        width: 165,
-                        templet: function(item) {
-                            var fName = item.name,
-                                version = item.version;
-                            if (bt.contains(item.name, 'php-')) {
-                                fName = 'php';
-                                version = '';
-                            }
-                            var click_opt = ' ',
-                                sStyle = '';
-                            if (item.setup) {
-                                sStyle = ' style="cursor:pointer"';
-                                if (item.admin) {
-                                    if (item.endtime >= 0 || item.price == 0) {
-                                        click_opt += 'onclick="bt.soft.set_lib_config(\'' + item.name + '\',\'' + item.title + '\')" ';
-                                    }
+                    field: 'title',
+                    title: lan.soft.app_name,
+                    width: 165,
+                    templet: function(item) {
+                        var fName = item.name,
+                            version = item.version;
+                        if (bt.contains(item.name, 'php-')) {
+                            fName = 'php';
+                            version = '';
+                        }
+                        var click_opt = ' ',
+                            sStyle = '';
+                        if (item.setup) {
+                            sStyle = ' style="cursor:pointer"';
+                            if (item.admin) {
+                                if (item.endtime >= 0 || item.price == 0) {
+                                    click_opt += 'onclick="bt.soft.set_lib_config(\'' + item.name + '\',\'' + item.title + '\')" ';
+                                }
 
-                                } else {
-                                    click_opt += ' onclick="soft.set_soft_config(\'' + item.name + '\')" ';
-                                }
+                            } else {
+                                click_opt += ' onclick="soft.set_soft_config(\'' + item.name + '\')" ';
                             }
-                            var is_php5 = item.name.indexOf('php-5') >= 0,
-                            webcache = bt.get_cookie('serverType') == 'openlitespeed' ? true : false,
-                            distribution = bt.get_cookie('distribution');
-                            if (webcache) {
-                                switch (distribution) {
-                                    case 'centos8':
-                                        if (is_php5 || item.name == 'php-7.0') {
-                                            click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
-                                        }
-                                        break;
-                                    case 'centos7':
-                                        if (item.name == 'php-5.2') {
-                                            click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
-                                        }
-                                        break;
-                                    default:
-                                        if (is_php5) {
-                                            click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
-                                        }
-                                        break;
-                                }
-                            }else if (rdata.apache22 && item.name.indexOf('php-') >= 0 && $.inArray(item.name, phps) == -1){
-                                click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                        }
+                        var is_php5 = item.name.indexOf('php-5') >= 0,
+                        webcache = bt.get_cookie('serverType') == 'openlitespeed' ? true : false,
+                        distribution = bt.get_cookie('distribution');
+                        if (webcache) {
+                            switch (distribution) {
+                                case 'centos8':
+                                    if (is_php5 || item.name == 'php-7.0') {
+                                        click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                                    }
+                                    break;
+                                case 'centos7':
+                                    if (item.name == 'php-5.2') {
+                                        click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                                    }
+                                    break;
+                                default:
+                                    if (is_php5) {
+                                        click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                                    }
+                                    break;
                             }
-                            //if (rdata.apache22 && item.name.indexOf('php-') >= 0 && $.inArray(item.name, phps) == -1) click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
-                            return '<span ' + click_opt + ' ' + sStyle + ' ><img src="/static/img/soft_ico/ico-' + fName + '.png">' + item.title + ' ' + version + '</span>';
+                        }else if (rdata.apache22 && item.name.indexOf('php-') >= 0 && $.inArray(item.name, phps) == -1){
+                            click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
                         }
-                    },
-                    {
-                        field: 'price',
-                        title: 'Developer',
-                        width: 110,
-                        templet: function(item) {
-                            if (!item.author) return 'official'
-                            return item.author;
-                        }
-                    },
-                    {
-                        field: 'ps',
-                        title: lan.soft.instructions,
-                        templet: function(item) {
-                            var ps = item.ps;
-                            var is_php = item.name.indexOf('php-') >= 0;
+                        //if (rdata.apache22 && item.name.indexOf('php-') >= 0 && $.inArray(item.name, phps) == -1) click_opt = ' title="' + lan.soft.ap2_2_not_support + '"';
+                        return '<span ' + click_opt + ' ' + sStyle + ' ><img src="/static/img/soft_ico/ico-' + fName + '.png">' + item.title + ' ' + version + '</span>';
+                    }
+                },
+                {
+                    field: 'price',
+                    title: 'Developer',
+                    width: 110,
+                    templet: function(item) {
+                        if (!item.author) return 'official'
+                        return item.author;
+                    }
+                },
+                {
+                    field: 'ps',
+                    title: lan.soft.instructions,
+                    templet: function(item) {
+                        var ps = item.ps;
+                        var is_php = item.name.indexOf('php-') >= 0;
 
-                            if (is_php && item.setup) {
-                                if (rdata.apache22 && $.inArray(item.name, phps) >= 0) {
-                                    if (item.fpm) {
-                                        ps += " <span style='color:red;'>(" + lan.soft.apache22 + ")</span>";
-                                    }
-                                } else if (!rdata.apache22) {
-                                    if (!item.fpm) {
-                                        ps += " <span style='color:red;'>(" + lan.soft.apache24 + ")</span>";
-                                    }
+                        if (is_php && item.setup) {
+                            if (rdata.apache22 && $.inArray(item.name, phps) >= 0) {
+                                if (item.fpm) {
+                                    ps += " <span style='color:red;'>(" + lan.soft.apache22 + ")</span>";
+                                }
+                            } else if (!rdata.apache22) {
+                                if (!item.fpm) {
+                                    ps += " <span style='color:red;'>(" + lan.soft.apache24 + ")</span>";
                                 }
                             }
-                            return '<span>' + ps + '</span>';
                         }
-                    },
-                    {
-                        field: 'price',
-                        title: lan.soft.price,
-                        width: 92,
-                        templet: function(item) {
-                            var price = lan.soft.free;
-                            if (item.price > 0) {
-                                price = '<span style="color:#fc6d26">$' + item.price + '</span>';
-                            }
-                            return price;
+                        return '<span>' + ps + '</span>';
+                    }
+                },
+                {
+                    field: 'price',
+                    title: lan.soft.price,
+                    width: 92,
+                    templet: function(item) {
+                        var price = lan.soft.free;
+                        if (item.price > 0) {
+                            price = '<span style="color:#fc6d26">$' + item.price + '</span>';
                         }
-                    },
-                    (type == 10 ? {
-                        field: 'sort',
-                        width: 80,
-                        title: 'Rated',
-                        templet: function(item) {
-                            return item.sort !== undefined ? ('<a href="javascript:;" onclick="score.open_score_view(' + item.pid + ',\'' + item.title + '\',' + item.count + ')" class="btlink open_sort_view">' + (item.sort <= 0 || item.sort > 5 ? lan.soft.not_rated : item.sort.toFixed(1)) + '</a>') : '--';
-                        }
-                    } : ''),
-                    {
-                        field: 'endtime',
-                        width: 120,
-                        title: lan.soft.expire_time,
-                        templet: function(item) {
-                            var endtime = '--';
-                            if (item.pid > 0) {
-                                if (item.endtime > 0) {
-                                    if (item.type != 10) {
-                                        endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') ;
-                                    } else {
-                                        endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') ;
-                                    }
-                                } else if (item.endtime === 0) {
-                                    endtime = lan.soft.permanent;
-                                } else if (item.endtime === -1) {
-                                    endtime = lan.soft.not_open;
-                                } else if (item.endtime === -2) {
-                                    if (item.type != 10) {
-                                        endtime = lan.soft.already_expire ;
-                                    } else {
-                                        endtime = lan.soft.already_expire ;
-                                    }
-                                }
-                            }
-                            return endtime;
-                        }
-                    },
-                    {
-                        field: 'path',
-                        width: 40,
-                        title: lan.soft.location,
-                        templet: function(item) {
-                            var path = '';
-                            if (item.setup) {
-                                path = '<span class="glyphicon glyphicon-folder-open"  onclick="openPath(\'' + item.uninsatll_checks + '\')"></span>';
-                            }
-                            return path;
-                        }
-                    },
-                    (type != 10 ? {
-                        field: 'status',
-                        width: 40,
-                        title: lan.soft.status1,
-                        templet: function(item) {
-                            var status = '';
-                            if (item.setup) {
-                                if (item.status) {
-                                    status = '<span style="color:#20a53a" class="glyphicon glyphicon-play"></span>';
-                                } else {
-                                    status = '<span style="color:red" class="glyphicon glyphicon-pause"></span>';
-                                }
-                            }
-                            return status;
-                        }
-                    } : ''),
-                    {
-                        field: 'index',
-                        width: 100,
-                        title: lan.soft.display_at_homepage,
-                        templet: function(item) {
-                            var to_index = '';
-                            if (item.setup) {
-                                var checked = '';
-                                if (item.index_display) checked = 'checked';
-                                var item_id = item.name.replace(/\./, "");
-                                to_index = '<div class="index-item"><input class="btswitch btswitch-ios" id="index_' + item_id + '" type="checkbox" ' + checked + '><label class="btswitch-btn" for="index_' + item_id + '" onclick="bt.soft.to_index(\'' + item.name + '\')"></label></div>';
-                            }
-                            return to_index;
-                        }
-                    },
-                    {
-                        field: 'opt',
-                        width: 190,
-                        title: lan.soft.operate,
-                        align: 'right',
-                        templet: function(item) {
-                            var option = '';
-
-                            var pay_opt = '';
-                            if (item.endtime < 0 && item.pid > 0) {
-                                var re_msg = '';
-                                var re_status = 0;
-                                switch (item.endtime) {
-                                    case -1:
-                                        re_msg = lan.soft.buy_now;
-                                        break;
-                                    case -2:
-                                        re_msg = lan.soft.renew_now;
-                                        re_status = 1;
-                                        break;
-                                }
+                        return price;
+                    }
+                },
+                (type == 10 ? {
+                    field: 'sort',
+                    width: 80,
+                    title: 'Rated',
+                    templet: function(item) {
+                        return item.sort !== undefined ? ('<a href="javascript:;" onclick="score.open_score_view(' + item.pid + ',\'' + item.title + '\',' + item.count + ')" class="btlink open_sort_view">' + (item.sort <= 0 || item.sort > 5 ? lan.soft.not_rated : item.sort.toFixed(1)) + '</a>') : '--';
+                    }
+                } : ''),
+                {
+                    field: 'endtime',
+                    width: 120,
+                    title: lan.soft.expire_time,
+                    templet: function(item) {
+                        var endtime = '--';
+                        if (item.pid > 0) {
+                            if (item.endtime > 0) {
                                 if (item.type != 10) {
-                                    pay_opt = '<a class="btlink" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,plugin:true,renew:item.endtime}) +')\'>' + re_msg + '</a>';
+                                    endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') ;
                                 } else {
-                                    pay_opt = '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',' + re_status + ',' + item.price + ')">' + re_msg + '</a>';
+                                    endtime = bt.format_data(item.endtime, 'yyyy/MM/dd') ;
                                 }
-
+                            } else if (item.endtime === 0) {
+                                endtime = lan.soft.permanent;
+                            } else if (item.endtime === -1) {
+                                endtime = lan.soft.not_open;
+                            } else if (item.endtime === -2) {
+                                if (item.type != 10) {
+                                    endtime = lan.soft.already_expire ;
+                                } else {
+                                    endtime = lan.soft.already_expire ;
+                                }
                             }
-                            var is_php = item.name.indexOf('php-') >= 0,
-                            is_php5 = item.name.indexOf('php-5') >= 0,
-                            webcache = bt.get_cookie('serverType') == 'openlitespeed' ? true : false,
-                            distribution = bt.get_cookie('distribution');
-                            if (webcache && is_php) {
-                                if ((is_php5 || item.name == 'php-7.0') && distribution=='centos8') {
+                        }
+                        return endtime;
+                    }
+                },
+                {
+                    field: 'path',
+                    width: 40,
+                    title: lan.soft.location,
+                    templet: function(item) {
+                        var path = '';
+                        if (item.setup) {
+                            path = '<span class="glyphicon glyphicon-folder-open"  onclick="openPath(\'' + item.uninsatll_checks + '\')"></span>';
+                        }
+                        return path;
+                    }
+                },
+                (type != 10 ? {
+                    field: 'status',
+                    width: 40,
+                    title: lan.soft.status1,
+                    templet: function(item) {
+                        var status = '';
+                        if (item.setup) {
+                            if (item.status) {
+                                status = '<span style="color:#20a53a" class="glyphicon glyphicon-play"></span>';
+                            } else {
+                                status = '<span style="color:red" class="glyphicon glyphicon-pause"></span>';
+                            }
+                        }
+                        return status;
+                    }
+                } : ''),
+                {
+                    field: 'index',
+                    width: 100,
+                    title: lan.soft.display_at_homepage,
+                    templet: function(item) {
+                        var to_index = '';
+                        if (item.setup) {
+                            var checked = '';
+                            if (item.index_display) checked = 'checked';
+                            var item_id = item.name.replace(/\./, "");
+                            to_index = '<div class="index-item"><input class="btswitch btswitch-ios" id="index_' + item_id + '" type="checkbox" ' + checked + '><label class="btswitch-btn" for="index_' + item_id + '" onclick="bt.soft.to_index(\'' + item.name + '\')"></label></div>';
+                        }
+                        return to_index;
+                    }
+                },
+                {
+                    field: 'opt',
+                    width: 190,
+                    title: lan.soft.operate,
+                    align: 'right',
+                    templet: function(item) {
+                        var option = '';
+
+                        var pay_opt = '';
+                        if (item.endtime < 0 && item.pid > 0) {
+                            var re_msg = '';
+                            var re_status = 0;
+                            switch (item.endtime) {
+                                case -1:
+                                    re_msg = lan.soft.buy_now;
+                                    break;
+                                case -2:
+                                    re_msg = lan.soft.renew_now;
+                                    re_status = 1;
+                                    break;
+                            }
+                            if (item.type != 10) {
+                                pay_opt = '<a class="btlink" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,plugin:true,renew:item.endtime}) +')\'>' + re_msg + '</a>';
+                            } else {
+                                pay_opt = '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',' + re_status + ',' + item.price + ')">' + re_msg + '</a>';
+                            }
+
+                        }
+                        var is_php = item.name.indexOf('php-') >= 0,
+                        is_php5 = item.name.indexOf('php-5') >= 0,
+                        webcache = bt.get_cookie('serverType') == 'openlitespeed' ? true : false,
+                        distribution = bt.get_cookie('distribution');
+                        if (webcache && is_php) {
+                            if ((is_php5 || item.name == 'php-7.0') && distribution=='centos8') {
+                                option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
+                            }else if (distribution=='centos7'&&item.name == 'php-5.2') {
+                                option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
+                            }else{
+                                if (distribution!='centos7'&&is_php5) {
                                     option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
-                                }else if (distribution=='centos7'&&item.name == 'php-5.2') {
-                                    option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
-                                }else{
-                                    if (distribution!='centos7'&&is_php5) {
-                                        option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
-                                    } else {
-                                        if (item.setup && item.task == '1') {
-                                            if (pay_opt == '') {
-                                                if (item.versions.length > 1) {
-                                                    for (var i = 0; i < item.versions.length; i++) {
-                                                        var min_version = item.versions[i]
-                                                        var ret = bt.check_version(item.version, min_version.m_version + '.' + min_version.version);
-                                                        if (ret > 0) {
-                                                            if (ret == 2) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
-                                                            break;
-                                                        }
-                                                    }
-                                                } else {
-                                                    var min_version = item.versions[0];
-                                                    var cloud_version = min_version.m_version + '.' + min_version.version;
-                                                    if (item.version != cloud_version) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
-                                                }
-                                                if (item.admin) {
-                                                    option += '<a class="btlink" onclick="bt.soft.set_lib_config(\'' + item.name + '\',\'' + item.title + '\')">' + lan.soft.setup + '</a> | ';
-                                                } else {
-                                                    option += '<a class="btlink" onclick="soft.set_soft_config(\'' + item.name + '\')">' + lan.soft.setup + '</a> | ';
-                                                }
-                                            } else {
-                                                option = pay_opt + ' | ' + option;
-                                            }
-                                            option += '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
-                                        } else if (item.task == '-1') {
-                                            option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.installing + '</a>';
-                                            soft.is_install = true;
-                                        } else if (item.task == '0') {
-                                            option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.wait_install + '</a>';
-                                            soft.is_install = true;
-                                        } else if (item.task == '-2') {
-                                            option = '<a class="btlink" onclick="messagebox()"  >Updating</a>';
-                                            soft.is_install = true;
-                                        } else {
-                                            if (pay_opt) {
-                                                option = pay_opt;
-                                            } else {
-                                                option = '<a class="btlink" onclick="bt.soft.install(\'' + item.name + '\')"  >' + lan.soft.install + '</a>';
-                                            }
-                                        }
-                                    }
-                                }
-                            }else {
-                                if (rdata.apache22 && is_php && $.inArray(item.name, phps) == -1) {
-                                    if (item.setup) {
-                                        option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
-                                    } else {
-                                        option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
-                                    }
-                                } else if (rdata.apache24 && item.name == 'php-5.2') {
-                                    if (item.setup) {
-                                        option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
-                                    } else {
-                                        option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
-                                    }
                                 } else {
                                     if (item.setup && item.task == '1') {
                                         if (pay_opt == '') {
@@ -377,20 +386,68 @@ var soft = {
                                     }
                                 }
                             }
-                            return option;
+                        }else {
+                            if (rdata.apache22 && is_php && $.inArray(item.name, phps) == -1) {
+                                if (item.setup) {
+                                    option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
+                                } else {
+                                    option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
+                                }
+                            } else if (rdata.apache24 && item.name == 'php-5.2') {
+                                if (item.setup) {
+                                    option = '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
+                                } else {
+                                    option = '<span title="\' + lan.soft.ap2_2_not_support + \'">' + lan.soft.not_comp + '</span>';
+                                }
+                            } else {
+                                if (item.setup && item.task == '1') {
+                                    if (pay_opt == '') {
+                                        if (item.versions.length > 1) {
+                                            for (var i = 0; i < item.versions.length; i++) {
+                                                var min_version = item.versions[i]
+                                                var ret = bt.check_version(item.version, min_version.m_version + '.' + min_version.version);
+                                                if (ret > 0) {
+                                                    if (ret == 2) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
+                                                    break;
+                                                }
+                                            }
+                                        } else {
+                                            var min_version = item.versions[0];
+                                            var cloud_version = min_version.m_version + '.' + min_version.version;
+                                            if (item.version != cloud_version) option += '<a class="btlink" onclick="bt.soft.update_soft(\'' + item.name + '\',\'' + item.title + '\',\'' + min_version.m_version + '\',\'' + min_version.version + '\',\'' + min_version.update_msg.replace(/\n/g, "_bt_") + '\')" >' + lan.soft.update + '</a> | ';
+                                        }
+                                        if (item.admin) {
+                                            option += '<a class="btlink" onclick="bt.soft.set_lib_config(\'' + item.name + '\',\'' + item.title + '\')">' + lan.soft.setup + '</a> | ';
+                                        } else {
+                                            option += '<a class="btlink" onclick="soft.set_soft_config(\'' + item.name + '\')">' + lan.soft.setup + '</a> | ';
+                                        }
+                                    } else {
+                                        option = pay_opt + ' | ' + option;
+                                    }
+                                    option += '<a class="btlink" onclick="bt.soft.un_install(\'' + item.name + '\')" >' + lan.soft.uninstall + '</a>';
+                                } else if (item.task == '-1') {
+                                    option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.installing + '</a>';
+                                    soft.is_install = true;
+                                } else if (item.task == '0') {
+                                    option = '<a class="btlink" onclick="messagebox()"  >' + lan.soft.wait_install + '</a>';
+                                    soft.is_install = true;
+                                } else if (item.task == '-2') {
+                                    option = '<a class="btlink" onclick="messagebox()"  >Updating</a>';
+                                    soft.is_install = true;
+                                } else {
+                                    if (pay_opt) {
+                                        option = pay_opt;
+                                    } else {
+                                        option = '<a class="btlink" onclick="bt.soft.install(\'' + item.name + '\')"  >' + lan.soft.install + '</a>';
+                                    }
+                                }
+                            }
                         }
+                        return option;
                     }
-                ],
-                data: data
-            })
-            bt.set_cookie('load_page', (page + '').split('not_load')[0])
-            bt.set_cookie('load_type', type)
-            bt.set_cookie('load_search', search)
-            if (soft.is_install) {
-                setTimeout(function() {
-                    soft.get_list(bt.get_cookie('load_page') + 'not_load', bt.get_cookie('load_type'), bt.get_cookie('load_search'));
-                }, 3000);
-            }
+                }
+            ],
+            data: data
         })
     },
     // 渲染列表
@@ -441,9 +498,10 @@ var soft = {
                                 }else if(item.endtime > 0){ //已购买
                                     thtml = '<button type="button" class="btn btn-success btn-xs" onclick="bt.soft.set_lib_config(\''+ item.name +'\',\''+ item.title +'\')">Setting</button>';
                                 }else if(item.endtime == -1){  //未购买
-                                    thtml = '<button type="button" class="btn btn-success btn-xs" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,pulgin:true,renew:item.endtime}) +');\'>Upgrade now</button>';
-                                }else if(item.endtime  == -2){ //已过期
-                                    thtml = '<button type="button" class="btn btn-success btn-xs" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,pulgin:true,renew:item.endtime}) +');\'>立即续费</button>';
+
+                                  thtml = '<button type="button" class="btn btn-success btn-xs" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,pulgin:true,renew:item.endtime}) +');\'>Upgrade now</button>';
+                                }else if(item.endtime == -2){ //已过期
+                                  thtml = '<button type="button" class="btn btn-success btn-xs" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,pulgin:true,renew:item.endtime}) +');\'>立即续费</button>';
                                 }
                             }else{
                                 thtml = '<button type="button" class="btn btn-success btn-xs" onclick="bt.soft.set_lib_config(\''+ item.name +'\',\''+ item.title +'\')">Setting</button>';
@@ -470,11 +528,12 @@ var soft = {
         }
     },
     set_soft_tips:function(el,type){
-        var tips_info = $('<div class="alert" style="margin-bottom:15px"><div class="soft_tips_text"></div><div class="btn-ground" style="display:inline-block;"></div></div>'), explain = tips_info.find('.soft_tips_text'), btn_ground = tips_info.find('.btn-ground');
-        $(el).empty();
+        var tips_info = $('<div class="alert" style="margin-bottom:15px"><div class="soft_tips_text"></div><div class="btn-ground" style="display:inline-block;"></div></div>'), explain = tips_info.find('.soft_tips_text'), btn_ground = tips_info.find('.btn-ground'),_this = this;
+        $(el).empty()
         type = parseInt(type);
         if(type != 11) $(el).next('.onekey-menu-sub').remove();
         if(type == 10){
+            $(el).css('display','block')
             explain.text('Security Reminder: aaPanel officially conducted a security audit before the third-party plug-in was put on the shelves, but there may be security risks. Please check it out before using it in the production environment.');
             btn_ground = soft.render_tips_btn(btn_ground,[
                 //{title:'免费入驻',href:'https://www.bt.cn/developer/',rel:'noreferrer noopener',target:'_blank',btn:'免费入驻',class:'btn btn-success btn-xs va0',style:"margin-left:10px;"},
@@ -496,15 +555,15 @@ var soft = {
             ]);
             $(el).append(tips_info.addClass('alert-info'));
         }else{
-            var ltd = parseInt(bt.get_cookie('ltd_end')),pro = parseInt(bt.get_cookie('pro_end')),todayDate = parseInt(new Date().getTime()/1000),_ltd = null;
+            var ltd = parseInt(bt.get_cookie('ltd_end') || -1),pro = parseInt(bt.get_cookie('pro_end')  || -1),todayDate = parseInt(new Date().getTime()/1000),_ltd = null;
             if((ltd > 0 && (ltd == pro || pro < 0)) || (ltd < 0 && pro >= 0) || (ltd > 0 && pro >= 0)){
                 _ltd = ((ltd > 0 && (ltd == pro || pro < 0)) || (ltd > 0 && pro >= 0))?1:0;
-                explain.html('当前为'+ (_ltd?'Pro':'专业版') +'，'+ (_ltd?'Pro':'专业版') +'可以免费使用'+ (_ltd?'专业版及企业版插件':'专业版插件') + (!(pro == 0 && ltd < 0)?('，过期时间：'+ (bt.format_data((_ltd?ltd:pro),'yyyy/MM/dd') ) +''+((((_ltd?ltd:pro) - todayDate) <= 15*24*60*60)?('，<span style="color:red">距离过期仅剩'+ Math.round(((_ltd?ltd:pro) - todayDate) / (24*60*60)) +'天</span>'):'')):'，过期时间：<span style="color: #fc6d26;font-weight: bold;">永久授权</span>'));
+                explain.html('The '+ (_ltd?'Pro':'Pro') +' edition can use the '+ (_ltd?'专业版及企业版插件':'professional plug-in for free,') + (!(pro == 0 && ltd < 0)?('expiration time: '+ (bt.format_data((_ltd?ltd:pro),'yyyy/MM/dd') ) +''+((((_ltd?ltd:pro) - todayDate) <= 15*24*60*60)?('，<span style="color:red">Only '+ Math.round(((_ltd?ltd:pro) - todayDate) / (24*60*60)) +' days until expiration</span>'):'')):'，过期时间：<span style="color: #fc6d26;font-weight: bold;">永久授权</span>'));
             }else if(ltd == -1 && pro == -1){
                 explain.html('Upgrade to Pro edition, all plugins, free to use!');
             }else if(pro == 0 && ltd < 0){
                 _ltd = 2;
-                explain.html('当前为专业版，专业版可以免费使用专业版插件，过期时间：永久授权。'+(type == 12?'&nbsp;&nbsp;<span style="color:#af8e48">升级企业版，企业可以免费试用企业版插件及专业版插件。</span>':''));
+                explain.html('The Pro edition can use the professional plug-in for free, expiration time: 永久授权。'+(type == 12?'&nbsp;&nbsp;<span style="color:#af8e48">升级企业版，企业可以免费试用企业版插件及专业版插件。</span>':''));
                 if(type == 12){
                     btn_ground  = soft.render_tips_btn(btn_ground,{title:'立即升级',href:'javascript:;',btn:'立即升级','class':'btn btn-success btn-xs va0 ml15','style':"margin-left:10px;",click:bt.soft.updata_ltd});
                 }
@@ -514,54 +573,66 @@ var soft = {
             }
             var btn_config = {title:null,href:'javascript:;',btn:null,'class':'btn btn-success btn-xs va0 ml15','style':"margin-left:10px;",click:null};
             var set_btn_style = function(res){
-                if(!res.status || !res){
-                    $.extend(btn_config,{title:'立即登录',btn:'立即登录',click:function(){
-                        bt.pub.bind_btname(function(){
-                            window.location.reload();
-                        });
-                    }});
+              if(!res.status || !res){
+                fun = function(){
+                  bt.pub.bind_btname(function(){
+                    window.location.reload();
+                  });
+                }
+                $.extend(btn_config,{title:'Login',btn:'Login',click:fun});
+              }else{
+                if(type == 12 && (ltd < 0 && pro >=0)){
+                  explain.html('企业版可以免费使用专业版及企业版插件，了解专业版和企业版的区别，请点击<a href="https://www.bt.cn/download/linux.html" target="_blank" class="btlink ml5">查看详情</a>。<a href="https://www.bt.cn/bbs/forum.php?mod=viewthread&tid=50342&page=1&extra=#pid179211" target="_blank" class="btlink ml5">《专业版升级企业版教程》</a>');
+                  $(el).append(tips_info.addClass('alert-ltd-success'));
+                  return false;
                 }else{
-                    if(type == 12 && (ltd < 0 && pro >=0)){
-                        explain.html('企业版可以免费使用专业版及企业版插件，了解专业版和企业版的区别，请点击<a href="https://www.bt.cn/download/linux.html" target="_blank" class="btlink ml5">查看详情</a>。<a href="https://www.bt.cn/bbs/forum.php?mod=viewthread&tid=50342&page=1&extra=#pid179211" target="_blank" class="btlink ml5">《专业版升级企业版教程》</a>');
-                        $(el).append(tips_info.addClass('alert-ltd-success'));
-                        return false;
-                    }else{
-                        if(_ltd != 2){
-                            var fun = '';
-                            switch(_ltd){
-                                case null:
-                                    fun = bt.soft.updata_commercial_view
-                                    break;
-                                case 1:
-                                    fun = bt.soft.updata_ltd
-                                    break;
-                                case 0:
-                                    fun = bt.soft.updata_pro
-                                    break;
-                            }
-                            $.extend(btn_config,{title:_ltd == null?'Upgrade now':'立即续费',btn:_ltd == null?'Upgrade now':'立即续费',click:fun})
-                        }
-                    }
+                  if(pro < 0){
+                    fun = bt.soft.updata_pro
+                  }else{
+                    fun = bt.soft.renew_pro
+                  }
+                  $.extend(btn_config,{title:_ltd == null?'Upgrade now':'Renew Now',btn:_ltd == null?'Upgrade now':'Renew Now',click:fun})
                 }
-                if(_ltd != 2){
-                    if(!(pro == 0 && ltd < 0)){
-                        btn_ground  = soft.render_tips_btn(btn_ground,btn_config);
-                    }
+              }
+              if(_ltd != 2){
+                if(!(pro == 0 && ltd < 0)){
+                  btn_ground  = soft.render_tips_btn(btn_ground,btn_config);
                 }
-                $(el).append(tips_info.addClass(_ltd == 1?'alert-ltd-success':'alert-success'));
+              }
+              $(el).append(tips_info.addClass(_ltd == 1?'alert-ltd-success':'alert-success'));
+              if(_this.trail){
+                setTimeout(function (){
+                  $('.btn-ground').after('<span class="pro_trail" style="font-weight: 700;margin-left:25px;">Try the Pro edition for free for 15 days</span>')
+                  var trail = $('<a href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">Click to try</a>');
+                  trail.click((!res.status || !res)?fun:function(){
+                    var loadT = bt.load()
+                    bt.confirm({
+                      title:"Pro Edition",
+                      msg:"Get 15-day Pro edition free, get it now?"
+                    },function (){
+                      bt.send('free_trial','auth/free_trial',{},function(res){
+                        loadT.close()
+                        bt.msg(res)
+                        setTimeout(function () { window.location.reload() },2000)
+                      })
+                    })
+                  })
+                  $('.pro_trail').after(trail)
+                },100)
+              }
             }
             var bt_user_info = bt.get_cookie('bt_user_info');
             if(!bt_user_info){
-                bt.pub.get_user_info(function(res){
-                    if(!res.status){
-                         set_btn_style(false);
-                        return false;
-                    }
-                    bt.set_cookie('bt_user_info',JSON.stringify(res),300000);
-                    set_btn_style(res);
-                });
+              bt.pub.get_user_info(function(res){
+                if(!res.status){
+                  set_btn_style(false);
+                  return false;
+                }
+                bt.set_cookie('bt_user_info',JSON.stringify(res),300000);
+                set_btn_style(res);
+              });
             }else{
-                set_btn_style(JSON.parse(bt.get_cookie('bt_user_info')));
+              set_btn_style(JSON.parse(bt.get_cookie('bt_user_info')));
             }
         }
     },
@@ -2791,9 +2862,9 @@ var soft = {
                             }
                         })
                         setTimeout(function() {
-                            if ($(".bt-soft-menu .bgw").text() === "Installation extension") {
-                                soft.get_tab_contents('set_php_config', obj);
-                            }
+                          if ($(".bt-soft-menu .bgw").index() === 1) {
+                            soft.get_tab_contents('set_php_config', obj);
+                          }
                         }, 3000)
                     })
                     break;
@@ -3851,8 +3922,8 @@ function onekeyCodeSite(codename, versions, title, enable_functions) {
 					<div class="line"><span class="tname">Note</span>\
 						<div class="info-r c4"><input id="Wbeizhu" class="bt-input-text" name="ps" placeholder="Website note" style="width:398px" type="text"> </div>\
 					</div>\
-					<div class="line"><span class="tname">Root Directory</span>\
-						<div class="info-r c4"><input id="inputPath" class="bt-input-text mr5" name="path" value="' + default_path + '" placeholder="Website root directory" style="width:398px" type="text"><span class="glyphicon glyphicon-folder-open cursor" onclick="ChangePath(\'inputPath\')"></span> </div>\
+					<div class="line"><span class="tname">Document Root</span>\
+						<div class="info-r c4"><input id="inputPath" class="bt-input-text mr5" name="path" value="' + default_path + '" placeholder="Website document root" style="width:398px" type="text"><span class="glyphicon glyphicon-folder-open cursor" onclick="ChangePath(\'inputPath\')"></span> </div>\
 					</div>\
 					<div class="line"><span class="tname">Database</span>\
 						<div class="info-r c4">\

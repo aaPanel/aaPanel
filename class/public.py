@@ -46,14 +46,6 @@ def HttpGet(url,timeout = 6,headers = {}):
         @return string
     """
     if is_local(): return False
-    home = 'www.bt.cn'
-    host_home = 'data/home_host.pl'
-    old_url = url
-    if url.find(home) != -1:
-        if os.path.exists(host_home):
-            headers['host'] = home
-            url = url.replace(home,readFile(host_home))
-
     import http_requests
     res = http_requests.get(url,timeout=timeout,headers = headers)
     if res.status_code == 0:
@@ -118,14 +110,6 @@ def HttpPost(url,data,timeout = 6,headers = {}):
         return string
     """
     if is_local(): return False
-    home = 'www.bt.cn'
-    host_home = 'data/home_host.pl'
-    old_url = url
-    if url.find(home) != -1:
-        if os.path.exists(host_home):
-            headers['host'] = home
-            url = url.replace(home, readFile(host_home))
-
     import http_requests
     res = http_requests.post(url,data=data,timeout=timeout,headers = headers)
     if res.status_code == 0:
@@ -343,8 +327,10 @@ def ReadFile(filename,mode = 'r'):
                 fp = open(filename, mode,encoding="utf-8")
                 f_body = fp.read()
                 fp.close()
-            except Exception as ex2:
-                return False
+            except:
+                fp = open(filename, mode,encoding="GBK")
+                f_body = fp.read()
+                fp.close()
         else:
             return False
     return f_body
@@ -544,7 +530,10 @@ def GetLocalIp():
         if not ipaddress:
             url = 'http://pv.sohu.com/cityjson?ie=utf-8'
             m_str = HttpGet(url)
-            ipaddress = re.search(r'\d+.\d+.\d+.\d+',m_str).group(0)
+            if isinstance(m_str,bytes):
+                ipaddress = re.search('\d+.\d+.\d+.\d+', m_str.decode('utf-8')).group(0)
+            else:
+                ipaddress = re.search('\d+.\d+.\d+.\d+', m_str).group(0)
             WriteFile(filename,ipaddress)
         c_ip = check_ip(ipaddress)
         if not c_ip: return GetHost()
@@ -1356,11 +1345,18 @@ def get_page(count, p=1, rows=12, callback='', result='1,2,3,4,5,8'):
 # 取面板版本
 def version():
     try:
-        from BTPanel import g
-        return g.version
-    except:
         comm = ReadFile('/www/server/panel/class/common.py')
-        return re.search("g\.version\s*=\s*'(\d+\.\d+\.\d+)'", comm).groups()[0]
+        return re.search("g\.version\s*=\s*'(\d+\.\d+\.\d+)'",comm).groups()[0]
+    except:
+        return get_panel_version()
+
+def get_panel_version():
+    comm = ReadFile('/www/server/panel/class/common.py')
+    s_key = 'g.version = '
+    s_len = len(s_key)
+    s_leff = comm.find(s_key) + s_len
+    version = comm[s_leff:s_leff+6].strip().strip("'")
+    return version
 
 
 # 取文件或目录大小
@@ -1544,7 +1540,9 @@ def check_ip_panel():
         iplist = ReadFile(ip_file)
         if iplist:
             iplist = iplist.strip()
-            if not GetClientIp() in iplist.split(','):
+            client_ip = GetClientIp()
+            if client_ip in ['127.0.0.1','localhost','::1']: return False
+            if not client_ip in iplist.split(','):
                 errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
                 try:
                     errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_IP_H1'),getMsg('PAGE_ERR_IP_P1',(GetClientIp(),)),getMsg('PAGE_ERR_IP_P2'),getMsg('PAGE_ERR_IP_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
@@ -1557,6 +1555,8 @@ def check_domain_panel():
     tmp = GetHost()
     domain = ReadFile('data/domain.conf')
     if domain:
+        client_ip = GetClientIp()
+        if client_ip in ['127.0.0.1','localhost','::1']: return False
         if tmp.strip().lower() != domain.strip().lower():
             errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
             try:
@@ -1586,15 +1586,16 @@ def auto_backup_panel():
         shutil.copytree(panel_paeh + '/data',backup_path + '/data')
         shutil.copytree(panel_paeh + '/config',backup_path + '/config')
         shutil.copytree(panel_paeh + '/vhost',backup_path + '/vhost')
-        ExecShell("chmod -R 600 {path};chown -R root.root {path}".format(paht=b_path))
+        ExecShell("chmod -R 600 {path};chown -R root.root {path}".format(path=b_path))
         time_now = time.time() - (86400 * 15)
         for f in os.listdir(b_path):
-            try:
-                if time.mktime(time.strptime(f, "%Y-%m-%d")) < time_now:
-                    path = b_path + '/' + f
-                    if os.path.exists(path): shutil.rmtree(path)
-            except: continue
-    except:pass
+            if time.mktime(time.strptime(f, "%Y-%m-%d")) < time_now:
+                path = b_path + '/' + f
+                if os.path.exists(path): shutil.rmtree(path)
+    except:
+        pass
+
+
 
 
 #检查端口状态
@@ -1818,6 +1819,7 @@ def sub_php_address(conf_file,rep,tsub,php_version):
         @param php_version string 指定PHP版本
         @return bool
     '''
+    if not os.path.isfile(conf_file): return False
     if not os.path.exists(conf_file): return False
     conf = readFile(conf_file)
     if not conf: return False
@@ -2020,10 +2022,7 @@ def get_linux_distribution():
     if os.path.exists(redhat_file):
         try:
             tmp = readFile(redhat_file).split()[3][0]
-            if int(tmp) > 7:
-                distribution = 'centos8'
-            else:
-                distribution = 'centos7'
+            distribution = 'centos{}'.format(tmp)
         except:
             distribution = 'centos7'
     return distribution
@@ -2052,6 +2051,17 @@ def ip2long(ip):
     if len(ips) != 4: return 0
     iplong = 2 ** 24 * int(ips[0]) + 2 ** 16 * int(ips[1])  + 2 ** 8 * int(ips[2])  + int(ips[3])
     return iplong
+
+def is_local_ip(ip):
+    '''
+        @name 判断是否为本地(内网)IP地址
+        @author hwliang<2021-03-26>
+        @param ip string(ipv4)
+        @return bool
+    '''
+    patt = r"^(192\.168|127|10|172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\."
+    if re.match(patt,ip): return True
+    return False
 
 #获取debug日志
 def get_debug_log():
@@ -2362,6 +2372,26 @@ def run_thread(fun,args = (),daemon=False):
     p.start()
     return True
 
+def check_domain_cloud(domain):
+    run_thread(cloud_check_domain,(domain,))
+
+def cloud_check_domain(domain):
+    '''
+        @name 从云端验证域名的可访问性,并将结果保存到文件
+        @author hwliang<2020-12-10>
+        @param domain {string} 被验证的域名
+        @return void
+    '''
+    try:
+        check_domain_path = '/www/server/panel/data/check_domain/'
+        if not os.path.exists(check_domain_path):
+            os.makedirs(check_domain_path,384)
+        result = httpPost('https://www.aapanel.com/api/panel/checkDomain',{"domain":domain})
+        cd_file = check_domain_path + domain +'.pl'
+        writeFile(cd_file,result)
+    except:
+        pass
+
 
 def send_file(data,fname='',mimetype = ''):
     '''
@@ -2412,6 +2442,19 @@ def get_ipaddress():
     iplist = ipa_tmp.split('\n')
     return iplist
 
+def get_oem_name():
+    '''
+        @name 获取OEM名称
+        @author hwliang<2021-03-24>
+        @return string
+    '''
+    oem = ''
+    oem_file = '/www/server/panel/data/o.pl'
+    if os.path.exists(oem_file):
+        oem = readFile(oem_file)
+        if oem: oem = oem.strip()
+    return oem
+
 def fetch_disk_SN():
     r,e = ExecShell("fdisk -l |grep 'Disk identifier' |awk {'print $3'}")
     if r:
@@ -2428,7 +2471,7 @@ def get_hostname():
 
 def get_platform():
     import platform
-    return platform.version()
+    return platform.platform()
 
 def get_memory():
     import psutil
@@ -2451,6 +2494,13 @@ def fetch_env_info():
     except:
         return {}
 
+def arequests(method,url,data=None,timeout=3):
+    import threading
+    if method == 'post':
+        method = httpPost
+    else:
+        method = httpGet
+    threading.Thread(target=method, args=(url,data,timeout)).start()
 
 #取通用对象
 class dict_obj:
@@ -2461,6 +2511,98 @@ class dict_obj:
     def __delitem__(self,key): delattr(self,key)
     def __delattr__(self, key): delattr(self,key)
     def get_items(self): return self
+    def get(self,key,default='',format='',limit = []):
+        '''
+            @name 获取指定参数
+            @param key<string> 参数名称，允许在/后面限制参数格式，请参考参数值格式(format)
+            @param default<string> 默认值，默认空字符串
+            @param format<string>  参数值格式(int|str|float|json|xss|path|url|ip|ipv4|ipv6|letter|mail|phone|正则表达式|>1|<1|=1)，默认为空
+            @param limit<list> 限制参数值内容
+            @param return mixed
+        '''
+        if key.find('/') != -1:
+            key,format = key.split('/')
+        result = getattr(self,key,default).strip()
+        if format:
+            if format in ['str','string','s']:
+                result = str(result)
+            elif format in ['int','d']:
+                try:
+                    result = int(result)
+                except:
+                    raise ValueError("Parameters: {}, requires int type data".format(key))
+            elif format in ['float','f']:
+                try:
+                    result = float(result)
+                except:
+                    raise ValueError("Parameters: {}, float type data required".format(key))
+            elif format in ['json','j']:
+                try:
+                    result = json.loads(result)
+                except:
+                    raise ValueError("Parameters: {}, requires JSON string".format(key))
+            elif format in ['xss','x']:
+                result = xssencode(result)
+            elif format in ['path','p']:
+                if not path_safe_check(result):
+                    raise ValueError("Parameters: {}, the correct path format is required".format(key))
+                result = result.replace('//','/')
+            elif format in ['url','u']:
+                regex = re.compile(
+                     r'^(?:http|ftp)s?://'
+                     r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
+                     r'localhost|'
+                     r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+                     r'(?::\d+)?'
+                     r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+                if not re.match(regex,result):
+                    raise ValueError('Parameters: {}, the correct URL format is required'.format(key))
+            elif format in ['ip','ipaddr','i','ipv4','ipv6']:
+                if format is 'ipv4':
+                    if not is_ipv4(result):
+                        raise ValueError('Parameters: {}, the correct ipv4 address is required'.format(key))
+                elif format is 'ipv6':
+                    if not is_ipv6(result):
+                        raise ValueError('Parameters: {}, the correct ipv6 address is required'.format(key))
+                else:
+                    if not is_ipv4(result) and not is_ipv6(result):
+                        raise ValueError('Parameters: {}, the correct ipv4/ipv6 address is required'.format(key))
+            elif format in ['w','letter']:
+                if not re.match(r'^\w+$',result):
+                    raise ValueError('Parameters: {}, the requirement can only be composed of English letters'.format(key))
+            elif format in ['email','mail','m']:
+                if not re.match(r"^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$",result):
+                    raise ValueError("Parameters: {}, the correct email address format is required".format(key))
+            elif format in ['phone','mobile','m']:
+                if not re.match("^[0-9]{11,11}$",result):
+                    raise ValueError("Parameters: {}, mobile phone number format required".format(key))
+            elif re.match(r"^[<>=]\d+$",result):
+                operator = format[0]
+                length = int(format[1:].strip())
+                result_len = len(result)
+                error_obj = ValueError("Parameters: {}, the required length is {}".format(key,format))
+                if operator is '=':
+                    if result_len != length:
+                        raise error_obj
+                elif operator is '>':
+                    if result_len < length:
+                        raise error_obj
+                else:
+                    if result_len > length:
+                        raise error_obj
+            elif format[0] in ['^','(','[','\\','.'] or format[-1] in ['$',')',']','+','}']:
+                if not re.match(format,result):
+                    raise ValueError("The format of the specified parameter is incorrect, {}:{}".format(key,format))
+
+        if limit:
+            if not result in limit:
+                raise ValueError("The specified parameter value range is incorrect, {}:{}".format(key,limit))
+        return result
+
+
+
+
+
 
 
 
@@ -2574,4 +2716,152 @@ def check_app(check='app'):
         if not app_info: return False
         return True
 
+#宝塔邮件报警
+def send_mail(title,body,is_logs=False,is_type="aapanel login reminder"):
+    if is_logs:
+        try:
+            import send_mail
+            send_mail22 = send_mail.send_mail()
+            tongdao = send_mail22.get_settings()
+            if tongdao['user_mail']['mail_list']==0:return false
+            if not tongdao['user_mail']['info']: return false
+            if len(tongdao['user_mail']['mail_list'])==1:
+                send_mail=tongdao['user_mail']['mail_list'][0]
+                send_mail22.qq_smtp_send(send_mail, title=title, body=body)
+            else:
+                send_mail22.qq_smtp_send(tongdao['user_mail']['mail_list'], title=title, body=body)
+            if is_logs:
+                WriteLog2(is_type, body)
+        except:
+            return False
+    else:
+        try:
+            import send_mail
+            send_mail22 = send_mail.send_mail()
+            tongdao = send_mail22.get_settings()
+            if tongdao['user_mail']['mail_list'] == 0: return false
+            if not tongdao['user_mail']['info']: return false
+            if len(tongdao['user_mail']['mail_list']) == 1:
+                send_mail = tongdao['user_mail']['mail_list'][0]
+                return send_mail22.qq_smtp_send(send_mail, title=title, body=body)
+            else:
+                return send_mail22.qq_smtp_send(tongdao['user_mail']['mail_list'], title=title, body=body)
+        except:
+            return False
 
+#宝塔钉钉 or 微信告警
+def send_dingding(body,is_logs=False,is_type="aapanel login reminder"):
+    if is_logs:
+        try:
+            import send_mail
+            send_mail22 = send_mail.send_mail()
+            tongdao = send_mail22.get_settings()
+            if not tongdao['dingding']['info']: return false
+            tongdao = send_mail22.get_settings()
+            if is_logs:
+                WriteLog2(is_type,body)
+            return send_mail22.dingding_send(body)
+        except:
+            return False
+    else:
+        try:
+            import send_mail
+            send_mail22 = send_mail.send_mail()
+            tongdao = send_mail22.get_settings()
+            if not tongdao['dingding']['info']: return false
+            tongdao = send_mail22.get_settings()
+            return send_mail22.dingding_send(body)
+        except:return False
+
+#获取服务器IP
+def get_ip():
+    if os.path.exists('/www/server/panel/data/iplist.txt'):
+        data=ReadFile('/www/server/panel/data/iplist.txt')
+        return data.strip()
+    else:return '127.0.0.1'
+
+#获取服务器内网Ip
+def get_local_ip():
+    try:
+        ret=ExecShell("ip addr | grep -E -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -E -v \"^127\.|^255\.|^0\.\" | head -n 1")
+        local_ip=ret[0].strip()
+        return local_ip
+    except:return '127.0.0.1'
+
+def create_logs():
+    import db
+    sql = db.Sql()
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'logs2')).count():
+        csql = '''CREATE TABLE `logs2` (
+  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `type` TEXT,
+  `log` TEXT,
+  `addtime` TEXT
+, uid integer DEFAULT '1', username TEXT DEFAULT 'system')'''
+        sql.execute(csql, ())
+
+def WriteLog2(type,logMsg,args=(),not_web = False):
+    import db
+    create_logs()
+    username = 'system'
+    uid = 1
+    tmp_msg = ''
+    sql = db.Sql()
+    mDate = time.strftime('%Y-%m-%d %X',time.localtime())
+    data = (uid,username,type,logMsg + tmp_msg,mDate)
+    result = sql.table('logs2').add('uid,username,type,log,addtime',data)
+
+def check_ip_white(path,ip):
+    if os.path.exists(path):
+        try:
+            path_json=json.loads(ReadFile(path))
+        except:
+            WriteFile(path,'[]')
+            return False
+        if ip in path_json:return True
+        else:return False
+    else:
+        return False
+
+#登陆告警
+def login_send_body(is_type,username,login_ip,port):
+    if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
+        if check_ip_white('/www/server/panel/data/send_login_white.json',login_ip):return False
+        send_mail("aapanel login reminder","aapanel login reminder：Your server "+get_ip()+" successfully logged in via "+is_type+", account number: "+username+", login IP: "+login_ip+":"+port+", login time: "+time.strftime('%Y -%m-%d %X',time.localtime()), True)
+    if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
+        if check_ip_white('/www/server/panel/data/send_login_white.json',login_ip):return False
+        send_dingding("aapanel login reminder：Your server "+get_ip()+" successfully logged in via "+is_type+", account number: "+username+", login IP: "+login_ip+":"+port+", login time: "+time.strftime('%Y -%m-%d %X',time.localtime()), True)
+
+#普通模式下调用发送消息【设置登陆告警后的设置】
+#title= 发送的title
+#body= 发送的body
+#is_logs= 是否记录日志
+#is_type=发送告警的类型
+def send_to_body(title,body,is_logs=False,is_type="aaPanel email alert"):
+    if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
+        if is_logs:
+            send_mail(title, body,True,is_type)
+        send_mail(title,body)
+    if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
+        if is_logs:
+            send_dingding(body,True,is_type)
+        send_dingding(body)
+
+#普通发送消息
+#send_type= ["mail","dingding"]
+#title =发送的头
+#body= 发送消息的内容
+def send_body_words(send_type,title,body):
+    if send_type=='mail':
+        return send_mail(title,body)
+    if send_type=='dingding':
+        return  send_dingding(body)
+
+def return_is_send_info():
+    import send_mail
+    send_mail22 = send_mail.send_mail()
+    tongdao = send_mail22.get_settings()
+    ret={}
+    ret['mail']=tongdao['user_mail']['user_name']
+    ret['dingding']=tongdao['dingding']['dingding']
+    return ret

@@ -45,6 +45,8 @@ class userlogin:
                 num = self.limit_address('+')
                 return public.returnJson(False,'LOGIN_USER_ERR',(str(num),)),json_header
             _key_file = "/www/server/panel/data/two_step_auth.txt"
+            #登陆告警
+            public.login_send_body("Userinfo",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT')))
             if hasattr(post,'vcode'):
                 if self.limit_address('?',v="vcode") < 1: return public.returnJson(False,'You have failed verification many times, forbidden for 10 minutes'),json_header
                 import pyotp
@@ -119,6 +121,7 @@ class userlogin:
 
     def request_temp(self,get):
         try:
+            if len(get.__dict__.keys()) > 2: return public.getMsg('INIT_ARGS_ERR')
             if not hasattr(get,'tmp_token'): return public.getMsg('INIT_ARGS_ERR')
             if len(get.tmp_token) != 48: return public.getMsg('INIT_ARGS_ERR')
             if not re.match(r"^\w+$",get.tmp_token):return public.getMsg('INIT_ARGS_ERR')
@@ -159,6 +162,7 @@ class userlogin:
             self.set_request_token()
             self.login_token()
             self.set_cdn_host(get)
+            public.login_send_body("Temporary authorization",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT')))
             return redirect('/')
         except:
             return public.getMsg('LOGIN_FAIL')

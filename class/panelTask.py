@@ -67,7 +67,7 @@ class bt_task:
         data = sql.field('id,name,type,shell,other,status,exectime,endtime,addtime').order(
             'id asc').limit('10').select()
         if type(data) == str:
-            public.WriteLog('TASK_QUEUE',data)
+            public.WriteLog('TASK_QUEUE', data,not_web = self.not_web)
             return []
         if not 'num' in get:
             get.num = 15

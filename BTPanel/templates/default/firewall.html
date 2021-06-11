@@ -78,13 +78,6 @@
             <div class="position f14 c9 pull-left">
                 <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
             </div>
-            <div class="search pull-right">
-                <form target="hid" onsubmit='firewall.get_log_list(1,$("#SearchValue").prop("value"))'>
-                    <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="{{data['lan']['SEARCH']}}" />
-                    <button type="button" class="ser-sub pull-left" onclick='firewall.get_log_list(1,$("#SearchValue").prop("value"))'></button>
-                </form>
-                <iframe name='hid' id="hid" style="display:none"></iframe>
-            </div>
         </div>
         <div class="safe container-fluid bgw mtb15 pd15">
             <div class="mr50 pull-left">
@@ -149,10 +142,17 @@
         <div class="white-black-ip bgw mtb15">
             <div class="black-ip">
                 <div class="def-log">
-                    <div class="title c6 plr15">
-                        <h3 class="f16">{{data['lan']['H4']}}</h3>
-                        <a class="btn btn-default btn-sm va0" onclick="bt.firewall.clear_logs(function(){firewall.get_log_list()});">{{data['lan']['BTN5']}}</a>
-                        <span class="btn btn-default btn-sm" style="position: absolute;right: 30px;margin-top: 10px;" onclick="firewall.get_panel_error_logs()">{{data['lan']['PANEL_LOG']}}</span>
+                    <div class="tootls_group" style="height: 40px;">
+                        <div class="pull-right">
+                            <div class="bt_search" style="margin-top: 10px;margin-right: 15px;">
+                                <input type="text" style="width:260px" class="search_input" placeholder="Please enter a keyword search log"><span onclick="firewall.on_search()" class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                            </div>
+                        </div>
+                        <div class="title c6 plr15">
+                            <h3 class="f16">{{data['lan']['H4']}}</h3>
+                            <a class="btn btn-default btn-sm va0" onclick="bt.firewall.clear_logs(function(){firewall.get_log_list()});">{{data['lan']['BTN5']}}</a>
+                            <span class="btn btn-default btn-sm" style="margin-top: 10px;" onclick="firewall.get_panel_error_logs()">{{data['lan']['PANEL_LOG']}}</span>
+                        </div>
                     </div>
                     <div class="divtable pd15">
                         <div class="tablescroll">
@@ -175,7 +175,10 @@
 	
 	var firewall = {		
 		ssl_scanning_list: [], //扫描列表
-		get_init:function(){			
+		on_search:function(){
+            firewall.get_log_list(1,$('.search_input').val());
+        },
+		get_init:function(){
 			firewall.flush_init();
 			firewall.get_list();
 			firewall.get_log_list();

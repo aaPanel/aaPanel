@@ -138,7 +138,7 @@
 	"PLUG_MAM": "Plugin manager",
 	"SET_PLUG": "Set plugin ['{1}'] AS!",
 	"INSTALL_THIRD_PARDY_PLUG": "Installed third-party plugin [{1}]",
-	"SITE_DIR_NOT_EXIST_RECREATE": "Site [{1}], root directory [{2}] does NOT exist, recreated!",
+	"SITE_DIR_NOT_EXIST_RECREATE": "Site [{1}], document root [{2}] does NOT exist, recreated!",
 	"SITE_STOP_ANTI_STEALING_LINK": "Hotlink Protection for site [{1}] disabled!",
 	"SITE_START_ANTI_STEALING_LINK": "Hotlink Protection for site [{1}] enabled!",
 	"SET_PHP_CLI":"Set the PHP-CLI version to: {1}",
@@ -170,5 +170,7 @@
 	"REMOVE_PARA": "Remove custom compilation parameters: {1}:{2}",
 	"SET_SOFTWARE_COMPILATION": "Setup software: Custom compilation parameters for {1} are configured as: {2}",
 	"SET_FILE_NOTES": "Set the file name [{1}], notes: {2}",
-	"CLEAR_FILE_NOTES": "Clear file notes [{1}]"
+	"CLEAR_FILE_NOTES": "Clear file notes [{1}]",
+	"CREATE_SOFTLINK": "Create softlink: {1} -> {2}",
+	"EXEC_COMPOSER": "Execute composer [{1}] in the directory: [{2}],"
 }

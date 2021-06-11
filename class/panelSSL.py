@@ -663,7 +663,17 @@ class panelSSL:
                 if not tmp: continue
                 tmp1 = json.loads(tmp)
                 data.append(tmp1)
-            return data
+            if not data:
+                lets_file = '/www/server/panel/config/letsencrypt.json'
+                tmp = public.readFile(ltes_file)
+                if not tmp:
+                    return []
+                tmp = json(tmp)
+                for i in tmp['orders']:
+                    data.append({"domains":tmp['orders'][i]['domains'],
+                        "notAfter":tmp['orders'][i]['cert_timeout'],
+                        "save_path":tmp['orders'][i]['save_path']
+                    })
         except:
             return []
     

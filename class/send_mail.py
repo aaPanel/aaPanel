@@ -123,17 +123,22 @@ class send_mail:
         ret = True
         if not 'port' in self.__qq_mail_user: self.__qq_mail_user['port'] = 465
         try:
-
             msg = MIMEText(body, 'html', 'utf-8')
             msg['From'] = formataddr([self.__qq_mail_user['qq_mail'], self.__qq_mail_user['qq_mail']])
-            msg['To'] = formataddr([self.__qq_mail_user['qq_mail'], email.strip()])
+            if type(email)==str:
+                msg['To'] = formataddr([self.__qq_mail_user['qq_mail'], email.strip()])
+            elif type(email)==list:
+                msg['To']=formataddr(email)
             msg['Subject'] = title
             if int(self.__qq_mail_user['port']) == 465:
                 server = smtplib.SMTP_SSL(str(self.__qq_mail_user['hosts']), str(self.__qq_mail_user['port']))
             else:
                 server = smtplib.SMTP(str(self.__qq_mail_user['hosts']), str(self.__qq_mail_user['port']))
             server.login(self.__qq_mail_user['qq_mail'], self.__qq_mail_user['qq_stmp_pwd'])
-            server.sendmail(self.__qq_mail_user['qq_mail'], [email.strip(), ], msg.as_string())
+            if type(email)==str:
+                server.sendmail(self.__qq_mail_user['qq_mail'], [email.strip()], msg.as_string())
+            elif type(email)==list:
+                server.sendmail(self.__qq_mail_user['qq_mail'], email, msg.as_string())
             server.quit()
         except Exception:
             ret = False
@@ -166,11 +171,18 @@ class send_mail:
             filename = '/www/server/panel/data/iplist.txt'
             ipaddress = public.readFile(filename)
             if not ipaddress:
-                import urllib2
+                try:
+                    import urllib2
+                except:
+                    import urllib as urllib2
+                    urllib2 = urllib2.request
                 url = 'http://pv.sohu.com/cityjson?ie=utf-8'
                 opener = urllib2.urlopen(url)
                 m_str = opener.read()
-                ipaddress = re.search('\d+.\d+.\d+.\d+', m_str).group(0)
+                if isinstance(m_str, bytes):
+                    ipaddress = re.search('\d+.\d+.\d+.\d+', m_str.decode('utf-8')).group(0)
+                else:
+                    ipaddress = re.search('\d+.\d+.\d+.\d+', m_str).group(0)
                 public.WriteFile(filename, ipaddress)
             c_ip = public.check_ip(ipaddress)
             if not c_ip:

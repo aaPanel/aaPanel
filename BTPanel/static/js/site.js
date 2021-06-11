@@ -61,20 +61,20 @@ var site_table = bt_tools.table({
                 var item = _ssl[_arry[i][0]];
                 _info += _arry[i][1]+':'+ item + (_arry.length-1 != i?'\n':'');
             }
-            return row.ssl === -1?'<a class="btlink" href="javascript:;" style="color:orange;">Not Set</a>':'<a class="btlink" href="javascript:;" title="'+ _info +'">Expire: '+ row.ssl.endtime +'days</a>';
+            return _ssl === -1?'<a class="btlink" href="javascript:;" style="color:orange;">Not Set</a>': (_ssl.endtime >= 0? '<a class="btlink" href="javascript:;" title="'+ _info +'">Expire: '+ _ssl.endtime +'days</a>':'<a style="color:red" href="javascript:;">Expired</a>');
         },event:function(row,index,ev,key,that){
             site.web_edit(row);
             setTimeout(function(){
                 $('.site-menu p:eq(8)').click();
             },500);
         }},
-        {title:lan.site.operate,type:'group',width:95,align:'right',group:[
-        // {
-        //     title:'防火墙',
-        //     event:function(row,index,ev,key,that){
-        //         site.site_waf(row.name);
-        //     }
-        // },
+        {title:lan.site.operate,type:'group',width:118,align:'right',group:[
+        {
+            title:'WAF',
+            event:function(row,index,ev,key,that){
+                site.site_waf(row.name);
+            }
+        },
         {
             title:lan.site.set,
             event:function(row,index,ev,key,that){
@@ -1822,6 +1822,151 @@ var site = {
         }
     },
     edit: {
+      update_composer: function () {
+          loadT = bt.load()
+          $.post('/files?action=update_composer', {
+            repo: $("select[name='repo']").val()
+          }, function (v_data) {
+            loadT.close();
+            bt.msg(v_data);
+          });
+        },
+        show_composer_log: function () {
+          $.post('/ajax?action=get_lines', {
+            filename: '/tmp/composer.log',
+            num: 30
+          }, function (v_body) {
+            var log_obj = $("#composer-log")
+            if (log_obj.length < 1) return;
+            log_obj.html(v_body.msg);
+            var div = document.getElementById('composer-log')
+            div.scrollTop = div.scrollHeight;
+            if (v_body.msg.indexOf('BT-Exec-Completed') != -1) {
+              //layer.close(site.edit.comp_showlog);
+              layer.msg('Execution complete', {
+                icon: 1
+              });
+              return;
+            }
+
+            setTimeout(function () {
+              site.edit.show_composer_log()
+            }, 1000)
+          });
+        },
+        comp_confirm: 0,
+        comp_showlog: 0,
+        exec_composer: function () {
+          site.edit.comp_confirm = layer.confirm('The impact of Composer execution depends on the composer.json configuration file in this directory. Continue?', {
+            title: 'Execute composer',
+            closeBtn: 2,
+            icon: 3
+          }, function (index) {
+            layer.close(site.edit.comp_confirm);
+            var pdata = {
+              php_version: $("select[name='php_version']").val(),
+              composer_args: $("select[name='composer_args']").val(),
+              repo: $("select[name='repo']").val(),
+              path: $("input[name='composer_path']").val(),
+              user: $("select[name='composer_user']").val()
+            }
+            $.post('/files?action=exec_composer', pdata, function (rdatas) {
+              if (!rdatas.status) {
+                layer.msg(rdatas.msg, {
+                  icon: 2
+                });
+                return false;
+              }
+              if (rdatas.status === true) {
+                site.edit.comp_showlog = layer.open({
+                  area: "800px",
+                  type: 1,
+                  shift: 5,
+                  closeBtn: 2,
+                  title: 'Execute Composer in the ['+ pdata['path'] +'] directory. After execution, please close this window after confirming that there is no problem',
+                  content: "<pre id='composer-log' style='height: 300px;background-color: #333;color: #fff;margin: 0 0 0;'></pre>"
+                });
+                setTimeout(function () {
+                  site.edit.show_composer_log();
+                }, 200);
+              }
+            });
+          });
+        },
+        remove_composer_lock: function (path) {
+          $.post('/files?action=DeleteFile', {
+            path: path + '/composer.lock'
+          }, function (rdata) {
+            bt.msg(rdata);
+            $(".composer-msg").remove();
+            $(".composer-rm").remove();
+          })
+        },
+        set_composer: function (web) {
+          $.post('/files?action=get_composer_version', {
+            path: web.path
+          }, function (v_data) {
+            if (v_data.status === false) {
+              bt.msg(v_data);
+              return;
+            }
+
+            var php_versions = '';
+            for (var i = 0; i < v_data.php_versions.length; i++) {
+              if (v_data.php_versions[i].version == '00') continue;
+              php_versions += '<option value="' + v_data.php_versions[i].version + '">' + v_data.php_versions[i].name + '</option>';
+            }
+
+            var msg = '';
+            if (v_data.comp_lock) {
+              msg += '<span>' + v_data.comp_lock + ' <a class="btlink composer-rm" onclick="site.edit.remove_composer_lock(\'' + web.path + '\')">[Delete]</a></span>'
+            }
+            if (v_data.comp_json !== true) {
+              msg += '<span>' + v_data.comp_json + '</span>'
+            }
+
+            var com_body = '<from class="bt-form" style="padding:10px 0px 0px 0px;;display:inline-block;width:580px">' +
+              '<div class="line"><span style="width: 105px;" class="tname">Version</span><div class="info-r"><input readonly="readonly" style="background-color: #eee;width:180px;" name="composer_version" class="bt-input-text" value="' + v_data.msg + '" /><button onclick="site.edit.update_composer();" style="margin-left: 5px;" class="btn btn-default btn-sm">Update</button></div></div>' +
+              '<div class="line"><span style="width: 105px;" class="tname">PHP</span><div class="info-r">' +
+              '<select class="bt-input-text" name="php_version" style="width:180px;">' +
+              '<option value="auto">Auto</option>' +
+              php_versions +
+              '</select>' +
+              '</div></div>' +
+              '<div class="line"><span style="width: 105px;" class="tname">Parameters</span><div class="info-r">' +
+              '<select class="bt-input-text" name="composer_args" style="width:180px;">' +
+              '<option value="install">Install</option>' +
+              '<option value="update">Update</option>' +
+              '</select>' +
+              '</div></div>' +
+              '<div class="line"><span style="width: 105px;" class="tname">Source</span><div class="info-r">' +
+              '<select class="bt-input-text" name="repo" style="width:180px;">' +
+              '<option value="repos.packagist">Official(packagist.org)</option>' +
+              '</select>' +
+              '</div></div>' +
+              '<div class="line"><span style="width: 105px;" class="tname">User</span><div class="info-r">' +
+              '<select class="bt-input-text" name="composer_user" style="width:180px;">' +
+              '<option value="www">www(recommend)</option>' +
+              '<option value="root">root(not suggested)</option>' +
+              '</select>' +
+              '</div></div>' +
+              '<div class="line"><span style="width: 105px;" class="tname">Dir</span><div class="info-r">' +
+              '<input style="width:275px;" class="bt-input-text" id="composer_path" name="composer_path" type="text" value="' + web.path + '" /><span class="glyphicon glyphicon-folder-open cursor ml5" onclick="bt.select_path(\'composer_path\')"></span>' +
+              '</div></div>' +
+              '<div class="line"><span style="width: 105px;height: 25px;" class="tname"> </span><span class="composer-msg" style="color:red;">' + msg + '</span></div>' +
+              '<div class="line" style="clear:both"><span style="width: 105px;" class="tname"> </span><div class="info-r"><button class="btn btn-success btn-sm" onclick="site.edit.exec_composer()">Execute</button></div></div>' +
+              '</from>' +
+              '<ul class="help-info-text c7">' +
+              '<li>Directory：Website root dir by default, please make sure that the dir contains composer.json</li>' +
+              '<li>User：The default user www, unless your website is run with root privileges, it is not recommended to use the root user to execute composer</li>' +
+              '<li>Source：source of composer</li>' +
+              '<li>Parameters：Install (install dependent package), Update (upgrade dependent package), please select as needed</li>' +
+              '<li>PHP version：The PHP version used to execute composer, it is recommended to try the default, if the installation fails, try to choose another PHP version</li>' +
+              '<li>Composer version：Composer version, you can click [Upgrade Composer] on the right to upgrade Composer to the latest stable version</li>' +
+              '</ul>'
+            $("#webedit-con").html(com_body);
+          });
+        },
         set_domains: function(web) {
             var _this = this;
                 var list = [{
@@ -1873,7 +2018,7 @@ var site = {
                             return '<a href="http://' + row.name + ':' + row.port + '" target="_blank" class="btlink">'+ row.name +'</a>';
                         }},
                         {fid:'port',title: lan.site.port,width:50,type:'text'},
-                        {title:'opt',width:80,type:'group',align:'right',group:[{
+                        {title:'OPT',width:80,type:'group',align:'right',group:[{
                             title:'Del',
                             template:function(row,that){
                                 return that.data.length === 1?'<span>Inoperable</span>':'Del';
@@ -1948,7 +2093,7 @@ var site = {
                     {fid:'port',title:lan.site.port,width:70,type:'text'},
                     {fid:'path',title:lan.site.subdirectories,width:70,type:'text'},
                     {title:'Opt',width:130,type:'group',align:'right',group:[{
-                        title:'URL rewirte',
+                        title:'URL rewrite',
                         event:function(row,index,ev,key,that){
                             bt.site.get_dir_rewrite({ id: row.id }, function (ret) {
                                 if (!ret.status) {
@@ -2184,13 +2329,13 @@ var site = {
         },
         set_dirguard: function(web) {
             $('#webedit-con').html('<div id="set_dirguard"></div>');
-            var tab = '<div class="tab-nav mlr20">\
+            var tab = '<div class="tab-nav mb15">\
                     <span class="on">Limit access</span><span class="">Deny access</span>\
                     </div>\
-                    <div id="dir_dirguard" class="pd20"></div>\
-                    <div id="php_dirguard" class="pd20" style="display:none;"></div>';
+                    <div id="dir_dirguard"></div>\
+                    <div id="php_dirguard" style="display:none;"></div>';
             $("#set_dirguard").html(tab);
-            bt_tools.table({
+            var dir_dirguard = bt_tools.table({
                 el:'#dir_dirguard',
                 url:'/site?action=get_dir_auth',
                 param:{id:web.id},
@@ -2223,57 +2368,135 @@ var site = {
                         site.edit.template_Dir(web.id,true);
                     }}]
                 },{ // 批量操作
-                    type:'batch',
-                    positon:['left','bottom'],
-                    config:{
-                        title:' delete',
-                        url:'/site?action=delete_dir_auth_multiple',
-                        param:{site_id:web.id},
-                        paramId:'name',
-                        paramName:'names',
-                        theadName:'Name',
-                        confirmVerify:false //是否提示验证方式
-                    }
+                    type: 'batch',
+                    positon: ['left', 'bottom'],
+                    config: {
+                	title: " delete",
+    			      url: '/site?action=delete_dir_auth',
+    			      param: function (row) {
+    			      	console.log(row)
+    			        return {
+    			          id: web.id,
+    			          name: row.name
+    			        }
+    			      },
+    			      load: true,
+    			      callback: function (that) { // 手动执行,data参数包含所有选中的站点
+    			    	bt.show_confirm('Delete limit access','Do you want to delete limit access ?',function(){
+    			    		that.start_batch({}, function (list) {
+    				            var html = '';
+    				            for (var i = 0; i < list.length; i++) {
+    				              var item = list[i];
+    				              html += '<tr><td>' + item.name + '</td><td><div style="float:right;"><span style="color:' + (item.request.status ? '#20a53a' : 'red') + '">' + item.request.msg + '</span></div></td></tr>';
+    				            }
+    				            dir_dirguard.$batch_success_table({
+    				              title: 'Limit access',
+    				              th: 'Limit access name',
+    				              html: html
+    				            });
+    				            dir_dirguard.$refresh_table_list(true);
+    				          });
+    			    	});
+    			      }
+    		    	}
                 }]
             });
-            bt_tools.table({
-                el:'#php_dirguard',
-                url:'/config?action=get_file_deny',
-                param:{website:web.name},
-                dataFilter:function(res){
-                    return {data:res};
+            var php_dirguard = bt_tools.table({
+              el: '#php_dirguard',
+              url: '/config?action=get_file_deny',
+              param: {
+                website: web.name
+              },
+              dataFilter: function (res) {
+                return {
+                  data: res
+                };
+              },
+              column: [
+                {type:'checkbox',width:20},
+                {
+                  fid: 'name',
+                  title: lan.site.name,
+                  type: 'text'
                 },
-                column:[
-                    //{type:'checkbox',width:20},
-                    {fid:'name',title:lan.site.name,type:'text'},
-                    {fid:'dir',title:'Path',type:'text', template:function(row){
-                        return '<span title="' + row.dir + '" style="max-width: 250px;" class="limit-text-length">' + row.dir + '</span>';
-                    }},
-                    {fid: 'suffix', title: 'Suffix', template:function(row){
-                        return '<span title="' + row.suffix + '" style="max-width: 85px;" class="limit-text-length">' + row.suffix + '</span>';
-                    }},
-                    {title:lan.site.operate,width:110,type:'group',align:'right',group:[{
-                        title:lan.site.edit,
-                        event:function(row,index,ev,key,that){
-                            site.edit.template_php(web.name,row);
+                {
+                  fid: 'dir',
+                  title: 'Path',
+                  type: 'text',
+                  template: function (row) {
+                    return '<span title="' + row.dir + '" style="max-width: 250px;" class="limit-text-length">' + row.dir + '</span>';
+                  }
+                },
+                {
+                  fid: 'suffix',
+                  title: 'Suffix',
+                  template: function (row) {
+                    return '<span title="' + row.suffix + '" style="max-width: 85px;" class="limit-text-length">' + row.suffix + '</span>';
+                  }
+                },
+                {
+                  title: lan.site.operate,
+                  width: 110,
+                  type: 'group',
+                  align: 'right',
+                  group: [{
+                    title: lan.site.edit,
+                    event: function (row, index, ev, key, that) {
+                      site.edit.template_php(web.name, row);
+                    }
+                  }, {
+                    title: lan.site.del,
+                    event: function (row, index, ev, key, that) {
+                      site.edit.del_php_deny(web.name, row.name, function (res) {
+                        if (res.status) that.$delete_table_row(index);
+                        bt.msg(res);
+                      });
+                    }
+                  }],
+                }
+              ],
+              tootls: [{ // 按钮组
+                  type: 'group',
+                  positon: ['left', 'top'],
+                  list: [{
+                    title: 'Add deny access',
+                    active: true,
+                    event: function (ev) {
+                      site.edit.template_php(web.name);
+                    }
+                  }]
+                }, { // 批量操作
+                type: 'batch',
+                positon: ['left', 'bottom'],
+                config: {
+                  title: " delete",
+                  url: '/site?action=del_file_deny',
+                  param: function (row) {
+                    return {
+                      website: web.name,
+                      deny_name: row.name
+                    }
+                  },
+                  load: true,
+                  callback: function (that) { // 手动执行,data参数包含所有选中的站点
+                    bt.show_confirm('Delete deny access', 'Do you want to delete deny access?', function () {
+                      that.start_batch({}, function (list) {
+                        var html = '';
+                        for (var i = 0; i < list.length; i++) {
+                          var item = list[i];
+                          html += '<tr><td>' + item.name + '</td><td><div style="float:right;"><span style="color:' + (item.request.status ? '#20a53a' : 'red') + '">' + item.request.msg + '</span></div></td></tr>';
                         }
-                    },{
-                        title:lan.site.del,
-                        event:function(row,index,ev,key,that){
-                            site.edit.del_php_deny(web.name,row.name,function(res){
-                                if(res.status) that.$delete_table_row(index);
-                                bt.msg(res);
-                            });
-                        }
-                    }],
-                }],
-                tootls:[{ // 按钮组
-                    type:'group',
-                    positon:['left','top'],
-                    list:[{title:'Add deny access',active:true, event:function(ev){
-                        site.edit.template_php(web.name);
-                    }}]
-                }]
+                        php_dirguard.$batch_success_table({
+                          title: 'Deny access',
+                          th: 'Deny access name',
+                          html: html
+                        });
+                        php_dirguard.$refresh_table_list(true);
+                      });
+                    });
+                  }
+                }
+              }]
             });
             $('#dir_dirguard>.divtable,#php_dirguard>.divtable').css('max-height','340px');
             $('#dir_dirguard').append("<ul class='help-info-text c7'>\
@@ -2282,7 +2505,7 @@ var site = {
             </ul>");
             $('#php_dirguard').append("<ul class='help-info-text c7'>\
                 <li>Suffix: Indicates the suffix that is not allowed to access, if there are more than one, separate with'|'.</li>\
-                <li>Path: Quote rules in this directory.</li>\
+                <li>Path: Quote rules in this directory. e.g: /a/ </li>\
                 <li>For Example, if you want to deny http://test.com/a/index.php</li>\
                 <li>Please fill in [ /a/ ]</li>\
             </ul>");
@@ -2883,11 +3106,17 @@ var site = {
                                                                 var helps = [];
                                                                 if (_val_obj.data !== false) {
                                                                     _form.title = lan.site.set + '【' + _val_obj.title + '】' + lan.site.interface;
+                                                                    if(_val_obj.help == "How to get API Token"){
+                                                                        _val_obj.help = '<a class="btlink"  target="_blank" href="https://forum.aapanel.com/d/3375-3375-set-the-clouldflare-apt-token-for-dns-editing-permissions">'+_val_obj.help+"</a>"
+                                                                    }
                                                                     helps.push(_val_obj.help);
                                                                     var is_hide = true;
                                                                     for (var i = 0; i < _val_obj.data.length; i++) {
                                                                         _form.list.push({ title: _val_obj.data[i].name, name: _val_obj.data[i].key, value: _val_obj.data[i].value })
                                                                         if (!_val_obj.data[i].value) is_hide = false;
+                                                                    }
+                                                                    if(_val_obj.title == 'CloudFlare'){
+                                                                      _form.list.push({html : '<div class="line"><span class="tname">API-Limit</span><div class="info-r c4"><div class="index-item" style="padding-top:7px"><input class="btswitch btswitch-ios" name="API_Limit" id="API_Limit" type="checkbox" '+(_val_obj.API_Limit?"checked":null)+'><label class="btswitch-btn" for="API_Limit"></label></div></div></div>'});
                                                                     }
                                                                     _form.btns.push({
                                                                         title: lan.site.save,
@@ -3490,12 +3719,12 @@ var site = {
                     "</div></div>" +
                     "<div class='line'>" +
                     "<span class='tname' style='width: 100px;'>Path</span>" +
-                    "<div class='info-r ml0' style='margin-left: 100px;'><input name='dir' placeholder='Quote rules in this directory' class='bt-input-text mr10' type='text' style='width:270px' value='" + obj.dir + "'>" +
+                    "<div class='info-r ml0' style='margin-left: 100px;'><input name='dir' placeholder='Quote rules in this directory. e.g: /a/' class='bt-input-text mr10' type='text' style='width:270px' value='" + obj.dir + "'>" +
                     "</div></div></form>" +
                     "<ul class='help-info-text c7 plr20'>" +
                     "<li>Name:The rule name.</li>" +
                     "<li>Suffix: Indicates the suffix that is not allowed to access, if there are more than one, separate with'|'</li>" +
-                    "<li>Path: Quote rules in this directory. </li>" +
+                    "<li>Path: Quote rules in this directory. e.g: /a/ </li>" +
                     "<li>For Example, if you want to deny http://test.com/a/index.php</li>" +
                     "<li>Please fill in [ /a/ ]" +
                     "</ul>",
@@ -4182,7 +4411,7 @@ var site = {
         var item = obj;
         bt.open({
             type: 1,
-            area: ['757px', '683px'],
+            area: ['780px', '683px'],
             title: lan.site.website_change + '[' + item.name + ']  --  ' + lan.site.addtime + '[' + item.addtime + ']',
             closeBtn: 2,
             shift: 0,
@@ -4201,6 +4430,7 @@ var site = {
                 { title: lan.site.site_menu_6, callback: site.edit.set_config },
                 { title: lan.site.site_menu_7, callback: site.edit.set_ssl },
                 { title: lan.site.php_ver, callback: site.edit.set_php_version },
+                { title: 'Composer', callback: site.edit.set_composer },
                 // { title: lan.site.site_menu_9, callback: site.edit.set_tomact },
                 // { title: lan.site.redirect, callback: site.edit.set_301_old },
                 { title: lan.site.redirect_test, callback: site.edit.set_301 },

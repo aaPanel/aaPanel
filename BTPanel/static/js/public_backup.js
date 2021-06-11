@@ -294,50 +294,96 @@ var bt = {
             return null;
         }
     },
-    select_path: function(id) {
-        _this = this;
-        _this.set_cookie("SetName", "");
+    select_path: function(id, type) {
+      _this = this;
+      _this.set_cookie("SetName", "");
+      var loadT = bt.open({
+          type: 1,
+          area: "680px",
+          title: type === 'all' ? 'Select directories or files' : lan.bt.dir,
+          closeBtn: 2,
+          shift: 5,
+          content: "<div class='changepath'><div class='path-top'><button type='button' id='btn_back' class='btn btn-default btn-sm'><span class='glyphicon glyphicon-share-alt'></span> " + lan.public.return+"</button><div class='place' id='PathPlace'>" + lan.bt.path + "：<span></span></div></div><div class='path-con'><div class='path-con-left'><dl><dt id='changecomlist' >" + lan.bt.comp + "</dt></dl></div><div class='path-con-right'><ul class='default' id='computerDefautl'></ul><div class='file-list divtable'><table class='table table-hover' style='border:0 none'><thead><tr class='file-list-head'><th width='5%'></th><th width='38%'>" + lan.bt.filename + "</th><th width='24%'>" + lan.bt.etime + "</th><th width='8%'>" + lan.bt.access + "</th><th width='15%'>" + lan.bt.own + "</th></tr></thead><tbody id='tbody' class='list-list'></tbody></table></div></div></div></div><div class='getfile-btn' style='margin-top:0'><button type='button' class='btn btn-default btn-sm pull-left' onclick='CreateFolder()'>" + lan.bt.adddir + "</button><button type='button' class='btn btn-danger btn-sm mr5' onclick=\"layer.close(getCookie('ChangePath'))\">" + lan.public.close + "</button> <button type='button' id='bt_select' class='btn btn-success btn-sm' >" + lan.bt.path_ok + "</button></div>",
+          success: function() {
+              $('#btn_back').click(function() {
+                      var path = $("#PathPlace").find("span").text();
+                      path = bt.rtrim(bt.format_path(path), '/');
+                      var back_path = bt.get_file_path(path);
+                      _this.get_file_list(back_path, type);
+                  })
+                  //选择
+              $('#bt_select').click(function() {
+                  var path = bt.format_path($("#PathPlace").find("span").text());
+                  if ($('#tbody tr').hasClass('active')) {
+                      path = $('#tbody tr.active .bt_open_dir').attr('path');
+                  }
+                  path = bt.rtrim(path, '/');
+                  $("#" + id).val(path).change();
+                  $("." + id).val(path).change();
+                  loadT.close();
+              })
+          }
+      });
+      _this.set_cookie('ChangePath', loadT.form);
+      var paths = $("#" + id).val();
+      if ($('#defaultPath').length > 0 && $("#" + id).parents('.tab-body').length > 0) {
+          paths = $('#defaultPath').text();
+      }
+      _this.get_file_list(paths, type);
 
-        var loadT = bt.open({
-            type: 1,
-            area: "650px",
-            title: lan.bt.dir,
-            closeBtn: 2,
-            shift: 5,
-            content: "<div class='changepath'><div class='path-top'><button type='button' id='btn_back' class='btn btn-default btn-sm'><span class='glyphicon glyphicon-share-alt'></span> " + lan.public.return+"</button><div class='place' id='PathPlace'>" + lan.bt.path + "：<span></span></div></div><div class='path-con'><div class='path-con-left'><dl><dt id='changecomlist' >" + lan.bt.comp + "</dt></dl></div><div class='path-con-right'><ul class='default' id='computerDefautl'></ul><div class='file-list divtable'><table class='table table-hover' style='border:0 none'><thead><tr class='file-list-head'><th width='40%'>" + lan.bt.filename + "</th><th width='20%'>" + lan.bt.etime + "</th><th width='10%'>" + lan.bt.access + "</th><th width='10%'>" + lan.bt.own + "</th><th width='10%'></th></tr></thead><tbody id='tbody' class='list-list'></tbody></table></div></div></div></div><div class='getfile-btn' style='margin-top:0'><button type='button' class='btn btn-default btn-sm pull-left' onclick='CreateFolder()'>" + lan.bt.adddir + "</button><button type='button' class='btn btn-danger btn-sm mr5' onclick=\"layer.close(getCookie('ChangePath'))\">" + lan.public.close + "</button> <button type='button' id='bt_select' class='btn btn-success btn-sm' >" + lan.bt.path_ok + "</button></div>"
-        });
-        _this.set_cookie('ChangePath', loadT.form);
-        setTimeout(function() {
-            $('#btn_back').click(function() {
-                    var path = $("#PathPlace").find("span").text();
-                    path = bt.rtrim(bt.format_path(path), '/');
-                    var back_path = bt.get_file_path(path);
-
-                    get_file_list(back_path);
-                })
-                //选择
-            $('#bt_select').click(function() {
-                var path = bt.format_path($("#PathPlace").find("span").text());
-                path = bt.rtrim(path, '/');
-                $("#" + id).val(path);
-                $("." + id).val(path);
-                loadT.close();
-            })
-        }, 100)
-        get_file_list($("#" + id).val())
-
-        function get_file_list(path) {
-            bt.send('GetDir', 'files/GetDir', { path: path, disk: true }, function(rdata) {
-                var d = '',
-                    a = '';
-                if (rdata.DISK != undefined) {
-                    for (var f = 0; f < rdata.DISK.length; f++) {
-                        a += "<dd class=\"bt_open_dir\" path =\"" + rdata.DISK[f].path + "\"><span class='glyphicon glyphicon-hdd'></span>&nbsp;" + rdata.DISK[f].path + "</dd>"
-                    }
-                    $("#changecomlist").html(a)
+      function ActiveDisk() {
+        var a = $("#PathPlace").find("span").text().substring(0, 1);
+        switch (a) {
+            case "C":
+                $(".path-con-left dd:nth-of-type(1)").css("background", "#eee").siblings().removeAttr("style");
+                break;
+            case "D":
+                $(".path-con-left dd:nth-of-type(2)").css("background", "#eee").siblings().removeAttr("style");
+                break;
+            case "E":
+                $(".path-con-left dd:nth-of-type(3)").css("background", "#eee").siblings().removeAttr("style");
+                break;
+            case "F":
+                $(".path-con-left dd:nth-of-type(4)").css("background", "#eee").siblings().removeAttr("style");
+                break;
+            case "G":
+                $(".path-con-left dd:nth-of-type(5)").css("background", "#eee").siblings().removeAttr("style");
+                break;
+            case "H":
+                $(".path-con-left dd:nth-of-type(6)").css("background", "#eee").siblings().removeAttr("style");
+                break;
+            default:
+                $(".path-con-left dd").removeAttr("style")
+        }
+      }
+    },
+    get_file_list:function(path, type){
+        var _that = this;
+        bt.send('GetDir', 'files/GetDir', { path: path, disk: true }, function(rdata) {
+            var d = '',a = '',disk = rdata.DISK;
+            if (disk != undefined) {
+                for (var f = 0; f < disk.length; f++) {
+                    a += "<dd class=\"bt_open_dir\" path =\"" + disk[f].path + "\"><span class='glyphicon glyphicon-hdd'></span>&nbsp;" + disk[f].path + "</dd>"
                 }
-                for (var f = 0; f < rdata.DIR.length; f++) {
-                    var g = rdata.DIR[f].split(";");
+                $("#changecomlist").html(a)
+            }
+            for (var f = 0; f < rdata.DIR.length; f++) {
+                var g = rdata.DIR[f].split(";");
+                var e = g[0];
+                if (e.length > 20) {
+                    e = e.substring(0, 20) + "..."
+                }
+                if (isChineseChar(e)) {
+                    if (e.length > 10) {
+                        e = e.substring(0, 10) + "..."
+                    }
+                }
+                d += "<tr><td><input type=\"checkbox\" /></td><td class=\"bt_open_dir\" path =\"" + rdata.PATH + "/" + g[0] + "\" data-type=\"dir\" title='" + g[0] + "'><span class='glyphicon glyphicon-folder-open'></span><span>" + e + "</span></td><td>" + bt.format_data(g[2]) + "</td><td>" + g[3] + "</td><td>" + g[4] + "</td></tr>"
+            }
+
+            if (rdata.FILES != null && rdata.FILES != "") {
+                for (var f = 0; f < rdata.FILES.length; f++) {
+                    var g = rdata.FILES[f].split(";");
                     var e = g[0];
                     if (e.length > 20) {
                         e = e.substring(0, 20) + "..."
@@ -347,66 +393,40 @@ var bt = {
                             e = e.substring(0, 10) + "..."
                         }
                     }
-                    d += "<tr><td class=\"bt_open_dir\" path =\"" + rdata.PATH + "/" + g[0] + "\"  title='" + g[0] + "'><span class='glyphicon glyphicon-folder-open'></span>" + e + "</td><td>" + bt.format_data(g[2]) + "</td><td>" + g[3] + "</td><td>" + g[4] + "</td><td><span class='delfile-btn' onclick=\"NewDelFile('" + rdata.PATH + "/" + g[0] + "')\">X</span></td></tr>"
+                    d += "<tr><td>" + (type === 'all' ? '<input type=\"checkbox\" />' : '') + "<td class=\"bt_open_dir\" title='" + g[0] + "' data-type=\"files\" path =\"" + rdata.PATH + "/" + g[0] + "\"><span class='glyphicon glyphicon-file'></span><span>" + e + "</span></td><td>" + bt.format_data(g[2]) + "</td><td>" + g[3] + "</td><td>" + g[4] + "</td></tr>"
                 }
+            }
 
-                if (rdata.FILES != null && rdata.FILES != "") {
-                    for (var f = 0; f < rdata.FILES.length; f++) {
-                        var g = rdata.FILES[f].split(";");
-                        var e = g[0];
-                        if (e.length > 20) {
-                            e = e.substring(0, 20) + "..."
-                        }
-                        if (isChineseChar(e)) {
-                            if (e.length > 10) {
-                                e = e.substring(0, 10) + "..."
-                            }
-                        }
-                        d += "<tr><td title='" + g[0] + "'><span class='glyphicon glyphicon-file'></span>" + e + "</td><td>" + bt.format_data(g[2]) + "</td><td>" + g[3] + "</td><td>" + g[4] + "</td><td></td></tr>"
+            $(".default").hide();
+            $(".file-list").show();
+            $("#tbody").html(d);
+            if (rdata.PATH.substr(rdata.PATH.length - 1, 1) != "/") {
+                rdata.PATH += "/"
+            }
+            $("#PathPlace").find("span").html(rdata.PATH);
+            $("#tbody tr").click(function() {
+                if ($(this).find('td:eq(0) input').length > 0) {
+                    if ($(this).hasClass('active')) {
+                        $(this).removeClass('active');
+                        $(this).find('td:eq(0) input').prop('checked', false);
+                    } else {
+                        $(this).find('td:eq(0) input').prop('checked', true);
+                        $(this).siblings().find('td:eq(0) input').prop('checked', false);
+                        $(this).addClass('active').siblings().removeClass('active');
                     }
                 }
-
-                $(".default").hide();
-                $(".file-list").show();
-                $("#tbody").html(d);
-                if (rdata.PATH.substr(rdata.PATH.length - 1, 1) != "/") {
-                    rdata.PATH += "/"
-                }
-                $("#PathPlace").find("span").html(rdata.PATH);
-
-                $('.bt_open_dir').click(function() {
-                    get_file_list($(this).attr('path'));
-                })
+            });
+      $('#changecomlist dd').click(function(){
+        _that.get_file_list($(this).attr('path'), type);
+      });
+            $('.bt_open_dir span').click(function() {
+                if ($(this).parent().data('type') == 'dir') _that.get_file_list($(this).parent().attr('path'), type);
             })
-        }
-
-
-        function ActiveDisk() {
-            var a = $("#PathPlace").find("span").text().substring(0, 1);
-            switch (a) {
-                case "C":
-                    $(".path-con-left dd:nth-of-type(1)").css("background", "#eee").siblings().removeAttr("style");
-                    break;
-                case "D":
-                    $(".path-con-left dd:nth-of-type(2)").css("background", "#eee").siblings().removeAttr("style");
-                    break;
-                case "E":
-                    $(".path-con-left dd:nth-of-type(3)").css("background", "#eee").siblings().removeAttr("style");
-                    break;
-                case "F":
-                    $(".path-con-left dd:nth-of-type(4)").css("background", "#eee").siblings().removeAttr("style");
-                    break;
-                case "G":
-                    $(".path-con-left dd:nth-of-type(5)").css("background", "#eee").siblings().removeAttr("style");
-                    break;
-                case "H":
-                    $(".path-con-left dd:nth-of-type(6)").css("background", "#eee").siblings().removeAttr("style");
-                    break;
-                default:
-                    $(".path-con-left dd").removeAttr("style")
-            }
-        }
+        })
     },
+
+
+
     show_confirm: function(title, msg, fun, error) {
         if (error == undefined) {
             error = ""
@@ -498,7 +518,6 @@ var bt = {
 
                 if (callback) callback(rdata);
             }).error(function(e, f) {
-                // console.log(e,f)
                 if (callback) callback('error');
             });
         }
@@ -1415,7 +1434,6 @@ bt.pub = {
 bt.index = {
     rec_install: function() {
         bt.send('GetSoftList', 'ajax/GetSoftList', {}, function(l) {
-
             var c = "";
             var g = "";
             var e = "";
@@ -1424,7 +1442,7 @@ bt.index = {
                     continue
                 }
                 var o = "";
-                var m = "<input id='data_" + l[h].name + "' data-info='" + l[h].name + " " + l[h].versions[0].version + "' type='checkbox' checked>";
+                var m = "<input id='data_" + l[h].name + "' data-info='" + l[h].name + " " + l[h].versions[0].version + "' type='checkbox' "+ (l[h].name == 'DNS-Server' || l[h].name == 'Mail-Server' ? '' : 'checked') +">";
                 for (var b = 0; b < l[h].versions.length; b++) {
                     var d = "";
                     if ((l[h].name == "PHP" && (l[h].versions[b].version == "7.4" || l[h].versions[b].version == "7.4")) || (l[h].name == "MySQL" && l[h].versions[b].version == "5.7") || (l[h].name == "phpMyAdmin" && l[h].versions[b].version == "5.0")) {
@@ -1451,7 +1469,7 @@ bt.index = {
             var k = layer.open({
                 type: 1,
                 title: lan.bt.install_title,
-                area: ["670px", "510px"],
+                area: ["670px", "610px"],
                 closeBtn: 2,
                 shadeClose: false,
                 content: "<div class='rec-install'><div class='important-title'><p><span class='glyphicon glyphicon-alert' style='color: #f39c12; margin-right: 10px;'></span>" + lan.bt.install_ps + " <a href='javascript:jump()' style='color:#20a53a'>" + lan.bt.install_s + "</a> " + lan.bt.install_s1 + "</p></div><div class='rec-box'><h3>" + lan.bt.install_lnmp + "</h3><div class='rec-box-con'><ul class='rec-list'>" + c + "</ul><p class='fangshi1'>" + lan.bt.install_type + "：<label data-title='" + lan.bt.install_rpm_title + "'><span>" + lan.bt.install_rpm + "</span><input type='checkbox' checked></label><label data-title='" + lan.bt.install_src_title + "'><span>" + lan.bt.install_src + "</span><input type='checkbox'></label></p><div class='onekey'>" + lan.bt.install_key + "</div></div></div><div class='rec-box' style='margin-left:16px'><h3>LAMP</h3><div class='rec-box-con'><ul class='rec-list'>" + g + "</ul><p class='fangshi1'>" + lan.bt.install_type + "：<label data-title='" + lan.bt.install_rpm_title + "'><span>" + lan.bt.install_rpm + "</span><input type='checkbox' checked></label><label data-title='" + lan.bt.install_src_title + "'><span>" + lan.bt.install_src + "</span><input type='checkbox'></label></p><div class='onekey'>"+lan.bt.install_key +"</div></div></div></div>",
@@ -1462,11 +1480,15 @@ bt.index = {
                 		'#select_Pure-Ftpd',
                 		'#select_PHP',
                 		'#select_phpMyAdmin',
+                		'#select_DNS-Server',
+                		'#select_Mail-Server',
                 		'#apache_select_Apache',
                 		'#apache_select_MySQL',
                 		'#apache_select_Pure-Ftpd',
                 		'#apache_select_PHP',
-                		'#apache_select_phpMyAdmin'
+                		'#apache_select_phpMyAdmin',
+                		'#apache_select_DNS-Server',
+                		'#apache_select_Mail-Server',
                 	]);
                 	form_group.checkbox();
                 	$('.layui-layer-content').css('overflow','inherit');
@@ -1504,7 +1526,7 @@ bt.index = {
 				var n = $(this).val();
 				j(n, "select_", "data_")
 			});
-	
+
 			function j(p, r, q) {
 				var n = "4.4";
 				switch(p) {
@@ -1530,7 +1552,7 @@ bt.index = {
 				var n = $(this).val();
 				a(n)
 			});
-			
+
 			$("#apache_select_Apache").change(function(){
 				var apacheVersion = $(this).val();
 				if(apacheVersion == '2.2'){
@@ -1539,7 +1561,7 @@ bt.index = {
 					layer.msg(lan.bt.install_apache24);
 				}
 			});
-			
+
 			$("#apache_select_PHP").change(function(){
 				var apacheVersion = $("#apache_select_Apache").val();
 				var phpVersion = $(this).val();
@@ -1559,7 +1581,7 @@ bt.index = {
 					}
 				}
 			});
-	
+
 			function a(n) {
 				memSize = bt.get_cookie("memSize");
 				max = 64;
@@ -1624,23 +1646,25 @@ bt.index = {
 					time: 0,
 					shade: [0.3, "#000"]
 				});
-				
+
 				install_plugin(q);
-				
+
 				function install_plugin(q){
 					if(!q[0]) return;
 					p = q[0].split(" ")[0].toLowerCase();
 					x = q[0].split(" ")[1];
 					if(p=='pure-ftpd') p = 'pureftpd';
 					if(p=='php') p = 'php-'+x;
-					
+					if(p=='dns-server') p = 'dns_manager';
+					if(p=='mail-server') p = 'mail_sys';
+
                     s = "sName=" + p + "&version=" + x + "&type=" + v + "&id=" + (t + 1);
 					bt.send('install_plugin','plugin/install_plugin',s,function(){
 						q.splice(0,1);
 						install_plugin(q);
 					});
 				}
-				
+
 				layer.close(loadT);
 				layer.close(k);
 				setTimeout(function() {
@@ -1653,7 +1677,7 @@ bt.index = {
 					task()
 				}, 1000)
             });
-            
+
             //InstallTips();
             fly("onekey")
         })
@@ -3341,9 +3365,9 @@ bt.soft = {
     },
     php: {
         get_config: function(version, callback) { //获取禁用函数,扩展列表
-            var loading = bt.load();
+            // var loading = bt.load();
             bt.send('GetPHPConfig', 'ajax/GetPHPConfig', { version: version }, function(rdata) {
-                loading.close();
+                // loading.close();
                 if (callback) callback(rdata);
             })
         },
@@ -3549,27 +3573,26 @@ bt.soft = {
             }
             return unit;
         },
-        get_product_discount_by: function(pluginName, callback) {
-            if (pluginName) {
-                bt.send('get_plugin_price', 'auth/get_plugin_price', { pluginName: pluginName }, function(rdata) {
-                    if (callback) callback(rdata)
-                })
-            } else {
-                bt.send('get_product_discount_by', 'auth/get_product_discount_by', {}, function(rdata) {
-                    if (callback) callback(rdata)
-                })
-            }
-
+        get_product_discount_by: function(product_id, callback) {
+          if (product_id) {
+            bt.send('get_plugin_price', 'auth/get_plugin_price', { product_id: product_id }, function(rdata) {
+              if (callback) callback(rdata)
+            })
+          } else {
+            bt.send('get_product_discount_by', 'auth/get_product_discount_by', {}, function(rdata) {
+              if (callback) callback(rdata)
+            })
+          }
         },
         get_plugin_coupon: function(pid, callback) {
-            bt.send('check_pay_status', 'auth/check_pay_status', { id: pid }, function(rdata) {
-                if (callback) callback(rdata);
-            })
+          bt.send('check_pay_status', 'auth/check_pay_status', { id: pid }, function(rdata) {
+            if (callback) callback(rdata);
+          })
         },
         get_re_order_status: function(callback) {
-            bt.send('get_re_order_status', 'auth/get_re_order_status', {}, function(rdata) {
-                if (callback) callback(rdata);
-            })
+          bt.send('get_re_order_status', 'auth/get_re_order_status', {}, function(rdata) {
+            if (callback) callback(rdata);
+          })
         },
         get_voucher: function(pid, callback) {
             if (pid) {
@@ -3605,34 +3628,47 @@ bt.soft = {
                     }
                 })
             }
-            
-           
-        },
-        create_order: function(data, callback) {
-            if (data.pid) {
-                var loadO = bt.load("Getting product information!")
-                bt.soft.get_panel_ssl_status(function(res){
-                    loadO.close()
-                    if(res.status==true){
-                    var _cycle_unit = $('#libPay-content .li-con .active  span').attr("data-unit").indexOf("year")>-1?"year":"month";
-                    data.cycle_unit = _cycle_unit,data.charge_type = 1;
-                    bt.send('get_buy_code', 'auth/get_buy_code', data, function(rdata) {
-                        loadO.close()
-                        //rdata = {"status": true, "msg": "weixin://wxpay/bizpayurl?pr=lR6zKqTzz", "ali_msg": "https://qr.alipay.com/bax08320q6rajjt4tytr20f6", "data": {"wxoid": 4533185, "oid": 102639743, "old_id": 0, "ptype": 1, "attach": "161155796024137", "pid": 100000045, "openid": "", "uid": 233152, "transaction_id": "", "cash_fee": 9900, "out_trade_no": "161155796033618", "msg": "宝塔面板", "status": 0, "addtime": 1611557960, "endtime": 0, "idc_code": "", "is_fapiao": 0, "is_pro": 0, "is_activity": 0, "source": 2, "update_at": "2021-01-25 14:59:20", "update_reason": "", "invite_user": 0, "agent_level": 1, "coupon_type": 0, "create_reason": "", "create_at": "2021-01-25 14:59:20", "product_cycle": 0, "product_cycle_unit": "month", "auth_serial": "", "parent_id": 0, "pay_info": null, "order_title": "", "coupon_id": 0, "station_count": 1, "buyer_ip": "", "pay_way": 1}}
-                        if (callback) callback(rdata);
-                    })
-                }else{
-                     $('#libPay-content').empty()
-                    $('#libPay-pay').empty().append('<div style="font-size: 18px;position: relative;top: 25px;text-align: center;">Please apply for SSL before purchasing!</div>')
-                    return false;
-                }
-            });  
+
+
+    },
+      create_order: function(data, callback) {
+        if (data.pid) {
+          var loadT = bt.load("Getting product information!")
+          bt.soft.get_panel_ssl_status(function (res) {
+            loadT.close()
+            if (res.status) {
+              var _cycle_unit = $('#libPay-content .li-con .active  span').attr("data-unit"),
+              _pay_channel = $('#libPay-mode .pay-cycle-btn span').text().indexOf('Stripe') > -1?'2':'10'
+              requestNmae = data.serial_no?'renew_product_auth':'get_buy_code'
+              data.cycle_unit = _cycle_unit;
+              if(!data.serial_no) {
+                data.charge_type = 1
+              }else{
+                data.pay_channel = _pay_channel
+              }
+              bt.send(requestNmae, 'auth/'+requestNmae, data, function (rdata) {
+                loadT.close()
+                if (callback) callback(rdata);
+              })
             } else {
-                bt.send('create_order', 'auth/create_order', { cycle: data.cycle }, function(rdata) {
-                    if (callback) callback(rdata);
-                })
+              $('#libPay-content').empty()
+              $('.libPay-mask').hide();
+              $('#libPay-pay').empty().append('<div style="font-size: 18px;position: relative;top: 25px;text-align: center;">Please apply for SSL before purchasing!</div>\
+              <div class="lib-price-box text-center"><button type="button" id="turn_on_ssl" style="margin-top:50px" class="btn btn-success ">Turn on SSL</button></div>');
+              $('#turn_on_ssl').on('click', function (e) {
+                setPanelSSL()
+              })
+              return false;
             }
+          });
+        } else {
+          bt.send('create_order', 'auth/create_order', {
+            cycle: data.cycle
+          }, function (rdata) {
+            if (callback) callback(rdata);
+          })
         }
+      }
     },
     updata_commercial_view:function(){
 		layer.closeAll();
@@ -3668,11 +3704,11 @@ bt.soft = {
 			</div>\
 		</div>';
 		layer.open({
-			type: 1 
+			type: 1
 			,closeBtn:2
 			,area: '500px'
 			,title: lan.public_backup.up_pro_use_allplug_free
-			,shade: 0.6 
+			,shade: 0.6
 			,anim: 0
 			,content:html,
 			success:function(layero,index){
@@ -3701,13 +3737,12 @@ bt.soft = {
                     var data = $(this).parent().data(),that = this;
                     bt.soft.set_product_renew_status({id:data.id,state:0},function(rdata){
                         if(!res.status){
-                            console.log(that);
                             $(that).parent().remove();
                         }
                         bt.msg(rdata);
                     });
                 })
-            }  
+            }
 
 	 	});
 	},
@@ -3738,36 +3773,37 @@ bt.soft = {
 	},
 	// 产品支付视图(配置参数)
 	product_pay_view:function(config){
-	    if(!bt.get_cookie('bt_user_info')){
-	        bt.pub.bind_btname(function(){
-                window.location.reload();
-            });
-	        return false;
-	    }
+    if(!bt.get_cookie('bt_user_info')){
+      bt.pub.bind_btname(function(){
+        window.location.reload();
+      });
+      return false;
+    }
+    if(config.renew === -1) config.renew = false
 		if(typeof config == "string") config = JSON.parse(config);
 		config = $.extend({
 			plugin:null,
 			renew:null,
 			active:'',
 			type:'',
-			pro: parseInt(bt.get_cookie('pro_end')),
-			ltd: parseInt(bt.get_cookie('ltd_end'))}
+			pro: parseInt(bt.get_cookie('pro_end')) || -1,
+			ltd: parseInt(bt.get_cookie('ltd_end')) || -1}
 			,config);
 		var title = '',that = this,endTime = null;
 		if(!config.is_alone){
 			if(config.plugin){ // 条件：当前为插件
-				title = (config.renew == -1?'Buy ':'续费') + config.name;
-				ndTime = config.renew != -1?config.renew:null
+				title = (!config.renew?'Buy ':'续费') + config.name;
+				ndTime = !config.renew?config.renew:null
 			}else if(config.pro == -1 && config.ltd == -1){  // 条件：专业版和企业版都没有购买过
 				title = 'Upgrade to Pro, all plugins are free to use';
 			}else if(config.ltd > 0){  // 条件：企业版续费
-				title = '续费' +(config.name == ''?'宝塔专业版':config.name);
+				title = 'Renew ' +(config.name == ''?'宝塔专业版':config.name);
 				endTime = config.ltd;
 			}else if(config.pro > 0 || config.pro == -2){  // 条件：专业版续费
-				title = '续费' + (config.name == ''?'宝塔专业版':config.name);
+				title = 'Renew ' + (config.name == ''?'宝塔专业版':config.name);
 				endTime = config.pro;
 			}else if(config.ltd == -2){
-				title = '续费' + (config.name == ''?'宝塔专业版':config.name);
+				title = 'Renew ' + (config.name == ''?'宝塔专业版':config.name);
 				endTime = config.ltd;
 			}
 		}else{
@@ -3778,8 +3814,7 @@ bt.soft = {
 			title:title,
 			area:['650px','760px'],
 			shadeClose:false,
-			content:'\
-			<div class="libPay plr15" id="pay_product_view">\
+			content:'<div class="libPay plr15" id="pay_product_view">\
 				<div class="libPay-item" style="margin-bottom:20px">\
 					<span class="bindUser">Account: <span></span></span>\
 					<span class="endTime">Expire date：<span></span></span>\
@@ -3800,34 +3835,35 @@ bt.soft = {
 				<div class="libPay-mask"></div>\
 			</div>',
 			success:function(indexs,layers){
-			    var bt_user_info = bt.get_cookie('bt_user_info');
-			    if(!bt_user_info){
-			        bt.pub.get_user_info(function(res){
-			            $('.bindUser span').html(res.data.username +'<a href="javascript:;" class="btlink ml5">Change</a>');
-			        });
-			    }else{
-			        $('.bindUser span').html(JSON.parse(bt_user_info).data.username +'<a href="javascript:;" class="btlink ml5">Change</a>');
-			    }
+        $.getScript('https://js.stripe.com/v3/')
+        var bt_user_info = bt.get_cookie('bt_user_info');
+        if(!bt_user_info){
+          bt.pub.get_user_info(function(res){
+            $('.bindUser span').html(res.data.username +'<a href="javascript:;" class="btlink ml5">Change</a>');
+          });
+        }else{
+          $('.bindUser span').html(JSON.parse(bt_user_info).data.username +'<a href="javascript:;" class="btlink ml5">Change</a>');
+        }
 				endTime != null?$('.endTime span').html(endTime > parseInt(new Date().getTime() /1000)?bt.format_data(endTime):'<i style="color:red;font-style:inherit">Expired</i>'):$('.endTime').hide();
 				$('.bindUser').on('click','a',function(){
 					bt.pub.bind_btname(function(){
 					 	bt.soft.product_pay_view(config);
 					 });
 				});
-                var arry = [];
+        var arry = [];
                 //config.name = '堡塔企业级防篡改';
-				if(config.plugin) arry.push({title:config.name,name:config.name,ps:'Plug-in only',pid:config.pid,active:((config.pro < 0 && config.ltd < 0) || (config.type == 12 && config.ltd<0)?true:false)});
-				// if((((config.pro > 0  || config.pro == -2 || config.ltd < 0) && ((config.ltd > 0 && config.ltd != config.pro) || config.ltd < 0) && config.type != 12) || config.limit == 'pro' || (config.ltd < 0 && config.pro == -1)) && config.type != 12 && ((config.ltd < 0 && config.pro > 0) || (config.ltd < 0 && config.pro < 0))){
-				// 	arry.push({title:'<span class="pro-font-icon"></span>',name:'',pid:'',ps:'推荐个人购买',active:  (((config.type == 8 && !config.plugin) || config.limit == 'pro' || (config.pro > 0 || config.pro == -2)) && config.ltd < 0 && (config.ltd == -2?(config.pro == -2?false:true):true))});
-				// }
-			
+				if(config.plugin) arry.push({title:config.name,name:config.name,ps:'Plug-in only',pid:config.pid,renew:config.renew || false,active:((config.pro < 0 && config.ltd < 0) || (config.type == 12 && config.ltd<0)?true:false)});
+				if((((config.pro > 0  || config.pro == -2 || config.ltd < 0) && ((config.ltd > 0 && config.ltd != config.pro) || config.ltd < 0) && config.type != 12) || config.limit == 'pro' || (config.ltd < 0 && config.pro == -1)) && config.type != 12 && ((config.ltd < 0 && config.pro > 0) || (config.ltd < 0 && config.pro < 0))){
+					arry.push({title:'<span class="pro-font-icon"></span>',name:'',pid:'100000058',ps:'Recommended',renew:config.renew || false,active:  (((config.type == 8 && !config.plugin) || config.limit == 'pro' || (config.pro > 0 || config.pro == -2)) && config.ltd < 0 && (config.ltd == -2?(config.pro == -2?false:true):true))});
+				}
+
 				// if((((config.ltd > 0 || config.ltd == -2 || config.pro == -2) || (config.ltd == -1 && config.pro == -1) || config.limit == 'ltd') && (config.pro < 0 || (config.pro >= 0 && config.ltd >0))) || (config.is_alone && config.pid == 100000032)){
 				// 	arry.push({title:'<span class="ltd-font-icon"></span>',name:'宝塔面板企业版',ps:'推荐企业购买',pid:100000032,recommend:true,active:((config.type == 12 && !config.plugin && config.ltd > 0) || config.limit == 'ltd' || (config.renew == config.ltd && config.ltd > 0)? true:false)});
 				// }
 				// if(config.type == 12 && config.pro >= 0 && config.ltd < 0) $('.pro-tips').html('温馨提示：专业版升级企业版需要手动结算当前专业版授权，<a href="https://www.bt.cn/bbs/thread-50342-1-1.html" target="_blank" class="btlink">《专业版和企业版切换教程》</a>').css('color','red');
 				$('#libPay-type .li-con').append(that.product_pay_swicth('type',arry));
 				if(config.source) bt.set_cookie('pay_source',config.source);
-				that.each(arry,function(index,item){ 
+				that.each(arry,function(index,item){
 					if(item.active){
 						that.product_pay_page_refresh($.extend({condition:1},item));
 					}
@@ -3843,49 +3879,59 @@ bt.soft = {
     order_cache:{},
     // 获取产品周期 ，并进行对象缓存
     get_product_discount_cache:function(config,callback){
-        var that = this;
-        if(typeof this.product_cache[config.pid] != "undefined"){
-            if(callback) callback(this.product_cache[config.pid]);
-        }else{
-            bt.soft.pro.get_product_discount_by(config.name,function(rdata){
-                //rdata = {"36": {"discount": 1, "did": 0, "price": 3564, "name": "正常", "sprice": 3564}, "24": {"discount": 1, "did": 0, "price": 2376, "name": "正常", "sprice": 2376}, "12": {"discount": 1, "did": 0, "price": 1188, "name": "正常", "sprice": 1188}, "6": {"discount": 1, "did": 0, "price": 594, "name": "正常", "sprice": 594}, "3": {"discount": 1, "did": 0, "price": 297, "name": "正常", "sprice": 297}, "1": {"discount": 1, "did": 0, "price": 99, "name": "正常", "sprice": 99}, "pid": "100000045"};
-                if(typeof rdata.status === "boolean"){
-                    if(!rdata.status) return false;
-                }
-                that.product_cache[config.pid] = rdata;
-                setTimeout(function(){ delete that.product_cache[config.pid] },60000);
-                if(callback) callback(rdata);
-            });
-        }
+      var that = this;
+      if(typeof this.product_cache[config.pid] != "undefined"){
+          if(callback) callback(this.product_cache[config.pid]);
+      }else{
+        bt.soft.pro.get_product_discount_by(config.pid,function(rdata){
+          //rdata = {"36": {"discount": 1, "did": 0, "price": 3564, "name": "正常", "sprice": 3564}, "24": {"discount": 1, "did": 0, "price": 2376, "name": "正常", "sprice": 2376}, "12": {"discount": 1, "did": 0, "price": 1188, "name": "正常", "sprice": 1188}, "6": {"discount": 1, "did": 0, "price": 594, "name": "正常", "sprice": 594}, "3": {"discount": 1, "did": 0, "price": 297, "name": "正常", "sprice": 297}, "1": {"discount": 1, "did": 0, "price": 99, "name": "正常", "sprice": 99}, "pid": "100000045"};
+          if(typeof rdata.status === "boolean"){
+              if(!rdata.status) return false;
+          }
+          that.product_cache[config.pid] = rdata;
+          setTimeout(function(){ delete that.product_cache[config.pid] },60000);
+          if(callback) callback(rdata);
+        });
+      }
     },
     // 产品页面刷新
     product_pay_page_refresh: function (config){
         var condition = config.condition, that = this;
         switch (condition){
             case 1:
-                var loadT = bt.load();
-                 bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
-                    bt.soft.pro.get_voucher(config.pid, function (rdata) {
-                        loadT.close();
-                        var _arry = [{ title: '微信支付', condition: 2 },{ title: 'Stripe', condition: 3 }, { title: 'voucher', condition: 4 },{title: "Authorization", condition: 7}];
-                        if(res == null) res = [];
-                        if (rdata == null) rdata = [];
-                        _arry[res.length > 0? '3' :(rdata.length > 0 ? '2' : '1')].active = true;
-                        $('#libPay-mode .li-con').empty().append(
-                            that.product_pay_swicth('payment', {
-                                name: config.name,
-                                pid: config.pid,
-                                data: _arry,
-                                voucher_data: rdata
-                            })
-                        );
-                        config.condition = (res.length > 0?7:(rdata.length > 0?4:2))
-                        if (rdata.length > 0) config.voucher_data = rdata;
-                        if(res.length > 0) config.voucher_data = res;
-                        that.product_pay_page_refresh(config);
-                    });
+              var loadT = bt.load();
+                bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
+                  bt.soft.pro.get_voucher(config.pid, function (rdata) {
+                    loadT.close();
+                    var _arry = [{ title: '微信支付', condition: 2 },{ title: 'Stripe', condition: 3 }, { title: 'voucher', condition: 4 },{title: "Authorization", condition: 7,"_pid":config.pid}];
+                    if(config.renew){
+                      _arry.splice(_arry.length-1,1)
+                      _arry[rdata.length > 0 ? '2' : '1'].active = true
+                      config.condition = rdata.length > 0?4:2
+                    }else{
+                      _arry[res.length > 0? '3' :(rdata.length > 0 ? '2' : '1')].active = true;
+                      config.condition = (res.length > 0?7:(rdata.length > 0?4:2))
+                    }
+                    if(res == null) res = [];
+                    if (rdata == null) rdata = [];
+                    $('#libPay-mode .li-con').empty().append(
+                      that.product_pay_swicth('payment', {
+                        name: config.name,
+                        pid: config.pid,
+                        data: _arry,
+                        voucher_data: rdata
+                      })
+                    );
+                    if(config.renew){
+                      if (rdata.length > 0) config.voucher_data = rdata;
+                    }else{
+                      if (rdata.length > 0) config.voucher_data = rdata;
+                      if(res.length > 0) config.voucher_data = res;
+                    }
+                    that.product_pay_page_refresh(config);
+                  });
                 });
-                break;
+              break;
             case 2:
             case 3:
                 $('#libPay-content .li-tit').text('Choose your plan');
@@ -3897,24 +3943,23 @@ bt.soft = {
                 }
                 var loadT = bt.load();
                 bt.soft.get_product_discount_cache(config,function (rdata){
-                    loadT.close();
-					var _arry = [],index = $('#libPay-content .pay-cycle-btn.active').index() || 3;
-					if(index < 0) index = 3
-                    try {
-                        delete rdata.pid
-                    } catch (error) {
-                        console.log(rdata.pid);
-                    }
-                    that.each(rdata, function (key, item) {
-                        _arry.push($.extend({ cycle: parseInt(key) }, item));
-                    });
-                    _arry[index].active = true;
-                    $('#libPay-content .li-con').empty().append(
-                        that.product_pay_swicth('time',{ name: config.name, pid: config.pid, data: _arry})
-                    );
-                    config.condition = 5;
-                    config = $.extend(config, _arry[index]);
-                    that.product_pay_page_refresh(config);
+                  loadT.close();
+                  var _arry = [],index = 0;
+                  try {
+                      delete rdata.pid
+                  } catch (error) {
+                      console.log(rdata.pid);
+                  }
+                  that.each(rdata, function (key, item) {
+                      _arry.push($.extend({ cycle: parseInt(key) }, item));
+                  });
+                  _arry[index].active = true;
+                  $('#libPay-content .li-con').empty().append(
+                      that.product_pay_swicth('time',{ name: config.name, pid: config.pid, data: _arry})
+                  );
+                  config.condition = 5;
+                  config = $.extend(config, _arry[index]);
+                  that.product_pay_page_refresh(config);
                 });
                 break;
             case 4:
@@ -3959,40 +4004,41 @@ bt.soft = {
                 $('#libPay-pay').find('.cost-price').css('display', (config.sprice > config.price ? 'inline-block' : 'none')).html('$ '+(config.sprice).toFixed(2));
                 $('#libPay-pay').find('#PayQcode').html('<div class="loading">Loading, please wait!</div>');
                 if (qcode) {
-                        $('#libPay-pay').find('#PayQcode').empty().qrcode(qcode);
-                        that.product_pay_monitor({ pid: config.pid, name: config.name });
-                        $('.libPay-mask').hide();
-                        return false;
-                    }
+                    $('#libPay-pay').find('#PayQcode').empty().qrcode(qcode);
+                    that.product_pay_monitor({ pid: config.pid, name: config.name });
+                    $('.libPay-mask').hide();
+                    return false;
+                  }
                 }else{
                     $('#libPay-pay').html('<div class="cloading">Loading, please wait!</div>');
-				}
-				var paream = {pid:config.pid,cycle:config.cycle},pay_source = bt.get_cookie('pay_source');
-				if(pay_source) paream.source = bt.get_cookie('pay_source');
-				if(!paream.pid) delete paream.pid;
+                }
+                var paream = {pid:config.pid,cycle:config.cycle},pay_source = bt.get_cookie('pay_source');
+                if(pay_source) paream.source = bt.get_cookie('pay_source');
+                if(!paream.pid) delete paream.pid;
+                if(bt.get_cookie('serial_no') != null) paream.serial_no = config.serial_no  || bt.get_cookie('serial_no')
                 that.pro.create_order(paream,function (rdata){
-                    if (rdata.status === false){
-                        bt.set_cookie('force', 1);
-                        if (soft) soft.flush_cache();
-                        layer.msg(rdata.msg, { icon: 2 });
-                        return;
-                    }
-                    config.pay = parseInt($('#libPay-mode .pay-cycle-btn.active').data('condition'));
-                    // 二维码显示界面
-                    $('#libPay-pay').empty().append(that.product_pay_swicth((config.pay == 2?'wechat':'alipay'),$.extend({ order_no:rdata.order_no,stripe_publishable_key:rdata.stripe_publishable_key}, config)));
+                  if (rdata.status === false){
+                    bt.set_cookie('force', 1);
+                    if (soft) soft.flush_cache();
+                    layer.msg(rdata.msg, { icon: 2 });
+                    return;
+                  }
+                  config.pay = parseInt($('#libPay-mode .pay-cycle-btn.active').data('condition'));
+                  // 二维码显示界面
+                  $('#libPay-pay').empty().append(that.product_pay_swicth((config.pay == 2?'wechat':'alipay'),$.extend({ order_no:rdata.order_no,stripe_publishable_key:rdata.stripe_publishable_key}, config)));
                 });
-                 $("#libPay-pay").on('click','#checkout-button',function(){
-                    var loadO = bt.load("Getting the session ID,Please waiting!")
-                    var stripe = Stripe($(this).data('keys'));
-                    that.pro.get_check_out_info($(this).data('code'),function(res){
-                        loadO.close()
-                        if(res.id){
-                            stripe.redirectToCheckout({ sessionId: res.id });
-                        }else{
-                            layer.msg("Payment order failed, please contact administrator!", { icon: 2 });
-                        }
-                    })
-                 })
+                $("#libPay-pay").on('click','#checkout-button',function(){
+                  var loadT = bt.load("Getting the session ID,Please waiting!")
+                  var stripe = Stripe($(this).data('keys'));
+                  that.pro.get_check_out_info($(this).data('code'),function(res){
+                    loadT.close()
+                    if(res.id){
+                        stripe.redirectToCheckout({ sessionId: res.id });
+                    }else{
+                        layer.msg("Payment order failed, please contact administrator!", { icon: 2 });
+                    }
+                  })
+                })
                 break;
             case 6:
                 var _html = $('<div class="paymethod-submit text-center"></div>'), _button = $('<button class="btn btn-success btn-sm f16 ' + (config.serial_no ? '' : 'disabled') + '" style="width: 200px; height: 40px;">' + (config.serial_no ? 'Pay' : 'No vouchers') + '</button>');
@@ -4011,24 +4057,34 @@ bt.soft = {
                 $('#libPay-pay').empty().append(_html.append(_button));
                 break;
             case 7:
+                if(config.renew) return false
                 var loadA = bt.load("Obtaining authorization information!")
-                $('#libPay-content .li-tit').text('Authorization information');
-                bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
+                    var _pid = config.pid;
+                     $('#libPay-content .li-tit').text('Authorization information');
+                    bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
                     loadA.close();
                     if(res.status==false){
                          layer.msg(res.msg, { icon: res.status ? 1 : 2 });
                          return false;
                     }
                     _html = $('<ul class="pay-btn-group"></ul>');
-                    
-                    if(res.length==0){
-                         _html.append($('<li class="pay-cycle-btn" id="no_authorization" style="width:180px;cursor: default;" disabled="disabled"><span> No authorization</span></li>'));
-                            
+                    if(res.length == 0){
+                      _html.append($('<li class="pay-cycle-btn" id="no_authorization" style="width:180px;cursor: default;" disabled="disabled"><span> No authorization</span></li>'));
                     }
+                    var  authorization_flag = false;
                     $.each(res, function (index, item) {
-                        _html.append($('<li class="pay-cycle-btn  ' + (index==0 ? 'active' : '') + '" data-id="' + item.serial_no + '" style="width:180px"><span>' + bt.format_data(item.end_time) + '</span></li>'));
+                        if(_pid == item.product_id){
+                            _html.append($('<li class="pay-cycle-btn  ' + (index==0 ? 'active' : '') + '" data-id="' + item.serial_no + '" style="width:180px"><span>' + bt.format_data(item.end_time) + '</span></li>'));
+                            authorization_flag = true;
+                        }
+                        if(authorization_flag == false && index == res.length - 1){
+                             _html.append($('<li class="pay-cycle-btn" id="no_authorization" style="width:180px;cursor: default;" disabled="disabled"><span> No authorization</span></li>'));
+                        }
                     });
                     $('#libPay-content .li-con').empty().append(_html);
+                    $('#libPay-content ul li').click(function(){
+                      $(this).addClass('active').siblings().removeClass('active')
+                    });
                     $('#libPay-pay').empty().append($('<div class="lib-price-box text-center"><button type="button" id="authorization" style="margin-top:30px" class="btn btn-success ">Authorization</button></div>'));
                     //授权
                     $('#authorization').unbind();
@@ -4053,7 +4109,7 @@ bt.soft = {
                     }
                 });
                 break;
-            
+
         }
     },
     // 产品购买，渲染方法
@@ -4109,13 +4165,12 @@ bt.soft = {
                 break;
             case 'wechat':
             case 'alipay':
-                // console.log(config)
                 _html = $('<div class="lib-price-box text-center">' +
                     '<span class="lib-price-name f14"><b>Total</b></span>' +
                     '<span class="price-txt"><b class="sale-price">$' + (config.price).toFixed(2) + '</b></span>' +
                     '<s class="cost-price" style="display: ' + (config.market_price > config.price ? 'inline-block' : 'none') + ';">$ ' + (config.market_price).toFixed(2) + '</s></div>' +
                     '<div class="lib-price-box text-center">' +
-                    '<button type="button" id="checkout-button" style="margin-top:30px" class="btn btn-success " data-code="'+config.order_no+'" data-keys="'+config.stripe_publishable_key+'">Checkout</button>'
+                    '<button type="button" id="checkout-button" style="margin-top:30px" class="btn btn-success " data-code="'+config.order_no+'" data-keys="'+config.stripe_publishable_key+'">Pay Now</button>'
                 );
                 // $(_html).find('#PayQcode').qrcode(config.data);
                 $('.libPay-mask').hide();
@@ -4185,9 +4240,20 @@ bt.soft = {
 		}
 		return that;
     },
+    /**
+     * @description 升级专业版
+    */
     updata_pro:function(){
-		bt.soft.product_pay_view({name:'',pid:'',limit:'pro'});
-	},
+      bt.soft.product_pay_view({name:'Pro',pid:'100000058',limit:'pro'});
+    },
+    /**
+     * @description 续费专业版
+    */
+    renew_pro:function(){
+      var config = {name:'Pro',pid:'100000058',limit:'pro',renew:true}
+      if(!bt.get_cookie('serial_no')) delete config.renew
+      bt.soft.product_pay_view(config);
+    },
     // updata_pro: function() {
     //     bt.pub.get_user_info(function(rdata) {
     //         if (!rdata.status) {
@@ -4281,27 +4347,27 @@ bt.soft = {
             var txt = lan.public_backup.buy;
             if (type) txt = lan.public_backup.renew;
             var payhtml = '<div class="libPay" style="padding:15px 30px 30px 30px">\
-					<div class="libpay-con">\
-						<div class="payment-con">\
-							<div class="pay-weixin">\
-								<div class="libPay-item f14 plr15">\
-									<div class="li-tit c4">' + txt + lan.public_backup.duration + '</div>\
-									<div class="li-con c6" id="PayCycle"><ul class="pay-btn-group">\
-                                        <li class="pay-cycle-btn active" onclick="bt.soft.get_rscode_other(' + pid + ',' + price + ',1,' + type + ')"><span>' + lan.public_backup.month1 + '</span></li>\
-                                        <li class="pay-cycle-btn" onclick="bt.soft.get_rscode_other(' + pid + ',' + price + ',3,' + type + ')"><span>' + lan.public_backup.month3 + '</span></li>\
-                                        <li class="pay-cycle-btn" onclick="bt.soft.get_rscode_other(' + pid + ',' + price + ',6,' + type + ')"><span>' + lan.public_backup.month6 + '</span></li>\
-                                        <li class="pay-cycle-btn" onclick="bt.soft.get_rscode_other(' + pid + ',' + price + ',12,' + type + ')"><span>' + lan.public_backup.year + '</span></li>\
-                                    </ul></div>\
-								</div>\
-								<div class="lib-price-box text-center"><span class="lib-price-name f14"><b>' + lan.public_backup.total + '</b></span><span class="price-txt"><b class="sale-price"></b>' + lan.public_backup.rmb + '</span><s class="cost-price"></s></div>\
-								<div class="paymethod">\
-									<div class="pay-wx"></div>\
-									<div class="pay-wx-info f16 text-center"><span class="wx-pay-ico mr5"></span>' + lan.public_backup.pay_by_wechatqrcore + '</div>\
-								</div>\
-							</div>\
-						</div>\
-					</div>\
-				</div>';
+              <div class="libpay-con">\
+                <div class="payment-con">\
+                  <div class="pay-weixin">\
+                    <div class="libPay-item f14 plr15">\
+                      <div class="li-tit c4">' + txt + lan.public_backup.duration + '</div>\
+                      <div class="li-con c6" id="PayCycle"><ul class="pay-btn-group">\
+                          <li class="pay-cycle-btn active" onclick="bt.soft.get_rscode_other(' + pid + ',' + price + ',1,' + type + ')"><span>' + lan.public_backup.month1 + '</span></li>\
+                          <li class="pay-cycle-btn" onclick="bt.soft.get_rscode_other(' + pid + ',' + price + ',3,' + type + ')"><span>' + lan.public_backup.month3 + '</span></li>\
+                          <li class="pay-cycle-btn" onclick="bt.soft.get_rscode_other(' + pid + ',' + price + ',6,' + type + ')"><span>' + lan.public_backup.month6 + '</span></li>\
+                          <li class="pay-cycle-btn" onclick="bt.soft.get_rscode_other(' + pid + ',' + price + ',12,' + type + ')"><span>' + lan.public_backup.year + '</span></li>\
+                      </ul></div>\
+                    </div>\
+                    <div class="lib-price-box text-center"><span class="lib-price-name f14"><b>' + lan.public_backup.total + '</b></span><span class="price-txt"><b class="sale-price"></b>' + lan.public_backup.rmb + '</span><s class="cost-price"></s></div>\
+                    <div class="paymethod">\
+                      <div class="pay-wx"></div>\
+                      <div class="pay-wx-info f16 text-center"><span class="wx-pay-ico mr5"></span>' + lan.public_backup.pay_by_wechatqrcore + '</div>\
+                    </div>\
+                  </div>\
+                </div>\
+              </div>\
+            </div>';
 
             layer.open({
                 type: 1,
@@ -4335,7 +4401,6 @@ bt.soft = {
                 soft.flush_cache();
                 return;
             }
-            console.log(price, cycle)
             $(".sale-price").text((price * cycle).toFixed(2))
             $(".pay-wx").html('');
             $(".pay-wx").qrcode(rdata.msg.code);
@@ -4386,7 +4451,7 @@ bt.soft = {
                     code = _active.attr("data-code"),
                     coupon_id = _active.attr("data-coupon-id"),
                     charge_type = _active.attr("data-charge-type");
-                    
+
                     var  _span = $("#couponlist .pay-btn-group .active span"),
                     cycle = parseInt(_span.html()),cycle_unit = _span.html.indexOf("Month")?"month":"year";
                     if (code == undefined) {
@@ -4542,11 +4607,15 @@ bt.soft = {
         }
 
         bt.send('get_soft_list', 'plugin/get_soft_list', { p: p, type: type, tojs: 'soft.get_list', force: force, query: search }, function(rdata) {
-            if (loading) loading.close();
-            bt.set_cookie('force', 0);
-            bt.set_cookie('ltd_end',rdata.ltd);
-			bt.set_cookie('pro_end',rdata.pro);
-            if (callback) callback(rdata);
+          if (loading) loading.close();
+          bt.set_cookie('force', 0);
+          if(rdata.pro_authorization_sn != null){
+            bt.set_cookie('serial_no',rdata.pro_authorization_sn);
+          }else{
+            bt.clear_cookie('serial_no')
+          }
+          bt.set_cookie('pro_end',rdata.pro);
+          if (callback) callback(rdata);
         })
     },
     to_index: function(name, callback) {
@@ -4891,6 +4960,8 @@ bt.soft = {
             }
         })
     },
+    is_loop_speed:true,
+	is_install:false,
     //显示进度
     show_speed: function() {
         bt.send('get_lines', 'ajax/get_lines', {
@@ -4964,7 +5035,7 @@ bt.soft = {
 			}
 		});
 	},
-    // install_soft: function(item, version, type,that) { //安装单版本	
+    // install_soft: function(item, version, type,that) { //安装单版本
     //     if (type == undefined) type = 0;
     //     item.title = bt.replace_all(item.title, '-' + version, '');
     //     var msg = item.type != 5 ? lan.soft.lib_insatll_confirm.replace('{1}', item.title) : lan.get('install_confirm', [item.title, version]);
@@ -5004,8 +5075,12 @@ bt.soft = {
 						bt.pub.get_task_count(function(rdata){
 							if(rdata > 0 && item.type === 5) messagebox();
 						});
-						if(typeof soft != "undefined") soft.get_list();
-						bt.msg(rdata);
+						if(!rdata.status){
+					        layer.msg(rdata.msg, {icon: rdata.status ? 1 : 2});
+					    }
+						setTimeout(function(){
+						    if(typeof soft != "undefined") soft.get_list();
+						},2000)
 					})
 				})
 		})
@@ -5071,12 +5146,12 @@ bt.soft = {
 						_this.install_other(rdata)
 						return;
 					}
-					layer.close(bt.soft.loadT);	
+					layer.close(bt.soft.loadT);
 					bt.pub.get_task_count(function(rdata){
 						if(rdata > 0 && item.type === 5) messagebox();
 					});
 					if(typeof soft != "undefined") soft.get_list();
-					bt.msg(rdata);	
+					bt.msg(rdata);
 				})
 			})
         }, msg);
@@ -5175,8 +5250,8 @@ bt.soft = {
             }
             rcode = rtmp[1].replace('</script>','');
 			setTimeout(function(){
-				if(!!(window.attachEvent && !window.opera)){ 
-                    execScript(rcode); 
+				if(!!(window.attachEvent && !window.opera)){
+                    execScript(rcode);
 				}else{
                     window.eval(rcode);
 				}
@@ -5938,7 +6013,7 @@ bt.site = {
                     }
                 });
                 $('.webname' + bs).focus(function(){
-                    var _this = $(this), 
+                    var _this = $(this),
                     tips = 'www will not add by default, if you need to access,please add it like:\
                     <br>hostname.com\
                     <br>www.hostname.com';
@@ -6612,7 +6687,6 @@ bt.data = {
                                 rdata.redirect = $(domains[0]).text();
                                 rdata.tourl = $(domains[1]).text();
                             }else{
-                                console.log(rdata.tourl);
                                 delete rdata.redirect;
                                 delete rdata.tourl;
                             }
@@ -6768,7 +6842,6 @@ var form_group = {
 				});
 				$(this).parents('.rec-box').siblings().find('.bt_select_ul.active').each(function(){
 					is_show_slect_parent(this);
-					console.log(this);
 				});
 			}
 			is_show_select_ul($(this).next().hasClass('active'));
@@ -6823,4 +6896,90 @@ var form_group = {
 			}
 		});
 	}
+}
+//设置面板SSL
+function setPanelSSL(){
+	var loadT = layer.msg(lan.config.ssl_msg,{icon:16,time:0,shade: [0.3, '#000']});
+    bt.send('get_cert_source', 'config/get_cert_source', {}, function (rdata) {
+        layer.close(loadT);
+        var sdata = rdata;
+        var _data = {
+            title: 'Panel SSL',
+            area: '630px',
+			class:'ssl_cert_from',
+            list: [
+              {
+              		html:'<div><i class="layui-layer-ico layui-layer-ico3"></i><h3>'+lan.config.ssl_open_ps+'</h3><ul><li style="color:red;">'+lan.config.ssl_open_ps_1+'</li><li>'+lan.config.ssl_open_ps_2+'</li><li>'+lan.config.ssl_open_ps_3+'</li></ul></div>'
+              },
+                {
+                    title: 'Cert Type',
+                    name: 'cert_type',
+                    type: 'select',
+                    width: '200px',
+                    value: sdata.cert_type,
+                    items: [{value: '1', title: 'Self-signed certificate'}, {value: '2', title: 'Let\'s Encrypt'}],
+                    callback: function (obj) {
+                        var subid = obj.attr('name') + '_subid';
+                        $('#' + subid).remove();
+                        if (obj.val() == '2') {
+                            var _tr = bt.render_form_line({
+                                title: 'Admin E-Mail',
+                                name: 'email',
+								width: '320px',
+                                placeholder: 'Admin E-Mail',
+                                value: sdata.email
+                            });
+                            obj.parents('div.line').append('<div class="line" id=' + subid + '>' + _tr.html + '</div>');
+                        }
+                    }
+                },
+              {
+              	html:'<div class="details"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: 3px 5px 0px;" for="checkSSL">'+lan.config.ssl_open_ps_4+'</label><a target="_blank" class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate">'+lan.config.ssl_open_ps_5+'</a></p></div>'
+              }
+
+            ],
+            btns: [
+                {
+                    title: 'Close', name: 'close', callback: function (rdata, load, callback) {
+                        load.close();
+                        $("#panelSSL").prop("checked", false);
+                    }
+                },
+                {
+                    title: 'Submit', name: 'submit', css: 'btn-success', callback: function (rdata, load, callback) {
+                      	if(!$('#checkSSL').is(':checked')){
+                        	bt.msg({status:false,msg:'Please confirm the risk first!'})
+                          	return;
+                        }
+                    	var confirm = layer.confirm('Whether to open the panel SSL certificate', {title:'Tips',btn: ['Confirm','Cancel'],icon:0,closeBtn:2}, function() {
+                        var loading = bt.load();
+                        bt.send('SetPanelSSL', 'config/SetPanelSSL', rdata, function (rdata) {
+                            loading.close()
+                            if (rdata.status) {
+                            	layer.msg(rdata.msg,{icon:1});
+                                $.get('/system?action=ReWeb', function () {
+                                });
+                                setTimeout(function () {
+                                    window.location.href = ((window.location.protocol.indexOf('https') != -1) ? 'http://' : 'https://') + window.location.host + window.location.pathname;
+                                }, 1500);
+                            }
+                            else {
+                                layer.msg(rdata.msg,{icon:2});
+                            }
+                        })
+						});
+                    }
+
+                }
+            ],
+            end: function () {
+               
+            }
+        };
+
+        var _bs = bt.render_form(_data);
+        // setTimeout(function () {
+        //     $('.cert_type' + _bs).trigger('change')
+        // }, 200);
+    });
 }

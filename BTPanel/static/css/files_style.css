@@ -2848,3 +2848,124 @@
     border-color: #38983b;
     color: #fff;
 }
+.bt-property-setting .tab-nav{
+  font-size: 0px;
+}
+.bt-property-setting .tab-nav span{
+  font-size: 12px;
+}
+.bt-property-setting .tab-con{
+  padding: 5px 0 0;
+}
+.bt-property-setting .property-box{
+  display: none;
+}
+
+.bt-property-setting .property-box.active{
+  display: inline-block;
+  width: 100%;
+}
+
+.bt-property-setting .property-box .attr-box{
+  margin: 5px 0;
+  width: 100%;
+}
+
+
+.bt-property-setting .property-box .attr-name{
+  width: 90px;
+  padding-left: 10px;
+  float: left;
+}
+
+.bt-property-setting .property-box .attr-content{
+  margin-left: 80px;
+}
+.bt-property-setting .property-box .attr-content input{
+  height: 32px;
+  line-height: 32px;
+  border:1px solid#ccc;
+  outline: none;
+  padding-left: 5px;
+  width: 350px;
+  border-radius: 2px;
+}
+.bt-property-setting .property-box .attr-content input:focus{
+  border-color: #20a53a;
+}
+
+.bt-property-setting .property-box .file_icon{
+  height: 50px;
+  width: 50px;
+  position: relative;
+  display: inline-block;
+  left:-10px;
+  top: 2px;
+}
+
+.bt-property-setting .property-box .dividing{
+  width: 100%;
+  height: 1px;
+  margin: 10px 0;
+  background-color: #ececec;
+}
+
+.bt-property-setting .property-box .attr-box .attr-name,
+.bt-property-setting .property-box .attr-box .attr-content{
+  height: 25px;
+  line-height: 25px;
+}
+.bt-property-setting .property-box .attr-box .attr-content span{
+  width: 450px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+.details_box_view,.history_box_view{
+  border:1px solid #ececec;
+}
+.details_box_view,
+.history_box_view,
+.property-box{
+  height:388px !important;
+  overflow:auto;
+}
+.details_box_view table,
+.history_box_view table{
+  width: 100%;
+}
+/* .details_box_view table td,
+.history_box_view table th{
+
+  padding: 5 10px;
+} */
+.details_box_view thead tr,
+.history_box_view thead tr{
+  background-color: #f6f6f6;
+  color: #555;
+  font-weight: 400;
+}
+.details_box_view tbody tr:hover,
+.history_box_view tbody tr:hover{
+  background: #f0f9f7;
+  cursor: pointer;
+}
+.details_box_view td div,
+.details_box_view th div,
+.history_box_view td div,
+.history_box_view th div{
+  padding: 5px;
+  height: 30px;
+  line-height: 20px;
+}
+.details_box_view thead,
+.history_box_view thead{
+  border-bottom: 1px solid #f6f6f6;
+}
+.ellipsis{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}

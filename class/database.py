@@ -34,9 +34,11 @@ class database(datatool.datatools):
             if self.CheckRecycleBin(data_name): return public.returnMsg(False,'DATABASE_DEL_RECYCLE_BIN',(data_name,))
             if len(data_name) > 64: return public.returnMsg(False, 'DATABASE_NAME_LEN')
             reg = r"^[\w\.-]+$"
-            if not re.match(reg, data_name): return public.returnMsg(False,'DATABASE_NAME_ERR_T')
-            if not hasattr(get,'db_user'): get.db_user = data_name
             username = get.db_user.strip()
+            if not re.match(reg, data_name): return public.returnMsg(False,'DATABASE_NAME_ERR_T')
+            if not re.match(reg, username): return public.returnMsg(False,'DATABASE_NAME_ERR')
+            if not hasattr(get,'db_user'): get.db_user = data_name
+
             checks = ['root','mysql','test','sys','panel_logs']
             if username in checks or len(username) < 1: return public.returnMsg(False,'DATABASE_USER_NAME_ERR')
             if data_name in checks or len(data_name) < 1: return public.returnMsg(False,'DATABASE_NAME_ERR')
@@ -299,6 +301,8 @@ SetLink
             find = public.M('databases').where("id=?",(id,)).field('id,pid,name,username,password,accept,ps,addtime').find()
             accept = find['accept']
             username = find['username']
+            if "'" in username:
+                username=re.sub("\'","\\'",username)
             #删除MYSQL
             result = panelMysql.panelMysql().execute("drop database `" + name + "`")
             isError=self.IsSqlError(result)
@@ -481,7 +485,7 @@ SetLink
         try:
             password = public.M('config').where('id=?',(1,)).getField('mysql_root')
             os.environ["MYSQL_PWD"] = password
-            public.ExecShell("/www/server/mysql/bin/mysqldump -R -E --default-character-set="+ public.get_database_character(name) +" --force --opt \"" + name + "\"  -u root | gzip > " + backupName)
+            public.ExecShell("/www/server/mysql/bin/mysqldump -R -E --triggers=false --default-character-set="+ public.get_database_character(name) +" --force --opt \"" + name + "\"  -u root | gzip > " + backupName)
         except Exception as e:
             raise
         finally:
@@ -748,6 +752,8 @@ SetLink
     #修改数据库目录
     def SetDataDir(self,get):
         if get.datadir[-1] == '/': get.datadir = get.datadir[0:-1]
+        if len(get.datadir) > 32: return public.returnMsg(False,'The data directory length cannot exceed 32 bits')
+        if not re.search(r"^[0-9A-Za-z_/\\]$+",get.datadir): return public.returnMsg(False,'Special symbols cannot be included in the database path')
         if not os.path.exists(get.datadir): public.ExecShell('mkdir -p ' + get.datadir)
         mysqlInfo = self.GetMySQLInfo(get)
         if mysqlInfo['datadir'] == get.datadir: return public.returnMsg(False,'DATABASE_MOVE_RE')

@@ -29,7 +29,7 @@
 		"key": "SAVED_CF_KEY",
 		"name": "API Key"
 	}],
-	"help": "CloudFlare Get in the background Global API Key",
+	"help": "How to get API Token",
 	"name": "CloudFlareDns"
 },
   {

@@ -21,9 +21,9 @@ class config:
     _bk_key_file = _setup_path + "/data/bk_two_step_auth.txt"
     _username_file = _setup_path + "/data/username.txt"
     _core_fle_path = _setup_path + '/data/qrcode'
-    __mail_config = '/www/server/panel/data/stmp_mail.json'
-    __mail_list_data = '/www/server/panel/data/mail_list.json'
-    __dingding_config = '/www/server/panel/data/dingding.json'
+    __mail_config = _setup_path+'/data/stmp_mail.json'
+    __mail_list_data = _setup_path+'/data/mail_list.json'
+    __dingding_config = _setup_path+'/data/dingding.json'
     __mail_list = []
     __weixin_user = []
 
@@ -112,7 +112,7 @@ class config:
             return public.returnMsg(False, 'SEND_FAILED')
 
     # 查看能使用的告警通道
-    def get_settings(self, get):
+    def get_settings(self, get=None):
         qq_mail_info = json.loads(public.ReadFile(self.__mail_config))
         if len(qq_mail_info) == 0:
             user_mail = False
@@ -127,6 +127,7 @@ class config:
         ret['user_mail'] = {"user_name": user_mail, "mail_list": self.__mail_list,"info":self.get_user_mail(get)}
         ret['dingding'] = {"dingding": dingding,"info":self.get_dingding(get)}
         return ret
+
     # 设置钉钉报警
     def set_dingding(self, get):
         if not (hasattr(get, 'url') or hasattr(get, 'atall')):
@@ -161,12 +162,12 @@ class config:
 
 
     def getPanelState(self,get):
-        return os.path.exists('/www/server/panel/data/close.pl')
+        return os.path.exists(self._setup_path+'/data/close.pl')
 
     def reload_session(self):
         userInfo = public.M('users').where("id=?",(1,)).field('username,password').find()
         token = public.Md5(userInfo['username'] + '/' + userInfo['password'])
-        public.writeFile('/www/server/panel/data/login_token.pl',token)
+        public.writeFile(self._setup_path+'/data/login_token.pl',token)
 
         sess_path = 'data/sess_files'
         if not os.path.exists(sess_path):
@@ -705,7 +706,7 @@ class config:
             sps = sp.set_lets(get)
             return sps
         else:
-            sslConf = '/www/server/panel/data/ssl.pl'
+            sslConf = self._setup_path+'/data/ssl.pl'
             if os.path.exists(sslConf):
                 public.ExecShell('rm -f ' + sslConf)
                 return public.returnMsg(True,'PANEL_SSL_CLOSE')
@@ -1676,9 +1677,151 @@ class config:
         import file_execute_deny
         p = file_execute_deny.FileExecuteDeny()
         return p.del_file_deny(args)
+    #查看告警
+    def get_login_send(self,get):
+        result={}
+        import time
+        time.sleep(0.5)
+        if os.path.exists('/www/server/panel/data/login_send_mail.pl'):
+            result['mail']=True
+        else:
+            result['mail']=False
+        if os.path.exists('/www/server/panel/data/login_send_dingding.pl'):
+            result['dingding']=True
+        else:
+            result['dingding']=False
+        if result['mail'] or result['dingding']:
+            return public.returnMsg(True, result)
+        return public.returnMsg(False, result)
+
+    #设置告警
+    def set_login_send(self,get):
+        type=get.type.strip()
+        if type=='mail':
+            if not os.path.exists("/www/server/panel/data/login_send_mail.pl"):
+                os.mknod("/www/server/panel/data/login_send_mail.pl")
+            if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
+                os.remove("/www/server/panel/data/login_send_dingding.pl")
+            return public.returnMsg(True, 'Setup Successfully')
+        elif type=='dingding':
+            if not os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
+                os.mknod("/www/server/panel/data/login_send_dingding.pl")
+            if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
+                os.remove("/www/server/panel/data/login_send_mail.pl")
+            return public.returnMsg(True, 'Setup Successfully')
+        else:
+            return public.returnMsg(False,'The delivery type is not supported')
+
+    #取消告警
+    def clear_login_send(self,get):
+        type = get.type.strip()
+        if type == 'mail':
+            if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
+                os.remove("/www/server/panel/data/login_send_mail.pl")
+            return public.returnMsg(True, '取消成功')
+        elif type == 'dingding':
+            if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
+                os.remove("/www/server/panel/data/login_send_dingding.pl")
+            return public.returnMsg(True, '取消成功')
+        else:
+            return public.returnMsg(False, '不支持该发送类型')
+
+    #告警日志
+    def get_login_log(self,get):
+        public.create_logs()
+        import page
+        page = page.Page()
+        count = public.M('logs2').where('type=?', (u'aapanel login reminder',)).field('log,addtime').count()
+        limit = 7
+        info = {}
+        info['count'] = count
+        info['row'] = limit
+        info['p'] = 1
+        if hasattr(get, 'p'):
+            info['p'] = int(get['p'])
+        info['uri'] = get
+        info['return_js'] = ''
+        if hasattr(get, 'tojs'):
+            info['return_js'] = get.tojs
+        data = {}
+        # 获取分页数据
+        data['page'] = page.GetPage(info, '1,2,3,4,5,8')
+        data['data'] = public.M('logs2').where('type=?', (u'aapanel login reminder',)).field('log,addtime').order('id desc').limit(
+            str(page.SHIFT) + ',' + str(page.ROW)).field('log,addtime').select()
+        return data
+
+    #白名单设置
+    def login_ipwhite(self,get):
+        type=get.type
+        if type=='get':
+            return self.get_login_ipwhite(get)
+        if type=='add':
+            return self.add_login_ipwhite(get)
+        if type=='del':
+            return self.del_login_ipwhite(get)
+        if type=='clear':
+            return self.clear_login_ipwhite(get)
+
+    #查看IP白名单
+    def get_login_ipwhite(self,get):
+        try:
+            path='/www/server/panel/data/send_login_white.json'
+            ip_white=json.loads(public.ReadFile('/www/server/panel/data/send_login_white.json'))
+            if not  ip_white:return public.returnMsg(True, [])
+            return public.returnMsg(True, ip_white)
+        except:
+            public.WriteFile(path, '[]')
+            return public.returnMsg(True, [])
+
+    def add_login_ipwhite(self,get):
+        ip=get.ip.strip()
+        try:
+            path = '/www/server/panel/data/send_login_white.json'
+            ip_white = json.loads(public.ReadFile('/www/server/panel/data/send_login_white.json'))
+            if not ip in ip_white:
+                ip_white.append(ip)
+                public.WriteFile(path, json.dumps(ip_white))
+            return public.returnMsg(True, "Add successfully")
+        except:
+            public.WriteFile(path, json.dumps([ip]))
+            return public.returnMsg(True, "Add successfully")
+
+    def del_login_ipwhite(self,get):
+        ip = get.ip.strip()
+        try:
+            path = '/www/server/panel/data/send_login_white.json'
+            ip_white = json.loads(public.ReadFile('/www/server/panel/data/send_login_white.json'))
+            if  ip in ip_white:
+                ip_white.remove(ip)
+                public.WriteFile(path, json.dumps(ip_white))
+            return public.returnMsg(True, "Delete successfully")
+        except:
+            public.WriteFile(path, json.dumps([]))
+            return public.returnMsg(True, "Delete successfully")
+
+    def clear_login_ipwhite(self,get):
+        path = '/www/server/panel/data/send_login_white.json'
+        public.WriteFile(path, json.dumps([]))
+        return public.returnMsg(True, "Clear successfully")
+
 
     def get_panel_ssl_status(self,get):
         import os
-        if os.path.exists('/www/server/panel/data/ssl.pl'):
+        if os.path.exists(self._setup_path+'/data/ssl.pl'):
+            return public.returnMsg(True,'success')
+        return public.returnMsg(False,'false')
+
+    def set_backup_notification(self,get):
+        import os
+        f = self._setup_path+'/data/send_back_error.pl'
+        if os.path.exists(f):
+            public.ExecShell('rm -f {}'.format(f))
+            return public.returnMsg(True,'Disable successfully')
+        public.writeFile(f,'1')
+        return public.returnMsg(True,'Enable Successfully')
+
+    def get_backup_notification(self,get):
+        import os
+        if os.path.exists(self._setup_path+'/data/send_back_error.pl'):
             return public.returnMsg(True,'success')
         return public.returnMsg(False,'false')

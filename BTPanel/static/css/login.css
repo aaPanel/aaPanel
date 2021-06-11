@@ -590,9 +590,9 @@ textarea:active,
 }
 
 .list_scan {
-    margin: 0 auto;
-    margin-top: 15px;
-    width: 150px
+  margin: 0 auto;
+  margin-top: 15px;
+  width: 155px
 }
 
 .list_scan>img {
@@ -645,7 +645,7 @@ textarea:active,
     top: 10px;
     right: 65px;
     padding: 5px 10px;
-    width: 115px;
+    width: 200px;
     border-radius: 4px;
     background: #dff0d8;
     color: #20a53a;

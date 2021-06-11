@@ -414,6 +414,11 @@ class acme_v2:
 
     # 设置验证信息
     def set_auth_info(self, identifier_auth):
+
+        #从云端验证
+        if not self.cloud_check_domain(identifier_auth['domain']):
+            self.err = "Cloud verification failed!"
+
         # 是否手动验证DNS
         if identifier_auth['auth_to'] == 'dns':
             return None
@@ -426,6 +431,14 @@ class acme_v2:
             # dnsapi验证
             self.create_dns_record(
                 identifier_auth['auth_to'], identifier_auth['domain'], identifier_auth['auth_value'])
+
+    #从云端验证域名是否可访问
+    def cloud_check_domain(self,domain):
+        try:
+            result = requests.post('https://www.aapanel.com/api/panel/checkDomain',{"domain":domain,"ssl":1}).json()
+            return result['status']
+        except: return False
+
 
     #清理验证文件
     def claer_auth_file(self,index):
@@ -881,9 +894,10 @@ fullchain.pem       Paste into certificate input box
         return p12.export()
 
     # 拆分根证书
-    def split_ca_data(self, cert):
-        datas = cert.split('-----END CERTIFICATE-----')
-        return {"cert": datas[0] + "-----END CERTIFICATE-----\n", "root": datas[1] + '-----END CERTIFICATE-----\n'}
+    def split_ca_data(self,cert):
+        sp_key = '-----END CERTIFICATE-----\n'
+        datas = cert.split(sp_key)
+        return {"cert": datas[0] + sp_key, "root": sp_key.join(datas[1:])}
 
     # 构造可选名称
     def get_alt_names(self, index):
@@ -1237,6 +1251,8 @@ fullchain.pem       Paste into certificate input box
     def apply_cert(self, domains, auth_type='dns', auth_to='Dns_com|None|None', **args):
         write_log("", "wb+")
         try:
+            if 'auto_wildcard' in args and args['auto_wildcard']:
+                self._auto_wildcard = True
             self.get_apis()
             index = None
             if 'index' in args:
@@ -1382,7 +1398,42 @@ fullchain.pem       Paste into certificate input box
                 return to_path
         return False
 
+    def get_site_id(self,domains):
+        site_ids=[]
+        for domain in domains:
+            if '*' in domain:
+                continue
+            site_id = public.M('domain').where('name=?', (domain,)).field('pid').select()
+            if not site_id:
+                continue
+            site_ids.append(site_id[0]['pid'])
+        if not site_ids:
+            return False
+        site_ids = list(set(site_ids))
+        if not len(site_ids) == 1:
+            return False
+        return site_ids[0]
 
+    def get_site_runpath(self,domains):
+        site_id = self.get_site_id(domains)
+        if not site_id:
+            return False
+        import panelSite
+        from collections import namedtuple
+        ps = panelSite.panelSite()
+        # 构造一个类
+        get = namedtuple("get", ["id"])
+        get.id=site_id
+        site_path = public.M('sites').where('id=?', (get.id,)).field('path').select()[0]['path']
+        runpath = ps.GetRunPath(get)
+        return site_path + runpath
+
+    def find_site_stopped(self,domains):
+        site_id = self.get_site_id(domains)
+        if not site_id:
+            return False
+        site_status = public.M('sites').where('id=?', (site_id,)).field('status').select()[0]['status']
+        return site_status
 
     # 续签证书
     def renew_cert(self, index):
@@ -1406,6 +1457,8 @@ fullchain.pem       Paste into certificate input box
                         self._config['orders'][i]['cert_timeout'] = int(time.time())
                     if self._config['orders'][i]['cert_timeout'] > s_time or self._config['orders'][i]['auth_to'] == 'dns':
                         continue
+                    if self.find_site_stopped(self._config['orders'][i]['domains']) == '0':
+                        continue
 
                     #已删除的网站直接跳过续签
                     if self._config['orders'][i]['auth_to'].find('|') == -1 and self._config['orders'][i]['auth_to'].find('/') != -1:
@@ -1418,15 +1471,19 @@ fullchain.pem       Paste into certificate input box
             if not order_index:
                 write_log(public.getMsg('ACME_NO_NEED_RENEW'))
                 return
-            write_log(public.getMsg("ACME_NEED_RENEW",(len(order_index),)))
+            write_log(public.getMsg("ACME_NEED_RENEW",(str(len(order_index)),)))
             n = 0
             self.get_apis()
             cert = None
             for index in order_index:
                 n += 1
-                write_log(public.getMsg("ACME_RENEWING",(str(n),self._config['orders'][index]['domains'])))
+                write_log(public.getMsg("ACME_RENEWING",(str(n),str(self._config['orders'][index]['domains']))))
                 write_log(public.getMsg('ACME_CREAT_ORDER'))
                 try:
+                    run_path = self.get_site_runpath(self._config['orders'][index]['domains'])
+                    if run_path:
+                        if self._config['orders'][index]['auth_to'] != run_path:
+                            self._config['orders'][index]['auth_to'] = run_path
                     index = self.create_order(
                         self._config['orders'][index]['domains'],
                         self._config['orders'][index]['auth_type'],

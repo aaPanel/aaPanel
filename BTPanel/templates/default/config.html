@@ -111,12 +111,19 @@
 						<span class="set-info c7" style="margin-left: 25px;">{{data['lan']['BASICAUTH_TIPS1']}}</span>
 					</div>
 					<div class="mtb15">
-                        <span class="set-tit text-right" title="Message channel">Message channel</span>
+                        <span class="set-tit text-right" title="Notification">Notification</span>
                         <div class="btn_tips">
                             <input id="channel_auth" name="channel_auth" class="inputtxt bt-input-text disable" type="text" value="" disabled>
                             <span class="modify btn btn-xs btn-success channel_auth" style="margin-left: -38px;" onclick="open_three_channel_auth()">Set</span>
                         </div>
 					</div>
+                    <div class="mtb15">
+                        <span class="set-tit text-right" title="Login panel alarm">Login panel alarm</span>
+                        <div class="btn_tips">
+                            <input id="panel_report" name="panel_report" class="inputtxt bt-input-text disable" type="text" value="" disabled>
+                            <span class="modify btn btn-xs btn-success panel_report" onclick="set_panel_report()">Set</span>
+                        </div>
+                    </div>
 					<div class="mtb15">
 						<span class="set-tit text-right" title="{{data['lan']['CT3']}}">{{data['lan']['CT3']}}</span>
 						<input name="domain" class="inputtxt bt-input-text" type="text" value="{{data['panel']['domain']}}">

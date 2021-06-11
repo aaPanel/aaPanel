@@ -24,7 +24,7 @@ class panelApi:
 
         data['limit_addr'] = '\n'.join(data['limit_addr'])
         data['bind'] = self.get_bind_token()
-        qrcode = (public.getPanelAddr() + "|" + data['token'] + "|" + data['key'] + '|' + data['bind']['token']).encode('utf-8')
+        qrcode = (public.getPanelAddr() + "|" + data['token'] + "|" + data['key'] + '|' + data['bind']['token']+'|aapanel').encode('utf-8')
         data['qrcode'] = public.base64.b64encode(qrcode).decode('utf-8')
         data['apps'] = sorted(data['apps'],key=lambda x: x['time'],reverse=True)
         del(data['key'])
@@ -216,7 +216,7 @@ class panelApi:
                 data['token'] = public.md5(token)
                 data['token_crypt'] = public.en_crypt(data['token'],token).decode('utf-8')
             public.WriteLog('SET_API','%s API interface' % stats[data['open']])
-            token = stats[data['open']] + 'success!'
+            token = stats[data['open']] + ' success!'
         elif get.t_type == '3':
             data['limit_addr'] = get.limit_addr.split('\n')
             public.WriteLog('SET_API','Change IP limit to [%s]' % get.limit_addr)

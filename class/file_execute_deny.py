@@ -125,6 +125,8 @@ class FileExecuteDeny:
             reg = '\s*#BEGIN_DENY_{n}\n(.|\n)*#END_DENY_{n}\n'.format(n=name)
             conf = re.sub(reg,'',conf)
         else:
+            if dir[0] != '/':dir = '/'+dir
+            if dir[-1] != '/':dir = dir+'/'
             new = '''
     #BEGIN_DENY_%s
     location ~* ^%s.*.(%s)$ {
@@ -146,9 +148,11 @@ class FileExecuteDeny:
             reg = '\s*#BEGIN_DENY_{n}\n(.|\n)*#END_DENY_{n}'.format(n=name)
             conf = re.sub(reg,'',conf)
         else:
+            if dir[0] != '/':dir = '/'+dir
+            if dir[-1] != '/':dir = dir+'/'
             new = '''
     #BEGIN_DENY_{n}
-        <Directory ~ "{d}.*\.(s)$">
+        <Directory ~ "{d}.*\.({s})$">
           Order allow,deny
           Deny from all
         </Directory>

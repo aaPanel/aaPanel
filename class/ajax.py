@@ -36,8 +36,13 @@ class ajax:
             #取Nginx负载状态
             self.CheckStatusConf()
             result = public.httpGet('http://127.0.0.1/nginx_status')
-            tmp = result.split()
-            if len(tmp) < 15:
+            is_curl = False
+            tmp = []
+            if result:
+                tmp = result.split()
+            if len(tmp) < 15: is_curl = True
+
+            if is_curl:
                 result = public.ExecShell('curl http://127.0.0.1/nginx_status')[0]
                 tmp = result.split()
             data = {}
@@ -464,7 +469,9 @@ class ajax:
             import json
             conf_status = public.M('config').where("id=?",('1',)).field('status').find()
             if int(session['config']['status']) == 0 and int(conf_status['status']) == 0:
-                public.HttpGet('{}/api/setupCount/setupPanel?type=Linux'.format(self.__official_url))
+                # public.HttpGet('{}/api/setupCount/setupPanel?type=Linux'.format(self.__official_url))
+                public.arequests('get', '{}/api/setupCount/setupPanel?type=Linux'.format(self.__official_url))
+
                 public.M('config').where("id=?",('1',)).setField('status',1)
             
             #取回远程版本信息
@@ -492,10 +499,7 @@ class ajax:
                 data['intrusion'] = 0
                 data['uid'] = self.get_uid()
                 #msg = public.getMsg('PANEL_UPDATE_MSG');
-                data['o'] = ''
-                filename = '/www/server/panel/data/o.pl'
-                if os.path.exists(filename): data['o'] = str(public.readFile(filename))
-                # sUrl = 'https://console.aapanel.com/api/panel/updateLinuxEn'
+                data['o'] = public.get_oem_name()
                 sUrl = '{}/api/panel/updateLinuxEn'.format(self.__official_url)
                 updateInfo = json.loads(public.httpPost(sUrl,data))
                 if not updateInfo: return public.returnMsg(False,"CONNECT_ERR")
@@ -1189,7 +1193,7 @@ class ajax:
             php_path = '/usr/local/lsws/lsphp'
         php_bin = php_path + php_version + '/bin/php'
         php_ini = php_path + php_version + '/etc/php.ini'
-        if not os.path.exists('/etc/redhat-release'):
+        if not os.path.exists('/etc/redhat-release') and public.get_webserver() == 'openlitespeed':
             php_ini = php_path + php_version + '/etc/php/'+args.php_version+'/litespeed/php.ini'
         tmp = public.ExecShell(php_bin + ' /www/server/panel/class/php_info.php')[0]
         if tmp.find('Warning: JIT is incompatible') != -1:

@@ -772,7 +772,7 @@ var aceEditor = {
 		$('.ace_dir_tools').on('click','.upper_level',function(){
 			var _paths = $(this).attr('data-menu-path');
 			_this.reader_file_dir_menu({path:_paths,is_empty:true});
-			$('.ace_catalogue_title').html('Directory: '+ _paths).attr('title',_paths);
+			$('.ace_catalogue_title').html('Dir: '+ _paths).attr('title',_paths);
 		});
 		// 新建文件（文件目录主菜单）
 		$('.ace_dir_tools').on('click','.new_folder',function(e){
@@ -2031,6 +2031,9 @@ function openEditorView(type, path) {
                 ace.config.set("workerPath", "/static/ace");
                 ace.config.set("themePath", "/static/ace");
                 aceEditor.openEditorView(path);
+                var _left = parseInt( $(layero).css('left')),_top =  parseInt( $(layero).css('top'));
+                _left<0?$(layero).css('left',Math.abs(_left)):$(layero).css('left',_left)
+                _top<0?$(layero).css('top',Math.abs(_top)):$(layero).css('top',_top)
                 // $('.aceEditors .layui-layer-min').click(function(e) {
                 //     aceEditor.isAceView = false;
                 //     setTimeout(function() {
@@ -2356,7 +2359,7 @@ function ChangePath(d) {
     setCookie("SetName", "");
     var c = layer.open({
         type: 1,
-        area: "650px",
+        area: "680px",
         title: lan.bt.dir,
         closeBtn: 2,
         shift: 5,
@@ -3986,7 +3989,8 @@ var Term = {
 		Term.send(JSON.stringify(Term.ssh_info || {}))
 // 		Term.term.FitAddon.fit();
 // 		Term.resize();
-		var f_path = $("#fileInputPath").val();
+// 		var f_path = $("#fileInputPath").val();
+		var f_path = $("#fileInputPath").attr('data-path');
 		if(f_path){
 			Term.last_cd = "cd " + f_path;
 			Term.send(Term.last_cd  + "\n");
