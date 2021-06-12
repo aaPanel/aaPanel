@@ -1115,7 +1115,7 @@ var lan = {
 		"third_party_apps_tips2":"The installation process may take a few minutes, please be patient!",
 		"third_party_apps_tips3":"If this plugin already exists, it will be replaced!",
 		"cancel":"Cancel",
-		"confirm_install":"Comfirm to install",
+		"confirm_install":"Confirm to install",
 		"upload_fail2":"Upload failed 2!",
 		"installing_please_wait":"Installing, this may take a few minutes...",
 		"running":"Running",

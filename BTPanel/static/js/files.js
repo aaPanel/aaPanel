@@ -128,8 +128,8 @@ var bt_file = {
             drop.el.addEventListener("dragover",function(e){ e.preventDefault() }, false);
             drop.el.addEventListener("drop",(enter.callback != null)?drop.callback:that.ev_drop, false);
         },
-    
-        
+
+
         // 事件触发
         ev_drop:function(e){
             if(e.dataTransfer.items[0].kind == 'string') return false;
@@ -158,7 +158,7 @@ var bt_file = {
                     return iterateFilesAndDirs(subFilesAndDirs, s.path);
                 });
             }
-    
+
             var iterateFilesAndDirs = function(filesAndDirs, path) {
                 if(!bt_file.file_drop.isUpload) return false
                 for (var i = 0; i < filesAndDirs.length; i++) {
@@ -196,7 +196,7 @@ var bt_file = {
                      return iterateFilesAndDirs(filesAndDirs, '/');
                 });
             }
-            
+
         },
         // 上传视图
         dialog_view:function(config){
@@ -1577,7 +1577,7 @@ var bt_file = {
                 shadeClose: false,
                 skin:'download_file_view',
                 content:html[0].outerHTML,
-                btn:['Comfirm','Close'],
+                btn:['Confirm','Close'],
                 success:function(){
                     form.setEvent();
                 },
@@ -1929,7 +1929,7 @@ var bt_file = {
     */
     del_favorites:function(path){
         var that = this
-        layer.confirm('Comfirm delete path【'+path+'】？', { title: 'Delete favorites', closeBtn: 2, icon: 3 }, function (index) {
+        layer.confirm('Confirm delete path【'+path+'】？', { title: 'Delete favorites', closeBtn: 2, icon: 3 }, function (index) {
             that.$http('del_files_store',{path:path},function(res){
                 if(res.status){
                     that.render_favorites_type_list();
@@ -3743,7 +3743,7 @@ var bt_file = {
         if(that.is_recycle){
             bt.confirm({
                 title:'Delete '+ data.type_tips +'[&nbsp;'+ data.filename +'&nbsp;]',
-                msg:'<span>Comfirm delete '+ data.type_tips +'[&nbsp;'+ data.path +'&nbsp;],it will move to recycle bin after delete, continue?</span>'
+                msg:'<span>Confirm delete '+ data.type_tips +'[&nbsp;'+ data.path +'&nbsp;],it will move to recycle bin after delete, continue?</span>'
             },function(){
                 that.del_file_req(data,function(res){
                     that.reader_file_list({path:that.file_path})
@@ -4416,13 +4416,13 @@ var bt_file = {
         });
         return (paths+path).replace('//','/');
     },
-    
+
     /**
      * @descripttion 取扩展名
      * @return: 返回扩展名
      */
     get_ext_name:function(fileName){
-        var extArr = fileName.split(".");	
+        var extArr = fileName.split(".");
         var exts = ["folder", "folder-unempty", "sql", "c", "cpp", "cs", "flv", "css", "js", "htm", "html", "java", "log", "mht", "php", "url", "xml", "ai", "bmp", "cdr", "gif", "ico", "jpeg", "jpg", "JPG", "png", "psd", "webp", "ape", "avi", "mkv", "mov", "mp3", "mp4", "mpeg", "mpg", "rm", "rmvb", "swf", "wav", "webm", "wma", "wmv", "rtf", "docx", "fdf", "potm", "pptx", "txt", "xlsb", "xlsx", "7z", "cab", "iso", "rar", "zip", "gz", "bt", "file", "apk", "bookfolder", "folder-empty", "fromchromefolder", "documentfolder", "fromphonefolder", "mix", "musicfolder", "picturefolder", "videofolder", "sefolder", "access", "mdb", "accdb", "fla", "doc", "docm", "dotx", "dotm", "dot", "pdf", "ppt", "pptm", "pot", "xls", "csv", "xlsm"];
         var extLastName = extArr[extArr.length - 1];
         for(var i=0; i<exts.length; i++){
@@ -4457,7 +4457,7 @@ var bt_file = {
     /**
      * @descripttion: 路径过滤
      * @return: 无返回值
-    */    
+    */
     path_check:function(path) {
         path = path.replace('//', '/');
         if (path === '/') return path;
@@ -4518,13 +4518,13 @@ var bt_file = {
     */
     remove_download_url:function(data,callback){
         var that = this;
-        layer.confirm('Comfirm to stop sharing【'+ data.fileName +'】, continue?',{ title: 'Cancel sharing', closeBtn: 2, icon: 3 }, function () {
+        layer.confirm('Confirm to stop sharing【'+ data.fileName +'】, continue?',{ title: 'Cancel sharing', closeBtn: 2, icon: 3 }, function () {
             this.layerT = bt.load('Canceling sharing files, please wait...');
             bt.send('remove_download_url','files/remove_download_url',{id:data.id},function(res){
                 if (callback) callback(res);
             });
         })
-        
+
     },
 
     /**
@@ -4744,7 +4744,7 @@ var bt_file = {
                     form.submitForm(function(res,datas){
                         setTimeout(function(){
                             that.reader_file_list({path:datas.path})
-                        }, 1000); 
+                        }, 1000);
                         if(res == null || res == undefined){
                             layer.msg(lan.files.zip_ok, { icon: 1 });
                         }
@@ -4763,7 +4763,7 @@ var bt_file = {
     */
     unpack_file_to_path:function(data){
         var that = this,_type = 'zip',spath = '';
-        spath = data.path.substring(0,data.path.lastIndexOf('\/'))  
+        spath = data.path.substring(0,data.path.lastIndexOf('\/'))
         this.reader_form_line({
             url: 'UnZip',
             overall: {width: '310px'},
@@ -4786,7 +4786,7 @@ var bt_file = {
                 shadeClose: false,
                 closeBtn:2,
                 skin:'unpack_file_view',
-                btn:['Comfirm','Cancel'],
+                btn:['Confirm','Cancel'],
                 content: html[0].outerHTML,
                 success:function(){
                     if(data.ext == 'gz') _type = 'tar' //解压格式
@@ -4802,7 +4802,7 @@ var bt_file = {
                         layer.close(loadT)
                         setTimeout(function(){
                             that.reader_file_list({path:datas.path})
-                        }, 1000); 
+                        }, 1000);
                         if(res.status){
                             that.render_present_task_list();
                         }
@@ -4812,7 +4812,7 @@ var bt_file = {
             })
         })
     },
-    
+
     /**
      * @description 匹配非法字符
      * @param {Array} item 配置对象
@@ -4879,7 +4879,7 @@ var bt_file = {
                             }else{
                                 els[items]();
                             }
-                            
+
                         }
                     }
                 });
@@ -4929,10 +4929,10 @@ var bt_file = {
             }
         },html);
     },
-        
+
     /**
      * @description 文件管理请求方法
-     * @param {*} data 
+     * @param {*} data
      * @param {*} data
      * @param {*} callback
      */
