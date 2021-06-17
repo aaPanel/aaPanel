@@ -80,23 +80,23 @@ def http_get_home(url,timeout,ex):
             res = HttpGet(new_url,timeout,headers)
             if res:
                 writeFile("data/home_host.pl",host)
-                set_home_host(host)
+                # set_home_host(host)
                 return res
         return ex
     except: return ex
 
 
-def set_home_host(host):
-    """
-        @name 设置官网hosts
-        @author hwliang<hwl@bt.cn>
-        @param host IP地址
-        @return void
-    """
-    ExecShell('sed -i "/www.bt.cn/d" /etc/hosts')
-    ExecShell("echo '' >> /etc/hosts")
-    ExecShell("echo '%s www.bt.cn' >> /etc/hosts" % host)
-    ExecShell('sed -i "/^\s*$/d" /etc/hosts')
+# def set_home_host(host):
+#     """
+#         @name 设置官网hosts
+#         @author hwliang<hwl@bt.cn>
+#         @param host IP地址
+#         @return void
+#     """
+#     ExecShell('sed -i "/www.bt.cn/d" /etc/hosts')
+#     ExecShell("echo '' >> /etc/hosts")
+#     ExecShell("echo '%s www.bt.cn' >> /etc/hosts" % host)
+#     ExecShell('sed -i "/^\s*$/d" /etc/hosts')
 
 def httpGet(url,timeout=6):
     return HttpGet(url,timeout)
@@ -145,7 +145,7 @@ def http_post_home(url,data,timeout,ex):
             res = HttpPost(new_url, data, timeout, headers)
             if res:
                 writeFile("data/home_host.pl", host)
-                set_home_host(host)
+                # set_home_host(host)
                 return res
         return ex
     except: return ex
