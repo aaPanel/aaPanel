@@ -947,7 +947,7 @@ var lan = {
 		"mysql_status_ps4": "If too low, increase innodb_buffer_pool_size",
 		"mysql_status_ps5": "If too low, increase query_cache_size",
 		"mysql_status_ps6": "If too high, increase tmp_table_size",
-		"mysql_status_ps7": "If too high, increase table_cache_size",
+		"mysql_status_ps7": "If too high, increase table_open_cache",
 		"mysql_status_ps8": "If not 0, please check index of DB table",
 		"mysql_status_ps9": "If not 0, please check index of DB table",
 		"mysql_status_ps10": "If too high, increase sort_buffer_size",

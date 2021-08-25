@@ -883,177 +883,173 @@ $(".dropdown ul li a").click(function(){
 })
 
 
+
 //备份
 function toBackup(type){
-  var sMsg = "";
-  switch(type){
-    case 'sites':
-      sMsg = lan.crontab.backup_site;
-      sType = "sites";
-      break;
-    case 'databases':
-      sMsg = lan.crontab.backup_database;
-      sType = "databases";
-      break;
-    case 'logs':
-      sMsg = lan.crontab.backup_log;
-      sType = "sites";
-      break;
-    case 'path':
-      sMsg = lan.crontab.dir_bak;
-      sType = "sites";
-      break;
-  }
-  var data='type='+sType
-  $.post('/crontab?action=GetDataList',data,function(rdata){
-    $(".planname input[name='name']").attr('readonly','true').css({"background-color":"#f6f6f6","color":"#666"});
-    if(type != 'path'){
-      var sOpt = "",sOptBody = '';
-      if(rdata.data.length == 0){
-        $(".planname input[name='name']").val('');
-        layer.msg(lan.public.list_empty,{icon:2})
-        return
-      }
-      for(var i=0;i<rdata.data.length;i++){
-        if(i==0){
-          $(".planname input[name='name']").val(sMsg+'['+rdata.data[i].name+']');
-        }
-        sOpt += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="'+rdata.data[i].name+'">'+rdata.data[i].name+'['+rdata.data[i].ps+']</a></li>';
-      }
-      sOptBody ='<div class="dropdown pull-left mr20">\
-            <button class="btn btn-default dropdown-toggle" type="button" id="backdata" data-toggle="dropdown" style="width:auto">\
-            <b id="sName" val="'+rdata.data[0].name+'">'+rdata.data[0].name+'['+rdata.data[0].ps+']</b> <span class="caret"></span>\
-            </button>\
-            <ul class="dropdown-menu" role="menu" aria-labelledby="backdata">\
-            <li><a role="menuitem" tabindex="-1" href="javascript:;" value="ALL">'+lan.public.all+'</a></li>\
-              '+sOpt+'\
-            </ul>\
-                    </div>'
-    }else{
-      $(".planname input[name='name']").val(sMsg+'[/www/wwwroot/]');
-      sOptBody = '<div class="info-r" style="display: inline-block;float: left;margin-right: 25px;"><input id="inputPath" class="bt-input-text mr5" type="text" name="path" value="/www/wwwroot/" placeholder="'+lan.crontab.dir_bak+'" style="width:208px;height:33px;"><span class="glyphicon glyphicon-folder-open cursor" onclick="bt.select_path(\'inputPath\')"></span></div>'
-      setCookie('default_dir_path','/www/wwwroot/');
-      setCookie('path_dir_change','/www/wwwroot/');
-      setInterval(function(){
-        if(getCookie('path_dir_change') != getCookie('default_dir_path')){
-          var  path_dir_change = getCookie('path_dir_change')
-          $(".planname input").val(lan.crontab.dir_bak+'['+getCookie('path_dir_change')+']');
-          setCookie('default_dir_path',path_dir_change);
-        }
-      },500);
-    }
-    var orderOpt = ''
-    for (var i=0;i<rdata.orderOpt.length;i++){
-      orderOpt += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="'+rdata.orderOpt[i].value+'">'+rdata.orderOpt[i].name+'</a></li>'
-    }
-
-
-
-    var sBody = sOptBody + '<div class="textname pull-left mr20">'+lan.crontab.backup_to+'</div>\
-          <div class="dropdown planBackupTo pull-left mr20">\
-            <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:auto;">\
-            <b val="localhost">'+lan.crontab.disk+'</b> <span class="caret"></span>\
-            </button>\
-            <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
-            <li><a role="menuitem" tabindex="-1" href="javascript:;" value="localhost">'+lan.crontab.disk+'</a></li>\
-            '+ orderOpt +'\
-            </ul>\
-          </div>\
-          <div class="textname pull-left mr20">'+lan.crontab.save_new+'</div><div class="plan_hms pull-left mr20 bt-input-text">\
-          <span><input type="number" name="save" id="save" value="3" maxlength="4" max="100" min="1"></span>\
-          <span class="name">'+lan.crontab.copies+'</span>\
-          </div>';
-          if (type == 'sites' || type == 'path' || type == 'databases') {
-            $.post('/config?action=get_settings',data,function(rdata){
-              var messageChannelDom = '', messageChannelBtnText = '', channelInitVal = ''
-              if(rdata.user_mail.user_name && rdata.dingding.dingding) {
-                messageChannelBtnText = 'All'
-          channelInitVal= 'user_name,dingding'
-                messageChannelDom = '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding,mail">All</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding">钉钉</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
-              } else if(!rdata.user_mail.user_name && !rdata.dingding.dingding){
-                messageChannelBtnText = 'No Data'
-          channelInitVal= ''
-                messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="">No Data</a></li>'
-              } else if(rdata.dingding.dingding) {
-                messageChannelBtnText = '钉钉'
-          channelInitVal= 'dingding'
-                messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding">钉钉</a></li>'
-              } else if(rdata.user_mail.user_name) {
-                messageChannelBtnText = 'Email'
-          channelInitVal= 'mail'
-                messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
-              }
-              sBody += '<p class="clearfix plan">\
-                  <div class="typename pull-left mr20 text-right" style="font-size: 14px;">Backup reminder</div>\
-                    <div class="dropdown planBackupTo pull-left mr20" style="display:'+ (type === 'logs'?'none':'inline-block') +'"  id="notice">\
-                      <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:180px;">\
-                        <b val="0">No notice</b> <span class="caret"></span>\
-                      </button>\
-                      <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
-                        <li><a role="menuitem" tabindex="-1" href="javascript:;" value="0">No notice</a></li>\
-                        <li><a role="menuitem" tabindex="-1" href="javascript:;" value="1">Notify on failure</a></li>\
-                      </ul>\
-                    </div>\
+	var sMsg = "";
+	switch(type){
+		case 'sites':
+			sMsg = lan.crontab.backup_site;
+			sType = "sites";
+			break;
+		case 'databases':
+			sMsg = lan.crontab.backup_database;
+			sType = "databases";
+			break;
+		case 'logs':
+			sMsg = lan.crontab.backup_log;
+			sType = "sites";
+			break;
+		case 'path':
+			sMsg = lan.crontab.dir_bak;
+			sType = "sites";
+			break;
+	}
+	var data='type='+sType
+	$.post('/crontab?action=GetDataList',data,function(rdata){
+		$(".planname input[name='name']").attr('readonly','true').css({"background-color":"#f6f6f6","color":"#666"});
+		if(type != 'path'){
+			var sOpt = "",sOptBody = '';
+			if(rdata.data.length == 0){
+				layer.msg(lan.public.list_empty,{icon:2})
+				return
+			}
+			for(var i=0;i<rdata.data.length;i++){
+				if(type === 'logs'){
+					$(".planname input[name='name']").val(sMsg+'[ALL]');
+				}else{
+					if(i ==0){
+						$(".planname input[name='name']").val(sMsg+'['+rdata.data[i].name+']');
+					}
+				}
+				sOpt += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="'+rdata.data[i].name+'">'+rdata.data[i].name+'['+rdata.data[i].ps+']</a></li>';
+			}
+			sOptBody ='<div class="dropdown pull-left mr20">\
+					  <button class="btn btn-default dropdown-toggle" type="button" id="backdata" data-toggle="dropdown" style="width:auto">\
+						<b id="sName" val="'+ (type === 'logs'?'ALL':rdata.data[0].name) +'">'+ (type === 'logs'?'ALL':(rdata.data[0].name +'['+rdata.data[0].ps+']')) +'</b> <span class="caret"></span>\
+					  </button>\
+					  <ul class="dropdown-menu" role="menu" aria-labelledby="backdata">\
+					 	<li><a role="menuitem" tabindex="-1" href="javascript:;" value="ALL">'+lan.public.all+'</a></li>\
+					  	'+sOpt+'\
+					  </ul>\
+            </div>'
+		}else{
+			$(".planname input[name='name']").val(sMsg+'[/www/wwwroot/]');
+			sOptBody = '<div class="info-r" style="display: inline-block;float: left;margin-right: 25px;"><input id="inputPath" class="bt-input-text mr5" type="text" name="path" value="/www/wwwroot/" placeholder="'+lan.crontab.dir_bak+'" style="width:208px;height:33px;"><span class="glyphicon glyphicon-folder-open cursor" onclick="ChangePath(&quot;inputPath&quot;)"></span></div>'
+			setCookie('default_dir_path','/www/wwwroot/');
+			setCookie('path_dir_change','/www/wwwroot/');
+			setInterval(function(){
+				if(getCookie('path_dir_change') != getCookie('default_dir_path')){
+					var  path_dir_change = getCookie('path_dir_change')
+					$(".planname input").val(lan.crontab.dir_bak+'['+getCookie('path_dir_change')+']');
+					setCookie('default_dir_path',path_dir_change);
+				}
+			},500);
+		}
+		var orderOpt = ''
+		for (var i=0;i<rdata.orderOpt.length;i++){
+			orderOpt += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="'+rdata.orderOpt[i].value+'">'+rdata.orderOpt[i].name+'</a></li>'
+		}
+		var save_num = 3;
+		if(type === 'logs'){
+			$('#cycle b').attr('val','day').text(lan.crontab.daily);
+			$('.planweek').hide();
+			$('[name="hour"]').val(0);
+			$('[name="minute"]').val(1);
+			// $('#implement').parent().after('<div class="clearfix plan" id="logs_tips"><span class="typename controls c4 pull-left f14 text-right mr20">提示</span><div style="line-height:34px">根据网络安全法第二十一条规定，网络日志应留存不少于六个月。</div></div>')
+			save_num = 180;
+		}else{
+			$('#logs_tips').remove();
+		}
+		var sBody = sOptBody + '<div class="textname pull-left mr20" style="display:'+ (type === 'logs'?'none':'inline-block') +'">'+lan.crontab.backup_to+'</div>\
+					<div class="dropdown planBackupTo pull-left mr20" style="display:'+ (type === 'logs'?'none':'inline-block') +'" id="saveAddServerDiskToLocal">\
+					  <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:auto;">\
+						<b val="localhost">'+lan.crontab.disk+'</b> <span class="caret"></span>\
+					  </button>\
+					  <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
+						<li><a role="menuitem" tabindex="-1" href="javascript:;" value="localhost">'+lan.crontab.disk+'</a></li>\
+						'+ orderOpt +'\
+					  </ul>\
+					</div>\
+					<div class="textname pull-left mr20">'+lan.crontab.save_new+'</div><div class="plan_hms pull-left mr20 bt-input-text">\
+					<span><input type="number" name="save" id="save" value="'+save_num+'" maxlength="4" max="100" min="1"></span>\
+					</div>';
+        if (type == 'sites' || type == 'path' || type == 'databases') {
+          $.post('/config?action=get_settings',data,function(rdata){
+            var messageChannelDom = '', messageChannelBtnText = '', channelInitVal = ''
+            if(rdata.user_mail.user_name && rdata.dingding.dingding) {
+              messageChannelBtnText = 'ALL'
+			  channelInitVal= 'user_name,dingding'
+              messageChannelDom = '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding,mail">ALL</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding">钉钉</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">邮箱</a></li>'
+            } else if(!rdata.user_mail.user_name && !rdata.dingding.dingding){
+              messageChannelBtnText = 'No Data'
+			  channelInitVal= ''
+              messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="">No Data</a></li>'
+            } else if(rdata.dingding.dingding) {
+              messageChannelBtnText = '钉钉'
+			  channelInitVal= 'dingding'
+              messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding">钉钉</a></li>'
+            } else if(rdata.user_mail.user_name) {
+              messageChannelBtnText = 'Email'
+			  channelInitVal= 'mail'
+              messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
+            }
+            sBody += '<p class="clearfix plan">\
+                <div class="textname pull-left mr20" style="width: 120px;text-align: right; font-size: 14px;">Backup reminder</div>\
+                  <div class="dropdown planBackupTo pull-left mr20" style="display:'+ (type === 'logs'?'none':'inline-block') +'"  id="notice">\
+                    <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:180px;">\
+                      <b val="0">No notice</b> <span class="caret"></span>\
+                    </button>\
+                    <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
+                      <li><a role="menuitem" tabindex="-1" href="javascript:;" value="0">No notice</a></li>\
+                      <li><a role="menuitem" tabindex="-1" href="javascript:;" value="1">Notify on failure</a></li>\
+                    </ul>\
                   </div>\
-                  <div class="textname pull-left mr20" style="font-size: 14px;display:none;" id="messageChannelBox">Notification</div>\
-                    <div class="dropdown planBackupTo pull-left mr20" style="display:none;" id="notice_channel">\
-                      <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:auto;">\
-                        <b val="'+channelInitVal+'">'+ messageChannelBtnText +'</b> <span class="caret"></span>\
-                      </button>\
-                      <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
-                        '+messageChannelDom+'\
-                      </ul>\
-                    </div>\
-                  </div>\
-                  <a role="menuitem" tabindex="-1" href="javascript:;" onclick="open_three_channel_auth()" value="0" style="color: #20a53a;">Set notifications</a>\
-          <span  id="selnoticeBox"  onclick="selSave_local()"><input type="checkbox" value="0" style="margin-left: 20px;margin-right: 10px;" id="save_local">Keep local backup</span>\
-              </p>';
-              if(type == 'sites' || type == "path") {
-          sBody += '<p class="clearfix plan">\
-                <div class="typename pull-left mr20 text-right" style="font-size: 14px;">'+lan.crontab.exclusion_rule+'</div>\
-                <div class="dropdown planBackupTo pull-left mr20">\
-                    <span><textarea style=" height: 120px;width:500px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
                 </div>\
-              </p>';
-        }
-    $("#implement").html(sBody);
-    getselectname();
-      })
-    }else{
-      $("#implement").html('<div></div>');
-      sBody += '<p class="clearfix plan">\
-        <div class="typename pull-left mr20 text-right" style="font-size: 14px;">'+lan.crontab.exclusion_rule+'</div>\
-        <div class="dropdown planBackupTo pull-left mr20">\
-            <span><textarea style=" height: 120px;width:500px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
-        </div>\
-      </p>';
-      $("#implement").html(sBody);
-    }
-    $("#implement").on('click','.dropdown ul li a',function(ev){
-      var val = $(this).attr('value');
-      console.log(val)
-      $("#sName").attr({'value':val}).text($(this).text())
-      $(".planname input[name='name']").val(sMsg+'['+val+']');
-    });
-    if(type == "path"){
-      $('.planname input').attr('readonly',false).removeAttr('style');
-    }
-    $("#exclude").focus(function(){
-      var _this = $(this), tips = _this.attr('placeholder'),
-      tipss = ''+lan.crontab.exclusion_rule_tips+'</br>data/config.php</br>static/upload</br> *.log</br>';
-      _this.attr('placeholder', '');
-      var loadT = layer.tips(tipss, _this, {
-        tips: [1, '#20a53a'],
-        time: 0,
-        area: _this[0].clientWidth + 'px'
-      });
-      $(this).one('blur', function () {
-        $(this).attr('placeholder', tips);
-        layer.close(loadT);
-      });
-    });
-  });
-
+                <div class="textname pull-left mr20" style="font-size: 14px;display:none;" id="messageChannelBox">Notification</div>\
+                  <div class="dropdown planBackupTo pull-left mr20" style="display:none;" id="notice_channel">\
+                    <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:auto;">\
+                      <b val="'+channelInitVal+'">'+ messageChannelBtnText +'</b> <span class="caret"></span>\
+                    </button>\
+                    <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
+                      '+messageChannelDom+'\
+                    </ul>\
+                  </div>\
+                </div>\
+                <a role="menuitem" tabindex="-1" href="javascript:;" onclick="open_three_channel_auth()" value="0" style="color: #20a53a;">Set notifications</a>\
+				<span  id="selnoticeBox"  onclick="selSave_local()" style="display:none;"><input type="checkbox" value="0" style="margin-left: 20px;margin-right: 10px;" id="save_local">Keep local backup</span>\
+            </p>';
+            if(type == 'sites' || type == "path") {
+				sBody += '<p class="clearfix plan">\
+              <div class="textname pull-left mr20" style="width: 120px;text-align: right; font-size: 14px;">'+lan.crontab.exclusion_rule+'</div>\
+              <div class="dropdown planBackupTo pull-left mr20">\
+                  <span><textarea style=" height: 100px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
+              </div>\
+            </p>';
+			}
+            $("#implement").html(sBody);
+			getselectnoticename();
+          })
+        } else {
+            $("#implement").html('<div></div>');
+            sBody += '<p class="clearfix plan">\
+              <div class="textname pull-left mr20" style="width: 120px;text-align: right; font-size: 14px;">'+lan.crontab.exclusion_rule+'</div>\
+              <div class="dropdown planBackupTo pull-left mr20">\
+                  <span><textarea style=" height: 100px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
+              </div>\
+            </p>';
+            $("#implement").html(sBody);
+            getselectname();
+		}
+		$("#implement").on('click','.dropdown ul li a',function(ev){
+			var sName = $("#sName").attr("val");
+			if(!sName) return;
+			$(".planname input[name='name']").val(sMsg+'['+sName+']');
+		});
+		if(type == "path"){
+			$('.planname input').attr('readonly',false).removeAttr('style');
+		}
+	});
 }
 
 //下拉菜单名称

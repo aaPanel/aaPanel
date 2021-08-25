@@ -1386,7 +1386,7 @@ var aceEditor = {
     },
     // 获取文件列表
 	get_file_dir_list:function(obj,callback){
-		var loadT = layer.msg('正在获取文件内容，请稍后...',{time: 0,icon: 16,shade: [0.3, '#000']}),_this = this;
+		var loadT = layer.msg('Getting file content, please wait...',{time: 0,icon: 16,shade: [0.3, '#000']}),_this = this;
 		if(obj['p'] === undefined) obj['p'] = 1;
 		if(obj['showRow'] === undefined) obj['showRow'] = 200;
 		if(obj['sort'] === undefined) obj['sort'] = 'name';
@@ -2219,6 +2219,28 @@ function ajax_encrypt(request){
 	}
 }
 
+// function ajaxSetup() {
+//     var my_headers = {};
+//     var request_token_ele = document.getElementById("request_token_head");
+//     if (request_token_ele) {
+//         var request_token = request_token_ele.getAttribute('token');
+//         if (request_token) {
+//             my_headers['x-http-token'] = request_token
+//         }
+//     }
+//     request_token_cookie = getCookie('request_token');
+//     if (request_token_cookie) {
+//         my_headers['x-cookie-token'] = request_token_cookie
+//     }
+//
+//     if (my_headers) {
+//         $.ajaxSetup({
+// 			headers: my_headers,
+// 			// dataFilter: ajax_decrypt,
+// 			// beforeSend: ajax_encrypt
+// 		});
+//     }
+// }
 function ajaxSetup() {
     var my_headers = {};
     var request_token_ele = document.getElementById("request_token_head");
@@ -2234,12 +2256,65 @@ function ajaxSetup() {
     }
 
     if (my_headers) {
-        $.ajaxSetup({ 
+		$.ajaxSetup({
 			headers: my_headers,
+			error: function(jqXHR, textStatus, errorThrown) {
+				if(!jqXHR.responseText) return;
+				if(typeof(String.prototype.trim) === "undefined"){
+					String.prototype.trim = function()
+					{
+						return String(this).replace(/^\s+|\s+$/g, '');
+					};
+				}
+
+				error_key = 'We need to make sure this has a favicon so that the debugger does';
+				error_find = jqXHR.responseText.indexOf(error_key)
+				if(jqXHR.status == 500 && (jqXHR.responseText.indexOf('An error occurred while the panel was running') != -1 || error_find != -1)){
+					// if(jqXHR.responseText.indexOf('请先绑定宝塔帐号!') != -1){
+					// 	bt.pub.bind_btname(function(){
+					// 		window.location.reload();
+					// 	});
+					// 	return;
+					// }
+					if(error_find != -1){
+						var error_body = jqXHR.responseText.split('<!--')[2].replace('-->','')
+						var tmp = error_body.split('During handling of the above exception, another exception occurred:')
+						error_body = tmp[tmp.length-1];
+						var error_msg = '<div>\
+						<h3 style="margin-bottom: 10px;">出错了，面板运行时发生错误！</h3>\
+						<pre style="height:635px;word-wrap: break-word;white-space: pre-wrap;margin: 0 0 0px">'+error_body.trim()+'</pre>\
+						<ul class="help-info-text">\
+							<li style="list-style: none;"><b>很抱歉，面板运行时意外发生错误，请尝试按以下顺序尝试解除此错误：</b></li>\
+							<li style="list-style: none;">1、在[首页]右上角点击修复面板，并退出面板重新登录。</li>\
+							<li style="list-style: none;">2、如上述尝试未能解除此错误，请截图此窗口到宝塔论坛发贴寻求帮助, 论坛地址：<a class="btlink" href="https://www.bt.cn/bbs" target="_blank">https://www.bt.cn/bbs</a></li>\
+						</ul>\
+					</div>'
+
+					}else{
+						var error_msg = jqXHR.responseText;
+					}
+					$(".layui-layer-padding").parents('.layer-anim').remove();
+					$(".layui-layer-shade").remove();
+					setTimeout(function(){
+						layer.open({
+							title: false,
+							content: error_msg,
+							closeBtn:2,
+							area: ["1000px","800px"],
+							btn:false,
+							shadeClose:false,
+							shade:0.3,
+							success:function(){
+								$('pre').scrollTop(100000000000)
+							}
+						});
+					},100)
+				}
+			}
 			// dataFilter: ajax_decrypt,
 			// beforeSend: ajax_encrypt
 		});
-    }
+	}
 }
 ajaxSetup();
 
@@ -3171,20 +3246,12 @@ function ActionTask() {
     })
 }
 
-function RemoveTask(b) {
-    var a = layer.msg(lan.public.the_del, {
-        icon: 16,
-        time: 0,
-        shade: [0.3, "#000"]
-    });
-    $.post("/files?action=RemoveTask", "id=" + b, function(c) {
-        layer.close(a);
-        layer.msg(c.msg, {
-            icon: c.status ? 1 : 5
-        });
-    }).error(function() {
-        layer.msg(lan.bt.task_close, { icon: 1 });
-    });
+function RemoveTask(id) {
+	var loadT = bt.load(lan.public.the_del);
+	bt.send('RemoveTask','files/RemoveTask',{id:id},function(res){
+		bt.msg(res)
+		reader_realtime_tasks()
+	})
 }
 
 function GetTaskList(a) {
@@ -3692,30 +3759,183 @@ function getSpeed(sele) {
     });
 }
 //消息盒子
-function messagebox() {
-    layer.open({
-        type: 1,
-        title: lan.bt.task_title,
-        area: "750px",
-        closeBtn: 2,
-        shadeClose: false,
-        content: '<div class="bt-form">\
-					<div class="bt-w-main">\
-						<div class="bt-w-menu">\
-							<p class="bgw" id="taskList" onclick="tasklist()">' + lan.bt.task_list + '(<span class="task_count">0</span>)</p>\
-							<p onclick="remind()">' + lan.bt.task_msg + '(<span class="msg_count">0</span>)</p>\
-							<p onclick="execLog()">' + lan.public.exec_log + '</p>\
-						</div>\
-						<div class="bt-w-con pd15">\
-							<div class="taskcon"></div>\
-						</div>\
-					</div>\
-				</div>'
-    });
-    $(".bt-w-menu p").click(function() {
-        $(this).addClass("bgw").siblings().removeClass("bgw");
-    });
-    tasklist();
+function messagebox(){
+	layer.open({
+		type: 1,
+		title: lan.bt.task_title,
+		area: "680px",
+		closeBtn: 2,
+		shadeClose: false,
+		content: '<div class="bt-form">' +
+			'<div class="bt-w-main">' +
+				'<div class="bt-w-menu">' +
+					'<p class="bgw">'+ lan.bt.task_list +' (<span id="taskNum">0</span>)</p>' +
+					'<p>'+ lan.bt.task_msg +' (<span id="taskCompleteNum">0</span>)</p>' +
+					'<p>'+lan.public.exec_log+'</p>' +
+				'</div>' +
+				'<div class="bt-w-con pd15">' +
+					'<div class="bt-w-item active" id="command_install_list"><ul class="cmdlist"></ul></div>'+
+					'<div class="bt-w-item" id="messageContent"></div>'+
+					'<div class="bt-w-item"><pre id="execLog" class="command_output_pre" style="height: 530px;"></pre></div>'+
+				'</div>' +
+			'</div>' +
+		'</div>',
+		success: function(layers,indexs){
+			$(layers).find('.bt-w-menu p').on('click',function(){
+				var index = $(this).index()
+				$(this).addClass('bgw').siblings().removeClass('bgw');
+				$(layers).find('.bt-w-con .bt-w-item:eq('+ index +')').addClass('active').siblings().removeClass('active');
+				switch (index) {
+					case 0:
+						reader_realtime_tasks()
+						break;
+					case 1:
+						reader_message_list()
+						break;
+					case 2:
+						var loadT = bt.load('正在获取执行日志，请稍后...')
+						bt.send('GetExecLog','files/GetExecLog',{},function(res){
+							loadT.close();
+							var exec_log = $('#execLog');
+							console.log(exec_log)
+							exec_log.html(res)
+							exec_log[0].scrollTop = exec_log[0].scrollHeight
+						})
+						break;
+				}
+			})
+			reader_realtime_tasks()
+			setTimeout(function(){
+				reader_realtime_tasks()
+			},1000)
+			reader_message_list()
+		}
+	});
+}
+
+function get_message_data(page,callback){
+	if(typeof page === "function") callback = page,page = 1;
+	var loadT = bt.load('正在获取消息列表，请稍后...');
+	bt.send("getData","data/getData",{
+		tojs:'reader_message_list',
+		table:'tasks',
+		result:'2,4,6,8',
+		limit:'11',
+		search:'1',
+		p:page
+	},function(res){
+		loadT.close();
+		if(callback) callback(res);
+	})
+}
+
+function reader_message_list(page){
+	get_message_data(page,function(res){
+		var html = "",f = false,task_count = 0;
+		for (var i = 0; i < res.data.length; i++) {
+			var item  = res.data[i];
+			if (item.status !== '1') {
+				task_count ++;
+				continue;
+			}
+			html += '<tr><td><div class="titlename c3">' + item.name + '</span><span class="rs-status">【' + lan.bt.task_ok + '】<span><span class="rs-time">' + lan.bt.time + (item.end - item.start) + lan.bt.s + '</span></div></td><td class="text-right c3">' + item.addtime + '</td></tr>'
+		}
+		var con = '<div class="divtable"><table class="table table-hover">\
+					<thead><tr><th>'+ lan.bt.task_name + '</th><th class="text-right">' + lan.bt.task_time + '</th></tr></thead>\
+						<tbody id="remind">'+ html + '</tbody>\
+					</table></div>\
+					<div class="mtb15" style="height:32px">\
+						<div class="pull-left buttongroup" style="display:none;"><button class="btn btn-default btn-sm mr5 rs-del" disabled="disabled">'+ lan.public.del + '</button><button class="btn btn-default btn-sm mr5 rs-read" disabled="disabled">' + lan.bt.task_tip_read + '</button><button class="btn btn-default btn-sm">' + lan.bt.task_tip_all + '</button></div>\
+						<div id="taskPage" class="page"></div>\
+					</div>';
+
+
+		var msg_count = res.page.match(/\'Pcount\'>.+<\/span>/)[0].replace(/[^0-9]/ig, "");
+		$("#taskCompleteNum").text(parseInt(msg_count) - task_count);
+		$("#messageContent").html(con);
+		$("#taskPage").html(res.page);
+	})
+}
+
+
+function get_realtime_tasks(callback){
+	bt.send('GetTaskSpeed','files/GetTaskSpeed',{},function(res){
+		if(callback) callback(res)
+	})
+}
+
+var initTime = null,messageBoxWssock = null;
+
+function reader_realtime_tasks(refresh){
+	get_realtime_tasks(function(res){
+		var command_install_list = $('#command_install_list'),
+			loading = 'data:image/gif;base64,R0lGODlhDgACAIAAAHNzcwAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQFDgABACwAAAAAAgACAAACAoRRACH5BAUOAAEALAQAAAACAAIAAAIChFEAIfkEBQ4AAQAsCAAAAAIAAgAAAgKEUQAh+QQJDgABACwAAAAADgACAAACBoyPBpu9BQA7',
+			html = '',
+			message = res.msg,
+			task = res.task;
+		$('#taskNum').html(typeof res.task === "undefined"?0:res.task.length);
+		if(typeof res.task === "undefined"){
+			html = '<div style="padding:5px;">'+lan.bt.task_not_list+'</div><div style="position: fixed;bottom: 15px;">' + lan.public.task_long_time_not_exec + '</div>'
+			command_install_list.html(html)
+		}else{
+			var shell = '', message_split = message.split("\n");
+			for(var j = 0; j < message_split.length; j++) {
+				shell += message_split[j] + "</br>";
+			}
+			if(command_install_list.find('li').length){
+				if(command_install_list.find('li').length > res.task.length) command_install_list.find('li:eq(0)').remove();
+				if(task[0].status !== '0' && !command_install_list.find('pre').length) command_install_list.find('li:eq(0)').append('<pre class=\'cmd command_output_pre\'>' + shell +'</pre>')
+				messageBoxWssock.el = command_install_list.find('pre');
+			}else{
+				for (var i = 0; i < task.length; i++) {
+					var item = task[i], task_html = '', del_task = '<a style="color:green" onclick="RemoveTask(' + item.id + ')" href="javascript:;">'+ lan.public.del +'</a>',loading_img = "<img src='"+ loading +"'/>";
+					if(item.status === '-1' && item.type === 'download'){
+						task_html = "<div class='line-progress' style='width:" + message.pre + "%'></div><span class='titlename'>" + item.name + "<a style='margin-left:130px;'>" + (ToSize(message.used) + "/" + ToSize(message.total)) + "</a></span><span class='com-progress'>" + message.pre + "%</span><span class='state'>"+ lan.bt.task_downloading +" "+ loading_img +" | "+ del_task +"</span>";
+					}else{
+						task_html += '<span class="titlename">' + item.name + '</span>';
+						task_html += '<span class="state">';
+						if(item.status !== "-1"){
+							task_html += lan.bt.task_sleep + ' | ' + del_task;
+						}else{
+							var is_scan = item.name.indexOf("扫描") !== -1;
+							task_html += (is_scan?lan.bt.task_scan:lan.bt.task_install) + ' ' + loading_img + ' | ' + del_task;
+						}
+						task_html += "</span>";
+						if(item.type !== "download" && item.status === "-1"){
+							task_html += '<pre class=\'cmd command_output_pre\'>' + shell +'</pre>'
+						}
+					}
+					html += "<li>"+ task_html +"</li>";
+				}
+				command_install_list.find('ul').append(html);
+			}
+			if(task[0].status === '0'){
+				setTimeout(function(){
+					reader_realtime_tasks(true)
+				},100)
+			}
+			if(command_install_list.find('pre').length){
+				var pre = command_install_list.find('pre')
+				pre.scrollTop(pre[0].scrollHeight)
+			}
+			if(!refresh){
+				messageBoxWssock = bt_tools.command_line_output({
+					el:'#command_install_list .command_output_pre',
+					area:['100%','200px'],
+					shell:'tail -n 100 -f /tmp/panelExec.log',
+					message:function(res){
+							if(res.indexOf('|-Successify ---Script execution completed---') > -1){
+								setTimeout(function(){
+									reader_realtime_tasks(true)
+									reader_message_list()
+								},100)
+							}
+						}
+					}
+				);
+			}
+		}
+	})
 }
 
 //取执行日志
@@ -3986,7 +4206,9 @@ var Term = {
     },
     //连接服务器成功
 	on_open:function(ws_event){
-		Term.send(JSON.stringify(Term.ssh_info || {}))
+      var http_token = $("#request_token_head").attr('token');
+      Term.send(JSON.stringify({'x-http-token':http_token}))
+      if(JSON.stringify(Term.ssh_info) !== '{}') Term.send(JSON.stringify(Term.ssh_info))
 // 		Term.term.FitAddon.fit();
 // 		Term.resize();
 // 		var f_path = $("#fileInputPath").val();
@@ -4166,10 +4388,10 @@ var Term = {
 
     // },
     run: function (ssh_info) {
-		if($("#panel_debug").attr("data") == 'True') {
-			layer.msg('Error: unable to create websocket connection, please close 【Developer mode】 on the settings page!',{icon:2,time:5000});
-			return;
-		}
+		// if($("#panel_debug").attr("data") == 'True') {
+		// 	layer.msg('Error: unable to create websocket connection, please close 【Developer mode】 on the settings page!',{icon:2,time:5000});
+		// 	return;
+		// }
         var loadT = layer.msg('It is loading the files required by the terminal. Please wait...', { icon: 16, time: 0, shade: 0.3 });
         loadScript([
         	"/static/js/xterm.js"

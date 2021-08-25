@@ -75,6 +75,15 @@ class backup:
             self._error_msg += "\n"
         self._error_msg += msg
 
+    #取排除列表用于计算排除目录大小
+    def get_exclude_list(self, exclude=[]):
+        if not exclude:
+            tmp_exclude = os.getenv('BT_EXCLUDE')
+            if tmp_exclude:
+                exclude = tmp_exclude.split(',')
+        if not exclude: return []
+        return exclude
+
     #构造排除
     def get_exclude(self,exclude = []):
         if not exclude:
@@ -274,10 +283,11 @@ class backup:
         dpath = os.path.dirname(dfile)
         if not os.path.exists(dpath):
             os.makedirs(dpath,384)
-        
-        p_size = public.get_path_size(spath)
+
         self.get_exclude(exclude)
         exclude_config = self._exclude
+        exclude_list = self.get_exclude_list(exclude)
+        p_size = public.get_path_size(spath, exclude=exclude_list)
         if not self._exclude:
             exclude_config = "Not set"
         
@@ -349,6 +359,7 @@ class backup:
                 error_msg = self._error_msg
             self.send_failture_notification(error_msg)
             return False
+
         if self._cloud:
             self.echo_info(public.getMsg("BACKUP_UPLOADING",(self._cloud._title,)))
             if self._cloud.upload_file(dfile,'site'):
@@ -709,7 +720,7 @@ class backup:
             return
 
         if notice == 1 or notice == 2:
-            title = self.generate_failture_title()
+            title = self.generate_failture_title(cron_title)
             task_name = cron_title
             msg = self.generate_failture_notice(task_name, error_msg, remark)
             res = self.send_notification(notice_channel, title, msg)
@@ -733,7 +744,7 @@ class backup:
             return
 
         if notice == 1 or notice == 2:
-            title = self.generate_failture_title()
+            title = self.generate_failture_title(cron_title)
             type_desc = {
                 "site": "site",
                 "database": "database"

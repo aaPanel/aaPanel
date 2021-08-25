@@ -117,6 +117,9 @@ class apache:
     def GetApacheValue(self):
         apachedefaultcontent = public.readFile(self.apachedefaultfile)
         apachempmcontent = public.readFile(self.apachempmfile)
+        if not "mpm_event_module" in apachempmcontent:
+            return public.returnMsg(False,"mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty")
+        apachempmcontent = re.search("\<IfModule mpm_event_module\>(\n|.)+?\</IfModule\>",apachempmcontent).group()
         ps = ["%s，%s" % (public.GetMsg("SECOND"),public.GetMsg("REQUEST_TIMEOUT_TIME")),
               public.GetMsg("KEEP_ALIVE"),
               "%s，%s" % (public.GetMsg("SECOND"),public.GetMsg("CONNECT_TIMEOUT_TIME")),
@@ -143,10 +146,12 @@ class apache:
             n += 1
 
         ps = [public.GetMsg("DEFUALT_PROCESSES"),
-              public.GetMsg("MAX_SPARE_SERVERS"),
-              "%s，%s" % (public.GetMsg("MAX_CONNECTIONS"),public.GetMsg("NOT_LIMITED_BY_0")),
-              public.GetMsg("MAX_PROCESSES")]
-        gets = ["StartServers","MaxSpareServers","MaxConnectionsPerChild","MaxRequestWorkers"]
+              public.GetMsg("MAX_SPARE_THREADS"),
+              public.GetMsg("MIN_SPARE_THREADS"),
+              public.GetMsg("THREADS_PER_CHILD"),
+              public.GetMsg("MAX_REQUEST_WORKERS"),
+              public.GetMsg("MaxConnectionsPerChild")]
+        gets = ["StartServers","MaxSpareThreads","MinSpareThreads","ThreadsPerChild","MaxRequestWorkers","MaxConnectionsPerChild"]
         n = 0
         for i in gets:
             rep = "(%s)\s+(\w+)" % i
@@ -167,6 +172,8 @@ class apache:
     def SetApacheValue(self,get):
         apachedefaultcontent = public.readFile(self.apachedefaultfile)
         apachempmcontent = public.readFile(self.apachempmfile)
+        if not "mpm_event_module" in apachempmcontent:
+            return public.returnMsg(False,"mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty")
         conflist = []
         getdict = get.__dict__
         for i in getdict.keys():
@@ -176,7 +183,6 @@ class apache:
                     "value": str(getdict[i])
                 }
                 conflist.append(getpost)
-        public.writeFile("/tmp/list",str(conflist))
         for c in conflist:
             if c["name"] == "KeepAlive":
                 if not re.search("on|off", c["value"]):
@@ -193,7 +199,7 @@ class apache:
                 apachedefaultcontent = re.sub(rep,newconf,apachedefaultcontent)
             elif re.search(rep,apachempmcontent):
                 newconf = "%s\t\t\t%s" % (c["name"], c["value"])
-                apachempmcontent = re.sub(rep, newconf , apachempmcontent,count = 1)
+                apachempmcontent = re.sub(rep, newconf , apachempmcontent)
         public.writeFile(self.apachedefaultfile,apachedefaultcontent)
         public.writeFile(self.apachempmfile, apachempmcontent)
         isError = public.checkWebConfig()
