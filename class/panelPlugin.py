@@ -296,6 +296,12 @@ class panelPlugin:
 
             if pluginInfo['name'] == 'mysql':
                 if public.M('databases').count() > 0: return public.returnMsg(False,"RM_DB_WARN")
+            if pluginInfo['name'] == 'nginx':
+                import nginx
+                nginx.nginx().del_all_log_format(get)
+            if pluginInfo['name'] == 'apache':
+                import apache
+                apache.apache().del_all_log_format(get)
             get.type = '0'
             if session['server_os']['x'] != 'RHEL': get.type = '3'
             get.sName = get.sName.lower()
