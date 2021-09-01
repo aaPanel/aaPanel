@@ -590,6 +590,9 @@ def GetClientIp():
     from flask import request
     return request.remote_addr.replace('::ffff:', '')
 
+def get_client_ip():
+    return GetClientIp()
+
 def phpReload(version):
     # 重载PHP配置
     import os

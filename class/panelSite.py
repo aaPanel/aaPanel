@@ -42,7 +42,7 @@ class panelSite(panelRedirect):
         path = self.setupPath + '/stop'
         if not os.path.exists(path + '/index.html'):
             public.ExecShell('mkdir -p ' + path)
-            public.ExecShell('wget -O ' + path + '/index.html ' + public.get_url() + '/stop.html &')
+            public.ExecShell('wget -O ' + path + '/index.html ' + public.get_url() + '/stop_en.html &')
         self.__proxyfile = '/www/server/panel/data/proxyfile.json'
         self.OldConfigFile()
         if os.path.exists(self.nginx_conf_bak): os.remove(self.nginx_conf_bak)
@@ -2230,8 +2230,8 @@ listener SSL443 {
             os.makedirs(path)
             public.downloadFile('http://download.bt.cn/stop_en.html', path + '/index.html')
 
-        if 'This site has been closed by administrator' not in public.readFile(path + '/index.html'):
-            public.downloadFile('http://download.bt.cn/stop_en.html', path + '/index.html')
+        # if 'This site has been closed by administrator' not in public.readFile(path + '/index.html'):
+        #     public.downloadFile('http://download.bt.cn/stop_en.html', path + '/index.html')
 
         binding = public.M('binding').where('pid=?', (id,)).field('id,pid,domain,path,port,addtime').select()
         for b in binding:
