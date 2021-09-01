@@ -166,15 +166,22 @@ class nginx:
         @author zhwen<zhw@bt.cn>
         @param log_format_name
         '''
+        log_format_name = args.log_format_name
         conf = public.readFile(self.nginxconf)
         if not conf:
             return public.returnMsg(False, 'NGINX_CONF_NOT_EXISTS')
         reg = '\s*#LOG_FORMAT_BEGIN_{n}(\n|.)+#LOG_FORMAT_END_{n}\n?'.format(n=args.log_format_name)
         conf = re.sub(reg,'',conf)
-        self._del_format_log_of_website(args.log_format_name)
+        self._del_format_log_of_website(log_format_name)
         public.writeFile(self.nginxconf,conf)
         public.serviceReload()
         return public.returnMsg(True, 'SET_SUCCESS')
+
+    def del_all_log_format(self,args):
+        all_format = self.get_nginx_access_log_format(args)
+        for i in all_format:
+            args.log_format_name = i
+            self.del_nginx_access_log_format(args)
 
     def get_nginx_access_log_format_parameter(self,args=None):
         data = {
@@ -218,15 +225,18 @@ class nginx:
             if not conf:
                 return public.returnMsg(False, 'NGINX_CONF_NOT_EXISTS')
             data = re.findall(reg,conf)
-            format_name = [i.split('_')[-1] for i in data]
+            format_name = [i.split('LOG_FORMAT_BEGIN_')[-1] for i in data]
             format_log = {}
             for i in format_name:
                 format_reg = "#LOG_FORMAT_BEGIN_{n}(\n|.)+log_format\s+{n}\s*(.*);".format(n=i)
-                tmp = re.search(format_reg,conf).groups()[1].split()
+                tmp = re.search(format_reg,conf)
+                if not tmp:
+                    continue
+                tmp = tmp.groups()[1].split()
                 format_log[i] = self._process_log_format(tmp)
             return format_log
         except:
-            return public.get_error_info()
+            return public.returnMsg(False,public.get_error_info())
 
     def set_format_log_to_website(self,args):
         '''

@@ -257,6 +257,12 @@ class apache:
         public.serviceReload()
         return public.returnMsg(True, 'SET_SUCCESS')
 
+    def del_all_log_format(self,args):
+        all_format = self.get_httpd_access_log_format(args)
+        for i in all_format:
+            args.log_format_name = i
+            self.del_httpd_access_log_format(args)
+
     def _del_format_log_of_website(self,log_format_name):
         site_format_log_status = self._get_format_log_to_website(log_format_name)
         try:
@@ -314,15 +320,18 @@ class apache:
             if not conf:
                 return public.returnMsg(False, 'CONF_FILE_NOT_EXISTS')
             data = re.findall(reg,conf)
-            format_name = [i.split('_')[-1] for i in data]
+            format_name = [i.split('LOG_FORMAT_BEGIN_')[-1] for i in data]
             format_log = {}
             for i in format_name:
                 format_reg = "#LOG_FORMAT_BEGIN_{n}(\n|.)+LogFormat\s+\'(.*)\'\s+{n}".format(n=i)
-                tmp = re.search(format_reg,conf).groups()[1].split()
+                tmp = re.search(format_reg,conf)
+                if not tmp:
+                    continue
+                tmp = tmp.groups()[1].split()
                 format_log[i] = self._process_log_format(tmp)
             return format_log
         except:
-            return public.get_error_info()
+            return public.returnMsg(False,public.get_error_info())
 
     def set_httpd_format_log_to_website(self,args):
         '''
