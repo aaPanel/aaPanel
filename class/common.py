@@ -18,12 +18,15 @@ import time
 
 class panelSetup:
     def init(self):
-        ua = request.headers.get('User-Agent','')
-        if ua:
-            ua = ua.lower()
-            if ua.find('spider') != -1 or ua.find('bot') != -1:
+        panel_path = public.get_panel_path()
+        if os.getcwd() != panel_path: os.chdir(panel_path)
+
+        g.ua = request.headers.get('User-Agent','')
+        if g.ua:
+            ua = g.ua.lower()
+            if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return redirect('https://www.google.com')
-        g.version = '6.8.12'
+        g.version = '6.8.14'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
@@ -97,7 +100,7 @@ class panelAdmin(panelSetup):
             session['brand'] = public.GetConfigValue('brand')
             session['product'] = public.GetConfigValue('product')
             session['rootPath'] = '/www'
-            session['download_url'] = 'http://download.bt.cn'
+            session['download_url'] = 'https://node.aapanel.com'
             session['setupPath'] = session['rootPath'] + '/server'
             session['logsPath'] = '/www/wwwlogs'
             session['yaer'] = datetime.now().year
@@ -147,50 +150,50 @@ class panelAdmin(panelSetup):
                 g.api_request = True
             else:
                 if session['login'] == False:
+                    public.WriteLog('Login auth', 'The current session has been logged out')
                     session.clear()
                     return redirect('/login')
 
                 if 'tmp_login_expire' in session:
                     s_file = 'data/session/{}'.format(session['tmp_login_id'])
                     if session['tmp_login_expire'] < time.time():
+                        public.WriteLog('Login auth', 'Temporary authorization has expired {}'.format(public.get_client_ip()))
                         session.clear()
                         if os.path.exists(s_file): os.remove(s_file)
                         return redirect('/login')
                     if not os.path.exists(s_file):
+                        public.WriteLog('Login auth', 'Forced withdrawal due to cancellation of temporary authorization {}'.format(public.get_client_ip()))
                         session.clear()
                         return redirect('/login')
+                ua_md5 = public.md5(g.ua)
+                if ua_md5 != session.get('login_user_agent',ua_md5):
+                    public.WriteLog('Login auth', 'UA verification failed {}'.format(public.get_client_ip()))
+                    session.clear()
+                    return redirect('/login')
 
             if api_check:
-                try:
-                    sess_out_path = 'data/session_timeout.pl'
-                    sess_input_path = 'data/session_last.pl'
-                    if not os.path.exists(sess_out_path): public.writeFile(sess_out_path,'86400')
-                    if not os.path.exists(sess_input_path): public.writeFile(sess_input_path,str(int(time.time())))
-                    session_timeout = int(public.readFile(sess_out_path))
-                    session_last = int(public.readFile(sess_input_path))
-                    if time.time() - session_last > session_timeout:
-                        os.remove(sess_input_path)
-                        session['login'] = False
-                        cache.set('dologin', True)
-                        session.clear()
-                        return redirect('/login')
-                    public.writeFile(sess_input_path, str(int(time.time())))
-                except:
-                    pass
+                session_timeout = session.get('session_timeout',0)
+                if session_timeout < time.time() and session_timeout != 0:
+                    public.WriteLog('Login auth', 'The session has expired {}'.format(public.get_client_ip()))
+                    session.clear()
+                    return redirect('/login?dologin=True&go=0')
 
-            filename = '/www/server/panel/data/login_token.pl'
-            if os.path.exists(filename):
-                token = public.readFile(filename).strip()
-                if 'login_token' in session:
-                    if session['login_token'] != token:
-                        session.clear()
-                        return redirect('/login?dologin=True&go=1')
+
+            login_token = session.get('login_token','')
+            if login_token:
+                if login_token != public.get_login_token_auth():
+                    public.WriteLog('Login auth', 'Session ID does not match {}'.format(public.get_client_ip()))
+                    session.clear()
+                    return redirect('/login?dologin=True&go=1')
+
             if api_check:
                 filename = 'data/sess_files/' + public.get_sess_key()
                 if not os.path.exists(filename):
+                    public.WriteLog('Login auth', 'Trigger CSRF defense {}'.format(public.get_client_ip()))
                     session.clear()
                     return redirect('/login?dologin=True&go=2')
         except:
+            public.WriteLog('Login auth',public.get_error_info())
             session.clear()
             return redirect('/login')
 

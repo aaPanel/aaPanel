@@ -12,7 +12,7 @@ try:
 except:
     public.ExecShell("pip install pyotp &")
 try:
-    from BTPanel import session,admin_path_checks,g,request
+    from BTPanel import session,admin_path_checks,g,request,cache
     import send_mail
 except:pass
 class config:
@@ -91,6 +91,18 @@ class config:
         if not 'port' in qq_mail_info:qq_mail_info['port']=465
         return public.returnMsg(True, qq_mail_info)
 
+    #清空数据
+    def set_empty(self,get):
+        type=get.type.strip()
+        if type=='dingding':
+            ret = []
+            public.writeFile(self.__dingding_config, json.dumps(ret))
+            return public.returnMsg(True, 'Empty successfully')
+        else:
+            ret = []
+            public.writeFile(self.__mail_config, json.dumps(ret))
+            return public.returnMsg(True, 'Empty successfully')
+
 
     # 用户自定义邮件发送
     def user_stmp_mail_send(self, get):
@@ -127,12 +139,11 @@ class config:
         ret['user_mail'] = {"user_name": user_mail, "mail_list": self.__mail_list,"info":self.get_user_mail(get)}
         ret['dingding'] = {"dingding": dingding,"info":self.get_dingding(get)}
         return ret
-
     # 设置钉钉报警
     def set_dingding(self, get):
         if not (hasattr(get, 'url') or hasattr(get, 'atall')):
             return public.returnMsg(False, 'COMPLETE_INFO')
-        if get.atall:
+        if get.atall=='True' or  get.atall=='1':
             get.atall = 'True'
         else: get.atall = 'False'
         self.mail.dingding_insert(get.url.strip(), get.atall)
@@ -321,7 +332,9 @@ class config:
             public.SetConfigValue('title',get.webname)
 
         limitip = public.readFile('data/limitip.conf')
-        if get.limitip != limitip: public.writeFile('data/limitip.conf',get.limitip)
+        if get.limitip != limitip:
+            public.writeFile('data/limitip.conf',get.limitip)
+            cache.set('limit_ip',[])
 
         public.writeFile('data/domain.conf',get.domain.strip())
         public.writeFile('data/iplist.txt',get.address)
@@ -364,8 +377,8 @@ class config:
             if not get.domain: get.domain = ''
             get.limitip = public.readFile('data/limitip.conf')
             if not get.limitip: get.limitip = ''
-            if not get.domain.strip() and not get.limitip.strip(): return public.returnMsg(False,
-                                                                                           'SECURITY_ENTRANCE_ADDRESS_TRUEN_OFF_WARN')
+            if not get.domain.strip() and not get.limitip.strip() and not os.path.exists('config/basic_auth.json'):
+                return public.returnMsg(False,'SECURITY_ENTRANCE_ADDRESS_TRUEN_OFF_WARN')
 
         admin_path_file = 'data/admin_path.pl'
         admin_path = '/'
@@ -523,9 +536,21 @@ class config:
         rep = r"\s*pm\s*=\s*(\w+)\s*"
         tmp = re.search(rep, conf).groups()
         data['pm'] = tmp[0]
+
+        rep = r"\s*listen.allowed_clients\s*=\s*([\w\.,/]+)\s*"
+        tmp = re.search(rep, conf).groups()
+        data['allowed'] = tmp[0]
+
+
         data['unix'] = 'unix'
-        if not isinstance(public.get_fpm_address(version),str):
+        data['port'] = ''
+        data['bind'] = '/tmp/php-cgi-{}.sock'.format(version)
+
+        fpm_address = public.get_fpm_address(version,True)
+        if not isinstance(fpm_address,str):
             data['unix'] = 'tcp'
+            data['port'] = fpm_address[1]
+            data['bind'] = fpm_address[0]
 
         return data
 
@@ -565,11 +590,23 @@ class config:
         if get.listen == 'unix':
             listen = '/tmp/php-cgi-{}.sock'.format(version)
         else:
-            listen = '127.0.0.1:10{}1'.format(version)
+            default_listen = '127.0.0.1:10{}1'.format(version)
+            if 'bind_port' in get:
+                if get.bind_port.find('sock') != -1:
+                    listen = default_listen
+                else:
+                    listen = get.bind_port
+            else:
+                listen = default_listen
 
 
         rep = r'\s*listen\s*=\s*.+\s*'
         conf = re.sub(rep, "\nlisten = "+listen+"\n", conf)
+
+        if 'allowed' in get:
+            if not get.allowed: get.allowed = '127.0.0.1'
+            rep = r"\s*listen.allowed_clients\s*=\s*([\w\.,/]+)\s*"
+            conf = re.sub(rep, "\nlisten.allowed_clients = "+get.allowed+"\n", conf)
 
         public.writeFile(file,conf)
         public.phpReload(version)
@@ -696,6 +733,8 @@ class config:
 
     #设置面板SSL
     def SetPanelSSL(self,get):
+        ssl_path = "{}/ssl".format(public.get_panel_path())
+        if not os.path.exists(ssl_path): os.makedirs(ssl_path,384)
         if hasattr(get,"email"):
             #rep_mail = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
             rep_mail = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
@@ -1681,7 +1720,7 @@ class config:
     def get_login_send(self,get):
         result={}
         import time
-        time.sleep(0.5)
+        time.sleep(0.01)
         if os.path.exists('/www/server/panel/data/login_send_mail.pl'):
             result['mail']=True
         else:

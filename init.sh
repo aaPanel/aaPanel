@@ -268,6 +268,8 @@ install_used()
         fi
         password=$(cat /dev/urandom | head -n 16 | md5sum | head -c 12)
         username=$($pythonV $panel_path/tools.py panel $password)
+        safe_path=$(cat /dev/urandom | head -n 16 | md5sum | head -c 8)
+        echo "/$safe_path" > $panel_path/data/admin_path.pl
         echo "$password" > $panel_path/default.pl
         rm -f $panel_path/aliyun.pl
 }

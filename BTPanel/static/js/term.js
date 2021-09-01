@@ -28,6 +28,8 @@ Terms.prototype = {
 
     //连接服务器成功
     on_open:function(ws_event){
+        var http_token = $("#request_token_head").attr('token');
+        this.send(JSON.stringify({'x-http-token':http_token}))
         this.send(JSON.stringify(this.ssh_info || {}))
         this.term.FitAddon.fit();
         this.resize({cols:this.term.cols, rows:this.term.rows});

@@ -22,9 +22,9 @@ class panelMessage:
     os = 'linux'
 
     def __init__(self):
-        # if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'messages','%retry_num%')).count():
-        #     public.M('messages').execute("alter TABLE messages add send integer DEFAULT 0",())
-        #     public.M('messages').execute("alter TABLE messages add retry_num integer DEFAULT 0",())
+        if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'messages','%retry_num%')).count():
+            public.M('messages').execute("alter TABLE messages add send integer DEFAULT 0",())
+            public.M('messages').execute("alter TABLE messages add retry_num integer DEFAULT 0",())
         pass
 
 

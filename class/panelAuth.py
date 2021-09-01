@@ -71,8 +71,10 @@ class panelAuth:
             else:
                 params['product_id'] = get.product_id
             data = self.send_cloud('{}/api/product/prices'.format(self.__official_url), params)
-            if len(data['res']) > 3:
-                return data['res'][-3:]
+            if not data['success']:
+                return public.returnMsg(False,data['msg'])
+            # if len(data['res']) == 6:
+            #     return data['res'][3:]
             return data['res']
         except:
             del(session['get_product_list'])
@@ -108,6 +110,8 @@ class panelAuth:
         params['environment_info'] = json.dumps(env_info)
         params['server_id'] = env_info['install_code']
         data = self.send_cloud('{}/api/order/product/create'.format(self.__official_url), params)
+        if not data['success']:
+            return public.returnMsg(False,data['res'])
         return data['res']
 
     def get_stripe_session_id(self,get):
@@ -285,6 +289,8 @@ class panelAuth:
         params['page'] = get.page if 'page' in get else 1
         params['pageSize'] = get.pageSize if 'pageSize' in get else 15
         data = self.send_cloud('{}/api/user/productAuthorizes'.format(self.__official_url), params)
+        if not data:
+            return []
         if not data['success']: return []
         data = data['res']
         return [i for i in data['list'] if i['status'] != 'activated']

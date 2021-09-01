@@ -275,7 +275,7 @@ def ClearMail():
         total += size;
         count += num;
     print('=======================================================================')
-    print("CLEAR_RUBBISH2",(str(count),ToSize(total)))
+    print(public.GetMsg('CLEAR_RUBBISH2',(str(count),ToSize(total))))
     return total,count
 
 #清理php_session文件

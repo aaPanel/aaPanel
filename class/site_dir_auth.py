@@ -123,9 +123,9 @@ class SiteDirAuth:
         try:
             conf = public.readFile(self.setup_path + '/panel/vhost/'+public.get_webserver()+'/'+siteName+'.conf');
             if public.get_webserver() == 'nginx':
-                rep = "enable-php-([0-9]{2,3})\.conf"
+                rep = "enable-php-(\w{2,5})\.conf"
             else:
-                rep = "php-cgi-([0-9]{2,3})\.sock"
+                rep = "php-cgi-(\w{2,5})\.sock"
             tmp = re.search(rep,conf).groups()
             if tmp:
                 return tmp[0]
@@ -145,8 +145,15 @@ class SiteDirAuth:
         conf = public.readFile(file_path)
         if not conf:
             return False
-        rep = "include\s+enable-php-\d+\.conf;"
-        conf = re.sub(rep,'include enable-php-{}.conf;'.format(phpv),conf)
+
+        if phpv == 'other':
+            php_conf = "include /www/server/panel/vhost/other_php/{}/enable-php-other.conf;".format(site_name)
+        else:
+            php_conf = 'include enable-php-{}.conf;'.format(phpv)
+
+        rep = r"include\s+(enable-php-\w+|/www/server/panel/vhost/other_php/{}/enable-php-other)\.conf;".format(site_name)
+        conf = re.sub(rep,php_conf,conf)
+
         public.writeFile(file_path,conf)
 
     # 设置独立认证文件
@@ -154,7 +161,11 @@ class SiteDirAuth:
         php_ver = self.get_site_php_version(site_name)
         php_conf = ""
         if php_ver:
-            php_conf = "include enable-php-{}.conf;".format(php_ver)
+            if php_ver == 'other':
+                php_conf = "include /www/server/panel/vhost/other_php/{}/enable-php-{}.conf;".format(site_name,php_ver)
+            else:
+                php_conf = "include enable-php-{}.conf;".format(php_ver)
+
         for i in ["nginx","apache"]:
             file_path = "{setup_path}/panel/vhost/{webserver}/dir_auth/{site_name}"
             if i == "nginx":
@@ -242,26 +253,27 @@ class SiteDirAuth:
         site_info = self.get_site_info(get.id)
         site_name = site_info["site_name"]
         conf = self._read_conf()
-        if site_name in conf:
-            for i in range(len(conf[site_name])):
-                if name in conf[site_name][i].values():
-                    print(conf[site_name][i])
-                    del(conf[site_name][i])
-                    if not conf[site_name]:
-                        del(conf[site_name])
-                    break
-            public.writeFile(self.conf_file,json.dumps(conf))
-            for i in ["nginx", "apache"]:
-                file_path = "{setup_path}/panel/vhost/{webserver}/dir_auth/{site_name}/{name}.conf".format(webserver=i,
-                                                                                                           setup_path=self.setup_path,
-                                                                                                           site_name=site_name,
-                                                                                                           name=name)
-                os.remove(file_path)
-            if not conf:
-                self.set_conf(site_name,"delete")
-            if not hasattr(get,'multiple'):
-                public.serviceReload()
-            return public.returnMsg(True,"DEL_SUCCESS")
+        if site_name not in conf:
+            return public.returnMsg(False,"The website does not exist in the configuration：{}".format(site_name))
+        for i in range(len(conf[site_name])):
+            if name in conf[site_name][i].values():
+                print(conf[site_name][i])
+                del(conf[site_name][i])
+                if not conf[site_name]:
+                    del(conf[site_name])
+                break
+        public.writeFile(self.conf_file,json.dumps(conf))
+        for i in ["nginx", "apache"]:
+            file_path = "{setup_path}/panel/vhost/{webserver}/dir_auth/{site_name}/{name}.conf".format(webserver=i,
+                                                                                                       setup_path=self.setup_path,
+                                                                                                       site_name=site_name,
+                                                                                                       name=name)
+            os.remove(file_path)
+        if not conf:
+            self.set_conf(site_name,"delete")
+        if not hasattr(get,'multiple'):
+            public.serviceReload()
+        return public.returnMsg(True,"DEL_SUCCESS")
 
     # 修改目录保护密码
     def modify_dir_auth_pass(self,get):

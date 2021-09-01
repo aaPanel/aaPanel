@@ -6,9 +6,11 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
+import logging
 import sys
 import json
 import os
+import threading
 import time
 import re
 import uuid
@@ -18,7 +20,7 @@ if not 'class/' in sys.path:
     sys.path.insert(0,'class/')
 
 from flask import Config, Flask, session, render_template, send_file, request, redirect, g, make_response, \
-    render_template_string, abort, Response as Resp
+    render_template_string, abort, stream_with_context,Response as Resp
 from cachelib import SimpleCache
 from werkzeug.wrappers import Response
 from flask_session import Session
@@ -32,8 +34,11 @@ import public
 app = Flask(__name__, template_folder="templates/{}".format(public.GetConfigValue('template')))
 Compress(app)
 sockets = Sockets(app)
-
-#import db
+# 注册HOOK
+hooks = {}
+if not hooks:
+    public.check_hooks()
+# import db
 dns_client = None
 app.config['DEBUG'] = os.path.exists('data/debug.pl')
 
@@ -52,12 +57,12 @@ if os.path.exists(basic_auth_conf):
 app.secret_key = uuid.UUID(int=uuid.getnode()).hex[-12:]
 local_ip = None
 my_terms = {}
-app.config['SESSION_MEMCACHED'] = SimpleCache()
+app.config['SESSION_MEMCACHED'] = SimpleCache(1000,86400)
 app.config['SESSION_TYPE'] = 'memcached'
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'BT_:'
-app.config['SESSION_COOKIE_NAME'] = "SESSIONID"
+app.config['SESSION_COOKIE_NAME'] = public.md5(app.secret_key)
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30
 Session(app)
 
@@ -130,8 +135,8 @@ if admin_path in admin_path_checks: admin_path = '/bt'
 @app.before_request
 def request_check():
     g.request_time = time.time()
-    #路由和URI长度过滤
-    if len(request.path) > 128: return abort(403)
+    # 路由和URI长度过滤
+    if len(request.path) > 256: return abort(403)
     if len(request.url) > 1024: return abort(403)
 
     if request.path in ['/service_status']: return
@@ -143,13 +148,24 @@ def request_check():
             if len(k) > 48: return abort(403)
             if len(pdata[k]) > 256: return abort(403)
     if session.get('debug') == 1: return
+
+    if app.config['BASIC_AUTH_OPEN']:
+        if request.path in ['/public', '/download', '/mail_sys', '/hook', '/down', '/check_bind',
+                            '/get_app_bind_status']: return
+        auth = request.authorization
+        if not comm.get_sk(): return
+        if not auth: return send_authenticated()
+        tips = '_bt.cn'
+        if public.md5(auth.username.strip() + tips) != app.config['BASIC_AUTH_USERNAME'] \
+                or public.md5(auth.password.strip() + tips) != app.config['BASIC_AUTH_PASSWORD']:
+            return send_authenticated()
+
     if not request.path in ['/safe', '/hook', '/public', '/mail_sys', '/down']:
         ip_check = public.check_ip_panel()
         if ip_check: return ip_check
 
     if request.path.find('/static/') != -1 or request.path == '/code':
         if not 'login' in session and not 'admin_auth' in session and not 'down' in session:
-            session.clear()
             return abort(401)
     domain_check = public.check_domain_panel()
     if domain_check: return domain_check
@@ -158,15 +174,14 @@ def request_check():
         if request.args.get('action') in not_networks: 
             return public.returnJson(False,'INIT_REQUEST_CHECK_LOCAL_ERR'),json_header
 
-    if app.config['BASIC_AUTH_OPEN']:
-        if request.path in ['/public','/download','/mail_sys','/hook','/down','/check_bind','/get_app_bind_status']: return
-        auth = request.authorization
-        if not comm.get_sk(): return
-        if not auth: return send_authenticated()
-        tips = '_bt.cn'
-        if public.md5(auth.username.strip() + tips) != app.config['BASIC_AUTH_USERNAME'] \
-            or public.md5(auth.password.strip() + tips) != app.config['BASIC_AUTH_PASSWORD']:
-            return send_authenticated()
+    if request.path in ['/','/site','/ftp','/database','/soft','/control','/firewall','/files','/xterm','/crontab','/config']:
+        licenes = 'data/licenes.pl'
+        if request.path in ['/'] and not os.path.exists(licenes):
+            return
+
+        # if not public.is_bind():
+        #     return redirect('/bind',302)
+
 
 #Flask 请求结束勾子
 @app.teardown_request
@@ -180,9 +195,10 @@ def request_end(reques = None):
             if g.api_request:
                 session.clear()
 
-#Flask 404页面勾子
+
+# Flask 404页面勾子
 @app.errorhandler(404)
-def notfound(e):
+def error_404(e):
     errorStr = '''<html>
 <head><title>404 Not Found</title></head>
 <body>
@@ -194,6 +210,36 @@ def notfound(e):
         "Content-Type":"text/html"
     }
     return Response(errorStr,status=404,headers=headers)
+
+# Flask 500页面勾子
+@app.errorhandler(500)
+def error_500(e):
+    ss = '''404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+
+During handling of the above exception, another exception occurred:'''
+    error_info = public.get_error_info().strip().split(ss)[-1].strip()
+    if error_info.find("`GLIBC_2.14'") != -1:
+        public.downloadFile('https://download.bt.cn/auth/libAuth_gcc_4.4.7_x{}.so'.format(public.get_sysbit()),'/www/server/panel/class/libAuth.x86-64.so')
+        error_info += "\n已尝试自动修复此问题，请刷新页面重试!"
+    request_info = '''REQUEST_DATE: {request_date}
+ PAN_VERSION: {panel_version}
+  OS_VERSION: {os_version}
+ REMOTE_ADDR: {remote_addr}
+ REQUEST_URI: {method} {full_path}
+REQUEST_FORM: {request_form}
+  USER_AGENT: {user_agent}'''.format(
+    request_date = public.getDate(),
+    remote_addr = public.GetClientIp(),
+    method = request.method,
+    full_path = request.full_path,
+    request_form = request.form.to_dict(),
+    user_agent = request.headers.get('User-Agent'),
+    panel_version = public.get_panel_version(),
+    os_version = public.get_os_version()
+)
+
+    result = public.readFile('/www/server/panel/BTPanel/templates/default/panel_error.html').format(error_title=error_info.split("\n")[-1],request_info = request_info,error_msg=error_info)
+    return Resp(result,500)
 
 # ===================================Flask HOOK========================#
 
@@ -226,55 +272,6 @@ def xterm():
     ssh_host_admin = ssh_terminal.ssh_host_admin()
     defs = ('get_host_list','get_host_find','modify_host','create_host','remove_host','set_sort','get_command_list','create_command','get_command_find','modify_command','remove_command')
     return publicObject(ssh_host_admin,defs,None)
-
-#@app.route('/webssh')
-@sockets.route('/webssh')
-def webssh(ws):
-    #宝塔终端连接
-    comReturn = comm.local()
-    if comReturn: return comReturn
-    #ws = request.environ.get('wsgi.websocket')
-    if not ws: return 'False'
-    get = ws.receive()
-    if not get: return
-    get = json.loads(get)
-    import ssh_terminal
-    sp = ssh_terminal.ssh_host_admin()
-    if 'host' in get:
-        ssh_info = {}
-        ssh_info['host'] = get['host'].strip()
-        if 'port' in get:
-            ssh_info['port'] = int(get['port'])
-        if 'username' in get:
-            ssh_info['username'] = get['username'].strip()
-        if 'password' in get:
-            ssh_info['password'] = get['password'].strip()
-        if 'pkey' in get:
-            ssh_info['pkey'] = get['pkey'].strip()
-
-        if get['host'] in ['127.0.0.1','localhost'] and 'port' not in ssh_info:
-            ssh_info = sp.get_ssh_info('127.0.0.1')
-            if not ssh_info: ssh_info = sp.get_ssh_info('localhost')
-            if not ssh_info: ssh_info = {"host":"127.0.0.1"}
-            ssh_info['port'] = public.get_ssh_port()
-    else:
-        ssh_info = sp.get_ssh_info('127.0.0.1')
-        if not ssh_info: ssh_info = sp.get_ssh_info('localhost')
-        if not ssh_info: ssh_info = {"host":"127.0.0.1"}
-        ssh_info['port'] = public.get_ssh_port()
-
-    if not ssh_info['host'] in ['127.0.0.1','localhost']:
-        if not 'username' in ssh_info:
-            ssh_info = sp.get_ssh_info(ssh_info['host'])
-            if not ssh_info:
-                ws.send(public.getMsg('SSH_LOGIN_ERR7'))
-                return
-    p = ssh_terminal.ssh_terminal()
-    p.run(ws,ssh_info)
-    del(p)
-    if not ws.closed:
-        ws.close()
-    return 'False'
 
 
 @app.route('/site',methods=method_all)
@@ -483,21 +480,22 @@ def firewall(pdata = None):
             'AddAcceptPort','DelAcceptPort','SetSshStatus','SetPing','SetSshPort','GetSshInfo')
     return publicObject(firewallObject,defs,None,pdata)
 
-@app.route('/ssh_security',methods=method_all)
-def ssh_security(pdata = None):
-    #SSH安全
+
+@app.route('/ssh_security', methods=method_all)
+def ssh_security(pdata=None):
+    # SSH安全
     comReturn = comm.local()
     if comReturn: return comReturn
     if request.method == method_get[0] and not pdata:
         data = {}
         data['lan'] = public.GetLan('firewall')
         data['js_random'] = get_js_random()
-        return render_template( 'firewall.html',data=data)
+        return render_template('firewall.html', data=data)
     import ssh_security
     firewallObject = ssh_security.ssh_security()
     defs = ('san_ssh_security', 'set_password', 'set_sshkey', 'stop_key', 'get_config',
             'stop_password', 'get_key', 'return_ip', 'add_return_ip', 'del_return_ip', 'start_jian', 'stop_jian',
-            'get_jian', 'get_logs','set_root','stop_root')
+            'get_jian', 'get_logs','set_root','stop_root','start_auth_method','stop_auth_method','get_auth_method','check_so_file','get_so_file')
     return publicObject(firewallObject, defs, None, pdata)
 
 
@@ -572,6 +570,20 @@ def abnormal(pdata=None):
             'php_cpu', 'CPU', 'Memory', 'disk', 'not_root_user', 'start'
             )
     return publicObject(dataObject, defs, None, pdata)
+
+@app.route('/project/<mod_name>/<def_name>', methods=method_all)
+def project(mod_name,def_name):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from panelProjectController import ProjectController
+    project_obj = ProjectController()
+    defs = ('model',)
+    get = get_input()
+    get.action = 'model'
+    get.mod_name = mod_name
+    get.def_name = def_name
+
+    return publicObject(project_obj,defs,None,get)
 
 @app.route('/files',methods=method_all)
 def files(pdata = None):
@@ -662,7 +674,7 @@ def config(pdata = None):
         return render_template( 'config.html',data=data)
     import config
     defs = (
-        'set_backup_notification','get_panel_ssl_status','set_file_deny', 'del_file_deny', 'get_file_deny',
+        'set_empty','set_backup_notification','get_panel_ssl_status','set_file_deny', 'del_file_deny', 'get_file_deny',
         'get_httpd_access_log_format_parameter','set_httpd_format_log_to_website','get_httpd_access_log_format',
         'del_httpd_access_log_format','add_httpd_access_log_format','get_nginx_access_log_format_parameter',
         'set_format_log_to_website','get_nginx_access_log_format','del_nginx_access_log_format',
@@ -775,7 +787,7 @@ def plugin(pdata = None):
     if comReturn: return comReturn
     import panelPlugin
     pluginObject = panelPlugin.panelPlugin()
-    defs = ('check_install_limit','set_score','get_score','update_zip','input_zip','export_zip','add_index','remove_index','sort_index',
+    defs = ('get_usually_plugin','check_install_limit','set_score','get_score','update_zip','input_zip','export_zip','add_index','remove_index','sort_index',
             'install_plugin','uninstall_plugin','get_soft_find','get_index_list','get_soft_list','get_cloud_list',
             'check_deps','flush_cache','GetCloudWarning','install','unInstall','getPluginList','getPluginInfo','get_make_args','add_make_args',
             'getPluginStatus','setPluginStatus','a','getCloudPlugin','getConfigHtml','savePluginSort','del_make_args','set_make_args')
@@ -889,9 +901,7 @@ def login():
     is_auth_path = False
     if admin_path != '/bt' and os.path.exists(admin_path_file) and  not 'admin_auth' in session:
         is_auth_path = True
-    num_key = public.md5(public.GetClientIp() + '_auth_path')
-    # if not public.get_error_num(num_key,20): return public.returnMsg(False,'AUTH_FAILED1')
-    #登录输入验证
+    # 登录输入验证
     if request.method == method_post[0]:
         v_list = ['username','password','code','vcode','cdn_url']
         for v in v_list:
@@ -949,14 +959,12 @@ def login():
             referer_path = referer_tmp[-1]
             if referer_path == '':
                 referer_path = referer_tmp[-2]
-            if route_path != '/'+referer_path:
-                public.set_error_num(num_key)
-                #return abort(404)
+            if route_path != '/' + referer_path:
                 data = {}
                 data['lan'] = public.getLan('close')
-                return render_template('autherr.html',data=data)
+                return render_template('autherr.html', data=data)
+
     session['admin_auth'] = True
-    public.set_error_num(num_key,True)
     comReturn = common.panelSetup().init()
     if comReturn: return comReturn
 
@@ -1071,20 +1079,22 @@ def down(token=None,fname=None):
                 if not re.match(r"^\w+$",args.file_password):
                     return public.ReturnJson(False,'WRONG_PASSWD'),json_header
                 if re.match(r"^\d+$",args.file_password):
-                    args.file_password += '.0'
+                    args.file_password = str(int(args.file_password))
+                    args.file_password += ".0"
                 if args.file_password != str(find['password']):
                     return public.ReturnJson(False,'WRONG_PASSWD'),json_header
                 session[token] = 1
                 session['down'] = True
             else:
                 pdata = {
-                        "to_path":"",
-                        "src_path": find['filename'],
-                        "password":True,
-                        "filename":find['filename'].split('/')[-1],
-                        "total":find['total'],
-                        "token":find['token'],
-                        "expire":public.format_date(times=find['expire'])
+                    "to_path":"",
+                    "src_path": find['filename'],
+                    "password":True,
+                    "filename":find['filename'].split('/')[-1],
+                    "ps": find['ps'],
+                    "total":find['total'],
+                    "token":find['token'],
+                    "expire":public.format_date(times=find['expire'])
                     }
                 session['down'] = True
                 return render_template('down.html',data = pdata)
@@ -1291,7 +1301,8 @@ def panel_other(name=None,fun = None,stype=None):
             data = panelPHP.panelPHP(name).exec_php_script(args)
 
         r_type = type(data)
-        if r_type == Response: return data
+        if r_type in [Response,Resp]:
+            return data
 
         #处理响应
         if stype == 'json':  #响应JSON
@@ -1383,6 +1394,38 @@ Disallow: /
 '''
     return robots,{'Content-Type':'text/plain'}
 
+
+@app.route('/rspamd', defaults={'path': ''},methods=method_all)
+@app.route('/rspamd/<path:path>',methods=method_all)
+def proxy_rspamd_requests(path):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    param = str(request.url).split('?')
+    param = "" if len(param) < 2 else param[-1]
+    import requests
+    headers = {}
+    for h in request.headers.keys():
+        headers[h] = request.headers[h]
+    if request.method == "GET":
+        if re.search("\.(js|css)$",path):
+            return send_file('/usr/share/rspamd/www/rspamd/'+path,conditional=True,add_etags=True)
+        if path == "/":
+            return send_file('/usr/share/rspamd/www/rspamd/',conditional=True,add_etags=True)
+        url = "http://127.0.0.1:11334/rspamd/" + path + "?" +param
+        for i in ['stat','auth','neighbours','list_extractors','list_transforms','graph','maps','actions','symbols','history','errors','check_selector','saveactions','savesymbols','getmap']:
+            if i in path:
+                url = "http://127.0.0.1:11334/" + path + "?" +param
+        req = requests.get(url, headers=headers,stream = True)
+        return Resp(stream_with_context(req.iter_content()), content_type = req.headers['content-type'])
+    else:
+        url = "http://127.0.0.1:11334/" + path
+        for i in request.form.keys():
+            data = '{}='.format(i)
+        # public.writeFile('/tmp/2',data+"\n","a+")
+        req = requests.post(url,data=data,headers=headers,stream = True)
+
+        return Resp(stream_with_context(req.iter_content()), content_type = req.headers['content-type'])
+
 #==================================================#
 
 
@@ -1405,6 +1448,7 @@ def get_dir_down(filename,token,find):
 
         pdata = files.files().GetDir(args)
         pdata['token'] = token
+        pdata['ps'] = find['ps']
         pdata['src_path'] = find['filename']
         pdata['to_path'] = to_path
         if find['expire'] < (time.time() + (86400 * 365 * 10)):
@@ -1455,34 +1499,19 @@ def get_phpmyadmin_dir():
 
 
 class run_exec:
-    #模块访问对像
-    def run(self,toObject,defs,get):
+    # 模块访问对像
+    def run(self, toObject, defs, get):
         result = None
-        for key in defs:
-            if key == get.action:
-                fun = 'toObject.'+key+'(get)'
-                if hasattr(get,'html') or hasattr(get,'s_module'):
-                    result =  eval(fun)
-                else:
-                    result = eval(fun)
-                    r_type = type(result)
-                    if r_type == Resp: return result
-                    result =  public.GetJson(result),json_header
-                break
-        if not result:
-            result = public.ReturnJson(False,'ARGS_ERR'),json_header
-        if g.is_aes:
-            result = public.aes_encrypt(result[0],g.aes_key),json_header
-        else:
-            # if os.path.exists('pyenv/bin/python') and sys.version_info[0] == 3:
-            #     if not os.path.exists('data/debug.pl'):
-            #         x_token = request.headers.get('x-http-token')
-            #         if x_token:
-            #             aes_pwd = x_token[:8] + x_token[40:48]
-            #             result = "BT-CRT"+public.aes_encrypt(result[0],aes_pwd),{'Content-Type':'text/plain; charset=utf-8'}
-            pass
-        return result
+        if not get.action in defs:  return public.ReturnJson(False, 'ARGS_ERR'), json_header
+        result = getattr(toObject,get.action)(get)
+        if not hasattr(get, 'html') and  not hasattr(get, 's_module'):
+            r_type = type(result)
+            if r_type in [Response,Resp]: return result
+            result = public.GetJson(result), json_header
 
+        if g.is_aes:
+            result = public.aes_encrypt(result[0], g.aes_key), json_header
+        return result
 
 
 def check_csrf():
@@ -1497,28 +1526,38 @@ def check_csrf():
     if cookie_token != session['request_token']: return False
     return True
 
-def publicObject(toObject,defs,action=None,get = None):
-    #模块访问前置检查
-    if 'request_token' in session and 'login' in session:
-        if not check_csrf(): return public.ReturnJson(False,'INIT_CSRF_ERR'),json_header
 
-    if not get: get = get_input()
-    if action: get.action = action
+def publicObject(toObject, defs, action=None, get=None):
+    try:
+        # 模块访问前置检查
+        if 'request_token' in session and 'login' in session:
+            if not check_csrf(): return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
 
-    if hasattr(get,'path'):
-            get.path = get.path.replace('//','/').replace('\\','/')
-            if get.path.find('./') != -1: return public.ReturnJson(False,'INIT_PATH_NOT_SAFE'),json_header
+        if not get: get = get_input()
+        if action: get.action = action
+
+        if hasattr(get, 'path'):
+            get.path = get.path.replace('//', '/').replace('\\', '/')
+            if get.path.find('./') != -1: return public.ReturnJson(False, 'INIT_PATH_NOT_SAFE'), json_header
             if get.path.find('->') != -1:
                 get.path = get.path.split('->')[0].strip()
-    if hasattr(get,'sfile'):
-        get.sfile = get.sfile.replace('//','/').replace('\\','/')
-    if hasattr(get,'dfile'):
-        get.dfile = get.dfile.replace('//','/').replace('\\','/')
+            get.path = public.xssdecode(get.path)
+        if hasattr(get, 'filename'):
+            get.filename = public.xssdecode(get.filename)
 
-    if hasattr(toObject,'site_path_check'):
-        if not toObject.site_path_check(get): return public.ReturnJson(False,'INIT_ACCEPT_NOT'),json_header
-    return run_exec().run(toObject,defs,get)
+        if hasattr(get, 'sfile'):
+            get.sfile = get.sfile.replace('//', '/').replace('\\', '/')
+            get.sfile = public.xssdecode(get.sfile)
+        if hasattr(get, 'dfile'):
+            get.dfile = get.dfile.replace('//', '/').replace('\\', '/')
+            get.dfile = public.xssdecode(get.dfile)
 
+
+        if hasattr(toObject, 'site_path_check'):
+            if not toObject.site_path_check(get): return public.ReturnJson(False, 'INIT_ACCEPT_NOT'), json_header
+        return run_exec().run(toObject, defs, get)
+    except:
+        return error_500(None)
 
 
 def check_login(http_token=None):
@@ -1569,8 +1608,8 @@ def get_pd():
             tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98,
                                     116, 112, 114, 111, 45, 102, 114, 101, 101, 34, 32, 111, 110, 99, 108, 105, 99, 107,
                                     61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95, 112, 114,
-                                    111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 28857, 20987, 21319, 32423,
-                                    21040, 21830, 19994, 29256, 34, 62, 20813, 36153, 29256, 60, 47, 115, 112, 97, 110, 62])
+                                    111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 67,108,105,99,107,32,116,111,32,
+                                     103,101,116,32,80,82,79, 34, 62, 20813, 36153, 29256, 60, 47, 115, 112, 97, 110, 62])
         elif tmp == -2:
             tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
                                     112, 114, 111, 45, 103, 114, 97, 121, 34, 62, 60, 115, 112, 97, 110, 32,
@@ -1609,8 +1648,8 @@ def get_pd():
             tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 112,
                                     114, 111, 45, 103, 114, 97, 121, 34, 32, 111, 110, 99, 108, 105, 99, 107,
                                     61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95, 112,
-                                    114, 111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 28857,
-                                    20987, 21319, 32423, 21040, 19987, 19994, 29256, 34, 62, 70, 82,
+                                    114, 111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 67,108,105,99,107,32,116,
+                                     111,32,103,101,116,32,80,82,79, 34, 62, 70, 82,
                                     69, 69, 60, 47, 115, 112, 97, 110, 62])
     else:
         tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 108, 116,
@@ -1675,17 +1714,9 @@ def get_input():
     for key in request.args.keys():
         data[key] = str(request.args.get(key,''))
     try:
-        # x_token = request.headers.get('x-http-token')
-        # if x_token:
-        #     aes_pwd = x_token[:8] + x_token[40:48]
-
         for key in request.form.keys():
             if key in exludes: continue
-            data[key] = str(request.form.get(key,''))
-            # if x_token:
-            #     if len(data[key]) > 5:
-            #         if data[key][:6] == 'BT-CRT':
-            #             data[key] = public.aes_decrypt(data[key][6:],aes_pwd)
+            data[key] = str(request.form.get(key, ''))
     except:
         try:
             post = request.form.to_dict()
@@ -1728,6 +1759,320 @@ def check_token(data):
 
 #======================公共方法区域END============================#
 
+# ---------------------    websocket  START  -------------------------- #
 
 
+@sockets.route('/workorder_client')
+def workorder_client(ws):
+    comReturn = comm.local()
+    if comReturn: return comReturn
 
+    get = ws.receive()
+    get = json.loads(get)
+    if not check_csrf_websocket(ws,get):
+        return
+
+    import panelWorkorder
+    toObject = panelWorkorder.panelWorkorder()
+    get = get_input()
+    toObject.client(ws, get)
+
+@sockets.route('/ws_panel')
+def ws_panel(ws):
+    '''
+        @name 面板接口ws入口
+        @author hwliang<2021-07-24>
+        @param ws<ws_parameter> websocket会话对像
+        @return void
+    '''
+    comReturn = comm.local()
+    if comReturn: return comReturn
+
+    get = ws.receive()
+    get = json.loads(get)
+    if not check_csrf_websocket(ws,get): return
+
+    while True:
+        pdata = ws.receive()
+        if pdata is '{}': break
+        data = json.loads(pdata)
+        get = public.to_dict_obj(data)
+        get._ws = ws
+        p = threading.Thread(target=ws_panel_thread,args=(get,))
+        p.start()
+
+def ws_panel_thread(get):
+    '''
+        @name 面板管理ws线程
+        @author hwliang<2021-07-24>
+        @param get<dict> 请求参数
+        @return void
+    '''
+
+    if not hasattr(get, 'ws_callback'):
+        get._ws.send(public.getJson(public.return_status_code(1001, 'ws_callback')))
+        return
+    if not hasattr(get, 'mod_name'):
+        get._ws.send(public.getJson(public.return_status_code(1001, 'mod_name')))
+        return
+    if not hasattr(get, 'def_name'):
+        get._ws.send(public.getJson(public.return_status_code(1001, 'def_name')))
+        return
+    get.mod_name = get.mod_name.strip()
+    get.def_name = get.def_name.strip()
+    check_str = '{}{}'.format(get.mod_name, get.def_name)
+    if not re.match("^\w+$", check_str) or get.mod_name in ['public', 'common', 'db', 'db_mysql', 'downloadFile',
+                                                            'jobs']:
+        get._ws.send(public.getJson(public.return_status_code(1000, '不安全的mod_name,def_name参数内容')))
+        return
+    if not hasattr(get, 'args'):
+        get._ws.send(public.getJson(public.return_status_code(1001, 'args')))
+        return
+
+    mod_file = '{}/{}.py'.format(public.get_class_path(), get.mod_name)
+    if not os.path.exists(mod_file):
+        get._ws.send(public.getJson(public.return_status_code(1000, '指定模块{}不存在'.format(get.mod_name))))
+        return
+    _obj = public.get_script_object(mod_file)
+    if not _obj:
+        get._ws.send(public.getJson(public.return_status_code(1000, '指定模块{}不存在'.format(get.mod_name))))
+        return
+    _cls = getattr(_obj, get.mod_name)
+    if not _cls:
+        get._ws.send(
+            public.getJson(public.return_status_code(1000, '在{}模块中没有找到{}对像'.format(get.mod_name, get.mod_name))))
+        return
+    _def = getattr(_cls(), get.def_name)
+    if not _def:
+        get._ws.send(
+            public.getJson(public.return_status_code(1000, '在{}对像中没有找到{}方法'.format(get.mod_name, get.def_name))))
+        return
+    result = {
+        'callback': get.ws_callback,
+        'result': _def(public.to_dict_obj(get.args))
+    }
+    get._ws.send(public.getJson(result))
+
+
+@sockets.route('/ws_project')
+def ws_project(ws):
+    '''
+        @name 项目管理ws入口
+        @author hwliang<2021-07-24>
+        @param ws<ws_parameter> websocket会话对像
+        @return void
+    '''
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    get = ws.receive()
+    get = json.loads(get)
+    if not check_csrf_websocket(ws,get): return
+
+    from panelProjectController import ProjectController
+    project_obj = ProjectController()
+    while True:
+        pdata = ws.receive()
+        if pdata in '{}': break
+        get = public.to_dict_obj(json.loads(pdata))
+        get._ws = ws
+        p = threading.Thread(target=ws_project_thread, args=(project_obj, get))
+        p.start()
+
+
+def ws_project_thread(_obj, get):
+    '''
+        @name 项目管理ws线程
+        @author hwliang<2021-07-24>
+        @param _obj<ProjectController> 项目管理控制器对像
+        @param get<dict> 请求参数
+        @return void
+    '''
+    if not hasattr(get, 'ws_callback'):
+        get._ws.send(public.getJson(public.return_status_code(1001, 'ws_callback')))
+        return
+    result = {
+        'callback': get.ws_callback,
+        'result': _obj.model(get)
+    }
+    get._ws.send(public.getJson(result))
+
+
+import subprocess
+sock_pids = {}
+@sockets.route('/sock_shell')
+def sock_shell(ws):
+    '''
+        @name 执行指定命令，实时输出命令执行结果
+        @author hwliang<2021-07-19>
+        @return void
+
+        示例：
+            p = new WebSocket('ws://192.168.1.247:8888/sock_shell')
+            p.send('ping www.bt.cn -c 100')
+    '''
+    comReturn = comm.local()
+    if comReturn:
+        ws.send(str(comReturn))
+        return
+    kill_closed()
+    get = ws.receive()
+    get = json.loads(get)
+    if not check_csrf_websocket(ws,get): return
+
+    t = None
+    try:
+        while True:
+            cmdstring = ws.receive()
+            if cmdstring in ['stop', 'error'] or not cmdstring:
+                break
+            t = threading.Thread(target=sock_recv, args=(cmdstring, ws))
+            t.start()
+        kill_closed()
+    except:
+        kill_closed()
+
+def kill_closed():
+    '''
+        @name 关闭已关闭的连接
+        @author hwliang<2021-07-24>
+        @return void
+    '''
+    global sock_pids
+    import psutil
+    pids = psutil.pids()
+    keys = sock_pids.copy().keys()
+    for pid in keys:
+        logging.debug("PID: {} , sock_stat: {}".format(pid, sock_pids[pid].closed))
+        if not sock_pids[pid].closed: continue
+
+        if pid in pids:
+            try:
+                p = psutil.Process(pid)
+                for cp in p.children():
+                    cp.kill()
+                p.kill()
+                logging.debug("killed: {}".format(pid))
+                sock_pids.pop(pid)
+            except:
+                pass
+        else:
+            sock_pids.pop(pid)
+
+
+def sock_recv(cmdstring, ws):
+    global sock_pids
+    try:
+        p = subprocess.Popen(cmdstring + " 2>&1", close_fds=True, shell=True, bufsize=4096, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        sock_pids[p.pid] = ws
+        kill_closed()
+        while p.poll() is None:
+            ws.send(p.stdout.readline().decode())
+        ws.send(p.stdout.read().decode())
+    except:
+        kill_closed()
+
+
+@app.route('/close_sock_shell', methods=method_all)
+def close_sock_shell():
+    '''
+        @name 关闭指定命令
+        @author hwliang<2021-07-19>
+        @param cmdstring<string> 完整命令行
+        @return dict
+        示例：
+            $.post('/close_sock_shell',{cmdstring:'ping www.bt.cn -c 100'})
+    '''
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    args = get_input()
+    cmdstring = args.cmdstring.strip()
+    skey = public.md5(cmdstring)
+    pid = cache.get(skey)
+    if not pid:
+        return json.dumps(public.return_data(False, [], error_msg='指定sock已终止!')), json_header
+    os.kill(pid, 9)
+    cache.delete(skey)
+    return json.dumps(public.return_data(True, '操作成功!')), json_header
+
+def check_csrf_websocket(ws,args):
+    '''
+        @name 检查websocket是否被csrf攻击
+        @author hwliang<2021-07-24>
+        @param ws<WebSocket> websocket对像
+        @return void
+    '''
+    if g.is_aes: return True
+    is_success = True
+    if not 'x-http-token' in args:
+        is_success = False
+
+    if is_success:
+        if session['request_token_head'] != args['x-http-token']:
+            is_success = False
+
+    # if is_success:
+    #     cookie_token = request.cookies.get('request_token')
+    #     if cookie_token != session['request_token']:
+    #         is_success = False
+
+    if not is_success:
+        ws.send('token error')
+        return False
+
+    return True
+
+@sockets.route('/webssh')
+def webssh(ws):
+    # 宝塔终端连接
+    comReturn = comm.local()
+    if comReturn:
+        ws.send(str(comReturn))
+        return
+    if not ws: return 'False'
+    get = ws.receive()
+    if not get: return
+    get = json.loads(get)
+    if not check_csrf_websocket(ws,get):
+        return
+
+    import ssh_terminal
+    sp = ssh_terminal.ssh_host_admin()
+    if 'host' in get:
+        ssh_info = {}
+        ssh_info['host'] = get['host'].strip()
+        if 'port' in get:
+            ssh_info['port'] = int(get['port'])
+        if 'username' in get:
+            ssh_info['username'] = get['username'].strip()
+        if 'password' in get:
+            ssh_info['password'] = get['password'].strip()
+        if 'pkey' in get:
+            ssh_info['pkey'] = get['pkey'].strip()
+
+        if get['host'] in ['127.0.0.1', 'localhost'] and 'port' not in ssh_info:
+            ssh_info = sp.get_ssh_info('127.0.0.1')
+            if not ssh_info: ssh_info = sp.get_ssh_info('localhost')
+            if not ssh_info: ssh_info = {"host": "127.0.0.1"}
+            ssh_info['port'] = public.get_ssh_port()
+    else:
+        ssh_info = sp.get_ssh_info('127.0.0.1')
+        if not ssh_info: ssh_info = sp.get_ssh_info('localhost')
+        if not ssh_info: ssh_info = {"host": "127.0.0.1"}
+        ssh_info['port'] = public.get_ssh_port()
+
+    if not ssh_info['host'] in ['127.0.0.1', 'localhost']:
+        if not 'username' in ssh_info:
+            ssh_info = sp.get_ssh_info(ssh_info['host'])
+            if not ssh_info:
+                ws.send('The specified host information is not found, please add it again!')
+                return
+    p = ssh_terminal.ssh_terminal()
+    p.run(ws, ssh_info)
+    del (p)
+    if not ws.closed:
+        ws.close()
+    return 'False'
+
+
+# ---------------------    websocket END    -------------------------- #
