@@ -1815,19 +1815,7 @@ html .menu .menu_exit:hover {
 
 .bt-w-con {
 	margin-left: 170px;
-    position: relative;
-    padding: 7px 15px;
-}
-.bt-w-con .bt-w-item{
-	height: 100%;
-	display:none;
-}
-.bt-w-con .bt-w-item.active{
-	display:block;
-}
-.taskcon{
-	height: 500px;
-    overflow: auto;
+	position: relative
 }
 .mes_channel .bt-w-con {
 	margin-left: 110px;
@@ -3127,6 +3115,7 @@ html .menu .menu_exit:hover {
 	vertical-align: middle;
 	padding: 5px 10px;
     height: 40px;
+    font-size: 12.5px;
 	box-sizing: border-box;
 }
 .table>tbody{
@@ -9945,16 +9934,6 @@ select[name="network-io"]{
 	margin-left: 5px;
 	vertical-align: middle;
 }
-
-.command_output_pre{
-	white-space: pre-line;
-	background: rgb(51, 51, 51);
-	color: rgb(236, 236, 236);
-	box-sizing: border-box;
-	margin: 0;
-	border: none;
-	border-radius: 1px;
-}
 /*批量创建站点end*/
 
 .custom_layer .layui-layer-content .tab-body .tab-con{
@@ -10309,63 +10288,3 @@ background:url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODIiIGhlaWdodD0iODIiIHh
 	margin-right: 10px;
 }
 /* 企业版支付end */
-.commonly_software{
-  height: 28px;
-  line-height: 28px;
-  margin-bottom: 15px;
-  color:#666;
-}
-.commonly_software .commonly_software_title{
-  display: inline-block;
-  padding-left: 5px;
-  padding-right: 15px;
-}
-
-.commonly_software .commonly_software_list{
-  display: inline-block;
-
-}
-.commonly_software .commonly_software_list .item{
-  display: inline-block;
-  margin-right: 10px;
-  padding: 0 10px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: all 500ms;
-  position: relative;
-}
-.commonly_software .commonly_software_list .item:hover{
-  color: #20A53A;
-  background-color: #f5f5f5;
-}
-.commonly_software .commonly_software_list .item img{
-  max-width: 22px;
-  margin-right: 5px;
-  image-rendering: -webkit-optimize-contrast;
-  vertical-align: middle;
-  margin-top: -2.5px;
-}
-
-.commonly_software .commonly_software_list .item span{
-  display: inline-block;
-  font-size: 12px;
-  color:#666;
-}
-.pro_introduce_content .item{
-  position: relative;
-}
-.pro_introduce_content .item .success_icon{
-    position: absolute;
-    display: block;
-    left: 0;
-    top: 50%;
-    margin-top: -8px;
-    width: 6px;
-    height: 12px;
-    border: solid #20a532;
-    border-width: 0 1.5px 1.5px 0;
-    transform: rotate(45deg);
-}
-.pro_introduce_content .item span:nth-child(2){
-  padding-left: 14px;
-}

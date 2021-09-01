@@ -114,9 +114,9 @@ _convenient and efficient file manager integration , Support uploading, download
 #### Installation command：
 ##### Centos
 ```bash
-yum install -y wget && wget -O install.sh http://www.aapanel.com/script/install_6.0_en.sh && bash install.sh 66959f96
+yum install -y wget && wget -O install.sh http://www.aapanel.com/script/install_6.0_en.sh && bash install.sh
 ```
 ##### Ubuntu/Debian
 ```bash
-wget -O install.sh http://www.aapanel.com/script/install-ubuntu_6.0_en.sh && sudo bash install.sh 66959f96
+wget -O install.sh http://www.aapanel.com/script/install-ubuntu_6.0_en.sh && sudo bash install.sh
 ```

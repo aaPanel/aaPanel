@@ -487,10 +487,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         import json, files
 
         get.path = self.__get_site_format_path(get.path)
-
-        if not public.check_site_path(get.path):
-            a,c = public.get_sys_path()
-            return public.returnMsg(False,'Please do not set the website root directory to the system main directory:<br> {}'.format("<br>".join(a+c)))
         try:
             siteMenu = json.loads(get.webname)
         except:
@@ -524,9 +520,10 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         domain = None
         # if siteMenu['count']:
         #    domain            = get.domain.replace(' ','')
-        #表单验证
-        if not self.__check_site_path(self.sitePath): return public.returnMsg(False,'PATH_ERROR')
-        if len(self.phpVersion) < 2: return public.returnMsg(False,'SITE_ADD_ERR_PHPEMPTY')
+        # 表单验证
+        if not files.files().CheckDir(self.sitePath) or not self.__check_site_path(
+            self.sitePath): return public.returnMsg(False, 'PATH_ERROR')
+        if len(self.phpVersion) < 2: return public.returnMsg(False, 'SITE_ADD_ERR_PHPEMPTY')
         reg = r"^([\w\-\*]{1,100}\.){1,4}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
         if not re.match(reg, self.siteName): return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN')
         if self.siteName.find('*') != -1: return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN_TOW')
@@ -603,12 +600,13 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             get.ps = self.siteName
             firewalls.firewalls().AddAcceptPort(get)
 
-        if not hasattr(get,'type_id'): get.type_id = 0
-        public.check_domain_cloud(self.siteName)
-        #写入数据库
-        get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime',(self.siteName,self.sitePath,'1',ps,get.type_id,public.getDate()))
+        if not hasattr(get, 'type_id'): get.type_id = 0
 
-        #添加更多域名
+        # 写入数据库
+        get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime',
+                                         (self.siteName, self.sitePath, '1', ps, get.type_id, public.getDate()))
+
+        # 添加更多域名
         for domain in siteMenu['domainlist']:
             get.domain = domain
             get.webname = self.siteName
@@ -1047,7 +1045,6 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
                 firewalls.firewalls().AddAcceptPort(get)
             if not multiple:
                 public.serviceReload()
-            public.check_domain_cloud(get.domain)
             public.WriteLog('TYPE_SITE', 'DOMAIN_ADD_SUCCESS', (get.webname, get.domain))
             sql.table('domain').add('pid,name,port,addtime', (get.id, get.domain, get.port, public.getDate()))
 
@@ -1645,20 +1642,11 @@ listener Default%s{
     # 获取TLS1.3标记
     def get_tls13(self):
         nginx_bin = '/www/server/nginx/sbin/nginx'
-        nginx_v = public.ExecShell(nginx_bin + ' -V 2>&1')[0]
-        nginx_v_re = re.findall("nginx/(\d\.\d+).+OpenSSL\s+(\d\.\d+)",nginx_v,re.DOTALL)
-        if nginx_v_re:
-            if nginx_v_re[0][0] in ['1.8','1.9','1.7','1.6','1.5','1.4']:
-                return ''
-            if float(nginx_v_re[0][0]) >= 1.15 and float(nginx_v_re[0][-1]) >= 1.1:
-                return ' TLSv1.3'
-        else:
-            _v = re.search('nginx/1\.1(5|6|7|8|9).\d',nginx_v)
-            if not _v:
-                _v = re.search('nginx/1\.2\d\.\d',nginx_v)
-            openssl_v = public.ExecShell(nginx_bin + ' -V 2>&1|grep OpenSSL')[0].find('OpenSSL 1.1.') != -1
-            if _v and openssl_v:
-                return ' TLSv1.3'
+        nginx_v = public.ExecShell(nginx_bin + ' -V 2>&1|grep version:')[0]
+        nginx_v = re.search('nginx/1\.1(5|6|7|8|9).\d', nginx_v)
+        openssl_v = public.ExecShell(nginx_bin + ' -V 2>&1|grep OpenSSL')[0].find('OpenSSL 1.1.') != -1
+        if nginx_v and openssl_v:
+            return ' TLSv1.3'
         return ''
 
     # 获取apache反向代理
@@ -2579,8 +2567,8 @@ listener SSL443 {
         if conf:
             listen_ipv6 = ''
             if self.is_ipv6: listen_ipv6 = "\n    listen [::]:%s;" % port
-            rep = "enable-php-(\w{2,5})\.conf"
-            tmp = re.search(rep,conf).groups()
+            rep = "enable-php-([0-9]{2,3})\.conf"
+            tmp = re.search(rep, conf).groups()
             version = tmp[0]
             bindingConf = '''
 #BINDING-%s-START
@@ -2901,10 +2889,9 @@ server
         Path = self.GetPath(get.path)
         if Path == "" or id == '0': return public.returnMsg(False, "DIR_EMPTY")
 
-        if not self.__check_site_path(Path): return public.returnMsg(False,"PATH_ERROR")
-        if not public.check_site_path(Path):
-            a, c = public.get_sys_path()
-            return public.returnMsg(False,'Please do not set the website root directory to the system main directory: <br>{}'.format("<br>".join(a+c)))
+        import files
+        if not files.files().CheckDir(Path) or not self.__check_site_path(Path): return public.returnMsg(False,
+                                                                                                         "PATH_ERROR")
 
         SiteFind = public.M("sites").where("id=?", (id,)).field('path,name').find()
         if SiteFind["path"] == Path: return public.returnMsg(False, "SITE_PATH_ERR_RE")
@@ -2942,41 +2929,33 @@ server
         public.set_site_open_basedir_nginx(Name)
 
         public.serviceReload()
-        public.M("sites").where("id=?",(id,)).setField('path',Path)
-        public.WriteLog('TYPE_SITE', 'SITE_PATH_SUCCESS',(Name,))
-        return public.returnMsg(True,  "SET_SUCCESS")
+        public.M("sites").where("id=?", (id,)).setField('path', Path)
+        public.WriteLog('TYPE_SITE', 'SITE_PATH_SUCCESS', (Name,))
+        return public.returnMsg(True, "SET_SUCCESS")
 
-    #取当前可用PHP版本
-    def GetPHPVersion(self,get):
-        phpVersions = ('00','other','52','53','54','55','56','70','71','72','73','74','80')
+    # 取当前可用PHP版本
+    def GetPHPVersion(self, get):
+        phpVersions = ('00', '52', '53', '54', '55', '56', '70', '71', '72', '73', '74', '80')
         httpdVersion = ""
         filename = self.setupPath + '/apache/version.pl'
         if os.path.exists(filename): httpdVersion = public.readFile(filename).strip()
 
-        if httpdVersion == '2.2': phpVersions = ('00','52','53','54')
-        if httpdVersion == '2.4': phpVersions = ('00','other','53','54','55','56','70','71','72','73','74','80')
+        if httpdVersion == '2.2': phpVersions = ('00', '52', '53', '54')
+        if httpdVersion == '2.4': phpVersions = ('00', '53', '54', '55', '56', '70', '71', '72', '73', '74', '80')
         if os.path.exists('/www/server/nginx/sbin/nginx'):
             cfile = '/www/server/nginx/conf/enable-php-00.conf'
-            if not os.path.exists(cfile): public.writeFile(cfile,'')
+            if not os.path.exists(cfile): public.writeFile(cfile, '')
 
-        s_type = getattr(get,'s_type',0)
         data = []
         for val in phpVersions:
             tmp = {}
-            checkPath = self.setupPath+'/php/'+val+'/bin/php'
-            if val in ['00','other']: checkPath = '/etc/init.d/bt'
-            if httpdVersion == '2.2': checkPath = self.setupPath+'/php/'+val+'/libphp5.so'
+            checkPath = self.setupPath + '/php/' + val + '/bin/php'
+            if val == '00': checkPath = '/etc/init.d/bt'
+            if httpdVersion == '2.2': checkPath = self.setupPath + '/php/' + val + '/libphp5.so'
             if os.path.exists(checkPath):
                 tmp['version'] = val
-                tmp['name'] = 'PHP-'+val
-                if val == '00':
-                    tmp['name'] = public.getMsg('STATIC')
-
-                if val == 'other':
-                    if s_type:
-                        tmp['name'] = 'Customize'
-                    else:
-                        continue
+                tmp['name'] = 'PHP-' + val
+                if val == '00': tmp['name'] = public.getMsg('STATIC')
                 data.append(tmp)
         return data
 
@@ -2990,12 +2969,6 @@ server
             data['tomcat'] = conf.find('#TOMCAT-START')
             data['tomcatversion'] = public.readFile(self.setupPath + '/tomcat/version.pl')
             data['nodejsversion'] = public.readFile(self.setupPath + '/node.js/version.pl')
-            data['php_other'] = ''
-            if data['phpversion'] == 'other':
-                other_file = '/www/server/panel/vhost/other_php/{}/enable-php-other.conf'.format(siteName)
-                if os.path.exists(other_file):
-                    conf = public.readFile(other_file)
-                    data['php_other'] = re.findall(r"fastcgi_pass\s+(.+);",conf)[0]
             return data
         except:
             return public.returnMsg(False, 'SITE_PHPVERSION_ERR_A22,{}'.format(public.get_error_info()))
@@ -3033,57 +3006,15 @@ server
     def SetPHPVersion(self, get, multiple=None):
         siteName = get.siteName
         version = get.version
-        if version == 'other' and not public.get_webserver() in ['nginx','tengine']:
-            return public.returnMsg(False,'Custom PHP configuration only supports Nginx')
         try:
             # nginx
             file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
             conf = public.readFile(file)
             if conf:
-                other_path = '/www/server/panel/vhost/other_php/{}'.format(siteName)
-                if not os.path.exists(other_path): os.makedirs(other_path)
-                other_rep = "{}/enable-php-other.conf".format(other_path)
-
-
-                if version == 'other':
-                    dst = other_rep
-                    get.other = get.other.strip()
-
-                    if not get.other:
-                        return public.returnMsg(False,'The PHP connection configuration cannot be empty when customizing the version!')
-
-                    if not re.match(r"^(\d+\.\d+\.\d+\.\d+:\d+|unix:[\w/\.-]+)$",get.other):
-                        return public.returnMsg(False,'The PHP connection configuration format is incorrect, please refer to the example!')
-
-                    other_tmp = get.other.split(':')
-                    if other_tmp[0] == 'unix':
-                        if not os.path.exists(other_tmp[1]):
-                            return public.returnMsg(False,'The specified unix socket [{}] does not exist!'.format(other_tmp[1]))
-                    else:
-                        if not public.check_tcp(other_tmp[0],int(other_tmp[1])):
-                            return public.returnMsg(False,'Unable to connect to [{}], please check whether the machine can connect to the target server'.format(get.other))
-
-                    other_conf = '''location ~ [^/]\.php(/|$)
-{{
-    try_files $uri =404;
-    fastcgi_pass  {};
-    fastcgi_index index.php;
-    include fastcgi.conf;
-    include pathinfo.conf;
-}}'''.format(get.other)
-                    public.writeFile(other_rep,other_conf)
-                    conf = conf.replace(other_rep,dst)
-                    rep = "include\s+enable-php-(\w{2,5})\.conf"
-                    tmp = re.search(rep,conf)
-                    if tmp: conf = conf.replace(tmp.group(),'include ' + dst)
-                else:
-                    dst = 'enable-php-'+version+'.conf'
-                    conf = conf.replace(other_rep,dst)
-                    rep = "enable-php-(\w{2,5})\.conf"
-                    tmp = re.search(rep,conf)
-                    if tmp: conf = conf.replace(tmp.group(),dst)
-
-                public.writeFile(file,conf)
+                rep = "enable-php-([0-9]{2,3})\.conf"
+                tmp = re.search(rep, conf).group()
+                conf = conf.replace(tmp, 'enable-php-' + version + '.conf')
+                public.writeFile(file, conf)
                 try:
                     import site_dir_auth
                     site_dir_auth_module = site_dir_auth.SiteDirAuth()
@@ -3097,25 +3028,23 @@ server
                                 site_dir_auth_module.change_dir_auth_file_nginx_phpver(siteName,version,auth_name)
                 except:
                     pass
-
-            #apache
-            file = self.setupPath + '/panel/vhost/apache/'+siteName+'.conf'
+            # apache
+            file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
             conf = public.readFile(file)
-            if conf and version != 'other':
-                rep = "(unix:/tmp/php-cgi-(\w{2,5})\.sock\|fcgi://localhost|fcgi://127.0.0.1:\d+)"
-                tmp = re.search(rep,conf).group()
-                conf = conf.replace(tmp,public.get_php_proxy(version,'apache'))
-                public.writeFile(file,conf)
-            #OLS
-            if version != 'other':
-                file = self.setupPath + '/panel/vhost/openlitespeed/detail/'+siteName+'.conf'
-                conf = public.readFile(file)
-                if conf:
-                    rep = 'lsphp\d+'
-                    tmp = re.search(rep, conf)
-                    if tmp:
-                        conf = conf.replace(tmp.group(), 'lsphp' + version)
-                        public.writeFile(file, conf)
+            if conf:
+                rep = "(unix:/tmp/php-cgi-([0-9]{2,3})\.sock\|fcgi://localhost|fcgi://127.0.0.1:\d+)"
+                tmp = re.search(rep, conf).group()
+                conf = conf.replace(tmp, public.get_php_proxy(version, 'apache'))
+                public.writeFile(file, conf)
+            # OLS
+            file = self.setupPath + '/panel/vhost/openlitespeed/detail/' + siteName + '.conf'
+            conf = public.readFile(file)
+            if conf:
+                rep = 'lsphp\d+'
+                tmp = re.search(rep, conf)
+                if tmp:
+                    conf = conf.replace(tmp.group(), 'lsphp' + version)
+                    public.writeFile(file, conf)
             if not multiple:
                 public.serviceReload()
             public.WriteLog("TYPE_SITE", "SITE_PHPVERSION_SUCCESS", (siteName, version))
@@ -3233,10 +3162,12 @@ server
         return json.loads(upBody)
 
         # 写配置
+
     def __write_config(self, path, data):
         return public.writeFile(path, json.dumps(data))
 
         # 取某个站点某条反向代理详情
+
     def GetProxyDetals(self, get):
         proxyUrl = self.__read_config(self.__proxyfile)
         sitename = get.sitename
@@ -3375,6 +3306,7 @@ server
             if i["sitename"] == get.sitename:
                 if i["advanced"] != int(get.advanced):
                     return i
+
     # 计算proxyname md5
     def __calc_md5(self, proxyname):
         md5 = hashlib.md5()
@@ -3436,8 +3368,8 @@ server
             return public.returnMsg(False, "PROXY_DIR_ERR", ("?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\,',\"]",))
         # 检测发送域名格式
         if get.todomain:
-            if re.search("[\}\{\#\;\"\']+",get.todomain):
-                return public.returnMsg(False, 'Sent Domain format error :'+get.todomain+'<br>The following special characters cannot exist [ }  { # ; \" \' ] ')
+            if not re.search(tod, get.todomain):
+                return public.returnMsg(False, 'SENT_DOMAIN_FORMAT', (get.todomain,))
         if public.get_webserver() != 'openlitespeed' and not get.todomain:
             get.todomain = "$host"
 
@@ -3716,11 +3648,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     ng_conf = re.sub("location\s+\~\*\s+\\\.\(gif.*\n\{\s*proxy_pass\s+%s.*" % (php_pass_proxy),
                                      "location ~* \.(gif|png|jpg|css|js|woff|woff2)$\n{\n\tproxy_pass %s;" % php_pass_proxy,ng_conf)
 
-                    backslash = ""
-                    if "Host $host" in ng_conf:
-                        backslash = "\\"
-
-                    ng_conf = re.sub("\sHost\s+%s" % backslash + conf[i]["todomain"], " Host " + get.todomain, ng_conf)
+                    ng_conf = re.sub("\sHost\s+%s" % '\\' + conf[i]["todomain"]," Host "+get.todomain,ng_conf)
                     cache_rep = r"proxy_cache_valid\s+200\s+304\s+301\s+302\s+\d+m;((\n|.)+expires\s+\d+m;)*"
                     if int(get.cache) == 1:
                         if re.search(cache_rep, ng_conf):

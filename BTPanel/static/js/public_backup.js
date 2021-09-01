@@ -517,7 +517,9 @@ var bt = {
                 }
 
                 if (callback) callback(rdata);
-            })
+            }).error(function(e, f) {
+                if (callback) callback('error');
+            });
         }
     },
     linux_format_param: function(param) {
@@ -549,11 +551,11 @@ var bt = {
         var btnObj = {
             title: config.title ? config.title : false,
             shadeClose: config.shadeClose ? config.shadeClose : true,
-            closeBtn: config.closeBtn ? config.closeBtn : 2,
+            closeBtn: config.closeBtn ? config.closeBtn : 0,
             scrollbar: true,
-            shade: 0.3
+            shade: 0.3,
         };
-        if (!config.hasOwnProperty('time')) config.time = 0;
+        if (!config.hasOwnProperty('time')) config.time = 2000;
         if (typeof config.msg == 'string' && bt.contains(config.msg, 'ERROR')) config.time = 0;
 
         if (config.hasOwnProperty('icon')) {
@@ -570,7 +572,7 @@ var bt = {
         if (config.msg) msg += config.msg;
         if (config.msg_error) msg += config.msg_error;
         if (config.msg_solve) msg += config.msg_solve;
-        if(config.status) $.extend(btnObj,{closeBtn:0,time:2000});
+
         layer.msg(msg, btnObj);
     },
     confirm: function(config, callback, callback1) {
@@ -3884,10 +3886,7 @@ bt.soft = {
         bt.soft.pro.get_product_discount_by(config.pid,function(rdata){
           //rdata = {"36": {"discount": 1, "did": 0, "price": 3564, "name": "正常", "sprice": 3564}, "24": {"discount": 1, "did": 0, "price": 2376, "name": "正常", "sprice": 2376}, "12": {"discount": 1, "did": 0, "price": 1188, "name": "正常", "sprice": 1188}, "6": {"discount": 1, "did": 0, "price": 594, "name": "正常", "sprice": 594}, "3": {"discount": 1, "did": 0, "price": 297, "name": "正常", "sprice": 297}, "1": {"discount": 1, "did": 0, "price": 99, "name": "正常", "sprice": 99}, "pid": "100000045"};
           if(typeof rdata.status === "boolean"){
-              if(!rdata.status) {
-                  bt.msg({status:false, msg:rdata.msg})
-                  return false;
-              }
+              if(!rdata.status) return false;
           }
           that.product_cache[config.pid] = rdata;
           setTimeout(function(){ delete that.product_cache[config.pid] },60000);
@@ -4021,8 +4020,7 @@ bt.soft = {
                   if (rdata.status === false){
                     bt.set_cookie('force', 1);
                     if (soft) soft.flush_cache();
-                    // layer.msg(rdata.msg, { icon: 2 });
-                    bt.msg({status:false,msg:rdata.msg})
+                    layer.msg(rdata.msg, { icon: 2 });
                     return;
                   }
                   config.pay = parseInt($('#libPay-mode .pay-cycle-btn.active').data('condition'));
@@ -4486,8 +4484,7 @@ bt.soft = {
             if (rdata.status === false) {
                 bt.set_cookie('force', 1);
                 if (soft) soft.flush_cache();
-                // layer.msg(rdata.msg, { icon: 2 });
-                bt.msg({status:false,msg:rdata.msg})
+                layer.msg(rdata.msg, { icon: 2 });
                 return;
             }
             $(".pay-wx").html('');
@@ -5836,17 +5833,6 @@ bt.site = {
             if (callback) callback(rdata);
         })
     },
-    get_site_error_logs: function (siteName, callback) {
-      var loading = bt.load();
-      bt.send('get_site_errlog', 'site/get_site_errlog', {
-        siteName: siteName
-        }, function (rdata) {
-            loading.close();
-            if (rdata.status !== true) rdata.msg = '';
-            if (rdata.msg == '') rdata.msg = lan.public_backup.no_log;
-            if (callback) callback(rdata);
-        })
-      },
     get_site_ssl: function(siteName, callback) {
         var loadT = bt.load(lan.site.the_msg);
         bt.send('GetSSL', 'site/GetSSL', { siteName: siteName }, function(rdata) {

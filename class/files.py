@@ -165,23 +165,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if text2.find(rep) != -1: text2 = text2.replace(rep,reps[rep])
         return text2
 
-    # 名称输入系列化
-    def xssdecode(self,text):
-        try:
-            cs = {"&quot":'"',"&#x27":"'"}
-            for c in cs.keys():
-                text = text.replace(c,cs[c])
-
-            str_convert = text
-            if sys.version_info[0] == 3:
-                import html
-                text2 = html.unescape(str_convert)
-            else:
-                text2 = cgi.unescape(str_convert)
-            return text2
-        except:
-            return text
-
     # 上传文件
     def UploadFile(self, get):
         from werkzeug.utils import secure_filename
@@ -319,13 +302,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return str(result)
         return '0'
 
-
-    def __filename_flater(self,filename):
-        ms = {";":""}
-        for m in ms.keys():
-            filename = filename.replace(m,ms[m])
-        return filename
-
     # 取文件/目录列表
     def GetDir(self, get):
         if not hasattr(get, 'path'):
@@ -335,7 +311,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.path = get.path.encode('utf-8')
         if get.path == '':
             get.path = '/www'
-        get.path = self.xssdecode(get.path)
         if not os.path.exists(get.path):
             get.path = '/www/wwwroot'
             #return public.ReturnMsg(False, '指定目录不存在!')
@@ -431,11 +406,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     # 判断文件是否已经被收藏
                     favorite = self.__check_favorite(filePath,data['STORE'])
                     if os.path.isdir(filePath):
-                        dirnames.append(self.__filename_flater(filename)+';'+size+';' + mtime+';'+accept+';'+user+';'+link + ';' +
+                        dirnames.append(filename+';'+size+';' + mtime+';'+accept+';'+user+';'+link + ';' +
                                         self.get_download_id(filePath)+';'+ self.is_composer_json(filePath)+';'
                                         +favorite+';'+self.__check_share(filePath))
                     else:
-                        filenames.append(self.__filename_flater(filename)+';'+size+';'+mtime+';'+accept+';'+user+';'+link+';'
+                        filenames.append(filename+';'+size+';'+mtime+';'+accept+';'+user+';'+link+';'
                                          +self.get_download_id(filePath)+';' + self.is_composer_json(filePath)+';'
                                          +favorite+';'+self.__check_share(filePath))
                     n += 1
@@ -462,7 +437,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 file_info = self.__format_stat(filename, get.path)
                 if not file_info: continue
                 favorite = self.__check_favorite(filename, data['STORE'])
-                r_file = self.__filename_flater(file_info['name']) + ';' + str(file_info['size']) + ';' + str(file_info['mtime']) + ';' + str(
+                r_file = file_info['name'] + ';' + str(file_info['size']) + ';' + str(file_info['mtime']) + ';' + str(
                     file_info['accept']) + ';' + file_info['user'] + ';' + file_info['link']+';'\
                          + self.get_download_id(filename) + ';' + self.is_composer_json(filename)+';'\
                          + favorite+';'+self.__check_share(filename)
@@ -502,30 +477,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         f_key2 = '/'.join((ps_path,public.md5(os.path.basename(filename))))
         if os.path.exists(f_key2):
             return public.readFile(f_key2)
-
-        pss = {
-            '/www/server/data':'MySQL data storage directory!',
-            '/www/server/mysql':'MySQL program directory',
-            '/www/server/redis':'Redis program directory',
-            '/www/server/mongodb':'MongoDB program directory',
-            '/www/server/nvm':'PM2/NVM/NPM program directory',
-            '/www/server/pass':'Website Basic Auth authentication password storage directory',
-            '/www/server/speed':'Website speed plugin directory',
-            '/www/server/docker':'Docker and data directory',
-            '/www/server/total':'Website Statistics Directory',
-            '/www/server/btwaf':'WAF directory',
-            '/www/server/pure-ftpd':'ftp program directory',
-            '/www/server/phpmyadmin':'phpMyAdmin program directory',
-            '/www/server/rar':'rar extension library directory, after deleting, it will lose support for RAR compressed files',
-            '/www/server/stop':'Website disabled page directory, please do not delete!',
-            '/www/server/nginx':'Nginx program directory',
-            '/www/server/apache':'Apache program directory',
-            '/www/server/cron':'Cron script and log directory',
-            '/www/server/php':'All interpreters of PHP versions are in this directory',
-            '/www/server/tomcat':'Tomcat program directory',
-            '/www/php_session':'PHP-SESSION Quarantine directory'
-        }
-        if filename in pss:  return pss[filename]
         return ''
 
 
@@ -561,13 +512,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
 
 
-    def check_file_sort(self,sort):
-        """
-        @校验排序字段
-        """
-        slist = ['name','size','mtime','accept','user']
-        if sort in slist: return sort
-        return 'name'
 
     def __list_dir(self, path, my_sort='name', reverse=False):
         '''
@@ -610,9 +554,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 continue
             #使用list[tuple]排序效率更高
             tmp_files.append((f_name,sort_val))
-        try:
-            tmp_files = sorted(tmp_files, key=lambda x: x[sort_key], reverse=reverse)
-        except:pass
+
+        tmp_files = sorted(tmp_files, key=lambda x: x[sort_key], reverse=reverse)
         return tmp_files
 
     def __format_stat(self, filename, path):
@@ -1139,8 +1082,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def GetFileBody(self, get):
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
-
-        get.path = self.xssdecode(get.path)
         if not os.path.exists(get.path):
             if get.path.find('rewrite') == -1:
                 return public.returnMsg(False,'FILE_NOT_EXISTS',(get.path,))
@@ -1367,11 +1308,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def Zip(self, get):
         if not 'z_type' in get:
             get.z_type = 'rar'
-
-        if get.z_type == 'rar':
-            if os.uname().machine == 'aarch64':
-                return public.returnMsg(False,'RAR component does not support aarch 64 platform')
-
         import panelTask
         task_obj = panelTask.bt_task()
         task_obj.create_task(public.GetMsg("COMPRESSION_FILE"),3,get.path,json.dumps({"sfile":get.sfile,"dfile":get.dfile,"z_type":get.z_type}))
@@ -1451,8 +1387,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def CloseLogs(self, get):
         get.path = public.GetConfigValue('root_path')
         public.ExecShell('rm -f '+public.GetConfigValue('logs_path')+'/*')
-        public.ExecShell('rm -rf '+public.GetConfigValue('logs_path')+'/history_backups/*')
-        public.ExecShell('rm -f '+public.GetConfigValue('logs_path')+'/pm2/*.log')
         if public.get_webserver() == 'nginx':
             public.ExecShell(
                 'kill -USR1 `cat '+public.GetConfigValue('setup_path')+'/nginx/logs/nginx.pid`')
@@ -1545,19 +1479,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         myfiles = json.loads(session['selected']['data'])
         l = len(myfiles)
         if get.type == '1':
-
-            for key in myfiles:
-                if sys.version_info[0] == 2:
-                    sfile = session['selected']['path'] + \
-                        '/' + key.encode('utf-8')
-                    dfile = get.path + '/' + key.encode('utf-8')
-                else:
-                    sfile = session['selected']['path'] + '/' + key
-                    dfile = get.path + '/' + key
-
-                if dfile.find(sfile) == 0:
-                    return public.returnMsg(False,'Wrong copy logic, from {} copy to {} has an inclusive relationship, there is an infinite loop copy risk!'.format(sfile,dfile))
-
             for key in myfiles:
                 i += 1
                 public.writeSpeed(key, i, l)
@@ -2093,7 +2014,7 @@ cd %s
             if len(pdata['password']) < 4 and len(pdata['password']) > 0:
                 return public.returnMsg(False,'The length of the extracted password cannot be less than 4 digits')
             if not re.match('^\w+$',pdata['password']):
-                return public.returnMsg(False,'The password only supports a combination of uppercase and lowercase letters and numbers')
+                return public.returnMsg(False,'No special symbols can be used in the extracted password')
 
         if 'ps' in get: pdata['ps'] = get.ps
         public.M(my_table).where('id=?', (id,)).update(pdata)
@@ -2116,8 +2037,8 @@ cd %s
         }
         if len(pdata['password']) < 4 and len(pdata['password']) > 0:
             return public.returnMsg(False,'PASSWD_ERR')
-        if not re.match('^\w+$',pdata['password']) and pdata['password']:
-            return public.returnMsg(False,'The password only supports a combination of uppercase and lowercase letters and numbers')
+        if not re.match('^\w+$',pdata['password']):
+            return public.returnMsg(False,'No special symbols can be used in the extracted password')
         #更新 or 插入
         token = public.M(my_table).where('filename=?',(get.filename,)).getField('token')
         if token:
@@ -2202,10 +2123,8 @@ cd %s
         php_bin = self.__get_php_bin(php_version)
         if not php_bin:
             return public.returnMsg(False,'PHP_VER_NOT_FOUND')
-        get.composer_cmd = get.composer_cmd.strip()
-        if get.composer_cmd == '':
-            if not os.path.exists(get.path + '/composer.json'):
-                return public.returnMsg(False,'COMPOSER_CONF_NOT_FOUND')
+        if not os.path.exists(get.path + '/composer.json'):
+            return public.returnMsg(False,'COMPOSER_CONF_NOT_FOUND')
         log_file = '/tmp/composer.log'
         user = ''
         if 'user' in get:
@@ -2224,15 +2143,7 @@ cd %s
             else:
                 public.ExecShell('export COMPOSER_HOME=/tmp && {}{} {} config -g --unset repos.packagist'.format(user,php_bin,composer_bin))
         #执行composer命令
-        if not get.composer_cmd:
-            composer_exec_str = '{} {} {} -vvv'.format(php_bin,composer_bin,get.composer_args)
-        else:
-            if get.composer_cmd.find('composer ') == 0 or get.composer_cmd.find('/usr/bin/composer ') == 0:
-                composer_cmd = get.composer_cmd.replace('composer ','').replace('/usr/bin/composer ','')
-                composer_exec_str = '{} {} {} -vvv'.format(php_bin,composer_bin,composer_cmd)
-            else:
-                composer_exec_str = '{} {} {} {} -vvv'.format(php_bin,composer_bin,get.composer_args,get.composer_cmd)
-
+        composer_exec_str = '{} {} {} -vvv'.format(php_bin,composer_bin,get.composer_args)
         if os.path.exists(log_file): os.remove(log_file)
         public.ExecShell("cd {} && export COMPOSER_HOME=/tmp && {} nohup {} &> {} && echo 'BT-Exec-Completed' >> {}  && rm -rf /home/www &".format(get.path,user,composer_exec_str,log_file,log_file))
         public.WriteLog('Composer',"EXEC_COMPOSER",(get.path,get.composer_args))
@@ -2347,27 +2258,6 @@ cd %s
         except:
             return uid
 
-    # 取lsattr
-    def get_lsattr(self,filename):
-        if os.path.isfile(filename):
-            return public.ExecShell('lsattr {}'.format(filename))[0].split(' ')[0]
-        else:
-            s_name = os.path.basename(filename)
-            s_path = os.path.dirname(filename)
-
-            try:
-                res = public.ExecShell('lsattr {}'.format(s_path))[0].strip()
-                for s in res.split('\n'):
-                    if not s: continue
-                    lsattr_info = s.split()
-                    if not lsattr_info: continue
-                    if filename == lsattr_info[1]:
-                        return lsattr_info[0]
-            except:
-                raise public.PanelError(lsattr_info)
-
-        return '--------------e----'
-
 
     # 取指定文件属性
     def get_file_attribute(self,args):
@@ -2393,7 +2283,6 @@ cd %s
         attribute['mode'] = str(oct(f_stat.st_mode)[-3:])         # 文件权限号
         attribute['md5'] = 'Do not count files or directories larger than 100MB'                        # 文件MD5
         attribute['sha1'] = 'Do not count files or directories larger than 100MB'                       # 文件sha1
-        attribute['lsattr'] = self.get_lsattr(filename)
         attribute['is_dir'] = os.path.isdir(filename)   # 是否为目录
         attribute['is_link'] = os.path.islink(filename)  # 是否为链接文件
         if attribute['is_link']:

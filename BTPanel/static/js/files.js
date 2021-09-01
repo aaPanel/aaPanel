@@ -298,14 +298,12 @@ var bt_file = {
                         if(that.uploading){
                             layer.confirm('Do you want to cancel the upload of files? It need to delete the uploaded files manually. Continue?',{title:'Cancel file upload',icon:0},function(indexs){
                                $('.upload_file_body').addClass('active').html('<span>Please drag the file here</span>')
-                               $('.file_upload_info').css('display','none').siblings().css('display','block')
                                that.filesList.length = 0
                             });
                             return false;
                         }else{
                             $('.upload_file_body').addClass('active').html('<span>Please drag the file here</span>')
                             that.filesList.length = 0
-                            $('.file_upload_info').css('display','none').siblings().css('display','block')
                             return false;
                         }
                     },
@@ -611,6 +609,7 @@ var bt_file = {
                     that.loadT.close();
                 }
             })
+            $('.file_search_config').addClass('hide')
             e.stopPropagation();
         })
         $('.search_path_views').on('click','.file_search_config label',function(e){

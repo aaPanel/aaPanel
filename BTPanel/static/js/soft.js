@@ -9,7 +9,7 @@ var soft = {
         if (type == undefined || type == 'null' || type == 'undefined') type = 0;
         if (!search) search = $("#SearchValue").val();
         if (search == undefined || search == 'null' || search == 'undefined' || search == '') search = undefined;
-        var _this = this, commonly_software = $('#commonly_software');
+        var _this = this;
         var istype = getCookie('softType');
         if(istype == 'undefined' || istype == 'null' || !istype){
             istype = 0;
@@ -18,7 +18,6 @@ var soft = {
         if (page == 0) page = bt.get_cookie('p' + type);
         if (type == '11'){
             soft.get_dep_list(1);
-            commonly_software.hide();
             return;
         }
         soft.is_install = false;
@@ -60,10 +59,8 @@ var soft = {
               $(this).addClass("on").siblings().removeClass("on");
               if (_type !== '11') {
                   soft.get_list(0, _type);
-                  commonly_software.show();
               } else {
                   soft.get_dep_list(0);
-                  commonly_software.hide();
               }
 
           })
@@ -638,21 +635,6 @@ var soft = {
               set_btn_style(JSON.parse(bt.get_cookie('bt_user_info')));
             }
         }
-    },
-    /**
-   * @description 设置软件信息
-   * @param {object} rdata 软件列表请求数据
-   * @param {string} type 列表类型
-   */
-    render_soft_recommend: function () {
-        bt.send('get_usually_plugin', 'plugin/get_usually_plugin', {}, function (res) {
-          var html = '';
-          for (var i = 0; i < res.length; i++) {
-            var item = res[i];
-            html += '<div class="item" title="open' + item.title + '" onclick="bt.soft.set_lib_config(\'' + item.name + '\',\'' + item.title + '\',\'' + item.version + '\')"><img src="/static/img/soft_ico/ico-' + item.name + '.png"><span>' + item.title + '</span></div>'
-          }
-          $('#commonly_software .commonly_software_list').html(html)
-        })
     },
     render_tips_btn:function(node,arry){
         if(!Array.isArray(arry)) arry = [arry]

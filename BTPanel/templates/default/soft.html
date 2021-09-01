@@ -31,7 +31,6 @@
             <div id="updata_pro_info">
               <div class="alert alert-success" style="margin-bottom:15px"><strong>{{data['lan']['PS']}}</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="{{data['lan']['UPDATE_PRO_NOW']}}" style="margin-left:8px">"{{data['lan']['UPDATE_NOW']}}"</button></div>
             </div>
-            <div id="commonly_software" class="commonly_software"><div class="commonly_software_title">Recently visited plugin:</div><div class="commonly_software_list"></div></div>
           <table id="softList" class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:10px"></table>
           <div id='softPage' class="dataTables_paginate paging_bootstrap page"></div>
         </div>
@@ -52,7 +51,6 @@
     bt.set_cookie('distribution', "{{session['config']['distribution']}}");
     $(document).ready(function () {
         soft.get_list();
-        soft.render_soft_recommend()
         setTimeout(function () {
             soft_td_width_auto();
         }, 500);
