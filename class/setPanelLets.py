@@ -85,7 +85,7 @@ class setPanelLets:
         gcl = pssl.GetCertList(get)
         for i in gcl:
             for v in i.values():
-                if get.domain == v:
+                if get.domain in v:
                     try:
                         time_stamp = int(i['notAfter'])
                     except:

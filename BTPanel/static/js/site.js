@@ -68,7 +68,7 @@ var site_table = bt_tools.table({
                 $('.site-menu p:eq(8)').click();
             },500);
         }},
-        {title:lan.site.operate,type:'group',width:119,align:'right',group:[
+        {title:lan.site.operate,type:'group',width:118,align:'right',group:[
         {
             title:'WAF',
             event:function(row,index,ev,key,that){
@@ -302,7 +302,7 @@ var site_table = bt_tools.table({
                             if(checked) param[$(this).attr('name')] = checked?1:0;
                         })
                         if(callback) callback(param);
-                    },"<div class='options bacth_options'><span class='item'><label><input type='checkbox' name='ftp'><span>FTP</span></label></span><span class='item'><label><input type='checkbox' name='database'><span>" + lan.site.database + "</span></label></span><span class='item' ><label style='margin-right:0'><input type='checkbox' name='path'><span>" + lan.site.root_dir + "</span></label></span></div>");
+                    },"<div class='options bacth_options'><span class='item'><label><input type='checkbox' name='ftp'><span>FTP</span></label></span><span class='item'><label><input type='checkbox' name='database'><span>" + lan.site.database + "</span></label></span><span class='item'><label><input type='checkbox' name='path'><span>" + lan.site.root_dir + "</span></label></span></div>");
                 }
             }
         ],
@@ -662,9 +662,54 @@ var site = {
             })
         }, 1000);
     },
-    /**
-     * @description 添加站点
-     */
+    // add_site: function(callback) {
+    //     bt.site.add_site(function(rdata) {
+    //         if (rdata.siteStatus) {
+    //             if(callback) callback(rdata);
+    //             //site.get_list();
+    //             var html = '';
+    //             var ftpData = '';
+    //             if (rdata.ftpStatus) {
+    //                 var list = [];
+    //                 list.push({ title: lan.site.user, val: rdata.ftpUser });
+    //                 list.push({ title: lan.site.password, val: rdata.ftpPass });
+    //                 var item = {};
+    //                 item.title = lan.site.ftp;
+    //                 item.list = list;
+    //                 ftpData = bt.render_ps(item);
+    //             }
+    //             var sqlData = '';
+    //             if (rdata.databaseStatus) {
+    //                 var list = [];
+    //                 list.push({ title: lan.site.database_name, val: rdata.databaseUser });
+    //                 list.push({ title: lan.site.user, val: rdata.databaseUser });
+    //                 list.push({ title: lan.site.password, val: rdata.databasePass });
+    //                 var item = {};
+    //                 item.title = lan.site.database_txt;
+    //                 item.list = list;
+    //                 sqlData = bt.render_ps(item);
+    //             }
+    //             if (ftpData == '' && sqlData == '') {
+    //                 bt.msg({ msg: lan.site.success_txt, icon: 1 })
+    //             } else {
+    //                 bt.open({
+    //                     type: 1,
+    //                     area: '600px',
+    //                     title: lan.site.success_txt,
+    //                     closeBtn: 2,
+    //                     shadeClose: false,
+    //                     content: "<div class='success-msg'><div class='pic'><img src='/static/img/success-pic.png'></div><div class='suc-con'>" + ftpData + sqlData + "</div></div>"
+    //                 });
+
+    //                 if ($(".success-msg").height() < 150) {
+    //                     $(".success-msg").find("img").css({ "width": "150px", "margin-top": "30px" });
+    //                 }
+    //             }
+    //         } else {
+    //             bt.msg(rdata);
+    //         }
+    //     })
+    // },
     add_site: function (callback) {
         var add_web = bt_tools.form({
             data:{}, //用于存储初始值和编辑时的赋值内容
@@ -987,11 +1032,6 @@ var site = {
             },
             yes:function(indexs){
                 var formValue = !web_tab.active?add_web.$get_form_value():bath_web.$get_form_value();
-                console.log(formValue)
-                if(formValue.webname === ''){
-                    bt.msg({status:false,msg:'The website domain name cannot be empty!'})
-                    return false;
-                }
                 if(!web_tab.active){  // 创建站点
                     var loading = bt.load();
                     add_web.$get_form_element(true);
@@ -1826,7 +1866,6 @@ var site = {
             var pdata = {
               php_version: $("select[name='php_version']").val(),
               composer_args: $("select[name='composer_args']").val(),
-              composer_cmd: $("input[name='composer_cmd']").val(),
               repo: $("select[name='repo']").val(),
               path: $("input[name='composer_path']").val(),
               user: $("select[name='composer_user']").val()
@@ -1900,11 +1939,6 @@ var site = {
               '<option value="update">Update</option>' +
               '</select>' +
               '</div></div>' +
-
-              '<div class="line"><span style="width: 105px;" class="tname">Extra commands</span><div class="info-r">' +
-              '<input style="width:275px;" class="bt-input-text" id="composer_cmd" name="composer_cmd"  placeholder="App name or full Composer command" type="text" value="" />' +
-              '</div></div>' +
-
               '<div class="line"><span style="width: 105px;" class="tname">Source</span><div class="info-r">' +
               '<select class="bt-input-text" name="repo" style="width:180px;">' +
               '<option value="repos.packagist">Official(packagist.org)</option>' +
@@ -1927,7 +1961,6 @@ var site = {
               '<li>User：The default user www, unless your website is run with root privileges, it is not recommended to use the root user to execute composer</li>' +
               '<li>Source：source of composer</li>' +
               '<li>Parameters：Install (install dependent package), Update (upgrade dependent package), please select as needed</li>' +
-              '<li>Extra commands: If this is empty, it will be executed according to the conf in composer.json, Supported fill in the complete composer command</li>' +
               '<li>PHP version：The PHP version used to execute composer, it is recommended to try the default, if the installation fails, try to choose another PHP version</li>' +
               '<li>Composer version：Composer version, you can click [Upgrade Composer] on the right to upgrade Composer to the latest stable version</li>' +
               '</ul>'
@@ -3394,104 +3427,17 @@ var site = {
                         o.title = o.name;
                         versions.push(o);
                     }
-
-                    // var data = {
-                    //     items: [
-                    //         {
-                    //             title: 'PHP版本',
-                    //             name: 'versions',
-                    //             value: sdata.phpversion,
-                    //             type: 'select',
-                    //             items: versions ,
-                    //             ps:'<input class="bt-input-text other-version" style="margin-right: 10px;width:300px;color: #000;" type="text" value="'+sdata.php_other+'" placeholder="连接配置，如：1.1.1.1:9001或unix:/tmp/php.sock" />'
-                    //         },
-                    //         {
-                    //             text: '切换',
-                    //             name: 'btn_change_phpversion',
-                    //             type: 'button',
-                    //             callback: function(pdata) {
-                    //                 var other = $('.other-version').val();
-                    //                 if(pdata.versions == 'other' && other == ''){
-                    //                     layer.msg('自定义PHP版本时，PHP连接配置不能为空');
-                    //                     $('.other-version').focus();
-                    //                     return;
-                    //                 }
-                    //                 bt.site.set_phpversion(web.name, pdata.versions, other, function(ret) {
-                    //                     if (ret.status) {
-                    //                         var versions = $('[name="versions"]').val();
-                    //                         versions = versions.slice(0, versions.length - 1) + '.' + versions.slice(-1);
-                    //                         if (versions == '0.0') versions = '静态';
-                    //                         site_table.$refresh_table_list(true);
-                    //                         site.reload()
-                    //                         setTimeout(function() {
-                    //                             bt.msg(ret);
-                    //                         }, 1000);
-                    //                     }else{
-                    //                         bt.msg(ret);
-                    //                     }
-
-                    //                 })
-                    //             }
-                    //         }
-                    //     ]
-                    // }
-                    // var _form_data = bt.render_form_line(data);
-                    // var _html = $(_form_data.html);
-                    // _html.append(bt.render_help([lan.site.switch_php_help1, lan.site.switch_php_help2, lan.site.switch_php_help3]));
-                    // $('#webedit-con').append(_html);
-                    // bt.render_clicks(_form_data.clicks);
-                    // $('#webedit-con').append('<div class="user_pw_tit" style="margin-top: 2px;padding-top: 11px;border-top: #ccc 1px dashed;"><span class="tit">' + lan.site.session_off + '</span><span class="btswitch-p ml5" style="margin-bottom: 0;display: inline-block;vertical-align: middle;"><input class="btswitch btswitch-ios" id="session_switch" type="checkbox"><label class="btswitch-btn session-btn" for="session_switch" ></label></span></div><div class="user_pw" style="margin-top: 10px; display: block;"></div>' + bt.render_help([lan.site.independent_storage]));
-
-                    // function get_session_status() {
-                    //     var loading = bt.load('Getting session status...');
-                    //     bt.send('get_php_session_path', 'config/get_php_session_path', { id: web.id }, function(tdata) {
-                    //         loading.close();
-                    //         $('#session_switch').prop("checked", tdata);
-                    //     })
-                    // };
-                    // get_session_status()
-                    // $('#session_switch').click(function() {
-                    //     var val = $(this).prop('checked');
-                    //     bt.send('set_php_session_path', 'config/set_php_session_path', { id: web.id, act: val ? 1 : 0 }, function(rdata) {
-                    //         get_session_status();
-                    //         bt.msg(rdata)
-                    //     });
-                    // })
-
                     var data = {
                         items: [
+                            { title: lan.site.php_ver, name: 'versions', value: sdata.phpversion, type: 'select', items: versions },
                             {
-                                title: 'PHP version',
-                                name: 'versions',
-                                value: sdata.phpversion,
-                                type: 'select',
-                                items: versions ,
-                                ps:'<input class="bt-input-text other-version" style="margin-right: 10px;width:300px;color: #000;" type="text" value="'+sdata.php_other+'" placeholder="e.g:1.1.1.1:9001 or unix:/tmp/php.sock" />'
-                            },
-                            {
-                                text: 'Switch',
+                                text: lan.site.switch,
                                 name: 'btn_change_phpversion',
                                 type: 'button',
                                 callback: function(pdata) {
-                                    var other = $('.other-version').val();
-                                    if(pdata.versions == 'other' && other == ''){
-                                        layer.msg('When customizing the PHP version, the PHP connection configuration cannot be empty');
-                                        $('.other-version').focus();
-                                        return;
-                                    }
-                                    bt.site.set_phpversion(web.name, pdata.versions, other, function(ret) {
-                                        if (ret.status) {
-                                            var versions = $('[name="versions"]').val();
-                                            versions = versions.slice(0, versions.length - 1) + '.' + versions.slice(-1);
-                                            if (versions == '0.0') versions = 'Static';
-                                            site_table.$refresh_table_list(true);
-                                            site.reload()
-                                            setTimeout(function() {
-                                                bt.msg(ret);
-                                            }, 1000);
-                                        }else{
-                                            bt.msg(ret);
-                                        }
+                                    bt.site.set_phpversion(web.name, pdata.versions, function(ret) {
+                                        if (ret.status) site.reload(8)
+                                        bt.msg(ret);
                                     })
                                 }
                             }
@@ -3499,30 +3445,13 @@ var site = {
                     }
                     var _form_data = bt.render_form_line(data);
                     var _html = $(_form_data.html);
-                    _html.append(bt.render_help(['Select the version according to your program requirements', 'Try not to use PHP5.2 unless you have to, as this can reduce your server security', 'PHP7 does not support the MySQL extension. The default installation is mysqli and mysql-pdo',"[Customize] You can customize the PHP connection information by selecting the available PHP connection configuration","[Customize] Currently only support NGINX","Support TCP or UNIX configuration. Example: 192.168.1.25:9001 or unix:/tmp/php8.sock"]));
+                    _html.append(bt.render_help([lan.site.switch_php_help1, lan.site.switch_php_help2, lan.site.switch_php_help3]));
                     $('#webedit-con').append(_html);
                     bt.render_clicks(_form_data.clicks);
-                    if(sdata.phpversion != 'other'){
-                        $('#webedit-con').append('<div class="user_pw_tit" style="margin-top: 2px;padding-top: 11px;border-top: #ccc 1px dashed;"><span class="tit">' + lan.site.session_off + '</span><span class="btswitch-p"style="display: inline-flex;"><input class="btswitch btswitch-ios" id="session_switch" type="checkbox"><label class="btswitch-btn session-btn" for="session_switch" ></label></span></div><div class="user_pw" style="margin-top: 10px; display: block;"></div>' +
-                        bt.render_help(['When enabled, session files will be stored in a separate folder, not in a common storage location with other sites', 'Do not enable this option if you are saving sessions to caches such as memcache/redis in your PHP configuration']));
-                    }
-                    if(sdata.phpversion != 'other'){
-                        $('.other-version').hide();
-                    }
-                    setTimeout(function(){
-                        $('select[name="versions"]').change(function(){
-                            var phpversion = $(this).val();
-                            console.log(phpversion);
-                            if(phpversion == 'other'){
-                                $('.other-version').show();
-                            }else{
-                                $('.other-version').hide();
-                            }
-                        });
-                    },500);
+                    $('#webedit-con').append('<div class="user_pw_tit" style="margin-top: 2px;padding-top: 11px;border-top: #ccc 1px dashed;"><span class="tit">' + lan.site.session_off + '</span><span class="btswitch-p ml5" style="margin-bottom: 0;display: inline-block;vertical-align: middle;"><input class="btswitch btswitch-ios" id="session_switch" type="checkbox"><label class="btswitch-btn session-btn" for="session_switch" ></label></span></div><div class="user_pw" style="margin-top: 10px; display: block;"></div>' + bt.render_help([lan.site.independent_storage]));
 
                     function get_session_status() {
-                        var loading = bt.load('Please wait while getting session status');
+                        var loading = bt.load('Getting session status...');
                         bt.send('get_php_session_path', 'config/get_php_session_path', { id: web.id }, function(tdata) {
                             loading.close();
                             $('#session_switch').prop("checked", tdata);
@@ -3532,11 +3461,9 @@ var site = {
                     $('#session_switch').click(function() {
                         var val = $(this).prop('checked');
                         bt.send('set_php_session_path', 'config/set_php_session_path', { id: web.id, act: val ? 1 : 0 }, function(rdata) {
-                            bt.msg(rdata)
-                        })
-                        setTimeout(function() {
                             get_session_status();
-                        }, 500);
+                            bt.msg(rdata)
+                        });
                     })
                 })
             })
@@ -4387,24 +4314,28 @@ var site = {
             })
         },
         get_site_logs: function(web) {
-          $('#webedit-con').append('<div id="tabLogs" class="tab-nav"></div><div class="tab-con" style="padding:10px 0 0;"></div>')
-            var serverType = bt.get_cookie('serverType'),shell = 'tail -n 100 -f /www/wwwlogs/'+ web.name;
-            var _tab = [{
-            title: "Access log",
-            on: true,
-            callback:function(robj){
-              var shellCopy = shell + (serverType === 'nginx'?'.':serverType === 'apache'?'-access_':'_ols.access_') + 'log';
-              bt_tools.command_line_output({ el:'#webedit-con .tab-con', shell:shellCopy,area:['100%','580px']})
-            }
-          },{
-            title: "Error log",
-            callback:function(robj){
-                var shellCopy = shell + (serverType === 'nginx'?'.error.':serverType === 'apache'?'-error_':'_ols.error_') + 'log';
-                bt_tools.command_line_output({ el:'#webedit-con .tab-con', shell:shellCopy,area:['100%','580px']})
-            }
-          }]
-          bt.render_tab('tabLogs',_tab);
-          $('#tabLogs span:eq(0)').click();
+            bt.site.get_site_logs(web.name, function(rdata) {
+                var robj = $('#webedit-con'),_form_data;
+                var logs = { class: 'bt-logs', items: [{ name: 'site_logs', height: '547px', value: rdata.msg, width: '100%', type: 'textarea' }] };
+                var _form_data = bt.render_form_line(logs);
+                robj.append(_form_data.html);
+                robj.find('.site_logs').css('resize','none');
+                bt.render_clicks(_form_data.clicks);
+                $('textarea[name="site_logs"]').attr('readonly', true);
+                $('textarea[name="site_logs"]').scrollTop(100000000000);
+                var tabs = '<div id="logs_tabs" class="tab-nav" style="margin-bottom: 10px;"><span class="on" data-url="GetSiteLogs">accesslog</span><span data-url="get_site_err_log">errorlog</span></div>';
+                $('textarea[name="site_logs"]').before(tabs);
+                $('#logs_tabs').on('click','span' ,function () {
+                    var url = $(this).attr('data-url'),
+                    loadT = bt.load();
+                    if(!$(this).hasClass('on')) $(this).addClass('on').siblings().removeClass('on');
+                    bt.send(url, 'site/'+url,{siteName:web.name}, function(rdata) {
+                        loadT.close();
+                        var _text = (rdata.msg=='')?'Currently no logs':rdata.msg;
+                        $('textarea[name="site_logs"]').val(_text);
+                    });
+                });
+            })
         }
     },
     create_let: function(ddata, callback) {

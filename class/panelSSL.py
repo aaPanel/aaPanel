@@ -29,6 +29,8 @@ class panelSSL:
     _check_url = None
     #构造方法
     def __init__(self):
+        # pdata = {}
+        # data = {}
         if os.path.exists(self.__UPATH):
             my_tmp = public.readFile(self.__UPATH)
             if my_tmp:
@@ -38,6 +40,20 @@ class panelSSL:
                     self.__userInfo = {}
             else:
                 self.__userInfo = {}
+
+        #     try:
+        #         if self.__userInfo:
+        #             pdata['access_key'] = self.__userInfo['access_key']
+        #             data['secret_key'] = self.__userInfo['secret_key']
+        #     except:
+        #         self.__userInfo = {}
+        #         pdata['access_key'] = 'test'
+        #         data['secret_key'] = '123456'
+        # else:
+        #     pdata['access_key'] = 'test'
+        #     data['secret_key'] = '123456'
+        # pdata['data'] = data
+        # self.__PDATA = pdata
     
     def en_code_rsa(self, data):
         pk = public.readFile(self.__PUBKEY)
@@ -487,7 +503,7 @@ class panelSSL:
     #检查域名是否解析
     def CheckDomain(self,get):
         try:
-            #创建目录
+            epass = public.GetRandomString(32)
             spath = get.path + '/.well-known/pki-validation'
             if not os.path.exists(spath): public.ExecShell("mkdir -p '" + spath + "'")
 
@@ -504,10 +520,9 @@ class panelSSL:
             result = http_requests.get(self._check_url,s_type='curl',timeout=6,headers={"host":get.domain}).text
             self.__test = result
             if result == epass: return True
-            self._check_url = self._check_url.replace('127.0.0.1', get.domain)
+
             return False
         except:
-            self._check_url = self._check_url.replace('127.0.0.1', get.domain)
             return False
     
     #确认域名
@@ -648,7 +663,17 @@ class panelSSL:
                 if not tmp: continue
                 tmp1 = json.loads(tmp)
                 data.append(tmp1)
-            return data
+            if not data:
+                lets_file = '/www/server/panel/config/letsencrypt.json'
+                tmp = public.readFile(ltes_file)
+                if not tmp:
+                    return []
+                tmp = json(tmp)
+                for i in tmp['orders']:
+                    data.append({"domains":tmp['orders'][i]['domains'],
+                        "notAfter":tmp['orders'][i]['cert_timeout'],
+                        "save_path":tmp['orders'][i]['save_path']
+                    })
         except:
             return []
     

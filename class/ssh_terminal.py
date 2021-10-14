@@ -47,7 +47,6 @@ class ssh_terminal:
     _tp = None
     _old_conf = None
     _debug_file = 'logs/terminal.log'
-    _s_code = None
 
     def connect(self):
         '''
@@ -124,16 +123,8 @@ class ssh_terminal:
                             pkey = paramiko.DSSKey.from_private_key(p_file)
                 self._tp.auth_publickey(username=self._user, key=pkey)
             else:
-                try:
-                    self._tp.auth_none(self._user)
-                except Exception as e:
-                    e = str(e)
-                    if e.find('keyboard-interactive') >= 0:
-                        self._auth_interactive()
-                    else:
-                        self.debug('Authenticating password')
-                        self._tp.auth_password(username=self._user, password=self._pass)
-                # self._tp.auth_password(username=self._user, password=self._pass)
+                self.debug(public.getMsg('AUTH_PASSWD'))
+                self._tp.auth_password(username=self._user, password=self._pass)
         except Exception as e:
             if self._old_conf:
                 s_file = '/www/server/panel/config/t_info.json'
@@ -141,11 +132,6 @@ class ssh_terminal:
             self.set_sshd_config(True)
             self._tp.close()
             e = str(e)
-            if e.find('websocket error!') != -1:
-                return returnMsg(True,'connection succeeded')
-            if e.find('Authentication timeout') != -1:
-                self.debug("认证超时{}".format(e))
-                return returnMsg(False,'Authentication timed out, please press enter to try again!{}'.format(e))
             if e.find('Authentication failed') != -1:
                 self.debug(public.getMsg('AUTH_FAIL',(str(e),)))
                 return returnMsg(False,'SSH_LOGIN_ERR1',(str(e + "," + self._user + "@" + self._host + ":" +str(self._port)),))
@@ -181,40 +167,6 @@ class ssh_terminal:
         self.debug('SSH_LOGIN_INFO2')
         return returnMsg(True,'CONNECTION_SUCCEEDED')
 
-    def _auth_interactive(self):
-        self.debug('Verification Code')
-
-        self.brk = False
-
-        def handler(title, instructions, prompt_list):
-            if not self._ws:  raise public.PanelError('websocket error!')
-            if instructions:
-                self._ws.send(instructions)
-            if title:
-                self._ws.send(title)
-            resp = []
-            for pr in prompt_list:
-                if str(pr[0]).strip() == "Password:":
-                    resp.append(self._pass)
-                elif str(pr[0]).strip() == "Verification code:":
-                    # 获取前段传入的验证码
-                    self._ws.send("Verification code# ")
-                    self._s_code = True
-                    code = ""
-                    while True:
-                        data = self._ws.receive()
-                        if data.find('"resize":1') != -1:
-                            self.resize(data)
-                            continue
-                        self._ws.send(data)
-                        if data in ["\n", "\r"]: break
-                        code += data
-                    resp.append(code)
-                    self._ws.send("\n")
-            self._s_code = None
-            return tuple(resp)
-
-        self._tp.auth_interactive(self._user, handler)
 
     def get_login_user(self):
         '''
@@ -397,6 +349,7 @@ class ssh_terminal:
             @return bool
         '''
         self.is_running(rep)
+        return False
         if rep and not self._rep_ssh_config:
             return False
 
@@ -537,9 +490,6 @@ class ssh_terminal:
         '''
         try:
             while not self._ws.closed:
-                if self._s_code:
-                    time.sleep(0.1)
-                    continue
                 client_data = self._ws.receive()
                 if not client_data: continue
                 if len(client_data) > 10:
@@ -638,8 +588,7 @@ class ssh_terminal:
         try:
             if self._ssh:
                 self._ssh.close()
-            if self._tp:  # 关闭宿主服务
-                self._tp.close()
+                #self._ssh = None
             if not self._ws.closed:
                 self._ws.close()
         except:
@@ -660,11 +609,8 @@ class ssh_terminal:
             self._pkey = ssh_info['pkey']
         if 'password' in ssh_info:
             self._pass = ssh_info['password']
-        try:
-            result = self.connect()
-        except Exception as ex:
-            if str(ex).find("NoneType") == -1:
-                raise public.PanelError(ex)
+
+        result = self.connect()
         return result
 
 

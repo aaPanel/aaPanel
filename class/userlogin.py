@@ -106,7 +106,8 @@ class userlogin:
             self.limit_address('-')
             cache.delete('panelNum')
             cache.delete('dologin')
-            session['session_timeout'] = time.time() + public.get_session_timeout()
+            sess_input_path = 'data/session_last.pl'
+            public.writeFile(sess_input_path,str(int(time.time())))
             del(data['tmp_token'])
             del(data['tmp_time'])
             public.writeFile(save_path,json.dumps(data))
@@ -156,7 +157,8 @@ class userlogin:
             self.limit_address('-')
             cache.delete('panelNum')
             cache.delete('dologin')
-            session['session_timeout'] = time.time() + public.get_session_timeout()
+            sess_input_path = 'data/session_last.pl'
+            public.writeFile(sess_input_path,str(int(time.time())))
             self.set_request_token()
             self.login_token()
             self.set_cdn_host(get)
@@ -275,12 +277,12 @@ class userlogin:
             session['login'] = True
             session['username'] = userInfo['username']
             session['uid'] = userInfo['id']
-            session['login_user_agent'] = public.md5(request.headers.get('User-Agent',''))
             public.WriteLog('TYPE_LOGIN','LOGIN_SUCCESS',(userInfo['username'],public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
             self.limit_address('-')
             cache.delete('panelNum')
             cache.delete('dologin')
-            session['session_timeout'] = time.time() + public.get_session_timeout()
+            sess_input_path = 'data/session_last.pl'
+            public.writeFile(sess_input_path,str(int(time.time())))
             self.set_request_token()
             self.login_token()
             login_type = 'data/app_login.pl'

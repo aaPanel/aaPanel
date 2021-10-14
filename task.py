@@ -94,14 +94,14 @@ def WriteLogs(logMsg):
         pass
 
 
-def ExecShell(cmdstring, cwd=None, timeout=None, shell=True, symbol = '&>'):
+def ExecShell(cmdstring, cwd=None, timeout=None, shell=True):
     try:
         global logPath
         import shlex
         import datetime
         import subprocess
         import time
-        sub = subprocess.Popen(cmdstring+ symbol +logPath, cwd=cwd,
+        sub = subprocess.Popen(cmdstring+' &> '+logPath, cwd=cwd,
                                stdin=subprocess.PIPE, shell=shell, bufsize=4096)
 
         while sub.poll() is None:
@@ -135,7 +135,6 @@ def startTask():
                                 DownloadFile(argv[0], argv[1])
                             elif value['type'] == 'execshell':
                                 ExecShell(value['execstr'])
-                                ExecShell("echo '|-Successify ---Script execution completed---'",symbol=">>")
                             end = int(time.time())
                             sql.table('tasks').where("id=?", (value['id'],)).save(
                                 'status,end', ('1', end))
@@ -604,11 +603,11 @@ def check_files_panel():
 
 
 # 面板消息提醒
-# def check_panel_msg():
-#     python_bin = get_python_bin()
-#     while True:
-#         os.system('{} {}/script/check_msg.py &'.format(python_bin,base_path))
-#         time.sleep(600)
+def check_panel_msg():
+    python_bin = get_python_bin()
+    while True:
+        os.system('{} {}/script/check_msg.py &'.format(python_bin,base_path))
+        time.sleep(600)
 
 
 def main():
@@ -659,9 +658,9 @@ def main():
     p.setDaemon(True)
     p.start()
 
-    # p = threading.Thread(target=check_files_panel)
-    # p.setDaemon(True)
-    # p.start()
+    p = threading.Thread(target=check_files_panel)
+    p.setDaemon(True)
+    p.start()
     import panelTask
     task_obj = panelTask.bt_task()
     task_obj.not_web = True
@@ -669,9 +668,9 @@ def main():
     p.setDaemon(True)
     p.start()
 
-    # p = threading.Thread(target=check_panel_msg)
-    # p.setDaemon(True)
-    # p.start()
+    p = threading.Thread(target=check_panel_msg)
+    p.setDaemon(True)
+    p.start()
 
     startTask()
 

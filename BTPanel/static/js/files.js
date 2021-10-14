@@ -298,14 +298,12 @@ var bt_file = {
                         if(that.uploading){
                             layer.confirm('Do you want to cancel the upload of files? It need to delete the uploaded files manually. Continue?',{title:'Cancel file upload',icon:0},function(indexs){
                                $('.upload_file_body').addClass('active').html('<span>Please drag the file here</span>')
-                               $('.file_upload_info').css('display','none').siblings().css('display','block')
                                that.filesList.length = 0
                             });
                             return false;
                         }else{
                             $('.upload_file_body').addClass('active').html('<span>Please drag the file here</span>')
                             that.filesList.length = 0
-                            $('.file_upload_info').css('display','none').siblings().css('display','block')
                             return false;
                         }
                     },
@@ -611,6 +609,7 @@ var bt_file = {
                     that.loadT.close();
                 }
             })
+            $('.file_search_config').addClass('hide')
             e.stopPropagation();
         })
         $('.search_path_views').on('click','.file_search_config label',function(e){
@@ -4417,13 +4416,13 @@ var bt_file = {
         });
         return (paths+path).replace('//','/');
     },
-
+    
     /**
      * @descripttion 取扩展名
      * @return: 返回扩展名
      */
     get_ext_name:function(fileName){
-        var extArr = fileName.split(".");
+        var extArr = fileName.split(".");	
         var exts = ["folder", "folder-unempty", "sql", "c", "cpp", "cs", "flv", "css", "js", "htm", "html", "java", "log", "mht", "php", "url", "xml", "ai", "bmp", "cdr", "gif", "ico", "jpeg", "jpg", "JPG", "png", "psd", "webp", "ape", "avi", "mkv", "mov", "mp3", "mp4", "mpeg", "mpg", "rm", "rmvb", "swf", "wav", "webm", "wma", "wmv", "rtf", "docx", "fdf", "potm", "pptx", "txt", "xlsb", "xlsx", "7z", "cab", "iso", "rar", "zip", "gz", "bt", "file", "apk", "bookfolder", "folder-empty", "fromchromefolder", "documentfolder", "fromphonefolder", "mix", "musicfolder", "picturefolder", "videofolder", "sefolder", "access", "mdb", "accdb", "fla", "doc", "docm", "dotx", "dotm", "dot", "pdf", "ppt", "pptm", "pot", "xls", "csv", "xlsm"];
         var extLastName = extArr[extArr.length - 1];
         for(var i=0; i<exts.length; i++){
@@ -4458,7 +4457,7 @@ var bt_file = {
     /**
      * @descripttion: 路径过滤
      * @return: 无返回值
-    */
+    */    
     path_check:function(path) {
         path = path.replace('//', '/');
         if (path === '/') return path;
@@ -4525,7 +4524,7 @@ var bt_file = {
                 if (callback) callback(res);
             });
         })
-
+        
     },
 
     /**

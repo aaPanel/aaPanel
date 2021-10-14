@@ -38,7 +38,7 @@ class data:
         temp['local'] = True
         try:
             s = socket.socket()
-            s.settimeout(0.01)
+            s.settimeout(0.15)
             s.connect((localIP,port))
             s.close()
         except:
@@ -141,16 +141,14 @@ class data:
                 conf = public.readFile(
                     self.setupPath + '/panel/vhost/' + self.web_server + '/detail/' + siteName + '.conf')
             if self.web_server == 'nginx':
-                rep = r"enable-php-(\w{2,5})\.conf"
+                rep = r"enable-php-([0-9]{2,3})\.conf"
             elif self.web_server == 'apache':
-                rep = r"php-cgi-(\w{2,5})\.sock"
+                rep = r"php-cgi-([0-9]{2,3})\.sock"
             else:
                 rep = r"path\s*/usr/local/lsws/lsphp(\d+)/bin/lsphp"
             tmp = re.search(rep,conf).groups()
             if tmp[0] == '00':
                 return 'Static'
-            if tmp[0] == 'other':
-                return 'Other'
 
             return tmp[0][0] + '.' + tmp[0][1]
         except:
@@ -201,8 +199,6 @@ class data:
                         data['data'][i]['domain'] = SQL.table('domain').where("pid=?",(data['data'][i]['id'],)).count()
                         data['data'][i]['ssl'] = self.get_site_ssl_info(data['data'][i]['name'])
                         data['data'][i]['php_version'] = self.get_php_version(data['data'][i]['name'])
-                        if not data['data'][i]['status'] in ['0','1',0,1]:
-                            data['data'][i]['status'] = '1'
             elif table == 'firewall':
                 for i in range(len(data['data'])):
                     if data['data'][i]['port'].find(':') != -1 or data['data'][i]['port'].find('.') != -1 or data['data'][i]['port'].find('-') != -1:
@@ -246,7 +242,9 @@ class data:
         where = "id=?"
         retuls = SQL.where(where,(id,)).getField(keyName)
         return retuls
-
+    
+        
+        
     '''
      * 获取数据与分页
      * @param string table 表
@@ -336,10 +334,7 @@ class data:
         if not search: return ""
 
         if type(search) == bytes: search = search.encode('utf-8').strip()
-        try:
-            search = re.search(r"[\w\x80-\xff\.]+",search).group()
-        except:
-            return ''
+        search = re.search(r"[\w\x80-\xff\.]+",search).group()
         wheres = {
             'sites'     :   "id='"+search+"' or name like '%"+search+"%' or status like '%"+search+"%' or ps like '%"+search+"%'",
             'ftps'      :   "id='"+search+"' or name like '%"+search+"%' or ps like '%"+search+"%'",
