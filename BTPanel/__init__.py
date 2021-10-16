@@ -14,8 +14,9 @@ import threading
 import time
 import re
 import uuid
+panel_path = '/www/server/panel'
 if not os.name in ['nt']:
-    os.chdir('/www/server/panel')
+    os.chdir(panel_path)
 if not 'class/' in sys.path:
     sys.path.insert(0,'class/')
 
@@ -203,7 +204,7 @@ def error_404(e):
 <head><title>404 Not Found</title></head>
 <body>
 <center><h1>404 Not Found</h1></center>
-<hr><center>server</center>
+<hr><center>nginx</center>
 </body>
 </html>'''
     headers={
@@ -238,7 +239,7 @@ REQUEST_FORM: {request_form}
     os_version = public.get_os_version()
 )
 
-    result = public.readFile('/www/server/panel/BTPanel/templates/default/panel_error.html').format(error_title=error_info.split("\n")[-1],request_info = request_info,error_msg=error_info)
+    result = public.readFile(public.get_panel_path() + '/BTPanel/templates/default/panel_error.html').format(error_title=error_info.split("\n")[-1],request_info = request_info,error_msg=error_info)
     return Resp(result,500)
 
 # ===================================Flask HOOK========================#
@@ -1134,71 +1135,34 @@ def down(token=None,fname=None):
 
 @app.route('/public',methods=method_all)
 def panel_public():
-    #小程序控制接口
     get = get_input()
-    try:
-        import panelWaf
-        panelWaf_data = panelWaf.panelWaf()
-        if panelWaf_data.is_sql(get.__dict__):return 'ERROR'
-        if panelWaf_data.is_xss(get.__dict__):return 'ERROR'
-    except:
-        pass
-
     if len("{}".format(get.__dict__)) > 1024 * 32:
         return 'ERROR'
-
     get.client_ip = public.GetClientIp()
     num_key = get.client_ip + '_wxapp'
-    if not public.get_error_num(num_key,10):
-        return public.returnMsg(False,'AUTH_FAILED')
-    if not hasattr(get,'name'): get.name = ''
-    if not hasattr(get,'fun'): return abort(404)
-    if not public.path_safe_check("%s/%s" % (get.name,get.fun)): return abort(404)
-    if get.fun in ['scan_login', 'login_qrcode', 'set_login', 'is_scan_ok', 'blind','static']:
-        if get.fun == 'static':
-            if not 'filename' in get: return abort(404)
-            if not public.path_safe_check("%s" % (get.filename)): return abort(404)
-            s_file = '/www/server/panel/BTPanel/static/' + get.filename
-            if s_file.find('..') != -1 or s_file.find('./') != -1: return abort(404)
-            if not os.path.exists(s_file): return abort(404)
-            return send_file(s_file, conditional=True, add_etags=True)
-
-        #检查是否验证过安全入口
-        if get.fun in ['login_qrcode','is_scan_ok']:
-            global admin_check_auth,admin_path,route_path,admin_path_file
-            if admin_path != '/bt' and os.path.exists(admin_path_file) and  not 'admin_auth' in session:
-                return 'False'
-
+    if not public.get_error_num(num_key, 10):
+        return public.returnMsg(False, 'AUTH_FAILED')
+    if not hasattr(get, 'name'): get.name = ''
+    if not hasattr(get, 'fun'): return abort(403)
+    if not public.path_safe_check("%s/%s" % (get.name, get.fun)): return abort(403)
+    if get.fun in ['login_qrcode', 'is_scan_ok','set_login']:
+        # 检查是否验证过安全入口
+        global admin_check_auth, admin_path, route_path, admin_path_file
+        if admin_path != '/bt' and os.path.exists(admin_path_file) and not 'admin_auth' in session:
+            return abort(403)
         #验证是否绑定了设备
-        if not get.fun in ['blind']:
-            if not public.check_app('app'):return public.returnMsg(False,'UNBOUND_USER')
+        if not public.check_app('app'):return public.returnMsg(False,'UNBOUND_USER')
         import wxapp
         pluwx = wxapp.wxapp()
         checks = pluwx._check(get)
         if type(checks) != bool or not checks:
             public.set_error_num(num_key)
-            return public.getJson(checks),json_header
-        data = public.getJson(eval('pluwx.'+get.fun+'(get)'))
-        return data,json_header
+            return public.getJson(checks), json_header
+        data = public.getJson(eval('pluwx.' + get.fun + '(get)'))
+        return data, json_header
+    else:
+        return abort(404)
 
-    if get.name != 'app': return abort(404)
-    if not public.check_app('wxapp'): return public.returnMsg(False, 'UNBOUND_USER')
-    import panelPlugin
-    plu = panelPlugin.panelPlugin()
-    get.s = '_check'
-    checks = plu.a(get)
-    if type(checks) != bool or not checks:
-        public.set_error_num(num_key)
-        return public.getJson(checks),json_header
-    get.s = get.fun
-    comm.setSession()
-    comm.init()
-    comm.checkWebType()
-    comm.GetOS()
-    result = plu.a(get)
-    #session.clear()
-    public.set_error_num(num_key,True)
-    return public.getJson(result),json_header
 
 @app.route('/favicon.ico',methods=method_get)
 def send_favicon():

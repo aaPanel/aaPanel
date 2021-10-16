@@ -540,7 +540,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         '''
         filename = args.filename.strip()
         ps_type = int(args.ps_type)
-        ps_body = args.ps_body
+        ps_body = public.xssencode(args.ps_body)
         ps_path = '/www/server/panel/data/files_ps'
         if not os.path.exists(ps_path):
             os.makedirs(ps_path,384)

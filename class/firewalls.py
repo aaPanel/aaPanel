@@ -138,7 +138,7 @@ class firewalls:
 
         import time
         port = get.port
-        ps = get.ps
+        ps = public.xssencode(get.ps)
         is_exists = public.M('firewall').where("port=? or port=?",(port,src_port)).count()
         if is_exists: return public.returnMsg(False,'FIREWALL_PORT_EXISTS')
         notudps = ['80','443','8888','888','39000:40000','21','22']

@@ -596,6 +596,7 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         if not result: return public.returnMsg(False, 'SITE_ADD_ERR_WRITE')
 
         ps = get.ps
+        ps = public.xssencode(ps)
         # 添加放行端口
         if self.sitePort != '80':
             import firewalls
@@ -3856,16 +3857,8 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         # proxysite1 = re.search(rep,get.proxysite).group(1)
         ng_proxy = '''
 #PROXY-START%s
-location  ~* \.(gif|png|jpg|css|js|woff|woff2)$
-{
-    proxy_pass %s;
-    proxy_set_header Host %s;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header REMOTE-HOST $remote_addr;
-    expires 12h;
-}
-location %s
+
+location ^~ %s
 {
     proxy_pass %s;
     proxy_set_header Host %s;

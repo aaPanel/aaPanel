@@ -25,6 +25,7 @@ class data:
     '''
     def setPs(self,get):
         id = get.id
+        get.ps = public.xssencode(get.ps)
         if public.M(get.table).where("id=?",(id,)).setField('ps',get.ps):
             return public.returnMsg(True,'EDIT_SUCCESS')
         return public.returnMsg(False,'EDIT_ERROR')
