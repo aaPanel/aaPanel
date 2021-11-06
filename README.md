@@ -1,9 +1,9 @@
 **Introduction:**
 
-aaPanel is the International version for BAOTA panel(www.bt.cn) There have millions servers had installed BAOTA panel since 2014 in China.
-aaPanel, a simple but powerful control panel, can manage the web server through web-based GUI(Graphical User Interface).
-aaPanel provides the one-click function such as one-click install LNMP/LAMP developing environment and software.
-Our main goal is helping users to save the time of deploying, thus users just focus on their own project that is fine.
+aaPanel is the International version for BAOTA panel(www.bt.cn) There are already millions servers running BAOTA panel since 2014 in China.
+aaPanel, a simple but powerful control panel, that allows web server management through web-based GUI(Graphical User Interface).
+aaPanel also provides many one-click functions such as one-click installation of LNMP/LAMP development environment and software.
+Our main goal is to help users save time deploying, thus focusing more on their own project.
 
 **History:**
 
