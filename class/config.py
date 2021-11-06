@@ -328,15 +328,15 @@ class config:
             isReWeb = True
 
         if get.webname != session['title']:
-            session['title'] = get.webname
-            public.SetConfigValue('title',get.webname)
+            session['title'] = public.xssencode(get.webname)
+            public.SetConfigValue('title',public.xssencode(get.webname))
 
         limitip = public.readFile('data/limitip.conf')
         if get.limitip != limitip:
             public.writeFile('data/limitip.conf',get.limitip)
             cache.set('limit_ip',[])
 
-        public.writeFile('data/domain.conf',get.domain.strip())
+        public.writeFile('data/domain.conf',public.xssencode2(get.domain).strip())
         public.writeFile('data/iplist.txt',get.address)
 
 
@@ -812,7 +812,7 @@ class config:
         isAdd = public.M('panel').where('title=? OR url=?',(get.title,get.url)).count()
         if isAdd: return public.returnMsg(False,'PANEL_SSL_ADD_EXISTS')
         import time,json
-        isRe = public.M('panel').add('title,url,username,password,click,addtime',(get.title,get.url,get.username,get.password,0,int(time.time())))
+        isRe = public.M('panel').add('title,url,username,password,click,addtime',(public.xssencode2(get.title),public.xssencode2(get.url),public.xssencode2(get.username),get.password,0,int(time.time())))
         if isRe: return public.returnMsg(True,'ADD_SUCCESS')
         return public.returnMsg(False,'ADD_ERROR')
 

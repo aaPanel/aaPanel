@@ -76,6 +76,7 @@ class database(datatool.datatools):
             self.__CreateUsers(data_name,username,password,address,ssl)
             
             if get['ps'] == '': get['ps']=public.getMsg('INPUT_PS')
+            get['ps'] = public.xssencode(get['ps'])
             addTime = time.strftime('%Y-%m-%d %X',time.localtime())
             
             pid = 0
@@ -687,6 +688,10 @@ SetLink
             ps = public.getMsg('INPUT_PS')
             if value[0] == 'test':
                     ps = public.getMsg('DATABASE_TEST')
+
+            # XSS filter
+            if not re.match("^[\w+\.-]+$",value[0]):continue
+
             addTime = time.strftime('%Y-%m-%d %X',time.localtime())
             if sql.table('databases').add('name,username,password,accept,ps,addtime',(value[0],value[0],'',host,ps,addTime)): n +=1
         

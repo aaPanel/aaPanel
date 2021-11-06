@@ -47,7 +47,7 @@ def HttpGet(url,timeout = 6,headers = {}):
     """
     if is_local(): return False
     import http_requests
-    res = http_requests.get(url,timeout=timeout,headers = headers)
+    res = http_requests.get(url,timeout=timeout,headers = headers,verify=False)
     if res.status_code == 0:
         if headers: return False
         s_body = res.text
@@ -346,36 +346,36 @@ def writeFile(filename,s_body,mode='w+'):
 
 def WriteLog(type,logMsg,args=(),not_web = False):
     #写日志
-    #try:
-    import time,db,json
-    username = 'system'
-    uid = 1
-    tmp_msg = ''
-    if not not_web:
-        try:
-            from BTPanel import session
-            if 'username' in session:
-                username = session['username']
-                uid = session['uid']
-                if session.get('debug') == 1: return
-        except:
-            pass
-    global _LAN_LOG
-    if not _LAN_LOG:
-        _LAN_LOG = json.loads(ReadFile('BTPanel/static/language/' + GetLanguage() + '/log.json'))
-    keys = _LAN_LOG.keys()
-    if logMsg in keys:
-        logMsg = _LAN_LOG[logMsg]
-        for i in range(len(args)):
-            rep = '{'+str(i+1)+'}'
-            logMsg = logMsg.replace(rep,args[i])
-    if type in keys: type = _LAN_LOG[type]
-    sql = db.Sql()
-    mDate = time.strftime('%Y-%m-%d %X',time.localtime())
-    data = (uid,username,type,logMsg + tmp_msg,mDate)
-    result = sql.table('logs').add('uid,username,type,log,addtime',data)
-    #except:
-        #pass
+    try:
+        import time,db,json
+        username = 'system'
+        uid = 1
+        tmp_msg = ''
+        if not not_web:
+            try:
+                from BTPanel import session
+                if 'username' in session:
+                    username = session['username']
+                    uid = session['uid']
+                    if session.get('debug') == 1: return
+            except:
+                pass
+        global _LAN_LOG
+        if not _LAN_LOG:
+            _LAN_LOG = json.loads(ReadFile('BTPanel/static/language/' + GetLanguage() + '/log.json'))
+        keys = _LAN_LOG.keys()
+        if logMsg in keys:
+            logMsg = _LAN_LOG[logMsg]
+            for i in range(len(args)):
+                rep = '{'+str(i+1)+'}'
+                logMsg = logMsg.replace(rep,args[i])
+        if type in keys: type = _LAN_LOG[type]
+        sql = db.Sql()
+        mDate = time.strftime('%Y-%m-%d %X',time.localtime())
+        data = (uid,username,type,xssencode2(logMsg + tmp_msg),mDate)
+        result = sql.table('logs').add('uid,username,type,log,addtime',data)
+    except:
+        pass
 
 def GetLanguage():
     '''
@@ -835,7 +835,7 @@ def downloadFile(url,filename):
         if sys.version_info[0] == 2:
             import requests
             headers = {'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'}
-            r = requests.get(url, headers=headers)
+            r = requests.get(url, headers=headers,verify=False)
             with open(filename,"wb") as f:
                 f.write(r.content)
         else:
@@ -1413,6 +1413,12 @@ def xssencode(text):
     text2 = cgi.escape(str_convert, quote=True)
     return text2
 
+#xss 防御
+def xssencode2(text):
+    import cgi
+    text2 = cgi.escape(text, quote=True)
+    return text2
+
 # 取缓存
 def cache_get(key):
     from BTPanel import cache
@@ -1710,30 +1716,32 @@ def de_crypt(key,strings):
 #获取IP限制列表
 def get_limit_ip():
     iplong_list = []
-    ip_file = 'data/limitip.conf'
-    if not os.path.exists(ip_file): return iplong_list
+    try:
+        ip_file = 'data/limitip.conf'
+        if not os.path.exists(ip_file): return iplong_list
 
-    from BTPanel import cache
-    ikey = 'limit_ip'
-    iplong_list = cache.get(ikey)
-    if iplong_list: return iplong_list
+        from BTPanel import cache
+        ikey = 'limit_ip'
+        iplong_list = cache.get(ikey)
+        if iplong_list: return iplong_list
 
-    iplong_list = []
-    iplist = ReadFile(ip_file)
-    if not iplist:return iplong_list
-    iplist = iplist.strip()
-    for limit_ip in iplist.split(','):
-        if not limit_ip: continue
-        limit_ip = limit_ip.split('-')
-        iplong = {}
-        iplong['min'] = ip2long(limit_ip[0])
-        if len(limit_ip) > 1:
-            iplong['max'] = ip2long(limit_ip[1])
-        else:
-            iplong['max'] = iplong['min']
-        iplong_list.append(iplong)
+        iplong_list = []
+        iplist = ReadFile(ip_file)
+        if not iplist:return iplong_list
+        iplist = iplist.strip()
+        for limit_ip in iplist.split(','):
+            if not limit_ip: continue
+            limit_ip = limit_ip.split('-')
+            iplong = {}
+            iplong['min'] = ip2long(limit_ip[0])
+            if len(limit_ip) > 1:
+                iplong['max'] = ip2long(limit_ip[1])
+            else:
+                iplong['max'] = iplong['min']
+            iplong_list.append(iplong)
 
-    cache.set(ikey,iplong_list,3600)
+        cache.set(ikey,iplong_list,3600)
+    except:pass
     return iplong_list
 
 
