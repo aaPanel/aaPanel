@@ -42,6 +42,7 @@ if not hooks:
 # import db
 dns_client = None
 app.config['DEBUG'] = os.path.exists('data/debug.pl')
+app.config['SSL'] = os.path.exists('data/ssl.pl')
 
 #设置BasicAuth
 basic_auth_conf = 'config/basic_auth.json'
@@ -65,6 +66,13 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'BT_:'
 app.config['SESSION_COOKIE_NAME'] = public.md5(app.secret_key)
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30
+if app.config['SSL']:
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_SECURE'] = True
+else:
+    app.config['SESSION_COOKIE_SAMESITE'] = None
+
+
 Session(app)
 
 import common
@@ -212,6 +220,23 @@ def error_404(e):
     }
     return Response(errorStr,status=404,headers=headers)
 
+
+# Flask 403页面勾子
+@app.errorhandler(403)
+def error_403(e):
+    errorStr = '''<html>
+<head><title>403 Forbidden</title></head>
+<body>
+<center><h1>403 Forbidden</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>'''
+    headers = {
+        "Content-Type": "text/html"
+    }
+    return Response(errorStr, status=403, headers=headers)
+
+
 # Flask 500页面勾子
 @app.errorhandler(500)
 def error_500(e):
@@ -219,9 +244,6 @@ def error_500(e):
 
 During handling of the above exception, another exception occurred:'''
     error_info = public.get_error_info().strip().split(ss)[-1].strip()
-    if error_info.find("`GLIBC_2.14'") != -1:
-        public.downloadFile('https://download.bt.cn/auth/libAuth_gcc_4.4.7_x{}.so'.format(public.get_sysbit()),'/www/server/panel/class/libAuth.x86-64.so')
-        error_info += "\n已尝试自动修复此问题，请刷新页面重试!"
     request_info = '''REQUEST_DATE: {request_date}
  PAN_VERSION: {panel_version}
   OS_VERSION: {os_version}
@@ -235,7 +257,7 @@ REQUEST_FORM: {request_form}
     full_path = request.full_path,
     request_form = request.form.to_dict(),
     user_agent = request.headers.get('User-Agent'),
-    panel_version = public.get_panel_version(),
+    panel_version = public.version(),
     os_version = public.get_os_version()
 )
 
@@ -294,7 +316,7 @@ def site(pdata = None):
     import panelSite
     siteObject = panelSite.panelSite()
         
-    defs = ('upload_csv','create_website_multiple','del_redirect_multiple','del_proxy_multiple','delete_dir_auth_multiple',
+    defs = ('check_del_data','upload_csv','create_website_multiple','del_redirect_multiple','del_proxy_multiple','delete_dir_auth_multiple',
             'delete_dir_bind_multiple','delete_domain_multiple','set_site_etime_multiple','set_site_php_version_multiple',
             'delete_website_multiple','set_site_status_multiple','get_site_err_log','get_site_domains','GetRedirectFile',
             'SaveRedirectFile','DeleteRedirect','GetRedirectList','CreateRedirect','ModifyRedirect',
@@ -348,7 +370,7 @@ def database(pdata = None):
         return render_template('database.html',data=data)
     import database
     databaseObject = database.database()
-    defs = ('get_mysql_user','check_mysql_ssl_status','write_ssl_to_mysql','GetdataInfo','GetInfo','ReTable','OpTable','AlTable','GetSlowLogs','GetRunStatus',
+    defs = ('check_del_data','get_database_size', 'get_mysql_user','check_mysql_ssl_status','write_ssl_to_mysql','GetdataInfo','GetInfo','ReTable','OpTable','AlTable','GetSlowLogs','GetRunStatus',
             'SetDbConf','GetDbStatus','BinLog','GetErrorLog','GetMySQLInfo','SetDataDir','SetMySQLPort',
             'AddDatabase','DeleteDatabase','SetupPassword','ResDatabasePassword','ToBackup','DelBackup',
             'InputSql','SyncToDatabases','SyncGetDatabases','GetDatabaseAccess','SetDatabaseAccess')
@@ -496,7 +518,7 @@ def ssh_security(pdata=None):
     firewallObject = ssh_security.ssh_security()
     defs = ('san_ssh_security', 'set_password', 'set_sshkey', 'stop_key', 'get_config',
             'stop_password', 'get_key', 'return_ip', 'add_return_ip', 'del_return_ip', 'start_jian', 'stop_jian',
-            'get_jian', 'get_logs','set_root','stop_root','start_auth_method','stop_auth_method','get_auth_method','check_so_file','get_so_file')
+            'get_jian', 'get_logs','set_root','stop_root','start_auth_method','stop_auth_method','get_auth_method','check_so_file','get_so_file','get_pin')
     return publicObject(firewallObject, defs, None, pdata)
 
 
@@ -599,7 +621,8 @@ def files(pdata = None):
         return render_template('files.html',data=data)
     import files
     filesObject = files.files()
-    defs = ('get_file_attribute','get_file_hash','CreateLink','get_progress','restore_website','fix_permissions','get_all_back',
+    defs = ('files_search','files_replace','get_replace_logs',
+            'get_file_attribute','get_file_hash','CreateLink','get_progress','restore_website','fix_permissions','get_all_back',
             'restore_path_permissions','del_path_premissions','get_path_premissions','back_path_permissions',
             'CheckExistsFiles','GetExecLog','GetSearch','ExecShell','GetExecShellMsg','exec_git','exec_composer','create_download_url',
             'UploadFile','GetDir','CreateFile','CreateDir','DeleteDir','DeleteFile','get_download_url_list','remove_download_url','modify_download_url',
@@ -675,7 +698,7 @@ def config(pdata = None):
         return render_template( 'config.html',data=data)
     import config
     defs = (
-        'set_empty','set_backup_notification','get_panel_ssl_status','set_file_deny', 'del_file_deny', 'get_file_deny',
+        'send_by_telegram','set_empty','set_backup_notification','get_panel_ssl_status','set_file_deny', 'del_file_deny', 'get_file_deny',
         'get_httpd_access_log_format_parameter','set_httpd_format_log_to_website','get_httpd_access_log_format',
         'del_httpd_access_log_format','add_httpd_access_log_format','get_nginx_access_log_format_parameter',
         'set_format_log_to_website','get_nginx_access_log_format','del_nginx_access_log_format',
@@ -691,7 +714,7 @@ def config(pdata = None):
         'get_php_config','get_config','SavePanelSSL','GetPanelSSL','GetPHPConf','SetPHPConf',
         'GetPanelList','AddPanelInfo','SetPanelInfo','DelPanelInfo','ClickPanelInfo','SetPanelSSL',
         'SetTemplates','Set502','setPassword','setUsername','setPanel','setPathInfo','setPHPMaxSize',
-        'getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl',
+        'getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl','get_settings2','del_tg_info','set_tg_bot',
         'ClosePanel','AutoUpdatePanel','SetPanelLock','return_mail_list','del_mail_list','add_mail_address','user_mail_send','get_user_mail','set_dingding','get_dingding',
         'get_settings','user_stmp_mail_send','user_dingding_send','get_login_send','set_login_send','clear_login_send','get_login_log','login_ipwhite'
         )
@@ -708,7 +731,7 @@ def ajax(pdata = None):
             'check_user_auth','to_not_beta','get_beta_logs','apple_beta','GetApacheStatus','GetCloudHtml',
             'get_load_average','GetOpeLogs','GetFpmLogs','GetFpmSlowLogs','SetMemcachedCache','GetMemcachedStatus',
             'GetRedisStatus','GetWarning','SetWarning','CheckLogin','GetSpeed','GetAd','phpSort','ToPunycode',
-            'GetBetaStatus','SetBeta','setPHPMyAdmin','delClose','KillProcess','GetPHPInfo','GetQiniuFileList',
+            'GetBetaStatus','SetBeta','setPHPMyAdmin','delClose','KillProcess','GetPHPInfo','GetQiniuFileList','get_process_tops','get_process_cpu_high',
             'UninstallLib','InstallLib','SetQiniuAS','GetQiniuAS','GetLibList','GetProcessList','GetNetWorkList',
             'GetNginxStatus','GetPHPStatus','GetTaskCount','GetSoftList','GetNetWorkIo','GetDiskIo','GetCpuIo',
             'CheckInstalled','UpdatePanel','GetInstalled','GetPHPConfig','SetPHPConfig')
@@ -777,8 +800,8 @@ def task(pdata = None):
     if comReturn: return comReturn
     import panelTask
     toObject = panelTask.bt_task()
-    defs = ('get_task_lists','remove_task','get_task_find')
-    result = publicObject(toObject,defs,None,pdata)
+    defs = ('get_task_lists', 'remove_task', 'get_task_find', "get_task_log_by_id")
+    result = publicObject(toObject, defs, None, pdata)
     return result
 
 @app.route('/plugin',methods=method_all)
@@ -853,7 +876,7 @@ def download():
                          attachment_filename=os.path.basename(filename),
                          cache_timeout=0)
 
-@app.route('/cloud',methods=method_get)
+@app.route('/cloud',methods=method_all)
 def panel_cloud():
     #从对像存储下载备份文件接口
     comReturn = comm.local()
@@ -877,7 +900,36 @@ def panel_cloud():
     if plugin_name == 'ftp':
         if download_url.find("ftp") != 0:download_url = "ftp://" + download_url
     else:
-        if download_url.find('http') != 0:download_url = 'http://' + download_url
+        if download_url.find('http') != 0: download_url = 'http://' + download_url
+
+    if "toserver" in get and get.toserver=="true":
+        download_dir = "/tmp/"
+        if "download_dir" in get:
+            download_dir = get.download_dir
+        local_file = os.path.join(download_dir, get.name)
+
+        input_from_local = False
+        if "input_from_local" in get:
+            input_from_local = True if get.input_from_local == "true" else False
+
+        if input_from_local:
+            if os.path.isfile(local_file):
+                return {
+                    "status": True,
+                    "msg": "The file already exists and will be restored locally.",
+                    "task_id": -1,
+                    "local_file": local_file
+                }
+        from panelTask import bt_task
+        task_obj = bt_task()
+        task_id = task_obj.create_task('Download file', 1, download_url, local_file)
+        return {
+            "status": True,
+            "msg": "The download task was created successfully",
+            "local_file": local_file,
+            "task_id": task_id
+        }
+
     return redirect(download_url)
 
 #======================普通路由区============================#
@@ -951,6 +1003,7 @@ def login():
                     os.remove(sess_file)
                 except:
                     pass
+            g.dologin = True
             return redirect(login_path)
 
     if is_auth_path:
@@ -1166,20 +1219,23 @@ def panel_public():
 
 @app.route('/favicon.ico',methods=method_get)
 def send_favicon():
-    #图标
+    # 图标
+    comReturn = comm.local()
+    if comReturn: return abort(404)
     s_file = '/www/server/panel/BTPanel/static/favicon.ico'
     if not os.path.exists(s_file): return abort(404)
     return send_file(s_file,conditional=True,add_etags=True)
 
 
-@app.route('/service_status',methods = method_get)
-def service_status():
-    #检查面板当前状态
-    try:
-        if not 'login' in session: session.clear()
-    except:
-        pass
-    return 'True'
+# @app.route('/service_status', methods=method_get)
+# def service_status():
+#     # 检查面板当前状态
+#     try:
+#         if not 'login' in session: session.clear()
+#     except:
+#         pass
+#     return 'True'
+
 
 @app.route('/coll',methods=method_all)
 @app.route('/coll/',methods=method_all)
@@ -1209,13 +1265,15 @@ def panel_other(name=None,fun = None,stype=None):
         if len(tmp) == 1:  tmp.append('')
         stype = tmp[1]
 
-
     if not name: name = 'coll'
     if not public.path_safe_check("%s/%s/%s" % (name,fun,stype)): return abort(404)
     if name.find('./') != -1 or not re.match(r"^[\w-]+$",name): return abort(404)
     if not name: return public.returnJson(False,'PLUGIN_INPUT_ERR'),json_header
     p_path = os.path.join('/www/server/panel/plugin/', name)
-    if not os.path.exists(p_path): return abort(404)
+    if not os.path.exists(p_path):
+        if name == 'btwaf' and fun == 'index':
+            return  render_template('error3.html',data={})
+        return abort(404)
 
     #是否响插件应静态文件
     if fun == 'static':
@@ -1295,9 +1353,7 @@ def panel_other(name=None,fun = None,stype=None):
                 return public.returnJson(False,public.getMsg('PUBLIC_ERR_RETURN').format(r_type)),json_header
             return data
     except:
-        error_info = public.get_error_info()
-        public.submit_error(error_info)
-        return error_info.replace('\n','<br>\n')
+        return public.get_error_object(None, plugin_name=name)
 
 
 @app.route('/hook',methods=method_all)
@@ -1660,7 +1716,16 @@ def is_login(result):
             result = make_response(result)
             request_token = public.GetRandomString(48)
             session['request_token'] = request_token
-            result.set_cookie('request_token',request_token,max_age=86400*30)
+            samesite = app.config['SESSION_COOKIE_SAMESITE']
+            secure = app.config['SESSION_COOKIE_SECURE']
+            if app.config['SSL'] and request.full_path.find('/login?tmp_token=') == 0:
+                samesite = 'None'
+                secure = True
+            result.set_cookie('request_token', request_token,
+            max_age=86400 * 30,
+            samesite= samesite,
+            secure=secure
+            )
     return result
 
 # js随机数模板使用，用于不更新版本号时更新前端文件不需要用户强制刷新浏览器
@@ -1787,7 +1852,7 @@ def ws_panel_thread(get):
     check_str = '{}{}'.format(get.mod_name, get.def_name)
     if not re.match("^\w+$", check_str) or get.mod_name in ['public', 'common', 'db', 'db_mysql', 'downloadFile',
                                                             'jobs']:
-        get._ws.send(public.getJson(public.return_status_code(1000, '不安全的mod_name,def_name参数内容')))
+        get._ws.send(public.getJson(public.return_status_code(1000, 'Unsafe mod_name, def_name parameter content')))
         return
     if not hasattr(get, 'args'):
         get._ws.send(public.getJson(public.return_status_code(1001, 'args')))
@@ -1795,21 +1860,21 @@ def ws_panel_thread(get):
 
     mod_file = '{}/{}.py'.format(public.get_class_path(), get.mod_name)
     if not os.path.exists(mod_file):
-        get._ws.send(public.getJson(public.return_status_code(1000, '指定模块{}不存在'.format(get.mod_name))))
+        get._ws.send(public.getJson(public.return_status_code(1000, 'Specified module {} does not exist'.format(get.mod_name))))
         return
     _obj = public.get_script_object(mod_file)
     if not _obj:
-        get._ws.send(public.getJson(public.return_status_code(1000, '指定模块{}不存在'.format(get.mod_name))))
+        get._ws.send(public.getJson(public.return_status_code(1000, 'Specified module {} does not exist'.format(get.mod_name))))
         return
     _cls = getattr(_obj, get.mod_name)
     if not _cls:
         get._ws.send(
-            public.getJson(public.return_status_code(1000, '在{}模块中没有找到{}对像'.format(get.mod_name, get.mod_name))))
+            public.getJson(public.return_status_code(1000, 'The {} object was not found in the {} module'.format(get.mod_name, get.mod_name))))
         return
     _def = getattr(_cls(), get.def_name)
     if not _def:
         get._ws.send(
-            public.getJson(public.return_status_code(1000, '在{}对像中没有找到{}方法'.format(get.mod_name, get.def_name))))
+            public.getJson(public.return_status_code(1000, 'The {} object was not found in the {} module'.format(get.mod_name, get.def_name))))
         return
     result = {
         'callback': get.ws_callback,
@@ -1931,7 +1996,9 @@ def sock_recv(cmdstring, ws):
         sock_pids[p.pid] = ws
         kill_closed()
         while p.poll() is None:
-            ws.send(p.stdout.readline().decode())
+            send_line = p.stdout.readline().decode()
+            if not send_line or send_line.find('tail: ') != -1: continue
+            ws.send(send_line)
         ws.send(p.stdout.read().decode())
     except:
         kill_closed()
@@ -1954,10 +2021,10 @@ def close_sock_shell():
     skey = public.md5(cmdstring)
     pid = cache.get(skey)
     if not pid:
-        return json.dumps(public.return_data(False, [], error_msg='指定sock已终止!')), json_header
+        return json.dumps(public.return_data(False, [], error_msg='The specified sock has been terminated!')), json_header
     os.kill(pid, 9)
     cache.delete(skey)
-    return json.dumps(public.return_data(True, '操作成功!')), json_header
+    return json.dumps(public.return_data(True, 'Successful operation!')), json_header
 
 def check_csrf_websocket(ws,args):
     '''

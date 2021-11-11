@@ -1,325 +1,1924 @@
-var site_table = bt_tools.table({
-    el:'#bt_site_table',
-    url:'/data?action=getData',
-    cookiePrefix:'site_table', // cookie前缀，用于状态存储，如果不设置，着所有状态不存储，
-    param:{table:'sites'}, //参数
-    minWidth:'1000px',
-    autoHeight:true,
-    default:"Site list is empty", // 数据为空时的默认提示
-    beforeRequest:function(param){
-        param.type = bt.get_cookie('site_type') || -1;
-        return param;
-    },
-    column:[
-        {type:'checkbox',class:'',width:20},
-        {fid:'name',title:lan.site.site_name,sort:true,sortValue:'asc',type:'link',event:function(row,index,ev){
-            site.web_edit(row,true);
-        }},
-        {fid:'status',title:lan.site.status,sort:true,width:85,config:{icon:true,list:[['1',lan.site.running_text,'bt_success','glyphicon-play'],['0',lan.site.stopped,'bt_danger','glyphicon-pause']]},type:'status',event:function(row,index,ev,key,that){
-            bt.site[parseInt(row.status)?'stop':'start'](row.id,row.name,function(res){
-                if(res.status) that.$modify_row_data({status:parseInt(row.status)?'0':'1'});
-            });
-        }},
-        {fid:'backup_count',title:lan.site.backup,width:80,type:'link',template:function(row,index){
-            var backup = lan.site.backup_no,_class = "bt_warning";
-            if (row.backup_count > 0) backup = lan.site.backup_yes,_class = "bt_success";
-            return '<a href="javascript:;" class="btlink  '+ _class +'">'+ backup + (row.backup_count >0?('('+ row.backup_count +')'):'') +'</a>';
-        },event:function(row,index){
-            site.site_detail(row.id,row.name);
-        }},
-        {fid:'path',title:lan.site.root_dir,tips:'Open path',type:'link',event:function(row,index,ev){
-            openPath(row.path);
-        }},
-        {fid:'edate',title:lan.site.endtime,width:115,class:'set_site_edate',sort:true,type:'link',template:function(row,index){
-            var _endtime = '';
-            if (row.edate) _endtime = row.edate;
-            if (row.endtime) _endtime = row.endtime;
-            _endtime = (_endtime === "0000-00-00") ? lan.site.web_end_time : _endtime;
-            return  _endtime;
-        },event:function(row){}}, //模拟点击误删
-        {fid:'ps',title:lan.site.note,type:'input',blur:function(row,index,ev){
-            bt.pub.set_data_ps({id:row.id,table:'sites',ps:ev.target.value},function(res){
-                if(!res.status) layer.msg(res.msg,{status:2});
-            });
-        },keyup:function(row,index,ev){
-            if(ev.keyCode === 13){
-                $(this).blur();
-            }
-        }},
-        {fid:'php_version',title:'PHP',tips:'Selete php version',width:57,type:'link',template:function(row,index){
-            if(row.php_version.indexOf('static') > -1) return  row.php_version;
-            return row.php_version;
-        },event:function(row,index){
-            site.web_edit(row);
-            setTimeout(function(){
-                $('.site-menu p:eq(9)').click();
-            },500);
-        }},
-        {fid:'ssl',title:'SSL',tips:'Deployment certificate',width:110,type:'text',template:function(row,index){
-            var _ssl = row.ssl,_info = '',_arry = [['issuer','Certificate'],['notAfter','Due date'],['notBefore','Application date'],['dns','Domain name']];
-            for(var i=0;i<_arry.length;i++){
-                var item = _ssl[_arry[i][0]];
-                _info += _arry[i][1]+':'+ item + (_arry.length-1 != i?'\n':'');
-            }
-            return _ssl === -1?'<a class="btlink" href="javascript:;" style="color:orange;">Not Set</a>': (_ssl.endtime >= 0? '<a class="btlink" href="javascript:;" title="'+ _info +'">Expire: '+ _ssl.endtime +'days</a>':'<a style="color:red" href="javascript:;">Expired</a>');
-        },event:function(row,index,ev,key,that){
-            site.web_edit(row);
-            setTimeout(function(){
-                $('.site-menu p:eq(8)').click();
-            },500);
-        }},
-        {title:lan.site.operate,type:'group',width:119,align:'right',group:[
-        {
-            title:'WAF',
-            event:function(row,index,ev,key,that){
-                site.site_waf(row.name);
-            }
-        },
-        {
-            title:lan.site.set,
-            event:function(row,index,ev,key,that){
-                site.web_edit(row,true);
-            }
-        },{
-            title:'Del',
-            event:function(row,index,ev,key,that){
-                site.del_site(row.id,row.name,function(){
-                    that.$refresh_table_list(true);
-                });
-            }
-        }]}
-    ],
-    sortParam:function(data){
-        return {'order':data.name +' '+ data.sort};
-    },
-    // 表格渲染完成后
-    success:function(that){
-        $('.event-edate-'+ that.random).each(function(){
-            var $this = $(this);
-            laydate.render({
-                elem: $this[0] //指定元素
-                , min: bt.get_date(1)
-                , max: '2099-12-31'
-                , vlue: bt.get_date(365)
-                , type: 'date'
-                , format: 'yyyy-MM-dd'
-                , trigger: 'click'
-                , btns: ['perpetual', 'confirm']
-                , theme: '#20a53a'
-                , ready:function(){
-                    $this.click();
-                }
-                , done: function (date) {
-                    var item = that.event_rows_model.rows;
-                    bt.site.set_endtime(item.id, date,function(res){
-                        if(res.status){
-                            layer.msg(res.msg);
-                            return false;
-                        }
-                        bt.msg(res);
-                    });
-                }
-            });
-        });
-    },
-    // 渲染完成
-    tootls:[{ // 按钮组
-        type:'group',
-        positon:['left','top'],
-        list:[
-            {title:'Add site',active:true, event:function(ev){ site.add_site(function(){ 
-                site_table.$refresh_table_list(true) });
-                bt.set_cookie('site_type','-1');
-            }},
-            {title:'Default Page',event:function(ev){ site.set_default_page() }},
-            {title:'Default Website',event:function(ev){ site.set_default_site() }},
-            {title:'PHP CLI version',event:function(ev){ site.get_cli_version()}},
-            {title:'Category manager',group:true,init:function(className){
-                bt.site.get_type(function(res){
-                    var html = '';
-                    $.each(res,function(index,item){
-                        html += '<li><a href="javascript:;" data-id="'+ item.id +'">'+ item.name +'</a></li>';
-                    });
-                    html += '<li role="separator" class="divider"></li><li><a href="javascript:;" data-id="type_sets">Category set</a></li>';
-                    $('.' + className).next().html(html);
-                    $('.' + className).next('ul').on('click','li a',function(){
-                        var id = $(this).data('id');
-                        if(id == 'type_sets'){
-                            site.set_class_type();
-                        }else{
-                            bt.set_cookie('site_type',id);
-                            site_table.$refresh_table_list(true);
-                        }
-                    });
-                });
-            }}
-        ]
-    },{ // 搜索内容
-        type:'search',
-        positon:['right','top'],
-        placeholder:'Please enter domain or remarks',
-        searchParam:'search', //搜索请求字段，默认为 search
-        value:'',// 当前内容,默认为空
-    },{ // 批量操作
-        type:'batch',//batch_btn
-        positon:['left','bottom'],
-        placeholder:'Select batch operation',
-        buttonValue:'Execute',
-        disabledSelectValue:'Select the website to execute!',
-        selectList:[
-            {
-                group:[{title:lan.site.enable_website,param:{status:1}},{title:'Disable website',param:{status:0}}],
-                url:'/site?action=set_site_status_multiple',
-                confirmVerify:false, //是否提示验证方式
-                paramName:'sites_id', //列表参数名,可以为空
-                paramId:'id', // 需要传入批量的id
-                theadName:'Name'
-            },{
-                title:lan.site.backup_website,
-                url:'/site?action=ToBackup',
-                paramId:'id',
-                load:true,
-                theadName:'Name',
-                callback:function(that){ // 手动执行,data参数包含所有选中的站点
-                    that.start_batch({},function(list){
-                        var html = '';
-                        for(var i=0;i<list.length;i++){
-                            var item = list[i];
-                            html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ item.request.msg +'</span></div></td></tr>';
-                        }
-                        site_table.$batch_success_table({title:'Batch backup',th:'Site name',html:html});
-                        site_table.$refresh_table_list(true);
-                    });
-                }
-            },{
-                title:lan.site.set_expired,
-                url:'/site?action=set_site_etime_multiple',
-                paramName:'sites_id', //列表参数名,可以为空
-                paramId:'id', // 需要传入批量的id
-                theadName:'Name',
-                confirm:{
-                    title:'Batch set expired date',
-                    content:'<div class="line"><span class="tname">Expired date</span><div class="info-r "><input name="edate" id="site_edate" class="bt-input-text mr5" placeholder="yyyy-MM-dd" type="text"></div></div>',
-                    success:function(){
-                        laydate.render({
-                            elem: '#site_edate'
-                            ,min: bt.format_data(new Date().getTime(),'yyyy-MM-dd')
-                            ,max: '2099-12-31'
-                            ,vlue: bt.get_date(365)
-                            ,type: 'date'
-                            ,format: 'yyyy-MM-dd'
-                            ,trigger: 'click'
-                            ,btns: ['perpetual','confirm']
-                            ,theme: '#20a53a'
-                        });
-                    },
-                    yes:function(index,layers,request){
-                        var site_edate = $('#site_edate'),site_edate_val = site_edate.val();
-                        if(site_edate_val != ''){
-                            request({'edate':site_edate_val==='Forever'?'0000-00-00':site_edate_val});
-                        }else{
-                            layer.tips('Input expired date','#site_edate',{tips:['1','red']});
-                            $('#site_edate').css('border-color','red');
-                            $('#site_edate').click();
-                            setTimeout(function(){
-                                $('#site_edate').removeAttr('style');
-                            },3000);
-                            return false;
-                        }
-                    }
-                }
-            },{
-                title:lan.site.set_php_version,
-                url:'/site?action=set_site_php_version_multiple',
-                paramName:'sites_id', //列表参数名,可以为空
-                paramId:'id', // 需要传入批量的id
-                theadName:'Name',
-                confirm:{
-                    title:'Batch set php version',
-                    area:'420px',
-                    content:'<div class="line"><span class="tname">PHP version</span><div class="info-r"><select class="bt-input-text mr5 versions" name="versions" style="width:150px"></select></span></div><ul class="help-info-text c7" style="font-size:11px"><li>Please select the version according to your program requirements.</li><li>If not necessary, please try not to use PHP 5.2, which will reduce your server security.</li><li>PHP 7 does not support mysql extension, mysqli and mysql_pdo will be installed by default.</li></ul></div>',
-                    success:function(){
-                        bt.site.get_all_phpversion(function(res){
-                            var html = '';
-                            $.each(res,function(index,item){
-                                html += '<option value="'+ item.version +'">'+ item.name +'</option>';
-                            });
-                            $('[name="versions"]').html(html);
-                        });
-                    },
-                    yes:function(index,layers,request){
-                        request({version:$('[name="versions"]').val()});
-                    }
-                }
-            },{
-                title:lan.site.set_category,
-                url:'/site?action=set_site_type',
-                paramName:'site_ids', //列表参数名,可以为空
-                paramId:'id', // 需要传入批量的id
-                beforeRequest:function(list){
-                    var arry = [];
-                    $.each(list,function(index,item){
-                        arry.push(item.id);
-                    });
-                    return JSON.stringify(arry);
-                },
-                confirm:{
-                    title:'Batch set category',
-                    content:'<div class="line"><span class="tname">Site category</span><div class="info-r"><select class="bt-input-text mr5 site_types" name="site_types" style="width:150px"></select></span></div></div>',
-                    success:function(){
-                        bt.site.get_type(function(res){
-                            var html = '';
-                            $.each(res,function(index,item){
-                                html += '<option value="'+ item.id +'">'+ item.name +'</option>';
-                            });
-                            $('[name="site_types"]').html(html);
-                        });
-                    },
-                    yes:function(index,layers,request){
-                        request({id:$('[name="site_types"]').val()});
-                    }
-                },
-                tips:false,
-                success:function(res,list,that){
-                    var html = '';
-                    $.each(list,function(index,item){
-                        html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (res.status?'#20a53a':'red') +'">'+ res.msg +'</span></div></td></tr>';
-                    });
-                    that.$batch_success_table({title:'Batch set category',th:'Site name',html:html});
-                    that.$refresh_table_list(true);
-                }
-            },{
-                title:lan.site.del_website,
-                url:'/site?action=delete_website_multiple',
-                paramName:'sites_id', //列表参数名,可以为空
-                paramId:'id', //需要传入批量的id
-                theadName:'Name',
-                confirm:function(config,callback){
-                    bt.show_confirm("Delete site","Confirm delete the FTP、database、root path of the selected site with the same name", function(){
-                        var param = {};
-                        $('.bacth_options input[type=checkbox]').each(function(){
-                            var checked = $(this).is(":checked");
-                            if(checked) param[$(this).attr('name')] = checked?1:0;
-                        })
-                        if(callback) callback(param);
-                    },"<div class='options bacth_options'><span class='item'><label><input type='checkbox' name='ftp'><span>FTP</span></label></span><span class='item'><label><input type='checkbox' name='database'><span>" + lan.site.database + "</span></label></span><span class='item' ><label style='margin-right:0'><input type='checkbox' name='path'><span>" + lan.site.root_dir + "</span></label></span></div>");
-                }
-            }
-        ],
-    },{ //分页显示
-        type:'page',
-        positon:['right','bottom'], // 默认在右下角
-        pageParam:'p', //分页请求字段,默认为 : p
-        page:1, //当前分页 默认：1
-        numberParam:'limit',　//分页数量请求字段默认为 : limit
-        number:20,　//分页数量默认 : 20条
-        numberList:[10,20,50,100,200], // 分页显示数量列表
-        numberStatus:true, //　是否支持分页数量选择,默认禁用
-        jump:true, //是否支持跳转分页,默认禁用
-    }]
-});
+
+$('#cutMode span').on('click',function(){
+    var index = $(this).index();
+    $(this).addClass('on').siblings().removeClass('on');
+    $(this).parent().next().find('.tab-con-block').eq(index).removeClass('hide').siblings().addClass('hide');
+    switch(index){
+        case 0:
+            $('#bt_site_table').empty();
+            if(!isSetup) $('.site_table_view .mask_layer').removeClass('hide').find('.prompt_description').html('Web server is not installed,<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'nginx\')">Install Nginx</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'apache\')">Install Apache</a>');
+            site.php_table_view();
+            site.get_types();
+            break;
+        case 1:
+            $('#bt_node_table').empty();
+            $.get('/plugin?action=getConfigHtml',{name: "nodejs"},function(res){
+                if(typeof res !== 'string') $('.site_table_view .mask_layer').removeClass('hide').find('.prompt_description').html('Node version manager is not installed，<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'nodejs\')">Click install</a>');
+            })
+            site.node_porject_view();
+            break;
+    }
+    bt.set_cookie('site_tab_status',index==0?'php':'nodejs')
+})
+
 
 var site = {
+    node:{
+        /**
+         * @description 选择路径配置
+         * @return config {object} 选中文件配置
+         *
+         */
+        get_project_select_path:function(path){
+            var that = this;
+            return {
+                type: 'text',
+                width: '320px',
+                name: 'project_script',
+                value:path,
+                placeholder:'Please select the project startup file and enter the startup command. It cannot be empty',
+                icon: {
+                    type: 'glyphicon-folder-open',
+                    select:'file',
+                    event: function (ev){}
+                }
+            }
+        },
+        get_project_select:function(path){
+            var that = this;
+            return {
+                type: 'select',
+                name: 'project_script',
+                width: '200px',
+                disabled: true,
+                unit: '* Get the startup mode in package.json',
+                placeholder: 'Select the project continue',
+                list:path?function(configs){
+                    that.get_project_script_list(path,configs[2],this)
+                }:[],
+                change:function(formData,elements,formConfig){
+                    var project_script = $("[data-name=\'project_script\']");
+                    if(formData.project_script === ''){
+                        if($("#project_script_two").length === 0){
+                            project_script.parent().after('<div class="inlineBlock"><input type="text" name="project_script_two" id="project_script_two" placeholder="Please select the startup file and startup command, it cannot be empty" class="mt5 bt-input-text mr10 " style="width:420px;" value="" /><span class="glyphicon glyphicon-folder-open cursor" onclick="bt.select_path(\'project_script_two\',\'file\',null,\''+path+'\')" style="margin-right: 18px;"></span></div>')
+                        }
+                    }else{
+                        project_script.parent().next().remove();
+                    }
+                }
+            }
+        },
+
+        /**
+         * @description 选择启动脚本配置
+         * @param path {string} 项目目录
+         * @param form {object} 表单元素
+         * @param formObject {object} 表单对象
+         * @return config {object} 选中文件配置
+         */
+        get_project_script_list:function(path,form,formObject){
+            var that = this;
+            that.get_start_command({project_cwd: path},function(res){
+                var arry = [];
+                for (var resKey in res) {
+                    arry.push({title: resKey + ' 【' + res[resKey] + '】', value:resKey })
+                }
+                arry.push({title:'Custom command',value:''})
+                form.group = that.get_project_select(path);
+                form.group.list = arry;
+                form.group.disabled = false;
+                formObject.$replace_render_content(2)
+                if(arry.length === 1){
+                    var project_script = $("[data-name=\'project_script\']");
+                    // form.group.value = '';
+                    project_script.parent().after('<div class="inlineBlock"><input type="text" name="project_script_two" id="project_script_two" placeholder="Please select the startup file and startup command, it cannot be empty" class="mt5 bt-input-text mr10 " style="width:420px;" value="" /><span class="glyphicon glyphicon-folder-open cursor" onclick="bt.select_path(\'project_script_two\',\'file\',null,\''+path+'\')" style="margin-right: 18px;"></span></div>')
+                }
+            },function(){
+                form.label = 'Start file/command';
+                form.group = that.get_project_select_path(path);
+                formObject.$replace_render_content(2)
+            })
+            return [];
+        },
+
+        /**
+         *
+         * @description 获取Node版本列表
+         * @return {{dataFilter: (function(*): *[]), url: string}}
+         */
+        get_node_version_list:function(){
+            return {
+                url: '/project/nodejs/get_nodejs_version',
+                dataFilter: function(res) {
+                    if(res.length === 0){
+                        layer.closeAll();
+                        bt.msg({status:false,msg:'Please open [Node Version Manager], install at least 1 Node version to continue'})
+                        return;
+                    }
+                    var arry = [];
+                    for (var i = 0; i < res.length; i++) {
+                        arry.push({title:res[i],value:res[i]})
+                    }
+                    return arry;
+                }
+            }
+        },
+
+
+        /**
+         * @description 获取Node通用Form配置
+         * @param config {object} 获取配置参数
+         * @return form模板
+         */
+        get_node_general_config: function (config) {
+            config = config || {}
+            var that = this,
+                formLineConfig = [{
+                    label: 'Path',
+                    group: {
+                        type: 'text',
+                        width: '350px',
+                        name: 'project_cwd',
+                        readonly: true,
+                        icon: {
+                            type: 'glyphicon-folder-open',
+                            event: function (ev) {},
+                            callback: function (path) {
+                                var filename = path.split('/');
+                                var project_script_config = this.config.form[2],
+                                    project_name_config = this.config.form[1],
+                                    project_ps_config = this.config.form[6];
+                                project_name_config.group.value = filename[filename.length - 1];
+                                project_ps_config.group.value = filename[filename.length - 1];
+                                project_script_config.group.disabled = false;
+                                this.$replace_render_content(1)
+                                this.$replace_render_content(6)
+                                that.get_project_script_list(path,project_script_config,this)
+                            }
+                        },
+                        value: bt.get_cookie('sites_path') ? bt.get_cookie('sites_path') : '/www/wwwroot',
+                        placeholder: 'Please select the project directory'
+                    }
+                }, {
+                    label: 'Name',
+                    group: {
+                        type: 'text',
+                        name: 'project_name',
+                        width: '350px',
+                        placeholder: 'Please enter the name of the Node project',
+                        input: function (formData,formElement,formConfig) {
+                            var  project_ps_config = formConfig.config.form[6];
+                            project_ps_config.group.value = formData.project_name;
+                            formConfig.$replace_render_content(6)
+                        }
+                    }
+                }, {
+                    label: 'Run opt',
+                    group:(function(){
+                        return that.get_project_select(config.path)
+                    }())
+                }, {
+                    label: 'Port',
+                    group: {
+                        type: 'number',
+                        name: 'port',
+                        width: '200px',
+                        placeholder: 'Port of the project',
+                        unit: '* Port of the project',
+                    }
+                }, {
+                    label: 'User',
+                    group: {
+                        type: 'select',
+                        name: 'run_user',
+                        width: '150px',
+                        unit:'* No special requirements,choose www user',
+                        list: [{title:'www',value:'www'},{title: 'root', value: 'root'}],
+                        tips: 'sssss'
+                    }
+                }, {
+                    label: 'Node',
+                    group: {
+                        type: 'select',
+                        name: 'nodejs_version',
+                        width: '150px',
+                        unit: '* Choose the right Node version, <a href="javascript:;" class="btlink" onclick="bt.soft.set_lib_config(\'nodejs\',\'Node.js version manager\')">Install other</a>',
+                        list: (function () {
+                            return that.get_node_version_list()
+                        })()
+                    }
+                }, {
+                    label: 'Remarks',
+                    group: {
+                        type: 'text',
+                        name: 'project_ps',
+                        width: '420px',
+                        placeholder: 'Please enter project remarks',
+                        value:config.ps,
+                    }
+                }, {
+                    label: 'Domain name',
+                    group: {
+                        type: 'textarea', //当前表单的类型 支持所有常规表单元素、和复合型的组合表单元素
+                        name: 'domains', //当前表单的name
+                        style: {'width': '420px', 'height': '120px', 'line-height': '22px'},
+                        tips: { //使用hover的方式显示提示
+                            text: '<span>Please enter the domain name to be bound, this option can be empty</span><br>One domain name per line, the default is port 80<br>Pan-analysis adding method *.domain.com<br>If the format of the additional port is www.domain.com:88',
+                            style: {top: '10px', left: '15px'},
+                        }
+                    }
+                },{
+                    group:{
+                        type:'help',
+                        list:[
+                            '[Run opt]: The scripts list in package.json is read by default, or you can select the [Custom Command] option to manually enter the start command',
+                            '[Custom start]: You can select the startup file or directly enter the startup command. Supported startup methods: npm/node/pm2/yarn',
+                            '[Port]：The wrong port will lead to access to 502, if you dont know the port, you can change to the correct port after starting',
+                            '[User]：For security reasons, the www user is used by default to run, and root user running may bring security risks'
+                        ]
+                    }
+                }]
+
+            if (config.path) {
+                formLineConfig.splice(-1, 1)
+                return formLineConfig.concat([{
+                    label: 'Boot',
+                    group: {
+                        type: 'checkbox',
+                        name: 'is_power_on',
+                        width: '220px',
+                        title: 'Follow the system to start the service',
+                    }
+                }, {
+                    label: '',
+                    group: {
+                        type: 'button',
+                        name:'saveNodeConfig',
+                        title: 'Save',
+                        event: function (data,form,that) {
+                            if(data.project_cwd === ''){
+                                bt.msg({status:false,msg:'The project directory cannot be empty'})
+                                return false
+                            }
+                            var project_script_two = $('[name="project_script_two"]');
+                            if(data.project_script === '' && project_script_two.length < 1 || project_script_two.length > 1 && project_script_two.val() === ''){
+                                bt.msg({status:false,msg:'Start file/command cannot be empty'})
+                                return false
+                            }
+                            if(data.port === ''){
+                                bt.msg({status:false,msg:'Project port cannot be empty'})
+                                return false
+                            }
+                            if(data.project_script === ''){
+                                data.project_script = project_script_two.val()
+                                delete data.project_script_two
+                            }
+                            config.callback(data,form,that)
+                        }
+                    }
+                }])
+            }
+            return formLineConfig;
+        },
+
+        /**
+         * @description 添加node项目表单
+         * @returns {{form: 当前实例对象, close: function(): void}}
+         */
+        add_node_form:function(callback){
+            var that = this;
+            var add_node_project = bt_tools.open({
+                title:"Add Node project",
+                area:'700px',
+                btn:['Confirm','Cancel'],
+                content:{
+                    class: 'pd30',
+                    form:(function(){
+                        return that.get_node_general_config({
+                            form:add_node_project
+                        })
+                    })()
+                },
+                yes:function(form,indexs,layers){
+                    var defaultParam = {
+                        bind_extranet:0,
+                        is_power_on:1,
+                        max_memory_limit:4096,
+                        project_env:''
+                    }
+                    if(form.domains !== ''){
+                        var arry = form.domains.replace('\n','').split('\r'),newArry = []
+                        for (var i = 0; i < arry.length; i++) {
+                            var item = arry[i];
+                            if(bt.check_domain(item)){
+                                newArry.push(item.indexOf(':') > -1?item:item+':80')
+                            }else{
+                                bt.msg({status:false,msg:'['+ item +'] The format of the bound domain name is incorrect'})
+                                break;
+                            }
+                        }
+                        defaultParam.bind_extranet = 1
+                        defaultParam.domains = newArry
+                    }
+                    if(form.project_name === ''){
+                        bt.msg({status:false,msg:'Project name cannot be empty'})
+                        return false
+                    }
+                    var project_script_two =  $('[name="project_script_two"]');
+                    if(project_script_two.length && project_script_two.val() === ''){
+                        bt.msg({status:false,msg:'Please enter a custom startup command, it cannot be empty!'});
+                        return false
+                    }
+                    if(form.port === ''){
+                        bt.msg({status:false,msg:'Project port cannot be empty'})
+                        return false
+                    }
+                    if(form.project_script === null){
+                        bt.msg({status:false,msg:'Please select the project directory to get the start command!'})
+                        return false
+                    }
+                    form = $.extend(form,defaultParam)
+                    if(project_script_two.length){
+                        form.project_script = project_script_two.val()
+                        delete form.project_script_two
+                    }
+                    var _command = null;
+                    setTimeout(function(){
+                        if(_command < 0) return false;
+                        _command = that.request_module_log_command({shell:'tail -f /www/server/panel/logs/npm-exec.log'})
+                    },500);
+                    site.node.add_node_project(form,function(res){
+                        if(!res.status) _command = -1
+                        if(_command > 0) layer.close(_command)
+                        if(callback) callback(res,indexs)
+                    })
+                }
+            })
+            return add_node_project;
+        },
+
+        /**
+         * @description 添加node项目请求
+         * @param param {object} 请求参数
+         * @param callback {function} 回调函数
+         */
+        add_node_project:function(param,callback){
+            this.http({create_project:false,verify:false},param,callback)
+        },
+
+        /**
+         * @description 获取Node环境
+         * @param callback {function} 回调函数
+         */
+        get_node_environment:function(callback){
+            bt_tools.send({
+                url:'/project/nodejs/is_install_nodejs'
+            },function(res){
+                if(callback) callback(res);
+            },{load:'Get the Node project environment'})
+        },
+
+        /**
+         * @description 编辑Node项目请求
+         * @param param {object} 请求参数
+         * @param callback {function} 回调函数
+         */
+        modify_node_project:function(param,callback){
+            this.http({modify_project: 'Modify Node project configuration'},param,callback)
+        },
+
+        /**
+         * @description 删除Node项目请求
+         * @param param {object} 请求参数
+         * @param callback {function} 回调函数
+         */
+        remove_node_project:function(param,callback){
+            this.http({remove_project: 'Delete Node project'},param,callback)
+        },
+
+        /**
+         * @description 获取node项目域名
+         * @param callback {function} 回调行数
+         */
+        get_node_project_domain:function(callback){
+            this.http({project_get_domain: 'Get the list of Node project domain names'},callback)
+        },
+
+        /**
+         * @description 获取启动命令列表
+         * @param param {object} 请求参数
+         * @param callback {function} 成功回调行数
+         * @param callback1 {function} 错误回调行数
+         */
+        get_start_command:function(params,callback,callback1){
+            this.http({get_run_list: 'Getting project start command'},params,callback,callback1)
+        },
+        /**
+         * @description 添加Node项目域名
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        add_node_project_domain:function(param,callback){
+            this.http({project_add_domain:false,verify:false},param,callback)
+        },
+
+        /**
+         * @description 删除Node项目域名
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        remove_node_project_domain:function(param,callback){
+            this.http({project_remove_domain:'Delete the Node project domain name'},param,callback)
+        },
+
+        /**
+         * @description 启动Node项目
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        start_node_project:function(param,callback){
+            this.http({start_project:'Enable Node project'},param,callback)
+        },
+
+        /**
+         * @description 停止Node项目
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        stop_node_project:function(param,callback){
+            this.http({stop_project:'Stop the Node project'},param,callback)
+        },
+
+        /**
+         * @description 重启Node项目
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        restart_node_project:function(param,callback){
+            this.http({restart_project:'Restart the Node project'},param,callback)
+        },
+
+        /**
+         * @description 获取值指定Node项目信息
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        get_node_project_info:function(param,callback){
+            this.http({get_project_info:'Get Node project information'},param,callback)
+        },
+
+        /**
+         * @description 绑定外网映射
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        bind_node_project_map:function(param,callback){
+            this.http({bind_extranet:'Mapping',verify:false},param,callback)
+        },
+        /**
+         * @description 绑定外网映射
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        unbind_node_project_map:function(param,callback){
+            this.http({unbind_extranet:'Unmapping',verify:false},param,callback)
+        },
+        /**
+         * @description 安装node项目依赖
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        install_node_project_packages:function(param,callback){
+            this.http({install_packages:false,verify:false},param,callback)
+        },
+
+        /**
+         * @description 安装指定模块
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        npm_install_node_module:function(param,callback){
+            this.http({install_module:'Install Node module'},param,callback)
+        },
+        /**
+         * @description 更新指定模块
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        upgrade_node_module:function(param,callback){
+            this.http({upgrade_module:'Update Node module'},param,callback)
+        },/**
+         * @description 删除指定模块
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        uninstall_node_module:function(param,callback){
+            this.http({uninstall_module:'Uninstall the Node module'},param,callback)
+        },
+        /**
+         * @description 模拟点击
+         */
+        simulated_click:function(num){
+            $('.bt-w-menu p:eq('+ num +')').click();
+        },
+        /**
+         * @description 获取Node项目信息
+         * @param row {object} 当前行，项目信息
+         */
+        set_node_project_view:function(row){
+            var that = this;
+            bt.open({
+                type:1,
+                title:'Node project management-['+ row.name +'], add time ['+ row.addtime +']',
+                skin:'node_project_dialog',
+                area:['800px','720px'],
+                content:'<div class="bt-form">' +
+                        '<div class="bt-w-menu site-menu pull-left"></div>'+
+                    '<div id="webedit-con" class="bt-w-con pd15" style="height:100%">' +
+                    '</div>'+
+                    '<div class="mask_module hide"><div class="node_mask_module_text">Please turn on <a href="javascript:;" class="btlink mapExtranet" onclick="site.node.simulated_click(2)"> mapping </a>to viewing the configuration information</div></div>'+
+                    '</div>',
+                btn:false,
+                success:function(layers){
+                    var $layers = $(layers), $content = $layers.find('#webedit-con');
+                    function reander_tab_list(config) {
+                        for (var i = 0; i < config.list.length; i++) {
+                            var item = config.list[i],tab = $('<p class="' + (i === 0 ? 'bgw' : '') + '">' + item.title + '</p>');
+                            $(config.el).append(tab);
+                            (function (i,item) {
+                                tab.on('click',function(ev){
+                                    $('.mask_module').addClass('hide');
+                                    $(this).addClass('bgw').siblings().removeClass('bgw');
+                                    if($(this).hasClass('bgw')) {
+                                        that.get_node_project_info({project_name:row.name},function(res){
+                                            config.list[i].event.call(that,$content,res,ev)
+                                        })
+                                    }
+                                })
+                                if(item.active) tab.click()
+                            }(i,item))
+                        }
+                    }
+                    reander_tab_list({
+                        el:$layers.find('.bt-w-menu'),
+                        list:[{
+                            title:'Project config',
+                            active:true,
+                            event:that.reander_node_project_config
+                        },{
+                            title:'Domain',
+                            event:that.reander_node_domain_manage
+                        },{
+                            title:'Mapping',
+                            event:that.reander_node_project_map,
+                        },{
+                            title:'URL rewrite',
+                            event:that.reander_node_project_rewrite
+                        },{
+                            title:'Config file',
+                            event:that.reander_node_file_config
+                        },{
+                            title:'SSL',
+                            event:that.reander_node_project_ssl
+                        },{
+                            title:'Load status',
+                            event:that.reander_node_service_condition
+                        },{
+                            title:'service status',
+                            event:that.reander_node_service_status
+                        },{
+                            title:'Module',
+                            event:that.reander_node_project_module
+                        },{
+                            title:'Project log',
+                            event:that.reander_node_project_log
+                        },{
+                            title:'Website log',
+                            event:that.reander_node_site_log
+                        }]
+
+                    })
+                }
+            })
+        },
+
+        /**
+         * @description 渲染Node项目配置视图
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         * @param that {object} 当前node项目对象
+         */
+        reander_node_project_config:function(el,rows){
+            var row = $.extend(true,{},rows);
+            var that = this,edit_node_project = bt_tools.form({
+                el:'#webedit-con',
+                data: row.project_config,
+                class: 'ptb10',
+                form:(function(){
+                    var fromConfig = that.get_node_general_config({
+                        form:edit_node_project,
+                        path:row.path,
+                        ps:row.ps,
+                        callback:function(data,form,formNew){
+                            data['is_power_on'] = data['is_power_on']?1:0;
+                            var project_script_two =  $('[name="project_script_two"]');
+                            if(project_script_two.length && project_script_two.val() === ''){
+                                bt.msg({status:false,msg:'Please enter a custom startup command, it cannot be empty!'});
+                                return false
+                            }
+                            if(form.port === ''){
+                                bt.msg({status:false,msg:'Project port cannot be empty'})
+                                return false
+                            }
+                            if(form.project_script === null){
+                                bt.msg({status:false,msg:'Please select the project directory to get the start command!'})
+                                return false
+                            }
+                            site.node.modify_node_project(data,function(res){
+                                if(res.status){
+                                    row['project_config'] = $.extend(row,data);
+                                    row['path'] = data.project_script;
+                                    row['ps'] = data.ps;
+                                }
+                                bt.msg({status:res.status, msg:res.data})
+                                site.node.simulated_click(0)
+                            })
+                        }
+                    })
+                    setTimeout(function(){
+                        var is_existence = false,list = fromConfig[2].group.list;
+                        for (var i = 0; i < list.length; i++) {
+                            var item = list[i];
+                            if(item.value === rows.project_config.project_script){
+                                is_existence = true;
+                                break;
+                            }
+                        }
+                        if(!is_existence && list.length > 1){
+                            $('[data-name="project_script"] li:eq('+ (list.length-1) + ')').click()
+                            $('[name="project_script_two"]').val(rows.project_config.project_script)
+                        }
+                        if(list.length === 1){
+                            $('[data-name="project_script"] li:eq(0)').click()
+                            $('[name="project_script_two"]').val(rows.project_config.project_script)
+                        }
+                    },250)
+
+                    fromConfig[1].group.disabled = true;
+                    fromConfig[fromConfig.length-3].hide = true;
+                    fromConfig[fromConfig.length-3].group.disabled = true;
+                    return fromConfig
+                })()
+            })
+            setTimeout(function(){
+                $(el).append('<ul class="help-info-text c7">' +
+                '<li>[Run opt]: The scripts list in package.json is read by default, or you can select the [Custom Command] option to manually enter the start command</li>' +
+                '<li>[Custom command]: You can select the startup file or directly enter the startup command. Supported startup methods: npm/node/pm2/yarn</li>' +
+                '<li>[Port]：The wrong port will lead to access to 502, if you don’t know the port, you can fill it out at will, and then change to the correct port after starting the project</li>' +
+                '<li>[User]：For security reasons, the www user is used by default to run, and root user running may bring security risks</li>' +
+            '</ul>')
+                if(!row.listen_ok) $(el).find('input[name="port"]').parent().after('<div class="block mt10" style="margin-left: 100px;color: red;line-height: 20px;">The project port may be wrong, it is detected that the current project listens to the following ports[ '+  row.listen.join('/') +' ]</div>');
+
+            },100)
+        },
+
+        /**
+         * @description 渲染Node项目服务状态
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         */
+        reander_node_service_status:function(el,row){
+            var arry = [
+                    {title: 'Start', event: this.start_node_project},
+                    {title: 'Stop', event: this.stop_node_project},
+                    {title: 'Restart', event: this.restart_node_project}
+                ],
+                that = this,
+                html = $('<div class="soft-man-con bt-form"><p class="status"></p><div class="sfm-opt"></div></div>');
+            function reander_service(status){
+                var status_info = status?['Start','#20a53a','play']:['Stop','red','pause'];
+                return 'Status: <span>' + status_info[0] + '</span><span style="color:' + status_info[1] + '; margin-left: 3px;" class="glyphicon glyphicon glyphicon-'+ status_info[2] +'"></span>'
+            }
+            html.find('.status').html(reander_service(row.run))
+            el.html(html)
+            for (var i = 0; i < arry.length; i++) {
+                var item = arry[i], btn = $('<button class="btn btn-default btn-sm"></button>');
+                (function (btn, item,indexs) {
+                    !(row.run && indexs === 0) || btn.addClass('hide');
+                    !(!row.run && indexs === 1 ) || btn.addClass('hide');
+                    btn.on('click', function () {
+                        bt.confirm({
+                            title:item.title +'Project-['+ row.name +']',
+                            msg:'Are you sure you want the'+ item.title +'item,'+ (row.run?'The project may be affected,':'') +'continue?'
+                        },function(index){
+                            layer.close(index)
+                            item.event.call(that, {project_name:row.name},function(res){
+                                row.run = (indexs === 0?true:(indexs === 1?false:row.run))
+                                html.find('.status').html(reander_service(row.run))
+                                $('.sfm-opt button').eq(0).addClass('hide');
+                                $('.sfm-opt button').eq(1).addClass('hide');
+                                $('.sfm-opt button').eq(row.run?1:0).removeClass('hide');
+                                bt.msg({status:res.status,msg:res.data || res.error_msg})
+                            })
+                        })
+                    }).text(item.title)
+                })(btn, item,i)
+                el.find('.sfm-opt').append(btn)
+            }
+        },
+
+
+        /**
+         * @description 渲染Node项目域名管理
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         */
+        reander_node_domain_manage:function(el,row){
+            var that = this,
+                list = [{
+                    class: 'mb0',
+                    items: [
+                        { name: 'nodedomain', width: '340px', type: 'textarea', placeholder: 'Please enter the domain name to be mapped, this option can be empty<br>One domain name per line, default port 80<br>How to add wildcard domain names *.domain.com<br>Specify the port used www.domain.com:88' },
+                        {
+                            name: 'btn_node_submit_domain',
+                            text: 'Add',
+                            type: 'button',
+                            callback: function(sdata) {
+                                var arrs = sdata.nodedomain.split("\n");
+                                var domins = [];
+                                for (var i = 0; i < arrs.length; i++) domins.push(arrs[i]);
+                                that.add_node_project_domain({project_name:row.name,domains:domins}, function(res) {
+                                    bt.msg({status:res.status,msg:res.data || res.error_msg});
+                                    if(res.status){
+                                        $('[name=nodedomain]').val('');
+                                        $('.placeholder').css('display','block')
+                                        project_domian.$refresh_table_list(true);
+                                    }
+                                })
+                            }
+                        }
+                    ]
+                }]
+            var _form_data = bt.render_form_line(list[0]),loadT = null,placeholder = null;
+            el.html(_form_data.html+'<div id="project_domian_list"></div>');
+            bt.render_clicks(_form_data.clicks);
+            // domain样式
+            $('.btn_node_submit_domain').addClass('pull-right').css("margin", "30px 35px 0 0");
+            $('textarea[name=nodedomain]').css('height','120px')
+            placeholder = $(".placeholder");
+            placeholder.click(function() {
+                $(this).hide();
+                $('.nodedomain').focus();
+            }).css({ 'width': '340px', 'heigth': '120px', 'left': '0px', 'top': '0px', 'padding-top': '10px', 'padding-left': '15px' })
+            $('.nodedomain').focus(function() {
+                placeholder.hide();
+                loadT = layer.tips(placeholder.html(), $(this), { tips: [1, '#20a53a'], time: 0, area: $(this).width() });
+            }).blur(function() {
+                if ($(this).val().length == 0) placeholder.show();
+                layer.close(loadT);
+            });
+            var project_domian = bt_tools.table({
+                el:'#project_domian_list',
+                url:'/project/nodejs/project_get_domain',
+                default: "No domain name list yet",
+                param:{project_name:row.name},
+                height:375,
+                beforeRequest:function(params){
+                    if(params.hasOwnProperty('data') && typeof params.data === 'string') return params
+                    return {data:JSON.stringify(params)}
+                },
+                column:[{ type: 'checkbox', class: '', width: 20 }, {
+                    fid: 'name',
+                    title: 'Domain Name',
+                    type: 'text',
+                    template: function(row) {
+                        return '<a href="http://' + row.name + ':' + row.port + '" target="_blank" class="btlink">' + row.name + '</a>';
+                    }
+                },{
+                    fid: 'port',
+                    title: 'Port',
+                    type: 'text'
+                },{
+                    title:'OPT',
+                    type:'group',
+                    width:'100px',
+                    align: 'right',
+                    group:[{
+                        title: 'Del',
+                        event: function (rowc,index,ev,key,rthat) {
+                            that.remove_node_project_domain({project_name:row.name,domain:(rowc.name+':'+rowc.port)},function(res){
+                                bt.msg({status:res.status,msg:res.data || res.error_msg})
+                                rthat.$refresh_table_list(true);
+                            })
+                        }
+                    }]
+                }],
+                tootls: [{ // 批量操作
+                    type: 'batch',
+                    positon: ['left', 'bottom'],
+                    placeholder: 'Please select bulk operation',
+                    buttonValue: 'Batch operation',
+                    disabledSelectValue: 'Please select the site that needs batch operation!',
+                    selectList: [{
+                        title: "Delete domain name",
+                        load: true,
+                        url: '/project/nodejs/project_remove_domain',
+                        param: function (crow) {
+                            return {data:JSON.stringify({project_name: row.name,domain: (crow.name+':'+crow.port)})}
+                        },
+                        callback: function (that) { // 手动执行,data参数包含所有选中的站点
+                            bt.show_confirm("Delete domain names in bulk", "<span style='color:red'>Delete the selected domain name at the same time, do you want to continue?</span>", function () {
+                                var param = {};
+                                that.start_batch(param, function (list) {
+                                    var html = ''
+                                    for (var i = 0; i < list.length; i++) {
+                                        var item = list[i];
+                                        html += '<tr><td>' + item.name + '</td><td><div style="float:right;"><span style="color:' + (item.request.status ? '#20a53a' : 'red') + '">' + (item.request.status?'Success':'Fail') + '</span></div></td></tr>';
+                                    }
+                                    project_domian.$batch_success_table({
+                                        title: 'Batch deletion',
+                                        th: 'Delete domain name',
+                                        html: html
+                                    });
+                                    project_domian.$refresh_table_list(true);
+                                });
+                            });
+                        }
+                    }]
+                }]
+            })
+            setTimeout(function(){
+
+                $(el).append('<ul class="help-info-text c7">' +
+                        '<li>If yours is an HTTP project and needs to be mapped, please bind at least one domain name</li>' +
+                        '<li>It is recommended that all domain names use the default port 80</li>' +
+                    '</ul>')
+
+            },100)
+        },
+
+        /**
+         * @description 渲染Node项目映射
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         */
+        reander_node_project_map:function(el,row){
+            var that = this;
+            el.html('<div class="pd15"><div class="ss-text mr50" style="display: block;height: 35px;">' +
+                '   <em title="Mapping">Mapping</em>' +
+                '       <div class="ssh-item">' +
+                '           <input class="btswitch btswitch-ios" id="node_project_map" type="checkbox">' +
+                '           <label class="btswitch-btn" for="node_project_map" name="node_project_map"></label>' +
+                '       </div>' +
+                '</div><ul class="help-info-text c7"><li>If your project is an HTTP project and you need to access the Internet through 80443, please use the mapping</li><li>Before using the mapping, please add at least 1 domain name in [Domain Name Management]</li></ul></div>')
+            $('#node_project_map').attr('checked',row['project_config']['bind_extranet']?true:false)
+            $('[name=node_project_map]').click(function(){
+                var _check = $('#node_project_map').prop('checked'),param = {project_name:row.name};
+                if(!_check) param['domains'] = row['project_config']['domains']
+                layer.confirm((!_check?'Enable':'Disable')+' mapping!,do you want to continue?',{
+                    title:'Mapping',
+                    icon:0,
+                    closeBtn:2,
+                    cancel:function(){
+                        $('#node_project_map').attr('checked',_check)
+                    }
+                },function(){
+                    that[_check?'unbind_node_project_map':'bind_node_project_map'](param,function(res){
+                        if(!res.status) $('#node_project_map').attr('checked',_check)
+                        bt.msg({status:res.status,msg:typeof res.data != "string"?res.error_msg:res.data})
+                        row['project_config']['bind_extranet'] = _check?0:1
+                    })
+                },function(){
+                    $('#node_project_map').attr('checked',_check)
+                })
+            })
+        },
+
+        /**
+         * @description 渲染Node项目模块
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         */
+        reander_node_project_module:function(el,row){
+            var that = this;
+            el.html('<div class="">' +
+                '<div class=""><input class="bt-input-text mr5" name="mname" type="text" value="" style="width:240px" placeholder="Module name" /><button class="btn btn-success btn-sm va0 install_node_module" >Install</button><button class="btn btn-success btn-sm va0 pull-right npm_install_node_config">One-key install</button></div>' +
+                '<div id="node_module_list"></div>' +
+            '</div>');
+            var node_project_module_table = bt_tools.table({
+                el:'#node_module_list',
+                url:'/project/nodejs/get_project_modules',
+                default: "The module is not installed, click one-click to install the project module, the default prompt when the data is empty",
+                param:{project_name:row.name,project_cwd:row.path},
+                height:'576px',
+                load:'Retrieving module list, please wait...',
+                beforeRequest:function(params){
+                    if(params.hasOwnProperty('data') && typeof params.data === 'string') return params
+                    return {data:JSON.stringify(params)}
+                },
+                column:[{
+                    fid: 'name',
+                    title: 'Module',
+                    type: 'text',
+                },{
+                    fid: 'version',
+                    title: 'Ver',
+                    type: 'text',
+                    width:'60px'
+                },{
+                    fid: 'license',
+                    title: 'License',
+                    type: 'text',
+                    template:function(row){
+                        if(typeof row.license === "object") return '<span>'+row.license.type+'<span>';
+                        return '<span>'+row.license+'</span>'
+                    }
+                },{
+                    fid: 'description',
+                    title: 'Description',
+                    width:235,
+                    type: 'text',
+                    template:function(row){
+                        return '<span>'+row.description + '<a href="javascript:;"></a></span>'
+                    }
+                },{
+                    title:'OPT',
+                    type:'group',
+                    width:'125px',
+                    align: 'right',
+                    group:[{
+                        title: 'Update',
+                        event: function (rowc,index,ev,key,rthat) {
+                            bt.show_confirm("Update module", "<span style='color:red'>Updating the ["+rowc.name+"] module may affect the operation of the project, continue?</span>", function () {
+                                that.upgrade_node_module({project_name:row.name,mod_name:rowc.name},function(res){
+                                    bt.msg({status:res.status,msg:res.data || res.error_msg})
+                                    rthat.$refresh_table_list(true);
+                                });
+                            });
+                        }
+                    },{
+                        title: 'Uninstall',
+                        event: function (rowc,index,ev,key,rthat) {
+                            bt.show_confirm("Uninstall the module", "<span style='color:red'>Uninstalling the ["+rowc.name+"] module may affect the operation of the project, continue?</span>", function () {
+                                that.uninstall_node_module({project_name:row.name,mod_name:rowc.name},function(res){
+                                    bt.msg({status:res.status,msg:res.data || res.error_msg})
+                                    rthat.$refresh_table_list(true);
+                                });
+                            });
+                        }
+                    }]
+                }],
+                success:function(config){
+                    // 隐藏一键安装
+                    if(config.data.length > 0) $('.npm_install_node_config').addClass('hide');
+                }
+            })
+            //安装模块
+            $('.install_node_module').on('click',function(){
+                var _mname = $('input[name=mname]').val();
+                if(!_mname) return layer.msg('Please enter the module name and version',{icon:2})
+                that.npm_install_node_module({project_name:row.name,mod_name:_mname},function(res){
+                    bt.msg({status:res.status,msg:res.data || res.error_msg})
+                    node_project_module_table.$refresh_table_list(true);
+                })
+            })
+            //一键安装项目模块
+            $('.npm_install_node_config').on('click',function(){
+                var _command = that.request_module_log_command({shell:'tail -f /www/server/panel/logs/npm-exec.log'})
+                that.install_node_project_packages({project_name:row.name},function(res){
+                    if(res.status){
+                        node_project_module_table.$refresh_table_list(true);
+                    }
+                    layer.close(_command);
+                    bt.msg({status: res.status, msg: res.data || res.error_msg})
+                })
+            })
+        },
+
+        /**
+         * @description 渲染Node项目伪静态
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         */
+        reander_node_project_rewrite:function(el,row){
+            el.empty();
+            if(row.project_config.bind_extranet === 0){
+                $('.mask_module').removeClass('hide').find('.node_mask_module_text:eq(1)').hide().prev().show()
+                return false;
+            }
+            site.edit.get_rewrite_list({name:'node_'+row.name},function(){
+                $('.webedit-box .line:first').remove();
+                $('[name=btn_save_to]').remove();
+                $('.webedit-box .help-info-text li:first').remove();
+            })
+        },
+        /**
+         * @description 渲染Node配置文件
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         */
+        reander_node_file_config:function(el,row){
+            el.empty();
+            if(row.project_config.bind_extranet === 0){
+                $('.mask_module').removeClass('hide').find('.node_mask_module_text:eq(1)').hide().prev().show()
+                return false;
+            }
+            site.edit.set_config({name:'node_'+row.name})
+        },
+        /**
+         * @description 渲染node项目使用情况
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         */
+        reander_node_service_condition:function(el,row){
+            if(!row.run){
+                el.html('').next().removeClass('hide')
+                if(el.next().find('.node_mask_module_text').length === 1) {
+                    el.next().find('.node_mask_module_text').hide().parent().append('<div class="node_mask_module_text">Please start the service first and try again,<a href="javascript:;" class="btlink" onclick="site.node.simulated_click(7)">Set service status</a></div>')
+                }else{
+                    el.next().find('.node_mask_module_text:eq(1)').show().prev().hide()
+                }
+                return false
+            }
+            el.html('<div class="line" style="padding-top: 0;"><span class="tname" style="width: 30px;text-align:left;padding-right: 5px;">PID</span><div class="info-r"><select class="bt-input-text mr5" name="node_project_pid"></select></div></div><div class="node_project_pid_datail"></div>')
+            var _option = '',tabelCon = ''
+            for(var load in row.load_info){
+                if(row.load_info.hasOwnProperty(load)){
+                    _option +='<option value="'+load+'">'+load+'</option>';
+                }
+            }
+            var node_pid = $('[name=node_project_pid]');
+            node_pid.html(_option);
+            node_pid.change(function(){
+                var _pid = $(this).val(),rdata = row['load_info'][_pid],fileBody = '',connectionsBody = '';
+                for(var i=0;i<rdata.open_files.length;i++){
+                    var itemi = rdata.open_files[i];
+                    fileBody += '<tr>' +
+                        '<td>'+itemi['path']+'</td>' +
+                        '<td>'+itemi['mode']+'</td>' +
+                        '<td>'+itemi['position']+'</td>' +
+                        '<td>'+itemi['flags']+'</td>' +
+                        '<td>'+itemi['fd']+'</td>' +
+                    '</tr>';
+                }
+                for(var k=0;k<rdata.connections.length;k++){
+                    var itemk = rdata.connections[k];
+                    connectionsBody += '<tr>' +
+                            '<td>'+itemk['client_addr']+'</td>' +
+                            '<td>'+itemk['client_rport']+'</td>' +
+                            '<td>'+itemk['family']+'</td>' +
+                            '<td>'+itemk['fd']+'</td>' +
+                            '<td>'+itemk['local_addr']+'</td>' +
+                            '<td>'+itemk['local_port']+'</td>' +
+                            '<td>'+itemk['status']+'</td>' +
+                        '</tr>'
+                }
+
+            //     tabelCon = reand_table_config([
+            //         [{"名称":rdata.name},{"PID":rdata.pid},{"状态":rdata.status},{"父进程":rdata.ppid}],
+            //         [{"用户":rdata.user},{"Socket":rdata.connects},{"CPU":rdata.cpu_percent},{"线程":rdata.threads}],
+            //         [{"内存":rdata.user},{"io读":rdata.connects},{"io写":rdata.cpu_percent},{"启动时间":rdata.threads}],
+            //         [{"启动命令":rdata.user}],
+            //     ])
+            //
+            // console.log(tabelCon)
+            //
+            //
+            //     function reand_table_config(conifg){
+            //         var html = '';
+            //         for (var i = 0; i < conifg.length; i++) {
+            //             var item = conifg[i];
+            //             html += '<tr>';
+            //             for (var j = 0; j < item; j++) {
+            //                 var items = config[j],name = Object.keys(items)[0];
+            //                 console.log(items,name)
+            //                 html += '<td>'+  name +'</td><td>'+ items[name] +'</td>'
+            //             }
+            //             console.log(html)
+            //             html += '</tr>'
+            //         }
+            //         return '<div class="divtable"><table class="table"><tbody>'+ html  +'</tbody></tbody></table></div>';
+            //     }
+
+
+                tabelCon = '<div class="divtable">' +
+                    '<table class="table">' +
+                    '<tbody>' +
+                    '<tr>' +
+                    '<th width="50">Name</th><td  width="100">' + rdata.name + '</td>' +
+                    '<th width="50">Status</th><td  width="90">' + rdata.status + '</td>' +
+                    '<th width="60">User</th><td width="100">' + rdata.user + '</td>' +
+                    '<th width="80">Start Time</th><td width="150">' + getLocalTime(rdata.create_time) + '</td>' +
+                    '</tr>' +
+                    '<tr>' +
+                        '<th>PID</th><td  >' + rdata.pid + '</td>' +
+                        '<th>PPID</th><td >' + rdata.ppid + '</td>' +
+                        '<th>Thread</th><td>' + rdata.threads + '</td>' +
+                        '<th>Socket</th><td>' + rdata.connects + '</td>' +
+                    '</tr>' +
+                    '<tr>' +
+                        '<th>CPU</th><td>' + rdata.cpu_percent + '%</td>' +
+                        '<th>RAM</th><td>' + ToSize(rdata.memory_used) + '</td>' +
+                        '<th>Disk/R</th><td>' + ToSize(rdata.io_read_bytes) + '</td>' +
+                        '<th>Dis/W</th><td>' + ToSize(rdata.io_write_bytes) + '</td>' +
+
+                    '</tr>' +
+                    '<tr>' +
+
+                    '</tr>' +
+                    '<tr>' +
+                    '<th width="50">Command</th><td colspan="7" style="word-break: break-word;width: 570px">' + rdata.exe + '</td>' +
+                    '</tr>' +
+                    '</tbody>' +
+                    '</table>' +
+                    '</div>' +
+                    '<h3 class="tname">Network</h3>' +
+                    '<div class="divtable" >' +
+                    '<div style="height:160px;overflow:auto;border:#ddd 1px solid" id="nodeNetworkList">' +
+                    '<table class="table table-hover" style="border:none">' +
+                    '<thead>' +
+                    '<tr>' +
+                    '<th>Client address</th>' +
+                    '<th>Client port</th>' +
+                    '<th>Protocol</th>' +
+                    '<th>FD</th>' +
+                    '<th>local address</th>' +
+                    '<th>local port</th>' +
+                    '<th>Status</th>' +
+                    '</tr>' +
+                    '</thead>' +
+                    '<tbody>' + connectionsBody + '</tbody>' +
+                    '</table>' +
+                    '</div>' +
+                    '</div>' +
+                    '<h3 class="tname">Open files</h3>' +
+                    '<div class="divtable" >' +
+                    '<div style="height:160px;overflow:auto;border:#ddd 1px solid" id="nodeFileList">' +
+                    '<table class="table table-hover" style="border:none">' +
+                    '<thead>' +
+                    '<tr>' +
+                    '<th>Files</th>' +
+                    '<th>mode</th>' +
+                    '<th>position</th>' +
+                    '<th>flags</th>' +
+                    '<th>fd</th>' +
+                    '</tr>' +
+                    '</thead>' +
+                    '<tbody>' + fileBody + '</tbody>' +
+                    '</table>' +
+                    '</div>' +
+                    '</div>'
+                $('.node_project_pid_datail').html(tabelCon);
+                bt_tools.$fixed_table_thead('#nodeNetworkList')
+                bt_tools.$fixed_table_thead('#nodeFileList')
+            }).change().html(_option);
+        },
+
+        /**
+         * @description 渲染Node项目日志
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         */
+        reander_node_project_log:function(el,row){
+            el.html('<div class="node_project_log"></div>')
+            bt_tools.send({
+                url:'/project/nodejs/get_project_log',
+                type:'GET',
+                data:{data:JSON.stringify({project_name: row.name})}
+                },function(res){
+                    $('#webedit-con .node_project_log').html('<pre class="command_output_pre" style="height:640px;">'+(typeof res == "object"?res.error_msg:res)+'</pre>')
+                    $('.command_output_pre').scrollTop($('.command_output_pre').prop('scrollHeight'))
+                },{load:'Get Node project log',verify:false})
+        },
+
+        reander_node_site_log:function(el,row){
+            el.empty()
+            if(row.project_config.bind_extranet === 0){
+                $('.mask_module').removeClass('hide').find('.node_mask_module_text:eq(1)').hide().prev().show()
+                return false;
+            }
+            site.edit.get_site_logs({name:row.name})
+        },
+
+        /**
+         * @description node项目SSL
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         */
+        reander_node_project_ssl:function(el,row){
+            el.empty();
+            if(row.project_config.bind_extranet === 0){
+                $('.mask_module').removeClass('hide').find('.node_mask_module_text:eq(1)').hide().prev().show()
+                return false;
+            }
+            site.set_ssl({name:row.name,ele:el,id:row.id});
+            site.ssl.reload();
+        },
+        /**
+         * @description 请求模块日志终端
+         * @param config {object} 当前配置数据
+         */
+        request_module_log_command:function(config){
+            var r_command = layer.open({
+                title:config.name || 'Module is being installed, please wait...',
+                type: 1,
+                closeBtn: 0,
+                area:['500px','342px'],
+                skin:config.class || 'module_commmand',
+                shadeClose: false,
+                content:'<div class="site_module_command"></div>',
+                success:function(){
+                    bt_tools.command_line_output({ el:'.site_module_command', shell:config.shell,area:config.area||['100%','300px']})
+                }
+            })
+            return r_command;
+        },
+
+        /**
+         * @description 请求封装
+         * @param keyMethod 接口名和loading，键值对
+         * @param param {object || function} 参数，可为空，为空则为callback参数
+         * @param callback {function} 成功回调函数
+         * @param callback1 {function} 错误调函数
+         */
+        http:function(keyMethod,param,callback,callback1){
+            var method = Object.keys(keyMethod),
+                config = {
+                    url: '/project/nodejs/' + method[0],
+                    data: param && {data: JSON.stringify(param)} || {}
+                },
+                success = function (res) {
+                    callback && callback(res)
+                }
+            if (callback1) {
+                bt_tools.send(config, success, callback1, {load: keyMethod[method[0]],verify:method[1]?keyMethod[method[1]]:true})
+            } else {
+                bt_tools.send(config,success,{load: keyMethod[method[0]],verify:method[1]?keyMethod[method[1]]:true})
+            }
+        }
+    },
+    node_porject_view: function(){
+        var node_table = bt_tools.table({
+            el: '#bt_node_table',
+            url: '/project/nodejs/get_project_list',
+            minWidth: '1000px',
+            autoHeight: true,
+            default: "The item list is empty", //数据为空时的默认提示\
+            load:'Getting the list of Node projects, please wait...',
+            beforeRequest:function(params){
+                if(params.hasOwnProperty('data') && typeof params.data === 'string') {
+                    var oldParams = JSON.parse(params['data'])
+                    delete params['data']
+                    return {data:JSON.stringify($.extend(oldParams,params))}
+                }
+                return {data:JSON.stringify(params)}
+            },
+            column: [
+                { type: 'checkbox', class: '', width: 20 },
+                {
+                    fid: 'name',
+                    title: 'Name',
+                    width: 85,
+                    type: 'link',
+                    event: function(row, index, ev) {
+                        site.node.set_node_project_view(row);
+                    }
+                },
+                {
+                    fid: 'run',
+                    title: 'Status',
+                    width: 85,
+                    config: {
+                        icon: true,
+                        list: [
+                            [true, 'Running', 'bt_success', 'glyphicon-play'],
+                            [false, 'Stop', 'bt_danger', 'glyphicon-pause']
+                        ]
+                    },
+                    type: 'status',
+                    event: function(row, index, ev, key, that) {
+                        var status = row.run;
+                        bt.confirm({
+                            title:status?'Stop project':'Startup project',
+                            msg:status?'After stopping the project, the project service will stop running, continue?':'Startup Node project ['+ row.name +'], continue operation?'
+                        },function(index){
+                            layer.close(index)
+                            site.node[status?'stop_node_project':'start_node_project']({project_name:row.name},function(res){
+                                bt.msg({status:res.status,msg:res.data || res.error_msg})
+                                that.$refresh_table_list(true);
+                            })
+                        })
+                    }
+                },
+                {
+                    fid:'pid',
+                    title:'PID',
+                    width:180,
+                    type:'text',
+                    template:function(row){
+                        if($.isEmptyObject(row['load_info'])) return '<span>-</span>'
+                        var _id = []
+                        for(var i in row.load_info){
+                            if(row.load_info.hasOwnProperty(i)){
+                                _id.push(i)
+                            }
+                        }
+                        return '<span class="size_ellipsis" style="width:180px" title="'+_id.join(',')+'">'+_id.join(',')+'</span>'
+                    }
+                },
+                {
+                    title:'CPU',
+                    type:'text',
+                    template:function(row){
+                        if($.isEmptyObject(row['load_info'])) return '<span>-</span>'
+                        var _cpu_total = 0;
+                        for(var i in row.load_info){
+                            _cpu_total += row.load_info[i]['cpu_percent']
+                        }
+                        return '<span>'+ _cpu_total.toFixed(2) +'%</span>'
+                    }
+                },
+                {
+                    title:'RAM',
+                    type:'text',
+                    template:function(row){
+                        if($.isEmptyObject(row['load_info'])) return '<span>-</span>'
+                        var _cpu_total = 0;
+                        for(var i in row.load_info){
+                            _cpu_total+=row.load_info[i]['memory_used']
+                        }
+                        return '<span>'+bt.format_size(_cpu_total)+'</span>'
+                    }
+                },
+                {
+                    fid: 'path',
+                    title: 'Root directory',
+                    tips: 'Open Directory',
+                    type: 'link',
+                    event: function(row, index, ev) {
+                        openPath(row.path);
+                    }
+                },
+                {
+                    fid:'node_version',
+                    title:'Node version',
+                    type:'text',
+                    template:function(row){
+                        return '<span>'+row['project_config']['nodejs_version']+'</span>'
+                    }
+                },{
+                    fid: 'ps',
+                    title: 'Remark',
+                    type: 'input',
+                    blur: function(row, index, ev, key, that) {
+                        if (row.ps == ev.target.value) return false;
+                        bt.pub.set_data_ps({ id: row.id, table: 'sites', ps: ev.target.value }, function(res) {
+                            bt_tools.msg(res, { is_dynamic: true });
+                        });
+                    },
+                    keyup: function(row, index, ev) {
+                        if (ev.keyCode === 13) {
+                            $(this).blur();
+                        }
+                    }
+                },{
+                    fid: 'ssl',
+                    title: 'SSL',
+                    tips: 'Deployment certificate',
+                    width: 100,
+                    type: 'text',
+                    template: function(row, index) {
+                        var _ssl = row.ssl,
+                            _info = '',
+                            _arry = [
+                                ['issuer', 'issuer'],
+                                ['notAfter', 'Due date'],
+                                ['notBefore', 'Application date'],
+                                ['dns', 'Available domain names']
+                            ];
+                        try {
+                            if (typeof row.ssl.endtime != 'undefined') {
+                                if (row.ssl.endtime < 0) {
+                                    return '<a class="btlink bt_danger" href="javascript:;">Exp in ' + Math.row.ssl.endtime + ' days</a>';
+                                }
+                            }
+                        } catch (error) {}
+                        for (var i = 0; i < _arry.length; i++) {
+                            var item = _ssl[_arry[i][0]];
+                            _info += _arry[i][1] + ':' + item + (_arry.length - 1 != i ? '\n' : '');
+                        }
+                        return row.ssl === -1 ? '<a class="btlink bt_warning" href="javascript:;">Not Set</a>' : '<a class="btlink ' + (row.ssl.endtime < 7 ? 'bt_danger' : '') + '" href="javascript:;" title="' + _info + '">Exp in ' + row.ssl.endtime + ' days</a>';
+                    },
+                    event: function(row) {
+                        site.node.set_node_project_view(row);
+                        setTimeout(function() {
+                            $('.site-menu p:eq(5)').click();
+                        }, 500);
+                    }
+                },{
+                    title: 'OPT',
+                    type: 'group',
+                    width: 100,
+                    align: 'right',
+                    group: [{
+                        title: 'Set',
+                        event: function(row, index, ev, key, that) {
+                            site.node.set_node_project_view(row);
+                        }
+                    }, {
+                        title: 'Del',
+                        event: function(row, index, ev, key, that) {
+                            bt.prompt_confirm('Delete item','You are deleting the Node project-['+ row.name +'], continue?',function(){
+                                site.node.remove_node_project({project_name:row.name},function(res){
+                                    bt.msg({status:res.status,msg:res.data || res.error_msg})
+                                    node_table.$refresh_table_list(true);
+                                })
+                            })
+                        }
+                    }]
+                }
+            ],
+            sortParam: function(data) {
+                return { 'order': data.name + ' ' + data.sort };
+            },
+            // 渲染完成
+            tootls: [{ // 按钮组
+                type: 'group',
+                positon: ['left', 'top'],
+                list: [{
+                    title: 'Add Node project',
+                    active: true,
+                    event: function(ev) {
+                        site.node.add_node_form(function(res,index){
+                            if(res.status) {
+                                layer.close(index)
+                                node_table.$refresh_table_list(true);
+                            }
+                            bt.msg({status:res.status, msg: (!Array.isArray(res.data)?res.data:false) || res.error_msg})
+                        })
+                    }
+                },{
+                    title: 'Node version manager',
+                    event: function(ev) {
+                        bt.soft.set_lib_config('nodejs','Node.js version manager')
+                    }
+                }]
+            }, { // 搜索内容
+                type: 'search',
+                positon: ['right', 'top'],
+                placeholder: 'Please enter the project name',
+                searchParam: 'search', //搜索请求字段，默认为 search
+                value: '', // 当前内容,默认为空
+            }, { // 批量操作
+                type: 'batch', //batch_btn
+                positon: ['left', 'bottom'],
+                placeholder: 'Please select bulk operation',
+                buttonValue: 'Batch operation',
+                disabledSelectValue: 'Please select the site that needs batch operation!',
+                selectList: [{
+                    title: "Delete item",
+                    url: '/project/nodejs/remove_project',
+                    param:function(row){
+                        return {
+                            data:JSON.stringify({project_name:row.name})
+                        }
+                    },
+                    refresh: true,
+                    callback: function(that) {
+                        bt.prompt_confirm('Delete items in bulk','You are deleting the selected Node project. Continue?',function(){
+                            that.start_batch({}, function(list) {
+                                var html = '';
+                                for (var i = 0; i < list.length; i++) {
+                                    var item = list[i];
+                                    html += '<tr><td><span>' + item.name + '</span></td><td><div style="float:right;"><span style="color:' + (item.requests.status ? '#20a53a' : 'red') + '">' + (item.requests.status?item.requests.data:item.requests.error_msg) + '</span></div></td></tr>';
+                                }
+                                node_table.$batch_success_table({ title: 'Delete items in bulk', th: 'project name', html: html });
+                                node_table.$refresh_table_list(true);
+                            });
+                        })
+                    }
+                }],
+            }, { //分页显示
+                type: 'page',
+                positon: ['right', 'bottom'], // 默认在右下角
+                pageParam: 'p', //分页请求字段,默认为 : p
+                page: 1, //当前分页 默认：1
+                numberParam: 'limit',
+                //分页数量请求字段默认为 : limit
+                number: 20,
+                //分页数量默认 : 20条
+                numberList: [10, 20, 50, 100, 200], // 分页显示数量列表
+                numberStatus: true, //　是否支持分页数量选择,默认禁用
+                jump: true, //是否支持跳转分页,默认禁用
+            }]
+        });
+    },
+    php_table_view:function(){
+        var site_table = bt_tools.table({
+            el:'#bt_site_table',
+            url:'/data?action=getData',
+            cookiePrefix:'site_table', // cookie前缀，用于状态存储，如果不设置，着所有状态不存储，
+            param:{table:'sites'}, //参数
+            minWidth:'1000px',
+            autoHeight:true,
+            default:"Site list is empty", // 数据为空时的默认提示
+            beforeRequest:function(param){
+                param.type = bt.get_cookie('site_type') || -1;
+                return param;
+            },
+            column:[
+                {type:'checkbox',class:'',width:20},
+                {fid:'name',title:lan.site.site_name,sort:true,sortValue:'asc',type:'link',event:function(row,index,ev){
+                    site.web_edit(row,true);
+                }},
+                {fid:'status',title:lan.site.status,sort:true,width:85,config:{icon:true,list:[['1',lan.site.running_text,'bt_success','glyphicon-play'],['0',lan.site.stopped,'bt_danger','glyphicon-pause']]},type:'status',event:function(row,index,ev,key,that){
+                    bt.site[parseInt(row.status)?'stop':'start'](row.id,row.name,function(res){
+                        if(res.status) that.$modify_row_data({status:parseInt(row.status)?'0':'1'});
+                    });
+                }},
+                {
+                    fid:'backup_count',
+                    title:lan.site.backup,
+                    width:80,
+                    type:'link',
+                    template:function(row,index){
+                        var backup = lan.site.backup_no,_class = "bt_warning";
+                        if (row.backup_count > 0) backup = lan.site.backup_yes,_class = "bt_success";
+                        return '<a href="javascript:;" class="btlink  '+ _class +'">'+ backup + (row.backup_count >0?('('+ row.backup_count +')'):'') +'</a>';
+                    },
+                    event:function(row,index){
+                        site.backup_site_view({id:row.id,name:row.name},site_table);
+                    }
+                },
+                {fid:'path',title:lan.site.root_dir,tips:'Open path',type:'link',event:function(row,index,ev){
+                    openPath(row.path);
+                }},
+                {
+                    fid:'edate',
+                    title: lan.site.endtime,
+                    width: 115,
+                    class: 'set_site_edate',
+                    sort: true,
+                    type: 'link',
+                    template: function (row,index) {
+                    var _endtime = row.edate || row.endtime;
+                        if (_endtime === "0000-00-00") {
+                            return lan.site.web_end_time;
+                        } else {
+                            if (new Date(_endtime).getTime() < new Date().getTime()) {
+                                return '<a href="javscript:;" class="bt_danger">' + _endtime + '</a>';
+                            } else {
+                                return _endtime;
+                            }
+                        }
+                    },
+                    event: function (row) {}
+                }, //模拟点击误删
+                {fid:'ps',title:lan.site.note,type:'input',blur:function(row,index,ev){
+                    if (row.ps == ev.target.value) return false;
+                    bt.pub.set_data_ps({id:row.id,table:'sites',ps:ev.target.value},function(res){
+                        if(!res.status) layer.msg(res.msg,{status:2});
+                    });
+                },keyup:function(row,index,ev){
+                    if(ev.keyCode === 13){
+                        $(this).blur();
+                    }
+                }},
+                {fid:'php_version',title:'PHP',tips:'Selete php version',width:57,type:'link',template:function(row,index){
+                    if(row.php_version.indexOf('static') > -1) return  row.php_version;
+                    return row.php_version;
+                },event:function(row,index){
+                    site.web_edit(row);
+                    setTimeout(function(){
+                        $('.site-menu p:eq(9)').click();
+                    },500);
+                }},
+                {fid:'ssl',title:'SSL',tips:'Deployment certificate',width:140,type:'text',template:function(row,index){
+                    var _ssl = row.ssl,_info = '',_arry = [['issuer','Certificate'],['notAfter','Due date'],['notBefore','Application date'],['dns','Domain name']];
+                    try {
+                        if (typeof row.ssl.endtime != 'undefined') {
+                            if (row.ssl.endtime < 0) {
+                                return '<a class="btlink bt_danger" href="javascript:;">Exp in ' + Math.row.ssl.endtime + ' days</a>';
+                            }
+                        }
+                    } catch (error) {}
+                    for (var i = 0; i < _arry.length; i++) {
+                        var item = _ssl[_arry[i][0]];
+                        _info += _arry[i][1] + ':' + item + (_arry.length - 1 != i ? '\n' : '');
+                    }
+                    return row.ssl === -1 ? '<a class="btlink bt_warning" href="javascript:;">Not Set</a>' : '<a class="btlink ' + (row.ssl.endtime < 7 ? 'bt_danger' : '') + '" href="javascript:;" title="' + _info + '">Exp in ' + row.ssl.endtime + ' days</a>';
+                },event:function(row,index,ev,key,that){
+                    console.log(row,'111');
+                    site.web_edit(row);
+                    setTimeout(function(){
+                        $('.site-menu p:eq(8)').click();
+                    },500);
+                }},
+                {title:lan.site.operate,type:'group',width:119,align:'right',group:[
+                {
+                    title:'WAF',
+                    event:function(row,index,ev,key,that){
+                        site.site_waf(row.name);
+                    }
+                },
+                {
+                    title:lan.site.set,
+                    event:function(row,index,ev,key,that){
+                        site.web_edit(row,true);
+                    }
+                },{
+                    title:'Del',
+                    event:function(row,index,ev,key,that){
+                        site.del_site(row.id,row.name,function(){
+                            that.$refresh_table_list(true);
+                        });
+                    }
+                }]}
+            ],
+            sortParam:function(data){
+                return {'order':data.name +' '+ data.sort};
+            },
+            // 表格渲染完成后
+            success: function (that) {
+                $('.event_edate_' + that.random).each(function(){
+                    var $this = $(this);
+                    laydate.render({
+                        elem: $this[0] //指定元素
+                        , min: bt.get_date(1)
+                        , max: '2099-12-31'
+                        , vlue: bt.get_date(365)
+                        , type: 'date'
+                        , format: 'yyyy-MM-dd'
+                        , trigger: 'click'
+                        , btns: ['perpetual', 'confirm']
+                        , theme: '#20a53a'
+                        , ready:function(){
+                            $this.click();
+                        }
+                        , done: function (date) {
+                            var item = that.event_rows_model.rows;
+                            bt.site.set_endtime(item.id, date,function(res){
+                                if(res.status){
+                                    layer.msg(res.msg);
+                                    return false;
+                                }
+                                bt.msg(res);
+                            });
+                        }
+                    });
+                });
+            },
+            // 渲染完成
+            tootls:[{ // 按钮组
+                type:'group',
+                positon:['left','top'],
+                list:[
+                    {title:'Add site',active:true, event:function(ev){ site.add_site(function(){
+                        site_table.$refresh_table_list(true) });
+                        bt.set_cookie('site_type','-1');
+                    }},
+                    {title:'Default Page',event:function(ev){ site.set_default_page() }},
+                    {title:'Default Website',event:function(ev){ site.set_default_site() }},
+                    {title:'PHP CLI version',event:function(ev){ site.get_cli_version()}}
+                ]
+            },{ // 搜索内容
+                type:'search',
+                positon:['right','top'],
+                placeholder:'Domain or Remarks',
+                searchParam:'search', //搜索请求字段，默认为 search
+                value:'',// 当前内容,默认为空
+            },{ // 批量操作
+                type:'batch',//batch_btn
+                positon:['left','bottom'],
+                placeholder:'Select batch operation',
+                buttonValue:'Execute',
+                disabledSelectValue:'Select the website to execute!',
+                selectList:[
+                    {
+                        group:[{title:lan.site.enable_website,param:{status:1}},{title:'Disable website',param:{status:0}}],
+                        url:'/site?action=set_site_status_multiple',
+                        confirmVerify:false, //是否提示验证方式
+                        paramName:'sites_id', //列表参数名,可以为空
+                        paramId:'id', // 需要传入批量的id
+                        theadName:'Name'
+                    },{
+                        title:lan.site.backup_website,
+                        url:'/site?action=ToBackup',
+                        paramId:'id',
+                        load:true,
+                        theadName:'Name',
+                        callback:function(that){ // 手动执行,data参数包含所有选中的站点
+                            that.start_batch({},function(list){
+                                var html = '';
+                                for(var i=0;i<list.length;i++){
+                                    var item = list[i];
+                                    html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ item.request.msg +'</span></div></td></tr>';
+                                }
+                                site_table.$batch_success_table({title:'Batch backup',th:'Site name',html:html});
+                                site_table.$refresh_table_list(true);
+                            });
+                        }
+                    },{
+                        title:lan.site.set_expired,
+                        url:'/site?action=set_site_etime_multiple',
+                        paramName:'sites_id', //列表参数名,可以为空
+                        paramId:'id', // 需要传入批量的id
+                        theadName:'Name',
+                        confirm:{
+                            title:'Batch set expired date',
+                            content:'<div class="line"><span class="tname">Expired date</span><div class="info-r "><input name="edate" id="site_edate" class="bt-input-text mr5" placeholder="yyyy-MM-dd" type="text"></div></div>',
+                            success:function(){
+                                laydate.render({
+                                    elem: '#site_edate'
+                                    ,min: bt.format_data(new Date().getTime(),'yyyy-MM-dd')
+                                    ,max: '2099-12-31'
+                                    ,vlue: bt.get_date(365)
+                                    ,type: 'date'
+                                    ,format: 'yyyy-MM-dd'
+                                    ,trigger: 'click'
+                                    ,btns: ['perpetual','confirm']
+                                    ,theme: '#20a53a'
+                                });
+                            },
+                            yes:function(index,layers,request){
+                                var site_edate = $('#site_edate'),site_edate_val = site_edate.val();
+                                if(site_edate_val != ''){
+                                    request({'edate':site_edate_val==='Forever'?'0000-00-00':site_edate_val});
+                                }else{
+                                    layer.tips('Input expired date','#site_edate',{tips:['1','red']});
+                                    $('#site_edate').css('border-color','red');
+                                    $('#site_edate').click();
+                                    setTimeout(function(){
+                                        $('#site_edate').removeAttr('style');
+                                    },3000);
+                                    return false;
+                                }
+                            }
+                        }
+                    },{
+                        title:lan.site.set_php_version,
+                        url:'/site?action=set_site_php_version_multiple',
+                        paramName:'sites_id', //列表参数名,可以为空
+                        paramId:'id', // 需要传入批量的id
+                        theadName:'Name',
+                        confirm:{
+                            title:'Batch set php version',
+                            area:'420px',
+                            content:'<div class="line"><span class="tname">PHP version</span><div class="info-r"><select class="bt-input-text mr5 versions" name="versions" style="width:150px"></select></span></div><ul class="help-info-text c7" style="font-size:11px"><li>Please select the version according to your program requirements.</li><li>If not necessary, please try not to use PHP 5.2, which will reduce your server security.</li><li>PHP 7 does not support mysql extension, mysqli and mysql_pdo will be installed by default.</li></ul></div>',
+                            success:function(){
+                                bt.site.get_all_phpversion(function(res){
+                                    var html = '';
+                                    $.each(res,function(index,item){
+                                        html += '<option value="'+ item.version +'">'+ item.name +'</option>';
+                                    });
+                                    $('[name="versions"]').html(html);
+                                });
+                            },
+                            yes:function(index,layers,request){
+                                request({version:$('[name="versions"]').val()});
+                            }
+                        }
+                    },{
+                        title:lan.site.set_category,
+                        url:'/site?action=set_site_type',
+                        paramName:'site_ids', //列表参数名,可以为空
+                        paramId:'id', // 需要传入批量的id
+                        beforeRequest:function(list){
+                            var arry = [];
+                            $.each(list,function(index,item){
+                                arry.push(item.id);
+                            });
+                            return JSON.stringify(arry);
+                        },
+                        confirm:{
+                            title:'Batch set category',
+                            content:'<div class="line"><span class="tname">Site category</span><div class="info-r"><select class="bt-input-text mr5 site_types" name="site_types" style="width:150px"></select></span></div></div>',
+                            success:function(){
+                                bt.site.get_type(function(res){
+                                    var html = '';
+                                    $.each(res,function(index,item){
+                                        html += '<option value="'+ item.id +'">'+ item.name +'</option>';
+                                    });
+                                    $('[name="site_types"]').html(html);
+                                });
+                            },
+                            yes:function(index,layers,request){
+                                request({id:$('[name="site_types"]').val()});
+                            }
+                        },
+                        tips:false,
+                        success:function(res,list,that){
+                            var html = '';
+                            $.each(list,function(index,item){
+                                html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (res.status?'#20a53a':'red') +'">'+ res.msg +'</span></div></td></tr>';
+                            });
+                            that.$batch_success_table({title:'Batch set category',th:'Site name',html:html});
+                            that.$refresh_table_list(true);
+                        }
+                    },{
+                        title:lan.site.del_website,
+                        url:'/site?action=DeleteSite',
+                        // paramName:'sites_id', //列表参数名,可以为空
+                        // paramId:'id', //需要传入批量的id
+                        // theadName:'Name',
+                        param: function (row) {
+                            return {
+                                id: row.id,
+                                webname: row.name
+                            }
+                        },
+                        load: true,
+                        callback: function(that){
+                            // bt.show_confirm("Delete site","Confirm delete the FTP、database、root path of the selected site with the same name", function(){
+                            //     var param = {};
+                            //     $('.bacth_options input[type=checkbox]').each(function(){
+                            //         var checked = $(this).is(":checked");
+                            //         if(checked) param[$(this).attr('name')] = checked?1:0;
+                            //     })
+                            //     if(callback) callback(param);
+                            // },"<div class='options bacth_options'><span class='item'><label><input type='checkbox' name='ftp'><span>FTP</span></label></span><span class='item'><label><input type='checkbox' name='database'><span>" + lan.site.database + "</span></label></span><span class='item'><label><input type='checkbox' name='path'><span>" + lan.site.root_dir + "</span></label></span></div>");
+                            var ids = [];
+                            for (var i = 0; i < that.check_list.length; i++) {
+                                ids.push(that.check_list[i].id);
+                            }
+                            site.del_site(ids,function(param){
+                                that.start_batch(param, function (list) {
+                                    layer.closeAll()
+                                    var html = '';
+                                    for (var i = 0; i < list.length; i++) {
+                                        var item = list[i];
+                                        html += '<tr><td>' + item.name + '</td><td><div style="float:right;"><span style="color:' + (item.request.status ? '#20a53a' : 'red') + '">' + item.request.msg + '</span></div></td></tr>';
+                                    }
+                                    site_table.$batch_success_table({
+                                        title: 'Batch delete',
+                                        th: 'site name',
+                                        html: html
+                                    });
+                                    site_table.$refresh_table_list(true);
+                                });
+                            });
+                        }
+                    }
+                ],
+            },{ //分页显示
+                type:'page',
+                positon:['right','bottom'], // 默认在右下角
+                pageParam:'p', //分页请求字段,默认为 : p
+                page:1, //当前分页 默认：1
+                numberParam:'limit',　//分页数量请求字段默认为 : limit
+                number:20,　//分页数量默认 : 20条
+                numberList:[10,20,50,100,200], // 分页显示数量列表
+                numberStatus:true, //　是否支持分页数量选择,默认禁用
+                jump:true, //是否支持跳转分页,默认禁用
+            }]
+        });
+        $('.tootls_group.tootls_top .pull-left').append('<div class="bt_select_updown site_class_type" style="vertical-align: bottom;"><div class="bt_select_value"><span class="bt_select_content">Classification:</span><span class="glyphicon glyphicon-triangle-bottom ml5"></span></span></div><ul class="bt_select_list"></ul></div>');
+        bt.site.get_type(function(res) {
+            site.reader_site_type(res,site_table);
+        });
+    },
+    reader_site_type: function(res,config) {
+        var html = '',
+            active = bt.get_cookie('site_type') || -1,
+            select = $('.site_class_type');
+        if(select.find('.bt_select_list li').length > 1) return false
+        res.unshift({ id: -1, name: "Category manager" });
+        $.each(res, function(index, item) {
+            html += '<li class="item ' + (parseInt(active) == item.id ? 'active' : '') + '" data-id="' + item.id + '">' + item.name + '</li>';
+        });
+        html += '<li role="separator" class="divider"></li><li class="item" data-id="type_sets">Category set</li>';
+        select.find('.bt_select_value').on('click', function(ev) {
+            var $this = this;
+            $(this).next().show();
+            $(document).one('click', function() {
+                $($this).next().hide();
+            });
+            ev.stopPropagation()
+        });
+
+        select.find('.bt_select_list').unbind('click').on('click', 'li', function() {
+            var id = $(this).data('id');
+            if (id === 'type_sets') {
+                site.set_class_type();
+            } else {
+                bt.set_cookie('site_type', id);
+                config.$refresh_table_list(true);
+                $(this).addClass('active').siblings().removeClass('active');
+                // select.find('.bt_select_value .bt_select_content').text('Classification: ' + $(this).text());
+                select.find('.bt_select_value .bt_select_content').text($(this).text());
+            }
+
+        }).empty().html(html);
+        select = $(select[0])
+        if (!select.find('.bt_select_list li.active').length) {
+            select.find('.bt_select_list li:eq(0)').addClass('active');
+            // select.find('.bt_select_value .bt_select_content').text('Classification: 默认分类');
+            select.find('.bt_select_value .bt_select_content').text('Classification: 默认分类');
+        } else {
+            // select.find('.bt_select_value .bt_select_content').text('Classification: ' + select.find('.bt_select_list li.active').text());
+            select.find('.bt_select_value .bt_select_content').text(select.find('.bt_select_list li.active').text());
+        }
+    },
     get_list: function(page, search, type) {
         if (page == undefined) page = 1;
         if (type == '-1' || type == undefined) {
@@ -398,7 +1997,7 @@ var site = {
                     },
                     {
                         field: 'php_version',width:70, title: 'PHP', templet: function (item) {
-                            
+
                             return  '<a class="phpversion_tips btlink">'+item.php_version+'</a>';
                         }
                     },
@@ -412,11 +2011,11 @@ var site = {
                                 var ssl_info = "Certificate: "+item.ssl.issuer+"<br>Due date: " + item.ssl.notAfter+"<br>Application date: " + item.ssl.notBefore +"<br>Domain name: " + item.ssl.dns.join("/");
                                 if(item.ssl.endtime < 0){
                                     _ssl = '<a class="ssl_tips btlink" style="color:red;" data-tips="'+ssl_info+'">Expired</a>';
-                                
+
                                 }else if(item.ssl.endtime < 20){
-                                    _ssl = '<a class="ssl_tips btlink" style="color:red;" data-tips="'+ssl_info+'">Expire: '+(item.ssl.endtime+' days')+'</a>';
+                                    _ssl = '<a class="ssl_tips btlink" style="color:red;" data-tips="'+ssl_info+'">Exp in '+(item.ssl.endtime+' days')+'</a>';
                                 }else{
-                                    _ssl = '<a class="ssl_tips btlink" style="color:green;" data-tips="'+ssl_info+'">Expire: '+item.ssl.endtime+' days</a>';
+                                    _ssl = '<a class="ssl_tips btlink" style="color:green;" data-tips="'+ssl_info+'">Exp in '+item.ssl.endtime+' days</a>';
                                 }
                             }
                             return _ssl;
@@ -541,7 +2140,7 @@ var site = {
                 site.get_list(0,'', val);
                 $(".site_type button").removeClass('btn-success').addClass('btn-default');
                 $(this).addClass('btn-success');
-                
+
             })
             if (callback) callback(rdata);
         });
@@ -639,6 +2238,152 @@ var site = {
 					});
                 })
             }, 100)
+        });
+    },
+    /**
+     * @description 备份站点视图
+     * @param {object} config  配置参数
+     * @param {function} callback  回调函数
+     */
+     backup_site_view: function(config, thatC,callback) {
+        bt_tools.open({
+            title: lan.site.backup_title+'&nbsp;-&nbsp;[&nbsp;' + config.name + '&nbsp;]',
+            area: '720px',
+            btn: false,
+            skin: 'bt_backup_table',
+            content: '<div id="bt_backup_table" class="pd20" style="padding-bottom:40px;"></div>',
+            success: function() {
+                var backup_table = bt_tools.table({
+                    el: '#bt_backup_table',
+                    url: '/data?action=getData',
+                    param: { table: 'backup', search: config.id, type: '0' },
+                    default: "[" + config.name + "] Currently no backup", //数据为空时的默认提示
+                    column: [
+                        { type: 'checkbox', class: '', width: 20 },
+                        { fid: 'name', title: lan.site.filename, width: 320, fixed: true },
+                        {
+                            fid: 'size',
+                            title: lan.site.filesize,
+                            width: 80,
+                            type: 'text',
+                            template: function(row, index) {
+                                return bt.format_size(row.size);
+                            }
+                        },
+                        { fid: 'addtime', width: 150, title: lan.site.backup_time },
+                        {
+                            title: lan.site.operate,
+                            type: 'group',
+                            width: 120,
+                            align: 'right',
+                            group: [{
+                                title:'Restore',
+                                event: function() {
+                                    var data = {};
+                                        data.file_name = $(this).attr('backup-name');
+                                        data.site_id = $(this).attr('site-id');
+                                    layer.confirm('Are you sure to restore backup file?', {
+                                        icon: 0,
+                                        closeBtn: 2,
+                                        title: 'Restore backup file',
+                                    }, function (index) {
+                                        $.post('/files?action=restore_website', data, function(rdata) {
+                                            layer.close(index);
+                                            site.backup_output_stop = true;
+                                            layer.msg(rdata.msg, {icon: rdata.status ? 1 : 2});
+                                        });
+                                        site.backup_output_logs();
+                                    });
+                                }
+                            },{
+                                title: lan.site.download,
+                                template: function(row, index, ev, key, that) {
+                                    return '<a target="_blank" class="btlink" href="/download?filename=' + row.filename + '&amp;name=' + row.name + '">'+lan.site.download+'</a>';
+                                }
+                            }, {
+                                title: lan.site.del,
+                                event: function(row, index, ev, key, that) {
+                                    that.del_site_backup({ name: row.name, id: row.id }, function(rdata) {
+                                        bt_tools.msg(rdata);
+                                        if (rdata.status) {
+                                            thatC.$modify_row_data({ backup_count: thatC.event_rows_model.rows.backup_count - 1 });
+                                            that.$refresh_table_list();
+                                        }
+                                    });
+                                }
+                            }]
+                        }
+                    ],
+                    methods: {
+                        /**
+                         * @description 删除站点备份
+                         * @param {object} config
+                         * @param {function} callback
+                         */
+                        del_site_backup: function(config, callback) {
+                            bt.confirm({ title: lan.site.del_bak_file, msg: 'The website backup is about to be deleted [' + config.name + '], do you want to continue?' }, function() {
+                                bt_tools.send('site/DelBackup', { id: config.id }, function(rdata) {
+                                    if (callback) callback(rdata);
+                                }, true);
+                            });
+                        }
+                    },
+                    success: function() {
+                        if (callback) callback();
+                        $('.bt_backup_table').css('top', (($(window).height() - $('.bt_backup_table').height()) / 2) + 'px');
+                    },
+                    tootls: [{ // 按钮组
+                        type: 'group',
+                        positon: ['left', 'top'],
+                        list: [{
+                            title: 'Backup',
+                            active: true,
+                            event: function(ev, that) {
+                                bt.site.backup_data(config.id, function(rdata) {
+                                    bt_tools.msg(rdata);
+                                    if (rdata.status) {
+                                        thatC.$modify_row_data({ backup_count: thatC.event_rows_model.rows.backup_count + 1 });
+                                        that.$refresh_table_list();
+                                    }
+                                });
+                            }
+                        }]
+                    }, {
+                        type: 'batch',
+                        positon: ['left', 'bottom'],
+                        config: {
+                            title: ' Delete',
+                            url: '/site?action=DelBackup',
+                            paramId: 'id',
+                            load: true,
+                            callback: function(that) {
+                                bt.confirm({ title: 'Delete site backups in bulk', msg: 'Do you want to delete selected site backups in batches?', icon: 0 }, function(index) {
+                                    layer.close(index);
+                                    that.start_batch({}, function(list) {
+                                        var html = '';
+                                        for (var i = 0; i < list.length; i++) {
+                                            var item = list[i];
+                                            html += '<tr><td><span class="text-overflow" title="' + item.name + '">' + item.name + '</span></td><td><div style="float:right;"><span style="color:' + (item.request.status ? '#20a53a' : 'red') + '">' + item.request.msg + '</span></div></td></tr>';
+                                        }
+                                        backup_table.$batch_success_table({ title: 'Delete site backups in bulk', th: 'file name', html: html });
+                                        backup_table.$refresh_table_list(true);
+                                        thatC.$modify_row_data({ backup_count: thatC.event_rows_model.rows.backup_count - list.length });
+                                    });
+                                });
+                            }
+                        } //分页显示
+                    }, {
+                        type: 'page',
+                        positon: ['right', 'bottom'], // 默认在右下角
+                        pageParam: 'p', //分页请求字段,默认为 : p
+                        page: 1, //当前分页 默认：1
+                        numberParam: 'limit',
+                        　 //分页数量请求字段默认为 : limit
+                        number: 10,
+                        　 //分页数量默认 : 20条
+                    }]
+                });
+            }
         });
     },
     backup_output_stop: false,
@@ -908,18 +2653,20 @@ var site = {
                     group:[{
                         type:'checkbox',
                         name:'set_ssl',
-                        label_tips:'Apply for SSL',
-                        event:function(value,form,that,config,ev){
-                            var set_ssl = $(this).is(':checked');
-                            if(!set_ssl) $('input[name=set_ssl],input[name=force_ssl]').prop('checked',set_ssl);
-                        }
+                        title:'Apply for SSL',
+                        class:'site_ssl_check',
+                        style:{'margin-right': '10px'}
                     },{
                         type:'checkbox',
                         name:'force_ssl',
-                        label_tips:'HTTP redirect to HTTPS',
+                        class:'site_ssl_check',
+                        title:'HTTP redirect to HTTPS',
                         event:function(value,form,that,config,ev){
                             var force_ssl = $(this).is(':checked');
-                            if(force_ssl) $('input[name=set_ssl]').prop('checked',force_ssl);
+                            if(force_ssl){
+                                $('.site_ssl_check:eq(0)').find('i').addClass('active');
+                                $('input[name=set_ssl]').prop('checked',force_ssl);
+                            }
                         }
                     }]
                 }
@@ -974,7 +2721,7 @@ var site = {
                 }
             }],
             success:function(){
-                
+
             }
         });
         bt_tools.open({
@@ -987,9 +2734,8 @@ var site = {
             },
             yes:function(indexs){
                 var formValue = !web_tab.active?add_web.$get_form_value():bath_web.$get_form_value();
-                console.log(formValue)
                 if(formValue.webname === ''){
-                    bt.msg({status:false,msg:'The website domain name cannot be empty!'})
+                    bt.msg({status:false,msg:'网站域名不能为空！'})
                     return false;
                 }
                 if(!web_tab.active){  // 创建站点
@@ -1019,12 +2765,12 @@ var site = {
                             return false;
                         }
                         Array.isArray(item)? item = item[0]:'';
-                        if(formValue['ftp'] === 'false' && (item === 'ftp_username' || item === 'ftp_password')) return true; 
+                        if(formValue['ftp'] === 'false' && (item === 'ftp_username' || item === 'ftp_password')) return true;
                         if(formValue['sql'] === 'false' && (item === 'datauser' || item === 'datapassword')) return true;
                         param[item] = formValue[item];
                     });
-                    param['set_ssl'] = $('input[name=set_ssl]').is(':checked')?1:0;
-                    param['force_ssl'] = $('input[name=force_ssl]').is(':checked')?1:0;
+                    param['set_ssl'] = $('input[name=set_ssl]').prop('checked')?1:0;
+                    param['force_ssl'] = $('input[name=force_ssl]').prop('checked')?1:0;
                     var is_redirect = $('.redirect_check').hasClass('hide');
                     if(!is_redirect){
                         var redirect_check = $('.redirect_check input[name=redirect]').is(':checked');
@@ -1072,7 +2818,7 @@ var site = {
                                     shadeClose: false,
                                     content: "<div class='success-msg'><div class='pic'><img src='/static/img/success-pic.png'></div><div class='suc-con'>" + ftpData + sqlData + "</div></div>"
                                 });
-            
+
                                 if ($(".success-msg").height() < 150) {
                                     $(".success-msg").find("img").css({ "width": "150px", "margin-top": "30px" });
                                 }
@@ -1248,22 +2994,188 @@ var site = {
         });
     },
     del_site: function(wid, wname,callback) {
-        var thtml = "<div class='options' style='width: 320px'><label><input type='checkbox' id='delftp' name='ftp'><span>FTP</span></label><label><input type='checkbox' id='deldata' name='data'><span>" + lan.site.database + "</span></label><label><input type='checkbox' id='delpath' name='path'><span>" + lan.site.root_dir + "</span></label></div>";
-        bt.show_confirm(lan.site.site_del_title + "[" + wname + "]", lan.site.site_del_info, function() {
-            var ftp = '',
-                data = '',
-                path = '',
-                data = { id: wid, webname: wname }
-            if ($("#delftp").is(":checked")) data.ftp = 1;
-            if ($("#deldata").is(":checked")) data.database = 1;
-            if ($("#delpath").is(":checked")) data.path = 1;
+        var num1 = bt.get_random_num(1, 9),
+            num2 = bt.get_random_num(1, 9),
+            title = '';
+        title = typeof wname === "function" ? 'Deleting sites in batches' : lan.site.site_del_title + ' [ '+ wname +' ]';
+        layer.open({
+            type: 1,
+            title: title,
+            icon: 0,
+            skin: 'delete_site_layer',
+            area: '480px',
+            closeBtn: 2,
+            shadeClose: true,
+            content: '\
+                <div class="bt-form webDelete pd30" id="site_delete_form">\
+                    <i class="layui-layer-ico layui-layer-ico0"></i>\
+                    <div class="f13 check_title">' + lan.site.site_del_info + '</div>\
+                    <div class="check_type_group">\
+                        <label>\
+                            <input type="checkbox" name="ftp" />\
+                            <span>FTP</span>\
+                        </label>\
+                        <label>\
+                            <input type="checkbox" name="database">\
+                            <span>' + lan.site.database + '</span>\
+                            ' + (!recycle_bin_db_open ? '<span class="glyphicon glyphicon-info-sign" style="color: red"></span>' : '') + '\
+                        </label>\
+                        <label style="margin-right: 0;">\
+                            <input type="checkbox" name="path">\
+                            <span>' + lan.site.root_dir + '</span>\
+                            ' + (!recycle_bin_open ? '<span class="glyphicon glyphicon-info-sign" style="color: red"></span>' : '') + '\
+                        </label>\
+                    </div>\
+                    <div class="vcode">\
+                        ' + lan.bt.cal_msg + '<span class="text">' + num1 + ' + ' + num2 + '</span>=\
+                        <input type="number" id="vcodeResult" value="" />\
+                    </div>\
+                </div>\
+            ',
+            btn:[lan.public.ok, lan.public.cancel],
+            success: function (layers, indexs) {
+                $(layers).find('.check_type_group label').hover(function(){
+                    var name = $(this).find('input').attr('name');
+                    if (name === 'data' && !recycle_bin_db_open) {
+                        layer.tips('Risky operation: the current database recycle bin is not open, delete the database will disappear forever!', this, {tips: [1, 'red'], time: 0});
+                    } else if (name === 'path' && !recycle_bin_open) {
+                        layer.tips('Risky operation: The current file recycle bin is not open, delete the site directory will disappear forever!', this, {tips: [1, 'red'], time: 0 });
+                    }
+                }, function() {
+                    layer.closeAll('tips');
+                });
+            },
+            yes: function (indexs) {
+                var vcodeResult = $('#vcodeResult'),data = {id: wid,webname: wname};
+                $('#site_delete_form input[type=checkbox]').each(function(index,item){
+                    if($(item).is(':checked')) data[$(item).attr('name')] = 1
+                })
+                if(vcodeResult.val() === ''){
+                    layer.tips('The result cannot be null', vcodeResult, {tips: [1, 'red'],time:3000})
+                    vcodeResult.focus()
+                    return false;
+                }else if(parseInt(vcodeResult.val()) !== (num1 + num2)){
+                    layer.tips('The calculation is incorrect', vcodeResult, {tips: [1, 'red'],time:3000})
+                    vcodeResult.focus()
+                    return false;
+                }
+                var is_database = data.hasOwnProperty('database'),is_path = data.hasOwnProperty('path'),is_ftp = data.hasOwnProperty('ftp');
+                if((!is_database && !is_path) && (!is_ftp || is_ftp)){
+                    if(typeof wname === "function"){
+                        wname(data)
+                        return false;
+                    }
+                    bt.site.del_site(data, function (rdata) {
+                        layer.close(indexs);
+                        if (callback) callback(rdata);
+                        bt.msg(rdata);
+                    })
+                    return false
+                }
+                if(typeof wname === "function"){
+                    delete data.id;
+                    delete data.webname;
+                }
+                layer.close(indexs)
+                var ids = JSON.stringify(wid instanceof Array ? wid : [ wid ]),countDown = typeof wname === 'string'?4:9;
+                title = typeof wname === "function" ?'Verify the information twice and delete sites in batches':'Verify information twice, delete site [ ' + wname + ' ]';
+                var loadT = bt.load('Checking site data information, please wait...')
+                bt.send('check_del_data', 'site/check_del_data', {ids: ids}, function (res) {
+                    loadT.close()
+                    layer.open({
+                        type:1,
+                        title:title,
+                        closeBtn: 2,
+                        skin: 'verify_site_layer_info active',
+                        area: '740px',
+                        content: '<div class="check_delete_site_main pd30">' +
+                            '<i class="layui-layer-ico layui-layer-ico0"></i>' +
+                            '<div class="check_layer_title">Please calm down for a few seconds and confirm the following data to be deleted.</div>' +
+                            '<div class="check_layer_content">' +
+                            '<div class="check_layer_item">' +
+                            '<div class="check_layer_site"></div>' +
+                            '<div class="check_layer_database"></div>' +
+                            '</div>' +
+                            '</div>' +
+                            '<div class="check_layer_error ' + (data.database && recycle_bin_db_open? 'hide' : '') + '"><span class="glyphicon glyphicon-info-sign"></span>Risks: The database recycle bin function is not enabled at present. After the database is deleted, the database will disappear forever!</div>' +
+                            '<div class="check_layer_error ' + (data.path && recycle_bin_open ? 'hide' : '') + '"><span class="glyphicon glyphicon-info-sign"></span>Risk: The file recycle bin function is disabled at present. After a site directory is deleted, the site directory will disappear forever!</div>' +
+                            '<div class="check_layer_message">Please read the above information to be deleted carefully to prevent site data from being deleted by mistake. Confirm that there are still <span style="color:red;font-weight: bold;">' + countDown + '</span> seconds left to delete.</div>' +
+                            '</div>',
+                        btn: ['Confirm deletion (continue operation after ' + countDown + 'seconds)', 'undelete'],
+                        success: function (layers) {
+                            var html = '', rdata = res.data;
+                            for (var i = 0; i < rdata.length; i++) {
+                                var item = rdata[i], newTime = parseInt(new Date().getTime() / 1000),
+                                    t_icon = '<span class="glyphicon glyphicon-info-sign" style="color: red;width:15px;height: 15px;;vertical-align: middle;"></span>';
 
-            bt.site.del_site(data, function(rdata) {
-                if(rdata.status) callback?callback(rdata):site.get_list();
-                bt.msg(rdata);
-            });
+                                site_html = (function(item){
+                                    if(!is_path) return ''
+                                    var is_time_rule = (newTime - item.st_time) > (86400 * 30) && (item.total > 1024 * 10),
+                                        is_path_rule = res.file_size <= item.total,
+                                        dir_time = bt.format_data(item.st_time, 'yyyy-MM-dd'),
+                                        dir_size = bt.format_size(item.total);
 
-        }, thtml);
+                                    var f_html = '<i ' + (is_path_rule ? 'class="warning"' : '') + ' style = "vertical-align: middle;" > ' +(item.limit ? 'More than 50 MB' : dir_size) + '</i> ' + (is_path_rule ? t_icon : '');
+                                    var f_title = (is_path_rule ?'Note: This directory may contain important data. Exercise caution when performing this operation.\n':'') + 'directory：' + item.path + '(' + (item.limit ? 'greater than ' : '') + dir_size + ')';
+
+                                    return '<div class="check_layer_site">' +
+                                        '<span title="site：' + item.name + '">site name：' + item.name + '</span>' +
+                                        '<span title="' + f_title + '" >directory：<span style="vertical-align: middle;max-width: 160px;width: auto;">' + item.path + '</span> (' + f_html + ')</span>' +
+                                        '<span title="' + (is_time_rule ? 'Note: This site is created earlier and may contain important data. Exercise caution when performing this operation.\n' : '') + 'time：' + dir_time +'">creation time：<i ' + (is_time_rule ? 'class="warning"' : '') + '>' + dir_time + '</i></span>' +
+                                        '</div>'
+                                }(item)),
+                                    database_html = (function(item){
+                                        if(!is_database || !item.database) return '';
+                                        var is_time_rule = (newTime - item.st_time) > (86400 * 30)  && (item.total > 1024 * 10),
+                                            is_database_rule = res.db_size <= item.database.total,
+                                            database_time = bt.format_data(item.database.st_time, 'yyyy-MM-dd'),
+                                            database_size = bt.format_size(item.database.total);
+
+                                        var f_size = '<i ' + (is_database_rule ? 'class="warning"' : '') + ' style = "vertical-align: middle;" > ' + database_size + '</i> ' + (is_database_rule ? t_icon : '');
+                                        var t_size = 'Note: This database is large and may contain important data. Exercise caution when performing this operation.\ndatabase：' + database_size;
+
+                                        return '<div class="check_layer_database">' +
+                                            '<span title="database：' + item.database.name + '">database：' + item.database.name + '</span>' +
+                                            '<span title="' + t_size+'">size：' + f_size +'</span>' +
+                                            '<span title="' + (is_time_rule && item.database.total != 0 ? 'important：This database is created earlier and may contain important data. Exercise caution when performing this operation.' : '') + 'time：' + database_time+'">creation time：<i ' + (is_time_rule && item.database.total != 0 ? 'class="warning"' : '') + '>' + database_time + '</i></span>' +
+                                            '</div>'
+                                    }(item))
+                                if((site_html + database_html) !== '') html += '<div class="check_layer_item">' + site_html + database_html +'</div>';
+                            }
+                            if(html === '') html = '<div style="text-align: center;width: 100%;height: 100%;line-height: 300px;font-size: 15px;">No data</div>'
+                            $('.check_layer_content').html(html)
+                            var interVal = setInterval(function () {
+                                countDown--;
+                                $(layers).find('.layui-layer-btn0').text('Confirm deletion (continue operation after ' + countDown + ' seconds)')
+                                $(layers).find('.check_layer_message span').text(countDown)
+                            }, 1000);
+                            setTimeout(function () {
+                                $(layers).find('.layui-layer-btn0').text('Confirm the deletion');
+                                $(layers).find('.check_layer_message').html('<span style="color:red">Note: please read the above information carefully to prevent site data from being deleted by mistake</span>')
+                                $(layers).removeClass('active');
+                                clearInterval(interVal)
+                            }, countDown * 1000)
+                        },
+                        yes:function(indes,layers){
+                            if($(layers).hasClass('active')){
+                                layer.tips('Please confirm the information and try again later. ' + countDown + ' seconds left', $(layers).find('.layui-layer-btn0') , {tips: [1, 'red'],time:3000})
+                                return;
+                            }
+                            if(typeof wname === "function"){
+                                wname(data)
+                            }else{
+                                bt.site.del_site(data, function (rdata) {
+                                    layer.closeAll()
+                                    if (rdata.status) site.get_list();
+                                    if (callback) callback(rdata);
+                                    bt.msg(rdata);
+                                })
+                            }
+                        }
+                    })
+                })
+            }
+        });
     },
     batch_site: function(type, obj, result) {
         if (obj == undefined) {
@@ -1754,7 +3666,7 @@ var site = {
                         setTimeout(function(){
                             $('#ssl_tabs span:eq('+ ssl_id +')').click();
                         },1000)
-                    } 
+                    }
                     if (action == 'CloseSSLConf') {
                         layer.msg(lan.site.ssl_close_info, { icon: 1, time: 5000 });
                     }
@@ -1963,7 +3875,7 @@ var site = {
                     $(this).hide();
                     $('.newdomain').focus();
                 }).css({ 'width':'340px', 'heigth':'100px','left': '0px', 'top': '0px',  'padding-top': '10px','padding-left': '15px'})
-                $('.newdomain').focus(function(){ 
+                $('.newdomain').focus(function(){
                     placeholder.hide();
                     console.log(placeholder)
                     loadT = layer.tips(placeholder.html(),$(this),{tips:[1,'#20a53a'],time:0,area:$(this).width()});
@@ -2102,7 +4014,7 @@ var site = {
                                                 }else{
                                                     arrs.push({ title: ret.rlist[i], value: ret.rlist[i] });
                                                 }
-                                            } 
+                                            }
                                             var datas = [{
                                                 name: 'dir_rewrite', type: 'select', width: '130px', items: arrs, callback: function (obj) {
                                                     get_rewrite_file(obj.val());
@@ -2331,7 +4243,7 @@ var site = {
                 tootls:[{ // 按钮组
                     type:'group',
                     positon:['left','top'],
-                    list:[{title:'Add limit access',active:true, event:function(ev){ 
+                    list:[{title:'Add limit access',active:true, event:function(ev){
                         site.edit.template_Dir(web.id,true);
                     }}]
                 },{ // 批量操作
@@ -2687,7 +4599,7 @@ var site = {
                                         return false;
                                     }
                                     aceEditor.ACE.setValue(ret.data);
-                                    aceEditor.ACE.moveCursorTo(0, 0); 
+                                    aceEditor.ACE.moveCursorTo(0, 0);
                                     aceEditor.path = spath;
                                 })
                             }
@@ -2814,571 +4726,6 @@ var site = {
             $("#OnlineEditFileBtn").click(function(e) {
                 bt.saveEditor(config);
             });
-        },
-        set_ssl: function(web) {
-            $('#webedit-con').html("<div id='ssl_tabs'></div><div class=\"tab-con\" style=\"padding:10px 0px;width: 100%;\"></div>");
-            bt.site.get_site_ssl(web.name, function(rdata) {
-                var _tabs = [
-                    // {
-                    //     title: lan.site.bt_ssl, on: true, callback: function (robj) {
-                    //         bt.pub.get_user_info(function (udata) {
-                    //             if (udata.status) {
-                    //                 bt.site.get_domains(web.id, function (ddata) {
-                    //                     var domains = [];
-                    //                     for (var i = 0; i < ddata.length; i++) {
-                    //                         if (ddata[i].name.indexOf('*') == -1) domains.push({ title: ddata[i].name, value: ddata[i].name });
-                    //                     }
-                    //                     var arrs1 = [
-                    //                         { title: lan.site.domain, width: '200px', name: 'domains', type: 'select', items: domains },
-                    //                         {
-                    //                             title: ' ', name: 'btsslApply', text: lan.site.btapply, type: 'button', callback: function (sdata) {
-                    //                                 if (sdata.domains.indexOf('www.') != -1) {
-                    //                                     var rootDomain = sdata.domains.split(/www\./)[1];
-                    //                                     if (!$.inArray(domains, rootDomain)) {
-                    //                                         layer.msg(lan.site.not_resolve_domain.replace('{1}',sdata.domains).replace("{2}",rootDomain), { icon: 2, time: 5000 });
-                    //                                         return;
-                    //                                     }
-                    //                                 }
-                    //                                 bt.site.get_dv_ssl(sdata.domains, web.path, function (tdata) {
-                    //                                     bt.msg(tdata);
-                    //                                     if (tdata.status) site.ssl.verify_domain(tdata.data.partnerOrderId, web.name);
-                    //                                 })
-                    //                             }
-                    //                         }
-                    //                     ]
-                    //                     for (var i = 0; i < arrs1.length; i++) {
-                    //                         var _form_data = bt.render_form_line(arrs1[i]);
-                    //                         robj.append(_form_data.html);
-                    //                         bt.render_clicks(_form_data.clicks);
-                    //                     }
-                    //                     var loading = bt.load()
-                    //                     bt.site.get_order_list(web.name, function (odata) {
-                    //                         loading.close();
-                    //                         robj.append("<div class=\"divtable mtb15 table-fixed-box\" style=\"max-height:200px;overflow-y: auto;\"><table id='bt_order_list' class='table table-hover'></table></div>");
-                    //                         bt.render({
-                    //                             table: '#bt_order_list',
-                    //                             columns: [
-                    //                                 { field: 'commonName', title: lan.site.domain },
-                    //                                 {
-                    //                                     field: 'endtime', width: '70px', title: lan.site.endtime, templet: function (item) {
-                    //                                         return bt.format_data(item.endtime, 'yyyy/MM/dd');
-                    //                                     }
-                    //                                 },
-                    //                                 { field: 'stateName', width: '100px', title: lan.site.status },
-                    //                                 {
-                    //                                     field: 'opt', align: 'right', width: '100px', title: lan.site.operate, templet: function (item) {
-                    //                                         var opt = '<a class="btlink" onclick="site.ssl.onekey_ssl(\'' + item.partnerOrderId + '\',\'' + web.name + '\')" href="javascript:;">'+lan.site.deploy+'</a>'
-                    //                                         if (item.stateCode == 'WF_DOMAIN_APPROVAL') {
-                    //                                             opt = '<a class="btlink" onclick="site.ssl.verify_domain(\'' + item.partnerOrderId + '\',\'' + web.name + '\')" href="javascript:;">'+lan.site.domain_validate+'</a>';
-                    //                                         }
-                    //                                         else {
-                    //                                             if (item.setup) opt = lan.site.deployed+' | <a class="btlink" href="javascript:site.ssl.set_ssl_status(\'CloseSSLConf\',\'' + web.name + '\')">'+lan.site.turn_off+'</a>'
-                    //                                         }
-                    //                                         return opt;
-                    //                                     }
-                    //                                 }
-                    //                             ],
-                    //                             data: odata.data
-                    //                         })
-                    //                         bt.fixed_table('bt_order_list');
-                    //                         var helps = [
-                    //                             lan.site.ssl_tips1,
-                    //                             lan.site.ssl_tips2,
-                    //                             lan.site.ssl_tips3,
-                    //                             lan.site.ssl_tips4,
-                    //                             lan.site.ssl_tips5,
-                    //                             lan.site.ssl_tips6
-                    //                         ]
-                    //                         robj.append(bt.render_help(helps));
-                    //                     })
-                    //                 })
-                    //             }
-                    //             else {
-                    //                 robj.append('<div class="alert alert-warning" style="padding:10px">'+lan.site.bt_bind_no+'</div>');
-                    //
-                    //                 var datas = [
-                    //                     { title: lan.site.bt_user, name: 'bt_username', value: rdata.email, width: '260px', placeholder: lan.site.phone_input },
-                    //                     { title: lan.site.password, type: 'password', name: 'bt_password', value: rdata.email, width: '260px' },
-                    //                     {
-                    //                         title: ' ', items: [
-                    //                             {
-                    //                                 text: lan.site.login, name: 'btn_ssl_login', type: 'button', callback: function (sdata) {
-                    //                                     bt.pub.login_btname(sdata.bt_username, sdata.bt_password, function (ret) {
-                    //                                         if (ret.status) site.reload(7);
-                    //                                     })
-                    //                                 }
-                    //                             },
-                    //                             {
-                    //                                 text: lan.site.bt_reg, name: 'bt_register', type: 'button', callback: function (sdata) {
-                    //                                     window.open('https://www.bt.cn/register.html')
-                    //                                 }
-                    //                             }
-                    //                         ]
-                    //                     }
-                    //                 ]
-                    //                 for (var i = 0; i < datas.length; i++) {
-                    //                     var _form_data = bt.render_form_line(datas[i]);
-                    //                     robj.append(_form_data.html);
-                    //                     bt.render_clicks(_form_data.clicks);
-                    //                 }
-                    //                 robj.append(bt.render_help([lan.site.bt_ssl_help_1, lan.site.bt_ssl_help_2, lan.site.bt_ssl_help_3, lan.site.bt_ssl_help_4]));
-                    //             }
-                    //         })
-                    //
-                    //     }
-                    // },
-                    {
-                        title: "Let's Encrypt",
-                        callback: function(robj) {
-                            acme.get_account_info(function(let_user) {});
-                            acme.id = web.id;
-                            if (rdata.status && rdata.type == 1) {
-                                var cert_info = '';
-                                if (rdata.cert_data['notBefore']) {
-                                    cert_info = '<div style="margin-bottom: 10px;padding: 10px;" class="alert alert-success">\
-                                        <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.deploy_success_cret + '</b>' + lan.site.try_renew_cret + '</span>\
-                                        <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;">\
-                                        <b>' + lan.site.cert_brand + '</b>' + rdata.cert_data.issuer + '</span>\
-                                        <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.auth_domain + '</b> ' + rdata.cert_data.dns.join('、') + '</span>\
-                                        <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.expire_time + '</b> ' + rdata.cert_data.notAfter + '</span></div>'
-                                }
-                                robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:190px">' + lan.site.ssl_crt + '</span></div></div>');
-                                var datas = [{
-                                        items: [
-                                            { name: 'key', width: '48%', height: '220px', type: 'textarea', value: rdata.key },
-                                            { name: 'csr', width: '48%', height: '220px', type: 'textarea', value: rdata.csr }
-                                        ]
-                                    },
-                                    {
-                                        items: [{
-                                                text: lan.site.ssl_close,
-                                                name: 'btn_ssl_close',
-                                                hide: !rdata.status,
-                                                type: 'button',
-                                                callback: function(sdata) {
-                                                    site.ssl.set_ssl_status('CloseSSLConf', web.name);
-                                                }
-                                            },
-                                            {
-                                                text: lan.site.ssl_renew,
-                                                name: 'btn_ssl_renew',
-                                                hide: !rdata.status,
-                                                type: 'button',
-                                                callback: function(sdata) {
-                                                    site.ssl.renew_ssl(web.name, rdata.auth_type, rdata.index);
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                                for (var i = 0; i < datas.length; i++) {
-                                    var _form_data = bt.render_form_line(datas[i]);
-                                    robj.append(_form_data.html);
-                                    bt.render_clicks(_form_data.clicks);
-                                }
-                                robj.find('textarea').css({'background-color':'#f6f6f6','resize':'none'}).attr('readonly', true);
-                                robj.find('[name=csr]').css('margin-right', '0');
-                                var helps = [
-                                    lan.site.ssl_tips1,
-                                    lan.site.ssl_tips2,
-                                    lan.site.ssl_tips3,
-                                    lan.site.ssl_tips4,
-                                    lan.site.ssl_tips5,
-                                ]
-                                robj.append(bt.render_help([lan.site.ssl_help_2, lan.site.ssl_help_3]));
-                                return;
-                            }
-                            bt.site.get_site_domains(web.id, function(ddata) {
-                                var helps = [
-                                    [
-                                        lan.site.bt_ssl_help_5,
-                                        lan.site.bt_ssl_help_8,
-                                        lan.site.bt_ssl_help_9,
-                                        lan.site.ssl_tips5
-                                    ],
-                                    [
-                                        lan.site.dns_check_tips1,
-                                        lan.site.dns_check_tips2,
-                                        lan.site.dns_check_tips3,
-                                        lan.site.dns_check_tips4
-                                    ]
-                                ]
-                                var datas = [{
-                                    title: lan.site.checking_mode,
-                                    items: [{
-                                            name: 'check_file',
-                                            text: lan.site.file_check,
-                                            type: 'radio',
-                                            callback: function(obj) {
-                                                $('.checks_line').remove()
-                                                $(obj).siblings().removeAttr('checked');
-
-                                                $('.help-info-text').html($(bt.render_help(helps[0])));
-                                                //var _form_data = bt.render_form_line({ title: ' ', class: 'checks_line label-input-group', items: [{ name: 'force', type: 'checkbox', value: true, text: '提前校验域名(提前发现问题,减少失败率)' }] });
-                                                //$(obj).parents('.line').append(_form_data.html);
-
-                                                $('#ymlist li input[type="checkbox"]').each(function() {
-                                                    if ($(this).val().indexOf('*') >= 0) {
-                                                        $(this).parents('li').hide();
-                                                    }
-                                                })
-                                            }
-                                        },
-                                        {
-                                            name: 'check_dns',
-                                            text: lan.site.check_dns,
-                                            type: 'radio',
-                                            callback: function(obj) {
-                                                $('.checks_line').remove();
-                                                $(obj).siblings().removeAttr('checked');
-                                                $('.help-info-text').html($(bt.render_help(helps[1])));
-                                                $('#ymlist li').show();
-
-                                                var arrs_list = [],
-                                                    arr_obj = {};
-                                                bt.site.get_dns_api(function(api) {
-                                                    site.dnsapi = {}
-
-                                                    for (var x = 0; x < api.length; x++) {
-                                                        site.dnsapi[api[x].name] = {}
-                                                        site.dnsapi[api[x].name].s_key = "None"
-                                                        site.dnsapi[api[x].name].s_token = "None"
-                                                        if (api[x].data) {
-                                                            site.dnsapi[api[x].name].s_key = api[x].data[0].value
-                                                            site.dnsapi[api[x].name].s_token = api[x].data[1].value
-                                                        }
-                                                        arrs_list.push({ title: api[x].title, value: api[x].name });
-                                                        arr_obj[api[x].name] = api[x];
-                                                    }
-
-                                                    var data = [{
-                                                        title: lan.site.choose_dns,
-                                                        class: 'checks_line',
-                                                        items: [{
-                                                            name: 'dns_select',
-                                                            width: 'auto',
-                                                            type: 'select',
-                                                            items: arrs_list,
-                                                            callback: function(obj) {
-                                                                var _val = obj.val();
-                                                                $('.set_dns_config').remove();
-                                                                var _val_obj = arr_obj[_val];
-                                                                var _form = {
-                                                                    title: '',
-                                                                    area: '530px',
-                                                                    list: [],
-                                                                    btns: [{ title: lan.site.turn_off, name: 'close' }]
-                                                                };
-
-                                                                var helps = [];
-                                                                if (_val_obj.data !== false) {
-                                                                    _form.title = lan.site.set + '【' + _val_obj.title + '】' + lan.site.interface;
-                                                                    if(_val_obj.help == "How to get API Token"){
-                                                                        _val_obj.help = '<a class="btlink"  target="_blank" href="https://forum.aapanel.com/d/3375-3375-set-the-clouldflare-apt-token-for-dns-editing-permissions">'+_val_obj.help+"</a>"
-                                                                    }
-                                                                    helps.push(_val_obj.help);
-                                                                    var is_hide = true;
-                                                                    for (var i = 0; i < _val_obj.data.length; i++) {
-                                                                        _form.list.push({ title: _val_obj.data[i].name, name: _val_obj.data[i].key, value: _val_obj.data[i].value })
-                                                                        if (!_val_obj.data[i].value) is_hide = false;
-                                                                    }
-                                                                    if(_val_obj.title == 'CloudFlare'){
-                                                                      _form.list.push({html : '<div class="line"><span class="tname">API-Limit</span><div class="info-r c4"><div class="index-item" style="padding-top:7px"><input class="btswitch btswitch-ios" name="API_Limit" id="API_Limit" type="checkbox" '+(_val_obj.API_Limit?"checked":null)+'><label class="btswitch-btn" for="API_Limit"></label></div></div></div>'});
-                                                                    }
-                                                                    _form.btns.push({
-                                                                        title: lan.site.save,
-                                                                        css: 'btn-success',
-                                                                        name: 'btn_submit_save',
-                                                                        callback: function(ldata, load) {
-                                                                            bt.site.set_dns_api({ pdata: JSON.stringify(ldata) }, function(ret) {
-                                                                                if (ret.status) {
-                                                                                    load.close();
-                                                                                    robj.find('input[type="radio"]:eq(0)').trigger('click')
-                                                                                    robj.find('input[type="radio"]:eq(1)').trigger('click')
-                                                                                }
-                                                                                bt.msg(ret);
-                                                                            })
-                                                                        }
-                                                                    })
-                                                                    if (is_hide) {
-                                                                        obj.after('<button class="btn btn-default btn-sm mr5 set_dns_config">' + lan.site.set + '</button>');
-                                                                        $('.set_dns_config').click(function() {
-                                                                            var _bs = bt.render_form(_form);
-                                                                            $('div[data-id="form' + _bs + '"]').append(bt.render_help(helps));
-                                                                        })
-                                                                    } else {
-                                                                        var _bs = bt.render_form(_form);
-                                                                        $('div[data-id="form' + _bs + '"]').append(bt.render_help(helps));
-                                                                    }
-                                                                }
-                                                            }
-                                                        }, ]
-                                                    }, {
-                                                        title: ' ',
-                                                        class: 'checks_line label-input-group',
-                                                        items: [
-                                                            { css: 'label-input-group ptb10', text: 'Automatically combine pan-domain names', name: 'app_root', type: 'checkbox' }
-                                                        ]
-                                                    }]
-                                                    for (var i = 0; i < data.length; i++) {
-                                                        var _form_data = bt.render_form_line(data[i]);
-                                                        $(obj).parents('.line').append(_form_data.html)
-                                                        bt.render_clicks(_form_data.clicks);
-                                                    }
-                                                })
-                                            }
-                                        },
-                                    ]
-                                }]
-
-                                for (var i = 0; i < datas.length; i++) {
-                                    var _form_data = bt.render_form_line(datas[i]);
-                                    robj.append(_form_data.html);
-                                    bt.render_clicks(_form_data.clicks);
-                                }
-                                var _ul = $('<ul id="ymlist" class="domain-ul-list"><div style="line-height: 25px;"><label style="margin-bottom: 0;height: 25px;line-height: 25px;"><input class="checkbox-text" type="checkbox" style="margin: 0 5px 0 0;vertical-align: middle;"><span style="font-weight: 500;cursor: pointer;">Select All</span></label></div></ul>');
-                                for (var i = 0; i < ddata.domains.length; i++) {
-                                    if (ddata.domains[i].binding === true) continue
-                                    _ul.append('<li style="cursor: pointer;"><input class="checkbox-text" type="checkbox" value="' + ddata.domains[i].name + '">' + ddata.domains[i].name + '</li>');
-                                }
-                                var _line = $("<div class='line mtb10'></div>");
-                                _line.append('<span class="tname text-center">' + lan.site.domain + '</span>');
-                                _line.append(_ul);
-                                robj.append(_line);
-                                robj.find('input[type="radio"]').parent().addClass('label-input-group ptb10');
-                                $("#ymlist li input").click(function(e) {
-                                    e.stopPropagation();
-                                    var a = true;
-                                    $("#ymlist li input").each(function () {
-                                        var o = $(this).prop("checked");
-                                        if (!o) {
-                                            a = false;
-                                            return false;
-                                        }
-                                    });
-                                    $("#ymlist div input").prop("checked",a);
-                                })
-                                $("#ymlist li").click(function() {
-
-                                    var o = $(this).find("input"),
-                                    a = true;
-                                    if (o.prop("checked")) {
-                                        o.prop("checked", false)
-                                    } else {
-                                        o.prop("checked", true);
-                                    }
-                                    $("#ymlist li input").each(function () {
-                                        var o = $(this).prop("checked");
-                                        if (!o) {
-                                            a = false;
-                                            return false;
-                                        }
-                                    });
-                                    $("#ymlist div input").prop("checked",a);
-                                })
-                                $("#ymlist div").click(function() {
-                                    var o = $("#ymlist div input"), p = $("#ymlist input");
-                                    if (o.prop("checked")) {
-                                        p.prop("checked", true);
-                                    } else {
-                                        p.prop("checked", false);
-                                    }
-                                })
-                                var _btn_data = bt.render_form_line({
-                                    title: ' ',
-                                    text: lan.site.btapply,
-                                    name: 'letsApply',
-                                    type: 'button',
-                                    callback: function(ldata) {
-                                        ldata['domains'] = [];
-                                        $('#ymlist li input[type="checkbox"]:checked').each(function() {
-                                            ldata['domains'].push($(this).val())
-                                        })
-
-                                        var auth_type = 'http'
-                                        var auth_to = web.id
-                                        var auto_wildcard = '0'
-                                        if (ldata.check_dns) {
-                                            auth_type = 'dns'
-                                            auth_to = 'dns'
-                                            auto_wildcard = ldata.app_root ? '1' : '0'
-                                            if (ldata.dns_select !== auth_to) {
-                                                if (!site.dnsapi[ldata.dns_select].s_key) {
-                                                    layer.msg("No key information is set for the specified dns interface");
-                                                    return;
-                                                }
-                                                auth_to = ldata.dns_select + "|" + site.dnsapi[ldata.dns_select].s_key + "|" + site.dnsapi[ldata.dns_select].s_token;
-                                            }
-                                        }
-                                        acme.apply_cert(ldata['domains'], auth_type, auth_to, auto_wildcard, function(res) {
-                                            site.ssl.ssl_result(res, auth_type, web.name);
-                                        })
-
-                                    }
-                                });
-                                robj.append(_btn_data.html);
-                                bt.render_clicks(_btn_data.clicks);
-
-                                robj.append(bt.render_help(helps[0]));
-                                robj.find('input[type="radio"]:eq(0)').trigger('click')
-                            })
-                        }
-                    },
-                    {
-                        title: lan.site.other_ssl,
-                        callback: function(robj) {
-                            var cert_info = '';
-                            if (rdata.cert_data['notBefore']) {
-                                cert_info = '<div style="margin-bottom: 10px;padding: 10px;" class="alert alert-success">\
-                                        <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;">' + (rdata.status ? lan.site.deploy_success_tips : lan.site.not_deploy_and_save) + '</span>\
-                                        <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.cert_brand + '</b>' + rdata.cert_data.issuer + '</span>\
-                                        <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.auth_domain + '</b> ' + rdata.cert_data.dns.join('、') + '</span>\
-                                        <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.expire_time + '</b> ' + rdata.cert_data.notAfter + '</span></div>'
-                            }
-                            robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:190px">' + lan.site.ssl_crt + '</span></div></div>');
-                            var datas = [{
-                                    items: [
-                                        { name: 'key', width: '48%', height: '220px', type: 'textarea', value: rdata.key },
-                                        { name: 'csr', width: '48%', height: '220px', type: 'textarea', value: rdata.csr }
-                                    ]
-                                },
-                                {
-                                    items: [{
-                                            text: lan.site.save,
-                                            name: 'btn_ssl_save',
-                                            type: 'button',
-                                            callback: function(sdata) {
-                                                bt.site.set_ssl(web.name, sdata, function(ret) {
-                                                    if (ret.status) site.reload(7);
-                                                    bt.msg(ret);
-                                                })
-                                            }
-                                        },
-                                        {
-                                            text: lan.site.ssl_close,
-                                            name: 'btn_ssl_close',
-                                            hide: !rdata.status,
-                                            type: 'button',
-                                            callback: function(sdata) {
-                                                site.ssl.set_ssl_status('CloseSSLConf', web.name);
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                            for (var i = 0; i < datas.length; i++) {
-                                var _form_data = bt.render_form_line(datas[i]);
-                                robj.append(_form_data.html);
-                                bt.render_clicks(_form_data.clicks);
-                            }
-                            var helps = [
-                                lan.site.bt_ssl_help_10,
-                                lan.public_backup.cret_err,
-                                lan.public_backup.pem_format,
-                                lan.site.ssl_tips5,
-                            ]
-                            robj.append(bt.render_help(helps));
-                            robj.find(".help-info-text").css('margin-top','0');
-                            robj.find('textarea').css('resize','none');
-                            robj.find('[name=csr]').css('margin-right', '0');
-                        }
-                    },
-                    {
-                        title: lan.site.turn_off,
-                        callback: function(robj) {
-                            if (rdata.type == -1) {
-                                robj.html("<div class='mtb15' style='line-height:30px'>" + lan.site.ssl_help_1 + "</div>");
-                                return;
-                            };
-                            var txt = '';
-                            switch (rdata.type) {
-                                case 1:
-                                    txt = "Let's Encrypt";
-                                    break;
-                                case 0:
-                                    txt = lan.site.other_ssl;
-                                    break;
-                                case 2:
-                                    txt = lan.site.bt_ssl;
-                                    break;
-                            }
-                            $(".tab-con").html("<div class='line mtb15'>" + lan.get('ssl_enable', [txt]) + "</div><div class='line mtb15'><button class='btn btn-success btn-sm' onclick=\"site.ssl.set_ssl_status('CloseSSLConf','" + web.name + "')\">" + lan.site.ssl_close + "</button></div>");
-
-                        }
-                    },
-                    {
-                        title: lan.site.ssl_dir,
-                        callback: function(robj) {
-                            robj.html("<div class='divtable' style='height:510px;'><table id='cer_list_table' class='table table-hover'></table></div>");
-                            bt.site.get_cer_list(function(rdata) {
-                                bt.render({
-                                    table: '#cer_list_table',
-                                    columns: [{
-                                            field: 'subject',
-                                            title: lan.site.domain,
-                                            templet: function(item) {
-                                                return item.dns.join('<br>')
-                                            }
-                                        },
-                                        { field: 'notAfter', width: '100px', title: lan.site.endtime },
-                                        { field: 'issuer', width: '150px', title: lan.site.brand },
-                                        {
-                                            field: 'opt',
-                                            width: '100px',
-                                            align: 'right',
-                                            title: lan.site.operate,
-                                            templet: function(item) {
-                                                var opt = '<a class="btlink" onclick="bt.site.set_cert_ssl(\'' + item.subject + '\',\'' + web.name + '\',function(rdata){if(rdata.status){site.ssl.reload(2);}})" href="javascript:;">' + lan.site.deploy + '</a> | ';
-                                                opt += '<a class="btlink" onclick="bt.site.remove_cert_ssl(\'' + item.subject + '\',function(rdata){if(rdata.status){site.ssl.reload(4);}})" href="javascript:;">' + lan.site.del + '</a>'
-                                                return opt;
-                                            }
-                                        }
-                                    ],
-                                    data: rdata
-                                })
-                            })
-                        }
-                    }
-                ]
-                bt.render_tab('ssl_tabs', _tabs);
-                $('#ssl_tabs').append('<div class="ss-text pull-right mr30" style="position: relative;top:-4px"><em>' + lan.site.force_https + '</em><div class="ssh-item"><input class="btswitch btswitch-ios" id="toHttps" type="checkbox"><label class="btswitch-btn" for="toHttps"></label></div></div>');
-                $("#toHttps").attr('checked', rdata.httpTohttps);
-                $('#toHttps').click(function(sdata) {
-                    var isHttps = $("#toHttps").attr('checked');
-                    if (isHttps) {
-                        layer.confirm('After closing HTTPS, you need to clear your browser cache to see the effect. Continue?', { icon: 3, title: "Turn off forced HTTPS\"" }, function() {
-                            bt.site.close_http_to_https(web.name, function(rdata) {
-                                if (rdata.status) {
-                                    setTimeout(function() {
-                                        site.reload(7);
-                                    }, 3000);
-                                }
-                            })
-                        });
-                    } else {
-                        bt.site.set_http_to_https(web.name, function(rdata) {
-                            if (!rdata.status) {
-                                setTimeout(function() {
-                                    site.reload(7);
-                                }, 3000);
-                            }
-
-                        })
-                    }
-                })
-                switch (rdata.type) {
-                    case 1:
-                        $('#ssl_tabs span:eq(0)').trigger('click');
-                        break;
-                    case 0:
-                        $('#ssl_tabs span:eq(0)').trigger('click');
-                        break;
-                    default:
-                        $('#ssl_tabs span:eq(0)').trigger('click');
-                        break;
-                }
-
-            })
         },
         set_php_version: function(web) {
             bt.site.get_site_phpversion(web.name, function(sdata) {
@@ -3978,7 +5325,7 @@ var site = {
                 tootls:[{ //按钮组
                     type:'group',
                     positon:['left','top'],
-                    list:[{title:'Add redirection',active:true, event:function(ev){ 
+                    list:[{title:'Add redirection',active:true, event:function(ev){
                         site.edit.templet_301(web.name,web.id,true);
                     }}]
                 },{ //批量操作
@@ -4170,7 +5517,7 @@ var site = {
             var limit_len = bt.get_cookie('serverType') == 'nginx'?'proxy_list_limit_4':'proxy_list_limit_3';
             $('#webedit-con').html('<div id="proxy_list" class="'+limit_len+'"></div>');
             String.prototype.myReplace = function (f, e) {//吧f替换成e
-                var reg = new RegExp(f, "g"); //创建正则RegExp对象   
+                var reg = new RegExp(f, "g"); //创建正则RegExp对象
                 return this.replace(reg, e);
             }
             bt_tools.table({
@@ -4278,7 +5625,7 @@ var site = {
                 tootls:[{ //按钮组
                     type:'group',
                     positon:['left','top'],
-                    list:[{title:'Add reverse proxy',active:true, event:function(ev){ 
+                    list:[{title:'Add reverse proxy',active:true, event:function(ev){
                         site.edit.templet_proxy(web.name, true)
                     }}]
                 },{ //批量操作
@@ -4497,7 +5844,7 @@ var site = {
                 { title: lan.site.site_menu_4, callback: site.edit.get_rewrite_list },
                 { title: lan.site.site_menu_5, callback: site.edit.set_default_index },
                 { title: lan.site.site_menu_6, callback: site.edit.set_config },
-                { title: lan.site.site_menu_7, callback: site.edit.set_ssl },
+                { title: lan.site.site_menu_7, callback: site.set_ssl },
                 { title: lan.site.php_ver, callback: site.edit.set_php_version },
                 { title: 'Composer', callback: site.edit.set_composer },
                 // { title: lan.site.site_menu_9, callback: site.edit.set_tomact },
@@ -4522,20 +5869,594 @@ var site = {
             })
             site.reload(0);
         }, 100)
+    },
+
+    set_ssl: function(web) {
+        // if(typeof web['ele'] === 'undefined') web['ele'] = $('.webedit-con')
+        $('#webedit-con').html("<div id='ssl_tabs'></div><div class=\"tab-con\" style=\"padding:10px 0;\"></div>");
+        bt.site.get_site_ssl(web.name, function(rdata) {
+            var _tabs = [
+                // {
+                //     title: lan.site.bt_ssl, on: true, callback: function (robj) {
+                //         bt.pub.get_user_info(function (udata) {
+                //             if (udata.status) {
+                //                 bt.site.get_domains(web.id, function (ddata) {
+                //                     var domains = [];
+                //                     for (var i = 0; i < ddata.length; i++) {
+                //                         if (ddata[i].name.indexOf('*') == -1) domains.push({ title: ddata[i].name, value: ddata[i].name });
+                //                     }
+                //                     var arrs1 = [
+                //                         { title: lan.site.domain, width: '200px', name: 'domains', type: 'select', items: domains },
+                //                         {
+                //                             title: ' ', name: 'btsslApply', text: lan.site.btapply, type: 'button', callback: function (sdata) {
+                //                                 if (sdata.domains.indexOf('www.') != -1) {
+                //                                     var rootDomain = sdata.domains.split(/www\./)[1];
+                //                                     if (!$.inArray(domains, rootDomain)) {
+                //                                         layer.msg(lan.site.not_resolve_domain.replace('{1}',sdata.domains).replace("{2}",rootDomain), { icon: 2, time: 5000 });
+                //                                         return;
+                //                                     }
+                //                                 }
+                //                                 bt.site.get_dv_ssl(sdata.domains, web.path, function (tdata) {
+                //                                     bt.msg(tdata);
+                //                                     if (tdata.status) site.ssl.verify_domain(tdata.data.partnerOrderId, web.name);
+                //                                 })
+                //                             }
+                //                         }
+                //                     ]
+                //                     for (var i = 0; i < arrs1.length; i++) {
+                //                         var _form_data = bt.render_form_line(arrs1[i]);
+                //                         robj.append(_form_data.html);
+                //                         bt.render_clicks(_form_data.clicks);
+                //                     }
+                //                     var loading = bt.load()
+                //                     bt.site.get_order_list(web.name, function (odata) {
+                //                         loading.close();
+                //                         robj.append("<div class=\"divtable mtb15 table-fixed-box\" style=\"max-height:200px;overflow-y: auto;\"><table id='bt_order_list' class='table table-hover'></table></div>");
+                //                         bt.render({
+                //                             table: '#bt_order_list',
+                //                             columns: [
+                //                                 { field: 'commonName', title: lan.site.domain },
+                //                                 {
+                //                                     field: 'endtime', width: '70px', title: lan.site.endtime, templet: function (item) {
+                //                                         return bt.format_data(item.endtime, 'yyyy/MM/dd');
+                //                                     }
+                //                                 },
+                //                                 { field: 'stateName', width: '100px', title: lan.site.status },
+                //                                 {
+                //                                     field: 'opt', align: 'right', width: '100px', title: lan.site.operate, templet: function (item) {
+                //                                         var opt = '<a class="btlink" onclick="site.ssl.onekey_ssl(\'' + item.partnerOrderId + '\',\'' + web.name + '\')" href="javascript:;">'+lan.site.deploy+'</a>'
+                //                                         if (item.stateCode == 'WF_DOMAIN_APPROVAL') {
+                //                                             opt = '<a class="btlink" onclick="site.ssl.verify_domain(\'' + item.partnerOrderId + '\',\'' + web.name + '\')" href="javascript:;">'+lan.site.domain_validate+'</a>';
+                //                                         }
+                //                                         else {
+                //                                             if (item.setup) opt = lan.site.deployed+' | <a class="btlink" href="javascript:site.ssl.set_ssl_status(\'CloseSSLConf\',\'' + web.name + '\')">'+lan.site.turn_off+'</a>'
+                //                                         }
+                //                                         return opt;
+                //                                     }
+                //                                 }
+                //                             ],
+                //                             data: odata.data
+                //                         })
+                //                         bt.fixed_table('bt_order_list');
+                //                         var helps = [
+                //                             lan.site.ssl_tips1,
+                //                             lan.site.ssl_tips2,
+                //                             lan.site.ssl_tips3,
+                //                             lan.site.ssl_tips4,
+                //                             lan.site.ssl_tips5,
+                //                             lan.site.ssl_tips6
+                //                         ]
+                //                         robj.append(bt.render_help(helps));
+                //                     })
+                //                 })
+                //             }
+                //             else {
+                //                 robj.append('<div class="alert alert-warning" style="padding:10px">'+lan.site.bt_bind_no+'</div>');
+                //
+                //                 var datas = [
+                //                     { title: lan.site.bt_user, name: 'bt_username', value: rdata.email, width: '260px', placeholder: lan.site.phone_input },
+                //                     { title: lan.site.password, type: 'password', name: 'bt_password', value: rdata.email, width: '260px' },
+                //                     {
+                //                         title: ' ', items: [
+                //                             {
+                //                                 text: lan.site.login, name: 'btn_ssl_login', type: 'button', callback: function (sdata) {
+                //                                     bt.pub.login_btname(sdata.bt_username, sdata.bt_password, function (ret) {
+                //                                         if (ret.status) site.reload(7);
+                //                                     })
+                //                                 }
+                //                             },
+                //                             {
+                //                                 text: lan.site.bt_reg, name: 'bt_register', type: 'button', callback: function (sdata) {
+                //                                     window.open('https://www.bt.cn/register.html')
+                //                                 }
+                //                             }
+                //                         ]
+                //                     }
+                //                 ]
+                //                 for (var i = 0; i < datas.length; i++) {
+                //                     var _form_data = bt.render_form_line(datas[i]);
+                //                     robj.append(_form_data.html);
+                //                     bt.render_clicks(_form_data.clicks);
+                //                 }
+                //                 robj.append(bt.render_help([lan.site.bt_ssl_help_1, lan.site.bt_ssl_help_2, lan.site.bt_ssl_help_3, lan.site.bt_ssl_help_4]));
+                //             }
+                //         })
+                //
+                //     }
+                // },
+                {
+                    title: "Let's Encrypt",
+                    callback: function(robj) {
+                        robj = $('#webedit-con .tab-con')
+                        console.log(robj,'obj');
+                        acme.get_account_info(function(let_user) {});
+                        acme.id = web.id;
+                        if (rdata.status && rdata.type == 1) {
+                            var cert_info = '';
+                            if (rdata.cert_data['notBefore']) {
+                                cert_info = '<div style="margin-bottom: 10px;padding: 10px;" class="alert alert-success">\
+                                    <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.deploy_success_cret + '</b>' + lan.site.try_renew_cret + '</span>\
+                                    <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;">\
+                                    <b>' + lan.site.cert_brand + '</b>' + rdata.cert_data.issuer + '</span>\
+                                    <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.auth_domain + '</b> ' + rdata.cert_data.dns.join('、') + '</span>\
+                                    <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.expire_time + '</b> ' + rdata.cert_data.notAfter + '</span></div>'
+                            }
+                            robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:190px">' + lan.site.ssl_crt + '</span></div></div>');
+                            var datas = [{
+                                    items: [
+                                        { name: 'key', width: '48%', height: '220px', type: 'textarea', value: rdata.key },
+                                        { name: 'csr', width: '48%', height: '220px', type: 'textarea', value: rdata.csr }
+                                    ]
+                                },
+                                {
+                                    items: [{
+                                            text: lan.site.ssl_close,
+                                            name: 'btn_ssl_close',
+                                            hide: !rdata.status,
+                                            type: 'button',
+                                            callback: function(sdata) {
+                                                site.ssl.set_ssl_status('CloseSSLConf', web.name);
+                                            }
+                                        },
+                                        {
+                                            text: lan.site.ssl_renew,
+                                            name: 'btn_ssl_renew',
+                                            hide: !rdata.status,
+                                            type: 'button',
+                                            callback: function(sdata) {
+                                                site.ssl.renew_ssl(web.name, rdata.auth_type, rdata.index);
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                            for (var i = 0; i < datas.length; i++) {
+                                var _form_data = bt.render_form_line(datas[i]);
+                                robj.append(_form_data.html);
+                                bt.render_clicks(_form_data.clicks);
+                            }
+                            robj.find('textarea').css({'background-color':'#f6f6f6','resize':'none'}).attr('readonly', true);
+                            robj.find('[name=csr]').css('margin-right', '0');
+                            var helps = [
+                                lan.site.ssl_tips1,
+                                lan.site.ssl_tips2,
+                                lan.site.ssl_tips3,
+                                lan.site.ssl_tips4,
+                                lan.site.ssl_tips5,
+                            ]
+                            robj.append(bt.render_help([lan.site.ssl_help_2, lan.site.ssl_help_3]));
+                            return;
+                        }
+                        bt.site.get_site_domains(web.id, function(ddata) {
+                            var helps = [
+                                [
+                                    lan.site.bt_ssl_help_5,
+                                    lan.site.bt_ssl_help_8,
+                                    lan.site.bt_ssl_help_9,
+                                    lan.site.ssl_tips5
+                                ],
+                                [
+                                    lan.site.dns_check_tips1,
+                                    lan.site.dns_check_tips2,
+                                    lan.site.dns_check_tips3,
+                                    lan.site.dns_check_tips4
+                                ]
+                            ]
+                            var datas = [{
+                                title: lan.site.checking_mode,
+                                items: [{
+                                        name: 'check_file',
+                                        text: lan.site.file_check,
+                                        type: 'radio',
+                                        callback: function(obj) {
+                                            $('.checks_line').remove()
+                                            $(obj).siblings().removeAttr('checked');
+
+                                            $('.help-info-text').html($(bt.render_help(helps[0])));
+                                            //var _form_data = bt.render_form_line({ title: ' ', class: 'checks_line label-input-group', items: [{ name: 'force', type: 'checkbox', value: true, text: '提前校验域名(提前发现问题,减少失败率)' }] });
+                                            //$(obj).parents('.line').append(_form_data.html);
+
+                                            $('#ymlist li input[type="checkbox"]').each(function() {
+                                                if ($(this).val().indexOf('*') >= 0) {
+                                                    $(this).parents('li').hide();
+                                                }
+                                            })
+                                        }
+                                    },
+                                    {
+                                        name: 'check_dns',
+                                        text: lan.site.check_dns,
+                                        type: 'radio',
+                                        callback: function(obj) {
+                                            $('.checks_line').remove();
+                                            $(obj).siblings().removeAttr('checked');
+                                            $('.help-info-text').html($(bt.render_help(helps[1])));
+                                            $('#ymlist li').show();
+
+                                            var arrs_list = [],
+                                                arr_obj = {};
+                                            bt.site.get_dns_api(function(api) {
+                                                site.dnsapi = {}
+
+                                                for (var x = 0; x < api.length; x++) {
+                                                    site.dnsapi[api[x].name] = {}
+                                                    site.dnsapi[api[x].name].s_key = "None"
+                                                    site.dnsapi[api[x].name].s_token = "None"
+                                                    if (api[x].data) {
+                                                        site.dnsapi[api[x].name].s_key = api[x].data[0].value
+                                                        site.dnsapi[api[x].name].s_token = api[x].data[1].value
+                                                    }
+                                                    arrs_list.push({ title: api[x].title, value: api[x].name });
+                                                    arr_obj[api[x].name] = api[x];
+                                                }
+
+                                                var data = [{
+                                                    title: lan.site.choose_dns,
+                                                    class: 'checks_line',
+                                                    items: [{
+                                                        name: 'dns_select',
+                                                        width: 'auto',
+                                                        type: 'select',
+                                                        items: arrs_list,
+                                                        callback: function(obj) {
+                                                            var _val = obj.val();
+                                                            $('.set_dns_config').remove();
+                                                            var _val_obj = arr_obj[_val];
+                                                            var _form = {
+                                                                title: '',
+                                                                area: '530px',
+                                                                list: [],
+                                                                btns: [{ title: lan.site.turn_off, name: 'close' }]
+                                                            };
+
+                                                            var helps = [];
+                                                            if (_val_obj.data !== false) {
+                                                                _form.title = lan.site.set + '【' + _val_obj.title + '】' + lan.site.interface;
+                                                                if(_val_obj.help == "How to get API Token"){
+                                                                    _val_obj.help = '<a class="btlink"  target="_blank" href="https://forum.aapanel.com/d/3375-3375-set-the-clouldflare-apt-token-for-dns-editing-permissions">'+_val_obj.help+"</a>"
+                                                                }
+                                                                helps.push(_val_obj.help);
+                                                                var is_hide = true;
+                                                                for (var i = 0; i < _val_obj.data.length; i++) {
+                                                                    _form.list.push({ title: _val_obj.data[i].name, name: _val_obj.data[i].key, value: _val_obj.data[i].value })
+                                                                    if (!_val_obj.data[i].value) is_hide = false;
+                                                                }
+                                                                if(_val_obj.title == 'CloudFlare'){
+                                                                  _form.list.push({html : '<div class="line"><span class="tname">API-Limit</span><div class="info-r c4"><div class="index-item" style="padding-top:7px"><input class="btswitch btswitch-ios" name="API_Limit" id="API_Limit" type="checkbox" '+(_val_obj.API_Limit?"checked":null)+'><label class="btswitch-btn" for="API_Limit"></label></div></div></div>'});
+                                                                }
+                                                                _form.btns.push({
+                                                                    title: lan.site.save,
+                                                                    css: 'btn-success',
+                                                                    name: 'btn_submit_save',
+                                                                    callback: function(ldata, load) {
+                                                                        bt.site.set_dns_api({ pdata: JSON.stringify(ldata) }, function(ret) {
+                                                                            if (ret.status) {
+                                                                                load.close();
+                                                                                robj.find('input[type="radio"]:eq(0)').trigger('click')
+                                                                                robj.find('input[type="radio"]:eq(1)').trigger('click')
+                                                                            }
+                                                                            bt.msg(ret);
+                                                                        })
+                                                                    }
+                                                                })
+                                                                if (is_hide) {
+                                                                    obj.after('<button class="btn btn-default btn-sm mr5 set_dns_config">' + lan.site.set + '</button>');
+                                                                    $('.set_dns_config').click(function() {
+                                                                        var _bs = bt.render_form(_form);
+                                                                        $('div[data-id="form' + _bs + '"]').append(bt.render_help(helps));
+                                                                    })
+                                                                } else {
+                                                                    var _bs = bt.render_form(_form);
+                                                                    $('div[data-id="form' + _bs + '"]').append(bt.render_help(helps));
+                                                                }
+                                                            }
+                                                        }
+                                                    }, ]
+                                                }, {
+                                                    title: ' ',
+                                                    class: 'checks_line label-input-group',
+                                                    items: [
+                                                        { css: 'label-input-group ptb10', text: 'Automatically combine pan-domain names', name: 'app_root', type: 'checkbox' }
+                                                    ]
+                                                }]
+                                                for (var i = 0; i < data.length; i++) {
+                                                    var _form_data = bt.render_form_line(data[i]);
+                                                    $(obj).parents('.line').append(_form_data.html)
+                                                    bt.render_clicks(_form_data.clicks);
+                                                }
+                                            })
+                                        }
+                                    },
+                                ]
+                            }]
+
+                            for (var i = 0; i < datas.length; i++) {
+                                var _form_data = bt.render_form_line(datas[i]);
+                                robj.append(_form_data.html);
+                                bt.render_clicks(_form_data.clicks);
+                            }
+                            var _ul = $('<ul id="ymlist" class="domain-ul-list"><div style="line-height: 25px;"><label style="margin-bottom: 0;height: 25px;line-height: 25px;"><input class="checkbox-text" type="checkbox" style="margin: 0 5px 0 0;vertical-align: middle;"><span style="font-weight: 500;cursor: pointer;">Select All</span></label></div></ul>');
+                            for (var i = 0; i < ddata.domains.length; i++) {
+                                if (ddata.domains[i].binding === true) continue
+                                _ul.append('<li style="cursor: pointer;"><input class="checkbox-text" type="checkbox" value="' + ddata.domains[i].name + '">' + ddata.domains[i].name + '</li>');
+                            }
+                            var _line = $("<div class='line mtb10'></div>");
+                            _line.append('<span class="tname text-center">' + lan.site.domain + '</span>');
+                            _line.append(_ul);
+                            robj.append(_line);
+                            robj.find('input[type="radio"]').parent().addClass('label-input-group ptb10');
+                            $("#ymlist li input").click(function(e) {
+                                e.stopPropagation();
+                                var a = true;
+                                $("#ymlist li input").each(function () {
+                                    var o = $(this).prop("checked");
+                                    if (!o) {
+                                        a = false;
+                                        return false;
+                                    }
+                                });
+                                $("#ymlist div input").prop("checked",a);
+                            })
+                            $("#ymlist li").click(function() {
+
+                                var o = $(this).find("input"),
+                                a = true;
+                                if (o.prop("checked")) {
+                                    o.prop("checked", false)
+                                } else {
+                                    o.prop("checked", true);
+                                }
+                                $("#ymlist li input").each(function () {
+                                    var o = $(this).prop("checked");
+                                    if (!o) {
+                                        a = false;
+                                        return false;
+                                    }
+                                });
+                                $("#ymlist div input").prop("checked",a);
+                            })
+                            $("#ymlist div").click(function() {
+                                var o = $("#ymlist div input"), p = $("#ymlist input");
+                                if (o.prop("checked")) {
+                                    p.prop("checked", true);
+                                } else {
+                                    p.prop("checked", false);
+                                }
+                            })
+                            var _btn_data = bt.render_form_line({
+                                title: ' ',
+                                text: lan.site.btapply,
+                                name: 'letsApply',
+                                type: 'button',
+                                callback: function(ldata) {
+                                    ldata['domains'] = [];
+                                    $('#ymlist li input[type="checkbox"]:checked').each(function() {
+                                        ldata['domains'].push($(this).val())
+                                    })
+
+                                    var auth_type = 'http'
+                                    var auth_to = web.id
+                                    var auto_wildcard = '0'
+                                    if (ldata.check_dns) {
+                                        auth_type = 'dns'
+                                        auth_to = 'dns'
+                                        auto_wildcard = ldata.app_root ? '1' : '0'
+                                        if (ldata.dns_select !== auth_to) {
+                                            if (!site.dnsapi[ldata.dns_select].s_key) {
+                                                layer.msg("No key information is set for the specified dns interface");
+                                                return;
+                                            }
+                                            auth_to = ldata.dns_select + "|" + site.dnsapi[ldata.dns_select].s_key + "|" + site.dnsapi[ldata.dns_select].s_token;
+                                        }
+                                    }
+                                    acme.apply_cert(ldata['domains'], auth_type, auth_to, auto_wildcard, function(res) {
+                                        site.ssl.ssl_result(res, auth_type, web.name);
+                                    })
+
+                                }
+                            });
+                            robj.append(_btn_data.html);
+                            bt.render_clicks(_btn_data.clicks);
+
+                            robj.append(bt.render_help(helps[0]));
+                            robj.find('input[type="radio"]:eq(0)').trigger('click')
+                        })
+                    }
+                },
+                {
+                    title: lan.site.other_ssl,
+                    callback: function(robj) {
+                        robj = $('#webedit-con .tab-con')
+                        var cert_info = '';
+                        if (rdata.cert_data['notBefore']) {
+                            cert_info = '<div style="margin-bottom: 10px;padding: 10px;" class="alert alert-success">\
+                                    <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;">' + (rdata.status ? lan.site.deploy_success_tips : lan.site.not_deploy_and_save) + '</span>\
+                                    <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.cert_brand + '</b>' + rdata.cert_data.issuer + '</span>\
+                                    <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.auth_domain + '</b> ' + rdata.cert_data.dns.join('、') + '</span>\
+                                    <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.expire_time + '</b> ' + rdata.cert_data.notAfter + '</span></div>'
+                        }
+                        robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:190px">' + lan.site.ssl_crt + '</span></div></div>');
+                        var datas = [{
+                                items: [
+                                    { name: 'key', width: '48%', height: '220px', type: 'textarea', value: rdata.key },
+                                    { name: 'csr', width: '48%', height: '220px', type: 'textarea', value: rdata.csr }
+                                ]
+                            },
+                            {
+                                items: [{
+                                        text: lan.site.save,
+                                        name: 'btn_ssl_save',
+                                        type: 'button',
+                                        callback: function(sdata) {
+                                            bt.site.set_ssl(web.name, sdata, function(ret) {
+                                                if (ret.status) site.reload(7);
+                                                bt.msg(ret);
+                                            })
+                                        }
+                                    },
+                                    {
+                                        text: lan.site.ssl_close,
+                                        name: 'btn_ssl_close',
+                                        hide: !rdata.status,
+                                        type: 'button',
+                                        callback: function(sdata) {
+                                            site.ssl.set_ssl_status('CloseSSLConf', web.name);
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                        for (var i = 0; i < datas.length; i++) {
+                            var _form_data = bt.render_form_line(datas[i]);
+                            robj.append(_form_data.html);
+                            bt.render_clicks(_form_data.clicks);
+                        }
+                        var helps = [
+                            lan.site.bt_ssl_help_10,
+                            lan.public_backup.cret_err,
+                            lan.public_backup.pem_format,
+                            lan.site.ssl_tips5,
+                        ]
+                        robj.append(bt.render_help(helps));
+                        robj.find(".help-info-text").css('margin-top','0');
+                        robj.find('textarea').css('resize','none');
+                        robj.find('[name=csr]').css('margin-right', '0');
+                    }
+                },
+                {
+                    title: lan.site.turn_off,
+                    callback: function(robj) {
+                        robj = $('#webedit-con .tab-con')
+                        if (rdata.type == -1) {
+                            robj.html("<div class='mtb15' style='line-height:30px'>" + lan.site.ssl_help_1 + "</div>");
+                            return;
+                        };
+                        var txt = '';
+                        switch (rdata.type) {
+                            case 1:
+                                txt = "Let's Encrypt";
+                                break;
+                            case 0:
+                                txt = lan.site.other_ssl;
+                                break;
+                            case 2:
+                                txt = lan.site.bt_ssl;
+                                break;
+                        }
+                        $("#webedit-con .tab-con").html("<div class='line mtb15'>" + lan.get('ssl_enable', [txt]) + "</div><div class='line mtb15'><button class='btn btn-success btn-sm' onclick=\"site.ssl.set_ssl_status('CloseSSLConf','" + web.name + "')\">" + lan.site.ssl_close + "</button></div>");
+
+                    }
+                },
+                {
+                    title: lan.site.ssl_dir,
+                    callback: function(robj) {
+                        robj = $('#webedit-con .tab-con')
+                        robj.html("<div class='divtable' style='height:510px;'><table id='cer_list_table' class='table table-hover'></table></div>");
+                        bt.site.get_cer_list(function(rdata) {
+                            bt.render({
+                                table: '#cer_list_table',
+                                columns: [{
+                                        field: 'subject',
+                                        title: lan.site.domain,
+                                        templet: function(item) {
+                                            return item.dns.join('<br>')
+                                        }
+                                    },
+                                    { field: 'notAfter', width: '100px', title: lan.site.endtime },
+                                    { field: 'issuer', width: '150px', title: lan.site.brand },
+                                    {
+                                        field: 'opt',
+                                        width: '100px',
+                                        align: 'right',
+                                        title: lan.site.operate,
+                                        templet: function(item) {
+                                            var opt = '<a class="btlink" onclick="bt.site.set_cert_ssl(\'' + item.subject + '\',\'' + web.name + '\',function(rdata){if(rdata.status){site.ssl.reload(2);}})" href="javascript:;">' + lan.site.deploy + '</a> | ';
+                                            opt += '<a class="btlink" onclick="bt.site.remove_cert_ssl(\'' + item.subject + '\',function(rdata){if(rdata.status){site.ssl.reload(4);}})" href="javascript:;">' + lan.site.del + '</a>'
+                                            return opt;
+                                        }
+                                    }
+                                ],
+                                data: rdata
+                            })
+                        })
+                    }
+                }
+            ]
+            bt.render_tab('ssl_tabs', _tabs);
+            $('#ssl_tabs').append('<div class="ss-text pull-right mr30" style="position: relative;top:-4px"><em>' + lan.site.force_https + '</em><div class="ssh-item"><input class="btswitch btswitch-ios" id="toHttps" type="checkbox"><label class="btswitch-btn" for="toHttps"></label></div></div>');
+            $("#toHttps").attr('checked', rdata.httpTohttps);
+            $('#toHttps').click(function(sdata) {
+                var isHttps = $("#toHttps").attr('checked');
+                if (isHttps) {
+                    layer.confirm('After closing HTTPS, you need to clear your browser cache to see the effect. Continue?', { icon: 3, title: "Turn off forced HTTPS\"" }, function() {
+                        bt.site.close_http_to_https(web.name, function(rdata) {
+                            if (rdata.status) {
+                                setTimeout(function() {
+                                    site.reload(7);
+                                }, 3000);
+                            }
+                        })
+                    });
+                } else {
+                    bt.site.set_http_to_https(web.name, function(rdata) {
+                        if (!rdata.status) {
+                            setTimeout(function() {
+                                site.reload(7);
+                            }, 3000);
+                        }
+
+                    })
+                }
+            })
+            // switch (rdata.type) {
+            //     case 1:
+            //         $('#ssl_tabs span:eq(0)').trigger('click');
+            //         break;
+            //     case 0:
+            //         $('#ssl_tabs span:eq(0)').trigger('click');
+            //         break;
+            //     default:
+            //         $('#ssl_tabs span:eq(0)').trigger('click');
+            //         break;
+            // }
+            $('#ssl_tabs span:eq(0)').trigger('click');
+        })
     }
 }
-site.get_types();
 
-$.prototype.serializeObject = function() {
-	var a, o, h, i, e;
-	a = this.serializeArray();
-	o = {};
-	h = o.hasOwnProperty;
-	for (i = 0; i < a.length; i++) {
-		e = a[i];
-		if (!h.call(o, e.name)) {
-			o[e.name] = e.value;
-		}
-	}
-	return o;
-};
+$('.site_table_view .tab-nav span').eq(bt.get_cookie('site_tab_status') == null?0:(bt.get_cookie('site_tab_status') == 'php'?0:1)).trigger('click')
+// site.get_types();
+
+// $.prototype.serializeObject = function() {
+// 	var a, o, h, i, e;
+// 	a = this.serializeArray();
+// 	o = {};
+// 	h = o.hasOwnProperty;
+// 	for (i = 0; i < a.length; i++) {
+// 		e = a[i];
+// 		if (!h.call(o, e.name)) {
+// 			o[e.name] = e.value;
+// 		}
+// 	}
+// 	return o;
+// };

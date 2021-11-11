@@ -55,6 +55,14 @@ class config:
         else:
             return public.returnMsg(True, 'EMAIL_NOT_EXISTS')
 
+    def del_tg_info(self,get):
+        import panel_telegram_bot
+        return panel_telegram_bot.panel_telegram_bot().del_tg_bot(get)
+
+    def set_tg_bot(self,get):
+        import panel_telegram_bot
+        return panel_telegram_bot.panel_telegram_bot().set_tg_bot(get)
+
     #添加接受邮件地址
     def add_mail_address(self, get):
         if not hasattr(get, 'email'): return public.returnMsg(False, 'INPUT_EMAIL')
@@ -139,6 +147,15 @@ class config:
         ret['user_mail'] = {"user_name": user_mail, "mail_list": self.__mail_list,"info":self.get_user_mail(get)}
         ret['dingding'] = {"dingding": dingding,"info":self.get_dingding(get)}
         return ret
+
+    def get_settings2(self, get=None):
+        import panel_telegram_bot
+        tg = panel_telegram_bot.panel_telegram_bot()
+        tg = tg.get_tg_conf()
+        conf = self.get_settings()
+        conf['telegram'] = tg
+        return conf
+
     # 设置钉钉报警
     def set_dingding(self, get):
         if not (hasattr(get, 'url') or hasattr(get, 'atall')):
@@ -179,7 +196,8 @@ class config:
         userInfo = public.M('users').where("id=?",(1,)).field('username,password').find()
         token = public.Md5(userInfo['username'] + '/' + userInfo['password'])
         public.writeFile(self._setup_path+'/data/login_token.pl',token)
-
+        skey = 'login_token'
+        cache.set(skey,token)
         sess_path = 'data/sess_files'
         if not os.path.exists(sess_path):
             os.makedirs(sess_path,384)
@@ -286,6 +304,9 @@ class config:
 
     def setPanel(self,get):
         if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK')
+        if 'limitip' in get:
+            if get.limitip.find('/') != -1:
+                return public.returnMsg(False,'The authorized IP format is incorrect, and the subnet segment writing is not supported')
         isReWeb = False
         sess_out_path = 'data/session_timeout.pl'
         if 'session_timeout' in get:
@@ -733,8 +754,6 @@ class config:
 
     #设置面板SSL
     def SetPanelSSL(self,get):
-        ssl_path = "{}/ssl".format(public.get_panel_path())
-        if not os.path.exists(ssl_path): os.makedirs(ssl_path,384)
         if hasattr(get,"email"):
             #rep_mail = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
             rep_mail = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
@@ -748,6 +767,7 @@ class config:
             sslConf = self._setup_path+'/data/ssl.pl'
             if os.path.exists(sslConf):
                 public.ExecShell('rm -f ' + sslConf)
+                g.rm_ssl = True
                 return public.returnMsg(True,'PANEL_SSL_CLOSE')
             else:
                 public.ExecShell('pip install cffi')

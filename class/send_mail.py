@@ -131,9 +131,9 @@ class send_mail:
                 msg['To']=formataddr(email)
             msg['Subject'] = title
             if int(self.__qq_mail_user['port']) == 465:
-                server = smtplib.SMTP_SSL(str(self.__qq_mail_user['hosts']), str(self.__qq_mail_user['port']))
+                server = smtplib.SMTP_SSL(str(self.__qq_mail_user['hosts']), str(self.__qq_mail_user['port']),timeout=5)
             else:
-                server = smtplib.SMTP(str(self.__qq_mail_user['hosts']), str(self.__qq_mail_user['port']))
+                server = smtplib.SMTP(str(self.__qq_mail_user['hosts']), str(self.__qq_mail_user['port']),timeout=5)
             server.login(self.__qq_mail_user['qq_mail'], self.__qq_mail_user['qq_stmp_pwd'])
             if type(email)==str:
                 server.sendmail(self.__qq_mail_user['qq_mail'], [email.strip()], msg.as_string())
@@ -141,6 +141,7 @@ class send_mail:
                 server.sendmail(self.__qq_mail_user['qq_mail'], email, msg.as_string())
             server.quit()
         except Exception:
+            print("发送错误,可能密码错误")
             ret = False
         return ret
 
@@ -206,18 +207,27 @@ class send_mail:
     # 钉钉机器人
     def dingding_send(self, content):
         if 'dingding_url' not in self.__dingding_info or 'isAtAll' not in self.__dingding_info or 'user' not in self.__dingding_info: return -1
-        data = {
-            "msgtype": "text",
-            "text": {
-                "content": content
-            },
-            "at": {
-                "atMobiles": [
-                    self.__dingding_info['user']
-                ],
-                "isAtAll": self.__dingding_info['isAtAll']
+        if 'weixin.qq.com' in self.__dingding_info['dingding_url']:
+            data = {
+                "msgtype": "markdown",
+                "markdown": {
+                        "content": content
+                }
             }
-        }
+        else:
+            data = {
+                "msgtype": "markdown",
+                "markdown": {
+                    "title": "Server notification",
+                    "text": content
+                },
+                "at": {
+                    "atMobiles": [
+                        self.__dingding_info['user']
+                    ],
+                    "isAtAll": self.__dingding_info['isAtAll']
+                }
+            }
         headers = {'Content-Type': 'application/json'}
         try:
             x = requests.post(url=self.__dingding_info['dingding_url'], data=json.dumps(data), headers=headers,

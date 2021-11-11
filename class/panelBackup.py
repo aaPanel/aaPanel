@@ -216,6 +216,15 @@ class backup:
                 if self._is_save_local:
                     _not_save_local = False
 
+                    pdata = {
+                        'type': '2',
+                        'name': spath,
+                        'pid': 0,
+                        'filename': dfile,
+                        'addtime': public.format_date(),
+                        'size': os.path.getsize(dfile)
+                    }
+                    public.M('backup').insert(pdata)
             if _not_save_local:
                 if os.path.exists(dfile):
                     os.remove(dfile)
@@ -252,7 +261,7 @@ class backup:
                 #尝试删除本地文件
                 if os.path.exists(backup['filename']):
                     try:
-                        os.remove(self._local_backdir + '/'+ data_type +'/' + backup['name'])
+                        os.remove(backup['filename'])
                     except:
                         pass
                     self.echo_info(public.getMsg("BACKUP_CLEAN",(backup['filename'],)))
@@ -401,6 +410,16 @@ class backup:
             else:
                 if self._is_save_local:
                     _not_save_local = False
+
+                    pdata = {
+                        'type': 0,
+                        'name': fname,
+                        'pid': pid,
+                        'filename': dfile,
+                        'addtime': public.format_date(),
+                        'size': os.path.getsize(dfile)
+                    }
+                    public.M('backup').insert(pdata)
 
             if _not_save_local:
                 if os.path.exists(dfile):
@@ -619,6 +638,16 @@ class backup:
                 if self._is_save_local:
                     _not_save_local = False
 
+                    pdata = {
+                        'type': '1',
+                        'name': fname,
+                        'pid': pid,
+                        'filename': dfile,
+                        'addtime': public.format_date(),
+                        'size': os.path.getsize(dfile)
+                    }
+                    public.M('backup').insert(pdata)
+
             if _not_save_local:
                 if os.path.exists(dfile):
                     os.remove(dfile)
@@ -659,7 +688,7 @@ class backup:
                          aaPanel reminds you that the cron you set failed to execute:
                          * Server IP: {}
                          * Time: {}
-                         * Task name: {}{}
+                         * Task name: {} {}
                          * The following is a list of {} that failed to backup:
                          <table style="color:red;">
                          {}
@@ -667,7 +696,16 @@ class backup:
                          Please deal with it as soon as possible to avoid unnecessary trouble due to the failure of the backup task.
                          - Notification by aaPanel""".format(
                         server_ip, now, task_name, remark, backup_type, msg)
-        return notice_content
+        tg_content = """📣‼*aaPanel reminds you that the cron failed to execute*‼
+        
+* Server IP*: {}
+* Time*: {}
+* Task name*: {} {}
+* The following is a list of {} that failed to backup*:
+{}
+--Notification by aaPanel""".format(
+                        server_ip, now, task_name, remark, backup_type, msg)
+        return {"mail":notice_content,"tg":tg_content}
 
     def generate_failture_notice(self, task_name, msg, remark):
         # from send_mail import send_mail
@@ -681,7 +719,7 @@ class backup:
                          aaPanel reminds you that the cron you set failed to execute:
                         * Server IP: {}
                         * Time: {}
-                        * Task name:{}{}
+                        * Task name: {}{}
                         * Error messages：
                         <span style="color:red;">
                         {}
@@ -689,7 +727,17 @@ class backup:
                         Please deal with it as soon as possible to avoid unnecessary trouble due to the failure of the backup task.
                         -- Notification by aaPanel""".format(
                         server_ip, now, task_name, remark, msg)
-        return notice_content
+        tg_content = """📣‼*aaPanel reminds you that the cron failed to execute*‼
+        
+* Server IP*: {}
+* Time*: {}
+* Task name*: {} {}
+* Error messages*：
+{}
+
+-- Notification by aaPanel""".format(
+                        server_ip, now, task_name, remark, msg)
+        return {'mail':notice_content,'tg':tg_content}
 
     def get_cron_info(self, cron_name):
         """ 通过计划任务名称查找计划任务配置参数 """
@@ -778,9 +826,10 @@ class backup:
             else:
                 self.echo_error(public.getMsg('NOTIFICATION_ERR'))
 
-    def send_notification(self, channel, title, msg = ""):
+    def send_notification(self, channel, title, msg = {}):
         try:
             from send_mail import send_mail
+            from config import config
             tondao = []
             if channel.find(",") >= 0:
                 tongdao = channel.split(",")
@@ -788,14 +837,16 @@ class backup:
                 tongdao = [channel]
 
             sm = send_mail()
+            c = config()
             send_res = []
             error_count = 0
             channel_names = {
                 "mail": "email",
-                # "dingidng": "钉钉"
+                "telegram": "telegram"
             }
             error_channel = []
-            settings = sm.get_settings()
+            # settings = sm.get_settings()
+            settings = c.get_settings2()
             for td in tongdao:
                 _res = False
                 if td == "mail":
@@ -804,14 +855,15 @@ class backup:
                     mail_list = settings['user_mail']['mail_list']
                     if len(mail_list) == 1:
                         mail_list = mail_list[0]
-                    _res = sm.qq_smtp_send(mail_list, title=title, body=msg.replace("\n", "<br/>"))
+                    _res = sm.qq_smtp_send(mail_list, title=title, body=msg['mail'].replace("\n", "<br/>"))
                     if not _res:
                         error_count += 1
                         error_channel.append(channel_names[td])
-                if td == "dingding":
-                    if len(settings["dingding"]['info']) == 0:
+                if td == "telegram":
+                    import panel_telegram_bot
+                    if not settings["telegram"]['setup']:
                         continue
-                    _res = sm.dingding_send(msg)
+                    _res = panel_telegram_bot.panel_telegram_bot().send_by_tg_bot(msg['tg'])
                     send_res.append(_res)
                     if not _res:
                         error_count += 1

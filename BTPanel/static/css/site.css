@@ -249,6 +249,10 @@ html {
 	padding-bottom: 70px
 }
 
+.mt5 {
+	margin-top: 5px
+}
+
 .mt10 {
 	margin-top: 10px
 }
@@ -3128,6 +3132,15 @@ html .menu .menu_exit:hover {
 	padding: 5px 10px;
     height: 40px;
 	box-sizing: border-box;
+}
+.databaseImportTable>tbody>tr>td {
+	vertical-align: middle;
+	padding: 5px 10px;
+    height: 40px;
+	box-sizing: border-box;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
 }
 .table>tbody{
 	border-bottom: 1px solid #ddd;
@@ -9360,7 +9373,6 @@ select[disabled]{
 }
 .redirect_check label span,
 .redirect_checkbox label span,
-.ssl_checkbox label span,
 .redirect_tourl label span{
     max-width: 55px;
     display: inline-block;
@@ -9391,6 +9403,9 @@ select[disabled]{
 }
 .redirect_tourl .radio_item input{
 	margin-right: 5px;
+}
+.site_ssl_check i.form-checkbox {
+    vertical-align: inherit;
 }
 
 
@@ -9498,7 +9513,8 @@ select[name="network-io"]{
     width: 100%;
     position: relative;
 }
-.bt_table .cust—checkbox{
+.bt_table .cust—checkbox,
+.bt-form .form-checkbox{
     display: inline-block;
     width: 16px;
     height: 16px;
@@ -9510,11 +9526,14 @@ select[name="network-io"]{
     border-radius: 2px;
 }
 .bt_table .cust—checkbox.active,
-.bt_table .cust—checkbox.selected{
+.bt_table .cust—checkbox.selected,
+.bt-form .form-checkbox.active,
+.bt-form .form-checkbox.selected{
     background-color: #20a53a;
     border-color: #20a53a;
 }
-.bt_table .cust—checkbox.active::after{
+.bt_table .cust—checkbox.active::after,
+.bt-form .form-checkbox.active::after{
     content: '';
     position: absolute;
     display: block;
@@ -9528,7 +9547,8 @@ select[name="network-io"]{
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
 }
-.bt_table .cust—checkbox.selected::after{
+.bt_table .cust—checkbox.selected::after,
+.bt-form .form-checkbox.selected::after{
     content: '';
     position: absolute;
     display: block;
@@ -9540,14 +9560,22 @@ select[name="network-io"]{
     width: 10px;
     background-color: #fff;
 }
-.bt_table .cust—checkbox+input{
+.bt_table .cust—checkbox+input,
+.bt-form .form-checkbox+input{
     display: none;
 }
-.bt_table .cursor-pointer{
+.bt_table .cursor-pointer,
+.bt-form .cursor-pointer{
     cursor: pointer;
 }
 .bt_table thead .sort-active span{
     font-weight: 500;
+}
+.vertical_middle{
+    vertical-align: middle;
+}
+.bt-form .form-checkbox-label span{
+    font-weight: 400;
 }
 /* .bt_table thead .sort-active .glyphicon{
     color: #20a53a;
@@ -9606,7 +9634,7 @@ select[name="network-io"]{
     outline: none;
     padding-left: 8px;
     vertical-align: top;
-    width:230px;
+    width:240px;
 }
 .tootls_group .bt_search .search_input:focus{
     border-color: #20a53a;
@@ -9735,15 +9763,19 @@ select[name="network-io"]{
     border-radius: 2px;
     height: 28px;
     line-height: 28px;
-    vertical-align: top;
     cursor: pointer;
     color:#666;
     position: relative;
 }
 
+.bt_table_select_group {
+    vertical-align: top;
+}
+
 .bt_select_updown{
-	height: 30px;
+    height: 30px;
 	line-height: 30px;
+    vertical-align: middle;
 }
 .bt_select_updown .bt_select_value{
 	height: 28px;
@@ -9751,6 +9783,9 @@ select[name="network-io"]{
 	padding:0 10px;
 	width: 100%;
 	position: relative;
+	overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 .bt_select_updown .bt_select_list{
 	display: none;
@@ -9776,6 +9811,9 @@ select[name="network-io"]{
 	line-height: 28px;
 	color: #333;
 	padding:0 10px;
+	overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 .bt_select_updown .bt_select_list .item.disabled{
 	opacity: .65;
@@ -9956,6 +9994,174 @@ select[name="network-io"]{
 	border-radius: 1px;
 }
 /*批量创建站点end*/
+
+
+/*站点删除安全验证*/
+
+.delete_site_layer #site_delete_form,.verify_site_layer_info .check_delete_site_main {
+	padding: 30px 25px !important;
+}
+
+.delete_site_layer .check_title{
+	font-size: 16px;
+	padding-left: 55px;
+	font-weight: bold;
+	color: #111;
+}
+.delete_site_layer .check_type_group{
+	padding:20px 0 20px 55px;
+}
+.delete_site_layer .layui-layer-content .layui-layer-ico{
+	left: 40px !important;
+	top: 27px !important;
+	position: absolute;
+	width: 30px;
+	height: 30px;
+}
+.delete_site_layer .check_type_group label{
+	height:24px;
+	line-height:24px;
+	cursor:pointer;
+	margin-right:35px;
+	margin-bottom:0;
+}
+.delete_site_layer .check_type_group label span{
+	display:inline-block;
+	font-weight:normal;
+	vertical-align:middle;
+	margin:0 0 0 5px;
+	position:relative;
+	top: 0;
+}
+.delete_site_layer .check_type_group input{
+	height:15px;
+	width:15px;
+	vertical-align:middle;
+	margin:0;
+	cursor:pointer;
+}
+.delete_site_layer .webDelete .vcode{
+	margin: 0 15px 5px 15px;
+	padding-left: 40px;
+}
+.delete_site_layer .webDelete .vcode input{
+	width: 80px !important;
+	border: 1px solid #ccc;
+	padding-left: 5px;
+	outline: none;
+}
+.delete_site_layer .webDelete .vcode input:focus,
+.delete_site_layer .webDelete .vcode input:active{
+	border-color:#20a53a !important;
+}
+
+/*END*//*验证站点删除二次信息*/
+
+
+.verify_site_layer_info .layui-layer-btn0{
+	background-color: #e00000 !important;
+}
+.verify_site_layer_info .layui-layer-btn0:hover{
+	background-color: #ff0000 !important;
+}
+.verify_site_layer_info.active .layui-layer-btn0{
+	background: #e000008c !important;
+	cursor: no-drop;
+}
+.check_delete_site_main {
+	height:100%;
+	padding: 10px 15px;
+}
+.check_delete_site_main .layui-layer-ico{
+	left: 30px !important;
+	top: 28px !important;
+	position: absolute;
+	width: 30px;
+	height: 30px;
+}
+.check_layer_title{
+	font-size:19px;
+	font-weight:bold;
+	padding-left: 50px;
+}
+.check_layer_content{
+	margin: 25px 0;
+	border: 1px solid #ececec;
+	overflow-y: auto;
+	height: 300px;
+}
+
+.check_layer_item{
+	padding: 12px;
+	max-height: 80px;
+	border-radius: 2px;
+	border-bottom: 1px solid #ececec;
+}
+.check_layer_item:last-child{
+	border-bottom:none;
+}
+.check_layer_item:first-child{
+	border-bottom: 1px solid #ececec;
+}
+.check_layer_item:hover{
+	background: #fcfcfc;
+}
+.check_layer_content .check_layer_site span,
+.check_layer_content .check_layer_database span{
+	display:inline-block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.check_layer_content span i.warning{
+	color: #EE3838;
+	font-weight: bold;
+}
+.check_layer_content span i{
+	font-style: inherit;
+}
+
+.check_layer_content .check_layer_site,
+.check_layer_content .check_layer_database{
+	display:inline-block;
+	font-size:13px;
+	height:25px;
+	line-height:25px;
+	vertical-align:middle;
+}
+
+.check_layer_content .check_layer_site span:nth-child(1),
+.check_layer_content .check_layer_database span:nth-child(1){
+	width:180px;
+}
+.check_layer_content .check_layer_site span:nth-child(2),
+.check_layer_content .check_layer_database span:nth-child(2){
+	width: 310px;
+	line-height:26px;
+	height:25px;
+}
+
+.check_layer_content .check_layer_database span:nth-child(2) .glyphicon{
+	line-height: 15px;
+}
+.check_layer_content .check_layer_site span:nth-child(3),
+.check_layer_content .check_layer_database span:nth-child(3){
+	width:150px;
+}
+
+.check_layer_error{
+	color:red;
+	font-size: 13px;
+	margin-bottom: 5px;
+}
+.check_layer_message{
+	font-size: 13px;
+	color: #333;
+	margin-top: 5px;
+}
+/*end*/
+
 
 .custom_layer .layui-layer-content .tab-body .tab-con{
 	max-height: 505px;
@@ -10369,3 +10575,368 @@ background:url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODIiIGhlaWdodD0iODIiIHh
 .pro_introduce_content .item span:nth-child(2){
   padding-left: 14px;
 }
+
+#bt_database_table .tootls_group .pull-left button:nth-child(4):after{
+	content: ' ';
+	position: relative;
+	left: -76px;
+	border-left: 1px solid #ececec;
+}
+/*node项目管理*/
+.node_project_dialog .mask_module{
+	position: absolute;
+	height: 100%;
+	background-color: rgba(0,0,0,0.5);
+	top: 0;
+	width: 610px;
+	left: 170px;
+	z-index: 99;
+}
+.node_project_dialog .mask_module .node_mask_module_text{
+	background: #fff;
+	/*color: #000;*/
+	width：280px;
+	text-align: center;
+	position: absolute;
+	padding: 15px 30px;
+	left: 36%;
+	top: 43%;
+	margin-left: -140px;
+	border: 1px solid #efefef;
+	display: inline-block;
+	border-radius：2px;
+}
+.node_project_dialog  .node_project_pid_datail h3.tname {
+	margin:10px 10px 10px 0;
+	color: #999;
+	font-size: 12px;
+	font-weight: bold;
+}
+#node_module_list .divtable,
+#project_domian_list .divtable{
+	border: 1px solid #ddd;
+	word-break: break-all;
+}
+#node_module_list .table,
+#project_domian_list .table{
+	border:none;
+}
+/*node项目管理 end*/
+
+
+/*文件内容查找替换*/
+	/*查找textarea样式*/
+.replace_content_view .replace_content_line:first-child{
+	position: relative;
+	height: 36px;
+}
+.replace_content_view .replace_content_line:first-child textarea{
+	width: 485px;
+	border: 1px solid #ccc;
+	border-right: none;
+	height: 36px;
+	position: absolute;
+	padding: 10px 0 0 10px;
+}
+.replace_content_view .replace_content_line:first-child i.history_search{
+	position: absolute;
+	right: 85px;
+	top: 1px;
+	cursor: pointer;
+	line-height: 34px;
+	padding: 0 4px;
+}
+.replace_content_view .replace_content_line:first-child i.history_search:hover{
+	background-color: #f0f0f1;
+	border-left: 1px solid #e2e2e2;
+}
+.replace_content_view .replace_content_line:first-child .normalBtnStyle{
+	position: absolute;
+	right: 0;
+	vertical-align: top;
+}
+	/*查找textarea样式 end*/
+	/*历史搜索列表*/
+.replace_content_view .history_search_list {
+	position: absolute;
+	top: 36px;
+	left: 10px;
+	background-color: #fff;
+	width: 485px;
+	font-size: 14px;
+	z-index: 10;
+	cursor: pointer;
+	border: 1px solid #ececec;
+	box-shadow: 4px 2px 5px 0 #ececec;
+}
+.replace_content_view .history_search_list li{
+	border-bottom: 1px solid #ececec;
+	padding: 5px 10px;
+}
+.replace_content_view .history_search_list li:hover{
+	background: #f0f0f0;
+	color: #555;
+}
+	/*历史搜索列表 end*/
+
+.replace_content_view .checkbox_config {
+	color: #666;
+	border-top: none;
+	height: 26px;
+	line-height: 26px;
+	display: inline-block;
+	cursor: pointer;
+}
+.replace_content_view .checkbox_config:nth-child(2n){
+	margin-left: 10px;
+}
+.replace_content_view .checkbox_config .laberText {
+	font-weight: normal;
+	font-size: 13px;
+}
+
+.replace_content_view .file_path_switch {
+	position: absolute;
+	right: 5px;
+	color: #666;
+	width: 65px;
+	line-height: 31px;
+	top: 2px;
+	cursor: pointer;
+}
+.replace_content_view .checkbox_config .file_find_radio,
+.replace_content_view .checkbox_config .file_find_checkbox,
+.replace_content_view .file_path_switch .file_find_checkbox {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border: 1px solid #ccc;
+	background-color: #fff;
+	vertical-align: sub;
+	position: relative;
+	border-radius: 2px;
+	margin-right: 4px;
+}
+.replace_content_view .checkbox_config .file_find_radio.active,
+.replace_content_view .checkbox_config .file_find_checkbox.active,
+.replace_content_view .file_path_switch .file_find_checkbox.active {
+	background-color: #20a53a;
+	border-color: #20a53a;
+}
+
+.replace_content_view .checkbox_config .file_find_radio.active::after,
+.replace_content_view .checkbox_config .file_find_checkbox.active::after,
+.replace_content_view .file_path_switch .file_find_checkbox.active::after {
+	content: '';
+	position: absolute;
+	display: block;
+	left: 50%;
+	top: 50%;
+	margin-left: -2.5px;
+	margin-top: -6px;
+	width: 5px;
+	height: 10px;
+	border: solid #fff;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}
+
+.replace_content_view .checkbox_config .file_find_radio{
+	border-radius: 20px;
+}
+.replace_content_view .replace_content_box .glyphicon-folder-open{
+	position: absolute;
+	right: 15px;
+	top: 145px;
+}
+.replace_content_view .file_path_switch .laberText {
+	position: absolute;
+	right: 5px;
+	top: 0;
+	font-weight: 400;
+}
+.replace_content_view .bt-input-text {
+	height: 36px;
+	line-height: 36px;
+	padding-left: 10px;
+}
+.replace_content_view .replace_content_line {
+	margin-bottom: 20px;
+ }
+.replace_content_view .replace_content_line .tname {
+	display: block;
+	float: left;
+	height: 36px;
+	line-height: 36px;
+	width: 50px;
+	font-size: 14px;
+	margin-right: 10px;
+}
+.replace_content_view .replace_content_line .info-r {
+	margin-left: 50px;
+	position: relative;
+}
+/*按钮样式*/
+.replace_content_view .normalBtnStyle {
+	min-width: 85px;
+	height: 36px;
+}
+.replace_content_view .normalBtnStyle:hover{
+	background-color:#20a53a;
+	color: #fff;
+}
+.replace_content_view .checkBtn {
+	border: none;
+	background-color: #20a53a;
+	color: #fff;
+}
+.replace_content_view .replaceBtn {
+	color: #20a53a;
+	background-color: #fff;
+	border: 1px solid #20a53a;
+	border-radius: 2px;
+}
+.replace_content_view .matchModel {
+	width: 570px;
+	height: 35px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+/*匹配容器*/
+.replace_content_view .match_container .header {
+	display: flex;
+	justify-content: space-between;
+	border-bottom: 1px solid #d4d4d4;
+	padding-bottom: 5px;
+}
+.replace_content_view .match_container .main {
+	overflow: auto;
+	height: 290px;
+	margin-top: 20px;
+}
+.replace_content_view .match_result_file_content{
+	overflow: auto;
+	word-wrap: break-word;
+	word-break: normal;
+	border-top: 1px solid #eee;
+	display: none;
+}
+.replace_content_view .match_result_file_content .match_result_detail{
+	font-size: 13px;
+	padding: 5px 5px 5px 15px;
+}
+.replace_content_view .match_result_file_content .match_result_detail:hover{
+	background-color: #eee;
+}
+.replace_content_view .match_result_file_content.matchShow{
+	display: block;
+}
+.replace_content_view .match_result_file_content .match_result_detail i{
+	color: red;
+	font-style: inherit;
+	background-color: aliceblue;
+}
+.replace_content_view .match_content_item {
+	border: 1px solid #eee;
+	border-radius: 3px;
+	margin-bottom: 15px;
+}
+.replace_content_view .match_content_title{
+	background-color: #fbfbfb;
+	padding: 5px 15px 5px 5px;
+}
+.replace_content_view .match_result_file_title{
+	cursor: pointer;
+	width: 490px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	display: inline-block;
+}
+.replace_content_view .match_content_title i.glyphicon{
+	margin-right: 10px;
+	margin-left:5px;
+}
+/*文件内容查找替换 end*/
+/*删除数据库弹窗样式*/
+.promptDelete p {
+    font-size: 14px;
+  }
+
+  .promptDelete .confirm-info-box {
+    position: relative;
+    margin-top: 15px;
+  }
+
+  .promptDelete input {
+    width: 100%;
+    height: 30px;
+    padding-left: 5px;
+  }
+
+  .promptDelete .placeholder {
+    line-height: 24px;
+    left: 7px;
+    top: 2px;
+  }
+
+/*删除数据库弹窗样式 end*/
+/*站点删除安全验证*/
+.delete_site_layer #site_delete_form,.verify_site_layer_info .check_delete_site_main {
+	padding: 30px 25px !important;
+}
+
+.delete_site_layer .check_title{
+	font-size: 16px;
+	padding-left: 55px;
+	font-weight: bold;
+	color: #111;
+}
+.delete_site_layer .check_type_group{
+	padding:20px 0 20px 55px;
+}
+.delete_site_layer .layui-layer-content .layui-layer-ico{
+	left: 40px !important;
+	top: 27px !important;
+	position: absolute;
+	width: 30px;
+	height: 30px;
+}
+.delete_site_layer .check_type_group label{
+	height:24px;
+	line-height:24px;
+	cursor:pointer;
+	margin-right:35px;
+	margin-bottom:0;
+}
+.delete_site_layer .check_type_group label span{
+	display:inline-block;
+	font-weight:normal;
+	vertical-align:middle;
+	margin:0 0 0 5px;
+	position:relative;
+	top: 0;
+}
+.delete_site_layer .check_type_group input{
+	height:15px;
+	width:15px;
+	vertical-align:middle;
+	margin:0;
+	cursor:pointer;
+}
+.delete_site_layer .webDelete .vcode{
+	margin: 0 15px 5px 15px;
+	padding-left: 40px;
+}
+.delete_site_layer .webDelete .vcode input{
+	width: 80px !important;
+	border: 1px solid #ccc;
+	padding-left: 5px;
+	outline: none;
+}
+.delete_site_layer .webDelete .vcode input:focus,
+.delete_site_layer .webDelete .vcode input:active{
+	border-color:#20a53a !important;
+}
+/*END*/

@@ -84,12 +84,22 @@ class setPanelLets:
         pssl = panelSSL.panelSSL()
         gcl = pssl.GetCertList(get)
         for i in gcl:
-            for v in i.values():
-                if get.domain == v:
+            if get.domain in i['dns'] or get.domain == i['subject']:
+                try:
+                    time_stamp = int(i['notAfter'])
+                except:
+                    time_array = time.strptime(i['notAfter'],"%Y-%m-%d")
+                    time_stamp = int(time.mktime(time_array))
+                now = time.time()
+                if time_stamp > int(now):
+                    return i
+            for d in i['dns']:
+                d = d.split('.')
+                if '*' in d and d[1:] == get.domain.split('.')[1:]:
                     try:
                         time_stamp = int(i['notAfter'])
                     except:
-                        time_array = time.strptime(i['notAfter'],"%Y-%m-%d")
+                        time_array = time.strptime(i['notAfter'], "%Y-%m-%d")
                         time_stamp = int(time.mktime(time_array))
                     now = time.time()
                     if time_stamp > int(now):

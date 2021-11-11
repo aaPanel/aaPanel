@@ -3815,7 +3815,7 @@ function messagebox(){
 
 function get_message_data(page,callback){
 	if(typeof page === "function") callback = page,page = 1;
-	var loadT = bt.load('正在获取消息列表，请稍后...');
+	var loadT = bt.load('Getting message list, please wait...');
 	bt.send("getData","data/getData",{
 		tojs:'reader_message_list',
 		table:'tasks',
@@ -4894,3 +4894,298 @@ acme = {
         });
     }
 }
+
+
+
+/** 消息通道 **/
+function MessageChannelSettings(){
+	MessageChannel.get_channel_settings(function (rdata){
+		layer.open({
+			type: 1,
+			area: "600px",
+			title: "Setting up notification",
+			skin:"layer-channel-auth",
+			closeBtn: 2,
+			shift: 5,
+			shadeClose: false,
+			content: '<div class="bt-form">\
+				<div class="bt-w-main">\
+					<div class="bt-w-menu" style="width: 110px;">\
+						<p class="bgw">Email</p>\
+						<p>Telegram</p>\
+					</div>\
+					<div class="bt-w-con pd15" style="margin-left: 110px">\
+						<div class="plugin_body">\
+							<div class="conter_box active" >\
+								<div class="bt-form">\
+									<div class="line">\
+										<button class="btn btn-success btn-sm" onclick="MessageChannel.add_receive_info()">Add recipient</button>\
+										<button class="btn btn-default btn-sm" onclick="MessageChannel.sender_info_edit()">Sender settings</button>\
+									</div>\
+									<div class="line">\
+										<div class="divtable">\
+											<table class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"><thead><tr><th>Email</th><th width="80px">Operating</th></tr></thead></table>\
+											<table class="table table-hover"><tbody id="receive_table"></tbody></table>\
+										</div>\
+									</div>\
+								</div>\
+							</div>\
+							<div class="conter_box" style="display:none">\
+                                <div class="line">\
+                                    <span class="tname">ID</span>\
+                                    <div class="info-r">\
+                                        <input name="telegram_id" class="bt-input-text mr5" type="text" placeholder="Telegram ID" style="width: 300px" value="'+rdata.telegram.my_id+'">\
+                                    </div>\
+                                </div>\
+                                <div class="line">\
+                                    <span class="tname">TOKEN</span>\
+                                    <div class="info-r">\
+                                        <input name="telegram_token" class="bt-input-text mr5" type="text" placeholder="Telegram TOKEN" style="width: 300px" value="'+rdata.telegram.bot_token+'">\
+                                    </div>\
+                                </div>\
+                                <div class="line">\
+                                    <span class="tname"></span>\
+                                    <button class="btn btn-success btn-sm addTelegram" style="margin-right: 10px;">Save</button>\
+                                    '+(rdata.telegram.setup?'<button class="btn btn-default btn-sm delTelegram">Clear set</button>':'')+'\
+                                </div>\
+                                <ul class="help-info-text c7" style="margin-top: 315px;">\
+                                    <li>ID: Your telegram user ID</li>\
+                                    <li>Token: Your telegram bot token </li>\
+                                    <li>e.g: [ 12345677:AAAAAAAAA_a0VUo2jjr__CCCCDDD ] <a class="btlink" href="https://forum.aapanel.com/d/5115-how-to-add-telegram-to-panel-notifications" target="_blank" rel="noopener"> Help</a></li>\
+                                </ul>\
+							</div>\
+						</div>\
+					</div>\
+				</div>\
+				</div>',
+			success:function(){
+                $('.addTelegram').click(function(){
+                    var _id = $('[name=telegram_id]').val(),_token = $('[name=telegram_token]').val();
+                    if(_id == '' || _token == '') return layer.msg('input box cannot be empty!');
+                    var loadT = layer.msg('The notification is being generated, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+                    $.post('/config?action=set_tg_bot',{bot_token:_token,my_id:_id},function(rdata){
+                        layer.close(loadT);
+                        layer.msg(rdata.msg,{icon:rdata.status?1:2})
+                    })
+                })
+                $('.delTelegram').click(function(){
+                    var loadTs = layer.msg('Deleting notification, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+                    $.post('/config?action=del_tg_info',function(rdata){
+                        layer.close(loadTs);
+                        layer.msg(rdata.msg,{icon:rdata.status?1:2})
+                        if(rdata.status){
+                            $('[name=telegram_id]').val('');
+                            $('[name=telegram_token]').val('')
+                            $('.delTelegram').hide();
+                        }
+                    })
+                })
+			}
+		})
+		$(".bt-w-menu p").click(function () {
+			var index = $(this).index();
+			$(this).addClass('bgw').siblings().removeClass('bgw');
+			$('.conter_box').eq(index).show().siblings().hide();
+		});
+		MessageChannel.get_receive_list();
+	})
+}
+var MessageChannel = {
+	//获取推送设置
+	get_channel_settings:function(callback){
+		var loadT = layer.msg('Getting profile, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+		$.post('/config?action=get_settings2',function(rdata){
+			layer.close(loadT);
+			if (callback) callback(rdata);
+		})
+	},
+	// 获取收件者列表
+	get_receive_list:function(){
+		$.post('/config?action=get_settings2',function(rdata){
+			var _html = '',_list = rdata.user_mail.mail_list;
+			if(_list.length > 0){
+				for(var i= 0; i<_list.length;i++){
+					_html += '<tr>\
+					<td>'+ _list[i] +'</td>\
+					<td width="80px" style="text-align:right;"><a onclick="MessageChannel.del_email(\''+ _list[i] + '\')" href="javascript:;" style="color:#20a53a">Del</a></td>\
+					</tr>'
+				}
+			}else{
+				_html = '<tr><td colspan="2">No Data</td></tr>'
+			}
+			$('#receive_table').html(_html);
+		})
+	},
+	// 添加收件者
+	add_receive_info:function (){
+		var _this = this
+		layer.open({
+			type: 1,
+			area: "400px",
+			title: "Add recipient email",
+			closeBtn: 2,
+			shift: 5,
+			shadeClose: false,
+			content: '<div class="bt-form pd20 pb70">\
+	        <div class="line">\
+	            <span class="tname">Recipient mailbox</span>\
+	            <div class="info-r">\
+	                <input name="creater_email_value" class="bt-input-text mr5" type="text" style="width: 240px" value="">\
+	            </div>\
+	        </div>\
+	        <div class="bt-form-submit-btn">\
+	            <button type="button" class="btn btn-danger btn-sm smtp_closeBtn">Close</button>\
+	            <button class="btn btn-success btn-sm CreaterReceive">Create</button>\
+	        </div>\
+	        </div>',
+			success:function(layers,index){
+				$(".CreaterReceive").click(function(){
+					var _receive = $('input[name=creater_email_value]').val();
+					if(_receive != ''){
+						var loadT = layer.msg('Please wait while creating recipient list...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+						layer.close(index)
+						$.post('/config?action=add_mail_address',{email:_receive},function(rdata){
+							layer.close(loadT);
+							// 刷新收件列表
+							_this.get_receive_list();
+							layer.msg(rdata.msg,{icon:rdata.status?1:2});
+						})
+					}else{
+						layer.msg('Recipient mailbox cannot be empty！！',{icon:2});
+					}
+				})
+
+				$(".smtp_closeBtn").click(function(){
+					layer.close(index)
+				})
+			}
+		})
+	},
+	// 删除收件者
+	del_email:function(mail){
+		var loadT = layer.msg('Deleting['+mail+'],please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] }),_this = this;
+		$.post('/config?action=del_mail_list',{email:mail},function(rdata){
+			layer.close(loadT);
+			layer.msg(rdata.msg,{icon:rdata.status?1:2})
+			_this.get_receive_list()
+		})
+	},
+	// 设置发送者邮箱信息
+	sender_info_edit:function (){
+		var loadT = layer.msg('Getting profile, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+		$.post('/config?action=get_settings2',function(rdata){
+			layer.close(loadT);
+			var qq_mail = rdata.user_mail.info.msg.qq_mail ? rdata.user_mail.info.msg.qq_mail:'',
+				qq_stmp_pwd = rdata.user_mail.info.msg.qq_stmp_pwd? rdata.user_mail.info.msg.qq_stmp_pwd:'',
+				hosts = rdata.user_mail.info.msg.hosts? rdata.user_mail.info.msg.hosts:'',
+				port = rdata.user_mail.info.msg.port? rdata.user_mail.info.msg.port:'',
+				is_custom = $.inArray(port,['25','465','587','']) != -1    //是否自定义
+			layer.open({
+				type: 1,
+				area: "460px",
+				title: "Set sender email information",
+				closeBtn: 2,
+				shift: 5,
+				shadeClose: false,
+				content: '<div class="bt-form pd20 pb70">\
+        	<div class="line">\
+                <span class="tname">Sender email</span>\
+                <div class="info-r">\
+                    <input name="channel_email_value" class="bt-input-text mr5" type="text" style="width: 300px" value="'+qq_mail+'">\
+                </div>\
+            </div>\
+            <div class="line">\
+                <span class="tname">SMTP password</span>\
+                <div class="info-r">\
+                    <input name="channel_email_password" class="bt-input-text mr5" type="password" style="width: 300px" value="'+qq_stmp_pwd+'">\
+                </div>\
+            </div>\
+            <div class="line">\
+                <span class="tname">SMTP server</span>\
+                <div class="info-r">\
+                    <input name="channel_email_server" class="bt-input-text mr5" type="text" style="width: 300px" value="'+hosts+'">\
+                </div>\
+            </div>\
+            <div class="line">\
+                <span class="tname">SMTP port</span>\
+                <div class="info-r">\
+                    <select class="bt-input-text mr5" id="port_select" style="width:'+(is_custom?'300px':'100px')+'"></select>\
+                    <input name="channel_email_port" class="bt-input-text mr5" type="Number" style="display:'+(is_custom? 'none':'inline-block')+'; width: 190px" value="'+port+'">\
+                </div>\
+            </div>\
+            <ul class="help-info-text c7">\
+            	<li>465 port is recommended, the protocol is SSL/TLS</li>\
+            	<li>Port 25 is SMTP protocol, port 587 is STARTTLS protocol</li>\
+            </ul>\
+            <div class="bt-form-submit-btn">\
+				'+(qq_mail != ''?'<button type="button" class="btn btn-default btn-sm pull-left set_empty">Clear set</button>':'')+'\
+	            <button type="button" class="btn btn-danger btn-sm smtp_closeBtn">Close</button>\
+	            <button class="btn btn-success btn-sm SetChannelEmail">Save</button></div>\
+        	</div>',
+				success:function(layers,index){
+					var _option = '';
+					if(is_custom){
+						if(port == '465' || port == ''){
+							_option = '<option value="465" selected="selected">465</option><option value="25">25</option><option value="587">587</option><option value="other">Customize</option>'
+						}else if(port == '25'){
+							_option = '<option value="465">465</option><option value="25" selected="selected">25</option><option value="587">587</option><option value="other">Customize</option>'
+						}else{
+							_option = '<option value="465">465</option><option value="25">25</option><option value="587" selected="selected">587</option><option value="other">Customize</option>'
+						}
+					}else{
+						_option = '<option value="465">465</option><option value="25">25</option><option value="587" >587</option><option value="other" selected="selected">Customize</option>'
+					}
+					$("#port_select").html(_option)
+					$("#port_select").change(function(e){
+						if(e.target.value == 'other'){
+							$("#port_select").css("width","100px");
+							$('input[name=channel_email_port]').css("display","inline-block");
+						}else{
+							$("#port_select").css("width","300px");
+							$('input[name=channel_email_port]').css("display","none");
+						}
+					})
+					$(".SetChannelEmail").click(function(){
+						var _email = $('input[name=channel_email_value]').val();
+						var _passW = $('input[name=channel_email_password]').val();
+						var _server = $('input[name=channel_email_server]').val(),
+							_port = ''
+						if($('#port_select').val() == 'other'){
+							_port = $('input[name=channel_email_port]').val();
+						}else{
+							_port = $('#port_select').val()
+						}
+						if(!_email) return layer.msg('Email address cannot be empty!',{icon:2});
+						if(!_passW) return layer.msg('STMP password cannot be empty!',{icon:2});
+						if(!_server)return layer.msg('STMP server address cannot be empty!',{icon:2})
+						if(!_port) return layer.msg('STMP server port cannot be empty!',{icon:2})
+
+						var loadT = layer.msg('The notification is being generated, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+						$.post('/config?action=user_mail_send',{email:_email,stmp_pwd:_passW,hosts:_server,port:_port},function(rdata){
+							layer.close(loadT);
+							if(rdata.status){
+								layer.close(index)
+								MessageChannel.get_channel_settings();
+							}
+							layer.msg(rdata.msg,{icon:rdata.status?1:2})
+						})
+					})
+					$(".smtp_closeBtn").click(function(){
+						layer.close(index)
+					})
+					$('.set_empty').click(function(){
+						var loadTs = layer.msg('notification, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+						$.post('/config?action=set_empty',{type:'mail'},function(rdata){
+							layer.close(loadTs);
+							layer.msg(rdata.msg,{icon:rdata.status?1:2})
+							if(rdata.status){
+								layer.close(index)
+							}
+						})
+					})
+				}
+			})
+		})
+	}
+}
+/** 消息通道 end**/

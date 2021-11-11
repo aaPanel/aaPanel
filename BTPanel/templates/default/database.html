@@ -1,15 +1,7 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<style>
-    #DataBody .dataBase,#DataBody .webNote{
-        white-space: nowrap;
-        display: inline-block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: auto;
-    }
-</style>
+
 <div class="main-content pb55">
     <div class="container-fluid">
         <div class="pos-box bgw mtb15">
@@ -17,40 +9,22 @@
                 <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
             </div>
             <div class="search pull-right">
-                <form target="hid" onsubmit='database.get_list(1,$("#SearchValue").val())'>
+                <form target="hid" onsubmit='return false;'>
                     <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="{{data['lan']['SEARCH']}}" />
-                    <button type="button" class="ser-sub pull-left" onclick='database.get_list(1,$("#SearchValue").val())'></button>
+                    <button type="button" class="ser-sub pull-left" onclick='database.database_table_view($("#SearchValue").val())'></button>
                 </form>
                 <iframe name='hid' id="hid" style="display:none"></iframe>
             </div>
         </div>
         <div class="safe bgw mtb15 pd15">
             <div class="info-title-tips">
-                <p><span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px;"></span> After adding the database, be sure to <a class="btlink" href="/crontab">[Cron]</a> page adds scheduled backup tasks to ensure your data security.</p>
+                <p>
+                    <span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px;"></span> After adding the database, be sure to <a class="btlink" href="/crontab">[Cron]</a> page adds scheduled backup tasks to ensure your data security.
+                </p>
             </div>
-            <button onclick="database.add_database()" title="{{data['lan']['BTNT1']}}" class="btn btn-success btn-sm" type="button" style="margin-right: 5px;">{{data['lan']['BTN1']}}</button>
-            <button onclick="bt.database.set_root()" title="{{data['lan']['BTNT2']}}" class="btn btn-default btn-sm" type="button" style="margin-right: 5px;">{{data['lan']['BTN2']}}</button>
-            <button onclick="bt.database.open_phpmyadmin('','root','{{data['mysql_root']}}')" title="{{data['lan']['BTNT3']}}" class="btn btn-default btn-sm" type="button" style="margin-right: 5px;">{{data['lan']['BTN3']}}</button>
-            <!--<a href="/adminer/index.php" target="_blank" title="Lightweight database management tool that supports remote database management" class="btn btn-default btn-sm" type="button" style="margin-right: 5px;">Adminer</a>-->
-            <span style="float:right">
-                <button batch="true" style="float: right;display: none;margin-left:10px;" onclick="database.batch_database('del');" title="{{data['lan']['BTNT4']}}" class="btn btn-default btn-sm">{{data['lan']['BTN4']}}</button>
-                <button onclick="bt.recycle_bin.open_recycle_bin(6)" id="dataRecycle" title="{{data['lan']['BTNT4']}}" class="btn btn-default btn-sm" style="margin-left: 5px;"><span class="glyphicon glyphicon-trash" style="margin-right: 5px;"></span>{{data['lan']['RECYCLE_BIN']}}</button>
-            </span>
-            <div class="divtable mtb10">
-                <div class="tablescroll">
-                    <table id="DataBody" class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 0 none;">      
-                    </table>                    
-                </div>
-                 <div id='databasePage' class="dataTables_paginate paging_bootstrap page">                   
-                </div>
-                <div class="table_toolbar">
-                    <span class="sync btn btn-default btn-sm" style="margin-right:5px" onclick="database.sync_to_database(1)" title="{{data['lan']['TP1']}}">{{data['lan']['SP1']}}</span>
-                    <span class="sync btn btn-default btn-sm" style="margin-right:5px" onclick="database.sync_to_database(0)" title="{{data['lan']['TP2']}}">{{data['lan']['SP2']}}</span>
-                    <span class="sync btn btn-default btn-sm" onclick="database.sync_database()" title="{{data['lan']['TP3']}}">{{data['lan']['SP3']}}</span>  
-                </div>
-            </div>
+            <div id="bt_database_table"></div>
         </div>
-        <form id="toPHPMyAdmin" public-data="{{session['phpmyadminDir']}}/index.php" action="/phpmyadmin/index.php" method="post" style="display: none;" target="_blank">
+        <form id="toPHPMyAdmin" public-data="{{session['phpmyadminDir']}}/index.php" action="{{session['phpmyadminDir']}}/index.php" method="post" style="display: none;" target="_blank">
             <input type="text" name="pma_username" id="pma_username" value="" />
             <input type="password" name="pma_password" id="pma_password" value="" />
             <input type="text" name="server" value="1" />
@@ -59,7 +33,6 @@
         </form>
     </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
@@ -72,7 +45,7 @@
 		layer.msg('{{data["lan"]["JS1"]}}<a href="/soft#i" style="color:#20a53a;float: right;">{{data["lan"]["JS2"]}}</a>',{icon:7,shade: [0.3, '#000'],time:0});
         $(".layui-layer-shade").css("margin-left", "180px");
     {% else %}
-    	database.get_list();
+    // 	database.get_list();
     {% endif %}		
 	
 </script>

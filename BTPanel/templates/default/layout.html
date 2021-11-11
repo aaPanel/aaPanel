@@ -63,6 +63,40 @@
             color: #fff;
         }
     </style>
+	<script type="text/javascript">
+      var recycle_bin_db_open = !!{{g['recycle_bin_db_open']}},recycle_bin_open = !!{{g['recycle_bin_open']}}
+      var ie_version = (function() {
+            var userAgent = navigator.userAgent,
+            	isLessIE11 = userAgent.indexOf('compatible') > -1 && userAgent.indexOf('MSIE') > -1,
+				isEdge = userAgent.indexOf('Edge') > -1 && !isLessIE11,
+				isIE11 = userAgent.indexOf('Trident') > -1 && userAgent.indexOf('rv:11.0') > -1;
+            if (isLessIE11) {
+                var IEReg = new RegExp('MSIE (\\d+\\.\\d+);');
+                IEReg.test(userAgent);
+                var IEVersionNum = parseFloat(RegExp['$1']);
+                if (IEVersionNum === 7) {// IE7
+                    return 7
+                } else if (IEVersionNum === 8) {// IE8
+                    return 8
+                } else if (IEVersionNum === 9) {// IE9
+                    return 9
+                } else if (IEVersionNum === 10) { // IE10
+                    return 10
+                } else {
+                    return 6
+                }
+            } else if (isEdge) { // edge
+                return 'edge'
+            } else if (isIE11) {// IE11
+                return 11
+            } else {// 不是ie浏览器
+                return -1
+            }
+        }());
+      if(ie_version != -1 && ie_version < 10 && ie_version != 'edge'){
+        window.location.href = '/tips';
+      }
+	</script>
 </head>
 
 <body>
@@ -97,64 +131,23 @@
             </div>
         </div>
         <script src="{{g.cdn_url}}/js/jquery-1.10.2.min.js"></script>
-	<script src="{{g.cdn_url}}/layer/layer.js?version={{g['version']}}"></script>
-	<script src="{{g.cdn_url}}/language/{{session['lan']}}/lan.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
-    <script src="{{g.cdn_url}}/js/clipboard.min.js" defer></script>
-    <script src="{{g.cdn_url}}/laydate/laydate.js" defer></script>
-	<script src="{{g.cdn_url}}/js/jquery.qrcode.min.js" defer></script>
-	<!-- 以下文件未来将被剔除 -->
-	<script src="{{g.cdn_url}}/js/bootstrap.min.js"></script>
-	<script src="{{g.cdn_url}}/js/public.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
-	<script src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
-	<script src="{{g.cdn_url}}/codemirror/lib/codemirror.js" defer></script>
-	<!-- End -->
-	<script type="text/javascript" src="{{g.cdn_url}}/js/tools.min.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+    	<script src="{{g.cdn_url}}/layer/layer.js?version={{g['version']}}"></script>
+    	<script src="{{g.cdn_url}}/language/{{session['lan']}}/lan.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+        <script src="{{g.cdn_url}}/js/clipboard.min.js" defer></script>
+        <script src="{{g.cdn_url}}/laydate/laydate.js" defer></script>
+    	<script src="{{g.cdn_url}}/js/jquery.qrcode.min.js" defer></script>
+    	<!-- 以下文件未来将被剔除 -->
+    	<script src="{{g.cdn_url}}/js/bootstrap.min.js"></script>
+    	<script src="{{g.cdn_url}}/js/public.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+    	<script src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+    	<script src="{{g.cdn_url}}/codemirror/lib/codemirror.js" defer></script>
+    	<!-- End -->
+    	<script type="text/javascript" src="{{g.cdn_url}}/js/tools.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+    	{% for js_f in g['other_js'] %}
+    		<script type="text/javascript" src="{{js_f}}"></script>
+    	{% endfor %}
         {% block scripts %}{% endblock %}
         <script type="text/javascript">
-            if (navigator.appName == "Microsoft Internet Explorer" && parseInt(navigator.appVersion.split(";")[1].replace(/[ ]/g, "").replace("MSIE", "")) < 9) {
-                $(".main-content").css("margin-top", "50px");
-                $('.top-tips').show();
-            }
-            function IEVersion() {
-            // 取得浏览器的userAgent字符串
-            var userAgent = navigator.userAgent;
-            // 判断是否为小于IE11的浏览器
-            var isLessIE11 = userAgent.indexOf('compatible') > -1 && userAgent.indexOf('MSIE') > -1;
-            // 判断是否为IE的Edge浏览器
-            var isEdge = userAgent.indexOf('Edge') > -1 && !isLessIE11;
-            // 判断是否为IE11浏览器
-            var isIE11 = userAgent.indexOf('Trident') > -1 && userAgent.indexOf('rv:11.0') > -1;
-            if (isLessIE11) {
-                var IEReg = new RegExp('MSIE (\\d+\\.\\d+);');
-                // 正则表达式匹配浏览器的userAgent字符串中MSIE后的数字部分，，这一步不可省略！！！
-                IEReg.test(userAgent);
-                // 取正则表达式中第一个小括号里匹配到的值
-                var IEVersionNum = parseFloat(RegExp['$1']);
-                if (IEVersionNum === 7) {// IE7
-                    return 7
-                } else if (IEVersionNum === 8) {// IE8
-                    return 8
-                } else if (IEVersionNum === 9) {// IE9
-                    return 9
-                } else if (IEVersionNum === 10) { // IE10
-                    
-                    return 10
-                } else {// IE版本<7
-                    return 6
-                }
-            } else if (isEdge) { // edge
-               
-                return 'edge'
-            } else if (isIE11) {// IE11
-                return 11
-            } else {// 不是ie浏览器
-                return -1
-            }
-        }
-        if(IEVersion() != -1 && IEVersion() < 9){
-            $(".main-content").css("margin-top", "50px");
-            $('.top-tips').show();
-        }
             $("#setBox").click(function() {
                 if ($(this).prop("checked")) {
                     $("input[name=id]").prop("checked", true);
@@ -280,6 +273,7 @@
             });
             task_stat();
         </script>
+    </div>
 </body>
 
 </html>

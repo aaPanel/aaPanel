@@ -32,7 +32,7 @@ class panelSite(panelRedirect):
     is_ipv6 = False
 
     def __init__(self):
-        self.setupPath = '/www/server'
+        self.setupPath = public.get_setup_path()
         path = self.setupPath + '/panel/vhost/nginx'
         if not os.path.exists(path): public.ExecShell("mkdir -p " + path + " && chmod -R 644 " + path)
         path = self.setupPath + '/panel/vhost/apache'
@@ -43,7 +43,7 @@ class panelSite(panelRedirect):
         if not os.path.exists(path + '/index.html'):
             public.ExecShell('mkdir -p ' + path)
             public.ExecShell('wget -O ' + path + '/index.html ' + public.get_url() + '/stop_en.html &')
-        self.__proxyfile = '/www/server/panel/data/proxyfile.json'
+        self.__proxyfile = '{}/data/proxyfile.json'.format(public.get_panel_path())
         self.OldConfigFile()
         if os.path.exists(self.nginx_conf_bak): os.remove(self.nginx_conf_bak)
         if os.path.exists(self.apache_conf_bak): os.remove(self.apache_conf_bak)
@@ -84,6 +84,7 @@ class panelSite(panelRedirect):
 
     # 添加apache端口
     def apacheAddPort(self, port):
+        port = str(port)
         filename = self.setupPath + '/apache/conf/extra/httpd-ssl.conf'
         if os.path.exists(filename):
             ssl_conf = public.readFile(filename)
@@ -1747,6 +1748,10 @@ listener SSL443 {
 
         # Nginx配置
         file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
+
+        # Node项目
+        if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
+
         ng_file = file
         conf = public.readFile(file)
 
@@ -1793,6 +1798,7 @@ listener SSL443 {
 
         # Apache配置
         file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
+        if not os.path.exists(file): file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
         conf = public.readFile(file)
         ap_static_security = self._get_ap_static_security(conf)
         if conf:
@@ -1907,8 +1913,10 @@ listener SSL443 {
     # HttpToHttps
     def HttpToHttps(self, get):
         siteName = get.siteName
-        # Nginx配置
-        file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
+        #Nginx配置
+        file = self.setupPath + '/panel/vhost/nginx/'+siteName+'.conf'
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/node_'+siteName+'.conf'
         conf = public.readFile(file)
         if conf:
             if conf.find('ssl_certificate') == -1: return public.returnMsg(False, 'NOT_OPEN_SSL')
@@ -1918,10 +1926,12 @@ listener SSL443 {
         rewrite ^(/.*)$ https://$host$1 permanent;
     }
     #HTTP_TO_HTTPS_END"""
-            conf = conf.replace('#error_page 404/404.html;', to)
-            public.writeFile(file, conf)
+            conf = conf.replace('#error_page 404/404.html;',to)
+            public.writeFile(file,conf)
 
-        file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
+        file = self.setupPath + '/panel/vhost/apache/'+siteName+'.conf'
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/apache/node_'+siteName+'.conf'
         conf = public.readFile(file)
         if conf:
             httpTohttos = '''combined
@@ -1979,6 +1989,9 @@ listener SSL443 {
     # 是否跳转到https
     def IsToHttps(self, siteName):
         file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/node_'+siteName+'.conf'
+            if not os.path.exists(file): return False
         conf = public.readFile(file)
         if conf:
             if conf.find('HTTP_TO_HTTPS_START') != -1: return True
@@ -1990,6 +2003,8 @@ listener SSL443 {
         siteName = get.siteName
 
         file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
         conf = public.readFile(file)
         if conf:
             rep = "\n\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"
@@ -2031,6 +2046,8 @@ listener SSL443 {
             public.writeFile(file, conf)
 
         file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
         conf = public.readFile(file)
         if conf:
             rep = "\n<VirtualHost \*\:443>(.|\n)*<\/VirtualHost>"
@@ -2090,6 +2107,9 @@ listener SSL443 {
         key = public.readFile(keypath)
         csr = public.readFile(csrpath)
         file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/' + siteName + '.conf'
+
+        # 是否为node项目
+        if not os.path.exists(file): file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/node_' + siteName + '.conf'
         if public.get_webserver() == "openlitespeed":
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/detail/' + siteName + '.conf'
         conf = public.readFile(file)
@@ -2393,11 +2413,16 @@ listener SSL443 {
         domains = ''
         id = public.M('sites').where("name=?", (siteName,)).getField('id')
         tmp = public.M('domain').where("pid=?", (id,)).field('name').select()
+        node = public.M('sites').where('id=? and project_type=?', (id, 'Node')).count()
+        if node:
+            node = 'node_'
+        else:
+            node = ''
         for key in tmp:
             domains += key['name'] + ','
         try:
-            if public.get_webserver() == 'nginx':
-                conf = public.readFile(self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf')
+            if (public.get_webserver() == 'nginx'):
+                conf = public.readFile(self.setupPath + '/panel/vhost/nginx/' + node + siteName + '.conf')
                 if conf.find('301-START') == -1:
                     result['domain'] = domains[:-1]
                     result['src'] = ""
@@ -2411,7 +2436,7 @@ listener SSL443 {
                 src = ''
                 if tmp: src = tmp.groups()[0]
             elif public.get_webserver() == 'apache':
-                conf = public.readFile(self.setupPath + '/panel/vhost/apache/' + siteName + '.conf')
+                conf = public.readFile(self.setupPath + '/panel/vhost/apache/' + node + siteName + '.conf')
                 if conf.find('301-START') == -1:
                     result['domain'] = domains[:-1]
                     result['src'] = ""
@@ -3122,6 +3147,7 @@ server
             public.WriteLog("TYPE_SITE", "SITE_PHPVERSION_SUCCESS", (siteName, version))
             return public.returnMsg(True, 'SITE_PHPVERSION_SUCCESS', (siteName, version))
         except:
+            return public.get_error_info()
             return public.returnMsg(False, 'PHP_SETUP_FAILED')
 
     # 是否开启目录防御
@@ -3677,6 +3703,15 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         if re.search(rep, data):
             return True
 
+    def old_proxy_conf(self,conf,ng_conf_file,get):
+        rep = 'location\s*\~\*.*gif\|png\|jpg\|css\|js\|woff\|woff2\)\$'
+        if not re.search(rep,conf):
+            return conf
+
+        self.RemoveProxy(get)
+        self.CreateProxy(get)
+        return public.readFile(ng_conf_file)
+
     # 修改反向代理
     def ModifyProxy(self, get):
         proxyname_md5 = self.__calc_md5(get.proxyname)
@@ -3689,6 +3724,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         if self.__CheckStart(get):
             return self.__CheckStart(get)
         conf = self.__read_config(self.__proxyfile)
+        random_string = public.GetRandomString(8)
         for i in range(len(conf)):
             if conf[i]["proxyname"] == get.proxyname and conf[i]["sitename"] == get.sitename:
                 if int(get.type) != 1:
@@ -3705,6 +3741,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                         public.ExecShell("mv {f}_bak {f}".format(f=ng_conf_file))
                         public.ExecShell("mv {f}_bak {f}".format(f=ols_conf_file))
                     ng_conf = public.readFile(ng_conf_file)
+                    ng_conf = self.old_proxy_conf(ng_conf, ng_conf_file, get)
                     # 修改nginx配置
                     # 如果代理URL后缀带有URI则删除URI，正则匹配不支持proxypass处带有uri
                     php_pass_proxy = get.proxysite
@@ -3730,13 +3767,22 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                             ng_conf = re.sub(cache_rep, "proxy_cache_valid 200 304 301 302 {0}m;".format(get.cachetime),
                                              ng_conf)
                         else:
+    #                         ng_cache = """
+    # proxy_ignore_headers Set-Cookie Cache-Control expires;
+    # proxy_cache cache_one;
+    # proxy_cache_key $host$uri$is_args$args;
+    # proxy_cache_valid 200 304 301 302 %sm;""" % (get.cachetime)
                             ng_cache = """
+    if ( $uri ~* "\.(gif|png|jpg|css|js|woff|woff2)$" )
+    {
+        expires 12h;
+    }
     proxy_ignore_headers Set-Cookie Cache-Control expires;
     proxy_cache cache_one;
     proxy_cache_key $host$uri$is_args$args;
     proxy_cache_valid 200 304 301 302 %sm;""" % (get.cachetime)
                             if self.check_annotate(ng_conf):
-                                cache_rep = '\n\s*#Set\s*Nginx\s*Cache(.|\n)*no-cache;'
+                                cache_rep = '\n\s*#Set\s*Nginx\s*Cache(.|\n)*no-cache;\s*\n*\s*\}'
                                 ng_conf = re.sub(cache_rep, '\n\t#Set Nginx Cache\n' + ng_cache, ng_conf)
                             else:
                                 # cache_rep = '#proxy_set_header\s+Connection\s+"upgrade";'
@@ -3745,16 +3791,30 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                                                  r"\n\tproxy_set_header\s+REMOTE-HOST\s+\$remote_addr;\n\t#Set Nginx Cache" + ng_cache,
                                                  ng_conf)
                     else:
+                        no_cache = """
+    #Set Nginx Cache
+    set $static_file%s 0;
+    if ( $uri ~* "\.(gif|png|jpg|css|js|woff|woff2)$" )
+    {
+        set $static_file%s 1;
+        expires 12h;
+        }
+    if ( $static_file%s = 0 )
+    {
+    add_header Cache-Control no-cache;
+    }""" % (random_string, random_string, random_string)
                         if self.check_annotate(ng_conf):
                             rep = r'\n\s*#Set\s*Nginx\s*Cache(.|\n)*\d+m;'
-                            ng_conf = re.sub(rep,
-                                             "\n\t#Set Nginx Cache\n\tproxy_ignore_headers Set-Cookie Cache-Control expires;\n\tadd_header Cache-Control no-cache;",
-                                             ng_conf)
+                            # ng_conf = re.sub(rep,
+                            #                  "\n\t#Set Nginx Cache\n\tproxy_ignore_headers Set-Cookie Cache-Control expires;\n\tadd_header Cache-Control no-cache;",
+                            #                  ng_conf)
+                            ng_conf = re.sub(rep,no_cache,ng_conf)
                         else:
                             rep = r"\s+proxy_cache\s+cache_one.*[\n\s\w\_\";\$]+m;"
-                            ng_conf = re.sub(rep,
-                                             r"\n\t#Set Nginx Cache\n\tproxy_ignore_headers Set-Cookie Cache-Control expires;\n\tadd_header Cache-Control no-cache;",
-                                             ng_conf)
+                            # ng_conf = re.sub(rep,
+                            #                  r"\n\t#Set Nginx Cache\n\tproxy_ignore_headers Set-Cookie Cache-Control expires;\n\tadd_header Cache-Control no-cache;",
+                            #                  ng_conf)
+                            ng_conf = re.sub(rep,no_cache,ng_conf)
 
                     sub_rep = "sub_filter"
                     subfilter = json.loads(get.subfilter)
@@ -3841,18 +3901,36 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         type = int(get.type)
         cache = int(get.cache)
         cachetime = int(get.cachetime)
+        proxysite = get.proxysite
+        proxydir = get.proxydir
         ng_file = self.setupPath + "/panel/vhost/nginx/" + sitename + ".conf"
         ap_file = self.setupPath + "/panel/vhost/apache/" + sitename + ".conf"
         p_conf = self.__read_config(self.__proxyfile)
+        random_string = public.GetRandomString(8)
         # 配置Nginx
         # 构造清理缓存连接
 
         # 构造缓存配置
         ng_cache = """
+    if ( $uri ~* "\.(gif|png|jpg|css|js|woff|woff2)$" )
+    {
+    	expires 12h;
+    }
     proxy_ignore_headers Set-Cookie Cache-Control expires;
     proxy_cache cache_one;
     proxy_cache_key $host$uri$is_args$args;
     proxy_cache_valid 200 304 301 302 %sm;""" % (cachetime)
+        no_cache = """
+    set $static_file%s 0;
+    if ( $uri ~* "\.(gif|png|jpg|css|js|woff|woff2)$" )
+    {
+    	set $static_file%s 1;
+    	expires 12h;
+        }
+    if ( $static_file%s = 0 )
+    {
+    add_header Cache-Control no-cache;
+    }""" % (random_string,random_string,random_string)
         # rep = "(https?://[\w\.]+)"
         # proxysite1 = re.search(rep,get.proxysite).group(1)
         ng_proxy = '''
@@ -3903,28 +3981,32 @@ location ^~ %s
             ng_sub_filter = ''
         # 构造反向代理
         # 如果代理URL后缀带有URI则删除URI，正则匹配不支持proxypass处带有uri
-        php_pass_proxy = get.proxysite
-        if get.proxysite[-1] == '/' or get.proxysite.count('/') > 2 or '?' in get.proxysite:
-            php_pass_proxy = re.search('(https?\:\/\/[\w\.]+)', get.proxysite).group(0)
+        # php_pass_proxy = get.proxysite
+        # if get.proxysite[-1] == '/' or get.proxysite.count('/') > 2 or '?' in get.proxysite:
+        #     php_pass_proxy = re.search('(https?\:\/\/[\w\.]+)', get.proxysite).group(0)
         if advanced == 1:
+            if proxydir[-1] != '/':
+                proxydir = '{}/'.format(proxydir)
+            if proxysite[-1] != '/':
+                proxysite = '{}/'.format(proxysite)
             if type == 1 and cache == 1:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, php_pass_proxy, get.todomain, get.proxydir, get.proxysite, get.todomain,
+                    proxydir, proxydir, proxysite, get.todomain,
                     public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, ng_cache, get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, php_pass_proxy, get.todomain, get.proxydir, get.proxysite, get.todomain,
-                    public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, '\tadd_header Cache-Control no-cache;',
+                    get.proxydir, get.proxydir, proxysite, get.todomain,
+                    public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, no_cache,
                     get.proxydir)
         else:
             if type == 1 and cache == 1:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, php_pass_proxy, get.todomain, get.proxydir, get.proxysite, get.todomain,
+                    get.proxydir, get.proxydir, get.proxysite, get.todomain,
                     public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, ng_cache, get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, php_pass_proxy, get.todomain, get.proxydir, get.proxysite, get.todomain,
-                    public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, '\tadd_header Cache-Control no-cache;',
+                    get.proxydir, get.proxydir, get.proxysite, get.todomain,
+                    public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, no_cache,
                     get.proxydir)
         public.writeFile(ng_proxyfile, ng_proxy_cache)
 
@@ -4007,6 +4089,8 @@ location ^~ %s
 
     # 取伪静态规则应用列表
     def GetRewriteList(self, get):
+        if get.siteName.find('node_') == 0:
+            get.siteName = get.siteName.replace('node_', '')
         rewriteList = {}
         ws = public.get_webserver()
         if ws == "openlitespeed":
@@ -4250,15 +4334,16 @@ location ^~ %s
                 rep = "\n#errorlog(.|\n)*compressArchive\s*1\s*\n#}"
                 tmp = re.search(rep, conf)
             tmp = tmp.group()
-            result = ''
-            if s == 'on':
-                for l in tmp.strip().splitlines():
-                    result += "\n#" + l
-            else:
-                for l in tmp.splitlines():
-                    result += "\n" + l[1:]
-            conf = re.sub(rep, "\n" + result.strip(), conf)
-            public.writeFile(filename, conf)
+            if tmp:
+                result = ''
+                if s == 'on':
+                    for l in tmp.strip().splitlines():
+                        result += "\n#"+l
+                else:
+                    for l in tmp.splitlines():
+                        result += "\n"+l[1:]
+                conf = re.sub(rep,"\n"+result.strip(),conf)
+                public.writeFile(filename,conf)
 
         public.serviceReload()
         return public.returnMsg(True, 'SUCCESS')
@@ -4488,6 +4573,7 @@ location ^~ %s
     def GetSiteRunPath(self, get):
         siteName = public.M('sites').where('id=?', (get.id,)).getField('name')
         sitePath = public.M('sites').where('id=?', (get.id,)).getField('path')
+        if not siteName: return {"runPath":"/",'dirs':[]}
         path = sitePath
         if public.get_webserver() == 'nginx':
             filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
@@ -5000,3 +5086,95 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     def modify_dir_auth_pass(self, get):
         sd = site_dir_auth.SiteDirAuth()
         return sd.modify_dir_auth_pass(get)
+
+    def _check_path_total(self,path, limit):
+        """
+        根据路径获取文件/目录大小
+        @path 文件或者目录路径
+        return int
+        """
+
+        if not os.path.exists(path): return 0;
+        if not os.path.isdir(path): return os.path.getsize(path)
+        size_total = 0
+        for nf in os.walk(path):
+            for f in nf[2]:
+                filename = nf[0] + '/' + f
+                if not os.path.exists(filename): continue;
+                if os.path.islink(filename): continue;
+                size_total += os.path.getsize(filename)
+                if size_total >= limit: return limit
+        return size_total
+
+    def get_average_num(self,slist):
+        """
+        @获取平均值
+        """
+        count = len(slist)
+        limit_size = 1 * 1024 * 1024
+        if count <= 0: return limit_size
+        print(slist)
+        if len(slist) > 1:
+            slist = sorted(slist)
+            limit_size =int((slist[0] + slist[-1])/2 * 0.85)
+        return limit_size
+
+
+    def check_del_data(self,get):
+        """
+        @删除前置检测
+        @ids = [1,2,3]
+        """
+        ids = json.loads(get['ids'])
+        slist = {}
+        result = []
+
+        import database
+        db_data = database.database().get_database_size(None)
+
+        limit_size = 50 * 1024 * 1024
+        f_list_size = [];db_list_size = []
+        for id in ids:
+            data = public.M('sites').where("id=?",(id,)).field('id,name,path,addtime').find();
+            if not data: continue
+
+            addtime = public.to_date(times = data['addtime'])
+
+            data['st_time'] = addtime
+            data['limit'] = False
+            data['backup_count'] = public.M('backup').where("pid=? AND type=?",(data['id'],'0')).count()
+            f_size = self._check_path_total(data['path'],limit_size)
+            data['total'] = f_size;
+            data['score'] = 0
+
+            #目录太小不计分
+            if f_size > 0:
+                f_list_size.append(f_size)
+
+                # 10k 目录不参与排序
+                if f_size > 10 * 1024: data['score'] = int(time.time() - addtime) + f_size
+
+            if data['total'] >= limit_size: data['limit'] = True
+            data['database'] = False
+
+            find = public.M('databases').field('id,pid,name,ps,addtime').where('pid=?',(data['id'],)).find()
+            if find:
+                db_addtime = public.to_date(times = find['addtime'])
+
+                data['database'] = db_data[find['name']]
+                data['database']['st_time'] = db_addtime
+
+                db_score = 0;
+                db_size = data['database']['total']
+
+                if db_size > 0:
+                    db_list_size.append(db_size)
+                    if db_size > 50 * 1024: db_score += int(time.time() - db_addtime) + db_size
+
+                data['score'] += db_score
+            result.append(data)
+
+        slist['data'] = sorted(result,key= lambda  x:x['score'],reverse=True)
+        slist['file_size'] = self.get_average_num(f_list_size)
+        slist['db_size'] = self.get_average_num(db_list_size)
+        return slist

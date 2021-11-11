@@ -121,6 +121,7 @@ class crontab:
     def set_cron_status(self,get):
         id = get['id']
         cronInfo = public.M('crontab').where('id=?',(id,)).field(self.field).find()
+        status_msg = ['Stop','Start']
         status = 1
         if cronInfo['status'] == status:
             status = 0
@@ -130,7 +131,7 @@ class crontab:
             self.sync_to_crond(cronInfo)
         
         public.M('crontab').where('id=?',(id,)).setField('status',status)
-        public.WriteLog('TYPE_CRON',"MODIFY_CRON_STATUS",(cronInfo['name'],str(status)))
+        public.WriteLog('TYPE_CRON',"MODIFY_CRON_STATUS",(cronInfo['name'],str(status_msg[status])))
         return public.returnMsg(True,'SET_SUCCESS')
 
     #修改计划任务
@@ -290,6 +291,7 @@ class crontab:
         data['orderOpt'] = []
         import json
         tmp = public.readFile('data/libList.conf')
+        if not tmp: return data
         libs = json.loads(tmp)
         for lib in libs:
             if not 'opt' in lib: continue

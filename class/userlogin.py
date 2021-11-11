@@ -46,7 +46,8 @@ class userlogin:
                 return public.returnJson(False,'LOGIN_USER_ERR',(str(num),)),json_header
             _key_file = "/www/server/panel/data/two_step_auth.txt"
             #登陆告警
-            public.login_send_body("Userinfo",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT')))
+            public.run_thread(public.login_send_body,("Userinfo",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT'))))
+            # public.login_send_body("Userinfo",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT')))
             if hasattr(post,'vcode'):
                 if self.limit_address('?',v="vcode") < 1: return public.returnJson(False,'You have failed verification many times, forbidden for 10 minutes'),json_header
                 import pyotp

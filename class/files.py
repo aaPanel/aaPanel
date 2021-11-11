@@ -335,6 +335,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.path = get.path.encode('utf-8')
         if get.path == '':
             get.path = '/www'
+
+        # 转换包含~的路径
+        if get.path.find('~') != -1:
+            get.path = os.path.expanduser(get.path)
+
         get.path = self.xssdecode(get.path)
         if not os.path.exists(get.path):
             get.path = '/www/wwwroot'
@@ -925,6 +930,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 else:
                     tmp['size'] = os.path.getsize(fname)
                 if os.path.isdir(fname):
+                    if file[:5] == 'BTDB_':
+                        tmp['size'] =  public.get_path_size(fname)
                     data['dirs'].append(tmp)
                 else:
                     data['files'].append(tmp)
@@ -2409,6 +2416,22 @@ cd %s
             attribute['sha1'] = hash_info['sha1']
             attribute['history'] = self.get_history_info(filename) # 历史文件
         return attribute
+
+    def files_search(self,args):
+        import panelSearch
+        adad=panelSearch.panelSearch()
+        return adad.get_search(args)
+
+
+    def files_replace(self,args):
+        import panelSearch
+        adad=panelSearch.panelSearch()
+        return adad.get_replace(args)
+
+    def get_replace_logs(self,args):
+        import panelSearch
+        adad=panelSearch.panelSearch()
+        return adad.get_replace_logs(args)
 
     # 数据库对象
     def _get_sqlite_connect(self):

@@ -82,7 +82,7 @@ class acme_v2:
                         return self._apis
 
             # 尝试从云端获取
-            res = requests.get(self._url)
+            res = requests.get(self._url,verify=False)
             if not res.status_code in [200, 201]:
                 result = res.json()
                 if "type" in result:
@@ -754,7 +754,8 @@ fullchain.pem       Paste into certificate input box
     # 替换服务器上的同域名同品牌证书
     def sub_all_cert(self, key_file, pem_file):
         cert_init = self.get_cert_init(pem_file)  # 获取新证书的基本信息
-        paths = ['vhost/cert', 'vhost/ssl']
+        paths = ['/www/server/panel/vhost/cert', '/www/server/panel/vhost/ssl','/www/server/panel']
+        is_panel = False
         for path in paths:
             if not os.path.exists(path):
                 continue
@@ -765,7 +766,12 @@ fullchain.pem       Paste into certificate input box
                 to_info = to_path + '/info.json'
                 # 判断目标证书是否存在
                 if not os.path.exists(to_pem_file):
-                    continue
+                    if not p_name in ['ssl']: continue
+                    to_pem_file = to_path + '/certificate.pem'
+                    to_key_file = to_path + '/privateKey.pem'
+                    if not os.path.exists(to_pem_file):
+                        continue
+                    is_panel = True
                 # 获取目标证书的基本信息
                 to_cert_init = self.get_cert_init(to_pem_file)
                 # 判断证书品牌是否一致
@@ -793,6 +799,7 @@ fullchain.pem       Paste into certificate input box
                 write_log(public.getMsg('ACME_CERT_REPLACE',(to_path,)))
         # 重载web服务
         public.serviceReload()
+        if is_panel: public.restart_panel()
 
     # 检查指定证书是否在订单列表
     def check_order_exists(self, pem_file):
@@ -1251,8 +1258,6 @@ fullchain.pem       Paste into certificate input box
     def apply_cert(self, domains, auth_type='dns', auth_to='Dns_com|None|None', **args):
         write_log("", "wb+")
         try:
-            if 'auto_wildcard' in args and args['auto_wildcard']:
-                self._auto_wildcard = True
             self.get_apis()
             index = None
             if 'index' in args:
@@ -1289,23 +1294,42 @@ fullchain.pem       Paste into certificate input box
     # 申请证书 - api
     def apply_cert_api(self, args):
         # 是否为指定站点
-        if re.match(r"^\d+$", args.auth_to):
-            import panelSite
-            path = public.M('sites').where('id=?',(args.id,)).getField('path')
-            args.auth_to = path + '/' + panelSite.panelSite().GetRunPath(args)
-            args.auth_to = args.auth_to.replace("//","/")
-            if args.auth_to[-1] == '/':
-                args.auth_to = args.auth_to[:-1]
+        if public.M('sites').where('id=? and project_type=?', (args.id, 'Java')).count():
+                project_info = public.M('sites').where('id=?', (args.id,)).getField('project_config')
+                try:
+                    project_info = json.loads(project_info)
+                    if not 'ssl_path' in project_info:
+                        return public.returnMsg(False, 'There is a problem with the current Java project configuration file, please rebuild')
+                    if not os.path.exists(project_info['ssl_path']):
+                        os.makedirs(project_info['ssl_path'])
+                    path = project_info['ssl_path']
+                    args.auth_to=path
+                    check_result = self.check_auth_env(args)
+                    if check_result: return check_result
 
-            if not os.path.exists(args.auth_to):
-                return public.returnMsg(False, 'ACME_DIR_ERR')
-            
-        check_result = self.check_auth_env(args)
-        if check_result: return check_result
-        
-        if args.auto_wildcard == '1':
-            self._auto_wildcard = True
-        return self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
+                    if args.auto_wildcard == '1':
+                        self._auto_wildcard = True
+                    return self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
+                except:
+                    return public.returnMsg(False, 'There is a problem with the current Java project configuration file, please rebuild')
+        else:
+            if re.match(r"^\d+$", args.auth_to):
+                import panelSite
+                path = public.M('sites').where('id=?', (args.id,)).getField('path')
+                args.auth_to = path + '/' + panelSite.panelSite().GetRunPath(args)
+                args.auth_to = args.auth_to.replace("//", "/")
+                if args.auth_to[-1] == '/':
+                    args.auth_to = args.auth_to[:-1]
+
+                if not os.path.exists(args.auth_to):
+                    return public.returnMsg(False, 'ACME_DIR_ERR')
+
+            check_result = self.check_auth_env(args)
+            if check_result: return check_result
+
+            if args.auto_wildcard == '1':
+                self._auto_wildcard = True
+            return self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
 
     #检查认证环境
     def check_auth_env(self,args):
@@ -1458,6 +1482,7 @@ fullchain.pem       Paste into certificate input box
                     if self._config['orders'][i]['cert_timeout'] > s_time or self._config['orders'][i]['auth_to'] == 'dns':
                         continue
                     if self.find_site_stopped(self._config['orders'][i]['domains']) == '0':
+                        write_log("|-The website has been suspended, skip certificate renewal!")
                         continue
 
                     #已删除的网站直接跳过续签
@@ -1466,6 +1491,21 @@ fullchain.pem       Paste into certificate input box
                             auth_to = self.get_ssl_used_site(self._config['orders'][i]['save_path'])
                             if not auth_to: continue
                             self._config['orders'][i]['auth_to'] = auth_to
+
+                    # 是否到了允许重试的时间
+                    if 'next_retry_time' in self._config['orders'][i]:
+                        timeout = self._config['orders'][i]['next_retry_time'] - int(time.time())
+                        if timeout > 0:
+                            write_log('|-The domain name skipped this time: {}, because the last renewal failed, you still need to wait {} hours and try again'.format(self._config['orders'][index]['domains'],int(timeout / 60 / 60)))
+                            continue
+
+                    # 是否到了最大重试次数
+                    if 'retry_count' in self._config['orders'][i]:
+                        if self._config['orders'][i]['retry_count'] >= 3:
+                            write_log('|-Skip the domain name this time: {}, this certificate will not be renewed due to failure to renew 3 times in a row'.format(self._config['orders'][index]['domains']))
+                            continue
+
+                    # 加入到续签订单
                     order_index.append(i)
 
             if not order_index:
@@ -1500,11 +1540,27 @@ fullchain.pem       Paste into certificate input box
                     write_log(public.getMsg('ACME_DOWNLOAD_CERT'))
                     cert = self.download_cert(index)
                     self._config['orders'][index]['renew_time'] = int(time.time())
+
+                    # 清理失败重试记录
+                    self._config['orders'][index]['retry_count'] = 0
+                    self._config['orders'][index]['next_retry_time'] = 0
+
+                    # 保存证书配置
                     self.save_config()
                     cert['status'] = True
                     cert['msg'] = public.getMsg('ACME_RENEW_SUCCESS')
                     write_log(public.getMsg('ACME_RENEW_SUCCESS1'))
                 except Exception as e:
+                    if str(e).find('请稍候重试') == -1: # 受其它证书影响和连接CA失败的的不记录重试次数
+                        # 设置下次重试时间
+                        self._config['orders'][index]['next_retry_time'] = int(time.time() + (86400 * 2))
+                        # 记录重试次数
+                        if not 'retry_count' in self._config['orders'][index].keys():
+                            self._config['orders'][index]['retry_count'] = 1
+                        self._config['orders'][index]['retry_count'] += 1
+                        # 保存证书配置
+                        self.save_config()
+
                     write_log("|-" + str(e).split('>>>>')[0])
                 write_log("-" * 70)
             return cert

@@ -419,7 +419,7 @@
                     $('#ssh_root_login').change(function(){
                         var start = $('#ssh_root_login').prop("checked");
                         if(start){
-                            $.post('/config?action=get_settings',function(res){
+                            $.post('/config?action=get_settings2',function(res){
                                 if(res['user_mail']['user_name']){
                                     $.post('/ssh_security?action=start_jian', {}, function (res) {layer.msg(res.msg,{icon:res.status?1:2})})
                                 }else{

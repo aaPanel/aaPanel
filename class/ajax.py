@@ -333,7 +333,38 @@ class ajax:
     def get_load_average(self,get):
         data = public.M('load_average').dbfile('system').where("addtime>=? AND addtime<=?",(get.start,get.end)).field('id,pro,one,five,fifteen,addtime').order('id asc').select()
         return self.ToAddtime(data)
-    
+
+
+    def get_process_tops(self,get):
+        '''
+            @name 获取进程开销排行
+            @author hwliang<2021-09-07>
+            @param get<dict_obj>{
+                start: int<开始时间>
+                end: int<结束时间>
+            }
+            @return list
+        '''
+        data = public.M('process_tops').dbfile('system').where("addtime>=? AND addtime<=?",(get.start,get.end)).field('id,process_list,addtime').order('id asc').select()
+        return self.ToAddtime(data)
+
+
+    def get_process_cpu_high(self,get):
+        '''
+            @name 获取CPU占用高的进程列表
+            @author hwliang<2021-09-07>
+            @param get<dict_obj>{
+                start: int<开始时间>
+                end: int<结束时间>
+            }
+            @return list
+        '''
+        data = public.M('process_high_percent').dbfile('system').where("addtime>=? AND addtime<=?",(get.start,get.end)).field('id,name,pid,cmdline,cpu_percent,memory,cpu_time_total,addtime').order('id asc').select()
+        return self.ToAddtime(data)
+
+
+
+
     
     def ToAddtime(self,data,tomem = False):
         import time
@@ -349,12 +380,16 @@ class ajax:
         if length > 10000: he = 15
         if he == 1:
             for i in range(length):
-                data[i]['addtime'] = time.strftime('%m/%d %H:%M',time.localtime(float(data[i]['addtime'])))
-                if tomem and data[i]['mem'] > 100: data[i]['mem'] = data[i]['mem'] / mPre
-                if tomem in [None]:
-                    if type(data[i]['down_packets']) == str:
-                        data[i]['down_packets'] = json.loads(data[i]['down_packets'])
-                        data[i]['up_packets'] = json.loads(data[i]['up_packets'])
+                try:
+                    data[i]['addtime'] = time.strftime('%m/%d %H:%M',time.localtime(float(data[i]['addtime'])))
+                    if 'process_list' in data[i]:
+                        data[i]['process_list'] = json.loads(data[i]['process_list'])
+                    if tomem and data[i]['mem'] > 100: data[i]['mem'] = data[i]['mem'] / mPre
+                    if tomem in [None]:
+                        if type(data[i]['down_packets']) == str:
+                            data[i]['down_packets'] = json.loads(data[i]['down_packets'])
+                            data[i]['up_packets'] = json.loads(data[i]['up_packets'])
+                except: continue
             return data
         else:
             count = 0
@@ -363,14 +398,16 @@ class ajax:
                 if count < he: 
                     count += 1
                     continue
-                value['addtime'] = time.strftime('%m/%d %H:%M',time.localtime(float(value['addtime'])))
-                if tomem and value['mem'] > 100: value['mem'] = value['mem'] / mPre
-                if tomem in [None]:
-                    if type(value['down_packets']) == str:
-                        value['down_packets'] = json.loads(value['down_packets'])
-                        value['up_packets'] = json.loads(value['up_packets'])
-                tmp.append(value)
-                count = 0
+                try:
+                    value['addtime'] = time.strftime('%m/%d %H:%M',time.localtime(float(value['addtime'])))
+                    if tomem and value['mem'] > 100: value['mem'] = value['mem'] / mPre
+                    if tomem in [None]:
+                        if type(value['down_packets']) == str:
+                            value['down_packets'] = json.loads(value['down_packets'])
+                            value['up_packets'] = json.loads(value['up_packets'])
+                    tmp.append(value)
+                    count = 0
+                except: continue
             return tmp
         
     def GetInstalleds(self,softlist):
@@ -578,19 +615,25 @@ class ajax:
         phpini = public.readFile(filename)
         data = {}
         rep = "disable_functions\s*=\s{0,1}(.*)\n"
-        tmp = re.search(rep,phpini).groups()
-        data['disable_functions'] = tmp[0]
+
+        tmp = re.search(rep,phpini)
+        if tmp:
+            data['disable_functions'] = tmp.groups()[0]
         
         rep = "upload_max_filesize\s*=\s*([0-9]+)(M|m|K|k)"
-        tmp = re.search(rep,phpini).groups()
-        data['max'] = tmp[0]
+
+        tmp = re.search(rep,phpini)
+        if tmp:
+            data['max'] = tmp.groups()[0]
         
         rep = u"\n;*\s*cgi\.fix_pathinfo\s*=\s*([0-9]+)\s*\n"
-        tmp = re.search(rep,phpini).groups()
-        if tmp[0] == '0':
-            data['pathinfo'] = False
-        else:
-            data['pathinfo'] = True
+        tmp = re.search(rep,phpini)
+        if tmp:
+            if tmp.groups()[0] == '0':
+                data['pathinfo'] = False
+            else:
+                data['pathinfo'] = True
+
         self.getCloudPHPExt(get)
         phplib = json.loads(public.readFile('data/phplib.conf'))
         libs = []
@@ -1176,7 +1219,7 @@ class ajax:
             if os.path.exists(u_path): os.remove(u_path)
             return public.returnMsg(False,'AJAX_USER_BE_OVERDUE')
         url_headers = {"authorization":"bt {}".format(userInfo['token'])}
-        resp = requests.post('{}/api/user/verifyToken'.format(self.__official_url),headers=url_headers)
+        resp = requests.post('{}/api/user/verifyToken'.format(self.__official_url),headers=url_headers,verify=False)
         resp = resp.json()
         if not resp['success']:
             if os.path.exists(u_path): os.remove(u_path)
@@ -1184,6 +1227,7 @@ class ajax:
         else:
             session[m_key] = public.returnMsg(True,'AJAX_USER_IS_VALID')
             return session[m_key]
+
 
     #PHP探针
     def php_info(self,args):

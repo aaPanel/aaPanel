@@ -26,7 +26,7 @@ class panelSetup:
             ua = g.ua.lower()
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return redirect('https://www.google.com')
-        g.version = '6.8.14'
+        g.version = '6.8.16'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
@@ -44,6 +44,11 @@ class panelSetup:
                 g.cdn_url = '/static'
             session['title'] = g.title
 
+        g.recycle_bin_open = 0
+        if os.path.exists("data/recycle_bin.pl"): g.recycle_bin_open = 1
+
+        g.recycle_bin_db_open = 0
+        if os.path.exists("data/recycle_bin_db.pl"): g.recycle_bin_db_open = 1
         g.is_aes = False
         self.other_import()
         return None
@@ -150,31 +155,27 @@ class panelAdmin(panelSetup):
                 g.api_request = True
             else:
                 if session['login'] == False:
-                    public.WriteLog('Login auth', 'The current session has been logged out')
                     session.clear()
                     return redirect('/login')
 
                 if 'tmp_login_expire' in session:
                     s_file = 'data/session/{}'.format(session['tmp_login_id'])
                     if session['tmp_login_expire'] < time.time():
-                        public.WriteLog('Login auth', 'Temporary authorization has expired {}'.format(public.get_client_ip()))
                         session.clear()
                         if os.path.exists(s_file): os.remove(s_file)
                         return redirect('/login')
                     if not os.path.exists(s_file):
-                        public.WriteLog('Login auth', 'Forced withdrawal due to cancellation of temporary authorization {}'.format(public.get_client_ip()))
                         session.clear()
                         return redirect('/login')
                 ua_md5 = public.md5(g.ua)
                 if ua_md5 != session.get('login_user_agent',ua_md5):
-                    public.WriteLog('Login auth', 'UA verification failed {}'.format(public.get_client_ip()))
                     session.clear()
                     return redirect('/login')
 
             if api_check:
+                now_time = time.time()
                 session_timeout = session.get('session_timeout',0)
-                if session_timeout < time.time() and session_timeout != 0:
-                    public.WriteLog('Login auth', 'The session has expired {}'.format(public.get_client_ip()))
+                if session_timeout < now_time and session_timeout != 0:
                     session.clear()
                     return redirect('/login?dologin=True&go=0')
 
@@ -182,16 +183,17 @@ class panelAdmin(panelSetup):
             login_token = session.get('login_token','')
             if login_token:
                 if login_token != public.get_login_token_auth():
-                    public.WriteLog('Login auth', 'Session ID does not match {}'.format(public.get_client_ip()))
                     session.clear()
                     return redirect('/login?dologin=True&go=1')
 
-            if api_check:
-                filename = 'data/sess_files/' + public.get_sess_key()
-                if not os.path.exists(filename):
-                    public.WriteLog('Login auth', 'Trigger CSRF defense {}'.format(public.get_client_ip()))
-                    session.clear()
-                    return redirect('/login?dologin=True&go=2')
+            # if api_check:
+            #     filename = 'data/sess_files/' + public.get_sess_key()
+            #     if not os.path.exists(filename):
+            #         session.clear()
+            #         return redirect('/login?dologin=True&go=2')
+
+            # 标记新的会话过期时间
+            session['session_timeout'] = time.time() + public.get_session_timeout()
         except:
             public.WriteLog('Login auth',public.get_error_info())
             session.clear()

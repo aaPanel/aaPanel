@@ -10,7 +10,7 @@
 #------------------------------
 # 数据库管理类
 #------------------------------
-import public,db,re,time,os,sys,panelMysql
+import public,db,re,time,os,sys,panelMysql,json
 from BTPanel import session
 import datatool
 class database(datatool.datatools):
@@ -30,7 +30,7 @@ class database(datatool.datatools):
                 ssl = get.ssl
             if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get):
                 return public.returnMsg(False,'MYSQL_SSL_ERR')
-            data_name = get['name'].strip()
+            data_name = get['name'].strip().lower()
             if self.CheckRecycleBin(data_name): return public.returnMsg(False,'DATABASE_DEL_RECYCLE_BIN',(data_name,))
             if len(data_name) > 64: return public.returnMsg(False, 'DATABASE_NAME_LEN')
             reg = r"^[\w\.-]+$"
@@ -332,7 +332,20 @@ SetLink
             panelMysql.panelMysql().execute("drop user '" + username + "'@'" + us[0] + "'")
         panelMysql.panelMysql().execute("flush privileges")
         rPath = '/www/Recycle_bin/'
-        public.writeFile(rPath + 'BTDB_' + name +'_t_' + str(time.time()),json.dumps(data))
+        data['rmtime'] = int(time.time())
+        rm_path = '{}/BTDB_{}_t_{}'.format(rPath,name,data['rmtime'])
+        if os.path.exists(rm_path): rm_path += '.1'
+        rm_config_file = '{}/config.json'.format(rm_path)
+        datadir = public.get_datadir()
+        db_path = '{}/{}'.format(datadir,name)
+        if not os.path.exists(db_path):
+            return public.returnMsg(False,'Means that the database data does not exist!')
+
+        public.ExecShell("mv -f {} {}".format(db_path,rm_path))
+        if not os.path.exists(rm_path):
+            return public.returnMsg(False,'Failed to move database data to the recycle bin!')
+        public.writeFile(rm_config_file,json.dumps(data))
+        # public.writeFile(rPath + 'BTDB_' + name +'_t_' + str(time.time()),json.dumps(data))
         public.M('databases').where("name=?",(name,)).delete()
         public.WriteLog("TYPE_DATABASE", 'DATABASE_DEL_SUCCESS',(name,))
         return public.returnMsg(True,'RECYCLE_BIN_DB')
@@ -340,39 +353,66 @@ SetLink
     #永久删除数据库
     def DeleteTo(self,filename):
         import json
-        data = json.loads(public.readFile(filename))
-        if public.M('databases').where("name=?",( data['name'],)).count():
+        if os.path.isfile(filename):
+            data = json.loads(public.readFile(filename))
+            if public.M('databases').where("name=?",( data['name'],)).count():
+                os.remove(filename)
+                return public.returnMsg(True,'DEL_SUCCESS')
+            result = panelMysql.panelMysql().execute("drop database `" + data['name'] + "`")
+            isError=self.IsSqlError(result)
+            if  isError != None: return isError
+            panelMysql.panelMysql().execute("drop user '" + data['username'] + "'@'localhost'")
+            users = panelMysql.panelMysql().query("select Host from mysql.user where User='" + data['username'] + "' AND Host!='localhost'")
+            for us in users:
+                panelMysql.panelMysql().execute("drop user '" + data['username'] + "'@'" + us[0] + "'")
+            panelMysql.panelMysql().execute("flush privileges")
             os.remove(filename)
-            return public.returnMsg(True,'DEL_SUCCESS')
-        result = panelMysql.panelMysql().execute("drop database `" + data['name'] + "`")
-        isError=self.IsSqlError(result)
-        if  isError != None: return isError
-        panelMysql.panelMysql().execute("drop user '" + data['username'] + "'@'localhost'")
-        users = panelMysql.panelMysql().query("select Host from mysql.user where User='" + data['username'] + "' AND Host!='localhost'")
-        for us in users:
-            panelMysql.panelMysql().execute("drop user '" + data['username'] + "'@'" + us[0] + "'")
-        panelMysql.panelMysql().execute("flush privileges")
-        os.remove(filename)
-        public.WriteLog("TYPE_DATABASE", 'DATABASE_DEL_SUCCESS',(data['name'],))
+        else:
+            import shutil
+            if os.path.exists(filename):
+                data = json.loads(public.readFile(filename + '/config.json'))
+                shutil.rmtree(filename)
+        try:
+            public.WriteLog("TYPE_DATABASE", 'DATABASE_DEL_SUCCESS',(data['name'],))
+        except:
+            pass
         return public.returnMsg(True,'DEL_SUCCESS')
     
     #恢复数据库
     def RecycleDB(self,filename):
         import json
-        data = json.loads(public.readFile(filename))
+        _isdir = False
+        if os.path.isfile(filename):
+            data = json.loads(public.readFile(filename))
+        else:
+            re_config_file = filename + '/config.json'
+            data = json.loads(public.readFile(re_config_file))
+            db_path = "{}/{}".format(public.get_datadir(),data['name'])
+            if os.path.exists(db_path):
+                return public.returnMsg(False,'There is a database with the same name in the current database. To ensure data security, stop recovery!')
+            _isdir = True
+
         if public.M('databases').where("name=?",( data['name'],)).count():
-            os.remove(filename)
+            if not _isdir: os.remove(filename)
             return public.returnMsg(True,'RECYCLEDB')
 
+
+        if not _isdir:
+            os.remove(filename)
+        else:
+            public.ExecShell('mv -f {} {}'.format(filename,db_path))
+            if not os.path.exists(db_path):
+                return public.returnMsg(False,'Data recovery failed!')
+            db_config_file = "{}/config.json".format(db_path)
+            if os.path.exists(db_config_file): os.remove(db_config_file)
+
+            # 设置文件权限
+            public.ExecShell("chown -R mysql:mysql {}".format(db_path))
+            public.ExecShell("chmod -R 660 {}".format(db_path))
+            public.ExecShell("chmod  700 {}".format(db_path))
+
         self.__CreateUsers(data['name'],data['username'],data['password'],data['accept'])
-        #result = panelMysql.panelMysql().execute("grant all privileges on `" + data['name'] + "`.* to '" + data['username'] + "'@'localhost' identified by '" + data['password'] + "'")
-        #isError=self.IsSqlError(result)
-        #if isError != None: return isError
-        #panelMysql.panelMysql().execute("grant all privileges on `" + data['name'] + "`.* to '" + data['username'] + "'@'" + data['accept'] + "' identified by '" + data['password'] + "'")
-        #panelMysql.panelMysql().execute("flush privileges")
-        
         public.M('databases').add('id,pid,name,username,password,accept,ps,addtime',(data['id'],data['pid'],data['name'],data['username'],data['password'],data['accept'],data['ps'],data['addtime']))
-        os.remove(filename)
         return public.returnMsg(True,"RECYCLEDB")
     
     #设置ROOT密码
@@ -965,49 +1005,54 @@ SetLink
         else:
             return public.returnMsg(False,"CHANVE_FAIL")
 
-    # 检查用户管理表是否存在
-    def _check_table_exist(self):
-        result = public.M('sqlite_master').where("name=?", ('mysql_user',)).getField('name')
-        if not result:
-            self._create_mysql_user_tb()
+    def get_average_num(self,slist):
+        """
+        @获取平均值
+        """
+        count = len(slist)
+        limit_size = 1 * 1024 * 1024
+        if count <= 0: return limit_size
 
-    # 数据库对象
-    def _get_sqlite_connect(self):
-        import sqlite3
-        try:
-            if not self.sqlite_connection:
-                self.sqlite_connection = sqlite3.connect('data/default.db')
-        except Exception as ex:
-            return "error: " + str(ex)
+        if len(slist) > 1:
+            slist = sorted(slist)
+            limit_size =int((slist[0] + slist[-1])/2 * 0.85)
+        return limit_size
 
-    # 创多用户表
-    def _create_mysql_user_tb(self):
-        self._get_sqlite_connect()
-        sql="""
-CREATE TABLE mysql_user(
-   id INTEGER  PRIMARY KEY AUTOINCREMENT,
-   pid INTEGER ,
-   username CHAR,
-   password CHAR,
-   accept CHAR,
-   ps CHAR,
-   addtime CHAR
-);"""
-        self.sqlite_connection.execute(sql)
+    def get_database_size(self,get):
+        """
+        获取数据库大小
+        """
+        result = {}
+        tables = public.get_database_size()
+        data = public.M('databases').field('id,pid,name,ps,addtime').select()
+        public.print_log(data)
+        for x in data:
+            name = x['name']
+            x['total'] = 0
+            x['backup_count'] = public.M('backup').where("pid=? AND type=?",(x['id'],'1')).count()
+            if name in tables: x['total'] = tables[name]
 
-    # 根据id获取用户列表
-    def get_mysql_user(self,get):
-        self._create_mysql_user_tb()
-        result = public.M('mysql_user').where("pid=?", (get.id,)).select()
+            result[name] = x
         return result
 
-    def add_mysql_user(self,get):
-        '''
-         * 添加mysql用户
-         * @param get.id 面板数据库id
-         * @param get.username 添加的用户
-         * @param get.password 添加的用户密码
-         * @param get.permission 添加的用户权限
-         * @param get.host 允许在哪里访问
-         * @return Bool
-        '''
+    def check_del_data(self,get):
+        """
+        @删除数据库前置检测
+        """
+        ids = json.loads(get.ids)
+        slist = {};result = [];db_list_size = []
+        db_data = self.get_database_size(None)
+        for key in db_data:
+            data = db_data[key]
+            if not data['id'] in ids: continue
+
+            db_addtime = public.to_date(times = data['addtime'])
+            data['score'] = int(time.time() - db_addtime) + data['total']
+            data['st_time'] = db_addtime
+
+            if data['total'] > 0 : db_list_size.append(data['total'])
+            result.append(data)
+
+        slist['data'] = sorted(result,key= lambda  x:x['score'],reverse=True)
+        slist['db_size'] = self.get_average_num(db_list_size)
+        return slist

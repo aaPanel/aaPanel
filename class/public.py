@@ -452,7 +452,7 @@ def getMsg(key,args = ()):
 
 # 获取Web服务器
 def GetWebServer():
-    if os.path.exists('/www/server/apache/bin/apachectl'):
+    if os.path.exists('{}/apache/bin/apachectl'.format(get_setup_path())):
         webserver = 'apache'
     elif os.path.exists('/usr/local/lsws/bin/lswsctrl'):
         webserver = 'openlitespeed'
@@ -464,31 +464,66 @@ def get_webserver():
     return GetWebServer()
 
 def ServiceReload():
-    # 重载Web服务配置
-    if os.path.exists('/www/server/nginx/sbin/nginx'):
+    #重载Web服务配置
+    if os.path.exists('{}/nginx/sbin/nginx'.format(get_setup_path())):
         result = ExecShell('/etc/init.d/nginx reload')
         if result[1].find('nginx.pid') != -1:
             ExecShell('pkill -9 nginx && sleep 1')
             ExecShell('/etc/init.d/nginx start')
-    elif os.path.exists('/www/server/apache/bin/apachectl'):
+    elif os.path.exists('{}/apache/bin/apachectl'.format(get_setup_path())):
         result = ExecShell('/etc/init.d/httpd reload')
     else:
         result = ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart')
     return result
+
 def serviceReload():
     return ServiceReload()
 
 
-def ExecShell(cmdstring, timeout=None, shell=True,cwd=None,env=None):
+
+def get_preexec_fn(run_user):
+    '''
+        @name 获取指定执行用户预处理函数
+        @author hwliang<2021-08-19>
+        @param run_user<string> 运行用户
+        @return 预处理函数
+    '''
+    import pwd
+    pid = pwd.getpwnam(run_user)
+    uid = pid.pw_uid
+    gid = pid.pw_gid
+
+    def _exec_rn():
+        os.setgid(gid)
+        os.setuid(uid)
+    return _exec_rn
+
+
+def ExecShell(cmdstring, timeout=None, shell=True,cwd=None,env=None,user = None):
+    '''
+        @name 执行命令
+        @author hwliang<2021-08-19>
+        @param cmdstring 命令 [必传]
+        @param timeout 超时时间
+        @param shell 是否通过shell运行
+        @param cwd 进入的目录
+        @param env 环境变量
+        @param user 执行用户名
+        @return 命令执行结果
+    '''
     a = ''
     e = ''
     import subprocess,tempfile
-
+    preexec_fn = None
+    tmp_dir = '/dev/shm'
+    if user:
+        preexec_fn = get_preexec_fn(user)
+        tmp_dir = '/tmp'
     try:
         rx = md5(cmdstring)
-        succ_f = tempfile.SpooledTemporaryFile(max_size=4096,mode='wb+',suffix='_succ',prefix='btex_' + rx ,dir='/dev/shm')
-        err_f = tempfile.SpooledTemporaryFile(max_size=4096,mode='wb+',suffix='_err',prefix='btex_' + rx ,dir='/dev/shm')
-        sub = subprocess.Popen(cmdstring, close_fds=True, shell=shell,bufsize=128,stdout=succ_f,stderr=err_f,cwd=cwd,env=env)
+        succ_f = tempfile.SpooledTemporaryFile(max_size=4096,mode='wb+',suffix='_succ',prefix='btex_' + rx ,dir=tmp_dir)
+        err_f = tempfile.SpooledTemporaryFile(max_size=4096,mode='wb+',suffix='_err',prefix='btex_' + rx ,dir=tmp_dir)
+        sub = subprocess.Popen(cmdstring, close_fds=True, shell=shell,bufsize=128,stdout=succ_f,stderr=err_f,cwd=cwd,env=env,preexec_fn=preexec_fn)
         if timeout:
             s = 0
             d = 0.01
@@ -594,9 +629,9 @@ def get_client_ip():
     return GetClientIp()
 
 def phpReload(version):
-    # 重载PHP配置
+    #重载PHP配置
     import os
-    if os.path.exists('/www/server/php/' + version + '/libphp5.so'):
+    if os.path.exists(get_setup_path()+'/php/' + version + '/libphp5.so'):
         ExecShell('/etc/init.d/httpd reload')
     else:
         ExecShell('/etc/init.d/php-fpm-'+version+' reload')
@@ -893,11 +928,12 @@ def get_plugin_title(plugin_name):
         @return string
     '''
 
-    info_file = '/www/server/panel/plugin/{}/info.json'.format(plugin_name)
+    info_file = '{}/{}/info.json'.format(get_plugin_path(),plugin_name)
     try:
         return json.loads(readFile(info_file))['title']
     except:
         return plugin_name
+
 
 def get_error_object(plugin_title = None,plugin_name = None):
     '''
@@ -931,11 +967,11 @@ REQUEST_FORM: {request_form}
     full_path = request.full_path,
     request_form = request.form.to_dict(),
     user_agent = request.headers.get('User-Agent'),
-    panel_version = get_panel_version(),
+    panel_version = version(),
     os_version = get_os_version()
 )
 
-    result =readFile('/www/server/panel/BTPanel/templates/default/plugin_error.html').format(
+    result =readFile('{}/BTPanel/templates/default/plugin_error.html'.format(get_panel_path())).format(
         plugin_name=plugin_title,
         request_info=request_info,
         error_title=error_info.split("\n")[-1],
@@ -959,8 +995,9 @@ def format_date(format="%Y-%m-%d %H:%M:%S",times = None):
 
 # 检查Web服务器配置文件是否有错误
 def checkWebConfig():
-    f1 = '/www/server/panel/vhost/'
-    f2 = '/www/server/panel/plugin/'
+    f1 = '{}/'.format(get_vhost_path())
+    f2 = '{}/'.format(get_plugin_path())
+    setup_path = get_setup_path()
     if not os.path.exists(f2 + 'btwaf'):
         f3 = f1 + 'nginx/btwaf.conf'
         if os.path.exists(f3): os.remove(f3)
@@ -974,19 +1011,19 @@ def checkWebConfig():
         f3 = f1 + 'nginx/total.conf'
         if os.path.exists(f3): os.remove(f3)
     else:
-        if os.path.exists('/www/server/apache/modules/mod_lua.so'):
-            writeFile(f1 + 'apache/btwaf.conf', 'LoadModule lua_module modules/mod_lua.so')
-            writeFile(f1 + 'apache/total.conf', 'LuaHookLog /www/server/total/httpd_log.lua run_logs')
+        if os.path.exists(setup_path + '/apache/modules/mod_lua.so'):
+            writeFile(f1 + 'apache/btwaf.conf','LoadModule lua_module modules/mod_lua.so')
+            writeFile(f1 + 'apache/total.conf','LuaHookLog {}/total/httpd_log.lua run_logs'.format(setup_path))
         else:
             f3 = f1 + 'apache/total.conf'
             if os.path.exists(f3): os.remove(f3)
 
     if get_webserver() == 'nginx':
-        result = ExecShell("ulimit -n 8192 ; /www/server/nginx/sbin/nginx -t -c /www/server/nginx/conf/nginx.conf")
+        result = ExecShell("ulimit -n 8192 ; {setup_path}/nginx/sbin/nginx -t -c {setup_path}/nginx/conf/nginx.conf".format(setup_path = setup_path))
         searchStr = 'successful'
     elif get_webserver() == 'apache':
     # else:
-        result = ExecShell("ulimit -n 8192 ; /www/server/apache/bin/apachectl -t")
+        result = ExecShell("ulimit -n 8192 ; {setup_path}/apache/bin/apachectl -t".format(setup_path = setup_path))
         searchStr = 'Syntax OK'
     else:
         result = ["1","1"]
@@ -1060,7 +1097,7 @@ def CheckMyCnf():
     if os.path.exists(confFile):
         conf = readFile(confFile)
         if conf.find('[mysqld]') != -1: return True
-    versionFile = '/www/server/mysql/version.pl'
+    versionFile = get_setup_path() + '/mysql/version.pl'
     if not os.path.exists(versionFile): return False
 
     versions = ['5.1','5.5','5.6','5.7','8.0','AliSQL']
@@ -1464,17 +1501,17 @@ def get_page(count, p=1, rows=12, callback='', result='1,2,3,4,5,8'):
 # 取面板版本
 def version():
     try:
-        comm = ReadFile('/www/server/panel/class/common.py')
+        comm = ReadFile('{}/common.py'.format(get_class_path()))
         return re.search("g\.version\s*=\s*'(\d+\.\d+\.\d+)'",comm).groups()[0]
     except:
         return get_panel_version()
 
 def get_panel_version():
-    comm = ReadFile('/www/server/panel/class/common.py')
+    comm = ReadFile('{}/common.py'.format(get_class_path()))
     s_key = 'g.version = '
     s_len = len(s_key)
     s_leff = comm.find(s_key) + s_len
-    version = comm[s_leff:s_leff+6].strip().strip("'")
+    version = comm[s_leff:s_leff+10].strip().strip("'")
     return version
 
 
@@ -1490,7 +1527,10 @@ def get_os_version():
     else:
         version = version.replace('release ','').replace('Linux','').replace('(Core)','').strip()
     v_info = sys.version_info
-    version = "{} {}(Py{}.{}.{})".format(version,os.uname().machine,v_info.major,v_info.minor,v_info.micro)
+    try:
+        version = "{} {}(Py{}.{}.{})".format(version,os.uname().machine,v_info.major,v_info.minor,v_info.micro)
+    except:
+        version = "{} (Py{}.{}.{})".format(version,v_info.major,v_info.minor,v_info.micro)
     return version
 
 #取文件或目录大小
@@ -1560,7 +1600,7 @@ def write_request_log(reques = None):
         if request.path in ['/service_status','/favicon.ico','/task','/system','/ajax','/control','/data','/ssl']:
             return False
 
-        log_path = '/www/server/panel/logs/request'
+        log_path = '{}/logs/request'.format(get_panel_path())
         log_file = getDate(format='%Y-%m-%d') + '.json'
         if not os.path.exists(log_path): os.makedirs(log_path)
 
@@ -1645,6 +1685,32 @@ def get_database_character(db_name):
         return c_type
     except:
         return 'utf8'
+
+def get_database_codestr(codeing):
+    wheres = {
+        'utf8'      :   'utf8_general_ci',
+        'utf8mb4'   :   'utf8mb4_general_ci',
+        'gbk'       :   'gbk_chinese_ci',
+        'big5'      :   'big5_chinese_ci'
+    }
+    return wheres[codeing]
+
+
+def get_database_size():
+    """
+    @获取数据库大小
+    """
+    data = {}
+    try:
+        import panelMysql
+        tables = panelMysql.panelMysql().query("select table_schema, (sum(DATA_LENGTH)+sum(INDEX_LENGTH)) as data from information_schema.TABLES group by table_schema")
+        if type(tables) == list:
+            for x in tables:
+                if len(x) < 2:continue
+                if x[1] == None:continue
+                data[x[0]] = int(x[1])
+    except: return data
+    return data
 
 def en_punycode(domain):
     if sys.version_info[0] == 2:
@@ -1781,17 +1847,17 @@ def check_domain_panel():
 
 #是否离线模式
 def is_local():
-    s_file = '/www/server/panel/data/not_network.pl'
+    s_file = '{}/data/not_network.pl'.format(get_panel_path())
     return os.path.exists(s_file)
 
 
 #自动备份面板数据
 def auto_backup_panel():
     try:
-        panel_paeh = '/www/server/panel'
+        panel_paeh = get_panel_path()
         paths = panel_paeh + '/data/not_auto_backup.pl'
         if os.path.exists(paths): return False
-        b_path = '/www/backup/panel'
+        b_path = '{}/panel'.format(get_backup_path())
         backup_path = b_path + '/' + format_date('%Y-%m-%d')
         if os.path.exists(backup_path): return True
         if os.path.getsize(panel_paeh + '/data/default.db') > 104857600 * 2: return False
@@ -1946,7 +2012,7 @@ def get_fpm_address(php_version,bind=False):
         @return tuple or string
     '''
     fpm_address = '/tmp/php-cgi-{}.sock'.format(php_version)
-    php_fpm_file = '/www/server/php/{}/etc/php-fpm.conf'.format(php_version)
+    php_fpm_file = '{}/php/{}/etc/php-fpm.conf'.format(get_setup_path(),php_version)
     try:
         fpm_conf = readFile(php_fpm_file)
         tmp = re.findall(r"listen\s*=\s*(.+)",fpm_conf)
@@ -2020,9 +2086,10 @@ def get_site_php_version(siteName):
         @return string
     '''
     web_server = get_webserver()
-    conf = readFile('/www/server/panel/vhost/'+web_server+'/'+siteName+'.conf')
+    vhost_path = get_vhost_path()
+    conf = readFile(vhost_path + '/'+web_server+'/'+siteName+'.conf')
     if web_server == 'openlitespeed':
-        conf = readFile('/www/server/panel/vhost/' + web_server + '/detail/' + siteName + '.conf')
+        conf = readFile(vhost_path + '/' + web_server + '/detail/' + siteName + '.conf')
     return get_php_version_conf(conf)
 
 
@@ -2087,7 +2154,7 @@ def sync_php_address(php_version):
         @param php_version string PHP版本
         @return void
     '''
-    if not os.path.exists('/www/server/php/{}/bin/php'.format(php_version)): # 指定PHP版本是否安装
+    if not os.path.exists('{}/php/{}/bin/php'.format(get_setup_path(),php_version)): # 指定PHP版本是否安装
         return False
     ngx_rep = r"(unix:/tmp/php-cgi.*\.sock|127.0.0.1:\d+)"
     apa_rep = r"(unix:/tmp/php-cgi.*\.sock\|fcgi://localhost|fcgi://127.0.0.1:\d+)"
@@ -2096,7 +2163,7 @@ def sync_php_address(php_version):
     is_write = False
 
     #nginx的PHP配置文件
-    nginx_conf_path = '/www/server/nginx/conf'
+    nginx_conf_path = '{}/nginx/conf'.format(get_setup_path())
 
     if os.path.exists(nginx_conf_path):
         for f_name in os.listdir(nginx_conf_path):
@@ -2111,14 +2178,14 @@ def sync_php_address(php_version):
     #         is_write = True
 
     #apache的网站配置文件
-    apache_conf_path = '/www/server/panel/vhost/apache'
+    apache_conf_path = '{}/apache'.format(get_vhost_path())
     if os.path.exists(apache_conf_path):
         for f_name in os.listdir(apache_conf_path):
             conf_file = '/'.join((apache_conf_path,f_name))
             if sub_php_address(conf_file,apa_rep,apa_proxy,php_version):
                 is_write = True
     #apache的phpmyadmin
-    conf_file = '/www/server/apache/conf/extra/httpd-vhosts.conf'
+    conf_file = '{}/apache/conf/extra/httpd-vhosts.conf'.format(get_setup_path())
     if os.path.exists(conf_file):
         if sub_php_address(conf_file,apa_rep,apa_proxy,php_version):
             is_write = True
@@ -2209,10 +2276,16 @@ def set_cdn_url(cdn_url):
     return True
 
 def get_python_bin():
-    bin_file = '/www/server/panel/pyenv/bin/python'
+    bin_file = '{}/pyenv/bin/python'.format(get_panel_path())
     if os.path.exists(bin_file):
         return bin_file
     return '/usr/bin/python'
+
+def get_pip_bin():
+    bin_file = '{}/pyenv/bin/pip'.format(get_panel_path())
+    if os.path.exists(bin_file):
+        return bin_file
+    return '/usr/bin/pip'
 
 def aes_encrypt(data,key):
     import panelAes
@@ -2314,11 +2387,11 @@ def get_session_id():
 
 #尝试自动恢复面板数据库
 def rep_default_db():
-    db_path = '/www/server/panel/data/'
+    db_path = '{}/data/'.format(get_panel_path())
     db_file = db_path + 'default.db'
     db_tmp_backup = db_path + 'default_' + format_date("%Y%m%d_%H%M%S") + ".db"
 
-    panel_backup = '/www/backup/panel'
+    panel_backup = '{}/panel'.format(get_backup_path())
     bak_list = os.listdir(panel_backup)
     if not bak_list: return False
     bak_list = sorted(bak_list,reverse=True)
@@ -2362,7 +2435,7 @@ def chdck_salt():
 
 
 def get_login_token():
-    token_s = readFile('/www/server/panel/data/login_token.pl')
+    token_s = readFile('{}/data/login_token.pl'.format(get_panel_path()))
     if not token_s: return GetRandomString(32)
     return token_s
 
@@ -2528,14 +2601,15 @@ def get_curl_bin():
 #设置防跨站配置
 def set_open_basedir():
     try:
-        fastcgi_file = '/www/server/nginx/conf/fastcgi.conf'
+        fastcgi_file = '{}/nginx/conf/fastcgi.conf'.format(get_setup_path())
+
         if os.path.exists(fastcgi_file):
             fastcgi_body = readFile(fastcgi_file)
             if fastcgi_body.find('bt_safe_dir') == -1:
                 fastcgi_body = fastcgi_body + "\n"+'fastcgi_param  PHP_ADMIN_VALUE    "$bt_safe_dir=$bt_safe_open";'
                 writeFile(fastcgi_file,fastcgi_body)
 
-        proxy_file = '/www/server/nginx/conf/proxy.conf'
+        proxy_file = '{}/nginx/conf/proxy.conf'.format(get_setup_path())
         if os.path.exists(proxy_file):
             proxy_body = readFile(proxy_file)
             if proxy_body.find('bt_safe_dir') == -1:
@@ -2547,7 +2621,7 @@ map "baota_open" $bt_safe_open {
 } '''
                 writeFile(proxy_file,proxy_body)
 
-        open_basedir_path = '/www/server/panel/vhost/open_basedir/nginx'
+        open_basedir_path = '{}/open_basedir/nginx'.format(get_vhost_path())
         if not os.path.exists(open_basedir_path):
             os.makedirs(open_basedir_path,384)
 
@@ -2623,7 +2697,7 @@ def cloud_check_domain(domain):
         @return void
     '''
     try:
-        check_domain_path = '/www/server/panel/data/check_domain/'
+        check_domain_path = '{}/data/check_domain/'.format(get_panel_path())
         if not os.path.exists(check_domain_path):
             os.makedirs(check_domain_path,384)
         pdata = get_user_info()
@@ -2634,9 +2708,13 @@ def cloud_check_domain(domain):
     except:
         pass
 
+def get_mac_address():
+    import uuid
+    mac=uuid.UUID(int = uuid.getnode()).hex[-12:]
+    return ":".join([mac[e:e+2] for e in range(0,11,2)])
 
 def get_user_info():
-    user_file = '/www/server/panel/data/userInfo.json'
+    user_file = '{}/data/userInfo.json'.format(get_panel_path())
     if not os.path.exists(user_file): return {}
     userInfo = {}
     try:
@@ -2866,6 +2944,11 @@ class dict_obj:
             elif format in ['phone','mobile','m']:
                 if not re.match("^[0-9]{11,11}$",result):
                     raise ValueError("Parameters: {}, mobile phone number format required".format(key))
+            elif format in ['port']:
+                result_port = int(result)
+                if result_port > 65535 or result_port < 0:
+                    raise ValueError("Parameters: {}, the required port number is 0-65535".format(key))
+                result = result_port
             elif re.match(r"^[<>=]\d+$",result):
                 operator = format[0]
                 length = int(format[1:].strip())
@@ -2888,13 +2971,6 @@ class dict_obj:
             if not result in limit:
                 raise ValueError("The specified parameter value range is incorrect, {}:{}".format(key,limit))
         return result
-
-
-
-
-
-
-
 
 #实例化定目录下的所有模块
 class get_modules:
@@ -3124,7 +3200,7 @@ def login_send_body(is_type,username,login_ip,port):
         send_mail("aapanel login reminder","aapanel login reminder：Your server "+get_ip()+" successfully logged in via "+is_type+", account number: "+username+", login IP: "+login_ip+":"+port+", login time: "+time.strftime('%Y -%m-%d %X',time.localtime()), True)
     if os.path.exists(login_send_dingding):
         if check_ip_white(send_login_white,login_ip):return False
-        send_dingding("aapanel login reminder：Your server "+get_ip()+" successfully logged in via "+is_type+", account number: "+username+", login IP: "+login_ip+":"+port+", login time: "+time.strftime('%Y -%m-%d %X',time.localtime()), True)
+        send_dingding("aapanel login reminder：Your server "+get_ip()+" successfully logged in via "+is_type+", account number: "+username+", login IP: "+login_ip+":"+port+", login time: "+time.strftime('%Y -%m-%d %X',time.localtime())+'\n\n > Login status:  <font color=#20a53a>Succeed</font>', True)
 
 #普通模式下调用发送消息【设置登陆告警后的设置】
 #title= 发送的title
@@ -3211,6 +3287,15 @@ class PanelError(Exception):
     def __str__(self):
         return ("面板运行时发生错误: {}".format(repr(self.value)))
 
+def get_sysbit():
+    '''
+        @name 获取操作系统位数
+        @author hwliang<2021-07-07>
+        @return int 32 or 64
+    '''
+    import struct
+    return struct.calcsize('P') * 8
+
 def get_setup_path():
     '''
         @name 获取安装路径
@@ -3226,6 +3311,241 @@ def get_panel_path():
         @return string
     '''
     return '{}/panel'.format(get_setup_path())
+
+def get_plugin_path(plugin_name = None):
+    '''
+        @name 取指定插件目录
+        @author hwliang<2021-07-14>
+        @param plugin_name<string> 插件名称 不传则返回插件根目录
+        @return string
+    '''
+
+    root_path = "{}/plugin".format(get_panel_path())
+    if not plugin_name: return root_path
+    return "{}/{}".format(root_path,plugin_name)
+
+def get_class_path():
+    '''
+        @name 取类库所在路径
+        @author hwliang<2021-07-14>
+        @return string
+    '''
+    return "{}/class".format(get_panel_path())
+
+def get_logs_path():
+    '''
+        @name 取日志目录
+        @author hwliang<2021-07-14>
+        @return string
+    '''
+    return '/www/wwwlogs'
+
+def get_vhost_path():
+    '''
+        @name 取虚拟主机目录
+        @author hwliang<2021-08-14>
+        @return string
+    '''
+    return '{}/vhost'.format(get_panel_path())
+
+
+def get_backup_path():
+    '''
+        @name 取备份目录
+        @author hwliang<2021-07-14>
+        @return string
+    '''
+    default_backup_path = '/www/backup'
+    backup_path = M('config').where("id=?",(1,)).getField('backup_path')
+    if not backup_path: return default_backup_path
+    if os.path.exists(backup_path): return backup_path
+    return default_backup_path
+
+def get_site_path():
+    '''
+        @name 取站点默认存储目录
+        @author hwliang<2021-07-14>
+        @return string
+    '''
+    default_site_path = '/www/wwwroot'
+    site_path = M('config').where("id=?",(1,)).getField('sites_path')
+    if not site_path: return default_site_path
+    if os.path.exists(site_path): return site_path
+    return default_site_path
+
+
+def read_config(config_name,ext_name = 'json'):
+    '''
+        @name 读取指定配置文件
+        @author hwliang<2021-07-14>
+        @param config_name<string> 配置文件名称(不含扩展名)
+        @param ext_name<string> 配置文件扩展名，默认为json
+        @return string 如果发生错误，将抛出PanelError异常
+    '''
+    config_file = "{}/config/{}.{}".format(get_panel_path(),config_name,ext_name)
+    if not os.path.exists(config_file):
+        raise PanelError('指定配置文件{} 不存在'.format(config_name))
+
+    config_str = readFile(config_file)
+    if ext_name == 'json':
+        try:
+            config_body = json.loads(config_str)
+        except Exception as ex:
+            raise PanelError('配置文件不是标准的可解析JSON内容!\n{}'.format(ex))
+        return config_body
+    return config_str
+
+def save_config(config_name,config_body,ext_name = 'json'):
+    '''
+        @name 保存配置文件
+        @author hwliang<2021-07-14>
+        @param config_name<string> 配置文件名称(不含扩展名)
+        @param config_body<mixed> 被保存的内容, ext_name为json，请传入可解析为json的参数类型，如list,dict,int,str等
+        @param ext_name<string> 配置文件扩展名，默认为json
+        @return string 如果发生错误，将抛出PanelError异常
+    '''
+
+    config_file = "{}/config/{}.{}".format(get_panel_path(),config_name,ext_name)
+    if ext_name == 'json':
+        try:
+            config_body = json.dumps(config_body)
+        except Exception as ex:
+            raise PanelError('配置内容无法被转换为json格式!\n{}'.format(ex))
+
+    return writeFile(config_file,config_body)
+
+def get_config_value(config_name,key,default='',ext_name='json'):
+    '''
+        @name 获取指定配置文件的指定配置项
+        @author hwliang<2021-07-14>
+        @param config_name<string> 配置文件名称(不含扩展名)
+        @param key<string> 配置项
+        @param default<mixed> 获不存在则返回的默认值，默认为空字符串
+        @param ext_name<string> 配置文件扩展名，默认为json
+        @return mixed 如果发生错误，将抛出PanelError异常
+    '''
+    config_data = read_config(config_name,ext_name)
+    return config_data.get(key,default)
+
+def set_config_value(config_name,key,value,ext_name='json'):
+    '''
+        @name 设置指定配置文件的指定配置项
+        @author hwliang<2021-07-14>
+        @param config_name<string> 配置文件名称(不含扩展名)
+        @param key<string> 配置项
+        @param value<mixed> 配置值
+        @param ext_name<string> 配置文件扩展名，默认为json
+        @return mixed  如果发生错误，将抛出PanelError异常
+    '''
+    config_data = read_config(config_name,ext_name)
+    config_data[key] = value
+    return save_config(config_name,config_data,ext_name)
+
+
+def return_data(status,data = {},status_code=None,error_msg = None):
+    '''
+        @name 格式化响应内容
+        @author hwliang<2021-07-14>
+        @param status<bool> 状态
+        @param data<mixed> 响应数据
+        @param status_code<int> 状态码
+        @param error_msg<string> 错误消息内容
+        @return dict
+
+    '''
+    if status_code is None:
+        status_code = 1 if status else 0
+    if error_msg is None:
+        error_msg = '' if status else '未知错误'
+
+    result = {
+                'status':status,
+                "status_code":status_code,
+                'error_msg':str(error_msg),
+                'data':data
+            }
+    return result
+
+
+def return_error(error_msg,status_code = -1,data = []):
+    '''
+        @name 格式化错误响应内容
+        @author hwliang<2021-07-15>
+        @param error_msg<string> 错误消息
+        @param status_code<int> 状态码，默认为-1
+        @param data<mixed> 响应数据
+        @return dict
+    '''
+    return return_data(False,data,status_code,str(error_msg))
+
+
+def error(error_msg,status_code = -1,data = []):
+    '''
+        @name 格式化错误响应内容
+        @author hwliang<2021-07-15>
+        @param error_msg<string> 错误消息
+        @param status_code<int> 状态码，默认为-1
+        @param data<mixed> 响应数据
+        @return dict
+    '''
+    return return_error(error_msg,status_code,data)
+
+def success(data = [],status_code = 1,error_msg = ''):
+    '''
+        @name 格式化成功响应内容
+        @author hwliang<2021-07-15>
+        @param data<mixed> 响应数据
+        @param status_code<int> 状态码，默认为0
+        @return dict
+    '''
+    return return_data(True,data,status_code,error_msg)
+
+
+def return_status_code(status_code,format_body,data = []):
+    '''
+        @name 按状态码返回
+        @author hwliang<2021-07-15>
+        @param status_code<int> 状态码
+        @param format_body<string> 错误内容
+        @param data<mixed> 响应数据
+        @return dict
+    '''
+    error_msg = get_config_value('status_code',str(status_code))
+    if not error_msg: raise PanelError('指定状态码不存在!')
+    return return_data(error_msg[0],data,status_code,error_msg[1].format(format_body))
+
+
+def to_dict_obj(data):
+    '''
+        @name 将dict转换为dict_obj
+        @author hwliang<2021-07-15>
+        @param data<dict> 要被转换的数据
+        @return dict_obj
+    '''
+    if not isinstance(data,dict):
+        raise PanelError('错误的数据类型，只支持将dict转换为dict_obj')
+    pdata = dict_obj()
+    for key in data.keys():
+        pdata[key] = data[key]
+    return pdata
+
+def get_script_object(filename):
+    '''
+        @name 从脚本文件获取对像
+        @author hwliang<2021-07-19>
+        @param filename<string> 文件名
+        @return object
+    '''
+    _obj =  sys.modules.get(filename,None)
+    if _obj: return _obj
+    from types import ModuleType
+    _obj = sys.modules.setdefault(filename, ModuleType(filename))
+    _code = readFile(filename)
+    _code_object = compile(_code,filename, 'exec')
+    _obj.__file__ = filename
+    _obj.__package__ = ''
+    exec(_code_object, _obj.__dict__)
+    return _obj
 
 def check_hooks():
     '''
@@ -3291,6 +3611,21 @@ def get_hook_index(mod_name, def_name):
     end_index = '{}_{}_END'.format(mod_name, def_name)
     return last_index, end_index
 
+
+def flush_plugin_list():
+    '''
+        @name 刷新插件列表
+        @author hwliang<2021-07-22>
+        @return bool
+    '''
+    skey = 'TNaMJdG3mDHKRS6Y'
+    from BTPanel import cache
+    from pluginAuth import Plugin
+    if cache.get(skey): cache.delete(skey)
+    Plugin(False).get_plugin_list(True)
+    return True
+
+
 def get_session_timeout():
     '''
         @name 获取session过期时间
@@ -3306,7 +3641,10 @@ def get_session_timeout():
     session_timeout = 86400
     if not os.path.exists(sess_out_path):
         return session_timeout
-    session_timeout = int(readFile(sess_out_path))
+    try:
+        session_timeout = int(readFile(sess_out_path))
+    except:
+        session_timeout = 86400
     cache.set(skey,session_timeout,3600)
     return session_timeout
 
@@ -3329,3 +3667,100 @@ def get_login_token_auth():
     login_token = readFile(login_token_file)
     cache.set(skey,login_token,3600)
     return login_token
+
+
+def listen_ipv6():
+    '''
+        @name 是否监听ipv6
+        @author hwliang<2021-08-12>
+        @return bool
+    '''
+    ipv6_file = '{}/data/ipv6.pl'.format(get_panel_path())
+    return os.path.exists(ipv6_file)
+
+def get_panel_log_file():
+    '''
+        @name 获取panel日志文件
+        @author hwliang<2021-08-12>
+        @return string
+    '''
+    return "{}/logs/error.log".format(get_panel_path())
+
+
+def print_log(_info,_level = 'DEBUG'):
+    '''
+        @name 写入日志
+        @author hwliang<2021-08-12>
+        @param _info<string> 要写入到日志文件的信息
+        @param _level<string> 日志级别
+        @return void
+    '''
+    log_body = "[{}][{}] - {}\n".format(format_date(),_level.upper(),_info)
+    return WriteFile(get_panel_log_file(),log_body,'a+')
+
+
+
+def to_date(format = "%Y-%m-%d %H:%M:%S",times = None):
+    '''
+        @name 格式时间转时间戳
+        @author hwliang<2021-08-17>
+        @param format<string> 时间格式
+        @param times<date> 时间
+        @return int
+    '''
+    ts = time.strptime(times, "%Y-%m-%d %H:%M:%S")
+    return time.mktime(ts)
+
+
+def get_glibc_version():
+    '''
+        @name 获取glibc版本
+        @author hwliang<2021-08-17>
+        @return string
+    '''
+    try:
+        cmd_result = ExecShell("ldd --version")[0]
+        if not cmd_result: return ''
+        glibc_version = cmd_result.split("\n")[0].split()[-1]
+    except:
+        return ''
+    return glibc_version
+
+
+def is_apache_nginx():
+    '''
+        @name 是否是apache或nginx
+        @author hwliang<2021-08-17>
+        @return bool
+    '''
+    setup_path = get_setup_path()
+    return os.path.exists(setup_path + '/apache') or os.path.exists(setup_path + '/nginx')
+
+def error_403(e):
+    from BTPanel import Response
+    errorStr = '''<html>
+<head><title>403 Forbidden</title></head>
+<body>
+<center><h1>403 Forbidden</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>'''
+    headers = {
+        "Content-Type": "text/html"
+    }
+    return Response(errorStr, status=403, headers=headers)
+
+def error_404(e):
+    from BTPanel import Response
+    errorStr = '''<html>
+<head><title>404 Not Found</title></head>
+<body>
+<center><h1>404 Not Found</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>'''
+    headers = {
+        "Content-Type": "text/html"
+    }
+    return Response(errorStr, status=404, headers=headers)
+

@@ -227,6 +227,25 @@ var bt = {
             var num = min + Math.round(rand * range); //四舍五入
             return num;
         },
+
+  /**
+   * 生成计算数字(加强计算，用于删除重要数据二次确认)
+   * */
+  get_random_code: function () {
+    var flist = [20, 21, 22, 23]
+
+    var num1 = bt.get_random_num(13, 19);
+    var t1 = num1 % 10;
+
+    var num2 = bt.get_random_num(13, 29);
+    var t2 = num2 % 10;
+
+    while ($.inArray(num2, flist) >= 0 || (t1 + t2) <= 10 || t1 == t2) {
+      num2 = bt.get_random_num(13, 29);
+      t2 = num2 % 10;
+    }
+    return { 'num1': num1, 'num2': num2 }
+  },
     /**
      * @description 设置本地存储，local和session
      * @param {String} type 存储类型，可以为空，默认为session类型。
@@ -294,9 +313,16 @@ var bt = {
             return null;
         }
     },
-    select_path: function(id, type) {
+    /**
+   * @description 选择文件目录或文件
+   * @param id {string} 元素ID
+   * @param type {string || function} 选择方式，文件或目录
+   * @param success {function} 成功后的回调
+   */
+    select_path: function(id, type,success,default_path) {
       _this = this;
       _this.set_cookie("SetName", "");
+      if(typeof type !== 'string') success = type,type = 'dir';
       var loadT = bt.open({
           type: 1,
           area: "680px",
@@ -322,40 +348,64 @@ var bt = {
                   $("." + id).val(path).change();
                   loadT.close();
               })
-          }
-      });
-      _this.set_cookie('ChangePath', loadT.form);
-      var paths = $("#" + id).val();
-      if ($('#defaultPath').length > 0 && $("#" + id).parents('.tab-body').length > 0) {
-          paths = $('#defaultPath').text();
-      }
-      _this.get_file_list(paths, type);
+                //选择
+                $('#bt_select').on('click',function () {
+                    var path = bt.format_path($("#PathPlace").find("span").text());
+                    if(type === 'file' && !$('#tbody tr.active').length){
+                        layer.msg('Select the file first!',{icon:0})
+                        return false;
+                    }
+                    if ($('#tbody tr').hasClass('active')) {
+                        path = $('#tbody tr.active .bt_open_dir').attr('path');
+                    }
+                    path = bt.rtrim(path, '/');
+                    $("#" + id).val(path).change();
+                    $("." + id).val(path).change();
+                    if(typeof success === "function") success(path)
+                    loadT.close();
+                })
+                var element = $("#" + id),paths = element.val(),defaultPath = $('#defaultPath');
+                if (defaultPath.length > 0 && element.parents('.tab-body').length > 0) {
+                    paths = defaultPath.text();
+                }
+                if(default_path){
+                    paths = default_path;
+                }
+                _this.get_file_list(paths, type);
+            }
+        });
+        _this.set_cookie('ChangePath', loadT.form);
+    //   var paths = $("#" + id).val();
+    //   if ($('#defaultPath').length > 0 && $("#" + id).parents('.tab-body').length > 0) {
+    //       paths = $('#defaultPath').text();
+    //   }
+    //   _this.get_file_list(paths, type);
 
-      function ActiveDisk() {
-        var a = $("#PathPlace").find("span").text().substring(0, 1);
-        switch (a) {
-            case "C":
-                $(".path-con-left dd:nth-of-type(1)").css("background", "#eee").siblings().removeAttr("style");
-                break;
-            case "D":
-                $(".path-con-left dd:nth-of-type(2)").css("background", "#eee").siblings().removeAttr("style");
-                break;
-            case "E":
-                $(".path-con-left dd:nth-of-type(3)").css("background", "#eee").siblings().removeAttr("style");
-                break;
-            case "F":
-                $(".path-con-left dd:nth-of-type(4)").css("background", "#eee").siblings().removeAttr("style");
-                break;
-            case "G":
-                $(".path-con-left dd:nth-of-type(5)").css("background", "#eee").siblings().removeAttr("style");
-                break;
-            case "H":
-                $(".path-con-left dd:nth-of-type(6)").css("background", "#eee").siblings().removeAttr("style");
-                break;
-            default:
-                $(".path-con-left dd").removeAttr("style")
-        }
-      }
+    //   function ActiveDisk() {
+    //     var a = $("#PathPlace").find("span").text().substring(0, 1);
+    //     switch (a) {
+    //         case "C":
+    //             $(".path-con-left dd:nth-of-type(1)").css("background", "#eee").siblings().removeAttr("style");
+    //             break;
+    //         case "D":
+    //             $(".path-con-left dd:nth-of-type(2)").css("background", "#eee").siblings().removeAttr("style");
+    //             break;
+    //         case "E":
+    //             $(".path-con-left dd:nth-of-type(3)").css("background", "#eee").siblings().removeAttr("style");
+    //             break;
+    //         case "F":
+    //             $(".path-con-left dd:nth-of-type(4)").css("background", "#eee").siblings().removeAttr("style");
+    //             break;
+    //         case "G":
+    //             $(".path-con-left dd:nth-of-type(5)").css("background", "#eee").siblings().removeAttr("style");
+    //             break;
+    //         case "H":
+    //             $(".path-con-left dd:nth-of-type(6)").css("background", "#eee").siblings().removeAttr("style");
+    //             break;
+    //         default:
+    //             $(".path-con-left dd").removeAttr("style")
+    //     }
+    //   }
     },
     get_file_list:function(path, type){
         var _that = this;
@@ -424,9 +474,52 @@ var bt = {
             })
         })
     },
+    prompt_confirm: function (title, msg, callback) {
+        layer.open({
+            type: 1,
+            title: title,
+            area: "480px",
+            closeBtn: 2,
+            btn: ['OK', 'Cancel'],
+            content: "<div class='bt-form promptDelete pd20'>\
+            	<p>" + msg + "</p>\
+            	<div class='confirm-info-box'>\
+            		<input onpaste='return false;' id='prompt_input_box' type='text' value=''>\
+            		<div class='placeholder c9 prompt_input_tips' >If you confirm the operation, enter it manually '<font style='color: red'>" + title + "</font>'</div>\
+                    <div style='margin-top:5px;display: none;' class='prompt_input_ps'>The verification code is incorrect. Please enter it manually '<font style='color: red'>" + title + "</font>'</div></div>\
+            	</div>",
+            success: function () {
+                var black_txt_ = $('#prompt_input_box')
 
-
-
+                $('.placeholder').click(function () {
+                    $(this).hide().siblings('input').focus()
+                })
+                black_txt_.focus(function () {
+                    $('.prompt_input_tips.placeholder').hide()
+                })
+                black_txt_.blur(function () {
+                    black_txt_.val() == '' ? $('.prompt_input_tips.placeholder').show() : $('.prompt_input_tips.placeholder').hide()
+                });
+                black_txt_.keyup(function () {
+                    if (black_txt_.val() == '') {
+                        $('.prompt_input_tips.placeholder').show();
+                        $('.prompt_input_ps').hide();
+                    } else {
+                        $('.prompt_input_tips.placeholder').hide();
+                    }
+                })
+            },
+            yes: function (layers, index) {
+                var result = $("#prompt_input_box").val().trim();
+                if (result == title) {
+                    layer.close(layers)
+                    if (callback) callback()
+                } else {
+                    $('.prompt_input_ps').show();
+                }
+            }
+        });
+    },
     show_confirm: function(title, msg, fun, error) {
         if (error == undefined) {
             error = ""
@@ -683,7 +776,7 @@ var bt = {
                 _tab.click(function() {
                     $('#' + obj).find('span').removeClass('on');
                     $(this).addClass('on');
-                    var _contents = $('.tab-con');
+                    var _contents = $('#' + obj).next('.tab-con');
                     _contents.html('');
                     $(this).data('callback')(_contents);
                 })
@@ -3072,14 +3165,25 @@ bt.system = {
     },
     rep_panel: function(callback) {
         var loading = bt.load(lan.index.rep_panel_the)
-        bt.send('RepPanel', 'system/RepPanel', {}, function(rdata) {
-            loading.close();
-            if (rdata) {
-                if (callback) callback({ status: rdata, msg: lan.index.rep_panel_ok });
-                bt.system.reload_panel();
+        $.ajax({
+            type: 'POST',
+            url: 'system?action=RepPanel',
+            error: function (err) {
+                setTimeout(() => {
+                    loading.close();
+                    bt.system.reload_panel(function () {
+                        location.reload();
+                    });
+                }, 1000 * 60 * 5);
+            },
+            success: function (rdata) {
+                loading.close();
+                if (rdata) {
+                    if (callback) callback({ status: rdata, msg: lan.index.rep_panel_ok });
+                    bt.system.reload_panel();
+                }
             }
-
-        })
+        });
     },
     get_warning: function(callback) {
         bt.send('GetWarning', 'ajax/GetWarning', {}, function(rdata) {
@@ -3884,10 +3988,7 @@ bt.soft = {
         bt.soft.pro.get_product_discount_by(config.pid,function(rdata){
           //rdata = {"36": {"discount": 1, "did": 0, "price": 3564, "name": "正常", "sprice": 3564}, "24": {"discount": 1, "did": 0, "price": 2376, "name": "正常", "sprice": 2376}, "12": {"discount": 1, "did": 0, "price": 1188, "name": "正常", "sprice": 1188}, "6": {"discount": 1, "did": 0, "price": 594, "name": "正常", "sprice": 594}, "3": {"discount": 1, "did": 0, "price": 297, "name": "正常", "sprice": 297}, "1": {"discount": 1, "did": 0, "price": 99, "name": "正常", "sprice": 99}, "pid": "100000045"};
           if(typeof rdata.status === "boolean"){
-              if(!rdata.status) {
-                  bt.msg({status:false, msg:rdata.msg})
-                  return false;
-              }
+              if(!rdata.status) return false;
           }
           that.product_cache[config.pid] = rdata;
           setTimeout(function(){ delete that.product_cache[config.pid] },60000);
@@ -4021,8 +4122,7 @@ bt.soft = {
                   if (rdata.status === false){
                     bt.set_cookie('force', 1);
                     if (soft) soft.flush_cache();
-                    // layer.msg(rdata.msg, { icon: 2 });
-                    bt.msg({status:false,msg:rdata.msg})
+                    layer.msg(rdata.msg, { icon: 2 });
                     return;
                   }
                   config.pay = parseInt($('#libPay-mode .pay-cycle-btn.active').data('condition'));
@@ -4486,8 +4586,7 @@ bt.soft = {
             if (rdata.status === false) {
                 bt.set_cookie('force', 1);
                 if (soft) soft.flush_cache();
-                // layer.msg(rdata.msg, { icon: 2 });
-                bt.msg({status:false,msg:rdata.msg})
+                layer.msg(rdata.msg, { icon: 2 });
                 return;
             }
             $(".pay-wx").html('');

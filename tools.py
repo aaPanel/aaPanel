@@ -450,6 +450,53 @@ def bt_cli(u_input = 0):
             u_input = input(public.GetMsg("INPUT_CMD_NUM"))
             if sys.version_info[0] == 3: u_input = int(u_input)
         except: u_input = 0
+    try:
+        if u_input in ['log','logs','error','err','tail','debug','info']:
+            os.system("tail -f {}".format(public.get_panel_log_file()))
+            return
+        if u_input[:6] in ['install','update']:
+            print("Tip: Example of command parameter transfer (compile and install php7.4):bt install/0/php/7.4")
+            print(sys.argv)
+            install_args = u_input.split('/')
+            if len(install_args) < 2:
+                try:
+                    install_input = input("Please select the installation method (0 compile install, 1 speed install, default: 1):")
+                    install_input = int(install_input)
+                except:
+                    install_input = 1
+            else:
+                install_input = int(install_args[1])
+            print(raw_tip)
+            soft_list = 'nginx apache php mysql memcached redis pure-ftpd phpmyadmin pm2 docker openlitespeed mongodb'
+            soft_list_arr = soft_list.split(' ')
+            if len(install_args) < 3:
+                install_soft = ''
+                while not install_soft:
+                    print("Supported software:{}".format(soft_list))
+                    print(raw_tip)
+                    install_soft = input("Please enter the name of the software to be installed (eg: nginx)：")
+                    if install_soft not in soft_list_arr:
+                        print("Software that does not support command line installation")
+                        install_soft = ''
+            else:
+                install_soft = install_args[2]
+
+            print(raw_tip)
+            if len(install_args) < 4:
+                install_version = ''
+                while not install_version:
+                    print(raw_tip)
+                    install_version = input("Please enter the version number to be installed (for example: 1.18):")
+            else:
+                install_version = install_args[3]
+
+            print(raw_tip)
+            os.system("bash /www/server/panel/install/install_soft.sh {} {} {} {}".format(install_input,install_args[0],install_soft,install_version))
+            exit()
+
+        print("Unsupported command")
+        exit()
+    except: pass
 
     nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25,26]
     if not u_input in nums:
@@ -639,7 +686,11 @@ if __name__ == "__main__":
         update_to6()
     elif type == "cli":
         clinum = 0
-        if len(sys.argv) > 2: clinum = int(sys.argv[2])
+        try:
+            if len(sys.argv) > 2:
+                clinum = int(sys.argv[2]) if sys.argv[2][:6] not in ['instal','update'] else sys.argv[2]
+        except:
+            clinum = sys.argv[2]
         bt_cli(clinum)
     else:
         print('ERROR: Parameter error')

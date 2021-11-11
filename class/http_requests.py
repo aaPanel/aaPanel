@@ -275,7 +275,7 @@ exit($header."\r\n\r\n".json_encode($body));
 
     #取CURL路径
     def _curl_bin(self):
-        c_bin = ['/usr/local/curl2/bin/curl','/usr/local/curl/bin/curl','/usr/bin/curl']
+        c_bin = ['/usr/local/curl2/bin/curl','/usr/local/curl/bin/curl','/usr/local/bin/curl','/usr/bin/curl']
         for cb in c_bin:
             if os.path.exists(cb): return cb
         return 'curl'

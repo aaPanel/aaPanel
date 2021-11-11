@@ -348,7 +348,7 @@ class panelPlugin:
             if 'token' in pdata:
                 url_headers = {"authorization": "bt {}".format(pdata['token'])}
             pdata['environment_info'] = json.dumps(public.fetch_env_info())
-            listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers)
+            listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers,verify=False)
             listTmp=listTmp.json()
             if not listTmp:
                 listTmp = public.readFile(lcoalTmp)
@@ -632,10 +632,11 @@ class panelPlugin:
     #处理分类
     def get_types(self,sList,sType):
         if sType <= 0: return sList
-        if sType != 12:
-            sType = [sType]
-        else:
-            sType = [sType,8]
+        sType = [sType]
+        # if sType != 12:
+        #     sType = [sType]
+        # else:
+        #     sType = [sType,8]
         newList = []
         for sInfo in sList:
             if sInfo['type'] in sType: newList.append(sInfo)
@@ -682,7 +683,8 @@ class panelPlugin:
             soft_list_tmp = []
             softList['list'] = self.check_isinstall(softList['list'])
             for val in softList['list']:
-                if val['setup']: soft_list_tmp.append(val)
+                if 'setup' in val:
+                    if val['setup']: soft_list_tmp.append(val)
             softList['list'] = soft_list_tmp
             softList['list'] = self.get_page(softList['list'],get)
         else:
@@ -804,38 +806,40 @@ class panelPlugin:
     def set_coexist(self,sList):
         softList = []
         for sInfo in sList:
-            if sInfo['version_coexist'] == 1:
-                for versionA in sInfo['versions']:
-                    sTmp = sInfo.copy()
-                    v = versionA['m_version'].replace('.','')
-                    sTmp['title'] = sTmp['title']+'-'+versionA['m_version']
-                    sTmp['name'] = sTmp['name']+'-'+versionA['m_version']
-                    sTmp['version'] = sTmp['version'].replace('{VERSION}',v)
-                    sTmp['manager_version'] = sTmp['manager_version'].replace('{VERSION}',v)
-                    sTmp['install_checks'] = sTmp['install_checks'].replace('{VERSION}',v)
-                    if 'uninsatll_checks' not in sTmp:
-                        sTmp['uninsatll_checks'] = sTmp['uninstall_checks'].replace('{VERSION}',v)
-                    else:
-                        sTmp['uninsatll_checks'] = sTmp['uninsatll_checks'].replace('{VERSION}',v)
-                    sTmp['s_version'] = sTmp['s_version'].replace('{VERSION}',v)
-                    sTmp['versions'] = []
-                    sTmp['versions'].append(versionA)
-                    softList.append(sTmp)
-            else:
-                softList.append(sInfo)
+            try:
+                if sInfo['version_coexist'] == 1 and 'versions' in sInfo:
+                    for versionA in sInfo['versions']:
+                        try:
+                            sTmp = sInfo.copy()
+                            v = versionA['m_version'].replace('.','')
+                            sTmp['title'] = sTmp['title']+'-'+versionA['m_version']
+                            sTmp['name'] = sTmp['name']+'-'+versionA['m_version']
+                            sTmp['version'] = sTmp['version'].replace('{VERSION}',v)
+                            sTmp['manager_version'] = sTmp['manager_version'].replace('{VERSION}',v)
+                            sTmp['install_checks'] = sTmp['install_checks'].replace('{VERSION}',v)
+                            if 'uninsatll_checks' not in sTmp:
+                                sTmp['uninsatll_checks'] = sTmp['uninstall_checks'].replace('{VERSION}',v)
+                            else:
+                                sTmp['uninsatll_checks'] = sTmp['uninsatll_checks'].replace('{VERSION}',v)
+                            sTmp['s_version'] = sTmp['s_version'].replace('{VERSION}',v)
+                            sTmp['versions'] = []
+                            sTmp['versions'].append(versionA)
+                            softList.append(sTmp)
+                        except: continue
+                else:
+                    softList.append(sInfo)
+            except: continue
         return softList
 
     #检测是否安装
     def check_isinstall(self,sList):
-        try:
-            if not os.path.exists(self.__index): public.writeFile(self.__index,'[]')
-            indexList = json.loads(public.ReadFile(self.__index))
-            for i in range(len(sList)):
-                sList[i]['index_display'] = sList[i]['name'] in indexList
-                sList[i] = self.check_status(sList[i])
-            return sList
-        except:
-            public.writeFile(self.__index,'[]')
+        if not os.path.exists(self.__index): public.writeFile(self.__index,'[]')
+        indexList = json.loads(public.ReadFile(self.__index))
+        for i in range(len(sList)):
+            sList[i]['index_display'] = sList[i]['name'] in indexList
+            sList[i] = self.check_status(sList[i])
+        return sList
+
 
     #检查软件状态
     def check_status(self,softInfo):
@@ -2077,7 +2081,7 @@ class panelPlugin:
                     import panelPHP
                     return panelPHP.panelPHP(get.name).exec_php_script(get)
                 return public.returnMsg(False,'PLUGIN_INPUT_B')
-            if not self.check_accept(get):return public.returnMsg(False,public.to_string([24744, 26410, 36141, 20080, 91, 37, 115, 93, 25110, 25480, 26435, 24050, 21040, 26399, 33]) % (self.get_title_byname(get),))
+            if not self.check_accept(get):return public.returnMsg(False,"You did not purchase [ %s ] or the authorization has expired" % (self.get_title_byname(get),))
             public.package_path_append(path)
             plugin_main = __import__(get.name+'_main')
             try:

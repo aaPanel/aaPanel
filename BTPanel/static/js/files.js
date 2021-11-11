@@ -220,7 +220,7 @@ var bt_file = {
                     content:'<div style="padding:15px 15px 10px 15px;"><div class="upload_btn_groud"><div class="btn-group"><button type="button" class="btn btn-primary btn-sm upload_file_btn">Upload file</button><button type="button" class="btn btn-primary  btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span><span class="sr-only">Toggle Dropdown</span></button><ul class="dropdown-menu"><li><a href="#" data-type="file">Upload file</a></li><li><a href="#" data-type="dir">Upload path</a></li></ul></div><div class="file_upload_info" style="display:none;"><span>Total process&nbsp;<i class="uploadProgress"></i>, uploading&nbsp;<i class="uploadNumber"></i>,</span><span style="display:none">Upload fail&nbsp;<i class="uploadError"></i></span><span>Speed&nbsp;<i class="uploadSpeed">Getting</i>,</span><span>Expect time&nbsp;<i class="uploadEstimate">Getting</i></span><i></i></div></div><div class="upload_file_body '+ (html==''?'active':'') +'">'+ (html!=''?('<ul class="dropUpLoadFileHead" style="padding-right:'+ (is_show?'15':'0') +'px"><li class="fileTitle"><span class="filename">File name</span><span class="filesize">File size</span><span class="fileStatus">File status</span></li></ul><ul class="dropUpLoadFile list-list">'+ html +'</ul>'):'<span>Please drag the file here'+ (!that.is_webkit?'<i style="display: block;font-style: normal;margin-top: 10px;color: red;font-size: 17px;">The current browser does not support drag upload. Commend to use Chrome browser or WebKit kernel for browsing</i>':'') +'</span>') +'</div></div>',
                     success:function(layers){
                         $('#mask_layer').hide();
-                        layers.find('.layui-layer-btn2').css('margin', '0 300px 0 0');
+                        layers.find('.layui-layer-btn2').css('float', 'left');
                         $('.file_dir_uploads .layui-layer-max').hide();
                         $('.upload_btn_groud .upload_file_btn').click(function(){$('.upload_btn_groud .dropdown-menu [data-type=file]').click()});
                         $('.upload_btn_groud .dropdown-menu a').click(function(){
@@ -725,6 +725,7 @@ var bt_file = {
                 if(!res.msg) layer.msg('Refresh succeeded')
             });
         });
+        // 上传
         $('.upload_file').on('click',function(e){
             that.file_drop.dialog_view();
         });
@@ -1117,7 +1118,7 @@ var bt_file = {
                 left: ev.clientX - $(this).offset().left
             };
             // 鼠标按下后拖动
-            $(document).unbind('mousemove').mousemove(function(ev){
+            bt_file.window_mousemove = function(ev) {
                 // 鼠标按下后移动到的位置
                 var endPos = {
                     top:  ev.clientY - con_t > 0 && ev.clientY - con_t < container.height() ? ev.clientY - con_t : (ev.clientY - (con_t+container.height()) > 1 ?container.height():0),
@@ -1130,6 +1131,7 @@ var bt_file = {
                 if(bt.get_cookie('rank') == 'list'){ //在列表模式下减去表头高度
                     fixedPoint.top = fixedPoint.top + 40
                 }
+                var enter_files_box = that.enter_files_box()
                 // 拖拽范围的宽高
                 var w = Math.min(Math.abs(endPos.left - startPos.left), con_l + container.width() - fixedPoint.left);
                 var h = Math.min(Math.abs(endPos.top - startPos.top), con_t + container.height() - fixedPoint.top);
@@ -1155,17 +1157,17 @@ var bt_file = {
                 }
                 if(startPos.top == endPos.top || startPos.left == endPos.left) return true;
                 // 设置拖拽盒子位置
-                that.enter_files_box().show().css({
+                enter_files_box.show().css({
                     left: fixedPoint.left+'px',
                     top: fixedPoint.top+'px',
                     width: w+'px',
                     height: h+'px'
                 });
 
-                var box_offset_top = that.enter_files_box().offset().top;
-                var box_offset_left = that.enter_files_box().offset().left;
-                var box_offset_w = that.enter_files_box().offset().left + that.enter_files_box().width();
-                var box_offset_h = that.enter_files_box().offset().top + that.enter_files_box().height();
+                var box_offset_top = enter_files_box.offset().top;
+                var box_offset_left = enter_files_box.offset().left;
+                var box_offset_w = enter_files_box.offset().left + enter_files_box.width();
+                var box_offset_h = enter_files_box.offset().top + enter_files_box.height();
                 $(container).find('.file_tr').each(function(i,item){
                     var offset_top = $(item).offset().top;
                     var offset_left = $(item).offset().left;
@@ -1185,15 +1187,15 @@ var bt_file = {
                         }
                     }
                 });
-            })
+            }
 
             // 鼠标抬起
-            $(document).on('mouseup',function(){
-                var _move_array = [];
-                var box_offset_top = that.enter_files_box().offset().top;
-                var box_offset_left = that.enter_files_box().offset().left;
-                var box_offset_w = that.enter_files_box().offset().left + that.enter_files_box().width();
-                var box_offset_h = that.enter_files_box().offset().top + that.enter_files_box().height();
+            bt_file.window_mouseup = function() {
+                var _move_array = [],enter_files_box = that.enter_files_box();
+                var box_offset_top = enter_files_box.offset().top;
+                var box_offset_left = enter_files_box.offset().left;
+                var box_offset_w = enter_files_box.offset().left + enter_files_box.width();
+                var box_offset_h = enter_files_box.offset().top + enter_files_box.height();
                 $(container).find('.file_tr').each(function(i,item){
                     var offset_top = $(item).offset().top;
                     var offset_left = $(item).offset().left;
@@ -1211,9 +1213,12 @@ var bt_file = {
                     }
                 });
                 that.render_file_selected(_move_array);  //渲染数据
-                that.enter_files_box().remove();         //删除盒子
+                enter_files_box.remove();         //删除盒子
                 $('.file_list_content').unbind('mousewheel');  //解绑滚轮事件
-            })
+                $(document).unbind('mousemove',bt_file.window_mousemove);
+            }
+            $(document).one('mouseup',bt_file.window_mouseup);
+            $(document).on('mousemove',bt_file.window_mousemove);
             ev.stopPropagation();
             ev.preventDefault();
         })
@@ -1264,6 +1269,10 @@ var bt_file = {
             item.type_tips = item.type == 'file'?'File':'Directory';
             that.file_groud_event(item);
         });
+        // 文件搜索
+        $('.replace_content').on('click', function() {
+            that.replace_content_view()
+        })
     },
     /**
      * @descripttion: 文件拖拽范围
@@ -1578,7 +1587,7 @@ var bt_file = {
                 shadeClose: false,
                 skin:'download_file_view',
                 content:html[0].outerHTML,
-                btn:['Comfirm','Close'],
+                btn:['Confirm','Close'],
                 success:function(){
                     form.setEvent();
                 },
@@ -1822,7 +1831,7 @@ var bt_file = {
      * @return: 无返回值
      */
     render_file_selected:function(_array){
-        $(document).unbind('mouseup').unbind('mousemove');
+        // $(document).unbind('mouseup').unbind('mousemove');
         var that = this,tmp = [];
         that.clear_table_active()
         $.each(_array,function(index,item){
@@ -1930,7 +1939,7 @@ var bt_file = {
     */
     del_favorites:function(path){
         var that = this
-        layer.confirm('Comfirm delete path【'+path+'】？', { title: 'Delete favorites', closeBtn: 2, icon: 3 }, function (index) {
+        layer.confirm('Confirm delete path【'+path+'】？', { title: 'Delete favorites', closeBtn: 2, icon: 3 }, function (index) {
             that.$http('del_files_store',{path:path},function(res){
                 if(res.status){
                     that.render_favorites_type_list();
@@ -2518,6 +2527,219 @@ var bt_file = {
             }
 
         })
+    },
+    /**
+     * @description 文件内容搜索替换
+     * @return void
+     */
+    replace_content_view: function() {
+        layer.open({
+            title: 'Search Files Content',
+            type: 1,
+            skin: 'replace_content_view',
+            area: '710px',
+            zIndex:19900,
+            closeBtn: 2,
+            content: '<div class="replace_content_box" style="padding:20px 40px">' +
+                '<div class="replace_content_line">' +
+                    '<span class="tname">Search</span>' +
+                    '<div class="info-r">' +
+                    '<input class="bt-input-text" id="replaceContentValue" AUTOCOMPLETE="off" type="text" placeholder="Enter the content of the file you search for" style="width:486px">' +
+                    '<i class="history_search iconfont icon-xiala"></i>'+
+                    '<button class="normalBtnStyle checkBtn" onClick="bt_file.searchReplaceContent()" style="vertical-align: top; ">Search</button>' +
+                    '<ul class="history_search_list hide"></ul>'+
+                    '</div>' +
+                '</div>' +
+                '<div class="replace_content_line">' +
+                    '<span class="tname">Suffix</span>' +
+                    '<div class="info-r">' +
+                    '<input name="replaceFileExtsType" id="replaceFileExtsType" class="bt-input-text" placeholder="e.g: php,html" type="text" value="html,php" style="width:570px">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="replace_content_line" style="margin-bottom: 10px;">' +
+                    '<span class="tname">Folder</span>' +
+                    '<div class="info-r">' +
+                        '<input class="bt-input-text" value="'+bt_file.file_path+'" type="text" style="width:570px" id="replaceContentPath">' +
+                        '<div class="file_path_switch replaceHasChild">' +
+                        '<i class="file_find_checkbox"></i>'+
+                        '<span class="laberText">Subdir</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="replace_content_line">' +
+                    '<span class="tname">Mode</span>' +
+                    '<div class="info-r matchModel">' +
+                        '<div>' +
+                            '<div class="checkbox_config normalModel">' +
+                            '<i class="file_find_radio active"></i>'+
+                            '<span class="laberText">Words</span>' +
+                            '</div>' +
+                            '<div class="checkbox_config regularMatchRe">' +
+                            '<i class="file_find_radio"></i>'+
+                            '<span class="laberText">Regex</span>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="checkbox_config allMatchRe hide_option">' +
+                            '<i class="file_find_checkbox"></i>'+
+                            '<span class="laberText">Match whole word</span>' +
+                            '</div>' +
+                            '<div class="checkbox_config distinguishCaseRe">' +
+                            '<i class="file_find_checkbox"></i>'+
+                            '<span class="laberText">Match case</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="line match_container">'+
+                    '<div class="header">'+
+                    '<div class="tips-title matchRresult"></div>'+
+                    '</div>'+
+                    '<div class="main matchContent_main"><div style="color: #bcbcbc; font-size: 16px; text-align: center;line-height: 35px;">Type search content to search in the file</br><span style="font-size:14px">Options to narrow down the search</span></div></div>'+
+                '</div>'+
+                '<span class="glyphicon cursor mr5 glyphicon-folder-open" onClick="bt.select_path(\'replaceContentPath\')"></span>' +
+            '</div>',
+            success:function(){
+                //单选、复选框按钮事件
+                $('.checkbox_config,.file_path_switch').click(function(e){
+                    if(e.target.localName == 'i' || e.target.localName == 'span'){
+                        var is_radio = $(this).find('i').hasClass('file_find_radio'),i_box = $(this).find('i');
+                        if(is_radio){//是否单选
+                            i_box.addClass('active').parent('div').siblings().find('i').removeClass('active');
+                            if($(this).find('.laberText').text() == 'Words'){
+                                $('.hide_option').removeClass('hide')
+                            }else{  //正则模式下取消全词匹配
+                                $('.hide_option').addClass('hide').find('i').removeClass('active')
+                            }
+                        }else{//是否复选
+                            if(i_box.hasClass('active')){
+                                i_box.removeClass('active')
+                            }else{
+                                i_box.addClass('active')
+                            }
+                        }
+                    }
+                })
+                // 历史输入
+                $('.history_search').click(function(e){
+                    var list = JSON.parse(bt.get_cookie('file_search_list')),h_html = '';
+                    if($.type(list) === 'undefined' || list == null){
+                        h_html = '<span style=" padding: 5px 10px; ">No records</span>';
+                        $('.history_search_list').html(h_html).removeClass('hide');
+                    }else{
+                        $('.history_search_list').empty();
+                        $.each(list,function(index,item){
+                            $('.history_search_list').append($('<li></li>').attr('data-key',item).text(item)).removeClass('hide')
+                        })
+                    }
+                    $(document).one('click', function() {
+                        $('.history_search_list').addClass('hide');
+                        e.stopPropagation();
+                    });
+                    e.stopPropagation();
+                })
+                //选择历史输入
+                $('.history_search_list').on('click','li',function(){
+                    $('#replaceContentValue').val($(this).data('key'));
+                    $('.history_search_list').addClass('hide');
+                })
+            }
+        })
+    },
+    /**
+     * @description 文件内容搜索結果
+     * @returns void
+     */
+    searchReplaceContent: function() {
+        var that = this,
+            file_num = 0,    //文件数量
+            match_num = 0,   //文件内查询到的数量
+            match_file_html = '',
+            data = {
+                text: $('#replaceContentValue').val(),
+                exts: $("#replaceFileExtsType").val() || 'html,php',
+                path: $('#replaceContentPath').val(),     //路径
+                is_subdir: !$('.replaceHasChild').find('i').hasClass('active') ? '0' : '1',    //0不包含子目录 1 包含子目录
+                mode: !$('.regularMatchRe').find('i').hasClass('active') ? '0' : '1',          //为普通模式 1 为正则模式
+                isword: !$('.allMatchRe').find('i').hasClass('active') ? '0' : '1',            //全词匹配 0 默认
+                iscase: !$('.distinguishCaseRe').find('i').hasClass('active') ? '1' : '0',     //不区分大小写 0 默认
+                noword: '0'        //不输出行信息 0 默认
+            }
+        this.$http('files_search',data,function(res) {
+            var reg = new RegExp("("+that.escodeChange(data.text)+")");
+            if(res.error) return layer.msg(res.error, {icon: 2});
+            if (data.text.indexOf('\n') < 0 && data.text != '') that.setSearchHistoryList(data.text);   //设置搜索历史列表
+            if($.isEmptyObject(res)){
+                $('.replace_content_view .matchContent_main').html('<div style=" color: #bcbcbc; font-size: 16px; text-align: center; ">No data found</div>')
+                $('.matchRresult').html('')
+                return
+            }
+            $.each(res,function(fileName,item){
+                file_num++;
+                var contentNum = Object.keys(item).length
+                match_file_html+='<div class="match_content_item" data-file="'+fileName+'">'+
+                        '<div class="match_content_title">'+
+                            '<span class="match_result_file_title" title="'+fileName+'&nbsp;&nbsp;(Match '+contentNum+' times)"><i class="glyphicon glyphicon-triangle-bottom"></i>'+fileName+'&nbsp;&nbsp;(Match '+contentNum+' times)</span>'+
+                            '<a class="btlink pull-right editFile" data-filename="'+fileName+'">Edit</a>'+
+                        '</div>'+
+                        '<div class="match_result_file_content matchShow">'
+                $.each(item,function(index,lineItem){
+                    match_num++
+                    var html = $('<div></div>').text(lineItem.trim()).html().replace(reg,'<i style="font-weight: bold">'+ $('<div></div>').text(data.text).html() +'</i>')
+                    match_file_html += '<div class="match_result_detail"><span style="font-weight: bold"> line '+index+'</span>:&nbsp;&nbsp;&nbsp;&nbsp;'+html+'</div>';
+                })
+                match_file_html+= '</div></div>'
+            })
+            $('.matchRresult').html('Search results: <span style="color: #20a53a;">'+ match_num +'</span> matches in <span style="font-weight: bold;">'+ file_num +'</span> files')
+            $('.matchContent_main').html(match_file_html);
+            // 隐藏显示内容
+            $('.matchContent_main .match_result_file_title').click(function(e){
+                var parent_box = $(this).parents('.match_content_item'),
+                    is_icon_top = $(this).find('i').hasClass('glyphicon-triangle-top')   //是否图标向上（未打开）
+                if(is_icon_top){
+                    parent_box.find('.match_result_file_content').addClass('matchShow')
+                    $(this).find('i').removeClass('glyphicon-triangle-top').addClass('glyphicon-triangle-bottom')
+                }else{
+                    $(this).find('i').removeClass('glyphicon-triangle-bottom').addClass('glyphicon-triangle-top')
+                    parent_box.find('.match_result_file_content').removeClass('matchShow')
+                }
+                e.stopPropagation()
+            })
+            //编辑跳转
+            $('.editFile').click(function(){
+                openEditorView(0,$(this).data('filename'),function(val,aceEitor){
+                    aceEitor.ace.find(data.text)
+                    aceEitor.ace.execCommand('find')
+                })
+            })
+        })
+    },
+    /**
+     * @description 设置搜索历史列表
+     * @param {String} text 查找的文本
+     * @returns void
+     */
+    setSearchHistoryList:function(text){
+        var h_cookie = JSON.parse(bt.get_cookie('file_search_list'));
+        if($.type(h_cookie) === 'undefined' || h_cookie == null){
+            bt.set_cookie('file_search_list', JSON.stringify([text]))
+        }else{
+            if($.inArray(text,h_cookie) != -1) return true;   //如果已在列表中则跳过
+            h_cookie.unshift(text)   //数组首位添加查找内容
+            if(h_cookie.length > 7) h_cookie.pop()   //超过7位时删除最后一条搜索记录
+            bt.set_cookie('file_search_list', JSON.stringify(h_cookie))
+        }
+    },
+    /**
+     * @description 转义查找输入的内容特殊字符
+     * @param {String} e 查找的内容
+     * @returns 返回转义结果
+     */
+    escodeChange:function(e){
+        if(/(\+|\-|\$|\||\!|\(|\)|\{|\}|\[|\]|\^|\”|\~|\*|\?|\:|\\)/g.test(e)){
+            e = e.replace(/(\+|\-|\$|\||\!|\(|\)|\{|\}|\[|\]|\^|\”|\~|\*|\?|\:|\\)/g,'\\$1').replace(/&/g, "&amp;").replace(/\>/g, "&gt;").replace(/\</g, "&lt;");
+        }
+        return e
     },
     /**
      * @description 回收站视图
@@ -3744,7 +3966,7 @@ var bt_file = {
         if(that.is_recycle){
             bt.confirm({
                 title:'Delete '+ data.type_tips +'[&nbsp;'+ data.filename +'&nbsp;]',
-                msg:'<span>Comfirm delete '+ data.type_tips +'[&nbsp;'+ data.path +'&nbsp;],it will move to recycle bin after delete, continue?</span>'
+                msg:'<span>Confirm delete '+ data.type_tips +'[&nbsp;'+ data.path +'&nbsp;],it will move to recycle bin after delete, continue?</span>'
             },function(){
                 that.del_file_req(data,function(res){
                     that.reader_file_list({path:that.file_path})
@@ -4519,7 +4741,7 @@ var bt_file = {
     */
     remove_download_url:function(data,callback){
         var that = this;
-        layer.confirm('Comfirm to stop sharing【'+ data.fileName +'】, continue?',{ title: 'Cancel sharing', closeBtn: 2, icon: 3 }, function () {
+        layer.confirm('Confirm to stop sharing【'+ data.fileName +'】, continue?',{ title: 'Cancel sharing', closeBtn: 2, icon: 3 }, function () {
             this.layerT = bt.load('Canceling sharing files, please wait...');
             bt.send('remove_download_url','files/remove_download_url',{id:data.id},function(res){
                 if (callback) callback(res);
@@ -4787,7 +5009,7 @@ var bt_file = {
                 shadeClose: false,
                 closeBtn:2,
                 skin:'unpack_file_view',
-                btn:['Comfirm','Cancel'],
+                btn:['Confirm','Cancel'],
                 content: html[0].outerHTML,
                 success:function(){
                     if(data.ext == 'gz') _type = 'tar' //解压格式

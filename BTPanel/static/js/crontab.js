@@ -147,29 +147,29 @@ function edit_task_info(id){
             }
           });
         }
-        if(obj.from.notice_channel == 'dingding') {
-            obj.sBody.title = '钉钉'
+        if(obj.from.notice_channel == 'telegram') {
+            obj.sBody.title = 'Telegram'
         }else if(obj.from.notice_channel == 'mail') {
             obj.sBody.title = 'Email'
-        }else if(obj.from.notice_channel == 'dingding,mail') {
+        }else if(obj.from.notice_channel == 'telegram,mail') {
             obj.sBody.title = 'All'
         } else {
             obj.sBody.title = 'No Data'
         }
         if(obj.from.sType == 'site' || obj.from.sType == 'database' || obj.from.sType == 'path') {
-          $.post('/config?action=get_settings',{type: 'sites'},function(rdata){
-            if(rdata.user_mail.user_name && rdata.dingding.dingding) {
+          $.post('/config?action=get_settings2',{type: 'sites'},function(rdata){
+            if(rdata.user_mail.user_name && rdata.telegram.setup) {
                           obj.sBody.messageChannelBtnText = 'All'
-                    obj.sBody.channelInitVal= 'user_name,dingding'
-                          obj.sBody.messageChannelDom = '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding,mail">All</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding">钉钉</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">邮箱</a></li>'
-            } else if(!rdata.user_mail.user_name && !rdata.dingding.dingding){
+                    obj.sBody.channelInitVal= 'user_name,telegram'
+                          obj.sBody.messageChannelDom = '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram,mail">All</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
+            } else if(!rdata.user_mail.user_name && !rdata.telegram.setup){
               obj.sBody.messageChannelBtnText = 'No Data'
               obj.sBody.channelInitVal= ''
               obj.sBody.messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="">No Data</a></li>'
-            } else if(rdata.dingding.dingding) {
-              obj.sBody.messageChannelBtnText = '钉钉'
-              obj.sBody.channelInitVal= 'dingding'
-              obj.sBody.messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding">钉钉</a></li>'
+            } else if(rdata.telegram.setup) {
+              obj.sBody.messageChannelBtnText = 'Telegram'
+              obj.sBody.channelInitVal= 'telegram'
+              obj.sBody.messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li>'
             } else if(rdata.user_mail.user_name) {
               obj.sBody.messageChannelBtnText = 'Email'
               obj.sBody.channelInitVal= 'mail'
@@ -465,7 +465,7 @@ function edit_task_info(id){
 }
 // 修改木马查杀  消息通道
 function edit_message_channel(type){
-  $.post('/config?action=get_settings',function(res){
+  $.post('/config?action=get_settings2',function(res){
     var tMess = "";
     if(res.user_mail.user_name && !res.dingding.dingding){
       tMess = '<div class="check_alert" style="margin-right:20px;display: inline-block;">\
@@ -975,20 +975,20 @@ function toBackup(type){
 					<span><input type="number" name="save" id="save" value="'+save_num+'" maxlength="4" max="100" min="1"></span>\
 					</div>';
         if (type == 'sites' || type == 'path' || type == 'databases') {
-          $.post('/config?action=get_settings',data,function(rdata){
+          $.post('/config?action=get_settings2',data,function(rdata){
             var messageChannelDom = '', messageChannelBtnText = '', channelInitVal = ''
-            if(rdata.user_mail.user_name && rdata.dingding.dingding) {
+            if(rdata.user_mail.user_name && rdata.telegram.setup) {
               messageChannelBtnText = 'ALL'
-			  channelInitVal= 'user_name,dingding'
-              messageChannelDom = '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding,mail">ALL</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding">钉钉</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">邮箱</a></li>'
-            } else if(!rdata.user_mail.user_name && !rdata.dingding.dingding){
+			  channelInitVal= 'user_name,telegram'
+              messageChannelDom = '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram,mail">ALL</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
+            } else if(!rdata.user_mail.user_name && !rdata.telegram.setup){
               messageChannelBtnText = 'No Data'
 			  channelInitVal= ''
               messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="">No Data</a></li>'
-            } else if(rdata.dingding.dingding) {
+            } else if(rdata.telegram.setup) {
               messageChannelBtnText = '钉钉'
-			  channelInitVal= 'dingding'
-              messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="dingding">钉钉</a></li>'
+			  channelInitVal= 'telegram'
+              messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li>'
             } else if(rdata.user_mail.user_name) {
               messageChannelBtnText = 'Email'
 			  channelInitVal= 'mail'
@@ -1016,7 +1016,7 @@ function toBackup(type){
                     </ul>\
                   </div>\
                 </div>\
-                <a role="menuitem" tabindex="-1" href="javascript:;" onclick="open_three_channel_auth()" value="0" style="color: #20a53a;">Set notifications</a>\
+                <a role="menuitem" tabindex="-1" href="javascript:;" onclick="MessageChannelSettings()" value="0" style="color: #20a53a;">Set notifications</a>\
 				<span  id="selnoticeBox"  onclick="selSave_local()" style="display:none;"><input type="checkbox" value="0" style="margin-left: 20px;margin-right: 10px;" id="save_local">Keep local backup</span>\
             </p>';
             if(type == 'sites' || type == "path") {
@@ -1203,20 +1203,20 @@ function webShell(){
   })
 }
 function message_channel_start(){
-  $.post('/config?action=get_settings',function(res){
+  $.post('/config?action=get_settings2',function(res){
     var wBody = "";
-    if(!res.user_mail.user_name && !res.dingding.dingding){
+    if(!res.user_mail.user_name && !res.telegram.setup){
       wBody = '<span style="color:red;">No message channel is set, please go to panel settings to add a message channel configuration<a href="https://www.bt.cn/bbs/thread-42312-1-1.html" target="_blank" class="bt-ico-ask" style="cursor: pointer;">?</a></span>';
       $(".plan-submit").css({"pointer-events":"none","background-color":"#e6e6e6","color":"#333"});
-    }else if(res.user_mail.user_name && !res.dingding.dingding){
+    }else if(res.user_mail.user_name && !res.telegram.setup){
       wBody = '<div class="check_alert" style="margin-right:20px;display: inline-block;">\
         <input type="radio" name="alert" title="Email" value="mail" checked="">\
         <label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">Email</label>\
       </div>'
-    }else if(!res.user_mail.user_name && res.dingding.dingding){
+    }else if(!res.user_mail.user_name && res.telegram.setup){
       wBody = '<div class="check_alert" style="display: inline-block;">\
-        <input type="radio" name="alert" title="dingding" value="dingding" checked="">\
-        <label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">dingding</label>\
+        <input type="radio" name="alert" title="telegram" value="telegram" checked="">\
+        <label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">telegram</label>\
       </div>'
     }else{
       wBody ='<div class="check_alert" style="margin-right:20px;display: inline-block;">\
@@ -1224,8 +1224,8 @@ function message_channel_start(){
         <label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">Email</label>\
       </div>\
       <div class="check_alert" style="display: inline-block;">\
-        <input type="radio" name="alert" title="dingding" value="dingding">\
-        <label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">dingding</label>\
+        <input type="radio" name="alert" title="telegram" value="telegram">\
+        <label style="font-weight: normal;font-size: 14px;margin-left: 6px;display: inline;">telegram</label>\
       </div>'
     }
     $(".message_start").html(wBody);
@@ -1253,259 +1253,6 @@ function fileupload(){
   $("#sFile").click();
 }
 
-// 计划任务2021/3/24新增任务通知新增
-function open_three_channel_auth(){
-  get_channel_settings(function(rdata){
-    var isOpen = rdata.dingding.info.msg.isAtAll == 'True' ? 'checked': '';
-    var isDing = rdata.dingding.info.msg == 'No Data'? '': rdata.dingding.info.msg.dingding_url;
-    layer.open({
-      type: 1,
-          area: "600px",
-          title: "Set notifications",
-          closeBtn: 2,
-          shift: 5,
-          shadeClose: false,
-          content: '<div class="bt-form">\
-                <div class="bt-w-main">\
-                  <div class="bt-w-menu" style="width:130px">\
-                    <p class="bgw">Email</p>\
-                  </div>\
-                  <div class="bt-w-con pd15" style="margin-left:130px">\
-                    <div class="plugin_body">\
-                      <div class="conter_box active" >\
-                        <div class="bt-form">\
-                          <div class="line">\
-                            <button class="btn btn-success btn-sm" onclick="add_receive_info()">Add recipient</button>\
-                            <button class="btn btn-default btn-sm" onclick="sender_info_edit()">Sender settings</button>\
-                          </div>\
-                          <div class="line">\
-                            <div class="divtable">\
-                              <table class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"><thead><tr><th>Email</th><th width="80px">OPT</th></tr></thead></table>\
-                              <table class="table table-hover"><tbody id="receive_table"></tbody></table>\
-                            </div>\
-                          </div>\
-                        </div>\
-                      </div>\
-                      <div class="conter_box" style="display:none">\
-                        <div class="bt-form">\
-                          <div class="line">\
-                            <span class="tname">Notify all</span>\
-                            <div class="info-r" style="height:28px; margin-left:100px">\
-                              <input class="btswitch btswitch-ios" id="panel_alert_all" type="checkbox" '+ isOpen+'>\
-                              <label style="position: relative;top: 5px;" class="btswitch-btn" for="panel_alert_all"></label>\
-                            </div>\
-                          </div>\
-                        </div>\
-                      </div>\
-                    </div>\
-                  </div>\
-                </div>\
-              </div>'
-    })
-    $(".bt-w-menu p").click(function () {
-            var index = $(this).index();
-            $(this).addClass('bgw').siblings().removeClass('bgw');
-            $('.conter_box').eq(index).show().siblings().hide();
-        });
-    get_receive_list();
-  })
-}
-function add_receive_info(){
-  layer.open({
-    type: 1,
-        area: "400px",
-        title: "Add recipient email",
-        closeBtn: 2,
-        shift: 5,
-        shadeClose: false,
-        content: '<div class="bt-form pd20 pb70">\
-          <div class="line">\
-              <span class="tname">Recipient mailbox\n</span>\
-              <div class="info-r">\
-                  <input name="creater_email_value" class="bt-input-text mr5" type="text" style="width: 220px" value="">\
-              </div>\
-          </div>\
-          <div class="bt-form-submit-btn">\
-              <button type="button" class="btn btn-danger btn-sm smtp_closeBtn">Close</button>\
-              <button class="btn btn-success btn-sm CreaterReceive">Create</button>\
-          </div>\
-          </div>',
-        success:function(layers,index){
-          $(".CreaterReceive").click(function(){
-            var _receive = $('input[name=creater_email_value]').val(),_that = this;
-        if(_receive != ''){
-          var loadT = layer.msg('Creating recipient list, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-          layer.close(index)
-          $.post('/config?action=add_mail_address',{email:_receive},function(rdata){
-            layer.close(loadT);
-            // 刷新收件列表
-            get_receive_list();
-            layer.msg(rdata.msg,{icon:rdata.status?1:2});
-          })
-        }else{
-          layer.msg('The recipient mailbox cannot be empty!',{icon:2});
-        }
-          })
-
-      $(".smtp_closeBtn").click(function(){
-        layer.close(index)
-      })
-    }
-  })
-}
-
-function sender_info_edit(){
-  var loadT = layer.msg('Fetching configuration, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-  $.post('/config?action=get_settings',function(rdata){
-    layer.close(loadT);
-    var qq_mail = rdata.user_mail.info.msg.qq_mail == undefined ? '' : rdata.user_mail.info.msg.qq_mail,
-      qq_stmp_pwd = rdata.user_mail.info.msg.qq_stmp_pwd == undefined? '' : rdata.user_mail.info.msg.qq_stmp_pwd,
-      hosts = rdata.user_mail.info.msg.hosts == undefined? '' : rdata.user_mail.info.msg.hosts,
-      port = rdata.user_mail.info.msg.port == undefined? '' : rdata.user_mail.info.msg.port
-    layer.open({
-    type: 1,
-        area: "480px",
-        title: "Set sender email information",
-        closeBtn: 2,
-        shift: 5,
-        shadeClose: false,
-        btn:['Save','Close'],
-        content: '<div class="bt-form pd20">\
-          <div class="line">\
-                <span class="tname">Sender email</span>\
-                <div class="info-r">\
-                    <input name="channel_email_value" class="bt-input-text mr5" type="text" style="width: 280px" value="'+qq_mail+'">\
-                </div>\
-            </div>\
-            <div class="line">\
-                <span class="tname">smtp password</span>\
-                <div class="info-r">\
-                    <input name="channel_email_password" class="bt-input-text mr5" type="password" style="width: 280px" value="'+qq_stmp_pwd+'">\
-                </div>\
-            </div>\
-            <div class="line">\
-                <span class="tname">smtp server</span>\
-                <div class="info-r">\
-                    <input name="channel_email_server" class="bt-input-text mr5" type="text" style="width: 280px" value="'+hosts+'">\
-                </div>\
-            </div>\
-            <div class="line">\
-                <span class="tname">smtp port</span>\
-                <div class="info-r">\
-                    <select class="bt-input-text mr5" id="port_select" style="width:280px"></select>\
-                    <input name="channel_email_port" class="bt-input-text mr5 mt5" type="Number" style="display:'+(select_port(port)? 'none':'inline-block')+'; width: 280px;margin-top:15px;" value="'+port+'">\
-                </div>\
-            </div>\
-            <ul class="help-info-text c7" style="margin-left:15px">\
-              <li>465 port is recommended, the protocol is SSL/TLS</li>\
-              <li>Port 25 is SMTP protocol, port 587 is STARTTLS protocol</li>\
-            </ul></div>',
-        success:function(layers,index){
-          var _option = '';
-          if(select_port(port)){
-            if(port == '465' || port == ''){
-              _option = '<option value="465" selected="selected">465</option><option value="25">25</option><option value="587">587</option><option value="other">Customize</option>'
-            }else if(port == '25'){
-              _option = '<option value="465">465</option><option value="25" selected="selected">25</option><option value="587">587</option><option value="other">Customize</option>'
-            }else{
-              _option = '<option value="465">465</option><option value="25">25</option><option value="587" selected="selected">587</option><option value="other">Customize</option>'
-            }
-          }else{
-            _option = '<option value="465">465</option><option value="25">25</option><option value="587" >587</option><option value="other" selected="selected">Customize</option>'
-          }
-          console.log(port)
-          $("#port_select").html(_option)
-          $("#port_select").change(function(e){
-            if(e.target.value == 'other'){
-              // $("#port_select").css("width","100px");
-              $('input[name=channel_email_port]').css("display","inline-block");
-            }else{
-              // $("#port_select").css("width","300px");
-              $('input[name=channel_email_port]').css("display","none");
-            }
-          })
-        },
-        yes:function(){
-          var _email = $('input[name=channel_email_value]').val();
-          var _passW = $('input[name=channel_email_password]').val();
-          var _server = $('input[name=channel_email_server]').val(),_port
-          if($('#port_select').val() == 'other'){
-            _port = $('input[name=channel_email_port]').val();
-          }else{
-            _port = $('#port_select').val()
-          }
-          if(_email == ''){
-            return layer.msg('Email address cannot be empty!',{icon:2});
-          }else if(_passW == ''){
-            return layer.msg('STMP password cannot be empty!',{icon:2});
-          }else if(_server == ''){
-            return layer.msg('STMP server address cannot be empty!',{icon:2})
-          }else if(_port == ''){
-            return layer.msg('STMP server port cannot be empty!',{icon:2})
-          }
-          var loadT = layer.msg('The notification is being generated, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-          $.post('/config?action=user_mail_send',{email:_email,stmp_pwd:_passW,hosts:_server,port:_port},function(rdata){
-            layer.close(loadT);
-            layer.msg(rdata.msg,{icon:rdata.status?1:2})
-            if(rdata.status){
-              layer.close(index)
-              get_channel_settings();
-            }
-          })
-        }
-      })
-  })
-}
-
-function get_channel_settings(callback){
-  var loadT = layer.msg('Fetching configuration, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-  $.post('/config?action=get_settings',function(rdata){
-    layer.close(loadT);
-        if (callback) callback(rdata);
-  })
-}
-
-function get_receive_list(){
-  $.post('/config?action=get_settings',function(rdata){
-    var _html = '',_list = rdata.user_mail.mail_list;
-    if(_list.length > 0){
-      for(var i= 0; i<_list.length;i++){
-        _html += '<tr>\
-          <td>'+ _list[i] +'</td>\
-          <td width="80px"><a onclick="del_email(\''+ _list[i] + '\')" href="javascript:;" style="color:#20a53a">Del</a></td>\
-          </tr>'
-      }
-    }else{
-      _html = '<tr>No data</tr>'
-    }
-    $('#receive_table').html(_html);
-  })
-
-}
-
-function del_email(mail){
-  var loadT = layer.msg('Deleting ['+mail+'], please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] }),_this = this;
-  $.post('/config?action=del_mail_list',{email:mail},function(rdata){
-    layer.close(loadT);
-    layer.msg(rdata.msg,{icon:rdata.status?1:2})
-    _this.get_receive_list()
-  })
-}
-
-// // 设置钉钉
-// function SetChannelDing(){
-// 	var _url = $('textarea[name=channel_dingding_value]').val();
-// 	var _all = $('#panel_alert_all').prop("checked");
-// 	if(_url != ''){
-// 		var loadT = layer.msg('正在生成钉钉通道中,请稍候...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-// 		$.post('/config?action=set_dingding',{url:_url,atall:_all == true? 'True':'False'},function(rdata){
-// 			layer.close(loadT);
-// 			layer.msg(rdata.msg,{icon:rdata.status?1:2})
-// 		})
-// 	}else{
-// 		layer.msg('请输入钉钉url',{icon:2})
-// 	}
-// }
 
 function selSave_local() {
 	if($('#save_local').val() == '0') {
@@ -1547,20 +1294,3 @@ function getselectnoticename(){
     }
   });
 }
-
-function select_port(port){
-  switch(port){
-    case '25':
-      return true;
-    case '465':
-      return true;
-    case '587':
-      return true;
-    case '':
-      return true;
-    default:
-      return false
-  }
-}
-
-// --计划任务2021/3/24新增任务通知新增结束

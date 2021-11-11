@@ -1,0 +1,2 @@
+class projectBase:
+    pass

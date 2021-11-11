@@ -238,7 +238,7 @@
 	"MOVE_ERR":"Failed to move file or directory!",
 	"FILE_GET_ERR":"Failed to obtain file content, format is not supported!",
 	"FILE_SAVE_SUCCESS":"Saved!",
-	"FILE_SAVE_ERR":"Save ERROR!",
+	"FILE_SAVE_ERR":"Save ERROR! {1}",
 	"ZIP_SUCCESS":"Compression succeeded!",
 	"ZIP_ERR":"Compression failed!",
 	"UNZIP_SUCCESS":"Uncompression succeeded!",
@@ -350,7 +350,11 @@
 	"MAX_PROCESSES": "Max processes",
 	"MAX_CONNECTIONS": "Max connections",
 	"NOT_LIMITED_BY_0": "0 means not limited",
-	"MAX_SPARE_SERVERS": "Max spare servers",
+	"MAX_SPARE_THREADS": "Maximum number of idle threads",
+	"MIN_SPARE_THREADS": "Minimum number of idle threads available to handle request spikes",
+	"THREADS_PER_CHILD": "Number of threads created by each child process",
+	"MAX_REQUEST_WORKERS": "Maximum number of connections that will be processed simultaneously",
+	"MaxConnectionsPerChild": "Limit on the number of connections that an individual child server will handle during its life",
 	"CONFIG_ERROR": "Configuration ERROR",
 	"SECRET_KEY_CHECK_FALSE": "Secret key verification failed",
 	"CHECK_IP_FALSE": "IP verification failed, your access IP is",
@@ -1235,5 +1239,4 @@
 	"BACKUP_MSG": "Backup to {1}, a total of {3} {2}, and failures {4}.",
 	"BACKUP_MSG1": "Backup failed {1}/total {2} sites",
 	"NOTIFICATION": "Notification"
-
 }
