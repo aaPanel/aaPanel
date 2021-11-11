@@ -37,7 +37,7 @@
 	"AJAX_USER_IS_VALID": "Binding is valid!",
 	"AJAX_PHPMYADMIN_PORT_ERR": "Please do NOT use the usual port as the phpMyAdmin port!",
 	"AJAX_WARNING_ERR": "Warning list does NOT exist!",
-	"AJAX_LOG_FILR_NOT_EXISTS": "Log file does NOT exist!",	
+	"AJAX_LOG_FILR_NOT_EXISTS": "Log file does NOT exist!",
 	"CODE_BOOM":"Please don't refresh verification code too frequently!",
 	"LOGIN_USER_EMPTY":"User name or password cannot be empty!",
 	"LOGIN_ERR_LIMIT":"You cannot login now because login failed too many times!",
@@ -66,7 +66,7 @@
 	"FILE_NOT_EXISTS":"Requested file does NOT exist!",
 	"SPECIFY_METHOD":"The specified method does NOT exist",
 	"SPECIFY_PLUG_ERR":"The specified plugin does NOT support public access!",
-	"SPECIFY_TEMPLATE":"The specified template does NOT exist",	
+	"SPECIFY_TEMPLATE":"The specified template does NOT exist",
 	"PATH_ERROR":"System critical directory cannot be used as site directory",
 	"BACKUP_SUCCESS":"Backup Succeeded!",
 	"UPDATE_SUCCESS":"Update Succeeded!",
@@ -204,7 +204,6 @@
 	"DATABASE_MOVE_RE":"The same as the current storage directory, file cannot be moved!",
 	"DATABASE_MOVE_ERR":"Failed to move file!",
 	"DATABASE_MOVE_SUCCESS":"Database moved!",
-	"LOG_CLOSE":"Logs emptied",
 	"FILE_UPLOAD_SUCCESS":"Successfully uploaded!",
 	"FILE_EXISTS":"Requested file exists!",
 	"DIR_EXISTS":"Requested directory exists!",
@@ -787,4 +786,3 @@
 	"SAVE_CONF": "Configuration has been saved",
 	"OPERATE_SUCCESS": "Operation succeeded"
 }
-

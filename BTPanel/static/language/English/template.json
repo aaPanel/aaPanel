@@ -85,7 +85,7 @@
 		"TH4":"Document Root",
 		"TH5":"Notes",
 		"TH6":"Action",
-		"JS1":"Pls install Prue-Ftpd first!",
+		"JS1":"Pls install Pure-Ftpd first!",
 		"JS2":"Install",
 		"DEL_FTP":"Delete FTP"
 	},
@@ -147,7 +147,7 @@
 		"CY4":"Split multiple IP with (,) Warning：If authorized IP is set, ONLY the PC with authorized IP can access the panel!",
 		"CY5":"New created site will be saved to subdirectory by default!",
 		"CY6":"Directory of site and database backup!",
-		"CY7":"Defualt IP is Internet IP. If you need use local virtual machine to test, please input Intranet IP of virtual machine!",
+		"CY7":"Default IP is Internet IP. If you need use local virtual machine to test, please input Intranet IP of virtual machine!",
 		"CY8":"Sync",
 		"CY9":"Modify",
 		"CY10":"Modify",
@@ -351,7 +351,7 @@
 		"PASS_NOT_SAME":"The passwords entered twice are inconsistent, please re-enter!",
 		"SETTING_UP":"Setting up..."
 	},
-	
+
 	"login":{
 		"N1":"User Name",
 		"N2":"Format Error",
@@ -364,7 +364,7 @@
 		"N9":"Verification Error",
 		"N10":"Click to Change",
 		"N11":"Login",
-		"N12":"Verification Code will be displaied after 3 times of login error",
+		"N12":"Verification Code will be displayed after 3 times of login error",
 		"N13":"Forget Password>>",
 		"JS1":"Error, please try again!",
 		"JS2":"Loading...",
