@@ -121,8 +121,8 @@ class setPanelLets:
         if not os.path.exists(key_file) and '*.' in key_file:
             key_file = key_file.replace('*.','')
             cert_file = cert_file.replace('*.','')
-        else:
-            return public.returnMsg(False,'Can not found the ssl file!')
+        if not os.path.exists(key_file):
+            return public.returnMsg(False,'Can not found the ssl file! {}'.format(key_file))
         self.__tmp_key = public.readFile(key_file)
         self.__tmp_cert = public.readFile(cert_file)
 
@@ -196,6 +196,7 @@ class setPanelLets:
         if panel_cert_data["key"] != self.__tmp_key and panel_cert_data["cert"] != self.__tmp_cert:
             self.__write_panel_cert()
             return public.returnMsg(True,'')
+        return public.returnMsg(True, '')
 
     # 设置lets证书
     def set_lets(self,get):
