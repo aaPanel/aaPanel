@@ -118,6 +118,11 @@ class setPanelLets:
             key_file = "{path}{domain}/{key}".format(path="/www/server/panel/vhost/ssl/",domain=domain_cert["subject"],key="privkey.pem")
             cert_file = "{path}{domain}/{cert}".format(path="/www/server/panel/vhost/ssl/", domain=domain_cert["subject"],
                                            cert="fullchain.pem")
+        if not os.path.exists(key_file) and '*.' in key_file:
+            key_file = key_file.replace('*.','')
+            cert_file = cert_file.replace('*.','')
+        else:
+            return public.returnMsg(False,'Can not found the ssl file!')
         self.__tmp_key = public.readFile(key_file)
         self.__tmp_cert = public.readFile(cert_file)
 
@@ -181,14 +186,16 @@ class setPanelLets:
 
     # 复制证书
     def copy_cert(self,domain_cert):
-        self.__read_site_cert(domain_cert)
+        res = self.__read_site_cert(domain_cert)
+        if res:
+            return res
         panel_cert_data = self.__check_panel_cert()
         if not panel_cert_data:
             self.__write_panel_cert()
-            return True
+            return public.returnMsg(True,'')
         if panel_cert_data["key"] != self.__tmp_key and panel_cert_data["cert"] != self.__tmp_cert:
             self.__write_panel_cert()
-            return True
+            return public.returnMsg(True,'')
 
     # 设置lets证书
     def set_lets(self,get):
@@ -206,7 +213,9 @@ class setPanelLets:
             create_site = self.__create_site_of_panel_lets(get)
         domain_cert = self.__check_cert_dir(get)
         if domain_cert:
-            self.copy_cert(domain_cert)
+            res = self.copy_cert(domain_cert)
+            if not res['status']:
+                return res
             public.writeFile("/www/server/panel/data/ssl.pl", "True")
             public.writeFile("/www/server/panel/data/reload.pl","1")
             self.__save_cert_source(domain,get.email)
