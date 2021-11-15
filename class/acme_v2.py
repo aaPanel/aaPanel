@@ -60,6 +60,7 @@ class acme_v2:
     _dnsapi_file = 'config/dns_api.json'
     _save_path = 'vhost/letsencrypt'
     _conf_file = 'config/letsencrypt.json'
+    _by_panel = None
 
     def __init__(self):
         if self._debug:
@@ -766,12 +767,16 @@ fullchain.pem       Paste into certificate input box
                 to_info = to_path + '/info.json'
                 # 判断目标证书是否存在
                 if not os.path.exists(to_pem_file):
-                    if not p_name in ['ssl']: continue
+                    if p_name not in ['ssl']: continue
                     to_pem_file = to_path + '/certificate.pem'
                     to_key_file = to_path + '/privateKey.pem'
                     if not os.path.exists(to_pem_file):
                         continue
-                    is_panel = True
+                    # _by_panel None 时通过面板请求时不即使续签面板证书也不重启面板以免导致后续请求出错
+                    if not os.path.exists('{}/data/ssl.pl'.format(public.get_panel_path())):
+                        continue
+                    if not self._by_panel:
+                        is_panel = True
                 # 获取目标证书的基本信息
                 to_cert_init = self.get_cert_init(to_pem_file)
                 # 判断证书品牌是否一致
@@ -1293,6 +1298,8 @@ fullchain.pem       Paste into certificate input box
 
     # 申请证书 - api
     def apply_cert_api(self, args):
+        # 在面板点击申请证书时不要重启面板以防后续请求出错
+        self._by_panel = True
         # 是否为指定站点
         if public.M('sites').where('id=? and project_type=?', (args.id, 'Java')).count():
                 project_info = public.M('sites').where('id=?', (args.id,)).getField('project_config')
@@ -1467,7 +1474,9 @@ fullchain.pem       Paste into certificate input box
             if index:
                 if type(index) != str:
                     index = index.index
-                if not index in self._config['orders']:
+                    # 在面板点击申请证书时不要重启面板以防后续请求出错
+                    self._by_panel = True
+                if index not in self._config['orders']:
                     raise Exception(public.getMsg('ACME_RENEW_ERR'))
                 order_index.append(index)
             else:
@@ -1510,7 +1519,7 @@ fullchain.pem       Paste into certificate input box
 
             if not order_index:
                 write_log(public.getMsg('ACME_NO_NEED_RENEW'))
-                return
+                return public.returnMsg(False,public.getMsg('ACME_NO_NEED_RENEW'))
             write_log(public.getMsg("ACME_NEED_RENEW",(str(len(order_index)),)))
             n = 0
             self.get_apis()
@@ -1560,7 +1569,6 @@ fullchain.pem       Paste into certificate input box
                         self._config['orders'][index]['retry_count'] += 1
                         # 保存证书配置
                         self.save_config()
-
                     write_log("|-" + str(e).split('>>>>')[0])
                 write_log("-" * 70)
             return cert
