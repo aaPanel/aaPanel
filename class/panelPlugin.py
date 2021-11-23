@@ -323,7 +323,9 @@ class panelPlugin:
             if os.path.exists(lcoalTmp): os.remove(lcoalTmp)
 
         if 'init' in get:
-            if softList: return softList
+            if softList:
+                if 'success' not in softList:
+                    return softList
 
         focre  = 0
         if hasattr(get,'force'): focre = int(get.force)
