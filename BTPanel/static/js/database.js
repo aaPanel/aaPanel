@@ -448,7 +448,7 @@ var database = {
             content:"<div class=\'bt-form webDelete pd30\' id=\'site_delete_form\'>" +
                 "<i class=\'layui-layer-ico layui-layer-ico0\'></i>" +
                 "<div class=\'f13 check_title\' style=\'margin-bottom: 20px;\'>The deletion may affect the business!</div>" +
-                "<div style=\'color:red;margin:18px 0 18px 18px;font-size:14px;font-weight: bold;\'>Note: The data is priceless, please operate with caution! ! !"+(!recycle_bin_db_open?'<br>Risk: The database recycle bin is not enabled, deleting the database will disappear forever!':'')+"</div>" +
+                "<div style=\'color:red;margin:18px 0 18px 18px;font-size:14px;font-weight: bold;\'>Note: The data is priceless, please operate with caution! ! !"+(!recycle_bin_db_open?'<br><br>Risk: The DB recycle bin is not enabled, deleting will disappear forever!':'')+"</div>" +
                 "<div class=\'vcode\'>" + lan.bt.cal_msg + "<span class=\'text\'>"+ num1 +" + "+ num2 +"</span>=<input type=\'number\' id=\'vcodeResult\' value=\'\'></div>" +
                 "</div>",
             btn:[lan.public.ok,lan.public.cancel],
