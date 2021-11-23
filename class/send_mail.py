@@ -141,7 +141,7 @@ class send_mail:
                 server.sendmail(self.__qq_mail_user['qq_mail'], email, msg.as_string())
             server.quit()
         except Exception:
-            print("发送错误,可能密码错误")
+            print("Sending error, maybe the email info is wrong")
             ret = False
         return ret
 
