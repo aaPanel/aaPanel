@@ -5129,6 +5129,7 @@ select[disabled]{
 	margin-left: 75px;
     margin-top: 30px;
 }
+.bt_table table td span.fixed,
 #database_fix table td span{
 	display:block;
 	overflow: hidden;
@@ -9618,6 +9619,12 @@ select[name="network-io"]{
 .tootls_group{
     height:30px;
     line-height: 30px;
+}
+.tootls_group::after {
+    content: '';
+    display: block;
+    width: 0;
+    clear: both;
 }
 
 .tootls_group .bt_search{
