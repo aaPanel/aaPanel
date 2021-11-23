@@ -1282,6 +1282,9 @@ var site = {
                     type: 'link',
                     event: function(row, index, ev) {
                         site.node.set_node_project_view(row);
+                    },
+                    template: function (row, index) {
+                        return '<a class="btlink" style="display: inline-block; width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" href="javascript:;" title="' + row.name + '">' + row.name + '</a>';
                     }
                 },
                 {
@@ -1357,12 +1360,16 @@ var site = {
                     type: 'link',
                     event: function(row, index, ev) {
                         openPath(row.path);
+                    },
+                    template: function (row, index) {
+                        return '<a class="btlink" style="display: inline-block; width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" href="javascript:;" title="' + row.path + '">' + row.path + '</a>';
                     }
                 },
                 {
                     fid:'node_version',
                     title:'Node version',
                     type:'text',
+                    width: 102,
                     template:function(row){
                         return '<span>'+row['project_config']['nodejs_version']+'</span>'
                     }
@@ -1528,9 +1535,19 @@ var site = {
             },
             column:[
                 {type:'checkbox',class:'',width:20},
-                {fid:'name',title:lan.site.site_name,sort:true,sortValue:'asc',type:'link',event:function(row,index,ev){
-                    site.web_edit(row,true);
-                }},
+                {
+                    fid: 'name',
+                    title: lan.site.site_name,
+                    sort: true,
+                    sortValue: 'asc',
+                    type: 'link',
+                    event: function(row,index,ev) {
+                        site.web_edit(row,true);
+                    },
+                    template: function (row, index) {
+                        return '<a class="btlink" style="display: inline-block; width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" href="javascript:;" title="' + row.name + '">' + row.name + '</a>';
+                    }
+                },
                 {fid:'status',title:lan.site.status,sort:true,width:85,config:{icon:true,list:[['1',lan.site.running_text,'bt_success','glyphicon-play'],['0',lan.site.stopped,'bt_danger','glyphicon-pause']]},type:'status',event:function(row,index,ev,key,that){
                     bt.site[parseInt(row.status)?'stop':'start'](row.id,row.name,function(res){
                         if(res.status) that.$modify_row_data({status:parseInt(row.status)?'0':'1'});
@@ -1550,9 +1567,18 @@ var site = {
                         site.backup_site_view({id:row.id,name:row.name},site_table);
                     }
                 },
-                {fid:'path',title:lan.site.root_dir,tips:'Open path',type:'link',event:function(row,index,ev){
-                    openPath(row.path);
-                }},
+                {
+                    fid: 'path',
+                    title: lan.site.root_dir,
+                    tips: 'Open path',
+                    type: 'link',
+                    event: function (row,index,ev) {
+                        openPath(row.path);
+                    },
+                    template: function (row, index) {
+                        return '<a class="btlink" style="display: inline-block; width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" href="javascript:;" title="' + row.path + '">' + row.path + '</a>';
+                    }
+                },
                 {
                     fid:'edate',
                     title: lan.site.endtime,
@@ -2224,6 +2250,7 @@ var site = {
                     var data = {};
                         data.file_name = $(this).attr('backup-name');
                         data.site_id = $(this).attr('site-id');
+                    // console.log(data);
                     layer.confirm('Are you sure to restore backup file?', {
                         icon: 0,
                         closeBtn: 2,
@@ -2260,7 +2287,7 @@ var site = {
                     default: "[" + config.name + "] Currently no backup", //数据为空时的默认提示
                     column: [
                         { type: 'checkbox', class: '', width: 20 },
-                        { fid: 'name', title: lan.site.filename, width: 320, fixed: true },
+                        { fid: 'name', title: lan.site.filename, width: 250, fixed: true },
                         {
                             fid: 'size',
                             title: lan.site.filesize,
@@ -2274,14 +2301,15 @@ var site = {
                         {
                             title: lan.site.operate,
                             type: 'group',
-                            width: 120,
+                            width: 165,
                             align: 'right',
                             group: [{
                                 title:'Restore',
-                                event: function() {
+                                event: function(row) {
                                     var data = {};
-                                        data.file_name = $(this).attr('backup-name');
-                                        data.site_id = $(this).attr('site-id');
+                                        data.file_name = row.name;
+                                        data.site_id = config.id;
+                                    // console.log(data);
                                     layer.confirm('Are you sure to restore backup file?', {
                                         icon: 0,
                                         closeBtn: 2,
@@ -3101,7 +3129,7 @@ var site = {
                             '<div class="check_layer_error ' + (data.path && recycle_bin_open ? 'hide' : '') + '"><span class="glyphicon glyphicon-info-sign"></span>Risk: The file recycle bin function is disabled at present. After a site directory is deleted, the site directory will disappear forever!</div>' +
                             '<div class="check_layer_message">Please read the above information to be deleted carefully to prevent site data from being deleted by mistake. Confirm that there are still <span style="color:red;font-weight: bold;">' + countDown + '</span> seconds left to delete.</div>' +
                             '</div>',
-                        btn: ['Confirm deletion (continue operation after ' + countDown + 'seconds)', 'undelete'],
+                        btn: ['Confirm deletion (continue operation after ' + countDown + 'seconds)', 'Cancel'],
                         success: function (layers) {
                             var html = '', rdata = res.data;
                             for (var i = 0; i < rdata.length; i++) {
@@ -3119,9 +3147,9 @@ var site = {
                                     var f_title = (is_path_rule ?'Note: This directory may contain important data. Exercise caution when performing this operation.\n':'') + 'directory：' + item.path + '(' + (item.limit ? 'greater than ' : '') + dir_size + ')';
 
                                     return '<div class="check_layer_site">' +
-                                        '<span title="site：' + item.name + '">site name：' + item.name + '</span>' +
-                                        '<span title="' + f_title + '" >directory：<span style="vertical-align: middle;max-width: 160px;width: auto;">' + item.path + '</span> (' + f_html + ')</span>' +
-                                        '<span title="' + (is_time_rule ? 'Note: This site is created earlier and may contain important data. Exercise caution when performing this operation.\n' : '') + 'time：' + dir_time +'">creation time：<i ' + (is_time_rule ? 'class="warning"' : '') + '>' + dir_time + '</i></span>' +
+                                        '<span title="site：' + item.name + '">Site: ' + item.name + '</span>' +
+                                        '<span title="' + f_title + '" >Path: <span style="vertical-align: middle;max-width: 160px;width: auto;">' + item.path + '</span> (' + f_html + ')</span>' +
+                                        '<span title="' + (is_time_rule ? 'Note: This site is created earlier and may contain important data. Exercise caution when performing this operation.\n' : '') + 'time：' + dir_time +'">Create: <i ' + (is_time_rule ? 'class="warning"' : '') + '>' + dir_time + '</i></span>' +
                                         '</div>'
                                 }(item)),
                                     database_html = (function(item){
@@ -3135,9 +3163,9 @@ var site = {
                                         var t_size = 'Note: This database is large and may contain important data. Exercise caution when performing this operation.\ndatabase：' + database_size;
 
                                         return '<div class="check_layer_database">' +
-                                            '<span title="database：' + item.database.name + '">database：' + item.database.name + '</span>' +
-                                            '<span title="' + t_size+'">size：' + f_size +'</span>' +
-                                            '<span title="' + (is_time_rule && item.database.total != 0 ? 'important：This database is created earlier and may contain important data. Exercise caution when performing this operation.' : '') + 'time：' + database_time+'">creation time：<i ' + (is_time_rule && item.database.total != 0 ? 'class="warning"' : '') + '>' + database_time + '</i></span>' +
+                                            '<span title="database：' + item.database.name + '">DB: ' + item.database.name + '</span>' +
+                                            '<span title="' + t_size+'">Size: ' + f_size +'</span>' +
+                                            '<span title="' + (is_time_rule && item.database.total != 0 ? 'important：This database is created earlier and may contain important data. Exercise caution when performing this operation.' : '') + 'time：' + database_time+'">Create: <i ' + (is_time_rule && item.database.total != 0 ? 'class="warning"' : '') + '>' + database_time + '</i></span>' +
                                             '</div>'
                                     }(item))
                                 if((site_html + database_html) !== '') html += '<div class="check_layer_item">' + site_html + database_html +'</div>';
@@ -4940,7 +4968,7 @@ var site = {
                         "<div class='line' style='clear:both;'>" +
                         "<span class='tname'>" + lan.site.redirect_type + "</span>" +
                         "<div class='info-r  ml0'>" +
-                        "<select class='bt-input-text mr5' name='domainorpath' style='width:100px'><option value='domain' " + (obj.domainorpath == 'domain' ? 'selected ="selected"' : "") + ">" + lan.site.domain + "</option><option value='path'  " + (obj.domainorpath == 'path' ? 'selected ="selected"' : "") + ">" + lan.site.path + "</option></select>" +
+                        "<select class='bt-input-text mr5' name='domainorpath' style='width:120px'><option value='domain' " + (obj.domainorpath == 'domain' ? 'selected ="selected"' : "") + ">" + lan.site.domain + "</option><option value='path'  " + (obj.domainorpath == 'path' ? 'selected ="selected"' : "") + ">" + lan.site.path + "</option></select>" +
                         "<span class='mlr15'>" + lan.site.redirect_mode + "</span>" +
                         "<select class='bt-input-text ml10' name='redirecttype' style='width:100px'><option value='301' " + (obj.redirecttype == '301' ? 'selected ="selected"' : "") + " >301</option><option value='302' " + (obj.redirecttype == '302' ? 'selected ="selected"' : "") + ">302</option></select></div>" +
                         "</div>" +
