@@ -4,7 +4,7 @@ flask-socketio>=4.1.0
 python-socketio>=4.2.0
 flask_sockets>=0.2.1
 Werkzeug>=0.15.1
-Pillow==5.4.1
+Pillow==9.0.0
 requests>=2.20
 cffi>=1.12.3
 psutil>=5.2.0
