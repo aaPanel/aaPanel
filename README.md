@@ -120,3 +120,7 @@ yum install -y wget && wget -O install.sh http://www.aapanel.com/script/install_
 ```bash
 wget -O install.sh http://www.aapanel.com/script/install-ubuntu_6.0_en.sh && sudo bash install.sh 66959f96
 ```
+Expansion and reprogramming to a multi-user panel
+
+Adjustments to the template and design
+
