@@ -26,7 +26,7 @@ class panelSetup:
             ua = g.ua.lower()
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return redirect('https://www.google.com')
-        g.version = '6.8.17'
+        g.version = '6.8.21'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
@@ -150,7 +150,7 @@ class panelAdmin(panelSetup):
             if not 'login' in session:
                 api_check = self.get_sk()
                 if api_check:
-                    session.clear()
+                    #session.clear()
                     return api_check
                 g.api_request = True
             else:

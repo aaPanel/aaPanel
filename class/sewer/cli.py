@@ -14,7 +14,7 @@ def main():
         CLOUDFLARE_EMAIL=example@example.com \
         CLOUDFLARE_API_KEY=api-key \
         sewer \
-        --dns cloudflare \
+        --model cloudflare \
         --domain example.com \
         --action run
 
@@ -23,7 +23,7 @@ def main():
         CLOUDFLARE_API_KEY=api-key \
         sewer \
         --account_key /path/to/your/account.key \
-        --dns cloudflare \
+        --model cloudflare \
         --domain example.com \
         --action renew
     """
@@ -34,7 +34,7 @@ def main():
             CLOUDFLARE_EMAIL=example@example.com \
             CLOUDFLARE_API_KEY=api-key \
             sewer \
-            --dns cloudflare \
+            --model cloudflare \
             --domain example.com \
             --action run""",
     )
@@ -59,7 +59,7 @@ def main():
         eg: --certificate_key /home/mycertificate.key",
     )
     parser.add_argument(
-        "--dns",
+        "--model",
         type=str,
         required=True,
         choices=[
@@ -72,7 +72,7 @@ def main():
             "dnspod",
             "duckdns",
         ],
-        help="The name of the dns provider that you want to use.",
+        help="The name of the model provider that you want to use.",
     )
     parser.add_argument(
         "--domain",
@@ -195,7 +195,7 @@ def main():
             dns_class = CloudFlareDns(
                 CLOUDFLARE_EMAIL=CLOUDFLARE_EMAIL, CLOUDFLARE_API_KEY=CLOUDFLARE_API_KEY
             )
-            logger.info("chosen_dns_provider. Using {0} as dns provider.".format(dns_provider))
+            logger.info("chosen_dns_provider. Using {0} as model provider.".format(dns_provider))
         except KeyError as e:
             logger.error("ERROR:: Please supply {0} as an environment variable.".format(str(e)))
             raise
@@ -210,7 +210,7 @@ def main():
             dns_class = AuroraDns(
                 AURORA_API_KEY=AURORA_API_KEY, AURORA_SECRET_KEY=AURORA_SECRET_KEY
             )
-            logger.info("chosen_dns_provider. Using {0} as dns provider.".format(dns_provider))
+            logger.info("chosen_dns_provider. Using {0} as model provider.".format(dns_provider))
         except KeyError as e:
             logger.error("ERROR:: Please supply {0} as an environment variable.".format(str(e)))
             raise
@@ -228,7 +228,7 @@ def main():
                 ACME_DNS_API_KEY=ACME_DNS_API_KEY,
                 ACME_DNS_API_BASE_URL=ACME_DNS_API_BASE_URL,
             )
-            logger.info("chosen_dns_provider. Using {0} as dns provider.".format(dns_provider))
+            logger.info("chosen_dns_provider. Using {0} as model provider.".format(dns_provider))
         except KeyError as e:
             logger.error("ERROR:: Please supply {0} as an environment variable.".format(str(e)))
             raise
@@ -240,7 +240,7 @@ def main():
             aliyun_secret = os.environ["ALIYUN_AK_SECRET"]
             aliyun_endpoint = os.environ.get("ALIYUN_ENDPOINT", "cn-beijing")
             dns_class = AliyunDns(aliyun_ak, aliyun_secret, aliyun_endpoint)
-            logger.info("chosen_dns_provider. Using {0} as dns provider.".format(dns_provider))
+            logger.info("chosen_dns_provider. Using {0} as model provider.".format(dns_provider))
         except KeyError as e:
             logger.error("ERROR:: Please supply {0} as an environment variable.".format(str(e)))
             raise
@@ -251,7 +251,7 @@ def main():
             he_username = os.environ["HURRICANE_USERNAME"]
             he_password = os.environ["HURRICANE_PASSWORD"]
             dns_class = HurricaneDns(he_username, he_password)
-            logger.info("chosen_dns_provider. Using {0} as dns provider.".format(dns_provider))
+            logger.info("chosen_dns_provider. Using {0} as model provider.".format(dns_provider))
         except KeyError as e:
             logger.error("ERROR:: Please supply {0} as an environment variable.".format(str(e)))
             raise
@@ -262,7 +262,7 @@ def main():
             RACKSPACE_USERNAME = os.environ["RACKSPACE_USERNAME"]
             RACKSPACE_API_KEY = os.environ["RACKSPACE_API_KEY"]
             dns_class = RackspaceDns(RACKSPACE_USERNAME, RACKSPACE_API_KEY)
-            logger.info("chosen_dns_prover. Using {0} as dns provider. ".format(dns_provider))
+            logger.info("chosen_dns_prover. Using {0} as model provider. ".format(dns_provider))
         except KeyError as e:
             logger.error("ERROR:: Please supply {0} as an environment variable.".format(str(e)))
             raise
@@ -273,7 +273,7 @@ def main():
             DNSPOD_ID = os.environ["DNSPOD_ID"]
             DNSPOD_API_KEY = os.environ["DNSPOD_API_KEY"]
             dns_class = DNSPodDns(DNSPOD_ID, DNSPOD_API_KEY)
-            logger.info("chosen_dns_prover. Using {0} as dns provider. ".format(dns_provider))
+            logger.info("chosen_dns_prover. Using {0} as model provider. ".format(dns_provider))
         except KeyError as e:
             logger.error("ERROR:: Please supply {0} as an environment variable.".format(str(e)))
             raise
@@ -284,12 +284,12 @@ def main():
             duckdns_token = os.environ["DUCKDNS_TOKEN"]
 
             dns_class = DuckDNSDns(duckdns_token=duckdns_token)
-            logger.info("chosen_dns_provider. Using {0} as dns provider.".format(dns_provider))
+            logger.info("chosen_dns_provider. Using {0} as model provider.".format(dns_provider))
         except KeyError as e:
             logger.error("ERROR:: Please supply {0} as an environment variable.".format(str(e)))
             raise
     else:
-        raise ValueError("The dns provider {0} is not recognised.".format(dns_provider))
+        raise ValueError("The model provider {0} is not recognised.".format(dns_provider))
 
     client = Client(
         domain_name=domain,

@@ -62,7 +62,7 @@ class DNSPodDns(common.BaseDns):
             # raise error so that we do not continue to make calls to ACME
             # server
             raise ValueError(
-                "Error creating dnspod dns record: status_code={status_code} response={response}".format(
+                "Error creating dnspod model record: status_code={status_code} response={response}".format(
                     status_code=create_dnspod_dns_record_response["status"]["code"],
                     response=create_dnspod_dns_record_response["status"]["message"],
                 )

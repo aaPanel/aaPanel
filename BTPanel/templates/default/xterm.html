@@ -102,10 +102,4 @@
 <script type="text/javascript" src="/static/js/clipboard.min.js"></script>
 <script type="text/javascript" src="/static/js/xterm.js"></script>
 <script type="text/javascript" src="/static/js/term.js"></script>
-<script type="text/javascript">
-    if($("#panel_debug").attr("data") == 'True') {
-        layer.msg('The current mode is developer mode. Can not support SSH. Please turn it off in the 【Settings】 page!',{icon:7,shade: [0.3, '#000'],time:0});
-        $(".layui-layer-shade").css("margin-left", "180px");
-    }
-</script>
 {% endblock %}

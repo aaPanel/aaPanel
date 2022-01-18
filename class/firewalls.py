@@ -141,7 +141,7 @@ class firewalls:
         ps = public.xssencode(get.ps)
         is_exists = public.M('firewall').where("port=? or port=?",(port,src_port)).count()
         if is_exists: return public.returnMsg(False,'FIREWALL_PORT_EXISTS')
-        notudps = ['80','443','8888','888','39000:40000','21','22']
+        notudps = ['80','443','8888','888','39000:40000','21','22','7800']
         if self.__isUfw:
             public.ExecShell('ufw allow ' + port + '/tcp')
             if not port in notudps: public.ExecShell('ufw allow ' + port + '/udp')
@@ -255,7 +255,7 @@ class firewalls:
     def SetSshPort(self,get):
         port = get.port
         if int(port) < 22 or int(port) > 65535: return public.returnMsg(False,'FIREWALL_SSH_PORT_ERR')
-        ports = ['21','25','80','443','8080','888','8888']
+        ports = ['21','25','80','443','8080','888','8888','7800']
         if port in ports: return public.returnMsg(False,'DONT_USE_PORT')
         file = '/etc/ssh/sshd_config'
         conf = public.readFile(file)

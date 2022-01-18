@@ -31,7 +31,7 @@ class _ResponseForAliyun(object):
 class AliyunDns(common.BaseDns):
     def __init__(self, key, secret, endpoint="cn-beijing", debug=False):
         """
-        aliyun dns client
+        aliyun model client
         :param str key: access key
         :param str secret: access sceret
         :param str endpoint: endpoint
@@ -162,7 +162,7 @@ class AliyunDns(common.BaseDns):
 
     def create_dns_record(self, domain_name, domain_dns_value):
         """
-        create a dns record
+        create a model record
         :param str domain_name: the value sewer client passed in, like *.menduo.example.com
         :param str domain_dns_value: the value sewer client passed in.
         :return _ResponseForAliyun:
@@ -200,7 +200,7 @@ class AliyunDns(common.BaseDns):
             self.logger.warning(msg)
             return
 
-        self.logger.info("start to delete dns record, id: %s", record_id)
+        self.logger.info("start to delete model record, id: %s", record_id)
 
         request = DeleteDomainRecordRequest.DeleteDomainRecordRequest()
         request.set_RecordId(record_id)

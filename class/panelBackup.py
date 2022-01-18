@@ -139,7 +139,7 @@ class backup:
         if not diskInfo: return '',0,0
         _root = None
         for d in diskInfo:
-            if d['path'] == '/':
+            if d['path'] == '/': 
                 _root = d
                 continue
             if re.match("^{}/.+".format(d['path']),dfile):
@@ -148,7 +148,7 @@ class backup:
             return _root['path'],float(_root['size'][2]) * 1024,int(_root['inodes'][2])
         return '',0,0
 
-    #备份指定目录
+    #备份指定目录 
     def backup_path(self,spath,dfile = None,exclude=[],save=3):
 
         error_msg = ""
@@ -166,7 +166,7 @@ class backup:
         if not dfile:
             fname = 'path_{}_{}.tar.gz'.format(dirname,public.format_date("%Y%m%d_%H%M%S"))
             dfile = os.path.join(self._path,'path',fname)
-
+        
         if not self.backup_path_to(spath,dfile,exclude):
             if self._error_msg:
                 error_msg = self._error_msg
@@ -241,7 +241,7 @@ class backup:
         self.echo_end()
         return dfile
 
-
+    
     #清理过期备份文件
     def delete_old(self,backups,save,data_type = None):
         if type(backups) == str:
@@ -299,13 +299,13 @@ class backup:
         p_size = public.get_path_size(spath, exclude=exclude_list)
         if not self._exclude:
             exclude_config = "Not set"
-
+        
         if siteName:
             self.echo_info(public.getMsg('BACKUP_SITE',(siteName,)))
             self.echo_info(public.getMsg('WEBSITE_DIR',(spath,)))
         else:
             self.echo_info(public.getMsg('BACKUP_DIR',(spath,)))
-
+        
         self.echo_info(public.getMsg(
             "DIR_SIZE",
             (str(public.to_size(p_size),))
@@ -513,7 +513,7 @@ class backup:
             dfile = os.path.join(self._path,'database',fname)
         else:
             fname = os.path.basename(dfile)
-
+        
         dpath = os.path.dirname(dfile)
         if not os.path.exists(dpath):
             os.makedirs(dpath,384)
@@ -529,7 +529,7 @@ class backup:
             self.echo_error(error_msg)
             self.send_failture_notification(error_msg)
             return False
-
+        
         if p_size == None:
             error_msg = public.getMsg('DB_BACKUP_ERR',(db_name,))
             self.echo_error(error_msg)
@@ -561,7 +561,7 @@ class backup:
                 self.echo_error(error_msg)
                 self.send_failture_notification(error_msg)
                 return False
-
+        
         stime = time.time()
         self.echo_info(public.getMsg("EXPORT_DB",(public.format_date(times=stime),)))
         if os.path.exists(dfile):
@@ -877,4 +877,4 @@ class backup:
             print(e)
         return False
 
-
+    

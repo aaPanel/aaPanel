@@ -94,6 +94,8 @@ class panelApi:
         return 1
 
     def get_bind_status(self,args):
+        if not public.cache_get("get_bind_status"):
+            public.cache_set("get_bind_status",1,60)
         bind = self.get_bind_token(args.bind_token)
         return bind
 

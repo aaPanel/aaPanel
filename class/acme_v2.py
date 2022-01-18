@@ -60,6 +60,7 @@ class acme_v2:
     _dnsapi_file = 'config/dns_api.json'
     _save_path = 'vhost/letsencrypt'
     _conf_file = 'config/letsencrypt.json'
+    _stop_rp_file = '{}/data/stop_rp_when_renew_ssl.pl'.format(public.get_panel_path())
     _by_panel = None
 
     def __init__(self):
@@ -1331,15 +1332,95 @@ fullchain.pem       Paste into certificate input box
                 if not os.path.exists(args.auth_to):
                     return public.returnMsg(False, 'ACME_DIR_ERR')
 
-            check_result = self.check_auth_env(args)
+            check_result = self.check_auth_env(args, check=True)
             if check_result: return check_result
-
             if args.auto_wildcard == '1':
                 self._auto_wildcard = True
-            return self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
+            res = self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
+            if os.path.exists(self._stop_rp_file):
+                self.turnon_redirect_proxy_httptohttps(args)
+            return res
+
+    def turnon_redirect_proxy_httptohttps(self,args):
+        import panelSite
+        s = panelSite.panelSite()
+        if not 'siteName' in args:
+            args.siteName = public.M('sites').where('id=?', (args.id,)).getField('name')
+        args.sitename = args.siteName
+        self.turnon_redirect(args,s)
+        self.turnon_proxy(args, s)
+        self.turnon_httptohttps(args,s)
+        public.serviceReload()
+
+    def turnon_httptohttps(self,args,s):
+        conf_file = '{}/data/stop_httptohttps.pl'.format(public.get_panel_path())
+        if os.path.exists(conf_file):
+            write_log('|-开启http to https')
+            s.HttpToHttps(args)
+            try:
+                os.remove(conf_file)
+            except:
+                pass
+
+    def turnon_proxy(self,args,s):
+        conf_file = '{}/data/stop_p_tmp.pl'.format(public.get_panel_path())
+        if not os.path.exists(conf_file):
+            return
+        write_log('|-开启反向代理')
+        conf = json.loads(public.readFile(conf_file))
+        data = s.GetProxyList(args)
+        for x in data:
+            if x['sitename'] not in conf:
+                continue
+            if x['proxyname'] not in conf[x['sitename']]:
+                continue
+            args.type = 1
+            args.advanced = x['advanced']
+            args.cache = x['cache']
+            args.cachetime = x['cachetime']
+            args.proxydir = x['proxydir']
+            args.proxyname = x['proxyname']
+            args.proxysite = x['proxysite']
+            args.sitename = x['sitename']
+            args.subfilter = json.dumps(x['subfilter'])
+            args.todomain = x['todomain']
+            s.ModifyProxy(args)
+        try:
+            os.remove(conf_file)
+        except:
+            pass
+
+    def turnon_redirect(self,args,s):
+        conf_file = '{}/data/stop_r_tmp.pl'.format(public.get_panel_path())
+        if not os.path.exists(conf_file):
+            return
+        write_log('|-开启重定向')
+        conf = json.loads(public.readFile(conf_file))
+        data = s.GetRedirectList(args)
+        for x in data:
+            if x['sitename'] not in conf:
+                continue
+            if x['redirectname'] not in conf[x['sitename']]:
+                continue
+            args.type = 1
+            args.sitename = x['sitename']
+            args.holdpath = x['holdpath']
+            args.redirectname = x['redirectname']
+            args.redirecttype = x['redirecttype']
+            args.domainorpath = x['domainorpath']
+            args.redirectpath = x['redirectpath']
+            args.redirectdomain = json.dumps(x['redirectdomain'])
+            args.tourl = x['tourl']
+            s.ModifyRedirect(args)
+        try:
+            os.remove(conf_file)
+        except:
+            pass
 
     #检查认证环境
-    def check_auth_env(self,args):
+    def check_auth_env(self,args,check = None):
+        if not check:
+            return
         for domain in json.loads(args.domains):
             if public.checkIp(domain): continue
             if domain.find('*.') >=0 and args.auth_type in ['http','tls']:
@@ -1348,26 +1429,80 @@ fullchain.pem       Paste into certificate input box
         s = panelSite.panelSite()
         if args.auth_type in ['http','tls']:
             try:
+                rp_conf = public.readFile(self._stop_rp_file)
+                try:
+                    if rp_conf:
+                        rp_conf = json.loads(rp_conf)
+                except:
+                    write_log('|-Failed to parse configuration file')
                 if not 'siteName' in args:
                     args.siteName = public.M('sites').where('id=?',(args.id,)).getField('name')
                 args.sitename = args.siteName
                 data = s.GetRedirectList(args)
                 # 检查重定向是否开启
                 if type(data) == list:
+                    redirect_tmp = {args.sitename:[]}
                     for x in data:
-                        if x['type']: return public.returnMsg(False, 'SITE_SSL_ERR_301')
+                        if rp_conf and x['sitename'] in rp_conf:
+                            if str(x['type']) == '0':
+                                continue
+                            args.type = 0
+                            args.sitename = x['sitename']
+                            args.holdpath = x['holdpath']
+                            args.redirectname = x['redirectname']
+                            args.redirecttype = x['redirecttype']
+                            args.domainorpath = x['domainorpath']
+                            args.redirectpath = x['redirectpath']
+                            args.redirectdomain = json.dumps(x['redirectdomain'])
+                            args.tourl = x['tourl']
+                            args.notreload = True
+                            write_log("|- Turning off redirection {}".format(args.redirectname))
+                            s.ModifyRedirect(args)
+                            redirect_tmp[args.sitename].append(x['redirectname'])
+                        else:
+                            if x['type']: return public.returnMsg(False, 'SITE_SSL_ERR_301')
+                    if redirect_tmp[args.sitename]:
+                        public.writeFile('{}/data/stop_r_tmp.pl'.format(public.get_panel_path()),json.dumps(redirect_tmp))
                 data = s.GetProxyList(args)
                 # 检查反向代理是否开启
                 if type(data) == list:
+                    proxy_tmp = {args.sitename: []}
                     for x in data:
-                        if x['type']: return public.returnMsg(False,'ACME_PROXY_ERR')
+                        if rp_conf and x['sitename'] in rp_conf:
+                            if str(x['type']) == '0':
+                                continue
+                            args.type = 0
+                            args.advanced = x['advanced']
+                            args.cache = x['cache']
+                            args.cachetime = x['cachetime']
+                            args.proxydir = x['proxydir']
+                            args.proxyname = x['proxyname']
+                            args.proxysite = x['proxysite']
+                            args.sitename = x['sitename']
+                            args.subfilter = json.dumps(x['subfilter'])
+                            args.todomain = x['todomain']
+                            args.notreload = True
+                            s.ModifyProxy(args)
+                            write_log("|- Turning off proxy {}".format(args.proxyname))
+                            proxy_tmp[args.sitename].append(x['proxyname'])
+                        else:
+                            if x['type']: return public.returnMsg(False,'ACME_PROXY_ERR')
+                    if proxy_tmp[args.sitename]:
+                        public.writeFile('{}/data/stop_p_tmp.pl'.format(public.get_panel_path()),json.dumps(proxy_tmp))
                 # 检查旧重定向是否开启
                 data = s.Get301Status(args)
                 if data['status']:
                     return public.returnMsg(False,'SITE_SSL_ERR_3011')
                 #判断是否强制HTTPS
                 if s.IsToHttps(args.siteName):
-                    return public.returnMsg(False, 'ACME_FORCE_SSL_ERR')
+                    if os.path.exists(self._stop_rp_file):
+                        if rp_conf and args.siteName in rp_conf:
+                            write_log("|- Turning off http to https")
+                            s.CloseToHttps(args)
+                        public.writeFile('{}/data/stop_httptohttps.pl'.format(public.get_panel_path()), '')
+                    else:
+                        return public.returnMsg(False, 'ACME_FORCE_SSL_ERR')
+                public.serviceReload()
             except:
                 return False
         else:          
@@ -1511,7 +1646,7 @@ fullchain.pem       Paste into certificate input box
                     # 是否到了最大重试次数
                     if 'retry_count' in self._config['orders'][i]:
                         if self._config['orders'][i]['retry_count'] >= 3:
-                            write_log('|-Skip the domain name this time: {}, this certificate will not be renewed due to failure to renew 3 times in a row'.format(self._config['orders'][i]['domains']))
+                            write_log('|-Skip the domain name this time: {}, this certificate will not be renewed due to failure to renew 3 times in a row, (The number of errors will be reset after manual renewal and success)'.format(self._config['orders'][i]['domains']))
                             continue
 
                     # 加入到续签订单
@@ -1524,7 +1659,17 @@ fullchain.pem       Paste into certificate input box
             n = 0
             self.get_apis()
             cert = None
+            args = public.to_dict_obj({})
             for index in order_index:
+                args.domains = json.dumps(self._config['orders'][index]['domains'])
+                args.auth_type = self._config['orders'][index]['auth_type']
+                args.auth_to = self._config['orders'][index]['auth_to']
+                sitename = args.auth_to.split('/')[-1]
+                if not sitename:
+                    sitename = self._config['orders'][index]['auth_to'].split('/')[-2]
+                args.siteName = sitename
+                write_log('|-Renew the visa certificate and start checking the environment')
+                self.check_auth_env(args,check=True)
                 n += 1
                 write_log(public.getMsg("ACME_RENEWING",(str(n),str(self._config['orders'][index]['domains']))))
                 write_log(public.getMsg('ACME_CREAT_ORDER'))
@@ -1558,6 +1703,8 @@ fullchain.pem       Paste into certificate input box
                     self.save_config()
                     cert['status'] = True
                     cert['msg'] = public.getMsg('ACME_RENEW_SUCCESS')
+                    if os.path.exists(self._stop_rp_file):
+                        self.turnon_redirect_proxy_httptohttps(args)
                     write_log(public.getMsg('ACME_RENEW_SUCCESS1'))
                 except Exception as e:
                     if str(e).find('请稍候重试') == -1: # 受其它证书影响和连接CA失败的的不记录重试次数

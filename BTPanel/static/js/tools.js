@@ -213,15 +213,14 @@ var bt_tools = {
              * @return void
              */
             $batch_success_table: function (config) {
-                console.log(1);
                 var _that = this,length = $(config.html).length;
                 bt.open({
                     type: 1,
                     title: config.title,
-                    area: config.area || ['400px', '350px'],
+                    area: config.area || ['400px'],
                     shadeClose: false,
                     closeBtn: 2,
-                    content: config.content || '<div class="batch_title"><span class><span class="batch_icon"></span><span class="batch_text">' + config.title + ' '+lan['public'].success+'</span></span></div><div class="'+ (length > 4?'fiexd_thead':'') +' batch_tabel divtable" style="margin: 15px 30px 15px 30px;overflow: auto;height: 200px;"><table class="table table-hover"><thead><tr><th>' + config.th + '</th><th style="text-align:right;width:170px;">'+lan['public'].result+'</th></tr></thead><tbody>' + config.html + '</tbody></table></div>',
+                    content: config.content || '<div class="batch_title"><span class><span class="batch_icon"></span><span class="batch_text">' + config.title + ' '+lan['public'].success+'</span></span></div><div class="'+ (length > 4?'fiexd_thead':'') +' batch_tabel divtable" style="margin: 15px 30px 15px 30px;overflow: auto;max-height: 195px; border: 1px solid #ddd;"><table style="border: none;" class="table table-hover"><thead><tr><th>' + config.th + '</th><th style="text-align:right;width:170px;">'+lan['public'].result+'</th></tr></thead><tbody>' + config.html + '</tbody></table></div>',
                     success: function () {
                         if(length > 4) _that.$fixed_table_thead('.fiexd_thead');
                     }
@@ -2321,10 +2320,10 @@ var bt_tools = {
         bt.open({
             type: 1,
             title: config.title,
-            area: config.area || ['400px', '350px'],
+            area: config.area || ['400px'],
             shadeClose: false,
             closeBtn: 2,
-            content: config.content || '<div class="batch_title"><span class><span class="batch_icon"></span><span class="batch_text">' + config.title + ' '+lan['public'].success+'</span></span></div><div class="'+ (length > 4?'fiexd_thead':'') +' batch_tabel divtable" style="margin: 15px 30px 15px 30px;overflow: auto;height: 200px;"><table class="table table-hover"><thead><tr><th>' + config.th + '</th><th style="text-align:right;width:170px;">'+lan['public'].result+'</th></tr></thead><tbody>' + config.html + '</tbody></table></div>',
+            content: config.content || '<div class="batch_title"><span class><span class="batch_icon"></span><span class="batch_text">' + config.title + ' '+lan['public'].success+'</span></span></div><div class="'+ (length > 4?'fiexd_thead':'') +' batch_tabel divtable" style="margin: 15px 30px 15px 30px;overflow: auto;max-height: 195px; border: 1px solid #ddd; border-bottom: none;"><table style="border: none;" class="table table-hover"><thead><tr><th>' + config.th + '</th><th style="text-align:right;width:170px;">'+lan['public'].result+'</th></tr></thead><tbody>' + config.html + '</tbody></table></div>',
             success: function () {
               if(length > 4) _that.$fixed_table_thead('.fiexd_thead');
             }

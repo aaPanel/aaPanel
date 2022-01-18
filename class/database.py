@@ -31,10 +31,12 @@ class database(datatool.datatools):
             if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get):
                 return public.returnMsg(False,'MYSQL_SSL_ERR')
             data_name = get['name'].strip().lower()
+            if not data_name: return public.returnMsg(False, 'The database name cannot be empty')
             if self.CheckRecycleBin(data_name): return public.returnMsg(False,'DATABASE_DEL_RECYCLE_BIN',(data_name,))
             if len(data_name) > 64: return public.returnMsg(False, 'DATABASE_NAME_LEN')
             reg = r"^[\w\.-]+$"
             username = get.db_user.strip()
+            if not username: return public.returnMsg(False,'The database user name cannot be empty')
             if not re.match(reg, data_name): return public.returnMsg(False,'DATABASE_NAME_ERR_T')
             if not re.match(reg, username): return public.returnMsg(False,'DATABASE_NAME_ERR')
             if not hasattr(get,'db_user'): get.db_user = data_name
@@ -50,6 +52,8 @@ class database(datatool.datatools):
             if sql.where("name=?",(data_name)).count(): return public.returnMsg(False,'DATABASE_NAME_EXISTS')
             if sql.where("username=?", (username)).count(): return public.returnMsg(False, 'DATABASE_USERNAME_EXISTS')
             address = get['address'].strip()
+            if address in ['','ip']: return public.returnMsg(False,'If the access permission is [Specified IP], you need to enter the IP address!')
+
             user = '是'
             password = data_pwd
             
@@ -102,16 +106,21 @@ openssl x509 -sha1 -req -in server-req.pem -days 3650 -CA ca.pem -CAkey ca-key.p
 openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -subj "/C=CA/ST=CA/L=CA/O=CA/OU=CA/CN={ip}" -keyout client-key.pem > client-req.pem
 openssl rsa -in client-key.pem -out client-key.pem
 openssl x509 -sha1 -req -in client-req.pem -days 3650 -CA ca.pem -CAkey ca-key.pem -set_serial 01 > client-cert.pem
-tar -zcvf ssl.zip client-cert.pem client-key.pem ca.pem
+zip -q ssl.zip client-cert.pem client-key.pem ca.pem
 """.format(ip=ip)
         public.ExecShell(openssl_command)
 
     # 写入mysqlssl到配置
     def write_ssl_to_mysql(self,get):
-        ssl_conf = """
-ssl-ca=/www/server/data/ca.pem
-ssl-cert=/www/server/data/server-cert.pem
-ssl-key=/www/server/data/server-key.pem
+#         ssl_conf = """
+# ssl-ca=/www/server/data/ca.pem
+# ssl-cert=/www/server/data/server-cert.pem
+# ssl-key=/www/server/data/server-key.pem
+# """
+        ssl_original_path = """
+ssl-ca=/www/server/mysql/mysql-test/std_data/cacert.pem
+ssl-cert=/www/server/mysql/mysql-test/std_data//server-cert.pem
+ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
 """
         conf_file = "/etc/my.cnf"
         conf = public.readFile(conf_file)
@@ -120,22 +129,37 @@ ssl-key=/www/server/data/server-key.pem
         if self.check_mysql_ssl_status(get):
             reg = "ssl-ca=/www.*\n.*\n.*server-key.pem\n"
             conf = re.sub(reg,"",conf)
+            if os.path.exists('/www/server/mysql/mysql-test/std_data/server-cert.pem'):
+                conf = re.sub('\[mysqld\]', '[mysqld]\nskip_ssl', conf)
             public.writeFile(conf_file,conf)
             return public.returnMsg(True,"SET_SUCCESS")
-        self._create_mysql_ssl()
+        # create_ssl = None
+        # for i in ['5.5','5.6','10.1','10.2','10.3']:
+        #     if i not in public.readFile('/www/server/mysql/version_check.pl'):
+        #         continue
+        #     create_ssl = True
+        # if create_ssl:
+            # self._create_mysql_ssl()
         if "ssl-ca" not in conf:
-            conf = re.sub('\[mysqld\]','[mysqld]'+ssl_conf,conf)
+            conf = re.sub('\[mysqld\]','[mysqld]'+ssl_original_path,conf)
+        conf = re.sub('skip_ssl\n', '', conf)
         public.writeFile(conf_file,conf)
-        public.ExecShell('chown mysql.mysql /www/server/data/*.pem')
+        # public.ExecShell('chown mysql.mysql /www/server/data/*.pem')
         return public.returnMsg(True,"MYSQL_SSL_OPEN_SUCCESS")
 
     # 检查mysqlssl状态
     def check_mysql_ssl_status(self,get):
         mysql_obj = panelMysql.panelMysql()
         result = mysql_obj.query("show variables like 'have_ssl';")
-        if result and result[0][1] == "YES":
-            return True
-        return False
+        if not os.path.exists('/www/server/data/ssl.zip'):
+            if os.path.exists('/www/server/mysql/mysql-test/std_data/client-cert.pem'):
+                public.ExecShell("cd /www/server/mysql/mysql-test/std_data/ && zip -q /www/server/data/ssl.zip client-cert.pem client-key.pem cacert.pem")
+        try:
+            if result and result[0][1] == "YES":
+                return True
+            return False
+        except:
+            return False
 
     #判断数据库是否存在—从MySQL
     def database_exists_for_mysql(self,mysql_obj,dataName):
@@ -163,8 +187,10 @@ ssl-key=/www/server/data/server-key.pem
     #检查是否在回收站
     def CheckRecycleBin(self,name):
         try:
+            u_name = self.db_name_to_unicode(name)
             for n in os.listdir('/www/Recycle_bin'):
                 if n.find('BTDB_'+name+'_t_') != -1: return True
+                if n.find('BTDB_'+u_name+'_t_') != -1: return True
             return False
         except:
             return False
@@ -320,7 +346,18 @@ SetLink
         except Exception as ex:
             public.WriteLog("TYPE_DATABASE",'DATABASE_DEL_ERR',(get.name , str(ex)))
             return public.returnMsg(False,'DEL_ERROR')
-    
+
+
+    def db_name_to_unicode(self,name):
+        '''
+            @name 中文数据库名转换为Unicode编码
+            @author hwliang<2021-12-20>
+            @param name<string> 数据库名
+            @return name<string> Unicode编码的数据库名
+        '''
+        name = name.replace('.','@002e')
+        return name.encode("unicode_escape").replace(b"\\u",b"@").decode()
+
     #删除数据库到回收站  
     def DeleteToRecycleBin(self,name):
         import json
@@ -333,11 +370,13 @@ SetLink
         panelMysql.panelMysql().execute("flush privileges")
         rPath = '/www/Recycle_bin/'
         data['rmtime'] = int(time.time())
-        rm_path = '{}/BTDB_{}_t_{}'.format(rPath,name,data['rmtime'])
+        u_name = self.db_name_to_unicode(name)
+        rm_path = '{}/BTDB_{}_t_{}'.format(rPath,u_name,data['rmtime'])
         if os.path.exists(rm_path): rm_path += '.1'
         rm_config_file = '{}/config.json'.format(rm_path)
         datadir = public.get_datadir()
-        db_path = '{}/{}'.format(datadir,name)
+
+        db_path = '{}/{}'.format(datadir,u_name)
         if not os.path.exists(db_path):
             return public.returnMsg(False,'Means that the database data does not exist!')
 
@@ -387,7 +426,8 @@ SetLink
         else:
             re_config_file = filename + '/config.json'
             data = json.loads(public.readFile(re_config_file))
-            db_path = "{}/{}".format(public.get_datadir(),data['name'])
+            u_name = self.db_name_to_unicode(data['name'])
+            db_path = "{}/{}".format(public.get_datadir(),u_name)
             if os.path.exists(db_path):
                 return public.returnMsg(False,'There is a database with the same name in the current database. To ensure data security, stop recovery!')
             _isdir = True
@@ -766,7 +806,8 @@ SetLink
             return public.returnMsg(False,'SSL is not enabled in the database, please open it in the Mysql manager first')
         name = get['name']
         db_name = public.M('databases').where('username=?',(name,)).getField('name')
-        access = get['access']
+        access = get['access'].strip()
+        if access in ['']: return public.returnMsg(False,'The IP address cannot be empty!')
         password = public.M('databases').where("username=?",(name,)).getField('password')
         mysql_obj = panelMysql.panelMysql()
         result = mysql_obj.query("show databases")

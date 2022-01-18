@@ -6,14 +6,22 @@ $('#cutMode span').on('click',function(){
     switch(index){
         case 0:
             $('#bt_site_table').empty();
-            if(!isSetup) $('.site_table_view .mask_layer').removeClass('hide').find('.prompt_description').html('Web server is not installed,<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'nginx\')">Install Nginx</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'apache\')">Install Apache</a>');
+            if (!isSetup) {
+                // layer.msg('Web server is not installed<br/><a href="javascript:;" class="btlink" onclick="bt.soft.install(\'nginx\')">Install Nginx</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'apache\')">Install Apache</a>', { icon: 7, shade: [0.3, '#000'], time: 0 });
+                $('#bt_site_table+.mask_layer').removeClass('hide').find('.prompt_description').html('Web server is not installed, <a href="javascript:;" class="btlink" onclick="bt.soft.install(\'nginx\')">Install Nginx</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'apache\')">Install Apache</a>');
+            }
             site.php_table_view();
             site.get_types();
             break;
         case 1:
             $('#bt_node_table').empty();
             $.get('/plugin?action=getConfigHtml',{name: "nodejs"},function(res){
-                if(typeof res !== 'string') $('.site_table_view .mask_layer').removeClass('hide').find('.prompt_description').html('Node version manager is not installed，<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'nodejs\')">Click install</a>');
+                // if(typeof res !== 'string') $('.site_table_view .mask_layer').removeClass('hide').find('.prompt_description').html('Node version manager is not installed，<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'nodejs\')">Click install</a>');
+                if (typeof res !== 'string') {
+                    $('#bt_node_table+.mask_layer').removeClass('hide').find('.prompt_description').html('Node version manager is not installed，<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'nodejs\')">Click install</a>');
+                } else {
+                    $('#bt_node_table+.mask_layer').addClass('hide');
+                }
             })
             site.node_porject_view();
             break;
@@ -60,7 +68,7 @@ var site = {
                     var project_script = $("[data-name=\'project_script\']");
                     if(formData.project_script === ''){
                         if($("#project_script_two").length === 0){
-                            project_script.parent().after('<div class="inlineBlock"><input type="text" name="project_script_two" id="project_script_two" placeholder="Please select the startup file and startup command, it cannot be empty" class="mt5 bt-input-text mr10 " style="width:420px;" value="" /><span class="glyphicon glyphicon-folder-open cursor" onclick="bt.select_path(\'project_script_two\',\'file\',null,\''+path+'\')" style="margin-right: 18px;"></span></div>')
+                            project_script.parent().after('<div class="inlineBlock"><input type="text" name="project_script_two" id="project_script_two" placeholder="Please select the startup file and startup command, it cannot be empty" class="mt5 bt-input-text mr10 " style="width:420px;" value="" /><span class="glyphicon glyphicon-folder-open cursor" onclick="bt.select_path(\'project_script_two\',\'all\',null,\''+path+'\')" style="margin-right: 18px;"></span></div>')
                         }
                     }else{
                         project_script.parent().next().remove();
@@ -1521,6 +1529,7 @@ var site = {
         });
     },
     php_table_view:function(){
+        $('#bt_site_table').empty();
         var site_table = bt_tools.table({
             el:'#bt_site_table',
             url:'/data?action=getData',
@@ -1545,7 +1554,7 @@ var site = {
                         site.web_edit(row,true);
                     },
                     template: function (row, index) {
-                        return '<a class="btlink" style="display: inline-block; width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" href="javascript:;" title="' + row.name + '">' + row.name + '</a>';
+                        return '<div style="display: flex;"><a class="btlink size_ellipsis" style="flex: 1; width: 0;" href="javascript:;" title="' + row.name + '">' + row.name + '</a></div>';
                     }
                 },
                 {fid:'status',title:lan.site.status,sort:true,width:85,config:{icon:true,list:[['1',lan.site.running_text,'bt_success','glyphicon-play'],['0',lan.site.stopped,'bt_danger','glyphicon-pause']]},type:'status',event:function(row,index,ev,key,that){
@@ -1576,7 +1585,7 @@ var site = {
                         openPath(row.path);
                     },
                     template: function (row, index) {
-                        return '<a class="btlink" style="display: inline-block; width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" href="javascript:;" title="' + row.path + '">' + row.path + '</a>';
+                        return '<div style="display: flex;"><a class="btlink size_ellipsis" style="flex: 1; width: 0;" href="javascript:;" title="' + row.path + '">' + row.path + '</a></div>';
                     }
                 },
                 {
@@ -1726,19 +1735,21 @@ var site = {
                         confirmVerify:false, //是否提示验证方式
                         paramName:'sites_id', //列表参数名,可以为空
                         paramId:'id', // 需要传入批量的id
-                        theadName:'Name'
+                        theadName:'Name',
+                        refresh: true
                     },{
                         title:lan.site.backup_website,
                         url:'/site?action=ToBackup',
                         paramId:'id',
                         load:true,
                         theadName:'Name',
+                        refresh: true,
                         callback:function(that){ // 手动执行,data参数包含所有选中的站点
                             that.start_batch({},function(list){
                                 var html = '';
                                 for(var i=0;i<list.length;i++){
                                     var item = list[i];
-                                    html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ item.request.msg +'</span></div></td></tr>';
+                                    html += '<tr><td><span style="width: 150px;" class="limit-text-length" title="' + item.name + '">'+ item.name +'</span></td><td class="text-right"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ item.request.msg +'</span></td></tr>';
                                 }
                                 site_table.$batch_success_table({title:'Batch backup',th:'Site name',html:html});
                                 site_table.$refresh_table_list(true);
@@ -1750,6 +1761,7 @@ var site = {
                         paramName:'sites_id', //列表参数名,可以为空
                         paramId:'id', // 需要传入批量的id
                         theadName:'Name',
+                        refresh: true,
                         confirm:{
                             title:'Batch set expired date',
                             content:'<div class="line"><span class="tname">Expired date</span><div class="info-r "><input name="edate" id="site_edate" class="bt-input-text mr5" placeholder="yyyy-MM-dd" type="text"></div></div>',
@@ -1787,6 +1799,7 @@ var site = {
                         paramName:'sites_id', //列表参数名,可以为空
                         paramId:'id', // 需要传入批量的id
                         theadName:'Name',
+                        refresh: true,
                         confirm:{
                             title:'Batch set php version',
                             area:'420px',
@@ -1809,6 +1822,7 @@ var site = {
                         url:'/site?action=set_site_type',
                         paramName:'site_ids', //列表参数名,可以为空
                         paramId:'id', // 需要传入批量的id
+                        refresh: true,
                         beforeRequest:function(list){
                             var arry = [];
                             $.each(list,function(index,item){
@@ -1833,6 +1847,7 @@ var site = {
                             }
                         },
                         tips:false,
+                        refresh: true,
                         success:function(res,list,that){
                             var html = '';
                             $.each(list,function(index,item){
@@ -1847,6 +1862,7 @@ var site = {
                         // paramName:'sites_id', //列表参数名,可以为空
                         // paramId:'id', //需要传入批量的id
                         // theadName:'Name',
+                        refresh: true,
                         param: function (row) {
                             return {
                                 id: row.id,
@@ -2166,7 +2182,6 @@ var site = {
                 site.get_list(0,'', val);
                 $(".site_type button").removeClass('btn-success').addClass('btn-default');
                 $(this).addClass('btn-success');
-
             })
             if (callback) callback(rdata);
         });
@@ -2391,7 +2406,7 @@ var site = {
                                         var html = '';
                                         for (var i = 0; i < list.length; i++) {
                                             var item = list[i];
-                                            html += '<tr><td><span class="text-overflow" title="' + item.name + '">' + item.name + '</span></td><td><div style="float:right;"><span style="color:' + (item.request.status ? '#20a53a' : 'red') + '">' + item.request.msg + '</span></div></td></tr>';
+                                            html += '<tr><td><span style="width: 150px;" class="limit-text-length" title="' + item.name + '">' + item.name + '</span></td><td class="text-right"><span style="color:' + (item.request.status ? '#20a53a' : 'red') + '">' + item.request.msg + '</span></td></tr>';
                                         }
                                         backup_table.$batch_success_table({ title: 'Delete site backups in bulk', th: 'file name', html: html });
                                         backup_table.$refresh_table_list(true);
@@ -3954,7 +3969,8 @@ var site = {
                             paramId:'id',
                             paramName:'domains_id',
                             theadName:'Domain',
-                            confirmVerify:false //是否提示验证方式
+                            confirmVerify:false, //是否提示验证方式
+                            refresh: true
                         }
                     }]
                 });
@@ -4859,8 +4875,8 @@ var site = {
                                             var versions = $('[name="versions"]').val();
                                             versions = versions.slice(0, versions.length - 1) + '.' + versions.slice(-1);
                                             if (versions == '0.0') versions = 'Static';
-                                            site_table.$refresh_table_list(true);
-                                            site.reload()
+                                            site.php_table_view();
+                                            site.reload();
                                             setTimeout(function() {
                                                 bt.msg(ret);
                                             }, 1000);
@@ -4887,7 +4903,7 @@ var site = {
                     setTimeout(function(){
                         $('select[name="versions"]').change(function(){
                             var phpversion = $(this).val();
-                            console.log(phpversion);
+                            // console.log(phpversion);
                             if(phpversion == 'other'){
                                 $('.other-version').show();
                             }else{
@@ -5859,7 +5875,7 @@ var site = {
             title: lan.site.website_change + '[' + item.name + ']  --  ' + lan.site.addtime + '[' + item.addtime + ']',
             closeBtn: 2,
             shift: 0,
-            content: "<div class='bt-form'><div class='bt-w-menu site-menu pull-left' style='height: 100%;'></div><div id='webedit-con' class='bt-w-con webedit-con pd15'></div></div>"
+            content: "<div class='bt-form clearfix'><div class='bt-w-menu site-menu pull-left' style='height: 100%;'></div><div id='webedit-con' class='bt-w-con webedit-con pd15'></div></div>"
         })
         setTimeout(function() {
             var webcache = bt.get_cookie('serverType') == 'openlitespeed' ? { title: 'LS-Cache', callback: site.edit.ols_cache } : '';
@@ -6016,7 +6032,7 @@ var site = {
                     title: "Let's Encrypt",
                     callback: function(robj) {
                         robj = $('#webedit-con .tab-con')
-                        console.log(robj,'obj');
+                        // console.log(robj,'obj');
                         acme.get_account_info(function(let_user) {});
                         acme.id = web.id;
                         if (rdata.status && rdata.type == 1) {

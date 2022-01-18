@@ -13,7 +13,7 @@ import os
 import threading
 import time
 import re
-import uuid
+import psutil
 panel_path = '/www/server/panel'
 if not os.name in ['nt']:
     os.chdir(panel_path)
@@ -56,7 +56,8 @@ if os.path.exists(basic_auth_conf):
     except: pass
 
 #初始化SESSION服务
-app.secret_key = uuid.UUID(int=uuid.getnode()).hex[-12:]
+# app.secret_key = uuid.UUID(int=uuid.getnode()).hex[-12:]
+app.secret_key = public.md5(str(os.uname())+str(psutil.boot_time()))
 local_ip = None
 my_terms = {}
 app.config['SESSION_MEMCACHED'] = SimpleCache(1000,86400)
@@ -145,8 +146,8 @@ if admin_path in admin_path_checks: admin_path = '/bt'
 def request_check():
     g.request_time = time.time()
     # 路由和URI长度过滤
-    if len(request.path) > 256: return abort(403)
-    if len(request.url) > 1024: return abort(403)
+    if len(request.path) > 256: return abort(404)
+    if len(request.url) > 1024: return abort(404)
 
     if request.path in ['/service_status']: return
 
@@ -154,8 +155,8 @@ def request_check():
     if request.path in ['/login','/safe','/hook','/public','/down','/get_app_bind_status','/check_bind']:
         pdata = request.form.to_dict()
         for k in pdata.keys():
-            if len(k) > 48: return abort(403)
-            if len(pdata[k]) > 256: return abort(403)
+            if len(k) > 48: return abort(404)
+            if len(pdata[k]) > 256: return abort(404)
     if session.get('debug') == 1: return
 
     if app.config['BASIC_AUTH_OPEN']:
@@ -171,13 +172,13 @@ def request_check():
 
     if not request.path in ['/safe', '/hook', '/public', '/mail_sys', '/down']:
         ip_check = public.check_ip_panel()
-        if ip_check: return ip_check
+        if ip_check: return abort(401)
 
     if request.path.find('/static/') != -1 or request.path == '/code':
         if not 'login' in session and not 'admin_auth' in session and not 'down' in session:
             return abort(401)
     domain_check = public.check_domain_panel()
-    if domain_check: return domain_check
+    if domain_check: return abort(401)
     if public.is_local():
         not_networks = ['uninstall_plugin','install_plugin','UpdatePanel']
         if request.args.get('action') in not_networks: 
@@ -1016,7 +1017,8 @@ def login():
             if route_path != '/' + referer_path:
                 data = {}
                 data['lan'] = public.getLan('close')
-                return render_template('autherr.html', data=data)
+                return abort(404)
+                # return render_template('autherr.html', data=data)
 
     session['admin_auth'] = True
     comReturn = common.panelSetup().init()
@@ -1040,9 +1042,7 @@ def login():
             else:
                 data['hosts'] = json.dumps(data['hosts'])
         data['app_login'] = os.path.exists('data/app_login.pl')
-        return render_template(
-            'login.html',
-            data=data )
+        return render_template('login.html',data=data )
 
 @app.route('/close',methods=method_get)
 def close():
@@ -1052,16 +1052,16 @@ def close():
     data['lan'] = public.getLan('close')
     return render_template('close.html',data=data)
 
-@app.route('/tips',methods=method_get)
-def tips():
-    #提示页面
-    return render_template('tips.html')
+# @app.route('/tips',methods=method_get)
+# def tips():
+#     #提示页面
+#     return render_template('tips.html')
 
 
 @app.route('/get_app_bind_status', methods=method_all)
 def get_app_bind_status(pdata=None):
     # APP绑定状态查询
-    if not public.check_app('app_bind'):return public.returnMsg(False, 'API_DISABLED')
+    if not public.check_app('app_bind'):return abort(404)
     import panelApi
     api_object = panelApi.panelApi()
     return json.dumps(api_object.get_app_bind_status(get_input())),json_header
@@ -1070,12 +1070,12 @@ def get_app_bind_status(pdata=None):
 @app.route('/check_bind', methods=method_all)
 def check_bind(pdata=None):
     # APP绑定查询
-    if not public.check_app('app_bind'):return public.returnMsg(False, 'API_DISABLED')
+    if not public.check_app('app_bind'):return abort(404)
     import panelApi
     api_object = panelApi.panelApi()
     return json.dumps(api_object.check_bind(get_input())),json_header
 
-@app.route('/code')
+@app.route('/code',methods=method_get)
 def code():
     if not 'code' in session:
         return ''
@@ -1196,13 +1196,13 @@ def panel_public():
     if not public.get_error_num(num_key, 10):
         return public.returnMsg(False, 'AUTH_FAILED')
     if not hasattr(get, 'name'): get.name = ''
-    if not hasattr(get, 'fun'): return abort(403)
-    if not public.path_safe_check("%s/%s" % (get.name, get.fun)): return abort(403)
+    if not hasattr(get, 'fun'): return abort(404)
+    if not public.path_safe_check("%s/%s" % (get.name, get.fun)): return abort(404)
     if get.fun in ['login_qrcode', 'is_scan_ok','set_login']:
         # 检查是否验证过安全入口
         global admin_check_auth, admin_path, route_path, admin_path_file
         if admin_path != '/bt' and os.path.exists(admin_path_file) and not 'admin_auth' in session:
-            return abort(403)
+            return abort(404)
         #验证是否绑定了设备
         if not public.check_app('app'):return public.returnMsg(False,'UNBOUND_USER')
         import wxapp
@@ -1361,10 +1361,10 @@ def panel_hook():
     #webhook接口
     get = get_input()
     if not os.path.exists('plugin/webhook'):
-        return public.getJson(public.returnMsg(False,'INIT_WEBHOOK_ERR'))
+        return abort(404)
     public.package_path_append('plugin/webhook')
     import webhook_main
-    session.clear()
+    #session.clear()
     return public.getJson(webhook_main.webhook_main().RunHook(get))
 
 @app.route('/install',methods=method_all)
@@ -1406,13 +1406,13 @@ def install():
         data['username'] = get.bt_username
         return render_template( 'install.html',data = data)
 
-@app.route('/robots.txt',methods=method_all)
-def panel_robots():
-    #爬虫规则响应接口
-    robots = '''User-agent: *
-Disallow: /
-'''
-    return robots,{'Content-Type':'text/plain'}
+# @app.route('/robots.txt',methods=method_all)
+# def panel_robots():
+#     #爬虫规则响应接口
+#     robots = '''User-agent: *
+# Disallow: /
+# '''
+#     return robots,{'Content-Type':'text/plain'}
 
 
 @app.route('/rspamd', defaults={'path': ''},methods=method_all)
@@ -1603,7 +1603,7 @@ def get_pd():
         tmp1 = None
     if tmp1:
         tmp = tmp1[public.to_string([112,114,111])]
-        ltd = tmp1.get('ltd',-1)
+        ltd = tmp1.get('ltd', -1)
     else:
         ltd = -1
         tmp4 = cache.get(public.to_string([112, 95, 116, 111, 107, 101, 110]))
@@ -1690,7 +1690,7 @@ def send_authenticated():
     #发送http认证信息
     request_host = public.GetHost()
     result = Response('', 401,{'WWW-Authenticate': 'Basic realm="%s"' % request_host.strip()})
-    if not 'login' in session and not 'admin_auth' in session: session.clear()
+    # if not 'login' in session and not 'admin_auth' in session: session.clear()
     return result
 
 

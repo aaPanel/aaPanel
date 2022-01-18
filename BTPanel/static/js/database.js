@@ -24,15 +24,27 @@ var database = {
             column:[
                 { fid: 'id', type: 'checkbox', width: 30 },
                 {
-                    fid: 'name', title: lan.database.add_name, width: '20%'
+                    fid: 'name',
+                    width: 120,
+                    title: lan.database.add_name,
+                    template: function (item) {
+                        return '<span class="limit-text-length" style="width: 120px;" title="' + item.name + '">' + item.name + '</span>';
+                    }
                 },
                 {
-                    fid: 'username', title: lan.database.user, sort: function () {
+                    fid: 'username',
+                    width: 120,
+                    title: lan.database.user,
+                    sort: function () {
                         database_table.$refresh_table_list(true);
+                    },
+                    template: function (item) {
+                        return '<span class="limit-text-length" style="width: 120px;" title="' + item.username + '">' + item.username + '</span>';
                     }
                 },
                 {
                     fid:'password',
+                    width: 200,
                     title:lan.database.add_pass,
                     type:'password',
                     copy:true,
@@ -151,12 +163,15 @@ var database = {
                     title: 'Sync all',
                     style: {'margin-left':'30px'},
                     event: function () {
-                        database.sync_to_database(1)
+                        database.sync_to_database(0)
                     }
                 },{
                     title: 'Get DB from server',
                     event: function () {
-                        database.sync_to_database(1)
+                        // database.sync_to_database(1)
+                        bt.database.sync_database(function (rdata) {
+                            if (rdata.status) that.database_table.$refresh_table_list(true);
+                        });
                     }
                 }]
             },{
@@ -164,7 +179,7 @@ var database = {
                 positon: ['left', 'bottom'],
                 placeholder: 'Select batch operation',
                 buttonValue: 'Execute',
-                disabledSelectValue: 'Select the website to execute!!',
+                disabledSelectValue: 'Select the DB to execute!!',
                 selectList: [{
                     title:'Sync to Server',
                     url:'/database?action=SyncToDatabases&type=1',

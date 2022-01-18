@@ -316,7 +316,7 @@ case "$1" in
                 	auth_path=$(cat $panel_path/data/admin_path.pl)
                 fi
                 if [ "$address" = "" ];then
-                	address=$(curl -sS --connect-timeout 10 -m 60 https://www.bt.cn/Api/getIpAddress)
+                	address=$(curl -sS --connect-timeout 10 -m 60 https://www.aapanel.com/api/common/getClientIP)
                 fi
 				pool=http
 				if [ -f $panel_path/data/ssl.pl ];then
@@ -331,7 +331,7 @@ case "$1" in
                 echo -e "password: $password"
                 echo -e "\033[33mWarning:\033[0m"
                 echo -e "\033[33mIf you cannot access the panel, \033[0m"
-                echo -e "\033[33mrelease the following port (8888|888|80|443|20|21) in the security group\033[0m"
+                echo -e "\033[33mrelease the following port (7800|888|80|443|20|21) in the security group\033[0m"
                 echo -e "=================================================================="
                 ;;
         *)

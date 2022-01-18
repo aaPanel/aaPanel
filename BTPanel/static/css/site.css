@@ -1818,9 +1818,13 @@ html .menu .menu_exit:hover {
 }
 
 .bt-w-con {
+	position: relative;
 	margin-left: 170px;
-    position: relative;
-    padding: 7px 15px;
+	padding: 7px 15px;
+}
+.bt-w-con.webedit-con {
+	height: 100%;
+	overflow-y: auto;
 }
 .bt-w-con .bt-w-item{
 	height: 100%;
@@ -2579,7 +2583,7 @@ html .menu .menu_exit:hover {
 .changepath .path-top .place span {
 	color: #444;
 	font-size: 12px;
-	font-weight: bold
+	font-weight: bold;
   display: inline-block;
   width: 450px;
   white-space: pre;
@@ -2589,38 +2593,56 @@ html .menu .menu_exit:hover {
 }
 
 .changepath .path-con-left {
-	width: 130px;
-	height: 450px;
 	float: left;
+	width: 150px;
+	height: 450px;
 	border-right: #aaa 1px solid;
-	padding-top: 5px
+	padding: 12px 0;
+	overflow-y: auto;
+}
+
+.changepath .path-con-left dl {
+	width: 100%;
+	height: 100%;
+	margin-bottom: 0;
+	padding-left: 12px;
 }
 
 .changepath .path-con-left dl dt {
-	background: url("../img/ico-computer.png") no-repeat left center;
-	height: 30px;
-	line-height: 30px;
-	padding-left: 23px;
+	width: 100%;
+	height: 100%;
+	padding-left: 22px;
+	background: url("../img/ico-computer.png") no-repeat left top;
 	font-size: 14px;
 	font-weight: normal;
-	margin-left: 10px
 }
 
 .changepath .path-con-left dl dd {
-	line-height: 30px;
-	padding-left: 12px;
-	cursor: pointer
+	width: 100%;
+	line-height: 16px;
+	padding-left: 6px;
+	padding-right: 6px;
+	cursor: pointer;
+}
+
+.changepath .path-con-left dl dd + dd {
+	margin-top: 12px;
 }
 
 .changepath .path-con-left dl dd span {
-	color: #666
+	color: #666;
+}
+
+.changepath .path-con-left dl dd span:first-child {
+	display: inline-block;
+	margin-right: 6px;
 }
 
 .changepath .path-con-right{
 	float: left;
+	width: 530px;
 	height: 450px;
 	overflow: auto;
-	width: 550px
 }
 
 .changepath .path-con-right .default li {
@@ -2817,6 +2839,7 @@ html .menu .menu_exit:hover {
 }
 
 .tab-con {
+	position: relative;
 	overflow: auto;
 	padding: 10px
 }
@@ -5543,9 +5566,9 @@ select[disabled]{
 }
 .user_set_info .btswitch-p{
 	width: 165px;
-    display: inline-block;
-    text-align: left;
-    margin-left: 0px;
+	display: inline-block;
+	text-align: left;
+	margin-left: 0px;
 }
 .ssl_cert_from label{
     font-weight: 400;
@@ -5553,14 +5576,18 @@ select[disabled]{
     vertical-align: top;
 }
 .ssl_cert_from .details{
-	padding-top:10px;
+	padding-top:15px;
 	width:80%;
 	margin:0 auto;
 }
+.ssl_cert_from .details input {
+	margin-top: 1px;
+}
+.ssl_cert_from .details label {
+	margin-top: 0!important;
+}
 .ssl_cert_from .details a{
 	float: right;
-    position: relative;
-    top: 3px;
 }
 
 .ssl_cert_from>.line .line {
@@ -9617,7 +9644,7 @@ select[name="network-io"]{
 }
 
 .tootls_group{
-    height:30px;
+    min-height:30px;
     line-height: 30px;
 }
 .tootls_group::after {
@@ -9803,7 +9830,7 @@ select[name="network-io"]{
     display: none;
     box-shadow: 0 1px 5px rgba(0, 0, 0, .5);
 	border-radius: 1px;
-	width: 100%;
+	/* width: 100%; */
 	z-index: 999;
 	background-color: #fff;
 	max-height: 200px;
@@ -10947,3 +10974,32 @@ background:url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODIiIGhlaWdodD0iODIiIHh
 	border-color:#20a53a !important;
 }
 /*END*/
+
+/*网址项目管理*/
+.mask_layer{
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgb(255 255 255 / 60%);
+	z-index: 9998;
+}
+.mask_layer .prompt_description{
+	width:450px;
+	height:60px;
+	line-height:60px;
+	text-align: center;
+	position:absolute;
+	left:50%;
+	top:50%;
+	margin-top: -25px;
+	margin-left:-225px;
+	background: #fff;
+	box-shadow: 1px 1px 50px rgb(0 0 0 / 30%);
+	border: 1px solid #eee;
+	border-radius:2px;
+	font-size: 13px;
+}
+
+/*end*/

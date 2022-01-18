@@ -16,3 +16,4 @@ gevent-websocket>=0.10.1
 pyopenssl>=19.0
 cryptography>=2.7
 six>=1.12.0
+pyOpenSSL>=21.0.0

@@ -71,7 +71,7 @@ class setPanelLets:
             return public.returnMsg(False, "Failed to apply for a certificate, please try to manually apply for a certificate for the panel domain name on the site management page")
         get.key = cert_info['private_key']
         get.csr = cert_info['cert'] + cert_info['root']
-        return self._deploy_cert(get)
+        return public.returnMsg(True, self._deploy_cert(get))
 
     # 部署证书
     def _deploy_cert(self,get):
@@ -223,6 +223,8 @@ class setPanelLets:
             return public.returnMsg(True, 'Panel lets set successfully')
         if not create_site:
             create_lets = self.__create_lets(get)
+            if not create_lets['status']:
+                return create_lets
             if create_lets['msg']:
                 domain_cert = self.__check_cert_dir(get)
                 self.copy_cert(domain_cert)

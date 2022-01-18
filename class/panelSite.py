@@ -1890,7 +1890,8 @@ listener SSL443 {
         import firewalls
         get.port = '443'
         get.ps = 'HTTPS'
-        firewalls.firewalls().AddAcceptPort(get)
+        if not public.M('firewall').where('port=?', ('443',)).count():
+            firewalls.firewalls().AddAcceptPort(get)
         public.serviceReload()
         self.save_cert(get)
         public.WriteLog('TYPE_SITE', 'SITE_SSL_OPEN_SUCCESS', (siteName,))
@@ -2974,13 +2975,13 @@ server
 
     #取当前可用PHP版本
     def GetPHPVersion(self,get):
-        phpVersions = ('00','other','52','53','54','55','56','70','71','72','73','74','80')
+        phpVersions = ('00','other','52','53','54','55','56','70','71','72','73','74','80','81')
         httpdVersion = ""
         filename = self.setupPath + '/apache/version.pl'
         if os.path.exists(filename): httpdVersion = public.readFile(filename).strip()
 
         if httpdVersion == '2.2': phpVersions = ('00','52','53','54')
-        if httpdVersion == '2.4': phpVersions = ('00','other','53','54','55','56','70','71','72','73','74','80')
+        if httpdVersion == '2.4': phpVersions = ('00','other','53','54','55','56','70','71','72','73','74','80','81')
         if os.path.exists('/www/server/nginx/sbin/nginx'):
             cfile = '/www/server/nginx/conf/enable-php-00.conf'
             if not os.path.exists(cfile): public.writeFile(cfile,'')
@@ -3647,7 +3648,8 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         if public.get_webserver() == 'nginx':
             if self.CheckLocation(get):
                 return self.CheckLocation(get)
-
+        if not get.proxysite.split('//')[-1]:
+            return public.returnMsg(False, 'The target URL cannot be [http:// or https://], please fill in the full URL, such as: https://aapanel.com')
         proxyUrl = self.__read_config(self.__proxyfile)
         proxyUrl.append({
             "proxyname": get.proxyname,
@@ -3890,7 +3892,8 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     # if int(get.type) != 1:
                     #     os.system("mv %s %s_bak" % (ap_conf_file, ap_conf_file))
                     #     os.system("mv %s %s_bak" % (ng_conf_file, ng_conf_file))
-                    public.serviceReload()
+                    if not hasattr(get, 'notreload'):
+                        public.serviceReload()
                     return public.returnMsg(True, 'EDIT_SUCCESS')
 
         # 设置反向代理

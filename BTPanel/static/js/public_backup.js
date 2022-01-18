@@ -320,34 +320,23 @@ var bt = {
    * @param success {function} 成功后的回调
    */
     select_path: function(id, type,success,default_path) {
-      _this = this;
-      _this.set_cookie("SetName", "");
-      if(typeof type !== 'string') success = type,type = 'dir';
-      var loadT = bt.open({
-          type: 1,
-          area: "680px",
-          title: type === 'all' ? 'Select directories or files' : lan.bt.dir,
-          closeBtn: 2,
-          shift: 5,
-          content: "<div class='changepath'><div class='path-top'><button type='button' id='btn_back' class='btn btn-default btn-sm'><span class='glyphicon glyphicon-share-alt'></span> " + lan.public.return+"</button><div class='place' id='PathPlace'>" + lan.bt.path + "：<span></span></div></div><div class='path-con'><div class='path-con-left'><dl><dt id='changecomlist' >" + lan.bt.comp + "</dt></dl></div><div class='path-con-right'><ul class='default' id='computerDefautl'></ul><div class='file-list divtable'><table class='table table-hover' style='border:0 none'><thead><tr class='file-list-head'><th width='5%'></th><th width='38%'>" + lan.bt.filename + "</th><th width='24%'>" + lan.bt.etime + "</th><th width='8%'>" + lan.bt.access + "</th><th width='15%'>" + lan.bt.own + "</th></tr></thead><tbody id='tbody' class='list-list'></tbody></table></div></div></div></div><div class='getfile-btn' style='margin-top:0'><button type='button' class='btn btn-default btn-sm pull-left' onclick='CreateFolder()'>" + lan.bt.adddir + "</button><button type='button' class='btn btn-danger btn-sm mr5' onclick=\"layer.close(getCookie('ChangePath'))\">" + lan.public.close + "</button> <button type='button' id='bt_select' class='btn btn-success btn-sm' >" + lan.bt.path_ok + "</button></div>",
-          success: function() {
-              $('#btn_back').click(function() {
-                      var path = $("#PathPlace").find("span").text();
-                      path = bt.rtrim(bt.format_path(path), '/');
-                      var back_path = bt.get_file_path(path);
-                      _this.get_file_list(back_path, type);
-                  })
-                  //选择
-              $('#bt_select').click(function() {
-                  var path = bt.format_path($("#PathPlace").find("span").text());
-                  if ($('#tbody tr').hasClass('active')) {
-                      path = $('#tbody tr.active .bt_open_dir').attr('path');
-                  }
-                  path = bt.rtrim(path, '/');
-                  $("#" + id).val(path).change();
-                  $("." + id).val(path).change();
-                  loadT.close();
-              })
+        _this = this;
+        _this.set_cookie("SetName", "");
+        if(typeof type !== 'string') success = type,type = 'dir';
+        var loadT = bt.open({
+            type: 1,
+            area: "680px",
+            title: type === 'all' ? 'Select directories or files' : lan.bt.dir,
+            closeBtn: 2,
+            shift: 5,
+            content: "<div class='changepath'><div class='path-top'><button type='button' id='btn_back' class='btn btn-default btn-sm'><span class='glyphicon glyphicon-share-alt'></span> " + lan.public.return+"</button><div class='place' id='PathPlace'>" + lan.bt.path + "：<span></span></div></div><div class='path-con'><div class='path-con-left'><dl><dt id='changecomlist' >" + lan.bt.comp + "</dt></dl></div><div class='path-con-right'><ul class='default' id='computerDefautl'></ul><div class='file-list divtable'><table class='table table-hover' style='border:0 none'><thead><tr class='file-list-head'><th width='5%'></th><th width='38%'>" + lan.bt.filename + "</th><th width='24%'>" + lan.bt.etime + "</th><th width='8%'>" + lan.bt.access + "</th><th width='15%'>" + lan.bt.own + "</th></tr></thead><tbody id='tbody' class='list-list'></tbody></table></div></div></div></div><div class='getfile-btn' style='margin-top:0'><button type='button' class='btn btn-default btn-sm pull-left' onclick='CreateFolder()'>" + lan.bt.adddir + "</button><button type='button' class='btn btn-danger btn-sm mr5' onclick=\"layer.close(getCookie('ChangePath'))\">" + lan.public.close + "</button> <button type='button' id='bt_select' class='btn btn-success btn-sm' >" + lan.bt.path_ok + "</button></div>",
+            success: function() {
+                $('#btn_back').click(function() {
+                    var path = $("#PathPlace").find("span").text();
+                    path = bt.rtrim(bt.format_path(path), '/');
+                    var back_path = bt.get_file_path(path);
+                    _this.get_file_list(back_path, type);
+                })
                 //选择
                 $('#bt_select').on('click',function () {
                     var path = bt.format_path($("#PathPlace").find("span").text());
@@ -413,7 +402,7 @@ var bt = {
             var d = '',a = '',disk = rdata.DISK;
             if (disk != undefined) {
                 for (var f = 0; f < disk.length; f++) {
-                    a += "<dd class=\"bt_open_dir\" path =\"" + disk[f].path + "\"><span class='glyphicon glyphicon-hdd'></span>&nbsp;" + disk[f].path + "</dd>"
+                    a += "<dd class=\"bt_open_dir size_ellipsis\" title='" + disk[f].path + "' path =\"" + disk[f].path + "\"><span class='glyphicon glyphicon-hdd'></span><span class='text'>" + disk[f].path + "</span></dd>"
                 }
                 $("#changecomlist").html(a)
             }
@@ -1746,7 +1735,7 @@ bt.index = {
 					x = q[0].split(" ")[1];
 					if(p=='pure-ftpd') p = 'pureftpd';
 					if(p=='php') p = 'php-'+x;
-					if(p=='dns-server') p = 'dns_manager';
+					if(p=='model-server') p = 'dns_manager';
 					if(p=='mail-server') p = 'mail_sys';
 
                     s = "sName=" + p + "&version=" + x + "&type=" + v + "&id=" + (t + 1);
@@ -5460,8 +5449,8 @@ bt.database = {
         var loadT = bt.load(lan.database.sync_the);
         bt.send('SyncGetDatabases', 'database/SyncGetDatabases', {}, function(rdata) {
             loadT.close();
-            if (callback) callback(rdata);
             bt.msg(rdata);
+            if (callback) callback(rdata);
         });
     },
     sync_to_database: function(data, callback) {
@@ -5771,9 +5760,9 @@ bt.site = {
             })
         }
     },
-    set_phpversion: function(siteName, version, callback) {
+    set_phpversion: function(siteName, version, other, callback) {
         var loading = bt.load();
-        bt.send('SetPHPVersion', 'site/SetPHPVersion', { siteName: siteName, version: version }, function(rdata) {
+        bt.send('SetPHPVersion', 'site/SetPHPVersion', { siteName: siteName, version: version, other: other }, function(rdata) {
             loading.close();
             if (callback) callback(rdata);
         })

@@ -613,7 +613,7 @@ def GetHost(port = False):
     try:
         if host_tmp.find(':') == -1: host_tmp += ':80'
     except:
-        host_tmp = "127.0.0.1:8888"
+        host_tmp = "127.0.0.1:7800"
     h = host_tmp.split(':')
     if port: return h[-1]
     if len(h) > 2:
@@ -621,9 +621,15 @@ def GetHost(port = False):
         return h
     return h[0]
 
+
+
+
 def GetClientIp():
     from flask import request
-    return request.remote_addr.replace('::ffff:', '')
+    ipaddr =  request.remote_addr.replace('::ffff:','')
+    if not check_ip(ipaddr): return '未知IP地址'
+    return ipaddr
+
 
 def get_client_ip():
     return GetClientIp()
@@ -1044,7 +1050,7 @@ def checkIp(ip):
 #检查端口是否合法
 def checkPort(port):
     if not re.match("^\d+$",port): return False
-    ports = ['21','25','443','8080','888','8888','8443']
+    ports = ['21','25','443','8080','888','8888','8443','7800']
     if port in ports: return False
     intport = int(port)
     if intport < 1 or intport > 65535: return False
@@ -1254,7 +1260,7 @@ def CheckPort(port,other=None):
     if type(port) == str: port = int(port)
     if port < 1 or port > 65535: return False
     if other:
-        checks = [22, 20, 21, 8888, 3306, 11211, 888, 25]
+        checks = [22, 20, 21, 8888, 3306, 11211, 888, 25,7800]
         if port in checks: return False
     return True
 
@@ -1823,12 +1829,12 @@ def check_ip_panel():
     for limit_ip in iplong_list:
         if client_ip_long >= limit_ip['min'] and client_ip_long <= limit_ip['max']:
             return False
-
-    errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
-    try:
-        errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_IP_H1'),getMsg('PAGE_ERR_IP_P1',(GetClientIp(),)),getMsg('PAGE_ERR_IP_P2'),getMsg('PAGE_ERR_IP_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
-    except IndexError:pass
-    return errorStr
+    return 404
+    # errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
+    # try:
+    #     errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_IP_H1'),getMsg('PAGE_ERR_IP_P1',(GetClientIp(),)),getMsg('PAGE_ERR_IP_P2'),getMsg('PAGE_ERR_IP_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
+    # except IndexError:pass
+    # return errorStr
 
 #检查面板域名
 def check_domain_panel():
@@ -1838,11 +1844,12 @@ def check_domain_panel():
         client_ip = GetClientIp()
         if client_ip in ['127.0.0.1','localhost','::1']: return False
         if tmp.strip().lower() != domain.strip().lower():
-            errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
-            try:
-                errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_DOMAIN_H1'),getMsg('PAGE_ERR_DOMAIN_P1'),getMsg('PAGE_ERR_DOMAIN_P2'),getMsg('PAGE_ERR_DOMAIN_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
-            except:pass
-            return errorStr
+            return 404
+            # errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
+            # try:
+            #     errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_DOMAIN_H1'),getMsg('PAGE_ERR_DOMAIN_P1'),getMsg('PAGE_ERR_DOMAIN_P2'),getMsg('PAGE_ERR_DOMAIN_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
+            # except:pass
+            # return errorStr
     return False
 
 #是否离线模式
@@ -3054,13 +3061,8 @@ def check_app(check='app'):
     path=get_panel_path() + '/'
     if check=='app':
         try:
-            if not os.path.exists(path+'data/user.json') and os.path.exists(path+'config/api.json') and not os.path.exists(path+'plugin/app/user.json'):return False
-            if os.path.exists(path+'plugin/app/user.json'):
-                wxapp = json.loads(readFile(path+'plugin/app/user.json'))
-                if wxapp:return True
-            if os.path.exists(path+'data/user.json'):
-                app_info = json.loads(readFile(path+'data/user.json'))
-                if app_info:return True
+            if not os.path.exists("/www/server/panel/plugin/btapp/btapp_main.py"): return False
+            if not os.path.exists(path+'config/api.json'):return False
             if os.path.exists(path+'config/api.json'):
                 btapp_info = json.loads(readFile(path+'config/api.json'))
                 if not  btapp_info['open']:return False
@@ -3071,6 +3073,8 @@ def check_app(check='app'):
         except:
             return False
     elif check=='app_bind':
+        if not cache_get('get_bind_status'):return False
+        if not os.path.exists("/www/server/panel/plugin/btapp/btapp_main.py"):return False
         if not os.path.exists(path + 'config/api.json'):return False
         btapp_info = json.loads(readFile(path +'config/api.json'))
         if not btapp_info: return False
@@ -3081,6 +3085,7 @@ def check_app(check='app'):
         app_info = json.loads(readFile(path+'plugin/app/user.json'))
         if not app_info: return False
         return True
+
 
 #宝塔邮件报警
 def send_mail(title,body,is_logs=False,is_type="aapanel login reminder"):

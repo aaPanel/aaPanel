@@ -217,7 +217,33 @@ var bt_file = {
                     btn:['Upload','Cancel','Clear'],
                     title: 'Upload files to【'+ bt.get_cookie('Path')  +'】--- Support breakpoint renewal',
                     skin:'file_dir_uploads',
-                    content:'<div style="padding:15px 15px 10px 15px;"><div class="upload_btn_groud"><div class="btn-group"><button type="button" class="btn btn-primary btn-sm upload_file_btn">Upload file</button><button type="button" class="btn btn-primary  btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span><span class="sr-only">Toggle Dropdown</span></button><ul class="dropdown-menu"><li><a href="#" data-type="file">Upload file</a></li><li><a href="#" data-type="dir">Upload path</a></li></ul></div><div class="file_upload_info" style="display:none;"><span>Total process&nbsp;<i class="uploadProgress"></i>, uploading&nbsp;<i class="uploadNumber"></i>,</span><span style="display:none">Upload fail&nbsp;<i class="uploadError"></i></span><span>Speed&nbsp;<i class="uploadSpeed">Getting</i>,</span><span>Expect time&nbsp;<i class="uploadEstimate">Getting</i></span><i></i></div></div><div class="upload_file_body '+ (html==''?'active':'') +'">'+ (html!=''?('<ul class="dropUpLoadFileHead" style="padding-right:'+ (is_show?'15':'0') +'px"><li class="fileTitle"><span class="filename">File name</span><span class="filesize">File size</span><span class="fileStatus">File status</span></li></ul><ul class="dropUpLoadFile list-list">'+ html +'</ul>'):'<span>Please drag the file here'+ (!that.is_webkit?'<i style="display: block;font-style: normal;margin-top: 10px;color: red;font-size: 17px;">The current browser does not support drag upload. Commend to use Chrome browser or WebKit kernel for browsing</i>':'') +'</span>') +'</div></div>',
+                    content:'\
+                        <div style="padding:15px 15px 10px 15px;">\
+                            <div class="upload_btn_groud">\
+                                <div class="btn-group">\
+                                    <button type="button" class="btn btn-primary btn-sm upload_file_btn">Upload file</button>\
+                                    <button type="button" class="btn btn-primary  btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span><span class="sr-only">Toggle Dropdown</span></button>\
+                                    <ul class="dropdown-menu">\
+                                        <li>\
+                                            <a href="#" data-type="file">Upload file</a>\
+                                        </li>\
+                                        <li>\
+                                            <a href="#" data-type="dir">Upload path</a>\
+                                        </li>\
+                                    </ul>\
+                                </div>\
+                                <div class="file_upload_info" style="display:none;">\
+                                    <span>Total process&nbsp;<i class="uploadProgress"></i>, uploading&nbsp;<i class="uploadNumber"></i>,</span>\
+                                    <span style="display:none">Upload fail&nbsp;<i class="uploadError"></i></span>\
+                                    <span>Speed&nbsp;<i class="uploadSpeed">Getting</i>,</span>\
+                                    <span>Expect time&nbsp;<i class="uploadEstimate">Getting</i></span>\
+                                    <i></i>\
+                                </div>\
+                            </div>\
+                            <div class="upload_file_body '+ (html==''?'active':'') +'">'+ (html!=''?('<ul class="dropUpLoadFileHead" style="padding-right:'+ (is_show?'15':'0') +'px"><li class="fileTitle"><span class="filename">File name</span><span class="filesize">File size</span><span class="fileStatus">File status</span></li></ul><ul class="dropUpLoadFile list-list">'+ html +'</ul>') :'<span>Please drag the file here'+ (!that.is_webkit?'<i style="display: block;font-style: normal;margin-top: 10px;color: red;font-size: 17px;">The current browser does not support drag upload. Commend to use Chrome browser or WebKit kernel for browsing</i>':'') +'</span>') +'\
+                            </div>\
+                        </div>\
+                    ',
                     success:function(layers){
                         $('#mask_layer').hide();
                         layers.find('.layui-layer-btn2').css('float', 'left');
@@ -294,18 +320,18 @@ var bt_file = {
                             layer.close(index);
                         }
                     },
-                    btn3:function(index, layero){
-                        if(that.uploading){
+                    btn3: function (index, layero) {
+                        if (that.uploading) {
                             layer.confirm('Do you want to cancel the upload of files? It need to delete the uploaded files manually. Continue?',{title:'Cancel file upload',icon:0},function(indexs){
                                $('.upload_file_body').addClass('active').html('<span>Please drag the file here</span>')
-                               $('.file_upload_info').css('display','none').siblings().css('display','block')
+                               $('.file_upload_info').css('display','none').siblings().css('display','inline-block');
                                that.filesList.length = 0
                             });
                             return false;
-                        }else{
-                            $('.upload_file_body').addClass('active').html('<span>Please drag the file here</span>')
-                            that.filesList.length = 0
-                            $('.file_upload_info').css('display','none').siblings().css('display','block')
+                        } else {
+                            $('.upload_file_body').addClass('active').html('<span>Please drag the file here</span>');
+                            that.filesList.length = 0;
+                            $('.file_upload_info').css('display','none').siblings().css('display','inline-block')
                             return false;
                         }
                     },
@@ -1742,7 +1768,7 @@ var bt_file = {
                 var page = $(res.PAGE);
                 page.append('<span class="Pcount-item">per page<select class="showRow">'+ select_page_num +'</select>item(s)</span>');
                 $('.filePage').html('<div class="page_num">Total '+ rdata.is_dir_num +' directory, '+ (that.file_list.length - rdata.is_dir_num) +'file(s), size:<a href="javascript:;" class="btlink" id="file_all_size">Click to calculate</a></div>' + page[0].outerHTML);
-                if(data.is_operating && that.file_operating[that.file_pointer] != res.PATH){
+                if(data && data.is_operating && that.file_operating[that.file_pointer] != res.PATH){
                     next_path = that.file_operating[that.file_pointer + 1];
                     if(typeof next_path != "undefined" && next_path != res.PATH) that.file_operating.splice(that.file_pointer+1);
                     that.file_operating.push(res.PATH);
@@ -3062,71 +3088,72 @@ var bt_file = {
     /**
      * @description 回收站渲染列表
      * @return void
-    */
+     */
     render_recycle_list: function() {
       var that = this;
       $('#recycle_table').empty()
       var recycle_list = bt_tools.table({
-        el:'#recycle_table',
-        url:'/files?action=Get_Recycle_bin',
-        height:480,
-        dataFilter:function(res){
+        el: '#recycle_table',
+        url: '/files?action=Get_Recycle_bin',
+        height: 488,
+        dataFilter: function (res) {
           var files = [];
           switch($('.re-con-menu p.on').index()){
             case 0:
-                for (let i = 0; i < res.dirs.length; i++){
-                    const item = res.dirs[i];
-                    files.push($.extend(item,{type:'folder'}));
-                }
-                for (let j = 0; j < res.files.length; j++){
-                    const item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
-                    if(item.name.indexOf('BTDB_') > -1) {
+                for (var i = 0; i < res.dirs.length; i++){
+                    var item = res.dirs[i];
+                    if (item.name.indexOf('BTDB_') > -1) {
                         item.dname = item.dname.replace('BTDB_', '');
                         item.name = item.name.replace('BTDB_', '');
                         files.push($.extend(item,{type:'files'}));
-                    }else if(ext == 'images'){
+                    } else {
+                        var item = res.dirs[i];
+                        files.push($.extend(item,{type:'folder'}));
+                    }
+                }
+                for (var j = 0; j < res.files.length; j++){
+                    var item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
+                    if(ext == 'images'){
                         files.push($.extend(item,{type:ext}));
                     }else{
                         files.push($.extend(item,{type:'files'}));
                     }
                 }
-            break;
+                break;
             case 1:
-                for (let i = 0; i < res.dirs.length; i++){
-                    const item = res.dirs[i];
-                    files.push($.extend(item,{type:'files'}));
+                for (var i = 0; i < res.dirs.length; i++){
+                    var item = res.dirs[i];
+                    files.push($.extend(item,{type:'folder'}));
                 }
-            break;
+                break;
             case 2:
-                for (let j = 0; j < res.files.length; j++){
-                    const item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
+                for (var j = 0; j < res.files.length; j++){
+                    var item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
                     if(item.name.indexOf('BTDB') == -1) files.push($.extend(item,{type:ext}));
                 }
-            break;
+                break;
             case 3:
-                for (let j = 0; j < res.files.length; j++){
-                    const item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
+                for (var j = 0; j < res.files.length; j++){
+                    var item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
                     if(ext == 'images') files.push($.extend(item,{type:ext}));
                 }
-
-            break;
+                break;
             case 4:
-                for (let j = 0; j < res.files.length; j++){
-                    const item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
+                for (var j = 0; j < res.files.length; j++){
+                    var item = res.files[j],ext_list =  item.dname.split('.') ,ext = that.determine_file_type(ext_list[ext_list.length - 1]);
                     if(ext != 'images' && ext != 'compress' && ext != 'video' && item.name.indexOf('BTDB') == -1) files.push($.extend(item,{type:ext}));
                 }
-            break;
+                break;
             case 5:
-                for (let j = 0; j < res.files.length; j++){
-                    const item = res.files[j];
-                    if(item.name.indexOf('BTDB_') > -1){
+                for (var j = 0; j < res.dirs.length; j++){
+                    var item = res.dirs[j];
+                    if (item.name.indexOf('BTDB_') > -1) {
                         item.dname = item.dname.replace('BTDB_','');
                         item.name = item.name.replace('BTDB_','');
-                        console.log()
                         files.push($.extend(item,{type:'files'}));
                     }
                 }
-            break;
+                break;
         }
         $('#Set_Recycle_bin').attr('checked', res.status);
         $('#Set_Recycle_bin_db').attr('checked', res.status_db);
@@ -3134,33 +3161,47 @@ var bt_file = {
       },
       column:[
         {type:'checkbox',class:'',width:18},
-        {fid:'name',title:lan.files.recycle_bin_th1,width:155,template:function(row){
-            return '<div class="text-overflow" style="width:150px" title="'+ row.name +'"><i class="file_icon file_'+ row.type +'"></i><span style="width:100px">'+ row.name +'</span></div>';
+        {fid:'name',title:lan.files.recycle_bin_th1, width: 150, template:function(row){
+            return '<div style="display: flex; align-items: center;" title="'+ row.name +'"><i class="file_icon file_'+ row.type +'"></i><span style="flex: 1; width: 0;" class="text-overflow">'+ row.name +'</span></div>';
         }},
-        {fid:'dname',title:lan.files.recycle_bin_th2,template:function(row){
-            return '<span class="text-overflow" style="min-width:150px" title="'+ row.dname +'">'+ row.dname +'</span>';
+        {fid:'dname',title:lan.files.recycle_bin_th2, width: 150, template:function(row){
+            return '<div style="display: flex;" title="'+ row.dname +'"><span style="flex: 1; width: 0;" class="text-overflow">'+ row.dname +'</span></div>';
         }},
         {fid:'size',title:lan.files.recycle_bin_th3,width:85,template:function(row){
-            return '<span class="text-overflow"  title="'+ row.size +'">'+ bt.format_size(row.size) +'</span>';
+            return '<span class="limit-text-length"  title="'+ row.size +'">'+ bt.format_size(row.size) +'</span>';
         }},
-        {fid:'time',title:lan.files.recycle_bin_th4,width:180,template:function(row, index){
-            return '<span title="'+ row.time +'">'+ bt.format_data(row.time) + '</span>'
-        }},
-        {type:'group',align:'right',width:250,title:lan.files.recycle_bin_th5,group:[{
-            title:lan.files.recycle_bin_re,
-            event:function(row, index, ev, key, that){
-              bt_file.ReRecycleBin(row.rname,function(){
-                  that.$delete_table_row(index);
-              });
+        {
+            fid: 'time',
+            title: lan.files.recycle_bin_th4,
+            width: 130,
+            template:function(row, index){
+                return '<span title="'+ row.time +'">'+ bt.format_data(row.time) + '</span>'
             }
-        },{
-            title:lan.files.recycle_bin_del,
-            event:function(row, index, ev, key, that){
-                bt_file.DelRecycleBin(row.rname,function(){
-                    that.$delete_table_row(index);
-                });
-            }
-        }]}
+        },
+        {
+            type: 'group',
+            align: 'right',
+            width: 170,
+            title: lan.files.recycle_bin_th5,
+            group: [
+                {
+                    title: lan.files.recycle_bin_re,
+                    event: function (row, index, ev, key, that) {
+                        bt_file.ReRecycleBin(row.rname, function () {
+                            that.$delete_table_row(index);
+                        });
+                    }
+                },
+                {
+                    title:lan.files.recycle_bin_del,
+                    event: function (row, index, ev, key, that) {
+                        bt_file.DelRecycleBin(row.rname, function () {
+                            that.$delete_table_row(index);
+                        });
+                    }
+                }
+            ]
+        }
       ],
       tootls: [{ // 批量操作
         type: 'batch',//batch_btn
@@ -3203,7 +3244,7 @@ var bt_file = {
                   var html = '';
                   for(var i=0;i<list.length;i++){
                     var item = list[i];
-                    html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ (item.request.status?'Successfully deleted':'Failed to delete') +'</span></div></td></tr>';
+                    html += '<tr><td><span class="limit-text-length" style="width: 170px;" title="'+ item.name +'">'+ item.name +'</span></td><td class="text-right"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ (item.request.status?'Successfully deleted':'Failed to delete') +'</span></td></tr>';
                   }
                   recycle_list.$batch_success_table({title:'Delete multiple files',th:'File name',html:html});
                   recycle_list.$refresh_table_list(true);
@@ -3831,7 +3872,7 @@ var bt_file = {
                 + '<div class="line"><span class="tname">Share name</span><div class="info-r"><input name="ps"  class="bt-input-text mr5" type="text" placeholder="No sharing name" style="width:270px" value="'+ data.filename +'"></div></div>'
                 + '<div class="line"><span class="tname">Expiration date</span><div class="info-r">'
                     +'<label class="checkbox_grourd"><input type="radio" name="expire" value="24" checked><span>&nbsp;A Day</span></label>'
-                    +'<label class="checkbox_grourd"><input type="radio" name="expire" value="168"><span>&nbsp;A Deek</span></label>'
+                    +'<label class="checkbox_grourd"><input type="radio" name="expire" value="168"><span>&nbsp;A Week</span></label>'
                     +'<label class="checkbox_grourd"><input type="radio" name="expire" value="1130800"><span>&nbsp;Permanent</span></label>'
                 +'</div></div>'
                 + '<div class="line"><span class="tname">Extraction code</span><div class="info-r"><input name="password" class="bt-input-text mr5" placeholder="No code if it is empty" type="text" style="width:195px" value=""><button type="button" id="random_paw" class="btn btn-success btn-sm btn-title">Random</button></div></div>'
@@ -5042,7 +5083,7 @@ var bt_file = {
      * @return 返回匹配结果
      */
     match_unqualified_string:function(item){
-        var containSpecial = RegExp(/[(\ )(\*)(\|)(\\)(\:)(\")(\/)(\<)(\>)(\?)(\)]+/);
+        var containSpecial = RegExp(/[(\*)(\|)(\\)(\:)(\")(\/)(\<)(\>)(\?)(\)]+/);
         return containSpecial.test(item)
     },
     /**

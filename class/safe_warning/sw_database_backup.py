@@ -37,7 +37,7 @@ def check_run():
     '''
 
     if public.M('crontab').where('sType=? AND sName=?',('database','ALL')).count():
-        return True,'无风险'
+        return True,'Risk-free'
 
     db_list = public.M('databases').field('name').select()
 
