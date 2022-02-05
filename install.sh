@@ -214,7 +214,7 @@ Install_RPM_Pack(){
 	Centos8Check=$(cat /etc/redhat-release | grep ' 8.' | grep -iE 'centos|Red Hat')
 	isExc=$(cat $yumPath|grep httpd)
 	if [ "$isExc" = "" ];then
-		echo "exclude=httpd nginx php mysql mairadb python-psutil python2-psutil" >> $yumPath
+		echo "exclude=httpd nginx php mysql mariadb python-psutil python2-psutil" >> $yumPath
 	fi
 
 	yumBaseUrl=$(cat /etc/yum.repos.d/CentOS-Base.repo|grep baseurl=http|cut -d '=' -f 2|cut -d '$' -f 1|head -n 1)

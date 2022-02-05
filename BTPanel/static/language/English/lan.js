@@ -1270,7 +1270,7 @@ var lan = {
 		"save_as_template":"Save as template",
 		"url_rw_help_1":"Please select your application. If the site cannot be accessed as expected with the rewrite rules set, please try to reset to default",
 		"url_rw_help_2":"You are able to modify rewrite rules, just save it after modification.",
-		"config_url":"Configurate rewirte rules",
+		"config_url":"Configurate rewrite rules",
 		"d_s_empty":"Domain and subdirectory name cannot be empty",
 		"s_bin_del":"Are you sure to delete this subdirectory binding?",
 		"proxy_url":"Target URL",
