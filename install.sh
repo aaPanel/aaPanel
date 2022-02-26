@@ -53,7 +53,7 @@ Install_Check(){
 	while [ "$yes" != 'yes' ] && [ "$yes" != 'n' ]
 	do
 		echo -e "----------------------------------------------------"
-		echo -e "Web service is alreday installed,installing aaPanel may affect existing sites."
+		echo -e "Web service is already installed,installing aaPanel may affect existing sites."
 		echo -e "----------------------------------------------------"
 		read -p "Enter yes to force installation (yes/n): " yes;
 	done 
