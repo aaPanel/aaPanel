@@ -378,7 +378,10 @@ function bindBTName(a,type){
 		p1 = $("#p1").val();
 		p2 = $("#p2").val();
 		var loadT = layer.msg(lan.config.token_get,{icon:16,time:0,shade: [0.3, '#000']});
-		$.post(" /ssl?action=GetToken", "username=" + p1 + "&password=" + p2, function(b){
+		$.post(" /ssl?action=GetToken", {
+			username: p1,
+			password: p2
+		}, function(b){
       bt.clear_cookie('bt_user_info')
 			layer.close(loadT);
 			layer.msg(b.msg, {icon: b.status?1:2});
@@ -464,89 +467,172 @@ function setPanelSSL(){
         })
 	}
 	else {
-        bt.send('get_cert_source', 'config/get_cert_source', {}, function (rdata) {
-            layer.close(loadT);
-            var sdata = rdata;
-            var _data = {
-                title: 'Panel SSL',
-                area: '630px',
-				class:'ssl_cert_from',
-                list: [
-                  {
-                  		html:'<div><i class="layui-layer-ico layui-layer-ico3"></i><h3>'+lan.config.ssl_open_ps+'</h3><ul><li style="color:red;">'+lan.config.ssl_open_ps_1+'</li><li>'+lan.config.ssl_open_ps_2+'</li><li>'+lan.config.ssl_open_ps_3+'</li></ul></div>'
-                  },
-                    {
-                        title: 'Cert Type',
-                        name: 'cert_type',
-                        type: 'select',
-                        width: '200px',
-                        value: sdata.cert_type,
-                        items: [{value: '1', title: 'Self-signed certificate'}, {value: '2', title: 'Let\'s Encrypt'}],
-                        callback: function (obj) {
-                            var subid = obj.attr('name') + '_subid';
-                            $('#' + subid).remove();
-                            if (obj.val() == '2') {
-                                var _tr = bt.render_form_line({
-                                    title: 'Admin E-Mail',
-                                    name: 'email',
-									width: '320px',
-                                    placeholder: 'Admin E-Mail',
-                                    value: sdata.email
-                                });
-                                obj.parents('div.line').append('<div class="line" id=' + subid + '>' + _tr.html + '</div>');
-                            }
-                        }
-                    },
-                  {
-                  	html:'<div class="details"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: 3px 5px 0px;" for="checkSSL">'+lan.config.ssl_open_ps_4+'</label><a target="_blank" class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate">'+lan.config.ssl_open_ps_5+'</a></p></div>'
-                  }
+		bt.send('get_cert_source', 'config/get_cert_source', {}, function (rdata) {
+			layer.close(loadT);
+			var sdata = rdata;
+			var _data = {
+					title: 'Panel SSL',
+					area: '630px',
+					class: 'ssl_cert_from ssl_cert_panel_from',
+					list: [
+							{
+									html: '\
+											<div style="position: relative; width: 90%; margin: 0 auto;">\
+													<i class="layui-layer-ico layui-layer-ico3" style="left: 0;"></i>\
+													<h3 style="margin-left: 45px;">' + lan.config.ssl_open_ps + '</h3>\
+													<ul style="width: 100%;">\
+															<li style="color:red;">' + lan.config.ssl_open_ps_1 + '</li>\
+															<li>' + lan.config.ssl_open_ps_2 + '</li>\
+															<li>If panel is not accessible, you can click the <a class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate" target="_blank">link</a> below to find solutions</li>\
+													</ul>\
+											</div>\
+									'
+							},
+							{
+									title: 'Cert Type',
+									name: 'cert_type',
+									type: 'select',
+									width: '260px',
+									// value: sdata.cert_type,
+									value: '3',
+									items: [
+										{value: '1', title: 'Self-signed certificate'},
+										{value: '2', title: 'Let\'s Encrypt'},
+										{value: '3', title: 'I have certficate'}
+									],
+									callback: function (obj) {
+											var set_height = function () {
+													var layer_box = $('.ssl_cert_from').parents('.layui-layer');
+													var window_height = $(window).height();
+													var height = layer_box.height();
+													var top = (window_height - height) / 2;
+													layer_box.css({
+															'top': top + 'px'
+													});
+											}
+											var subid = obj.attr('name') + '_subid';
+											var keyid = obj.attr('name') + '_keyid';
+											$('#' + subid).remove();
+											$('#' + keyid).remove();
+											if (obj.val() == '1') {
+													set_height();
+											}
+											if (obj.val() == '2') {
+													var _tr = bt.render_form_line({
+															title: 'E-Mail',
+															name: 'email',
+															width: '260px',
+															placeholder: 'Admin E-Mail',
+															value: sdata.email
+													});
+													obj.parents('div.line').append('<div class="line" id=' + subid + '>' + _tr.html + '</div>');
+													set_height();
+											}
+											if (obj.val() == '3') {
+													var loadT = layer.msg(lan.config.get_cert, {icon: 16, time: 0, shade: [0.3, '#000']});
+													$.post('/config?action=GetPanelSSL', {}, function (cert) {
+															layer.close(loadT);
+															if (cert.privateKey === 'false') {
+																	cert.privateKey = 'paste your Private key (KEY) here';
+															}
+															if (cert.certPem === 'false') {
+																	cert.certPem = 'paste your Certificate (CRT/PEM) here';
+															}
+															obj.parents('div.line').append('\
+																	<div class="myKeyCon" id="' + keyid + '" style="margin: 0 auto; padding: 16px 0 0;">\
+																			<div class="ssl-con-key pull-left">Key<br>\
+																					<textarea id="key" class="bt-input-text">' + cert.privateKey + '</textarea>\
+																			</div>\
+																			<div class="ssl-con-key pull-right">Certificate (in pem format)<br>\
+																					<textarea id="csr" class="bt-input-text">' + cert.certPem + '</textarea>\
+																			</div>\
+																			<div style="clear: both;"></div>\
+																	</div>\
+															');
+															set_height();
+													});
+											}
+											$('.ssl_cert_from .line .tname').css('width', '75px');
+									}
+							},
+							{
+									html: '\
+											<div class="details" style="width: 80%;">\
+													<input type="checkbox" id="checkSSL" />\
+													<label style="font-weight: 400;" for="checkSSL">' + lan.config.ssl_open_ps_4 + '</label>\
+													<a class="btlink" style="top: 0;" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate" target="_blank">' + lan.config.ssl_open_ps_5 + '</a>\
+											</div>\
+									'
+							}
 
-                ],
-                btns: [
-                    {
-                        title: 'Close', name: 'close', callback: function (rdata, load, callback) {
-                            load.close();
-                            $("#panelSSL").prop("checked", false);
-                        }
-                    },
-                    {
-                        title: 'Submit', name: 'submit', css: 'btn-success', callback: function (rdata, load, callback) {
-                          	if(!$('#checkSSL').is(':checked')){
-                            	bt.msg({status:false,msg:'Please confirm the risk first!'})
-                              	return;
-                            }
-                        	var confirm = layer.confirm('Whether to open the panel SSL certificate', {title:'Tips',btn: ['Confirm','Cancel'],icon:0,closeBtn:2}, function() {
-                            var loading = bt.load();
-                            bt.send('SetPanelSSL', 'config/SetPanelSSL', rdata, function (rdata) {
-                                loading.close()
-                                if (rdata.status) {
-                                	layer.msg(rdata.msg,{icon:1});
-                                    $.get('/system?action=ReWeb', function () {
-                                    });
-                                    setTimeout(function () {
-                                        window.location.href = ((window.location.protocol.indexOf('https') != -1) ? 'http://' : 'https://') + window.location.host + window.location.pathname;
-                                    }, 1500);
-                                }
-                                else {
-                                    layer.msg(rdata.msg,{icon:2});
-                                }
-                            })
-							});
-                        }
+					],
+					btns: [
+							{
+									title: 'Close', name: 'close', callback: function (rdata, load, callback) {
+											load.close();
+											$("#panelSSL").prop("checked", false);
+									}
+							},
+							{
+									title: 'Submit',
+									name: 'submit',
+									css: 'btn-success',
+									callback: function (rdata, load, callback) {
+											if (!$('#checkSSL').is(':checked')) return bt.msg({
+													status: false,
+													msg: 'Please confirm the risk first!'
+											});
+											layer.confirm('Whether to open the panel SSL certificate', {
+													title: 'Tips',
+													btn: ['Confirm', 'Cancel'],
+													icon: 0,
+													closeBtn: 2
+											}, function () {
+													var loading = bt.load();
+													var type = $('select[name="cert_type"]').val();
+													if (type == '3') {
+															SavePanelSSL({
+																	loading: false,
+																	callback: function (res) {
+																			SetPanelSSL(rdata, function (res) {
+																					loading.close();
+																			});
+																	}
+															});
+													} else {
+															SetPanelSSL(rdata, function (rdata) {
+																	loading.close();
+															});
+													}
+											});
+									}
 
-                    }
-                ],
-                end: function () {
-                    $("#panelSSL").prop("checked", false);
-                }
-            };
+							}
+					],
+					end: function () {
+							$("#panelSSL").prop("checked", false);
+					}
+			};
+			var _bs = bt.render_form(_data);
+			setTimeout(function () {
+					$('.cert_type' + _bs).trigger('change')
+			}, 200);
+		});
+  }
+}
 
-            var _bs = bt.render_form(_data);
-            setTimeout(function () {
-                $('.cert_type' + _bs).trigger('change')
-            }, 200);
-        });
-    }
+function SetPanelSSL(rdata, callback) {
+	bt.send('SetPanelSSL', 'config/SetPanelSSL', rdata, function (rdata) {
+			if (callback) callback(rdata);
+			if (rdata.status) {
+					$.get('/system?action=ReWeb');
+					layer.msg(rdata.msg, {icon: 1, time: 1500}, function () {
+							window.location.href = ((window.location.protocol.indexOf('https') != -1) ? 'http://' : 'https://') + window.location.host + window.location.pathname;
+					});
+			} else {
+					layer.msg(rdata.msg, {icon: 2});
+			}
+	});
 }
 
 function GetPanelSSL(){
@@ -582,18 +668,49 @@ function GetPanelSSL(){
 	});
 }
 
-function SavePanelSSL(){
+// function SavePanelSSL(){
+// 	var data = {
+// 		privateKey:$("#key").val(),
+// 		certPem:$("#csr").val()
+// 	}
+// 	var loadT = layer.msg(lan.config.ssl_msg,{icon:16,time:0,shade: [0.3, '#000']});
+// 	$.post('/config?action=SavePanelSSL',data,function(rdata){
+// 		layer.close(loadT);
+// 		if(rdata.status){
+// 			layer.closeAll();
+// 		}
+// 		layer.msg(rdata.msg,{icon:rdata.status?1:2});
+// 	});
+// }
+
+function SavePanelSSL(option) {
+	option = option || {
+			loading: true
+	};
+	var privateKey = $("#key").val().trim();
+	var certPem = $("#csr").val().trim();
+	if (privateKey === 'false') return layer.msg('Please paste your Private key (KEY) here', {icon: 2});
+	if (certPem === 'false') return layer.msg('Please paste your Certificate (CRT/PEM) here', {icon: 2});
 	var data = {
-		privateKey:$("#key").val(),
-		certPem:$("#csr").val()
+			privateKey: privateKey,
+			certPem: certPem
 	}
-	var loadT = layer.msg(lan.config.ssl_msg,{icon:16,time:0,shade: [0.3, '#000']});
-	$.post('/config?action=SavePanelSSL',data,function(rdata){
-		layer.close(loadT);
-		if(rdata.status){
-			layer.closeAll();
-		}
-		layer.msg(rdata.msg,{icon:rdata.status?1:2});
+	var loadT;
+	if (option.loading) {
+			loadT = layer.msg(lan.config.ssl_msg, {icon: 16, time: 0, shade: [0.3, '#000']});
+	}
+	$.post('/config?action=SavePanelSSL', data, function (rdata) {
+			if (option.loading) layer.close(loadT);
+			if (rdata.status) {
+					if (option.callback) {
+							option.callback(rdata);
+					} else {
+							layer.closeAll();
+							layer.msg(rdata.msg, {icon: 1});
+					}
+			} else {
+					layer.msg(rdata.msg, {icon: 2});
+			}
 	});
 }
 

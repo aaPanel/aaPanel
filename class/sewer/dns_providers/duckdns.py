@@ -49,7 +49,7 @@ class DuckDNSDns(common.BaseDns):
             # raise error so that we do not continue to make calls to DuckDNS
             # server
             raise ValueError(
-                "Error creating DuckDNS dns record: status_code={status_code} response={response}".format(
+                "Error creating DuckDNS model record: status_code={status_code} response={response}".format(
                     status_code=update_duckdns_dns_record_response.status_code,
                     response=normalized_response,
                 )

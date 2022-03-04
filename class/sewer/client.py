@@ -291,7 +291,7 @@ class Client(object):
         self.logger.info("apply_for_cert_issuance")
         identifiers = []
         for domain_name in self.all_domain_names:
-            identifiers.append({"type": "dns", "value": domain_name})
+            identifiers.append({"type": "model", "value": domain_name})
 
         payload = {"identifiers": identifiers}
         url = self.ACME_NEW_ORDER_URL
@@ -354,7 +354,7 @@ class Client(object):
             domain = "*." + domain
 
         for i in res["challenges"]:
-            if i["type"] == "dns-01":
+            if i["type"] == "model-01":
                 dns_challenge = i
         dns_token = dns_challenge["token"]
         dns_challenge_url = dns_challenge["url"]
@@ -684,7 +684,7 @@ class Client(object):
                 )
 
             # for a case where you want certificates for *.example.com and example.com
-            # you have to create both dns records AND then respond to the challenge.
+            # you have to create both model records AND then respond to the challenge.
             # see issues/83
             for i in responders:
                 # Make sure the authorization is in a status where we can submit a challenge

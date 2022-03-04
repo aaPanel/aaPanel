@@ -535,7 +535,7 @@ class Dns_com(object):
         pass
 
     def get_dns_obj(self):
-        p_path = '/www/server/panel/plugin/dns'
+        p_path = '/www/server/panel/plugin/model'
         if not os.path.exists(p_path +'/dns_main.py'): return None
         sys.path.insert(0,p_path)
         import dns_main

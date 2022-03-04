@@ -275,6 +275,7 @@ class MemcachedSessionInterface(SessionInterface):
         httponly = self.get_cookie_httponly(app)
         secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
+        samesite = self.get_cookie_samesite(app)
         if not PY2:
             val = self.serializer.dumps(dict(session), 0)
         else:
@@ -285,9 +286,29 @@ class MemcachedSessionInterface(SessionInterface):
             session_id = self._get_signer(app).sign(want_bytes(session.sid))
         else:
             session_id = session.sid
-        response.set_cookie(app.session_cookie_name, session_id,
+        from BTPanel import request, g, get_input
+        if 'auth_error' in g: return
+        if request.path in ['/', '/tips','/robots.txt']: return
+        if request.path in ['/public']:
+            get = get_input()
+            if 'get_ping' in get: return
+        if response.status_code in [401]: return
+
+        if request.full_path.find('/login?tmp_token=') != 0:
+            if response.status_code not in [200, 308]: return
+        else:
+            if response.status_code not in [302, 301]: return
+            if secure: samesite = 'None'
+
+        if response.status_code not in [200,302]: return
+        if not request.cookies.get(app.session_cookie_name):
+            if request.full_path.find('/login?tmp_token=') == 0:
+                samesite = 'None'
+                secure = True
+            response.set_cookie(app.session_cookie_name, session_id,
                             expires=expires, httponly=httponly,
-                            domain=domain, path=path, secure=secure)
+                            domain=domain, path=path, secure=secure,samesite=samesite)
+
 
 
 class FileSystemSessionInterface(SessionInterface):

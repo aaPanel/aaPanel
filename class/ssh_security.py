@@ -182,11 +182,15 @@ class ssh_security:
 
     ################## SSH 登陆报警设置 ####################################
     def send_mail_data(self,title,body,type='mail'):
+        import threading
         if type=='mail':
             if self.__mail_config['user_mail']['user_name']:
                 if len(self.__mail_config['user_mail']['mail_list'])>=1:
                     for i in self.__mail_config['user_mail']['mail_list']:
-                        self.__mail.qq_smtp_send(i, title, body)
+                        t = threading.Thread(target=self.__mail.qq_smtp_send,args=(i, title, body))
+                        t.setDaemon(True)
+                        t.start()
+                        # self.__mail.qq_smtp_send(i, title, body)
         elif type=='dingding':
             if self.__mail_config['dingding']['dingding']:
                 self.__mail.dingding_send(title+body)

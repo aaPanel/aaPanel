@@ -56,12 +56,12 @@ class backup:
 
     def echo_start(self):
         print("="*90)
-        print("★"+public.getMsg('START_BACKUP')+"[{}]".format(public.format_date()))
+        print("|-"+public.getMsg('START_BACKUP')+"[{}]".format(public.format_date()))
         print("="*90)
 
     def echo_end(self):
         print("="*90)
-        print("☆"+public.getMsg('BACKUP_COMPLETED')+"[{}]".format(public.format_date()))
+        print("|-"+public.getMsg('BACKUP_COMPLETED')+"[{}]".format(public.format_date()))
         print("="*90)
         print("\n")
 

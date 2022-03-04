@@ -197,7 +197,7 @@ class firewalls:
         types=get.type
         type_list=['tcp','udp']
         if types not in type_list:return public.returnMsg(False, 'FIREWALL_PORT_EXISTS')
-        notudps = ['80', '443', '8888', '888', '39000:40000', '21', '22']
+        notudps = ['80', '443', '8888', '888', '39000:40000', '21', '22', '7800']
         if port in notudps:flag=True
         #return public.M('firewall').where("port=?", (port,)).count()
         if types=='tcp':
@@ -314,7 +314,7 @@ class firewalls:
         #return public.returnMsg(False,'演示服务器，禁止此操作!');
         port = get.port
         if int(port) < 22 or int(port) > 65535: return public.returnMsg(False,'FIREWALL_SSH_PORT_ERR');
-        ports = ['21','25','80','443','8080','888','8888'];
+        ports = ['21','25','80','443','8080','888','8888', '7800']
         if port in ports: return public.returnMsg(False,'');
         
         file = '/etc/ssh/sshd_config'
@@ -419,7 +419,7 @@ class firewalls:
 
         if protocol not in protocol_list: return public.returnMsg(False, 'FIREWALL_PORT_EXISTS')
 
-        notudps = ['80', '443', '8888', '888', '39000:40000', '21', '22']
+        notudps = ['80', '443', '8888', '888', '39000:40000', '21', '22','7800']
         if ports in notudps: flag = True
 
         # sql 查询

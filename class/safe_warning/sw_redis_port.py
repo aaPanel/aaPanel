@@ -49,7 +49,7 @@ def check_run():
     if not is_strong_password(redis_pass):
         return False, 'Redis access password is too simple, and there are security risks'
 
-    return True,'无风险'
+    return True,'Risk-free'
 
 
 def is_strong_password(password):

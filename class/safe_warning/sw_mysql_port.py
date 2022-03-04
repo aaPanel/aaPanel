@@ -63,4 +63,4 @@ def check_run():
                     return True,'Fail2ban is enabled'
         except: pass
 
-    return False,'当前MySQL端口: {}，可被任意服务器访问，这可能导致MySQL被暴力破解，存在安全隐患'.format(port_tmp[0])
+    return False,'MySQL port: {}, can be accessed by any server, which may cause MySQL to be cracked by brute force, posing security risks'.format(port_tmp[0])

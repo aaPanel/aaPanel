@@ -15,19 +15,28 @@ function GetLogs(id){
       area: ['700px','490px'],
       shadeClose:false,
       closeBtn:2,
-      content:'<div class="setchmod bt-form  pb70">'
-          +'<pre class="crontab-log" style="overflow: auto; border: 0px none; line-height:23px;padding: 15px; margin: 0px; white-space: pre-wrap; height: 405px; background-color: rgb(51,51,51);color:#f1f1f1;border-radius:0px;font-family: \"'+lan.crontab.microsoft_yahei+'\"">'+ (rdata.msg == '' ? lan.crontab.log_empty:rdata.msg) +'</pre>'
-          +'<div class="bt-form-submit-btn" style="margin-top: 0px;">'
-          +'<button type="button" class="btn btn-danger btn-sm btn-title" style="margin-right:15px;" onclick="CloseLogs('+id+')">'+lan.public.empty+'</button>'
-          +'<button type="button" class="btn btn-success btn-sm btn-title" onclick="layer.closeAll()">'+lan.public.close+'</button>'
-          +'</div>'
-          +'</div>'
+      content:'<div class="setchmod bt-form  pb70" style="padding-top: 0;">\
+        <pre class="crontab-log" style="overflow: auto; border: 0 none; line-height:23px;padding: 15px; margin: 0;white-space: pre-wrap; height: 405px; background-color: rgb(51,51,51);color:#f1f1f1;border-radius:0;"></pre>\
+          <div class="bt-form-submit-btn" style="margin-top: 0">\
+          <button type="button" class="btn btn-danger btn-sm btn-title" id="clearLogs" style="margin-right:15px;">'+ lan.public.empty +'</button>\
+          <button type="button" class="btn btn-success btn-sm btn-title" onclick="layer.closeAll()">'+ lan.public.close +'</button>\
+        </div>\
+      </div>',
+      success: function () {
+        var log_body = rdata.msg === '' ? 'The current log is empty':rdata.msg,setchmod = $(".setchmod pre"),crontab_log = $('.crontab-log')[0]
+        setchmod.text(log_body);
+        crontab_log.scrollTop = crontab_log.scrollHeight;
+        $('#clearLogs').on('click',function (){
+          CloseLogs(id);
+        });
+      }
     });
-    setTimeout(function(){
-      $("#crontab-log").text(rdata.msg);
-      var div = document.getElementsByClassName('crontab-log')[0]
-      div.scrollTop  = div.scrollHeight;
-    },200)
+    // setTimeout(function(){
+    //   $("#crontab-log").text(rdata.msg);
+    //   var div = document.getElementsByClassName('crontab-log')[0]
+    //   div.scrollTop  = div.scrollHeight;
+    // },200)
+    return false;
   });
 }
 

@@ -62,7 +62,7 @@ class AcmeDnsDns(common.BaseDns):
             # raise error so that we do not continue to make calls to ACME
             # server
             raise ValueError(
-                "Error creating acme-dns dns record: status_code={status_code} response={response}".format(
+                "Error creating acme-model model record: status_code={status_code} response={response}".format(
                     status_code=update_acmedns_dns_record_response.status_code,
                     response=self.log_response(update_acmedns_dns_record_response),
                 )
@@ -71,5 +71,5 @@ class AcmeDnsDns(common.BaseDns):
 
     def delete_dns_record(self, domain_name, domain_dns_value):
         self.logger.info("delete_dns_record")
-        # acme-dns doesn't support this
+        # acme-model doesn't support this
         self.logger.info("delete_dns_record_success")

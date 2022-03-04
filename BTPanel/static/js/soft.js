@@ -2803,8 +2803,10 @@ var soft = {
                     }
                     break;
                 case 'set_php_config':
-
+                    if (!obj.notLoading) var loading = bt.load(lan.public.the);
                     bt.soft.php.get_config(version, function(rdata) {
+                        if (!obj.notLoading) loading.close();
+                        obj.notLoading = false;
                         var divObj = document.getElementById('phpextdiv');
                         var scrollTopNum = 0;
                         if (divObj) scrollTopNum = divObj.scrollTop;
@@ -2880,7 +2882,8 @@ var soft = {
                             }
                         })
                         setTimeout(function() {
-                          if ($(".bt-soft-menu .bgw").index() === 1) {
+                          if ($(".bt-soft-menu .bgw").text() === 'Install extensions') {
+                            obj.notLoading = true;
                             soft.get_tab_contents('set_php_config', obj);
                           }
                         }, 3000)
@@ -2892,9 +2895,11 @@ var soft = {
                         true: '<span style="color:green;">Yes</span>',
                         false: '<span style="color:red;">No</span>'
                     };
+                    var loading = bt.load(lan.public.the);
                     $.post('/ajax?action=php_info', {
                         php_version: version
                     }, function(php_info) {
+                        loading.close();
                         con += '<button id="btn_phpinfo" class="btn btn-default btn-sm" >' + lan.soft.phpinfo + '</button>'
                         con += '<div class="php_info_group"><p>' + lan.soft.php_base_info + ' </p>'
                         con += '<table id="tab_php_status" class="table table-hover table-bordered" style="margin:0;padding:0">';
@@ -3082,7 +3087,9 @@ var soft = {
                     })
                     break;
                 case 'set_dis_fun':
+                    var loading = bt.load(lan.public.the);
                     bt.soft.php.get_config(version, function(rdata) {
+                        loading.close();
                         var list = [];
                         var disable_functions = rdata.disable_functions.split(',');
                         for (var i = 0; i < disable_functions.length; i++) {

@@ -126,7 +126,16 @@ var bt_tools = {
                                 event_list = $.extend(event_list, template[1]);
                                 template = template[0];
                             }
-                            tbody += '<td><span ' + (item['class'] ? 'class="' + item['class']+ '"' : '') + ' ' + (item.tips ? 'title="' + item.tips + '"' : '') + '>' + template + '</span></td>';
+                              var fixed = false;
+                              if (typeof item.fixed != "undefined" && item.fixed) {
+                                if (typeof item.class != "undefined") {
+                                  if (item.class.indexOf('fixed') === -1) item.class += ' fixed';
+                                } else {
+                                  item.class = 'fixed';
+                                }
+                                fixed = true;
+                              }
+                              tbody += '<td><span ' + (fixed ? 'style="width:' + (item.width - 16) + 'px" title="'+ template +'"' : ' ') + (item['class'] ? 'class="' + item['class'] + '"' : '') + ' ' + (item.tips ? 'title="' + item.tips + '"' : '') + '>' + template + '</span></td>';
                             if (i === 0) {
                                 if (!event_list[className] && item.event) event_list[className] = {
                                     event: item.event,
@@ -204,15 +213,14 @@ var bt_tools = {
              * @return void
              */
             $batch_success_table: function (config) {
-                console.log(1);
                 var _that = this,length = $(config.html).length;
                 bt.open({
                     type: 1,
                     title: config.title,
-                    area: config.area || ['400px', '350px'],
+                    area: config.area || ['400px'],
                     shadeClose: false,
                     closeBtn: 2,
-                    content: config.content || '<div class="batch_title"><span class><span class="batch_icon"></span><span class="batch_text">' + config.title + ' '+lan['public'].success+'</span></span></div><div class="'+ (length > 4?'fiexd_thead':'') +' batch_tabel divtable" style="margin: 15px 30px 15px 30px;overflow: auto;height: 200px;"><table class="table table-hover"><thead><tr><th>' + config.th + '</th><th style="text-align:right;width:170px;">'+lan['public'].result+'</th></tr></thead><tbody>' + config.html + '</tbody></table></div>',
+                    content: config.content || '<div class="batch_title"><span class><span class="batch_icon"></span><span class="batch_text">' + config.title + ' '+lan['public'].success+'</span></span></div><div class="'+ (length > 4?'fiexd_thead':'') +' batch_tabel divtable" style="margin: 15px 30px 15px 30px;overflow: auto;max-height: 195px; border: 1px solid #ddd;"><table style="border: none;" class="table table-hover"><thead><tr><th>' + config.th + '</th><th style="text-align:right;width:170px;">'+lan['public'].result+'</th></tr></thead><tbody>' + config.html + '</tbody></table></div>',
                     success: function () {
                         if(length > 4) _that.$fixed_table_thead('.fiexd_thead');
                     }
@@ -539,8 +547,8 @@ var bt_tools = {
                                 });
                             } else {
                                 bt.confirm({
-                                    title: '批量' + active.title,
-                                    msg: '批量' + active.title + '，该操作可能会存在风险，是否继续？',
+                                    title: 'Batch ' + active.title,
+                                    msg: 'Please be cautious, The selected item will be [ '+active.title+' ] after confirmation',
                                 }, function (index) {
                                     layer.close(index)
                                     if(!active.recursion){
@@ -697,7 +705,7 @@ var bt_tools = {
                                     var _text = $(this).text(),
                                         _index = $(this).index();
                                     $(this).addClass('active').siblings().removeClass('active');
-                                    $(_that.config.el + ' .bt_select_tips').html('Batch execute' + _text + '<em>('+lan.site.have_been_selected + _that.checkbox_list.length + ')</em>');
+                                    $(_that.config.el + ' .bt_select_tips').html('Batch execute ' + _text + '<em>('+lan.site.have_been_selected + _that.checkbox_list.length + ')</em>');
                                     _that.batch_active = batch_list[_index];
                                     if (!_that.checked) $('.bt_table_select_group').removeClass('active');
                                 });
@@ -2312,10 +2320,10 @@ var bt_tools = {
         bt.open({
             type: 1,
             title: config.title,
-            area: config.area || ['400px', '350px'],
+            area: config.area || ['400px'],
             shadeClose: false,
             closeBtn: 2,
-            content: config.content || '<div class="batch_title"><span class><span class="batch_icon"></span><span class="batch_text">' + config.title + ' '+lan['public'].success+'</span></span></div><div class="'+ (length > 4?'fiexd_thead':'') +' batch_tabel divtable" style="margin: 15px 30px 15px 30px;overflow: auto;height: 200px;"><table class="table table-hover"><thead><tr><th>' + config.th + '</th><th style="text-align:right;width:170px;">'+lan['public'].result+'</th></tr></thead><tbody>' + config.html + '</tbody></table></div>',
+            content: config.content || '<div class="batch_title"><span class><span class="batch_icon"></span><span class="batch_text">' + config.title + ' '+lan['public'].success+'</span></span></div><div class="'+ (length > 4?'fiexd_thead':'') +' batch_tabel divtable" style="margin: 15px 30px 15px 30px;overflow: auto;max-height: 195px; border: 1px solid #ddd; border-bottom: none;"><table style="border: none;" class="table table-hover"><thead><tr><th>' + config.th + '</th><th style="text-align:right;width:170px;">'+lan['public'].result+'</th></tr></thead><tbody>' + config.html + '</tbody></table></div>',
             success: function () {
               if(length > 4) _that.$fixed_table_thead('.fiexd_thead');
             }

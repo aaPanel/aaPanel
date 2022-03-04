@@ -159,6 +159,9 @@ class panelPlugin:
     def install_plugin(self,get):
         if not self.check_sys_write(): return public.returnMsg(False,'CANT_WRITE_SYS_DIR')
         if not 'sName' in get: return public.returnMsg(False,'Please specify the software name!')
+        #处理ols还不支持php81的情况
+        if get.sName == "php-8.1" and public.get_webserver() == 'openlitespeed':
+            return public.returnMsg(False, 'Sorry, currently OLS official does not support php8.1')
         pluginInfo = self.get_soft_find(get.sName)
         get.pluginInfo = pluginInfo
         check_result = self.check_install_limit(get)
@@ -314,79 +317,89 @@ class panelPlugin:
 
     #从云端取列表
     def get_cloud_list(self,get=None):
-        lcoalTmp = 'data/plugin.json'
-        softList = None
-        listTmp = public.readFile(lcoalTmp)
         try:
-            if listTmp: softList = json.loads(listTmp)
-        except:
-            if os.path.exists(lcoalTmp): os.remove(lcoalTmp)
+            lcoalTmp = 'data/plugin.json'
+            softList = None
+            listTmp = public.readFile(lcoalTmp)
+            force_refresh = 0
+            try:
+                if listTmp: softList = json.loads(listTmp)
+                if 'success' in softList and not softList['success']:
+                    if os.path.exists(lcoalTmp): os.remove(lcoalTmp)
+                    force_refresh = 1
+            except:
+                if os.path.exists(lcoalTmp): os.remove(lcoalTmp)
 
-        if 'init' in get:
-            if softList: return softList
+            if 'init' in get:
+                if softList:
+                    if 'success' not in softList:
+                        return softList
 
-        focre  = 0
-        if hasattr(get,'force'): focre = int(get.force)
-        if 'focre_cloud' in session:
-            if session['focre_cloud']:
-                focre = 1
-                session['focre_cloud'] = False
+            focre  = 0
+            if hasattr(get,'force'): focre = int(get.force)
+            if 'focre_cloud' in session:
+                if session['focre_cloud']:
+                    focre = 1
+                    session['focre_cloud'] = False
 
-        if not 'init_cloud' in session:
+            if not 'init_cloud' in session:
                 focre = 1
                 session['init_cloud'] = True
-
-        if not softList or focre > 0:
-            self.clean_panel_log()
-            # cloudUrl = 'https://console.aapanel.com/api/panel/get_soft_list'
-            cloudUrl = '{}/api/panel/getSoftList'.format(self.__official_url)
-            import panelAuth
-            import requests
-            pdata = panelAuth.panelAuth().create_serverid(None)
-            # listTmp = public.httpPost(cloudUrl,pdata,6)
-            url_headers={}
-            if 'token' in pdata:
-                url_headers = {"authorization": "bt {}".format(pdata['token'])}
-            pdata['environment_info'] = json.dumps(public.fetch_env_info())
-            listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers,verify=False)
-            listTmp=listTmp.json()
-            if not listTmp:
-                listTmp = public.readFile(lcoalTmp)
+            if force_refresh == 1:
+                focre = 1
+            if not softList or focre > 0:
+                self.clean_panel_log()
+                # cloudUrl = 'https://console.aapanel.com/api/panel/get_soft_list'
+                cloudUrl = '{}/api/panel/getSoftList'.format(self.__official_url)
+                import panelAuth
+                import requests
+                pdata = panelAuth.panelAuth().create_serverid(None)
+                # listTmp = public.httpPost(cloudUrl,pdata,6)
+                url_headers={}
+                if 'token' in pdata:
+                    url_headers = {"authorization": "bt {}".format(pdata['token'])}
+                pdata['environment_info'] = json.dumps(public.fetch_env_info())
+                listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers,verify=False)
+                listTmp=listTmp.json()
+                if not listTmp:
+                    listTmp = public.readFile(lcoalTmp)
+                try:
+                    softList = listTmp
+                except: pass
+                if softList: public.writeFile(lcoalTmp,json.dumps(softList))
+                public.ExecShell('rm -f /tmp/bmac_*')
+                public.run_thread(self.getCloudPHPExt)
+                # 专业版和企业版到期提醒，aaPanel目前没有先注释
+                # self.expire_msg(softList)
             try:
-                softList = listTmp
-            except: pass
-            if softList: public.writeFile(lcoalTmp,json.dumps(softList))
-            public.ExecShell('rm -f /tmp/bmac_*')
-            public.run_thread(self.getCloudPHPExt)
-            # 专业版和企业版到期提醒，aaPanel目前没有先注释
-            # self.expire_msg(softList)
-        try:
-            public.writeFile("/tmp/" + cache.get('p_token'),str(softList['pro']))
-        except:pass
-        sType = 0
-        try:
-            if hasattr(get,'type'): sType = int(get['type'])
+                public.writeFile("/tmp/" + cache.get('p_token'),str(softList['pro']))
+            except:pass
+            sType = 0
+            try:
+                if hasattr(get,'type'): sType = int(get['type'])
+                if hasattr(get,'query'):
+                    if get.query: sType = 0
+            except:pass
+            softList['list'] = self.get_local_plugin(softList['list'])
+            softList['list'] = self.get_types(softList['list'],sType)
             if hasattr(get,'query'):
-                if get.query: sType = 0
-        except:pass
-        softList['list'] = self.get_local_plugin(softList['list'])
-        softList['list'] = self.get_types(softList['list'],sType)
-        if hasattr(get,'query'):
-            if get.query:
-                get.query = get.query.lower()
-                tmpList = []
-                for softInfo in softList['list']:
-                    if softInfo['name'].lower().find(get.query) != -1 or \
-                        softInfo['title'].lower().find(get.query) != -1 or \
-                        softInfo['ps'].lower().find(get.query) != -1:
-                        tmpList.append(softInfo)
-                softList['list'] = tmpList
-        for softInfo in softList['list']:
-            if 'uninsatll_checks' not in softInfo:
-                softInfo['uninsatll_checks'] = softInfo['uninstall_checks']
-        if not softList['list']:
-            if os.path.exists(lcoalTmp): os.remove(lcoalTmp)
-        return softList
+                if get.query:
+                    get.query = get.query.lower()
+                    tmpList = []
+                    for softInfo in softList['list']:
+                        if softInfo['name'].lower().find(get.query) != -1 or \
+                            softInfo['title'].lower().find(get.query) != -1 or \
+                            softInfo['ps'].lower().find(get.query) != -1:
+                            tmpList.append(softInfo)
+                    softList['list'] = tmpList
+            for softInfo in softList['list']:
+                if 'uninsatll_checks' not in softInfo:
+                    softInfo['uninsatll_checks'] = softInfo['uninstall_checks']
+            if not softList['list']:
+                if os.path.exists(lcoalTmp): os.remove(lcoalTmp)
+            return softList
+        except:
+            pass
 
     #取提醒标记
     def get_level_msg(self,level,s_time,endtime):

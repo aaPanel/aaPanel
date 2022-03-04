@@ -47,11 +47,11 @@ class RackspaceDns(common.BaseDns):
         data = find_rackspace_api_details_response.json()
         api_token = data["access"]["token"]["id"]
         url_data = next(
-            (item for item in data["access"]["serviceCatalog"] if item["type"] == "rax:dns"), None
+            (item for item in data["access"]["serviceCatalog"] if item["type"] == "rax:model"), None
         )
         if url_data is None:
             raise ValueError(
-                "Error finding url data for the rackspace dns api in the response from the identity server"
+                "Error finding url data for the rackspace model api in the response from the identity server"
             )
         else:
             api_base_url = url_data["endpoints"][0]["publicURL"] + "/"
@@ -91,7 +91,7 @@ class RackspaceDns(common.BaseDns):
         )
         if find_dns_zone_id_response.status_code != 200:
             raise ValueError(
-                "Error getting rackspace dns domain info: status_code={status_code} response={response}".format(
+                "Error getting rackspace model domain info: status_code={status_code} response={response}".format(
                     status_code=find_dns_zone_id_response.status_code,
                     response=self.log_response(find_dns_zone_id_response),
                 )
@@ -102,7 +102,7 @@ class RackspaceDns(common.BaseDns):
         )
         if domain_data is None:
             raise ValueError(
-                "Error finding information for {dns_zone} in dns response data:\n{response_data})".format(
+                "Error finding information for {dns_zone} in model response data:\n{response_data})".format(
                     dns_zone=self.RACKSPACE_DNS_ZONE,
                     response_data=self.log_response(find_dns_zone_id_response),
                 )
@@ -124,7 +124,7 @@ class RackspaceDns(common.BaseDns):
         self.logger.debug(url)
         if find_dns_record_id_response.status_code != 200:
             raise ValueError(
-                "Error finding dns records for {dns_zone}: status_code={status_code} response={response}".format(
+                "Error finding model records for {dns_zone}: status_code={status_code} response={response}".format(
                     dns_zone=self.RACKSPACE_DNS_ZONE,
                     status_code=find_dns_record_id_response.status_code,
                     response=self.log_response(find_dns_record_id_response),
@@ -152,21 +152,21 @@ class RackspaceDns(common.BaseDns):
             callback_url_response = requests.get(callback_url, headers=self.RACKSPACE_HEADERS)
             if time.time() > start_time + self.HTTP_TIMEOUT:
                 raise ValueError(
-                    "Timed out polling callbackurl for dns record status.  Last status_code={status_code} last response={response}".format(
+                    "Timed out polling callbackurl for model record status.  Last status_code={status_code} last response={response}".format(
                         status_code=callback_url_response.status_code,
                         response=self.log_response(callback_url_response),
                     )
                 )
             if callback_url_response.status_code != 200:
                 raise Exception(
-                    "Could not get dns record status from callback url.  Status code ={status_code}. response={response}".format(
+                    "Could not get model record status from callback url.  Status code ={status_code}. response={response}".format(
                         status_code=callback_url_response.status_code,
                         response=self.log_response(callback_url_response),
                     )
                 )
             if callback_url_response.json()["status"] == "ERROR":
                 raise Exception(
-                    "Error in creating/deleting dns record: status_Code={status_code}. response={response}".format(
+                    "Error in creating/deleting model record: status_Code={status_code}. response={response}".format(
                         status_code=callback_url_response.status_code,
                         response=self.log_response(callback_url_response),
                     )
@@ -196,13 +196,13 @@ class RackspaceDns(common.BaseDns):
         )
         if create_rackspace_dns_record_response.status_code != 202:
             raise ValueError(
-                "Error creating rackspace dns record: status_code={status_code} response={response}".format(
+                "Error creating rackspace model record: status_code={status_code} response={response}".format(
                     status_code=create_rackspace_dns_record_response.status_code,
                     response=create_rackspace_dns_record_response.text,
                 )
             )
             # response=self.log_response(create_rackspace_dns_record_response)))
-            # After posting the dns record we want created, the response gives us a url to check that will
+            # After posting the model record we want created, the response gives us a url to check that will
         # update when the job is done
         callback_url = create_rackspace_dns_record_response.json()["callbackUrl"]
         self.poll_callback_url(callback_url)
@@ -228,7 +228,7 @@ class RackspaceDns(common.BaseDns):
         )
         if delete_dns_record_response.status_code != 202:
             raise ValueError(
-                "Error deleting rackspace dns record: status_code={status_code} response={response}".format(
+                "Error deleting rackspace model record: status_code={status_code} response={response}".format(
                     status_code=delete_dns_record_response.status_code,
                     response=self.log_response(delete_dns_record_response),
                 )

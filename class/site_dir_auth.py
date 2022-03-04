@@ -62,6 +62,8 @@ class SiteDirAuth:
         :param get:
         :return:
         '''
+        if len(get.username) < 3 or len(get.password) < 3:
+            return public.returnMsg(False, 'The account number or password cannot be less than 3 characters')
         name = get.name
         site_dir = get.site_dir
         if public.get_webserver() == "openlitespeed":

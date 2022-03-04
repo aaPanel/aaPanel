@@ -359,7 +359,8 @@ class panelRedirect:
         self.SetRedirect(get)
         self.SetRedirectNginx(get)
         self.SetRedirectApache(get.sitename)
-        public.serviceReload()
+        if not hasattr(get,'notreload'):
+            public.serviceReload()
         return public.returnMsg(True, 'EDIT_SUCCESS')
 
     def del_redirect_multiple(self,get):

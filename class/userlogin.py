@@ -177,12 +177,13 @@ class userlogin:
         domain = public.readFile('data/domain.conf')
         
         if domain:
-            if(public.GetHost().lower() != domain.strip().lower()): 
-                errorStr = public.ReadFile('./BTPanel/templates/' + public.GetConfigValue('template') + '/error2.html')
-                try:
-                    errorStr = errorStr.format(public.getMsg('PAGE_ERR_TITLE'),public.getMsg('PAGE_ERR_DOMAIN_H1'),public.getMsg('PAGE_ERR_DOMAIN_P1'),public.getMsg('PAGE_ERR_DOMAIN_P2'),public.getMsg('PAGE_ERR_DOMAIN_P3'),public.getMsg('NAME'),public.getMsg('PAGE_ERR_HELP'))
-                except IndexError:pass
-                return errorStr
+            if(public.GetHost().lower() != domain.strip().lower()):
+                return 404
+                # errorStr = public.ReadFile('./BTPanel/templates/' + public.GetConfigValue('template') + '/error2.html')
+                # try:
+                #     errorStr = errorStr.format(public.getMsg('PAGE_ERR_TITLE'),public.getMsg('PAGE_ERR_DOMAIN_H1'),public.getMsg('PAGE_ERR_DOMAIN_P1'),public.getMsg('PAGE_ERR_DOMAIN_P2'),public.getMsg('PAGE_ERR_DOMAIN_P3'),public.getMsg('NAME'),public.getMsg('PAGE_ERR_HELP'))
+                # except IndexError:pass
+                # return errorStr
         if os.path.exists('data/limitip.conf'):
             iplist = public.readFile('data/limitip.conf')
             if iplist:

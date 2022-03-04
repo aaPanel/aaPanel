@@ -3667,7 +3667,7 @@ function bindBTPanel(a, type, ip, btid, url, user, pw) {
         var gurl = "/config?action=AddPanelInfo";
         var btaddress = $("#btaddress").val();
         if (!btaddress.match(/^(http|https)+:\/\/([\w-]+\.)+[\w-]+:\d+/)) {
-            layer.msg(lan.bt.panel_err_format + '<p>http://192.168.0.1:8888</p>', { icon: 5, time: 5000 });
+            layer.msg(lan.bt.panel_err_format + '<p>http://192.168.0.1:7800</p>', { icon: 5, time: 5000 });
             return;
         }
         var btuser = encodeURIComponent($("#btuser").val());
@@ -4837,7 +4837,7 @@ acme = {
 
     //一键申请
     //domain 域名列表 []
-    //auth_type 验证类型 dns/http
+    //auth_type 验证类型 model/http
     //auth_to 验证路径 网站根目录或dnsapi
     //auto_wildcard 是否自动组合通配符 1.是 0.否 默认0
     apply_cert: function(domains, auth_type, auth_to, auto_wildcard, callback) {

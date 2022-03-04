@@ -156,7 +156,7 @@ class ssh_terminal:
                 return returnMsg(False,'SSH_LOGIN_ERR2',(str(e)))
             if e.find('Connection reset by peer') != -1:
                 self.debug(public.getMsg('SSH_LOGIN_ERR3'))
-                return returnMsg(False,'SSH_LOGIN_ERR3')
+                return returnMsg(False,public.getMsg('SSH_LOGIN_ERR3'))
             if e.find('Error reading SSH protocol banner') != -1:
                 self.debug('SSH_LOGIN_ERR10')
                 return returnMsg(False,public.getMsg('SSH_LOGIN_ERR4',(str(e),)))

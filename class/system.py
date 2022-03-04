@@ -411,6 +411,8 @@ class system:
         for tmp in temp1:
             n += 1
             try:
+                if ',' in tmp:
+                    tmp = re.sub(',\d+','',tmp)
                 inodes = tempInodes1[n-1].split()
                 disk = re.findall(r"^(.+)\s+([\w\.]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\d%]{2,4})\s+(/.{0,100})$",tmp.strip())
                 if disk: disk = disk[0]
@@ -902,7 +904,6 @@ class system:
             public.ExecShell('/etc/init.d/nginx start')
         if get.type != 'test':
             public.WriteLog("TYPE_SOFT", 'SYS_EXEC_SUCCESS',(execStr,))
-        
         if len(result[1]) > 1 and get.name != 'pure-ftpd' and get.name != 'redis': return public.returnMsg(False, '<p>Warning message: <p>' + result[1].replace('\n','<br>'))
         return public.returnMsg(True,'SYS_EXEC_SUCCESS')
     
