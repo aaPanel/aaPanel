@@ -9,13 +9,43 @@
 # +-------------------------------------------------------------------
 from gevent import monkey
 monkey.patch_all()
-import os,sys,ssl
+import os,sys,ssl,time,logging
+
 _PATH = '/www/server/panel'
 os.chdir(_PATH)
+os.system("nohup ./pyenv/bin/python3 class/jobs.py &>/dev/null &")
+upgrade_file = 'script/upgrade_flask.sh'
+if os.path.exists(upgrade_file):
+    os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
+
+if os.path.exists('class/flask'):
+    os.system('rm -rf class/flask')
+
+
 if not 'class/' in sys.path:
     sys.path.insert(0,'class/')
 from BTPanel import app,sys,public
 is_debug = os.path.exists('data/debug.pl')
+
+
+# # 检查加载器
+# def check_plugin_loader():
+#     plugin_loader_file = 'class/PluginLoader.so'
+#     machine = 'x86_64'
+#     try:
+#         machine = os.uname().machine
+#     except:
+#         pass
+#     plugin_loader_src_file = "class/PluginLoader.{}.Python3.7.so".format(machine)
+#     if machine == 'x86_64':
+#         glibc_version = public.get_glibc_version()
+#         if glibc_version in ['2.14','2.13','2.12','2.11','2.10']:
+#             plugin_loader_src_file = "class/PluginLoader.{}.glibc214.Python3.7.so".format(machine)
+#     if os.path.exists(plugin_loader_src_file):
+#         os.system("\cp -f {} {}".format(plugin_loader_src_file, plugin_loader_file))
+
+# check_plugin_loader()
+
 
 if is_debug:
     import pyinotify,time,logging,re
@@ -26,7 +56,10 @@ if is_debug:
         _exts = ['py','html','BT-Panel','so']
         _explude_patts = [
             re.compile('{}/plugin/.+'.format(_PATH)),
-            re.compile('{}/(tmp|temp)/.+'.format(_PATH))
+            re.compile('{}/(tmp|temp)/.+'.format(_PATH)),
+            re.compile('{}/pyenv/.+'.format(_PATH)),
+            re.compile('{}/class/projectModel/.+'.format(_PATH)),
+            re.compile('{}/class/databaseModel/.+'.format(_PATH))
         ]
         _lsat_time = 0
 
@@ -68,16 +101,52 @@ if is_debug:
             if not self.is_ext(event.pathname): return
             self.panel_reload(event.pathname,'[Modify]')
 
+        def process_IN_MOVED_TO(self,event):
+            if not self.is_ext(event.pathname): return
+            self.panel_reload(event.pathname,'[覆盖]')
+
     def debug_event():
         logger.debug('Launch the panel in debug mode')
         logger.debug('Listening port：0.0.0.0:{}'.format(public.readFile('data/port.pl')))
 
         event = PanelEventHandler()
         watchManager = pyinotify.WatchManager()
-        mode = pyinotify.IN_CREATE | pyinotify.IN_DELETE | pyinotify.IN_MODIFY
+        mode = pyinotify.IN_CREATE | pyinotify.IN_DELETE | pyinotify.IN_MODIFY | pyinotify.IN_MOVED_TO
         watchManager.add_watch(_PATH, mode, auto_add=True, rec=True)
         notifier = pyinotify.Notifier(watchManager, event)
         notifier.loop()
+
+def run_task():
+    public.ExecShell("chmod 700 {}/BT-Task".format(_PATH))
+    public.ExecShell("{}/BT-Task".format(_PATH))
+
+def daemon_task():
+    cycle = 60
+    task_pid_file = "{}/logs/task.pid".format(_PATH)
+    while 1:
+        time.sleep(cycle)
+
+        # 检查pid文件是否存在
+        if not os.path.exists(task_pid_file):
+            continue
+
+        # 读取pid文件
+        task_pid = public.readFile(task_pid_file)
+        if not task_pid:
+            run_task()
+            continue
+
+        # 检查进程是否存在
+        comm_file = "/proc/{}/comm".format(task_pid)
+        if not os.path.exists(comm_file):
+            run_task()
+            continue
+
+        # 是否为面板进程
+        comm = public.readFile(comm_file)
+        if comm.find('BT-Task') == -1:
+            run_task()
+            continue
 
 if __name__ == '__main__':
     pid_file = "{}/logs/panel.pid".format(_PATH)
@@ -96,13 +165,17 @@ if __name__ == '__main__':
     sys.stdout.flush()
     sys.stderr.flush()
 
-    f = open('data/port.pl')
-    PORT = int(f.read())
+
+    try:
+        f = open('data/port.pl')
+        PORT = int(f.read())
+        f.close()
+        if not PORT: PORT = 7800
+    except:
+        PORT = 7800
     HOST = '0.0.0.0'
     if os.path.exists('data/ipv6.pl'):
         HOST = "0:0:0:0:0:0:0:0"
-    f.close()
-    
 
     keyfile = 'ssl/privateKey.pem'
     certfile = 'ssl/certificate.pem'
@@ -111,41 +184,83 @@ if __name__ == '__main__':
         is_ssl = True
 
     if not is_ssl or is_debug:
-        err_f = open('logs/error.log','a+')
-        os.dup2(err_f.fileno(),sys.stderr.fileno())
-        err_f.close()
+        try:
+            err_f = open('logs/error.log','a+')
+            os.dup2(err_f.fileno(),sys.stderr.fileno())
+            err_f.close()
+        except Exception as ex:
+            print(ex)
 
     import threading
-    import jobs
-
-    job = threading.Thread(target=jobs.control_init)
-    job.setDaemon(True)
-    job.start()
-
+    task_thread = threading.Thread(target=daemon_task)
+    task_thread.setDaemon(True)
+    task_thread.start()
 
     if is_ssl:
         ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_context.load_cert_chain(certfile=certfile,keyfile=keyfile)
-        ssl_context.options = (ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
-        ssl_context.set_ciphers("ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE")
+        if hasattr(ssl_context, "minimum_version"):
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        else:
+            ssl_context.options = (ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
 
+        ssl_context.set_ciphers("ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE")
+        is_ssl_verify = os.path.exists('/www/server/panel/data/ssl_verify_data.pl')
+        if is_ssl_verify:
+            crlfile = '/www/server/panel/ssl/crl.pem'
+            rootcafile = '/www/server/panel/ssl/ca.pem'
+            #注销列表
+            # ssl_context.load_verify_locations(crlfile)
+            # ssl_context.verify_flags |= ssl.VERIFY_CRL_CHECK_CHAIN
+            #加载证书
+            ssl_context.load_verify_locations(rootcafile)
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+            ssl_context.set_default_verify_paths()
+
+    # 设置日志格式
+    _level = logging.WARNING
+    if is_debug: _level = logging.NOTSET
+    logging.basicConfig(level=_level,format="[%(asctime)s][%(levelname)s] - %(message)s")
+    logger = logging.getLogger()
+    app.logger = logger
 
     from  gevent.pywsgi import WSGIServer
-    from geventwebsocket.handler import WebSocketHandler
+    try:
+        import flask_sock
+        if is_ssl:
+            http_server = WSGIServer((HOST, PORT), app,ssl_context = ssl_context,log=app.logger)
+        else:
+            http_server = WSGIServer((HOST, PORT), app,log=app.logger)
+    except:
+        from geventwebsocket.handler import WebSocketHandler
+        if is_ssl:
+            http_server = WSGIServer((HOST, PORT), app,ssl_context = ssl_context,handler_class=WebSocketHandler,log=app.logger)
+        else:
+            http_server = WSGIServer((HOST, PORT), app,handler_class=WebSocketHandler,log=app.logger)
 
-    if is_ssl:
-        http_server = WSGIServer((HOST, PORT), app,handler_class=WebSocketHandler,ssl_context = ssl_context)
-    else:
-        http_server = WSGIServer((HOST, PORT), app,handler_class=WebSocketHandler)
 
     if is_debug:
         try:
             dev = threading.Thread(target=debug_event)
-            dev.setDaemon(True)
             dev.start()
         except:
             pass
 
-    http_server.serve_forever()
+    is_process = os.path.exists('data/is_process.pl')
+    if not is_process:
+        http_server.serve_forever()
+    else:
+        http_server.start()
+        from multiprocessing import Process
+        def serve_forever():
+            http_server.start_accepting()
+            http_server._stop_event.wait()
 
+        process_count = 2
+        for i in range(process_count):
+            p = Process(target=serve_forever)
+            p.daemon = True
+            p.start()
 
+        while 1:
+            time.sleep(1000)

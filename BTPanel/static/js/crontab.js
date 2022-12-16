@@ -91,7 +91,7 @@ function getCronData(){
 }
 // 编辑计划任务
 function edit_task_info(id){
-  layer.msg(lan.public.the_get,{icon:16,time:0,shade: [0.3, '#000']});
+  var load = layer.msg(lan.public.the_get,{icon:16,time:0,shade: [0.3, '#000']});
   $.post('/crontab?action=get_crond_find',{id:id},function(rdata){
     layer.closeAll();
     var sTypeName = '',sTypeDom = '',cycleName = '',cycleDom = '',weekName = '',weekDom = '',sNameName ='',sNameDom = '',backupsName = '',backupsDom ='';
@@ -121,7 +121,7 @@ function edit_task_info(id){
       },
       sTypeArray:[['toShell',lan.crontab.shell],['site',lan.crontab.site_bak],['database',lan.crontab.db_bak],['logs',lan.crontab.log_split],['path',lan.crontab.dir_bak],['rememory',lan.crontab.mem_release],['toUrl',lan.crontab.get_url]],
       cycleArray:[['day',lan.crontab.daily],['day-n',lan.crontab.n_day],['hour',lan.crontab.hourly],['hour-n',lan.crontab.n_hour],['minute-n',lan.crontab.n_min],['week',lan.crontab.weekly],['month',lan.crontab.monthly]],
-      weekArray:[[1,lan.crontab.TZZ1],[2,lan.crontab.TZZ2],[3,lan.crontab.TZZ3],[4,lan.crontab.TZZ4],[5,lan.crontab.TZZ5],[6,lan.crontab.TZZ6],[7,lan.crontab.TZZ7]],
+      weekArray:[[1,lan.crontab.TZZ1],[2,lan.crontab.TZZ2],[3,lan.crontab.TZZ3],[4,lan.crontab.TZZ4],[5,lan.crontab.TZZ5],[6,lan.crontab.TZZ6],[0,lan.crontab.TZZ7]],
       sNameArray:[],
       backupsArray:[],
       create:function(callback){
@@ -134,8 +134,17 @@ function edit_task_info(id){
           cycleDom += '<li><a role="menuitem"  href="javascript:;" value="'+ obj['cycleArray'][i][0] +'">'+ obj['cycleArray'][i][1] +'</a></li>';
         }
         for(var i = 0; i <obj['weekArray'].length; i++){
-          if(obj.from['week'] == obj['weekArray'][i][0])  weekName  = obj['weekArray'][i][1];
+          if (obj.from['week'] == obj['weekArray'][i][0]) weekName = obj['weekArray'][i][1];
           weekDom += '<li><a role="menuitem"  href="javascript:;" value="'+ obj['weekArray'][i][0] +'">'+ obj['weekArray'][i][1] +'</a></li>';
+        }
+        if(obj.from.notice_channel == 'telegram') {
+          obj.sBody.title = 'Telegram'
+        }else if(obj.from.notice_channel == 'mail') {
+            obj.sBody.title = 'Email'
+        }else if(obj.from.notice_channel == 'telegram,mail') {
+            obj.sBody.title = 'All'
+        } else {
+            obj.sBody.title = 'No Data'
         }
         if(obj.from.sType == 'site' || obj.from.sType == 'database' || obj.from.sType == 'path' || obj.from.sType == 'logs'){
           $.post('/crontab?action=GetDataList',{type:obj.from.sType  == 'database'?'databases':'sites'},function(rdata){
@@ -154,61 +163,57 @@ function edit_task_info(id){
             if(obj.from.sType == 'webshell'){
               edit_message_channel(obj.from.urladdress)
             }
-          });
-        }
-        if(obj.from.notice_channel == 'telegram') {
-            obj.sBody.title = 'Telegram'
-        }else if(obj.from.notice_channel == 'mail') {
-            obj.sBody.title = 'Email'
-        }else if(obj.from.notice_channel == 'telegram,mail') {
-            obj.sBody.title = 'All'
-        } else {
-            obj.sBody.title = 'No Data'
-        }
-        if(obj.from.sType == 'site' || obj.from.sType == 'database' || obj.from.sType == 'path') {
-          $.post('/config?action=get_settings2',{type: 'sites'},function(rdata){
-            if(rdata.user_mail.user_name && rdata.telegram.setup) {
-                          obj.sBody.messageChannelBtnText = 'All'
-                    obj.sBody.channelInitVal= 'user_name,telegram'
-                          obj.sBody.messageChannelDom = '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram,mail">All</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
-            } else if(!rdata.user_mail.user_name && !rdata.telegram.setup){
-              obj.sBody.messageChannelBtnText = 'No Data'
-              obj.sBody.channelInitVal= ''
-              obj.sBody.messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="">No Data</a></li>'
-            } else if(rdata.telegram.setup) {
-              obj.sBody.messageChannelBtnText = 'Telegram'
-              obj.sBody.channelInitVal= 'telegram'
-              obj.sBody.messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li>'
-            } else if(rdata.user_mail.user_name) {
-              obj.sBody.messageChannelBtnText = 'Email'
-              obj.sBody.channelInitVal= 'mail'
-              obj.sBody.messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
+            if(obj.from.sType == 'site' || obj.from.sType == 'database' || obj.from.sType == 'path') {
+              $.post('/config?action=get_settings2',{type: 'sites'},function(rdata){
+                if(rdata.user_mail.user_name && rdata.telegram.setup) {
+                              obj.sBody.messageChannelBtnText = 'All'
+                        obj.sBody.channelInitVal= 'user_name,telegram'
+                              obj.sBody.messageChannelDom = '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram,mail">All</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
+                } else if(!rdata.user_mail.user_name && !rdata.telegram.setup){
+                  obj.sBody.messageChannelBtnText = 'No Data'
+                  obj.sBody.channelInitVal= ''
+                  obj.sBody.messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="">No Data</a></li>'
+                } else if(rdata.telegram.setup) {
+                  obj.sBody.messageChannelBtnText = 'Telegram'
+                  obj.sBody.channelInitVal= 'telegram'
+                  obj.sBody.messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li>'
+                } else if(rdata.user_mail.user_name) {
+                  obj.sBody.messageChannelBtnText = 'Email'
+                  obj.sBody.channelInitVal= 'mail'
+                  obj.sBody.messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
+                }
+                layer.close(load);
+                callback();
+              })
+            } else {
+              layer.close(load);
+              callback();
             }
-            // callback();
-          })
-        }
-        setTimeout(function() {
+          });
+        } else {
+          layer.close(load);
           callback();
-        },200)
+        }
       }
     };
     obj.create(function(){
       layer.open({
-        type:1,
-        title:lan.crontab.crontab_edit+'-['+rdata.name+']',
-        area: '866px',
-        skin:'layer-create-content',
-        shadeClose:false,
-        closeBtn:2,
-        content:'<div class="setting-con ptb20">\
+        type: 1,
+        title: lan.crontab.crontab_edit + '-[' + rdata.name + ']',
+        area: '900px',
+        skin: 'layer-create-content',
+        shadeClose: false,
+        closeBtn: 2,
+        content: '\
+          <div class="setting-con ptb20">\
             <div class="clearfix plan ptb10">\
-              <span class="typename c4 pull-left f14 text-right mr20">'+lan.crontab.task_type+'</span>\
+              <span class="typename c4 pull-left f14 text-right mr20">' + lan.crontab.task_type + '</span>\
               <div class="dropdown stype_list pull-left mr20">\
                 <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:auto" disabled="disabled">\
-                  <b val="'+ obj.from.sType +'">'+ sTypeName +'</b>\
+                  <b val="' + obj.from.sType + '">' + sTypeName + '</b>\
                   <span class="caret"></span>\
                 </button>\
-                <ul class="dropdown-menu" role="menu" aria-labelledby="sType">'+ sTypeDom +'</ul>\
+                <ul class="dropdown-menu" role="menu" aria-labelledby="sType">' + sTypeDom + '</ul>\
               </div>\
             </div>\
             <div class="clearfix plan ptb10">\
@@ -222,67 +227,93 @@ function edit_task_info(id){
                   <b val="'+ obj.from.type +'">'+ cycleName +'</b>\
                   <span class="caret"></span>\
                 </button>\
-                <ul class="dropdown-menu" role="menu" aria-labelledby="cycle">'+ cycleDom +'</ul>\
+                <ul class="dropdown-menu" role="menu" aria-labelledby="cycle">' + cycleDom + '</ul>\
               </div>\
               <div class="pull-left optional_week">\
-                <div class="dropdown week_btn pull-left mr20" style="display:'+ (obj.from.type == "week"  ?'block;':'none') +'">\
+                <div class="dropdown week_btn pull-left mr20" style="display:' + (obj.from.type == "week" ? 'block;' : 'none') + '">\
                   <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" >\
-                    <b val="'+ obj.from.week +'">'+ weekName +'</b> \
+                    <b val="' + obj.from.week + '">' + weekName + '</b> \
                     <span class="caret"></span>\
                   </button>\
-                  <ul class="dropdown-menu" role="menu" aria-labelledby="week">'+ weekDom +'</ul>\
+                  <ul class="dropdown-menu" role="menu" aria-labelledby="week">' + weekDom + '</ul>\
                 </div>\
-                <div class="plan_hms pull-left mr20 bt-input-text where1_input" style="display:'+ (obj.from.type == "day-n" || obj.from.type == 'month' ?'block;':'none') +'"><span><input type="number" name="where1" class="where1_create" value="'+obj.from.where1 +'" maxlength="2" max="23" min="0"></span> <span class="name">'+lan.crontab.sun+'</span> </div>\
-                <div class="plan_hms pull-left mr20 bt-input-text hour_input" style="display:'+ (obj.from.type == "day" || obj.from.type == 'day-n' || obj.from.type == 'hour-n' || obj.from.type == 'week' || obj.from.type == 'month'?'block;':'none') +'"><span><input type="number" name="hour" class="hour_create" value="'+ ( obj.from.type == 'hour-n' ? obj.from.where1 : obj.from.hour ) +'" maxlength="2" max="23" min="0"></span> <span class="name">'+lan.crontab.hour1+'</span> </div>\
-                <div class="plan_hms pull-left mr20 bt-input-text minute_input"><span><input type="number" name="minute" class="minute_create" value="'+ (obj.from.type == 'minute-n' ? obj.from.where1 : obj.from.minute)+'" maxlength="2" max="59" min="0"></span> <span class="name">'+lan.crontab.minute1+'</span> </div>\
+                <div class="plan_hms pull-left mr20 bt-input-text where1_input" style="display:' + (obj.from.type == "day-n" || obj.from.type == 'month' ? 'block;' : 'none') + '">\
+                  <span>\
+                    <input type="number" name="where1" class="where1_create" value="' + obj.from.where1 + '" maxlength="2" max="23" min="0" />\
+                  </span>\
+                  <span class="name">' + lan.crontab.sun + '</span>\
+                </div>\
+                <div class="plan_hms pull-left mr20 bt-input-text hour_input" style="display:' + (obj.from.type == "day" || obj.from.type == 'day-n' || obj.from.type == 'hour-n' || obj.from.type == 'week' || obj.from.type == 'month' ? 'block;' : 'none') + '">\
+                  <span>\
+                    <input type="number" name="hour" class="hour_create" value="' + (obj.from.type == 'hour-n' ? obj.from.where1 : obj.from.hour) + '" maxlength="2" max="23" min="0" />\
+                  </span>\
+                  <span class="name">' + lan.crontab.hour1 + '</span>\
+                </div>\
+                <div class="plan_hms pull-left mr20 bt-input-text minute_input">\
+                  <span>\
+                    <input type="number" name="minute" class="minute_create" value="' + (obj.from.type == 'minute-n' ? obj.from.where1 : obj.from.minute) + '" maxlength="2" max="59" min="0" />\
+                  </span>\
+                  <span class="name">' + lan.crontab.minute1 + '</span>\
+                </div>\
               </div>\
             </div>\
             <div class="clearfix plan ptb10 site_list">\
-              <span class="typename controls c4 pull-left f14 text-right mr20">'+ sTypeName  +'</span>\
-              <div style="line-height:34px"><div class="dropdown pull-left mr20 sName_btn" style="display:'+ (obj.from.sType != "path"?'block;':'none') +'">\
-                <button class="btn btn-default dropdown-toggle" type="button"  data-toggle="dropdown" style="width:auto" disabled="disabled">\
-                  <b id="sName" val="'+ obj.from.sName +'">'+ sNameName +'</b>\
-                  <span class="caret"></span>\
-                </button>\
-                <ul class="dropdown-menu" role="menu" aria-labelledby="sName">'+ sNameDom +'</ul>\
-              </div>\
+              <span class="typename controls c4 pull-left f14 text-right mr20">' + sTypeName + '</span>\
               <div style="line-height:34px">\
-                <div class="pull-left" style="margin-right:20px;display:'+ (obj.from.sType == "path"?'block;':'none') +'"><input type="text" name="name" class="bt-input-text sName_create" value="'+ obj.from.sName +'" disabled="disabled"></div>\
-              </div>\
-              <div class="textname pull-left mr20">'+lan.crontab.bakup_to+'</div>\
-                <div class="dropdown  pull-left mr20">\
-                  <button class="btn btn-default dropdown-toggle backup_btn" type="button"  data-toggle="dropdown" style="width:auto;">\
-                    <b val="'+ obj.from.backupTo +'">'+ backupsName +'</b>\
+                <div class="dropdown pull-left mr20 sName_btn" style="display:' + (obj.from.sType != "path" ? 'block;' : 'none') + '">\
+                  <button class="btn btn-default dropdown-toggle" type="button"  data-toggle="dropdown" style="width:auto" disabled="disabled">\
+                    <b id="sName" val="' + obj.from.sName + '">' + sNameName + '</b>\
                     <span class="caret"></span>\
                   </button>\
-                  <ul class="dropdown-menu" role="menu" aria-labelledby="backupTo">'+ backupsDom +'</ul>\
+                  <ul class="dropdown-menu" role="menu" aria-labelledby="sName">' + sNameDom + '</ul>\
                 </div>\
-                <div class="textname pull-left mr20">'+lan.crontab.keep_update+'</div>\
+                <div style="line-height:34px">\
+                  <div class="pull-left" style="margin-right:20px;display:' + (obj.from.sType == "path" ? 'block;' : 'none') + '">\
+                    <input type="text" name="name" class="bt-input-text sName_create" value="' + obj.from.sName + '" disabled="disabled">\
+                  </div>\
+                </div>\
+                <div class="textname pull-left mr20">' + lan.crontab.bakup_to + '</div>\
+                <div class="dropdown pull-left mr20 serverDiskToLocal">\
+                  <button class="btn btn-default dropdown-toggle backup_btn" type="button"  data-toggle="dropdown" style="width:auto;">\
+                    <b val="' + obj.from.backupTo + '">' + backupsName + '</b>\
+                    <span class="caret"></span>\
+                  </button>\
+                  <ul class="dropdown-menu" role="menu" aria-labelledby="backupTo">' + backupsDom + '</ul>\
+                </div>\
+                <div class="textname pull-left mr20">' + lan.crontab.keep_update + '</div>\
                 <div class="plan_hms pull-left mr20 bt-input-text">\
-                  <span><input type="number" name="save" class="save_create" value="'+ obj.from.save +'" maxlength="4" max="100" min="1"></span><span class="name">'+lan.crontab.copies+'</span>\
+                  <span>\
+                    <input type="number" name="save" class="save_create" value="' + obj.from.save + '" maxlength="4" max="100" min="1" />\
+                  </span>\
+                  <span class="name">' + lan.crontab.copies + '</span>\
                 </div>\
+                <div class="textname pull-left local-backup-line" style="display: ' + (obj.from.backupTo && obj.from.backupTo !== 'localhost' ? 'block' : 'none') + ';">\
+                  <i class="form-checkbox mr5 ' + (obj.from.save_local == 1 ? 'active' : '') + '"></i>\
+                  <input type="checkbox" class="form—checkbox-input hide mr10" name="mod_save_local" ' + (obj.from.save_local == 1 ? 'checked' : '') + ' />\
+                  <span class="form-checkbox-label">Keep local backup</span>\
                 </div>\
+              </div>\
             </div>\
             <div class="clearfix plan ptb10 site_list">\
-              <span class="typename controls c4 pull-left f14 text-right mr20" style="display:'+ (obj.from.sType == "logs"?'none':'block') +';">Backup reminder</span>\
-              <div style="line-height:34px" ><div class="dropdown pull-left mr20 sName_btn" id="modNotice" style="display:'+ (obj.from.sType == "logs"?'none':'block') +';">\
-                <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:180px;">\
-                  <b val="'+obj.from.notice+'">'+ (obj.from.notice == 1 ? 'Notify on failure' : 'Dont notify') +'</b> <span class="caret"></span>\
-                </button>\
-                <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
-                  <li><a role="menuitem" tabindex="-1" href="javascript:;" value="0">Dont notify</a></li>\
-                  <li><a role="menuitem" tabindex="-1" href="javascript:;" value="1">Notify on failure</a></li>\
-                </ul>\
-              </div>\
-              <div class="pull-left mr20"  style="display:'+ (parseInt(obj.from.notice) == 1 && obj.from.sType != 'logs' ?'block':'none') +';">notification</div>\
-                <div class="dropdown  pull-left mr20"  style="display:'+ (obj.from.notice == 1 ?'block':'none') +';">\
-                  <button class="btn btn-default dropdown-toggle"  type="button"  data-toggle="dropdown" style="width:auto;" id="modNotice_channel">\
-                    <b val="'+obj.from.notice_channel+'" id="modNotice_channelValue">'+ obj.sBody.title +'</b> <span class="caret"></span>\
+              <span class="typename controls c4 pull-left f14 text-right mr20" style="display:' + (obj.from.sType == "logs" ? 'none' : 'block') + ';">Backup reminder</span>\
+              <div style="line-height:34px" >\
+                <div class="dropdown pull-left mr20 sName_btn" id="modNotice" style="display:' + (obj.from.sType == "logs" ? 'none' : 'block') + ';">\
+                  <button class="btn btn-default dropdown-toggle" type="button" id="excode"  data-toggle="dropdown" style="width:180px;">\
+                    <b val="' + obj.from.notice + '">' + (obj.from.notice == 1 ? 'Notify on failure' : 'Dont notify') + '</b>\
+                    <span class="caret"></span>\
+                  </button>\
+                  <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
+                    <li><a role="menuitem" tabindex="-1" href="javascript:;" value="0">Dont notify</a></li>\
+                    <li><a role="menuitem" tabindex="-1" href="javascript:;" value="1">Notify on failure</a></li>\
+                  </ul>\
+                </div>\
+                <div class="pull-left mr20"  style="display:' + (parseInt(obj.from.notice) == 1 && obj.from.sType != 'logs' ? 'block' : 'none') + ';">notification</div>\
+                <div class="dropdown  pull-left mr20"  style="display:' + (obj.from.notice == 1 ? 'block' : 'none') + ';">\
+                  <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" style="width:auto;" id="modNotice_channel">\
+                    <b val="' + obj.from.notice_channel + '" id="modNotice_channelValue">' + obj.sBody.title + '</b>\
+                    <span class="caret"></span>\
                   </button>\
                   <ul class="dropdown-menu" role="menu">'+obj.sBody.messageChannelDom+'</ul>\
-                </div>\
-                <div class="textname pull-left mr20" id="selmodnoticeBox" onclick="modSelSave_local()">\
-                  <span style="display:'+ (obj.from.sType == "logs"?'none':'block') +';"><input type="checkbox" value="'+obj.from.save_local+'" '+ (obj.from.save_local == 1 ? 'checked': '') +' style="margin-left: 20px;margin-right: 10px;" id="modSave_local">Keep local backup</span>\
                 </div>\
               </div>\
             </div>\
@@ -305,169 +336,170 @@ function edit_task_info(id){
               <span class="typename controls c4 pull-left f14 text-right mr20">Scan site</span>\
               <div class="dropdown pull-left mr20 sName_btn">\
                 <button class="btn btn-default dropdown-toggle" type="button"  data-toggle="dropdown" style="width:auto" disabled="disabled">\
-                  <b id="sName" val="'+ obj.from.sName +'">'+ sNameName +'</b>\
+                  <b id="sName" val="' + obj.from.sName + '">' + sNameName + '</b>\
                   <span class="caret"></span>\
                 </button>\
-                <ul class="dropdown-menu" role="menu" aria-labelledby="sName">'+ sNameDom +'</ul>\
+                <ul class="dropdown-menu" role="menu" aria-labelledby="sName">' + sNameDom + '</ul>\
               </div>\
               <p class="clearfix plan">\
                 <div class="textname pull-left mr20" style="margin-left: 63px; font-size: 14px;">Message channel</div>\
                 <div class="dropdown planBackupTo pull-left mr20 message_start" style="line-height: 34px;"></div>\
               </p>\
-                <div class="clearfix plan ptb10">\
-                    <div class="bt-submit plan-submits " style="margin-left: 141px;">'+lan.crontab.edit_save+'</div>\
-                </div>\
+              <div class="clearfix plan ptb10">\
+                <div class="bt-submit plan-submits " style="margin-left: 141px;">' + lan.crontab.edit_save + '</div>\
+              </div>\
             </div>\
-        </div>'
-      });
-      getselectnoticename();
-      setTimeout(function(){
-        if(obj.from.sType == 'toShell'){
-          $('.site_list').hide();
-        }else if(obj.from.sType == 'rememory'){
-          $('.site_list').hide();
-        }else if( obj.from.sType == 'toUrl'){
-          $('.site_list').hide();
-        }else if( obj.from.sType == 'webshell'){
-          $('.site_list').hide();
-        }else{
-          $('.site_list').show();
-        }
-
-        $('.sName_create').blur(function () {
-          obj.from.name = $(this).val();
-        });
-        $('.where1_create').blur(function () {
-          obj.from.where1 = $(this).val();
-        });
-
-        $('.hour_create').blur(function () {
-          obj.from.hour = $(this).val();
-        });
-
-        $('.minute_create').blur(function () {
-          obj.from.minute = $(this).val();
-        });
-
-        $('.save_create').blur(function () {
-          obj.from.save = $(this).val();
-        });
-
-        $('.sBody_create').blur(function () {
-          obj.from.sBody = $(this).val();
-        });
-        $('.url_create').blur(function () {
-          obj.from.urladdress = $(this).val();
-        });
-
-        $('[aria-labelledby="cycle"] a').unbind().click(function () {
-          $('.cycle_btn').find('b').attr('val',$(this).attr('value')).html($(this).html());
-          var type = $(this).attr('value');
-          switch(type){
-            case 'day':
-              $('.week_btn').hide();
-              $('.where1_input').hide();
-              $('.hour_input').show().find('input').val('1');
-              $('.minute_input').show().find('input').val('30');
-              obj.from.week = '';
-              obj.from.type = '';
-              obj.from.hour = 1;
-              obj.from.minute = 30;
-            break;
-            case 'day-n':
-              $('.week_btn').hide();
-              $('.where1_input').show().find('input').val('1');
-              $('.hour_input').show().find('input').val('1');
-              $('.minute_input').show().find('input').val('30');
-              obj.from.week = '';
-              obj.from.where1 = 1;
-              obj.from.hour = 1;
-              obj.from.minute = 30;
-            break;
-            case 'hour':
-              $('.week_btn').hide();
-              $('.where1_input').hide();
-              $('.hour_input').hide();
-              $('.minute_input').show().find('input').val('30');
-              obj.from.week = '';
-              obj.from.where1 = '';
-              obj.from.hour = '';
-              obj.from.minute = 30;
-            break;
-            case 'hour-n':
-              $('.week_btn').hide();
-              $('.where1_input').hide();
-              $('.hour_input').show().find('input').val('1');
-              $('.minute_input').show().find('input').val('30');
-              obj.from.week = '';
-              obj.from.where1 = '';
-              obj.from.hour = 1;
-              obj.from.minute = 30;
-            break;
-            case 'minute-n':
-              $('.week_btn').hide();
-              $('.where1_input').hide();
-              $('.hour_input').hide();
-              $('.minute_input').show();
-              obj.from.week = '';
-              obj.from.where1 = '';
-              obj.from.hour = '';
-              obj.from.minute = 30;
-            break;
-            case 'week':
-              $('.week_btn').show();
-              $('.where1_input').hide();
-              $('.hour_input').show();
-              $('.minute_input').show();
-              obj.from.week = 1;
-              obj.from.where1 = '';
-              obj.from.hour = 1;
-              obj.from.minute = 30;
-            break;
-            case 'month':
-              $('.week_btn').hide();
-              $('.where1_input').show();
-              $('.hour_input').show();
-              $('.minute_input').show();
-              obj.from.week = '';
-              obj.from.where1 = 1;
-              obj.from.hour = 1;
-              obj.from.minute = 30;
-            break;
+          </div>\
+        ',
+        success: function () {
+          getselectnoticename();
+          if(obj.from.sType == 'toShell'){
+            $('.site_list').hide();
+          }else if(obj.from.sType == 'rememory'){
+            $('.site_list').hide();
+          }else if( obj.from.sType == 'toUrl'){
+            $('.site_list').hide();
+          }else if( obj.from.sType == 'webshell'){
+            $('.site_list').hide();
+          }else{
+            $('.site_list').show();
           }
-          obj.from.type = $(this).attr('value');
-        });
-
-        $('[aria-labelledby="week"] a').unbind().click(function () {
-          $('.week_btn').find('b').attr('val',$(this).attr('value')).html($(this).html());
-          obj.from.week = $(this).attr('value');
-        });
-
-        $('[aria-labelledby="backupTo"] a').unbind().click(function () {
-          $('.backup_btn').find('b').attr('val',$(this).attr('value')).html($(this).html());
-          obj.from.backupTo = $(this).attr('value');
-        });
-        $('.plan-submits').unbind().click(function(){
-          if(obj.from.type == 'hour-n'){
-            obj.from.where1 = obj.from.hour;
-            obj.from.hour = '';
-          }else if(obj.from.type == 'minute-n'){
-            obj.from.where1 = obj.from.minute;
-            obj.from.minute = '';
-          }else if(obj.from.sType == 'webshell'){
-            obj.from.urladdress = $(".message_start input:checked").val()
-          }
-          obj.from.save_local = $('#modSave_local').val()
-          obj.from.notice = $("#modNotice").find("button b").attr("val")
-          obj.from.notice_channel = $("#modNotice_channelValue").attr("val")
-          layer.msg(lan.crontab.saving,{icon:16,time:0,shade: [0.3, '#000']});
-          $.post('/crontab?action=modify_crond',obj.from,function(rdata){
-            layer.closeAll();
-            getCronData();
-            layer.msg(rdata.msg,{icon:rdata.status?1:2});
+  
+          $('.sName_create').blur(function () {
+            obj.from.name = $(this).val();
           });
-        });
-      },100);
+          $('.where1_create').blur(function () {
+            obj.from.where1 = $(this).val();
+          });
+  
+          $('.hour_create').blur(function () {
+            obj.from.hour = $(this).val();
+          });
+  
+          $('.minute_create').blur(function () {
+            obj.from.minute = $(this).val();
+          });
+  
+          $('.save_create').blur(function () {
+            obj.from.save = $(this).val();
+          });
+  
+          $('.sBody_create').blur(function () {
+            obj.from.sBody = $(this).val();
+          });
+          $('.url_create').blur(function () {
+            obj.from.urladdress = $(this).val();
+          });
+  
+          $('[aria-labelledby="cycle"] a').unbind().click(function () {
+            $('.cycle_btn').find('b').attr('val',$(this).attr('value')).html($(this).html());
+            var type = $(this).attr('value');
+            switch(type){
+              case 'day':
+                $('.week_btn').hide();
+                $('.where1_input').hide();
+                $('.hour_input').show().find('input').val('1');
+                $('.minute_input').show().find('input').val('30');
+                obj.from.week = '';
+                obj.from.type = '';
+                obj.from.hour = 1;
+                obj.from.minute = 30;
+              break;
+              case 'day-n':
+                $('.week_btn').hide();
+                $('.where1_input').show().find('input').val('1');
+                $('.hour_input').show().find('input').val('1');
+                $('.minute_input').show().find('input').val('30');
+                obj.from.week = '';
+                obj.from.where1 = 1;
+                obj.from.hour = 1;
+                obj.from.minute = 30;
+              break;
+              case 'hour':
+                $('.week_btn').hide();
+                $('.where1_input').hide();
+                $('.hour_input').hide();
+                $('.minute_input').show().find('input').val('30');
+                obj.from.week = '';
+                obj.from.where1 = '';
+                obj.from.hour = '';
+                obj.from.minute = 30;
+              break;
+              case 'hour-n':
+                $('.week_btn').hide();
+                $('.where1_input').hide();
+                $('.hour_input').show().find('input').val('1');
+                $('.minute_input').show().find('input').val('30');
+                obj.from.week = '';
+                obj.from.where1 = '';
+                obj.from.hour = 1;
+                obj.from.minute = 30;
+              break;
+              case 'minute-n':
+                $('.week_btn').hide();
+                $('.where1_input').hide();
+                $('.hour_input').hide();
+                $('.minute_input').show();
+                obj.from.week = '';
+                obj.from.where1 = '';
+                obj.from.hour = '';
+                obj.from.minute = 30;
+              break;
+              case 'week':
+                $('.week_btn').show();
+                $('.where1_input').hide();
+                $('.hour_input').show();
+                $('.minute_input').show();
+                obj.from.week = 1;
+                obj.from.where1 = '';
+                obj.from.hour = 1;
+                obj.from.minute = 30;
+              break;
+              case 'month':
+                $('.week_btn').hide();
+                $('.where1_input').show();
+                $('.hour_input').show();
+                $('.minute_input').show();
+                obj.from.week = '';
+                obj.from.where1 = 1;
+                obj.from.hour = 1;
+                obj.from.minute = 30;
+              break;
+            }
+            obj.from.type = $(this).attr('value');
+          });
+  
+          $('[aria-labelledby="week"] a').unbind().click(function () {
+            $('.week_btn').find('b').attr('val',$(this).attr('value')).html($(this).html());
+            obj.from.week = $(this).attr('value');
+          });
+  
+          $('[aria-labelledby="backupTo"] a').unbind().click(function () {
+            $('.backup_btn').find('b').attr('val',$(this).attr('value')).html($(this).html());
+            obj.from.backupTo = $(this).attr('value');
+          });
+          $('.plan-submits').unbind().click(function(){
+            if(obj.from.type == 'hour-n'){
+              obj.from.where1 = obj.from.hour;
+              obj.from.hour = '';
+            }else if(obj.from.type == 'minute-n'){
+              obj.from.where1 = obj.from.minute;
+              obj.from.minute = '';
+            }else if(obj.from.sType == 'webshell'){
+              obj.from.urladdress = $(".message_start input:checked").val()
+            }
+            obj.from.save_local = $('input[name="mod_save_local"]').is(':checked') ? 1 : 0;
+            obj.from.notice = $("#modNotice").find("button b").attr("val")
+            obj.from.notice_channel = $("#modNotice_channelValue").attr("val")
+            layer.msg(lan.crontab.saving,{icon:16,time:0,shade: [0.3, '#000']});
+            $.post('/crontab?action=modify_crond',obj.from,function(rdata){
+              layer.closeAll();
+              getCronData();
+              layer.msg(rdata.msg,{icon:rdata.status?1:2});
+            });
+          });
+        }
+      });
     });
   });
 
@@ -658,7 +690,6 @@ function planAdd(){
     case 'month':
       is1=31;
       break;
-
   }
 
   if(where1 > is1 || where1 < is2){
@@ -756,7 +787,8 @@ function planAdd(){
     data = data.replace('&sName=&','&sName='+ encodeURIComponent($('#filePath').val()) +'&')
   }
   if(data.indexOf('&save_local=') == -1) {
-    data = data + '&save_local='+ $('#save_local').val() +'&notice='+ $("#notice").find("b").attr("val") +'&notice_channel='+ $("#notice_channel").find("b").attr("val") +''
+    var save_local = $('input[name="save_local"]').is(':checked') ? 1 : 0;
+    data = data + '&save_local=' + save_local + '&notice=' + $("#notice").find("b").attr("val") + '&notice_channel=' + $("#notice_channel").find("b").attr("val") + ''
   }
   $.post('/crontab?action=AddCrontab',data,function(rdata){
     layer.closeAll();
@@ -894,171 +926,211 @@ $(".dropdown ul li a").click(function(){
 
 
 //备份
-function toBackup(type){
-	var sMsg = "";
-	switch(type){
-		case 'sites':
-			sMsg = lan.crontab.backup_site;
-			sType = "sites";
-			break;
-		case 'databases':
-			sMsg = lan.crontab.backup_database;
-			sType = "databases";
-			break;
-		case 'logs':
-			sMsg = lan.crontab.backup_log;
-			sType = "sites";
-			break;
-		case 'path':
-			sMsg = lan.crontab.dir_bak;
-			sType = "sites";
-			break;
-	}
-	var data='type='+sType
-	$.post('/crontab?action=GetDataList',data,function(rdata){
-		$(".planname input[name='name']").attr('readonly','true').css({"background-color":"#f6f6f6","color":"#666"});
-		if(type != 'path'){
-			var sOpt = "",sOptBody = '';
-			if(rdata.data.length == 0){
-				layer.msg(lan.public.list_empty,{icon:2})
-				return
-			}
-			for(var i=0;i<rdata.data.length;i++){
-				if(type === 'logs'){
-					$(".planname input[name='name']").val(sMsg+'[ALL]');
-				}else{
-					if(i ==0){
-						$(".planname input[name='name']").val(sMsg+'['+rdata.data[i].name+']');
-					}
-				}
-				sOpt += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="'+rdata.data[i].name+'">'+rdata.data[i].name+'['+rdata.data[i].ps+']</a></li>';
-			}
-			sOptBody ='<div class="dropdown pull-left mr20">\
-					  <button class="btn btn-default dropdown-toggle" type="button" id="backdata" data-toggle="dropdown" style="width:auto">\
-						<b id="sName" val="'+ (type === 'logs'?'ALL':rdata.data[0].name) +'">'+ (type === 'logs'?'ALL':(rdata.data[0].name +'['+rdata.data[0].ps+']')) +'</b> <span class="caret"></span>\
-					  </button>\
-					  <ul class="dropdown-menu" role="menu" aria-labelledby="backdata">\
-					 	<li><a role="menuitem" tabindex="-1" href="javascript:;" value="ALL">'+lan.public.all+'</a></li>\
-					  	'+sOpt+'\
-					  </ul>\
-            </div>'
-		}else{
-			$(".planname input[name='name']").val(sMsg+'[/www/wwwroot/]');
-			sOptBody = '<div class="info-r" style="display: inline-block;float: left;margin-right: 25px;"><input id="inputPath" class="bt-input-text mr5" type="text" name="path" value="/www/wwwroot/" placeholder="'+lan.crontab.dir_bak+'" style="width:208px;height:33px;"><span class="glyphicon glyphicon-folder-open cursor" onclick="ChangePath(&quot;inputPath&quot;)"></span></div>'
-			setCookie('default_dir_path','/www/wwwroot/');
-			setCookie('path_dir_change','/www/wwwroot/');
-			setInterval(function(){
-				if(getCookie('path_dir_change') != getCookie('default_dir_path')){
-					var  path_dir_change = getCookie('path_dir_change')
-					$(".planname input").val(lan.crontab.dir_bak+'['+getCookie('path_dir_change')+']');
-					setCookie('default_dir_path',path_dir_change);
-				}
-			},500);
-		}
-		var orderOpt = ''
-		for (var i=0;i<rdata.orderOpt.length;i++){
-			orderOpt += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="'+rdata.orderOpt[i].value+'">'+rdata.orderOpt[i].name+'</a></li>'
-		}
-		var save_num = 3;
-		if(type === 'logs'){
-			$('#cycle b').attr('val','day').text(lan.crontab.daily);
-			$('.planweek').hide();
-			$('[name="hour"]').val(0);
-			$('[name="minute"]').val(1);
-			// $('#implement').parent().after('<div class="clearfix plan" id="logs_tips"><span class="typename controls c4 pull-left f14 text-right mr20">提示</span><div style="line-height:34px">根据网络安全法第二十一条规定，网络日志应留存不少于六个月。</div></div>')
-			save_num = 180;
-		}else{
-			$('#logs_tips').remove();
-		}
-		var sBody = sOptBody + '<div class="textname pull-left mr20" style="display:'+ (type === 'logs'?'none':'inline-block') +'">'+lan.crontab.backup_to+'</div>\
-					<div class="dropdown planBackupTo pull-left mr20" style="display:'+ (type === 'logs'?'none':'inline-block') +'" id="saveAddServerDiskToLocal">\
-					  <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:auto;">\
-						<b val="localhost">'+lan.crontab.disk+'</b> <span class="caret"></span>\
-					  </button>\
-					  <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
-						<li><a role="menuitem" tabindex="-1" href="javascript:;" value="localhost">'+lan.crontab.disk+'</a></li>\
-						'+ orderOpt +'\
-					  </ul>\
-					</div>\
-					<div class="textname pull-left mr20">'+lan.crontab.save_new+'</div><div class="plan_hms pull-left mr20 bt-input-text">\
-					<span><input type="number" name="save" id="save" value="'+save_num+'" maxlength="4" max="100" min="1"></span>\
-					</div>';
-        if (type == 'sites' || type == 'path' || type == 'databases') {
-          $.post('/config?action=get_settings2',data,function(rdata){
-            var messageChannelDom = '', messageChannelBtnText = '', channelInitVal = ''
-            if(rdata.user_mail.user_name && rdata.telegram.setup) {
-              messageChannelBtnText = 'ALL'
-			  channelInitVal= 'user_name,telegram'
-              messageChannelDom = '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram,mail">ALL</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li><li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
-            } else if(!rdata.user_mail.user_name && !rdata.telegram.setup){
-              messageChannelBtnText = 'No Data'
-			  channelInitVal= ''
-              messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="">No Data</a></li>'
-            } else if(rdata.telegram.setup) {
-              messageChannelBtnText = '钉钉'
-			  channelInitVal= 'telegram'
-              messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li>'
-            } else if(rdata.user_mail.user_name) {
-              messageChannelBtnText = 'Email'
-			  channelInitVal= 'mail'
-              messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>'
-            }
-            sBody += '<p class="clearfix plan">\
-                <div class="textname pull-left mr20" style="width: 120px;text-align: right; font-size: 14px;">Backup reminder</div>\
-                  <div class="dropdown planBackupTo pull-left mr20" style="display:'+ (type === 'logs'?'none':'inline-block') +'"  id="notice">\
-                    <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:180px;">\
-                      <b val="0">No notice</b> <span class="caret"></span>\
-                    </button>\
-                    <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
-                      <li><a role="menuitem" tabindex="-1" href="javascript:;" value="0">No notice</a></li>\
-                      <li><a role="menuitem" tabindex="-1" href="javascript:;" value="1">Notify on failure</a></li>\
-                    </ul>\
-                  </div>\
-                </div>\
-                <div class="textname pull-left mr20" style="font-size: 14px;display:none;" id="messageChannelBox">Notification</div>\
-                  <div class="dropdown planBackupTo pull-left mr20" style="display:none;" id="notice_channel">\
-                    <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:auto;">\
-                      <b val="'+channelInitVal+'">'+ messageChannelBtnText +'</b> <span class="caret"></span>\
-                    </button>\
-                    <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
-                      '+messageChannelDom+'\
-                    </ul>\
-                  </div>\
-                </div>\
-                <a role="menuitem" tabindex="-1" href="javascript:;" onclick="MessageChannelSettings()" value="0" style="color: #20a53a;">Set notifications</a>\
-				<span  id="selnoticeBox"  onclick="selSave_local()" style="display:none;"><input type="checkbox" value="0" style="margin-left: 20px;margin-right: 10px;" id="save_local">Keep local backup</span>\
-            </p>';
-            if(type == 'sites' || type == "path") {
-				sBody += '<p class="clearfix plan">\
-              <div class="textname pull-left mr20" style="width: 120px;text-align: right; font-size: 14px;">'+lan.crontab.exclusion_rule+'</div>\
-              <div class="dropdown planBackupTo pull-left mr20">\
-                  <span><textarea style=" height: 100px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
-              </div>\
-            </p>';
-			}
-            $("#implement").html(sBody);
-			getselectnoticename();
-          })
+function toBackup(type) {
+  var sMsg = '';
+  switch (type) {
+    case 'sites':
+      sMsg = lan.crontab.backup_site;
+      sType = "sites";
+      break;
+    case 'databases':
+      sMsg = lan.crontab.backup_database;
+      sType = "databases";
+      break;
+    case 'logs':
+      sMsg = lan.crontab.backup_log;
+      sType = "sites";
+      break;
+    case 'path':
+      sMsg = lan.crontab.dir_bak;
+      sType = "sites";
+      break;
+  }
+  var data = 'type=' + sType;
+  $.post('/crontab?action=GetDataList', data, function (rdata) {
+    $(".planname input[name='name']").attr('readonly', 'true').css({"background-color": "#f6f6f6", "color": "#666"});
+    if (type != 'path') {
+      var sOpt = '';
+      var sOptBody = '';
+      if (rdata.data.length == 0) {
+        layer.msg(lan.public.list_empty, {icon: 2});
+        return
+      }
+      for (var i = 0; i < rdata.data.length; i++) {
+        if (type === 'logs') {
+          $(".planname input[name='name']").val(sMsg + '[ALL]');
         } else {
-            $("#implement").html('<div></div>');
-            sBody += '<p class="clearfix plan">\
-              <div class="textname pull-left mr20" style="width: 120px;text-align: right; font-size: 14px;">'+lan.crontab.exclusion_rule+'</div>\
+          if (i == 0) {
+            $(".planname input[name='name']").val(sMsg + '[' + rdata.data[i].name + ']');
+          }
+        }
+        sOpt += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="' + rdata.data[i].name + '">' + rdata.data[i].name + '[' + rdata.data[i].ps + ']</a></li>';
+      }
+      sOptBody = '\
+        <div class="dropdown pull-left mr20">\
+          <button class="btn btn-default dropdown-toggle" type="button" id="backdata" data-toggle="dropdown" style="width:auto">\
+            <b id="sName" val="' + (type === 'logs' ? 'ALL' : rdata.data[0].name) + '">' + (type === 'logs' ? 'ALL' : (rdata.data[0].name + '[' + rdata.data[0].ps + ']')) + '</b> <span class="caret"></span>\
+          </button>\
+          <ul class="dropdown-menu" role="menu" aria-labelledby="backdata">\
+            <li>\
+              <a role="menuitem" tabindex="-1" href="javascript:;" value="ALL">' + lan.public.all + '</a>\
+            </li>\
+            ' + sOpt + '\
+          </ul>\
+        </div>\
+      ';
+    } else {
+      $(".planname input[name='name']").val(sMsg + '[/www/wwwroot/]');
+      sOptBody = '\
+        <div class="info-r" style="display: inline-block;float: left;margin-right: 25px;">\
+          <input id="inputPath" class="bt-input-text mr5" type="text" name="path" value="/www/wwwroot/" placeholder="' + lan.crontab.dir_bak + '" style="width:208px;height:33px;" />\
+          <span class="glyphicon glyphicon-folder-open cursor" onclick="ChangePath(&quot;inputPath&quot;)"></span>\
+        </div>\
+      ';
+      setCookie('default_dir_path', '/www/wwwroot/');
+      setCookie('path_dir_change', '/www/wwwroot/');
+      setInterval(function () {
+        if (getCookie('path_dir_change') != getCookie('default_dir_path')) {
+          var path_dir_change = getCookie('path_dir_change')
+          $(".planname input").val(lan.crontab.dir_bak + '[' + getCookie('path_dir_change') + ']');
+          setCookie('default_dir_path', path_dir_change);
+        }
+      }, 500);
+    }
+    var orderOpt = ''
+    for (var i = 0; i < rdata.orderOpt.length; i++) {
+      orderOpt += '\
+        <li>\
+          <a role="menuitem" tabindex="-1" href="javascript:;" value="' + rdata.orderOpt[i].value + '">' + rdata.orderOpt[i].name + '</a>\
+        </li>\
+      ';
+    }
+    var save_num = 3;
+    if (type === 'logs') {
+      $('#cycle b').attr('val', 'day').text(lan.crontab.daily);
+      $('.planweek').hide();
+      $('[name="hour"]').val(0);
+      $('[name="minute"]').val(1);
+      // $('#implement').parent().after('<div class="clearfix plan" id="logs_tips"><span class="typename controls c4 pull-left f14 text-right mr20">提示</span><div style="line-height:34px">根据网络安全法第二十一条规定，网络日志应留存不少于六个月。</div></div>')
+      save_num = 180;
+    } else {
+      $('#logs_tips').remove();
+    }
+    var sBody = sOptBody + '\
+      <div class="textname pull-left mr20" style="display:' + (type === 'logs' ? 'none' : 'inline-block') + '">' + lan.crontab.backup_to + '</div>\
+      <div class="dropdown planBackupTo pull-left mr20 serverDiskToLocal" style="display:' + (type === 'logs' ? 'none' : 'inline-block') + '">\
+        <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:auto;">\
+          <b val="localhost">' + lan.crontab.disk + '</b> <span class="caret"></span>\
+        </button>\
+        <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
+          <li>\
+            <a role="menuitem" tabindex="-1" href="javascript:;" value="localhost">' + lan.crontab.disk + '</a>\
+          </li>\
+          ' + orderOpt + '\
+        </ul>\
+      </div>\
+      <div class="textname pull-left mr20">' + lan.crontab.save_new + '</div>\
+      <div class="plan_hms pull-left mr20 bt-input-text">\
+        <span>\
+          <input type="number" name="save" id="save" value="' + save_num + '" maxlength="4" max="100" min="1" />\
+        </span>\
+      </div>\
+      <div class="textname pull-left local-backup-line" style="display: none;">\
+        <i class="form-checkbox active mr5"></i>\
+        <input type="checkbox" class="form—checkbox-input hide mr10" name="save_local" checked />\
+        <span class="form-checkbox-label">Keep local backup</span>\
+      </div>\
+    ';
+    if (type == 'sites' || type == 'path' || type == 'databases') {
+      $.post('/config?action=get_settings2', data, function (rdata) {
+        var messageChannelDom = '';
+        var messageChannelBtnText = '';
+        var channelInitVal = '';
+        if (rdata.user_mail.user_name && rdata.telegram.setup) {
+          messageChannelBtnText = 'ALL';
+          channelInitVal = 'user_name,telegram';
+          messageChannelDom = '\
+            <li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram,mail">ALL</a></li>\
+            <li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li>\
+            <li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>\
+          ';
+        } else if (!rdata.user_mail.user_name && !rdata.telegram.setup) {
+          messageChannelBtnText = 'No Data'
+          channelInitVal = ''
+          messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="">No Data</a></li>';
+        } else if (rdata.telegram.setup) {
+          messageChannelBtnText = 'Telegram'
+          channelInitVal = 'telegram'
+          messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li>';
+        } else if (rdata.user_mail.user_name) {
+          messageChannelBtnText = 'Email'
+          channelInitVal = 'mail'
+          messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="mail">Email</a></li>';
+        }
+        sBody += '\
+          <p class="clearfix plan">\
+            <div class="textname pull-left mr20" style="width: 120px;text-align: right; font-size: 14px;">Backup reminder</div>\
+            <div class="dropdown planBackupTo pull-left mr20" style="display:' + (type === 'logs' ? 'none' : 'inline-block') + '"  id="notice">\
+              <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:180px;">\
+                <b val="0">No notice</b> <span class="caret"></span>\
+              </button>\
+              <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
+                <li><a role="menuitem" tabindex="-1" href="javascript:;" value="0">No notice</a></li>\
+                <li><a role="menuitem" tabindex="-1" href="javascript:;" value="1">Notify on failure</a></li>\
+              </ul>\
+            </div>\
+            <div class="textname pull-left mr20" style="font-size: 14px;display:none;" id="messageChannelBox">Notification</div>\
+            <div class="dropdown planBackupTo pull-left mr20" style="display:none;" id="notice_channel">\
+              <button class="btn btn-default dropdown-toggle" type="button" id="excode" data-toggle="dropdown" style="width:auto;">\
+                <b val="' + channelInitVal + '">' + messageChannelBtnText + '</b>\
+                <span class="caret"></span>\
+              </button>\
+              <ul class="dropdown-menu" role="menu" aria-labelledby="excode">\
+                ' + messageChannelDom + '\
+              </ul>\
+            </div>\
+            <a role="menuitem" tabindex="-1" href="javascript:;" onclick="MessageChannelSettings()" value="0" style="color: #20a53a;">Set notifications</a>\
+          </p>\
+        ';
+        if (type == 'sites' || type == "path") {
+          sBody += '\
+            <p class="clearfix plan">\
+              <div class="textname pull-left mr20" style="width: 120px;text-align: right; font-size: 14px;">' + lan.crontab.exclusion_rule + '</div>\
               <div class="dropdown planBackupTo pull-left mr20">\
-                  <span><textarea style=" height: 100px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="'+lan.crontab.exclusion_rule_tips+'\ndata/config.php\nstatic/upload\n *.log\n"></textarea></span>\
+                <span>\
+                  <textarea style=" height: 100px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="' + lan.crontab.exclusion_rule_tips + '\ndata/config.php\nstatic/upload\n *.log\n"></textarea>\
+                </span>\
               </div>\
-            </p>';
-            $("#implement").html(sBody);
-            getselectname();
-		}
-		$("#implement").on('click','.dropdown ul li a',function(ev){
-			var sName = $("#sName").attr("val");
-			if(!sName) return;
-			$(".planname input[name='name']").val(sMsg+'['+sName+']');
-		});
-		if(type == "path"){
-			$('.planname input').attr('readonly',false).removeAttr('style');
-		}
-	});
+            </p>\
+          ';
+        }
+        $("#implement").html(sBody);
+        getselectnoticename();
+      });
+    } else {
+      $("#implement").html('<div></div>');
+      sBody += '\
+        <p class="clearfix plan">\
+          <div class="textname pull-left mr20" style="width: 120px;text-align: right; font-size: 14px;">' + lan.crontab.exclusion_rule + '</div>\
+          <div class="dropdown planBackupTo pull-left mr20">\
+            <span>\
+              <textarea style=" height: 100px;width:300px;line-height:22px;" class="bt-input-text" type="text" name="sBody" id="exclude" placeholder="' + lan.crontab.exclusion_rule_tips + '\ndata/config.php\nstatic/upload\n *.log\n"></textarea>\
+            </span>\
+          </div>\
+        </p>\
+      ';
+      $("#implement").html(sBody);
+      getselectname();
+    }
+    $("#implement").on('click', '.dropdown ul li a', function (ev) {
+      var sName = $("#sName").attr("val");
+      if (!sName) return;
+      $(".planname input[name='name']").val(sMsg + '[' + sName + ']');
+    });
+    if (type == "path") {
+      $('.planname input').attr('readonly', false).removeAttr('style');
+    }
+  });
 }
 
 //下拉菜单名称
@@ -1282,7 +1354,7 @@ function modSelSave_local() {
 	}
 }
 
-//下拉菜单名称
+// 下拉菜单名称
 function getselectnoticename(){
   $(".dropdown ul li a").click(function(){
     var txt = $(this).text();
@@ -1294,12 +1366,37 @@ function getselectnoticename(){
     } else {
       $('#modNotice').nextAll().show()
     }
-    if($("#notice").find("button b").attr("val") == '0') {
+    if ($("#notice").find("button b").attr("val") == '0') {
       $('#messageChannelBox').hide()
       $('#notice_channel').hide()
-    }else {
+    } else {
       $('#messageChannelBox').show()
       $('#notice_channel').show()
     }
   });
 }
+
+// 备份到
+$('body').on('click', '.serverDiskToLocal .dropdown-menu a', function () {
+  var value = $(this).attr('value');
+  var $line = $(this).parents('.clearfix.plan').find('.local-backup-line');
+  if (value == 'localhost') {
+    $line.find('input').prop('checked', false);
+    $line.find('.form-checkbox').removeClass('active');
+    $line.hide();
+  } else {
+    $line.find('input').prop('checked', true);
+    $line.find('.form-checkbox').addClass('active');
+    $line.show();
+  }
+});
+
+// 单选框
+$('body').on('click', '.form-checkbox', function () {
+  $(this).toggleClass('active');
+  $(this).next().prop('checked', $(this).hasClass('active'));
+});
+
+$('body').on('click', '.form-checkbox-label', function () {
+  $(this).siblings('.form-checkbox').click();
+});

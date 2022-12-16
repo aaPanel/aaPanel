@@ -28,7 +28,7 @@ class system:
         data = session['config']
         data['webserver'] = public.get_webserver()
         #PHP版本
-        phpVersions = ('52','53','54','55','56','70','71','72','73','74')
+        phpVersions = public.get_php_versions()
         
         data['php'] = []
         
@@ -120,7 +120,7 @@ class system:
                 
 
         tmp['type'] = data['webserver']
-        tmp['version'] = public.readFile(self.setupPath + '/'+data['webserver']+'/version.pl');
+        tmp['version'] = public.xss_version(public.readFile(self.setupPath + '/'+data['webserver']+'/version.pl'))
         tmp['status'] = False
         result = public.ExecShell('/etc/init.d/' + serviceName + ' status')
         if result[0].find('running') != -1: tmp['status'] = True
@@ -128,7 +128,7 @@ class system:
         
         tmp = {}
         vfile = self.setupPath + '/phpmyadmin/version.pl'
-        tmp['version'] = public.readFile(vfile)
+        tmp['version'] = public.xss_version(public.readFile(vfile))
         if tmp['version']: tmp['version'] = tmp['version'].strip()
         tmp['setup'] = os.path.exists(vfile)
         tmp['status'] = pstatus
@@ -141,12 +141,12 @@ class system:
         tmp['setup'] = os.path.exists('/etc/init.d/tomcat')
         tmp['status'] = tmp['setup']
         #if public.ExecShell('ps -aux|grep tomcat|grep -v grep')[0] == "": tmp['status'] = False
-        tmp['version'] = public.readFile(self.setupPath + '/tomcat/version.pl')
+        tmp['version'] = public.xss_version(public.readFile(self.setupPath + '/tomcat/version.pl'))
         data['tomcat'] = tmp
         
         tmp = {}
         tmp['setup'] = os.path.exists(self.setupPath +'/mysql/bin/mysql')
-        tmp['version'] = public.readFile(self.setupPath + '/mysql/version.pl')
+        tmp['version'] = public.xss_version(public.readFile(self.setupPath + '/mysql/version.pl'))
         tmp['status'] = os.path.exists('/tmp/mysql.sock')
         data['mysql'] = tmp
         
@@ -162,7 +162,7 @@ class system:
         
         tmp = {}
         tmp['setup'] = os.path.exists(self.setupPath +'/pure-ftpd/bin/pure-pw')
-        tmp['version'] = public.readFile(self.setupPath + '/pure-ftpd/version.pl')
+        tmp['version'] = public.xss_version(public.readFile(self.setupPath + '/pure-ftpd/version.pl'))
         tmp['status'] = os.path.exists('/var/run/pure-ftpd.pid')
         data['pure-ftpd'] = tmp
         data['panel'] = self.GetPanelInfo()
@@ -281,14 +281,7 @@ class system:
         key = 'sys_version'
         version = cache.get(key)
         if version: return version
-        import public
-        version = public.readFile('/etc/redhat-release')
-        if not version:
-            version = public.readFile('/etc/issue').strip().split("\n")[0].replace('\\n','').replace('\l','').strip()
-        else:
-            version = version.replace('release ','').replace('Linux','').replace('(Core)','').strip()
-        v_info = sys.version_info
-        version = version + '(Py' + str(v_info.major) + '.' + str(v_info.minor) + '.' + str(v_info.micro) + ')'
+        version = public.get_os_version()
         cache.set(key,version,600)
         return version
     
@@ -396,13 +389,17 @@ class system:
             diskInfo.append(tmp)
         return diskInfo
 
-    def GetDiskInfo2(self):
+    def GetDiskInfo2(self, human=True):
+
         #取磁盘分区信息
         key = 'sys_disk'
         diskInfo = cache.get(key)
         if diskInfo: return diskInfo
-        temp = public.ExecShell("df -hT -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
-        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
+        if human:
+            temp = public.ExecShell("df -hT -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev|grep -v overlay")[0]
+        else:
+            temp = public.ExecShell("df -T -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev|grep -v overlay")[0]
+        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev|grep -v overlay")[0]
         temp1 = temp.split('\n')
         tempInodes1 = tempInodes.split('\n')
         diskInfo = []
@@ -432,7 +429,7 @@ class system:
                 arr['inodes'] = [inodes[1],inodes[2],inodes[3],inodes[4]]
                 diskInfo.append(arr)
             except Exception as ex:
-                public.WriteLog('GET_INFO',str(ex))
+                public.write_log_gettext('Get Info',str(ex))
                 continue
         cache.set(key,diskInfo,10)
         return diskInfo
@@ -809,7 +806,7 @@ class system:
             import ajax
             get.status = 'True'
             ajax.ajax().setPHPMyAdmin(get)
-            return public.returnMsg(True,'SYS_EXEC_SUCCESS')
+            return public.return_msg_gettext(True,'Executed successfully!')
 
         if get.name == 'openlitespeed':
             if get.type == 'stop':
@@ -818,12 +815,12 @@ class system:
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl start')
             else:
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart')
-            return public.returnMsg(True,'SYS_EXEC_SUCCESS')
+            return public.return_msg_gettext(True,'Executed successfully!')
 
         #检查httpd配置文件
         if get.name == 'apache' or get.name == 'httpd':
             get.name = 'httpd'
-            if not os.path.exists(self.setupPath+'/apache/bin/apachectl'): return public.returnMsg(True,'SYS_NOT_INSTALL_APACHE')
+            if not os.path.exists(self.setupPath+'/apache/bin/apachectl'): return public.return_msg_gettext(True,'Execution failed, check if Apache installed')
             vhostPath = self.setupPath + '/panel/vhost/apache'
             if not os.path.exists(vhostPath):
                 public.ExecShell('mkdir ' + vhostPath)
@@ -835,8 +832,8 @@ class system:
                 
             result = public.ExecShell('ulimit -n 8192 ; ' + self.setupPath+'/apache/bin/apachectl -t')
             if result[1].find('Syntax OK') == -1:
-                public.WriteLog("TYPE_SOFT",'SYS_EXEC_ERR', (str(result),))
-                return public.returnMsg(False,'SYS_CONF_APACHE_ERR',(result[1].replace("\n",'<br>'),))
+                public.write_log_gettext("Software manager",'Execution failed: {}', (str(result),))
+                return public.return_msg_gettext(False,"Apache rule configuration error: <br><a style='color:red;'>{}</a>",(result[1].replace("\n",'<br>'),))
             
             if get.type == 'restart':
                 public.ExecShell('pkill -9 httpd')
@@ -847,12 +844,14 @@ class system:
         elif get.name == 'nginx':
             vhostPath = self.setupPath + '/panel/vhost/rewrite'
             if not os.path.exists(vhostPath): public.ExecShell('mkdir ' + vhostPath)
+            if not os.path.exists("/dev/shm/nginx-cache/wp"):
+                public.ExecShell('mkdir -p /dev/shm/nginx-cache/wp && chown -R www.www /dev/shm/nginx-cache')
             vhostPath = self.setupPath + '/panel/vhost/nginx'
             if not os.path.exists(vhostPath):
                 public.ExecShell('mkdir ' + vhostPath)
                 public.ExecShell('/etc/init.d/nginx start')
             
-            result = public.ExecShell('ulimit -n 8192 ; nginx -t -c '+self.setupPath+'/nginx/conf/nginx.conf')
+            result = public.ExecShell('ulimit -n 8192 ; '+self.setupPath+'/nginx/sbin/nginx -t -c '+self.setupPath+'/nginx/conf/nginx.conf')
             if result[1].find('perserver') != -1:
                 limit = self.setupPath + '/nginx/conf/nginx.conf'
                 nginxConf = public.readFile(limit)
@@ -860,18 +859,18 @@ class system:
                 nginxConf = nginxConf.replace("#limit_conn_zone $binary_remote_addr zone=perip:10m;",limitConf)
                 public.writeFile(limit,nginxConf)
                 public.ExecShell('/etc/init.d/nginx start')
-                return public.returnMsg(True,'SYS_CONF_NGINX_REP')
+                return public.return_msg_gettext(True,'Configuration file mismatch caused by reinstalling Nginx fixed')
             
             if result[1].find('proxy') != -1:
                 import panelSite
                 panelSite.panelSite().CheckProxy(get)
                 public.ExecShell('/etc/init.d/nginx start')
-                return public.returnMsg(True,'SYS_CONF_NGINX_REP')
+                return public.return_msg_gettext(True,'Configuration file mismatch caused by reinstalling Nginx fixed')
             
             #return result
             if result[1].find('successful') == -1:
-                public.WriteLog("TYPE_SOFT",'SYS_EXEC_ERR', (str(result),))
-                return public.returnMsg(False,'SYS_CONF_NGINX_ERR',(result[1].replace("\n",'<br>'),))
+                public.write_log_gettext("Software manager",'Execution failed: {}', (str(result),))
+                return public.return_msg_gettext(False,"Nginx rule configuration error: <br><a style='color:red;'>{}</a>",(result[1].replace("\n",'<br>'),))
 
             if get.type == 'start': 
                 self.kill_port()
@@ -903,14 +902,14 @@ class system:
             public.ExecShell('pkill -9 nginx && sleep 1')
             public.ExecShell('/etc/init.d/nginx start')
         if get.type != 'test':
-            public.WriteLog("TYPE_SOFT", 'SYS_EXEC_SUCCESS',(execStr,))
-        if len(result[1]) > 1 and get.name != 'pure-ftpd' and get.name != 'redis': return public.returnMsg(False, '<p>Warning message: <p>' + result[1].replace('\n','<br>'))
-        return public.returnMsg(True,'SYS_EXEC_SUCCESS')
+            public.write_log_gettext("Software manager", 'Executed successfully!',(execStr,))
+        if len(result[1]) > 1 and get.name != 'pure-ftpd' and get.name != 'redis': return public.return_msg_gettext(False, '<p>Warning message: <p>' + result[1].replace('\n','<br>'))
+        return public.return_msg_gettext(True,'Executed successfully!')
     
     def RestartServer(self,get):
-        if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK')
+        if not public.IsRestart(): return public.return_msg_gettext(False,'Please run the program when all install tasks finished!')
         public.ExecShell("sync && init 6 &")
-        return public.returnMsg(True,'SYS_REBOOT')
+        return public.return_msg_gettext(True,'Command sent successfully!')
 
     def kill_port(self):
         public.ExecShell('pkill -9 httpd')
@@ -931,7 +930,7 @@ class system:
     def ReWeb(self,get):
         public.ExecShell("/etc/init.d/bt start")
         public.writeFile('data/restart.pl','True')
-        return public.returnMsg(True,'PANEL_WAS_RESTART')
+        return public.return_msg_gettext(True,'Panel restarted')
 
     
     #修复面板

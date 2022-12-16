@@ -44,12 +44,12 @@ import hmac
 try:
     import requests
 except:
-    os.system('pip install requests')
+    os.system('btpip install requests')
     import requests
 try:
     import OpenSSL
 except:
-    os.system('pip install pyopenssl')
+    os.system('btpip install pyOpenSSL')
     import OpenSSL
 import random
 import datetime
@@ -252,7 +252,7 @@ class ACMEclient(object):
         print("Apply for a certificate")
         identifiers = []
         for domain_name in self.all_domain_names:
-            identifiers.append({"type": "model", "value": domain_name})
+            identifiers.append({"type": "dns", "value": domain_name})
         payload = {"identifiers": identifiers}
         url = self.ACME_NEW_ORDER_URL
         apply_for_cert_issuance_response = self.make_signed_acme_request(url=url, payload=payload)
@@ -299,7 +299,7 @@ class ACMEclient(object):
         if wildcard:
             domain = "*." + domain
         for i in res["challenges"]:
-            if i["type"] == "model-01":
+            if i["type"] == "dns-01":
                 dns_challenge = i
         dns_token = dns_challenge["token"]
         dns_challenge_url = dns_challenge["url"]
@@ -806,7 +806,7 @@ class AliyunDns(object):
             msg = public.GetMsg("CANT_FIND_RECORDID"), domain_name
             print(msg)
             return
-        print("start to delete model record, id: ", record_id)
+        print("start to delete dns record, id: ", record_id)
         randomint = random.randint(11111111111111, 99999999999999)
         now = datetime.datetime.utcnow()
         otherStyleTime = now.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -901,7 +901,7 @@ class Dns_com(object):
     def create_dns_record(self, domain_name, domain_dns_value):
         root, _, acme_txt = extract_zone(domain_name)
         print("create_dns_record,", acme_txt, domain_dns_value)
-        result = public.ExecShell('''{} /www/server/panel/plugin/model/dns_main.py add_txt {} {}'''.format(public.get_python_bin(),acme_txt + '.' + root, domain_dns_value))
+        result = public.ExecShell('''{} /www/server/panel/plugin/dns/dns_main.py add_txt {} {}'''.format(public.get_python_bin(),acme_txt + '.' + root, domain_dns_value))
         if result[0].strip() == "False":
             sys.exit(json.dumps({"data": public.GetMsg("BT_DNSRES_ERR")}))
         print("create_dns_record_end")
@@ -909,7 +909,7 @@ class Dns_com(object):
     def delete_dns_record(self, domain_name, domain_dns_value):
         root, _, acme_txt = extract_zone(domain_name)
         print("delete_dns_record start: ", acme_txt, domain_dns_value)
-        public.ExecShell('''{} /www/server/panel/plugin/model/dns_main.py remove_txt {} {}'''.format(public.get_python_bin() ,acme_txt + '.' + root, domain_dns_value))
+        public.ExecShell('''{} /www/server/panel/plugin/dns/dns_main.py remove_txt {} {}'''.format(public.get_python_bin() ,acme_txt + '.' + root, domain_dns_value))
         print("delete_dns_record_success")
 
 
@@ -939,9 +939,9 @@ if __name__ == "__main__":#dns调用验证脚本
         dns_class = AliyunDns(key=key, secret=secret)
     elif dnsapi == "dns_cx":  # CloudXns
         dns_class = CloudxnsDns(key=key, secret=secret)
-    elif dnsapi == "dns_bt":  # model.com
+    elif dnsapi == "dns_bt":  # dns.com
         dns_class = Dns_com()
-    elif dnsapi == "model":  # 手动的
+    elif dnsapi == "dns":  # 手动的
         dns_class = Dns_Manual()
         Manual = 1
     domain_alt_names = data['domain_alt_names'].split(",")

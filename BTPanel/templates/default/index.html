@@ -69,28 +69,31 @@
   }
 </style>
 <div class="main-content">
-    <div class="index-pos-box bgw">
-        <div class="position f12 c6 pull-left" style="background:none;padding-left:15px">
-            <span class="bind-user c4">
-                <a href="javascript:bt.pub.bind_btname();" class="btlink">{{data['lan']['ACCOUNT']}}</a>
-            </span>
-			{% if data['pd'].find("{{data['lan']['ACCOUNT']}}") != -1 %}
-			<span class="bt-dashi">
-			<a class="btlink" href="https://www.bt.cn/invite" target="_blank" style="margin-left:5px">{{data['lan']['INVITATION_REWARD']}}</a>
-			</span>
-			{% endif %}
-            <!--<span class="bind-weixin c4"><a href="javascript:bt.weixin.open_wxapp();" class="btlink">{{data['lan']['WECHAT']}}</a></span>-->
-            <span class="ico-system">{{data['lan']['S1']}}</span><span id="info" style="margin-left:10px;"> {{data['lan']['S2']}}</span>&#12288;&#12288;{{data['lan']['S3']}} <span id="running">{{data['lan']['S4']}}</span>
-        </div>
-        <span class="pull-right f12 c6" style="line-height:52px; margin-right:15px">
-            {{data['pd']|safe}}
-            <span id="btversion" style="margin-right:10px">{{session['version']}}</span>
-            <span id="toUpdate"><a class="btlink" href="javascript:index.check_update();">{{data['lan']['UPDATE']}}</a></span>
-            <span style="margin:0 10px"><a class="btlink" href="javascript:index.re_panel();">{{data['lan']['FIX']}}</a></span>
-            <span style="margin-right:10px"><a class="btlink" href="javascript:index.re_server();">{{data['lan']['RESTART']}}</a></span>
-        </span>
-    </div>
     <div class="container-fluid" style="padding-bottom: 66px;padding-left: 15px;">
+        <div class="index-pos-box bgw mtb15">
+            <div class="position f12 c6 pull-left" style="background:none;padding-left:15px">
+                <span class="bind-user c4">
+                    <a href="javascript:bt.pub.bind_btname();" class="btlink">{{data['lan']['ACCOUNT']}}</a>
+                </span>
+                {% if data['pd'].find("{{data['lan']['ACCOUNT']}}") != -1 %}
+                <span class="bt-dashi">
+                <a class="btlink" href="https://www.bt.cn/invite" target="_blank" style="margin-left:5px">{{data['lan']['INVITATION_REWARD']}}</a>
+                </span>
+                {% endif %}
+                <!--<span class="bind-weixin c4"><a href="javascript:bt.weixin.open_wxapp();" class="btlink">{{data['lan']['WECHAT']}}</a></span>-->
+                <span class="ico-system">{{data['lan']['S1']}}</span><span id="info" style="margin-left:10px;"> {{data['lan']['S2']}}</span>&#12288;&#12288;{{data['lan']['S3']}} <span id="running">{{data['lan']['S4']}}</span>
+            </div>
+            <span class="pull-right f12 c6" style="line-height:52px; margin-right:15px">
+                {{data['pd']|safe}}
+                <span id="btversion" style="margin-right:10px">
+                  <a onclick="index.open_log()" style="cursor: pointer;">{{session['version']}}</a>
+                </span>
+                <span id="toUpdate"><a class="btlink" href="javascript:index.check_update();">{{data['lan']['UPDATE']}}</a></span>
+                <span style="margin:0 10px"><a class="btlink" href="javascript:index.re_panel();">{{data['lan']['FIX']}}</a></span>
+                <span style="margin-right:10px"><a class="btlink" href="javascript:index.re_server();">{{data['lan']['RESTART']}}</a></span>
+            </span>
+        </div>
+        <div class="col-xs-24 col-sm-24 col-md-24" id="home-recommend"></div>
         <div class="danger-tips">
             <div class="important-title" id="messageError" style="display: none; margin-top:15px"></div>
         </div>
@@ -249,7 +252,7 @@
 
 
 {% block scripts %}
-
+{{ super() }} 
 <script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script type="text/javascript" src="/static/js/index.js?f2={{g['version']}}"></script>

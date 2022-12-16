@@ -5,16 +5,16 @@ install_tmp='/tmp/bt_install.pl'
 download_Url=http://download.bt.cn
 Install_Ftp()
 {	
-	echo '正在安装脚本文件...' > $install_tmp
+	echo 'Installing script files...' > $install_tmp
 	wget -O /www/server/panel/script/backup_ftp.py $download_Url/install/lib/script/backup_ftp.py -T 5
 	
-	echo '安装完成' > $install_tmp
+	echo 'The installation is complete' > $install_tmp
 }
 
 Uninstall_Ftp()
 {
 	rm -f /www/server/panel/script/backup_ftp.py
-	echo '卸载完成' > $install_tmp
+	echo 'Uninstall complete' > $install_tmp
 }
 
 

@@ -20,7 +20,7 @@ try:
 except:
     pass
 class panelSSL:
-    __APIURL = 'https://brandnew.aapanel.com/api/user'
+    __APIURL = 'https://www.aapanel.com/api/user'
     __APIURL2 = 'http://www.bt.cn/api/Cert'
     __UPATH = 'data/userInfo.json'
     __PUBKEY = 'data/public.key'
@@ -65,13 +65,13 @@ class panelSSL:
                 userinfo['token'] = result['res']['access_token']
                 public.writeFile(self.__UPATH, json.dumps(userinfo))
                 session['focre_cloud'] = True
-                return public.returnMsg(True,'Bind successfully')
+                return public.return_msg_gettext(True,'Bind successfully')
             else:
-                return public.returnMsg(False,'Invalid username or email or password! please check and try again!')
+                return public.return_msg_gettext(False,'Invalid username or email or password! please check and try again!')
         except Exception as ex:
             bind = 'data/bind.pl'
             if os.path.exists(bind): os.remove(bind)
-            return public.returnMsg(False, '%s<br>%s' % (public.GetMsg("CONNECT_ERR"), str(rtmp)))
+            return public.return_msg_gettext(False, '%s<br>%s' % (public.get_msg_gettext('Failed to connect server!'), str(rtmp)))
 
     #删除Token
     def DelToken(self,get):
@@ -83,7 +83,7 @@ class panelSSL:
             public.ExecShell("rm -f " + self.__UPATH)
         session['focre_cloud'] = True
 
-        return public.returnMsg(True,"SSL_BTUSER_UN")
+        return public.return_msg_gettext(True,'Unbound!')
     
     #获取用户信息
     def GetUserInfo(self,get):
@@ -93,19 +93,19 @@ class panelSSL:
                 userTmp = {}
                 userTmp['username'] = self.__userInfo['email'][0:3]+'****'+self.__userInfo['email'][-4:]
                 result['status'] = True
-                result['msg'] = public.getMsg('SSL_GET_SUCCESS')
+                result['msg'] = public.get_msg_gettext('Got successfully!')
                 result['data'] = userTmp
             else:
                 userTmp = {}
-                userTmp['username'] = public.getMsg('SSL_NOT_BTUSER')
+                userTmp['username'] = public.get_msg_gettext('Please bind your account!')
                 result['status'] = False
-                result['msg'] = public.getMsg('SSL_NOT_BTUSER')
+                result['msg'] = public.get_msg_gettext('Please bind your account!')
                 result['data'] = userTmp
         except:
             userTmp = {}
-            userTmp['username'] = public.getMsg('SSL_NOT_BTUSER')
+            userTmp['username'] = public.get_msg_gettext('Please bind your account!')
             result['status'] = False
-            result['msg'] = public.getMsg('SSL_NOT_BTUSER')
+            result['msg'] = public.get_msg_gettext('Please bind your account!')
             result['data'] = userTmp
         return result
 
@@ -153,7 +153,7 @@ class panelSSL:
         import panelSite
         panelSite.panelSite().SetSSLConf(get)
         public.serviceReload()
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     #生成商业证书支付订单
     def apply_order_pay(self,args):
@@ -311,7 +311,7 @@ class panelSSL:
         verify_info['paths'] = []
         verify_info['hosts'] = []
         if verify_info['data']['application']['status'] == 'ongoing':
-            return public.returnMsg(False,'订单出现问题，CA正在人工验证，若24小时内依然出现此提示，请联系宝塔')
+            return public.return_msg_gettext(False,'订单出现问题，CA正在人工验证，若24小时内依然出现此提示，请联系宝塔')
         for dinfo in verify_info['data']['dcvList']:
             is_https = dinfo['dcvMethod'] == 'HTTPS_CSR_HASH'
             if is_https:
@@ -356,7 +356,7 @@ class panelSSL:
     #发送请求
     def request(self,dname):
         self.__PDATA['data'] = json.dumps(self.__PDATA['data'])
-        result= public.returnMsg(False,'The request failed, please try again later!')
+        result= public.return_msg_gettext(False,'The request failed, please try again later!')
         try:
             result = public.httpPost(self.__APIURL2 + '/' + dname,self.__PDATA)
             result = json.loads(result)
@@ -378,7 +378,7 @@ class panelSSL:
         rs = public.httpPost(self.__APIURL + '/GetSSLList',self.__PDATA)
         try:
             result = json.loads(rs)
-        except: return public.returnMsg(False,'SSL_ORDER_GET_FAILED')
+        except: return public.return_msg_gettext(False,'Failed to get, please try again later!')
 
         result['data'] = self.En_Code(result['data'])
         for i in range(len(result['data'])):
@@ -408,11 +408,11 @@ class panelSSL:
         #当申请二级域名为www时，检测主域名是否绑定到同一网站
         if get.domain[:4] == 'www.':
             if not public.M('domain').where('name=? AND pid=?',(get.domain[4:],get.id)).count():
-                return public.returnMsg(False,"Apply for [%s] certificate to verify [%s] Please bind [%s] and resolve to the site!" % (get.domain,get.domain[4:],get.domain[4:]))
+                return public.return_msg_gettext(False,"Apply for [{}] certificate to verify [{}] Please bind [{}] and resolve to the site!",(get.domain,get.domain[4:],get.domain[4:]))
 
         #检测是否开启强制HTTPS
         if not self.CheckForceHTTPS(get.siteName):
-            return public.returnMsg(False,'SSL_ORDER_HTTPS_ERR')
+            return public.return_msg_gettext(False,'[Force HTTPS] is enabled on the current website, please turn off this function before applying for an SSL certificate!')
 
         #获取真实网站运行目录
         runPath = self.GetRunPath(get)
@@ -423,19 +423,19 @@ class panelSSL:
         authfile = get.path + '/.well-known/pki-validation/fileauth.txt'
         if not self.CheckDomain(get):
             if not os.path.exists(authfile):
-                return public.returnMsg(False,'CANT_CREATE',(authfile,))
+                return public.return_msg_gettext(False,'Cannot create [{}]',(authfile,))
             else:
                 msg = '''{err_msg}<br><a class="btlink" href="{c_url}" target="_blank">{c_url}</a> <br><br>
                 <p></b>{err_msg1}</b></p>
                 {err_msg2}<br>
                 {err_msg3}<br>
                 {err_msg4}'''.format(c_url = self._check_url,
-                                    err_msg=public.getMsg('SSL_ERR_MSG'),
-                                    err_msg1=public.getMsg('SSL_ERR_MSG1'),
-                                    err_msg2=public.getMsg('SSL_ERR_MSG2'),
-                                    err_msg3=public.getMsg('SSL_ERR_MSG3'),
-                                    err_msg4=public.getMsg('SSL_ERR_MSG4'))
-                return public.returnMsg(False,msg)
+                                    err_msg=public.get_msg_gettext('Cannot access verification file correctly'),
+                                    err_msg1=public.get_msg_gettext('Possible reason:'),
+                                    err_msg2=public.get_msg_gettext('1. The resolution is not correct, or the resolution is not effective [Please resolve the domain name correctly, or wait for the resolution to take effect and try again]'),
+                                    err_msg3=public.get_msg_gettext('2. Check if there is 301/302 redirection set up [please temporarily turn off the redirection related configuration]'),
+                                    err_msg4=public.get_msg_gettext('3. Check whether the website is set to force HTTPS [please turn off the force HTTPS function temporarily]'))
+                return public.return_msg_gettext(False,msg)
         
         action = 'GetDVSSL'
         if hasattr(get,'partnerOrderId'):
@@ -523,7 +523,7 @@ class panelSSL:
             try:
                 sslInfo = json.loads(tmp)
             except:
-                return public.returnMsg(False,tmp)
+                return public.return_msg_gettext(False,tmp)
 
             sslInfo['data'] = self.En_Code(sslInfo['data'])
             try:
@@ -531,13 +531,13 @@ class panelSSL:
                 if not os.path.exists(spath): public.ExecShell("mkdir -p '" + spath + "'")
                 public.writeFile(spath + '/fileauth.txt',sslInfo['data']['authValue'])
             except:
-                return public.returnMsg(False,'SSL_CHECK_WRITE_ERR')
+                return public.return_msg_gettext(False,'Verification error!')
         try:
             result = json.loads(public.httpPost(self.__APIURL + '/Completed',self.__PDATA))
             if 'data' in result:
                 result['data'] = self.En_Code(result['data'])
         except:
-            result = public.returnMsg(True,'CHECKING')
+            result = public.return_msg_gettext(True,'Checking...')
         n = 0;
         my_ok = False
         while True:
@@ -598,9 +598,9 @@ class panelSSL:
                 import panelSite
                 panelSite.panelSite().SetSSLConf(get)
                 public.serviceReload()
-                return public.returnMsg(True,'SET_SUCCESS')
+                return public.return_msg_gettext(True,'Setup successfully!')
             except:
-                return public.returnMsg(False,'SET_ERROR')
+                return public.return_msg_gettext(False,'Failed to set')
         result['data'] = self.En_Code(result['data'])
         return result
     
@@ -632,9 +632,9 @@ class panelSSL:
             import panelSite
             panelSite.panelSite().SetSSLConf(get)
             public.serviceReload()
-            return public.returnMsg(True,'SET_SUCCESS')
+            return public.return_msg_gettext(True,'Setup successfully!')
         except Exception as ex:
-            return public.returnMsg(False,'SET_ERROR,' + public.get_error_info())
+            return public.return_msg_gettext(False,'Failed to set \n{}',(public.get_error_info(),))
     
     #获取证书列表
     def GetCertList(self,get):
@@ -657,17 +657,17 @@ class panelSSL:
     def RemoveCert(self,get):
         try:
             vpath = '/www/server/panel/vhost/ssl/' + get.certName.replace("*.",'')
-            if not os.path.exists(vpath): return public.returnMsg(False,'CRET_NOT_EXIST')
+            if not os.path.exists(vpath): return public.return_msg_gettext(False,'Certificate does NOT exist!')
             public.ExecShell("rm -rf " + vpath)
-            return public.returnMsg(True,'CRET_DEL')
+            return public.return_msg_gettext(True,'Certificate deleted!')
         except:
-            return public.returnMsg(False,'CRET_DEL_FAIL')
+            return public.return_msg_gettext(False,'Failed to delete!')
     
     #保存证书
     def SaveCert(self,get):
         try:
             certInfo = self.GetCertName(get)
-            if not certInfo: return public.returnMsg(False,'CRET_RESOLVE_FAIL')
+            if not certInfo: return public.return_msg_gettext(False,'Certificate parsing failed')
             vpath = '/www/server/panel/vhost/ssl/' + certInfo['subject']
             vpath=vpath.replace("*.",'')
             if not os.path.exists(vpath):
@@ -675,14 +675,14 @@ class panelSSL:
             public.writeFile(vpath + '/privkey.pem',public.readFile(get.keyPath))
             public.writeFile(vpath + '/fullchain.pem',public.readFile(get.certPath))
             public.writeFile(vpath + '/info.json',json.dumps(certInfo))
-            return public.returnMsg(True,'CRET_SAVE_SUSSESS')
+            return public.return_msg_gettext(True,'Successfully saved certificate!')
         except:
-            return public.returnMsg(False,'CRET_SAVE_FAIL')
+            return public.return_msg_gettext(False,'Failed to save certificate!')
     
     #读取证书
     def GetCert(self,get):
         vpath = os.path.join('/www/server/panel/vhost/ssl' , get.certName.replace("*.",''))
-        if not os.path.exists(vpath): return public.returnMsg(False,'CRET_NOT_EXIST')
+        if not os.path.exists(vpath): return public.return_msg_gettext(False,'Certificate does NOT exist!')
         data = {}
         data['privkey'] = public.readFile(vpath + '/privkey.pem')
         data['fullchain'] = public.readFile(vpath + '/fullchain.pem')
@@ -822,13 +822,13 @@ class panelSSL:
     # 手动一键续签
     def renew_lets_ssl(self, get):
         if not os.path.exists('vhost/cert/crontab.json'):
-            return public.returnMsg(False,'SSL_RENEW_ERR')
+            return public.return_msg_gettext(False,'There are currently no certificates to renew!')
 
         old_list = json.loads(public.ReadFile("vhost/cert/crontab.json"))
         cron_list = old_list
         if hasattr(get, 'siteName'):
             if not get.siteName in old_list:
-                return public.returnMsg(False,'WEBSITE_SSL_RENEW_ERR')
+                return public.return_msg_gettext(False,'There is no certificate that can be renewed on the current website..')
             cron_list = {}
             cron_list[get.siteName] = old_list[get.siteName]
 

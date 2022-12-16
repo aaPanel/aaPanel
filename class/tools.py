@@ -65,8 +65,8 @@ def set_panel_pwd(password,ncli = False):
     result = sql.table('users').where('id=?',(1,)).setField('password',public.md5(password))
     username = sql.table('users').where('id=?',(1,)).getField('username')
     if ncli:
-        print("|-%s: " % public.GetMsg("USER_NAME") + username)
-        print("|-%s: " % public.GetMsg("NEW_PASS") + password)
+        print("|-%s: " % public.get_msg_gettext('Username') + username)
+        print("|-%s: " % public.get_msg_gettext('New password') + password)
     else:
         print(username)
 
@@ -107,28 +107,28 @@ echo '---------------------------------------------------------------------'
 #封装
 def PackagePanel():
     print('========================================================')
-    print('|-%s...' % public.GetMsg("CLEARING_LOG")),
-    public.M('logs').where('id!=?',(0,)).delete();
+    print('|-%s...' % public.get_msg_gettext('Clearing log info')),
+    public.M('logs').where('id!=?',(0,)).delete()
     print('\t\t\033[1;32m[done]\033[0m')
-    print('|-%s...' % public.GetMsg("CLEARING_TASK_HISTORY")),
-    public.M('tasks').where('id!=?',(0,)).delete();
+    print('|-%s...' % public.get_msg_gettext('Clearing task history')),
+    public.M('tasks').where('id!=?',(0,)).delete()
     print('\t\t\033[1;32m[done]\033[0m')
-    print('|-%s...' % public.GetMsg("CLEARING_NET_MO")),
-    public.M('network').dbfile('system').where('id!=?',(0,)).delete();
+    print('|-%s...' % public.get_msg_gettext('Clearing network monitoring records')),
+    public.M('network').dbfile('system').where('id!=?',(0,)).delete()
     print('\t\033[1;32m[done]\033[0m')
-    print('|-%s...' % public.GetMsg("CLEARING_CPU_MO")),
-    public.M('cpuio').dbfile('system').where('id!=?',(0,)).delete();
+    print('|-%s...' % public.get_msg_gettext('Clearing CPU monitoring records')),
+    public.M('cpuio').dbfile('system').where('id!=?',(0,)).delete()
     print('\t\033[1;32m[done]\033[0m')
-    print('|-%s...' % public.GetMsg("CLEARING_DISK_MO")),
-    public.M('diskio').dbfile('system').where('id!=?',(0,)).delete();
+    print('|-%s...' % public.get_msg_gettext('Clearing disk monitoring records')),
+    public.M('diskio').dbfile('system').where('id!=?',(0,)).delete()
     print('\t\033[1;32m[done]\033[0m')
-    print('|-%s...' % public.GetMsg('CLEARING_IP')),
+    print('|-%s...' % public.get_msg_gettext('Clearing IP info')),
     os.system('rm -f /www/server/panel/data/iplist.txt')
     os.system('rm -f /www/server/panel/data/address.pl')
     os.system('rm -f /www/server/panel/data/*.login')
     os.system('rm -f /www/server/panel/data/domain.conf')
     print('\t\033[1;32m[done]\033[0m')
-    print('|-%s...' % public.GetMsg("CLEARING_SYS_HISTORY")),
+    print('|-%s...' % public.get_msg_gettext('Clearing system history')),
     command = '''cat /dev/null > /var/log/boot.log
 cat /dev/null > /var/log/btmp
 cat /dev/null > /var/log/cron
@@ -154,8 +154,8 @@ history -c
     port = public.readFile('data/port.pl').strip();
     public.M('config').where("id=?",('1',)).setField('status',0);
     print('========================================================')
-    print('\033[1;32m|-%s\033[0m' % public.GetMsg("PANEL_TIPS"))
-    print('\033[1;41m|-%s: http://{SERVERIP}:' % public.GetMsg("PANEL_INIT_ADD")+port+'/install\033[0m')
+    print('\033[1;32m|-%s\033[0m' % public.get_msg_gettext('The panel is packaged successfully. Please do NOT log in to the panel to do any other operations!'))
+    print('\033[1;41m|-%s: http://{SERVERIP}:' % public.get_msg_gettext('Panel initialization address')+port+'/install\033[0m')
 
 #清空正在执行的任务
 def CloseTask():
@@ -163,7 +163,7 @@ def CloseTask():
     os.system("kill `ps -ef |grep 'python panelSafe.pyc'|grep -v grep|grep -v panelExec|awk '{print $2}'`");
     os.system("kill `ps -ef |grep 'install_soft.sh'|grep -v grep|grep -v panelExec|awk '{print $2}'`");
     os.system('/etc/init.d/bt restart');
-    print(public.GetMsg("CLEAR_TASK",(int(ncount),)))
+    print(public.get_msg_gettext('Successfully cleared {} tasks!',(int(ncount),)))
     
 #自签证书
 def CreateSSL():
@@ -217,7 +217,7 @@ def ClearSystem():
     count += tmp_count;
     total += tmp_total;
     print('=======================================================================')
-    print('\033[1;32m|-%s\033[0m' % public.GetMsg("CLEAR_RUBBISH",(str(count),ToSize(total))));
+    print('\033[1;32m|-%s\033[0m' % public.get_msg_gettext('System rubbish cleared, totally deleted [{}] files, freed disk space [{}]',(str(count),ToSize(total))));
 
 #清理邮件日志
 def ClearMail():
@@ -242,11 +242,11 @@ def ClearMail():
                 os.remove(filename)
             print('\t\033[1;32m[OK]\033[0m')
             num += 1
-        print(public.GetMsg("CLEAR_RUBBISH1",(dpath,str(num),ToSize(size))))
+        print(public.get_msg_gettext('|-Cleared [{}], deleted [{}] files, freed disk space [{}]',(dpath,str(num),ToSize(size))))
         total += size;
         count += num;
     print('=======================================================================')
-    print(public.GetMsg('CLEAR_RUBBISH2',(str(count),ToSize(total))))
+    print(public.get_msg_gettext('|-Spool cleared, deleted [{}] files, freed disk space [{}]',(str(count),ToSize(total))))
     return total,count
 
 #清理php_session文件
@@ -254,7 +254,7 @@ def ClearSession():
     spath = '/tmp'
     total = count = 0;
     import shutil
-    print(public.GetMsg("CLEAR_PHP_SESSION"));
+    print(public.get_msg_gettext('|-Clearing PHP Session ...'));
     for d in os.listdir(spath):
         if d.find('sess_') == -1: continue;
         filename = spath + '/' + d;
@@ -267,7 +267,7 @@ def ClearSession():
             os.remove(filename)
         print('\t\033[1;32m[OK]\033[0m')
         count += 1;
-    print(public.GetMsg("CLEAR_PHP_SESSION1",(str(count),ToSize(total))))
+    print(public.get_msg_gettext('|-PHP session cleared, deleted [{}] files, freed disk space [{}]',(str(count),ToSize(total))))
     return total,count
 
 #清空回收站
@@ -288,7 +288,7 @@ def ClearOther():
                  ]
     
     total = count = 0;
-    print(public.GetMsg('CLEAR_RUBBISH3'));
+    print(public.get_msg_gettext('|-Clearing up temporary files and site logs...'));
     for c in clearPath:
         for d in os.listdir(c['path']):
             if d.find(c['find']) == -1: continue;
@@ -304,7 +304,7 @@ def ClearOther():
             count += 1;
     public.serviceReload();
     os.system('sleep 1 && /etc/init.d/bt reload > /dev/null &');
-    print(public.GetMsg("CLEAR_RUBBISH4",(str(count),ToSize(total))))
+    print(public.get_msg_gettext('|-Temporary files and site logs cleared, deleted [{}] files, freed disk space [{}]',(str(count),ToSize(total))))
     return total,count
 
 #关闭普通日志
@@ -336,14 +336,14 @@ def set_panel_username(username = None):
     sql = db.Sql()
     if username:
         if len(username) < 5:
-            print(public.GetMsg("USER_NAME_LEN_ERR"))
+            print(public.get_msg_gettext('|-ERROR, username cannot be less than 5 characters'))
             return;
         if username in ['admin','root']:
-            print(public.GetMsg("EASY_NAME"))
+            print(public.get_msg_gettext('|-ERROR, cannot use too simple username'))
             return;
 
         sql.table('users').where('id=?',(1,)).setField('username',username)
-        print(public.GetMsg("NEW_NAME",(username,)))
+        print(public.get_msg_gettext('|-New username: {}',(username,)))
         return;
     
     username = sql.table('users').where('id=?',(1,)).getField('username')
@@ -365,14 +365,14 @@ def setup_idc():
         pFile = panelPath + '/static/language/Simplified_Chinese/public.json'
         pInfo = json.loads(public.readFile(pFile))
         pInfo['BRAND'] = idcInfo['msg']['name']
-        pInfo['PRODUCT'] = public.GetMsg("WITH_BT_CUSTOM_EDITION")
+        pInfo['PRODUCT'] = public.get_msg_gettext('Customized edition with aaPanel')
         pInfo['NANE'] = pInfo['BRAND'] + pInfo['PRODUCT']
         public.writeFile(pFile,json.dumps(pInfo))
         tFile = panelPath + '/data/title.pl'
-        titleNew = (pInfo['BRAND'] + public.GetMsg("PANEL")).encode('utf-8')
+        titleNew = (pInfo['BRAND'] + public.get_msg_gettext('Failed，cannot delete current port of the panel!')).encode('utf-8')
         if os.path.exists(tFile):
             title = public.readFile(tFile).strip()
-            if title == public.GetMsg("NAME") or title == '': public.writeFile(tFile,titleNew)
+            if title == public.get_msg_gettext('aaPanel') or title == '': public.writeFile(tFile,titleNew)
         else:
             public.writeFile(tFile,titleNew)
         return True
@@ -381,48 +381,48 @@ def setup_idc():
 #将插件升级到6.0
 def update_to6():
     print("====================================================")
-    print(public.GetMsg("PLUG_UPDATEING"))
+    print(public.get_msg_gettext('Updating plugin...'))
     print("====================================================")
     download_address = public.get_url()
     exlodes = ['gitlab','pm2','mongodb','deployment_jd','logs','docker','beta','btyw']
     for pname in os.listdir('plugin/'):
         if not os.path.isdir('plugin/' + pname): continue
         if pname in exlodes: continue
-        print("|-正在升级【%s】..." % pname),
-        download_url = download_address + '/install/plugin/' + pname + '/install.sh';
+        print(public.get_msg_gettext("|-Upgrading [{}]...",(pname,))),
+        download_url = download_address + '/install/plugin/' + pname + '/install.sh'
         to_file = '/tmp/%s.sh' % pname
-        public.downloadFile(download_url,to_file);
-        os.system('/bin/bash ' + to_file + ' install &> /tmp/plugin_update.log 2>&1');
-        print("    \033[32m[%s]\033[0m" % public.GetMsg("SUCCESS"))
+        public.downloadFile(download_url,to_file)
+        os.system('/bin/bash ' + to_file + ' install &> /tmp/plugin_update.log 2>&1')
+        print("    \033[32m[%s]\033[0m" % public.get_msg_gettext('Login succeeded, loading...'))
     print("====================================================")
-    print("\033[32m%s\033[0m" % public.GetMsg("PLUG_UPDATE_TO_6"))
+    print("\033[32m%s\033[0m" % public.get_msg_gettext('All plugins successfully updated to 6.0 compatible!'))
     print("====================================================")
 
 #命令行菜单
 def bt_cli():
     raw_tip = "==============================================="
-    print("===============%s==================" % public.GetMsg("PANEL_SHELL"))
-    print("(01) %s           (08) %s" % (public.GetMsg("RESTART_PANEL"),public.GetMsg("CHANGE_PANEL_PORT")))
-    print("(02) %s           (09) %s" % (public.GetMsg("STOP_PANEL"),public.GetMsg("CLEAR_PANEL_CACHE")))
-    print("(03) %s           (10) %s" % (public.GetMsg("START_PANEL"),public.GetMsg("CLEAR_PANEL_LIMIT")))
-    print("(04) %s           (11) %s" % (public.GetMsg("RELOAD_PANEL"),public.GetMsg("CANCEL_ENTRY")))
-    print("(05) %s           (12) %s" % (public.GetMsg("CHANGE_PANEL_PASS"),public.GetMsg("CANCEL_DOMAIN_BIND")))
-    print("(06) %s         (13) %s" % (public.GetMsg("CHANGE_PANEL_USER"),public.GetMsg("CANCEL_IP_LIMIT")))
-    print("(07) %s      (14) %s" % (public.GetMsg("CHANGE_MYSQL_PASS_FORCE"),public.GetMsg("GET_PANEL_DEFAULT_MSG")))
-    print("(00) %s                   (15) %s" % (public.GetMsg("CANCEL"),public.GetMsg("CLEAR_SYS_RUBBISH")))
+    print("===============%s==================" % public.get_msg_gettext('aaPanel CLI'))
+    print("(01) %s           (08) %s" % (public.get_msg_gettext('Restart panel'),public.get_msg_gettext('Change panel port')))
+    print("(02) %s           (09) %s" % (public.get_msg_gettext('Stop panel'),public.get_msg_gettext('Clear panel cache')))
+    print("(03) %s           (10) %s" % (public.get_msg_gettext('Restart panel'),public.get_msg_gettext('Clear login limit')))
+    print("(04) %s           (11) %s" % (public.get_msg_gettext('Reload panel'),public.get_msg_gettext('Cancel entrance limit')))
+    print("(05) %s           (12) %s" % (public.get_msg_gettext('Change panel password'),public.get_msg_gettext('Cancel domain binding limit')))
+    print("(06) %s         (13) %s" % (public.get_msg_gettext('Change panel username'),public.get_msg_gettext('Cacel IP access limit')))
+    print("(07) %s      (14) %s" % (public.get_msg_gettext('Forcibly change MySQL root password'),public.get_msg_gettext('View panel default info')))
+    print("(00) %s                   (15) %s" % (public.get_msg_gettext('Task cancelled!'),public.get_msg_gettext('Clear system rubbish')))
     print(raw_tip)
     try:
-        u_input = input(public.GetMsg("INPUT_CMD_NUM"))
+        u_input = input(public.get_msg_gettext('Pls enter command number：'))
         if sys.version_info[0] == 3: u_input = int(u_input)
     except: u_input = 0
     nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
     if not u_input in nums:
         print(raw_tip)
-        print(public.GetMsg("CANCELLED"))
+        print(public.get_msg_gettext('Cacelled!'))
         exit()
 
     print(raw_tip)
-    print(public.GetMsg("EXECUTING",(u_input,)))
+    print(public.get_msg_gettext('Executing ({})...',(u_input,)))
     print(raw_tip)
 
     if u_input == 1:
@@ -435,55 +435,55 @@ def bt_cli():
         os.system("/etc/init.d/bt reload")
     elif u_input == 5:
         if sys.version_info[0] == 2:
-            input_pwd = raw_input(public.GetMsg("INPUT_NEW_PASS"))
+            input_pwd = raw_input(public.get_msg_gettext('Pls enter new password: '))
         else:
-            input_pwd = input(public.GetMsg("INPUT_NEW_PASS"))
+            input_pwd = input(public.get_msg_gettext('Pls enter new password: '))
         set_panel_pwd(input_pwd.strip(),True)
     elif u_input == 6:
         if sys.version_info[0] == 2:
-            input_user = raw_input(public.GetMsg("INPUT_NEW_USER"))
+            input_user = raw_input(public.get_msg_gettext('Pls enter new username(>5 characters): '))
         else:
-            input_user = input(public.GetMsg("INPUT_NEW_USER"))
+            input_user = input(public.get_msg_gettext('Pls enter new username(>5 characters): '))
         set_panel_username(input_user.strip())
     elif u_input == 7:
         if sys.version_info[0] == 2:
-            input_mysql = raw_input(public.GetMsg("INPUT_NEW_MYSQL_PASS"))
+            input_mysql = raw_input(public.get_msg_gettext('Pls enter new MySQL root password：'))
         else:
-            input_mysql = input(public.GetMsg("INPUT_NEW_MYSQL_PASS"))
+            input_mysql = input(public.get_msg_gettext('Pls enter new MySQL root password：'))
         if not input_mysql:
-            print(public.GetMsg("PASS_NOT_EMPTY"))
-            return;
+            print(public.get_msg_gettext('|-ERROR, password cannot be empty'))
+            return
 
         if len(input_mysql) < 8:
-            print(public.GetMsg("PASS_LEN_ERR"))
-            return;
+            print(public.get_msg_gettext('|-ERROR, password cannot be less than 8 characters'))
+            return
 
         import re
         rep = "^[\w@\._]+$"
         if not re.match(rep, input_mysql):
-            print(public.GetMsg("PASS_SPECIAL_CHARACTRES_ERR"))
-            return;
+            print(public.get_msg_gettext('|-ERROR, password cannot contain special characters'))
+            return
         
         print(input_mysql)
         set_mysql_root(input_mysql.strip())
     elif u_input == 8:
-        input_port = input(public.GetMsg("INPUT_NEW_PANEL_PORT"))
+        input_port = input(public.get_msg_gettext('Pls enter new panel port: '))
         if sys.version_info[0] == 3: input_port = int(input_port)
         if not input_port:
-            print(public.GetMsg("INPUT_PANEL_PORT_ERR"))
-            return;
+            print(public.get_msg_gettext('|-ERROR, no valid port entered'))
+            return
         if input_port in [80,443,21,20,22]:
-            print(public.GetMsg("CANT_USE_USUALLY_PORT_ERR"))
-            return;
+            print(public.get_msg_gettext('|-ERROR, pls do NOT use the common port as panel port'))
+            return
         old_port = int(public.readFile('data/port.pl'))
         if old_port == input_port:
-            print(public.GetMsg("NEW_PORT_SAMEAS_OLD"))
-            return;
+            print(public.get_msg_gettext('|-ERROR, new port is the same as current panel port, no need to change'))
+            return
 
         is_exists = public.ExecShell("lsof -i:%s" % input_port)
         if len(is_exists[0]) > 5:
-            print(public.GetMsg("PORT_ALREADY_IN_USE"))
-            return;
+            print(public.get_msg_gettext('|-ERROR, specified port is already in use'))
+            return
 
         public.writeFile('data/port.pl',str(input_port))
         if os.path.exists("/usr/bin/firewall-cmd"):
@@ -507,17 +507,17 @@ def bt_cli():
         auth_file = 'data/admin_path.pl'
         if os.path.exists(auth_file): os.remove(auth_file)
         os.system("/etc/init.d/bt reload")
-        print(public.GetMsg("CHANGE_LIMITED_CANCEL"))
+        print(public.get_msg_gettext('|-Entrance limit cancelled'))
     elif u_input == 12:
         auth_file = 'data/domain.conf'
         if os.path.exists(auth_file): os.remove(auth_file)
         os.system("/etc/init.d/bt reload")
-        print(public.GetMsg("CHANGE_DOMAIN_CANCEL"))
+        print(public.get_msg_gettext('|-Domain limit cancelled'))
     elif u_input == 13:
         auth_file = 'data/limitip.conf'
         if os.path.exists(auth_file): os.remove(auth_file)
         os.system("/etc/init.d/bt reload")
-        print(public.GetMsg("CHANGE_IP_CANCEL"))
+        print(public.get_msg_gettext('|-IP access limit cancelled'))
     elif u_input == 14:
         os.system("/etc/init.d/bt default")
     elif u_input == 15:

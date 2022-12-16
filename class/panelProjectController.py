@@ -29,11 +29,11 @@ class ProjectController:
             }
         '''
         try: # 表单验证
-            if args['mod_name'] in ['base']: return public.return_status_code(1000,'错误的调用!')
+            if args['mod_name'] in ['base']: return public.return_status_code(1000,'wrong call!')
             public.exists_args('def_name,mod_name',args)
-            if args['def_name'].find('__') != -1: return public.return_status_code(1000,'调用的方法名称中不能包含“__”字符')
-            if not re.match(r"^\w+$",args['mod_name']): return public.return_status_code(1000,'调用的模块名称中不能包含\w以外的字符')
-            if not re.match(r"^\w+$",args['def_name']): return public.return_status_code(1000,'调用的方法名称中不能包含\w以外的字符')
+            if args['def_name'].find('__') != -1: return public.return_status_code(1000,'Called method name cannot contain [ __ ] characters')
+            if not re.match(r"^\w+$",args['mod_name']): return public.return_status_code(1000,'The called module name cannot contain characters other than \w')
+            if not re.match(r"^\w+$",args['def_name']): return public.return_status_code(1000,'The called module name cannot contain characters other than \w')
         except:
             return public.get_error_object()
         # 参数处理
@@ -59,7 +59,7 @@ class ProjectController:
             else:
                 pdata = args.data
         else:
-            pdata = public.dict_obj()
+            pdata = args
 
         # 前置HOOK
         hook_index = '{}_{}_LAST'.format(mod_name.upper(),def_name.upper())

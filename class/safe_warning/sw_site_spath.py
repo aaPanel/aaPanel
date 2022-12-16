@@ -35,7 +35,7 @@ def check_run():
         @return tuple (status<bool>,msg<string>)
     '''
     not_uini = []
-    site_list = public.M('sites').where('status=?',(1,)).field('name,path').select()
+    site_list = public.M('sites').where('status=? AND project_type=?',(1,'PHP')).field('name,path').select()
     for s in site_list:
         path = get_site_run_path(s['name'],s['path'])
         user_ini = path + '/.user.ini'

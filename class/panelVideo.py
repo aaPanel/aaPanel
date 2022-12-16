@@ -18,14 +18,8 @@ from BTPanel import Response
 
 def get_buff_size(file_size):
     buff_size = 2097152
-    if file_size < 104857600:
-        buff_size = 2097152
-    elif file_size < 524288000:
+    if file_size > 1073741824:
         buff_size = 4194304
-    elif file_size < 1073741824:
-        buff_size = 8388608
-    else:
-        buff_size = 10485760
     return buff_size
 
 def partial_response(path, start, end=None):

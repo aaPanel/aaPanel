@@ -33,13 +33,27 @@ class panelApi:
 
     def login_for_app(self,get):
         from BTPanel import cache
+        import uuid
         tid = get.tid
-        if(len(tid) != 12): return public.returnMsg(False,'Invalid login key')
+        if(len(tid) != 32): return public.return_msg_gettext(False,'Invalid login key1')
         session_id = cache.get(tid)
-        if not session_id: return public.returnMsg(False,'The specified key does not exist or has expired')
-        if(len(session_id) != 64): return public.returnMsg(False,'Invalid login key')
-        cache.set(session_id,'True',120)
-        return public.returnMsg(True,'Scan code successfully, log in!')
+        if not session_id: return public.return_msg_gettext(False,'The specified key does not exist or has expired1')
+        if(len(session_id) != 64): return public.return_msg_gettext(False,'Invalid login key2')
+        try:
+            if not os.path.exists('/www/server/panel/data/app_login_check.pl'):return public.returnMsg(False,'Invalid login key3')
+            key, init_time, tid2, status = public.readFile('/www/server/panel/data/app_login_check.pl').split(':')
+            if session_id!=key:return public.returnMsg(False,'Invalid login key4')
+            if tid != tid2: return public.returnMsg(False, 'The specified key does not exist or has expired5')
+            if time.time() - float(init_time) > 60:
+                return public.returnMsg(False, 'QR code validity time expired6')
+            cache.set(session_id,public.md5(uuid.UUID(int=uuid.getnode()).hex),120)
+            import uuid
+            data = key + ':' + init_time + ':' + tid2 + ':' + uuid.UUID(int=uuid.getnode()).hex[-12:]
+            public.writeFile("/www/server/panel/data/app_login_check.pl", data)
+            return public.return_msg_gettext(True,'Scan code successfully, log in!')
+        except:
+            os.remove("/www/server/panel/data/app_login_check.pl")
+            return public.return_msg_gettext(False, 'Invalid login key')
 
     def get_api_config(self):
         tmp = public.ReadFile(self.save_path)
@@ -81,11 +95,11 @@ class panelApi:
 
         bind = self.get_bind_token(args.bind_token)
         if bind['token'] != args.bind_token:
-            return 'The current QR code has expired, please refresh the page and rescan the code!'
+            return public.get_msg_gettext('The current QR code has expired, please refresh the page and rescan the code!')
 
         apps = self.get_apps()
         if len(apps) >= self.max_bind:
-            return 'This server is bound to a maximum of {} devices, which has reached the limit!'.format(self.max_bind)
+            return public.get_msg_gettext('This server is bound to a maximum of {} devices, which has reached the limit!',(self.max_bind,))
 
         bind['status'] = 1
         bind['brand'] = args.client_brand
@@ -94,8 +108,8 @@ class panelApi:
         return 1
 
     def get_bind_status(self,args):
-        if not public.cache_get("get_bind_status"):
-            public.cache_set("get_bind_status",1,60)
+        if not public.cache_get(public.Md5(os.uname().version)):
+            public.cache_set(public.Md5(os.uname().version),1,60)
         bind = self.get_bind_token(args.bind_token)
         return bind
 
@@ -133,10 +147,10 @@ class panelApi:
     def add_bind_app(self,args):
         bind = self.get_bind_token(args.bind_token)
         if bind['status'] == 0:
-            return public.returnMsg(False,'Failed verification!')
+            return public.return_msg_gettext(False,'Failed verification!')
         apps = self.get_apps()
         if len(apps) >= self.max_bind:
-            return public.returnMsg(False,'A server allows up to {} device bindings!'.format(self.max_bind))
+            return public.return_msg_gettext(False,'A server allows up to {} device bindings!'.format(self.max_bind))
 
         args.bind_app = args.bind_token
         self.remove_bind_app(args)
@@ -144,7 +158,7 @@ class panelApi:
         data['apps'].append(bind)
         self.save_api_config(data)
         self.remove_bind_token(args.bind_token)
-        return public.returnMsg(True,'Bind successfully!')
+        return public.return_msg_gettext(True,'Bind successfully!')
 
     def remove_bind_token(self,bind_token):
         data = self.get_api_config()
@@ -168,7 +182,7 @@ class panelApi:
         s_file = '/dev/shm/{}'.format(args.bind_app)
         if os.path.exists(s_file):
             os.remove(s_file)
-        return public.returnMsg(True,'successfully deleted!')
+        return public.return_msg_gettext(True,'Successfully deleted!')
 
     def get_bind_token(self,token = None):
         data = self.get_api_config()
@@ -203,13 +217,13 @@ class panelApi:
 
 
     def set_token(self,get):
-        if 'request_token' in get: return public.returnMsg(False,'Cannot configure API through API interface')
+        if 'request_token' in get: return public.return_msg_gettext(False,'Cannot configure API through API interface')
         data = self.get_api_config()
         if get.t_type == '1':
             token = public.GetRandomString(32)
             data['token'] = public.md5(token)
             data['token_crypt'] = public.en_crypt(data['token'],token).decode('utf-8')
-            public.WriteLog('SET_API','Regenerate API-Token')
+            public.write_log_gettext('API configuration','Regenerate API-Token')
         elif get.t_type == '2':
             data['open'] = not data['open']
             stats = {True:'Open',False:'Close'}
@@ -217,19 +231,19 @@ class panelApi:
                 token = public.GetRandomString(32)
                 data['token'] = public.md5(token)
                 data['token_crypt'] = public.en_crypt(data['token'],token).decode('utf-8')
-            public.WriteLog('SET_API','%s API interface' % stats[data['open']])
+            public.write_log_gettext('API configuration','{} API interface',(stats[data['open']],))
             token = stats[data['open']] + ' success!'
         elif get.t_type == '3':
             data['limit_addr'] = get.limit_addr.split('\n')
-            public.WriteLog('SET_API','Change IP limit to [%s]' % get.limit_addr)
+            public.write_log_gettext('API configuration','Change IP limit to [{}]',(get.limit_addr,))
             token ='Saved successfully!'
         self.save_api_config(data)
-        return public.returnMsg(True,token)
+        return public.return_msg_gettext(True,token)
 
     def get_tmp_token(self,get):
-        if not 'request_token' in get: return public.returnMsg(False,'Temporary keys can only be obtained through the API interface')
+        if not 'request_token' in get: return public.return_msg_gettext(False,'Temporary keys can only be obtained through the API interface')
         data = self.get_api_config()
         data['tmp_token'] = public.GetRandomString(64)
         data['tmp_time'] = time.time()
         self.save_api_config(data)
-        return public.returnMsg(True,data['tmp_token'])
+        return public.return_msg_gettext(True,data['tmp_token'])

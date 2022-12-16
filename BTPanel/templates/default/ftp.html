@@ -1,195 +1,387 @@
 {% extends "layout.html" %}
-
 {% block content %}
 <style>
-    #ftpData .webPath,#ftpData .webNote,#ftpData .ftpStatus{
-        white-space: nowrap;
-        display: inline-block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: auto;
-    }
+  #ftpData .webPath,#ftpData .webNote,#ftpData .ftpStatus{
+    white-space: nowrap;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: auto;
+  }
 </style>
 <div class="main-content pb55">
-    <div class="container-fluid">
-        <div class="pos-box bgw mtb15">
-            <div class="position f14 c9 pull-left">
-                <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
-            </div>
-            <div class="search pull-right">
-                <form target="hid" onsubmit='ftp.get_list(1,$("#SearchValue").prop("value"))'>
-                    <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="{{data['lan']['SEARCH']}}" />
-                    <button type="button" class="ser-sub pull-left" onclick='ftp.get_list(1,$("#SearchValue").prop("value"))'></button>
-                </form>
-                <iframe name='hid' id="hid" style="display:none"></iframe>
-            </div>
+  <div class="container-fluid">
+    <div class="pos-box bgw mtb15">
+      <!-- <div class="position f14 c9 pull-left">
+        <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
+      </div>
+      <div class="search pull-right">
+        <form target="hid" onsubmit='ftp.get_list(1,$("#SearchValue").prop("value"))'>
+          <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="{{data['lan']['SEARCH']}}" />
+          <button type="button" class="ser-sub pull-left" onclick='ftp.get_list(1,$("#SearchValue").prop("value"))'></button>
+        </form>
+        <iframe name='hid' id="hid" style="display:none"></iframe>
+      </div> -->
+      <div class="pos-box bgw mtb15">
+        <div class="tab-list" id="cutMode">
+          <div class="tabs-item active">{{data['lan']['H2']}}</div>
         </div>
-        <div class="safe bgw mtb15 pd15">
-            <div class="info-title-tips">
-                <p><span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px;"></span>{{data['lan']['PS']}} ftp://{{session['address']}}:{{session['port']}}</p>
-            </div>
-            <button onclick="ftp.add_user()" class="btn btn-success btn-sm" type="button">{{data['lan']['BTN1']}}</button>
-            <button onclick="ftp.set_port()" class="btn btn-default btn-sm" type="button" style="margin-left:5px">{{data['lan']['BTN2']}}</button>
-            <span style="float:right">     
-                <button batch="true" style="float: right;display: none;margin-left:10px;" onclick="ftp.batch_ftp('del');" class="btn btn-default btn-sm">{{data['lan']['BTN3']}}</button>                
-            </span>
-            <div class="divtable mtb10">
-                <div class="tablescroll">
-                    <table id="ftpData" class="table table-hover" style="min-width: 700px;border: 0 none;">                 
-                    </table>
-                </div>
-                <div class="dataTables_paginate paging_bootstrap page">
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+    <div class="safe bgw mtb15 pd15">
+      <div class="info-title-tips">
+        <p><span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px;"></span>{{data['lan']['PS']}} ftp://{{session['address']}}:{{session['port']}}</p>
+      </div>
+      <div id="bt_ftp_table"></div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script type="text/javascript">
-	
-	var ftp = {
-		get_list:function(page,search){
-            if (page == undefined) page = 1;
-            if (!search) search = $("#SearchValue").val();
-			bt.ftp.get_list(page,search,function(rdata){
-				$('.dataTables_paginate').html(rdata.page);
-				var _tab =  bt.render({
-					table:'#ftpData',
-					columns:[
-						{ field:'id',type:'checkbox',width:30},
-						{ field: 'name', title: lan.ftp.add_user,width:'20%'},
-						{ field: 'password',width:'15%', title: lan.ftp.add_pass,templet : function(item){
-							var _html = '<span class="password" data-pw="'+item.password+'">**********</span>';
-							_html += '<span onclick="bt.pub.show_hide_pass(this)" class="glyphicon glyphicon-eye-open cursor pw-ico" style="margin-left:10px"></span>';
-							_html += '<span class="ico-copy cursor btcopy" style="margin-left:10px" title="'+lan.ftp.copy+'" data-pw="'+item.password+'" onclick="bt.pub.copy_pass(\''+item.password+'\')"></span>';
-							return _html;
-						}},
-						{ field: 'status', title: lan.ftp.status,templet:function(item){
-							var _status = '<a class="ftpStatus" href="javascript:;" title="'+lan.ftp.ftp_user+'"';
-							if(item.status=='1'){
-								_status+=' onclick="ftp.stop_user('+item.id+',\''+item.name+'\') " >';
-								_status+='<span style="color:#5CB85C">'+lan.ftp.start+' </span><span style="color:#5CB85C" class="glyphicon glyphicon-play"></span>';
-							}
-							else{
-								_status+=' onclick="ftp.start_user('+item.id+',\''+item.name+'\')"';
-									_status+='<span style="color:red">'+lan.ftp.stop+'  </span><span style="color:red" class="glyphicon glyphicon-pause"></span>';
-							}
-							return _status;
-						},sort:function(){
-							ftp.get_list();
-						}},
-						{ field: 'path', title: lan.ftp.add_path,templet:function(item){
-							var _path = bt.format_path(item.path);							
-							return '<a class="btlink webPath" title="'+lan.ftp.open_path+'" href="javascript:openPath(\''+_path+'\');">'+_path+'</a>';
-						}},
-						{ field: 'ps', title: lan.ftp.add_ps,templet : function(item){
-							return "<span class='c9 input-edit webNote' onclick=\"bt.pub.set_data_by_key('ftps','ps',this)\">"+item.ps+ "</span>";
-						}},
-						{ field: 'opt',width:130, title: lan.ftp.operate,align:'right',templet:function(item){
-							var option = "<a href=\"javascript:;\" class=\"btlink\" onclick=\"ftp.set_password("+item.id+",'"+item.name+"','"+item.password+"')\" title="+lan.ftp.change_pass+">"+lan.ftp.edit_pass+"</a> | ";
-							option += "<a href=\"javascript:;\" class=\"btlink\" onclick=\"ftp.del("+item.id+",'"+item.name+"')\" title="+lan.ftp.del_ftp_title+">"+lan.ftp.del+"</a>";
-							return option;
-						}},
-					],
-					data:rdata.data
-				});
-				ftp.forSize();	
-			});	
-		},
-		batch_ftp:function(type,arr,result){
-			if(arr == undefined){
-				arr = [];
-				result = {count:0,error_list:[]};
-				$('input[type="checkbox"].check:checked').each(function(){
-					var _val = $(this).val();						
-					if(!isNaN(_val)) arr.push($(this).parents('tr').data('item'));
-				})	
-				bt.show_confirm(lan.ftp.del_all,"<a style='color:red;'>"+lan.get('del_all_ftp',[arr.length])+"</a>",function(){							
-					bt.closeAll();			
-					ftp.batch_ftp(type,arr,result);
-				});
-				return;
-			}
-			var item = arr[0];
-			switch(type){
-				case 'del':					
-					if(arr.length<1){
-						ftp.get_list();
-						bt.msg({msg:lan.get('del_all_ftp_ok',[result.count]),icon:1,time:5000});						
-						return;
-					}					
-					bt.ftp.del(item.id,item.name,function(rdata){
-						if(rdata.status){
-							result.count+=1;
-						}else{
-							result.error_list.push({name:item.item,err_msg:rdata.msg});
-						}
-						arr.splice(0,1)
-						ftp.batch_ftp(type,arr,result);
-					})
-					break;
-			}
-		},
-		del:function(id,ftp_username){
-			bt.show_confirm(lan.public.del+"["+ftp_username+"]",lan.get('confirm_del',[ftp_username]),function(){
-				bt.ftp.del(id,ftp_username,function(rdata){
-					if(rdata.status) ftp.get_list();
-					bt.msg(rdata);
-				})
-			})
-		},
-		add_user:function(){
-			bt.ftp.add(function(rdata){
-				if(rdata.status) ftp.get_list();	
-			})
-		},
-		set_password:function(id,name,password){
-			var bs = bt.ftp.set_password(function(rdata){
-				if(rdata.status) ftp.get_list();	
-			})
-			$('.id'+bs).val(id);
-			$('.ftp_username'+bs).val(name);
-			$('.new_password'+bs).val(password);
-		},
-		set_port:function(){
-			var bs = bt.ftp.set_port(function(rdata){
-				if(rdata.status) ftp.get_list();	
-			})
-			$('.port'+bs).val('{{session["port"]}}');
-		},
-		stop_user:function(id,username){
-			bt.confirm({msg:lan.ftp.stop_confirm.replace('{1}',username),title:lan.ftp.stop_title},function(index){			
-				bt.ftp.set_status(id,username,0,function(rdata){
-					if(rdata.status) ftp.get_list();
-				})
-			})
-		},
-		start_user:function(id,username){
-			bt.ftp.set_status(id,username,1,function(rdata){
-				if(rdata.status) ftp.get_list();
-			})
-		},
-		//浏览器窗口大小变化时调整内容宽度
-		forSize:function(){
-			var ticket_with = $('#ftpData').parent().width(),
-			td_width = ticket_with*0.6-160-$('#ftpData th:eq(3)').width(),
-			path_width = td_width/2 > $('#ftpData th:eq(4)').width() ? $('#ftpData th:eq(4)').width() : td_width/2;
-			$('#ftpData .webPath').css('max-width',path_width);
-			$('#ftpData .webNote').css('max-width',td_width-$('#ftpData .webPath').width());
-		}
-	}
+{{ super() }}
+<script>
 	bt.set_cookie('sites_path',"{{session['config']['sites_path']}}");
-	$(window).resize(function() {
-		ftp.forSize();
-	});
-    {% if not data['isSetup'] %}
+  
+  {% if not data['isSetup'] %}
 		layer.msg('{{data["lan"]["JS1"]}}<a href="/soft" style="color:#20a53a; float: right;">{{data["lan"]["JS2"]}}</a>',{icon:7,time:0,shade: [0.3, '#000']});
 		$(".layui-layer-shade").css("margin-left", "180px");
-    {% else %}
-		ftp.get_list();
-		
-    {% endif %}	
+  {% else %}
+    var ftp_table = bt_tools.table({
+      el: '#bt_ftp_table',
+      url: '/data?action=getData',
+      param: { table: 'ftps' },
+      minWidth: '1000px',
+      autoHeight: true,
+      pageName: 'ftp',
+      default: lan.pythonmamager.no_data,
+      sortParam: function (data) {
+        return { 'order': data.name + ' ' + data.sort }
+      },
+      methods: {
+        /**
+					* @description 设置FTP端口
+					* @param {function} callback 回调函数
+					* @return void
+				 */
+				add_ftp_user: function (callback) {
+					var that = this;
+					bt.ftp.add(function(rdata){
+						if (callback) callback(rdata);
+						if (rdata.status) that.$refresh_table_list(true);
+					})
+				},
+				/**
+				 * @description 设置FTP端口
+				 * @param {object} obj 配置对象包含port
+				 * @param {function} callback 回调函数
+				 * @return void
+				 */
+				del_ftp_user: function (obj, callback) {
+					var that = this;
+          var msg = lan.public.del+"["+ obj.name +"]";
+          var title = lan.get('confirm_del',[obj.name]);
+					bt.show_confirm(msg, title, function () {
+						bt.ftp.del(obj.id,obj.name, function (rdata) {
+							if (callback) callback(rdata);
+							bt.msg(rdata);
+						});
+					});
+				},
+				/**
+				 * @description 设置FTP密码
+				 * @param {object} obj 配置对象包含id、name、password
+				 * @param {function} callback 回调函数
+				 * @return void
+				 */
+				set_ftp_password: function (obj, callback) {
+					var that = this,bs = bt.ftp.set_password(function(rdata){
+						if(callback) callback(rdata);
+					});
+					$('.id'+bs).val(obj.id);
+					$('.ftp_username'+bs).val(obj.name);
+					$('.new_password'+bs).val(obj.password);
+				},
+				/**
+				 * @description 设置FTP端口
+				 * @param {object} obj 配置对象包含port
+				 * @param {function} callback 回调函数
+				 * @return void
+				 */
+				set_ftp_port: function (callback) {
+					var bs = bt.ftp.set_port(function(rdata){
+						if(callback) callback(rdata);
+						if (rdata.status) {
+							setTimeout(function () {
+								window.location.reload()
+							}, 1000)
+						}	
+					})
+					$('.port' + bs).val('{{session["port"]}}');
+				},
+				/**
+				 * @description 设置ftp状态
+				 * @param {object} obj 配置对象包含id、username、status
+				 * @param {function} callback 回调函数
+				 * @return void
+			 	 */
+				set_ftp_status: function (obj, callback) {
+					if (!parseInt(obj.status)) {
+						bt.ftp.set_status(obj.id,obj.name,"1",function(rdata){
+							if(callback) callback(rdata);
+						});
+					} else {
+						bt.confirm({msg:lan.ftp.stop_confirm.replace('{1}',obj.name),title:lan.ftp.stop_title},function(index){			
+							bt.ftp.set_status(obj.id,obj.name,"0",function(rdata){
+								if(callback) callback(rdata);
+							});
+						});
+					}
+				},
+        /**
+				 * @description 设置路径
+				 * @param {object} row 配置对象包含id、username、status
+				 * @return void
+			 	 */
+        set_path: function (row, callback) {
+          if (row == null) return;
+          bt_tools.open({
+            title: lan.ftp.change_ftp_user_home,
+            area: '450px',
+            btn: [lan.public.save, lan.public.cancel],
+            content: {
+              'class': 'pd20',
+              form: [
+                {
+                  label: lan.ftp.add_user,
+                  group: {
+                    type: 'text',
+                    name: 'ftp_username',
+                    width: '260px',
+                    value: row.name,
+                    disabled: true
+                  }
+                },
+                {
+                  label: lan.ftp.add_path,
+                  class: 'path_line',
+                  value: row.path,
+                  group: {
+                    type: 'text',
+                    name: 'path',
+                    width: '230px',
+                    icon: {
+                      type: 'glyphicon-folder-open',
+                      select: 'all',
+                      event: function (ev) {}
+                    }
+                  }
+                },
+                {
+                  group: {
+                    type: 'help',
+                    style: {'margin-top': '0'},
+                    list: [
+                      lan.ftp.set_path_tips1,
+                      lan.ftp.set_path_tips2,
+                      lan.ftp.set_path_tips3
+                    ]
+                  }
+                }
+              ]
+            },
+            success: function () {
+              $('.path_line').after('\
+              <div class="line">\
+                <span class="tname checkType">' + lan.ftp.migrate + '</span>\
+                <div class="info-r" style="height:32px;margin-left:125px;padding-top:6px;">\
+                  <input type="checkbox" name="migrate" id="migrate" class="btswitch btswitch-ios">\
+                  <label for="migrate" class="btswitch-btn"></label>\
+                </div>\
+              </div>');
+              $('input[name="path"]').val(row.path)
+            },
+            yes: function (form, index) {
+              if (form.path === '') {
+                return layer.msg('Please select a path', {icon: 2});
+              }
+              var loading = bt.load('Setting up, please wait...');
+              var migrate = $('#migrate').is(':checked');
+              var data = Object.assign({id: row.id, migrate: migrate ? 1 : 0}, form);
+              bt.send('set_user_home', 'ftp/set_user_home', data, function (rdata) {
+                loading.close();
+                bt.msg(rdata);
+                setTimeout(function () {
+                  if (!rdata.status) return;
+                  layer.close(index);
+                  callback && callback();
+                }, 2000)
+              });
+            }
+          });
+        },
+      },
+      column: [
+        { type:'checkbox', width: 20 },
+        { fid: 'name', title: lan.ftp.add_user, type: 'text' },
+        {
+          fid: 'password',
+          title: lan.ftp.add_pass,
+          type: 'password',
+          copy: true,
+          eye_open: true
+        },
+        {
+          fid: 'status',
+          title: lan.ftp.status,
+          sort: true,
+          width: 100,
+          type: 'status',
+          config: {
+					  icon: true,
+            list: [
+              [ '1', lan.ftp.start, 'bt_success', 'glyphicon-play' ],
+              [ '0', lan.ftp.stop, 'bt_danger', 'glyphicon-pause']
+            ]
+          },
+          event: function (row, index, ev, key, that) {
+					  that.set_ftp_status({
+              id: row.id, status: row.status, name: row.name
+            }, function (res) {
+						  if (res.status)
+                that.$modify_row_data({ status: parseInt(row.status) ? '0' : '1' });
+					  });
+				  }
+        },
+        {
+          fid: 'path',
+          title: lan.ftp.add_path,
+          type: 'link',
+          event: function (row, index, ev) {
+            openPath(row.path);
+          }
+        },
+        bt.public.get_quota_config('ftp'),
+        {
+          fid: 'ps',
+          title: lan.ftp.add_ps,
+          type: 'input',
+          blur: function (row, index, ev) {
+            bt.pub.set_data_ps({
+              id: row.id, table: 'ftps', ps: ev.target.value
+            }, function (res) {
+              bt_tools.msg(res);
+            });
+          },
+        },
+        {
+          title: lan.ftp.operate,
+          type: 'group',
+          width: 170,
+          align: 'right',
+          group:[
+            {
+              title: 'Set Path',
+              event: function (row, index, ev, key, that) {
+                that.set_path(row, function () {
+                  that.$refresh_table_list(true);
+                });
+              }
+            },
+            {
+              title: lan.ftp.edit_pass,
+              event: function (row, index, ev, key, that) {
+                that.set_ftp_password({
+                  id: row.id, name: row.name, password: row.password
+                }, function (rdata) {
+                  if (rdata.status) that.$refresh_table_list(true);
+                });
+              }
+            },
+            {
+              title: lan.ftp.del,
+              event: function (row, index, ev, key, that) {
+                that.del_ftp_user({
+                  id: row.id, name: row.name
+                }, function (res) {
+                  if (res.status) that.$refresh_table_list(true);
+                });
+              }
+            }
+          ]
+        }
+      ],
+      tootls:[
+        {
+          type: 'group',
+          positon: ['left', 'top'],
+          list:[
+            {
+              title: 'Add FTP',
+              active: true,
+              event: function (ev, that) {
+                that.add_ftp_user();
+              }
+            },
+            {
+              title: 'Change FTP Port',
+              event: function (ev, that) {
+                that.set_ftp_port();
+              }
+            }
+          ]
+        },
+        {
+          type: 'search',
+          positon: ['right', 'top'],
+          placeholder: 'FTP search',
+          searchParam: 'search', // 搜索请求字段，默认为 search
+          value: '', // 当前内容,默认为空
+        },
+        { // 批量操作
+          type: 'batch',
+          positon: ['left', 'bottom'],
+          config: {
+            title: lan.ftp.del,
+            url: '/ftp?action=DeleteUser',
+            load: true,
+            param: function (row) {
+              return { id: row.id, username: row.name }
+            },
+            callback: function (that) {
+              var msg = '<div style="color: red;">' + lan.get('del_all_ftp', [that.check_list.length]) + '</div>';
+              bt.show_confirm(lan.ftp.del_all, msg, function () {
+                that.start_batch({}, function (list) {
+                  var html = '';
+                  for (var i = 0; i < list.length; i++) {
+                    var item = list[i];
+                    html += '<tr><td>'+ item.name +'</td><td><div style="float:right;"><span style="color:'+ (item.request.status?'#20a53a':'red') +'">'+ item.request.msg +'</span></div></td></tr>';
+                  }
+                  ftp_table.$batch_success_table({
+                    title: 'Batch Delete FTP',
+                    th: 'FTP',
+                    html: html
+                  });
+                  ftp_table.$refresh_table_list(true);
+                });
+              })
+            }
+          }
+        },
+        { // 分页显示
+          type: 'page',
+          positon: ['right','bottom'], // 默认在右下角
+          pageParam: 'p', // 分页请求字段,默认为 : p
+          page: 1, // 当前分页 默认：1
+          numberParam: 'limit', //分页数量请求字段默认为 : limit
+          number: 20, //分页数量默认 : 20条
+          numberList: [10, 20, 50, 100, 200], // 分页显示数量列表
+          numberStatus: true, // 是否支持分页数量选择,默认禁用
+          jump: true, // 是否支持跳转分页,默认禁用
+        }
+      ]
+    });
+  {% endif %}
+
 </script>
 {% endblock %}

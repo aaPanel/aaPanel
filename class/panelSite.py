@@ -18,6 +18,7 @@ except:
     pass
 from panelRedirect import panelRedirect
 import site_dir_auth
+import one_key_wp
 
 
 class panelSite(panelRedirect):
@@ -230,14 +231,14 @@ class panelSite(panelRedirect):
             listen_port=self.sitePort,
             listen_ipv6=listen_ipv6,
             site_path=self.sitePath,
-            ssl_start_msg=public.getMsg('NGINX_CONF_MSG1'),
-            err_page_msg=public.getMsg('NGINX_CONF_MSG2'),
-            php_info_start=public.getMsg('NGINX_CONF_MSG3'),
+            ssl_start_msg=public.get_msg_gettext('SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules'),
+            err_page_msg=public.get_msg_gettext('Error page configuration, allowed to be commented, deleted or modified'),
+            php_info_start=public.get_msg_gettext('PHP reference configuration, allowed to be commented, deleted or modified'),
             php_version=self.phpVersion,
             setup_path=self.setupPath,
-            rewrite_start_msg=public.getMsg('NGINX_CONF_MSG4'),
-            description=public.GetMsg("NGINX_CONF_BAN_FILE_DIR"),
-            description1=public.GetMsg("NGINX_CONF_ONECLICK_SET_SSL_DIR"),
+            rewrite_start_msg=public.get_msg_gettext('URL rewrite rule reference, any modification will invalidate the rewrite rules set by the panel'),
+            description=public.get_msg_gettext('# Forbidden files or directories'),
+            description1=public.get_msg_gettext('# Directory verification related settings for one-click application for SSL certificate'),
             log_path=public.GetConfigValue('logs_path'),
             site_name=self.siteName
         )
@@ -267,7 +268,7 @@ class panelSite(panelRedirect):
         # 写主配置httpd_config.conf
         # 操作默认监听配置
         if not self.sitePath:
-            return public.returnMsg(False, "Not specify parameter [sitePath]")
+            return public.return_msg_gettext(False, "Not specify parameter [sitePath]")
         if init_args:
             self.siteName = init_args['sitename']
             self.phpVersion = init_args['phpv']
@@ -451,8 +452,8 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                     continue
                 create_successfully[domains[0]] = create_other
             except:
-                create_failed[domains[0]] = public.getMsg('CREATE_WEBSITE_ERR')
-        return {'status': True, 'msg': public.getMsg('CREATE_WEBSITE_MULTIPLE', (','.join(create_successfully),)),
+                create_failed[domains[0]] = public.get_msg_gettext('There was an error creating, please try again.')
+        return {'status': True, 'msg': public.get_msg_gettext('Create the website [ {} ] successfully', (','.join(create_successfully),)),
                 'error': create_failed,
                 'success': create_successfully}
 
@@ -477,35 +478,66 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         public.serviceReload()
         return res
 
+    # 检测enable-php-00.conf
+    def check_php_conf(self):
+        try:
+            file = '/www/server/nginx/conf/enable-php.conf'
+            if public.get_webserver() != "nginx":
+                return
+            if os.path.exists(file):
+                return
+            php_v = os.listdir('/www/server/php')
+            if not php_v:
+                return
+            conf = public.readFile('/www/server/nginx/conf/enable-php-{}.conf'.format(php_v[0]))
+            public.writeFile(file,conf)
+        except:
+            pass
+
     # 添加站点
     def AddSite(self, get, multiple=None):
+        if not get.path:
+            return public.return_msg_gettext(False, "Please fill in the website path")
+        if get.path == "/":
+            return public.return_msg_gettext(False, "The website path cannot be the root directory [/]")
+        rep_email = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
+        if hasattr(get, 'email'):
+            if not re.search(rep_email,get.email):
+                return public.return_msg_gettext(False, "Please check if the [Email] format correct")
+        if hasattr(get,'password') and hasattr(get,'pw_weak'):
+            l = public.check_password(get.password)
+            if l == 0 and get.pw_weak == 'off':
+                return public.return_msg_gettext(False,'Password very weak, if you are sure to use it, please tick [ Allow weak passwords ]')
+            #判断Mysql PHP 没有安装不能继续
+            if not os.path.exists("/www/server/mysql") or not os.path.exists("/www/server/php"):
+                return public.return_msg_gettext(False,
+                                        'Please install Mysql and PHP first!')
         self.check_default()
+        self.check_php_conf()
         isError = public.checkWebConfig()
         if isError != True:
-            return public.returnMsg(False, 'ERROR: %s<br><br><a style="color:red;">' % public.GetMsg(
-                "GET_ERR_IN_CONFILE") + isError.replace("\n", '<br>') + '</a>')
+            return public.return_msg_gettext(False, 'ERROR: %s<br><br><a style="color:red;">' % public.get_msg_gettext(
+                'An error was detected in the configuration file. Please solve it before proceeding') + isError.replace("\n", '<br>') + '</a>')
 
-        import json, files
-
+        import json
         get.path = self.__get_site_format_path(get.path)
-
         if not public.check_site_path(get.path):
             a,c = public.get_sys_path()
-            return public.returnMsg(False,'Please do not set the website root directory to the system main directory:<br> {}'.format("<br>".join(a+c)))
+            return public.return_msg_gettext(False,'Please do not set the website root directory to the system main directory:<br> {}'.format("<br>".join(a+c)))
         try:
             siteMenu = json.loads(get.webname)
         except:
-            return public.returnMsg(False, 'PARAMETER_WEBNAME_ERR')
+            return public.return_msg_gettext(False, 'The format of the webname parameter is incorrect, it should be a parseable JSON string')
         self.siteName = self.ToPunycode(siteMenu['domain'].strip().split(':')[0]).strip().lower()
         self.sitePath = self.ToPunycodePath(self.GetPath(get.path.replace(' ', ''))).strip()
         self.sitePort = get.port.strip().replace(' ', '')
 
         if self.sitePort == "": get.port = "80"
-        if not public.checkPort(self.sitePort): return public.returnMsg(False, 'SITE_ADD_ERR_PORT')
+        if not public.checkPort(self.sitePort): return public.return_msg_gettext(False, 'Port range is incorrect! should be between 100-65535')
         for domain in siteMenu['domainlist']:
             if not len(domain.split(':')) == 2:
                 continue
-            if not public.checkPort(domain.split(':')[1]): return public.returnMsg(False, 'SITE_ADD_ERR_PORT')
+            if not public.checkPort(domain.split(':')[1]): return public.return_msg_gettext(False, 'Port range is incorrect! should be between 100-65535')
 
         if hasattr(get, 'version'):
             self.phpVersion = get.version.replace(' ', '')
@@ -520,40 +552,40 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             if self.phpVersion == php_v['version']:
                 is_phpv = True
                 break
-        if not is_phpv: return public.returnMsg(False, 'PHP_NOT_EXISTS')
+        if not is_phpv: return public.return_msg_gettext(False, 'Requested PHP version does NOT exist!')
 
         domain = None
         # if siteMenu['count']:
         #    domain            = get.domain.replace(' ','')
         #表单验证
-        if not self.__check_site_path(self.sitePath): return public.returnMsg(False,'PATH_ERROR')
-        if len(self.phpVersion) < 2: return public.returnMsg(False,'SITE_ADD_ERR_PHPEMPTY')
-        reg = r"^([\w\-\*]{1,100}\.){1,4}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
-        if not re.match(reg, self.siteName): return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN')
-        if self.siteName.find('*') != -1: return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN_TOW')
-        if self.sitePath[-1] == '.': return public.returnMsg(False, 'DIR_END_WITH', ("'.'",))
+        if not self.__check_site_path(self.sitePath): return public.return_msg_gettext(False,'System critical directory cannot be used as site directory')
+        if len(self.phpVersion) < 2: return public.return_msg_gettext(False,'PHP version cannot be empty')
+        reg = r"^([\w\-\*]{1,100}\.){1,24}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
+        if not re.match(reg, self.siteName): return public.return_msg_gettext(False, 'Format of primary domain is incorrect')
+        if self.siteName.find('*') != -1: return public.return_msg_gettext(False, 'Primary domain cannot be wildcard DNS record')
+        if self.sitePath[-1] == '.': return public.return_msg_gettext(False, 'DIR_END_WITH', ("'.'",))
 
         if not domain: domain = self.siteName
 
         # 是否重复
         sql = public.M('sites')
-        if sql.where("name=?", (self.siteName,)).count(): return public.returnMsg(False, 'SITE_ADD_ERR_EXISTS')
+        if sql.where("name=?", (self.siteName,)).count(): return public.return_msg_gettext(False, 'The site you tried to add already exists!')
         opid = public.M('domain').where("name=?", (self.siteName,)).getField('pid')
 
         if opid:
             if public.M('sites').where('id=?', (opid,)).count():
-                return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN_EXISTS')
+                return public.return_msg_gettext(False, 'The domain you tried to add already exists!')
             public.M('domain').where('pid=?', (opid,)).delete()
 
         if public.M('binding').where('domain=?', (self.siteName,)).count():
-            return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN_EXISTS')
+            return public.return_msg_gettext(False, 'The domain you tried to add already exists!')
 
         # 创建根目录
         if not os.path.exists(self.sitePath):
             try:
                 os.makedirs(self.sitePath)
             except Exception as ex:
-                return public.returnMsg(False, 'CREATE_SITE_DIR_ERR', (ex,))
+                return public.return_msg_gettext(False, 'Failed to create site document root, {}', (ex,))
             public.ExecShell('chmod -R 755 ' + self.sitePath)
             public.ExecShell('chown -R www:www ' + self.sitePath)
 
@@ -594,10 +626,9 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         result = self.openlitespeed_add_site(get)
 
         # 检查处理结果
-        if not result: return public.returnMsg(False, 'SITE_ADD_ERR_WRITE')
+        if not result: return public.return_msg_gettext(False, 'Failed to add, write configuraton ERROR!')
 
-        ps = get.ps
-        ps = public.xssencode(ps)
+        ps = public.xssencode2(get.ps)
         # 添加放行端口
         if self.sitePort != '80':
             import firewalls
@@ -606,9 +637,13 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             firewalls.firewalls().AddAcceptPort(get)
 
         if not hasattr(get,'type_id'): get.type_id = 0
+        if not hasattr(get,'project_type'): get.project_type = "PHP"
         public.check_domain_cloud(self.siteName)
+        # 统计wordpress安装次数
+        if get.project_type == 'WP':
+            public.count_wp()
         #写入数据库
-        get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime',(self.siteName,self.sitePath,'1',ps,get.type_id,public.getDate()))
+        get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type',(self.siteName,self.sitePath,'1',ps,get.type_id,public.getDate(),get.project_type))
 
         #添加更多域名
         for domain in siteMenu['domainlist']:
@@ -653,11 +688,12 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
                 data['databaseStatus'] = True
                 data['databaseUser'] = get.datauser
                 data['databasePass'] = get.datapassword
+                data['d_id'] = str(public.M('databases').where('pid=?',(get.pid,)).field('id').find()['id'])
         if not multiple:
             public.serviceReload()
         data = self._set_ssl(get, data, siteMenu)
         data = self._set_redirect(get, data)
-        public.WriteLog('TYPE_SITE', 'SITE_ADD_SUCCESS', (self.siteName,))
+        public.write_log_gettext('Site manager', 'Successfully added site [{}]!', (self.siteName,))
         return data
 
     def _set_redirect(self, get, data):
@@ -745,10 +781,10 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
                 self.DeleteSite(get, multiple=1)
                 del_successfully.append(get.webname)
             except:
-                del_failed[get.webname] = public.getMsg('DEL_ERROR1')
+                del_failed[get.webname] = public.get_msg_gettext('There was an error deleting, please try again.')
                 pass
         public.serviceReload()
-        return {'status': True, 'msg': public.getMsg('DEL_WEBSITE_MULTIPLE', (','.join(del_successfully),)),
+        return {'status': True, 'msg': public.get_msg_gettext('Delete website [{}] successfully', (','.join(del_successfully),)),
                 'error': del_failed,
                 'success': del_successfully}
 
@@ -756,7 +792,7 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
     def DeleteSite(self, get, multiple=None):
         proxyconf = self.__read_config(self.__proxyfile)
         id = get.id
-        if public.M('sites').where('id=?', (id,)).count() < 1: return public.returnMsg(False, 'SITE_NOT_EXIST')
+        if public.M('sites').where('id=?', (id,)).count() < 1: return public.return_msg_gettext(False, 'Specified site does NOT exist')
         siteName = get.webname
         get.siteName = siteName
         self.CloseTomcat(get)
@@ -873,7 +909,8 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         public.M('sites').where("id=?", (id,)).delete()
         public.M('binding').where("pid=?", (id,)).delete()
         public.M('domain').where("pid=?", (id,)).delete()
-        public.WriteLog('TYPE_SITE', "SITE_DEL_SUCCESS", (siteName,))
+        public.M('wordpress_onekey').where("s_id=?", (id,)).delete()
+        public.write_log_gettext('Site manager', 'Successfully deleted site!', (siteName,))
 
         # 是否删除关联数据库
         if hasattr(get, 'database'):
@@ -895,7 +932,7 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
                     get.id = find['id']
                     ftp.ftp().DeleteUser(get)
 
-        return public.returnMsg(True, 'SITE_DEL_SUCCESS')
+        return public.return_msg_gettext(True, 'Successfully deleted site!')
 
     def _del_ols_listen_conf(self, sitename):
         conf_dir = '/www/server/panel/vhost/openlitespeed/listen/'
@@ -996,11 +1033,11 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         # 检查配置文件
         isError = public.checkWebConfig()
         if isError != True:
-            return public.returnMsg(False, 'ERROR: %s<br><br><a style="color:red;">' % public.GetMsg(
-                "GET_ERR_IN_CONFILE") + isError.replace("\n", '<br>') + '</a>')
+            return public.return_msg_gettext(False, 'ERROR: %s<br><br><a style="color:red;">' % public.get_msg_gettext(
+                'An error was detected in the configuration file. Please solve it before proceeding') + isError.replace("\n", '<br>') + '</a>')
 
-        if not 'domain' in get: return public.returnMsg(False, 'DOMAIN_NAME')
-        if len(get.domain) < 3: return public.returnMsg(False, 'SITE_ADD_DOMAIN_ERR_EMPTY')
+        if not 'domain' in get: return public.return_msg_gettext(False, 'Please enter the host domain name')
+        if len(get.domain) < 3: return public.return_msg_gettext(False, 'Domain cannot be empty!')
         domains = get.domain.replace(' ', '').split(',')
 
         for domain in domains:
@@ -1009,23 +1046,25 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             get.domain = self.ToPunycode(domain[0]).lower()
             get.port = '80'
 
-            reg = "^([\w\-\*]{1,100}\.){1,4}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
-            if not re.match(reg, get.domain): return public.returnMsg(False, 'SITE_ADD_DOMAIN_ERR_FORMAT')
+            reg = "^([\w\-\*]{1,100}\.){1,24}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
+            if not re.match(reg, get.domain): return public.return_msg_gettext(False, 'Format of domain is invalid!')
 
             if len(domain) == 2: get.port = domain[1]
             if get.port == "": get.port = "80"
 
-            if not public.checkPort(get.port): return public.returnMsg(False, 'SITE_ADD_DOMAIN_ERR_POER')
+            if not public.checkPort(get.port): return public.return_msg_gettext(False, 'Port range is incorrect! should be between 100-65535')
             # 检查域名是否存在
             sql = public.M('domain')
             opid = sql.where("name=? AND (port=? OR pid=?)", (get.domain, get.port, get.id)).getField('pid')
             if opid:
-                if public.M('sites').where('id=?', (opid,)).count():
-                    return public.returnMsg(False, 'SITE_ADD_DOMAIN_ERR_EXISTS')
+                siteName = public.M('sites').where('id=?',(opid,)).getField('name')
+                if siteName:
+                    return public.return_msg_gettext(False, 'The specified domain name has been bound by the website [{}]'.format(siteName))
                 sql.where('pid=?', (opid,)).delete()
-
-            if public.M('binding').where('domain=?', (get.domain,)).count():
-                return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN_EXISTS')
+            opid = public.M('binding').where('domain=?', (get.domain,)).getField('pid')
+            if opid:
+                siteName = public.M('sites').where('id=?',(opid,)).getField('name')
+                return public.returnMsg(False,'The specified domain name has been bound by a subdirectory of the website [{}]!'.format(siteName))
 
             # 写配置文件
             self.NginxDomain(get)
@@ -1050,10 +1089,10 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             if not multiple:
                 public.serviceReload()
             public.check_domain_cloud(get.domain)
-            public.WriteLog('TYPE_SITE', 'DOMAIN_ADD_SUCCESS', (get.webname, get.domain))
+            public.write_log_gettext('Site manager', 'Site [{}] added domain [{}] successfully!', (get.webname, get.domain))
             sql.table('domain').add('pid,name,port,addtime', (get.id, get.domain, get.port, public.getDate()))
 
-        return public.returnMsg(True, 'SITE_ADD_DOMAIN')
+        return public.return_msg_gettext(True, 'Successfully added site!')
 
     # 判断ols_ssl是否已经设置
     def _check_ols_ssl(self, webname):
@@ -1211,7 +1250,7 @@ listener Default%s{
                 # rep = "php-cgi-([0-9]{2,3})\.sock"
                 # version = re.search(rep,conf).groups()[0]
                 version = public.get_php_version_conf(conf)
-                if len(version) < 2: return public.returnMsg(False, 'PHP_GET_ERR')
+                if len(version) < 2: return public.return_msg_gettext(False, 'Failed to get PHP version!')
                 phpConfig = '''
     #PHP
     <FilesMatch \\.php$>
@@ -1280,23 +1319,23 @@ listener Default%s{
                 del_successfully.append(tmp)
             except:
                 tmp = get.domain + ':' + get.port
-                del_failed[tmp] = public.getMsg('DEL_ERROR1')
+                del_failed[tmp] = public.get_msg_gettext('There was an error deleting, please try again.')
                 pass
         public.serviceReload()
-        return {'status': True, 'msg': public.getMsg('DEL_DOMAIN_MULTIPLE', (','.join(del_successfully),)),
+        return {'status': True, 'msg': public.get_msg_gettext('Delete domain [{}] successfully', (','.join(del_successfully),)),
                 'error': del_failed,
                 'success': del_successfully}
 
     # 删除域名
     def DelDomain(self, get, multiple=None):
-        if not 'id' in get: return public.returnMsg(False, 'CHOOSE_DOMAIN')
-        if not 'port' in get: return public.returnMsg(False, 'CHOOSE_PORT')
+        if not 'id' in get: return public.return_msg_gettext(False, 'Please choose a domain name')
+        if not 'port' in get: return public.return_msg_gettext(False, 'Please choose a port')
         sql = public.M('domain')
         id = get['id']
         port = get.port
         find = sql.where("pid=? AND name=?", (get.id, get.domain)).field('id,name').find()
         domain_count = sql.table('domain').where("pid=?", (id,)).count()
-        if domain_count == 1: return public.returnMsg(False, 'SITE_DEL_DOMAIN_ERR_ONLY')
+        if domain_count == 1: return public.return_msg_gettext(False, 'Last domain cannot be deleted!')
 
         # nginx
         file = self.setupPath + '/panel/vhost/nginx/' + get['webname'] + '.conf'
@@ -1339,9 +1378,8 @@ listener Default%s{
                     newServerName = tmp.replace(' ' + get['domain'] + "\n", "\n")
                     newServerName = newServerName.replace(' ' + get['domain'] + ' ', ' ')
                     conf = conf.replace(tmp, newServerName)
-
                 # 保存配置
-                public.writeFile(file, conf)
+                public.writeFile(file, conf.strip())
             except:
                 pass
 
@@ -1349,10 +1387,10 @@ listener Default%s{
         self._del_ols_domain(get)
 
         sql.table('domain').where("id=?", (find['id'],)).delete()
-        public.WriteLog('TYPE_SITE', 'DOMAIN_DEL_SUCCESS', (get.webname, get.domain))
+        public.write_log_gettext('Site manager', 'Site [{}] deleted domain [{}] successfully!', (get.webname, get.domain))
         if not multiple:
             public.serviceReload()
-        return public.returnMsg(True, 'DEL_SUCCESS')
+        return public.return_msg_gettext(True, 'Successfully deleted')
 
     # openlitespeed删除域名
     def _del_ols_domain(self, get):
@@ -1400,10 +1438,10 @@ listener Default%s{
         csrpath = path + "/fullchain.pem"
         keypath = path + "/privkey.pem"
 
-        if (get.key.find('KEY') == -1): return public.returnMsg(False, 'SITE_SSL_ERR_PRIVATE')
-        if (get.csr.find('CERTIFICATE') == -1): return public.returnMsg(False, 'SITE_SSL_ERR_CERT')
+        if (get.key.find('KEY') == -1): return public.return_msg_gettext(False, 'Private Key ERROR, please check!')
+        if (get.csr.find('CERTIFICATE') == -1): return public.return_msg_gettext(False, 'Certificate ERROR, please check!')
         public.writeFile('/tmp/cert.pl', get.csr)
-        if not public.CheckCert('/tmp/cert.pl'): return public.returnMsg(False, 'CERT_ERR')
+        if not public.CheckCert('/tmp/cert.pl'): return public.return_msg_gettext(False, 'Error getting certificate')
         backup_cert = '/tmp/backup_cert_' + siteName
 
         import shutil
@@ -1423,18 +1461,18 @@ listener Default%s{
         if (type(isError) == str):
             if os.path.exists(path): shutil.rmtree(backup_cert)
             shutil.move(backup_cert, path)
-            return public.returnMsg(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
+            return public.return_msg_gettext(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
         public.serviceReload()
 
         if os.path.exists(path + '/partnerOrderId'): os.remove(path + '/partnerOrderId')
         if os.path.exists(path + '/certOrderId'): os.remove(path + '/certOrderId')
         p_file = '/etc/letsencrypt/live/' + get.siteName
         if os.path.exists(p_file): shutil.rmtree(p_file)
-        public.WriteLog('TYPE_SITE', 'SITE_SSL_SAVE_SUCCESS')
+        public.write_log_gettext('Site manager', 'Certificate saved!')
 
         # 清理备份证书
         if os.path.exists(backup_cert): shutil.rmtree(backup_cert)
-        return public.returnMsg(True, 'SITE_SSL_SUCCESS')
+        return public.return_msg_gettext(True, 'Certificate saved!')
 
     # 获取运行目录
     def GetRunPath(self, get):
@@ -1455,7 +1493,7 @@ listener Default%s{
 
         domains = json.loads(get.domains)
         if not len(domains):
-            return public.returnMsg(False, 'CHOOSE_DOMAIN')
+            return public.return_msg_gettext(False, 'Please choose a domain name')
 
         file_auth = True
         if hasattr(get, 'dnsapi'):
@@ -1477,12 +1515,12 @@ listener Default%s{
         for domain in domains:
             if public.checkIp(domain): continue
             if domain.find('*.') >= 0 and file_auth:
-                return public.returnMsg(False, 'SSL_FILE_V_ERR')
+                return public.return_msg_gettext(False, 'A generic domain name cannot be used to apply for a certificate using [File Validation]!')
 
         if file_auth:
             get.sitename = get.siteName
-            if self.GetRedirectList(get): return public.returnMsg(False, 'SITE_SSL_ERR_301')
-            if self.GetProxyList(get): return public.returnMsg(False, 'SSL_FILE_V_ERR_PROXY')
+            if self.GetRedirectList(get): return public.return_msg_gettext(False, 'Your site has 301 Redirect on，Please turn it off first!')
+            if self.GetProxyList(get): return public.return_msg_gettext(False, 'Sites that have reverse proxy turned on cannot request SSL!')
             data = self.get_site_info(get.siteName)
             get.id = data['id']
             runPath = self.GetRunPath(get)
@@ -1504,10 +1542,10 @@ listener Default%s{
                     get.dns_param = '|'.join(param)
             n_list = ['dns', 'dns_bt']
             if not get.dnsapi in n_list:
-                if len(get.dns_param) < 16: return public.returnMsg(False, 'API_ERR', (get.dnsapi,))
+                if len(get.dns_param) < 16: return public.return_msg_gettext(False, 'No valid DNSAPI key information found', (get.dnsapi,))
             if get.dnsapi == 'dns_bt':
                 if not os.path.exists('plugin/dns/dns_main.py'):
-                    return public.returnMsg(False, 'CLOUD_DNS_ERR')
+                    return public.return_msg_gettext(False, 'Please go to the software store to install [Cloud Resolution] and complete the domain name NS binding.')
 
         self.check_ssl_pack()
         try:
@@ -1516,8 +1554,8 @@ listener Default%s{
         except Exception as ex:
             if str(ex).find('No module named requests') != -1:
                 public.ExecShell("pip install requests &")
-                return public.returnMsg(False, 'REQUEST_MODULE_ERR')
-            return public.returnMsg(False, str(ex))
+                return public.return_msg_gettext(False, 'Missing requests component, please try to repair the panel!')
+            return public.return_msg_gettext(False, str(ex))
 
         lets = panelLets.panelLets()
         result = lets.apple_lest_cert(get)
@@ -1537,11 +1575,11 @@ listener Default%s{
         try:
             import requests
         except:
-            public.ExecShell('pip install requests')
+            public.ExecShell('btpip install requests')
         try:
             import OpenSSL
         except:
-            public.ExecShell('pip install pyopenssl')
+            public.ExecShell('btpip install pyOpenSSL')
 
     # 判断DNS-API是否设置
     def Check_DnsApi(self, dnsapi):
@@ -1605,7 +1643,7 @@ listener Default%s{
                     is_write = True
 
         if is_write: public.writeFile('./config/dns_api.json', json.dumps(apis))
-        return public.returnMsg(True, "SET_SUCCESS")
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 获取站点所有域名
     def GetSiteDomains(self, get):
@@ -1775,7 +1813,7 @@ listener SSL443 {
 """ % (get.first_domain, get.first_domain, self.get_tls13())
                 if (conf.find('ssl_certificate') != -1):
                     public.serviceReload()
-                    return public.returnMsg(True, 'SITE_SSL_OPEN_SUCCESS')
+                    return public.return_msg_gettext(True, 'SSL turned on!')
 
                 conf = conf.replace('#error_page 404/404.html;', sslStr)
                 # 添加端口
@@ -1825,7 +1863,7 @@ listener SSL443 {
                     # rep = r"php-cgi-([0-9]{2,3})\.sock"
                     # version = re.search(rep, conf).groups()[0]
                     version = public.get_php_version_conf(conf)
-                    if len(version) < 2: return public.returnMsg(False, 'PHP_GET_ERR')
+                    if len(version) < 2: return public.return_msg_gettext(False, 'Failed to get PHP version!')
                     phpConfig = '''
     #PHP
     <FilesMatch \\.php$>
@@ -1882,8 +1920,8 @@ listener SSL443 {
             if os.path.exists(self.nginx_conf_bak): shutil.copyfile(self.nginx_conf_bak, ng_file)
             if os.path.exists(self.apache_conf_bak): shutil.copyfile(self.apache_conf_bak, file)
             public.ExecShell("rm -f /tmp/backup_*.conf")
-            return public.returnMsg(False,
-                                    public.GetMsg("SSL_ERR_CERT") + ': <br><a style="color:red;">' + isError.replace(
+            return public.return_msg_gettext(False,
+                                    public.get_msg_gettext('Certificate ERROR, please check!') + ': <br><a style="color:red;">' + isError.replace(
                                         "\n", '<br>') + '</a>')
 
         sql = public.M('firewall')
@@ -1894,8 +1932,8 @@ listener SSL443 {
             firewalls.firewalls().AddAcceptPort(get)
         public.serviceReload()
         self.save_cert(get)
-        public.WriteLog('TYPE_SITE', 'SITE_SSL_OPEN_SUCCESS', (siteName,))
-        result = public.returnMsg(True, 'SITE_SSL_OPEN_SUCCESS')
+        public.write_log_gettext('Site manager', 'Site [{}] turned on SSL successfully!', (siteName,))
+        result = public.return_msg_gettext(True, 'SSL turned on!')
         result['csr'] = public.readFile('/www/server/panel/vhost/cert/' + get.siteName + '/fullchain.pem')
         result['key'] = public.readFile('/www/server/panel/vhost/cert/' + get.siteName + '/privkey.pem')
         return result
@@ -1920,7 +1958,7 @@ listener SSL443 {
             file = self.setupPath + '/panel/vhost/nginx/node_'+siteName+'.conf'
         conf = public.readFile(file)
         if conf:
-            if conf.find('ssl_certificate') == -1: return public.returnMsg(False, 'NOT_OPEN_SSL')
+            if conf.find('ssl_certificate') == -1: return public.return_msg_gettext(False, 'SSL is NOT currently enabled')
             to = """#error_page 404/404.html;
     #HTTP_TO_HTTPS_START
     if ($server_port !~ 443){
@@ -1960,7 +1998,7 @@ listener SSL443 {
 #HTTP_TO_HTTPS_END'''
         public.writeFile(file, ols_force_https)
         public.serviceReload()
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # CloseToHttps
     def CloseToHttps(self, get):
@@ -1985,7 +2023,7 @@ listener SSL443 {
         public.ExecShell('rm -f {}*'.format(file))
         public.serviceReload()
 
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 是否跳转到https
     def IsToHttps(self, siteName):
@@ -2077,15 +2115,15 @@ listener SSL443 {
         p_file = '/etc/letsencrypt/live/' + siteName + '/partnerOrderId'
         if os.path.exists(p_file): public.ExecShell('rm -f ' + p_file)
 
-        public.WriteLog('TYPE_SITE', 'SITE_SSL_CLOSE_SUCCESS', (siteName,))
+        public.write_log_gettext('Site manager', 'Site [{}] turned off SSL successfully!', (siteName,))
         public.serviceReload()
-        return public.returnMsg(True, 'SITE_SSL_CLOSE_SUCCESS')
+        return public.return_msg_gettext(True, 'SSL turned off!')
 
     def _del_ols_443_domain(self, sitename):
         file = "/www/server/panel/vhost/openlitespeed/listen/443.conf"
         conf = public.readFile(file)
         if conf:
-            rep = '\n\s*map\s*{}'.format(sitename)
+            rep = '\n\s*map\s*{}.*'.format(sitename)
             conf = re.sub(rep, '', conf)
             if not "map " in conf:
                 public.ExecShell('rm -f {}*'.format(file))
@@ -2114,7 +2152,7 @@ listener SSL443 {
         if public.get_webserver() == "openlitespeed":
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/detail/' + siteName + '.conf'
         conf = public.readFile(file)
-        if not conf: return public.returnMsg(False, 'WEBSITE_CONF_NOT_EXIST')
+        if not conf: return public.return_msg_gettext(False, 'The specified website profile does not exist')
 
         if public.get_webserver() == 'nginx':
             keyText = 'ssl_certificate'
@@ -2185,10 +2223,10 @@ listener SSL443 {
                 self.SiteStop(get, multiple=1)
         public.serviceReload()
         if get.status == '1':
-            return {'status': True, 'msg': public.getMsg('ENABLE_WEBSITE_MULTIPLE', (','.join(sites_name),)),
+            return {'status': True, 'msg': public.get_msg_gettext('Enable website [{}] successfully', (','.join(sites_name),)),
                     'error': {}, 'success': sites_name}
         else:
-            return {'status': True, 'msg': public.getMsg('DISABLE_WEBSITE_MULTIPLE', (','.join(sites_name),)),
+            return {'status': True, 'msg': public.get_msg_gettext('Disable website [{}] successfully', (','.join(sites_name),)),
                     'error': {}, 'success': sites_name}
 
     # 启动站点
@@ -2224,8 +2262,8 @@ listener SSL443 {
         public.M('sites').where("id=?", (id,)).setField('status', '1')
         if not multiple:
             public.serviceReload()
-        public.WriteLog('TYPE_SITE', 'SITE_START_SUCCESS', (get.name,))
-        return public.returnMsg(True, 'SITE_START_SUCCESS')
+        public.write_log_gettext('Site manager', 'Site [{}] started!', (get.name,))
+        return public.return_msg_gettext(True, 'Site started')
 
     def _process_has_run_dir(self, website_name, website_path, stop_path):
         '''
@@ -2248,9 +2286,12 @@ listener SSL443 {
     def SiteStop(self, get, multiple=None):
         path = self.setupPath + '/stop'
         id = get.id
+        site_status = public.M('sites').where("id=?", (id,)).getField('status')
+        if str(site_status) != '1':
+            return public.returnMsg(True, 'SITE_STOP_SUCCESS')
         if not os.path.exists(path):
             os.makedirs(path)
-            public.downloadFile('http://download.bt.cn/stop_en.html', path + '/index.html')
+            public.downloadFile('https://node.aapanel.com/stop_en.html', path + '/index.html')
 
         # if 'This site has been closed by administrator' not in public.readFile(path + '/index.html'):
         #     public.downloadFile('http://download.bt.cn/stop_en.html', path + '/index.html')
@@ -2296,8 +2337,8 @@ listener SSL443 {
         public.M('sites').where("id=?", (id,)).setField('status', '0')
         if not multiple:
             public.serviceReload()
-        public.WriteLog('TYPE_SITE', 'SITE_STOP_SUCCESS', (get.name,))
-        return public.returnMsg(True, 'SITE_STOP_SUCCESS')
+        public.write_log_gettext('Site manager', 'Site [{}] stopped!', (get.name,))
+        return public.return_msg_gettext(True, 'Site stopped')
 
     # 取流量限制值
     def GetLimitNet(self, get):
@@ -2333,11 +2374,11 @@ listener SSL443 {
 
     # 设置流量限制
     def SetLimitNet(self, get):
-        if (public.get_webserver() != 'nginx'): return public.returnMsg(False, 'SITE_NETLIMIT_ERR')
+        if (public.get_webserver() != 'nginx'): return public.return_msg_gettext(False, 'Site Traffic Control only supports Nginx Web Server!')
 
         id = get.id
         if int(get.perserver) < 1 or int(get.perip) < 1 or int(get.perip) < 1:
-            return public.returnMsg(False, 'WEBSITE_TRAFFIC_LIMIT_ERR')
+            return public.return_msg_gettext(False, 'Concurrency restrictions, IP restrictions, traffic restrictions must be greater than 0')
         perserver = 'limit_conn perserver ' + get.perserver + ';'
         perip = 'limit_conn perip ' + get.perip + ';'
         limit_rate = 'limit_rate ' + get.limit_rate + 'k;'
@@ -2378,11 +2419,11 @@ listener SSL443 {
         isError = public.checkWebConfig()
         if (isError != True):
             if os.path.exists(self.nginx_conf_bak): shutil.copyfile(self.nginx_conf_bak, filename)
-            return public.returnMsg(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
+            return public.return_msg_gettext(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
 
         public.serviceReload()
-        public.WriteLog('TYPE_SITE', 'SITE_NETLIMIT_OPEN_SUCCESS', (siteName,))
-        return public.returnMsg(True, 'SET_SUCCESS')
+        public.write_log_gettext('Site manager', 'Site [{}] traffic control turned on!', (siteName,))
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 关闭流量限制
     def CloseLimitNet(self, get):
@@ -2404,8 +2445,8 @@ listener SSL443 {
         conf = re.sub(rep, '', conf)
         public.writeFile(filename, conf)
         public.serviceReload()
-        public.WriteLog('TYPE_SITE', 'SITE_NETLIMIT_CLOSE_SUCCESS', (siteName,))
-        return public.returnMsg(True, 'SITE_NETLIMIT_CLOSE_SUCCESS')
+        public.write_log_gettext('Site manager', 'Site Traffic Control has been turned off!', (siteName,))
+        return public.return_msg_gettext(True, 'Site Traffic Control has been turned off!')
 
     # 取301配置状态
     def Get301Status(self, get):
@@ -2484,12 +2525,12 @@ listener SSL443 {
         toDomain = get.toDomain
         type = get.type
         rep = "(http|https)\://.+"
-        if not re.match(rep, toDomain):    return public.returnMsg(False, "SITE_PROXY_ERR_URL")
+        if not re.match(rep, toDomain):    return public.return_msg_gettext(False, 'URL address is invalid!')
 
         # nginx
         filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
         mconf = public.readFile(filename)
-        if mconf == False: return public.returnMsg(False, 'CONF_FILE_NOT_EXISTS')
+        if mconf == False: return public.return_msg_gettext(False, 'Configuration file not exist')
         if (srcDomain == 'all'):
             conf301 = "\t#301-START\n\t\treturn 301 " + toDomain + "$request_uri;\n\t#301-END"
         else:
@@ -2504,7 +2545,7 @@ listener SSL443 {
         # apache
         filename = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
         mconf = public.readFile(filename)
-        if mconf == False: return public.returnMsg(False, 'CONF_FILE_NOT_EXISTS')
+        if mconf == False: return public.return_msg_gettext(False, 'Configuration file not exist')
         if type == '1':
             if (srcDomain == 'all'):
                 conf301 = "\n\t#301-START\n\t<IfModule mod_rewrite.c>\n\t\tRewriteEngine on\n\t\tRewriteRule ^(.*)$ " + toDomain + "$1 [L,R=301]\n\t</IfModule>\n\t#301-END\n"
@@ -2535,10 +2576,10 @@ listener SSL443 {
 
         isError = public.checkWebConfig()
         if (isError != True):
-            return public.returnMsg(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
+            return public.return_msg_gettext(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
 
         public.serviceReload()
-        return public.returnMsg(True, 'SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 取子目录绑定
     def GetDirBinding(self, get):
@@ -2556,26 +2597,38 @@ listener SSL443 {
             get.path = path
             self.SetDirUserINI(get)
             siteName = public.M('sites').where('id=?', (get.id,)).getField('name')
-            public.WriteLog('TYPE_SITE', "SITE_DIR_NOT_EXIST_RECREATE", (siteName, path))
+            public.write_log_gettext('Site manager', "Site [{}], document root [{}] does NOT exist, recreated!", (siteName, path))
         dirnames = []
-        for filename in os.listdir(path):
-            try:
-                json.dumps(filename)
-                if sys.version_info[0] == 2:
-                    filename = filename.encode('utf-8')
-                else:
-                    filename.encode('utf-8')
-                filePath = path + '/' + filename
-                if os.path.islink(filePath): continue
-                if os.path.isdir(filePath):
-                    dirnames.append(filename)
-            except:
-                pass
+        # 取运行目录
+        run_path = self.GetRunPath(get)
+        if run_path: path += run_path
+
+        # 遍历目录
+        if os.path.exists(path):
+            for filename in os.listdir(path):
+                try:
+                    json.dumps(filename)
+                    if sys.version_info[0] == 2:
+                        filename = filename.encode('utf-8')
+                    else:
+                        filename.encode('utf-8')
+                    filePath = path + '/' + filename
+                    if os.path.islink(filePath): continue
+                    if os.path.isdir(filePath):
+                        dirnames.append(filename)
+                except:
+                    pass
 
         data = {}
+        data['run_path'] = run_path # 运行目录
         data['dirs'] = dirnames
-        data['binding'] = public.M('binding').where('pid=?', (get.id,)).field(
-            'id,pid,domain,path,port,addtime').select()
+        data['binding'] = public.M('binding').where('pid=?',(get.id,)).field('id,pid,domain,path,port,addtime').select()
+
+        # 标记子目录是否存在
+        for dname in data['binding']:
+            _path = os.path.join(path,dname['path'])
+            if not os.path.exists(_path):
+                dname['path'] += '<a style="color:red;"> >> error: directory does not exist</a>'
         return data
 
     # 添加子目录绑定
@@ -2587,18 +2640,26 @@ listener SSL443 {
         port = '80'
         version = ''
         if len(tmp) > 1: port = tmp[1]
-        if not hasattr(get, 'dirName'): public.returnMsg(False, 'DIR_EMPTY')
+        if not hasattr(get, 'dirName'): public.return_msg_gettext(False, 'Directory cannot be empty!')
         dirName = get.dirName
 
         reg = "^([\w\-\*]{1,100}\.){1,4}(\w{1,10}|\w{1,10}\.\w{1,10})$"
-        if not re.match(reg, domain): return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN')
+        if not re.match(reg, domain): return public.return_msg_gettext(False, 'Format of primary domain is incorrect')
 
-        siteInfo = public.M('sites').where("id=?", (id,)).field('id,path,name').find()
-        webdir = siteInfo['path'] + '/' + dirName
+        siteInfo = public.M('sites').where("id=?",(id,)).field('id,path,name').find()
+        # 实际运行目录
+        root_path = siteInfo['path']
+        run_path = self.GetRunPath(get)
+        if run_path: root_path += run_path
+
+
+        webdir = root_path + '/' + dirName
+        webdir = webdir.replace('//','/').strip()
+
         sql = public.M('binding')
-        if sql.where("domain=?", (domain,)).count() > 0: return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN_EXISTS')
-        if public.M('domain').where("name=?", (domain,)).count() > 0: return public.returnMsg(False,
-                                                                                              'SITE_ADD_ERR_DOMAIN_EXISTS')
+        if sql.where("domain=?", (domain,)).count() > 0: return public.return_msg_gettext(False, 'The domain you tried to add already exists!')
+        if public.M('domain').where("name=?", (domain,)).count() > 0: return public.return_msg_gettext(False,
+                                                                                              'The domain you tried to add already exists!')
 
         filename = self.setupPath + '/panel/vhost/nginx/' + siteInfo['name'] + '.conf'
         nginx_conf_file = filename
@@ -2606,8 +2667,15 @@ listener SSL443 {
         if conf:
             listen_ipv6 = ''
             if self.is_ipv6: listen_ipv6 = "\n    listen [::]:%s;" % port
-            rep = "enable-php-(\w{2,5})\.conf"
-            tmp = re.search(rep,conf).groups()
+            try:
+                rep = "enable-php-(\w{2,5})\.conf"
+                tmp = re.search(rep,conf)
+                if not tmp:
+                    rep = "enable-php-(\d+-wpfastcgi).conf"
+                    tmp = re.search(rep, conf)
+            except:
+                return public.returnMsg(False,"Get enable php config failed!")
+            tmp = tmp.groups()
             version = tmp[0]
             bindingConf = '''
 #BINDING-%s-START
@@ -2647,7 +2715,7 @@ server
     error_log  %s.error.log;
 }
 #BINDING-%s-END''' % (domain, port, listen_ipv6, domain, webdir, version, self.setupPath, siteInfo['name'],
-                      public.GetMsg("NGINX_CONF_BAN_FILE_DIR"), public.GetMsg("NGINX_CONF_ONECLICK_SET_SSL_DIR"),
+                      public.get_msg_gettext('# Forbidden files or directories'), public.get_msg_gettext('# Directory verification related settings for one-click application for SSL certificate'),
                       public.GetConfigValue('logs_path') + '/' + siteInfo['name'],
                       public.GetConfigValue('logs_path') + '/' + siteInfo['name'], domain)
 
@@ -2732,12 +2800,12 @@ server
         if isError != True:
             if os.path.exists(self.nginx_conf_bak): shutil.copyfile(self.nginx_conf_bak, nginx_conf_file)
             if os.path.exists(self.apache_conf_bak): shutil.copyfile(self.apache_conf_bak, filename)
-            return public.returnMsg(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
+            return public.return_msg_gettext(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
 
         public.M('binding').add('pid,domain,port,path,addtime', (id, domain, port, dirName, public.getDate()))
         public.serviceReload()
-        public.WriteLog('TYPE_SITE', 'SITE_BINDING_ADD_SUCCESS', (siteInfo['name'], dirName, domain))
-        return public.returnMsg(True, 'ADD_SUCCESS')
+        public.write_log_gettext('Site manager', 'Site [{}] subdirectory [{}] bound to [{}]', (siteInfo['name'], dirName, domain))
+        return public.return_msg_gettext(True, 'Successfully added')
 
     def delete_dir_bind_multiple(self, get):
         '''
@@ -2757,10 +2825,10 @@ server
                 self.DelDirBinding(get, multiple=1)
                 del_successfully.append(domain)
             except:
-                del_failed[domain] = public.getMsg('DEL_ERROR1')
+                del_failed[domain] = public.get_msg_gettext('There was an error deleting, please try again.')
                 pass
         public.serviceReload()
-        return {'status': True, 'msg': public.getMsg('DEL_SUBDIRBIND', (','.join(del_successfully),)),
+        return {'status': True, 'msg': public.get_msg_gettext('Delete [{}] subdirectory binding successfully', (','.join(del_successfully),)),
                 'error': del_failed,
                 'success': del_successfully}
 
@@ -2809,13 +2877,18 @@ server
         detail_file = "{}/panel/vhost/openlitespeed/detail/{}_{}.conf".format(self.setupPath, siteName, binding['path'])
         public.ExecShell("rm -f {}*".format(detail_file))
 
-        public.M('binding').where("id=?", (id,)).delete()
-        filename = self.setupPath + '/panel/vhost/rewrite/' + siteName + '_' + binding['path'] + '.conf'
-        if os.path.exists(filename): public.ExecShell('rm -rf %s' % filename)
+        # 从数据库删除绑定
+        public.M('binding').where("id=?",(id,)).delete()
+
+        # 如果没有其它域名绑定同一子目录，则删除该子目录的伪静态规则
+        if not public.M('binding').where("path=? AND pid=?",(binding['path'],binding['pid'])).count():
+            filename = self.setupPath + '/panel/vhost/rewrite/' + siteName + '_' + binding['path'] + '.conf'
+            if os.path.exists(filename): public.ExecShell('rm -rf %s'%filename)
+        # 是否需要重载服务
         if not multiple:
             public.serviceReload()
-        public.WriteLog('TYPE_SITE', 'SITE_BINDING_DEL_SUCCESS', (siteName, binding['path']))
-        return public.returnMsg(True, 'DEL_SUCCESS')
+        public.write_log_gettext('Site manager', 'Deleted site [{}] subdirectory [{}] binding', (siteName, binding['path']))
+        return public.return_msg_gettext(True, 'Successfully deleted')
 
     # 取子目录Rewrite
     def GetDirRewrite(self, get):
@@ -2863,7 +2936,7 @@ server
         if public.get_webserver() == 'openlitespeed':
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/detail/' + Name + '.conf'
         conf = public.readFile(file)
-        if conf == False: return public.returnMsg(False, 'CONF_FILE_NOT_EXISTS')
+        if conf == False: return public.return_msg_gettext(False, 'Configuration file not exist')
         if public.get_webserver() == 'nginx':
             rep = "\s+index\s+(.+);"
         elif public.get_webserver() == 'apache':
@@ -2875,17 +2948,18 @@ server
             if public.get_webserver() == 'openlitespeed':
                 return tmp[0]
             return tmp[0].replace(' ', ',')
-        return public.returnMsg(False, 'INDEX_FILE_ERR')
+        return public.return_msg_gettext(False, 'Failed to get, there is no default document in the configuration file')
 
     # 设置默认文档
     def SetIndex(self, get):
         id = get.id
-        if get.Index.find('.') == -1: return public.returnMsg(False, 'SITE_INDEX_ERR_FORMAT')
 
         Index = get.Index.replace(' ', '')
-        Index = get.Index.replace(',,', ',')
+        Index = Index.replace(',,', ',').strip()
+        if not Index: return public.returnMsg(False,"Default index file cannot be empty")
+        if get.Index.find('.') == -1: return public.return_msg_gettext(False, 'Default Document Format is invalid, e.g., index.html')
 
-        if len(Index) < 3: return public.returnMsg(False, 'SITE_INDEX_ERR_EMPTY')
+        if len(Index) < 3: return public.return_msg_gettext(False, 'Default Document cannot be empty!')
 
         Name = public.M('sites').where("id=?", (id,)).getField('name')
         # 准备指令
@@ -2919,22 +2993,22 @@ server
             public.writeFile(file, conf)
 
         public.serviceReload()
-        public.WriteLog('TYPE_SITE', 'SITE_INDEX_SUCCESS', (Name, Index_L))
-        return public.returnMsg(True, 'SET_SUCCESS')
+        public.write_log_gettext('Site manager', 'Defualt document of site [{}] is [{}]', (Name, Index_L))
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 修改物理路径
     def SetPath(self, get):
         id = get.id
         Path = self.GetPath(get.path)
-        if Path == "" or id == '0': return public.returnMsg(False, "DIR_EMPTY")
+        if Path == "" or id == '0': return public.return_msg_gettext(False, 'Directory cannot be empty!')
 
-        if not self.__check_site_path(Path): return public.returnMsg(False,"PATH_ERROR")
+        if not self.__check_site_path(Path): return public.return_msg_gettext(False,'System critical directory cannot be used as site directory')
         if not public.check_site_path(Path):
             a, c = public.get_sys_path()
-            return public.returnMsg(False,'Please do not set the website root directory to the system main directory: <br>{}'.format("<br>".join(a+c)))
+            return public.return_msg_gettext(False,'Please do not set the website root directory to the system main directory: <br>{}'.format("<br>".join(a+c)))
 
         SiteFind = public.M("sites").where("id=?", (id,)).field('path,name').find()
-        if SiteFind["path"] == Path: return public.returnMsg(False, "SITE_PATH_ERR_RE")
+        if SiteFind["path"] == Path: return public.return_msg_gettext(False, 'Same as original path, no need to change!')
         Name = SiteFind['name']
         file = self.setupPath + '/panel/vhost/nginx/' + Name + '.conf'
         conf = public.readFile(file)
@@ -2970,18 +3044,22 @@ server
 
         public.serviceReload()
         public.M("sites").where("id=?",(id,)).setField('path',Path)
-        public.WriteLog('TYPE_SITE', 'SITE_PATH_SUCCESS',(Name,))
-        return public.returnMsg(True,  "SET_SUCCESS")
+        public.write_log_gettext('Site manager', 'Successfully changed directory of site [{}]!',(Name,))
+        return public.return_msg_gettext(True,  'Successfully set')
 
     #取当前可用PHP版本
     def GetPHPVersion(self,get):
-        phpVersions = ('00','other','52','53','54','55','56','70','71','72','73','74','80','81')
+
+        phpVersions = public.get_php_versions()
+        phpVersions.insert(0,'other')
+        phpVersions.insert(0,'00')
         httpdVersion = ""
         filename = self.setupPath + '/apache/version.pl'
         if os.path.exists(filename): httpdVersion = public.readFile(filename).strip()
 
         if httpdVersion == '2.2': phpVersions = ('00','52','53','54')
-        if httpdVersion == '2.4': phpVersions = ('00','other','53','54','55','56','70','71','72','73','74','80','81')
+        if httpdVersion == '2.4':
+            if '52' in phpVersions: phpVersions.remove('52')
         if os.path.exists('/www/server/nginx/sbin/nginx'):
             cfile = '/www/server/nginx/conf/enable-php-00.conf'
             if not os.path.exists(cfile): public.writeFile(cfile,'')
@@ -2997,7 +3075,7 @@ server
                 tmp['version'] = val
                 tmp['name'] = 'PHP-'+val
                 if val == '00':
-                    tmp['name'] = public.getMsg('STATIC')
+                    tmp['name'] = public.get_msg_gettext('Static')
 
                 if val == 'other':
                     if s_type:
@@ -3025,7 +3103,7 @@ server
                     data['php_other'] = re.findall(r"fastcgi_pass\s+(.+);",conf)[0]
             return data
         except:
-            return public.returnMsg(False, 'SITE_PHPVERSION_ERR_A22,{}'.format(public.get_error_info()))
+            return public.return_msg_gettext(False, 'Apache2.2 does NOT support MultiPHP!,{}'.format(public.get_error_info()))
 
     def set_site_php_version_multiple(self, get):
         '''
@@ -3049,10 +3127,10 @@ server
                     continue
                 set_phpv_successfully.append(get.siteName)
             except:
-                set_phpv_failed[get.siteName] = public.getMsg('SET_ERROR1')
+                set_phpv_failed[get.siteName] = public.get_msg_gettext('There was an error setting, please try again.')
                 pass
         public.serviceReload()
-        return {'status': True, 'msg': public.getMsg('SET_PHPV_MULTIPLE', (','.join(set_phpv_successfully),)),
+        return {'status': True, 'msg': public.get_msg_gettext('Set up website [{}] PHP version successfully', (','.join(set_phpv_successfully),)),
                 'error': set_phpv_failed,
                 'success': set_phpv_successfully}
 
@@ -3061,12 +3139,15 @@ server
         siteName = get.siteName
         version = get.version
         if version == 'other' and not public.get_webserver() in ['nginx','tengine']:
-            return public.returnMsg(False,'Custom PHP configuration only supports Nginx')
+            return public.return_msg_gettext(False,'Custom PHP configuration only supports Nginx')
         try:
             # nginx
             file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
             conf = public.readFile(file)
             if conf:
+                wp00 = "/www/server/nginx/conf/enable-php-00-wpfastcgi.conf"
+                if not os.path.exists(wp00):
+                    public.writeFile(wp00, '')
                 other_path = '/www/server/panel/vhost/other_php/{}'.format(siteName)
                 if not os.path.exists(other_path): os.makedirs(other_path)
                 other_rep = "{}/enable-php-other.conf".format(other_path)
@@ -3077,18 +3158,18 @@ server
                     get.other = get.other.strip()
 
                     if not get.other:
-                        return public.returnMsg(False,'The PHP connection configuration cannot be empty when customizing the version!')
+                        return public.return_msg_gettext(False,'The PHP connection configuration cannot be empty when customizing the version!')
 
                     if not re.match(r"^(\d+\.\d+\.\d+\.\d+:\d+|unix:[\w/\.-]+)$",get.other):
-                        return public.returnMsg(False,'The PHP connection configuration format is incorrect, please refer to the example!')
+                        return public.return_msg_gettext(False,'The PHP connection configuration format is incorrect, please refer to the example!')
 
                     other_tmp = get.other.split(':')
                     if other_tmp[0] == 'unix':
                         if not os.path.exists(other_tmp[1]):
-                            return public.returnMsg(False,'The specified unix socket [{}] does not exist!'.format(other_tmp[1]))
+                            return public.return_msg_gettext(False,'The specified unix socket [{}] does not exist!'.format(other_tmp[1]))
                     else:
                         if not public.check_tcp(other_tmp[0],int(other_tmp[1])):
-                            return public.returnMsg(False,'Unable to connect to [{}], please check whether the machine can connect to the target server'.format(get.other))
+                            return public.return_msg_gettext(False,'Unable to connect to [{}], please check whether the machine can connect to the target server'.format(get.other))
 
                     other_conf = '''location ~ [^/]\.php(/|$)
 {{
@@ -3103,13 +3184,18 @@ server
                     rep = "include\s+enable-php-(\w{2,5})\.conf"
                     tmp = re.search(rep,conf)
                     if tmp: conf = conf.replace(tmp.group(),'include ' + dst)
+                elif re.search("enable-php-\d+-wpfastcgi.conf",conf):
+                    dst = 'enable-php-{}-wpfastcgi.conf'.format(version)
+                    conf = conf.replace(other_rep,dst)
+                    rep = "enable-php-\d+-wpfastcgi.conf"
+                    tmp = re.search(rep, conf)
+                    if tmp:conf = conf.replace(tmp.group(),dst)
                 else:
                     dst = 'enable-php-'+version+'.conf'
                     conf = conf.replace(other_rep,dst)
                     rep = "enable-php-(\w{2,5})\.conf"
                     tmp = re.search(rep,conf)
                     if tmp: conf = conf.replace(tmp.group(),dst)
-
                 public.writeFile(file,conf)
                 try:
                     import site_dir_auth
@@ -3145,16 +3231,16 @@ server
                         public.writeFile(file, conf)
             if not multiple:
                 public.serviceReload()
-            public.WriteLog("TYPE_SITE", "SITE_PHPVERSION_SUCCESS", (siteName, version))
-            return public.returnMsg(True, 'SITE_PHPVERSION_SUCCESS', (siteName, version))
+            public.write_log_gettext("Site manager", 'Successfully changed PHP Version of site [{}] to PHP-{}', (siteName, version))
+            return public.return_msg_gettext(True, 'Successfully changed PHP Version of site [{}] to PHP-{}', (siteName, version))
         except:
             return public.get_error_info()
-            return public.returnMsg(False, 'PHP_SETUP_FAILED')
+            return public.return_msg_gettext(False, 'Setup failed, no enable-php-xx related configuration items were found in the website configuration file!')
 
     # 是否开启目录防御
     def GetDirUserINI(self, get):
         path = get.path + self.GetRunPath(get)
-        if not path: return public.returnMsg(False, 'DIR_NOT_EXISTS')
+        if not path: return public.return_msg_gettext(False, 'Requested directory does not exist')
         id = get.id
         get.name = public.M('sites').where("id=?", (id,)).getField('name')
         data = {}
@@ -3210,7 +3296,7 @@ server
                     public.writeFile(filename, conf)
                     public.ExecShell("chattr +i " + filename)
                 public.set_site_open_basedir_nginx(siteName)
-                return public.returnMsg(True, 'SITE_BASEDIR_CLOSE_SUCCESS')
+                return public.return_msg_gettext(True, 'Base directory turned off!')
 
             if conf and "session.save_path" in conf:
                 rep = "session.save_path\s*=\s*(.*)"
@@ -3221,7 +3307,7 @@ server
             public.ExecShell("chattr +i " + filename)
             public.set_site_open_basedir_nginx(siteName)
             public.serviceReload()
-            return public.returnMsg(True, 'SITE_BASEDIR_OPEN_SUCCESS')
+            return public.return_msg_gettext(True, 'Base directory turned on!')
         except Exception as e:
             public.ExecShell("chattr +i " + filename)
             return str(e)
@@ -3292,7 +3378,7 @@ server
                 else:
                     get.todomain = ""
                     get.proxysite = str(re.search(url_rep, old_conf).group(2))
-                get.proxyname = public.GetMsg("OLD_PROXY")
+                get.proxyname = public.get_msg_gettext('Old proxy')
                 get.type = 1
                 get.proxydir = "/"
                 get.advanced = 0
@@ -3344,9 +3430,9 @@ server
                     del_failed[proxyname] = resule['msg']
                 del_successfully.append(proxyname)
             except:
-                del_failed[proxyname] = public.getMsg('DEL_ERROR1')
+                del_failed[proxyname] = public.get_msg_gettext('There was an error deleting, please try again.')
                 pass
-        return {'status': True, 'msg': public.getMsg('DEL_PROXY_MULTIPLE', (','.join(del_failed),)),
+        return {'status': True, 'msg': public.get_msg_gettext('Delete [ {} ] proxy successfully', (','.join(del_failed),)),
                 'error': del_failed,
                 'success': del_successfully}
 
@@ -3375,7 +3461,7 @@ server
                 self.SetApache(get.sitename)
                 if not multiple:
                     public.serviceReload()
-                return public.returnMsg(True, 'DEL_SUCCESS')
+                return public.return_msg_gettext(True, 'Successfully deleted')
 
     # 检查代理是否存在
     def __check_even(self, get, action=""):
@@ -3429,31 +3515,31 @@ server
                 else:
                     sk.connect((d, 443))
         except:
-            return public.returnMsg(False, "CANT_GET_URL")
+            return public.return_msg_gettext(False, 'Can NOT get target URL')
 
     # 基本设置检查
     def __CheckStart(self, get, action=""):
         isError = public.checkWebConfig()
         if (isError != True):
-            return public.returnMsg(False, 'GET_ERR_IN_CONFILE')
+            return public.return_msg_gettext(False, 'An error was detected in the configuration file. Please solve it before proceeding')
         if action == "create":
             if sys.version_info.major < 3:
-                if len(get.proxyname) < 3 or len(get.proxyname) > 15:
-                    return public.returnMsg(False, 'NAME_LEN')
+                if len(get.proxyname) < 3 or len(get.proxyname) > 40:
+                    return public.return_msg_gettext(False, 'Database name cannot be more than 40 characters!')
             else:
-                if len(get.proxyname.encode("utf-8")) < 3 or len(get.proxyname.encode("utf-8")) > 15:
-                    return public.returnMsg(False, 'NAME_LEN')
+                if len(get.proxyname.encode("utf-8")) < 3 or len(get.proxyname.encode("utf-8")) > 40:
+                    return public.return_msg_gettext(False, 'Database name cannot be more than 40 characters!')
         if self.__check_even(get, action):
-            return public.returnMsg(False, 'PROXY_NAME_OR_DIR_EXIST')
+            return public.return_msg_gettext(False, 'Specified reverse proxy name or proxy folder already exists')
         # 判断代理，只能有全局代理或目录代理
         if self.__check_proxy_even(get, action):
-            return public.returnMsg(False, 'CANT_SET_DIRANDGLOBA')
+            return public.return_msg_gettext(False, 'Cannot set both directory and global proxies')
         # 判断cachetime类型
         if get.cachetime:
             try:
                 int(get.cachetime)
             except:
-                return public.returnMsg(False, "INPUT_NUM")
+                return public.return_msg_gettext(False, 'Please enter number')
 
         rep = "http(s)?\:\/\/"
         # repd = "http(s)?\:\/\/([a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.)+([a-zA-Z0-9][a-zA-Z0-9]{0,62})+.?"
@@ -3461,19 +3547,19 @@ server
         repte = "[\?\=\[\]\)\(\*\&\^\%\$\#\@\!\~\`{\}\>\<\,\',\"]+"
         # 检测代理目录格式
         if re.search(repte, get.proxydir):
-            return public.returnMsg(False, "PROXY_DIR_ERR", ("?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\,',\"]",))
+            return public.return_msg_gettext(False, "PROXY_DIR_ERR", ("?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\,',\"]",))
         # 检测发送域名格式
         if get.todomain:
             if re.search("[\}\{\#\;\"\']+",get.todomain):
-                return public.returnMsg(False, 'Sent Domain format error :'+get.todomain+'<br>The following special characters cannot exist [ }  { # ; \" \' ] ')
+                return public.return_msg_gettext(False, 'Sent Domain format error :'+get.todomain+'<br>The following special characters cannot exist [ }  { # ; \" \' ] ')
         if public.get_webserver() != 'openlitespeed' and not get.todomain:
             get.todomain = "$host"
 
         # 检测目标URL格式
         if not re.match(rep, get.proxysite):
-            return public.returnMsg(False, 'DOMAIN_FORMAT', (get.proxysite,))
+            return public.return_msg_gettext(False, 'Sent domain format ERROR {}', (get.proxysite,))
         if re.search(repte, get.proxysite):
-            return public.returnMsg(False, "PROXY_URL_ERR", ("?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\,',\"]",))
+            return public.return_msg_gettext(False, "PROXY_URL_ERR", ("?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\,',\"]",))
         # 检测目标url是否可用
         # if re.match(repd, get.proxysite):
         #     if self.__CheckUrl(get):
@@ -3484,9 +3570,9 @@ server
             for s in subfilter:
                 if not s["sub1"]:
                     if s["sub2"]:
-                        return public.returnMsg(False, 'INPUT_REPLACE_CONTENT')
+                        return public.return_msg_gettext(False, 'Please enter the content to be replaced')
                 elif s["sub1"] == s["sub2"]:
-                    return public.returnMsg(False, 'REP_CON_CANT_SAMEAS_BEREP_CON')
+                    return public.return_msg_gettext(False, 'The content to replace cannot be the same as the content to be replaced')
 
     # 设置Nginx配置
     def SetNginx(self, get):
@@ -3508,9 +3594,11 @@ server
             self.CheckProxy(get)
             ng_conf = public.readFile(ng_file)
             if not p_conf:
-                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
-                    "CLEAR_CACHE")
-                ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
+                # rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
+                #     "CLEAR_CACHE")
+                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.*\n.*" % public.get_msg_gettext("#Clear cache")
+                # ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
+                ng_conf = re.sub(rep, '', ng_conf)
                 oldconf = '''location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$
     {
         expires      30d;
@@ -3524,7 +3612,7 @@ server
         access_log off;
     }'''
                 if "(gif|jpg|jpeg|png|bmp|swf)$" not in ng_conf:
-                    ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
+                    ng_conf = re.sub('access_log\s*/www', oldconf + "\n\taccess_log /www",ng_conf)
                 public.writeFile(ng_file, ng_conf)
                 return
             sitenamelist = []
@@ -3536,15 +3624,17 @@ server
                 if not re.search(rep, ng_conf):
                     rep = "location.+\(gif[\w\|\$\(\)\n\{\}\s\;\/\~\.\*\\\\\?]+access_log\s+/"
                     ng_conf = re.sub(rep, 'access_log  /', ng_conf)
-                    ng_conf = ng_conf.replace("include enable-php-", "%s\n" % public.GetMsg(
-                        "CLEAR_CACHE") + cureCache + "\n\t%s\n\t" % public.GetMsg(
-                        "NGINX_PROXY_REP") + "include " + ng_proxyfile + ";\n\n\tinclude enable-php-")
+                    ng_conf = ng_conf.replace("include enable-php-", "%s\n" % public.get_msg_gettext(
+                        "#Clear cache") + cureCache + "\n\t%s\n\t" % public.get_msg_gettext(
+                        "#Referenced reverse proxy rule, if commented, the configured reverse proxy will be invalid") + "include " + ng_proxyfile + ";\n\n\tinclude enable-php-")
                     public.writeFile(ng_file, ng_conf)
 
             else:
-                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
-                    "CLEAR_CACHE")
-                ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
+                # rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
+                #     "CLEAR_CACHE")
+                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.*\n.*" % public.get_msg_gettext("#Clear cache")
+                # ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
+                ng_conf = re.sub(rep,'',ng_conf)
                 oldconf = '''location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$
     {
         expires      30d;
@@ -3558,7 +3648,7 @@ server
         access_log off;
     }'''
                 if "(gif|jpg|jpeg|png|bmp|swf)$" not in ng_conf:
-                    ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
+                    ng_conf = re.sub('access_log\s*/www', oldconf + "\n\taccess_log  /www",ng_conf)
                 public.writeFile(ng_file, ng_conf)
 
     # 设置apache配置
@@ -3573,7 +3663,7 @@ server
         if os.path.exists(ap_file):
             ap_conf = public.readFile(ap_file)
             if p_conf == "[]":
-                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.GetMsg("NGINX_PROXY_REP")
+                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.get_msg_gettext('#Referenced reverse proxy rule, if commented, the configured reverse proxy will be invalid')
                 ap_conf = re.sub(rep, '', ap_conf)
                 public.writeFile(ap_file, ap_conf)
                 return
@@ -3581,12 +3671,12 @@ server
                 rep = "combined(\n|.)+IncludeOptional.*\/proxy\/.*conf"
                 rep1 = "combined"
                 if not re.search(rep, ap_conf):
-                    ap_conf = ap_conf.replace(rep1, rep1 + "\n\t%s\n\t" % public.GetMsg(
-                        "NGINX_PROXY_REP") + "\n\tIncludeOptional " + ap_proxyfile)
+                    ap_conf = ap_conf.replace(rep1, rep1 + "\n\t%s\n\t" % public.get_msg_gettext(
+                        '#Referenced reverse proxy rule, if commented, the configured reverse proxy will be invalid') + "\n\tIncludeOptional " + ap_proxyfile)
                     public.writeFile(ap_file, ap_conf)
             else:
                 # rep = "\n*#引用反向代理(\n|.)+IncludeOptional.*\/proxy\/.*conf"
-                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.GetMsg("NGINX_PROXY_REP")
+                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.get_msg_gettext('#Referenced reverse proxy rule, if commented, the configured reverse proxy will be invalid')
                 ap_conf = re.sub(rep, '', ap_conf)
                 public.writeFile(ap_file, ap_conf)
 
@@ -3634,7 +3724,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         for i in [rewriteconfpath, nginxconfpath, vhostpath]:
             conf = public.readFile(i)
             if re.findall(rep, conf):
-                return public.returnMsg(False, 'NGINX_PROXY_EXIST_ERR')
+                return public.return_msg_gettext(False, 'A global reverse proxy already exists in the rewrite/nginx master configuration/vhost file')
 
     # 创建反向代理
     def CreateProxy(self, get):
@@ -3650,6 +3740,9 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                 return self.CheckLocation(get)
         if not get.proxysite.split('//')[-1]:
             return public.returnMsg(False, 'The target URL cannot be [http:// or https://], please fill in the full URL, such as: https://aapanel.com')
+        # project_type = public.M('sites').where('name=?', (get.sitename,)).field('project_type').find()['project_type']
+        # if project_type == 'WP':
+        #     return public.return_msg_gettext(False,'Reverse proxies are not currently available for Wordpress sites that use one-click deployment')
         proxyUrl = self.__read_config(self.__proxyfile)
         proxyUrl.append({
             "proxyname": get.proxyname,
@@ -3675,7 +3768,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
             get.siteName = get.sitename
             self.SetPHPVersion(get)
         public.serviceReload()
-        return public.returnMsg(True, 'ADD_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 取代理配置文件
     def GetProxyFile(self, get):
@@ -3688,7 +3781,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         self.setupPath, get.webserver, sitename, proxyname_md5, sitename)
         for i in conf:
             if proxyname == i["proxyname"] and sitename == i["sitename"] and i["type"] != 1:
-                return public.returnMsg(False, 'PROXY_WAS_STOP')
+                return public.return_msg_gettext(False, 'Proxy suspended')
         f = files.files()
         return f.GetFileBody(get), get.path
 
@@ -3730,13 +3823,15 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         for i in range(len(conf)):
             if conf[i]["proxyname"] == get.proxyname and conf[i]["sitename"] == get.sitename:
                 if int(get.type) != 1:
+                    if not os.path.exists(ng_conf_file):
+                        return public.returnMsg(False,"Please enable the reverse proxy before editing!")
                     public.ExecShell("mv {f} {f}_bak".format(f=ap_conf_file))
                     public.ExecShell("mv {f} {f}_bak".format(f=ng_conf_file))
                     public.ExecShell("mv {f} {f}_bak".format(f=ols_conf_file))
                     conf[i]["type"] = int(get.type)
                     self.__write_config(self.__proxyfile, conf)
                     public.serviceReload()
-                    return public.returnMsg(True, 'EDIT_SUCCESS')
+                    return public.return_msg_gettext(True, 'Setup successfully!')
                 else:
                     if os.path.exists(ap_conf_file + "_bak"):
                         public.ExecShell("mv {f}_bak {f}".format(f=ap_conf_file))
@@ -3749,7 +3844,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     php_pass_proxy = get.proxysite
                     if get.proxysite[-1] == '/' or get.proxysite.count('/') > 2 or '?' in get.proxysite:
                         php_pass_proxy = re.search('(https?\:\/\/[\w\.]+)', get.proxysite).group(0)
-                    ng_conf = re.sub("location\s+%s" % conf[i]["proxydir"], "location " + get.proxydir, ng_conf)
+                    ng_conf = re.sub("location\s+[\^\~]*\s?%s" % conf[i]["proxydir"], "location ^~ " + get.proxydir, ng_conf)
                     ng_conf = re.sub("proxy_pass\s+%s" % conf[i]["proxysite"], "proxy_pass " + get.proxysite, ng_conf)
                     ng_conf = re.sub("location\s+\~\*\s+\\\.\(php.*\n\{\s*proxy_pass\s+%s.*" % (php_pass_proxy),
                                      "location ~* \.(php|jsp|cgi|asp|aspx)$\n{\n\tproxy_pass %s;" % php_pass_proxy,ng_conf)
@@ -3894,7 +3989,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     #     os.system("mv %s %s_bak" % (ng_conf_file, ng_conf_file))
                     if not hasattr(get, 'notreload'):
                         public.serviceReload()
-                    return public.returnMsg(True, 'EDIT_SUCCESS')
+                    return public.return_msg_gettext(True, 'Setup successfully!')
 
         # 设置反向代理
 
@@ -3995,21 +4090,21 @@ location ^~ %s
             if type == 1 and cache == 1:
                 ng_proxy_cache += ng_proxy % (
                     proxydir, proxydir, proxysite, get.todomain,
-                    public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, ng_cache, get.proxydir)
+                    public.get_msg_gettext('#Persistent connection related configuration'), ng_sub_filter, ng_cache, get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
                     get.proxydir, get.proxydir, proxysite, get.todomain,
-                    public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, no_cache,
+                    public.get_msg_gettext('#Persistent connection related configuration'), ng_sub_filter, no_cache,
                     get.proxydir)
         else:
             if type == 1 and cache == 1:
                 ng_proxy_cache += ng_proxy % (
                     get.proxydir, get.proxydir, get.proxysite, get.todomain,
-                    public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, ng_cache, get.proxydir)
+                    public.get_msg_gettext('#Persistent connection related configuration'), ng_sub_filter, ng_cache, get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
                     get.proxydir, get.proxydir, get.proxysite, get.todomain,
-                    public.GetMsg("NGINX_PERSISTENCE"), ng_sub_filter, no_cache,
+                    public.get_msg_gettext('#Persistent connection related configuration'), ng_sub_filter, no_cache,
                     get.proxydir)
         public.writeFile(ng_proxyfile, ng_proxy_cache)
 
@@ -4042,17 +4137,17 @@ location ^~ %s
                 if get.sitename == p_conf[i]["sitename"] and p_conf[i]["proxyname"]:
                     del p_conf[i]
             self.RemoveProxy(get)
-            return public.returnMsg(False, 'ERROR: %s<br><a style="color:red;">' % public.GetMsg(
-                "CONFIG_ERROR") + isError.replace("\n",
+            return public.return_msg_gettext(False, 'ERROR: %s<br><a style="color:red;">' % public.get_msg_gettext(
+                'Configuration ERROR') + isError.replace("\n",
                                                   '<br>') + '</a>')
-        return public.returnMsg(True, 'SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 开启缓存
     def ProxyCache(self, get):
-        if public.get_webserver() != 'nginx': return public.returnMsg(False, 'WAF_NOT_NGINX')
+        if public.get_webserver() != 'nginx': return public.return_msg_gettext(False, 'Currently only support Nginx')
         file = self.setupPath + "/panel/vhost/nginx/" + get.siteName + ".conf"
         conf = public.readFile(file)
-        if conf.find('proxy_pass') == -1: return public.returnMsg(False, 'SET_ERROR')
+        if conf.find('proxy_pass') == -1: return public.return_msg_gettext(False, 'Failed to set')
         if conf.find('#proxy_cache') != -1:
             conf = conf.replace('#proxy_cache', 'proxy_cache')
             conf = conf.replace('#expires 12h', 'expires 12h')
@@ -4062,7 +4157,7 @@ location ^~ %s
 
         public.writeFile(file, conf)
         public.serviceReload()
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 检查反向代理配置
     def CheckProxy(self, get):
@@ -4107,7 +4202,7 @@ location ^~ %s
                 'runPath']
 
         rewriteList['rewrite'] = []
-        rewriteList['rewrite'].append('0.' + public.getMsg('SITE_REWRITE_NOW'))
+        rewriteList['rewrite'].append('0.' + public.get_msg_gettext('Current'))
         for ds in os.listdir('rewrite/' + ws):
             if ds == 'list.txt': continue
             rewriteList['rewrite'].append(ds[0:len(ds) - 5])
@@ -4117,12 +4212,14 @@ location ^~ %s
     # 保存伪静态模板
     def SetRewriteTel(self, get):
         ws = public.get_webserver()
+        if not get.name:
+            public.return_msg_gettext(True, 'Please enter a template name')
         if ws == "openlitespeed":
             ws = "apache"
         if sys.version_info[0] == 2: get.name = get.name.encode('utf-8')
         filename = 'rewrite/' + ws + '/' + get.name + '.conf'
         public.writeFile(filename, get.data)
-        return public.returnMsg(True, 'SITE_REWRITE_SAVE')
+        return public.return_msg_gettext(True, 'New URL rewrite rule has been saved!')
 
     # 打包
     def ToBackup(self, get):
@@ -4138,8 +4235,8 @@ location ^~ %s
         public.ExecShell(execStr)
         sql = public.M('backup').add('type,name,pid,filename,size,addtime',
                                      (0, fileName, find['id'], zipName, 0, public.getDate()))
-        public.WriteLog('TYPE_SITE', 'SITE_BACKUP_SUCCESS', (find['name'],))
-        return public.returnMsg(True, 'BACKUP_SUCCESS')
+        public.write_log_gettext('Site manager', 'Backup site [{}] succeed!', (find['name'],))
+        return public.return_msg_gettext(True, 'Backup Succeeded!')
 
     # 删除备份文件
     def DelBackup(self, get):
@@ -4153,9 +4250,9 @@ location ^~ %s
             public.ExecShell(
                 public.get_python_bin() + " " + self.setupPath + '/panel/script/backup_qiniu.py delete_file ' + name)
 
-        public.WriteLog('TYPE_SITE', 'SITE_BACKUP_DEL_SUCCESS', (name, filename))
+        public.write_log_gettext('Site manager', 'Successfully deleted backup [{}] of site [{}]!', (name, filename))
         public.M('backup').where(where, (id,)).delete()
-        return public.returnMsg(True, 'DEL_SUCCESS')
+        return public.return_msg_gettext(True, 'Successfully deleted')
 
     # 旧版本配置文件处理
     def OldConfigFile(self):
@@ -4280,7 +4377,7 @@ location ^~ %s
     def toSiteDatabase(self, name, domains, path):
         if public.M('sites').where('name=?', (name,)).count() > 0: return
         public.M('sites').add('name,path,status,ps,addtime',
-                              (name, path, '1', public.GetMsg("INPUT_DB_PS"), public.getDate()))
+                              (name, path, '1', public.get_msg_gettext('Please enter a note'), public.getDate()))
         pid = public.M('sites').where("name=?", (name,)).getField('id')
         for domain in domains:
             public.M('domain').add('pid,name,port,addtime', (pid, domain, '80', public.getDate()))
@@ -4349,7 +4446,7 @@ location ^~ %s
                 public.writeFile(filename,conf)
 
         public.serviceReload()
-        return public.returnMsg(True, 'SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 取日志状态
     def GetLogsStatus(self, get):
@@ -4380,16 +4477,19 @@ location ^~ %s
     # 设置目录加密
     def SetHasPwd(self, get):
         if public.get_webserver() == 'openlitespeed':
-            return public.returnMsg(False, 'NOT_SUPPORT_OLS')
-        if len(get.username.strip()) == 0 or len(get.password.strip()) == 0: return public.returnMsg(False,
-                                                                                                     'LOGIN_USER_EMPTY')
+            return public.return_msg_gettext(False, 'The current web server is openlitespeed. This function is not supported yet.')
+        if len(get.username.strip()) < 3 or len(get.password.strip()) < 3: return public.return_msg_gettext(False,
+                                                                                                     'Username or password cannot be less than 3 digits!')
 
         if not hasattr(get, 'siteName'):
             get.siteName = public.M('sites').where('id=?', (get.id,)).getField('name')
 
         self.CloseHasPwd(get)
         filename = public.GetConfigValue('setup_path') + '/pass/' + get.siteName + '.pass'
-        passconf = get.username + ':' + public.hasPwd(get.password)
+        try:
+            passconf = get.username + ':' + public.hasPwd(get.password)
+        except:
+            return public.returnMsg(False,"The password fomart is wrong, please do not use special symbols for the first two digits!")
 
         if get.siteName == 'phpmyadmin':
             get.configFile = self.setupPath + '/nginx/conf/nginx.conf'
@@ -4439,8 +4539,8 @@ location ^~ %s
         if not os.path.exists(passDir): public.ExecShell('mkdir -p ' + passDir)
         public.writeFile(filename, passconf)
         public.serviceReload()
-        public.WriteLog("TYPE_SITE", "SITE_AUTH_OPEN_SUCCESS", (get.siteName,))
-        return public.returnMsg(True, 'SET_SUCCESS')
+        public.write_log_gettext("Site manager", "Set site [{}] to password authentication required!", (get.siteName,))
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 取消目录加密
     def CloseHasPwd(self, get):
@@ -4470,8 +4570,8 @@ location ^~ %s
             conf = conf.replace(' #Require all granted', " Require all granted")
             public.writeFile(get.configFile, conf)
         public.serviceReload()
-        public.WriteLog("TYPE_SITE", "SITE_AUTH_CLOSE_SUCCESS", (get.siteName,))
-        return public.returnMsg(True, 'SET_SUCCESS')
+        public.write_log_gettext("Site manager", "Cleared password authentication for site [{}]!", (get.siteName,))
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 启用tomcat支持
     def SetTomcat(self, get):
@@ -4479,7 +4579,7 @@ location ^~ %s
         name = siteName.replace('.', '_')
 
         rep = "^(\d{1,3}\.){3,3}\d{1,3}$"
-        if re.match(rep, siteName): return public.returnMsg(False, 'TOMCAT_IP')
+        if re.match(rep, siteName): return public.return_msg_gettext(False, 'ERROR, primary domain cannot be IP address!')
 
         # nginx
         filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
@@ -4536,8 +4636,8 @@ location ^~ %s
         public.ExecShell('/etc/init.d/tomcat stop')
         public.ExecShell('/etc/init.d/tomcat start')
         public.ExecShell('echo "127.0.0.1 ' + siteName + '" >> /etc/hosts')
-        public.WriteLog('TYPE_SITE', 'SITE_TOMCAT_OPEN', (siteName,))
-        return public.returnMsg(True, 'SITE_TOMCAT_OPEN')
+        public.write_log_gettext('TYPE_SITE', 'Turned on Tomcat supporting for site [{}]!', (siteName,))
+        return public.return_msg_gettext(True, 'Succeeded, please test JSP program!')
 
     # 关闭tomcat支持
     def CloseTomcat(self, get):
@@ -4569,14 +4669,14 @@ location ^~ %s
         public.serviceReload()
         public.ExecShell('/etc/init.d/tomcat restart')
         public.ExecShell("sed -i '/" + siteName + "/d' /etc/hosts")
-        public.WriteLog('TYPE_SITE', 'SITE_TOMCAT_CLOSE', (siteName,))
-        return public.returnMsg(True, 'SITE_TOMCAT_CLOSE')
+        public.write_log_gettext('Site manager', 'Turned off Tomcat supporting for site [{}]!', (siteName,))
+        return public.return_msg_gettext(True, 'Tomcat mapping closed!')
 
-    # 取当站点前运行目录
-    def GetSiteRunPath(self, get):
-        siteName = public.M('sites').where('id=?', (get.id,)).getField('name')
-        sitePath = public.M('sites').where('id=?', (get.id,)).getField('path')
-        if not siteName: return {"runPath":"/",'dirs':[]}
+    #取当站点前运行目录
+    def GetSiteRunPath(self,get):
+        siteName = public.M('sites').where('id=?',(get.id,)).getField('name')
+        sitePath = public.M('sites').where('id=?',(get.id,)).getField('path')
+        if not siteName or os.path.isfile(sitePath): return {"runPath":"/",'dirs':[]}
         path = sitePath
         if public.get_webserver() == 'nginx':
             filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
@@ -4585,7 +4685,7 @@ location ^~ %s
                 rep = '\s*root\s+(.+);'
                 path = re.search(rep, conf)
                 if not path:
-                    return public.returnMsg(False, "GET_RUN_PATH_FAILED")
+                    return public.return_msg_gettext(False, 'Get Site run path false')
                 path = path.groups()[0]
         elif public.get_webserver() == 'apache':
             filename = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
@@ -4594,7 +4694,7 @@ location ^~ %s
                 rep = '\s*DocumentRoot\s*"(.+)"\s*\n'
                 path = re.search(rep, conf)
                 if not path:
-                    return public.returnMsg(False, "GET_RUN_PATH_FAILED")
+                    return public.return_msg_gettext(False, 'Get Site run path false')
                 path = path.groups()[0]
         else:
             filename = self.setupPath + '/panel/vhost/openlitespeed/' + siteName + '.conf'
@@ -4603,7 +4703,7 @@ location ^~ %s
                 rep = "vhRoot\s*(.*)"
                 path = re.search(rep, conf)
                 if not path:
-                    return public.returnMsg(False, "GET_RUN_PATH_FAILED")
+                    return public.return_msg_gettext(False, 'Get Site run path false')
                 path = path.groups()[0]
         data = {}
         if sitePath == path:
@@ -4641,19 +4741,25 @@ location ^~ %s
         filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
         if os.path.exists(filename):
             conf = public.readFile(filename)
-            rep = '\s*root\s+(.+);'
-            path = re.search(rep, conf).groups()[0]
-            conf = conf.replace(path, sitePath + get.runPath)
-            public.writeFile(filename, conf)
+            if conf:
+                rep = '\s*root\s+(.+);'
+                tmp = re.search(rep,conf)
+                if tmp:
+                    path = tmp.groups()[0]
+                    conf = conf.replace(path,sitePath + get.runPath)
+                    public.writeFile(filename,conf)
 
-        # 处理Apache
+        #处理Apache
         filename = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
         if os.path.exists(filename):
             conf = public.readFile(filename)
-            rep = '\s*DocumentRoot\s*"(.+)"\s*\n'
-            path = re.search(rep, conf).groups()[0]
-            conf = conf.replace(path, sitePath + get.runPath)
-            public.writeFile(filename, conf)
+            if conf:
+                rep = '\s*DocumentRoot\s*"(.+)"\s*\n'
+                tmp = re.search(rep,conf)
+                if tmp:
+                    path = tmp.groups()[0]
+                    conf = conf.replace(path,sitePath + get.runPath)
+                    public.writeFile(filename,conf)
         # 处理OLS
         self._set_ols_run_path(sitePath, get.runPath, siteName)
         # self.DelUserInI(sitePath)
@@ -4667,7 +4773,7 @@ location ^~ %s
             public.ExecShell("chattr +i {}".format(d_path))
 
         public.serviceReload()
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     def _set_ols_run_path(self, site_path, run_path, sitename):
         ols_conf_file = "{}/panel/vhost/openlitespeed/{}.conf".format(self.setupPath, sitename)
@@ -4716,7 +4822,7 @@ location ^~ %s
         if get.name == '0':
             if os.path.exists(default_site_save): os.remove(default_site_save)
             public.serviceReload()
-            return public.returnMsg(True, 'SET_SUCCESS')
+            return public.return_msg_gettext(True, 'Setup successfully!')
 
         # 处理新的
         path = self.setupPath + '/apache/htdocs'
@@ -4747,12 +4853,12 @@ location ^~ %s
         if os.path.exists(path): public.ExecShell('rm -f ' + path)
         public.writeFile(default_site_save, get.name)
         public.serviceReload()
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 取默认站点
     def GetDefaultSite(self, get):
         data = {}
-        data['sites'] = public.M('sites').field('name').order('id desc').select()
+        data['sites'] = public.M('sites').where('project_type=? OR project_type=?',('PHP','WP')).field('name').order('id desc').select()
         data['defaultSite'] = public.readFile('data/defaultSite.pl')
         return data
 
@@ -4768,11 +4874,11 @@ location ^~ %s
             'setup_path') + "/panel/class && " + public.get_python_bin() + " panelSafe.pyc " + get.path
         sql = db.Sql()
         sql.table('tasks').add('id,name,type,status,addtime,execstr', (
-        None, '%s [' % public.GetMsg("SCAN_DIR") + get.path + ']', 'execshell', '0', time.strftime('%Y-%m-%d %H:%M:%S'),
+        None, '%s [' % public.get_msg_gettext('Scan directory') + get.path + ']', 'execshell', '0', time.strftime('%Y-%m-%d %H:%M:%S'),
         execstr))
         public.writeFile(isTask, 'True')
-        public.WriteLog('TYPE_SETUP', 'SITE_SCAN_ADD', (get.path,))
-        return public.returnMsg(True, 'SITE_SCAN_ADD')
+        public.write_log_gettext('Installer', 'Added trojan scan task for directory [{}]!', (get.path,))
+        return public.return_msg_gettext(True, 'Scan Task has in the queue!')
 
     # 获取结果信息
     def GetCheckSafe(self, get):
@@ -4794,10 +4900,10 @@ location ^~ %s
             conf = public.httpGet(public.getUrl() + '/install/ruleList.conf')
             if conf:
                 public.writeFile(self.setupPath + '/panel/data/ruleList.conf', conf)
-                return public.returnMsg(True, 'UPDATE_SUCCESS')
-            return public.returnMsg(False, 'CONNECT_ERR')
+                return public.return_msg_gettext(True, 'Update Succeeded!')
+            return public.return_msg_gettext(False, 'Failed to connect server!')
         except:
-            return public.returnMsg(False, 'CONNECT_ERR')
+            return public.return_msg_gettext(False, 'Failed to connect server!')
 
     def set_site_etime_multiple(self, get):
         '''
@@ -4818,9 +4924,9 @@ location ^~ %s
                 self.SetEdate(get)
                 set_edate_successfully.append(site_name)
             except:
-                set_edate_failed[site_name] = 'SET_ERROR1'
+                set_edate_failed[site_name] = 'There was an error setting, please try again.'
                 pass
-        return {'status': True, 'msg': public.getMsg('SET_EDATE_MULTIPLE', (','.join(set_edate_successfully),)),
+        return {'status': True, 'msg': public.get_msg_gettext('Set the website [{}] expiration time successfully', (','.join(set_edate_successfully),)),
                 'error': set_edate_failed,
                 'success': set_edate_successfully}
 
@@ -4828,15 +4934,15 @@ location ^~ %s
     def SetEdate(self, get):
         result = public.M('sites').where('id=?', (get.id,)).setField('edate', get.edate)
         siteName = public.M('sites').where('id=?', (get.id,)).getField('name')
-        public.WriteLog('TYPE_SITE', 'SITE_EXPIRE_SUCCESS', (siteName, get.edate))
-        return public.returnMsg(True, 'SITE_EXPIRE_SUCCESS')
+        public.write_log_gettext('Site manager', 'Set expired date to [{}] for site[{}]!', (get.edate,siteName))
+        return public.return_msg_gettext(True, 'Successfully set, the site will stop automatically when expires!')
 
     # 获取防盗链状态
     def GetSecurity(self, get):
         file = '/www/server/panel/vhost/nginx/' + get.name + '.conf'
         conf = public.readFile(file)
         data = {}
-        if type(conf) == bool: return public.returnMsg(False, 'CONF_FILE_NOT_EXISTS')
+        if type(conf) == bool: return public.return_msg_gettext(False, 'Configuration file not exist')
         if conf.find('SECURITY-START') != -1:
             rep = "#SECURITY-START(\n|.)+#SECURITY-END"
             tmp = re.search(rep, conf).group()
@@ -4868,25 +4974,32 @@ location ^~ %s
 
     # 设置防盗链
     def SetSecurity(self, get):
-        if len(get.fix) < 2: return public.returnMsg(False, 'URL_SUFFIX_NOT_EMPTY!')
-        if len(get.domains) < 3: return public.returnMsg(False, 'ANTI_THEFT_EMPTY_ERR')
+        if len(get.fix) < 2: return public.return_msg_gettext(False, 'URL suffix cannot be empty!')
+        if len(get.domains) < 3: return public.return_msg_gettext(False, 'Anti-theft chain domain name cannot be empty!')
         file = '/www/server/panel/vhost/nginx/' + get.name + '.conf'
         if os.path.exists(file):
             conf = public.readFile(file)
             if get.status == '1':
+                if conf.find('SECURITY-START') == -1: return public.return_msg_gettext(False,'Please turn on the hotlink first!')
                 r_key = 'valid_referers none blocked'
                 d_key = 'valid_referers'
                 if conf.find(r_key) == -1:
                     conf = conf.replace(d_key, r_key)
                 else:
-                    if conf.find('SECURITY-START') == -1: return public.returnMsg(False, 'ANTI_THEFT_ERR')
                     conf = conf.replace(r_key, d_key)
             else:
 
                 if conf.find('SECURITY-START') != -1:
                     rep = "\s{0,4}#SECURITY-START(\n|.){1,500}#SECURITY-END\n?"
                     conf = re.sub(rep, '', conf)
-                    public.WriteLog('TYPE_SITE', "SITE_STOP_ANTI_STEALING_LINK", (get.name,))
+                    public.write_log_gettext('Site manager', "Hotlink Protection for site [{}] disabled!", (get.name,))
+                    # 先替换域名部分，防止域名过多导致替换失败
+                    rep = "\s+valid_referers.+"
+                    conf = re.sub(rep,'',conf)
+                    # 再替换配置部分
+                    rep = "\s+#SECURITY-START(\n|.){1,500}#SECURITY-END\n?"
+                    conf = re.sub(rep,'',conf)
+                    public.write_log_gettext('Site manager', "Hotlink Protection for site [{}] disabled!", (get.name,))
                 else:
                     return_rule = 'return 404'
                     if 'return_rule' in get:
@@ -4895,7 +5008,7 @@ location ^~ %s
                             return_rule = 'return {}'.format(get.return_rule)
                         else:
                             if get.return_rule[0] != '/':
-                                return public.returnMsg(False, "RESPONSE_ERR")
+                                return public.return_msg_gettext(False, 'Response resources should use URI path or HTTP status code, such as: /test.png or 404')
                             return_rule = 'rewrite /.* {} break'.format(get.return_rule)
                     rconf = '''%s
     location ~ .*\.(%s)$
@@ -4908,10 +5021,10 @@ location ^~ %s
         }
     }
     #SECURITY-END
-    include enable-php-''' % (public.GetMsg("SECURITY_START"), get.fix.strip().replace(',', '|'),
+    include enable-php-''' % (public.get_msg_gettext('#SECURITY-START Hotlink protection configuration'), get.fix.strip().replace(',', '|'),
                               get.domains.strip().replace(',', ' '), return_rule)
                     conf = re.sub("include\s+enable-php-", rconf, conf)
-                    public.WriteLog('TYPE_SITE', "SITE_START_ANTI_STEALING_LINK", (get.name,))
+                    public.write_log_gettext('Site manager', "Hotlink Protection for site [{}] enabled!", (get.name,))
             public.writeFile(file, conf)
 
         file = '/www/server/panel/vhost/apache/' + get.name + '.conf'
@@ -4923,7 +5036,7 @@ location ^~ %s
                 if conf.find(r_key) == -1:
                     conf = conf.replace(d_key, r_key)
                 else:
-                    if conf.find('SECURITY-START') == -1: return public.returnMsg(False, 'ANTI_THEFT_ERR')
+                    if conf.find('SECURITY-START') == -1: return public.return_msg_gettext(False, 'Please turn on anti-theft first!')
                     conf = conf.replace(r_key, d_key)
             else:
                 if conf.find('SECURITY-START') != -1:
@@ -4937,7 +5050,7 @@ location ^~ %s
                             return_rule = '/{s}.html [R={s},NC,L]'.format(s=get.return_rule)
                         else:
                             if get.return_rule[0] != '/':
-                                return public.returnMsg(False, "RESPONSE_ERR")
+                                return public.return_msg_gettext(False, 'Response resources should use URI path or HTTP status code, such as: /test.png or 404')
                             return_rule = '{}'.format(get.return_rule)
 
                     tmp = "    RewriteCond %{HTTP_REFERER} !{DOMAIN} [NC]"
@@ -4945,8 +5058,8 @@ location ^~ %s
                     for d in get.domains.split(','):
                         tmps.append(tmp.replace('{DOMAIN}', d))
                     domains = "\n".join(tmps)
-                    rconf = "combined\n    " + public.GetMsg(
-                        "SECURITY_START") + "\n    RewriteEngine on\n" + domains + "\n    RewriteRule .(" + get.fix.strip().replace(
+                    rconf = "combined\n    " + public.get_msg_gettext(
+                        '#SECURITY-START Hotlink protection configuration') + "\n    RewriteEngine on\n" + domains + "\n    RewriteRule .(" + get.fix.strip().replace(
                         ',', '|') + ") " + return_rule + "\n    #SECURITY-END"
                     conf = conf.replace('combined', rconf)
             public.writeFile(file, conf)
@@ -4974,7 +5087,19 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         if get.status == "false":
             public.ExecShell('rm -f {}'.format(file))
         public.serviceReload()
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
+
+    # xss 防御
+    def xsssec(self,text):
+        replace_list = {
+            "<":"＜",
+            ">":"＞",
+            "'":"＇",
+            '"':"＂",
+        }
+        for k,v in replace_list.items():
+            text = text.replace(k,v)
+        return public.xssencode2(text)
 
     # 取网站日志
     def GetSiteLogs(self, get):
@@ -4985,8 +5110,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             logPath = '/www/wwwlogs/' + get.siteName + '-access_log'
         else:
             logPath = '/www/wwwlogs/' + get.siteName + '_ols.access_log'
-        if not os.path.exists(logPath): return public.returnMsg(False, 'LOG_EMPTY')
-        return public.returnMsg(True, public.GetNumLines(logPath, 1000))
+        if not os.path.exists(logPath): return public.return_msg_gettext(False, 'Log is empty')
+        return public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 1000)))
 
     # 取网站日志
     def get_site_err_log(self, get):
@@ -4997,43 +5122,43 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             logPath = '/www/wwwlogs/' + get.siteName + '-error_log'
         else:
             logPath = '/www/wwwlogs/' + get.siteName + '_ols.error_log'
-        if not os.path.exists(logPath): return public.returnMsg(False, 'LOG_EMPTY')
-        return public.returnMsg(True, public.GetNumLines(logPath, 1000))
+        if not os.path.exists(logPath): return public.return_msg_gettext(False, 'Log is empty')
+        return public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 1000)))
 
     # 取网站分类
     def get_site_types(self, get):
         data = public.M("site_types").field("id,name").order("id asc").select()
-        data.insert(0, {"id": 0, "name": public.GetMsg("DEFAULT_SORT")})
+        data.insert(0, {"id": 0, "name": public.get_msg_gettext('Default category')})
         return data
 
     # 添加网站分类
     def add_site_type(self, get):
         get.name = get.name.strip()
-        if not get.name: return public.returnMsg(False, "SORT_NAME_ERR")
-        if len(get.name) > 18: return public.returnMsg(False, "SORT_NAME_LEN_ERR")
+        if not get.name: return public.return_msg_gettext(False, 'Category name cannot be empty')
+        if len(get.name) > 18: return public.return_msg_gettext(False, 'Category name cannot exceed 6 Chinese characters or 18 letters')
         type_sql = public.M('site_types')
-        if type_sql.count() >= 10: return public.returnMsg(False, 'SORT_MOST')
-        if type_sql.where('name=?', (get.name,)).count() > 0: return public.returnMsg(False, "SORT_NAME_EXIST")
-        type_sql.add("name", (get.name,))
-        return public.returnMsg(True, 'ADD_SUCCESS')
+        if type_sql.count() >= 10: return public.return_msg_gettext(False, 'Add up to 10 categories!')
+        if type_sql.where('name=?', (get.name,)).count() > 0: return public.return_msg_gettext(False, 'Specified category name already exists!')
+        type_sql.add("name",(public.xssencode2(get.name),))
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 删除网站分类
     def remove_site_type(self, get):
         type_sql = public.M('site_types')
-        if type_sql.where('id=?', (get.id,)).count() == 0: return public.returnMsg(False, "SORT_NOT_EXIST")
+        if type_sql.where('id=?', (get.id,)).count() == 0: return public.return_msg_gettext(False, 'Specified category does NOT exist!')
         type_sql.where('id=?', (get.id,)).delete()
         public.M("sites").where("type_id=?", (get.id,)).save("type_id", (0,))
-        return public.returnMsg(True, "SORT_DEL")
+        return public.return_msg_gettext(True, 'Category deleted!')
 
     # 修改网站分类名称
     def modify_site_type_name(self, get):
         get.name = get.name.strip()
-        if not get.name: return public.returnMsg(False, "SORT_NAME_ERR")
-        if len(get.name) > 18: return public.returnMsg(False, "SORT_NAME_LEN_ERR")
+        if not get.name: return public.return_msg_gettext(False, 'Category name cannot be empty')
+        if len(get.name) > 18: return public.return_msg_gettext(False, 'Category name cannot exceed 6 Chinese characters or 18 letters')
         type_sql = public.M('site_types')
-        if type_sql.where('id=?', (get.id,)).count() == 0: return public.returnMsg(False, "SORT_NOT_EXIST")
+        if type_sql.where('id=?', (get.id,)).count() == 0: return public.return_msg_gettext(False, 'Specified category does NOT exist!')
         type_sql.where('id=?', (get.id,)).setField('name', get.name)
-        return public.returnMsg(True, "EDIT_SUCCESS")
+        return public.return_msg_gettext(True, 'Successfully modified')
 
     # 设置指定站点的分类
     def set_site_type(self, get):
@@ -5041,7 +5166,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         site_sql = public.M("sites")
         for s_id in site_ids:
             site_sql.where("id=?", (s_id,)).setField("type_id", get.id)
-        return public.returnMsg(True, "SET_SUCCESS")
+        return public.returnMsg(True, "Setup successfully!")
 
     # 设置目录保护
     def set_dir_auth(self, get):
@@ -5069,9 +5194,9 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                     continue
                 del_successfully.append(name)
             except:
-                del_failed[name] = public.getMsg('DEL_ERROR1')
+                del_failed[name] = public.get_msg_gettext('There was an error deleting, please try again.')
         public.serviceReload()
-        return {'status': True, 'msg': public.getMsg('DEL_DIR_AUTH_MULTIPLE', (','.join(del_successfully),)),
+        return {'status': True, 'msg': public.get_msg_gettext('Delete [ {} ] dir auth successfully', (','.join(del_successfully),)),
                 'error': del_failed,
                 'success': del_successfully}
 
@@ -5133,8 +5258,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         result = []
 
         import database
-        db_data = database.database().get_database_size(None)
-
+        db_data = database.database().get_database_size(ids,True)
         limit_size = 50 * 1024 * 1024
         f_list_size = [];db_list_size = []
         for id in ids:
@@ -5167,7 +5291,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                 data['database'] = db_data[find['name']]
                 data['database']['st_time'] = db_addtime
 
-                db_score = 0;
+                db_score = 0
                 db_size = data['database']['total']
 
                 if db_size > 0:
@@ -5181,3 +5305,271 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         slist['file_size'] = self.get_average_num(f_list_size)
         slist['db_size'] = self.get_average_num(db_list_size)
         return slist
+
+    def get_https_mode(self, get=None):
+        '''
+            @name 获取https模式
+            @author hwliang<2022-01-14>
+            @return bool False.宽松模式 True.严格模式
+        '''
+        web_server = public.get_webserver()
+        if web_server not in ['nginx', 'apache']:
+            return False
+
+        if web_server == 'nginx':
+            default_conf_file = "{}/nginx/0.default.conf".format(public.get_vhost_path())
+        else:
+            default_conf_file = "{}/apache/0.default.conf".format(public.get_vhost_path())
+
+        if not os.path.exists(default_conf_file): return False
+        default_conf = public.readFile(default_conf_file)
+        if not default_conf: return False
+
+        if default_conf.find('DEFAULT SSL CONFI') != -1: return True
+        return False
+
+    def write_ngx_default_conf_by_ssl(self):
+        '''
+            @name 写nginx默认配置文件（含SSL配置）
+            @author hwliang<2022-01-14>
+            @return bool
+        '''
+        default_conf_body = '''server
+{
+    listen 80;
+    listen 443 ssl;
+    server_name _;
+    index index.html;
+    root /www/server/nginx/html;
+
+    # DEFAULT SSL CONFIG
+    ssl_certificate    /www/server/panel/vhost/cert/0.default/fullchain.pem;
+    ssl_certificate_key    /www/server/panel/vhost/cert/0.default/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    add_header Strict-Transport-Security "max-age=31536000";
+}'''
+        ngx_default_conf_file = "{}/nginx/0.default.conf".format(public.get_vhost_path())
+        self.create_default_cert()
+        return public.writeFile(ngx_default_conf_file, default_conf_body)
+
+    def write_ngx_default_conf(self):
+        '''
+            @name 写nginx默认配置文件
+            @author hwliang<2022-01-14>
+            @return bool
+        '''
+        default_conf_body = '''server
+{
+    listen 80;
+    server_name _;
+    index index.html;
+    root /www/server/nginx/html;
+}'''
+        ngx_default_conf_file = "{}/nginx/0.default.conf".format(public.get_vhost_path())
+        return public.writeFile(ngx_default_conf_file, default_conf_body)
+
+    def write_apa_default_conf_by_ssl(self):
+        '''
+            @name 写nginx默认配置文件（含SSL配置）
+            @author hwliang<2022-01-14>
+            @return bool
+        '''
+        default_conf_body = '''<VirtualHost *:80>
+    ServerAdmin webmaster@example.com
+    DocumentRoot "/www/server/apache/htdocs"
+    ServerName bt.default.com
+    <Directory "/www/server/apache/htdocs">
+        SetOutputFilter DEFLATE
+        Options FollowSymLinks
+        AllowOverride All
+        Order allow,deny
+        Allow from all
+        DirectoryIndex index.html
+    </Directory>
+</VirtualHost>
+<VirtualHost *:443>
+    ServerAdmin webmaster@example.com
+    DocumentRoot "/www/server/apache/htdocs"
+    ServerName ssl.default.com
+
+    # DEFAULT SSL CONFIG
+    SSLEngine On
+    SSLCertificateFile /www/server/panel/vhost/cert/0.default/fullchain.pem
+    SSLCertificateKeyFile /www/server/panel/vhost/cert/0.default/privkey.pem
+    SSLCipherSuite EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5
+    SSLProtocol All -SSLv2 -SSLv3 -TLSv1
+    SSLHonorCipherOrder On
+
+    <Directory "/www/server/apache/htdocs">
+        SetOutputFilter DEFLATE
+        Options FollowSymLinks
+        AllowOverride All
+        Order allow,deny
+        Allow from all
+        DirectoryIndex index.html
+    </Directory>
+</VirtualHost>'''
+        apa_default_conf_file = "{}/apache/0.default.conf".format(public.get_vhost_path())
+        self.create_default_cert()
+        return public.writeFile(apa_default_conf_file, default_conf_body)
+
+    def write_apa_default_conf(self):
+        '''
+            @name 写apache默认配置文件
+            @author hwliang<2022-01-14>
+            @return bool
+        '''
+        default_conf_body = '''<VirtualHost *:80>
+    ServerAdmin webmaster@example.com
+    DocumentRoot "/www/server/apache/htdocs"
+    ServerName bt.default.com
+    <Directory "/www/server/apache/htdocs">
+        SetOutputFilter DEFLATE
+        Options FollowSymLinks
+        AllowOverride All
+        Order allow,deny
+        Allow from all
+        DirectoryIndex index.html
+    </Directory>
+</VirtualHost>'''
+        apa_default_conf_file = "{}/apache/0.default.conf".format(public.get_vhost_path())
+        return public.writeFile(apa_default_conf_file, default_conf_body)
+
+    def set_https_mode(self, get=None):
+        '''
+            @name 设置https模式
+            @author hwliang<2022-01-14>
+            @return dict
+        '''
+        web_server = public.get_webserver()
+        if web_server not in ['nginx', 'apache']:
+            return public.return_msg_gettext(False, 'This function only supports Nginx/Apache')
+
+        ngx_default_conf_file = "{}/nginx/0.default.conf".format(public.get_vhost_path())
+        apa_default_conf_file = "{}/apache/0.default.conf".format(public.get_vhost_path())
+        ngx_default_conf = public.readFile(ngx_default_conf_file)
+        apa_default_conf = public.readFile(apa_default_conf_file)
+        status = False
+        if ngx_default_conf:
+            if ngx_default_conf.find('DEFAULT SSL CONFIG') != -1:
+                status = False
+                self.write_ngx_default_conf()
+                self.write_apa_default_conf()
+            else:
+                status = True
+                self.write_ngx_default_conf_by_ssl()
+                self.write_apa_default_conf_by_ssl()
+        else:
+            status = True
+            self.write_ngx_default_conf_by_ssl()
+            self.write_apa_default_conf_by_ssl()
+
+        public.serviceReload()
+        status_msg = {True: 'Open', False: 'Close'}
+        msg = public.gettext_msg('Has {} HTTPS strict mode',(status_msg[status],))
+        public.write_log_gettext('WebSite manager', msg)
+        return public.return_msg_gettext(True, msg)
+
+    def create_default_cert(self):
+        '''
+            @name 创建默认SSL证书
+            @author hwliang<2022-01-14>
+            @return bool
+        '''
+        cert_pem = '/www/server/panel/vhost/cert/0.default/fullchain.pem'
+        cert_key = '/www/server/panel/vhost/cert/0.default/privkey.pem'
+        if os.path.exists(cert_pem) and os.path.exists(cert_key): return True
+        cert_path = os.path.dirname(cert_pem)
+        if not os.path.exists(cert_path): os.makedirs(cert_path)
+        import OpenSSL
+        key = OpenSSL.crypto.PKey()
+        key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+        cert = OpenSSL.crypto.X509()
+        cert.set_serial_number(0)
+        # cert.get_subject().CN = ''
+        cert.set_issuer(cert.get_subject())
+        cert.gmtime_adj_notBefore(0)
+        cert.gmtime_adj_notAfter(86400 * 3650)
+        cert.set_pubkey(key)
+        cert.sign(key, 'md5')
+        cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
+        private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+        if len(cert_ca) > 100 and len(private_key) > 100:
+            public.writeFile(cert_pem, cert_ca, 'wb+')
+            public.writeFile(cert_key, private_key, 'wb+')
+            return True
+        return False
+
+    def auto_restart_rph(self,get):
+        #设置申请或续签SSL时自动停止反向代理、重定向、http to https，申请完成后自动开启
+        conf_file = '{}/data/stop_rp_when_renew_ssl.pl'.format(public.get_panel_path())
+        conf = public.readFile(conf_file)
+        if not conf:
+            public.writeFile(conf_file,json.dumps([get.sitename]))
+        try:
+            conf = json.loads(conf)
+            if get.sitename not in conf:
+                conf.append(get.sitename)
+                public.writeFile(conf_file,json.dumps(conf))
+        except:
+            return public.returnMsg(True,'Error parsing configuration file')
+        return public.returnMsg(True,'Setup successfully')
+
+    def remove_auto_restart_rph(self,get):
+        #设置申请或续签SSL时自动停止反向代理、重定向、http to https，申请完成后自动开启
+        conf_file = '{}/data/stop_rp_when_renew_ssl.pl'.format(public.get_panel_path())
+        conf = public.readFile(conf_file)
+        if not conf:
+            return public.returnMsg(False,'Website [proxy,redirect,http to https]  are not set to restart automatically')
+        try:
+            conf = json.loads(conf)
+            conf.remove(get.sitename)
+            public.writeFile(conf_file,json.dumps(conf))
+        except:
+            return public.returnMsg(False,'Configuration file parsing error')
+        return public.returnMsg(True,'Setup successfully')
+
+    def get_auto_restart_rph(self,get):
+        #设置申请或续签SSL时自动停止反向代理、重定向、http to https，申请完成后自动开启
+        conf_file = '{}/data/stop_rp_when_renew_ssl.pl'.format(public.get_panel_path())
+        conf = public.readFile(conf_file)
+        if not conf:
+            return public.returnMsg(False,'Website [proxy,redirect,http to https]  are not set to restart automatically')
+        try:
+            conf = json.loads(conf)
+            if get.sitename in conf:
+                return public.returnMsg(True, 'This website has turn on [proxy,redirect,http to https] auto restart')
+            return public.returnMsg(False, 'Website has turn off auto restart')
+        except:
+            return public.returnMsg(False,'Configuration file parsing error')
+
+    def reset_wp_password(self,get):
+        return one_key_wp.one_key_wp().reset_wp_password(get)
+
+    def is_update (self,get):
+        return one_key_wp.one_key_wp().is_update(get)
+
+    def purge_all_cache(self,get):
+        return one_key_wp.one_key_wp().purge_all_cache(get)
+
+    def set_fastcgi_cache(self,get):
+        return one_key_wp.one_key_wp().set_fastcgi_cache(get)
+
+    def update_wp(self,get):
+        return one_key_wp.one_key_wp().update_wp(get)
+
+    def get_language(self,get):
+        return one_key_wp.one_key_wp().get_language(get)
+
+    def deploy_wp(self,get):
+        return one_key_wp.one_key_wp().deploy_wp(get)
+
+    def get_wp_username(self,get):
+        return one_key_wp.one_key_wp().get_wp_username(get)
+
+    def reset_wp_db(self,get):
+        return one_key_wp.one_key_wp().reset_wp_db(get)

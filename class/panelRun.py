@@ -20,7 +20,7 @@ class panelRun:
     __run_config_path = '{}/config/run_config'.format(__panel_path)
     __run_pids_path = '{}/logs/run_pids'.format(__panel_path)
     __run_logs_path = '{}/logs/run_logs'.format(__panel_path)
-    __log_name = '开机启动项'
+    __log_name = 'Startup items'
 
 
     def __init__(self):
@@ -69,7 +69,7 @@ class panelRun:
         if get: run_name = get['run_name']
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if not os.path.isfile(run_file):
-            return public.returnMsg(False,'启动配置不存在!')
+            return public.return_msg_gettext(False,'Configuration file not exist')
 
         run_info = json.loads(public.readFile(run_file))
         return run_info
@@ -98,14 +98,14 @@ class panelRun:
         run_script_args = get['run_script_args']
         run_env = json.loads(get['run_env'])
         if not os.path.exists(run_path):
-            return public.returnMsg(False,'指定运行目录{}不存在!'.format(run_path))
+            return public.return_msg_gettext(False,'The specified run directory {} does not exist!'.format(run_path))
             
         if not re.match(r'^\w+$',run_name):
-            return public.returnMsg(False, '启动项名称格式不正确，支持:[a-zA-Z0-9_]!')
+            return public.return_msg_gettext(False, 'The startup item name format is incorrect, support: [a-zA-Z0-9_]!')
 
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if os.path.exists(run_file):
-            return public.returnMsg(False,'启动配置已存在!')
+            return public.return_msg_gettext(False,'Launch configuration already exists!')
 
         run_info = {
             'run_title': run_title,
@@ -117,8 +117,8 @@ class panelRun:
         }
         run_info = json.dumps(run_info)
         public.writeFile(run_file,run_info)
-        public.WriteLog(self.__log_name,'创建启动项[]成功!'.format(run_title))
-        return public.returnMsg(True,'创建成功!')
+        public.write_log_gettext(self.__log_name,'Create startup item [] successful!'.format(run_title))
+        return public.return_msg_gettext(True,'Successfully created')
 
 
     def modify_run(self,get):
@@ -145,15 +145,15 @@ class panelRun:
         run_env = json.loads(get['run_env'])
 
         if not os.path.exists(run_path):
-            return public.returnMsg(False,'指定运行目录{}不存在!'.format(run_path))
+            return public.return_msg_gettext(False,'The specified run directory {} does not exist!',(run_path,))
         
         if not re.match(r'^\w+$',run_name):
-            return public.returnMsg(False, '启动项名称格式不正确，支持:[a-zA-Z0-9_]!')
+            return public.return_msg_gettext(False, 'The startup item name format is incorrect, support: [a-zA-Z0-9_]!')
 
         
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if not os.path.exists(run_file):
-            return public.returnMsg(False,'启动配置不存在!')
+            return public.return_msg_gettext(False,'The launch configuration does not exist!')
 
         run_info = json.loads(public.readFile(run_file))
         run_info['run_title'] = run_title
@@ -162,8 +162,8 @@ class panelRun:
         run_info['run_env'] = run_env
         run_info = json.dumps(run_info)
         public.writeFile(run_file,run_info)
-        public.WriteLog(self.__log_name,'修改启动项[]成功!'.format(run_title))
-        return public.returnMsg(True,'修改成功!')
+        public.write_log_gettext(self.__log_name,'Modify startup item [{}] successful!',(run_title,))
+        return public.return_msg_gettext(True,'Successfully modified')
 
 
     def remove_run(self,get):
@@ -178,11 +178,11 @@ class panelRun:
         run_name = get['run_name']
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if not os.path.isfile(run_file):
-            return public.returnMsg(False,'启动配置不存在!')
+            return public.return_msg_gettext(False,'The launch configuration does not exist!')
 
         os.remove(run_file)
-        public.WriteLog(self.__log_name,'删除启动项[]成功!'.format(run_name))
-        return public.returnMsg(True,'删除成功!')
+        public.write_log_gettext(self.__log_name,'Delete startup item [{}] successful!',(run_name,))
+        return public.return_msg_gettext(True,'successfully deleted')
 
     def set_run_status(self,get):
         '''
@@ -199,14 +199,14 @@ class panelRun:
 
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if not os.path.isfile(run_file):
-            return public.returnMsg(False,'启动配置不存在!')
+            return public.return_msg_gettext(False,'launch configuration does not exist!')
 
         run_info = json.loads(public.readFile(run_file))
         run_info['run_status'] = run_status
         run_info = json.dumps(run_info)
         public.writeFile(run_file,run_info)
-        public.WriteLog(self.__log_name,'设置启动项[]状态成功!'.format(run_info['title']))
-        return public.returnMsg(True,'设置成功!')
+        public.write_log_gettext(self.__log_name,'Setting startup item [{}] status succeeded!',(run_info['title'],))
+        return public.return_msg_gettext(True,'Setup successfully!')
 
 
     def stop_run(self,run_name = None):
@@ -219,7 +219,7 @@ class panelRun:
         pid = self.get_run_pid(run_name)
         if not pid: return True
         os.kill(pid,signal.SIGKILL)
-        public.WriteLog(self.__log_name,'关闭启动项[]成功!'.format(run_name))
+        public.write_log_gettext(self.__log_name,'Close startup item [{}] successful!',(run_name,))
         return True
 
 
@@ -267,9 +267,9 @@ class panelRun:
             @return dict
         '''
         pid = self.get_run_pid(run_name)
-        if not pid: return public.returnMsg(False,'未启动')
+        if not pid: return public.return_msg_gettext(False,'Not run')
         process_info = self.get_process_info(pid)
-        if not process_info: return public.returnMsg(False,'无法获取进程信息')
+        if not process_info: return public.return_msg_gettext(False,'Unable to get process information')
         return process_info
     
     def get_process_info(self,pid):
@@ -281,7 +281,7 @@ class panelRun:
         '''
         process_info = {}
         p = psutil.Process(pid)
-        status_ps = {'sleeping':'睡眠','running':'活动'}
+        status_ps = {'sleeping':'sleeping','running':'running'}
         with p.oneshot():
             p_mem = p.memory_full_info()
             if p_mem.uss + p_mem.rss + p_mem.pss + p_mem.data == 0: return False
@@ -368,7 +368,7 @@ class panelRun:
         time.sleep(1)
         pid = self.get_script_pid(run_info)
         public.writeFile(pid_file,str(pid))
-        public.WriteLog(self.__log_name, '开机启动{}成功, PID: {}'.format(run_name,pid))
+        public.write_log_gettext(self.__log_name, 'Startup {} successful, PID:{}',(run_name,pid,))
         return True
 
 

@@ -63,19 +63,29 @@
         <div class="line c_password_view <% (this.form.password != '' || this.form.pkey == '' && this.form.password == '')?'show':'hidden'%>">
             <span class="tname">Password</span>
             <div class="info-r">
-                <input type="text" name="password" class="bt-input-text mr5" placeholder="Please enter SSH password" style="width:305px;" value="<% this.form.password %>" autocomplete="off"/>
+                <input type="text" name="password" class="bt-input-text mr5" placeholder="Please enter SSH password"
+                       style="width:305px;" value="<% this.form.password %>" autocomplete="off"/>
             </div>
         </div>
         <div class="line c_pkey_view <% this.form.pkey != ''?'show':'hidden'%>">
             <span class="tname">Private key</span>
             <div class="info-r">
-                <textarea rows="4" name="pkey" class="bt-input-text mr5" placeholder="Please enter SSH Private key" style="width:305px;height: 80px;line-height: 18px;padding-top:10px;"><% this.form.pkey %></textarea>
+                <textarea rows="4" name="pkey" class="bt-input-text mr5" placeholder="Please enter SSH Private key"
+                          style="width:305px;height: 80px;line-height: 18px;padding-top:10px;"><% this.form.pkey %></textarea>
+            </div>
+        </div>
+        <div class="line key_pwd_line <% this.form.pkey != '' ? 'show' : 'hidden' %>">
+            <span class="tname">Key password</span>
+            <div class="info-r">
+                <input type="text" name="pkey_passwd" class="bt-input-text mr5" placeholder="Please enter Key password, can be blank" style="width:305px;"
+                       value="<% this.form.pkey_passwd %>" autocomplete="off"/>
             </div>
         </div>
         <div class="line">
             <span class="tname">Remarks</span>
             <div class="info-r">
-                <input type="text" name="ps" class="bt-input-text mr5" placeholder="Please enter remarks, can be blank" style="width:305px;" value="<% this.form.ps %>" autocomplete="off"/>
+                <input type="text" name="ps" class="bt-input-text mr5" placeholder="Please enter remarks, can be blank"
+                       style="width:305px;" value="<% this.form.ps %>" autocomplete="off"/>
             </div>
         </div>
     </div>
@@ -91,13 +101,16 @@
         <div class="line">
             <span class="tname">Content</span>
             <div class="info-r">
-                <textarea rows="4" name="shell" class="bt-input-text mr5" placeholder="Please enter command content, required" style="width:305px;height: 150px;line-height: 18px;padding-top:10px;"><% this.form.shell %></textarea>
+                <textarea rows="4" name="shell" class="bt-input-text mr5"
+                          placeholder="Please enter command content, required"
+                          style="width:305px;height: 150px;line-height: 18px;padding-top:10px;"><% this.form.shell %></textarea>
             </div>
         </div>
     </div>
 </script>
 {% endblock %}
 {% block scripts %}
+{{ super() }}
 <script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
 <script type="text/javascript" src="/static/js/clipboard.min.js"></script>
 <script type="text/javascript" src="/static/js/xterm.js"></script>

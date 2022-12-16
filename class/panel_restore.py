@@ -60,7 +60,7 @@ class panel_restore:
         # 判断备份文件是否存在，如果不存在继续检查是否远程备份
         if not os.path.exists(local_backup_file_path):
             self._progress_rewrite('No backup file found: {}'.format(str(local_backup_file_path)))
-            return public.returnMsg(False, 'Panel does not find the backup file: {}'.format(local_backup_file_path))
+            return public.return_msg_gettext(False, 'Panel does not find the backup file: {}'.format(local_backup_file_path))
         # 将网站目录移至回收站
         self._progress_rewrite('Move the current website directory to the recycle bin: {}'.format(str(args.path)))
         self._remove_old_website_file_to_trush(args)
@@ -158,14 +158,14 @@ class panel_restore:
             self._download_google_drive_file(args)
             result = self._restore_backup(self._local_file, site_info, args)
         else:
-            return public.ExecShell(False,'Currently only supports restoring local, Google storage and AWS S3 backups')
+            return public.return_msg_gettext(False,'Currently only supports restoring local, Google storage and AWS S3 backups')
         if os.path.exists(self._local_file):
             os.remove(self._local_file)
         if result:
             self._progress_rewrite('Recovery failed: {}'.format(str(site_info['site_path'])))
             return result
         self._progress_rewrite('Successful recovery: {}'.format(str(site_info['site_path'])))
-        return public.returnMsg(True,'Restore Successful')
+        return public.return_msg_gettext(True,'Restore Successful')
 
     # 取任务进度
     def get_progress(self, get):
@@ -187,6 +187,8 @@ class panel_restore:
             @parma file_name 备份得文件名 /www/backup/database/db_test_com_20200817_112722.sql.gz|Google Drive|db_test_com_20200817_112722.sql.gz
             @parma obj_name 数据库名
         """
+        if "|" not in args.file:
+            return public.returnMsg(True,'success')
         try:
             backup_info = args.file.split('|')
             args.file_name = backup_info[-1]
@@ -202,7 +204,8 @@ class panel_restore:
             elif backup_method == 'Google Drive':
                 self._download_google_drive_file(args)
             else:
-                return public.ExecShell(False,'Currently only supports restoring local, Google storage and AWS S3 backups')
+                return public.returnMsg(False,'Currently only supports restoring local, Google storage and AWS S3 backups')
             public.ExecShell('mv {} {}/database'.format(self._local_file, self._get_local_backup_path()))
+            return public.returnMsg(True,'success')
         except:
-            return False
+            return public.returnMsg(False,"Download error!")

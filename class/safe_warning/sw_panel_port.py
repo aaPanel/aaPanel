@@ -37,7 +37,7 @@ def check_run():
     port = public.readFile(port_file)
     if not port: return True,'Rick-free'
     port = int(port)
-    if port != 8888 and port != 7800:
+    if port != 8888:
         return True,'Rick-free'
     return False,'The panel port is the default port ({}), which may cause unnecessary security risks'.format(port)
     

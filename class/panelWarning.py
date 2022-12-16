@@ -48,21 +48,25 @@ class panelWarning:
             }
             result_file = self.__result + '/' + m_name + '.pl'
 
-            not_force = True
-            if 'force' in args:
-                not_force = m_info['ignore']
+            # not_force = True
+            # if 'force' in args:
+            #     not_force = m_info['ignore']
 
-            if os.path.exists(result_file) and not_force:
-                m_info['status'],m_info['msg'],m_info['check_time'],m_info['taking'] = json.loads(public.readFile(result_file))
-            else:
-                try:
-                    s_time = time.time()
-                    m_info['status'],m_info['msg'] = p[m_name].check_run()
-                    m_info['taking'] = round(time.time() - s_time,6)
-                    m_info['check_time'] = int(time.time())
-                    public.writeFile(result_file,json.dumps([m_info['status'],m_info['msg'],m_info['check_time'],m_info['taking']],))
-                except:
-                    continue
+            # if os.path.exists(result_file) and not_force:
+            #     try:
+            #         m_info['status'],m_info['msg'],m_info['check_time'],m_info['taking'] = json.loads(public.readFile(result_file))
+            #     except:
+            #         if os.path.exists(result_file): os.remove(result_file)
+            #         continue
+            # else:
+            try:
+                s_time = time.time()
+                m_info['status'],m_info['msg'] = p[m_name].check_run()
+                m_info['taking'] = round(time.time() - s_time,6)
+                m_info['check_time'] = int(time.time())
+                public.writeFile(result_file,json.dumps([m_info['status'],m_info['msg'],m_info['check_time'],m_info['taking']],))
+            except:
+                continue
 
             
             if m_info['ignore']:

@@ -1,5 +1,7 @@
 var database_table = {}
 var database = {
+    dbCloudServerTable: null,  //远程服务器视图
+    cloudDatabaseList: [],     //远程服务器列表
     init: function () {
         this.database_table_view();
         var _this = this;
@@ -10,246 +12,426 @@ var database = {
             }
         });
     },
-    database_table_view:function(search){
-        $('#bt_database_table').empty();
-        database_table = bt_tools.table({
-            el: '#bt_database_table',
-            url: '/data?action=getData',
-            param: {
-                table: 'databases',
-                search:search|| ''
-            }, //参数
-            minWidth: '1000px',
-            default: "Database list is empty", // 数据为空时的默认提示
-            column:[
-                { fid: 'id', type: 'checkbox', width: 30 },
-                {
-                    fid: 'name',
-                    width: 120,
-                    title: lan.database.add_name,
-                    template: function (item) {
-                        return '<span class="limit-text-length" style="width: 120px;" title="' + item.name + '">' + item.name + '</span>';
+    database_table_view: function (search) {
+        var that = this;
+        this.get_cloud_server_list(function () {
+            $('#bt_database_table').empty();
+            var param = { table: 'databases', search: search || '' };
+            database_table = bt_tools.table({
+                el: '#bt_database_table',
+                url: '/data?action=getData',
+                param: param, //参数
+                minWidth: '1000px',
+                autoHeight: true,
+                default: "Database list is empty", // 数据为空时的默认提示
+                beforeRequest: function () {
+                    var db_type_val = $('.database_type_select_filter').val();
+                    switch (db_type_val) {
+                        case 'all':
+                            delete param['db_type'];
+                            delete param['sid'];
+                            break;
+                        case 0:
+                            param['db_type'] = 0;
+                            break;
+                        default:
+                            delete param['db_type'];
+                            param['sid'] = db_type_val;
                     }
+                    return param;
                 },
-                {
-                    fid: 'username',
-                    width: 120,
-                    title: lan.database.user,
-                    sort: function () {
-                        database_table.$refresh_table_list(true);
-                    },
-                    template: function (item) {
-                        return '<span class="limit-text-length" style="width: 120px;" title="' + item.username + '">' + item.username + '</span>';
-                    }
-                },
-                {
-                    fid:'password',
-                    width: 200,
-                    title:lan.database.add_pass,
-                    type:'password',
-                    copy:true,
-                    eye_open:true
-                },
-                {
-                    fid:'backup',
-                    title: lan.database.backup,
-                    width: 130,
-                    template: function (item) {
-                        var backup = lan.database.backup_empty,
-                            _class = "bt_warning";
-                        if (item.backup_count > 0) backup = lan.database.backup_ok, _class = "bt_success";
-                        return '<span><a href="javascript:;" class="btlink ' + _class + '" onclick="database.database_detail('+ item.id+',\''+item.name+'\')">' + backup + (item.backup_count > 0 ? ('(' + item.backup_count + ')') : '') + '</a> | ' +
-                            '<a href="javascript:database.input_database(\''+item.name+'\')" class="btlink">'+lan.database.input+'</a></span>';
-                    }
-                },
-                // {
-                //     fid: 'ps', title: lan.database.add_ps, templet: function (item) {
-                //         var _ps = "<span class='c9 input-edit webNote' onclick=\"bt.pub.set_data_by_key('databases','ps',this)\" >"
-                //         if (item.password) {
-                //             _ps += item.ps
-                //         } else {
-                //             _ps += lan.database.cant_get_pass+'<span style="color:red">'+lan.database.edit_pass+'</span>'+lan.database.button_set_pass+'!';
-                //         }
-                //         _ps += "</span>";
-                //         return _ps;
-                //     }
-                // },
-                {
-                    fid: 'ps',
-                    title: lan.database.add_ps,
-                    type: 'input',
-                    blur: function (row, index, ev) {
-                        bt.pub.set_data_ps({
-                            id: row.id,
-                            table: 'databases',
-                            ps: ev.target.value
-                        }, function (res) {
-                            layer.msg(res.msg, (res.status ? {} : {
-                                icon: 2
-                            }));
-                        });
-                    },
-                    keyup: function (row, index, ev) {
-                        if (ev.keyCode === 13) {
-                            $(this).blur();
-                        }
-                    }
-                },
-                {
-                    type: 'group',
-                    title: lan.database.operation,
-                    width: 280,
-                    align: 'right',
-                    group: [{
-                        title: lan.database.admin,
-                        tips: lan.database.admin_title,
-                        event: function(row) {
-                            bt.database.open_phpmyadmin(row.name,row.username,row.password);
-                        }
-                    },{
-                        title: lan.database.auth,
-                        tips:lan.database.set_db_auth,
-                        event: function(row) {
-                            bt.database.set_data_access(row.username);
-                        }
-                    },{
-                        title:lan.database.tools,
-                        tips:lan.database.mysql_tools,
-                        event: function(row){
-                            database.rep_tools(row.name);
-                        }
-                    },{
-                        title:lan.database.edit_pass,
-                        tips:lan.database.edit_pass_title,
-                        event: function(row){
-                            database.set_data_pass(row.id,row.username,row.password);
-                        }
-                    },{
-                        title:lan.database.del,
-                        tips:lan.database.del_title,
-                        event: function(row){
-                            database.del_database(row.id,row.name);
-                        }
-                    }]
-                }
-            ],
-            sortParam: function (data) {
-                return {
-                    'order': data.name + ' ' + data.sort
-                };
-            },
-            tootls: [{ // 按钮组
-                type: 'group',
-                positon: ['left', 'top'],
-                list: [{
-                    title: lan.database.add_title,
-                    active: true,
-                    event: function () {
-                        bt.database.add_database(function (res){
-                            if(res.status) database_table.$refresh_table_list(true);
-                        })
-                    }
-                },{
-                    title: lan.database.edit_root,
-                    event: function () {
-                        bt.database.set_root('root')
-                    }
-                },{
-                    title: 'phpMyAdmin',
-                    event: function () {
-                        bt.database.open_phpmyadmin('','root', bt.config.mysql_root)
-                    }
-                },{
-                    title: 'Sync all',
-                    style: {'margin-left':'30px'},
-                    event: function () {
-                        database.sync_to_database(0)
-                    }
-                },{
-                    title: 'Get DB from server',
-                    event: function () {
-                        // database.sync_to_database(1)
-                        bt.database.sync_database(function (rdata) {
-                            if (rdata.status) that.database_table.$refresh_table_list(true);
-                        });
-                    }
-                }]
-            },{
-                type: 'batch', //batch_btn
-                positon: ['left', 'bottom'],
-                placeholder: 'Select batch operation',
-                buttonValue: 'Execute',
-                disabledSelectValue: 'Select the DB to execute!!',
-                selectList: [{
-                    title:'Sync to Server',
-                    url:'/database?action=SyncToDatabases&type=1',
-                    paramName: 'ids', //列表参数名,可以为空
-                    paramId: 'id', // 需要传入批量的id
-                    th:'Database Name',
-                    beforeRequest: function(list) {
-                        var arry = [];
-                        $.each(list, function (index, item) {
-                            arry.push(item.id);
-                        });
-                        return JSON.stringify(arry)
-                    },
-                    success: function (res, list, that) {
-                        layer.closeAll();
-                        var html = '';
-                        $.each(list, function (index, item) {
-                            html += '<tr><td>' + item.name + '</td><td><div style="float:right;"><span style="color:' + (res.status ? '#20a53a' : 'red') + '">' + res.msg + '</span></div></td></tr>';
-                        });
-                        that.$batch_success_table({
-                            title: 'Batch sync selected',
-                            th: 'Database Name',
-                            html: html
-                        });
-                    }
-                },{
-                    title: "Delete database",
-                    url: '/database?action=DeleteDatabase',
-                    load: true,
-                    param: function (row) {
-                        return {
-                            id: row.id,
-                            name: row.name
+                column:[
+                    { fid: 'id', type: 'checkbox', width: 20 },
+                    {
+                        fid: 'name',
+                        width: 120,
+                        title: lan.database.add_name,
+                        template: function (item) {
+                            return '<span class="limit-text-length" style="width: 100px;" title="' + item.name + '">' + item.name + '</span>';
                         }
                     },
-                    callback: function (that) { // 手动执行,data参数包含所有选中的站点
-                        var ids = [];
-                        for (var i = 0; i < that.check_list.length; i++) {
-                            ids.push(that.check_list[i].id);
-                        }
-                        database.del_database(ids,function(param){
-                            that.start_batch(param, function (list) {
-                                layer.closeAll()
-                                var html = '';
-                                for (var i = 0; i < list.length; i++) {
-                                    var item = list[i];
-                                    html += '<tr><td>' + item.name + '</td><td><div style="float:right;"><span style="color:' + (item.request.status ? '#20a53a' : 'red') + '">' + item.request.msg + '</span></div></td></tr>';
-                                }
-                                database_table.$batch_success_table({
-                                    title: 'Batch deletion',
-                                    th: 'Database Name',
-                                    html: html
-                                });
-                            });
+                    {
+                        fid: 'username',
+                        width: 120,
+                        title: lan.database.user,
+                        sort: function () {
                             database_table.$refresh_table_list(true);
-                        })
+                        },
+                        template: function (item) {
+                            return '<span class="limit-text-length" style="width: 100px;" title="' + item.username + '">' + item.username + '</span>';
+                        }
+                    },
+                    {
+                        fid:'password',
+                        width: 220,
+                        title: lan.database.add_pass,
+                        type: 'password',
+                        copy: true,
+                        eye_open: true,
+                        template: function (row) {
+                            var id = row.id;
+                            var username = row.username;
+                            var password = row.password;
+                            if (row.password === '') return '<span class="c9 cursor" onclick="database.set_data_pass(\'' + id + '\',\'' + username + '\',\'' + password + '\')">' + lan.database.not_found_pwd_1 + '<span style="color:red">' + lan.database.not_found_pwd_2 + '</span>' + lan.database.not_found_pwd_3 + '!</span>';
+                            return true;
+                        }
+                    },
+                    bt.public.get_quota_config('database'),
+                    {
+                        fid: 'backup',
+                        title: lan.database.backup,
+                        width: 130,
+                        template: function (item) {
+                            var backup = lan.database.backup_empty,
+                                _class = "bt_warning";
+                            if (item.backup_count > 0) backup = lan.database.backup_ok, _class = "bt_success";
+                            return '<span><a href="javascript:;" class="btlink ' + _class + '" onclick="database.database_detail('+ item.id+',\''+item.name+'\')">' + backup + (item.backup_count > 0 ? ('(' + item.backup_count + ')') : '') + '</a> | ' +
+                                '<a href="javascript:database.input_database(\''+item.name+'\')" class="btlink">'+lan.database.input+'</a></span>';
+                        }
+                    },
+                    {
+                        fid: 'position',
+                        title: lan.database.position,
+                        type: 'text',
+                        template: function (row) {
+                            var type_column = '-';
+                            var host = row.conn_config.db_host;
+                            var port = row.conn_config.db_port;
+                            switch(row.db_type){
+                                case 0:
+                                    type_column = lan.database.add_auth_local;
+                                    break;
+                                case 1:
+                                    type_column = (lan.database.cloud_database + '(' + host + ':' + port + ')').toString();
+                                    break;
+                                case 2:
+                                    var list = that.cloudDatabaseList;
+                                    $.each(list, function(index, item) {
+                                        var db_host = item.db_host;
+                                        var db_port = item.db_port;
+                                        if (row.sid == item.id) {
+                                            // 默认显示备注
+                                            if (item.ps !== '') { 
+                                                type_column = item.ps
+                                            } else {
+                                                type_column = (lan.database.cloud_database + '(' + db_host + ':' + db_port + ')').toString();
+                                            }
+                                        }
+                                    });
+                                    break;
+                            }
+                            return '<span class="size_ellipsis" style="width: 100px" title="' + type_column + '">' + type_column + '</span>';
+                        }
+                    },
+                    {
+                        fid: 'ps',
+                        title: lan.database.add_ps,
+                        type: 'input',
+                        blur: function (row, index, ev) {
+                            bt.pub.set_data_ps({
+                                id: row.id,
+                                table: 'databases',
+                                ps: ev.target.value
+                            }, function (res) {
+                                layer.msg(res.msg, (res.status ? {} : {
+                                    icon: 2
+                                }));
+                            });
+                        },
+                        keyup: function (row, index, ev) {
+                            if (ev.keyCode === 13) {
+                                $(this).blur();
+                            }
+                        }
+                    },
+                    {
+                        type: 'group',
+                        title: lan.database.operation,
+                        width: 280,
+                        align: 'right',
+                        group: [
+                            {
+                                title: lan.database.admin,
+                                tips: lan.database.admin_title,
+                                hide: function (row) {
+                                    return row.db_type != 0
+                                },
+                                event: function(row) {
+                                    bt.database.open_phpmyadmin(row.name,row.username,row.password);
+                                }
+                            },
+                            {
+                                title: lan.database.auth,
+                                tips:lan.database.set_db_auth,
+                                hide: function (row) {
+                                    return row.db_type == 1
+                                },
+                                event: function(row) {
+                                    bt.database.set_data_access(row.username);
+                                }
+                            },
+                            {
+                                title:lan.database.tools,
+                                tips:lan.database.mysql_tools,
+                                event: function(row){
+                                    database.rep_tools(row.name);
+                                }
+                            },
+                            {
+                                title: lan.database.edit_pass,
+                                tips: lan.database.edit_pass_title,
+                                hide: function (row) {
+                                    return row.db_type == 1
+                                },
+                                event: function(row){
+                                    database.set_data_pass(row.id,row.username,row.password);
+                                }
+                            },
+                            {
+                                title: lan.database.del,
+                                tips: lan.database.del_title,
+                                event: function(row){
+                                    database.del_database(row.id, row.name, row);
+                                }
+                            }
+                        ]
                     }
-                }]
-            }, { //分页显示
-                type: 'page',
-                positon: ['right', 'bottom'], // 默认在右下角
-                pageParam: 'p', //分页请求字段,默认为 : p
-                page: 1, //当前分页 默认：1
-                numberParam: 'limit', //分页数量请求字段默认为 : limit
-                number: 20, //分页数量默认 : 20条
-                numberList: [10, 20, 50, 100, 200], // 分页显示数量列表
-                numberStatus: true, //　是否支持分页数量选择,默认禁用
-                jump: true, //是否支持跳转分页,默认禁用
-            }]
+                ],
+                sortParam: function (data) {
+                    return {
+                        'order': data.name + ' ' + data.sort
+                    };
+                },
+                tootls: [
+                    { // 按钮组
+                        type: 'group',
+                        positon: ['left', 'top'],
+                        list: [
+                            {
+                                title: lan.database.add_title,
+                                active: true,
+                                event: function () {
+                                    that.generate_cloud_server_list(function (list) {
+                                        bt.database.add_database(list, function (res){
+                                            if (res.status) database_table.$refresh_table_list(true);
+                                        });
+                                    });
+                                }
+                            },
+                            {
+                                title: lan.database.edit_root,
+                                event: function () {
+																	bt.database.set_root('root')
+                                }
+                            },
+                            {
+                                title: 'phpMyAdmin',
+                                event: function () {
+                                    bt.database.open_phpmyadmin('','root', bt.config.mysql_root)
+                                }
+                            },
+                            {
+                                title: lan.database.cloud_server,
+                                event: function() {
+                                    database.open_cloud_server();
+                                }
+                            },{
+                                title: 'Sync all',
+                                style: { 'margin-left': '30px' },
+                                event: function () {
+                                    database.sync_to_database(0)
+                                }
+                            }, {
+                                title: 'Get DB from server',
+                                event: function () {
+                                    that.generate_cloud_server_list(function (list) {
+                                        bt_tools.open({
+                                            title: lan.database.select_position,
+                                            area: '450px',
+                                            skin: 'databaseCloudServer',
+                                            btn: [lan.public.confirm, lan.public.cancel],
+                                            content: {
+                                                'class':'pd20',
+                                                form:[
+                                                    {
+                                                        label: lan.database.position,
+                                                        group:{
+                                                            type: 'select',
+                                                            name: 'sid',
+                                                            width: '260px',
+                                                            list: list
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            success: function ($layer) {
+                                                $layer.find('.layui-layer-content').css('overflow','inherit');
+                                            },
+                                            yes: function (form, index) {
+                                                bt.database.sync_database(form.sid, function (rdata) {
+                                                    if (rdata.status) {
+                                                        database_table.$refresh_table_list(true);
+                                                        layer.close(index);
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    });
+                                }
+                            }
+                            // {
+                            //     title: 'Recycle bin',
+                            //     style: {
+                            //       'position': 'absolute',
+                            //       'right': '-5px'
+                            //     },
+                            //     icon: 'trash',
+                            //     event: function () {
+                            //       bt.recycle_bin.open_recycle_bin(6)
+                            //     }
+                            // }
+                        ]
+                    },
+                    {
+                        type: 'batch', // batch_btn
+                        positon: ['left', 'bottom'],
+                        placeholder: 'Select batch operation',
+                        buttonValue: 'Execute',
+                        disabledSelectValue: 'Select the DB to execute!!',
+                        selectList: [
+                            {
+                                title: 'Sync to Server',
+                                url: '/database?action=SyncToDatabases&type=1',
+                                paramName: 'ids', //列表参数名,可以为空
+                                paramId: 'id', // 需要传入批量的id
+                                th: 'Database Name',
+                                refresh: true,
+                                beforeRequest: function (list) {
+                                    var arry = [];
+                                    $.each(list, function (index, item) {
+                                        arry.push(item.id);
+                                    });
+                                    return JSON.stringify(arry)
+                                },
+                                success: function (res, list, that) {
+                                    layer.closeAll();
+                                    var html = '';
+                                    $.each(list, function (index, item) {
+                                        html += '<tr><td>' + item.name + '</td><td><div style="float:right;"><span style="color:' + (res.status ? '#20a53a' : 'red') + '">' + res.msg + '</span></div></td></tr>';
+                                    });
+                                    that.$batch_success_table({
+                                        title: 'Batch sync selected',
+                                        th: 'Database Name',
+                                        html: html
+                                    });
+                                }
+                            }, {
+                                title: "Delete database",
+                                url: '/database?action=DeleteDatabase',
+                                load: true,
+                                refresh: true,
+                                param: function (row) {
+                                    return {
+                                        id: row.id,
+                                        name: row.name
+                                    }
+                                },
+                                callback: function (that) {
+                                    // 手动执行, data参数包含所有选中的站点
+                                    var ids = [];
+                                    for (var i = 0; i < that.check_list.length; i++) {
+                                        ids.push(that.check_list[i].id);
+                                    }
+                                    database.del_database(ids, function(param){
+																			that.start_batch(param, function (list) {
+																				layer.closeAll()
+																				var html = '';
+																				for (var i = 0; i < list.length; i++) {
+																					var item = list[i];
+																					html += '<tr><td>' + item.name + '</td><td><div style="float:right;"><span style="color:' + (item.request.status ? '#20a53a' : 'red') + '">' + item.request.msg + '</span></div></td></tr>';
+																				}
+																				database_table.$batch_success_table({
+																					title: 'Batch deletion',
+																					th: 'Database Name',
+																					html: html
+																				});
+																				database_table.$refresh_table_list(true);
+																			});
+                                    })
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        type: 'search',
+                        positon: ['right', 'top'],
+                        placeholder: lan.database.database_search,
+                        searchParam: 'search', //搜索请求字段，默认为 search
+                        value: '',// 当前内容,默认为空
+                    },
+                    { //分页显示
+                        type: 'page',
+                        positon: ['right', 'bottom'], // 默认在右下角
+                        pageParam: 'p', //分页请求字段,默认为 : p
+                        page: 1, //当前分页 默认：1
+                        numberParam: 'limit', //分页数量请求字段默认为 : limit
+                        number: 20, //分页数量默认 : 20条
+                        numberList: [10, 20, 50, 100, 200], // 分页显示数量列表
+                        numberStatus: true, //　是否支持分页数量选择,默认禁用
+                        jump: true, //是否支持跳转分页,默认禁用
+                    }
+                ]
+            });
+						// 未安装数据库
+						if (!isSetup) {
+							$("button[title='phpMyAdmin']").hide();
+        			$("button[title='Root password']").hide();
+						}
+            that.render_cloud_server_list();
         });
+    },
+    // 渲染远程数据库选择框
+    render_cloud_server_list: function () {
+        if ($('.database_type_select_filter').length == 0) {
+            $('#bt_database_table .bt_search').before('<select class="bt-input-text mr5 database_type_select_filter" style="width:120px" name="db_type_filter"></select>');
+            $('.database_type_select_filter').change(function () {
+                database_table.$refresh_table_list(true);
+            });
+        }
+        var option = '<option value="all">' + lan.public.all + '</option>';
+        $.each(this.cloudDatabaseList, function (index, item) {
+            var tips = item.ps != '' ? item.ps : item.db_host;
+            option += '<option value="' + item.id + '">' + tips + '</option>';
+        });
+        $('.database_type_select_filter').html(option);
+    },
+    // 获取远程服务器列表
+    get_cloud_server_list: function (callback) {
+        var that = this;
+        var loadT = bt.load(lan.database.get_cloud_list_tips);
+        bt.send('GetCloudServer', 'database/GetCloudServer', {}, function (cloudData) {
+            loadT.close();
+            that.cloudDatabaseList = cloudData;
+            callback && callback();
+        });
+    },
+    // 生成远程服务器列表
+    generate_cloud_server_list: function (callback) {
+        var list = this.cloudDatabaseList;
+        if (list.length == 0) {
+            return layer.msg(lan.database.add_server_tips, {
+                time: 0, icon: 2, closeBtn: 2, shade: .3
+            });
+        }
+        var cloudList = [];
+        $.each(list, function (index, item) {
+            var ps = item.ps;
+            var host = item.db_host;
+            if (!ps || !host) return;
+            var tips = ps != '' ? (ps + ' (' + host + ')') : host;
+            cloudList.push({ title: tips, value: item.id });
+        });
+        callback && callback(cloudList);
     },
     rep_tools: function (db_name, res) {
         var loadT = layer.msg(lan.database.get_data, { icon: 16, time: 0 });
@@ -263,6 +445,7 @@ var database = {
             var tbody = '';
             for (var i = 0; i < rdata.tables.length; i++) {
                 if (!types[rdata.tables[i].type]) continue;
+								var setType = rdata.tables[i].type == 'InnoDB' ? types.MyISAM : types.InnoDB
                 tbody += '<tr>\
                         <td><input value="dbtools_' + rdata.tables[i].table_name + '" class="check" onclick="database.selected_tools(null,\'' + db_name + '\');" type="checkbox"></td>\
                         <td><span style="width:150px;"> ' + rdata.tables[i].table_name + '</span></td>\
@@ -273,7 +456,7 @@ var database = {
                         <td style="text-align: right;">\
                             <a class="btlink" onclick="database.rep_database(\''+ db_name + '\',\'' + rdata.tables[i].table_name + '\')">'+lan.database.backup_re+'</a> |\
                             <a class="btlink" onclick="database.op_database(\''+ db_name + '\',\'' + rdata.tables[i].table_name + '\')">'+lan.database.optimization+'</a> |\
-                            <a class="btlink" onclick="database.to_database_type(\''+ db_name + '\',\'' + rdata.tables[i].table_name + '\',\'' + types[rdata.tables[i].type] + '\')">'+ lan.database.change + types[rdata.tables[i].type] + '</a>\
+                            <a class="btlink" onclick="database.to_database_type(\''+ db_name + '\',\'' + rdata.tables[i].table_name + '\',\'' + setType + '\')">'+ lan.database.change + setType + '</a>\
                         </td>\
                     </tr> '
             }
@@ -288,7 +471,7 @@ var database = {
 
             layer.open({
                 type: 1,
-                title: lan.database.mysql_tools_box+"【" + db_name + "】",
+                title: lan.database.mysql_tools_box+" [ " + db_name + " ]",
                 area: ['850px', '580px'],
                 closeBtn: 2,
                 shadeClose: false,
@@ -405,11 +588,6 @@ var database = {
             if (rdata.status) database_table.$refresh_table_list(true);
         });
     },
-    sync_database: function () {
-        bt.database.sync_database(function (rdata) {
-            if (rdata.status) database_table.$refresh_table_list(true);
-        })
-    },
     add_database: function () {
         bt.database.add_database(function (rdata) {
             if (rdata.status) database_table.$refresh_table_list(true);
@@ -449,9 +627,16 @@ var database = {
                 break;
         }
     },
-    del_database: function (wid, dbname, callback) {
-        var rendom = bt.get_random_code(),num1 = rendom['num1'],num2 = rendom['num2'],title = '';
+    del_database: function (wid, dbname, obj, callback) {
+        var rendom = bt.get_random_code();
+        var num1 = rendom['num1'];
+        var num2 = rendom['num2'];
+        var title = '';
+        var tips = 'The deletion may affect the business!';
         title = typeof dbname === "function" ?'Batch delete databases':'Delete database [ '+ dbname +' ]';
+        if (obj && obj.db_type > 0) {
+            tips = lan.database.del_cloud_database_tips;
+        }
         layer.open({
             type:1,
             title:title,
@@ -462,7 +647,7 @@ var database = {
             shadeClose: true,
             content:"<div class=\'bt-form webDelete pd30\' id=\'site_delete_form\'>" +
                 "<i class=\'layui-layer-ico layui-layer-ico0\'></i>" +
-                "<div class=\'f13 check_title\' style=\'margin-bottom: 20px;\'>The deletion may affect the business!</div>" +
+                "<div class=\'f13 check_title\' style=\'margin-bottom: 20px;\'>" + tips + "</div>" +
                 "<div style=\'color:red;margin:18px 0 18px 18px;font-size:14px;font-weight: bold;\'>Note: The data is priceless, please operate with caution! ! !"+(!recycle_bin_db_open?'<br><br>Risk: The DB recycle bin is not enabled, deleting will disappear forever!':'')+"</div>" +
                 "<div class=\'vcode\'>" + lan.bt.cal_msg + "<span class=\'text\'>"+ num1 +" + "+ num2 +"</span>=<input type=\'number\' id=\'vcodeResult\' value=\'\'></div>" +
                 "</div>",
@@ -592,7 +777,7 @@ var database = {
                 bt.open({
                     type: 1,
                     skin: 'demo-class',
-                    area: '700px',
+                    area: ['700px', '400px'],
                     title: lan.database.backup_title,
                     closeBtn: 2,
                     shift: 5,
@@ -643,6 +828,242 @@ var database = {
             database.input_database(name);
         });
     },
+    // 打开远程服务器列表弹框
+    open_cloud_server: function () {
+        var that = this;
+        bt_tools.open({
+            title: lan.database.cloud_server_list,
+            area: ['860px', '400px'],
+            btn: false,
+            skin: 'databaseCloudServer',
+            content: '<div id="db_cloud_server_table" class="pd20"></div>',
+            success: function () {
+                that.dbCloudServerTable = bt_tools.table({
+                    el: '#db_cloud_server_table',
+                    url: '/database?action=GetCloudServer',
+                    default: lan.database.cloud_server_empty,
+                    height: 300,
+                    column: [
+                        {
+                            fid: 'db_host',
+                            title: lan.database.server_address,
+                            width: 150,
+                            template: function (item) {
+                                return '<span style="width:200px;word-wrap:break-word;" title="' + item.db_host+'">' + item.db_host + '</span>';
+                            }
+                        },
+                        {
+                            fid: 'db_port',
+                            width: 100,
+                            title: lan.database.port
+                        },
+                        {
+                            fid: 'db_user',
+                            width: 120,
+                            title: lan.database.user
+                        },
+                        {
+                            fid: 'db_password',
+                            width: 190,
+                            type: 'password',
+                            title: lan.database.add_pass,
+                            copy: true,
+                            eye_open: true
+                        },
+                        {
+                            fid: 'ps',
+                            title: lan.database.add_ps,
+                            template: function (item) {
+                                var ps = item.ps;
+                                return '<span style="display: flex;"><span class="size_ellipsis" style="flex: 1; width: 0;" title="' + ps + '">' + ps + '</span></span>';
+                            }
+                        },
+                        {
+                            type: 'group',
+                            width: 130,
+                            title: lan.database.operation,
+                            align: 'right',
+                            group: [
+                                {
+                                    title: 'Get DB',
+                                    event: function (row) {
+                                        bt.database.sync_database(row.id, function (rdata) {
+                                            if (rdata.status) {
+                                                database_table.$refresh_table_list(true);
+                                            }
+                                        });
+                                    }
+                                },
+                                {
+                                    title: lan.public.edit,
+                                    event: function (row) {
+                                        that.render_db_cloud_server_view(row, true);
+                                    }
+                                },
+                                {
+                                    title: lan.public.del,
+                                    event: function (row) {
+                                        that.del_db_cloud_server(row);
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    tootls:[
+                        {
+                            type: 'group',
+                            positon: ['left', 'top'],
+                            list:[{
+                                title: lan.public.add + ' ' + lan.database.cloud_server,
+                                active: true,
+                                event: function() {
+                                    that.render_db_cloud_server_view();
+                                }
+                            }]
+                        }
+                    ],
+                    success: function (config) {
+                        that.cloudDatabaseList = config.data;
+                    }
+                });
+            }
+        });
+    },
+    // 添加/编辑远程服务器视图
+    render_db_cloud_server_view: function(config, is_edit) {
+        var that = this;
+        if (!config) {
+            config = {
+                db_host: '',
+                db_port: '3306',
+                db_user: '',
+                db_password: '',
+                db_user: 'root',
+                ps: ''
+            };
+        }
+        var title = is_edit ? lan.public.edit : lan.public.add;
+        bt_tools.open({
+            title: title + ' ' + lan.database.cloud_server,
+            area: '450px',
+            btn: [lan.public.save, lan.public.cancel],
+            skin: 'addCloudServerProject',
+            content:{
+                'class':'pd20',
+                form:[
+                    {
+                        label: lan.database.server_address,
+                        group:{
+                            type: 'text',
+                            name: 'db_host',
+                            width: '260px',
+                            value: config.db_host,
+                            placeholder: lan.database.input_server_address,
+                            event: function () {
+                                $('[name=db_host]').on('input', function () {
+                                    $('[name=db_ps]').val($(this).val());
+                                });
+                            }
+                        }
+                    },
+                    {
+                        label: lan.database.port,
+                        group: {
+                            type: 'number',
+                            name: 'db_port',
+                            width: '260px',
+                            value: config.db_port,
+                            placeholder: lan.database.input_port
+                        }
+                    },
+                    {
+                        label: lan.database.user,
+                        group: {
+                            type: 'text',
+                            name: 'db_user',
+                            width: '260px',
+                            value: config.db_user,
+                            placeholder: lan.database.input_username
+                        }
+                    },
+                    {
+                        label: lan.database.add_pass,
+                        group:{
+                            type: 'text',
+                            name: 'db_password',
+                            width: '260px',
+                            value: config.db_password,
+                            placeholder: lan.database.input_password
+                        }
+                    },
+                    {
+                        label: lan.database.add_ps,
+                        group:{
+                            type: 'text',
+                            name: 'db_ps',
+                            width: '260px',
+                            value: config.ps,
+                            placeholder: lan.database.server_note
+                        }
+                    },
+                    {
+                        group: {
+                            type: 'help',
+                            style: {'margin-top':'0'},
+                            list: [
+                                lan.database.remote_help_1,
+                                lan.database.remote_help_2,
+                                lan.database.remote_help_3,
+                                lan.database.remote_help_4
+                            ]
+                        }
+                    }
+                ]
+            },
+            yes: function (form, indexs) {
+                var interface = is_edit ? 'ModifyCloudServer' : 'AddCloudServer';
+                if (form.db_host == '') return layer.msg(lan.database.input_server_address, { icon: 2 });
+                if (form.db_port == '') return layer.msg(lan.database.input_port, { icon: 2 });
+                if (form.db_user == '') return layer.msg(lan.database.input_username, { icon: 2 });
+                if (form.db_password == '') return layer.msg(lan.database.input_password, { icon: 2 });
+
+                if (is_edit) form['id'] = config['id'];
+
+                var tips = is_edit ? lan.database.edit_cloud_server_tips : lan.database.add_cloud_server_tips;
+                var layerT = bt.load(tips);
+                bt.send(interface, 'database/' + interface, form, function (rdata) {
+                    layerT.close();
+                    if (rdata.status) {
+                        that.dbCloudServerTable.$refresh_table_list();
+                        layer.close(indexs);
+                        layer.msg(rdata.msg, { icon: 1 });
+                    } else {
+                        layer.msg(rdata.msg, {
+                            time:0,icon:2,closeBtn: 2, shade: .3, area: '650px'
+                        });
+                    }
+                });
+            }
+        });
+    },
+    // 删除远程服务器管理关系
+    del_db_cloud_server: function (row) {
+        var that = this;
+        bt.confirm({
+            title: lan.public.del + ' [' + row.db_host + '] ' + lan.database.cloud_server,
+            msg: lan.database.del_cloud_server_tips + '!'
+        }, function () {
+            bt.send('RemoveCloudServer', 'database/RemoveCloudServer', {
+                id: row.id
+            }, function (rdata) {
+                if (rdata.status) {
+                    database_table.$refresh_table_list(true);
+                    that.dbCloudServerTable.$refresh_table_list(true);
+                }
+                bt.msg(rdata);
+            });
+        })
+    },
     input_database: function (name) {
         var path = bt.get_cookie('backup_path') + "/database";
         bt.send('get_files', 'files/GetDir', 'reverse=True&sort=mtime&tojs=GetFiles&p=1&showRow=100&path=' + path, function (rdata) {
@@ -658,7 +1079,7 @@ var database = {
                 bt.open({
                     type: 1,
                     skin: 'demo-class',
-                    area: '600px',
+                    area: ["600px", "530px"],
                     title: lan.database.input_title_file+'['+name+']',
                     closeBtn: 2,
                     shift: 5,

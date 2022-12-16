@@ -51,7 +51,7 @@ class FileExecuteDeny:
                 deny_name.append(tmp[-1])
         result = []
         for i in deny_name:
-            reg = '#BEGIN_DENY_{}\n\s*location\s*\~\*\s*\^(.*)\.\*.*\((.*)\)\$'.format(i)
+            reg = '#BEGIN_DENY_{}\n\s*location\s*\~\*\s*\^(.*)\.\*.*\((.*)\)\$'.format(i.replace("|","\|"))
             deny_directory = re.search(reg,conf).groups()[0]
             deny_suffix = re.search(reg,conf).groups()[1]
             result.append({'name':i,'dir':deny_directory,'suffix':deny_suffix})
@@ -71,7 +71,7 @@ class FileExecuteDeny:
                 deny_name.append(tmp[-1])
         result = []
         for i in deny_name:
-            reg = '#BEGIN_DENY_{}\n\s*<Directory\s*\~\s*"(.*)\.\*.*\((.*)\)\$'.format(i)
+            reg = '#BEGIN_DENY_{}\n\s*<Directory\s*\~\s*"(.*)\.\*.*\((.*)\)\$'.format(i.replace("|","\|"))
             deny_directory = re.search(reg,conf).groups()[0]
             deny_suffix = re.search(reg,conf).groups()[1]
             result.append({'name':i,'dir':deny_directory,'suffix':deny_suffix})
@@ -91,7 +91,7 @@ class FileExecuteDeny:
                 deny_name.append(tmp[-1])
         result = []
         for i in deny_name:
-            reg = '#BEGIN_DENY_{}\n\s*rules\s*RewriteRule\s*\^(.*)\.\*.*\((.*)\)\$'.format(i)
+            reg = '#BEGIN_DENY_{}\n\s*rules\s*RewriteRule\s*\^(.*)\.\*.*\((.*)\)\$'.format(i.replace("|","\|"))
             deny_directory = re.search(reg, conf).groups()[0]
             deny_suffix = re.search(reg,conf).groups()[1]
             result.append({'name':i,'dir':deny_directory,'suffix':deny_suffix})
@@ -116,6 +116,8 @@ class FileExecuteDeny:
         dir = args.dir
         suffix = args.suffix
         website = args.website
+        if suffix[-1] == "|":
+            suffix = suffix[:-1]
         self._init_conf(website)
         conf = public.readFile(self.ng_website_conf)
         if not conf:
@@ -124,16 +126,16 @@ class FileExecuteDeny:
         exist_deny_name = [i.split('_')[-1] for i in data]
         if args.act == 'edit':
             if deny_name not in exist_deny_name:
-                return public.returnMsg(False, 'The specify rule name is not exists! [ {} ]'.format(deny_name))
+                return public.return_msg_gettext(False, 'The specify rule name is not exists! [ {} ]'.format(deny_name))
             self.del_file_deny(args)
         else:
             if deny_name in exist_deny_name:
-                return public.returnMsg(False,'The specify rule name is already exists! [ {} ]'.format(deny_name))
+                return public.return_msg_gettext(False,'The specify rule name is already exists! [ {} ]'.format(deny_name))
         self._set_nginx_file_deny(deny_name,dir,suffix)
         self._set_apache_file_deny(deny_name,dir,suffix)
         self._set_ols_file_deny(deny_name,dir,suffix)
         public.serviceReload()
-        return public.returnMsg(True,'Add Successfully')
+        return public.returnMsg(True,'Setup successfully!')
 
     def _set_nginx_file_deny(self,name,dir=None,suffix=None):
         conf = public.readFile(self.ng_website_conf)
@@ -216,16 +218,16 @@ class FileExecuteDeny:
         self._set_apache_file_deny(deny_name)
         self._set_ols_file_deny(deny_name)
         public.serviceReload()
-        return public.returnMsg(True,'Delete Successfully')
+        return public.returnMsg(True,'Successfully deleted!')
 
     # 检查传入参数
     def _check_args(self,args):
         if hasattr(args,'deny_name'):
             if len(args.deny_name) < 3:
-                return public.returnMsg(False, 'Rule name needs to be greater than 3 bytes')
+                return public.return_msg_gettext(False, 'Rule name needs to be greater than 3 bytes')
         if hasattr(args,'suffix'):
             if not args.suffix:
-                return public.returnMsg(False, 'File suffix cannot be empty')
+                return public.return_msg_gettext(False, 'File suffix cannot be empty')
         if hasattr(args,'dir'):
             if not args.dir:
-                return public.returnMsg(False, 'Directory cannot be empty')
+                return public.return_msg_gettext(False, 'Directory cannot be empty')

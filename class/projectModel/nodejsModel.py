@@ -666,6 +666,7 @@ export PATH
         error_list = []
         for domain in domains:
             domain = domain.strip()
+            if not domain: return public.return_error('Domain name cannot be empty',data='')
             domain_arr = domain.split(':')
             if len(domain_arr) == 1: 
                 domain_arr.append(80)
@@ -683,8 +684,8 @@ export PATH
         if success_list:
             public.M('sites').where('id=?',(project_id,)).save('project_config',json.dumps(project_find['project_config']))
             self.set_config(get.project_name)
-
-        return public.return_data(True,"[{}] domain names added successfully, [{}] failed!".format(len(success_list),len(error_list)),error_msg=error_list)
+            return public.return_data(True,"[{}] domain names added successfully, [{}] failed!".format(len(success_list),len(error_list)),error_msg=error_list)
+        return public.return_data(False,"[{}] domain names added successfully, [{}] failed!".format(len(success_list),len(error_list)),error_msg=error_list)
 
 
     def project_remove_domain(self,get):
@@ -1093,25 +1094,70 @@ export PATH
             @param pid: string<项目pid>
             @return list
         '''
-        plugin_name = None
+        project_name = None
         for pid_name in os.listdir(self._node_pid_path):
             pid_file = '{}/{}'.format(self._node_pid_path,pid_name)
-            s_pid = int(public.readFile(pid_file))
+            #s_pid = int(public.readFile(pid_file))
+            data = public.readFile(pid_file)
+            if isinstance(data,str) and data:
+                s_pid = int(data)
+            else:
+                return []
             if pid == s_pid:
-                plugin_name = pid_name[:-4]
+                project_name = pid_name[:-4]
                 break
-        project_find = self.get_project_find(plugin_name)
+        project_find = self.get_project_find(project_name)
         if not project_find: return []
         if not self._pids: self._pids = psutil.pids()
         all_pids = []
         for i in self._pids:
             try:
                 p = psutil.Process(i)
-                if p.cwd() == project_find['path'] and p.username() == project_find['project_config']['run_user']:
-                    if p.name() in ['node','npm','pm2']:
+                if p.cwd() == project_find['path']:
+                    pname = p.name()
+                    if pname in ['node','npm','pm2','yarn'] or pname.find('node ') == 0:
+                        cmdline = ','.join(p.cmdline())
+                        if cmdline.find('God Daemon') != -1:continue
+                        env_list = p.environ()
+                        if 'name' in env_list:
+                            if not env_list['name'] == project_name: continue
+                        if 'NODE_PROJECT_NAME' in env_list:
+                            if not env_list['NODE_PROJECT_NAME'] == project_name: continue
                         all_pids.append(i)
             except: continue
         return all_pids
+
+    def get_project_state_by_cwd(self,project_name):
+        '''
+            @name 通过cwd获取项目状态
+            @author hwliang<2022-01-17>
+            @param project_name<string> 项目名称
+            @return bool or list
+        '''
+        project_find = self.get_project_find(project_name)
+        self._pids = psutil.pids()
+        if not project_find: return []
+        all_pids = []
+        for i in self._pids:
+            try:
+                p = psutil.Process(i)
+                if p.cwd() == project_find['path']:
+                    pname = p.name()
+                    if pname in ['node','npm','pm2','yarn'] or pname.find('node ') == 0:
+                        cmdline = ','.join(p.cmdline())
+                        if cmdline.find('God Daemon') != -1:continue
+                        env_list = p.environ()
+                        if 'name' in env_list:
+                            if not env_list['name'] == project_name: continue
+                        if 'NODE_PROJECT_NAME' in env_list:
+                            if not env_list['NODE_PROJECT_NAME'] == project_name: continue
+                        all_pids.append(i)
+            except: continue
+        if all_pids:
+            pid_file = "{}/{}.pid".format(self._node_pid_path,project_name)
+            public.writeFile(pid_file,str(all_pids[0]))
+            return all_pids
+        return False
 
     def kill_pids(self,get=None,pids = None):
         '''
@@ -1175,7 +1221,10 @@ export PATH
         nodejs_version = project_find['project_config']['nodejs_version']
         node_bin = self.get_node_bin(nodejs_version)
         npm_bin = self.get_npm_bin(nodejs_version)
-        project_script = project_find['project_config']['project_script'].strip()
+        project_script = project_find['project_config']['project_script'].strip().replace('  ',' ')
+        if project_script[:3] == 'pm2': # PM2启动方式处理
+            project_script = project_script.replace('pm2 ','pm2 -u {} -n {} '.format(project_find['project_config']['run_user'],get.project_name))
+            project_find['project_config']['run_user'] = 'root'
         log_file = "{}/{}.log".format(self._node_logs_path,get.project_name)
         if not project_script: return public.return_error('No startup script configured')
 
@@ -1184,6 +1233,7 @@ export PATH
         # 生成启动脚本
         if os.path.exists(project_script):
             start_cmd = '''{last_env}
+export NODE_PROJECT_NAME="{project_name}"
 cd {project_cwd}
 nohup {node_bin} {project_script} 2>&1 >> {log_file} & 
 echo $! > {pid_file}
@@ -1193,10 +1243,12 @@ echo $! > {pid_file}
     project_script = project_script,
     log_file = log_file,
     pid_file = pid_file,
-    last_env = last_env
+    last_env = last_env,
+    project_name = get.project_name
 )
         elif project_script in scripts_keys:
             start_cmd = '''{last_env}
+export NODE_PROJECT_NAME="{project_name}"
 cd {project_cwd}
 nohup {npm_bin} run {project_script} 2>&1 >> {log_file} &
 echo $! > {pid_file}
@@ -1206,10 +1258,12 @@ echo $! > {pid_file}
     project_script = project_script,
     pid_file = pid_file,
     log_file = log_file,
-    last_env = last_env
+    last_env = last_env,
+    project_name = get.project_name
 )
         else:
             start_cmd = '''{last_env}
+export NODE_PROJECT_NAME="{project_name}"
 cd {project_cwd}
 nohup {project_script} 2>&1 >> {log_file} &
 echo $! > {pid_file}
@@ -1218,7 +1272,8 @@ echo $! > {pid_file}
     project_script = project_script,
     pid_file = pid_file,
     log_file = log_file,
-    last_env = last_env
+    last_env = last_env,
+    project_name = get.project_name
 )
         script_file = "{}/{}.sh".format(self._node_run_scripts,get.project_name)
 
@@ -1236,6 +1291,10 @@ echo $! > {pid_file}
         # 执行脚本文件
         p = public.ExecShell("bash {}".format(script_file),user=project_find['project_config']['run_user'])
         time.sleep(1)
+        n = 0
+        while n < 5:
+            if self.get_project_state_by_cwd(get.project_name): break
+            n+=1
         if not os.path.exists(pid_file):
             p = '\n'.join(p)
             if p.find('[Errno 0]') != -1:
@@ -1245,7 +1304,10 @@ echo $! > {pid_file}
             return public.return_error('failed to activate<pre>{}</pre>'.format(p))
 
         # 获取PID
-        pid = int(public.readFile(pid_file))
+        try:
+            pid = int(public.readFile(pid_file))
+        except:
+            return public.return_error('Startup failed <br>{}'.format(public.GetNumLines(log_file,20)))
         pids = self.get_project_pids(pid=pid)
         if not pids: 
             if os.path.exists(pid_file): os.remove(pid_file)
@@ -1263,13 +1325,33 @@ echo $! > {pid_file}
             }
             @return dict
         '''
+        project_find = self.get_project_find(get.project_name)
+        if not project_find: return public.return_error('Project does not exist')
+        project_script = project_find['project_config']['project_script'].strip().replace('  ',' ')
         pid_file = "{}/{}.pid".format(self._node_pid_path,get.project_name)
-        if not os.path.exists(pid_file): return public.return_error('Project did not start')
-        pid = int(public.readFile(pid_file))
-        pids = self.get_project_pids(pid=pid)
-        if not pids: return public.return_error('Project did not start')
-        self.kill_pids(pids=pids)
+        if project_script.find('pm2 start') != -1: # 处理PM2启动的项目
+            nodejs_version = project_find['project_config']['nodejs_version']
+            last_env = self.get_last_env(nodejs_version,project_find['path'])
+            project_script = project_script.replace('pm2 start','pm2 stop')
+            public.ExecShell('''{}
+cd {}
+{}'''.format(last_env,project_find['path'],project_script))
+        else:
+            pid_file = "{}/{}.pid".format(self._node_pid_path,get.project_name)
+            if not os.path.exists(pid_file): return public.return_error('Project did not start')
+            data = public.readFile(pid_file)
+            if isinstance(data,str) and data:
+                pid = int(data)
+                pids = self.get_project_pids(pid=pid)
+            else:
+                return  public.return_error('Project did not start')
+            if not pids: return public.return_error('Project did not start')
+            self.kill_pids(pids=pids)
         if os.path.exists(pid_file): os.remove(pid_file)
+        time.sleep(0.5)
+        pids = self.get_project_state_by_cwd(get.project_name)
+        if pids: self.kill_pids(pids=pids)
+
         return public.return_data(True, 'Stopped successfully')
 
     def restart_project(self,get):
@@ -1314,8 +1396,12 @@ echo $! > {pid_file}
         load_info = {}
         pid_file = "{}/{}.pid".format(self._node_pid_path,project_name)
         if not os.path.exists(pid_file): return load_info
-        pid = int(public.readFile(pid_file))
-        pids = self.get_project_pids(pid=pid)
+        data = public.readFile(pid_file)
+        if isinstance(data,str) and data:
+            pid = int(data)
+            pids = self.get_project_pids(pid=pid)
+        else:
+            return load_info
         if not pids: return load_info
         for i in pids:
             process_info = self.get_process_info_by_pid(i)
@@ -1514,9 +1600,13 @@ echo $! > {pid_file}
         if get: project_name = get.project_name.strip()
         pid_file = "{}/{}.pid".format(self._node_pid_path,project_name)
         if not os.path.exists(pid_file): return False
-        pid = int(public.readFile(pid_file))
-        pids = self.get_project_pids(pid=pid)
-        if not pids: return False
+        data=public.readFile(pid_file)
+        if isinstance(data,str) and data:
+            pid = int(data)
+            pids = self.get_project_pids(pid=pid)
+        else:
+            return self.get_project_state_by_cwd(project_name)
+        if not pids: return self.get_project_state_by_cwd(project_name)
         return True
 
     def get_project_find(self,project_name):
@@ -1556,12 +1646,16 @@ echo $! > {pid_file}
         '''
         project_info['project_config'] = json.loads(project_info['project_config'])
         project_info['run'] = self.get_project_run_state(project_name = project_info['name'])
-        project_info['load_info'] = self.get_project_load_info(project_name = project_info['name'])
+        project_info['load_info'] = {}
+        if project_info['run']:
+            project_info['load_info'] = self.get_project_load_info(project_name = project_info['name'])
         project_info['ssl'] = self.get_ssl_end_date(project_name = project_info['name'])
         project_info['listen'] = []
         project_info['listen_ok'] = True
         if project_info['load_info']:
             for pid in project_info['load_info'].keys():
+                if not 'connections' in project_info['load_info'][pid]:
+                    project_info['load_info'][pid]['connections'] = []
                 for conn in project_info['load_info'][pid]['connections']:
                     if not conn['status'] == 'LISTEN': continue
                     if not conn['local_port'] in project_info['listen']:

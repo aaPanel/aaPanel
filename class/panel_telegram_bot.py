@@ -17,7 +17,7 @@ pip = public.get_pip_bin()
 try:
     import telegram
 except:
-    public.ExecShell('{} install telegram'.format(pip))
+    public.ExecShell('{} install python-telegram-bot'.format(pip))
     import telegram
 
 class panel_telegram_bot:

@@ -56,12 +56,12 @@ class backup:
 
     def echo_start(self):
         print("="*90)
-        print("|-"+public.getMsg('START_BACKUP')+"[{}]".format(public.format_date()))
+        print("|-"+public.get_msg_gettext('Start backup')+"[{}]".format(public.format_date()))
         print("="*90)
 
     def echo_end(self):
         print("="*90)
-        print("|-"+public.getMsg('BACKUP_COMPLETED')+"[{}]".format(public.format_date()))
+        print("|-"+public.get_msg_gettext('Backup completed')+"[{}]".format(public.format_date()))
         print("="*90)
         print("\n")
 
@@ -98,8 +98,8 @@ class backup:
 
     def GetDiskInfo2(self):
         #取磁盘分区信息
-        temp = public.ExecShell("df -T -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
-        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
+        temp = public.ExecShell("df -T -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev|grep -v overlay")[0]
+        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev|grep -v overlay")[0]
         temp1 = temp.split('\n')
         tempInodes1 = tempInodes.split('\n')
         diskInfo = []
@@ -154,9 +154,9 @@ class backup:
         error_msg = ""
         self.echo_start()
         if not os.path.exists(spath):
-            error_msg= public.getMsg('BACKUP_DIR_NOT_EXIST',(spath,))
+            error_msg= public.get_msg_gettext('The specified directory {} does not exist!',(spath,))
             self.echo_error(error_msg)
-            self.send_failture_notification(error_msg)
+            self.send_failture_notification(error_msg, target=spath)
             return False
 
         if spath[-1] == '/':
@@ -170,25 +170,25 @@ class backup:
         if not self.backup_path_to(spath,dfile,exclude):
             if self._error_msg:
                 error_msg = self._error_msg
-            self.send_failture_notification(error_msg)
+            self.send_failture_notification(error_msg, target=spath)
             return False
 
         if self._cloud:
-            self.echo_info(public.getMsg("BACKUP_UPLOADING",(self._cloud._title,)))
+            self.echo_info(public.get_msg_gettext('Uploading to {}, please wait ...',(self._cloud._title,)))
             if self._cloud.upload_file(dfile,'path'):
-                self.echo_info(public.getMsg("BACKUP_UPLOAD_SUCCESS",(self._cloud._title,)))
+                self.echo_info(public.get_msg_gettext('Successfully uploaded to {}',(self._cloud._title,)))
             else:
                 if hasattr(self._cloud, "error_msg"):
                     if self._cloud.error_msg:
                         error_msg = self._cloud.error_msg
                 if not error_msg:
-                    error_msg = public.getMsg('BACKUP_UPLOAD_FAILED')
+                    error_msg = public.get_msg_gettext('File upload failed, skip this backup!')
                 self.echo_error(error_msg)
                 if os.path.exists(dfile):
                     os.remove(dfile)
 
                 remark = "Backup to " + self._cloud._title
-                self.send_failture_notification(error_msg, remark=remark)
+                self.send_failture_notification(error_msg, target=spath, remark=remark)
                 return False
 
         filename = dfile
@@ -228,9 +228,9 @@ class backup:
             if _not_save_local:
                 if os.path.exists(dfile):
                     os.remove(dfile)
-                    self.echo_info(public.getMsg("BACKUP_DEL",(dfile,)))
+                    self.echo_info(public.get_msg_gettext('User settings do not retain local backups, deleted {}',(dfile,)))
             else:
-                self.echo_info(public.getMsg('KEEP_LOCAL'))
+                self.echo_info(public.get_msg_gettext('Local backup has been kept'))
 
         if not self._cloud:
             backups = public.M('backup').where("type=? and pid=? and name=? and filename NOT LIKE '%|%'",('2',0,spath)).field('id,name,filename').select()
@@ -239,15 +239,16 @@ class backup:
 
         self.delete_old(backups,save,'path')
         self.echo_end()
+        self.save_backup_status(True, target=spath)
         return dfile
 
     
     #清理过期备份文件
     def delete_old(self,backups,save,data_type = None):
         if type(backups) == str:
-            self.echo_info(public.getMsg('BACKUP_CLEAN_ERR',(backups,)))
+            self.echo_info(public.get_msg_gettext('Failed to clean expired backup, error: {}',(backups,)))
             return
-        self.echo_info(public.getMsg('BACKUP_KEEP',(str(save),)))
+        self.echo_info(public.get_msg_gettext('Keep the latest number of backups: {} copies',(str(save),)))
         num = len(backups) - int(save)
         if  num > 0:
             self._get_local_backdir()
@@ -264,11 +265,11 @@ class backup:
                         os.remove(backup['filename'])
                     except:
                         pass
-                    self.echo_info(public.getMsg("BACKUP_CLEAN",(backup['filename'],)))
+                    self.echo_info(public.get_msg_gettext('Expired backup files have been cleaned from disk: {}',(backup['filename'],)))
                 #尝试删除远程文件
                 if self._cloud:
                     self._cloud.delete_file(backup['name'],data_type)
-                    self.echo_info(public.getMsg("BACKUP_CLEAN_REMOVE",(self._cloud._title,backup['name'])))
+                    self.echo_info(public.get_msg_gettext('Expired backup files have been cleaned from {}: {}',(self._cloud._title,backup['name'])))
 
                 #从数据库清理
                 public.M('backup').where('id=?',(backup['id'],)).delete()
@@ -282,7 +283,7 @@ class backup:
     #压缩目录
     def backup_path_to(self,spath,dfile,exclude = [],siteName = None):
         if not os.path.exists(spath):
-            self.echo_error(public.getMsg('BACKUP_DIR_NOT_EXIST',(spath,)))
+            self.echo_error(public.get_msg_gettext('The specified directory {} does not exist!',(spath,)))
             return False
 
         if spath[-1] == '/':
@@ -301,55 +302,55 @@ class backup:
             exclude_config = "Not set"
         
         if siteName:
-            self.echo_info(public.getMsg('BACKUP_SITE',(siteName,)))
-            self.echo_info(public.getMsg('WEBSITE_DIR',(spath,)))
+            self.echo_info(public.get_msg_gettext('Backup site: {}',(siteName,)))
+            self.echo_info(public.get_msg_gettext('Website document root: {}',(spath,)))
         else:
-            self.echo_info(public.getMsg('BACKUP_DIR',(spath,)))
+            self.echo_info(public.get_msg_gettext('Backup directory: {}',(spath,)))
         
-        self.echo_info(public.getMsg(
-            "DIR_SIZE",
+        self.echo_info(public.get_msg_gettext(
+            'Directory size: {}',
             (str(public.to_size(p_size),))
         ))
-        self.echo_info(public.getMsg('BACKUP_EXCLUSION',(exclude_config,)))
+        self.echo_info(public.get_msg_gettext('Exclusion setting: {}',(exclude_config,)))
         disk_path,disk_free,disk_inode = self.get_disk_free(dfile)
-        self.echo_info(public.getMsg(
-            "PARTITION_INFO",
+        self.echo_info(public.get_msg_gettext(
+            'Partition {} available disk space is: {}, available Inode is: {}',
             (disk_path,str(public.to_size(disk_free)),str(disk_inode))
         ))
         if disk_path:
             if disk_free < p_size:
-                self.echo_error(public.getMsg(
-                    "PARTITION_LESS_THEN",
+                self.echo_error(public.get_msg_gettext(
+                    'The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!',
                     (str(public.to_size(p_size)),)
                 ))
                 return False
 
             if disk_inode < self._inode_min:
-                self.echo_error(public.getMsg(
-                    "INODE_LESS_THEN",
+                self.echo_error(public.get_msg_gettext(
+                    'The available Inode of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!',
                     (str(self._inode_min,))
                 ))
                 return False
 
         stime = time.time()
-        self.echo_info(public.getMsg("START_COMPRESS",(public.format_date(times=stime),)))
+        self.echo_info(public.get_msg_gettext('Start compressing files: {}',(public.format_date(times=stime),)))
         if os.path.exists(dfile):
             os.remove(dfile)
         public.ExecShell("cd " + os.path.dirname(spath) + " && tar zcvf '" + dfile + "' " + self._exclude + " '" + dirname + "' 2>{err_log} 1> /dev/null".format(err_log = self._err_log))
         tar_size = os.path.getsize(dfile)
         if tar_size < 1:
-            self.echo_error(public.getMsg('ZIP_ERR'))
+            self.echo_error(public.get_msg_gettext('Compression failed!'))
             self.echo_info(public.readFile(self._err_log))
             return False
         compression_time = str('{:.2f}'.format(time.time() - stime))
-        self.echo_info(public.getMsg(
-            'COMPRESS_TIME',
+        self.echo_info(public.get_msg_gettext(
+            'Compression completed, took {} seconds, compressed package size: {}',
             (compression_time,str(public.to_size(tar_size)))
         ))
         if siteName:
-            self.echo_info(public.getMsg("WEBSITE_BACKUP_TO",(dfile,)))
+            self.echo_info(public.get_msg_gettext('Site backed up to: {}',(dfile,)))
         else:
-            self.echo_info(public.getMsg("DIR_BACKUP_TO",(dfile,)))
+            self.echo_info(public.get_msg_gettext('Directory has been backed up to: {}',(dfile,)))
         if os.path.exists(self._err_log):
             os.remove(self._err_log)
         return dfile
@@ -366,25 +367,25 @@ class backup:
         if not self.backup_path_to(spath,dfile,exclude,siteName=siteName):
             if self._error_msg:
                 error_msg = self._error_msg
-            self.send_failture_notification(error_msg)
+            self.send_failture_notification(error_msg, target=siteName)
             return False
 
         if self._cloud:
-            self.echo_info(public.getMsg("BACKUP_UPLOADING",(self._cloud._title,)))
+            self.echo_info(public.get_msg_gettext('Uploading to {}, please wait ...',(self._cloud._title,)))
             if self._cloud.upload_file(dfile,'site'):
-                self.echo_info(public.getMsg("BACKUP_UPLOAD_SUCCESS",(self._cloud._title,)))
+                self.echo_info(public.get_msg_gettext('Successfully uploaded to {}',(self._cloud._title,)))
             else:
                 if hasattr(self._cloud, "error_msg"):
                     if self._cloud.error_msg:
                         error_msg = self._cloud.error_msg
                 if not error_msg:
-                    error_msg = public.getMsg('BACKUP_UPLOAD_FAILED')
+                    error_msg = public.get_msg_gettext('File upload failed, skip this backup!')
                 self.echo_error(error_msg)
                 if os.path.exists(dfile):
                     os.remove(dfile)
 
                 remark = "Backup to " + self._cloud._title
-                self.send_failture_notification(error_msg, remark=remark)
+                self.send_failture_notification(error_msg, target=siteName, remark=remark)
                 return False
 
         filename = dfile
@@ -424,9 +425,9 @@ class backup:
             if _not_save_local:
                 if os.path.exists(dfile):
                     os.remove(dfile)
-                    self.echo_info(public.getMsg("BACKUP_DEL",(dfile,)))
+                    self.echo_info(public.get_msg_gettext('User settings do not retain local backups, deleted {}',(dfile,)))
             else:
-                self.echo_info(public.getMsg('KEEP_LOCAL'))
+                self.echo_info(public.get_msg_gettext('Local backup has been kept'))
 
         #清理多余备份
         if not self._cloud:
@@ -450,6 +451,7 @@ class backup:
             if not result:
                 failture_count += 1
             results.append((database['name'], result, self._error_msg,))
+            self.save_backup_status(result, target=database['name'], msg=self._error_msg)
 
         if failture_count > 0:
             self.send_all_failture_notification("database", results)
@@ -467,6 +469,7 @@ class backup:
             if not result:
                 failture_count += 1
             results.append((site['name'], result, self._error_msg,))
+            self.save_backup_status(result, target=site['name'], msg=self._error_msg)
 
         if failture_count > 0:
             self.send_all_failture_notification("site", results)
@@ -519,58 +522,78 @@ class backup:
             os.makedirs(dpath,384)
 
         error_msg = ""
-        import panelMysql
-        if not self._db_mysql:self._db_mysql = panelMysql.panelMysql()
+        # ----- 判断是否为远程数据库START  @author hwliang<2021-01-08>--------
+        db_find = public.M('databases').where("name=?",(db_name,)).find()
+        conn_config = {}
+        self._db_mysql = public.get_mysql_obj(db_name)
+        is_cloud_db = db_find['db_type'] in ['1',1,'2',2]
+        if is_cloud_db:
+            # 连接远程数据库
+            if db_find['sid']:
+                conn_config = public.M('database_servers').where('id=?',db_find['sid']).find()
+                if not 'db_name' in conn_config: conn_config['db_name'] = None
+            else:
+                conn_config = json.loads(db_find['conn_config'])
+            conn_config['db_port'] = str(int(conn_config['db_port']))
+            self._db_mysql.set_host(conn_config['db_host'],int(conn_config['db_port']),conn_config['db_name'],conn_config['db_user'],conn_config['db_password'])
+        # ----- 判断是否为远程数据库END @author hwliang<2021-01-08>------------
         d_tmp = self._db_mysql.query("select sum(DATA_LENGTH)+sum(INDEX_LENGTH) from information_schema.tables where table_schema='%s'" % db_name)
         try:
             p_size = self.map_to_list(d_tmp)[0][0]
         except:
-            error_msg = public.getMsg('DB_CONN_ERR')
+            error_msg = public.get_msg_gettext('The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct.')
             self.echo_error(error_msg)
-            self.send_failture_notification(error_msg)
+            self.send_failture_notification(error_msg, target=db_name)
             return False
         
         if p_size == None:
-            error_msg = public.getMsg('DB_BACKUP_ERR',(db_name,))
+            error_msg = public.get_msg_gettext('The specified database [ {} ] has no data!',(db_name,))
             self.echo_error(error_msg)
-            self.send_failture_notification(error_msg)
+            self.send_failture_notification(error_msg, target=db_name)
             return False
 
         character = public.get_database_character(db_name)
 
-        self.echo_info(public.getMsg('DB_BACKUP',(db_name,)))
-        self.echo_info(public.getMsg("DB_SIZE",(public.to_size(p_size),)))
-        self.echo_info(public.getMsg("DB_CHARACTER",(character,)))
+        self.echo_info(public.get_msg_gettext('Backup database:{}',(db_name,)))
+        self.echo_info(public.get_msg_gettext('Database size: {}',(public.to_size(p_size),)))
+        self.echo_info(public.get_msg_gettext('Database character set: {}',(character,)))
         disk_path,disk_free,disk_inode = self.get_disk_free(dfile)
-        self.echo_info(public.getMsg(
-            "PARTITION_INFO",(
+        self.echo_info(public.get_msg_gettext(
+            'Partition {} available disk space is: {}, available Inode is: {}',(
                 disk_path,str(public.to_size(disk_free)),str(disk_inode)
             )
         ))
         if disk_path:
             if disk_free < p_size:
-                error_msg = public.getMsg("PARTITION_LESS_THEN",(
+                error_msg = public.get_msg_gettext('The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!',(
                         str(public.to_size(p_size),)
                     ))
                 self.echo_error(error_msg)
-                self.send_failture_notification(error_msg)
+                self.send_failture_notification(error_msg, target=db_name)
                 return False
 
             if disk_inode < self._inode_min:
-                error_msg = public.getMsg("INODE_LESS_THEN",(self._inode_min,))
+                error_msg = public.get_msg_gettext('The available Inode of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!',(self._inode_min,))
                 self.echo_error(error_msg)
-                self.send_failture_notification(error_msg)
+                self.send_failture_notification(error_msg, target=db_name)
                 return False
         
         stime = time.time()
-        self.echo_info(public.getMsg("EXPORT_DB",(public.format_date(times=stime),)))
+        self.echo_info(public.get_msg_gettext('Start exporting database: {}',(public.format_date(times=stime),)))
         if os.path.exists(dfile):
             os.remove(dfile)
         #self.mypass(True)
+        mysqldump_bin = public.get_mysqldump_bin()
         try:
-            password = public.M('config').where('id=?',(1,)).getField('mysql_root')
-            os.environ["MYSQL_PWD"] = password
-            backup_cmd = "/www/server/mysql/bin/mysqldump -E -R --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " -u root" + " 2>"+self._err_log+"| gzip > " + dfile
+            if not is_cloud_db:
+                # 本地数据库 @author hwliang<2021-01-08>
+                password = public.M('config').where('id=?',(1,)).getField('mysql_root')
+                os.environ["MYSQL_PWD"] = password
+                backup_cmd = mysqldump_bin + " -E -R --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " -u root" + " 2>"+self._err_log+"| gzip > " + dfile
+            else:
+                # 远程数据库 @author hwliang<2021-01-08>
+                os.environ["MYSQL_PWD"] = conn_config['db_password']
+                backup_cmd = mysqldump_bin + " -h " + conn_config['db_host'] + " -P " + conn_config['db_port'] + " -E -R --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " -u " + conn_config['db_user'] + " 2>"+self._err_log+"| gzip > " + dfile
             public.ExecShell(backup_cmd)
         except Exception as e:
             raise
@@ -580,27 +603,27 @@ class backup:
         #self.mypass(False)
         gz_size = os.path.getsize(dfile)
         if gz_size < 400:
-            error_msg = public.getMsg("EXPORT_DB_ERR")
+            error_msg = public.get_msg_gettext('Database export failed!')
             self.echo_error(error_msg)
-            self.send_failture_notification(error_msg)
+            self.send_failture_notification(error_msg, target=db_name)
             self.echo_info(public.readFile(self._err_log))
             return False
         compressed_time = str('{:.2f}'.format(time.time() - stime))
         self.echo_info(
-            public.getMsg("COMPRESS_TIME",(str(compressed_time),
+            public.get_msg_gettext('Compression completed, took {} seconds, compressed package size: {}',(str(compressed_time),
             str(public.to_size(gz_size))
             ))
         )
         if self._cloud:
-            self.echo_info(public.getMsg("BACKUP_UPLOADING",(self._cloud._title,)))
+            self.echo_info(public.get_msg_gettext('Uploading to {}, please wait ...',(self._cloud._title,)))
             if self._cloud.upload_file(dfile, 'database'):
-                self.echo_info(public.getMsg("BACKUP_UPLOAD_SUCCESS",(self._cloud._title,)))
+                self.echo_info(public.get_msg_gettext('Successfully uploaded to {}',(self._cloud._title,)))
             else:
                 if hasattr(self._cloud, "error_msg"):
                     if self._cloud.error_msg:
                         error_msg = self._cloud.error_msg
                 if not error_msg:
-                    error_msg = public.getMsg('BACKUP_UPLOAD_FAILED')
+                    error_msg = public.get_msg_gettext('File upload failed, skip this backup!')
                 self.echo_error(error_msg)
                 if os.path.exists(dfile):
                     os.remove(dfile)
@@ -612,7 +635,7 @@ class backup:
         filename = dfile
         if self._cloud:
             filename = dfile + '|' + self._cloud._name + '|' + fname
-        self.echo_info(public.getMsg("DB_BACKUP_TO",(dfile,)))
+        self.echo_info(public.get_msg_gettext('Database has been backed up to: {}',(dfile,)))
         if os.path.exists(self._err_log):
             os.remove(self._err_log)
 
@@ -651,9 +674,9 @@ class backup:
             if _not_save_local:
                 if os.path.exists(dfile):
                     os.remove(dfile)
-                    self.echo_info(public.getMsg("BACKUP_DEL",(dfile,)))
+                    self.echo_info(public.get_msg_gettext('User settings do not retain local backups, deleted {}',(dfile,)))
             else:
-                self.echo_info(public.getMsg('KEEP_LOCAL'))
+                self.echo_info(public.get_msg_gettext('Local backup has been kept'))
 
         #清理多余备份
         if not self._cloud:
@@ -662,6 +685,7 @@ class backup:
             backups = public.M('backup').where('type=? and pid=? and filename LIKE "%{}%"'.format(self._cloud._name),('1',pid)).field('id,name,filename').select()
         self.delete_old(backups,save,'database')
         self.echo_end()
+        self.save_backup_status(True, target=db_name)
         return dfile
 
     def generate_success_title(self, task_name):
@@ -669,10 +693,10 @@ class backup:
         sm = send_mail()
         now = public.format_date(format="%Y-%m-%d %H:%M")
         server_ip = sm.GetLocalIp()
-        title = public.getMsg("BACKUP_TASK_TITLE",(server_ip, task_name))
+        title = public.get_msg_gettext('{}-{} The task was executed successfully',(server_ip, task_name))
         return title
 
-    def generate_failture_title(self):
+    def generate_failture_title(self, task_name):
         title = "aaPanel backup task failed reminder"
         return title
 
@@ -743,13 +767,13 @@ class backup:
         """ 通过计划任务名称查找计划任务配置参数 """
         try:
             cron_info  = public.M('crontab').where('echo=?',(cron_name,))\
-            .field('name,save_local,notice,notice_channel').find()
+            .field('name,save_local,notice,notice_channel,id').find()
             return cron_info
         except Exception as e:
             pass
         return {}
 
-    def send_failture_notification(self, error_msg, remark=""):
+    def send_failture_notification(self, error_msg, target="", remark=""):
         """发送任务失败消息
 
         :error_msg 错误信息
@@ -764,16 +788,18 @@ class backup:
         save_local = cron_info["save_local"]
         notice = cron_info["notice"]
         notice_channel = cron_info["notice_channel"]
+
+        self.save_backup_status(False, target, msg=error_msg)
         if notice == 0 or not notice_channel:
             return
 
         if notice == 1 or notice == 2:
-            title = self.generate_failture_title(cron_title)
+            title = self.generate_failture_title()
             task_name = cron_title
             msg = self.generate_failture_notice(task_name, error_msg, remark)
             res = self.send_notification(notice_channel, title, msg)
             if res:
-                self.echo_info(public.getMsg('NOTIFICATION_SENT'))
+                self.echo_info(public.get_msg_gettext('Notification has been sent'))
 
     def send_all_failture_notification(self, backup_type, results, remark=""):
         """统一发送任务失败消息
@@ -813,18 +839,18 @@ class backup:
 
             if failture_count > 0:
                 if self._cloud:
-                    remark = public.getMsg("BACKUP_MSG"),(
+                    remark = public.get_msg_gettext('Backup to {}, a total of {} {}, and failures {}.'),(
                    self._cloud._title, total, backup_type_desc, failture_count)
                 else:
-                        remark = public.getMsg("BACKUP_MSG1"),(
+                        remark = public.get_msg_gettext('Backup failed {}/total {} sites'),(
                         failture_count, total, backup_type_desc)
 
             msg = self.generate_all_failture_notice(task_name, content, backup_type_desc, remark)
             res = self.send_notification(notice_channel, title, msg)
             if res:
-                self.echo_info(public.getMsg('NOTIFICATION_SENT'))
+                self.echo_info(public.get_msg_gettext('Notification has been sent'))
             else:
-                self.echo_error(public.getMsg('NOTIFICATION_ERR'))
+                self.echo_error(public.get_msg_gettext('Failed to send notification'))
 
     def send_notification(self, channel, title, msg = {}):
         try:
@@ -876,5 +902,14 @@ class backup:
         except Exception as e:
             print(e)
         return False
-
+    def save_backup_status(self, status, target="", msg=""):
+        """保存备份的状态"""
+        try:
+            if not self.cron_info:
+                return
+            cron_id = self.cron_info["id"]
+            sql = public.M("system").dbfile("system").table("backup_status")
+            sql.add("id,target,status,msg,addtime", (cron_id, target, status, msg, time.time(),))
+        except Exception as e:
+            print("Backup status saving error :{}.".format(e))
     

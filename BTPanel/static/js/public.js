@@ -334,13 +334,13 @@ var aceEditor = {
                         title: lan.public.history_version + '[ ' + _item.fileName + ' ]',
                         skin: 'historys_layer',
                         content: '<div class="pd20">\
-							<div class="divtable">\
-								<table class="historys table table-hover">\
-									<thead><tr><th>' + lan.public.file_name + '</th><th>' + lan.public.v_time + '</th><th style="text-align:right;">' + lan.public.operate + '</th></tr></thead>\
-									<tbody></tbody>\
-								</table>\
-							</div>\
-						</div>',
+													<div class="divtable" style="overflow:auto;height:450px; border: 1px solid #ddd;">\
+														<table class="historys table table-hover" id="historys-table" style="border: none;">\
+															<thead><tr><th>' + lan.public.file_name + '</th><th>' + lan.public.v_time + '</th><th style="text-align:right;">' + lan.public.operate + '</th></tr></thead>\
+															<tbody></tbody>\
+														</table>\
+													</div>\
+												</div>',
                         success: function(layeo, index) {
                             var _html = '';
                             for (var i = 0; i < _item.historys.length; i++) {
@@ -360,6 +360,7 @@ var aceEditor = {
                             $('.recovery_file_historys').click(function() {
                                 _this.event_ecovery_file(this);
                             });
+														bt.fixed_table('historys-table');
                         }
                     });
                     break;
@@ -2963,7 +2964,9 @@ function loadScript(arry, param, callback) {
     var ready = 0;
     if (typeof param === 'function') callback = param
     for (var i = 0; i < arry.length; i++) {
-        if (!Array.isArray(bt['loadScript'])) bt['loadScript'] = []
+        if (!Array.isArray(bt['loadScript'])) {
+            bt['loadScript'] = []
+        }
         if (!is_file_existence(arry[i], true)) {
             if ((arry.length - 1) === i && callback) callback();
             continue;
@@ -2986,6 +2989,7 @@ function loadScript(arry, param, callback) {
             } else {
                 (function(i) {
                     script.onload = function() {
+                        if (!bt['loadScript']) bt['loadScript'] = [];
                         bt['loadScript'].push(arry[i]);
                         ready++;
                     };
@@ -3667,7 +3671,7 @@ function bindBTPanel(a, type, ip, btid, url, user, pw) {
         var gurl = "/config?action=AddPanelInfo";
         var btaddress = $("#btaddress").val();
         if (!btaddress.match(/^(http|https)+:\/\/([\w-]+\.)+[\w-]+:\d+/)) {
-            layer.msg(lan.bt.panel_err_format + '<p>http://192.168.0.1:7800</p>', { icon: 5, time: 5000 });
+            layer.msg(lan.bt.panel_err_format + '<p>http://192.168.0.1:8888</p>', { icon: 5, time: 5000 });
             return;
         }
         var btuser = encodeURIComponent($("#btuser").val());
@@ -3774,7 +3778,10 @@ function messagebox(){
 					'<p>'+lan.public.exec_log+'</p>' +
 				'</div>' +
 				'<div class="bt-w-con pd15">' +
-					'<div class="bt-w-item active" id="command_install_list"><ul class="cmdlist"></ul></div>'+
+					'<div class="bt-w-item active" id="command_install_list">\
+						<ul class="cmdlist"></ul>\
+						<div style="position: fixed;bottom: 15px;">' + lan.public.task_long_time_not_exec + '</div>\
+					</div>'+
 					'<div class="bt-w-item" id="messageContent"></div>'+
 					'<div class="bt-w-item"><pre id="execLog" class="command_output_pre" style="height: 530px;"></pre></div>'+
 				'</div>' +
@@ -3797,7 +3804,7 @@ function messagebox(){
 						bt.send('GetExecLog','files/GetExecLog',{},function(res){
 							loadT.close();
 							var exec_log = $('#execLog');
-							console.log(exec_log)
+							// console.log(exec_log)
 							exec_log.html(res)
 							exec_log[0].scrollTop = exec_log[0].scrollHeight
 						})
@@ -3873,43 +3880,48 @@ function reader_realtime_tasks(refresh){
 			html = '',
 			message = res.msg,
 			task = res.task;
-		$('#taskNum').html(typeof res.task === "undefined"?0:res.task.length);
+		$('#taskNum').html(typeof res.task === "undefined" ? 0 : res.task.length);
 		if(typeof res.task === "undefined"){
 			html = '<div style="padding:5px;">'+lan.bt.task_not_list+'</div><div style="position: fixed;bottom: 15px;">' + lan.public.task_long_time_not_exec + '</div>'
+			
 			command_install_list.html(html)
 		}else{
 			var shell = '', message_split = message.split("\n");
+      var del_task = '<a style="color:green" onclick="RemoveTask($id)" href="javascript:;">'+ lan.public.del +'</a>',loading_img = "<img src='"+ loading +"'/>";
 			for(var j = 0; j < message_split.length; j++) {
 				shell += message_split[j] + "</br>";
 			}
-			if(command_install_list.find('li').length){
-				if(command_install_list.find('li').length > res.task.length) command_install_list.find('li:eq(0)').remove();
-				if(task[0].status !== '0' && !command_install_list.find('pre').length) command_install_list.find('li:eq(0)').append('<pre class=\'cmd command_output_pre\'>' + shell +'</pre>')
-				messageBoxWssock.el = command_install_list.find('pre');
-			}else{
-				for (var i = 0; i < task.length; i++) {
-					var item = task[i], task_html = '', del_task = '<a style="color:green" onclick="RemoveTask(' + item.id + ')" href="javascript:;">'+ lan.public.del +'</a>',loading_img = "<img src='"+ loading +"'/>";
-					if(item.status === '-1' && item.type === 'download'){
-						task_html = "<div class='line-progress' style='width:" + message.pre + "%'></div><span class='titlename'>" + item.name + "<a style='margin-left:130px;'>" + (ToSize(message.used) + "/" + ToSize(message.total)) + "</a></span><span class='com-progress'>" + message.pre + "%</span><span class='state'>"+ lan.bt.task_downloading +" "+ loading_img +" | "+ del_task +"</span>";
-					}else{
-						task_html += '<span class="titlename">' + item.name + '</span>';
-						task_html += '<span class="state">';
-						if(item.status !== "-1"){
-							task_html += lan.bt.task_sleep + ' | ' + del_task;
-						}else{
-							var is_scan = item.name.indexOf("扫描") !== -1;
-							task_html += (is_scan?lan.bt.task_scan:lan.bt.task_install) + ' ' + loading_img + ' | ' + del_task;
-						}
-						task_html += "</span>";
-						if(item.type !== "download" && item.status === "-1"){
-							task_html += '<pre class=\'cmd command_output_pre\'>' + shell +'</pre>'
-						}
+			// if(command_install_list.find('li').length){
+			// 	if(command_install_list.find('li').length > res.task.length) command_install_list.find('li:eq(0)').remove();
+			// 	if(task[0].status !== '0' && !command_install_list.find('pre').length) command_install_list.find('li:eq(0)').append('<pre class=\'cmd command_output_pre\'>' + shell +'</pre>')
+			// 	messageBoxWssock.el = command_install_list.find('pre');
+			// }else{
+			for (var i = 0; i < task.length; i++) {
+				var item = task[i], task_html = '';
+				if(item.status === '-1' && item.type === 'download'){
+					task_html = "<div class='line-progress' style='width:" + message.pre + "%'></div><span class='titlename'>" + item.name + "<a style='margin-left:130px;'>" + (ToSize(message.used) + "/" + ToSize(message.total)) + "</a></span><span class='com-progress'>" + message.pre + "%</span><span class='state'>"+ lan.bt.task_downloading +" "+ loading_img +" | "+ del_task.replace('$id', item.id) +"</span>";
+				}else{
+					task_html += '<span class="titlename">' + item.name + '</span>';
+					task_html += '<span class="state">';
+          switch(item.status){
+            case '0':
+              task_html += lan.bt.task_sleep + ' | ' + del_task.replace('$id', item.id);
+              break
+            case '-1':
+              var is_scan = item.name.indexOf("扫描") !== -1;
+              task_html += (is_scan ? lan.bt.task_scan : lan.bt.task_install) + ' ' + loading_img + ' | ' + del_task.replace('$id', item.id);
+              break
+          }
+					task_html += "</span>";
+					if(item.type !== "download" && item.status === "-1"){
+						task_html += '<pre class=\'cmd command_output_pre\'>' + shell +'</pre>'
 					}
-					html += "<li>"+ task_html +"</li>";
 				}
-				command_install_list.find('ul').append(html);
+				html += "<li>"+ task_html +"</li>";
 			}
-			if(task[0].status === '0'){
+			command_install_list.find('ul').html(html);
+			// }
+			if(task.length > 0 && task[0].status === '0'){
 				setTimeout(function(){
 					reader_realtime_tasks(true)
 				},100)
@@ -5189,3 +5201,147 @@ var MessageChannel = {
 	}
 }
 /** 消息通道 end**/
+var product_recommend = {
+    data:null,
+    /**
+     * @description 初始化
+     */
+    init:function(callback){
+        var _this = this;
+        if(location.pathname.indexOf('bind') > -1) return;
+        this.get_product_type(function (rdata) {
+            _this.data = rdata
+            if(callback) callback(rdata)
+        })
+    },
+    /**
+     * @description 获取推荐类型
+     * @param {object} type 参数{type:类型}
+     */
+    get_recommend_type:function(type){
+        var config = null,pathname = location.pathname.replace('/','') || 'home';
+        for (var i = 0; i < this.data.length; i++) {
+            var item = this.data[i];
+            if(item.type == type && item.show) config = item
+        }
+        return config
+    },
+
+    /**
+     * @description 或指定版本事件
+     * @param {} name
+     */
+    get_version_event:function (item,param) {
+        var pay_status = this.get_pay_status();
+        bt.soft.get_soft_find(item.name,function(res){
+            if((res.type === 12 && pay_status.is_pay && pay_status.advanced !== 'ltd') || !pay_status.is_pay){
+                product_recommend.recommend_product_view(item)
+            }else if(!res.setup){
+                bt.soft.install(item.name)
+            }else{
+                bt.plugin.get_plugin_byhtml(item.name,function(html){
+                    if(typeof html === "string"){
+                        layer.open({
+                            type:1,
+                            shade:0,
+                            skin:'hide',
+                            content:html,
+                            success:function(){
+                                var is_event = false;
+                                for (var i = 0; i < item.eventList.length; i++) {
+                                    var data = item.eventList[i];
+                                    var oldVersion = data.version.replace('.',''),newVersion = res.version.replace('.','');
+                                    if(newVersion <= oldVersion){
+                                        is_event = true
+                                        setTimeout(function () {
+                                            new Function(data.event.replace('$siteName',param))()
+                                        },100)
+                                        break;
+                                    }
+                                }
+                                if(!is_event) new Function(item.eventList[item.eventList.length - 1].event.replace('$siteName',param))()
+                            }
+                        })
+                    }
+                })
+            }
+
+        })
+    },
+    /**
+     * @description 获取支付状态
+     */
+    get_pay_status:function(){
+        var pro_end = parseInt(bt.get_cookie('pro_end') || -1);
+        var ltd_end = parseInt(bt.get_cookie('ltd_end')  || -1);
+        var is_pay = pro_end > -1 || ltd_end > -1; // 是否购买付费版本
+        var advanced = 'pro'; // 已购买，专业版优先显示
+        if(pro_end === -2 || pro_end > -1) advanced = 'pro';
+        if(ltd_end === -2 || ltd_end > -1) advanced = 'ltd';
+        var end_time = advanced === 'ltd'? ltd_end:pro_end; // 到期时间
+        return { advanced: advanced, is_pay:is_pay,  end_time:end_time };
+    },
+
+    pay_product_sign:function (type,source) {
+        switch (type) {
+            case 'pro':
+                bt.soft['updata_' + type](source);
+                break;
+            case 'ltd':
+                bt.soft['updata_' + type](false, source);
+                break;
+        }
+    },
+    /**
+     * @description 获取项目类型
+     * @param {Function} callback 回调函数
+     */
+    get_product_type:function(callback){
+        bt.send('get_pay_type','ajax/get_pay_type',{},function(rdata){
+            bt.set_storage('session','get_pay_type',JSON.stringify(rdata))
+            if(callback) callback(rdata)
+        })
+    },
+    /**
+     * @description 推荐购买产品
+     * @param {Object} pay_id 购买的入口id
+     */
+    recommend_product_view: function (config) {
+        var name = config.name.split('_')[0];
+        var status = this.get_pay_status();
+        console.log(status);
+        bt.open({
+            title:false,
+            area:'650px',
+            btn:false,
+            content:'<div class="ptb15" style="display: flex;">\
+        <div class="product_view"><img src="/static/images/recommend/'+ name +'.png"/></div>\
+        <div class="product_describe ml10">\
+          <div class="describe_title">'+ config.pluginName +'</div>\
+          <div class="describe_ps">'+ config.ps +'</div>\
+          <div class="product_describe_btn">\
+            <a class="btn btn-default mr10 btn-sm productPreview '+ (!config.preview?'hide':'') +'" href="'+ config.preview +'" target="_blank">产品预览</a><button class="btn btn-success btn-sm buyNow">立即购买</button>\
+          </div>\
+        </div>\
+      </div>',
+            success:function () {
+                // 产品预览
+                $('.product_view img').click(function () {
+                    layer.open({
+                        type:1,
+                        title:'查看图片',
+                        area:['650px','450px'],
+                        closeBtn:2,
+                        btn:false,
+                        content:'<img src="/static/images/recommend/'+ name +'.png" style="width:100%" />'
+                    })
+                })
+                // 立即购买
+                $('.buyNow').click(function(){
+                    bt.set_cookie('pay_source',config.pay)
+                    bt.soft['updata_' + status.advanced]()
+                })
+            }
+        })
+    }
+}

@@ -48,6 +48,19 @@ def control_init():
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%project_config%')).count():
         public.M('sites').execute("alter TABLE sites add project_config STRING DEFAULT '{}'",())
 
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'backup','%ps%')).count():
+        public.M('backup').execute("alter TABLE backup add ps STRING DEFAULT 'No'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'databases','%db_type%')).count():
+        public.M('databases').execute("alter TABLE databases add db_type integer DEFAULT '0'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'databases','%conn_config%')).count():
+        public.M('databases').execute("alter TABLE databases add conn_config STRING DEFAULT '{}'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'databases','%sid%')).count():
+        public.M('databases').execute("alter TABLE databases add sid integer DEFAULT 0",())
+
+
     sql = db.Sql()
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_types')).count():
         csql = '''CREATE TABLE IF NOT EXISTS `site_types` (
@@ -93,6 +106,18 @@ def control_init():
 `login_addr` REAL,
 `logout_time` INTEGER,
 `expire` INTEGER,
+`addtime` INTEGER
+)'''
+        sql.execute(csql,())
+
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'database_servers')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `database_servers` (
+`id` INTEGER PRIMARY KEY AUTOINCREMENT,
+`db_host` REAL,
+`db_port` REAL,
+`db_user` INTEGER,
+`db_password` INTEGER,
+`ps` REAL,
 `addtime` INTEGER
 )'''
         sql.execute(csql,())
@@ -161,10 +186,19 @@ def control_init():
         public.ExecShell("rm -rf /www/server/panel/adminer")
     if os.path.exists('/dev/shm/session.db'):
         os.remove('/dev/shm/session.db')
+
+    node_service_bin = '/usr/bin/nodejs-service'
+    node_service_src = '/www/server/panel/script/nodejs-service.py'
+    if os.path.exists(node_service_src): public.ExecShell("chmod 700 " + node_service_src)
+    if not os.path.exists(node_service_bin):
+        if os.path.exists(node_service_src):
+            public.ExecShell("ln -sf {} {}".format(node_service_src,node_service_bin))
+
     #disable_putenv('putenv')
     #clean_session()
     #set_crond()
     test_ping()
+    set_wp_cache_dir()
     clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
     clean_max_log('/var/log/rsyncd.log',1024*1024*10)
     clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
@@ -182,7 +216,12 @@ def control_init():
     update_py37()
     run_script()
     set_php_cli_env()
+    check_enable_php()
 
+def set_wp_cache_dir():
+    import one_key_wp
+    one_key_wp.fast_cgi().set_nginx_conf()
+    public.ExecShell("/etc/init.d/nginx restart")
 
 def set_php_cli_env():
     '''
@@ -209,7 +248,7 @@ def set_php_cli_env():
 
 
     # 设置所有已安装的PHP版本环境变量和别名
-    php_versions_list = ['52','53','54','55','56','70','71','72','73','74','80','81','82','83','84','90','91']
+    php_versions_list = public.get_php_versions()
     for php_version in php_versions_list:
         php_ini = "{}/{}/etc/php.ini".format(php_path,php_version)
         php_cli_ini = "{}/{}/etc/php-cli.ini".format(php_path,php_version)
@@ -242,6 +281,30 @@ def set_php_cli_env():
             if os.path.exists(php_pecl): os.remove(php_pecl)
             if os.path.exists(php_pear): os.remove(php_pear)
     public.writeFile(bashrc,bashrc_body)
+
+
+def check_enable_php():
+    '''
+        @name 检查nginx下的php配置文件
+    '''
+    php_versions = public.get_php_versions()
+    ngx_php_conf = public.get_setup_path() + '/nginx/conf/enable-php-00.conf'
+    public.writeFile(ngx_php_conf,'')
+    for php_v in php_versions:
+        ngx_php_conf = public.get_setup_path() + '/nginx/conf/enable-php-{}.conf'.format(php_v)
+        if os.path.exists(ngx_php_conf): continue
+        enable_conf = '''
+    location ~ [^/]\.php(/|$)
+	{{
+		try_files $uri =404;
+		fastcgi_pass  unix:/tmp/php-cgi-{}.sock;
+		fastcgi_index index.php;
+		include fastcgi.conf;
+		include pathinfo.conf;
+	}}
+    '''.format(php_v)
+        public.writeFile(ngx_php_conf,enable_conf)
+
 
 
 def write_run_script_log(_log,rn='\n'):
@@ -319,7 +382,6 @@ def files_set_mode():
         ["/www/server/stop","","root",755,True],
         ["/www/server/redis","","redis",700,True],
         ["/www/server/redis/redis.conf","","redis",600,False],
-        ["/www/Recycle_bin","","root",600,True],
         ["/www/server/panel/class","","root",600,True],
         ["/www/server/panel/data","","root",600,True],
         ["/www/server/panel/plugin","","root",600,False],
@@ -344,6 +406,10 @@ def files_set_mode():
         ["/www/server/phpmyadmin","","root",755,True],
         ["/www/server/coll","","root",700,True]
     ]
+
+    recycle_list = public.get_recycle_bin_list()
+    for recycle_path in recycle_list:
+        m_paths.append([recycle_path,'','root',600,True])
 
     for m in m_paths:
         if not os.path.exists(m[0]): continue
@@ -409,7 +475,7 @@ def set_pma_access():
 
 #尝试升级到独立环境
 def update_py37():
-    pyenv='/www/server/panel/pyenv/bin/python'
+    pyenv='/www/server/panel/pyenv/bin/python3'
     pyenv_exists='/www/server/panel/data/pyenv_exists.pl'
     if os.path.exists(pyenv) or os.path.exists(pyenv_exists): return False
     download_url = public.get_url()
@@ -552,7 +618,7 @@ def disable_putenv(fun_name):
     try:
         is_set_disable = '/www/server/panel/data/disable_%s' % fun_name
         if os.path.exists(is_set_disable): return True
-        php_vs = ('52','53','54','55','56','70','71','72','73','74')
+        php_vs = public.get_php_versions()
         php_ini = "/www/server/php/{0}/etc/php.ini"
         rep = "disable_functions\s*=\s*.*"
         for pv in php_vs:
@@ -617,5 +683,10 @@ def clean_session():
         if old_state: public.ExecShell("rm -f " + session_path + '/*')
         return True
     except:return False
+
+
+
+if __name__ == '__main__':
+    control_init()
 
 

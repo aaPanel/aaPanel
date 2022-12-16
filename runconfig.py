@@ -5,7 +5,7 @@ f.close()
 if bt_port:
     bt_port.strip()
 else:
-    bt_port = 7800
+    bt_port = 8888
 bind = []
 if os.path.exists('data/ipv6.pl'): 
     bind.append('[0:0:0:0:0:0:0:0]:%s' % bt_port)

@@ -93,6 +93,7 @@ class setPanelLets:
                 now = time.time()
                 if time_stamp > int(now):
                     return i
+        for i in gcl:
             for d in i['dns']:
                 d = d.split('.')
                 if '*' in d and d[1:] == get.domain.split('.')[1:]:
@@ -139,8 +140,8 @@ class setPanelLets:
         public.writeFile(self.__panel_cert_path + "certificate.pem", self.__tmp_cert)
 
     # 记录证书源
-    def __save_cert_source(self,domain,email):
-        public.writeFile(self.__panel_cert_path+"lets.info",json.dumps({"domain":domain,"cert_type":"2","email":email}))
+    def __save_cert_source(self,domain):
+        public.writeFile(self.__panel_cert_path+"lets.info",json.dumps({"domain":domain,"cert_type":"2"}))
 
     # 获取证书源
     def get_cert_source(self):
@@ -192,10 +193,10 @@ class setPanelLets:
         panel_cert_data = self.__check_panel_cert()
         if not panel_cert_data:
             self.__write_panel_cert()
-            return public.returnMsg(True,'')
+            return public.returnMsg(True,'1')
         if panel_cert_data["key"] != self.__tmp_key and panel_cert_data["cert"] != self.__tmp_cert:
             self.__write_panel_cert()
-            return public.returnMsg(True,'')
+            return public.returnMsg(True,'1')
         return public.returnMsg(True, '')
 
     # 设置lets证书
@@ -209,7 +210,7 @@ class setPanelLets:
         domain = self.__check_panel_domain()
         get.domain = domain
         if not domain:
-            return public.returnMsg(False, "You need to bind the domain name to the panel before you can apply for the Let\'s Encrypt certificate.")
+            return public.returnMsg(False, "You need to bind the domain name to the panel before you can apply for the Lets Encrypt certificate.")
         if not self.__check_host_name(domain):
             create_site = self.__create_site_of_panel_lets(get)
         domain_cert = self.__check_cert_dir(get)
@@ -218,9 +219,9 @@ class setPanelLets:
             if not res['status']:
                 return res
             public.writeFile("/www/server/panel/data/ssl.pl", "True")
-            public.writeFile("/www/server/panel/data/reload.pl","1")
-            self.__save_cert_source(domain,get.email)
-            return public.returnMsg(True, 'Panel lets set successfully')
+            # public.writeFile("/www/server/panel/data/reload.pl","1")
+            self.__save_cert_source(domain)
+            return public.returnMsg(True, 'Setup successfully!')
         if not create_site:
             create_lets = self.__create_lets(get)
             if not create_lets['status']:
@@ -229,9 +230,9 @@ class setPanelLets:
                 domain_cert = self.__check_cert_dir(get)
                 self.copy_cert(domain_cert)
                 public.writeFile("/www/server/panel/data/ssl.pl", "True")
-                public.writeFile("/www/server/panel/data/reload.pl", "1")
-                self.__save_cert_source(domain, get.email)
-                return  public.returnMsg(True, 'Panel lets set successfully')
+                # public.writeFile("/www/server/panel/data/reload.pl", "1")
+                self.__save_cert_source(domain)
+                return  public.returnMsg(True, 'Setup successfully!')
             else:
                 return public.returnMsg(False, create_lets)
         else:

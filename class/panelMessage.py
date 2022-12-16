@@ -44,33 +44,36 @@ class panelMessage:
 
 
     """
-    获取官网推送消息，一小时获取一次
+    获取官网推送消息，一天获取一次
     """
     def get_cloud_messages(self,args):
-        #ret = cache.get('get_cloud_messages')
-        #if ret: return public.returnMsg(True,'同步成功1!')
-        data = {}
-        data['version'] = public.version()
-        data['os'] = self.os
-        sUrl = public.GetConfigValue('home') + '/api/wpanel/get_messages'
-        import http_requests
-        http_requests.DEFAULT_TYPE = 'src'
-        info = http_requests.post(sUrl,data).json()
-        # info = json.loads(public.httpPost(sUrl,data))
-        for x in info:
-            count = public.M('messages').where('level=? and msg=?',(x['level'],x['msg'],)).count()
-            if count: continue
+        try:
+            ret = cache.get('get_cloud_messages')
+            if ret: return public.returnMsg(True,'同步成功1!')
+            data = {}
+            data['version'] = public.version()
+            data['os'] = self.os
+            sUrl = public.GetConfigValue('home') + '/api/wpanel/get_messages'
+            import http_requests
+            http_requests.DEFAULT_TYPE = 'src'
+            info = http_requests.post(sUrl,data).json()
+            # info = json.loads(public.httpPost(sUrl,data))
+            for x in info:
+                count = public.M('messages').where('level=? and msg=?',(x['level'],x['msg'],)).count()
+                if count: continue
 
-            pdata = {
-                "level":x['level'],
-                "msg":x['msg'],
-                "state":1,
-                "expire":int(time.time()) + (int(x['expire']) * 86400),
-                "addtime": int(time.time())
-            }
-            public.M('messages').insert(pdata)
-        #cache.set('get_cloud_messages',3600)
-        return public.returnMsg(True,'同步成功!')
+                pdata = {
+                    "level":x['level'],
+                    "msg":x['msg'],
+                    "state":1,
+                    "expire":int(time.time()) + (int(x['expire']) * 86400),
+                    "addtime": int(time.time())
+                }
+                public.M('messages').insert(pdata)
+            cache.set('get_cloud_messages',86400)
+            return public.returnMsg(True,'同步成功!')
+        except:
+            return public.returnMsg(False,'同步失败!')
 
     def get_messages(self,args = None):
         '''
@@ -78,7 +81,7 @@ class panelMessage:
             @author hwliang <2020-05-18>
             @return list
         '''
-        self.get_cloud_messages(args)
+        public.run_thread(self.get_cloud_messages,args=(args,))
         data = public.M('messages').where('state=? and expire>?',(1,int(time.time()))).order("id desc").select()
         return data
 
@@ -88,7 +91,7 @@ class panelMessage:
             @author hwliang <2020-05-18>
             @return list
         '''
-        self.get_cloud_messages(args)
+        public.run_thread(self.get_cloud_messages,args=(args,))
         data = public.M('messages').order("id desc").select()
         return data
 

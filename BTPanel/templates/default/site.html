@@ -13,7 +13,7 @@
 </style>
 <div class="main-content pb55">
     <div class="container-fluid">
-        <div class="pos-box bgw mtb15">
+        <!-- <div class="pos-box bgw mtb15">
             <div class="position f14 c9 pull-left">
                 <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
             </div>
@@ -24,23 +24,33 @@
                 </form>
                 <iframe name='hid' id="hid" style="display:none"></iframe>
             </div>
+        </div> -->
+        <div class="pos-box bgw mtb15">
+            <div class="tab-list" id="cutMode">
+                <div class="tabs-item active" data-type="php">PHP Project</div>
+                <div class="tabs-item" data-type="nodejs">Node Project</div>
+            </div>
         </div>
-        <div class="site_table_view bgw mtb15 pd15">
-            <div class="info-title-tips">
+        <div id="site_table_view" class="site_table_view bgw mtb15 pd15">
+            <!-- <div class="info-title-tips">
                 <p><span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px;"></span> {{data['lan']['PS']}}after the site is successfully established, please<a class="btlink" href="/crontab">[Cron]</a>add scheduled backup tasks to the page!</p>
             </div>
             <div class="tab-nav" id="cutMode">
                 <span class="on">PHP Project</span>
                 <span >Node Project</span>
-            </div>
-            <div class="tab-con" style="padding:10px 0;overflow: inherit;">
+            </div> -->
+            <div class="tab-con" style="padding: 0;overflow: inherit;">
                 <div class="tab-con-block">
                     <div id="bt_site_table"></div>
-                    <div class="mask_layer hide"><div class="prompt_description"></div></div>
+                    <div class="mask_layer hide">
+                        <div class="prompt_description"></div>
+                    </div>
                 </div>
                 <div class="tab-con-block">
                     <div id="bt_node_table"></div>
-                    <div class="mask_layer hide"><div class="prompt_description"></div></div>
+                    <div class="mask_layer hide">
+                        <div class="prompt_description node-model"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -50,6 +60,7 @@
 
 
 {% block scripts %}
+{{ super() }}
 <script type="text/javascript">
     bt.set_cookie('sites_path', "{{session['config']['sites_path']}}");
     bt.set_cookie('serverType', "{{session['webserver']}}");

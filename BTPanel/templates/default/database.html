@@ -4,16 +4,9 @@
 
 <div class="main-content pb55">
     <div class="container-fluid">
-        <div class="pos-box bgw mtb15">
-            <div class="position f14 c9 pull-left">
-                <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
-            </div>
-            <div class="search pull-right">
-                <form target="hid" onsubmit='return false;'>
-                    <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="{{data['lan']['SEARCH']}}" />
-                    <button type="button" class="ser-sub pull-left" onclick='database.database_table_view($("#SearchValue").val())'></button>
-                </form>
-                <iframe name='hid' id="hid" style="display:none"></iframe>
+        <div class="pos-box bgw mtb15 ">
+            <div class="tab-list">
+                <div class="tabs-item active">{{data['lan']['H2']}}</div>
             </div>
         </div>
         <div class="safe bgw mtb15 pd15">
@@ -26,28 +19,35 @@
         </div>
         <form id="toPHPMyAdmin" public-data="{{session['phpmyadminDir']}}/index.php" action="{{session['phpmyadminDir']}}/index.php" method="post" style="display: none;" target="_blank">
             <input type="text" name="pma_username" id="pma_username" value="" />
-            <input type="password" name="pma_password" id="pma_password" value="" />
-            <input type="text" name="server" value="1" />
-            <input type="text" name="target" value="index.php" />
-            <input type="text" name="db" id="db" value="" />
+            <input type="password" name="pma_password" id="pma_password" value=""/>
+            <input type="text" name="server" value="1"/>
+            <input type="text" name="target" value="index.php"/>
+            <input type="text" name="db" id="db" value=""/>
         </form>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script type="text/javascript" src="/static/js/bt_upload.js?version={{g['version']}}"></script>
 <script src="/static/js/database.js?date={{g['version']}}"></script>
 <script type="text/javascript">
     bt.set_cookie('backup_path', "{{session['config']['backup_path']}}");
-	
-	{% if not data['isSetup'] %}
-		layer.msg('{{data["lan"]["JS1"]}}<a href="/soft#i" style="color:#20a53a;float: right;">{{data["lan"]["JS2"]}}</a>',{icon:7,shade: [0.3, '#000'],time:0});
-        $(".layui-layer-shade").css("margin-left", "180px");
-    {% else %}
+
+		var isSetup = true;
+    {% if not data['isSetup'] %}
+        // layer.msg('{{data["lan"]["JS1"]}}<a href="/soft#i" style="color:#20a53a;float: right;">{{data["lan"]["JS2"]}}</a>', {
+        //     icon: 7,
+        //     shade: [0.3, '#000'],
+        //     time: 0
+        // });
+        // $(".layui-layer-shade").css("margin-left", "180px");
+        // layer.msg('{{data["lan"]["NOT_INSTALL_DATABASE_DESC"]}}', { time: 2000 });
+				isSetup = false;
+    // {% else %}
     // 	database.get_list();
     {% endif %}		
-	
 </script>
 <script src="/static/js/upload.js?date={{g['version']}}"></script>
 {% endblock %}

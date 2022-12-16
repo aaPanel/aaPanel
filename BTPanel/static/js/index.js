@@ -724,6 +724,8 @@ var index = {
             var rlen = rdata.length;
             var clickName = '';
             var setup_length = 0;
+            var softboxsum = 12;
+            var softboxcon = '';
             for (var i = 0; i < rlen; i++) {
                 if (rdata[i].setup) {
                     setup_length++;
@@ -754,9 +756,34 @@ var index = {
                 }
             }
             $("#indexsoft").html(con);
+            // 推荐安装软件
+            try {
+                var recomConfig = product_recommend.get_recommend_type(1)
+                if(recomConfig){
+                    var pay_status = product_recommend.get_pay_status();
+                    for (var i = 0; i < recomConfig['list'].length; i++) {
+                        const item = recomConfig['list'][i];
+                        if(setup_length > softboxsum) break;
+                        if(pay_status.is_pay && item['install']) continue;
+                        softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3">\
+                      <div class="recommend-soft recom-iconfont">\
+                        <div class="product-close hide">关闭推荐</div>\
+                        <div class="images"><img src="/static/img/soft_ico/ico-'+ item['name'] +'.png"></div>\
+                        <div class="product-name">'+ item['title'] +'</div>\
+                        <div class="product-pay-btn">\
+                        '+ ((item['isBuy'] && !item['install'])?
+                            '<button class="btn btn-sm btn-success home_recommend_btn" style="margin-left:0;" onclick="bt.soft.install(\''+ item['name'] +'\')">Install</button>':
+                            '<a class="btn btn-sm btn-default mr5 '+ (!item.preview?'hide':'') +'" href="'+ item.preview +'" target="_blank">Preview</a><button type="submit" class="btn btn-sm btn-success home_recommend_btn" onclick=\"product_recommend.pay_product_sign(\'pro\','+ item.pay +')\">Buy now</button>') +'\
+                        </div>\
+                      </div>\
+                    </div>'
+                        setup_length ++;
+                    }
+                }
+            } catch (error) {
+                console.log(error)
+            }
             //软件位置移动
-            var softboxsum = 12;
-            var softboxcon = '';
             if (setup_length <= softboxsum) {
                 for (var i = 0; i < softboxsum - setup_length; i++) {
                     softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3 no-bg"></div>'
@@ -794,7 +821,7 @@ var index = {
                                 <div class="update_title"><i class="layui-layer-ico layui-layer-ico1"></i><span>'+lan.index.last_version_now+'</span></div>\
                                 <div class="update_version">'+lan.index.this_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_this_version_log+'">'+lan.index.bt_linux+ (rdata.msg.is_beta == 1 ? lan.index.test_version+' ' + rdata.msg.beta.version : lan.index.final_version+' ' + rdata.msg.version) + '</a>&nbsp;&nbsp;'+ lan.index.release_time + (rdata.msg.is_beta == 1 ? rdata.msg.beta.uptime : rdata.msg.uptime) + '</div>\
                                 <div class="update_conter">\
-                                        <div class="update_tips">'+ (is_beta != 1 ? lan.index.test_version : lan.index.final_version) + lan.index.last_version_is + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
+                                        <div class="update_tips">'+ lan.index.last_version_is+(is_beta != 1 ? lan.index.test_version : lan.index.final_version)  + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
                                         '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">&nbsp;&nbsp;'+lan.index.change_final+'</a></span>') + '\
                                     </div>\
                                 <div class="bt-form-submit-btn">\
@@ -834,11 +861,11 @@ var index = {
                     content: '<div class="setchmod bt-form" style="padding-bottom:50px;">\
                                     <div class="update_title"><i class="layui-layer-ico layui-layer-ico0"></i><span>'+lan.index.have_new_version+'</span></div>\
                                     <div class="update_conter">\
-                                        <div class="update_version">'+lan.index.last_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_version_log+'">'+lan.index.bt_linux+ (is_beta === 1 ? lan.index.test_version : lan.index.final_version) + rdata.version + '</a></br>'+lan.index.update_date + (result.msg.is_beta == 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
+                                        <div class="update_version">'+lan.index.last_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_version_log+'">'+lan.index.bt_linux+ (is_beta === 1 ? lan.index.test_version : lan.index.final_version) +' '+ rdata.version + '</a></br>'+lan.index.update_date + (result.msg.is_beta == 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
                                         <div class="update_logs">'+ rdata.updateMsg + '</div>\
                                     </div>\
                                     <div class="update_conter">\
-                                        <div class="update_tips">'+ (is_beta !== 1 ? lan.index.test_version : lan.index.final_version) + lan.index.last_version_is + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
+                                        <div class="update_tips">'+ lan.index.last_version_is +(is_beta !== 1 ? lan.index.test_version : lan.index.final_version) +  (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
                                         '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">'+lan.index.change_final+'</a></span>') + '\
                                     </div>\
                                     <div class="bt-form-submit-btn">\
@@ -1068,6 +1095,7 @@ var index = {
         }, 100)
     },
     open_log: function () {
+			return
         bt.open({
             type: 1,
             area: '640px',
@@ -1077,7 +1105,7 @@ var index = {
             shadeClose: false,
             content: '<div class="DrawRecordCon"></div>'
         });
-        $.get('https://www.bt.cn/Api/getUpdateLogs?type=' + bt.os, function (rdata) {
+        $.get('https://www.bt.cn/api/panel/updateLinuxEn', function (rdata) {
             var body = '';
             for (var i = 0; i < rdata.length; i++) {
                 body += '<div class="DrawRecord DrawRecordlist">\
@@ -1244,7 +1272,7 @@ var index = {
                         break;
                         case 1:
                             if(data.type != 'ignore'){
-                                bt.confirm({title:'Ignore risk',msg:'Confirm to ignore【'+ data.title +'】risk?'},function(){
+                                bt.confirm({title:'Ignore risk',msg:'Confirm to ignore [ '+ data.title +' ] risk?'},function(){
                                     that.warning_set_ignore(data.model,function(res){
                                         that.get_warning_list(false,function(){
                                             bt.msg(res)
@@ -1309,7 +1337,74 @@ var index = {
                 if(callback) callback(res);
             }
         });
+    },
+    /**
+     * @description 获取当前的产品状态
+     */
+    get_product_status: function (callback) {
+        // var loadT = layer.msg('正在获取产品状态，请稍候...', { icon: 16, time: 0 })
+        bt.send('get_pd', 'ajax/get_pd', {}, function (res) {
+            $('.btpro-gray').replaceWith($(res[0]));
+            bt.set_cookie('pro_end', res[1]);
+            bt.set_cookie('ltd_end', res[2]);
+            if(res[1] === 0){
+                $(".btpro span").click(function(e){
+                    layer.confirm('切换回免费版可通过解绑账号实现', { icon: 3, btn: ['解绑账号'], closeBtn: 2, title: '是否取消授权' }, function () {
+                        $.post('/ssl?action=DelToken', {}, function (rdata) {
+                            layer.msg(rdata.msg);
+                            setTimeout(function () {
+                                window.location.reload();
+                            },2000);
+                        });
+                    });
+                    e.stopPropagation();
+                });
+            }
+            if(callback) callback();
+        })
+    },
+    /**
+     * @description 推荐进阶版产品
+     */
+    recommend_paid_version: function () {
+        try {
+            var recomConfig = product_recommend.get_recommend_type(0)
+            var pay_status = product_recommend.get_pay_status()
+            var is_pay = pay_status.is_pay;
+            var advanced =  pay_status.advanced;
+            var end_time = pay_status.end_time;
+            var html = '',list_html = '';
+            if(!is_pay) advanced = ''; //未购买的时候，使用推荐内容
+            if(recomConfig){
+                var item = recomConfig;
+                for (let j = 0; j < item['ps'].length; j++) {
+                    const element = item['ps'][j];
+                    list_html += '<div class="item">'+ element +'</div>';
+                }
+                var pay_html = '';
+                if(is_pay){
+                    pay_html = '<div class="product-buy '+ (advanced || item.name) +'-type">Expired: <span>'+ (end_time === 0?'Lifetime':(end_time === -2?'Expired':bt.format_data(end_time,'yyyy-MM-dd')) + '&nbsp;&nbsp;<a class="btlink" href="javascript:;" onclick="product_recommend.pay_product_sign(\''+ advanced +'\','+ item.pay +')">Renew</a>') +'</span></div>'
+                }else{
+                    pay_html = '<div class="product-buy"><button type="button" class="btn btn-xs btn-success" onclick="product_recommend.pay_product_sign(\''+ (advanced || item.name) +'\','+ item.pay +')">Buy now</button></div>'
+                }
+                html = '<div class="conter-box bgw">\
+          <div class="recommend-top pd15 '+ (is_pay?( advanced +'-bg'):'') +'">'+ (!is_pay?pay_html:'') +'<div class="product-ico '+ (advanced || item.name) +''+ (!is_pay?'-pay':'') +'-ico"></div>' + (is_pay?pay_html:'') +'\
+            <div class="product-label">'+ list_html +'</div>\
+          </div>\
+        </div>'
+                $('#home-recommend').html(html)
+            }
+        } catch (error) {
+            console.log(error)
+        }
     }
 }
 index.get_init();
 //setTimeout(function () { index.get_cloud_list() }, 800);
+
+product_recommend.init(function(){
+    index.get_product_status(function(){
+        index.recommend_paid_version()
+    });
+    index.get_index_list();
+})

@@ -38,7 +38,7 @@
                 </div>
 			</div>
 		</div>
-		<div class="file_nav_view">
+		<div class="file_nav_view clearfix">
             <div class="nav_group">
 				<div class="nav_btn upload_file">
 					<span class="nav_btn_title">Upload</span>
@@ -403,15 +403,15 @@
                     <ul></ul>
                 </div>
                 <div class="menu-item menu-setUp"  style="display: none;">
-                	<div class="menu-title">Editor setting【Some settings need to be restart editor】</div>
+                	<div class="menu-title">Editor setting [ Some settings need to be restart editor ]</div>
                 	<ul class="editor_menu">
                 		<li data-type="wrap">Auto wrap</li>
                 		<li data-type="enableLiveAutocompletion">Code autocomplete</li>
                 		<li data-type="enableSnippets">Enable snippets</li>
                 		<li data-type="showInvisibles">Show hidden characters</li>
-                		<li data-type="showLineNumbers">Show line numbers</li>
-                		
-                	</ul>
+                        <li data-type="showLineNumbers">Show line numbers</li>
+
+                    </ul>
                 </div>
             </div>
         </div>
@@ -419,13 +419,19 @@
 </script>
 {% endblock %}
 {% block scripts %}
-    <script type="text/javascript" src="{{g.cdn_url}}/js/jquery.dragsort-0.5.2.min.js" defer></script>
-    <script type="text/javascript" src="{{g.cdn_url}}/js/jquery.qrcode.min.js" defer></script>
-    <script type="text/javascript" src="{{g.cdn_url}}/js/public.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
-    <script type="text/javascript" src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
-    <script type="text/javascript" src="{{g.cdn_url}}/js/clipboard.min.js" defer></script>
-    <script type="text/javascript" src="{{g.cdn_url}}/js/polyfill.js"></script>
-    <script type="text/javascript" src="{{g.cdn_url}}/ace/ace.js" defer></script>
-    <script type="text/javascript" src="{{g.cdn_url}}/ace/ext-language_tools.js" defer></script>
-    <script type="text/javascript" src="{{g.cdn_url}}/js/files.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+{{ super() }}
+<script type="text/javascript" src="{{g.cdn_url}}/js/jquery.dragsort-0.5.2.min.js" defer></script>
+<script type="text/javascript" src="{{g.cdn_url}}/js/jquery.qrcode.min.js" defer></script>
+<script type="text/javascript"
+        src="{{g.cdn_url}}/js/public.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+<script type="text/javascript"
+        src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+<script type="text/javascript" src="{{g.cdn_url}}/js/clipboard.min.js" defer></script>
+<script type="text/javascript" src="{{g.cdn_url}}/js/polyfill.js"></script>
+<script type="text/javascript" src="{{g.cdn_url}}/ace/ace.js" defer></script>
+<script type="text/javascript" src="{{g.cdn_url}}/ace/ext-language_tools.js" defer></script>
+<script type="text/javascript"
+        src="{{g.cdn_url}}/js/files.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+<script type="text/javascript"
+        src="{{g.cdn_url}}/js/upload-drog.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
 {% endblock %}

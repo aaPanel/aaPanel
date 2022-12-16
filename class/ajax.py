@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-from BTPanel import session,request
+from BTPanel import session,request,cache
 import public,os,json,time,apache,psutil
 class ajax:
     __official_url = 'https://brandnew.aapanel.com'
@@ -25,7 +25,7 @@ class ajax:
             pass
     def GetNginxStatus(self,get):
         try:
-            if not os.path.exists('/www/server/nginx/sbin/nginx'): return public.returnMsg(False,'NGINX_NOT_INSTALL')
+            if not os.path.exists('/www/server/nginx/sbin/nginx'): return public.return_msg_gettext(False,'Nginx is not install')
             process_cpu = {}
             worker = int(public.ExecShell("ps aux|grep nginx|grep 'worker process'|wc -l")[0])-1
             workermen = int(public.ExecShell("ps aux|grep nginx|grep 'worker process'|awk '{memsum+=$6};END {print memsum}'")[0]) / 1024
@@ -66,8 +66,8 @@ class ajax:
             data['workermen'] = "%s%s" % (int(workermen), "MB")
             return data
         except Exception as ex:
-            public.WriteLog('GET_INFO','NGINX_LOAD_ERR',(ex,))
-            return public.returnMsg(False,'GET_DATA_ERR')
+            public.write_log_gettext('Get Info','Nginx load status acquisition failed:{}',(ex,))
+            return public.return_msg_gettext(False,'Data acquisition failed!')
     
     def GetPHPStatus(self,get):
         #取指定PHP版本的负载状态
@@ -80,8 +80,8 @@ class ajax:
             tmp['start time'] = time.strftime('%Y-%m-%d %H:%M:%S',fTime)
             return tmp
         except Exception as ex:
-            public.WriteLog('GET_INFO',"PHP_LOAD_ERR",(public.get_error_info(),))
-            return public.returnMsg(False,'PHP_LOAD_ERR1')
+            public.write_log_gettext('Get Info',"PHP load status acquisition failed: {}",(public.get_error_info(),))
+            return public.return_msg_gettext(False,'PHP load status acquisition failed!')
         
     def CheckStatusConf(self):
         if public.get_webserver() != 'nginx': return
@@ -152,19 +152,19 @@ class ajax:
     
     def CheckLibInstall(self,checks):
         for cFile in checks:
-            if os.path.exists(cFile): return public.GetMsg("ALREADY_INSTALLED")
-        return public.GetMsg("NOT_INSTALL")
+            if os.path.exists(cFile): return public.GetMsg('Already installed')
+        return public.GetMsg('Not installed')
     
     #取插件操作选项
     def GetLibOpt(self,status,libName):
         optStr = ''
-        if status == public.GetMsg("NOT_INSTALL"):
-            optStr = '<a class="link" href="javascript:InstallLib(\''+libName+'\');">'+public.GetMsg("INSTALL")+'</a>'
+        if status == public.GetMsg('Not installed'):
+            optStr = '<a class="link" href="javascript:InstallLib(\''+libName+'\');">'+public.GetMsg('Uninstallaton succeeded')+'</a>'
         else:
-            libConfig = public.GetMsg("CONF")
-            if(libName == 'beta'): libConfig = public.GetMsg("CLOSE_BETA")
+            libConfig = public.GetMsg('Old configuration')
+            if(libName == 'beta'): libConfig = public.GetMsg('Beta tester profile')
                                   
-            optStr = '<a class="link" href="javascript:SetLibConfig(\''+libName+'\');">'+libConfig+'</a> | <a class="link" href="javascript:UninstallLib(\''+libName+'\');">'+public.GetMsg("UNINSTALL")+'</a>';
+            optStr = '<a class="link" href="javascript:SetLibConfig(\''+libName+'\');">'+libConfig+'</a> | <a class="link" href="javascript:UninstallLib(\''+libName+'\');">'+public.get_msg_gettext("Uninstallaton succeeded")+'</a>';
         return optStr
     
     #取插件AS
@@ -189,9 +189,9 @@ class ajax:
         result = public.ExecShell(public.get_python_bin() + " " + public.GetConfigValue('setup_path') + "/panel/script/backup_"+get.name+".py list")
         
         if result[0].find("ERROR:") == -1: 
-            public.WriteLog("PLUG_MAM","SET_PLUG[" +info['name']+ "]AS!")
-            return public.returnMsg(True, 'SET_SUCCESS')
-        return public.returnMsg(False,'AK_SK_CONNECT_ERROR',(info['name'],))
+            public.write_log_gettext("Plugin manager","Set plugin [" +info['name']+ "]AS!")
+            return public.return_msg_gettext(True, 'Successfully set')
+        return public.return_msg_gettext(False,'ERROR: Unable to connect to the {} server, please check if the [AK/SK/Storage] setting is correct!',(info['name'],))
     
     #设置内测
     def SetBeta(self,get):
@@ -229,7 +229,7 @@ class ajax:
             result = public.ExecShell(public.get_python_bin() + " " + public.GetConfigValue('setup_path') + "/panel/script/backup_"+get.name+".py list")
             return json.loads(result[0])
         except:
-            return public.returnMsg(False, 'GET_QINIU_FILE_LIST')
+            return public.return_msg_gettext(False, 'Failed to get the list, please check if the [AK/SK/Storage] setting is correct!')
 
     
     
@@ -301,11 +301,11 @@ class ajax:
         import psutil
         p = psutil.Process(int(get.pid))
         name = p.name()
-        if name == 'python': return public.returnMsg(False,'KILL_PROCESS_ERR')
+        if name == 'python': return public.return_msg_gettext(False,'Error, cannot end task processes!')
         
         p.kill()
-        public.WriteLog('TYPE_PROCESS','KILL_PROCESS',(get.pid,name))
-        return public.returnMsg(True,'KILL_PROCESS',(get.pid,name))
+        public.write_log_gettext('Task manager','Ended processes[{}][{}] Successfully!',(get.pid,name))
+        return public.return_msg_gettext(True,'Ended processes[{}][{}] Successfully!',(get.pid,name))
     
     def GoToProcess(self,name):
         ps = ['sftp-server','login','nm-dispatcher','irqbalance','qmgr','wpa_supplicant','lvmetad','auditd','master','dbus-daemon','tapdisk','sshd','init','ksoftirqd','kworker','kmpathd','kmpath_handlerd','python','kdmflush','bioset','crond','kthreadd','migration','rcu_sched','kjournald','iptables','systemd','network','dhclient','systemd-journald','NetworkManager','systemd-logind','systemd-udevd','polkitd','tuned','rsyslogd']
@@ -445,8 +445,8 @@ class ajax:
             public.writeFile('/www/server/panel/data/is_beta.pl','true')
             try:
                 return {'status': True, 'msg': "Successful application!"}
-            except: return public.returnMsg(False,'AJAX_CONN_ERR')
-        except: return public.returnMsg(False,'AJAX_USER_BINDING_ERR')
+            except: return public.return_msg_gettext(False,'Fail to connect to the server!')
+        except: return public.return_msg_gettext(False,'Please bind your account first!')
 
     def to_not_beta(self,get):
         try:
@@ -461,8 +461,8 @@ class ajax:
                 if os.path.exists(beta_file):
                     os.remove(beta_file)
                 return {"status": True, "msg": "Successful application!"}
-            except: return public.returnMsg(False,'AJAX_CONN_ERR')
-        except: return public.returnMsg(False,'AJAX_USER_BINDING_ERR')
+            except: return public.return_msg_gettext(False,'Fail to connect to the server!')
+        except: return public.return_msg_gettext(False,'Please bind your account first!')
 
     def to_beta(self):
         try:
@@ -483,11 +483,10 @@ class ajax:
     #获取最新的5条测试版更新日志
     def get_beta_logs(self,get):
         try:
-            # data = json.loads(public.HttpGet('https://console.aapanel.com/api/panel/get_beta_logs_en'))
             data = json.loads(public.HttpGet('{}/api/panel/getBetaVersionLogs'.format(self.__official_url)))
             return data
         except:
-            return public.returnMsg(False,'AJAX_CONN_ERR')
+            return public.return_msg_gettext(False,'Fail to connect to the server!')
 
     def get_other_info(self):
         other = {}
@@ -502,13 +501,11 @@ class ajax:
 
     def UpdatePanel(self,get):
         try:
-            if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK')
+            if not public.IsRestart(): return public.return_msg_gettext(False,'Please run the program when all install tasks finished!')
             import json
             conf_status = public.M('config').where("id=?",('1',)).field('status').find()
             if int(session['config']['status']) == 0 and int(conf_status['status']) == 0:
-                # public.HttpGet('{}/api/setupCount/setupPanel?type=Linux'.format(self.__official_url))
                 public.arequests('get', '{}/api/setupCount/setupPanel?type=Linux'.format(self.__official_url))
-
                 public.M('config').where("id=?",('1',)).setField('status',1)
             
             #取回远程版本信息
@@ -535,21 +532,22 @@ class ajax:
                 data['oem'] = ''
                 data['intrusion'] = 0
                 data['uid'] = self.get_uid()
-                #msg = public.getMsg('PANEL_UPDATE_MSG');
+                #msg = public.getMsg('Current version is stable version and already latest. Update cycle of stable version is generally 2 months，while developer version will update every Wednesday!');
                 data['o'] = public.get_oem_name()
                 sUrl = '{}/api/panel/updateLinuxEn'.format(self.__official_url)
                 updateInfo = json.loads(public.httpPost(sUrl,data))
-                if not updateInfo: return public.returnMsg(False,"CONNECT_ERR")
+                if not updateInfo: return public.return_msg_gettext(False,'Failed to connect server!')
                 #updateInfo['msg'] = msg;
                 if os.path.exists('/www/server/panel/data/is_beta.pl'):
                     updateInfo['is_beta'] = 1
                 session['updateInfo'] = updateInfo
                 
             #检查是否需要升级
-            if updateInfo['is_beta'] == 1:
-                if updateInfo['beta']['version'] ==session['version']: return public.returnMsg(False,updateInfo)
-            else:
-                if updateInfo['version'] ==session['version']: return public.returnMsg(False,updateInfo)
+            if not hasattr(get,'toUpdate'):
+                if updateInfo['is_beta'] == 1:
+                    if updateInfo['beta']['version'] == session['version']: return public.returnMsg(False,updateInfo)
+                else:
+                    if updateInfo['version'] == session['version']: return public.returnMsg(False,updateInfo)
             
             
             #是否执行升级程序 
@@ -560,9 +558,9 @@ class ajax:
                 httpUrl = public.get_url()
                 if httpUrl: updateInfo['downUrl'] =  httpUrl + '/install/' + uptype + '/LinuxPanel_EN-' + updateInfo['version'] + '.zip'
                 public.downloadFile(updateInfo['downUrl'],'panel.zip')
-                if os.path.getsize('panel.zip') < 1048576: return public.returnMsg(False,"PANEL_UPDATE_ERR_DOWN")
+                if os.path.getsize('panel.zip') < 1048576: return public.return_msg_gettext(False,'File download failed, please try again or update manually!')
                 public.ExecShell('unzip -o panel.zip -d ' + setupPath + '/')
-                import compileall
+                # import compileall
                 if os.path.exists('/www/server/panel/runserver.py'): public.ExecShell('rm -f /www/server/panel/*.pyc')
                 if os.path.exists('/www/server/panel/class/common.py'): public.ExecShell('rm -f /www/server/panel/class/*.pyc')
                 
@@ -572,7 +570,7 @@ class ajax:
                 if updateInfo['is_beta'] == 1: self.to_beta()
                 public.ExecShell("/etc/init.d/bt start")
                 public.writeFile('data/restart.pl','True')
-                return public.returnMsg(True,'PANEL_UPDATE',(updateInfo['version'],))
+                return public.return_msg_gettext(True,'Successful to update to {}',(updateInfo['version'],))
             
             #输出新版本信息
             data = {
@@ -580,13 +578,20 @@ class ajax:
                 'version': updateInfo['version'],
                 'updateMsg' : updateInfo['updateMsg']
             }
-            
+            # 输出忽略的版本
+            updateInfo['ignore'] = []
+            no_path = '{}/data/no_update.pl'.format(public.get_panel_path())
+            if os.path.exists(no_path):
+                try:
+                    updateInfo['ignore'] = json.loads(public.readFile(no_path))
+                except:
+                    pass
             public.ExecShell('rm -rf /www/server/phpinfo/*')
             return public.returnMsg(True,updateInfo)
         except Exception as ex:
             return public.get_error_info()
-            return public.returnMsg(False,"CONNECT_ERR")
-         
+            return public.return_msg_gettext(False,'Failed to connect server!')
+
     #检查是否安装任何
     def CheckInstalled(self,get):
         checks = ['nginx','apache','php','pure-ftpd','mysql']
@@ -611,7 +616,7 @@ class ajax:
             filename = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version,get.version[0],get.version[1])
             if os.path.exists('/etc/redhat-release'):
                 filename = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
-        if not os.path.exists(filename): return public.returnMsg(False,'PHP_NOT_EXISTS')
+        if not os.path.exists(filename): return public.return_msg_gettext(False,'Requested PHP version does NOT exist!')
         phpini = public.readFile(filename)
         data = {}
         rep = "disable_functions\s*=\s{0,1}(.*)\n"
@@ -698,7 +703,7 @@ class ajax:
 
     # 下载云端php扩展配置
     def _get_cloud_phplib(self):
-        if not session.get('download_url'): session['download_url'] = 'http://node.aapanel.com'
+        if not session.get('download_url'): session['download_url'] = 'https://node.aapanel.com'
         download_url = session['download_url'] + '/install/lib/phplib_en.json'
         tstr = public.httpGet(download_url)
         data = json.loads(tstr)
@@ -723,13 +728,13 @@ class ajax:
     #清理日志
     def delClose(self,get):
         if not 'uid' in session: session['uid'] = 1
-        if session['uid'] != 1: return public.returnMsg(False,'PERMISSION_DENIED')
+        if session['uid'] != 1: return public.return_msg_gettext(False,'Permission denied!')
         if 'tmp_login_id' in session:
-            return public.returnMsg(False,'PERMISSION_DENIED')
+            return public.return_msg_gettext(False,'Permission denied!')
 
         public.M('logs').where('id>?',(0,)).delete()
-        public.WriteLog('TYPE_CONFIG','LOG_CLOSE')
-        return public.returnMsg(True,'LOG_CLOSE')
+        public.write_log_gettext('Panel setting','Panel Logs emptied!')
+        return public.return_msg_gettext(True,'Panel Logs emptied!')
 
     def __get_webserver_conffile(self):
         webserver = public.get_webserver()
@@ -778,54 +783,54 @@ class ajax:
     # 修改php ssl端口
     def change_phpmyadmin_ssl_port(self,get):
         if public.get_webserver() == "openlitespeed":
-            return public.returnMsg(False, 'NOT_SUPPORT_OLS')
+            return public.return_msg_gettext(False, 'The current web server is openlitespeed. This function is not supported yet.')
         import re
         try:
             port = int(get.port)
             if 1 > port > 65535:
-                return public.returnMsg(False, 'PORT_CHECK_RANGE')
+                return public.return_msg_gettext(False, 'Port range is incorrect!')
         except:
-            return public.returnMsg(False, 'PORT_FORMAT_ERR')
+            return public.return_msg_gettext(False, 'Please enter the correct port number')
         for i in ["nginx","apache"]:
             file = "/www/server/panel/vhost/{}/phpmyadmin.conf".format(i)
             conf = public.readFile(file)
             if not conf:
-                return public.returnMsg(False,"PHPMYADMIN_SSL_ERR",(i,))
+                return public.return_msg_gettext(False,'Did not find the {} configuration file, please try to close the ssl port settings before opening',(i,))
             rulePort = ['80', '443', '21', '20', '8080', '8081', '8089', '11211', '6379']
             if get.port in rulePort:
-                return public.returnMsg(False, 'AJAX_PHPMYADMIN_PORT_ERR')
+                return public.return_msg_gettext(False, 'Please do NOT use the usual port as the phpMyAdmin port!')
             if i == "nginx":
                 if not os.path.exists("/www/server/panel/vhost/apache/phpmyadmin.conf"):
-                    return public.returnMsg(False, "PHPMYADMIN_SSL_ERR1")
+                    return public.return_msg_gettext(False, 'Did not find the apache phpmyadmin ssl configuration file, please try to close the ssl port settings before opening')
                 rep = "listen\s*([0-9]+)\s*.*;"
                 oldPort = re.search(rep, conf)
                 if not oldPort:
-                    return public.returnMsg(False, 'PHPMYADMIN_SSL_ERR2')
+                    return public.return_msg_gettext(False, 'Did not detect the port that nginx phpmyadmin listens, please confirm whether the file has been manually modified.')
                 oldPort = oldPort.groups()[0]
                 conf = re.sub(rep, 'listen ' + get.port + ' ssl;', conf)
             else:
                 rep = "Listen\s*([0-9]+)\s*\n"
                 oldPort = re.search(rep, conf)
                 if not oldPort:
-                    return public.returnMsg(False, 'PHPMYADMIN_SSL_ERR3')
+                    return public.return_msg_gettext(False, 'Did not detect the port that apache phpmyadmin listens, please confirm whether the file has been manually modified.')
                 oldPort = oldPort.groups()[0]
                 conf = re.sub(rep, "Listen " + get.port + "\n", conf, 1)
                 rep = "VirtualHost\s*\*:[0-9]+"
                 conf = re.sub(rep, "VirtualHost *:" + get.port, conf, 1)
-            if oldPort == get.port: return public.returnMsg(False, 'SOFT_PHPVERSION_ERR_PORT')
+            if oldPort == get.port: return public.return_msg_gettext(False, 'Port [{}] is in use!',(get.port,))
             public.writeFile(file, conf)
             public.serviceReload()
             if i=="apache":
                 import firewalls
-                get.ps = public.getMsg('SOFT_PHPVERSION_PS')
+                get.ps = public.getMsg('New phpMyAdmin Port')
                 fw = firewalls.firewalls()
                 fw.AddAcceptPort(get)
                 public.serviceReload()
-                public.WriteLog('TYPE_SOFT', 'SOFT_PHPMYADMIN_PORT', (get.port,))
+                public.write_log_gettext('Software manager', 'Modified access port to {} for phpMyAdmin!', (get.port,))
                 get.id = public.M('firewall').where('port=?', (oldPort,)).getField('id')
                 get.port = oldPort
                 fw.DelAcceptPort(get)
-        return public.returnMsg(True, 'SET_PORT_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     def _get_phpmyadmin_auth(self):
         import re
@@ -846,9 +851,9 @@ class ajax:
     # 设置phpmyadmin ssl
     def set_phpmyadmin_ssl(self,get):
         if public.get_webserver() == "openlitespeed":
-            return public.returnMsg(False, 'NOT_SUPPORT_OLS')
+            return public.return_msg_gettext(False, 'The current web server is openlitespeed. This function is not supported yet.')
         if not os.path.exists("/www/server/panel/ssl/certificate.pem"):
-            return public.returnMsg(False,'PHPMYADMIN_SSL_ERR4')
+            return public.return_msg_gettext(False,'The panel certificate does not exist. Please apply for the panel certificate and try again.')
         if get.v == "1":
             # 获取auth信息
             auth = ""
@@ -952,9 +957,9 @@ class ajax:
             if os.path.exists("/www/server/panel/vhost/apache/phpmyadmin.conf"):
                 os.remove("/www/server/panel/vhost/apache/phpmyadmin.conf")
             public.serviceReload()
-            return public.returnMsg(True, 'SET_SUCCESS')
+            return public.return_msg_gettext(True, 'Setup successfully!')
         public.serviceReload()
-        return public.returnMsg(True,'PHPMYADMIN_SSL_ERR5')
+        return public.return_msg_gettext(True,'Open successfully, please manually release phpmyadmin ssl port')
 
 
     #设置PHPMyAdmin
@@ -965,13 +970,13 @@ class ajax:
         if public.get_webserver() == 'openlitespeed':
             filename = "/www/server/panel/vhost/openlitespeed/detail/phpmyadmin.conf"
         conf = public.readFile(filename)
-        if not conf: return public.returnMsg(False,'ERROR')
+        if not conf: return public.return_msg_gettext(False,'Operation failed')
         if hasattr(get,'port'):
             mainPort = public.readFile('data/port.pl').strip()
             rulePort = ['80','443','21','20','8080','8081','8089','11211','6379']
             oldPort = "888"
             if get.port in rulePort:
-                return public.returnMsg(False,'AJAX_PHPMYADMIN_PORT_ERR')
+                return public.return_msg_gettext(False,'Please do NOT use the usual port as the phpMyAdmin port!')
             if public.get_webserver() == 'nginx':
                 rep = r"listen\s+([0-9]+)\s*;"
                 oldPort = re.search(rep,conf).groups()[0]
@@ -990,19 +995,19 @@ class ajax:
                 if tmp:
                     oldPort = tmp.groups(1)
                 conf = re.sub(reg,"address *:{}".format(get.port),conf)
-            if oldPort == get.port: return public.returnMsg(False,'SOFT_PHPVERSION_ERR_PORT')
+            if oldPort == get.port: return public.returnMsg(False,'Port [{}] is in use!',(get.port,))
             
             public.writeFile(filename,conf)
             import firewalls
-            get.ps = public.getMsg('SOFT_PHPVERSION_PS')
+            get.ps = public.getMsg('New phpMyAdmin Port')
             fw = firewalls.firewalls()
             fw.AddAcceptPort(get)
             public.serviceReload()
-            public.WriteLog('TYPE_SOFT','SOFT_PHPMYADMIN_PORT',(get.port,))
+            public.write_log_gettext('Software manager','Modified access port to {} for phpMyAdmin!',(get.port,))
             get.id = public.M('firewall').where('port=?',(oldPort,)).getField('id')
             get.port = oldPort
             fw.DelAcceptPort(get)
-            return public.returnMsg(True,'SET_PORT_SUCCESS')
+            return public.returnMsg(True,'Setup successfully!')
         
         if hasattr(get,'phpversion'):
             if public.get_webserver() == 'nginx':
@@ -1018,8 +1023,8 @@ class ajax:
                 conf = re.sub(reg,'/usr/local/lsws/lsphp{}/bin/lsphp'.format(get.phpversion),conf)
             public.writeFile(filename,conf)
             public.serviceReload()
-            public.WriteLog('TYPE_SOFT','SOFT_PHPMYADMIN_PHP',(get.phpversion,))
-            return public.returnMsg(True,'SOFT_PHPVERSION_SET')
+            public.write_log_gettext('Software manager','Modified PHP runtime version to PHP-{} for phpMyAdmin!',(get.phpversion,))
+            return public.return_msg_gettext(True,'Setup successfully!')
         
         if hasattr(get,'password'):
             import panelSite
@@ -1029,17 +1034,49 @@ class ajax:
                 return panelSite.panelSite().SetHasPwd(get)
         
         if hasattr(get,'status'):
-            if conf.find(public.GetConfigValue('setup_path') + '/stop') != -1:
-                conf = conf.replace(public.GetConfigValue('setup_path') + '/stop',public.GetConfigValue('setup_path') + '/phpmyadmin')
+            pma_path = public.GetConfigValue('setup_path') + '/phpmyadmin'
+            stop_path = public.GetConfigValue('setup_path') + '/stop'
+
+
+            webserver = public.get_webserver()
+            if conf.find(stop_path) != -1:
+                conf = conf.replace(stop_path,pma_path)
                 msg = public.getMsg('START')
+
+            if webserver == 'nginx':
+                sub_string = '''{};
+        allow 127.0.0.1;
+        allow ::1;
+        deny all'''.format(pma_path)
+                if conf.find(sub_string) != -1:
+                    conf = conf.replace(sub_string,pma_path)
+                    msg = public.getMsg('START')
+                else:
+                    conf = conf.replace(pma_path,sub_string)
+                    msg = public.getMsg('STOP')
+            elif webserver == 'apache':
+                src_string = 'AllowOverride All'
+                sub_string = '''{}
+        Deny from all
+        Allow from 127.0.0.1 ::1 localhost'''.format(src_string,pma_path)
+                if conf.find(sub_string) != -1:
+                    conf = conf.replace(sub_string,src_string)
+                    msg = public.getMsg('START')
+                else:
+                    conf = conf.replace(src_string,sub_string)
+                    msg = public.getMsg('STOP')
             else:
-                conf = conf.replace(public.GetConfigValue('setup_path') + '/phpmyadmin',public.GetConfigValue('setup_path') + '/stop')
-                msg = public.getMsg('STOP')
+                if conf.find(stop_path) != -1:
+                    conf = conf.replace(stop_path,pma_path)
+                    msg = public.getMsg('START')
+                else:
+                    conf = conf.replace(pma_path,stop_path)
+                    msg = public.getMsg('STOP')
             
             public.writeFile(filename,conf)
             public.serviceReload()
-            public.WriteLog('TYPE_SOFT','SOFT_PHPMYADMIN_STATUS',(msg,))
-            return public.returnMsg(True,'SOFT_PHPMYADMIN_STATUS',(msg,))
+            public.write_log_gettext('Software manager','phpMyAdmin already {}!',(msg,))
+            return public.return_msg_gettext(True,'phpMyAdmin already {}!',(msg,))
         #except:
             #return public.returnMsg(False,'ERROR');
 
@@ -1060,8 +1097,8 @@ class ajax:
     
     #保存PHP排序
     def phpSort(self,get):
-        if public.writeFile('/www/server/php/sort.pl',get.ssort): return public.returnMsg(True,'SUCCESS')
-        return public.returnMsg(False,'ERROR')
+        if public.writeFile('/www/server/php/sort.pl',get.ssort): return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(False,'Operation failed')
     
     #获取广告代码
     def GetAd(self,get):
@@ -1081,7 +1118,7 @@ class ajax:
     #获取警告标识
     def GetWarning(self,get):
         warningFile = 'data/warning.json'
-        if not os.path.exists(warningFile): return public.returnMsg(False,'AJAX_WARNING_ERR')
+        if not os.path.exists(warningFile): return public.return_msg_gettext(False,'Warning list does NOT exist!')
         import json,time;
         wlist = json.loads(public.readFile(warningFile))
         wlist['time'] = int(time.time())
@@ -1099,7 +1136,7 @@ class ajax:
         
         warningFile = 'data/warning.json'
         public.writeFile(warningFile,json.dumps(wlist))
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
     
     #获取memcached状态
     def GetMemcachedStatus(self,get):
@@ -1139,7 +1176,7 @@ class ajax:
         conf = re.sub('CACHESIZE=\d+','CACHESIZE='+get.cachesize,conf)
         public.writeFile(confFile,conf)
         public.ExecShell(confFile + ' reload')
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
     
     #取redis状态
     def GetRedisStatus(self,get):
@@ -1180,10 +1217,10 @@ class ajax:
     def GetFpmLogs(self,get):
         import re
         fpm_path = '/www/server/php/' + get.version + '/etc/php-fpm.conf'
-        if not os.path.exists(fpm_path): return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
+        if not os.path.exists(fpm_path): return public.return_msg_gettext(False,'Log file does NOT exist!')
         fpm_conf = public.readFile(fpm_path)
         log_tmp = re.findall(r"error_log\s*=\s*(.+)",fpm_conf)
-        if not log_tmp: return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
+        if not log_tmp: return public.return_msg_gettext(False,'Log file does NOT exist!')
         log_file = log_tmp[0].strip()
         if log_file.find('var/log') == 0:
             log_file = '/www/server/php/' +get.version + '/'+ log_file
@@ -1193,10 +1230,10 @@ class ajax:
     def GetFpmSlowLogs(self,get):
         import re
         fpm_path = '/www/server/php/' + get.version + '/etc/php-fpm.conf'
-        if not os.path.exists(fpm_path): return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
+        if not os.path.exists(fpm_path): return public.return_msg_gettext(False,'Log file does NOT exist!')
         fpm_conf = public.readFile(fpm_path)
         log_tmp = re.findall(r"slowlog\s*=\s*(.+)",fpm_conf)
-        if not log_tmp: return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
+        if not log_tmp: return public.return_msg_gettext(False,'Log file does NOT exist!')
         log_file = log_tmp[0].strip()
         if log_file.find('var/log') == 0:
             log_file = '/www/server/php/' +get.version + '/'+ log_file
@@ -1204,12 +1241,120 @@ class ajax:
     
     #取指定日志
     def GetOpeLogs(self,get):
-        if not os.path.exists(get.path): return public.returnMsg(False,'AJAX_LOG_FILR_NOT_EXISTS')
+        if not os.path.exists(get.path): return public.return_msg_gettext(False,'Log file does NOT exist!')
         return public.returnMsg(True,public.GetNumLines(get.path,1000))
-    
+
+    def get_pd(self,get):
+        from BTPanel import cache
+        tmp = -1
+        try:
+            import panelPlugin
+            # get = public.dict_obj()
+            # get.init = 1
+            tmp1 = panelPlugin.panelPlugin().get_cloud_list(get)
+        except:
+            tmp1 = None
+        if tmp1:
+            tmp = tmp1[public.to_string([112, 114, 111])]
+            ltd = tmp1.get('ltd', -1)
+        else:
+            ltd = -1
+            tmp4 = cache.get(public.to_string([112, 95, 116, 111, 107, 101, 110]))
+            if tmp4:
+                tmp_f = public.to_string([47, 116, 109, 112, 47]) + tmp4
+                if not os.path.exists(tmp_f): public.writeFile(tmp_f, '-1')
+                tmp = public.readFile(tmp_f)
+                if tmp: tmp = int(tmp)
+        if not ltd: ltd = -1
+        if tmp == None: tmp = -1
+        if ltd < 1:
+            if ltd == -2:
+                tmp3 = public.to_string(
+                    [60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 108, 116, 100,
+                     45, 103, 114, 97, 121, 34, 62, 60, 115, 112, 97, 110, 32, 115, 116, 121, 108, 101,
+                     61, 34, 99, 111, 108, 111, 114, 58, 32, 35, 102, 99, 54, 100, 50, 54, 59, 102, 111,
+                     110, 116, 45, 119, 101, 105, 103, 104, 116, 58, 32, 98, 111, 108, 100, 59, 109, 97,
+                     114, 103, 105, 110, 45, 114, 105, 103, 104, 116, 58, 53, 112, 120, 34, 62, 24050, 36807,
+                     26399, 60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
+                     108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105, 99, 107, 61, 34, 98, 116, 46, 115, 111,
+                     102, 116, 46, 117, 112, 100, 97, 116, 97, 95, 108, 116, 100, 40, 41, 34, 62, 82, 69, 78, 69, 87,
+                     60, 47, 97,
+                     62, 60, 47, 115, 112, 97, 110, 62])
+            elif tmp == -1:
+                tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98,
+                                         116, 112, 114, 111, 45, 102, 114, 101, 101, 34, 32, 111, 110, 99, 108, 105, 99,
+                                         107,
+                                         61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95, 112,
+                                         114,
+                                         111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 67, 108, 105, 99, 107,
+                                         32, 116, 111, 32,
+                                         103, 101, 116, 32, 80, 82, 79, 34, 62, 20813, 36153, 29256, 60, 47, 115, 112,
+                                         97, 110, 62])
+            elif tmp == -2:
+                tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
+                                         112, 114, 111, 45, 103, 114, 97, 121, 34, 62, 60, 115, 112, 97, 110, 32,
+                                         115, 116, 121, 108, 101, 61, 34, 99, 111, 108, 111, 114, 58, 32, 35,
+                                         102, 99, 54, 100, 50, 54, 59, 102, 111, 110, 116, 45, 119, 101, 105, 103,
+                                         104, 116, 58, 32, 98, 111, 108, 100, 59, 109, 97, 114, 103, 105, 110, 45,
+                                         114, 105, 103, 104, 116, 58, 53, 112, 120, 34, 62, 24050, 36807, 26399,
+                                         60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108, 97, 115, 115, 61, 34,
+                                         98, 116, 108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105, 99, 107, 61,
+                                         34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95, 112, 114,
+                                         111, 40, 41, 34, 62, 82, 69, 78, 69, 87, 60, 47, 97, 62, 60, 47, 115, 112, 97,
+                                         110, 62])
+            if tmp >= 0 and ltd in [-1, -2]:
+                if tmp == 0:
+                    tmp2 = public.to_string([27704, 20037, 25480, 26435])
+                    tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
+                                             112, 114, 111, 34, 62, 123, 48, 125, 60, 115, 112, 97, 110, 32, 115, 116,
+                                             121, 108, 101, 61, 34, 99, 111, 108, 111, 114, 58, 32, 35, 102, 99, 54,
+                                             100,
+                                             50, 54, 59, 102, 111, 110, 116, 45, 119, 101, 105, 103, 104, 116,
+                                             58, 32, 98, 111, 108, 100, 59, 34, 62, 123, 49, 125, 60, 47, 115,
+                                             112, 97, 110, 62, 60, 47, 115, 112, 97, 110, 62]).format(
+                        public.to_string([21040, 26399, 26102, 38388, 65306]), tmp2)
+                else:
+                    tmp2 = time.strftime(public.to_string([37, 89, 45, 37, 109, 45, 37, 100]), time.localtime(tmp))
+                    tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
+                                             112, 114, 111, 34, 62, 69, 120, 112, 105, 114, 101, 58, 32, 60, 115, 112,
+                                             97, 110, 32, 115, 116, 121, 108, 101, 61, 34, 99, 111, 108, 111, 114,
+                                             58, 32, 35, 102, 99, 54, 100, 50, 54, 59, 102, 111, 110, 116, 45, 119,
+                                             101, 105, 103, 104, 116, 58, 32, 98, 111, 108, 100, 59, 109, 97, 114,
+                                             103, 105, 110, 45, 114, 105, 103, 104, 116, 58, 53, 112, 120, 34, 62, 123,
+                                             48, 125, 60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108, 97, 115,
+                                             115, 61, 34, 98, 116, 108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105,
+                                             99,
+                                             107, 61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119,
+                                             95,
+                                             112, 114, 111, 40, 41, 34, 62, 82, 69, 78, 69, 87, 60, 47, 97, 62, 60,
+                                             47, 115, 112, 97, 110, 62]).format(tmp2)
+            else:
+                tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 112,
+                                         114, 111, 45, 103, 114, 97, 121, 34, 32, 111, 110, 99, 108, 105, 99, 107,
+                                         61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 117, 112, 100, 97, 116, 97, 95, 112,
+                                         114, 111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 67, 108, 105, 99,
+                                         107, 32, 116,
+                                         111, 32, 103, 101, 116, 32, 80, 82, 79, 34, 62, 70, 82,
+                                         69, 69, 60, 47, 115, 112, 97, 110, 62])
+        else:
+            tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 108, 116,
+                                     100, 34, 62, 69, 120, 112, 105, 114, 101, 58, 32, 60, 115, 112, 97, 110, 32, 115,
+                                     116,
+                                     121, 108, 101, 61, 34, 99, 111, 108, 111, 114, 58, 32, 35, 102, 99, 54, 100, 50,
+                                     54, 59, 102, 111, 110, 116, 45, 119, 101, 105, 103, 104, 116, 58, 32, 98, 111,
+                                     108, 100, 59, 109, 97, 114, 103, 105, 110, 45, 114, 105, 103, 104, 116, 58, 53,
+                                     112, 120, 34, 62, 123, 125, 60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108,
+                                     97, 115, 115, 61, 34, 98, 116, 108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105,
+                                     99, 107, 61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95,
+                                     112, 114, 111, 40, 41, 34, 62, 82, 69, 78, 69, 87, 60, 47, 97, 62, 60, 47, 115,
+                                     112, 97, 110, 62]).format(
+                time.strftime(public.to_string([37, 89, 45, 37, 109, 45, 37, 100]), time.localtime(ltd)))
+
+        return tmp3, tmp, ltd
+
     #检查用户绑定是否正确
     def check_user_auth(self,get):
-        import requests
+        # import requests
         m_key = 'check_user_auth'
         if m_key in session: return session[m_key]
         u_path = 'data/userInfo.json'
@@ -1217,15 +1362,16 @@ class ajax:
             userInfo = json.loads(public.ReadFile(u_path))
         except: 
             if os.path.exists(u_path): os.remove(u_path)
-            return public.returnMsg(False,'AJAX_USER_BE_OVERDUE')
+            return public.return_msg_gettext(False,'Account binding has expired, please re-bind on the [Settings] page!')
         url_headers = {"authorization":"bt {}".format(userInfo['token'])}
-        resp = requests.post('{}/api/user/verifyToken'.format(self.__official_url),headers=url_headers,verify=False)
+        # resp = requests.post('{}/api/user/verifyToken'.format(self.__official_url),headers=url_headers,verify=False)
+        resp = public.HttpPost.post('{}/api/user/verifyToken'.format(self.__official_url), headers=url_headers, verify=False)
         resp = resp.json()
         if not resp['success']:
             if os.path.exists(u_path): os.remove(u_path)
-            return public.returnMsg(False,'AJAX_USER_BE_OVERDUE')
+            return public.return_msg_gettext(False,'Account binding has expired, please re-bind on the [Settings] page!')
         else:
-            session[m_key] = public.returnMsg(True,'AJAX_USER_IS_VALID')
+            session[m_key] = public.return_msg_gettext(True,'Binding is valid!')
             return session[m_key]
 
 
@@ -1239,7 +1385,7 @@ class ajax:
         php_ini = php_path + php_version + '/etc/php.ini'
         if not os.path.exists('/etc/redhat-release') and public.get_webserver() == 'openlitespeed':
             php_ini = php_path + php_version + '/etc/php/'+args.php_version+'/litespeed/php.ini'
-        tmp = public.ExecShell(php_bin + ' /www/server/panel/class/php_info.php')[0]
+        tmp = public.ExecShell(php_bin + ' -c {} /www/server/panel/class/php_info.php'.format(php_ini))[0]
         if tmp.find('Warning: JIT is incompatible') != -1:
             tmp = tmp.strip().split('\n')[-1]
         result = json.loads(tmp)
@@ -1258,8 +1404,113 @@ class ajax:
 
     #取指定行
     def get_lines(self,args):
-        if not os.path.exists(args.filename): return public.returnMsg(False,'LOG_EMPTY')
+        if not os.path.exists(args.filename): return public.returnMsg(False,'Logs emptied')
         s_body = public.ExecShell("tail -n {} {}".format(args.num,args.filename))[0]
         return public.returnMsg(True,s_body)
 
-        
+    def log_analysis(self,get):
+        import log_analysis
+        log_analysis=log_analysis.log_analysis()
+        return log_analysis.log_analysis(get)
+
+
+    def speed_log(self,get):
+        import log_analysis
+        log_analysis=log_analysis.log_analysis()
+        return log_analysis.speed_log(get)
+
+
+
+    def get_result(self,get):
+        import log_analysis
+        log_analysis=log_analysis.log_analysis()
+        return log_analysis.get_result(get)
+
+    def get_detailed(self,get):
+        import log_analysis
+        log_analysis=log_analysis.log_analysis()
+        return log_analysis.get_detailed(get)
+
+    def download_pay_type(self, path):
+        public.downloadFile(public.get_url() + '/install/lib/pay_type_en.json', path)
+        return True
+
+    def get_pay_type(self, get):
+        """
+            @name 获取推荐列表
+        """
+        spath = '{}/data/pay_type.json'.format(public.get_panel_path())
+        down = cache.get('pay_type')
+        if not down:
+            public.run_thread(self.download_pay_type, (spath,))
+            cache.set('pay_type', 1, 86400)
+        try:
+            data = json.loads(public.readFile("data/pay_type.json"))
+        except:
+            public.run_thread(self.download_pay_type, (spath,))
+            data = {}
+
+        import panelPlugin
+        plu_panel = panelPlugin.panelPlugin()
+        plugin_list = plu_panel.get_cloud_list()
+        if not 'pro' in plugin_list: plugin_list['pro'] = -1
+
+        for item in data:
+            if 'list' in item:
+                item['list'] = self.__get_home_list(item['list'], item['type'], plugin_list, plu_panel)
+                if item['type'] == 1:
+                    if len(item['list']) > 4: item['list'] = item['list'][:4]
+            # if item['type'] == 0 and plugin_list['pro'] >= 0:
+            #     item['show'] = False
+        return data
+
+    def __get_home_list(self, sList, stype, plugin_list, plu_panel):
+        """
+            @name 获取首页软件列表推荐
+        """
+        nList = []
+        webserver = public.get_webserver()
+        for x in sList:
+            for plugin_info in plugin_list['list']:
+                if x['name'] == plugin_info['name']:
+                    if not 'endtime' in plugin_info or plugin_info['endtime'] >= 0:
+                        x['isBuy'] = True
+            is_check = False
+            if 'dependent' in x:
+                if x['dependent'] == webserver: is_check = True
+            else:
+                is_check = True
+            if is_check:
+                info = plu_panel.get_soft_find(x['name'])
+                if info:
+                    if stype == 1:
+                        # if plugin_list['pro'] >= 0: continue
+                        if not info['setup']:
+                            x['install'] = info['setup']
+                            nList.append(x)
+                    else:
+                        x['install'] = info['setup']
+                        nList.append(x)
+        return nList
+
+    def ignore_version(self, get):
+        """
+        @忽略版本更新
+        :param version 忽略的版本号
+        """
+        version = get.version
+        path = '{}/data/no_update.pl'.format(public.get_panel_path())
+        try:
+            data = json.loads(public.readFile(path))
+        except:
+            data = []
+
+        if not version in data: data.append(version)
+
+        public.writeFile(path, json.dumps(data))
+        try:
+            del (session['updateInfo'])
+        except:
+            pass
+
+        return public.return_msg_gettext(True, "Ignore success, this version will no longer be reminded to update.")

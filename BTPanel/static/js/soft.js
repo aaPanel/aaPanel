@@ -32,7 +32,7 @@ var soft = {
           // } else if (rdata.pro === -1) {
           //   $("#updata_pro_info").html('<div class="alert alert-success" style="margin-bottom:15px"><strong > ' + lan.soft.upgrade_pro + '</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="' + lan.soft.upgrade_pro_now + '" style="margin-left:8px">' + lan.soft.upgrade_now + '</button>\</div>');
           // }
-          soft.set_soft_tips('#updata_pro_info',type);
+          soft.set_soft_tips(rdata,type);
 
           // if (type == 10) {
           //   $("#updata_pro_info").html('<div class="alert alert-danger" style="margin-bottom:15px"><strong>' + lan.soft.bt_developer + '</strong><a class="btn btn-success btn-xs va0" href="https://www.aapanel.com" title="' + lan.soft.get_third_party_apps + '" style="margin-left: 8px" target="_blank">' + lan.soft.get_third_party_apps + '</a><input type="file" style="display:none;" accept=".zip,.tar.gz" id="update_zip" multiple="multiple"><button class="btn btn-success btn-xs" onclick="soft.update_zip_open()" style="margin-left:8px">' + lan.soft.import_plug + '</button></div>')
@@ -317,17 +317,27 @@ var soft = {
                         if (item.endtime < 0 && item.pid > 0) {
                             var re_msg = '';
                             var re_status = 0;
+                            var buy_type = 0;
                             switch (item.endtime) {
                                 case -1:
                                     re_msg = lan.soft.buy_now;
+                                    buy_type = 31;
                                     break;
                                 case -2:
                                     re_msg = lan.soft.renew_now;
                                     re_status = 1;
+                                    buy_type = 32;
                                     break;
                             }
                             if (item.type != 10) {
-                                pay_opt = '<a class="btlink" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({name:item.title,pid:item.pid,type:item.type,plugin:true,renew:item.endtime}) +')\'>' + re_msg + '</a>';
+                                pay_opt = '<a class="btlink" onclick=\'bt.soft.product_pay_view('+ JSON.stringify({
+                                    name:item.title,
+                                    pid:item.pid,
+                                    type:item.type,
+                                    plugin:true,
+                                    renew:item.endtime,
+                                    totalNum:buy_type
+                                }) +')\'>' + re_msg + '</a>';
                             } else {
                                 pay_opt = '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',' + re_status + ',' + item.price + ')">' + re_msg + '</a>';
                             }
@@ -530,8 +540,12 @@ var soft = {
             });
         }
     },
-    set_soft_tips:function(el,type){
-        var tips_info = $('<div class="alert" style="margin-bottom:15px"><div class="soft_tips_text"></div><div class="btn-ground" style="display:inline-block;"></div></div>'), explain = tips_info.find('.soft_tips_text'), btn_ground = tips_info.find('.btn-ground'),_this = this;
+    set_soft_tips:function(rdata,type){
+        var tips_info = $('<div class="alert" style="margin-bottom:15px"><div class="soft_tips_text"></div><div class="btn-ground" style="display:inline-block;"></div></div>'),
+        explain = tips_info.find('.soft_tips_text'),
+        btn_ground = tips_info.find('.btn-ground'),
+        _this = this,
+        el = '#updata_pro_info';
         $(el).empty()
         type = parseInt(type);
         if(type != 11) $(el).next('.onekey-menu-sub').remove();
@@ -558,6 +572,16 @@ var soft = {
             ]);
             $(el).append(tips_info.addClass('alert-info'));
         }else{
+            var genre = true,
+                is_buy = false
+            if (rdata.ltd > 0 || type === 12) {
+                genre = false
+            } else if (rdata.pro >= 0 || type === 8) {
+                genre = true
+            }
+            if (rdata.ltd > 0 || rdata.pro >= 0) is_buy = true
+            if (type === 12 && rdata.ltd < 0) is_buy = false
+            var buy_type = is_buy?30:29
             var ltd = parseInt(bt.get_cookie('ltd_end') || -1),pro = parseInt(bt.get_cookie('pro_end')  || -1),todayDate = parseInt(new Date().getTime()/1000),_ltd = null;
             if((ltd > 0 && (ltd == pro || pro < 0)) || (ltd < 0 && pro >= 0) || (ltd > 0 && pro >= 0)){
                 _ltd = ((ltd > 0 && (ltd == pro || pro < 0)) || (ltd > 0 && pro >= 0))?1:0;
@@ -589,29 +613,28 @@ var soft = {
                   $(el).append(tips_info.addClass('alert-ltd-success'));
                   return false;
                 }else{
-                  if(pro < 0){
-                    fun = bt.soft.updata_pro
-                  }else{
-                    fun = bt.soft.renew_pro
-                  }
-                  $.extend(btn_config,{title:_ltd == null?'Upgrade now':'Renew Now',btn:_ltd == null?'Upgrade now':'Renew Now',click:fun})
+                    var btn = $('<a title="' + (is_buy ? 'Renew Now' : 'Upgrade now') + '" href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">' + (is_buy ? 'Renew Now' : 'Upgrade now') + '</a>')
+                    btn.on('click', function () {
+                        genre ? bt.soft.updata_pro(buy_type) : bt.soft.updata_ltd(undefined,buy_type)
+                    })
+                    tips_info.addClass('showprofun').find('.btn-ground').append(btn)
                 }
               }
-              if(_ltd != 2){
-                if(!(pro == 0 && ltd < 0)){
-                  btn_ground  = soft.render_tips_btn(btn_ground,btn_config);
-                }
-              }
+              // if(_ltd != 2){
+              //   if(!(pro == 0 && ltd < 0)){
+              //     btn_ground  = soft.render_tips_btn(btn_ground);
+              //   }
+              // }
               $(el).append(tips_info.addClass(_ltd == 1?'alert-ltd-success':'alert-success'));
               if(_this.trail){
                 setTimeout(function (){
-                  $('.btn-ground').after('<span class="pro_trail" style="font-weight: 700;margin-left:25px;">Try the Pro edition for free for 15 days</span>')
+                  $('.btn-ground').after('<span class="pro_trail" style="font-weight: 700;margin-left:25px;">Try the Pro edition for free</span>')
                   var trail = $('<a href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">Click to try</a>');
                   trail.click((!res.status || !res)?fun:function(){
                     var loadT = bt.load()
                     bt.confirm({
                       title:"Pro Edition",
-                      msg:"Get 15-day Pro edition free, get it now?"
+                      msg:"Get 7-day Pro edition free, get it now?"
                     },function (){
                       bt.send('free_trial','auth/free_trial',{},function(res){
                         loadT.close()
@@ -693,6 +716,7 @@ var soft = {
         $.post('/deployment?action=GetList', pdata, function(rdata) {
             layer.close(loadT)
             var tBody = '';
+            soft.set_soft_tips(rdata, 11);
             rdata.type.unshift({
                 icon: 'icon',
                 id: 0,
@@ -2799,6 +2823,9 @@ var soft = {
                         }, function(rdata) {
                             loading.close();
                             bt.msg(rdata);
+                            setTimeout(function () {
+                                location.reload();
+                            }, 1000);
                         })
                     }
                     break;

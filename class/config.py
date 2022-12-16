@@ -6,7 +6,8 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-import public,re,sys,os,nginx,apache,json,time,ols
+import base64
+import public,re,os,nginx,apache,json,time,ols
 try:
     import pyotp
 except:
@@ -43,7 +44,7 @@ class config:
         except:pass
     # 返回配置邮件地址
     def return_mail_list(self, get):
-        return public.returnMsg(True, self.__mail_list)
+        return public.return_msg_gettext(True, self.__mail_list)
 
     # 删除邮件接口
     def del_mail_list(self, get):
@@ -51,9 +52,9 @@ class config:
         if emial in self.__mail_list:
             self.__mail_list.remove(emial)
             public.writeFile(self.__mail_list_data, json.dumps(self.__mail_list))
-            return public.returnMsg(True, 'DEL_SUCCESS')
+            return public.return_msg_gettext(True, 'Successfully deleted')
         else:
-            return public.returnMsg(True, 'EMAIL_NOT_EXISTS')
+            return public.return_msg_gettext(True, 'Email does not exist')
 
     def del_tg_info(self,get):
         import panel_telegram_bot
@@ -65,39 +66,39 @@ class config:
 
     #添加接受邮件地址
     def add_mail_address(self, get):
-        if not hasattr(get, 'email'): return public.returnMsg(False, 'INPUT_EMAIL')
+        if not hasattr(get, 'email'): return public.return_msg_gettext(False, 'Please input your email')
         emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
-        if not emailformat.search(get.email): return public.returnMsg(False, 'EMAIL_ERR')
+        if not emailformat.search(get.email): return public.return_msg_gettext(False, 'Please enter your vaild email')
         # 测试发送邮件
-        if get.email.strip() in self.__mail_list: return public.returnMsg(True, 'EMAIL_EXISTS')
+        if get.email.strip() in self.__mail_list: return public.return_msg_gettext(True, 'Email already exists')
         self.__mail_list.append(get.email.strip())
         public.writeFile(self.__mail_list_data, json.dumps(self.__mail_list))
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 添加自定义邮箱地址
     def user_mail_send(self, get):
         if not (hasattr(get, 'email') or hasattr(get, 'stmp_pwd') or hasattr(get, 'hosts') or hasattr(get, 'port')):
-            return public.returnMsg(False, 'COMPLETE_INFO')
+            return public.return_msg_gettext(False, 'Please complete the information')
         # 自定义邮件
         self.mail.qq_stmp_insert(get.email.strip(), get.stmp_pwd.strip(), get.hosts.strip(),get.port.strip())
         # 测试发送
-        if self.mail.qq_smtp_send(get.email.strip(), public.getMsg('TEST_MAIL_TITLE'), public.getMsg('TEST_MAIL_CONTENT')):
+        if self.mail.qq_smtp_send(get.email.strip(), public.get_msg_gettext('aaPanel Alert Test Email'), public.get_msg_gettext('aaPanel Alert Test Email')):
             if not get.email.strip() in self.__mail_list:
                 self.__mail_list.append(get.email.strip())
                 public.writeFile(self.__mail_list_data, json.dumps(self.__mail_list))
-            return public.returnMsg(True, 'SET_SUCCESS')
+            return public.return_msg_gettext(True, 'Setup successfully!')
         else:
             ret = []
             public.writeFile(self.__mail_config, json.dumps(ret))
-            return public.returnMsg(False, 'TEST_MAIL_SEND_ERR')
+            return public.return_msg_gettext(False, 'Email sending failed, please check if the STMP password is correct or the hosts are correct')
 
     # 查看自定义邮箱配置
     def get_user_mail(self, get):
         qq_mail_info = json.loads(public.ReadFile(self.__mail_config))
         if len(qq_mail_info) == 0:
-            return public.returnMsg(False, 'NO_DATA')
+            return public.return_msg_gettext(False, 'No Data')
         if not 'port' in qq_mail_info:qq_mail_info['port']=465
-        return public.returnMsg(True, qq_mail_info)
+        return public.return_msg_gettext(True, qq_mail_info)
 
     #清空数据
     def set_empty(self,get):
@@ -105,31 +106,31 @@ class config:
         if type=='dingding':
             ret = []
             public.writeFile(self.__dingding_config, json.dumps(ret))
-            return public.returnMsg(True, 'Empty successfully')
+            return public.return_msg_gettext(True, 'Empty successfully')
         else:
             ret = []
             public.writeFile(self.__mail_config, json.dumps(ret))
-            return public.returnMsg(True, 'Empty successfully')
+            return public.return_msg_gettext(True, 'Empty successfully')
 
 
     # 用户自定义邮件发送
     def user_stmp_mail_send(self, get):
-        if not (hasattr(get, 'email')): return public.returnMsg(False, 'INPUT_EMAIL')
+        if not (hasattr(get, 'email')): return public.return_msg_gettext(False, 'Please input your email')
         emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
-        if not emailformat.search(get.email): return public.returnMsg(False, 'EMAIL_ERR')
+        if not emailformat.search(get.email): return public.return_msg_gettext(False, 'Please enter your vaild email')
         # 测试发送邮件
-        if not get.email.strip() in self.__mail_list: return public.returnMsg(True, 'MAILBOX_NOT_EXIST')
-        if not (hasattr(get, 'title')): return public.returnMsg(False, 'EMAIL_TITLE')
-        if not (hasattr(get, 'body')): return public.returnMsg(False, 'EMAIL_CONTENT_ERR')
+        if not get.email.strip() in self.__mail_list: return public.return_msg_gettext(True, 'The mailbox does not exist, please add it to the mailbox list')
+        if not (hasattr(get, 'title')): return public.return_msg_gettext(False, 'Please fill in the email title')
+        if not (hasattr(get, 'body')): return public.return_msg_gettext(False, 'Please enter the email content')
         # 先判断是否存在stmp信息
         qq_mail_info = json.loads(public.ReadFile(self.__mail_config))
         if len(qq_mail_info) == 0:
-            return public.returnMsg(False, 'SMTP_INFO_ERR')
+            return public.return_msg_gettext(False, 'STMP information was not found, please re-add custom mail STMP information in the settings')
         if self.mail.qq_smtp_send(get.email.strip(), get.title.strip(), get.body):
             # 发送成功
-            return public.returnMsg(True, 'SEND_SUCCESS')
+            return public.return_msg_gettext(True, 'Sent successfully')
         else:
-            return public.returnMsg(False, 'SEND_FAILED')
+            return public.return_msg_gettext(False, 'Failed to send')
 
     # 查看能使用的告警通道
     def get_settings(self, get=None):
@@ -159,34 +160,34 @@ class config:
     # 设置钉钉报警
     def set_dingding(self, get):
         if not (hasattr(get, 'url') or hasattr(get, 'atall')):
-            return public.returnMsg(False, 'COMPLETE_INFO')
+            return public.return_msg_gettext(False, 'Please complete the information')
         if get.atall=='True' or  get.atall=='1':
             get.atall = 'True'
         else: get.atall = 'False'
         self.mail.dingding_insert(get.url.strip(), get.atall)
-        if self.mail.dingding_send(public.getMsg('ALARM_TEST')):
-            return public.returnMsg(True, 'SET_SUCCESS')
+        if self.mail.dingding_send(public.get_msg_gettext('aaPanel alarm test')):
+            return public.return_msg_gettext(True, 'Successfully set')
         else:
             ret = []
             public.writeFile(self.__dingding_config, json.dumps(ret))
-            return public.returnMsg(False, 'MAIL_ADD_FAILED')
+            return public.return_msg_gettext(False, 'Add failed, please check if the URL is correct')
     # 查看钉钉
     def get_dingding(self, get):
         qq_mail_info = json.loads(public.ReadFile(self.__dingding_config))
         if len(qq_mail_info) == 0:
-            return public.returnMsg(False, 'NO_DATA')
-        return public.returnMsg(True, qq_mail_info)
+            return public.return_msg_gettext(False, 'No Data')
+        return public.return_msg_gettext(True, qq_mail_info)
 
     # 使用钉钉发送消息
     def user_dingding_send(self, get):
         qq_mail_info = json.loads(public.ReadFile(self.__dingding_config))
         if len(qq_mail_info) == 0:
-            return public.returnMsg(False, 'The configuration information of the nails you configured was not found, please add in the settings')
-        if not (hasattr(get, 'content')): return public.returnMsg(False, 'Please enter the data you need to send')
+            return public.return_msg_gettext(False, 'The configuration information of the nails you configured was not found, please add in the settings')
+        if not (hasattr(get, 'content')): return public.return_msg_gettext(False, 'Please enter the data you need to send')
         if self.mail.dingding_send(get.content):
-            return public.returnMsg(True, 'SEND_SUCCESS')
+            return public.return_msg_gettext(True, 'Sent successfully')
         else:
-            return public.returnMsg(False, 'SEND_FAILED')
+            return public.return_msg_gettext(False, 'Failed to send')
 
 
     def getPanelState(self,get):
@@ -230,24 +231,181 @@ class config:
             except:
                 pass
 
+    def get_password_safe_file(self):
+        '''
+            @name 获取密码复杂度配置文件
+            @auther hwliang<2021-10-18>
+            @return string
+        '''
+        return public.get_panel_path() + '/data/check_password_safe.pl'
+
+    def check_password_safe(self,password):
+        '''
+            @name 密码复杂度验证
+            @auther hwliang<2021-10-18>
+            @param password(string) 密码
+            @return bool
+        '''
+        # 是否检测密码复杂度
+        is_check_file = self.get_password_safe_file()
+        if not os.path.exists(is_check_file): return True
+
+        # 密码长度验证
+        if len(password) < 8: return False
+
+        num = 0
+        # 密码是否包含数字
+        if re.search(r'[0-9]+',password): num += 1
+        # 密码是否包含小写字母
+        if re.search(r'[a-z]+',password): num += 1
+        # 密码是否包含大写字母
+        if re.search(r'[A-Z]+',password): num += 1
+        # 密码是否包含特殊字符
+        if re.search(r'[^\w\s]+',password): num += 1
+        # 密码是否包含以上任意3种组合
+        if num < 3: return False
+        return True
+
+    def set_password_safe(self,get):
+        '''
+            @name 设置密码复杂度
+            @auther hwliang<2021-10-18>
+            @param get(string) 参数
+            @return dict
+        '''
+        is_check_file = self.get_password_safe_file()
+        if os.path.exists(is_check_file):
+            os.remove(is_check_file)
+            public.WriteLog('TYPE_PANEL','Disable password complexity verification')
+            return public.returnMsg(True,'Password complexity verification is disabled')
+        else:
+            public.writeFile(is_check_file,'True')
+            public.WriteLog('TYPE_PANEL','Enable password complexity verification')
+            return public.returnMsg(True,'Password complexity verification has been enabled')
+
+    def get_password_safe(self,get):
+        '''
+            @name 获取密码复杂度
+            @auther hwliang<2021-10-18>
+            @param get(string) 参数
+            @return bool
+        '''
+        is_check_file = self.get_password_safe_file()
+        return os.path.exists(is_check_file)
+
+
+    def get_password_expire_file(self):
+        '''
+            @name 获取密码过期配置文件
+            @auther hwliang<2021-10-18>
+            @return string
+        '''
+        return public.get_panel_path() + '/data/password_expire.pl'
+
+
+    def set_password_expire(self,get):
+        '''
+            @name 设置密码过期时间
+            @auther hwliang<2021-10-18>
+            @param get<dict_obj>{
+                expire: int<密码过期时间> 单位:天,
+            }
+            @return dict
+        '''
+        expire = int(get.expire)
+        expire_file = self.get_password_expire_file()
+        if expire <= 0:
+            if os.path.exists(expire_file):
+                os.remove(expire_file)
+            public.WriteLog('TYPE_PANEL','Disable password expiration authentication')
+            return public.returnMsg(True,'Password expiration authentication is disabled')
+        min_expire = 10
+        max_expire = 365 * 5
+        if expire < min_expire: return public.returnMsg(False,'The password expiration period cannot be less than {} days'.format(min_expire))
+        if expire > max_expire: return public.returnMsg(False,'The password expiration period cannot be longer than {} days'.format(max_expire))
+
+        public.writeFile(self.get_password_expire_file(),str(expire))
+
+        if expire > 0:
+            expire_time_file = public.get_panel_path() + '/data/password_expire_time.pl'
+            public.writeFile(expire_time_file,str(int(time.time()) + (expire * 86400)))
+
+        public.WriteLog('TYPE_PANEL','Set the password expiration time to [{}] days'.format(expire))
+        return public.returnMsg(True,'The password expiration time is set to [{}] days'.format(expire))
+
+    def get_password_config(self,get=None):
+        '''
+            @name 获取密码配置
+            @auther hwliang<2021-10-18>
+            @param get<dict_obj> 参数
+            @return dict{expire:int,expire_time:int,password_safe:bool}
+        '''
+        expire_file = self.get_password_expire_file()
+        expire = 0
+        expire_time=0
+        if os.path.exists(expire_file):
+            expire = public.readFile(expire_file)
+            try:
+                expire = int(expire)
+            except:
+                expire = 0
+
+            # 检查密码过期时间文件是否存在
+            expire_time_file = public.get_panel_path() + '/data/password_expire_time.pl'
+            if not os.path.exists(expire_time_file) and expire > 0:
+                public.writeFile(expire_time_file,str(int(time.time()) + (expire * 86400)))
+
+            expire_time = public.readFile(expire_time_file)
+            if expire_time:
+                expire_time = int(expire_time)
+            else:
+                expire_time = 0
+
+        data = {}
+        data['expire'] = expire
+        data['expire_time'] = expire_time
+        data['password_safe'] = self.get_password_safe(get)
+        data['ps'] = 'Password expiration configuration is not enabled. For your panel security, please consider enabling it!'
+        if data['expire_time']:
+            data['expire_day'] = int((expire_time - time.time()) / 86400)
+            if data['expire_day'] < 10:
+                if data['expire_day'] <= 0:
+                    data['ps'] = 'Your password has expired. In case you fail to log in next time, please change your password immediately.'
+                else:
+                    data['ps'] = "Your panel password will expire in <span style='color:red;'>{}</span> days, in order not to affect your normal login, please change the password as soon as possible!".format(data['expire_day'])
+            else:
+                data['ps'] = "Your panel password has  <span style='color:green;'>{}</span> days left to expire!".format(data['expire_day'])
+        return data
 
 
     def setPassword(self,get):
-        if get.password1 != get.password2: return public.returnMsg(False,'USER_PASSWORD_CHECK')
-        if len(get.password1) < 5: return public.returnMsg(False,'USER_PASSWORD_LEN')
+        get.password1 = public.url_decode(get.password1)
+        get.password2 = public.url_decode(get.password2)
+        if get.password1 != get.password2: return public.return_msg_gettext(False,'The passwords entered twice are inconsistent, please try again!')
+        if len(get.password1) < 5: return public.return_msg_gettext(False,'Password cannot be less than 5 characters!')
+        if not self.check_password_safe(get.password1): return public.returnMsg(False,'The password must be at least eight characters in length and contain at least three combinations of digits, uppercase letters, lowercase letters, and special characters')
         public.M('users').where("username=?",(session['username'],)).setField('password',public.password_salt(public.md5(get.password1.strip()),username=session['username']))
-        public.WriteLog('TYPE_PANEL','USER_PASSWORD_SUCCESS',(session['username'],))
+        public.write_log_gettext('Panel configuration','Successfully modified password for user [{0}]!',(session['username'],))
         self.reload_session()
-        return public.returnMsg(True,'USER_PASSWORD_SUCCESS')
+
+        # 密码过期时间
+        expire_time_file = public.get_panel_path() + '/data/password_expire_time.pl'
+        if os.path.exists(expire_time_file): os.remove(expire_time_file)
+        self.get_password_config(None)
+        if session.get('password_expire',False):
+            session['password_expire'] = False
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     def setUsername(self,get):
-        if get.username1 != get.username2: return public.returnMsg(False,'USER_USERNAME_CHECK')
-        if len(get.username1) < 3: return public.returnMsg(False,'USER_USERNAME_LEN')
+        get.username1 = public.url_decode(get.username1)
+        get.username2 = public.url_decode(get.username2)
+        if get.username1 != get.username2: return public.return_msg_gettext(False,'The usernames entered twice are inconsistent, plesea try again!')
+        if len(get.username1) < 3: return public.return_msg_gettext(False,'Username cannot be less than 3 characters')
         public.M('users').where("username=?",(session['username'],)).setField('username',get.username1.strip())
-        public.WriteLog('TYPE_PANEL','USER_USERNAME_SUCCESS',(session['username'],get.username2))
+        public.write_log_gettext('Panel configuration','Username is modified from [{}] to [{}]',(session['username'],get.username2))
         session['username'] = get.username1
         self.reload_session()
-        return public.returnMsg(True,'USER_USERNAME_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     #取用户列表
     def get_users(self,args):
@@ -256,79 +414,88 @@ class config:
 
     # 创建新用户
     def create_user(self,args):
-        if session['uid'] != 1: return public.returnMsg(False,'PERMISSION_DENIED')
-        if len(args.username) < 2: return public.returnMsg(False,'USERNAME_ERR')
-        if len(args.password) < 8: return public.returnMsg(False,'PASSWORD_ERR')
+        args.username = public.url_decode(args.username)
+        args.password = public.url_decode(args.password)
+        if session['uid'] != 1: return public.return_msg_gettext(False,'Permission denied!')
+        if len(args.username) < 2: return public.return_msg_gettext(False,'User name must be at least 2 characters')
+        if len(args.password) < 8: return public.return_msg_gettext(False,'Password must be at least 8 characters')
         pdata = {
             "username": args.username.strip(),
             "password": public.password_salt(public.md5(args.password.strip()),username=args.username.strip())
         }
 
         if(public.M('users').where('username=?',(pdata['username'],)).count()):
-            return public.returnMsg(False,'USERNAME_EXIST')
+            return public.return_msg_gettext(False,'The specified username already exists!')
 
         if(public.M('users').insert(pdata)):
-            public.WriteLog('USER_MANAGE','CREATE_USER',(pdata['username'],))
-            return public.returnMsg(True,'CREATE_USER_SUCCESS',(pdata['username'],))
-        return public.returnMsg(False,'CREATE_USER_FAILED')
+            public.write_log_gettext('User Management','Create new user {}',(pdata['username'],))
+            return public.return_msg_gettext(True,'Create new user {} success!',(pdata['username'],))
+        return public.return_msg_gettext(False,'Create new user failed!')
 
     # 删除用户
     def remove_user(self,args):
-        if session['uid'] != 1: return public.returnMsg(False,'PERMISSION_DENIED')
-        if int(args.id) == 1: return public.returnMsg(False,'DEL_USER_ERR')
+        if session['uid'] != 1: return public.return_msg_gettext(False,'Permission denied!')
+        if int(args.id) == 1: return public.return_msg_gettext(False,'Cannot delete initial default user!')
         username = public.M('users').where('id=?',(args.id,)).getField('username')
-        if not username: return public.returnMsg(False,'USERNAME_NOT_EXIST')
+        if not username: return public.return_msg_gettext(False,'The specified username not exists!')
         if(public.M('users').where('id=?',(args.id,)).delete()):
-            public.WriteLog('USER_MANAGE','DEL_USER',(username))
-            return public.returnMsg(True,'DEL_USER_SUCCESS',(username,))
-        return public.returnMsg(False,'DEL_USER_FAILED')
+            public.write_log_gettext('User Management','Delete users [{}]',(username))
+            return public.return_msg_gettext(True,'Delete user {} success!',(username,))
+        return public.return_msg_gettext(False,'User deletion failed!')
 
     # 修改用户
     def modify_user(self,args):
-        if session['uid'] != 1: return public.returnMsg(False,'PERMISSION_DENIED')
+        if session['uid'] != 1: return public.return_msg_gettext(False,'Permission denied!')
         username = public.M('users').where('id=?',(args.id,)).getField('username')
         pdata = {}
         if 'username' in args:
-            if len(args.username) < 2: return public.returnMsg(False,'USERNAME_ERR')
+            args.username = public.url_decode(args.username)
+            if len(args.username) < 2: return public.return_msg_gettext(False,'User name must be at least 2 characters')
             pdata['username'] = args.username.strip()
 
         if 'password' in args:
             if args.password:
-                if len(args.password) < 8: return public.returnMsg(False,'PASSWORD_ERR')
+                args.password = public.url_decode(args.password)
+                if len(args.password) < 8: return public.return_msg_gettext(False,'Password must be at least 8 characters')
                 pdata['password'] = public.password_salt(public.md5(args.password.strip()),username=username)
 
         if(public.M('users').where('id=?',(args.id,)).update(pdata)):
-            public.WriteLog('USER_MANAGE',"EDIT_USER",(username,))
-            return public.returnMsg(True,'EDIT_SUCCESS')
-        return public.returnMsg(False,'NO_CHANGE_SUBMITTED')
+            public.write_log_gettext('User Management',"Edit user {}",(username,))
+            return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(False,'No changes submitted')
 
     def setPanel(self,get):
-        if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK')
+        if not public.IsRestart(): return public.return_msg_gettext(False,'Please run the program when all install tasks finished!')
         if 'limitip' in get:
             if get.limitip.find('/') != -1:
-                return public.returnMsg(False,'The authorized IP format is incorrect, and the subnet segment writing is not supported')
+                return public.return_msg_gettext(False,'The authorized IP format is incorrect, and the subnet segment writing is not supported')
         isReWeb = False
         sess_out_path = 'data/session_timeout.pl'
         if 'session_timeout' in get:
-            session_timeout = int(get.session_timeout)
+            try:
+                session_timeout = int(get.session_timeout)
+            except:
+                return public.returnMsg(False,"Timeout must be an integer!")
             s_time_tmp = public.readFile(sess_out_path)
             if not s_time_tmp: s_time_tmp = '0'
             if int(s_time_tmp) != session_timeout:
-                if session_timeout < 300: return public.returnMsg(False,'NOT_LESS_THAN_TIMEOUT')
+                if session_timeout < 300 or session_timeout > 86400: return public.return_msg_gettext(False,'The timeout time needs to be between 300-86400')
                 public.writeFile(sess_out_path,str(session_timeout))
                 isReWeb = True
+        else:
+            return public.returnMsg(False,'Timeout must be an integer!')
 
         workers_p = 'data/workers.pl'
         if 'workers' in get:
             workers = int(get.workers)
             if int(public.readFile(workers_p)) != workers:
-                if workers < 1 or workers > 1024: return public.returnMsg(False,public.GetMsg("PANEL_THREAD_RANGE_ERR"))
+                if workers < 1 or workers > 1024: return public.return_msg_gettext(False,public.get_msg_gettext('The number of panel threads should be between 1-1024'))
                 public.writeFile(workers_p,str(workers))
                 isReWeb = True
 
         if get.domain:
             reg = r"^([\w\-\*]{1,100}\.){1,4}(\w{1,10}|\w{1,10}\.\w{1,10})$"
-            if not re.match(reg, get.domain): return public.returnMsg(False,'SITE_ADD_ERR_DOMAIN')
+            if not re.match(reg, get.domain): return public.return_msg_gettext(False,'Format of primary domain is incorrect')
         oldPort = public.GetHost(True)
         if not 'port' in get:
             get.port = oldPort
@@ -336,11 +503,11 @@ class config:
         if oldPort != get.port:
             get.port = str(int(get.port))
             if self.IsOpen(get.port):
-                return public.returnMsg(False,'PORT_CHECK_EXISTS',(get.port,))
-            if int(get.port) >= 65535 or  int(get.port) < 100: return public.returnMsg(False,'PORT_CHECK_RANGE')
+                return public.return_msg_gettext(False,'Port [{}] is in use!',(get.port,))
+            if int(get.port) >= 65535 or  int(get.port) < 100: return public.return_msg_gettext(False,'Port range is incorrect! should be between 100-65535')
             public.writeFile('data/port.pl',get.port)
             import firewalls
-            get.ps = public.getMsg('PORT_CHECK_PS')
+            get.ps = public.get_msg_gettext('New panel port')
             fw = firewalls.firewalls()
             fw.AddAcceptPort(get)
             get.port = oldPort
@@ -349,8 +516,8 @@ class config:
             isReWeb = True
 
         if get.webname != session['title']:
-            session['title'] = public.xssencode(get.webname)
-            public.SetConfigValue('title',public.xssencode(get.webname))
+            session['title'] = public.xssencode2(get.webname)
+            public.SetConfigValue('title',public.xssencode2(get.webname))
 
         limitip = public.readFile('data/limitip.conf')
         if get.limitip != limitip:
@@ -360,7 +527,10 @@ class config:
         public.writeFile('data/domain.conf',public.xssencode2(get.domain).strip())
         public.writeFile('data/iplist.txt',get.address)
 
-
+        import files
+        fs = files.files()
+        if not fs.CheckDir(get.backup_path): return public.returnMsg(False,'Cannot use system critical directory as default backup directory')
+        if not fs.CheckDir(get.sites_path): return public.returnMsg(False,'Cannot use system critical directory as default site directory')
         public.M('config').where("id=?",('1',)).save('backup_path,sites_path',(get.backup_path,get.sites_path))
         session['config']['backup_path'] = os.path.join('/',get.backup_path)
         session['config']['sites_path'] = os.path.join('/',get.sites_path)
@@ -379,27 +549,18 @@ class config:
 
         mhost = public.GetHost()
         if get.domain.strip(): mhost = get.domain
-        data = {'uri':request.path,'host':mhost+':'+newPort,'status':True,'isReWeb':isReWeb,'msg':public.getMsg('PANEL_SAVE')}
-        public.WriteLog('TYPE_PANEL','PANEL_SET_SUCCESS',(newPort,get.domain,get.backup_path,get.sites_path,get.address,get.limitip))
+        data = {'uri':request.path,'host':mhost+':'+newPort,'status':True,'isReWeb':isReWeb,'msg':public.get_msg_gettext('Saved')}
+        public.write_log_gettext('Panel configuration','Set panel port [{}], domain [{}], default backup directory [{}], default site directory [{}], server IP [{}], authorized IP [{}]!',(newPort,get.domain,get.backup_path,get.sites_path,get.address,get.limitip))
         if isReWeb: public.restart_panel()
         return data
 
 
     def set_admin_path(self,get):
         get.admin_path = get.admin_path.strip()
-        if get.admin_path == '': get.admin_path = '/'
-        if get.admin_path != '/':
-            if len(get.admin_path) < 6: return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_NOT_LESS_THAN')
-            if get.admin_path in admin_path_checks: return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_EXIST')
-            if not public.path_safe_check(get.admin_path) or get.admin_path[-1] == '.':  return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_INCORRECT')
-            if get.admin_path[0] != '/': return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_INCORRECT')
-        else:
-            get.domain = public.readFile('data/domain.conf')
-            if not get.domain: get.domain = ''
-            get.limitip = public.readFile('data/limitip.conf')
-            if not get.limitip: get.limitip = ''
-            if not get.domain.strip() and not get.limitip.strip() and not os.path.exists('config/basic_auth.json'):
-                return public.returnMsg(False,'SECURITY_ENTRANCE_ADDRESS_TRUEN_OFF_WARN')
+        if len(get.admin_path) < 6: return public.return_msg_gettext(False,'Security Entrance cannot be less than 6 characters!')
+        if get.admin_path in admin_path_checks: return public.return_msg_gettext(False,'This entrance has been used by the panel, please set another entrances!')
+        if not public.path_safe_check(get.admin_path) or get.admin_path[-1] == '.':  return public.returnMsg(False,'Entrance address format is incorrect, e.g. /my_panel')
+        if get.admin_path[0] != '/': return public.return_msg_gettext(False,'Entrance address format is incorrect, e.g. /my_panel')
 
         admin_path_file = 'data/admin_path.pl'
         admin_path = '/'
@@ -407,7 +568,7 @@ class config:
         if get.admin_path != admin_path:
             public.writeFile(admin_path_file,get.admin_path)
             public.restart_panel()
-        return public.returnMsg(True, 'EDIT_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
 
     def setPathInfo(self,get):
@@ -432,16 +593,16 @@ class config:
         if type == 'on':status = '1'
         conf = re.sub(rep,"\ncgi.fix_pathinfo = "+status+"\n",conf)
         public.writeFile(path,conf)
-        public.WriteLog("TYPE_PHP", "PHP_PATHINFO_SUCCESS",(version,type))
+        public.write_log_gettext("PHP configuration", "Set PATH_INFO module to [{}] for PHP-{}!",(version,type))
         public.phpReload(version)
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
 
     #设置文件上传大小限制
     def setPHPMaxSize(self,get):
         version = get.version
         max = get.max
-        if int(max) < 2: return public.returnMsg(False,'PHP_UPLOAD_MAX_ERR')
+        if int(max) < 2: return public.return_msg_gettext(False,'Limit of upload size cannot be less than 2 MB')
         #设置PHP
         path = public.GetConfigValue('setup_path')+'/php/'+version+'/etc/php.ini'
         ols_php_path = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version, get.version[0],get.version[1])
@@ -453,9 +614,9 @@ class config:
             if not os.path.exists(p):
                 continue
             conf = public.readFile(p)
-            rep = r"\nupload_max_filesize\s*=\s*[0-9]+M"
+            rep = r"\nupload_max_filesize\s*=\s*[0-9]+M?m?"
             conf = re.sub(rep,r'\nupload_max_filesize = '+max+'M',conf)
-            rep = r"\npost_max_size\s*=\s*[0-9]+M"
+            rep = r"\npost_max_size\s*=\s*[0-9]+M?m?"
             conf = re.sub(rep,r'\npost_max_size = '+max+'M',conf)
             public.writeFile(p,conf)
 
@@ -463,7 +624,7 @@ class config:
             #设置Nginx
             path = public.GetConfigValue('setup_path')+'/nginx/conf/nginx.conf'
             conf = public.readFile(path)
-            rep = r"client_max_body_size\s+([0-9]+)m"
+            rep = r"client_max_body_size\s+([0-9]+)m?M?"
             tmp = re.search(rep,conf).groups()
             if int(tmp[0]) < int(max):
                 conf = re.sub(rep,'client_max_body_size '+max+'m',conf)
@@ -471,8 +632,8 @@ class config:
 
         public.serviceReload()
         public.phpReload(version)
-        public.WriteLog("TYPE_PHP", "PHP_UPLOAD_MAX",(version,max))
-        return public.returnMsg(True,'SET_SUCCESS')
+        public.write_log_gettext("PHP configuration", "Set max upload size to [{} MB] for PHP-{}!",(version,max))
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     #设置禁用函数
     def setPHPDisable(self,get):
@@ -480,24 +641,24 @@ class config:
         ols_php_path = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version, get.version[0],get.version[1])
         if os.path.exists('/etc/redhat-release'):
             ols_php_path = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
-        if not os.path.exists(filename): return public.returnMsg(False,'PHP_NOT_EXISTS')
+        if not os.path.exists(filename): return public.return_msg_gettext(False,'Requested PHP version does NOT exist!')
         for file in [filename,ols_php_path]:
             if not os.path.exists(file):
                 continue
             phpini = public.readFile(file)
             rep = r"disable_functions\s*=\s*.*\n"
             phpini = re.sub(rep, 'disable_functions = ' + get.disable_functions + "\n", phpini)
-            public.WriteLog('TYPE_PHP','PHP_DISABLE_FUNCTION',(get.version,get.disable_functions))
+            public.write_log_gettext('PHP configuration','Modified disabled function to [{}] for PHP-{}',(get.version,get.disable_functions))
             public.writeFile(file,phpini)
             public.phpReload(get.version)
         public.serviceReload()
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     #设置PHP超时时间
     def setPHPMaxTime(self,get):
         time = get.time
         version = get.version
-        if int(time) < 30 or int(time) > 86400: return public.returnMsg(False,'PHP_TIMEOUT_ERR')
+        if int(time) < 30 or int(time) > 86400: return public.return_msg_gettext(False,'Please fill in the value between 30 and 86400!')
         file = public.GetConfigValue('setup_path')+'/php/'+version+'/etc/php-fpm.conf'
         conf = public.readFile(file)
         rep = r"request_terminate_timeout\s*=\s*([0-9]+)\n"
@@ -526,10 +687,10 @@ class config:
                 conf = re.sub(rep,'fastcgi_read_timeout '+time+';',conf)
                 public.writeFile(path,conf)
 
-        public.WriteLog("TYPE_PHP", "PHP_TIMEOUT",(version,time))
+        public.write_log_gettext("PHP configuration", "Set maximum time of script to [{} second] for PHP-{}!",(version,time))
         public.serviceReload()
         public.phpReload(version)
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
 
     #取FPM设置
@@ -585,7 +746,7 @@ class config:
         max_spare_servers = get.max_spare_servers
         pm = get.pm
         if not pm in ['static','dynamic','ondemand']:
-            return public.returnMsg(False,'WRONG_MODE')
+            return public.return_msg_gettext(False,'Wrong operating mode')
         file = public.GetConfigValue('setup_path')+"/php/"+version+"/etc/php-fpm.conf"
         conf = public.readFile(file)
 
@@ -632,8 +793,8 @@ class config:
         public.writeFile(file,conf)
         public.phpReload(version)
         public.sync_php_address(version)
-        public.WriteLog("TYPE_PHP",'PHP_CHILDREN', (version,max_children,start_servers,min_spare_servers,max_spare_servers))
-        return public.returnMsg(True, 'SET_SUCCESS')
+        public.write_log_gettext("PHP configuration",'Set concurrency of PHP-{}, max_children={}, start_servers={}, min_spare_servers={}, max_spare_servers={}', (version,max_children,start_servers,min_spare_servers,max_spare_servers))
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     #同步时间
     def syncDate(self,get):
@@ -642,8 +803,8 @@ class config:
         time_arr = time.localtime(new_time)
         date_str = time.strftime("%Y-%m-%d %H:%M:%S", time_arr)
         public.ExecShell('date -s "%s"' % date_str)
-        public.WriteLog("TYPE_PANEL", "DATE_SUCCESS")
-        return public.returnMsg(True,"DATE_SUCCESS")
+        public.write_log_gettext("Panel configuration", 'Update Succeeded!')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     def IsOpen(self,port):
         #检查端口是否占用
@@ -662,25 +823,25 @@ class config:
             if hasattr(get,'day'):
                 get.day = int(get.day)
                 get.day = str(get.day)
-                if(get.day < 1): return public.returnMsg(False,"CONTROL_ERR")
+                if(get.day < 1): return public.return_msg_gettext(False,'Number of saving days is illegal!')
         except:
             pass
 
         filename = 'data/control.conf'
         if get.type == '1':
             public.writeFile(filename,get.day)
-            public.WriteLog("TYPE_PANEL",'CONTROL_OPEN',(get.day,))
+            public.write_log_gettext("Panel configuration",'Turned on monitory service, save for [{}] day!',(get.day,))
         elif get.type == '0':
             if os.path.exists(filename): os.remove(filename)
-            public.WriteLog("TYPE_PANEL", "CONTROL_CLOSE")
+            public.write_log_gettext("Panel configuration", 'Monitor service turned off!')
         elif get.type == 'del':
-            if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK')
+            if not public.IsRestart(): return public.return_msg_gettext(False,'Please run the program when all install tasks finished!')
             os.remove("data/system.db")
             import db
             sql = db.Sql()
             sql.dbfile('system').create('system')
-            public.WriteLog("TYPE_PANEL", "CONTROL_CLOSE")
-            return public.returnMsg(True,"CONTROL_CLOSE")
+            public.write_log_gettext("Panel configuration", 'Monitor service turned off!')
+            return public.return_msg_gettext(True,'Setup successfully!')
 
         else:
             data = {}
@@ -695,18 +856,18 @@ class config:
                 data['status'] = False
             return data
 
-        return public.returnMsg(True,"SET_SUCCESS")
+        return public.return_msg_gettext(True,'Successfully set')
 
     #关闭面板
     def ClosePanel(self,get):
         filename = 'data/close.pl'
         if os.path.exists(filename):
             os.remove(filename)
-            return public.returnMsg(True, 'OPEN_SUCCESSFUL')
+            return public.returnMsg(True, 'Setup successfully!')
         public.writeFile(filename, 'True')
         public.ExecShell("chmod 600 " + filename)
         public.ExecShell("chown root.root " + filename)
-        return public.returnMsg(True,'PANEL_CLOSE')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
 
     #设置自动更新
@@ -719,7 +880,7 @@ class config:
             public.writeFile(filename,'True')
             public.ExecShell("chmod 600 " + filename)
             public.ExecShell("chown root.root " + filename)
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     #设置二级密码
     def SetPanelLock(self,get):
@@ -745,62 +906,134 @@ class config:
         else:
             public.writeFile(filename,'True')
 
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     #设置模板
     def SetTemplates(self,get):
         public.writeFile('data/templates.pl',get.templates)
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     #设置面板SSL
-    def SetPanelSSL(self,get):
-        if hasattr(get,"email"):
-            #rep_mail = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
-            rep_mail = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
-            if not re.search(rep_mail,get.email):
-                return public.returnMsg(False,'EMAIL_FORMAT_ERR')
+    def SetPanelSSL(self, get):
+        if hasattr(get, "cert_type") and str(get.cert_type) == "2":
+            # rep_mail = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
+            # if not re.search(rep_mail,get.email):
+            #     return public.return_msg_gettext(False,'The E-Mail format is illegal')
             import setPanelLets
             sp = setPanelLets.setPanelLets()
             sps = sp.set_lets(get)
             return sps
         else:
-            sslConf = self._setup_path+'/data/ssl.pl'
+            sslConf = self._setup_path + '/data/ssl.pl'
             if os.path.exists(sslConf):
-                public.ExecShell('rm -f ' + sslConf)
+                public.ExecShell('rm -f ' + sslConf + '&& rm -f /www/server/panel/ssl/*')
                 g.rm_ssl = True
-                return public.returnMsg(True,'PANEL_SSL_CLOSE')
+                return public.return_msg_gettext(True, 'SSL turned off，Please use http protocol to access the panel!')
             else:
-                public.ExecShell('pip install cffi')
-                public.ExecShell('pip install cryptography')
-                public.ExecShell('pip install pyOpenSSL')
+                public.ExecShell('btpip install cffi')
+                public.ExecShell('btpip install cryptography')
+                public.ExecShell('btpip install pyOpenSSL')
                 try:
-                    if not self.CreateSSL(): return public.returnMsg(False,'PANEL_SSL_ERR')
-                    public.writeFile(sslConf,'True')
+                    if not self.CreateSSL():
+                        return public.return_msg_gettext(False,
+                                                         'Error, unable to auto install pyOpenSSL!<p>Plesea try to manually install: pip install pyOpenSSL</p>')
+                    public.writeFile(sslConf, 'True')
                 except:
-                    return public.returnMsg(False,'PANEL_SSL_ERR')
-                return public.returnMsg(True,'PANEL_SSL_OPEN')
+                    return public.return_msg_gettext(False,
+                                                     'Error, unable to auto install pyOpenSSL!<p>Plesea try to manually install: pip install pyOpenSSL</p>')
+                return public.return_msg_gettext(True,
+                                                 'SSL is turned on, plesea use https protocol to access the panel!')
     #自签证书
+    # def CreateSSL(self):
+    #     if os.path.exists('ssl/input.pl'): return True
+    #     import OpenSSL
+    #     key = OpenSSL.crypto.PKey()
+    #     key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+    #     cert = OpenSSL.crypto.X509()
+    #     cert.set_serial_number(0)
+    #     cert.get_subject().CN = public.GetLocalIp()
+    #     cert.set_issuer(cert.get_subject())
+    #     cert.gmtime_adj_notBefore( 0 )
+    #     cert.gmtime_adj_notAfter(86400 * 3650)
+    #     cert.set_pubkey( key )
+    #     cert.sign( key, 'md5' )
+    #     cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
+    #     private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+    #     if len(cert_ca) > 100 and len(private_key) > 100:
+    #         public.writeFile('ssl/certificate.pem',cert_ca,'wb+')
+    #         public.writeFile('ssl/privateKey.pem',private_key,'wb+')
+    #         return True
+    #     return False
+    # 自签证书
+
     def CreateSSL(self):
-        if os.path.exists('ssl/input.pl'): return True
-        import OpenSSL
-        key = OpenSSL.crypto.PKey()
-        key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
-        cert = OpenSSL.crypto.X509()
-        cert.set_serial_number(0)
-        cert.get_subject().CN = public.GetLocalIp()
-        cert.set_issuer(cert.get_subject())
-        cert.gmtime_adj_notBefore( 0 )
-        cert.gmtime_adj_notAfter(86400 * 3650)
-        cert.set_pubkey( key )
-        cert.sign( key, 'md5' )
-        cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
-        private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
-        if len(cert_ca) > 100 and len(private_key) > 100:
-            public.writeFile('ssl/certificate.pem',cert_ca,'wb+')
-            public.writeFile('ssl/privateKey.pem',private_key,'wb+')
-            return True
+        import base64
+        userInfo = public.get_user_info()
+        if not userInfo:
+            userInfo['uid'] = 0
+            userInfo['access_key'] = 'B' * 32
+        domains = self.get_host_all()
+        pdata = {
+            "action": "get_domain_cert",
+            "company": "aapanel.com",
+            "domain": ','.join(domains),
+            "uid": userInfo['uid'],
+            "access_key": 'B' * 32,
+            "panel": 1
+        }
+        cert_api = 'https://api.aapanel.com/aapanel_cert'
+        result = json.loads(public.httpPost(cert_api, {'data': json.dumps(pdata)}))
+        if 'status' in result:
+            if result['status']:
+                # if os.path.exists('ssl/certificate.pem'):
+                #     os.remove('ssl/certificate.pem')
+                # if os.path.exists('ssl/privateKey.pem'):
+                #     os.remove('ssl/privateKey.pem')
+                # if os.path.exists('ssl/baota_root.pfx'):
+                #     os.remove('ssl/baota_root.pfx')
+                # if os.path.exists('ssl/root_password.pl'):
+                #     os.remove('ssl/root_password.pl')
+                public.writeFile('ssl/certificate.pem', result['cert'])
+                public.writeFile('ssl/privateKey.pem', result['key'])
+                public.writeFile('ssl/baota_root.pfx', base64.b64decode(result['pfx']), 'wb+')
+                public.writeFile('ssl/root_password.pl', result['password'])
+                public.writeFile('data/ssl.pl', 'True')
+                # public.ExecShell("/etc/init.d/bt reload")
+                print('1')
+                return True
+        print('0')
         return False
 
+    def get_ipaddress(self):
+        '''
+            @name 获取本机IP地址
+            @author hwliang<2020-11-24>
+            @return list
+        '''
+        ipa_tmp = \
+        public.ExecShell("ip a |grep inet|grep -v inet6|grep -v 127.0.0.1|awk '{print $2}'|sed 's#/[0-9]*##g'")[
+            0].strip()
+        iplist = ipa_tmp.split('\n')
+        return iplist
+
+    def get_host_all(self):
+        local_ip = ['127.0.0.1', '::1', 'localhost']
+        ip_list = []
+        bind_ip = self.get_ipaddress()
+
+        for ip in bind_ip:
+            ip = ip.strip()
+            if ip in local_ip: continue
+            if ip in ip_list: continue
+            ip_list.append(ip)
+        net_ip = public.httpGet("https://www.aapanel.com/api/common/getClientIP")
+
+        if net_ip:
+            net_ip = net_ip.strip()
+            if not net_ip in ip_list:
+                ip_list.append(net_ip)
+        ip_list = [ip_list[-1], ip_list[0]]
+        return ip_list
     #生成Token
     def SetToken(self,get):
         data = {}
@@ -830,30 +1063,30 @@ class config:
 
         #校验是还是重复
         isAdd = public.M('panel').where('title=? OR url=?',(get.title,get.url)).count()
-        if isAdd: return public.returnMsg(False,'PANEL_SSL_ADD_EXISTS')
+        if isAdd: return public.return_msg_gettext(False,'Notes or panel address duplicate!')
         import time,json
         isRe = public.M('panel').add('title,url,username,password,click,addtime',(public.xssencode2(get.title),public.xssencode2(get.url),public.xssencode2(get.username),get.password,0,int(time.time())))
-        if isRe: return public.returnMsg(True,'ADD_SUCCESS')
-        return public.returnMsg(False,'ADD_ERROR')
+        if isRe: return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(False,'Failed to add')
 
     #修改面板资料
     def SetPanelInfo(self,get):
         #校验是还是重复
         isSave = public.M('panel').where('(title=? OR url=?) AND id!=?',(get.title,get.url,get.id)).count()
-        if isSave: return public.returnMsg(False,'PANEL_SSL_ADD_EXISTS')
+        if isSave: return public.return_msg_gettext(False,'Notes or panel address duplicate!')
         import time,json
 
         #更新到数据库
         isRe = public.M('panel').where('id=?',(get.id,)).save('title,url,username,password',(get.title,get.url,get.username,get.password))
-        if isRe: return public.returnMsg(True,'EDIT_SUCCESS')
-        return public.returnMsg(False,'EDIT_ERROR')
+        if isRe: return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(False,'Failed to modify')
 
     #删除面板资料
     def DelPanelInfo(self,get):
         isExists = public.M('panel').where('id=?',(get.id,)).count()
-        if not isExists: return public.returnMsg(False,'PANEL_SSL_ADD_NOT_EXISTS')
+        if not isExists: return public.return_msg_gettext(False,'Requested panel info does NOT exist!')
         public.M('panel').where('id=?',(get.id,)).delete()
-        return public.returnMsg(True,'DEL_SUCCESS')
+        return public.return_msg_gettext(True,'Successfully deleted')
 
     #点击计数
     def ClickPanelInfo(self,get):
@@ -864,20 +1097,20 @@ class config:
     #获取PHP配置参数
     def GetPHPConf(self,get):
         gets = [
-                {'name':'short_open_tag','type':1,'ps':public.getMsg('PHP_CONF_1')},
-                {'name':'asp_tags','type':1,'ps':public.getMsg('PHP_CONF_2')},
-                {'name':'max_execution_time','type':2,'ps':public.getMsg('PHP_CONF_4')},
-                {'name':'max_input_time','type':2,'ps':public.getMsg('PHP_CONF_5')},
-                {'name':'memory_limit','type':2,'ps':public.getMsg('PHP_CONF_6')},
-                {'name':'post_max_size','type':2,'ps':public.getMsg('PHP_CONF_7')},
-                {'name':'file_uploads','type':1,'ps':public.getMsg('PHP_CONF_8')},
-                {'name':'upload_max_filesize','type':2,'ps':public.getMsg('PHP_CONF_9')},
-                {'name':'max_file_uploads','type':2,'ps':public.getMsg('PHP_CONF_10')},
-                {'name':'default_socket_timeout','type':2,'ps':public.getMsg('PHP_CONF_11')},
-                {'name':'error_reporting','type':3,'ps':public.getMsg('PHP_CONF_12')},
-                {'name':'display_errors','type':1,'ps':public.getMsg('PHP_CONF_13')},
-                {'name':'cgi.fix_pathinfo','type':0,'ps':public.getMsg('PHP_CONF_14')},
-                {'name':'date.timezone','type':3,'ps':public.getMsg('PHP_CONF_15')}
+                {'name':'short_open_tag','type':1,'ps':public.get_msg_gettext('Short tag support')},
+                {'name':'asp_tags','type':1,'ps':public.get_msg_gettext('ASP tag support')},
+                {'name':'max_execution_time','type':2,'ps':public.get_msg_gettext('Max time of running script')},
+                {'name':'max_input_time','type':2,'ps':public.get_msg_gettext('Max time of input')},
+                {'name':'memory_limit','type':2,'ps':public.get_msg_gettext('Limit of script memory')},
+                {'name':'post_max_size','type':2,'ps':public.get_msg_gettext('Max size of POST data')},
+                {'name':'file_uploads','type':1,'ps':public.get_msg_gettext('Whether to allow upload file')},
+                {'name':'upload_max_filesize','type':2,'ps':public.get_msg_gettext('Max size of upload file')},
+                {'name':'max_file_uploads','type':2,'ps':public.get_msg_gettext('Max value of simultaneously upload file')},
+                {'name':'default_socket_timeout','type':2,'ps':public.get_msg_gettext('Socket over time')},
+                {'name':'error_reporting','type':3,'ps':public.get_msg_gettext('Level of error')},
+                {'name':'display_errors','type':1,'ps':public.get_msg_gettext('Whether to output detailed error info')},
+                {'name':'cgi.fix_pathinfo','type':0,'ps':public.get_msg_gettext('Whether to turn on pathinfo')},
+                {'name':'date.timezone','type':3,'ps':public.get_msg_gettext('Timezone')}
                 ]
         phpini_file = '/www/server/php/' + get.version + '/etc/php.ini'
         if public.get_webserver() == 'openlitespeed':
@@ -885,6 +1118,8 @@ class config:
             if os.path.exists('/etc/redhat-release'):
                 phpini_file = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
         phpini = public.readFile(phpini_file)
+        if not phpini:
+            return public.return_msg_gettext(False,"Error reading PHP configuration file, please try to reinstall this PHP!")
         result = []
         for g in gets:
             rep = g['name'] + r'\s*=\s*([0-9A-Za-z_&/ ~]+)(\s*;?|\r?\n)'
@@ -959,7 +1194,7 @@ class config:
             public.writeFile(p,phpini)
         public.ExecShell(reload_str)
         public.ExecShell(reload_ols_str)
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
 
  # 取Session缓存方式
@@ -1007,16 +1242,16 @@ class config:
         if g != "files":
             iprep = r"(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})\.(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})\.(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})\.(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})"
             if not re.search(iprep, ip):
-                return public.returnMsg(False, 'FIREWALL_IP_FORMAT')
+                return public.return_msg_gettext(False, 'IP address is illegal!')
             try:
                 port = int(port)
                 if port >= 65535 or port < 1:
-                    return public.returnMsg(False, 'SITE_ADD_ERR_PORT')
+                    return public.return_msg_gettext(False, 'Port range is incorrect! should be between 100-65535')
             except:
-                return public.returnMsg(False, 'SITE_ADD_ERR_PORT')
+                return public.return_msg_gettext(False, 'Port range is incorrect! should be between 100-65535')
             prep = r"[\~\`\/\=]"
             if re.search(prep, passwd):
-                return public.returnMsg(False, 'SPECIAL_CHARACTRES', ('" ~ ` / = "'))
+                return public.return_msg_gettext(False, 'Please do NOT enter the following special characters {}', ('" ~ ` / = "'))
         filename = '/www/server/php/' + get.version + '/etc/php.ini'
         filename_ols = None
         if os.path.exists("/usr/local/lsws/bin/lswsctrl"):
@@ -1042,7 +1277,7 @@ class config:
             phpini = re.sub(rep, val, phpini)
             if g == "memcached":
                 if not re.search("memcached.so", phpini) and "memcached.so" not in ols_so_list:
-                    return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g,))
+                    return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
                 rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
                 val = r'\nsession.save_path = "%s:%s" \n' % (ip,port)
                 if re.search(rep, phpini):
@@ -1051,7 +1286,7 @@ class config:
                     phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
             if g == "memcache":
                 if not re.search("memcache.so", phpini) and "memcache.so" not in ols_so_list:
-                    return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g,))
+                    return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
                 rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
                 val = r'\nsession.save_path = "tcp://%s:%s"\n' % (ip, port)
                 if re.search(rep, phpini):
@@ -1060,7 +1295,7 @@ class config:
                     phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
             if g == "redis":
                 if not re.search("redis.so", phpini) and "redis.so" not in ols_so_list:
-                    return public.returnMsg(False, 'INSTALL_EXTEND_FIRST', (g,))
+                    return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
                 if passwd:
                     passwd = "?auth=" + passwd
                 else:
@@ -1082,7 +1317,7 @@ class config:
             public.writeFile(f, phpini)
         public.ExecShell('/etc/init.d/php-fpm-' + get.version + ' reload')
         public.serviceReload()
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 获取Session文件数量
     def GetSessionCount(self, get):
@@ -1120,9 +1355,9 @@ class config:
         # old_file_conf = int(public.ExecShell(s)[0].split("\n")[0])
         old_file_conf = self.GetSessionCount(get)["oldfile"]
         if old_file_conf == 0:
-            return public.returnMsg(True, 'DEL_SUCCESS')
+            return public.return_msg_gettext(True, 'Successfully deleted')
         else:
-            return public.returnMsg(True, 'DEL_ERROR')
+            return public.return_msg_gettext(True, 'Failed to delete')
 
     # 获取面板证书
     def GetPanelSSL(self, get):
@@ -1142,9 +1377,9 @@ class config:
             public.writeFile(keyPath,get.privateKey)
         if get.certPem:
             public.writeFile(certPath, get.certPem)
-        if not public.CheckCert(checkCert): return public.returnMsg(False, 'SITE_SSL_ERR_CERT')
+        if not public.CheckCert(checkCert): return public.return_msg_gettext(False, 'Certificate ERROR, please check!')
         public.writeFile('ssl/input.pl', 'True')
-        return public.returnMsg(True, 'SITE_SSL_SUCCESS')
+        return public.return_msg_gettext(True, 'Certificate saved!')
 
     #获取配置
     def get_config(self,get):
@@ -1238,19 +1473,19 @@ class config:
         ipv6_file = 'data/ipv6.pl'
         if self.get_ipv6_listen(get):
             os.remove(ipv6_file)
-            public.WriteLog('TYPE_CONFIG', 'P_STOP_IPV6!')
+            public.write_log_gettext('Panel setting', 'Disable IPv6 compatibility of the panel!')
         else:
             public.writeFile(ipv6_file, 'True')
-            public.WriteLog('TYPE_CONFIG', 'P_START_IPV6!')
+            public.write_log_gettext('Panel setting', 'Enable IPv6 compatibility of the panel!')
         public.restart_panel()
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     #自动补充CLI模式下的PHP版本
     def auto_cli_php_version(self,get):
         import panelSite
         php_versions = panelSite.panelSite().GetPHPVersion(get)
         php_bin_src = "/www/server/php/%s/bin/php" % php_versions[-1]['version']
-        if not os.path.exists(php_bin_src): return public.returnMsg(False,'PHP_NOT_INSTALL')
+        if not os.path.exists(php_bin_src): return public.return_msg_gettext(False,'PHP is not installed')
         get.php_version = php_versions[-1]['version']
         self.set_cli_php_version(get)
         return php_versions[-1]
@@ -1264,7 +1499,7 @@ class config:
         import panelSite
         php_versions = panelSite.panelSite().GetPHPVersion(get)
         if len(php_versions)==0:
-            return public.returnMsg(False,'GET_PHP_VER_ERR')
+            return public.return_msg_gettext(False,'Failed to get php version!')
         del(php_versions[0])
         for v in php_versions:
             if link_re.find(v['version']) != -1: return {"select":v,"versions":php_versions}
@@ -1282,7 +1517,7 @@ class config:
         php_pecl_src = "/www/server/php/%s/bin/pecl" % get.php_version
         php_pear = '/usr/bin/pear'
         php_pear_src = "/www/server/php/%s/bin/pear" % get.php_version
-        if not os.path.exists(php_bin_src): return public.returnMsg(False,'SPECIFIED_PHP_NOT_INSTALL')
+        if not os.path.exists(php_bin_src): return public.return_msg_gettext(False,'Specified PHP version not installed')
         is_chattr = public.ExecShell('lsattr /usr|grep /usr/bin')[0].find('-i-')
         if is_chattr != -1: public.ExecShell('chattr -i /usr/bin')
         public.ExecShell("rm -f " + php_bin + ' '+ php_ize + ' ' + php_fpm + ' ' + php_pecl + ' ' + php_pear)
@@ -1291,9 +1526,11 @@ class config:
         public.ExecShell("ln -sf %s %s" % (php_fpm_src,php_fpm))
         public.ExecShell("ln -sf %s %s" % (php_pecl_src,php_pecl))
         public.ExecShell("ln -sf %s %s" % (php_pear_src,php_pear))
+        import jobs
+        jobs.set_php_cli_env()
         if is_chattr != -1:  public.ExecShell('chattr +i /usr/bin')
-        public.WriteLog('P_CONF','SET_PHP_CLI %s' % get.php_version)
-        return public.returnMsg(True,'SET_SUCCESS')
+        public.write_log_gettext('Panel settings','Set the PHP-CLI version to: {}',(get.php_version,))
+        return public.return_msg_gettext(True,'Setup successfully!')
 
 
     #获取BasicAuth状态
@@ -1317,6 +1554,8 @@ class config:
         tips = '_bt.cn'
         path = 'config/basic_auth.json'
         ba_conf = None
+        if is_open:
+            if not get.basic_user.strip() or not get.basic_pwd.strip(): return public.returnMsg(False,'BasicAuth authentication username and password cannot be empty!')
         if os.path.exists(path):
             try:
                 ba_conf = json.loads(public.readFile(path))
@@ -1332,22 +1571,23 @@ class config:
 
         public.writeFile(path,json.dumps(ba_conf))
         os.chmod(path,384)
-        public.WriteLog('P_CONF','SET_BASICAUTH_STATUS %s' % is_open)
+        public.write_log_gettext('Panel settings','Set the BasicAuth status to: {}', (is_open,))
         public.writeFile('data/reload.pl','True')
-        return public.returnMsg(True,"SET_SUCCESS")
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     #取面板运行日志
     def get_panel_error_logs(self,get):
         filename = 'logs/error.log'
-        if not os.path.exists(filename): return public.returnMsg(False,'LOG_CLOSE')
+        if not os.path.exists(filename): return public.return_msg_gettext(False,"Logs emptied")
         result = public.GetNumLines(filename,2000)
-        return public.returnMsg(True,result)
+        return public.return_msg_gettext(True,result)
+
     #清空面板运行日志
     def clean_panel_error_logs(self,get):
         filename = 'logs/error.log'
         public.writeFile(filename,'')
-        public.WriteLog('P_CONF','CLEARING_LOG')
-        return public.returnMsg(True,'CLEARED')
+        public.write_log_gettext('Panel settings','Clearing log info')
+        return public.return_msg_gettext(True,'Cleared!')
 
     # 获取lets证书
     def get_cert_source(self,get):
@@ -1365,9 +1605,9 @@ class config:
         else:
             t_str = 'Open'
             public.writeFile(debug_path,'True')
-        public.WriteLog('TYPE_PANEL','DEVELOPER_MODE',(t_str,))
+        public.write_log_gettext('Panel configuration','{} Developer mode(DeBug)',(t_str,))
         public.restart_panel()
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
 
     #设置离线模式
@@ -1379,8 +1619,8 @@ class config:
         else:
             t_str = 'Open'
             public.writeFile(d_path,'True')
-        public.WriteLog('TYPE_PANEL','OFFLINE_MODE',(t_str,))
-        return public.returnMsg(True,'SET_SUCCESS')
+        public.write_log_gettext('Panel configuration','{} Offline mode',(t_str,))
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     # 修改.user.ini文件
     def _edit_user_ini(self,file,s_conf,act,session_path):
@@ -1408,7 +1648,7 @@ class config:
         :return:
         '''
         if public.get_webserver() == 'openlitespeed':
-            return public.returnMsg(False, "NOT_SUPPORT_OLS")
+            return public.return_msg_gettext(False, 'The current web server is openlitespeed. This function is not supported yet.')
         import panelSite
         site_info = public.M('sites').where('id=?', (get.id,)).field('name,path').find()
         session_path = "/www/php_session/{}".format(site_info["name"])
@@ -1422,12 +1662,12 @@ class config:
             if not os.path.exists(user_ini_file):
                 public.writeFile(user_ini_file,conf)
                 public.ExecShell("chattr +i {}".format(user_ini_file))
-                return public.returnMsg(True,"SET_SUCCESS")
+                return public.return_msg_gettext(True,'Setup successfully!')
             self._edit_user_ini(user_ini_file,conf,get.act,session_path)
-            return public.returnMsg(True, "SET_SUCCESS")
+            return public.return_msg_gettext(True, 'Setup successfully!')
         else:
             self._edit_user_ini(user_ini_file,conf,get.act,session_path)
-            return public.returnMsg(True, "SET_SUCCESS")
+            return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 获取php_session是否存放到独立文件夹
     def get_php_session_path(self,get):
@@ -1450,9 +1690,9 @@ class config:
         key = public.readFile(self._key_file)
         username = public.readFile(self._username_file)
         if not key:
-            return public.returnMsg(False, "KEY_NOT_EXIST")
+            return public.return_msg_gettext(False, 'The key does not exist. Please turn on and try again.')
         if not username:
-            return public.returnMsg(False, "USERNAME_NOT_EXIST1")
+            return public.return_msg_gettext(False, 'The username does not exist. Please turn on and try again.')
         return {"key":key,"username":username}
 
     def get_random(self):
@@ -1466,7 +1706,7 @@ class config:
 
     def set_two_step_auth(self,get):
         if not hasattr(get,"act") or not get.act:
-            return public.returnMsg(False, "SELECT_MODE")
+            return public.return_msg_gettext(False, 'Please enter the operation mode')
         if get.act == "1":
             if not os.path.exists(self._core_fle_path):
                 os.makedirs(self._core_fle_path)
@@ -1481,7 +1721,7 @@ class config:
             username = public.readFile(self._username_file)
             local_ip = public.GetLocalIp()
             if not secret_key:
-                return public.returnMsg(False,"GENERATE_KEY_ERR",(self._setup_path+"/data/",))
+                return public.return_msg_gettext(False,"Failed to generate key or username. Please check if the hard disk space is insufficient or the directory cannot be written.[ {} ]",(self._setup_path+"/data/",))
             try:
                 try:
                     panel_name = json.loads(public.readFile(self._setup_path+'/config/config.json'))['title']
@@ -1489,36 +1729,36 @@ class config:
                     panel_name = 'aaPanel'
                 data = pyotp.totp.TOTP(secret_key).provisioning_uri(username, issuer_name='{}--{}'.format(panel_name,local_ip))
                 public.writeFile(self._core_fle_path+'/qrcode.txt',str(data))
-                return public.returnMsg(True, "OPEN_SUCCESSFUL")
+                return public.return_msg_gettext(True, 'Setup successfully!')
             except Exception as e:
-                return public.returnMsg(False, e)
+                return public.return_msg_gettext(False, e)
         else:
             if os.path.exists(self._key_file):
                 os.rename(self._key_file,self._bk_key_file)
-            return public.returnMsg(True, "CLOSE_SUCCESS")
+            return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 检测是否开启双因素验证
     def check_two_step(self,get):
         secret_key = public.readFile(self._key_file)
         if not secret_key:
-            return public.returnMsg(False, "GOOGLE_AUTH_ERR")
-        return public.returnMsg(True, "TURN_ON_GOOGLE_AUTH")
+            return public.return_msg_gettext(False, 'Did not open Google authentication')
+        return public.return_msg_gettext(True, 'Google authentication has been turned on')
 
     # 读取二维码data
     def get_qrcode_data(self,get):
         data = public.readFile(self._core_fle_path + '/qrcode.txt')
         if data:
             return data
-        return public.returnMsg(True, "QR_CODE_ERR")
+        return public.return_msg_gettext(True, 'No QR code data, please re-open')
 
     # 设置是否云控打开
     def set_coll_open(self,get):
-        if not 'coll_show' in get: return public.returnMsg(False,'INIT_ARGS_ERR')
+        if not 'coll_show' in get: return public.return_msg_gettext(False,'Parameter ERROR!')
         if get.coll_show == 'True':
             session['tmp_login'] = True
         else:
             session['tmp_login'] = False
-        return public.returnMsg(True,'SET_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     # 获取菜单列表
     def get_menu_list(self, get):
@@ -1569,8 +1809,8 @@ class config:
             if h in not_hide_id: continue
             hide_menu.append(h)
         public.writeFile(hide_menu_file, json.dumps(hide_menu))
-        public.WriteLog('TYPE_CONFIG', 'EDIT_MENU_SUCCESS')
-        return public.returnMsg(True, 'SET_SUCCESS')
+        public.write_log_gettext('Panel setting', 'Successfully modify the panel menu display list')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 获取临时登录列表
     def get_temp_login(self, args):
@@ -1579,7 +1819,7 @@ class config:
             @author hwliang<2020-09-2>
             @return dict
         '''
-        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        if 'tmp_login_expire' in session: return public.return_msg_gettext(False, 'Permission denied!')
         public.M('temp_login').where('state=? and expire<?', (0, int(time.time()))).setField('state', -1)
         callback = ''
         if 'tojs' in args:
@@ -1607,7 +1847,7 @@ class config:
             @author hwliang<2020-09-2>
             @return dict
         '''
-        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        if 'tmp_login_expire' in session: return public.return_msg_gettext(False, 'Permission denied!')
         s_time = int(time.time())
         public.M('temp_login').where('state=? and expire>?', (0, s_time)).delete()
         token = public.GetRandomString(48)
@@ -1627,9 +1867,9 @@ class config:
             pdata['id'] = 101
 
         if public.M('temp_login').insert(pdata):
-            public.WriteLog('TYPE_CONFIG', 'TMP_LOGIN',(public.format_date(times=pdata['expire']),))
-            return {'status': True, 'msg': public.getMsg('TMP_LOGIN1'), 'token': token, 'expire': pdata['expire']}
-        return public.returnMsg(False, 'TMP_LOGIN2')
+            public.write_log_gettext('Panel setting', 'Generate temporary connection, expiration time: {}',(public.format_date(times=pdata['expire']),))
+            return {'status': True, 'msg': public.get_msg_gettext('Temporary login URL has been generated'), 'token': token, 'expire': pdata['expire']}
+        return public.return_msg_gettext(False, 'Failed to generate temporary login URL')
 
     # 删除临时登录
     def remove_temp_login(self, args):
@@ -1641,12 +1881,12 @@ class config:
             }
             @return dict
         '''
-        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        if 'tmp_login_expire' in session: return public.return_msg_gettext(False, 'Permission denied!')
         id = int(args.id)
         if public.M('temp_login').where('id=?', (id,)).delete():
-            public.WriteLog('TYPE_CONFIG', 'TMP_LOGIN3')
-            return public.returnMsg(True, 'DEL_SUCCESS')
-        return public.returnMsg(False, 'DEL_ERROR')
+            public.write_log_gettext('Panel setting', 'Delete temporary login URL')
+            return public.return_msg_gettext(True, 'Successfully deleted')
+        return public.return_msg_gettext(False, 'Failed to delete')
 
     # 强制弹出指定临时登录
     def clear_temp_login(self, args):
@@ -1658,14 +1898,14 @@ class config:
             }
             @return dict
         '''
-        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        if 'tmp_login_expire' in session: return public.return_msg_gettext(False, 'Permission denied!')
         id = int(args.id)
         s_file = 'data/session/{}'.format(id)
         if os.path.exists(s_file):
             os.remove(s_file)
-            public.WriteLog('TYPE_CONFIG', 'LOGOUT_TMP_UESR',(str(id),))
-            return public.returnMsg(True, 'LOGOUT_TMP_USER',(str(id),))
-        public.returnMsg(False, 'TMP_USER_NOT_LOGIN')
+            public.write_log_gettext('Panel setting', 'Force logout of temporary users:{1}',(str(id),))
+            return public.return_msg_gettext(True, 'Temporary user has been forcibly logged out:{}',(str(id),))
+        public.return_msg_gettext(False, 'The specified user is not currently logged in!')
 
     # 查看临时授权操作日志
     def get_temp_login_logs(self, args):
@@ -1677,7 +1917,7 @@ class config:
             }
             @return dict
         '''
-        if 'tmp_login_expire' in session: return public.returnMsg(False, 'PERMISSION_DENIED')
+        if 'tmp_login_expire' in session: return public.return_msg_gettext(False, 'Permission denied!')
         id = int(args.id)
         data = public.M('logs').where('uid=?', (id,)).order('id desc').select()
         return data
@@ -1750,8 +1990,8 @@ class config:
         else:
             result['dingding']=False
         if result['mail'] or result['dingding']:
-            return public.returnMsg(True, result)
-        return public.returnMsg(False, result)
+            return public.return_msg_gettext(True, result)
+        return public.return_msg_gettext(False, result)
 
     #设置告警
     def set_login_send(self,get):
@@ -1761,15 +2001,15 @@ class config:
                 os.mknod("/www/server/panel/data/login_send_mail.pl")
             if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
                 os.remove("/www/server/panel/data/login_send_dingding.pl")
-            return public.returnMsg(True, 'Setup Successfully')
+            return public.return_msg_gettext(True, 'Setup Successfully')
         elif type=='dingding':
             if not os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
                 os.mknod("/www/server/panel/data/login_send_dingding.pl")
             if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
                 os.remove("/www/server/panel/data/login_send_mail.pl")
-            return public.returnMsg(True, 'Setup Successfully')
+            return public.return_msg_gettext(True, 'Setup Successfully')
         else:
-            return public.returnMsg(False,'The delivery type is not supported')
+            return public.return_msg_gettext(False,'The delivery type is not supported')
 
     #取消告警
     def clear_login_send(self,get):
@@ -1777,13 +2017,13 @@ class config:
         if type == 'mail':
             if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
                 os.remove("/www/server/panel/data/login_send_mail.pl")
-            return public.returnMsg(True, '取消成功')
+            return public.return_msg_gettext(True, 'Setup successfully!')
         elif type == 'dingding':
             if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
                 os.remove("/www/server/panel/data/login_send_dingding.pl")
-            return public.returnMsg(True, '取消成功')
+            return public.return_msg_gettext(True, 'Setup successfully!')
         else:
-            return public.returnMsg(False, '不支持该发送类型')
+            return public.return_msg_gettext(False, 'The send type is not supported')
 
     #告警日志
     def get_login_log(self,get):
@@ -1826,11 +2066,11 @@ class config:
         try:
             path='/www/server/panel/data/send_login_white.json'
             ip_white=json.loads(public.ReadFile('/www/server/panel/data/send_login_white.json'))
-            if not  ip_white:return public.returnMsg(True, [])
-            return public.returnMsg(True, ip_white)
+            if not  ip_white:return public.return_msg_gettext(True, [])
+            return public.return_msg_gettext(True, ip_white)
         except:
             public.WriteFile(path, '[]')
-            return public.returnMsg(True, [])
+            return public.return_msg_gettext(True, [])
 
     def add_login_ipwhite(self,get):
         ip=get.ip.strip()
@@ -1840,10 +2080,10 @@ class config:
             if not ip in ip_white:
                 ip_white.append(ip)
                 public.WriteFile(path, json.dumps(ip_white))
-            return public.returnMsg(True, "Add successfully")
+            return public.return_msg_gettext(True, "Setup successfully!")
         except:
             public.WriteFile(path, json.dumps([ip]))
-            return public.returnMsg(True, "Add successfully")
+            return public.return_msg_gettext(True, "Setup successfully!")
 
     def del_login_ipwhite(self,get):
         ip = get.ip.strip()
@@ -1853,34 +2093,68 @@ class config:
             if  ip in ip_white:
                 ip_white.remove(ip)
                 public.WriteFile(path, json.dumps(ip_white))
-            return public.returnMsg(True, "Delete successfully")
+            return public.return_msg_gettext(True, "Successfully deleted!")
         except:
             public.WriteFile(path, json.dumps([]))
-            return public.returnMsg(True, "Delete successfully")
+            return public.return_msg_gettext(True, "Successfully deleted!")
 
     def clear_login_ipwhite(self,get):
         path = '/www/server/panel/data/send_login_white.json'
         public.WriteFile(path, json.dumps([]))
-        return public.returnMsg(True, "Clear successfully")
+        return public.return_msg_gettext(True, "Successfully created")
 
 
     def get_panel_ssl_status(self,get):
         import os
         if os.path.exists(self._setup_path+'/data/ssl.pl'):
-            return public.returnMsg(True,'success')
-        return public.returnMsg(False,'false')
+            return public.return_msg_gettext(True,'success')
+        return public.return_msg_gettext(False,'false')
 
     def set_backup_notification(self,get):
         import os
         f = self._setup_path+'/data/send_back_error.pl'
         if os.path.exists(f):
             public.ExecShell('rm -f {}'.format(f))
-            return public.returnMsg(True,'Disable successfully')
+            return public.return_msg_gettext(True,'Disable successfully')
         public.writeFile(f,'1')
-        return public.returnMsg(True,'Enable Successfully')
+        return public.return_msg_gettext(True,'Enable Successfully')
 
     def get_backup_notification(self,get):
         import os
         if os.path.exists(self._setup_path+'/data/send_back_error.pl'):
             return public.returnMsg(True,'success')
         return public.returnMsg(False,'false')
+
+    def set_not_auth_status(self,get):
+        '''
+            @name 设置未认证时的响应状态
+            @author hwliang<2021-12-16>
+            @param status_code<int> 状态码
+            @return dict
+        '''
+        if not 'status_code' in get:
+            return public.return_msg_gettext(False,'Parameter ERROR!')
+
+        if re.match("^\d+$", get.status_code):
+            status_code = int(get.status_code)
+            if status_code != 0:
+                if status_code < 100 or status_code > 999:
+                    return public.return_msg_gettext(False,'Parameter ERROR!')
+        else:
+            return public.return_msg_gettext(False,'Parameter ERROR!')
+
+        public.save_config('abort',get.status_code)
+        public.write_log_gettext('Panel configuration','Set the unauthorized response status to:{}'.format(get.status_code))
+        return public.return_msg_gettext(True,'Setup successfully!')
+
+    def get_not_auth_status(self):
+        '''
+            @name 获取未认证时的响应状态
+            @author hwliang<2021-12-16>
+            @return int
+        '''
+        try:
+            status_code = int(public.read_config('abort'))
+            return status_code
+        except:
+            return 404

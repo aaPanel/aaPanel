@@ -378,16 +378,28 @@ class ssh_security:
         关闭key
         无需参数传递
         '''
-        file = ['/root/.ssh/id_rsa.pub', '/root/.ssh/id_rsa', '/root/.ssh/authorized_keys']
-        rec = '\n#?RSAAuthentication\s\w+'
-        rec2 = '\n#?PubkeyAuthentication\s\w+'
-        file = public.readFile(self.__SSH_CONFIG)
-        file_ssh = re.sub(rec, '\nRSAAuthentication no', file)
-        file_result = re.sub(rec2, '\nPubkeyAuthentication no', file_ssh)
-        self.wirte(self.__SSH_CONFIG, file_result)
-        self.set_password(get)
-        self.restart_ssh()
-        return public.returnMsg(True, 'Closed successfully')
+        is_ssh_status=public.get_sshd_status()
+        if is_ssh_status:
+            file = ['/root/.ssh/id_rsa.pub', '/root/.ssh/id_rsa', '/root/.ssh/authorized_keys']
+            rec = '\n#?RSAAuthentication\s\w+'
+            rec2 = '\n#?PubkeyAuthentication\s\w+'
+            file = public.readFile(self.__SSH_CONFIG)
+            file_ssh = re.sub(rec, '\nRSAAuthentication no', file)
+            file_result = re.sub(rec2, '\nPubkeyAuthentication no', file_ssh)
+            self.wirte(self.__SSH_CONFIG, file_result)
+            self.set_password(get)
+            self.restart_ssh()
+            return public.returnMsg(True, 'Closed successfully')
+        else:
+            file = ['/root/.ssh/id_rsa.pub', '/root/.ssh/id_rsa', '/root/.ssh/authorized_keys']
+            rec = '\n#?RSAAuthentication\s\w+'
+            rec2 = '\n#?PubkeyAuthentication\s\w+'
+            file = public.readFile(self.__SSH_CONFIG)
+            file_ssh = re.sub(rec, '\nRSAAuthentication no', file)
+            file_result = re.sub(rec2, '\nPubkeyAuthentication no', file_ssh)
+            self.wirte(self.__SSH_CONFIG, file_result)
+            #self.set_password(get)
+            return public.returnMsg(True, 'Closed successfully')
 
     def get_config(self, get):
         '''
@@ -514,6 +526,8 @@ if __name__ == '__main__':
         try:
             aa = ssh_security()
             aa.login()
-        except:pass
+        except:
+            print(111)
+            pass
     else:
         pass

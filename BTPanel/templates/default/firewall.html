@@ -61,16 +61,22 @@
         font-family: Courier New;
         font-size: 12px;
     }
-    .security_detail pre {
-        white-space: pre-wrap;
-        white-space: -moz-pre-wrap;
-        white-space: -pre-wrap;
-        white-space: -o-pre-wrap;
-        word-wrap: break-word;
-    }
-    .detail_tips {
-        margin-top: 15px;
-    }
+
+   .security_detail pre {
+       white-space: pre-wrap;
+       white-space: -moz-pre-wrap;
+       white-space: -pre-wrap;
+       white-space: -o-pre-wrap;
+       word-wrap: break-word;
+   }
+
+   .detail_tips {
+       margin-top: 15px;
+   }
+
+   .setchmod {
+       padding-top: 0;
+   }
 </style>
 <div class="main-content">
     <div class="container-fluid" style="padding-bottom: 50px;">
@@ -80,7 +86,7 @@
             </div>
         </div>
         <div class="safe container-fluid bgw mtb15 pd15">
-            <div class="mr50 pull-left">
+            <div class="mr20 pull-left">
                 <form>
                     <div class="ss-text pull-left">
                         <em>{{data['lan']['BTN1']}}</em>
@@ -90,7 +96,7 @@
                     </div>
                 </form>
             </div>
-            <div class="mr50 pull-left">
+            <div class="mr20 pull-left">
                 <div class="ss-text pull-left mr5">
                     <em>{{data['lan']['BTN2']}}</em>
                     <input type="text" class="bt-input-text" id="mstscPort" value="" />
@@ -160,8 +166,8 @@
                                                         
                             </table>
                         </div>
-                         <div class="dataTables_paginate paging_bootstrap page logsBody" style="margin-bottom:0">              
-                        </div>
+                         <div class="dataTables_paginate paging_bootstrap page logsBody" style="margin-bottom:0">
+                         </div>
                     </div>
                 </div>
             </div>
@@ -171,16 +177,17 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script type="text/javascript">
-	
-	var firewall = {		
-		ssl_scanning_list: [], //扫描列表
-		on_search:function(){
-            firewall.get_log_list(1,$('.search_input').val());
+
+    var firewall = {
+        ssl_scanning_list: [], //扫描列表
+        on_search: function () {
+            firewall.get_log_list(1, $('.search_input').val());
         },
-		get_init:function(){
-			firewall.flush_init();
-			firewall.get_list();
+        get_init: function () {
+            firewall.flush_init();
+            firewall.get_list();
 			firewall.get_log_list();
 			firewall.get_logs_size();			
 			$('.sshswitch').click(function(){
@@ -314,14 +321,14 @@
                             <button class="btn btn-success btn-sm add_white_ip" type="button">Add IP white list</button>\
                             <div class="pull-right ssl_login_config_view"><span>Monitor root login</span><input class="btswitch btswitch-ios" id="ssh_root_login" type="checkbox"><label class="btswitch-btn" for="ssh_root_login" title="Monitor root login"></label></div>\
                             <div class="divtable mtb15" style="max-height: 441px;overflow: auto;">\
-                                <table id="ssh_ip_white_table" class="table table-hover" style="min-width: 500px;border: 0 none;"></table>\
+                                <table id="ssh_ip_white_table" class="table table-hover" style="min-width: 500px;"></table>\
 							</div>\
 							<ul class="help-info-text c7">\
 								<li>This list is an IP whitelist, and no alarm will be issued when these IPs log in</li>\
 							</ul>\
                         </div>\
                         <div class="bt-box" style="display: none;">\
-                            <table id="ssh_logs_table" class="table table-hover" style="min-width: 500px;border: 0 none;"></table>\
+                            <table id="ssh_logs_table" class="table table-hover" style="min-width: 500px;"></table>\
                             <div class="page">\
                                 <div id="ssh_logs"></div>\
                             </div>\
@@ -465,7 +472,7 @@
             var item = this.ssl_scanning_list[index];
             layer.open({
                 type: 1,
-                title:'View details【 '+ item.name  +' 】',
+                title:'View details [ '+ item.name  +' ]',
                 area: '500px',
                 closeBtn:2,
                 btn: ['Confirm'],
@@ -700,7 +707,7 @@
                 layer.open({
                     type: 1,
                     title: '{{data["lan"]["PANEL_LOG"]}}',
-                    area: ['700px', '490px'],
+                    area: ['700px', '496px'],
                     shadeClose: false,
                     closeBtn: 2,
                     content: '<div class="setchmod bt-form  pb70">'

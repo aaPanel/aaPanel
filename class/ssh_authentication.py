@@ -100,7 +100,7 @@ class ssh_authentication:
     def install_pam_python(self,check):
         so_path=check[2]
         so_name=check[2].split('/')[-1]
-        public.ExecShell('/usr/local/curl/bin/curl -o %s http://download.bt.cn/btwaf_rule/pam_python_so/%s'%(so_path,so_name))
+        public.ExecShell('/usr/local/curl/bin/curl -o %s https://download.bt.cn/btwaf_rule/pam_python_so/%s'%(so_path,so_name))
         public.ExecShell("chmod 600 " + so_path)
         return True
     

@@ -23,29 +23,29 @@ class nginx:
         proxycontent = public.readFile(self.proxyfile)
         for i in [[ngconfcontent,self.nginxconf],[proxycontent,self.proxyfile]]:
             if not i[0]:
-                return public.returnMsg(False,"Can not find nginx config file [ {} ]".format(i[1]))
+                return public.return_msg_gettext(False,"Can not find nginx config file [ {} ]".format(i[1]))
         unitrep = "[kmgKMG]"
         conflist = []
-        ps = ["%s,%s" % (public.GetMsg("WORKER_PROCESSES"),public.GetMsg("WORKER_PROCESSES_AUTO")),
-              public.GetMsg("WORKER_CONNECTIONS"),
-              public.GetMsg("CONNECT_TIMEOUT_TIME"),
-              public.GetMsg("NGINX_ZIP"),
-              public.GetMsg("NGINX_ZIP_MIN"),
-              public.GetMsg("ZIP_COMP_LEVEL"),
-              public.GetMsg("UPLOAD_MAX_FILE"),
-              public.GetMsg("SERVER_NAME_HASH"),
-              public.GetMsg("CLIENT_HEADER_BUFF")]
+        ps = ["%s,%s" % (public.get_msg_gettext('Worker processes'),public.get_msg_gettext('Auto means automatic')),
+              public.get_msg_gettext('Worker connections'),
+              public.get_msg_gettext('Connection timeout'),
+              public.get_msg_gettext('Whether to enable compressed transmission'),
+              public.get_msg_gettext('Minimum file to compress'),
+              public.get_msg_gettext('Compression level'),
+              public.get_msg_gettext('Maximum file to upload'),
+              public.get_msg_gettext('Hash table size of server name'),
+              public.get_msg_gettext('Client header buffer size')]
         gets = ["worker_processes","worker_connections","keepalive_timeout","gzip","gzip_min_length","gzip_comp_level","client_max_body_size","server_names_hash_bucket_size","client_header_buffer_size"]
         n = 0
         for i in gets:
             rep = "(%s)\s+(\w+)" % i
             k = re.search(rep, ngconfcontent)
             if not k:
-                return public.returnMsg(False,"Get key {} False".format(k))
+                return public.return_msg_gettext(False,"Get key {} False".format(k))
             k = k.group(1)
             v = re.search(rep, ngconfcontent)
             if not v:
-                return public.returnMsg(False,"Get value {} False".format(v))
+                return public.return_msg_gettext(False,"Get value {} False".format(v))
             v = v.group(2)
             if re.search(unitrep,v):
                 u = str.upper(v[-1])
@@ -60,18 +60,18 @@ class nginx:
             kv = {"name":k,"value":v,"unit":u,"ps":psstr}
             conflist.append(kv)
             n += 1
-        ps = [public.GetMsg("CLIENT_BODY_BUFF")]
+        ps = [public.get_msg_gettext('Client body buffer')]
         gets = ["client_body_buffer_size"]
         n = 0
         for i in gets:
             rep = "(%s)\s+(\w+)" % i
             k = re.search(rep, proxycontent)
             if not k:
-                return public.returnMsg(False,"Get key {} False".format(k))
+                return public.return_msg_gettext(False,"Get key {} False".format(k))
             k=k.group(1)
             v = re.search(rep, proxycontent)
             if not v:
-                return public.returnMsg(False,"Get value {} False".format(v))
+                return public.return_msg_gettext(False,"Get value {} False".format(v))
             v = v.group(2)
             if re.search(unitrep, v):
                 u = str.upper(v[-1])
@@ -86,7 +86,6 @@ class nginx:
             kv = {"name":k, "value":v, "unit":u,"ps":psstr}
             conflist.append(kv)
             n+=1
-        print(conflist)
         return conflist
 
     def SetNginxValue(self,get):
@@ -109,10 +108,10 @@ class nginx:
             rep = "%s\s+[^kKmMgG\;\n]+" % c["name"]
             if c["name"] == "worker_processes" or c["name"] == "gzip":
                 if not re.search("auto|on|off|\d+", c["value"]):
-                    return public.returnMsg(False, 'INIT_ARGS_ERR')
+                    return public.return_msg_gettext(False, 'Parameter ERROR!')
             else:
                 if not re.search("\d+", c["value"]):
-                    return public.returnMsg(False, 'INIT_ARGS_ERR')
+                    return public.return_msg_gettext(False, 'Parameter ERROR!')
             if re.search(rep,ngconfcontent):
                 newconf = "%s %s" % (c["name"],c["value"])
                 ngconfcontent = re.sub(rep,newconf,ngconfcontent)
@@ -125,10 +124,10 @@ class nginx:
         if (isError != True):
             shutil.copyfile('/tmp/ng_file_bk.conf', self.nginxconf)
             shutil.copyfile('/tmp/proxyfile_bk.conf', self.proxyfile)
-            return public.returnMsg(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n",
+            return public.return_msg_gettext(False, 'ERROR: <br><a style="color:red;">' + isError.replace("\n",
                                                                                                           '<br>') + '</a>')
         public.serviceReload()
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     def add_nginx_access_log_format(self,args):
         '''
@@ -151,14 +150,14 @@ class nginx:
                 self.del_nginx_access_log_format(args)
             conf = public.readFile(self.nginxconf)
             if not conf:
-                return public.returnMsg(False,'NGINX_CONF_NOT_EXISTS')
+                return public.return_msg_gettext(False,'Nginx configuration file does not exist!')
             reg = 'http(\n|\s)+{'
             conf = re.sub(reg,'http\n\t{'+data,conf)
             public.writeFile(self.nginxconf,conf)
             public.serviceReload()
-            return public.returnMsg(True, 'SET_SUCCESS')
+            return public.return_msg_gettext(True, 'Setup successfully!')
         except:
-            return public.returnMsg(False, str(public.get_error_info()))
+            return public.return_msg_gettext(False, str(public.get_error_info()))
 
     def del_nginx_access_log_format(self,args):
         '''
@@ -169,13 +168,13 @@ class nginx:
         log_format_name = args.log_format_name
         conf = public.readFile(self.nginxconf)
         if not conf:
-            return public.returnMsg(False, 'NGINX_CONF_NOT_EXISTS')
+            return public.return_msg_gettext(False, 'Nginx configuration file does not exist!')
         reg = '\s*#LOG_FORMAT_BEGIN_{n}(\n|.)+#LOG_FORMAT_END_{n}\n?'.format(n=args.log_format_name)
         conf = re.sub(reg,'',conf)
         self._del_format_log_of_website(log_format_name)
         public.writeFile(self.nginxconf,conf)
         public.serviceReload()
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     def del_all_log_format(self,args):
         all_format = self.get_nginx_access_log_format(args)
@@ -223,7 +222,7 @@ class nginx:
             reg = "#LOG_FORMAT_BEGIN.*"
             conf = public.readFile(self.nginxconf)
             if not conf:
-                return public.returnMsg(False, 'NGINX_CONF_NOT_EXISTS')
+                return public.return_msg_gettext(False, 'Nginx configuration file does not exist!')
             data = re.findall(reg,conf)
             format_name = [i.split('LOG_FORMAT_BEGIN_')[-1] for i in data]
             format_log = {}
@@ -236,7 +235,7 @@ class nginx:
                 format_log[i] = self._process_log_format(tmp)
             return format_log
         except:
-            return public.returnMsg(False,public.get_error_info())
+            return public.return_msg_gettext(False,public.get_error_info())
 
     def set_format_log_to_website(self,args):
         '''
@@ -254,7 +253,7 @@ class nginx:
                 website_conf_file = '/www/server/panel/vhost/nginx/{}.conf'.format(site['name'])
                 conf = public.readFile(website_conf_file)
                 if not conf:
-                    return public.returnMsg(False, 'NGINX_CONF_NOT_EXISTS')
+                    return public.return_msg_gettext(False, 'Nginx configuration file does not exist!')
                 format_exist_reg = '(access_log\s+/www.*\.log).*;'
                 access_log = self.get_nginx_access_log(conf)
                 if not access_log:
@@ -267,9 +266,9 @@ class nginx:
                     continue
                 conf = re.sub(format_exist_reg,access_log,conf)
                 public.writeFile(website_conf_file,conf)
-            return public.returnMsg(True, 'SET_SUCCESS')
+            return public.return_msg_gettext(True, 'Setup successfully!')
         except:
-            return public.returnMsg(False, str(public.get_error_info()))
+            return public.return_msg_gettext(False, str(public.get_error_info()))
 
     def get_nginx_access_log(self,nginx_conf):
         try:

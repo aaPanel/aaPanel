@@ -62,31 +62,32 @@ class SiteDirAuth:
         :param get:
         :return:
         '''
-        if len(get.username) < 3 or len(get.password) < 3:
-            return public.returnMsg(False, 'The account number or password cannot be less than 3 characters')
-        name = get.name
+        # if len(get.username) < 3 or len(get.password) < 3:
+        #     return public.return_msg_gettext(False, 'Username or password cannot be less than 3 characters')
+        # name = get.name
+        param = self.__check_param(get)
+        if not param['status']:
+            return param
+        param = param['msg']
+        password = param['password']
+        username = param['username']
+        name = param['name']
         site_dir = get.site_dir
         if public.get_webserver() == "openlitespeed":
-            return public.returnMsg(False,"OpenLiteSpeed is currently not supported")
-        if not hasattr(get,"password") or not get.password or not hasattr(get,"username") or not get.username:
-            return public.returnMsg(False, 'Please enter an account or password')
+            return public.return_msg_gettext(False,"OpenLiteSpeed is currently not supported")
+        # if not hasattr(get,"password") or not get.password or not hasattr(get,"username") or not get.username:
+        #     return public.return_msg_gettext(False, 'Please enter an account or password')
         if not get.site_dir:
-            return public.returnMsg(False, 'Please enter the directory to be protected')
+            return public.return_msg_gettext(False, 'Please enter the directory to be protected')
         if not get.name:
-            return public.returnMsg(False, 'Please enter the Name')
-
-        # if site_dir[0] != "/" or site_dir[-1] != "/":
-        #     return public.returnMsg(False, 'Directory format is incorrect')
-            # site_dir = site_dir[1:]
-            # if site_dir[-1] == "/":
-            #     site_dir = site_dir[:-1]
-        passwd = public.hasPwd(get.password)
+            return public.return_msg_gettext(False, 'Please enter the Name')
+        passwd = public.hasPwd(password)
         site_info = self.get_site_info(get.id)
         site_name = site_info["site_name"]
         if self._check_site_authorization(site_name):
-            return public.returnMsg(False, 'Site password protection has been set, please cancel and then set. Site directory --> Password access')
+            return public.return_msg_gettext(False, 'Site password protection has been set, please cancel and then set. Site directory --> Password access')
         if self._check_dir_auth(site_name, name,site_dir):
-            return public.returnMsg(False, 'Directory has been protected')
+            return public.return_msg_gettext(False, 'Directory has been protected')
         auth = "{user}:{passwd}".format(user=get.username,passwd=passwd)
         auth_file = '{setup_path}/pass/{site_name}'.format(setup_path=self.setup_path,site_name=site_name)
         if not os.path.exists(auth_file):
@@ -108,7 +109,7 @@ class SiteDirAuth:
         conf = {"name":name,"site_dir":get.site_dir,"auth_file":auth_file}
         self._write_conf(conf,site_name)
         public.serviceReload()
-        return public.returnMsg(True,"Created successfully")
+        return public.return_msg_gettext(True,"Successfully created")
 
     # 检查配置是否存在
     def _check_dir_auth(self, site_name, name,site_dir):
@@ -126,6 +127,10 @@ class SiteDirAuth:
             conf = public.readFile(self.setup_path + '/panel/vhost/'+public.get_webserver()+'/'+siteName+'.conf');
             if public.get_webserver() == 'nginx':
                 rep = "enable-php-(\w{2,5})\.conf"
+                tmp = re.search(rep,conf)
+                if not tmp:
+                    rep = "enable-php-(\d+-wpfastcgi).conf"
+                    re.search(rep, conf)
             else:
                 rep = "php-cgi-(\w{2,5})\.sock"
             tmp = re.search(rep,conf).groups()
@@ -134,7 +139,7 @@ class SiteDirAuth:
             else:
                 return ""
         except:
-            return public.returnMsg(False, 'SITE_PHPVERSION_ERR_A22')
+            return public.return_msg_gettext(False, 'Apache2.2 does NOT support MultiPHP!')
 
     # 获取站点名
     def get_site_info(self,id):
@@ -179,6 +184,8 @@ class SiteDirAuth:
     %s
     #AUTH_END
 }''' % (site_dir,auth_file,php_conf)
+                public.writeFile("/tmp/2", conf)
+
             else:
             # 设置apache
                 conf = '''<Directory "{site_path}{site_dir}">
@@ -211,10 +218,12 @@ class SiteDirAuth:
                 conf = public.readFile(file)
                 if i == "apache":
                     if act == "create":
-                        rep = "combined(\n|.)+IncludeOptional.*\/dir_auth\/.*conf"
-                        rep1 = "combined"
-                        if not re.search(rep,conf):
-                            conf = conf.replace(rep1, rep1 + "\n\t#Directory protection rules, do not manually delete\n\tIncludeOptional {}".format(dir_auth_file))
+                        rep = "IncludeOptional.*\/dir_auth\/.*conf(\n|.)+<\/VirtualHost>"
+                        rep1 = "</VirtualHost>"
+                        if not re.search(rep, conf):
+                            conf = conf.replace(rep1,
+                                                "\n\t#Directory protection rules, do not manually delete\n\tIncludeOptional {}\n</VirtualHost>".format(
+                                                    dir_auth_file))
                     else:
                         rep = "\n*#Directory protection rules, do not manually delete\n+\s+IncludeOptional[\s\w\/\.\*]+"
                         conf = re.sub(rep, '', conf)
@@ -240,7 +249,7 @@ class SiteDirAuth:
             # for i in range(len(a_conf)-1,-1,-1):
             #     if site_name == a_conf[i]["sitename"] and a_conf[i]["proxyname"]:
             #         del a_conf[i]
-            return public.returnMsg(False, 'ERROR: %s<br><a style="color:red;">' % public.GetMsg("CONFIG_ERROR") + isError.replace("\n",
+            return public.return_msg_gettext(False, 'ERROR: %s<br><a style="color:red;">' % public.get_msg_gettext('Configuration ERROR') + isError.replace("\n",
                                                                                                           '<br>') + '</a>')
 
     # 删除密码保护
@@ -256,7 +265,7 @@ class SiteDirAuth:
         site_name = site_info["site_name"]
         conf = self._read_conf()
         if site_name not in conf:
-            return public.returnMsg(False,"The website does not exist in the configuration：{}".format(site_name))
+            return public.return_msg_gettext(False,"The website does not exist in the configuration：{}",(site_name,))
         for i in range(len(conf[site_name])):
             if name in conf[site_name][i].values():
                 print(conf[site_name][i])
@@ -275,7 +284,7 @@ class SiteDirAuth:
             self.set_conf(site_name,"delete")
         if not hasattr(get,'multiple'):
             public.serviceReload()
-        return public.returnMsg(True,"DEL_SUCCESS")
+        return public.return_msg_gettext(True,'Successfully deleted!')
 
     # 修改目录保护密码
     def modify_dir_auth_pass(self,get):
@@ -287,6 +296,14 @@ class SiteDirAuth:
         :param get:
         :return:
         '''
+        # if not hasattr(get,"password") or not get.password or not hasattr(get,"username") or not get.username:
+        #     return public.return_msg_gettext(False, 'Username or password cannot be less than 3 characters')
+        param = self.__check_param(get)
+        if not param['status']:
+            return param
+        param = param['msg']
+        password = param['password']
+        username = param['username']
         name = get.name
         site_info = self.get_site_info(get.id)
         site_name = site_info["site_name"]
@@ -295,7 +312,7 @@ class SiteDirAuth:
         auth_file = '{setup_path}/pass/{site_name}/{name}.pass'.format(setup_path=self.setup_path,site_name=site_name,name=name)
         public.writeFile(auth_file,auth)
         public.serviceReload()
-        return public.returnMsg(True,"EDIT_SUCCESS")
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     # 获取目录保护列表
     def get_dir_auth(self,get):
@@ -314,3 +331,39 @@ class SiteDirAuth:
         if site_name in conf:
             return {site_name:conf[site_name]}
         return {}
+
+    def __check_param(self, get):
+        values = {}
+        if hasattr(get, "password"):
+            if not get.password:
+                return public.returnMsg(False, 'Please enter password!')
+            password = get.password.strip()
+            if len(password) < 3:
+                return public.returnMsg(False, 'Password cannot be less than 3 characters')
+            if re.search('\s', password):
+                return public.returnMsg(False, 'Password cannot contain spaces')
+            values['password'] = password
+
+        if hasattr(get, "username"):
+            if not get.username:
+                return public.returnMsg(False, 'Please enter username!')
+            username = get.username.strip()
+            if len(username) < 3:
+                return public.returnMsg(False, 'Username cannot be less than 3 characters')
+            if re.search('\s', username):
+                return public.returnMsg(False, 'Username cannot contain spaces')
+            values['username'] = username
+
+        if hasattr(get, "name"):
+            if not get.name:
+                return public.returnMsg(False, 'Please enter a name!')
+            name = get.name.strip()
+            if len(name) < 3:
+                return public.returnMsg(False, 'Name cannot be less than 3 characters')
+            if re.search('\s', name):
+                return public.returnMsg(False, 'Name cannot contain spaces')
+            if re.search('[\/\"\'\!@#$%^&*()+={}\[\]\:\;\?><,./\\\]+', name):
+                return public.returnMsg(False, 'Name format must be [ aaa_bbb ]')
+            values['name'] = name
+
+        return public.returnMsg(True, values)

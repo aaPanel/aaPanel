@@ -189,10 +189,10 @@ class panelSearch:
         noword 1 不输出行信息  0 默认
     '''
     def get_search(self, args):
-        if 'text' not in args or not args.text: return {'error': 'Search content cannot be empty'}
-        if 'exts' not in args or not args.exts: return {'error': 'The suffix cannot be empty; please enter [ *.* ] to search all files'}
-        if 'path' not in args or not args.path or args.path == '/': return {'error': 'The directory cannot be empty or /'}
-        if not os.path.isdir(args.path): return {'error': 'Directory does not exist'}
+        if 'text' not in args or not args.text: return {'error': public.get_msg_gettext('Search content cannot be empty')}
+        if 'exts' not in args or not args.exts: return {'error': public.get_msg_gettext('The suffix cannot be empty; please enter [ *.* ] to search all files')}
+        if 'path' not in args or not args.path or args.path == '/': return {'error': public.get_msg_gettext('The directory cannot be empty or /')}
+        if not os.path.isdir(args.path): return {'error': public.get_msg_gettext('Directory does not exist')}
         text=args.text
         exts=args.exts
         path=args.path
@@ -217,11 +217,11 @@ class panelSearch:
         noword 1 不输出行信息  0 默认
     '''
     def get_replace(self, args):
-        if 'text' not in args or not args.text: return {'error': 'Search content cannot be empty'}
-        if 'rtext' not in args or not args.text: return {'error': 'The content to be replaced cannot be empty'}
-        if 'exts' not in args or not args.exts: return {'error': 'The suffix cannot be empty; please enter [ *.* ] to search all files'}
-        if 'path' not in args or not args.path or args.path == '/': return {'error': 'The directory cannot be empty or /'}
-        if not os.path.isdir(args.path): return {'error': 'Directory does not exist'}
+        if 'text' not in args or not args.text: return {'error': public.get_msg_gettext('Search content cannot be empty')}
+        if 'rtext' not in args or not args.text: return {'error': public.get_msg_gettext('The content to be replaced cannot be empty')}
+        if 'exts' not in args or not args.exts: return {'error': public.get_msg_gettext('The suffix cannot be empty; please enter [ *.* ] to search all files')}
+        if 'path' not in args or not args.path or args.path == '/': return {'error': public.get_msg_gettext('The directory cannot be empty or /')}
+        if not os.path.isdir(args.path): return {'error': public.get_msg_gettext('Directory does not exist')}
         is_backup = int(args.isbackup) if 'isbackup' in args else 0
         text = args.text
         rtext = args.rtext

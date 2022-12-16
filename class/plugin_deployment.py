@@ -12,7 +12,7 @@
 #+--------------------------------------------------------------------
 
 import public,json,os,time,sys,re
-from BTPanel import session
+from BTPanel import session,cache
 class obj: id=0
 class plugin_deployment:
     __setupPath = 'data'
@@ -21,6 +21,7 @@ class plugin_deployment:
     __tmp = '/www/server/panel/temp/'
     timeoutCount = 0
     oldTime = 0
+    _speed_key = 'dep_download_speed'
 
     #获取列表
     def GetList(self,get):
@@ -76,7 +77,7 @@ class plugin_deployment:
         if sys.version_info[0] == 2: filename = filename.encode('utf-8')
         if os.path.exists(filename): 
             if os.path.getsize(filename) > 100: return pinfo
-        public.ExecShell("wget -O " + filename + ' http://www.bt.cn' + m_uri + " &")
+        public.ExecShell("wget -O " + filename + ' https://www.bt.cn' + m_uri + " &")
         return pinfo
 
     #获取插件列表
@@ -103,7 +104,7 @@ class plugin_deployment:
         try:
             jsonFile = self.__setupPath + '/deployment_list.json'
             if not 'package' in session or not os.path.exists(jsonFile) or hasattr(get,'force'):
-                downloadUrl = 'http://www.bt.cn/api/panel/get_deplist'
+                downloadUrl = 'https://www.bt.cn/api/panel/get_deplist'
                 pdata = public.get_pdata()
                 tmp = json.loads(public.httpPost(downloadUrl,pdata,3))
                 if not tmp: return public.returnMsg(False,'Failed to get from the cloud!')
@@ -269,7 +270,7 @@ class plugin_deployment:
         #下载文件
         if isDownload:
             self.WriteLogs(json.dumps({'name':'Downloading file ...','total':0,'used':0,'pre':0,'speed':0}))
-            if pinfo['versions'][0]['download']: self.DownloadFile('http://www.bt.cn/api/Pluginother/get_file?fname=' + pinfo['versions'][0]['download'], packageZip)
+            if pinfo['versions'][0]['download']: self.DownloadFile('https://www.bt.cn/api/Pluginother/get_file?fname=' + pinfo['versions'][0]['download'], packageZip)
 
         if not os.path.exists(packageZip): return public.returnMsg(False,'File download failed!' + packageZip)
 
@@ -470,7 +471,7 @@ class plugin_deployment:
         p = panelAuth.panelAuth()
         pdata = p.create_serverid(None);
         pdata['pid'] = id;
-        p_url = 'http://www.bt.cn/api/pluginother/create_order_okey'
+        p_url = 'https://www.bt.cn/api/pluginother/create_order_okey'
         public.httpPost(p_url,pdata)
 
     #获取进度

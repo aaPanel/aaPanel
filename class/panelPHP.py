@@ -61,15 +61,8 @@ class panelPHP:
         data = {}
         data['GET'] = request.args.to_dict()
         data['POST'] = {}
-        x_token = request.headers.get('x-http-token')
-        if x_token:
-            aes_pwd = x_token[:8] + x_token[40:48]
         for key in request.form.keys():
             data['POST'][key] = str(request.form.get(key,''))
-            if x_token:
-                if len(data['POST'][key]) > 5:
-                    if data['POST'][key][:6] == 'BT-CRT':
-                        data['POST'][key] = public.aes_decrypt(data['POST'][key][6:],aes_pwd)
         data['POST']['client_ip'] = public.GetClientIp()
         data = json.dumps(data)
         public.writeFile(self.__args_tmp,data)
@@ -93,7 +86,7 @@ class panelPHP:
              php_vs = json.loads(public.readFile(php_v_file).replace('.',''))
         else:
             #否则兼容所有版本
-            php_vs = ["80","74","73","72","71","70","56","55","54","53","52"]
+            php_vs = public.get_php_versions(True)
         #判段兼容的PHP版本是否安装
         php_path = "/www/server/php/"
         php_v = None
@@ -125,7 +118,7 @@ class panelPHP:
             else:
                 php_vs = sorted(php_version,reverse=True)
         else:
-            php_vs = ["80","74","73","72","71","70","56","55","54","53","52"]
+            php_vs = public.get_php_versions(True)
         php_path = "/www/server/php/"
         php_v = None
         for pv in php_vs:
@@ -601,7 +594,7 @@ class FPM(object):
             'DOCUMENT_ROOT': self.document_root,
             'SERVER_PROTOCOL' : 'HTTP/1.1',
             'REMOTE_ADDR': '127.0.0.1',
-            'REMOTE_PORT': '7800',
+            'REMOTE_PORT': '8888',
             'SERVER_ADDR': '127.0.0.1',
             'SERVER_PORT': '80',
             'SERVER_NAME': 'BT-Panel'

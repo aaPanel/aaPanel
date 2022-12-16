@@ -180,20 +180,53 @@
 </div>
 </div>
 <style>
-.layer-create-content .layui-layer-content{
-    overflow: inherit;
-}
+    .layer-create-content .layui-layer-content {
+        overflow: inherit;
+    }
+    .textname i.form-checkbox {
+        position: relative;
+        top: 3px;
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        border-radius: 2px;
+        cursor: pointer;
+    }
+    .textname i.form-checkbox.active {
+        background-color: #20a53a;
+        border-color: #20a53a;
+    }
+    .textname i.form-checkbox.active::after {
+        content: '';
+        position: absolute;
+        display: block;
+        left: 50%;
+        top: 50%;
+        margin-left: -2.5px;
+        margin-top: -6px;
+        width: 5px;
+        height: 10px;
+        border: solid #fff;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+    }
+    .textname .form-checkbox-label {
+        cursor: pointer;
+    }
 </style>
 {% endblock %}
 
 {% block scripts %}
-	<script src="/static/js/crontab.js?date20200106={{g['version']}}"></script>
-	<script type="text/javascript">
-	    setCookie('serverType',"{{session['webserver']}}");
-		toWeek();
-		toHour();
-		toMinute();
-		toShell();
-		getCronData();
-	</script>
+{{ super() }}
+<script src="/static/js/crontab.js?date20200106={{g['version']}}"></script>
+<script type="text/javascript">
+    setCookie('serverType', "{{session['webserver']}}");
+    toWeek();
+    toHour();
+    toMinute();
+    toShell();
+    getCronData();
+</script>
 {% endblock %}

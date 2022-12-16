@@ -6,73 +6,74 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-import re, os, sys, public, json
+
+import re,os,sys,public,json
 import pymysql
 
-
-class mysql:
-    __DB_PASS = ''
-    __DB_USER = ''
-    __DB_NAME = ''
+class panelMysql:
+    __DB_PASS = None
+    __DB_USER = 'root'
+    __DB_NAME = None
     __DB_PORT = 3306
     __DB_HOST = 'localhost'
     __DB_PREFIX = ''
     __DB_CONN = None
-    __DB_CUR = None
-    __DB_ERR = None
-    __DB_NET = None
-    __DB_TABLE = ""  # 被操作的表名称
-    __OPT_WHERE = ""  # where条件
-    __OPT_LIMIT = ""  # limit条件
-    __OPT_ORDER = ""  # order条件
-    __OPT_FIELD = "*"  # field条件
-    __OPT_PARAM = ()  # where值
+    __DB_CUR  = None
+    __DB_ERR  = None
+    __DB_TABLE   = ""              # 被操作的表名称
+    __OPT_WHERE  = ""              # where条件
+    __OPT_LIMIT  = ""              # limit条件
+    __OPT_ORDER  = ""              # order条件
+    __OPT_FIELD  = "*"             # field条件
+    __OPT_PARAM  = ()              # where值
+    _USER = None
 
     def __init__(self):
         pass
 
-    def set_name(self, name):
-        self.__DB_NAME = name
+    def set_name(self,name):
+        self.__DB_NAME = str(name)
         return self
 
-    def set_host(self, host, port, name, username, password, prefix=''):
-        self.__DB_HOST = host
-        self.__DB_PORT = port
-        self.__DB_NAME = name
-        self.__DB_USER = username
-        self.__DB_PASS = password
+    def set_prefix(self,prefix):
         self.__DB_PREFIX = prefix
+        return self
+
+    def set_host(self,host,port,name,username,password,prefix = ''):
+        self.__DB_HOST = host
+        self.__DB_PORT = int(port)
+        self.__DB_NAME = name
+        if self.__DB_NAME: self.__DB_NAME = str(self.__DB_NAME)
+        self.__DB_USER = str(username)
+        self._USER = str(username)
+        self.__DB_PASS = str(password)
+        self.__DB_PREFIX = prefix
+        self.__GetConn()
         return self
 
     #连接MYSQL数据库
     def __GetConn(self):
-        if self.__DB_NET: return True
         try:
-            self.__DB_CONN = pymysql.connect(host=self.__DB_HOST,
-                                             port=self.__DB_PORT,
-                                             user=self.__DB_USER,
-                                             passwd=self.__DB_PASS)
+            self.__DB_CONN = pymysql.connect(host=self.__DB_HOST,user=self.__DB_USER,passwd=str(self.__DB_PASS),db=self.__DB_NAME,port=self.__DB_PORT,connect_timeout=15,read_timeout=60,write_timeout=60)
+        except:
+            self.__DB_CONN = pymysql.connect(host=self.__DB_HOST,user=self.__DB_USER,passwd=str(self.__DB_PASS),db=self.__DB_NAME,port=self.__DB_PORT)
+        self.__DB_CUR  = self.__DB_CONN.cursor()
+        return True
 
-            self.__DB_CUR = self.__DB_CONN.cursor()
-            self.__DB_NET = True
-            return True
-        except pymysql.Error as e:
-            self.__DB_ERR = e
-            return False
-
-    def table(self, table):
+    def table(self,table):
         #设置表名
         self.__DB_TABLE = self.__DB_PREFIX + table
         return self
 
-    def where(self, where, param):
+
+    def where(self,where,param):
         #WHERE条件
         if where:
             self.__OPT_WHERE = " WHERE " + where
             self.__OPT_PARAM = self.__to_tuple(param)
         return self
 
-    def __to_tuple(self, param):
+    def __to_tuple(self,param):
         #将参数转换为tuple
         if type(param) != tuple:
             if type(param) == list:
@@ -103,6 +104,7 @@ class mysql:
     def select(self):
         #查询数据集
         self.__GetConn()
+        if not self.__DB_CUR: return self.__DB_ERR
         try:
             self.__get_columns()
             sql = "SELECT " + self.__OPT_FIELD + " FROM " + self.__DB_TABLE + self.__OPT_WHERE + self.__OPT_ORDER + self.__OPT_LIMIT
@@ -119,18 +121,18 @@ class mysql:
                         tmp1[key.strip('`')] = row[i]
                         i += 1
                     tmp.append(tmp1)
-                    del (tmp1)
+                    del(tmp1)
                 data = tmp
-                del (tmp)
+                del(tmp)
             else:
                 #将元组转换成列表
                 tmp = list(map(list, data))
                 data = tmp
-                del (tmp)
+                del(tmp)
             self.__close()
             return data
         except Exception as ex:
-            return public.get_error_info()
+            return "error: " + str(ex)
 
     def get(self):
         self.__get_columns()
@@ -291,29 +293,33 @@ class mysql:
         except Exception as ex:
             return "error: " + str(ex)
 
-    def execute(self, sql, is_close=True):
+    def execute(self,sql,param = ()):
         #执行SQL语句返回受影响行
         if not self.__GetConn(): return self.__DB_ERR
         try:
-            result = self.__DB_CUR.execute(sql)
+            self.__OPT_PARAM = list(self.__to_tuple(param))
+            result = self.__DB_CUR.execute(sql,self.__OPT_PARAM)
             self.__DB_CONN.commit()
-            if is_close: self.__close()
+            self.__close()
             return result
         except Exception as ex:
             return ex
 
-    def query(self, sql, is_close=True):
+
+    def query(self,sql,is_close=True,param=()):
         #执行SQL语句返回数据集
         if not self.__GetConn(): return self.__DB_ERR
         try:
-            self.__DB_CUR.execute(sql)
+            self.__OPT_PARAM = list(self.__to_tuple(param))
+            self.__DB_CUR.execute(sql,self.__OPT_PARAM)
             result = self.__DB_CUR.fetchall()
             #将元组转换成列表
-            data = list(map(list, result))
+            data = list(map(list,result))
             if is_close: self.__Close()
             return data
         except Exception as ex:
             return ex
+
 
     #关闭连接
     def __Close(self):

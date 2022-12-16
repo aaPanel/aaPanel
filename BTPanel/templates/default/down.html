@@ -1017,7 +1017,7 @@ td {
     <!--<ul class="bg-bubbles"><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ul>-->
     <div class="div-center">
         <div class="file-down-header">
-            <div class="file-name">Share file【 <span style="font-size:14px;">{{data.filename}} </span> 】</div>
+            <div class="file-name">Share file [ <span style="font-size:14px;">{{data.filename}} </span> ]</div>
             <div class="file-validity-time">Term of validity：{{data.expire}}</div>
         </div>
         {% if not data['PATH'] %}
@@ -1282,7 +1282,7 @@ td {
             layer.open({
                 type: 1,
                 closeBtn: 1,
-                title: 'Preview pictures【'+fileName+'】',
+                title: 'Preview pictures [ '+fileName+' ]',
                 area: area,
                 shadeClose: true,
                 content: '<div class="showpicdiv"><img width="100%" src="' + imgUrl + '"></div>'

@@ -339,11 +339,11 @@ var host_trem = {
                     }
                     that.editor_host_view({
                         form:rdata,
-                        config: {btn: 'Save', title: 'Edit server information 【'+ host +'】'}
+                        config: {btn: 'Save', title: 'Edit server information [ '+ host +' ]'}
                     });
                 });
             }else{
-                bt.confirm({title:'Delete information',msg:'Delete service information 【'+ host +'】, continue?',icon:0},function(index){
+                bt.confirm({title:'Delete information',msg:'Delete service information [ '+ host +' ], continue?',icon:0},function(index){
                     that.remove_host(host,function(rdata){
                         layer.close(index);
                         that.reader_host_list(function(){
@@ -560,10 +560,12 @@ var host_trem = {
                 case 0:
                     $('.c_password_view').addClass('show').removeClass('hidden');
                     $('.c_pkey_view').addClass('hidden').removeClass('show').find('input').val('');
+                    $('.key_pwd_line').addClass('hidden').removeClass('show');
                 break;
                 case 1:
                     $('.c_password_view').addClass('hidden').removeClass('show').find('input').val('');
                     $('.c_pkey_view').addClass('show').removeClass('hidden');
+                    $('.key_pwd_line').addClass('show').removeClass('hidden');
                 break;
             }
         });
@@ -652,30 +654,39 @@ var host_trem = {
     */
     editor_host_view:function(obj){
         var that = this;
-        if (!obj) obj = {form: this.host_form, config: {btn: 'Submit', title: 'Add host information'}}
+        if (!obj) {
+            obj = {
+                form: this.host_form,
+                config: {
+                    btn: 'Submit', title: 'Add host information'
+                }
+            }
+        }
         this.render_template({
             html: host_form_view.innerHTML,
             data: obj
         }, function (html) {
             layer.open({
                 type: 1 //Page层类型
-                ,area: '510px'
-                ,closeBtn: 2
-                ,title: obj.config.title
-                ,btn: [obj.config.btn, 'Cancel']
-                ,content: html
-                ,success: function (layers, index){
-                    $('.auth_type_checkbox').click(function(){
+                , area: '510px'
+                , closeBtn: 2
+                , title: obj.config.title
+                , btn: [obj.config.btn, 'Cancel']
+                , content: html
+                , success: function (layers, index) {
+                    $('.auth_type_checkbox').click(function () {
                         var index = $(this).index();
                         $(this).addClass('btn-success').removeClass('btn-default').siblings().removeClass('btn-success').addClass('btn-default')
-                        switch(index){
+                        switch (index) {
                             case 0:
                                 $('.c_password_view').addClass('show').removeClass('hidden');
                                 $('.c_pkey_view').addClass('hidden').removeClass('show').find('input').val('');
-                            break;
-                            case 1:
-                                $('.c_password_view').addClass('hidden').removeClass('show').find('input').val('');
-                                $('.c_pkey_view').addClass('show').removeClass('hidden');
+                                $('.key_pwd_line').addClass('hidden').removeClass('show');
+                              break;
+                          case 1:
+                            $('.c_password_view').addClass('hidden').removeClass('show').find('input').val('');
+                            $('.c_pkey_view').addClass('show').removeClass('hidden');
+                            $('.key_pwd_line').addClass('show').removeClass('hidden');
                             break;
                         }
                     });
@@ -791,30 +802,37 @@ var host_trem = {
      * @name 常用信息添加或编辑
      * @author chudong<2020-08-10>
      * @param {Objeact} obj 需要编辑的form数据,可以为空，为空则添加
-     * @return void 
-    */
-    editor_command_view:function(obj){
+     * @return void
+     */
+    editor_command_view: function (obj) {
         var that = this;
-        if (!obj) obj = {form: this.command_form, config: {btn: 'Submit', title: 'Add command information'}};
+        if (!obj) {
+            obj = {
+                form: this.command_form,
+                config: {
+                    btn: 'Submit', title: 'Add command information'
+                }
+            };
+        }
         this.render_template({
             html: shell_form_view.innerHTML,
             data: obj
         }, function (html) {
             layer.open({
                 type: 1 //Page层类型
-                ,area: '510px'
-                ,closeBtn: 2
-                ,title: obj.config.title
-                ,btn: [obj.config.btn, 'Cancel']
-                ,content: html
-                ,yes: function (indexs,layero){
-                    var shell = $('[name="shell"]').val(),title = $('[name="title"]').val();
-                    if(title == ''){
-                        bt.msg({status:false,msg:'Command description cannot be empty!'});
+                , area: '510px'
+                , closeBtn: 2
+                , title: obj.config.title
+                , btn: [obj.config.btn, 'Cancel']
+                , content: html
+                , yes: function (indexs, layero) {
+                    var shell = $('[name="shell"]').val(), title = $('[name="title"]').val();
+                    if (title == '') {
+                        bt.msg({status: false, msg: 'Command description cannot be empty!'});
                         return false;
                     }
-                    if(shell == ''){
-                        bt.msg({status:false,msg:'Command cannot be empty!'});
+                    if (shell == '') {
+                        bt.msg({status: false, msg: 'Command cannot be empty!'});
                         return false;
                     }
 

@@ -83,7 +83,7 @@ class panelRedirect:
                 else:
                     sk.connect((d, 443))
         except:
-            return public.returnMsg(False, "CANT_GET_URL")
+            return public.return_msg_gettext(False, 'Can NOT get target URL')
     # 计算proxyname md5
     def __calc_md5(self,redirectname):
         import hashlib
@@ -112,7 +112,7 @@ class panelRedirect:
             if get.sitename in sitenamelist:
                 rep = "include.*\/redirect\/.*\*.conf;"
                 if not re.search(rep,ng_conf):
-                    ng_conf = ng_conf.replace("#SSL-END","#SSL-END\n\t%s\n\t" % public.GetMsg("NGINX_REDIRECT_REP") + "include " + ng_redirectfile + ";")
+                    ng_conf = ng_conf.replace("#SSL-END","#SSL-END\n\t%s\n\t" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid') + "include " + ng_redirectfile + ";")
                     public.writeFile(ng_file,ng_conf)
 
             else:
@@ -130,18 +130,18 @@ class panelRedirect:
         if os.path.exists(ap_file):
             ap_conf = public.readFile(ap_file)
             if p_conf == "[]":
-                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.GetMsg("NGINX_REDIRECT_REP")
+                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid')
                 ap_conf = re.sub(rep, '', ap_conf)
                 public.writeFile(ap_file, ap_conf)
                 return
             if sitename in p_conf:
-                rep = "%s(\n|.)+IncludeOptional.*\/redirect\/.*conf" % public.GetMsg("NGINX_REDIRECT_REP1")
+                rep = "%s(\n|.)+IncludeOptional.*\/redirect\/.*conf" % public.get_msg_gettext('#referenced redirect rule')
                 rep1 = "combined"
                 if not re.search(rep,ap_conf):
-                    ap_conf = ap_conf.replace(rep1, rep1 + "\n\t%s" % public.GetMsg("NGINX_REDIRECT_REP") +"\n\tIncludeOptional " + ap_redirectfile)
+                    ap_conf = ap_conf.replace(rep1, rep1 + "\n\t%s" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid') +"\n\tIncludeOptional " + ap_redirectfile)
                     public.writeFile(ap_file,ap_conf)
             else:
-                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.GetMsg("NGINX_REDIRECT_REP")
+                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid')
                 ap_conf = re.sub(rep,'', ap_conf)
                 public.writeFile(ap_file, ap_conf)
 
@@ -149,52 +149,52 @@ class panelRedirect:
     def __CheckRedirectStart(self,get,action=""):
         isError = public.checkWebConfig()
         if (isError != True):
-            return public.returnMsg(False, 'GET_ERR_IN_CONFILE')
+            return public.return_msg_gettext(False, 'An error was detected in the configuration file. Please solve it before proceeding')
         if action == "create":
             #检测名称是否重复
             if sys.version_info.major < 3:
                 if len(get.redirectname) < 3 or len(get.redirectname) > 15:
-                    return public.returnMsg(False, 'NAME_LEN')
+                    return public.return_msg_gettext(False, 'Database name cannot be more than 16 characters!')
             else:
                 if len(get.redirectname.encode("utf-8")) < 3 or len(get.redirectname.encode("utf-8")) > 15:
-                    return public.returnMsg(False, 'NAME_LEN')
+                    return public.return_msg_gettext(False, 'Database name cannot be more than 16 characters!')
             if self.__CheckRedirect(get.sitename,get.redirectname):
-                return public.returnMsg(False, 'REDIRECT_EXIST')
+                return public.return_msg_gettext(False, 'Specified redirect name already exists')
         #检测是否选择域名
         if get.domainorpath == "domain":
             if not json.loads(get.redirectdomain):
-                return public.returnMsg(False, 'SELECT_RED_DOMAIN')
+                return public.return_msg_gettext(False, 'Please select redirected domain')
         else:
             if not get.redirectpath:
-                return public.returnMsg(False, 'INPUT_RED_DOMAIN')
+                return public.return_msg_gettext(False, 'Please enter redirected path')
             #repte = "[\?\=\[\]\)\(\*\&\^\%\$\#\@\!\~\`{\}\>\<\,\',\"]+"
             # 检测路径格式
             if "/" not in get.redirectpath:
-                return public.returnMsg(False, "PATH_ERR")
+                return public.return_msg_gettext(False, 'Path format is incorrect, the format is /xxx')
             #if re.search(repte, get.redirectpath):
-            #    return public.returnMsg(False, "代理目录不能有以下特殊符号 ?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\,',\"]")
+            #    return public.return_msg_gettext(False, "代理目录不能有以下特殊符号 ?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\,',\"]")
         #检测域名是否已经存在配置文件
         repeatdomain = self.__CheckRepeatDomain(get,action)
         if repeatdomain:
-            return public.returnMsg(False, 'RED_DOMAIN_EXIST' , (repeatdomain,))
+            return public.return_msg_gettext(False, 'Redirected domain already exists {}' , (repeatdomain,))
         #检测路径是否有存在配置文件
         repeatpath = self.__CheckRepeatPath(get)
         if repeatpath:
-            return public.returnMsg(False, 'RED_DOMAIN_EXIST' , (repeatpath,))
+            return public.return_msg_gettext(False, 'Redirected domain already exists {}' , (repeatpath,))
         #检测目标URL格式
         rep = "http(s)?\:\/\/([a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.)+([a-zA-Z0-9][a-zA-Z0-9]{0,62})+.?"
         if not re.match(rep, get.tourl):
-            return public.returnMsg(False, 'URL_FORMAT_ERR' ,(get.tourl,))
+            return public.return_msg_gettext(False, 'The target URL format is incorrect {}' ,(get.tourl,))
         #检测目标URL是否可用
         #if self.__CheckRedirectUrl(get):
-        #    return public.returnMsg(False, '目标URL无法访问')
+        #    return public.return_msg_gettext(False, '目标URL无法访问')
 
         #检查目标URL的域名和被重定向的域名是否一样
         if get.domainorpath == "domain":
             for d in json.loads(get.redirectdomain):
                 tu = self.GetToDomain(get.tourl)
                 if d == tu:
-                    return public.returnMsg(False,public.GetMsg("DOMAIN_SAMEAS_URL",(d,)))
+                    return public.return_msg_gettext(False,public.get_msg_gettext('Domain name {} is the same as the target domain name, please deselect it',(d,)))
 
         if get.domainorpath == "path":
             domains = self.GetAllDomain(get.sitename)
@@ -203,7 +203,7 @@ class panelRedirect:
             for d in domains:
                 ad = "%s%s" % (d,get.redirectpath) #站点域名+重定向路径
                 if tu == ad:
-                    return public.GetMsg("URL_SAMEAS_REDPATH",(tu,))
+                    return public.get_msg_gettext('{}, the target URL is the same as the redirected path',(tu,))
     #创建重定向
     def CreateRedirect(self,get):
 
@@ -226,7 +226,7 @@ class panelRedirect:
         self.SetRedirectApache(get.sitename)
         self.SetRedirect(get)
         public.serviceReload()
-        return public.returnMsg(True, 'CREATE_SUCCESS')
+        return public.return_msg_gettext(True, 'Successfully created file!')
 
     # 设置重定向
     def SetRedirect(self,get):
@@ -331,7 +331,7 @@ class panelRedirect:
                 for i in range(len(p_conf) - 1, -1, -1):
                     if get.sitename == p_conf[i]["sitename"] and p_conf[i]["redirectname"]:
                         del(p_conf[i])
-                return public.returnMsg(False, '%s<br><a style="color:red;">' % public.GetMsg("HAVE_ERR") + isError.replace("\n",'<br>') + '</a>')
+                return public.return_msg_gettext(False, '%s<br><a style="color:red;">' % public.get_msg_gettext('Sorry, something went wrong') + isError.replace("\n",'<br>') + '</a>')
 
         else:
             redirectname_md5 = self.__calc_md5(get.redirectname)
@@ -361,7 +361,7 @@ class panelRedirect:
         self.SetRedirectApache(get.sitename)
         if not hasattr(get,'notreload'):
             public.serviceReload()
-        return public.returnMsg(True, 'EDIT_SUCCESS')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     def del_redirect_multiple(self,get):
         '''
@@ -384,9 +384,9 @@ class panelRedirect:
                     continue
                 del_successfully.append(redirectname)
             except:
-                del_failed[redirectname]=public.getMsg('DEL_ERROR1')
+                del_failed[redirectname]=public.get_msg_gettext('There was an error deleting, please try again.')
         public.serviceReload()
-        return {'status': True, 'msg': public.getMsg('DEL_REDIRECT_MULTIPLE',(','.join(del_successfully),)), 'error': del_failed,
+        return {'status': True, 'msg': public.get_msg_gettext('Delete redirects [{}] successfully',(','.join(del_successfully),)), 'error': del_failed,
                 'success': del_successfully}
 
     def DeleteRedirect(self,get,multiple=None):
@@ -404,7 +404,7 @@ class panelRedirect:
                 self.SetRedirectApache(get.sitename)
                 if not multiple:
                     public.serviceReload()
-                return public.returnMsg(True, 'DEL_SUCCESS')
+                return public.return_msg_gettext(True, 'Successfully deleted')
 
     def GetRedirectList(self,get):
         redirectconf = self.__read_config(self.__redirectfile)
@@ -433,7 +433,7 @@ class panelRedirect:
         #         get.redirectpath = "/"
         #         get.redirectdomain = "[]"
         #     get.sitename = sitename
-        #     get.redirectname = public.GetMsg("OLD_CONF")
+        #     get.redirectname = public.get_msg_gettext('Old configuration')
         #     get.type = 1
         #     get.holdpath = 1
 
@@ -470,7 +470,7 @@ class panelRedirect:
             conf = re.sub(rep, "", old_conf)
             public.writeFile(conf_path, conf)
         public.serviceReload()
-        return public.returnMsg(False, 'CLEAR_OLD_RED')
+        return public.return_msg_gettext(False, 'Old redirection cleaned')
 
     # 取重定向配置文件
     def GetRedirectFile(self,get):
@@ -484,7 +484,7 @@ class panelRedirect:
         get.path = "%s/panel/vhost/%s/redirect/%s/%s_%s.conf" % (self.setupPath, get.webserver, sitename,proxyname_md5,sitename)
         for i in conf:
             if redirectname == i["redirectname"] and sitename == i["sitename"] and i["type"] != 1:
-                return public.returnMsg(False, 'RED_ALREADY_STOP')
+                return public.return_msg_gettext(False, 'Redirection suspended')
         f = files.files()
         return f.GetFileBody(get),get.path
 
@@ -493,7 +493,7 @@ class panelRedirect:
         import files
         f = files.files()
         return f.SaveFileBody(get)
-        #	return public.returnMsg(True, '保存成功')
+        #	return public.return_msg_gettext(True, '保存成功')
 
     def __CheckRedirect(self,sitename,redirectname):
         conf_data = self.__read_config(self.__redirectfile)

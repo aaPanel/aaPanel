@@ -329,16 +329,16 @@ var bt = {
             title: type === 'all' ? 'Select directories or files' : lan.bt.dir,
             closeBtn: 2,
             shift: 5,
-            content: "<div class='changepath'><div class='path-top'><button type='button' id='btn_back' class='btn btn-default btn-sm'><span class='glyphicon glyphicon-share-alt'></span> " + lan.public.return+"</button><div class='place' id='PathPlace'>" + lan.bt.path + "：<span></span></div></div><div class='path-con'><div class='path-con-left'><dl><dt id='changecomlist' >" + lan.bt.comp + "</dt></dl></div><div class='path-con-right'><ul class='default' id='computerDefautl'></ul><div class='file-list divtable'><table class='table table-hover' style='border:0 none'><thead><tr class='file-list-head'><th width='5%'></th><th width='38%'>" + lan.bt.filename + "</th><th width='24%'>" + lan.bt.etime + "</th><th width='8%'>" + lan.bt.access + "</th><th width='15%'>" + lan.bt.own + "</th></tr></thead><tbody id='tbody' class='list-list'></tbody></table></div></div></div></div><div class='getfile-btn' style='margin-top:0'><button type='button' class='btn btn-default btn-sm pull-left' onclick='CreateFolder()'>" + lan.bt.adddir + "</button><button type='button' class='btn btn-danger btn-sm mr5' onclick=\"layer.close(getCookie('ChangePath'))\">" + lan.public.close + "</button> <button type='button' id='bt_select' class='btn btn-success btn-sm' >" + lan.bt.path_ok + "</button></div>",
-            success: function() {
-                $('#btn_back').click(function() {
+            content: "<div class='changepath'><div class='path-top'><button type='button' id='btn_back' class='btn btn-default btn-sm'><span class='glyphicon glyphicon-share-alt'></span> " + lan.public.return + "</button><div class='place' id='PathPlace'>" + lan.bt.path + "：<span></span></div></div><div class='path-con'><div class='path-con-left'><dl><dt id='changecomlist' >" + lan.bt.comp + "</dt></dl></div><div class='path-con-right'><ul class='default' id='computerDefautl'></ul><div class='file-list divtable'><table id='file-list-table' class='table table-hover' style='border:0 none'><thead><tr class='file-list-head'><th width='5%'></th><th width='38%'>" + lan.bt.filename + "</th><th width='24%'>" + lan.bt.etime + "</th><th width='8%'>" + lan.bt.access + "</th><th width='15%'>" + lan.bt.own + "</th></tr></thead><tbody id='tbody' class='list-list'></tbody></table></div></div></div></div><div class='getfile-btn' style='margin-top:0'><button type='button' class='btn btn-default btn-sm pull-left' onclick='CreateFolder()'>" + lan.bt.adddir + "</button><button type='button' class='btn btn-danger btn-sm mr5' onclick=\"layer.close(getCookie('ChangePath'))\">" + lan.public.close + "</button> <button type='button' id='bt_select' class='btn btn-success btn-sm' >" + lan.bt.path_ok + "</button></div>",
+            success: function () {
+                $('#btn_back').click(function () {
                     var path = $("#PathPlace").find("span").text();
                     path = bt.rtrim(bt.format_path(path), '/');
                     var back_path = bt.get_file_path(path);
                     _this.get_file_list(back_path, type);
                 })
                 //选择
-                $('#bt_select').on('click',function () {
+                $('#bt_select').on('click', function () {
                     var path = bt.format_path($("#PathPlace").find("span").text());
                     if(type === 'file' && !$('#tbody tr.active').length){
                         layer.msg('Select the file first!',{icon:0})
@@ -361,6 +361,7 @@ var bt = {
                     paths = default_path;
                 }
                 _this.get_file_list(paths, type);
+                bt.fixed_table('file-list-table');
             }
         });
         _this.set_cookie('ChangePath', loadT.form);
@@ -627,33 +628,32 @@ var bt = {
         return param;
     },
     msg: function(config) {
-        var btns = new Array();
-        var btnObj = {
-            title: config.title ? config.title : false,
-            shadeClose: config.shadeClose ? config.shadeClose : true,
-            closeBtn: config.closeBtn ? config.closeBtn : 2,
-            scrollbar: true,
-            shade: 0.3
-        };
-        if (!config.hasOwnProperty('time')) config.time = 0;
-        if (typeof config.msg == 'string' && bt.contains(config.msg, 'ERROR')) config.time = 0;
-
-        if (config.hasOwnProperty('icon')) {
-            if (typeof config.icon == 'boolean') config.icon = config.icon ? 1 : 2;
-        } else if (config.hasOwnProperty('status')) {
-            config.icon = config.status ? 1 : 2;
-            if (!config.status) {
-                btnObj.time = 0;
-            }
-        }
-        if (config.icon) btnObj.icon = config.icon;
-        btnObj.time = config.time;
-        var msg = ''
-        if (config.msg) msg += config.msg;
-        if (config.msg_error) msg += config.msg_error;
-        if (config.msg_solve) msg += config.msg_solve;
-        if(config.status) $.extend(btnObj,{closeBtn:0,time:2000});
-        layer.msg(msg, btnObj);
+			var btnObj = {
+				title: config.title ? config.title : false,
+				shadeClose: config.shadeClose ? config.shadeClose : true,
+				closeBtn: config.closeBtn ? config.closeBtn : 0,
+				scrollbar: true,
+				shade: 0.3,
+			};
+			if (!config.hasOwnProperty('time')) config.time = 2000;
+			if (typeof config.msg == 'string' && bt.contains(config.msg, 'ERROR')) config.time = 0;
+	
+			if (config.hasOwnProperty('icon')) {
+				if (typeof config.icon == 'boolean') config.icon = config.icon ? 1 : 2;
+			} else if (config.hasOwnProperty('status')) {
+				config.icon = config.status ? 1 : 2;
+				if (!config.status) {
+					btnObj.time = 0;
+				}
+			}
+			if (config.icon) btnObj.icon = config.icon;
+			btnObj.time = config.time;
+			var msg = ''
+			if (config.msg) msg += config.msg;
+			if (config.msg_error) msg += config.msg_error;
+			if (config.msg_solve) msg += config.msg_solve;
+	
+			layer.msg(msg, btnObj);
     },
     confirm: function(config, callback, callback1) {
         var btnObj = {
@@ -955,7 +955,10 @@ var bt = {
                 title: data.title,
                 closeBtn: 2,
                 content: _form.prop("outerHTML"),
-                end: data.end ? data.end : false
+                end: data.end ? data.end : false,
+                success:function(){
+                    if (data.success) data.success()
+                }
             })
             setTimeout(function() {
                 bt.render_clicks(clicks, loadOpen, callback);
@@ -1754,14 +1757,11 @@ bt.index = {
 					icon: 1
 				});
 				setTimeout(function() {
-					task()
-				}, 1000)
-            });
-
-            //InstallTips();
-            fly("onekey")
-        })
-    }
+					task();
+				}, 1000);
+      });
+    });
+  }
 }
 
 bt.weixin = {
@@ -2006,7 +2006,7 @@ bt.recycle_bin = {
                 bt.open({
                     type: 1,
                     skin: 'demo-class',
-                    area: ['80%', '606px'],
+                    area: ['80%', '672px'],
                     title: lan.files.recycle_bin_title,
                     closeBtn: 2,
                     shift: 5,
@@ -2030,7 +2030,7 @@ bt.recycle_bin = {
 							<div class="re-con">\
 								<div class="re-con-menu"></div>\
 								<div class="re-con-con">\
-								<div style="margin: 15px;" class="divtable">\
+								<div class="divtable">\
 									<table id="tab_recycle_bin" width="100%" class="table table-hover"></table>\
 								</div></div></div>'
                 });
@@ -2939,7 +2939,7 @@ bt.config = {
         });
     },
     set_panel_ssl: function(status, callback) {
-        var msg = status ? lan.config.ssl_close_msg : '<a style="font-weight: bolder;font-size: 16px;">' + lan.config.ssl_open_ps + '</a><li style="margin-top: 12px;color:red;">' + lan.config.ssl_open_ps_1 + '</li><li>' + lan.config.ssl_open_ps_2 + '</li><li>' + lan.config.ssl_open_ps_3 + '</li><p style="margin-top: 10px;"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: 3px 5px 0px;" for="checkSSL">' + lan.config.ssl_open_ps_4 + '</label><a target="_blank" class="btlink" href="https://www.bt.cn/bbs/thread-4689-1-1.html" style="float: right;">' + lan.config.ssl_open_ps_5 + '</a></p>';
+        var msg = status ? lan.config.ssl_close_msg : '<a style="font-weight: bolder;font-size: 16px;">' + lan.config.ssl_open_ps + '</a><li style="margin-top: 12px;color:red;">' + lan.config.ssl_open_ps_1 + '</li><li>' + lan.config.ssl_open_ps_2 + '</li><li>' + lan.config.ssl_open_ps_3 + '</li><p style="margin-top: 10px;"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: -1px 5px 0px;" for="checkSSL">' + lan.config.ssl_open_ps_4 + '</label><a target="_blank" class="btlink" href="https://www.bt.cn/bbs/thread-4689-1-1.html" style="float: right;">' + lan.config.ssl_open_ps_5 + '</a></p>';
         layer.confirm(msg, {
             title: lan.config.ssl_title,
             closeBtn: 2,
@@ -3405,10 +3405,10 @@ bt.firewall = {
             action = "AddAcceptPort";
         }
 
-        if (ps.length < 1) {
-            layer.msg(lan.firewall.ps_err, { icon: 2 });
-            return -1;
-        }
+        // if (ps.length < 1) {
+        //     layer.msg(lan.firewall.ps_err, { icon: 2 });
+        //     return -1;
+        // }
         loading = bt.load();
         bt.send(action, 'firewall/' + action, { port: port, type: type, ps: ps }, function(rdata) {
             loading.close();
@@ -3853,113 +3853,138 @@ bt.soft = {
             if(callback) callback(res)
         });
 	},
-	set_product_renew_status:function(data,callback){
-	    $.post('/message/status_message',{id:data.id,state:data.state},function(res){
-	        if(res.status === false){
-	            layer.msg(res.msg,{icon:2});
-	            return false;
-	        }
-            if(callback) callback(res)
-        });
-	},
-	// 产品支付视图(配置参数)
-	product_pay_view:function(config){
-    if(!bt.get_cookie('bt_user_info')){
-      bt.pub.bind_btname(function(){
+  set_product_renew_status: function (data, callback) {
+    $.post('/message/status_message', {id: data.id, state: data.state}, function (res) {
+      if (res.status === false) {
+        layer.msg(res.msg, {icon: 2});
+        return false;
+      }
+      if (callback) callback(res)
+    });
+  },
+  // 产品支付视图(配置参数)
+  product_pay_view: function (config) {
+    if (!bt.get_cookie('bt_user_info')) {
+      bt.pub.bind_btname(function () {
         window.location.reload();
       });
       return false;
     }
-    if(config.renew === -1) config.renew = false
-		if(typeof config == "string") config = JSON.parse(config);
-		config = $.extend({
-			plugin:null,
-			renew:null,
-			active:'',
-			type:'',
-			pro: parseInt(bt.get_cookie('pro_end')) || -1,
-			ltd: parseInt(bt.get_cookie('ltd_end')) || -1}
-			,config);
-		var title = '',that = this,endTime = null;
-		if(!config.is_alone){
-			if(config.plugin){ // 条件：当前为插件
-				title = (!config.renew?'Buy ':'续费') + config.name;
-				ndTime = !config.renew?config.renew:null
-			}else if(config.pro == -1 && config.ltd == -1){  // 条件：专业版和企业版都没有购买过
-				title = 'Upgrade to Pro, all plugins are free to use';
-			}else if(config.ltd > 0){  // 条件：企业版续费
-				title = 'Renew ' +(config.name == ''?'宝塔专业版':config.name);
-				endTime = config.ltd;
-			}else if(config.pro > 0 || config.pro == -2){  // 条件：专业版续费
-				title = 'Renew ' + (config.name == ''?'宝塔专业版':config.name);
-				endTime = config.pro;
-			}else if(config.ltd == -2){
-				title = 'Renew ' + (config.name == ''?'宝塔专业版':config.name);
-				endTime = config.ltd;
-			}
-		}else{
-			title = (config.ltd>0?'续费':'购买')+'宝塔企业版';
-		}
-		bt.open({
-			type:1,
-			title:title,
-			area:['650px','760px'],
-			shadeClose:false,
-			content:'<div class="libPay plr15" id="pay_product_view">\
-				<div class="libPay-item" style="margin-bottom:20px">\
-					<span class="bindUser">Account: <span></span></span>\
-					<span class="endTime">Expire date：<span></span></span>\
-				</div>\
-				<div class="libPay-item" id="libPay-type">\
-					<div class="li-tit c3">Type</div>\
-					<div class="li-con c5"></div>\
-				</div>\
-				<div class="libPay-item" id="libPay-mode">\
-					<div class="li-tit c4">Payment method</div>\
-					<div class="li-con c5"></div>\
-				</div>\
-				<div class="libPay-item" id="libPay-content">\
-					<div class="li-tit c4">Choose your plan</div>\
-					<div class="li-con c5"></div>\
-				</div>\
-				<div class="libPay-item" id="libPay-pay"></div>\
-				<div class="libPay-mask"></div>\
-			</div>',
-			success:function(indexs,layers){
-        $.getScript('https://js.stripe.com/v3/')
+    if (config.renew === -1) config.renew = false
+    if (typeof config == "string") config = JSON.parse(config);
+    config = $.extend({
+      plugin: null,
+      renew: null,
+      active: '',
+      type: '',
+      pro: parseInt(bt.get_cookie('pro_end')) || -1,
+      ltd: parseInt(bt.get_cookie('ltd_end')) || -1
+    }, config);
+      var totalNum = config.totalNum ? config.totalNum : '';
+      if (totalNum) {
+          bt.set_cookie('pay_source', parseInt(totalNum));
+      }
+    var title = '',that = this,endTime = null;
+    if (!config.is_alone) {
+      // 条件：当前为插件
+      if (config.plugin) {
+        title = (!config.renew ? 'Buy ' : '续费') + config.name;
+        ndTime = !config.renew ? config.renew : null
+      } else if (config.pro == -1 && config.ltd == -1) { // 条件：专业版和企业版都没有购买过
+        title = 'Upgrade to Pro, all plugins are free to use';
+      } else if (config.ltd > 0) { // 条件：企业版续费
+        title = 'Renew ' + (config.name == '' ? '宝塔专业版' : config.name);
+        endTime = config.ltd;
+      } else if (config.pro > 0 || config.pro == -2) { // 条件：专业版续费
+        title = 'Renew ' + (config.name == '' ? '宝塔专业版' : config.name);
+        endTime = config.pro;
+      } else if (config.ltd == -2) {
+        title = 'Renew ' + (config.name == '' ? '宝塔专业版' : config.name);
+        endTime = config.ltd;
+      }
+    } else {
+      title = (config.ltd > 0 ? '续费' : '购买') + '宝塔企业版';
+    }
+    bt.open({
+      type: 1,
+      title: title,
+      area: ['650px', '760px'],
+      shadeClose: false,
+      content: '\
+                <div class="libPay plr15" id="pay_product_view" ' + (config.totalNum ? 'data-index="'+config.totalNum+'"' : '') + '>\
+                    <div class="libPay-item" style="margin-bottom:20px">\
+                        <span class="bindUser">Account: <span></span></span>\
+                        <span class="endTime">Expire date: <span></span></span>\
+                    </div>\
+                    <div class="libPay-item" id="libPay-type">\
+                        <div class="li-tit c3">Type</div>\
+                        <div class="li-con c5"></div>\
+                    </div>\
+                    <div class="libPay-item" id="libPay-mode">\
+                        <div class="li-tit c4">Payment method</div>\
+                        <div class="li-con c5"></div>\
+                    </div>\
+                    <div class="libPay-item" id="libPay-content">\
+                        <div class="li-tit c4">Choose your plan</div>\
+                        <div class="li-con c5"></div>\
+                    </div>\
+                    <div class="libPay-item" id="libPay-pay"></div>\
+                    <div class="libPay-mask"></div>\
+                </div>\
+            ',
+      success: function ($layer, index) {
+        $.getScript('https://js.stripe.com/v3/');
         var bt_user_info = bt.get_cookie('bt_user_info');
-        if(!bt_user_info){
-          bt.pub.get_user_info(function(res){
-            $('.bindUser span').html(res.data.username +'<a href="javascript:;" class="btlink ml5">Change</a>');
+        if (!bt_user_info) {
+          bt.pub.get_user_info(function (res) {
+            $('.bindUser span').html(res.data.username + '<a href="javascript:;" class="btlink ml5">Change</a>');
           });
-        }else{
-          $('.bindUser span').html(JSON.parse(bt_user_info).data.username +'<a href="javascript:;" class="btlink ml5">Change</a>');
+        } else {
+          $('.bindUser span').html(JSON.parse(bt_user_info).data.username + '<a href="javascript:;" class="btlink ml5">Change</a>');
         }
-				endTime != null?$('.endTime span').html(endTime > parseInt(new Date().getTime() /1000)?bt.format_data(endTime):'<i style="color:red;font-style:inherit">Expired</i>'):$('.endTime').hide();
-				$('.bindUser').on('click','a',function(){
-					bt.pub.bind_btname(function(){
-					 	bt.soft.product_pay_view(config);
-					 });
-				});
+        if (endTime != null) {
+          $('.endTime span').html(endTime > parseInt(new Date().getTime() / 1000) ? bt.format_data(endTime) : '<i style="color:red;font-style:inherit">Expired</i>');
+        } else {
+          $('.endTime').hide();
+        }
+        $('.bindUser').on('click', 'a', function () {
+          bt.pub.bind_btname(function () {
+            bt.soft.product_pay_view(config);
+          });
+        });
         var arry = [];
-                //config.name = '堡塔企业级防篡改';
-				if(config.plugin) arry.push({title:config.name,name:config.name,ps:'Plug-in only',pid:config.pid,renew:config.renew || false,active:((config.pro < 0 && config.ltd < 0) || (config.type == 12 && config.ltd<0)?true:false)});
-				if((((config.pro > 0  || config.pro == -2 || config.ltd < 0) && ((config.ltd > 0 && config.ltd != config.pro) || config.ltd < 0) && config.type != 12) || config.limit == 'pro' || (config.ltd < 0 && config.pro == -1)) && config.type != 12 && ((config.ltd < 0 && config.pro > 0) || (config.ltd < 0 && config.pro < 0))){
-					arry.push({title:'<span class="pro-font-icon"></span>',name:'',pid:'100000058',ps:'Recommended',renew:config.renew || false,active:  (((config.type == 8 && !config.plugin) || config.limit == 'pro' || (config.pro > 0 || config.pro == -2)) && config.ltd < 0 && (config.ltd == -2?(config.pro == -2?false:true):true))});
-				}
+        //config.name = '堡塔企业级防篡改';
+        if (config.plugin) arry.push({
+          title: config.name,
+          name: config.name,
+          ps: 'Plug-in only',
+          pid: config.pid,
+          renew: config.renew || false,
+          active: ((config.pro < 0 && config.ltd < 0) || (config.type == 12 && config.ltd < 0) ? true : false)
+        });
+        if ((((config.pro > 0 || config.pro == -2 || config.ltd < 0) && ((config.ltd > 0 && config.ltd != config.pro) || config.ltd < 0) && config.type != 12) || config.limit == 'pro' || (config.ltd < 0 && config.pro == -1)) && config.type != 12 && ((config.ltd < 0 && config.pro > 0) || (config.ltd < 0 && config.pro < 0))) {
+          arry.push({
+            title: '<span class="pro-font-icon"></span>',
+            name: '',
+            pid: '100000058',
+            ps: 'Recommended',
+            renew: config.renew || false,
+            active: (((config.type == 8 && !config.plugin) || config.limit == 'pro' || (config.pro > 0 || config.pro == -2)) && config.ltd < 0 && (config.ltd == -2 ? (config.pro == -2 ? false : true) : true))
+          });
+        }
 
-				// if((((config.ltd > 0 || config.ltd == -2 || config.pro == -2) || (config.ltd == -1 && config.pro == -1) || config.limit == 'ltd') && (config.pro < 0 || (config.pro >= 0 && config.ltd >0))) || (config.is_alone && config.pid == 100000032)){
-				// 	arry.push({title:'<span class="ltd-font-icon"></span>',name:'宝塔面板企业版',ps:'推荐企业购买',pid:100000032,recommend:true,active:((config.type == 12 && !config.plugin && config.ltd > 0) || config.limit == 'ltd' || (config.renew == config.ltd && config.ltd > 0)? true:false)});
-				// }
-				// if(config.type == 12 && config.pro >= 0 && config.ltd < 0) $('.pro-tips').html('温馨提示：专业版升级企业版需要手动结算当前专业版授权，<a href="https://www.bt.cn/bbs/thread-50342-1-1.html" target="_blank" class="btlink">《专业版和企业版切换教程》</a>').css('color','red');
-				$('#libPay-type .li-con').append(that.product_pay_swicth('type',arry));
-				if(config.source) bt.set_cookie('pay_source',config.source);
-				that.each(arry,function(index,item){
-					if(item.active){
-						that.product_pay_page_refresh($.extend({condition:1},item));
-					}
-				});
-			},
+        // if((((config.ltd > 0 || config.ltd == -2 || config.pro == -2) || (config.ltd == -1 && config.pro == -1) || config.limit == 'ltd') && (config.pro < 0 || (config.pro >= 0 && config.ltd >0))) || (config.is_alone && config.pid == 100000032)){
+        // 	arry.push({title:'<span class="ltd-font-icon"></span>',name:'宝塔面板企业版',ps:'推荐企业购买',pid:100000032,recommend:true,active:((config.type == 12 && !config.plugin && config.ltd > 0) || config.limit == 'ltd' || (config.renew == config.ltd && config.ltd > 0)? true:false)});
+        // }
+        // if(config.type == 12 && config.pro >= 0 && config.ltd < 0) $('.pro-tips').html('温馨提示：专业版升级企业版需要手动结算当前专业版授权，<a href="https://www.bt.cn/bbs/thread-50342-1-1.html" target="_blank" class="btlink">《专业版和企业版切换教程》</a>').css('color','red');
+        $('#libPay-type .li-con').append(that.product_pay_swicth('type', arry));
+        if (config.source) bt.set_cookie('pay_source', config.source);
+        that.each(arry, function (index, item) {
+          if (item.active) {
+            that.product_pay_page_refresh($.extend({condition: 1}, item));
+          }
+        });
+      },
 			end:function(){
 				clearInterval(bt.soft.pub.wxpayTimeId);
 				bt.clear_cookie('pay_source');
@@ -3986,95 +4011,107 @@ bt.soft = {
       }
     },
     // 产品页面刷新
-    product_pay_page_refresh: function (config){
-        var condition = config.condition, that = this;
-        switch (condition){
-            case 1:
-              var loadT = bt.load();
-                bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
-                  bt.soft.pro.get_voucher(config.pid, function (rdata) {
-                    loadT.close();
-                    var _arry = [{ title: '微信支付', condition: 2 },{ title: 'Stripe', condition: 3 }, { title: 'voucher', condition: 4 },{title: "Authorization", condition: 7,"_pid":config.pid}];
-                    if(config.renew){
-                      _arry.splice(_arry.length-1,1)
-                      _arry[rdata.length > 0 ? '2' : '1'].active = true
-                      config.condition = rdata.length > 0?4:2
-                    }else{
-                      _arry[res.length > 0? '3' :(rdata.length > 0 ? '2' : '1')].active = true;
-                      config.condition = (res.length > 0?7:(rdata.length > 0?4:2))
-                    }
-                    if(res == null) res = [];
-                    if (rdata == null) rdata = [];
-                    $('#libPay-mode .li-con').empty().append(
-                      that.product_pay_swicth('payment', {
-                        name: config.name,
-                        pid: config.pid,
-                        data: _arry,
+    product_pay_page_refresh: function (config) {
+      var that = this;
+      var condition = config.condition;
+      switch (condition) {
+        case 1:
+          var loadT = bt.load();
+          bt.send('get_product_auth', 'auth/get_product_auth', {page: 1, pageSize: 15,pid:config.pid}, function (res) {
+            bt.soft.pro.get_voucher(config.pid, function (rdata) {
+              loadT.close();
+              var _arry = [
+                {title: '微信支付', condition: 2},
+                {title: 'Stripe', condition: 3},
+                {title: 'voucher', condition: 4},
+                {title: "Authorization", condition: 7, "_pid": config.pid}
+              ];
+              // if (config.renew) {
+              //   _arry.splice(_arry.length - 1, 1);
+              //   _arry[rdata.length > 0 ? '2' : '1'].active = true;
+              //   config.condition = rdata.length > 0 ? 4 : 2;
+              // } else {
+                _arry[res.length > 0 ? '3' : (rdata.length > 0 ? '2' : '1')].active = true;
+                config.condition = (res.length > 0 ? 7 : (rdata.length > 0 ? 4 : 3))
+              // }
+              if (res == null) res = [];
+              if (rdata == null) rdata = [];
+              $('#libPay-mode .li-con').empty().append(
+                that.product_pay_swicth('payment', {
+                  name: config.name,
+                  pid: config.pid,
+                  data: _arry,
                         voucher_data: rdata
                       })
                     );
-                    if(config.renew){
-                      if (rdata.length > 0) config.voucher_data = rdata;
-                    }else{
-                      if (rdata.length > 0) config.voucher_data = rdata;
-                      if(res.length > 0) config.voucher_data = res;
-                    }
+              if (config.renew) {
+                if (rdata.length > 0) config.voucher_data = rdata;
+              } else {
+                if (rdata.length > 0) config.voucher_data = rdata;
+                if (res.length > 0) config.voucher_data = res;
+              }
                     that.product_pay_page_refresh(config);
                   });
                 });
               break;
-            case 2:
-            case 3:
-                $('#libPay-content .li-tit').text('Choose your plan');
-                config.pay = condition;
-                if (config.pid == '100000030') {
-                    $('#libPay-tips').show();
-                } else {
-                    $('#libPay-tips').hide();
-                }
-                var loadT = bt.load();
-                bt.soft.get_product_discount_cache(config,function (rdata){
-                  loadT.close();
-                  var _arry = [],index = 0;
-                  try {
-                      delete rdata.pid
-                  } catch (error) {
-                      console.log(rdata.pid);
-                  }
-                  that.each(rdata, function (key, item) {
-                      _arry.push($.extend({ cycle: parseInt(key) }, item));
-                  });
-                  _arry[index].active = true;
-                  $('#libPay-content .li-con').empty().append(
-                      that.product_pay_swicth('time',{ name: config.name, pid: config.pid, data: _arry})
-                  );
-                  config.condition = 5;
-                  config = $.extend(config, _arry[index]);
-                  that.product_pay_page_refresh(config);
-                });
-                break;
-            case 4:
-                var loadP = bt.load("Getting deduction volume information!")
-                clearInterval(bt.soft.pub.wxpayTimeId);
-                $('#libPay-content .li-tit').text('Vouchers');
-                $('#libPay-pay').removeAttr('data-qecode');
-                $('#libPay-tips').hide();
-                function callback(rdata) {
-                    loadP.close()
-                    if(rdata == null)  rdata = [];
-                    if(rdata.length == 0){
-                        $('#libPay-content .li-con').empty()
-                        that.product_pay_page_refresh({ condition: 6, pid: '', code: false });
-                        return false;
-                    }
+        case 2:
+        case 3:
+          $('#libPay-content .li-tit').text('Choose your plan');
+          config.pay = condition;
+          if (config.pid == '100000030') {
+            $('#libPay-tips').show();
+          } else {
+            $('#libPay-tips').hide();
+          }
+          var loadT = bt.load();
+          bt.soft.get_product_discount_cache(config, function (rdata) {
+            loadT.close();
+            var _arry = [];
+            var index = 0;
+            try {
+              delete rdata.pid
+            } catch (error) {
+              console.log(rdata.pid);
+            }
+            that.each(rdata, function (key, item) {
+              _arry.push($.extend({cycle: parseInt(key)}, item));
+            });
+            _arry[index].active = true;
+            $('#libPay-content .li-con').empty().append(
+              that.product_pay_swicth('time', {
+                name: config.name, pid: config.pid, data: _arry
+              })
+            );
+            config.condition = 5;
+            config = $.extend(config, _arry[index]);
+            that.product_pay_page_refresh(config);
+          });
+          break;
+        case 4:
+          var loadP = bt.load("Getting deduction volume information!")
+          clearInterval(bt.soft.pub.wxpayTimeId);
+          $('#libPay-content').empty().append('<div class="li-tit c4"></div><div class="li-con c5"></div>');
+          $('#libPay-pay').empty();
+          $('#libPay-content .li-tit').text('Vouchers');
+          $('#libPay-pay').removeAttr('data-qecode');
+          $('#libPay-tips').hide();
+
+        function callback(rdata) {
+          loadP.close();
+          if (rdata == null && !Array.isArray(rdata)) rdata = [];
+          if (rdata.length == 0) {
+            $('#libPay-content .li-con').empty()
+            that.product_pay_page_refresh({condition: 6, pid: '', code: false});
+            return false;
+          }
                     rdata[0].active = true;
-                    $('#libPay-content .li-con').empty().append(
-                        that.product_pay_swicth('voucher', {
-                            name: config.name,
-                            pid: config.pid,
-                            data: rdata
-                        })
-                    );
+          $('#libPay-content .li-con').append(
+            that.product_pay_swicth('voucher', {
+              name: config.name,
+              pid: config.pid,
+              data: rdata
+            })
+          );
                     config.condition = 6;
                     that.product_pay_page_refresh($.extend(config, rdata[0]));
                 }
@@ -4082,7 +4119,7 @@ bt.soft = {
                     callback(config.voucher_data);
                 } else {
                     bt.soft.pro.get_voucher(config.pid, function (rdata) {
-                        callback(rdata);
+                      callback(rdata);
                     });
                 }
                 break;
@@ -4103,8 +4140,15 @@ bt.soft = {
                 }else{
                     $('#libPay-pay').html('<div class="cloading">Loading, please wait!</div>');
                 }
-                var paream = {pid:config.pid,cycle:config.cycle},pay_source = bt.get_cookie('pay_source');
-                if(pay_source) paream.source = bt.get_cookie('pay_source');
+                var paream = {pid:config.pid,cycle:config.cycle};
+                paream.source = parseInt(bt.get_cookie('pay_source') || 0)
+                if (paream.source === 0) {
+                    if ($('.btpro-gray').length == 1) {  // 是否免费版
+                        paream.source = 27;
+                    } else {
+                        paream.source = 28;
+                    }
+                }
                 if(!paream.pid) delete paream.pid;
                 if(bt.get_cookie('serial_no') != null) paream.serial_no = config.serial_no  || bt.get_cookie('serial_no')
                 that.pro.create_order(paream,function (rdata){
@@ -4123,45 +4167,48 @@ bt.soft = {
                   var stripe = Stripe($(this).data('keys'));
                   that.pro.get_check_out_info($(this).data('code'),function(res){
                     loadT.close()
-                    if(res.id){
-                        stripe.redirectToCheckout({ sessionId: res.id });
-                    }else{
-                        layer.msg("Payment order failed, please contact administrator!", { icon: 2 });
+                    if (res.id) {
+                      stripe.redirectToCheckout({sessionId: res.id});
+                    } else {
+                      layer.msg("Payment order failed, please contact administrator!", {icon: 2});
                     }
                   })
                 })
-                break;
-            case 6:
-                var _html = $('<div class="paymethod-submit text-center"></div>'), _button = $('<button class="btn btn-success btn-sm f16 ' + (config.serial_no ? '' : 'disabled') + '" style="width: 200px; height: 40px;">' + (config.serial_no ? 'Pay' : 'No vouchers') + '</button>');
-                _button.click(function (ev) {
-                    if (!config.serial_no){
-                        layer.msg('No vouchers');
-                        return false;
-                    }
-                    bt.soft.pro.create_order_voucher(config.pid, config.code, config.id, config.cycle, config.cycle_unit , config.charge_type,function (rdata) {
-                        layer.closeAll();
-                        bt.set_cookie('force', 1);
-                        if (soft) soft.flush_cache();
-                        bt.msg(rdata.res);
-                    });
-                });
-                $('#libPay-pay').empty().append(_html.append(_button));
-                break;
-            case 7:
-                if(config.renew) return false
-                var loadA = bt.load("Obtaining authorization information!")
-                    var _pid = config.pid;
-                     $('#libPay-content .li-tit').text('Authorization information');
-                    bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
-                    loadA.close();
-                    if(res.status==false){
-                         layer.msg(res.msg, { icon: res.status ? 1 : 2 });
-                         return false;
-                    }
-                    _html = $('<ul class="pay-btn-group"></ul>');
-                    if(res.length == 0){
-                      _html.append($('<li class="pay-cycle-btn" id="no_authorization" style="width:180px;cursor: default;" disabled="disabled"><span> No authorization</span></li>'));
-                    }
+              break;
+        case 6:
+          var _html = $('<div class="paymethod-submit text-center"></div>');
+          var _button = $('<button class="btn btn-success btn-sm f16 ' + (config.serial_no ? '' : 'disabled') + '" style="width: 200px; height: 40px;">' + (config.serial_no ? 'Pay' : 'No vouchers') + '</button>');
+          _button.click(function (ev) {
+            if (!config.serial_no) {
+              layer.msg('No vouchers');
+              return false;
+            }
+            bt.soft.pro.create_order_voucher(config.pid, config.code, config.id, config.cycle, config.cycle_unit, config.charge_type, function (rdata) {
+              layer.closeAll();
+              bt.set_cookie('force', 1);
+              if (soft) soft.flush_cache();
+              bt.msg(rdata.res);
+            });
+          });
+          $('#libPay-pay').empty().append(_html.append(_button));
+          break;
+        case 7:
+          if (config.renew) return false
+          var loadA = bt.load("Obtaining authorization information!")
+          $('#libPay-content').empty().append('<div class="li-tit c4"></div><div class="li-con c5"></div>');
+          $('#libPay-pay').empty();
+          var _pid = config.pid;
+          $('#libPay-content .li-tit').text('Authorization information');
+          bt.send('get_product_auth', 'auth/get_product_auth', {page: 1, pageSize: 15,pid:config.pid}, function (res) {
+            loadA.close();
+            if (res.status == false) {
+              layer.msg(res.msg, {icon: res.status ? 1 : 2});
+              return false;
+            }
+            _html = $('<ul class="pay-btn-group"></ul>');
+            if (res.length == 0) {
+              _html.append($('<li class="pay-cycle-btn" id="no_authorization" style="width:180px;cursor: default;" disabled="disabled"><span> No authorization</span></li>'));
+            }
                     var  authorization_flag = false;
                     $.each(res, function (index, item) {
                         if(_pid == item.product_id){
@@ -4169,34 +4216,35 @@ bt.soft = {
                             authorization_flag = true;
                         }
                         if(authorization_flag == false && index == res.length - 1){
-                             _html.append($('<li class="pay-cycle-btn" id="no_authorization" style="width:180px;cursor: default;" disabled="disabled"><span> No authorization</span></li>'));
+                            _html.append($('<li class="pay-cycle-btn" id="no_authorization" style="width:180px;cursor: default;" disabled="disabled"><span> No authorization</span></li>'));
                         }
                     });
-                    $('#libPay-content .li-con').empty().append(_html);
-                    $('#libPay-content ul li').click(function(){
-                      $(this).addClass('active').siblings().removeClass('active')
-                    });
-                    $('#libPay-pay').empty().append($('<div class="lib-price-box text-center"><button type="button" id="authorization" style="margin-top:30px" class="btn btn-success ">Authorization</button></div>'));
-                    //授权
-                    $('#authorization').unbind();
-                    if($('#libPay-content .li-con ul li  span').html().indexOf("No authorization")>0){
-                        $('#authorization').attr("disabled","disabled");
-                    }else{
-                        $('#authorization').removeAttr("disabled");
-                        $('#authorization').on('click',function(e){
-                        var loadU = bt.load("Under licensing!")
-                        var _serial_no = $('#libPay-content .active').attr('data-id');
-                        if(typeof _serial_no ==undefined) return false;
-                        bt.send('auth_activate', 'auth/auth_activate', { serial_no: _serial_no }, function(res) {
-                            loadU.close()
-                            if(res){
-                                layer.msg(res.msg, { icon: res.status ? 1 : 2 });
-                                if(res.status){
-                                    window.location.reload();
-                                }
-                            }
+                        $('#libPay-content .li-con').empty().append(_html);
+                        $('#libPay-content ul li').click(function () {
+                            $(this).addClass('active').siblings().removeClass('active')
                         });
-                    })
+                        $('#libPay-pay').empty().append($('<div class="lib-price-box text-center"><button type="button" id="authorization" style="margin-top:30px" class="btn btn-success ">Authorization</button></div>'));
+                        //授权
+                        $('#authorization').unbind();
+                        var html = $('#libPay-content .li-con ul li  span').html() || '';
+                        if (html.indexOf("No authorization") > 0) {
+                            $('#authorization').attr("disabled", "disabled");
+                        } else {
+                            $('#authorization').removeAttr("disabled");
+                            $('#authorization').on('click', function (e) {
+                                var _serial_no = $('#libPay-content .active').attr('data-id');
+                                if (typeof _serial_no == 'undefined') return false;
+                                var loadU = bt.load("Under licensing!");
+                                bt.send('auth_activate', 'auth/auth_activate', {serial_no: _serial_no}, function (res) {
+                                    loadU.close()
+                                    if (res) {
+                                        layer.msg(res.msg, {icon: res.status ? 1 : 2});
+                                        if (res.status) {
+                                            window.location.reload();
+                                        }
+                                    }
+                                });
+                            })
                     }
                 });
                 break;
@@ -4235,26 +4283,30 @@ bt.soft = {
                 });
                 break;
             case 'time': // 产品开通时长（配置参数）
-                _html = $('<ul class="pay-btn-group"></ul>');
-                this.each(config.data, function (index, item) {
-                    _html.append($('<li class="pay-cycle-btn ' + (item.active ? 'active' : '') + '"><span data-unit='+item.cycle_unit+'>' + that.pro.conver_unit(item.cycle + item.cycle_unit) + '</span>' + (item.discount_rate != 1 ? '<em style="width:50px">' + (100-item.discount_rate * 100) + '% off</em>' : '') + '</li>').data($.extend({ pid: config.pid, dom_index: index }, item)).click(function (ev) {
-                        var data = $(this).data();
-                        if (!$(this).hasClass('active')) that.product_pay_page_refresh($.extend({ condition: 5 }, data));
-                        $(this).addClass('active').siblings().removeClass('active');
-                    }));
-                });
-                break;
-            case 'voucher':// 产品抵扣卷（配置参数）
-                _html = $('<ul class="pay-btn-group"></ul>');
-                this.each(config.data, function (index, item){
-                    _html.append($('<li class="pay-cycle-btn ' + (item.active ? 'active' : '') + '"><span>' + (item.cycle_unit == 'month' && item.cycle == 999 ? '永久' : (item.cycle + that.pro.conver_unit(item.cycle_unit))) + '</span></li>').data($.extend({ pid: config.pid }, item)).click(function (ev) {
-                        var data = $(this).data();
-                        $(this).addClass('active').siblings().removeClass('active');
-                        that.product_pay_page_refresh($.extend({ condition: 6 }, data));
-                    }));
-                });
-                break;
-            case 'wechat':
+              _html = $('<ul class="pay-btn-group"></ul>');
+              this.each(config.data, function (index, item) {
+                _html.append($('<li class="pay-cycle-btn ' + (item.active ? 'active' : '') + '"><span data-unit=' + item.cycle_unit + '>' + that.pro.conver_unit(item.cycle + item.cycle_unit) + '</span>' + (item.discount_rate != 1 ? '<em style="width:50px">' + (100 - item.discount_rate * 100) + '% off</em>' : '') + '</li>').data($.extend({
+                  pid: config.pid,
+                  dom_index: index
+                }, item)).click(function (ev) {
+                  var data = $(this).data();
+                  if (!$(this).hasClass('active')) that.product_pay_page_refresh($.extend({condition: 5}, data));
+                  $(this).addClass('active').siblings().removeClass('active');
+                }));
+              });
+              break;
+          case 'voucher':// 产品抵扣卷（配置参数）
+            _html = $('<ul class="pay-btn-group voucher-group"></ul>');
+
+            this.each(config.data, function (index, item) {
+              _html.append($('<li class="pay-cycle-btn ' + (item.active ? 'active' : '') + '"><span>' + (item.cycle_unit == 'month' && item.cycle == 999 ? '永久' : (item.cycle + that.pro.conver_unit(item.cycle_unit))) + '</span></li>').data($.extend({pid: config.pid}, item)).click(function (ev) {
+                var data = $(this).data();
+                $(this).addClass('active').siblings().removeClass('active');
+                that.product_pay_page_refresh($.extend({condition: 6}, data));
+              }));
+            });
+            break;
+          case 'wechat':
             case 'alipay':
                 _html = $('<div class="lib-price-box text-center">' +
                     '<span class="lib-price-name f14"><b>Total</b></span>' +
@@ -4331,20 +4383,27 @@ bt.soft = {
 		}
 		return that;
     },
-    /**
-     * @description 升级专业版
-    */
-    updata_pro:function(){
-      bt.soft.product_pay_view({name:'Pro',pid:'100000058',limit:'pro'});
-    },
-    /**
-     * @description 续费专业版
-    */
-    renew_pro:function(){
-      var config = {name:'Pro',pid:'100000058',limit:'pro',renew:true}
-      if(!bt.get_cookie('serial_no')) delete config.renew
-      bt.soft.product_pay_view(config);
-    },
+  /**
+   * @description 升级专业版
+   */
+  updata_pro: function (num) {
+      var param = {
+          name: 'Pro',
+          pid: 100000058,
+          limit: 'pro'
+      }
+      if(num) param['totalNum'] = num;
+      bt.set_cookie('pay_source', num);
+      bt.soft.product_pay_view(param);
+  },
+  /**
+   * @description 续费专业版
+   */
+  renew_pro: function () {
+    var config = {name: 'Pro', pid: '100000058', limit: 'pro', renew: true};
+    if (!bt.get_cookie('serial_no')) delete config.renew;
+    bt.soft.product_pay_view(config);
+  },
     // updata_pro: function() {
     //     bt.pub.get_user_info(function(rdata) {
     //         if (!rdata.status) {
@@ -4519,7 +4578,6 @@ bt.soft = {
     get_voucher_list: function(pid) {
         $("#couponlist").html("<div class='cloading'>" + lan.public_backup.loading + "</div>");
         bt.soft.pro.get_voucher(pid, function(rdata) {
-
             if (rdata != null && rdata.length > 0) {
                 var con = '';
                 var len = rdata.length;
@@ -4946,13 +5004,13 @@ bt.soft = {
         }
         return name
     },
-    install: function(name,that) {
+    install: function (name, that) {
         var _this = this;
-        if(bt.soft.is_install){
-			layer.msg('Installing other software, please operate later!',{icon:0});
-			return false;
-		}
-        _this.get_soft_find(name, function(rdata) {
+        if (bt.soft.is_install) {
+            layer.msg('Installing other software, please operate later!', {icon: 0});
+            return false;
+        }
+        _this.get_soft_find(name, function (rdata) {
             var arrs = ['apache', 'nginx', 'mysql'];
             if ($.inArray(name, arrs) >= 0 || name.indexOf('php-') >= 0) {
                 var SelectVersion = '', shtml = name;
@@ -4989,10 +5047,15 @@ bt.soft = {
 							</div>\
 						</div>\
 						<div class='bt-form-submit-btn'>\
-							<button type='button' class='btn btn-danger btn-sm btn-title' onclick='layer.closeAll()'>" + lan.public.close + "</button>\
+							<button type='button' class='btn btn-danger btn-sm btn-title btn-close'>" + lan.public.close + "</button>\
 					        <button type='button' id='bi-btn' class='btn btn-success btn-sm btn-title bi-btn'>" + lan.public.submit + "</button>\
 				        </div>\
-				    </div>"
+				    </div>",
+									success: function ($layer, index) {
+										$layer.find('.btn-close').click(function () {
+											layer.close(index);
+										});
+									}
                 });
 
                 $('.fangshi input').click(function() {
@@ -5044,7 +5107,7 @@ bt.soft = {
                     var info = $("#SelectVersion").val().toLowerCase();
                     name = info.split(" ")[0];
                     version = info.split(" ")[1];
-                    _this.install_soft(rdata, version,0,that);
+                    _this.install_soft(rdata, version, 0, that);
                 });
             } else {
                 _this.install_soft(rdata, rdata.versions[0].m_version,0,that);
@@ -5148,21 +5211,39 @@ bt.soft = {
     //         })
     //     })
     // },
-    install_soft: function (item, version, type,that) { //安装单版本
+    install_soft: function (item, version, type, that) { //安装单版本
         if (type == undefined) type = 0;
         var loadT = '';
-		item.title = bt.replace_all(item.title,'-' + version,'');
-		layer.confirm(item.type!=5?lan.soft.lib_insatll_confirm.replace('{1}',item.title):lan.get('install_confirm',[item.title,version]),{ title:item.type!=5?lan.soft.lib_install:lan.soft.install_title,icon:0,closeBtn:2},function(){
-				layer.closeAll();
-				bt.soft.show_speed_window({title:'Installing '+ item.title +', please wait...',msg:lan.soft.lib_install_the,soft:item,event:that},function(){
-					if(item.type == 10) loadT = layer.msg('Getting third party installation information, please wait<img src="/static/img/ing.gif">', { icon: 16, time: 0, shade: [0.3, '#000'] });
-					bt.send('install_plugin', 'plugin/install_plugin', { sName: item.name, version: version, type: type }, function (rdata) {
-						if (rdata.size) {
-							layer.close(loadT);
-							bt.soft.install_other(rdata,status);
-							return;
-						}
-						layer.close(bt.soft.loadT);
+        item.title = bt.replace_all(item.title, '-' + version, '');
+        layer.confirm(item.type != 5 ? lan.soft.lib_insatll_confirm.replace('{1}', item.title) : lan.get('install_confirm', [item.title, version]), {
+            btn: [lan.public.confirm, lan.public.close],
+            title: item.type != 5 ? lan.soft.lib_install : lan.soft.install_title,
+            icon: 0,
+            closeBtn: 2
+        }, function () {
+            layer.closeAll();
+            bt.soft.show_speed_window({
+                title: 'Installing ' + item.title + ', please wait...',
+                msg: lan.soft.lib_install_the,
+                soft: item,
+                event: that
+            }, function () {
+                if (item.type == 10) loadT = layer.msg('Getting third party installation information, please wait<img src="/static/img/ing.gif">', {
+                    icon: 16,
+                    time: 0,
+                    shade: [0.3, '#000']
+                });
+                bt.send('install_plugin', 'plugin/install_plugin', {
+                    sName: item.name,
+                    version: version,
+                    type: type
+                }, function (rdata) {
+                    if (rdata.size) {
+                        layer.close(loadT);
+                        bt.soft.install_other(rdata, status);
+                        return;
+                    }
+                    layer.close(bt.soft.loadT);
 						bt.pub.get_task_count(function(rdata){
 							if(rdata > 0 && item.type === 5) messagebox();
 						});
@@ -5233,6 +5314,7 @@ bt.soft = {
             // })
             bt.soft.show_speed_window({title:'Updating to [' + title+'-'+version+'.'+min_version+'],Please wait...',status:true,soft:{type:parseInt(type)}},function(){
 				bt.send('install_plugin', 'plugin/install_plugin', { sName: name, version: version, upgrade: version }, function (rdata) {
+                    console.log(rdata);
 					if (rdata.size) {
 						_this.install_other(rdata)
 						return;
@@ -5431,8 +5513,9 @@ bt.database = {
             }, 100)
         })
     },
-    add_database: function(callback) {
+    add_database: function(cloudList, callback) {
         bt.data.database.data_add.list[2].items[0].value = bt.get_random(16);
+        bt.data.database.data_add.list[5].items[0].items = cloudList;
         bt.render_form(bt.data.database.data_add, function(rdata) {
             if (callback) callback(rdata);
         });
@@ -5445,9 +5528,11 @@ bt.database = {
             if (callback) callback(rdata);
         })
     },
-    sync_database: function(callback) {
+    sync_database: function(sid, callback) {
         var loadT = bt.load(lan.database.sync_the);
-        bt.send('SyncGetDatabases', 'database/SyncGetDatabases', {}, function(rdata) {
+        bt.send('SyncGetDatabases', 'database/SyncGetDatabases', {
+            sid: sid
+        }, function (rdata) {
             loadT.close();
             bt.msg(rdata);
             if (callback) callback(rdata);
@@ -5926,7 +6011,7 @@ bt.site = {
     },
     get_site_error_logs: function (siteName, callback) {
       var loading = bt.load();
-      bt.send('get_site_errlog', 'site/get_site_errlog', {
+      bt.send('get_site_err_log', 'site/get_site_err_log', {
         siteName: siteName
         }, function (rdata) {
             loading.close();
@@ -6364,8 +6449,8 @@ bt.data = {
                     var loading = bt.load();
                     bt.send('SetupPassword', 'database/SetupPassword', rdata, function(rRet) {
                         loading.close();
-                        bt.msg(rRet);
-                        load.close();
+                        layer.msg(rRet.msg, { icon: rRet.status ? 1 : 2, shade: .3 })
+                        if (rRet.status) load.close();
                     })
                 })
             ]
@@ -6373,9 +6458,11 @@ bt.data = {
         data_add: {
             title: lan.database.add_title,
             area: '530px',
-            list: [{
+            list: [
+                {
                     title: 'DBName',
-                    items: [{
+                    items: [
+                        {
                             name: 'name',
                             placeholder: lan.public_backup.new_db_name,
                             type: 'text',
@@ -6397,26 +6484,52 @@ bt.data = {
                         }
                     ]
                 },
-                { title: lan.public_backup.user_name, name: 'db_user', placeholder: lan.public_backup.db_user, width: '65%' },
+                {
+                    name: 'db_user',
+                    title: lan.public_backup.user_name,
+                    placeholder: lan.public_backup.db_user,
+                    width: '65%'
+                },
                 bt.form.item.password,
-                bt.form.item.data_access,
                 {
                     title: lan.public_backup.type,
                     name: 'dtype',
                     type: 'select',
                     disabled: (bt.contains(bt.get_cookie('serverType'), 'nginx') || bt.contains(bt.get_cookie('serverType'), 'apache') ? true : false),
                     items: [
-                        { title: 'MySQL', value: 'MySQL' },
-                        { title: 'SQLServer', value: 'SQLServer' }
+                        {
+                            title: 'MySQL',
+                            value: 'MySQL'
+                        },
+                        {
+                            title: 'SQLServer',
+                            value: 'SQLServer'
+                        }
                     ]
                 },
-                { html: '<div class="line" style="padding:0;">\
-                    <span class="tname checkType">Force SSL</span>\
-                    <div style="display: inline-block;">\
-                        <input type="checkbox" name="active" id="check_ssl" class="btswitch btswitch-ios">\
-                        <label for="check_ssl" class="btswitch-btn" style="margin-top:5px;"></label>\
-                    </div>\
-                </div>' },
+                bt.form.item.data_access,
+                {
+                    title: lan.public_backup.add_to,
+                    items: [
+                        {
+                            name: 'sid',
+                            width: '65%',
+                            type: 'select',
+                            items: []
+                        }
+                    ]
+                },
+                {
+                    html: '\
+                        <div class="line" style="padding:0;">\
+                            <span class="tname checkType">Force SSL</span>\
+                            <div style="display: inline-block;">\
+                                <input type="checkbox" name="active" id="check_ssl" class="btswitch btswitch-ios">\
+                                <label for="check_ssl" class="btswitch-btn" style="margin-top: 5px;"></label>\
+                            </div>\
+                        </div>\
+                    '
+                }
             ],
             btns: [
                 bt.form.btn.close(),
@@ -6432,7 +6545,10 @@ bt.data = {
                         bt.msg(rRet);
                     })
                 })
-            ]
+            ],
+            success: function () {
+                $('[name=sid]').after('<a class="btlink" onclick="layer.closeAll();database.open_cloud_server()" style="margin-left: 10px;">' + lan.public.manage_cloud_server +  '</a>');
+            }
         },
         data_access: {
             title: lan.public_backup.set_db_permissions,
@@ -6999,6 +7115,110 @@ var form_group = {
 		});
 	}
 }
+
+bt.public = {
+    
+    // 设置目录配额
+    modify_path_quota:function (data,callback) {
+      var loadT = bt.load(lan.public.modify_path_quota)
+      $.post('/project/quota/modify_path_quota',data,function (res) {
+        loadT.close()
+        if(callback) callback(res)
+      })
+    },
+  
+    // 设置mysql配额
+    modify_mysql_quota:function (data,callback) {
+      var loadT = bt.load(lan.public.modify_mysql_quota)
+      $.post('/project/quota/modify_mysql_quota',data,function (res) {
+        loadT.close()
+        if(callback) callback(res)
+      })
+    },
+  
+    /**
+     * @description 获取quoto容量
+    */
+  
+    get_quota_config:function (type) {
+      return {
+        fid: 'quota',
+        title: lan.public.capacity,
+        width: 120,
+        template:function(row,index){
+          var quota = row.quota;
+          if(!quota.size) return '<a href="javascript:;" class="btlink">' + lan.public.notConfigured + '</a>'
+          var size = quota.size * 1024 * 1024;
+          var speed = ((quota.used / size) * 100).toFixed(2)
+          var quotaFull = false
+          if(quota.size > 0 && quota.used >= (size)) quotaFull = true;
+          return '<div class=""><div class="progress mb0 cursor" style="height:12px;line-height:12px;vertical-align:middle;border-radius:2px;margin-top:3px;" title="' + lan.public.currentUsedCapacity + ': '+ (quotaFull?lan.public.finished:bt.format_size(quota.used)) +'\n' + lan.public.currentUsedCapacity + ': '+ bt.format_size(size) +'\n' + lan.public.modifyQuotaCapacity + '">'+
+            '<div class="progress-bar progress-bar-'+ (speed >= 90?'danger':'success') +'" style="height:15px;line-height:15px;width: '+ speed +'%;display: inline-block;" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>'+
+          '</div>'
+        },
+        event:function(row, index, ev){
+          var quota = row.quota;
+          var size = quota.size * 1024 * 1024
+          var usedList = bt.format_size(quota.used).split(' ');
+          var quotaFull = false
+          if(quota.size > 0 && quota.used >= (size)) quotaFull = true;
+          var types = {
+              site: lan.site.website,
+              ftp: lan.site.add_site.ftp,
+              database: lan.site.database
+          }
+          layer.open({
+            type:1,
+            title: '[' + row.name + '] '+ types[type] + ' ' + lan.public.quotaCapacity,
+            area:'476px',
+            closeBtn:2,
+            btn: [lan.public.save, lan.public.cancel],
+            content:'<div class="bt-form pd20"><div class="line">'+
+              '<span class="tname" style="width:180px">' + lan.public.currentUsedCapacity + '</span>'+
+              '<div class="info-r">' +
+                '<input type="text" name="used" disabled placeholder="" class="bt-input-text mr10 " style="width:120px;" value="'+ (!quotaFull?(quota.size != 0?usedList[0]:0):lan.public.capacityFinished) +'" /><span>'+ (!quotaFull?(quota.size != 0?usedList[1]:'MB'):'') +'</span>'+
+              '</div>'+
+                '<span class="tname" style="width:180px">' + lan.public.quotaCapacity + '</span>'+
+                '<div class="info-r">'+
+                  '<input type="text" name="quota_size" placeholder="" class="bt-input-text mr10 " style="width:120px;" value="'+ quota.size +'" /><span>MB</span>'+
+                '</div>'+
+              '</div>'+
+              '<ul class="help-info-text c7">'+
+                '<li style="color:red;">' + lan.public.capacityTips1 + '</li>'+
+                '<li class="'+ (type == "database"?'hide':'') +'">' + lan.public.capacityTips2 + '</li>'+
+                '<li class="'+ (type == "database"?'hide':'') +'">' + lan.public.capacityTips3 + '</li>'+
+                '<li class="'+ (type == "database"?'':'hide') +'">' + lan.public.capacityTips4 + '</li>'+
+                '<li>' + lan.public.capacityTips5 + '</li>'+
+              '</ul>'+
+            '</div>',
+            yes:function (indexs) { 
+              var quota_size = $('[name="quota_size"]').val()
+              if(type === 'site' || type === 'ftp'){
+                bt.public.modify_path_quota({data:JSON.stringify({size:quota_size,path:row.path})},function (res) {
+                  if(res.status){
+                    bt.msg(res)
+                    layer.close(indexs)
+                    setTimeout(function () { location.reload() },200)
+                  }else{
+                    layer.msg(res.msg,{ icon:res.status?1:2, area:'650px',time:0,shade:.3,closeBtn:2})
+                  }
+                })
+              }else{
+                bt.public.modify_mysql_quota({data:JSON.stringify({size:quota_size,db_name:row.name})},function (res) {
+                  bt.msg(res)
+                  if(res.status){
+                    layer.close(indexs)
+                    setTimeout(function () { location.reload() },200)
+                  }
+                })
+              }
+            }
+          })
+        }
+      }
+    }
+}
+
 //设置面板SSL
 function setPanelSSL(){
 	var loadT = layer.msg(lan.config.ssl_msg,{icon:16,time:0,shade: [0.3, '#000']});
@@ -7036,7 +7256,7 @@ function setPanelSSL(){
                     }
                 },
               {
-              	html:'<div class="details"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: 3px 5px 0px;" for="checkSSL">'+lan.config.ssl_open_ps_4+'</label><a target="_blank" class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate">'+lan.config.ssl_open_ps_5+'</a></p></div>'
+                  html: '<div class="details"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: -1px 5px 0px;" for="checkSSL">' + lan.config.ssl_open_ps_4 + '</label><a target="_blank" class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate">' + lan.config.ssl_open_ps_5 + '</a></p></div>'
               }
 
             ],

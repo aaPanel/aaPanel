@@ -132,7 +132,10 @@
 }
 
 .file_table_view.icon_view .file_ico_type {
-    height: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .file_table_view.icon_view .file_list_content .file_icon {
@@ -555,7 +558,13 @@
     display: inline-block;
     position: relative;
 }
-
+.file_table_view.list_view .file_list_content .file_ico_type img.file_images{
+  width: 22px;
+  height: 22px;
+  position: absolute;
+  top: 50%;
+  margin-top: -11px;
+}
 .file_table_view.list_view .file_title {
     vertical-align: top;
     padding-left: 38px;

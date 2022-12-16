@@ -42,6 +42,7 @@
 
 {% endblock %}
 {% block scripts %}
+{{ super() }}
 <script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
 <script type="text/javascript" src="/static/laydate/laydate.js?date=20180301"></script>
 <script type="text/javascript" src="/static/ace/ace.js?date={{g.version}}"></script>

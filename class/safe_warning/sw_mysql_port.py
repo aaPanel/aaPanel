@@ -51,8 +51,23 @@ def check_run():
     if not public.ExecShell("lsof -i :{}".format(port_tmp[0]))[0]:
         return True,'MySQL is not installed'
     result = public.check_port_stat(int(port_tmp[0]),public.GetLocalIp())
-    if result == 0:
-        return True,'Risk-free'
+    #兼容socket能连通但实际端口不通情况
+    if result != 0:
+        res=''
+        if os.path.exists('/usr/sbin/firewalld'):
+            res=public.ExecShell('firewall-cmd --list-all')
+        elif os.path.exists('/usr/sbin/ufw'):
+            try:
+                res=public.ExecShell('sudo ufw status verbose')
+            except:
+                res=public.ExecShell('ufw status verbose')
+        else:
+            pass
+        check_str=' '+port_tmp[0]+'/'
+        if res[0].find(check_str) == -1:
+            return True,'Risk-free'
+    else:return True,'Risk-free'
+
 
     fail2ban_file = '/www/server/panel/plugin/fail2ban/config.json'
     if os.path.exists(fail2ban_file):
