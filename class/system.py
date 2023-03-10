@@ -25,11 +25,10 @@ class system:
             session['config'] = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find()
         if not 'email' in session['config']:
             session['config']['email'] = public.M('users').where("id=?",('1',)).getField('email')
-        data = {}
         data = session['config']
-        data['webserver'] = session['config']['webserver']
+        data['webserver'] = public.get_webserver()
         #PHP版本
-        phpVersions = ('52','53','54','55','56','70','71','72','73','74')
+        phpVersions = public.get_php_versions()
         
         data['php'] = []
         
@@ -100,7 +99,7 @@ class system:
         elif os.path.exists('/usr/local/lsws/bin/lswsctrl'):
             data['webserver'] = 'openlitespeed'
             serviceName = 'openlitespeed'
-            tmp['setup'] = os.path.exists(self.setupPath +'/apache/bin/httpd')
+            tmp['setup'] = os.path.exists('/usr/local/lsws/bin/lswsctrl')
             configFile = '/usr/local/lsws/bin/lswsctrl'
             try:
                 if os.path.exists(configFile):
@@ -119,54 +118,55 @@ class system:
             except:
                 pass
                 
+
         tmp['type'] = data['webserver']
-        tmp['version'] = public.readFile(self.setupPath + '/'+data['webserver']+'/version.pl');
+        tmp['version'] = public.xss_version(public.readFile(self.setupPath + '/'+data['webserver']+'/version.pl'))
         tmp['status'] = False
         result = public.ExecShell('/etc/init.d/' + serviceName + ' status')
         if result[0].find('running') != -1: tmp['status'] = True
         data['web'] = tmp
         
         tmp = {}
-        vfile = self.setupPath + '/phpmyadmin/version.pl';
-        tmp['version'] = public.readFile(vfile);
+        vfile = self.setupPath + '/phpmyadmin/version.pl'
+        tmp['version'] = public.xss_version(public.readFile(vfile))
         if tmp['version']: tmp['version'] = tmp['version'].strip()
-        tmp['setup'] = os.path.exists(vfile);
-        tmp['status'] = pstatus;
-        tmp['phpversion'] = phpversion.strip();
-        tmp['port'] = phpport;
-        tmp['auth'] = pauth;
-        data['phpmyadmin'] = tmp;
+        tmp['setup'] = os.path.exists(vfile)
+        tmp['status'] = pstatus
+        tmp['phpversion'] = phpversion.strip()
+        tmp['port'] = phpport
+        tmp['auth'] = pauth
+        data['phpmyadmin'] = tmp
         
         tmp = {}
-        tmp['setup'] = os.path.exists('/etc/init.d/tomcat');
+        tmp['setup'] = os.path.exists('/etc/init.d/tomcat')
         tmp['status'] = tmp['setup']
         #if public.ExecShell('ps -aux|grep tomcat|grep -v grep')[0] == "": tmp['status'] = False
-        tmp['version'] = public.readFile(self.setupPath + '/tomcat/version.pl');
-        data['tomcat'] = tmp;
+        tmp['version'] = public.xss_version(public.readFile(self.setupPath + '/tomcat/version.pl'))
+        data['tomcat'] = tmp
         
         tmp = {}
-        tmp['setup'] = os.path.exists(self.setupPath +'/mysql/bin/mysql');
-        tmp['version'] = public.readFile(self.setupPath + '/mysql/version.pl');
+        tmp['setup'] = os.path.exists(self.setupPath +'/mysql/bin/mysql')
+        tmp['version'] = public.xss_version(public.readFile(self.setupPath + '/mysql/version.pl'))
         tmp['status'] = os.path.exists('/tmp/mysql.sock')
         data['mysql'] = tmp
         
         tmp = {}
-        tmp['setup'] = os.path.exists(self.setupPath +'/redis/runtest');
-        tmp['status'] = os.path.exists('/var/run/redis_6379.pid');
-        data['redis'] = tmp;
+        tmp['setup'] = os.path.exists(self.setupPath +'/redis/runtest')
+        tmp['status'] = os.path.exists('/var/run/redis_6379.pid')
+        data['redis'] = tmp
         
         tmp = {}
-        tmp['setup'] = os.path.exists('/usr/local/memcached/bin/memcached');
-        tmp['status'] = os.path.exists('/var/run/memcached.pid');
-        data['memcached'] = tmp;
+        tmp['setup'] = os.path.exists('/usr/local/memcached/bin/memcached')
+        tmp['status'] = os.path.exists('/var/run/memcached.pid')
+        data['memcached'] = tmp
         
         tmp = {}
-        tmp['setup'] = os.path.exists(self.setupPath +'/pure-ftpd/bin/pure-pw');
-        tmp['version'] = public.readFile(self.setupPath + '/pure-ftpd/version.pl');
+        tmp['setup'] = os.path.exists(self.setupPath +'/pure-ftpd/bin/pure-pw')
+        tmp['version'] = public.xss_version(public.readFile(self.setupPath + '/pure-ftpd/version.pl'))
         tmp['status'] = os.path.exists('/var/run/pure-ftpd.pid')
         data['pure-ftpd'] = tmp
         data['panel'] = self.GetPanelInfo()
-        data['systemdate'] = public.ExecShell('date +"%Y-%m-%d %H:%M:%S %Z %z"')[0].strip();
+        data['systemdate'] = public.format_date("%Y-%m-%d %H:%M:%S %Z %z") #public.ExecShell('date +"%Y-%m-%d %H:%M:%S %Z %z"')[0].strip()
         
         return data
     
@@ -176,15 +176,15 @@ class system:
         try:
             port = public.GetHost(True)
         except:
-            port = '8888';
+            port = '8888'
         domain = ''
         if os.path.exists('data/domain.conf'):
-           domain = public.readFile('data/domain.conf');
+           domain = public.readFile('data/domain.conf')
         
         autoUpdate = ''
-        if os.path.exists('data/autoUpdate.pl'): autoUpdate = 'checked';
+        if os.path.exists('data/autoUpdate.pl'): autoUpdate = 'checked'
         limitip = ''
-        if os.path.exists('data/limitip.conf'): limitip = public.readFile('data/limitip.conf');
+        if os.path.exists('data/limitip.conf'): limitip = public.readFile('data/limitip.conf')
         admin_path = '/'
         if os.path.exists('data/admin_path.pl'): admin_path = public.readFile('data/admin_path.pl').strip()
         
@@ -193,8 +193,8 @@ class system:
         #    if os.path.isdir('templates/' + template): templates.append(template);
         template = public.GetConfigValue('template')
         
-        check502 = '';
-        if os.path.exists('data/502Task.pl'): check502 = 'checked';
+        check502 = ''
+        if os.path.exists('data/502Task.pl'): check502 = 'checked'
         return {'port':port,'address':address,'domain':domain,'auto':autoUpdate,'502':check502,'limitip':limitip,'templates':templates,'template':template,'admin_path':admin_path}
     
     def GetPHPConfig(self,version):
@@ -233,18 +233,18 @@ class system:
     
     def GetSystemTotal(self,get,interval = 1):
         #取系统统计信息
-        data = self.GetMemInfo();
-        cpu = self.GetCpuInfo(interval);
-        data['cpuNum'] = cpu[1];
-        data['cpuRealUsed'] = cpu[0];
-        data['time'] = self.GetBootTime();
-        data['system'] = self.GetSystemVersion();
-        data['isuser'] = public.M('users').where('username=?',('admin',)).count();
+        data = self.GetMemInfo()
+        cpu = self.GetCpuInfo(interval)
+        data['cpuNum'] = cpu[1]
+        data['cpuRealUsed'] = cpu[0]
+        data['time'] = self.GetBootTime()
+        data['system'] = self.GetSystemVersion()
+        data['isuser'] = public.M('users').where('username=?',('admin',)).count()
         try:
             data['isport'] = public.GetHost(True) == '8888'
         except:data['isport'] = False
 
-        data['version'] = session['version'];
+        data['version'] = session['version']
         return data
     
     def GetLoadAverage(self,get):
@@ -252,14 +252,14 @@ class system:
             c = os.getloadavg()
         except:
             c = [0,0,0]
-        data = {};
-        data['one'] = float(c[0]);
-        data['five'] = float(c[1]);
-        data['fifteen'] = float(c[2]);
-        data['max'] = psutil.cpu_count() * 2;
-        data['limit'] = data['max'];
-        data['safe'] = data['max'] * 0.75;
-        return data;
+        data = {}
+        data['one'] = float(c[0])
+        data['five'] = float(c[1])
+        data['fifteen'] = float(c[2])
+        data['max'] = psutil.cpu_count() * 2
+        data['limit'] = data['max']
+        data['safe'] = data['max'] * 0.75
+        return data
     
     def GetAllInfo(self,get):
         data = {}
@@ -278,17 +278,18 @@ class system:
     
     def GetSystemVersion(self):
         #取操作系统版本
-        import public
-        version = public.readFile('/etc/redhat-release')
-        if not version:
-            version = public.readFile('/etc/issue').strip().split("\n")[0].replace('\\n','').replace('\l','').strip()
-        else:
-            version = version.replace('release ','').replace('Linux','').replace('(Core)','').strip()
-        v_info = sys.version_info
-        return version + '(Py' + str(v_info.major) + '.' + str(v_info.minor) + '.' + str(v_info.micro) + ')'
+        key = 'sys_version'
+        version = cache.get(key)
+        if version: return version
+        version = public.get_os_version()
+        cache.set(key,version,600)
+        return version
     
     def GetBootTime(self):
         #取系统启动时间
+        key = 'sys_time'
+        sys_time = cache.get(key)
+        if sys_time: return sys_time
         import public,math
         conf = public.readFile('/proc/uptime').split()
         tStr = float(conf[0])
@@ -297,7 +298,9 @@ class system:
         days = math.floor(hours / 24)
         hours = math.floor(hours - (days * 24))
         min = math.floor(min - (days * 60 * 24) - (hours * 60))
-        return "{} Day".format(int(days))
+        sys_time = "{} Day(s)".format(int(days))
+        cache.set(key,sys_time,1800)
+        return sys_time
         #return public.getMsg('SYS_BOOT_TIME',(str(int(days)),str(int(hours)),str(int(min))))
     
     def GetCpuInfo(self,interval = 1):
@@ -307,14 +310,24 @@ class system:
         c_tmp = public.readFile('/proc/cpuinfo')
         d_tmp = re.findall("physical id.+",c_tmp)
         cpuW = len(set(d_tmp))
-        used = psutil.cpu_percent(interval)
+        import threading
+        p = threading.Thread(target=self.get_cpu_percent_thead,args=(interval,))
+        p.setDaemon(True)
+        p.start()
+
+        used = cache.get('cpu_used_all')
+        if not used: used = self.get_cpu_percent_thead(interval)
+
         used_all = psutil.cpu_percent(percpu=True)
         cpu_name = public.getCpuType() + " * {}".format(cpuW)
+
         return used,cpuCount,used_all,cpu_name,cpuNum,cpuW
 
+    def get_cpu_percent_thead(self,interval):
+        used = psutil.cpu_percent(interval)
+        cache.set('cpu_used_all',used,10)
+        return used
 
-    def GetCpuInfo_new(self):
-        cpuCount = psutil.cpu_count()
 
     def get_cpu_percent(self):
         percent = 0.00
@@ -353,9 +366,13 @@ class system:
     
     def GetMemInfo(self,get=None):
         #取内存信息
+        skey = 'memInfo'
+        memInfo = cache.get(skey)
+        if memInfo: return memInfo
         mem = psutil.virtual_memory()
         memInfo = {'memTotal':int(mem.total/1024/1024),'memFree':int(mem.free/1024/1024),'memBuffers':int(mem.buffers/1024/1024),'memCached':int(mem.cached/1024/1024)}
         memInfo['memRealUsed'] = memInfo['memTotal'] - memInfo['memFree'] - memInfo['memBuffers'] - memInfo['memCached']
+        cache.set(skey,memInfo,60)
         return memInfo
     
     def GetDiskInfo(self,get=None):
@@ -372,10 +389,17 @@ class system:
             diskInfo.append(tmp)
         return diskInfo
 
-    def GetDiskInfo2(self):
+    def GetDiskInfo2(self, human=True):
+
         #取磁盘分区信息
-        temp = public.ExecShell("df -hT -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
-        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev")[0]
+        key = 'sys_disk'
+        diskInfo = cache.get(key)
+        if diskInfo: return diskInfo
+        if human:
+            temp = public.ExecShell("df -hT -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev|grep -v overlay")[0]
+        else:
+            temp = public.ExecShell("df -T -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev|grep -v overlay")[0]
+        tempInodes = public.ExecShell("df -i -P|grep '/'|grep -v tmpfs|grep -v 'snap/core'|grep -v udev|grep -v overlay")[0]
         temp1 = temp.split('\n')
         tempInodes1 = tempInodes.split('\n')
         diskInfo = []
@@ -384,8 +408,10 @@ class system:
         for tmp in temp1:
             n += 1
             try:
+                if ',' in tmp:
+                    tmp = re.sub(',\d+','',tmp)
                 inodes = tempInodes1[n-1].split()
-                disk = re.findall(r"^(.+)\s+([\w]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\d%]{2,4})\s+(/.{0,50})$",tmp.strip())
+                disk = re.findall(r"^(.+)\s+([\w\.]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\w\.]+)\s+([\d%]{2,4})\s+(/.{0,100})$",tmp.strip())
                 if disk: disk = disk[0]
                 if len(disk) < 6: continue
                 if disk[2].find('M') != -1: continue
@@ -397,15 +423,72 @@ class system:
                 arr = {}
                 arr['filesystem'] = disk[0].strip()
                 arr['type'] = disk[1].strip()
-                arr['path'] = disk[6]
+                arr['path'] = disk[6].replace('/usr/local/lighthouse/softwares/btpanel','/www')
                 tmp1 = [disk[2],disk[3],disk[4],disk[5]]
                 arr['size'] = tmp1
                 arr['inodes'] = [inodes[1],inodes[2],inodes[3],inodes[4]]
                 diskInfo.append(arr)
             except Exception as ex:
-                public.WriteLog('Access to information',str(ex))
+                public.write_log_gettext('Get Info',str(ex))
                 continue
+        cache.set(key,diskInfo,10)
         return diskInfo
+
+
+    # 获取磁盘IO开销数据
+    def get_disk_iostat(self):
+        iokey = 'iostat'
+        diskio = cache.get(iokey)
+        mtime = int(time.time())
+        if not diskio:
+            diskio = {}
+            diskio['info'] = None
+            diskio['time'] = mtime
+        diskio_1 = diskio['info']
+        stime = mtime - diskio['time']
+        if not stime: stime = 1
+        diskInfo = {}
+        diskInfo['ALL'] = {}
+        diskInfo['ALL']['read_count'] = 0
+        diskInfo['ALL']['write_count'] = 0
+        diskInfo['ALL']['read_bytes'] = 0
+        diskInfo['ALL']['write_bytes'] = 0
+        diskInfo['ALL']['read_time'] = 0
+        diskInfo['ALL']['write_time'] = 0
+        diskInfo['ALL']['read_merged_count'] = 0
+        diskInfo['ALL']['write_merged_count'] = 0
+        try:
+            if os.path.exists('/proc/diskstats'):
+                diskio_2 = psutil.disk_io_counters(perdisk=True)
+                if not diskio_1:
+                    diskio_1 = diskio_2
+                for disk_name in diskio_2.keys():
+                    diskInfo[disk_name] = {}
+                    diskInfo[disk_name]['read_count']   = int((diskio_2[disk_name].read_count - diskio_1[disk_name].read_count) / stime)
+                    diskInfo[disk_name]['write_count']  = int((diskio_2[disk_name].write_count - diskio_1[disk_name].write_count) / stime)
+                    diskInfo[disk_name]['read_bytes']   = int((diskio_2[disk_name].read_bytes - diskio_1[disk_name].read_bytes) / stime)
+                    diskInfo[disk_name]['write_bytes']  = int((diskio_2[disk_name].write_bytes - diskio_1[disk_name].write_bytes) / stime)
+                    diskInfo[disk_name]['read_time']    = int((diskio_2[disk_name].read_time - diskio_1[disk_name].read_time) / stime)
+                    diskInfo[disk_name]['write_time']   = int((diskio_2[disk_name].write_time - diskio_1[disk_name].write_time) / stime)
+                    diskInfo[disk_name]['read_merged_count'] = int((diskio_2[disk_name].read_merged_count - diskio_1[disk_name].read_merged_count) / stime)
+                    diskInfo[disk_name]['write_merged_count'] = int((diskio_2[disk_name].write_merged_count - diskio_1[disk_name].write_merged_count) / stime)
+
+                    diskInfo['ALL']['read_count'] += diskInfo[disk_name]['read_count']
+                    diskInfo['ALL']['write_count'] += diskInfo[disk_name]['write_count']
+                    diskInfo['ALL']['read_bytes'] += diskInfo[disk_name]['read_bytes']
+                    diskInfo['ALL']['write_bytes'] += diskInfo[disk_name]['write_bytes']
+                    if diskInfo['ALL']['read_time'] < diskInfo[disk_name]['read_time']:
+                        diskInfo['ALL']['read_time'] = diskInfo[disk_name]['read_time']
+                    if diskInfo['ALL']['write_time'] < diskInfo[disk_name]['write_time']:
+                        diskInfo['ALL']['write_time'] = diskInfo[disk_name]['write_time']
+                    diskInfo['ALL']['read_merged_count'] += diskInfo[disk_name]['read_merged_count']
+                    diskInfo['ALL']['write_merged_count'] += diskInfo[disk_name]['write_merged_count']
+
+                cache.set(iokey,{'info':diskio_2,'time':mtime})
+        except:
+            return diskInfo
+        return diskInfo
+
 
     #清理系统垃圾
     def ClearSystem(self,get):
@@ -470,34 +553,58 @@ class system:
     
     def GetNetWork(self,get=None):
         cache_timeout = 86400
-        networkIo = psutil.net_io_counters()[:4]
         otime = cache.get("otime")
-        if not otime:
-            otime = time.time()
-            cache.set('up',networkIo[0],cache_timeout)
-            cache.set('down',networkIo[1],cache_timeout)
-            cache.set('otime',otime ,cache_timeout)
-            
         ntime = time.time()
         networkInfo = {}
-        up = cache.get('up')
-        down = cache.get('down')
-        if not up:
-            up = networkIo[0]
-        if not down:
-            down = networkIo[1]
-        networkInfo['upTotal']   = networkIo[0]
-        networkInfo['downTotal'] = networkIo[1]
-        networkInfo['up']        = round(float(networkIo[0] -  up) / 1024 / (ntime - otime),2)
-        networkInfo['down']      = round(float(networkIo[1] - down) / 1024 / (ntime -  otime),2)
-        networkInfo['downPackets'] =networkIo[3]
-        networkInfo['upPackets']   =networkIo[2]
-            
-        cache.set('up',networkIo[0],cache_timeout)
-        cache.set('down',networkIo[1],cache_timeout)
-        cache.set('otime', time.time(),cache_timeout)
+        networkInfo['network'] = {}
+        networkInfo['upTotal'] = 0
+        networkInfo['downTotal'] = 0
+        networkInfo['up'] = 0
+        networkInfo['down'] = 0
+        networkInfo['downPackets'] = 0
+        networkInfo['upPackets'] = 0
+        networkIo_list = psutil.net_io_counters(pernic = True)
+        for net_key in networkIo_list.keys():
+            networkIo = networkIo_list[net_key][:4]
+            up_key = "{}_up".format(net_key)
+            down_key = "{}_down".format(net_key)
+            otime_key = "otime"
+
+            if not otime:
+                otime = time.time()
+
+                cache.set(up_key,networkIo[0],cache_timeout)
+                cache.set(down_key,networkIo[1],cache_timeout)
+                cache.set(otime_key,otime ,cache_timeout)
+
+            networkInfo['network'][net_key] = {}
+            up = cache.get(up_key)
+            down = cache.get(down_key)
+            if not up:
+                up = networkIo[0]
+            if not down:
+                down = networkIo[1]
+            networkInfo['network'][net_key]['upTotal']   = networkIo[0]
+            networkInfo['network'][net_key]['downTotal'] = networkIo[1]
+            networkInfo['network'][net_key]['up']        = round(float(networkIo[0] -  up) / 1024 / (ntime - otime),2)
+            networkInfo['network'][net_key]['down']      = round(float(networkIo[1] - down) / 1024 / (ntime -  otime),2)
+            networkInfo['network'][net_key]['downPackets'] =networkIo[3]
+            networkInfo['network'][net_key]['upPackets']   =networkIo[2]
+
+            networkInfo['upTotal'] += networkInfo['network'][net_key]['upTotal']
+            networkInfo['downTotal'] += networkInfo['network'][net_key]['downTotal']
+            networkInfo['up'] += networkInfo['network'][net_key]['up']
+            networkInfo['down'] += networkInfo['network'][net_key]['down']
+            networkInfo['downPackets'] += networkInfo['network'][net_key]['downPackets']
+            networkInfo['upPackets'] += networkInfo['network'][net_key]['upPackets']
+
+            cache.set(up_key,networkIo[0],cache_timeout)
+            cache.set(down_key,networkIo[1],cache_timeout)
+            cache.set(otime_key, time.time(),cache_timeout)
+
         if get != False:
-            networkInfo['cpu'] = self.GetCpuInfo(0.2)
+            networkInfo['cpu'] = self.GetCpuInfo(1)
+            networkInfo['cpu_times'] = self.get_cpu_times()
             networkInfo['load'] = self.GetLoadAverage(get)
             networkInfo['mem'] = self.GetMemInfo(get)
             networkInfo['version'] = session['version']
@@ -508,12 +615,64 @@ class system:
         networkInfo['site_total'] = public.M('sites').count()
         networkInfo['ftp_total'] = public.M('ftps').count()
         networkInfo['database_total'] = public.M('databases').count()
+        networkInfo['system'] = self.GetSystemVersion()
+        networkInfo['installed'] = self.CheckInstalled()
+        import panelSSL
+        networkInfo['user_info'] = panelSSL.panelSSL().GetUserInfo(None)
+        networkInfo['up'] = round(float(networkInfo['up']),2)
+        networkInfo['down'] = round(float(networkInfo['down']),2)
+        networkInfo['iostat'] = self.get_disk_iostat()
+
         return networkInfo
-        
+
+
+    def get_cpu_times(self):
+        skey = 'cpu_times'
+        data = cache.get(skey)
+        if data:return data
+        try:
+            data = {}
+            cpu_times_p  = psutil.cpu_times_percent()
+            data['user'] = cpu_times_p.user
+            data['nice'] = cpu_times_p.nice
+            data['system'] = cpu_times_p.system
+            data['idle'] = cpu_times_p.idle
+            data['iowait'] = cpu_times_p.iowait
+            data['irq'] = cpu_times_p.irq
+            data['softirq'] = cpu_times_p.softirq
+            data['steal'] = cpu_times_p.steal
+            data['guest'] = cpu_times_p.guest
+            data['guest_nice'] = cpu_times_p.guest_nice
+            data['total_processes'] = 0
+            data['active_processes'] = 0
+            for pid in psutil.pids():
+                try:
+                    p = psutil.Process(pid)
+                    if p.status() == 'running':
+                        data['active_processes'] += 1
+                except:
+                    continue
+                data['total_processes'] += 1
+
+            cache.set(skey,data,60)
+        except: return None
+        return data
+
+
+
     
     def GetNetWorkApi(self,get=None):
         return self.GetNetWork()
-    
+
+    #检查是否安装任何
+    def CheckInstalled(self):
+        checks = ['nginx','apache','php','pure-ftpd','mysql']
+        import os
+        for name in checks:
+            filename = public.GetConfigValue('root_path') + "/server/" + name
+            if os.path.exists(filename): return True
+        return False
+
     def GetNetWorkOld(self):
         #取网络流量信息
         import time;
@@ -647,7 +806,7 @@ class system:
             import ajax
             get.status = 'True'
             ajax.ajax().setPHPMyAdmin(get)
-            return public.returnMsg(True,'SYS_EXEC_SUCCESS')
+            return public.return_msg_gettext(True,'Executed successfully!')
 
         if get.name == 'openlitespeed':
             if get.type == 'stop':
@@ -656,12 +815,12 @@ class system:
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl start')
             else:
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart')
-            return public.returnMsg(True,'SYS_EXEC_SUCCESS')
+            return public.return_msg_gettext(True,'Executed successfully!')
 
         #检查httpd配置文件
         if get.name == 'apache' or get.name == 'httpd':
             get.name = 'httpd'
-            if not os.path.exists(self.setupPath+'/apache/bin/apachectl'): return public.returnMsg(True,'SYS_NOT_INSTALL_APACHE')
+            if not os.path.exists(self.setupPath+'/apache/bin/apachectl'): return public.return_msg_gettext(True,'Execution failed, check if Apache installed')
             vhostPath = self.setupPath + '/panel/vhost/apache'
             if not os.path.exists(vhostPath):
                 public.ExecShell('mkdir ' + vhostPath)
@@ -673,8 +832,8 @@ class system:
                 
             result = public.ExecShell('ulimit -n 8192 ; ' + self.setupPath+'/apache/bin/apachectl -t')
             if result[1].find('Syntax OK') == -1:
-                public.WriteLog("TYPE_SOFT",'SYS_EXEC_ERR', (str(result),))
-                return public.returnMsg(False,'SYS_CONF_APACHE_ERR',(result[1].replace("\n",'<br>'),))
+                public.write_log_gettext("Software manager",'Execution failed: {}', (str(result),))
+                return public.return_msg_gettext(False,"Apache rule configuration error: <br><a style='color:red;'>{}</a>",(result[1].replace("\n",'<br>'),))
             
             if get.type == 'restart':
                 public.ExecShell('pkill -9 httpd')
@@ -685,12 +844,14 @@ class system:
         elif get.name == 'nginx':
             vhostPath = self.setupPath + '/panel/vhost/rewrite'
             if not os.path.exists(vhostPath): public.ExecShell('mkdir ' + vhostPath)
+            if not os.path.exists("/dev/shm/nginx-cache/wp"):
+                public.ExecShell('mkdir -p /dev/shm/nginx-cache/wp && chown -R www.www /dev/shm/nginx-cache')
             vhostPath = self.setupPath + '/panel/vhost/nginx'
             if not os.path.exists(vhostPath):
                 public.ExecShell('mkdir ' + vhostPath)
                 public.ExecShell('/etc/init.d/nginx start')
             
-            result = public.ExecShell('ulimit -n 8192 ; nginx -t -c '+self.setupPath+'/nginx/conf/nginx.conf')
+            result = public.ExecShell('ulimit -n 8192 ; '+self.setupPath+'/nginx/sbin/nginx -t -c '+self.setupPath+'/nginx/conf/nginx.conf')
             if result[1].find('perserver') != -1:
                 limit = self.setupPath + '/nginx/conf/nginx.conf'
                 nginxConf = public.readFile(limit)
@@ -698,18 +859,18 @@ class system:
                 nginxConf = nginxConf.replace("#limit_conn_zone $binary_remote_addr zone=perip:10m;",limitConf)
                 public.writeFile(limit,nginxConf)
                 public.ExecShell('/etc/init.d/nginx start')
-                return public.returnMsg(True,'SYS_CONF_NGINX_REP')
+                return public.return_msg_gettext(True,'Configuration file mismatch caused by reinstalling Nginx fixed')
             
             if result[1].find('proxy') != -1:
                 import panelSite
                 panelSite.panelSite().CheckProxy(get)
                 public.ExecShell('/etc/init.d/nginx start')
-                return public.returnMsg(True,'SYS_CONF_NGINX_REP')
+                return public.return_msg_gettext(True,'Configuration file mismatch caused by reinstalling Nginx fixed')
             
             #return result
             if result[1].find('successful') == -1:
-                public.WriteLog("TYPE_SOFT",'SYS_EXEC_ERR', (str(result),))
-                return public.returnMsg(False,'SYS_CONF_NGINX_ERR',(result[1].replace("\n",'<br>'),))
+                public.write_log_gettext("Software manager",'Execution failed: {}', (str(result),))
+                return public.return_msg_gettext(False,"Nginx rule configuration error: <br><a style='color:red;'>{}</a>",(result[1].replace("\n",'<br>'),))
 
             if get.type == 'start': 
                 self.kill_port()
@@ -741,15 +902,14 @@ class system:
             public.ExecShell('pkill -9 nginx && sleep 1')
             public.ExecShell('/etc/init.d/nginx start')
         if get.type != 'test':
-            public.WriteLog("TYPE_SOFT", 'SYS_EXEC_SUCCESS',(execStr,))
-        
-        if len(result[1]) > 1 and get.name != 'pure-ftpd' and get.name != 'redis': return public.returnMsg(False, '<p>Warning message: <p>' + result[1].replace('\n','<br>'))
-        return public.returnMsg(True,'SYS_EXEC_SUCCESS')
+            public.write_log_gettext("Software manager", 'Executed successfully!',(execStr,))
+        if len(result[1]) > 1 and get.name != 'pure-ftpd' and get.name != 'redis': return public.return_msg_gettext(False, '<p>Warning message: <p>' + result[1].replace('\n','<br>'))
+        return public.return_msg_gettext(True,'Executed successfully!')
     
     def RestartServer(self,get):
-        if not public.IsRestart(): return public.returnMsg(False,'EXEC_ERR_TASK')
+        if not public.IsRestart(): return public.return_msg_gettext(False,'Please run the program when all install tasks finished!')
         public.ExecShell("sync && init 6 &")
-        return public.returnMsg(True,'SYS_REBOOT')
+        return public.return_msg_gettext(True,'Command sent successfully!')
 
     def kill_port(self):
         public.ExecShell('pkill -9 httpd')
@@ -768,41 +928,14 @@ class system:
     
     #重启面板     
     def ReWeb(self,get):
-        #s = time.time()
-        #if not self.shell: self.connect_ssh()
-        #self.shell.send("nohup /etc/init.d/bt restart && sleep 1 && /etc/init.d/bt start > /dev/null &\n")
-        #public.ExecShell("nohup sleep 2 && /etc/init.d/bt restart 2>&1 >/dev/null &")
-        
         public.ExecShell("/etc/init.d/bt start")
         public.writeFile('data/restart.pl','True')
-        return public.returnMsg(True,'PANEL_WAS_RESTART')
+        return public.return_msg_gettext(True,'Panel restarted')
 
-    def connect_ssh(self):
-        import paramiko
-        self.ssh = paramiko.SSHClient()
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        try:
-            self.ssh.connect('127.0.0.1', public.GetSSHPort())
-        except:
-            if public.GetSSHStatus():
-                try:
-                    self.ssh.connect('localhost', public.GetSSHPort())
-                except:
-                    return False
-            import firewalls,common
-            fw = firewalls.firewalls()
-            get = common.dict_obj()
-            get.status = '0'
-            fw.SetSshStatus(get)
-            self.ssh.connect('127.0.0.1', public.GetSSHPort())
-            get.status = '1'
-            fw.SetSshStatus(get)
-        self.shell = self.ssh.invoke_shell(term='xterm', width=100, height=29)
-        self.shell.setblocking(0)
-        return True
     
     #修复面板
     def RepPanel(self,get):
+        public.writeFile('data/js_random.pl','1')
         public.ExecShell("wget -O update.sh " + public.get_url() + "/install/update6_en.sh && bash update.sh")
         self.ReWeb(None)
         return True
@@ -812,10 +945,3 @@ class system:
         public.ExecShell("wget -O update.sh " + public.get_url() + "/install/update6_en.sh && bash update.sh")
         self.ReWeb(None)
         return True
-
-        
-        
-        
-        
-        
-        

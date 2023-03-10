@@ -136,7 +136,7 @@
 	"PLUG_MAM": "Plugin manager",
 	"SET_PLUG": "Set plugin ['{1}'] AS!",
 	"INSTALL_THIRD_PARDY_PLUG": "Installed third-party plugin [{1}]",
-	"SITE_DIR_NOT_EXIST_RECREATE": "Site [{1}], root directory [{2}] does NOT exist, recreated!",
+	"SITE_DIR_NOT_EXIST_RECREATE": "Site [{1}], document root [{2}] does NOT exist, recreated!",
 	"SITE_STOP_ANTI_STEALING_LINK": "Hotlink Protection for site [{1}] disabled!",
 	"SITE_START_ANTI_STEALING_LINK": "Hotlink Protection for site [{1}] enabled!"
 }

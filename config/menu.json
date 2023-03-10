@@ -27,40 +27,54 @@
     "id": "memuAdatabase",
     "sort": 4
   },
+    {
+    "title": "Docker",
+    "href": "/docker",
+    "class": "menu_docker",
+    "id": "memuDocker",
+    "sort": 5
+  },
   {
     "title": "Monitor",
     "href": "/control",
     "class": "menu_control",
     "id": "memuAcontrol",
-    "sort": 5
+    "sort": 6
   },
   {
     "title": "Security",
     "href": "/firewall",
     "class": "menu_firewall",
     "id": "memuAfirewall",
-    "sort": 6
+    "sort": 7
+  },
+  {
+    "title": "WAF",
+    "href": "/btwaf/index",
+    "class": "menu_btwaf",
+    "id": "memu_btwaf",
+    "sort": 8
   },
   {
     "title": "Files",
     "href": "/files",
     "class": "menu_folder",
     "id": "memuAfiles",
-    "sort": 7
+    "sort": 9
   },
   {
     "title": "Terminal",
     "href": "/xterm",
     "class": "menu_xterm",
     "id": "memuAxterm",
-    "sort": 8
+    "sort": 10
   },
   {
     "title": "Cron",
     "href": "/crontab",
     "class": "menu_day",
     "id": "memuAcrontab",
-    "sort": 9
+    "sort": 11
   },
 
   {
@@ -68,20 +82,20 @@
     "href": "/soft",
     "class": "menu_soft",
     "id": "memuAsoft",
-    "sort": 10
+    "sort": 12
   },
   {
     "title": "Settings",
     "href": "/config",
     "class": "menu_set",
     "id": "memuAconfig",
-    "sort": 11
+    "sort": 13
   },
   {
     "title": "Log out",
     "href": "/login?dologin=True",
     "class": "menu_exit",
     "id": "dologin",
-    "sort": 12
+    "sort": 14
   }
 ]

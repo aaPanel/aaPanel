@@ -71,7 +71,7 @@ class setPanelLets:
             return public.returnMsg(False, "Failed to apply for a certificate, please try to manually apply for a certificate for the panel domain name on the site management page")
         get.key = cert_info['private_key']
         get.csr = cert_info['cert'] + cert_info['root']
-        return self._deploy_cert(get)
+        return public.returnMsg(True, self._deploy_cert(get))
 
     # 部署证书
     def _deploy_cert(self,get):
@@ -84,22 +84,46 @@ class setPanelLets:
         pssl = panelSSL.panelSSL()
         gcl = pssl.GetCertList(get)
         for i in gcl:
-            if get.domain in i.values():
-                time_array = time.strptime(i['notAfter'],"%Y-%m-%d")
-                time_stamp = int(time.mktime(time_array))
+            if get.domain in i['dns'] or get.domain == i['subject']:
+                try:
+                    time_stamp = int(i['notAfter'])
+                except:
+                    time_array = time.strptime(i['notAfter'],"%Y-%m-%d")
+                    time_stamp = int(time.mktime(time_array))
                 now = time.time()
                 if time_stamp > int(now):
                     return i
+        for i in gcl:
+            for d in i['dns']:
+                d = d.split('.')
+                if '*' in d and d[1:] == get.domain.split('.')[1:]:
+                    try:
+                        time_stamp = int(i['notAfter'])
+                    except:
+                        time_array = time.strptime(i['notAfter'], "%Y-%m-%d")
+                        time_stamp = int(time.mktime(time_array))
+                    now = time.time()
+                    if time_stamp > int(now):
+                        return i
 
     # 读取可用站点证书
     def __read_site_cert(self,domain_cert):
-        key_file = "{path}{domain}/{key}".format(path=self.__vhost_cert_path,domain=domain_cert["subject"],key="privkey.pem")
-        cert_file = "{path}{domain}/{cert}".format(path=self.__vhost_cert_path, domain=domain_cert["subject"],
+        try:
+            key_file = "{path}{domain}/{key}".format(path=self.__vhost_cert_path,domain=domain_cert["subject"],key="privkey.pem")
+            cert_file = "{path}{domain}/{cert}".format(path=self.__vhost_cert_path, domain=domain_cert["subject"],
                                                    cert="fullchain.pem")
+        except:
+            key_file = "/www/server/panel/{}/privkey.pem".format(domain_cert['save_path'])
+            cert_file  = "/www/server/panel/{}/fullchain.pem".format(domain_cert['save_path'])
         if not os.path.exists(key_file):
             key_file = "{path}{domain}/{key}".format(path="/www/server/panel/vhost/ssl/",domain=domain_cert["subject"],key="privkey.pem")
             cert_file = "{path}{domain}/{cert}".format(path="/www/server/panel/vhost/ssl/", domain=domain_cert["subject"],
                                            cert="fullchain.pem")
+        if not os.path.exists(key_file) and '*.' in key_file:
+            key_file = key_file.replace('*.','')
+            cert_file = cert_file.replace('*.','')
+        if not os.path.exists(key_file):
+            return public.returnMsg(False,'Can not found the ssl file! {}'.format(key_file))
         self.__tmp_key = public.readFile(key_file)
         self.__tmp_cert = public.readFile(cert_file)
 
@@ -116,8 +140,8 @@ class setPanelLets:
         public.writeFile(self.__panel_cert_path + "certificate.pem", self.__tmp_cert)
 
     # 记录证书源
-    def __save_cert_source(self,domain,email):
-        public.writeFile(self.__panel_cert_path+"lets.info",json.dumps({"domain":domain,"cert_type":"2","email":email}))
+    def __save_cert_source(self,domain):
+        public.writeFile(self.__panel_cert_path+"lets.info",json.dumps({"domain":domain,"cert_type":"2"}))
 
     # 获取证书源
     def get_cert_source(self):
@@ -163,14 +187,17 @@ class setPanelLets:
 
     # 复制证书
     def copy_cert(self,domain_cert):
-        self.__read_site_cert(domain_cert)
+        res = self.__read_site_cert(domain_cert)
+        if res:
+            return res
         panel_cert_data = self.__check_panel_cert()
         if not panel_cert_data:
             self.__write_panel_cert()
-            return True
+            return public.returnMsg(True,'1')
         if panel_cert_data["key"] != self.__tmp_key and panel_cert_data["cert"] != self.__tmp_cert:
             self.__write_panel_cert()
-            return True
+            return public.returnMsg(True,'1')
+        return public.returnMsg(True, '')
 
     # 设置lets证书
     def set_lets(self,get):
@@ -183,25 +210,29 @@ class setPanelLets:
         domain = self.__check_panel_domain()
         get.domain = domain
         if not domain:
-            return public.returnMsg(False, "You need to bind the domain name to the panel before you can apply for the Let\'s Encrypt certificate.")
+            return public.returnMsg(False, "You need to bind the domain name to the panel before you can apply for the Lets Encrypt certificate.")
         if not self.__check_host_name(domain):
             create_site = self.__create_site_of_panel_lets(get)
         domain_cert = self.__check_cert_dir(get)
         if domain_cert:
-            self.copy_cert(domain_cert)
+            res = self.copy_cert(domain_cert)
+            if not res['status']:
+                return res
             public.writeFile("/www/server/panel/data/ssl.pl", "True")
-            public.writeFile("/www/server/panel/data/reload.pl","1")
-            self.__save_cert_source(domain,get.email)
-            return public.returnMsg(True, 'Panel lets set successfully')
+            # public.writeFile("/www/server/panel/data/reload.pl","1")
+            self.__save_cert_source(domain)
+            return public.returnMsg(True, 'Setup successfully!')
         if not create_site:
             create_lets = self.__create_lets(get)
+            if not create_lets['status']:
+                return create_lets
             if create_lets['msg']:
                 domain_cert = self.__check_cert_dir(get)
                 self.copy_cert(domain_cert)
                 public.writeFile("/www/server/panel/data/ssl.pl", "True")
-                public.writeFile("/www/server/panel/data/reload.pl", "1")
-                self.__save_cert_source(domain, get.email)
-                return  public.returnMsg(True, 'Panel lets set successfully')
+                # public.writeFile("/www/server/panel/data/reload.pl", "1")
+                self.__save_cert_source(domain)
+                return  public.returnMsg(True, 'Setup successfully!')
             else:
                 return public.returnMsg(False, create_lets)
         else:

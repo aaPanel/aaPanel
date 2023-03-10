@@ -141,6 +141,7 @@
 
 {% endblock %}
 {% block scripts %}
+    {{ super() }}
 	<script src="/static/js/echarts.min.js"></script>
 	<script src="/static/js/control.js?date={{g['version']}}"></script>
 {% endblock %}

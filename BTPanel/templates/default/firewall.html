@@ -61,16 +61,22 @@
         font-family: Courier New;
         font-size: 12px;
     }
-    .security_detail pre {
-        white-space: pre-wrap;
-        white-space: -moz-pre-wrap;
-        white-space: -pre-wrap;
-        white-space: -o-pre-wrap;
-        word-wrap: break-word;
-    }
-    .detail_tips {
-        margin-top: 15px;
-    }
+
+   .security_detail pre {
+       white-space: pre-wrap;
+       white-space: -moz-pre-wrap;
+       white-space: -pre-wrap;
+       white-space: -o-pre-wrap;
+       word-wrap: break-word;
+   }
+
+   .detail_tips {
+       margin-top: 15px;
+   }
+
+   .setchmod {
+       padding-top: 0;
+   }
 </style>
 <div class="main-content">
     <div class="container-fluid" style="padding-bottom: 50px;">
@@ -78,16 +84,9 @@
             <div class="position f14 c9 pull-left">
                 <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
             </div>
-            <div class="search pull-right">
-                <form target="hid" onsubmit='firewall.get_log_list(1,$("#SearchValue").prop("value"))'>
-                    <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="{{data['lan']['SEARCH']}}" />
-                    <button type="button" class="ser-sub pull-left" onclick='firewall.get_log_list(1,$("#SearchValue").prop("value"))'></button>
-                </form>
-                <iframe name='hid' id="hid" style="display:none"></iframe>
-            </div>
         </div>
         <div class="safe container-fluid bgw mtb15 pd15">
-            <div class="mr50 pull-left">
+            <div class="mr20 pull-left">
                 <form>
                     <div class="ss-text pull-left">
                         <em>{{data['lan']['BTN1']}}</em>
@@ -97,7 +96,7 @@
                     </div>
                 </form>
             </div>
-            <div class="mr50 pull-left">
+            <div class="mr20 pull-left">
                 <div class="ss-text pull-left mr5">
                     <em>{{data['lan']['BTN2']}}</em>
                     <input type="text" class="bt-input-text" id="mstscPort" value="" />
@@ -128,10 +127,11 @@
                     </div>
                     <div class="divtable pd15">
 						<div class="firewall-port-box">
-							<select id="firewalldType" class="bt-input-text c5 mr5" name="type" style="width:80px;">
+							<select id="firewalldType" class="bt-input-text c5 mr5" name="type">
 								<option value="port">{{data['lan']['F1']}}</option>
 								<option value="address">{{data['lan']['F2']}}</option>
-							</select><input type="text" class="bt-input-text mr5" style="width: 117px;" id="AcceptPort" placeholder="{{data['lan']['F3']}}"><input type="text" class="bt-input-text mr5" id="Ps" placeholder="{{data['lan']['F4']}}"><button id="toAccept" onclick="firewall.add_accept_port()" class="btn btn-default btn-sm va0" type="button">{{data['lan']['F5']}}</button>
+                            </select><input type="text" class="bt-input-text mr5" style="width: 117px;" id="AcceptPort" placeholder="{{data['lan']['F3']}}"><input type="text" class="bt-input-text mr5" id="Ps" placeholder="{{data['lan']['F4']}}"><button id="toAccept" onclick="firewall.add_accept_port()" class="btn btn-default btn-sm va0" type="button">{{data['lan']['F5']}}</button>
+                            <button class="btn btn-default btn-sm sys_firewall" type="button">SYS Firewall</button>
 							<span id="f-ps" class="c9" style="margin-left: 10px;">{{data['lan']['F6']}}</span>
 						</div>
                         <div class="tablescroll">
@@ -148,10 +148,17 @@
         <div class="white-black-ip bgw mtb15">
             <div class="black-ip">
                 <div class="def-log">
-                    <div class="title c6 plr15">
-                        <h3 class="f16">{{data['lan']['H4']}}</h3>
-                        <a class="btn btn-default btn-sm va0" onclick="bt.firewall.clear_logs(function(){firewall.get_log_list()});">{{data['lan']['BTN5']}}</a>
-                        <span class="btn btn-default btn-sm" style="position: absolute;right: 30px;margin-top: 10px;" onclick="firewall.get_panel_error_logs()">{{data['lan']['PANEL_LOG']}}</span>
+                    <div class="tootls_group" style="height: 40px;">
+                        <div class="pull-right">
+                            <div class="bt_search" style="margin-top: 10px;margin-right: 15px;">
+                                <input type="text" style="width:260px" class="search_input" placeholder="Please enter a keyword search log"><span onclick="firewall.on_search()" class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                            </div>
+                        </div>
+                        <div class="title c6 plr15">
+                            <h3 class="f16">{{data['lan']['H4']}}</h3>
+                            <a class="btn btn-default btn-sm va0" onclick="bt.firewall.clear_logs(function(){firewall.get_log_list()});">{{data['lan']['BTN5']}}</a>
+                            <span class="btn btn-default btn-sm" style="margin-top: 10px;" onclick="firewall.get_panel_error_logs()">{{data['lan']['PANEL_LOG']}}</span>
+                        </div>
                     </div>
                     <div class="divtable pd15">
                         <div class="tablescroll">
@@ -159,8 +166,8 @@
                                                         
                             </table>
                         </div>
-                         <div class="dataTables_paginate paging_bootstrap page logsBody" style="margin-bottom:0">              
-                        </div>
+                         <div class="dataTables_paginate paging_bootstrap page logsBody" style="margin-bottom:0">
+                         </div>
                     </div>
                 </div>
             </div>
@@ -170,13 +177,17 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script type="text/javascript">
-	
-	var firewall = {		
-		ssl_scanning_list: [], //扫描列表
-		get_init:function(){			
-			firewall.flush_init();
-			firewall.get_list();
+
+    var firewall = {
+        ssl_scanning_list: [], //扫描列表
+        on_search: function () {
+            firewall.get_log_list(1, $('.search_input').val());
+        },
+        get_init: function () {
+            firewall.flush_init();
+            firewall.get_list();
 			firewall.get_log_list();
 			firewall.get_logs_size();			
 			$('.sshswitch').click(function(){
@@ -208,7 +219,19 @@
 						firewall.flush_init();
 					}
 				})
-			})			
+            });
+            $('.sys_firewall').on('click', function () {
+                $.post('/plugin?action=getConfigHtml', {name: 'firewall'}, function (rdata) {
+                    if(rdata.status == false) {
+                        layer.confirm('The SYS Firewall plugin is not installed, <br>please leave to &quot;<a href="/soft" class="btlink">APP Store > Tools</a>&quot;<br> install SYS Firewall plugin first.',
+                            {title: 'No SYS Firewall', icon: 7, closeBtn: 2,}, function () {
+                            window.location.href = '/soft';
+                        });
+                    } else {
+                        bt.soft.set_lib_config('firewall','SYS Firewall');
+                    }
+                });
+            });			
 			$("#firewalldType").change(function(){
 				var type = $(this).val();
 				var w = '120px';
@@ -298,14 +321,14 @@
                             <button class="btn btn-success btn-sm add_white_ip" type="button">Add IP white list</button>\
                             <div class="pull-right ssl_login_config_view"><span>Monitor root login</span><input class="btswitch btswitch-ios" id="ssh_root_login" type="checkbox"><label class="btswitch-btn" for="ssh_root_login" title="Monitor root login"></label></div>\
                             <div class="divtable mtb15" style="max-height: 441px;overflow: auto;">\
-                                <table id="ssh_ip_white_table" class="table table-hover" style="min-width: 500px;border: 0 none;"></table>\
+                                <table id="ssh_ip_white_table" class="table table-hover" style="min-width: 500px;"></table>\
 							</div>\
 							<ul class="help-info-text c7">\
 								<li>This list is an IP whitelist, and no alarm will be issued when these IPs log in</li>\
 							</ul>\
                         </div>\
                         <div class="bt-box" style="display: none;">\
-                            <table id="ssh_logs_table" class="table table-hover" style="min-width: 500px;border: 0 none;"></table>\
+                            <table id="ssh_logs_table" class="table table-hover" style="min-width: 500px;"></table>\
                             <div class="page">\
                                 <div id="ssh_logs"></div>\
                             </div>\
@@ -403,7 +426,7 @@
                     $('#ssh_root_login').change(function(){
                         var start = $('#ssh_root_login').prop("checked");
                         if(start){
-                            $.post('/config?action=get_settings',function(res){
+                            $.post('/config?action=get_settings2',function(res){
                                 if(res['user_mail']['user_name']){
                                     $.post('/ssh_security?action=start_jian', {}, function (res) {layer.msg(res.msg,{icon:res.status?1:2})})
                                 }else{
@@ -449,7 +472,7 @@
             var item = this.ssl_scanning_list[index];
             layer.open({
                 type: 1,
-                title:'View details【 '+ item.name  +' 】',
+                title:'View details [ '+ item.name  +' ]',
                 area: '500px',
                 closeBtn:2,
                 btn: ['Confirm'],
@@ -684,7 +707,7 @@
                 layer.open({
                     type: 1,
                     title: '{{data["lan"]["PANEL_LOG"]}}',
-                    area: ['700px', '490px'],
+                    area: ['700px', '496px'],
                     shadeClose: false,
                     closeBtn: 2,
                     content: '<div class="setchmod bt-form  pb70">'

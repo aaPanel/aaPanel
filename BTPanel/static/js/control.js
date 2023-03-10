@@ -132,6 +132,9 @@ function SetControl(act){
 	}
 	
 	loadT = layer.msg(lan.public.the,{icon:16,time:0})
+  if(!/^-?\d+$/.test(day)){
+    return layer.msg('The number of days to keep must be an integer',{icon:2,time:2000});
+  }
 	$.post('/config?action=SetControl','type='+type+'&day='+day,function(rdata){
 		layer.close(loadT);
 		layer.msg(rdata.msg,{icon:rdata.status?1:2});
@@ -218,7 +221,6 @@ $.get('/ajax?action=GetCpuIo&start='+b+'&end='+e,function(rdata){
 		yAxis: {
 			type: 'value',
 			name: lan.public.pre,
-			boundaryGap: [0, '100%'],
 			min:0,
 			max: 100,
 			splitLine:{
@@ -266,7 +268,8 @@ $.get('/ajax?action=GetCpuIo&start='+b+'&end='+e,function(rdata){
 			}
 		]
 	};
-	myChartCpu.setOption(option);
+	myChartCpu.clear()
+	myChartCpu.setOption(option, true);
     window.addEventListener("resize",function(){
 		myChartCpu.resize();
 	});
@@ -307,7 +310,6 @@ $.get('/ajax?action=GetCpuIo&start='+b+'&end='+e,function(rdata){
 		yAxis: {
 			type: 'value',
 			name: lan.public.pre,
-			boundaryGap: [0, '100%'],
 			min:0,
 			max: 100,
 			splitLine:{
@@ -355,7 +357,8 @@ $.get('/ajax?action=GetCpuIo&start='+b+'&end='+e,function(rdata){
 			}
 		]
 	};
-	myChartMen.setOption(option);
+	myChartMen.clear()
+	myChartMen.setOption(option, true);
 	window.addEventListener("resize",function(){
 		myChartMen.resize();
 	});
@@ -364,109 +367,156 @@ $.get('/ajax?action=GetCpuIo&start='+b+'&end='+e,function(rdata){
 
 //磁盘io
 function disk(b, e) {
-    $.get('/ajax?action=GetDiskIo&start=' + b + '&end=' + e, function (rdata) {
-        var myChartDisk = echarts.init(document.getElementById('diskview'));
-        var rData = [];
-        var wData = [];
-        var xData = [];
-        //var yData = [];
-        //var zData = [];
+	$.get('/ajax?action=GetDiskIo&start=' + b + '&end=' + e, function (rdata) {
+		var myChartDisk = echarts.init(document.getElementById('diskview'));
+		var rData = [];
+		var wData = [];
+		var xData = [];
+		var yData = [];
+		var zData = [];
 
-        for (var i = 0; i < rdata.length; i++) {
-            rData.push((rdata[i].read_bytes / 1024 / 60).toFixed(2));
-            wData.push((rdata[i].write_bytes / 1024 / 60).toFixed(2));
-            xData.push(rdata[i].addtime);
-            //yData.push(rdata[i].read_count);
-            //zData.push(rdata[i].write_count);
-        }
-        option = {
-            tooltip: {
-                trigger: 'axis',
-                axisPointer: {
-                    type: 'cross'
-                },
-                //formatter: lan.control.time+"：{b0}<br />{a0}: {c0} Kb/s<br />{a1}: {c1} Kb/s",
-            },
-            legend: {
-                data: [lan.control.disk_read_bytes, lan.control.disk_write_bytes]
-            },
-            xAxis: {
-                type: 'category',
-                boundaryGap: false,
-                data: xData,
-                axisLine: {
-                    lineStyle: {
-                        color: "#666"
-                    }
-                }
-            },
-            yAxis: {
-                type: 'value',
-                name: lan.index.unit + ':KB/s',
-                boundaryGap: [0, '100%'],
-                splitLine: {
-                    lineStyle: {
-                        color: "#ddd"
-                    }
-                },
-                axisLine: {
-                    lineStyle: {
-                        color: "#666"
-                    }
-                }
-            },
-            dataZoom: [{
-                type: 'inside',
-                start: 0,
-                end: 100,
-                zoomLock: true
-            }, {
-                start: 0,
-                end: 100,
-                handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
-                handleSize: '80%',
-                handleStyle: {
-                    color: '#fff',
-                    shadowBlur: 3,
-                    shadowColor: 'rgba(0, 0, 0, 0.6)',
-                    shadowOffsetX: 2,
-                    shadowOffsetY: 2
-                }
-            }],
-            series: [
-                {
-                    name: lan.control.disk_read_bytes,
-                    type: 'line',
-                    smooth: true,
-                    symbol: 'none',
-                    sampling: 'average',
-                    itemStyle: {
-                        normal: {
-                            color: 'rgb(255, 70, 131)'
-                        }
-                    },
-                    data: rData
-                },
-                {
-                    name: lan.control.disk_write_bytes,
-                    type: 'line',
-                    smooth: true,
-                    symbol: 'none',
-                    sampling: 'average',
-                    itemStyle: {
-                        normal: {
-                            color: 'rgba(46, 165, 186, .7)'
-                        }
-                    },
-                    data: wData
-                }
-            ]
-        };
-        myChartDisk.setOption(option);
-        window.addEventListener("resize", function () {
-            myChartDisk.resize();
-        });
-    })
+		for (var i = 0; i < rdata.length; i++) {
+			rData.push((rdata[i].read_bytes / 1024 / 60).toFixed(2));
+			wData.push((rdata[i].write_bytes / 1024 / 60).toFixed(2));
+			xData.push(rdata[i].addtime);
+			yData.push(rdata[i].read_count);
+			zData.push(rdata[i].read_time);
+		}
+		option = {
+			tooltip: {
+				trigger: 'axis',
+				axisPointer: {
+					type: 'cross'
+				},
+				formatter: function (config) {
+					var _tips = '';
+					var unit = 'KB/s';
+					var time = config[0].axisValue;
+					var _style = '<span style="display: inline-block; width: 10px; height: 10px; margin-rigth:10px; border-radius: 50%; background: ';
+					for (var i = 0; i < config.length; i++) {
+						var item = config[i];
+						_tips +=  _style + item.color + ';"></span>  ' + item.seriesName + ': ';
+						if (item.seriesName == lan.control.disk_read_bytes || item.seriesName == lan.control.disk_write_bytes) {
+							_tips += item.data + unit + (config.length - 1 !== i ? '<br />' : '');
+						} else {
+							if (item.seriesName == lan.control.disk_rw_count) {
+								_tips += item.data + '/s' + (config.length - 1 !== i ? '<br />' : '');
+							}else{
+								_tips += item.data + 'ms' + (config.length - 1 !== i ? '<br />' : '');
+							}
+						}
+					}
+					return lan.control.time + ": " +  time + "<br />" + _tips;
+				}
+				//formatter: lan.control.time+"：{b0}<br />{a0}: {c0} Kb/s<br />{a1}: {c1} Kb/s",
+			},
+			legend: {
+				data: [
+					lan.control.disk_read_bytes, 
+					lan.control.disk_write_bytes, 
+					lan.control.disk_rw_count, 
+					lan.control.disk_rw_time 
+				]
+			},
+			xAxis: {
+				type: 'category',
+				boundaryGap: false,
+				data: xData,
+				axisLine: {
+					lineStyle: {
+						color: "#666"
+					}
+				}
+			},
+			yAxis: {
+				type: 'value',
+				name: lan.index.unit + ':KB/s',
+				boundaryGap: [0, '20%'],
+				splitLine: {
+					lineStyle: {
+						color: "#ddd"
+					}
+				},
+				axisLine: {
+					lineStyle: {
+						color: "#666"
+					}
+				}
+			},
+			dataZoom: [
+				{
+					type: 'inside',
+					start: 0,
+					end: 100,
+					zoomLock: true
+				},
+				{
+					start: 0,
+					end: 100,
+					handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+					handleSize: '80%',
+					handleStyle: {
+						color: '#fff',
+						shadowBlur: 3,
+						shadowColor: 'rgba(0, 0, 0, 0.6)',
+						shadowOffsetX: 2,
+						shadowOffsetY: 2
+					}
+				}
+			],
+			series: [
+				{
+					name: lan.control.disk_read_bytes,
+					type: 'line',
+					symbol: 'none',
+					itemStyle: {
+						normal: {
+							color: 'rgb(255, 70, 131)'
+						}
+					},
+					data: rData
+				},
+				{
+					name: lan.control.disk_write_bytes,
+					type: 'line',
+					symbol: 'none',
+					itemStyle: {
+						normal: {
+							color: 'rgba(46, 165, 186, .7)'
+						}
+					},
+					data: wData
+				},
+				{
+					name: lan.control.disk_rw_count,
+					type: 'line',
+					symbol: 'none',
+					itemStyle: {
+						normal: {
+							color: 'rgba(30, 144, 255)'
+						}
+					},
+					data: yData
+				},
+				{
+					name: lan.control.disk_rw_time,
+					type: 'line',
+					symbol: 'none',
+					itemStyle: {
+						normal: {
+							color: 'rgba(255, 140, 0)'
+						}
+					},
+					data: zData
+				}
+			]
+		};
+		myChartDisk.clear()
+		myChartDisk.setOption(option, true);
+		window.addEventListener("resize", function () {
+			myChartDisk.resize();
+		});
+	});
 }
 
 //网络Io
@@ -513,7 +563,7 @@ $.get('/ajax?action=GetNetWorkIo&start='+b+'&end='+e,function(rdata){
 		yAxis: {
 			type: 'value',
 			name: lan.index.unit+':KB/s',
-			boundaryGap: [0, '100%'],
+			boundaryGap: [0, '20%'],
 			splitLine:{
 				lineStyle:{
 					color:"#ddd"
@@ -572,7 +622,8 @@ $.get('/ajax?action=GetNetWorkIo&start='+b+'&end='+e,function(rdata){
 			}
 		]
 	};
-	myChartNetwork.setOption(option);
+	myChartNetwork.clear()
+	myChartNetwork.setOption(option, true);
 	window.addEventListener("resize",function(){
 		myChartNetwork.resize();
 	});
@@ -702,7 +753,8 @@ $.get('/ajax?action=get_load_average&start='+b+'&end='+e,function(rdata){
 			}
 		]
 	};
-	myChartgetload.setOption(option);
+	myChartgetload.clear()
+	myChartgetload.setOption(option, true);
 	window.addEventListener("resize",function(){
 		myChartgetload.resize();
 	});
@@ -783,6 +835,8 @@ function getload(b,e){
 		],
 		yAxis: [{
 				scale: true,
+				min: 0,
+				max: 100,
 				name: lan.control.resource_usage,
 				splitLine: { // y轴网格显示
 					show: true,
@@ -923,7 +977,8 @@ function getload(b,e){
 			fontSize: 12
 		}
 	}
-	myChartgetload.setOption(option);
+	myChartgetload.clear()
+	myChartgetload.setOption(option, true);
 	window.addEventListener("resize",function(){
 		myChartgetload.resize();
 	})

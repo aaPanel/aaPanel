@@ -12,7 +12,8 @@
 # ------------------------------
 import sys, os
 os.chdir("/www/server/panel")
-sys.path.append('class')
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
 import panelMysql
 import re,json,public
 
@@ -24,17 +25,17 @@ class datatools:
         for d in ds:
             if size < 1024: return ('%.2f' % size) + d
             size = size / 1024
-        return '0b';
+        return '0b'
 
     # 获取当前数据库信息
     def GetdataInfo(self,get):
         '''
         传递一个数据库名称即可 get.databases
         '''
-        if not self.DB_MySQL:self.DB_MySQL = panelMysql.panelMysql()
-        db_name=get.db_name
 
+        db_name=get.db_name
         if not db_name:return False
+        if not self.DB_MySQL:self.DB_MySQL = public.get_mysql_obj(db_name)
         ret = {}
         tables = self.map_to_list(self.DB_MySQL.query('show tables from `%s`' % db_name))
         if type(tables) == list:
@@ -49,7 +50,7 @@ class datatools:
 
             ret3 = []
             for i in tables:
-                if i == 1049: return public.returnMsg(False,'DB_NOT_EXIST')
+                if i == 1049: return public.return_msg_gettext(False,'Database does NOT exist!')
                 if type(i) == int: continue
                 table = self.map_to_list(self.DB_MySQL.query("show table status from `%s` where name = '%s'" % (db_name, i[0])))
                 if not table: continue
@@ -57,7 +58,7 @@ class datatools:
                     ret2 = {}
                     ret2['type']=table[0][1]
                     data_size = table[0][6]
-                    ret2['rows_count'] = table[0][4]
+                    ret2['rows_count'] = self.DB_MySQL.query("select count(*) from `{}`.`{}`".format(db_name,i[0]))[0][0] #table[0][4]  实时获取行数 @authow hwliang<2021-08-05> 修改
                     ret2['collation'] = table[0][14]
                     ret2['data_size'] = self.ToSize(int(data_size))
                     ret2['table_name'] = i[0]
@@ -79,7 +80,9 @@ class datatools:
         db_name = get.db_name
         tables = json.loads(get.tables)
         if not db_name or not tables: return False
-        if not self.DB_MySQL:self.DB_MySQL = panelMysql.panelMysql()
+        if not self.DB_MySQL:self.DB_MySQL = public.get_mysql_obj(db_name)
+        m_version = self.DB_MySQL.query('select version();')[0][0]
+        if m_version.find('5.1.')!=-1:return public.return_msg_gettext(False,"Nonsupport mysql5.1!")
         mysql_table = self.map_to_list(self.DB_MySQL.query('show tables from `%s`' % db_name))
         ret=[]
         if type(mysql_table)==list:
@@ -111,10 +114,11 @@ class datatools:
         db_name=web
         tables=['web1','web2']
         '''
-        if not self.DB_MySQL:self.DB_MySQL = panelMysql.panelMysql()
+
         db_name = get.db_name
         tables = json.loads(get.tables)
         if not db_name or not tables: return False
+        if not self.DB_MySQL:self.DB_MySQL = public.get_mysql_obj(db_name)
         mysql_table = self.map_to_list(self.DB_MySQL.query('show tables from `%s`' % db_name))
         ret=[]
         if type(mysql_table) == list:
@@ -137,13 +141,12 @@ class datatools:
         table_type=innodb
         tables=['web1','web2']
         '''
-        if not self.DB_MySQL:self.DB_MySQL = panelMysql.panelMysql()
         db_name = get.db_name
         table_type = get.table_type
         tables = json.loads(get.tables)
 
         if not db_name or not tables: return False
-        
+        if not self.DB_MySQL:self.DB_MySQL = public.get_mysql_obj(db_name)
         mysql_table = self.map_to_list(self.DB_MySQL.query('show tables from `%s`' % db_name))
         ret=[]
         if type(mysql_table)==list:

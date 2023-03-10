@@ -12,7 +12,7 @@
 # MySQL端口安全检测
 # -------------------------------------------------------------------
 
-import os,sys,re,public
+import os,sys,re,public,json
 
 _title = 'MySQL security'
 _version = 1.0                              # 版本
@@ -50,9 +50,32 @@ def check_run():
         return True,'MySQL is not installed'
     if not public.ExecShell("lsof -i :{}".format(port_tmp[0]))[0]:
         return True,'MySQL is not installed'
-    result = public.check_port_stat(int(port_tmp[0]),public.GetClientIp())
-    if result == 0:
-        return True,'Risk-free'
+    result = public.check_port_stat(int(port_tmp[0]),public.GetLocalIp())
+    #兼容socket能连通但实际端口不通情况
+    if result != 0:
+        res=''
+        if os.path.exists('/usr/sbin/firewalld'):
+            res=public.ExecShell('firewall-cmd --list-all')
+        elif os.path.exists('/usr/sbin/ufw'):
+            try:
+                res=public.ExecShell('sudo ufw status verbose')
+            except:
+                res=public.ExecShell('ufw status verbose')
+        else:
+            pass
+        check_str=' '+port_tmp[0]+'/'
+        if res[0].find(check_str) == -1:
+            return True,'Risk-free'
+    else:return True,'Risk-free'
 
-    return False,'The current MySQL port: {}, which can be accessed by any server, which may cause MySQL to be cracked by brute force, posing security risks'.format(port_tmp[0])
-    
+
+    fail2ban_file = '/www/server/panel/plugin/fail2ban/config.json'
+    if os.path.exists(fail2ban_file):
+        try:
+            fail2ban_config = json.loads(public.readFile(fail2ban_file))
+            if 'mysql' in fail2ban_config.keys():
+                if fail2ban_config['mysql']['act'] == 'true':
+                    return True,'Fail2ban is enabled'
+        except: pass
+
+    return False,'MySQL port: {}, can be accessed by any server, which may cause MySQL to be cracked by brute force, posing security risks'.format(port_tmp[0])

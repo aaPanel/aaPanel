@@ -99,6 +99,19 @@ class ssh_security:
         if os.path.exists('/www/server/panel/pyenv'):
             self.__pyenv = 'btpython'
 
+    def return_python(self):
+        if os.path.exists('/www/server/panel/pyenv/bin/python'):return '/www/server/panel/pyenv/bin/python'
+        if os.path.exists('/usr/bin/python'):return '/usr/bin/python'
+        if os.path.exists('/usr/bin/python3'):return '/usr/bin/python3'
+        return 'python'
+
+    def return_bashrc(self):
+        if os.path.exists('/root/.bashrc'):return '/root/.bashrc'
+        if os.path.exists('/etc/bashrc'):return '/etc/bashrc'
+        if os.path.exists('/etc/bash.bashrc'):return '/etc/bash.bashrc'
+        fd = open('/root/.bashrc', mode="w", encoding="utf-8")
+        fd.close()
+        return '/root/.bashrc'
 
     def check_files(self):
         try:
@@ -169,11 +182,15 @@ class ssh_security:
 
     ################## SSH 登陆报警设置 ####################################
     def send_mail_data(self,title,body,type='mail'):
+        import threading
         if type=='mail':
             if self.__mail_config['user_mail']['user_name']:
                 if len(self.__mail_config['user_mail']['mail_list'])>=1:
                     for i in self.__mail_config['user_mail']['mail_list']:
-                        self.__mail.qq_smtp_send(i, title, body)
+                        t = threading.Thread(target=self.__mail.qq_smtp_send,args=(i, title, body))
+                        t.setDaemon(True)
+                        t.start()
+                        # self.__mail.qq_smtp_send(i, title, body)
         elif type=='dingding':
             if self.__mail_config['dingding']['dingding']:
                 self.__mail.dingding_send(title+body)
@@ -230,7 +247,7 @@ class ssh_security:
 
     #获取ROOT当前登陆的IP
     def get_ip(self):
-        data = public.ExecShell(''' echo $SSH_CLIENT |awk ' { print $1 }' ''')
+        data = public.ExecShell(''' who am i |awk ' {print $5 }' ''')
         data = re.findall("(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)",data[0])
         return data
 
@@ -278,24 +295,27 @@ class ssh_security:
 
     #开启监控
     def start_jian(self,get):
-        data=public.ReadFile('/etc/bashrc')
+        data=public.ReadFile(self.return_bashrc())
         if not re.search('{}\/www\/server\/panel\/class\/ssh_security.py'.format(".*python\s+"),data):
-            public.WriteFile('/etc/bashrc',data.strip()+'\n{} /www/server/panel/class/ssh_security.py login\n'.format(self.__pyenv))
+            public.WriteFile(self.return_bashrc(),data.strip()+'\n'+self.return_python()+ ' /www/server/panel/class/ssh_security.py login\n')
             return public.returnMsg(True, 'Open successfully')
         return public.returnMsg(False, 'Open failed')
 
     #关闭监控
     def stop_jian(self,get):
-        data = public.ReadFile('/etc/bashrc')
-        if re.search('{}\/www\/server\/panel\/class\/ssh_security.py'.format(".*python\s+"), data):
-            public.WriteFile('/etc/bashrc',re.sub('\n.*python\s+\/www\/server\/panel\/class\/ssh_security.py.*','',data))
+        data = public.ReadFile(self.return_bashrc())
+        if re.search(self.return_python()+' /www/server/panel/class/ssh_security.py', data):
+            public.WriteFile(self.return_bashrc(),data.replace(self.return_python()+' /www/server/panel/class/ssh_security.py login',''))
+            if os.path.exists('/etc/bashrc'):
+                if re.search('python /www/server/panel/class/ssh_security.py', data):
+                    public.WriteFile(self.return_bashrc(),data.replace(self.return_python()+' /www/server/panel/class/ssh_security.py login',''))
             return public.returnMsg(True, 'Closed successfully')
         else:
             return public.returnMsg(True, 'Closed successfully')
 
     #监控状态
     def get_jian(self,get):
-        data = public.ReadFile('/etc/bashrc')
+        data = public.ReadFile(self.return_bashrc())
         if re.search('{}\/www\/server\/panel\/class\/ssh_security.py\s+login'.format(".*python\s+"), data):
             return public.returnMsg(True, '1')
         else:
@@ -358,16 +378,28 @@ class ssh_security:
         关闭key
         无需参数传递
         '''
-        file = ['/root/.ssh/id_rsa.pub', '/root/.ssh/id_rsa', '/root/.ssh/authorized_keys']
-        rec = '\n#?RSAAuthentication\s\w+'
-        rec2 = '\n#?PubkeyAuthentication\s\w+'
-        file = public.readFile(self.__SSH_CONFIG)
-        file_ssh = re.sub(rec, '\n#RSAAuthentication no', file)
-        file_result = re.sub(rec2, '\n#PubkeyAuthentication no', file_ssh)
-        self.wirte(self.__SSH_CONFIG, file_result)
-        self.set_password(get)
-        self.restart_ssh()
-        return public.returnMsg(True, 'Closed successfully')
+        is_ssh_status=public.get_sshd_status()
+        if is_ssh_status:
+            file = ['/root/.ssh/id_rsa.pub', '/root/.ssh/id_rsa', '/root/.ssh/authorized_keys']
+            rec = '\n#?RSAAuthentication\s\w+'
+            rec2 = '\n#?PubkeyAuthentication\s\w+'
+            file = public.readFile(self.__SSH_CONFIG)
+            file_ssh = re.sub(rec, '\nRSAAuthentication no', file)
+            file_result = re.sub(rec2, '\nPubkeyAuthentication no', file_ssh)
+            self.wirte(self.__SSH_CONFIG, file_result)
+            self.set_password(get)
+            self.restart_ssh()
+            return public.returnMsg(True, 'Closed successfully')
+        else:
+            file = ['/root/.ssh/id_rsa.pub', '/root/.ssh/id_rsa', '/root/.ssh/authorized_keys']
+            rec = '\n#?RSAAuthentication\s\w+'
+            rec2 = '\n#?PubkeyAuthentication\s\w+'
+            file = public.readFile(self.__SSH_CONFIG)
+            file_ssh = re.sub(rec, '\nRSAAuthentication no', file)
+            file_result = re.sub(rec2, '\nPubkeyAuthentication no', file_ssh)
+            self.wirte(self.__SSH_CONFIG, file_result)
+            #self.set_password(get)
+            return public.returnMsg(True, 'Closed successfully')
 
     def get_config(self, get):
         '''
@@ -379,6 +411,9 @@ class ssh_security:
         rec = '\n#?RSAAuthentication\s\w+'
         pubkey = '\n#?PubkeyAuthentication\s\w+'
         ssh_password = '\nPasswordAuthentication\s\w+'
+        #是否运行root登录
+        root_is_login='\n#?PermitRootLogin\s\w+'
+
         ret = re.findall(ssh_password, file)
         if not ret:
             result['password'] = 'no'
@@ -403,7 +438,47 @@ class ssh_security:
                 result['rsa_auth'] = 'no'
             else:
                 result['rsa_auth'] = 'yes'
+
+        is_root=re.findall(root_is_login, file)
+        if not is_root:
+            result['root_is_login'] = 'no'
+        else:
+            if is_root[-1].split()[-1] == 'no':
+                result['root_is_login'] = 'no'
+            else:
+                result['root_is_login'] = 'yes'
         return result
+
+
+    def set_root(self, get):
+        '''
+        开启密码登陆
+        get: 无需传递参数
+        '''
+        ssh_password = '\n#?PermitRootLogin\s\w+'
+        file = public.readFile(self.__SSH_CONFIG)
+        if len(re.findall(ssh_password, file)) == 0:
+            file_result = file + '\nPermitRootLogin yes'
+        else:
+            file_result = re.sub(ssh_password, '\nPermitRootLogin yes', file)
+        self.wirte(self.__SSH_CONFIG, file_result)
+        self.restart_ssh()
+        return public.returnMsg(True, 'Successfully opened')
+
+    def stop_root(self, get):
+        '''
+        开启密码登陆
+        get: 无需传递参数
+        '''
+        ssh_password = '\n#?PermitRootLogin\s\w+'
+        file = public.readFile(self.__SSH_CONFIG)
+        if len(re.findall(ssh_password, file)) == 0:
+            file_result = file + '\nPermitRootLogin no'
+        else:
+            file_result = re.sub(ssh_password, '\nPermitRootLogin no', file)
+        self.wirte(self.__SSH_CONFIG, file_result)
+        self.restart_ssh()
+        return public.returnMsg(True, 'Closed successfully')
 
     def stop_password(self, get):
         '''
@@ -451,6 +526,8 @@ if __name__ == '__main__':
         try:
             aa = ssh_security()
             aa.login()
-        except:pass
+        except:
+            print(111)
+            pass
     else:
         pass

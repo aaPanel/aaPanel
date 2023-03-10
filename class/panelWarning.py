@@ -22,7 +22,7 @@ class panelWarning:
 
 
     def get_list(self,args):
-        self.sync_rule()
+        #self.sync_rule()
         p = public.get_modules('class/safe_warning')
         
         data = {
@@ -32,6 +32,9 @@ class panelWarning:
         }
 
         for m_name in p.__dict__.keys():
+            # 忽略的检查项
+            if p[m_name]._level == 0: continue
+
             m_info = {
                 'title': p[m_name]._title,
                 'm_name': m_name,
@@ -45,21 +48,25 @@ class panelWarning:
             }
             result_file = self.__result + '/' + m_name + '.pl'
 
-            not_force = True
-            if 'force' in args:
-                not_force = m_info['ignore']
+            # not_force = True
+            # if 'force' in args:
+            #     not_force = m_info['ignore']
 
-            if os.path.exists(result_file) and not_force:
-                m_info['status'],m_info['msg'],m_info['check_time'],m_info['taking'] = json.loads(public.readFile(result_file))
-            else:
-                try:
-                    s_time = time.time()
-                    m_info['status'],m_info['msg'] = p[m_name].check_run()
-                    m_info['taking'] = round(time.time() - s_time,6)
-                    m_info['check_time'] = int(time.time())
-                    public.writeFile(result_file,json.dumps([m_info['status'],m_info['msg'],m_info['check_time'],m_info['taking']],))
-                except:
-                    continue
+            # if os.path.exists(result_file) and not_force:
+            #     try:
+            #         m_info['status'],m_info['msg'],m_info['check_time'],m_info['taking'] = json.loads(public.readFile(result_file))
+            #     except:
+            #         if os.path.exists(result_file): os.remove(result_file)
+            #         continue
+            # else:
+            try:
+                s_time = time.time()
+                m_info['status'],m_info['msg'] = p[m_name].check_run()
+                m_info['taking'] = round(time.time() - s_time,6)
+                m_info['check_time'] = int(time.time())
+                public.writeFile(result_file,json.dumps([m_info['status'],m_info['msg'],m_info['check_time'],m_info['taking']],))
+            except:
+                continue
 
             
             if m_info['ignore']:
@@ -82,45 +89,47 @@ class panelWarning:
             @author hwliang<2020-08-05>
             @return void
         '''
-        try:
-            dep_path = '/www/server/panel/class/safe_warning'
-            local_version_file = self.__path + '/version.pl'
-            last_sync_time = local_version_file = self.__path + '/last_sync.pl'
-            if os.path.exists(dep_path):
-                if os.path.exists(last_sync_time):
-                    if int(public.readFile(last_sync_time)) > time.time():
-                        return
-            else:
-                if os.path.exists(local_version_file): os.remove(local_version_file)
+        # try:
+        #     dep_path = '/www/server/panel/class/safe_warning'
+        #     local_version_file = self.__path + '/version.pl'
+        #     last_sync_time = local_version_file = self.__path + '/last_sync.pl'
+        #     if os.path.exists(dep_path):
+        #         if os.path.exists(last_sync_time):
+        #             if int(public.readFile(last_sync_time)) > time.time():
+        #                 return
+        #     else:
+        #         if os.path.exists(local_version_file): os.remove(local_version_file)
 
-            download_url = public.get_url()
-            version_url = download_url + '/install/warning/version.txt'
-            cloud_version = public.httpGet(version_url)
-            if cloud_version: cloud_version = cloud_version.strip()
+        #     download_url = public.get_url()
+        #     version_url = download_url + '/install/warning/version.txt'
+        #     cloud_version = public.httpGet(version_url)
+        #     if cloud_version: cloud_version = cloud_version.strip()
 
-            local_version = public.readFile(local_version_file)
-            if local_version:
-                if cloud_version == local_version:
-                    return
+        #     local_version = public.readFile(local_version_file)
+        #     if local_version:
+        #         if cloud_version == local_version:
+        #             return
+
+        #     tmp_file = '/tmp/bt_safe_warning.zip'
+        #     public.ExecShell('wget -O {} {} -T 5'.format(tmp_file,download_url + '/install/warning/safe_warning.zip'))
+        #     if not os.path.exists(tmp_file):
+        #         return
+
+        #     if os.path.getsize(tmp_file) < 2129:
+        #         os.remove(tmp_file)
+        #         return
             
-            tmp_file = '/tmp/bt_safe_warning.zip'
-            public.ExecShell('wget -O {} {} -T 5'.format(tmp_file,download_url + '/install/warning/safe_warning_en.zip'))
-            if not os.path.exists(tmp_file):
-                return
+        #     if not os.path.exists(dep_path):
+        #         os.makedirs(dep_path,384)
+        #     public.ExecShell("unzip -o {} -d {}/ >/dev/null".format(tmp_file,dep_path))
+        #     public.writeFile(local_version_file,cloud_version)
+        #     public.writeFile(last_sync_time,str(int(time.time() + 7200)))
+        #     if os.path.exists(tmp_file): os.remove(tmp_file)
+        #     public.ExecShell("chmod -R 600 {}".format(dep_path))
+        # except:
+        #     pass
 
-            if os.path.getsize(tmp_file) < 2129:
-                os.remove(tmp_file)
-                return
-            
-            if not os.path.exists(dep_path):
-                os.makedirs(dep_path,384)
-            public.ExecShell("unzip -o {} -d {}/ >/dev/null".format(tmp_file,dep_path))
-            public.writeFile(local_version_file,cloud_version)
-            public.writeFile(last_sync_time,str(int(time.time() + 7200)))
-            if os.path.exists(tmp_file): os.remove(tmp_file)
-            public.ExecShell("chmod -R 600 {}".format(dep_path))
-        except:
-            pass
+
 
     def set_ignore(self,args):
         '''

@@ -44,12 +44,12 @@ import hmac
 try:
     import requests
 except:
-    os.system('pip install requests')
+    os.system('btpip install requests')
     import requests
 try:
     import OpenSSL
 except:
-    os.system('pip install pyopenssl')
+    os.system('btpip install pyOpenSSL')
     import OpenSSL
 import random
 import datetime
@@ -57,7 +57,8 @@ import logging
 from hashlib import sha1
 
 os.chdir("/www/server/panel")
-sys.path.append("class/")
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
 import public
 
 
@@ -363,7 +364,7 @@ class ACMEclient(object):
             if authorization_status in desired_status:
                 break
             else:
-                print("Failed to verify dns txt wait {} seconds to re-verify dns, returned information：".format(self.ACME_AUTH_STATUS_WAIT_PERIOD))
+                print("Failed to verify model txt wait {} seconds to re-verify model, returned information：".format(self.ACME_AUTH_STATUS_WAIT_PERIOD))
                 print(check_authorization_status_response.json())
                 public.WriteFile(os.path.join(ssl_home_path, "check_authorization_status_response"), check_authorization_status_response.text, mode="w")
                 # 等待

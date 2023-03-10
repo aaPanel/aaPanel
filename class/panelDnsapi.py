@@ -34,12 +34,12 @@ import hmac
 try:
     import requests
 except:
-    public.ExecShell('pip install requests')
+    public.ExecShell('btpip install requests')
     import requests
 try:
     import OpenSSL
 except:
-    public.ExecShell('pip install pyopenssl')
+    public.ExecShell('btpip install pyOpenSSL')
     import OpenSSL
 import random
 import datetime
@@ -47,7 +47,8 @@ import logging
 from hashlib import sha1
 
 os.chdir("/www/server/panel")
-sys.path.append("class/")
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
 import public
 caa_value = '0 issue "letsencrypt.org"'
 
@@ -96,7 +97,7 @@ class BaseDns(object):
 
 class DNSPodDns(BaseDns):
     dns_provider_name = "dnspod"
-
+    _type = 0 # 0:lest 1：锐成
     def __init__(self, DNSPOD_ID, DNSPOD_API_KEY, DNSPOD_API_BASE_URL="https://dnsapi.cn/"):
         self.DNSPOD_ID = DNSPOD_ID
         self.DNSPOD_API_KEY = DNSPOD_API_KEY
@@ -112,7 +113,10 @@ class DNSPodDns(BaseDns):
 
     def create_dns_record(self, domain_name, domain_dns_value):
         domain_name,_,subd = extract_zone(domain_name)
-        self.add_record(domain_name,subd,domain_dns_value,'TXT')
+        if self._type == 1:
+            self.add_record(domain_name,subd.replace('_acme-challenge.',''),domain_dns_value,'CNAME')
+        else:
+            self.add_record(domain_name,subd,domain_dns_value,'TXT')
 
 
 
@@ -176,7 +180,7 @@ class DNSPodDns(BaseDns):
 
 class CloudFlareDns(BaseDns):
     dns_provider_name = "cloudflare"
-
+    _type = 0 # 0:lest 1：锐成
     def __init__(
         self,
         CLOUDFLARE_EMAIL,
@@ -200,9 +204,16 @@ class CloudFlareDns(BaseDns):
             self.CLOUDFLARE_API_BASE_URL = CLOUDFLARE_API_BASE_URL
         super(CloudFlareDns, self).__init__()
 
+    def get_headers(self):
+        if os.path.exists('/www/server/panel/data/cf_limit_api.pl'):
+            headers = {"Authorization": "Bearer "+self.CLOUDFLARE_API_KEY}
+        else:
+            headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        return headers
+
     def find_dns_zone(self, domain_name):
-        url = urljoin(self.CLOUDFLARE_API_BASE_URL, "zones?status=active")
-        headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        url = urljoin(self.CLOUDFLARE_API_BASE_URL, "zones?status=active&name={0}".format(domain_name))
+        headers = self.get_headers()
         find_dns_zone_response = requests.get(url, headers=headers, timeout=self.HTTP_TIMEOUT)
         if find_dns_zone_response.status_code != 200:
             raise ValueError(
@@ -230,7 +241,11 @@ class CloudFlareDns(BaseDns):
             self.CLOUDFLARE_API_BASE_URL,
             "zones/{0}/dns_records".format(self.CLOUDFLARE_DNS_ZONE_ID),
         )
-        headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        # if '_' in self.CLOUDFLARE_API_KEY or '-' in self.CLOUDFLARE_API_KEY:
+        #     headers = {"Authorization": "Bearer "+self.CLOUDFLARE_API_KEY}
+        # else:
+        #     headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        headers = self.get_headers()
         body = {
             "type": s_type,
             "name": domain_name,
@@ -256,12 +271,22 @@ class CloudFlareDns(BaseDns):
             self.CLOUDFLARE_API_BASE_URL,
             "zones/{0}/dns_records".format(self.CLOUDFLARE_DNS_ZONE_ID),
         )
-        headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        # if '_' in self.CLOUDFLARE_API_KEY or '-' in self.CLOUDFLARE_API_KEY:
+        #     headers = {"Authorization": "Bearer "+self.CLOUDFLARE_API_KEY}
+        # else:
+        #     headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        headers = self.get_headers()
         body = {
             "type": "TXT",
             "name": "_acme-challenge" + "." + domain_name + ".",
             "content": "{0}".format(domain_dns_value),
         }
+
+        if self._type == 1:
+            body['type'] = 'CNAME'
+            root, _, acme_txt = extract_zone(domain_name)
+            body['name'] = acme_txt.replace('_acme-challenge.','')
+
         create_cloudflare_dns_record_response = requests.post(
             url, headers=headers, json=body, timeout=self.HTTP_TIMEOUT
         )
@@ -277,8 +302,11 @@ class CloudFlareDns(BaseDns):
 
 
     def remove_record(self,domain_name,dns_name,s_type):
-        headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
-
+        # if '_' in self.CLOUDFLARE_API_KEY or '-' in self.CLOUDFLARE_API_KEY:
+        #     headers = {"Authorization": "Bearer "+self.CLOUDFLARE_API_KEY}
+        # else:
+        #     headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        headers = self.get_headers()
         list_dns_payload = {"type": s_type, "name": dns_name}
         list_dns_url = urljoin(
             self.CLOUDFLARE_API_BASE_URL,
@@ -295,7 +323,6 @@ class CloudFlareDns(BaseDns):
                 self.CLOUDFLARE_API_BASE_URL,
                 "zones/{0}/dns_records/{1}".format(self.CLOUDFLARE_DNS_ZONE_ID, dns_record_id),
             )
-            headers = {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
             requests.delete(
                 url, headers=headers, timeout=self.HTTP_TIMEOUT
             )
@@ -308,6 +335,7 @@ class CloudFlareDns(BaseDns):
 
 
 class AliyunDns(object):
+    _type = 0 # 0:lest 1：锐成
     def __init__(self, key, secret, ):
         self.key = str(key).strip()
         self.secret = str(secret).strip()
@@ -341,11 +369,14 @@ class AliyunDns(object):
 
     def create_dns_record(self, domain_name, domain_dns_value):
         root, _, acme_txt = extract_zone(domain_name)
-        self.add_record(root,'TXT',acme_txt,domain_dns_value)
-        try:
-            self.add_record(root,'CAA','@',caa_value)
-        except:
-            pass
+        if self._type == 1:
+            acme_txt = acme_txt.replace('_acme-challenge.','')
+            self.add_record(root,'CNAME',acme_txt,domain_dns_value)
+        else:
+            try:
+                self.add_record(root,'CAA','@',caa_value)
+            except: pass
+            self.add_record(root,'TXT',acme_txt,domain_dns_value)
 
 
     def add_record(self,domain,s_type,host,value):
@@ -446,7 +477,7 @@ class CloudxnsDns(object):
         headers = self.get_headers(url)
         req = requests.get(url=url, headers=headers,verify=False)
         req = req.json()
-        
+
         return req
 
     def get_domain_id(self, domain_name):
@@ -475,17 +506,6 @@ class CloudxnsDns(object):
         req = requests.post(url=url, headers=headers, data=parameter,verify=False)
         req = req.json()
 
-        data = {
-            "domain_id": int(domain),
-            "host": '@',
-            "value": caa_value,
-            "type": "CAA",
-            "line_id": 1,
-        }
-        parameter = json.dumps(data)
-        headers = self.get_headers(url, parameter)
-        requests.post(url=url, headers=headers, data=parameter,verify=False)
-
         return req
 
     def delete_dns_record(self, domain_name, domain_dns_value):
@@ -495,10 +515,6 @@ class CloudxnsDns(object):
         headers = self.get_headers(url, )
         req = requests.delete(url=url, headers=headers, verify=False)
         req = req.json()
-
-        url = "https://www.cloudxns.net/api2/record/{}/{}".format(self.get_record_id(root,'CAA'), self.get_domain_id(root))
-        headers = self.get_headers(url, )
-        req = requests.delete(url=url, headers=headers, verify=False)
         return req
 
     def get_record_id(self, domain_name,s_type = 'TXT'):
@@ -512,7 +528,7 @@ class CloudxnsDns(object):
         return False
 
 class Dns_com(object):
-
+    _type = 0 # 0:lest 1：锐成
     def __init__(self, key, secret, ):
         pass
 
@@ -526,7 +542,13 @@ class Dns_com(object):
 
     def create_dns_record(self, domain_name, domain_dns_value):
         root, _, acme_txt = extract_zone(domain_name)
-        result = self.get_dns_obj().add_txt(acme_txt + '.' + root,domain_dns_value)
+
+        if self._type == 1:
+            acme_txt = acme_txt.replace('_acme-challenge.','')
+            result = self.add_record(acme_txt + '.' + root,domain_dns_value)
+        else:
+            result = self.get_dns_obj().add_txt(acme_txt + '.' + root,domain_dns_value)
+
         if result == "False":
             raise ValueError('[DNS] This domain name does not exist in the currently bound Pagoda DNS cloud resolution account. Adding parsing failed!')
         time.sleep(5)

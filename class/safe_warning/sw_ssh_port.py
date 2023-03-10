@@ -13,12 +13,12 @@
 # -------------------------------------------------------------------
 
 
-import os,sys,re,public
+import os,sys,re,public,json
 
 _title = 'SSH security'
 _version = 1.0                              # 版本
 _ps = "Check whether the SSH port of the current server is safe"      # 描述
-_level = 2                                  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
+_level = 1                                  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
 _date = '2020-08-04'                        # 最后更新时间
 _ignore = os.path.exists("data/warning/ignore/sw_ssh_port.pl")
 _tips = [
@@ -72,7 +72,16 @@ def check_run():
             status = public.ExecShell("systemctl status sshd.service | grep 'dead'|grep -v grep")
         else:
             status = public.ExecShell("/etc/init.d/sshd status | grep -e 'stopped' -e '已停'|grep -v grep")
-        
+
+    fail2ban_file = '/www/server/panel/plugin/fail2ban/config.json'
+    if os.path.exists(fail2ban_file):
+        try:
+            fail2ban_config = json.loads(public.readFile(fail2ban_file))
+            if 'sshd' in fail2ban_config.keys():
+                if fail2ban_config['sshd']['act'] == 'true':
+                    return True,'Fail2ban is enable'
+        except: pass
+
     if len(status[0]) > 3:
         status = False
     else:
@@ -83,7 +92,7 @@ def check_run():
     if port != '22':
         return True,'The default SSH port has been modified'
     
-    result = public.check_port_stat(int(port),public.GetClientIp())
+    result = public.check_port_stat(int(port),public.GetLocalIp())
     if result == 0:
         return True,'Rick-free'
     

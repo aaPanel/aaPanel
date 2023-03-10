@@ -42,7 +42,7 @@ class CloudFlareDns(common.BaseDns):
         )
         if find_dns_zone_response.status_code != 200:
             raise ValueError(
-                "Error creating cloudflare dns record: status_code={status_code} response={response}".format(
+                "Error creating cloudflare model record: status_code={status_code} response={response}".format(
                     status_code=find_dns_zone_response.status_code,
                     response=self.log_response(find_dns_zone_response),
                 )
@@ -92,7 +92,7 @@ class CloudFlareDns(common.BaseDns):
             # raise error so that we do not continue to make calls to ACME
             # server
             raise ValueError(
-                "Error creating cloudflare dns record: status_code={status_code} response={response}".format(
+                "Error creating cloudflare model record: status_code={status_code} response={response}".format(
                     status_code=create_cloudflare_dns_record_response.status_code,
                     response=self.log_response(create_cloudflare_dns_record_response),
                 )

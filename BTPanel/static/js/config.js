@@ -228,18 +228,37 @@ $('.open_two_verify_view').click(function(){
 		}
     });
 });
-
+var three_channel_status = {};
 (function(){
 	check_two_step(function(res){
 		$('#panel_verification').prop('checked',res.status);
 	});
 	get_three_channel(function(res){
-		$('#channel_auth').val(!res.user_mail.user_name && !res.dingding.dingding ? 'Email is not set':(res.user_mail.user_name? 'Email is set':(res.dingding.dingding? 'dingding is set': '')))
+		three_channel_status = res;
+		$('#channel_auth').val(!res.user_mail.user_name && !res.telegram.setup ? 'Email is not set':(res.user_mail.user_name? 'Email is set':(res.telegram.setup? 'Telegram is set': '')))
 	});
+	get_login_send(function(rdata){
+		$('#panel_report').val(!rdata.status ? 'Email is not set':(rdata.msg.mail? 'Already set':'Not set'))
+	})
 })()
 
 function get_three_channel(callback){
-	$.post('/config?action=get_settings',function(res){
+	$.post('/config?action=get_settings2',function(res){
+		if(callback) callback(res);
+	});
+}
+function get_login_send(callback){
+    var loadS = bt.load('Getting login information, please wait...')
+    $.post('/config?action=get_login_send',function(res){
+        loadS.close()
+		if(callback) callback(res);
+	});
+}
+function login_ipwhite(obj,callback){
+    var loadY = bt.load('Getting IP lists, please wait...')
+    $.post('/config?action=login_ipwhite',obj,function(res){
+        loadY.close()
+		if(!res.status) return layer.msg(res.msg,{icon:res.status?1:2})
 		if(callback) callback(res);
 	});
 }
@@ -358,11 +377,15 @@ function bindBTName(a,type){
 	if(a == 1) {
 		p1 = $("#p1").val();
 		p2 = $("#p2").val();
-		var loadT = layer.msg(lan.config.token_get,{icon:16,time:0,shade: [0.3, '#000']});
-		$.post(" /ssl?action=GetToken", "username=" + p1 + "&password=" + p2, function(b){
+		var loadT = layer.msg(lan.config.token_get, {icon: 16, time: 0, shade: [0.3, '#000']});
+		$.post(" /ssl?action=GetToken", {
+			username: p1,
+			password: p2
+		}, function (b) {
+			bt.clear_cookie('bt_user_info');
 			layer.close(loadT);
-			layer.msg(b.msg, {icon: b.status?1:2});
-			if(b.status) {
+			layer.msg(b.msg, {icon: b.status ? 1 : 2});
+			if (b.status) {
 				window.location.reload();
 				$("input[name='btusername']").val(p1);
 			}
@@ -376,7 +399,7 @@ function bindBTName(a,type){
 		closeBtn: 2,
 		shift: 5,
 		shadeClose: false,
-		content: "<div class='bt-form pd20 pb70'><div class='line'><span class='tname'>"+lan.public.user+"</span><div class='info-r'><input class='bt-input-text' type='text' name='username' id='p1' value='' placeholder='"+lan.config.user_bt+"' style='width:100%'/></div></div><div class='line'><span class='tname'>"+lan.public.pass+"</span><div class='info-r'><input class='bt-input-text' type='password' name='password' id='p2' value='' placeholder='"+lan.config.pass_bt+"' style='width:100%'/></div></div><div class='bt-form-submit-btn'><button type='button' class='btn btn-danger btn-sm' onclick=\"layer.closeAll()\">"+lan.public.cancel+"</button> "+btn+"</div></div>"
+		content: "<div class='bt-form pd20 pb70'><div class='line'><span class='tname' style='width:100px;'>"+lan.public.user+"</span><div class='info-r' style='margin-left:100px;'><input class='bt-input-text' type='text' name='username' id='p1' value='' placeholder='"+lan.config.user_bt+"' style='width:100%'/></div></div><div class='line'><span class='tname' style='width:100px;'>"+lan.public.pass+"</span><div class='info-r' style='margin-left:100px;'><input class='bt-input-text' type='password' name='password' id='p2' value='' placeholder='"+lan.config.pass_bt+"' style='width:100%'/></div></div><div class='bt-form-submit-btn'><button type='button' class='btn btn-danger btn-sm' onclick=\"layer.closeAll()\">"+lan.public.cancel+"</button> "+btn+"</div></div>"
 	})
 }
 //解除绑定宝塔账号
@@ -385,7 +408,11 @@ function UnboundBt(){
 	layer.confirm(lan.config.binding_un_msg,{closeBtn:2,icon:3,title:lan.config.binding_un},function(){
 		$.get("/ssl?action=DelToken",function(b){
 			layer.msg(b.msg,{icon:b.status? 1:2})
-			$("input[name='btusername']").val('');
+      bt.clear_cookie('bt_user_info')
+			if(b.status){
+			    window.location.reload();
+			    $("input[name='btusername']").val('');
+			}
 		})
 	})
 }
@@ -421,24 +448,33 @@ function setPanelSSL(){
 	var status = $("#panelSSL").prop("checked");
 	var loadT = layer.msg(lan.config.ssl_msg,{icon:16,time:0,shade: [0.3, '#000']});
 	if(status){
-		var confirm = layer.confirm('Whether to close the panel SSL certificate', {title:'Tips',btn: ['Confirm','Cancel'],icon:0,closeBtn:2}, function() {
+        var confirm = layer.confirm('Whether to close the panel SSL certificate', {
+            title: 'Tips',
+            btn: ['Confirm', 'Cancel'],
+            icon: 0,
+            closeBtn: 2,
+            cancel: function () {
+                $("#panelSSL").prop("checked", true);
+            }
+        }, function () {
             bt.send('SetPanelSSL', 'config/SetPanelSSL', {}, function (rdata) {
                 layer.close(loadT);
                 if (rdata.status) {
-                	layer.msg(rdata.msg,{icon:1});
+                    layer.msg(rdata.msg, {icon: 1});
                     $.get('/system?action=ReWeb', function () {
                     });
                     setTimeout(function () {
                         window.location.href = ((window.location.protocol.indexOf('https') != -1) ? 'http://' : 'https://') + window.location.host + window.location.pathname;
                     }, 1500);
-                }
-                else {
-                    layer.msg(res.rdata,{icon:2});
+                } else {
+                    layer.msg(res.rdata, {icon: 2});
                 }
             });
             return;
-        })
-	}
+        }, function () {
+            this.cancel();
+        });
+    }
 	else {
         bt.send('get_cert_source', 'config/get_cert_source', {}, function (rdata) {
             layer.close(loadT);
@@ -446,36 +482,96 @@ function setPanelSSL(){
             var _data = {
                 title: 'Panel SSL',
                 area: '630px',
-				class:'ssl_cert_from',
+                class: 'ssl_cert_from ssl_cert_panel_from',
                 list: [
-                  {
-                  		html:'<div><i class="layui-layer-ico layui-layer-ico3"></i><h3>'+lan.config.ssl_open_ps+'</h3><ul><li style="color:red;">'+lan.config.ssl_open_ps_1+'</li><li>'+lan.config.ssl_open_ps_2+'</li><li>'+lan.config.ssl_open_ps_3+'</li></ul></div>'
-                  },
+                    {
+                        html: '\
+                            <div style="position: relative; width: 90%; margin: 0 auto;">\
+                                <i class="layui-layer-ico layui-layer-ico3" style="left: 0;"></i>\
+                                <h3 style="margin-left: 45px;">' + lan.config.ssl_open_ps + '</h3>\
+                                <ul style="width: 100%;">\
+                                    <li style="color:red;">' + lan.config.ssl_open_ps_1 + '</li>\
+                                    <li>' + lan.config.ssl_open_ps_2 + '</li>\
+                                    <li>If panel is not accessible, you can click the <a class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate" target="_blank">link</a> below to find solutions</li>\
+                                </ul>\
+                            </div>\
+                        '
+                    },
                     {
                         title: 'Cert Type',
                         name: 'cert_type',
                         type: 'select',
-                        width: '200px',
+                        width: '260px',
                         value: sdata.cert_type,
-                        items: [{value: '1', title: 'Self-signed certificate'}, {value: '2', title: 'Let\'s Encrypt'}],
+                        items: [
+                            {value: '1', title: 'Self-signed certificate'},
+                            {value: '2', title: 'Let\'s Encrypt'},
+                            {value: '3', title: 'I have certficate'}
+                        ],
                         callback: function (obj) {
+                            var set_height = function () {
+                                var layer_box = $('.ssl_cert_from').parents('.layui-layer');
+                                var window_height = $(window).height();
+                                var height = layer_box.height();
+                                var top = (window_height - height) / 2;
+                                layer_box.css({
+                                    'top': top + 'px'
+                                });
+                            }
                             var subid = obj.attr('name') + '_subid';
+                            var keyid = obj.attr('name') + '_keyid';
                             $('#' + subid).remove();
+                            $('#' + keyid).remove();
+                            if (obj.val() == '1') {
+                                set_height();
+                            }
                             if (obj.val() == '2') {
                                 var _tr = bt.render_form_line({
-                                    title: 'Admin E-Mail',
+                                    title: 'E-Mail',
                                     name: 'email',
-									width: '320px',
+                                    width: '260px',
                                     placeholder: 'Admin E-Mail',
                                     value: sdata.email
                                 });
                                 obj.parents('div.line').append('<div class="line" id=' + subid + '>' + _tr.html + '</div>');
+                                set_height();
                             }
+                            if (obj.val() == '3') {
+                                var loadT = layer.msg(lan.config.get_cert, {icon: 16, time: 0, shade: [0.3, '#000']});
+                                $.post('/config?action=GetPanelSSL', {}, function (cert) {
+                                    layer.close(loadT);
+                                    if (cert.privateKey === 'false') {
+                                        cert.privateKey = 'paste your Private key (KEY) here';
+                                    }
+                                    if (cert.certPem === 'false') {
+                                        cert.certPem = 'paste your Certificate (CRT/PEM) here';
+                                    }
+                                    obj.parents('div.line').append('\
+                                        <div class="myKeyCon" id="' + keyid + '" style="margin: 0 auto; padding: 16px 0 0;">\
+                                            <div class="ssl-con-key pull-left">Key<br>\
+                                                <textarea id="key" class="bt-input-text">' + cert.privateKey + '</textarea>\
+                                            </div>\
+                                            <div class="ssl-con-key pull-right">Certificate (in pem format)<br>\
+                                                <textarea id="csr" class="bt-input-text">' + cert.certPem + '</textarea>\
+                                            </div>\
+                                            <div style="clear: both;"></div>\
+                                        </div>\
+                                    ');
+                                    set_height();
+                                });
+                            }
+
                         }
                     },
-                  {
-                  	html:'<div class="details"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: 3px 5px 0px;" for="checkSSL">'+lan.config.ssl_open_ps_4+'</label><a target="_blank" class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate">'+lan.config.ssl_open_ps_5+'</a></p></div>'
-                  }
+                    {
+                        html: '\
+                            <div class="details" style="width: 90%; padding-top: 15px;">\
+                                <input type="checkbox" id="checkSSL" />\
+                                <label style="font-weight: 400; margin: -1px 5px 0px;" for="checkSSL">' + lan.config.ssl_open_ps_4 + '</label>\
+                                <a class="btlink" style="top: 0;" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate" target="_blank">' + lan.config.ssl_open_ps_5 + '</a>\
+                            </div>\
+                        '
+                    }
 
                 ],
                 btns: [
@@ -486,28 +582,37 @@ function setPanelSSL(){
                         }
                     },
                     {
-                        title: 'Submit', name: 'submit', css: 'btn-success', callback: function (rdata, load, callback) {
-                          	if(!$('#checkSSL').is(':checked')){
-                            	bt.msg({status:false,msg:'Please confirm the risk first!'})
-                              	return;
-                            }
-                        	var confirm = layer.confirm('Whether to open the panel SSL certificate', {title:'Tips',btn: ['Confirm','Cancel'],icon:0,closeBtn:2}, function() {
-                            var loading = bt.load();
-                            bt.send('SetPanelSSL', 'config/SetPanelSSL', rdata, function (rdata) {
-                                loading.close()
-                                if (rdata.status) {
-                                	layer.msg(rdata.msg,{icon:1});
-                                    $.get('/system?action=ReWeb', function () {
+                        title: 'Submit',
+                        name: 'submit',
+                        css: 'btn-success',
+                        callback: function (rdata, load, callback) {
+                            if (!$('#checkSSL').is(':checked')) return bt.msg({
+                                status: false,
+                                msg: 'Please confirm the risk first!'
+                            });
+                            layer.confirm('Whether to open the panel SSL certificate', {
+                                title: 'Tips',
+                                btn: ['Confirm', 'Cancel'],
+                                icon: 0,
+                                closeBtn: 2
+                            }, function () {
+                                var loading = bt.load();
+                                var type = $('select[name="cert_type"]').val();
+                                if (type == '3') {
+                                    SavePanelSSL({
+                                        loading: false,
+                                        callback: function (res) {
+                                            SetPanelSSL(rdata, function (res) {
+                                                loading.close();
+                                            });
+                                        }
                                     });
-                                    setTimeout(function () {
-                                        window.location.href = ((window.location.protocol.indexOf('https') != -1) ? 'http://' : 'https://') + window.location.host + window.location.pathname;
-                                    }, 1500);
+                                } else {
+                                    SetPanelSSL(rdata, function (rdata) {
+                                        loading.close();
+                                    });
                                 }
-                                else {
-                                    layer.msg(rdata.msg,{icon:2});
-                                }
-                            })
-							});
+                            });
                         }
 
                     }
@@ -516,7 +621,6 @@ function setPanelSSL(){
                     $("#panelSSL").prop("checked", false);
                 }
             };
-
             var _bs = bt.render_form(_data);
             setTimeout(function () {
                 $('.cert_type' + _bs).trigger('change')
@@ -525,72 +629,118 @@ function setPanelSSL(){
     }
 }
 
-function GetPanelSSL(){
-	var loadT = layer.msg(lan.config.get_cert,{icon:16,time:0,shade: [0.3, '#000']});
-	$.post('/config?action=GetPanelSSL',{},function(cert){
-		layer.close(loadT);
-		var certBody = '<div class="tab-con">\
+function SetPanelSSL(rdata, callback) {
+    bt.send('SetPanelSSL', 'config/SetPanelSSL', rdata, function (rdata) {
+        if (callback) callback(rdata);
+        if (rdata.status) {
+            $.get('/system?action=ReWeb');
+            layer.msg(rdata.msg, {icon: 1, time: 1500}, function () {
+                window.location.href = ((window.location.protocol.indexOf('https') != -1) ? 'http://' : 'https://') + window.location.host + window.location.pathname;
+            });
+        } else {
+            layer.msg(rdata.msg, {icon: 2});
+        }
+    });
+}
+
+function GetPanelSSL() {
+    var loadT = layer.msg(lan.config.get_cert, {icon: 16, time: 0, shade: [0.3, '#000']});
+    $.post('/config?action=GetPanelSSL', {}, function (cert) {
+        layer.close(loadT);
+        var certBody = '<div class="tab-con">\
 			<div class="myKeyCon ptb15">\
-				<div class="ssl-con-key pull-left mr20">'+lan.config.key+'<br>\
-					<textarea id="key" class="bt-input-text">'+cert.privateKey+'</textarea>\
+				<div class="ssl-con-key pull-left mr20">' + lan.config.key + '<br>\
+					<textarea id="key" class="bt-input-text">' + cert.privateKey + '</textarea>\
 				</div>\
-				<div class="ssl-con-key pull-left">'+lan.config.pem_cert+'<br>\
-					<textarea id="csr" class="bt-input-text">'+cert.certPem+'</textarea>\
+				<div class="ssl-con-key pull-left">' + lan.config.pem_cert + '<br>\
+					<textarea id="csr" class="bt-input-text">' + cert.certPem + '</textarea>\
 				</div>\
 				<div class="ssl-btn pull-left mtb15" style="width:100%">\
-					<button class="btn btn-success btn-sm" onclick="SavePanelSSL()">'+lan.config.save+'</button>\
+					<button class="btn btn-success btn-sm" onclick="SavePanelSSL()">' + lan.config.save + '</button>\
 				</div>\
 			</div>\
 			<ul class="help-info-text c7 pull-left">\
-				<li>'+lan.config.ps+'<a href="http://www.bt.cn/bbs/thread-704-1-1.html" class="btlink" target="_blank">['+lan.config.help+']</a>。</li>\
-				<li>'+lan.config.ps1+'</li><li>'+lan.config.ps2+'</li>\
+				<li>' + lan.config.ps + '<a href="http://www.bt.cn/bbs/thread-704-1-1.html" class="btlink" target="_blank">[' + lan.config.help + ']</a>。</li>\
+				<li>' + lan.config.ps1 + '</li><li>' + lan.config.ps2 + '</li>\
 			</ul>\
 		</div>'
 		layer.open({
 			type: 1,
-			area: "600px",
-			title: lan.config.custom_panel_cert,
-			closeBtn: 2,
-			shift: 5,
-			shadeClose: false,
-			content:certBody
-		});
-	});
+            area: "600px",
+            title: lan.config.custom_panel_cert,
+            closeBtn: 2,
+            shift: 5,
+            shadeClose: false,
+            content: certBody
+        });
+    });
 }
 
-function SavePanelSSL(){
-	var data = {
-		privateKey:$("#key").val(),
-		certPem:$("#csr").val()
-	}
-	var loadT = layer.msg(lan.config.ssl_msg,{icon:16,time:0,shade: [0.3, '#000']});
-	$.post('/config?action=SavePanelSSL',data,function(rdata){
-		layer.close(loadT);
-		if(rdata.status){
-			layer.closeAll();
-		}
-		layer.msg(rdata.msg,{icon:rdata.status?1:2});
-	});
+// function SavePanelSSL(){
+// 	var data = {
+// 		privateKey:$("#key").val(),
+// 		certPem:$("#csr").val()
+// 	}
+// 	var loadT = layer.msg(lan.config.ssl_msg,{icon:16,time:0,shade: [0.3, '#000']});
+// 	$.post('/config?action=SavePanelSSL',data,function(rdata){
+// 		layer.close(loadT);
+// 		if(rdata.status){
+// 			layer.closeAll();
+// 		}
+// 		layer.msg(rdata.msg,{icon:rdata.status?1:2});
+// 	});
+// }
+
+function SavePanelSSL(option) {
+    option = option || {
+        loading: true
+    };
+    var privateKey = $("#key").val().trim();
+    var certPem = $("#csr").val().trim();
+    if (privateKey === 'false') return layer.msg('Please paste your Private key (KEY) here', {icon: 2});
+    if (certPem === 'false') return layer.msg('Please paste your Certificate (CRT/PEM) here', {icon: 2});
+    var data = {
+        privateKey: privateKey,
+        certPem: certPem
+    }
+    var loadT;
+    if (option.loading) {
+        loadT = layer.msg(lan.config.ssl_msg, {icon: 16, time: 0, shade: [0.3, '#000']});
+    }
+    $.post('/config?action=SavePanelSSL', data, function (rdata) {
+        if (option.loading) layer.close(loadT);
+        if (rdata.status) {
+            if (option.callback) {
+                option.callback(rdata);
+            } else {
+                layer.closeAll();
+                layer.msg(rdata.msg, {icon: 1});
+            }
+        } else {
+            layer.msg(rdata.msg, {icon: 2});
+        }
+    });
 }
 
 function SetDebug() {
-    var status_s = {false:'Open',true:'Close'}
+    var status_s = {false: 'open', true: 'close'}
     var debug_stat = $("#panelDebug").prop('checked');
     bt.confirm({
-		title: status_s[debug_stat] + "Developer mode",
-		msg: "Do you really want "+ status_s[debug_stat]+" developer mode?",
-		cancel: function () {
-			$("#panelDebug").prop('checked',debug_stat);
-    	}}, function () {
-			var loadT = layer.msg(lan.public.the, { icon: 16, time: 0, shade: [0.3, '#000'] });
-			$.post('/config?action=set_debug', {}, function (rdata) {
-				layer.close(loadT);
-				if (rdata.status) layer.closeAll()
-				layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
-			});
-		},function () {
-		$("#panelDebug").prop('checked',debug_stat);
-	});
+        title: (debug_stat ? 'Open' : 'Close') + " developer mode",
+        msg: "Do you confirm to " + (debug_stat ? 'open' : 'close') + " developer mode?",
+        cancel: function () {
+            $("#panelDebug").prop('checked', debug_stat);
+        }
+    }, function () {
+        var loadT = layer.msg(lan.public.the, {icon: 16, time: 0, shade: [0.3, '#000']});
+        $.post('/config?action=set_debug', {}, function (rdata) {
+            layer.close(loadT);
+            if (rdata.status) layer.closeAll()
+            layer.msg(rdata.msg, {icon: rdata.status ? 1 : 2});
+        });
+    }, function () {
+        $("#panelDebug").prop('checked', debug_stat);
+    });
 }
 
 function set_local() {
@@ -772,11 +922,11 @@ function open_wxapp(){
 
 $(function () {
 
-    $.get("/ssl?action=GetUserInfo", function (b) {
+     $.get("/ssl?action=GetUserInfo", function (b) {
         if (b.status) {
             $("input[name='btusername']").val(b.data.username);
-            $("input[name='btusername']").next().text(lan.public.edit).attr("onclick", "bindBTName(2,'c')").css({ "margin-left": "-82px" });
-            $("input[name='btusername']").next().after('<span class="btn btn-xs btn-success" onclick="UnboundBt()" style="vertical-align: 0px;">' + lan.config.binding_un + '</span>');
+            $("input[name='btusername']").next().text(lan.public.edit).attr("onclick", "bindBTName(2,'c')").css({ "right": "57px" });
+            $("input[name='btusername']").next().after('<span class="modify btn btn-xs btn-success" onclick="UnboundBt()" style="vertical-align: 0px;">' + lan.config.binding_un + '</span>');
         }
         else {
             $("input[name='btusername']").next().text(lan.config.binding).attr("onclick", "bindBTName(2,'b')").removeAttr("style");
@@ -804,7 +954,7 @@ function GetPanelApi() {
         isOpen = rdata.open ? 'checked' : '';
         layer.open({
             type: 1,
-            area: "500px",
+            area: "522px",
             title: lan.config.set_api,
             closeBtn: 2,
             shift: 5,
@@ -814,7 +964,7 @@ function GetPanelApi() {
 							<span class="tname">'+lan.config.api+'</span>\
 							<div class="info-r" style="height:28px;">\
 								<input class="btswitch btswitch-ios" id="panelApi_s" type="checkbox" '+ isOpen+'>\
-								<label style="position: relative;top: 5px;" class="btswitch-btn" for="panelApi_s" onclick="SetPanelApi(2)"></label>\
+								<label style="position: relative;top: 5px;" class="btswitch-btn" for="panelApi_s" onclick="SetPanelApi(2,1)"></label>\
 							</div>\
 						</div>\
                         <div class="line">\
@@ -872,10 +1022,12 @@ function SetPanelApi(t_type,index) {
 		return false
     }
     set_token_req(pdata,function(rdata){
-    	layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
-        if (rdata.msg == lan.config.open_successfully) {
-            if(t_type == 2 && index != '0') GetPanelApi();
-        }
+		layer.close(layer.index);
+        if (rdata.msg == 'Open success!') {
+            if(t_type == 2 && index != '1') GetPanelApi();
+		}
+		if(t_type == 2) $('#panelApi').prop('checked',rdata.msg == 'Open success!'?true:false);
+		layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
     });
 }
 
@@ -913,7 +1065,177 @@ function modify_basic_auth_to() {
     });
 
 }
-
+function set_panel_report(){
+	if(!three_channel_status.user_mail.user_name) return layer.msg('Please set up the [ Notification ] first',{icon:2})
+	get_login_send(function(rdata){
+		layer.open({
+			type: 1,
+			area:'700px',
+			title: "Login panel alarm",
+			closeBtn: 2,
+			shift: 5,
+			shadeClose: false,
+			content: '<div class="bt-form">\
+						<div class="bt-w-main">\
+							<div class="bt-w-menu" style="width: 140px;">\
+								<p class="bgw">Alarm settings</p>\
+								<p>IP whitelist</p>\
+							</div>\
+							<div class="bt-w-con pd15" style="margin-left: 140px;">\
+								<div class="plugin_body">\
+									<div class="conter_box active" >\
+										<div class="bt-form" style="height:500px">\
+											<div class="line">\
+												<span class="set-tit" style="display:inline-block;vertical-align: top;margin: 3px;color:#666" title="Notification email">Send to mailbox</span>\
+												<div class="mail" name="server_input" style="display:inline-block;margin:0px 10px 0px 0px">\
+													<input class="btswitch btswitch-ios" id="mail" type="checkbox" '+(!rdata.status?"":(rdata.msg.mail?"checked":""))+' >\
+													 <label class="btswitch-btn" for="mail"></label>\
+												</div>\
+											</div>\
+											<div class="line" style="max-height:400px;height:auto;overflow:auto">\
+												<div class="divtable">\
+													<table class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"><thead><tr><th width="75%">login info</th><th width="25%" style="text-align:right">time</th></tr></thead>\
+													 <tbody id="server_table"></tbody>\
+													</table>\
+												</div>\
+											</div>\
+											<div class="page" id="server_table_page"></div>\
+										</div>\
+										<ul class="mtl0 c7" style="font-size: 13px;position:absolute;bottom:0;padding-right: 40px;">\
+										   <li style="list-style:inside disc">xxxxxxxxxxxxxxxxxxx</li>\
+										</ul>\
+									</div>\
+									<div class="conter_box" style="display:none;height:500px">\
+										<div class="bt-form">\
+											<div class="line" style="display:inline-block">\
+												<input name="ip_write" class="bt-input-text mr5" type="text" style="width: 220px;" placeholder="Please enter the IP">\
+												<button class="btn btn-success btn-sm add_ip_write" style="padding: 4px 15px">Add</button>\
+											</div>\
+											<div class="line" style="float:right">\
+												<button class="btn btn-default btn-sm clear_all" style="padding: 4px 15px;text-align:right">Clean all</button>\
+											</div>\
+											 <div class="line" style="max-height:400px;height:auto;overflow:auto">\
+												<div class="divtable">\
+													<table class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"><thead><tr><th width="60%">IP</th><th width="40%" style="text-align:right">Opt</th></tr></thead>\
+													 <tbody id="ip_write_table"></tbody>\
+													</table>\
+												</div>\
+											</div>\
+										</div>\
+										  <ul class="mtl0 c7" style="font-size: 13px;position:absolute;bottom:0;padding-right: 40px;">\
+										   <li style="list-style:inside disc">Only allow to set ipv4 whitelist</li>\
+										</ul>\
+									</div>\
+								</div>\
+							</div>\
+						</div>\
+					  </div>',
+			success:function(index,layers){
+				get_log_table();
+				get_ip_write_table()
+				$(".bt-w-menu p").click(function () {
+					var index = $(this).index();
+					$(this).addClass('bgw').siblings().removeClass('bgw');
+					console.log(index,'111');
+					switch(index){
+						case 0:
+							get_log_table();
+							break;
+						case 1:
+							get_ip_write_table()
+							break;
+					}
+					$('.conter_box').eq(index).show().siblings().hide();
+				});
+				//设置告警
+				$('#mail').on('click',function(){
+					var _checked = $(this).prop('checked');
+					if(_checked){
+						$.post('/config?action=set_login_send',{type:'mail'},function(res){
+							layer.msg(res.msg,{icon:res.status?1:2});
+						});
+					}else{
+						$.post('/config?action=clear_login_send',{type:'mail'},function(res){
+							layer.msg(res.msg,{icon:res.status?1:2});
+						});
+					}
+				});
+				//添加
+				$('.add_ip_write').on('click',function(){
+					var _ip = $('[name="ip_write"]').val();
+					if(!bt.check_ip(_ip)) return layer.msg('Please enter the correct IP',{icon:2})
+					login_ipwhite({ip:_ip,type:'add'},function(res){
+						if(res.status) get_ip_write_table()
+						layer.msg(res.msg,{icon:res.status?1:2});
+					})
+				})
+				//删除ip白名单
+				$('#ip_write_table').on('click','.del_ip_write',function(){
+					var _ip = $(this).parents('tr').data().data;
+					login_ipwhite({ip:_ip,type:'del'},function(res){
+						if(res.status) get_ip_write_table()
+						layer.msg(res.msg,{icon:res.status?1:2});
+					})
+				});
+				//清空全部
+				$('.clear_all').on('click',function(){
+					layer.confirm('Whether to clear the IP whitelist', {title:'Tips',btn: ['Confirm','Cancel'],icon:0,closeBtn:2}, function() {
+						login_ipwhite({type:'clear'},function(res){
+							if(res.status) get_ip_write_table()
+							layer.msg(res.msg,{icon:res.status?1:2});
+						})
+					})
+				})
+				//分页操作
+				$('#server_table_page').on('click','a',function(e){
+					e.stopPropagation();
+					e.preventDefault();
+					var _p = $(this).attr('href').match(/p=([0-9]*)/)[1];
+					get_log_table({p:_p});
+				})
+			},
+			cancel:function(){
+				$('#panel_report').val( $('#mail').prop('checked') ? 'Already set' : 'Not set');
+			}
+		})
+	})
+}
+function get_log_table(obj){
+    if(!obj) obj = {p:1}
+    var loadT = bt.load('Getting Logs list, please wait')
+	$.post('/config?action=get_login_log',obj,function(res){
+		loadT.close()
+        $('#server_table').empty()
+		if(res.data.length > 0){
+			$.each(res.data,function(index,item){
+				$('#server_table').append($('<tr>\
+					<td>'+ item.log +'</td>\
+					<td style="text-align:right">'+ item.addtime +'</td>\
+					</tr>').data({data:item,index:index}))
+			});
+		}else{
+			$('#server_table').html('<tr><td colspan="2" style="text-align:center">None Data</td></tr>')
+		}
+		$('#server_table_page').html(res.page)
+	});
+}
+function get_ip_write_table(){
+    $('#ip_write_table').empty()
+    login_ipwhite({type:'get'},function(res){
+		if(res.msg.length > 0){
+			$.each(res.msg,function(index,item){
+				$('#ip_write_table').append($('<tr>\
+					<td>'+ item +'</td>\
+					<td style="text-align:right">\
+						<a href="javascript:;" class="btlink del_ip_write" >Del</a>\
+					</td>\
+					</tr>').data({data:item,index:index}))
+			});
+		}else{
+			$('#ip_write_table').html('<tr><td colspan="2" style="text-align:center">None Data</td></tr>')
+		}
+    })
+}
 function modify_basic_auth() {
     var loadT = layer.msg(lan.config.setting_basicauth, { icon: 16, time: 0, shade: [0.3, '#000'] });
     $.post('/config?action=get_basic_auth_stat', {}, function (rdata) {
@@ -924,11 +1246,11 @@ function modify_basic_auth() {
             m_html = '<div class="risk_form"><i class="layui-layer-ico layui-layer-ico3"></i>'
                 + '<h3 class="risk_tilte">Warning! Do not understand this feature, do not open!</h3>'
                 + '<ul style="border: 1px solid #ececec;border-radius: 10px; margin: 0px auto;margin-top: 20px;margin-bottom: 20px;background: #f7f7f7; width: 100 %;padding: 33px;list-style-type: inherit;">'
-					+ '<li style="color:red;">You must use and understand this feature to decide if you want to open it!</li>'
-					+ '<li>After opening, access the panel in any way, you will be asked to enter the BasicAuth username and password first.</li>'
-					+ '<li>After being turned on, it can effectively prevent the panel from being scanned and found, but it cannot replace the account password of the panel itself.</li>'
-					+ '<li>Please remember the BasicAuth password, but forget that you will not be able to access the panel.</li>'
-					+ '<li>If you forget your password, you can disable BasicAuth authentication by using the bt command in SSH.</li>'
+					+ '<li style="color:red;">'+lan.config.know_risk+'</li>'
+					+ '<li>'+lan.config.basic_auth_desc1+'</li>'
+					+ '<li>'+lan.config.basic_auth_desc2+'</li>'
+					+ '<li>'+lan.config.basic_auth_desc3+'</li>'
+					+ '<li>'+lan.config.basic_auth_desc4+'</li>'
                 + '</ul></div>'
                 + '<div class="details">'
                 + '<input type="checkbox" id="check_basic"><label style="font-weight: 400;margin: 3px 10px 0px;font-size:12px;" for="check_basic">I already know the details and are willing to take risks</label>'
@@ -945,277 +1267,6 @@ function modify_basic_auth() {
 
         }
     });
-}
-function open_three_channel_auth(){
-	get_channel_settings(function(rdata){
-		var isOpen = rdata.dingding.info.msg.isAtAll == 'True' ? 'checked': '';
-		var isDing = rdata.dingding.info.msg == 'No information'? '': rdata.dingding.info.msg.dingding_url;
-		layer.open({
-			type: 1,
-	        area: "600px",
-	        title: "Setting up a message channel",
-	        closeBtn: 2,
-	        shift: 5,
-	        shadeClose: false,
-	        content: '<div class="bt-form mes_channel">\
-	        			<div class="bt-w-main">\
-					        <div class="bt-w-menu">\
-					            <p class="bgw">Email</p>\
-					        </div>\
-					        <div class="bt-w-con pd15">\
-					            <div class="plugin_body">\
-	                				<div class="conter_box active" >\
-	                					<div class="bt-form">\
-	                						<div class="line">\
-	                							<button class="btn btn-success btn-sm" onclick="add_receive_info()">Add recipient</button>\
-	                							<button class="btn btn-default btn-sm" onclick="sender_info_edit()">Sender settings</button>\
-	                						</div>\
-					                        <div class="line">\
-						                        <div class="divtable">\
-						                        	<table class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"><thead><tr><th>Email</th><th width="80px">Operating</th></tr></thead></table>\
-						                        	<table class="table table-hover"><tbody id="receive_table"></tbody></table>\
-						                        </div>\
-					                        </div>\
-				                        </div>\
-	                				</div>\
-	                				<div class="conter_box" style="display:none">\
-		                				<div class="bt-form">\
-		                					<div class="line">\
-												<span class="tname">Notice all</span>\
-												<div class="info-r" style="height:28px; margin-left:125px">\
-													<input class="btswitch btswitch-ios" id="panel_alert_all" type="checkbox" '+ isOpen+'>\
-													<label style="position: relative;top: 5px;" class="btswitch-btn" for="panel_alert_all"></label>\
-												</div>\
-											</div>\
-						        			<div class="line">\
-					                            <span class="tname">DingDing URL</span>\
-					                            <div class="info-r">\
-					                                <textarea name="channel_dingding_value" class="bt-input-text mr5" type="text" style="width: 300px; height:90px; line-height:20px">'+isDing+'</textarea>\
-					                            </div>\
-					                            <button class="btn btn-success btn-sm" onclick="SetChannelDing()" style="margin: 10px 0 0 125px;">Save</button>\
-					                        </div>\
-				                        </div>\
-		            				</div>\
-	                			</div>\
-	                		</div>\
-                		</div>\
-                	  </div>'
-		})
-		$(".bt-w-menu p").click(function () {
-            var index = $(this).index();
-            $(this).addClass('bgw').siblings().removeClass('bgw');
-            $('.conter_box').eq(index).show().siblings().hide();
-        });
-		get_receive_list();
-	})
-}
-function sender_info_edit(){
-	var loadT = layer.msg('Getting profile, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-	$.post('/config?action=get_settings',function(rdata){
-		layer.close(loadT);
-		var qq_mail = rdata.user_mail.info.msg.qq_mail == undefined ? '' : rdata.user_mail.info.msg.qq_mail,
-			qq_stmp_pwd = rdata.user_mail.info.msg.qq_stmp_pwd == undefined? '' : rdata.user_mail.info.msg.qq_stmp_pwd,
-			hosts = rdata.user_mail.info.msg.hosts == undefined? '' : rdata.user_mail.info.msg.hosts,
-			port = rdata.user_mail.info.msg.port == undefined? '' : rdata.user_mail.info.msg.port;
-		layer.open({
-		type: 1,
-        area: "485px",
-        title: "Set sender email information",
-        closeBtn: 2,
-        shift: 5,
-        shadeClose: false,
-        content: '<div class="bt-form pd20 pb70">\
-        	<div class="line">\
-                <span class="tname">Sender email</span>\
-                <div class="info-r">\
-                    <input name="channel_email_value" class="bt-input-text mr5" type="text" style="width: 300px" value="'+qq_mail+'">\
-                </div>\
-            </div>\
-            <div class="line">\
-                <span class="tname">smtp password</span>\
-                <div class="info-r">\
-                    <input name="channel_email_password" class="bt-input-text mr5" type="password" style="width: 300px" value="'+qq_stmp_pwd+'">\
-                </div>\
-            </div>\
-            <div class="line">\
-                <span class="tname">smtp server</span>\
-                <div class="info-r">\
-                    <input name="channel_email_server" class="bt-input-text mr5" type="text" style="width: 300px" value="'+hosts+'">\
-                </div>\
-			</div>\
-			<div class="line">\
-                <span class="tname">smtp port</span>\
-                <div class="info-r">\
-                    <select class="bt-input-text mr5" id="port_select" style="width:'+(select_port(port)?'300px':'100px')+'"></select>\
-                    <input name="channel_email_port" class="bt-input-text mr5" type="Number" style="display:'+(select_port(port)? 'none':'inline-block')+'; width: 190px" value="'+port+'">\
-                </div>\
-            </div>\
-            <ul class="help-info-text c7">\
-            	<li>465 port is recommended, the protocol is SSL/TLS</li>\
-            	<li>Port 25 is SMTP protocol, port 587 is STARTTLS protocol</li>\
-            </ul>\
-            <div class="bt-form-submit-btn">\
-	            <button type="button" class="btn btn-danger btn-sm smtp_closeBtn">Close</button>\
-	            <button class="btn btn-success btn-sm SetChannelEmail">Save</button></div>\
-        	</div>',
-        success:function(layers,index){
-			var _option = '';
-        	if(select_port(port)){
-        		if(port == '465' || port == ''){
-        			_option = '<option value="465" selected="selected">465</option><option value="25">25</option><option value="587">587</option><option value="other">Customize</option>'
-        		}else if(port == '25'){
-        			_option = '<option value="465">465</option><option value="25" selected="selected">25</option><option value="587">587</option><option value="other">Customize</option>'
-        		}else{
-        			_option = '<option value="465">465</option><option value="25">25</option><option value="587" selected="selected">587</option><option value="other">Customize</option>'
-        		}
-        	}else{
-        		_option = '<option value="465">465</option><option value="25">25</option><option value="587" >587</option><option value="other" selected="selected">Customize</option>'
-        	}
-        	$("#port_select").html(_option)
-        	$("#port_select").change(function(e){
-        		if(e.target.value == 'other'){
-        			$("#port_select").css("width","100px");
-					$('input[name=channel_email_port]').css("display","inline-block");
-        		}else{
-        			$("#port_select").css("width","300px");
-					$('input[name=channel_email_port]').css("display","none");
-        		}
-        	})
-			$(".SetChannelEmail").click(function(){
-				var _email = $('input[name=channel_email_value]').val();
-				var _passW = $('input[name=channel_email_password]').val();
-				var _server = $('input[name=channel_email_server]').val();
-				if($('#port_select').val() == 'other'){
-					_port = $('input[name=channel_email_port]').val();
-				}else{
-					_port = $('#port_select').val()
-				}
-				if(_email == ''){
-					return layer.msg('Email address cannot be empty！',{icon:2});
-				}else if(_passW == ''){
-					return layer.msg('STMP password cannot be empty！',{icon:2});
-				}else if(_server == ''){
-					return layer.msg('STMP server address cannot be empty！',{icon:2});
-				}else if(_port == ''){
-					return layer.msg('STMP server port cannot be empty！',{icon:2});
-				}
-				var loadT = layer.msg('Please wait while generating mailbox channel...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-				layer.close(index)
-				$.post('/config?action=user_mail_send',{email:_email,stmp_pwd:_passW,hosts:_server,port:_port},function(rdata){
-					layer.close(loadT);
-					layer.msg(rdata.msg,{icon:rdata.status?1:2})
-				})
-			})
-			$(".smtp_closeBtn").click(function(){
-				layer.close(index)
-			})
-		}
-	})
-	});
-}
-function select_port(port){
-	switch(port){
-		case '25':
-			return true;
-		case '465':
-			return true;
-		case '587':
-			return true;
-		case '':
-			return true;
-		default:
-			return false
-	}
-}
-function get_channel_settings(callback){
-	var loadT = layer.msg('Getting profile, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-	$.post('/config?action=get_settings',function(rdata){
-		layer.close(loadT);
-        if (callback) callback(rdata);
-	})
-}
-function add_receive_info(){
-	layer.open({
-		type: 1,
-        area: "400px",
-        title: "Add recipient email",
-        closeBtn: 2,
-        shift: 5,
-        shadeClose: false,
-        content: '<div class="bt-form pd20 pb70">\
-	        <div class="line">\
-	            <span class="tname">Recipient mailbox</span>\
-	            <div class="info-r">\
-	                <input name="creater_email_value" class="bt-input-text mr5" type="text" style="width: 240px" value="">\
-	            </div>\
-	        </div>\
-	        <div class="bt-form-submit-btn">\
-	            <button type="button" class="btn btn-danger btn-sm smtp_closeBtn">Close</button>\
-	            <button class="btn btn-success btn-sm CreaterReceive">Create</button>\
-	        </div>\
-	        </div>',
-        success:function(layers,index){
-        	$(".CreaterReceive").click(function(){
-        		var _receive = $('input[name=creater_email_value]').val(),_that = this;
-				if(_receive != ''){
-					var loadT = layer.msg('Please wait while creating recipient list...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-					layer.close(index)
-					$.post('/config?action=add_mail_address',{email:_receive},function(rdata){
-						layer.close(loadT);
-						// 刷新收件列表
-						get_receive_list();
-						layer.msg(rdata.msg,{icon:rdata.status?1:2});
-					})
-				}else{
-					layer.msg('Recipient mailbox cannot be empty！',{icon:2});
-				}
-        	})
-
-			$(".smtp_closeBtn").click(function(){
-				layer.close(index)
-			})
-		}
-	})
-}
-function get_receive_list(){
-	$.post('/config?action=get_settings',function(rdata){
-		var _html = '',_list = rdata.user_mail.mail_list;
-		if(_list.length > 0){
-			for(var i= 0; i<_list.length;i++){
-				_html += '<tr>\
-					<td>'+ _list[i] +'</td>\
-					<td width="80px"><a onclick="del_email(\''+ _list[i] + '\')" href="javascript:;" style="color:#20a53a">Del</a></td>\
-					</tr>'
-			}
-		}else{
-			_html = '<tr>No Data</tr>'
-		}
-		$('#receive_table').html(_html);
-	})
-
-}
-
-function del_email(mail){
-	var loadT = layer.msg('Deleting ['+ mail +'], please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] }),_this = this;
-	$.post('/config?action=del_mail_list',{email:mail},function(rdata){
-		layer.close(loadT);
-		layer.msg(rdata.msg,{icon:rdata.status?1:2})
-		_this.get_receive_list()
-	})
-}
-// 设置钉钉
-function SetChannelDing(){
-	var _url = $('textarea[name=channel_dingding_value]').val();
-	var _all = $('#panel_alert_all').prop("checked");
-	if(_url != ''){
-		var loadT = layer.msg('Please wait while generating dingding channel...', { icon: 16, time: 0, shade: [0.3, '#000'] });
-		$.post('/config?action=set_dingding',{url:_url,atall:_all == true? 'True':'False'},function(rdata){
-			layer.close(loadT);
-			layer.msg(rdata.msg,{icon:rdata.status?1:2})
-		})
-	}else{
-		layer.msg('Please enter the dingding URL',{icon:2})
-	}
 }
 
 
@@ -1258,4 +1309,330 @@ function show_basic_auth(rdata) {
                         </ul>\
                     </div>'
     })
+}
+function get_panel_hide_list(){
+	var loadT = bt.load('Getting panel menu bar, please wait...'),arry = [];
+	$.post('/config?action=get_menu_list',function(rdata){
+		loadT.close();
+		$.each(rdata,function(index,item){
+			if(!item.show) arry.push(item.title)
+		});
+		$('#panel_menu_hide').val(arry.length > 0?arry.join('/'):'No hidden bar');
+	});
+
+}
+
+get_panel_hide_list();
+
+// 设置面板菜单显示功能
+function set_panel_ground(){
+	var loadT = bt.load('Getting panel menu bar, please wait...');
+	$.post('/config?action=get_menu_list',function(rdata){
+		var html = '',arry = ["dologin","memuAconfig","memuAsoft","memuA"],is_option = '';
+		loadT.close();
+		$.each(rdata,function(index,item){
+			is_option = '<div class="index-item" style="float:right;"><input class="btswitch btswitch-ios" id="'+ item.id +'0000" name="'+ item.id +'" type="checkbox" '+ (item.show?'checked':'') +'><label class="btswitch-btn" for="'+ item.id +'0000"></label></div>'
+			
+			if(item.id == 'dologin' || item.id == 'memuAconfig' || item.id == 'memuAsoft' || item.id == 'memuA') is_option = 'Inoperable';
+			html += '<tr><td>'+ item.title +'</td><td><div style="float:right;">'+ is_option +'</div></td></tr>';
+		});
+		layer.open({
+			type:1,
+			title:'Manage panel menu bar',
+			area:['350px','536px'],
+			shadeClose:false,
+			closeBtn:2,
+			content:'<div class="divtable softlist" id="panel_menu_tab" style="padding: 20px 15px;"><table class="table table-hover"><thead><tr><th>Menu bar</th><th style="text-align:right;width:120px;">Display</th></tr></thead><tbody>'+ html +'</tbody></table></div>',
+			success:function(){
+				$('#panel_menu_tab input').click(function(){
+					var arry = [];
+					$(this).parents('tr').siblings().each(function(index,el){
+						if($(this).find('input').length >0 && !$(this).find('input').prop('checked')){
+							arry.push($(this).find('input').attr('name'));
+						}
+					});
+					if(!$(this).prop('checked')){
+						arry.push($(this).attr('name'));
+					}
+					var loadT = bt.load('Setting panel menu bar display status, please wait...');
+					$.post('/config?action=set_hide_menu_list',{hide_list:JSON.stringify(arry)},function(rdata){
+						loadT.close();
+						bt.msg(rdata);
+					});
+				});
+			}
+		});
+	});
+}
+
+
+/**
+ * @description 获取临时授权列表
+ * @param {Function} callback 回调函数列表
+ * @returns void
+ */
+function get_temp_login(data,callback){
+	var loadT = bt.load('Get temporary authorization list, please wait...');
+	bt.send('get_temp_login','config/get_temp_login',data,function(res){
+		if(res.status === false){
+			layer.closeAll();
+			bt.msg(res);
+			return false;
+		}
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+
+/**
+ * @description 设置临时链接
+ * @param {Function} callback 回调函数列表
+ * @returns void
+ */
+function set_temp_login(callback){
+	var loadT = bt.load('Setting temporary links, please wait...');
+	bt.send('set_temp_login','config/set_temp_login',{},function(res){
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+
+/**
+ * @description 设置临时链接
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function remove_temp_login(data,callback){
+	var loadT = bt.load('Deleting temporary authorization record, please wait...');
+	bt.send('remove_temp_login','config/remove_temp_login',{id:data.id},function(res){
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+/**
+ * @description 强制用户登出
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function clear_temp_login(data,callback){
+	var loadT = bt.load('Forcing user to log out, please wait...');
+	bt.send('clear_temp_login','config/clear_temp_login',{id:data.id},function(res){
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+
+/**
+ * @description 渲染授权管理列表
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function reader_temp_list(data,callback){
+	if(typeof data == 'function') callback = data,data = {p:1};
+	get_temp_login(data,function(rdata){
+		var html = '';
+		$.each(rdata.data,function(index,item){
+			html += '<tr><td>'+ (item.login_addr || 'Not login') +'</td><td>'+ (function(){
+				switch(item.state){
+					case 0:
+						return 'Not login';
+					break;
+					case 1:
+						return 'Logged in';
+					break;
+					case -1:
+						return 'Expired';
+					break;
+				}
+			}()) +'</td><td >'+ (item.login_time == 0?'Not login':bt.format_data(item.login_time)) +'</td><td>'+ bt.format_data(item.expire) +'</td><td style="text-align:right;">'+ (function(){
+				if(item.state != 1){
+					return '<a href="javascript:;" class="btlink remove_temp_login" data-ip="'+ item.login_addr +'" data-id="'+ item.id +'">Del</a>';
+				}
+				if(item.online_state){
+					return '<a href="javascript:;" class="btlink clear_temp_login" style="color:red" data-ip="'+ item.login_addr +'" data-id="'+ item.id +'">Force logout </a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink logs_temp_login" data-ip="'+ item.login_addr +'" data-id="'+ item.id +'">Logs</a>';
+				}
+				return '<a href="javascript:;" class="btlink logs_temp_login" data-ip="'+ item.login_addr +'" data-id="'+ item.id +'">Logs</a>';
+			}()) +'</td></tr>';
+		});
+		$('#temp_login_view_tbody').html(html);
+		$('.temp_login_view_page').html(rdata.page);
+		if(callback) callback()
+	});
+}
+
+
+
+
+/**
+ * @description 获取操作日志
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function get_temp_login_logs(data,callback){
+	var loadT = bt.load('Getting operation log, please wait...');
+	bt.send('clear_temp_login','config/get_temp_login_logs',{id:data.id},function(res){
+		loadT.close();
+		if(callback) callback(res)
+	});
+}
+
+/**
+ * @description 渲染操作日志
+ * @param {Object} data 传入参数，id
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function reader_temp_login_logs(data,callback){
+	get_temp_login_logs(data,function(res){
+		var html = '';
+		$.each(res,function(index,item){
+			html += '<tr><td>'+ item.type +'</td><td>'+ item.addtime +'</td><td><span title="'+ item.log +'" style="white-space: pre;">'+ item.log +'</span></td></tr>';
+		});
+		if(callback) callback({tbody:html,data:res});
+	})
+}
+
+
+
+
+/**
+ * @description 设置临时链接
+ * @param {Function} callback 回调函数列表
+ * @returns void
+*/
+function get_temp_login_view(){
+	layer.open({
+		type: 1,
+        area:["700px",'600px'],
+        title: "Temporary authorization management",
+        closeBtn: 2,
+        shift: 5,
+		shadeClose: false,
+		content:'<div class="login_view_table pd15">'+
+			'<button class="btn btn-success btn-sm va0 create_temp_login" >Create authorization</button>'+
+			'<div class="divtable mt10">'+
+				'<table class="table table-hover">'+
+					'<thead><tr><th>Login IP</th><th>Status</th><th>Login time</th><th>Expiration time</th><th style="text-align:right;">Opt</th></tr></thead>'+
+					'<tbody id="temp_login_view_tbody"></tbody>'+
+				'</table>'+
+				'<div class="temp_login_view_page page"></div>'+
+			'</div>'+
+		'</div>',
+		success:function(){
+			reader_temp_list();
+			// 创建临时授权
+			$('.create_temp_login').click(function(){
+				bt.confirm({title:'Risk tips',msg:'<span style="color:red">Note 1: Abuse of temporary authorization may lead to security risks.</br>Note 2: Not publish temporary authorized connections in public</span></br>Temporary authorization connection is about to be created. Continue?'},function(){
+					layer.open({
+						type: 1,
+						area:'570px',
+						title: "Create temporary authorization",
+						closeBtn: 2,
+						shift: 5,
+						shadeClose: false,
+						content:'<div class="bt-form create_temp_view">'+
+							'<div class="line"><span class="tname" style="width: auto;">Temporary authorized address</span><div class="info-r ml0"><textarea id="temp_link" class="bt-input-text mr20" style="margin: 0px;width: 500px;height: 50px;line-height: 19px;"></textarea></div></div>'+
+							'<div class="line"><button type="submit" class="btn btn-success btn-sm btn-copy-temp-link" data-clipboard-text="">Copy address</button></div>'+
+							'<ul class="help-info-text c7"><li>The temporary authorization is valid within 1 hour after it is generated. It is a one-time authorization and will be invalid immediately after use</li><li>Use temporary authorization to log in to the panel within 1 hour. Do not publish temporary authorization connection in public</li><li>The authorized connection information is only displayed here once. If you forget it before use, please regenerate it</li></ul>'+
+						'</div>',
+						success:function(){
+							set_temp_login(function(res){
+								if(res.status){
+									var temp_link = location.origin+ '/login?tmp_token=' + res.token;
+									$('#temp_link').val(temp_link);
+									$('.btn-copy-temp-link').attr('data-clipboard-text',temp_link);
+								}
+							});
+							var clipboard = new ClipboardJS('.btn');
+							clipboard.on('success', function(e) {
+								bt.msg({status:true,msg:'Copy succeeded!'});
+								e.clearSelection();
+							});
+							clipboard.on('error', function(e) {
+								bt.msg({status:false,msg:'Copy failed, please copy address manually'});
+							});
+						},
+						end:function(){
+							reader_temp_list();
+						}
+					});
+				});
+			});
+			// 操作日志
+			$('#temp_login_view_tbody').on('click','.logs_temp_login',function(){
+				var id = $(this).data('id'),ip = $(this).data('ip');
+				layer.open({
+					type: 1,
+					area:['700px','550px'],
+					title:'Operation logs ['+ ip +']',
+					closeBtn: 2,
+					shift: 5,
+					shadeClose: false,
+					content:'<div class="pd15">'+
+						'<button class="btn btn-default btn-sm va0 refresh_login_logs">Refresh logs</button>'+
+						'<div class="divtable mt10 tablescroll" style="max-height: 420px;overflow-y: auto;border:none">'+
+							'<table class="table table-hover" id="logs_login_view_table">'+
+								'<thead><tr><th width="90px">Operation</th><th width="150px">Time</th><th>logs</th></tr></thead>'+
+								'<tbody ></tbody>'+
+							'</table>'+
+						'</div>'+
+					'</div>',
+					success:function(){
+						reader_temp_login_logs({id:id},function(data){
+							$('#logs_login_view_table tbody').html(data.tbody);
+						});
+						$('.refresh_login_logs').click(function(){
+							reader_temp_login_logs({id:id},function(data){
+								$('#logs_login_view_table tbody').html(data.tbody);
+							});
+						});
+						bt.fixed_table('logs_login_view_table');
+					}
+				});
+			});
+
+			
+
+			//删除授权记录，仅未使用的授权记录
+			$('#temp_login_view_tbody').on('click','.remove_temp_login',function(){
+				var id = $(this).data('id');
+				bt.confirm({
+					title:'Remove unused licenses',
+					msg:'Delete unused authorization record, continue?'
+				},function(){
+					remove_temp_login({id:id},function(res){
+						reader_temp_list(function(){
+							bt.msg(res);
+						})
+					})
+				})
+			});
+			//强制下线，强制登录的用户下线
+			$('#temp_login_view_tbody').on('click','.clear_temp_login',function(){
+				var id = $(this).data('id'),ip= $(this).data('ip');
+				bt.confirm({
+					title:'Force logout [ '+ ip +' ]',
+					msg:'Confirm to force logout [ '+ ip +' ]?'
+				},function(){
+					clear_temp_login({id:id},function(res){
+						reader_temp_list(function(){
+							bt.msg(res);
+						});
+					});
+				})
+			});
+			// 分页操作
+			$('.temp_login_view_page').on('click','a',function(ev){
+				var href = $(this).attr('href'),reg = /([0-9]*)$/,page = reg.exec(href)[0];
+				reader_temp_list({p:page});
+				ev.stopPropagation();
+				ev.preventDefault();
+			});
+		}
+	});
+
 }

@@ -31,19 +31,17 @@ mysqld_safe --skip-grant-tables&
 echo 'Changing password...';
 sleep 6
 m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.1.|5.5.|5.6.|10.0|10.1)")
+m2_version=$(cat /www/server/mysql/version.pl|grep -E "(10.5.|10.4.)")
 if [ "$m_version" != "" ];then
     mysql -uroot -e "UPDATE mysql.user SET password=PASSWORD('${pwd}') WHERE user='root'";
+elif [ "$m2_version" != "" ];then
+    mysql -uroot -e "FLUSH PRIVILEGES;alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
 else
     m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.7.|8.0.)")
     if [ "$m_version" != "" ];then
-        mysql -uroot -e "FLUSH PRIVILEGES;update mysql.user set authentication_string='' where user='root';alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
+        mysql -uroot -e "FLUSH PRIVILEGES;update mysql.user set authentication_string='' where user='root' and (host='127.0.0.1' or host='localhost');alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
     else
         mysql -uroot -e "update mysql.user set authentication_string=password('${pwd}') where user='root';"
-    fi
-    m_version=$(cat /www/server/mysql/version.pl|grep -E "10.4.")
-    if [ "$m_version" != "" ];then
-        mysql -uroot -e "flush privileges;ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${pwd}');ALTER USER root@127.0.0.1 IDENTIFIED VIA mysql_native_password USING PASSWORD('${pwd}');"
-        echo 1
     fi
 fi
 mysql -uroot -e "FLUSH PRIVILEGES";
@@ -192,31 +190,64 @@ def CloseTask():
     os.system('/etc/init.d/bt restart')
     print(public.GetMsg("CLEAR_TASK",(int(ncount),)))
     
+def get_ipaddress():
+    '''
+        @name 获取本机IP地址
+        @author hwliang<2020-11-24>
+        @return list
+    '''
+    ipa_tmp = public.ExecShell("ip a |grep inet|grep -v inet6|grep -v 127.0.0.1|awk '{print $2}'|sed 's#/[0-9]*##g'")[0].strip()
+    iplist = ipa_tmp.split('\n')
+    return iplist
+def get_host_all():
+    local_ip = ['127.0.0.1','::1','localhost']
+    ip_list = []
+    bind_ip = get_ipaddress()
+
+    for ip in bind_ip:
+        ip = ip.strip()
+        if ip in local_ip: continue
+        if ip in ip_list: continue
+        ip_list.append(ip)
+    net_ip = public.httpGet("https://api.bt.cn/api/getipaddress")
+
+    if net_ip:
+        net_ip = net_ip.strip()
+        if not net_ip in ip_list:
+            ip_list.append(net_ip)
+    ip_list = [ip_list[-1],ip_list[0]]
+    return ip_list
+
 #自签证书
 def CreateSSL():
-    import OpenSSL
-    key = OpenSSL.crypto.PKey()
-    key.generate_key( OpenSSL.crypto.TYPE_RSA, 2048 )
-    cert = OpenSSL.crypto.X509()
-    cert.set_serial_number(0)
-    cert.get_subject().CN = public.GetLocalIp()
-    cert.set_issuer(cert.get_subject())
-    cert.gmtime_adj_notBefore( 0 )
-    cert.gmtime_adj_notAfter( 10*365*24*60*60 )
-    cert.set_pubkey( key )
-    cert.sign( key, 'md5' )
-    cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
-    private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
-    if isinstance(cert_ca,bytes):
-        cert_ca = bytes.decode(cert_ca)
-        private_key = bytes.decode(private_key)
-    if len(cert_ca) > 100 and len(private_key) > 100:
-        public.writeFile('ssl/certificate.pem',cert_ca)
-        public.writeFile('ssl/privateKey.pem',private_key)
-        public.writeFile('/www/server/panel/data/ssl.pl','')
-        print('success')
-        return
-    print('error')
+    import base64
+    userInfo = public.get_user_info()
+    if not userInfo:
+        userInfo['uid'] = 0
+        userInfo['access_key'] = 'B' * 32
+    domains = get_host_all()
+    pdata = {
+        "action":"get_domain_cert",
+        "company":"aapanel.com",
+        "domain":','.join(domains),
+        "uid":userInfo['uid'],
+        "access_key":userInfo['access_key'],
+        "panel":1
+    }
+    cert_api = 'https://api.aapanel.com/aapanel_cert'
+    result = json.loads(public.httpPost(cert_api,{'data': json.dumps(pdata)}))
+    if 'status' in result:
+        if result['status']:
+            public.writeFile('ssl/certificate.pem',result['cert'])
+            public.writeFile('ssl/privateKey.pem',result['key'])
+            public.writeFile('ssl/baota_root.pfx',base64.b64decode(result['pfx']),'wb+')
+            public.writeFile('ssl/root_password.pl',result['password'])
+            public.writeFile('data/ssl.pl','True')
+            public.ExecShell("/etc/init.d/bt reload")
+            print('1')
+            return True
+    print('0')
+    return False
 
 #创建文件
 def CreateFiles(path,num):
@@ -277,7 +308,7 @@ def ClearMail():
         total += size;
         count += num;
     print('=======================================================================')
-    print("CLEAR_RUBBISH2",(str(count),ToSize(total)))
+    print(public.GetMsg('CLEAR_RUBBISH2',(str(count),ToSize(total))))
     return total,count
 
 #清理php_session文件
@@ -364,7 +395,7 @@ def set_panel_username(username = None):
     import db
     sql = db.Sql()
     if username:
-        if len(username) < 5:
+        if len(username) < 3:
             print(public.GetMsg("USER_NAME_LEN_ERR"))
             return;
         if username in ['admin','root']:
@@ -388,7 +419,7 @@ def setup_idc():
         filename = panelPath + '/data/o.pl'
         if not os.path.exists(filename): return False
         o = public.readFile(filename).strip()
-        c_url = 'http://www.bt.cn/api/idc/get_idc_info_bycode?o=%s' % o
+        c_url = 'https://www.bt.cn/api/idc/get_idc_info_bycode?o=%s' % o
         idcInfo = json.loads(public.httpGet(c_url))
         if not idcInfo['status']: return False
         pFile = panelPath + '/config/config.json'
@@ -399,7 +430,7 @@ def setup_idc():
         tFile = panelPath + '/data/title.pl'
         titleNew = (pInfo['brand'] + public.GetMsg("PANEL")).encode('utf-8')
         if os.path.exists(tFile):
-            title = public.readFile(tFile).strip()
+            title = public.GetConfigValue('title')
             if title == '宝塔Linux面板' or title == '': 
                 public.writeFile(tFile,titleNew)
                 public.SetConfigValue('title',titleNew)
@@ -419,7 +450,7 @@ def update_to6():
     for pname in os.listdir('plugin/'):
         if not os.path.isdir('plugin/' + pname): continue
         if pname in exlodes: continue
-        print("|-upgrading【%s】..." % pname),
+        print("|-upgrading [ %s ]..." % pname),
         download_url = download_address + '/install/plugin/' + pname + '/install.sh'
         to_file = '/tmp/%s.sh' % pname
         public.downloadFile(download_url,to_file)
@@ -444,15 +475,63 @@ def bt_cli(u_input = 0):
         print("(22) %s                (15) %s"% ("Display panel error log",public.GetMsg("CLEAR_SYS_RUBBISH")))
         print("(23) %s      (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
         print("(24) Turn off Google Authenticator          (17) Set log cutting on/off compression")
-        print("(25) Set whether to back up the panel automatically  (18) Set whether to save a historical copy of the file")
+        print("(25) Set whether to save a historical copy of the file  (18) Set whether to back up the panel automatically")
+        print("(26) Keep/Remove local backup when backing up to cloud storage")
         print("(0) Cancel")
         print(raw_tip)
         try:
             u_input = input(public.GetMsg("INPUT_CMD_NUM"))
             if sys.version_info[0] == 3: u_input = int(u_input)
         except: u_input = 0
+    try:
+        if u_input in ['log','logs','error','err','tail','debug','info']:
+            os.system("tail -f {}".format(public.get_panel_log_file()))
+            return
+        if u_input[:6] in ['install','update']:
+            print("Tip: Example of command parameter transfer (compile and install php7.4):bt install/0/php/7.4")
+            print(sys.argv)
+            install_args = u_input.split('/')
+            if len(install_args) < 2:
+                try:
+                    install_input = input("Please select the installation method (0 compile install, 1 speed install, default: 1):")
+                    install_input = int(install_input)
+                except:
+                    install_input = 1
+            else:
+                install_input = int(install_args[1])
+            print(raw_tip)
+            soft_list = 'nginx apache php mysql memcached redis pure-ftpd phpmyadmin pm2 docker openlitespeed mongodb'
+            soft_list_arr = soft_list.split(' ')
+            if len(install_args) < 3:
+                install_soft = ''
+                while not install_soft:
+                    print("Supported software:{}".format(soft_list))
+                    print(raw_tip)
+                    install_soft = input("Please enter the name of the software to be installed (eg: nginx)：")
+                    if install_soft not in soft_list_arr:
+                        print("Software that does not support command line installation")
+                        install_soft = ''
+            else:
+                install_soft = install_args[2]
 
-    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25]
+            print(raw_tip)
+            if len(install_args) < 4:
+                install_version = ''
+                while not install_version:
+                    print(raw_tip)
+                    install_version = input("Please enter the version number to be installed (for example: 1.18):")
+            else:
+                install_version = install_args[3]
+
+            print(raw_tip)
+            os.system("bash /www/server/panel/install/install_soft.sh {} {} {} {}".format(install_input,install_args[0],install_soft,install_version))
+            exit()
+
+        print("Unsupported command")
+        exit()
+    except: pass
+
+    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25,26]
     if not u_input in nums:
         print(raw_tip)
         print(public.GetMsg("CANCELLED"))
@@ -536,8 +615,9 @@ def bt_cli(u_input = 0):
         print(public.GetMsg("CHANGE_PORT_SUCCESS",(input_port,)))
         print(public.GetMsg("CLOUD_RELEASE_PORT",(input_port,)))
     elif u_input == 9:
-        sess_file = '/dev/shm/session.db'
-        if os.path.exists(sess_file): os.remove(sess_file)
+        sess_file = '/www/server/panel/data/session'
+        if os.path.exists(sess_file):
+            os.system("rm -f {}/*".format(sess_file))
         os.system("/etc/init.d/bt reload")
     elif u_input == 10:
         os.system("/etc/init.d/bt reload")
@@ -562,7 +642,7 @@ def bt_cli(u_input = 0):
         ClearSystem()
     elif u_input == 16:
         os.system("/www/server/panel/pyenv/bin/pip install cachelib")
-        os.system("curl http://download.bt.cn/install/update6_en.sh|bash")
+        os.system("curl https://download.bt.cn/install/update6_en.sh|bash")
     elif u_input == 17:
         l_path = '/www/server/panel/data/log_not_gzip.pl'
         if os.path.exists(l_path):
@@ -604,6 +684,14 @@ def bt_cli(u_input = 0):
             print("|-Detected that the file copy function is turned on and is closing...")
             public.writeFile(l_path,'True')
             print("|-File copy function turned off")
+    elif u_input == 26:
+        keep_local = "/www/server/panel/data/is_save_local_backup.pl"
+        if os.path.exists(keep_local):
+            print("|-The local file retention setting is turned off")
+            os.remove(keep_local)
+        else:
+            print("|-The local file retention setting is turned on")
+            os.mknod(keep_local)
 
 
 
@@ -631,7 +719,11 @@ if __name__ == "__main__":
         update_to6()
     elif type == "cli":
         clinum = 0
-        if len(sys.argv) > 2: clinum = int(sys.argv[2])
+        try:
+            if len(sys.argv) > 2:
+                clinum = int(sys.argv[2]) if sys.argv[2][:6] not in ['instal','update'] else sys.argv[2]
+        except:
+            clinum = sys.argv[2]
         bt_cli(clinum)
     else:
         print('ERROR: Parameter error')

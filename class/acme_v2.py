@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#coding: utf-8
+# coding: utf-8
 # -------------------------------------------------------------------
 # 宝塔Linux面板
 # -------------------------------------------------------------------
@@ -18,26 +18,29 @@ import binascii
 import hashlib
 import base64
 import json
-import copy
 import time
 import os
 import sys
+
 os.chdir('/www/server/panel')
-sys.path.append('class/')
+if not 'class/' in sys.path:
+    sys.path.insert(0, 'class/')
 import http_requests as requests
+
 requests.DEFAULT_TYPE = 'curl'
 import public
 
 try:
     import OpenSSL
 except:
-    public.ExecShell("pip install -I pyopenssl")
+    public.ExecShell("btpip install -I pyOpenSSL")
     import OpenSSL
 try:
     import dns.resolver
 except:
     public.ExecShell("pip install dnspython")
     import dns.resolver
+
 
 class acme_v2:
     _url = None
@@ -59,6 +62,8 @@ class acme_v2:
     _dnsapi_file = 'config/dns_api.json'
     _save_path = 'vhost/letsencrypt'
     _conf_file = 'config/letsencrypt.json'
+    _stop_rp_file = '{}/data/stop_rp_when_renew_ssl.pl'.format(public.get_panel_path())
+    _by_panel = None
 
     def __init__(self):
         if self._debug:
@@ -81,12 +86,16 @@ class acme_v2:
                         return self._apis
 
             # 尝试从云端获取
-            res = requests.get(self._url)
+            res = requests.get(self._url,verify=False)
             if not res.status_code in [200, 201]:
                 result = res.json()
                 if "type" in result:
                     if result['type'] == 'urn:acme:error:serverInternal':
-                        raise Exception(public.getMsg('ACME_MSG_ERR'))
+                        raise Exception(public.get_msg_gettext('Service shutdown or internal error due to maintenance, check [ https://letsencrypt.status.io ] see for more details.'))
+                if not os.path.exists('/www/server/panel/data/http_type.pl'):
+                    public.writeFile('/www/server/panel/data/http_type.pl','python')
+                    self.get_apis()
+                    return self._apis
                 raise Exception(res.content)
             s_body = res.json()
             self._apis = {}
@@ -118,19 +127,19 @@ class acme_v2:
             self.set_crond()
             return account
         except Exception as ex:
-            return public.returnMsg(False,str(ex))
+            return public.return_msg_gettext(False,str(ex))
 
     # 设置帐户信息
     def set_account_info(self, args):
         if not 'account' in self._config:
-            return public.returnMsg(False, 'ACME_ACCOUNT_ERR')
+            return public.return_msg_gettext(False, 'The specified account does not exist')
         account = json.loads(args.account)
         if 'email' in account:
             self._config['email'] = account['email']
             del(account['email'])
         self._config['account'][self._mod_index[self._debug]] = account
         self.save_config()
-        return public.returnMsg(True, 'ACME_SUCCESS_ACCOUNT_SETUP')
+        return public.return_msg_gettext(True, 'Setup successfully!')
 
     # 获取订单列表
     def get_orders(self, args):
@@ -146,19 +155,19 @@ class acme_v2:
     # 删除订单
     def remove_order(self, args):
         if not 'orders' in self._config:
-            return public.returnMsg(False, 'ACME_ORDER_NOT_EXIST')
+            return public.return_msg_gettext(False, 'The specified order does not exist!')
         if not args.index in self._config['orders']:
-            return public.returnMsg(False, 'ACME_ORDER_NOT_EXIST')
+            return public.return_msg_gettext(False, 'The specified order does not exist!')
         del(self._config['orders'][args.index])
         self.save_config()
-        return public.returnMsg(True, 'ACME_DEL_ODER_SUCCESS')
+        return public.return_msg_gettext(True, 'Order deleted successfully!')
 
     # 取指定订单数据
     def get_order_find(self, args):
         if not 'orders' in self._config:
-            return public.returnMsg(False, 'ACME_ORDER_NOT_EXIST')
+            return public.return_msg_gettext(False, 'The specified order does not exist!')
         if not args.index in self._config['orders']:
-            return public.returnMsg(False, 'ACME_ORDER_NOT_EXIST')
+            return public.return_msg_gettext(False, 'The specified order does not exist!')
         result = self._config['orders'][args.index]
         result['cert'] = self.get_cert_info(args.index)
         return result
@@ -179,27 +188,27 @@ class acme_v2:
         if not os.path.exists(path):  # 尝试重新下载证书
             self.download_cert(args.index)
         if not os.path.exists(path):
-            return public.returnMsg(False, 'ACME_GET_CERT_ERR')
+            return public.return_msg_gettext(False, 'Certificate read failed, directory does not exist!')
         import panelTask
         bt_task = panelTask.bt_task()
         zip_file = path+'/cert.zip'
         result = bt_task._zip(path, '.', path+'/cert.zip', '/dev/null', 'zip')
         if not os.path.exists(zip_file):
             return result
-        return public.returnMsg(True, zip_file)
+        return public.return_msg_gettext(True, zip_file)
 
     # 吊销证书
     def revoke_order(self, index):
         if type(index) != str:
             index = index.index
         if not index in self._config['orders']:
-            raise Exception(public.getMsg('ACME_ORDER_NOT_EXIST'))
+            raise Exception(public.get_msg_gettext('The specified order does not exist!'))
         cert_path = self._config['orders'][index]['save_path']
         if not os.path.exists(cert_path):
-            raise Exception(public.getMsg('ACME_CERT_ERR'))
+            raise Exception(public.get_msg_gettext('No certificate found for the specified order!'))
         cert = self.dump_der(cert_path)
         if not cert:
-            raise Exception(public.getMsg('ACME_CERT_READ_ERR'))
+            raise Exception(public.get_msg_gettext('Certificate read failed!'))
         payload = {
             "certificate": self.calculate_safe_base64(cert),
             "reason": 4
@@ -210,15 +219,42 @@ class acme_v2:
                 public.ExecShell("rm -rf {}".format(cert_path))
             del(self._config['orders'][index])
             self.save_config()
-            return public.returnMsg(True, "Certificate revoked!")
+            return public.return_msg_gettext(True, "Certificate revoked!")
         return res.json()
 
     # 取根域名和记录值
     def extract_zone(self, domain_name):
-        top_domain_list = ['.ac.cn', '.ah.cn', '.bj.cn', '.com.cn', '.cq.cn', '.fj.cn', '.gd.cn',
-                           '.gov.cn', '.gs.cn', '.gx.cn', '.gz.cn', '.ha.cn', '.hb.cn', '.he.cn',
-                           '.hi.cn', '.hk.cn', '.hl.cn', '.hn.cn', '.jl.cn', '.js.cn', '.jx.cn',
-                           '.ln.cn', '.mo.cn', '.net.cn', '.nm.cn', '.nx.cn', '.org.cn','my.id']
+        top_domain_list = ['.ac.cn', '.ah.cn', '.bj.cn', '.com.cn', '.cq.cn', '.fj.cn', '.gd.cn','.gov.cn', '.gs.cn',
+                           '.gx.cn', '.gz.cn', '.ha.cn', '.hb.cn', '.he.cn','.hi.cn', '.hk.cn', '.hl.cn', '.hn.cn',
+                           '.jl.cn', '.js.cn', '.jx.cn','.ln.cn', '.mo.cn', '.net.cn', '.nm.cn', '.nx.cn', '.org.cn',
+                           '.my.id','.com.ac','.com.ad','.com.ae','.com.af','.com.ag','.com.ai','.com.al','.com.am',
+                           '.com.an','.com.ao','.com.aq','.com.ar','.com.as','.com.as','.com.at','.com.au','.com.aw',
+                           '.com.az','.com.ba','.com.bb','.com.bd','.com.be','.com.bf','.com.bg','.com.bh','.com.bi',
+                           '.com.bj','.com.bm','.com.bn','.com.bo','.com.br','.com.bs','.com.bt','.com.bv','.com.bw',
+                           '.com.by','.com.bz','.com.ca','.com.ca','.com.cc','.com.cd','.com.cf','.com.cg','.com.ch',
+                           '.com.ci','.com.ck','.com.cl','.com.cm','.com.cn','.com.co','.com.cq','.com.cr','.com.cu',
+                           '.com.cv','.com.cx','.com.cy','.com.cz','.com.de','.com.dj','.com.dk','.com.dm','.com.do',
+                           '.com.dz','.com.ec','.com.ee','.com.eg','.com.eh','.com.es','.com.et','.com.eu','.com.ev',
+                           '.com.fi','.com.fj','.com.fk','.com.fm','.com.fo','.com.fr','.com.ga','.com.gb','.com.gd',
+                           '.com.ge','.com.gf','.com.gh','.com.gi','.com.gl','.com.gm','.com.gn','.com.gp','.com.gr',
+                           '.com.gt','.com.gu','.com.gw','.com.gy','.com.hm','.com.hn','.com.hr','.com.ht','.com.hu',
+                           '.com.id','.com.id','.com.ie','.com.il','.com.il','.com.in','.com.io','.com.iq','.com.ir',
+                           '.com.is','.com.it','.com.jm','.com.jo','.com.jp','.com.ke','.com.kg','.com.kh','.com.ki',
+                           '.com.km','.com.kn','.com.kp','.com.kr','.com.kw','.com.ky','.com.kz','.com.la','.com.lb',
+                           '.com.lc','.com.li','.com.lk','.com.lr','.com.ls','.com.lt','.com.lu','.com.lv','.com.ly',
+                           '.com.ma','.com.mc','.com.md','.com.me','.com.mg','.com.mh','.com.ml','.com.mm','.com.mn',
+                           '.com.mo','.com.mp','.com.mq','.com.mr','.com.ms','.com.mt','.com.mv','.com.mw','.com.mx',
+                           '.com.my','.com.mz','.com.na','.com.nc','.com.ne','.com.nf','.com.ng','.com.ni','.com.nl',
+                           '.com.no','.com.np','.com.nr','.com.nr','.com.nt','.com.nu','.com.nz','.com.om','.com.pa',
+                           '.com.pe','.com.pf','.com.pg','.com.ph','.com.pk','.com.pl','.com.pm','.com.pn','.com.pr',
+                           '.com.pt','.com.pw','.com.py','.com.qa','.com.re','.com.ro','.com.rs','.com.ru','.com.rw',
+                           '.com.sa','.com.sb','.com.sc','.com.sd','.com.se','.com.sg','.com.sh','.com.si','.com.sj',
+                           '.com.sk','.com.sl','.com.sm','.com.sn','.com.so','.com.sr','.com.st','.com.su','.com.sy',
+                           '.com.sz','.com.tc','.com.td','.com.tf','.com.tg','.com.th','.com.tj','.com.tk','.com.tl',
+                           '.com.tm','.com.tn','.com.to','.com.tp','.com.tr','.com.tt','.com.tv','.com.tw','.com.tz',
+                           '.com.ua','.com.ug','.com.uk','.com.uk','.com.us','.com.uy','.com.uz','.com.va','.com.vc',
+                           '.com.ve','.com.vg','.com.vn','.com.vu','.com.wf','.com.ws','.com.ye','.com.za','.com.zm',
+                           '.com.zw']
         old_domain_name = domain_name
         top_domain = "."+".".join(domain_name.rsplit('.')[-2:])
         new_top_domain = "." + top_domain.replace(".", "")
@@ -286,7 +322,7 @@ class acme_v2:
     def create_order(self, domains, auth_type, auth_to, index=None):
         domains = self.format_domains(domains)
         if not domains:
-            raise Exception(public.getMsg('ACME_DOMAIN_ERR'))
+            raise Exception(public.get_msg_gettext('Need at least a domain name!'))
         # 构造标识
         identifiers = []
         for domain_name in domains:
@@ -314,7 +350,7 @@ class acme_v2:
                 a_auth = res.json()
                 ret_title = self.get_error(str(a_auth))
                 raise StopIteration(
-                        "{0} >>>> {1}".format(
+                        "{} >>>> {}".format(
                             ret_title,
                             json.dumps(a_auth)
                         )
@@ -331,7 +367,7 @@ class acme_v2:
     # 获取验证信息
     def get_auths(self, index):
         if not index in self._config['orders']:
-            raise Exception(public.getMsg('ACME_ORDER_NOT_EXIST'))
+            raise Exception(public.get_msg_gettext('The specified order does not exist!'))
 
         # 检查是否已经获取过授权信息
         if 'auths' in self._config['orders'][index]:
@@ -382,6 +418,11 @@ class acme_v2:
 
     # 设置验证信息
     def set_auth_info(self, identifier_auth):
+
+        #从云端验证
+        if not self.cloud_check_domain(identifier_auth['domain']):
+            self.err = "Cloud verification failed!"
+
         # 是否手动验证DNS
         if identifier_auth['auth_to'] == 'dns':
             return None
@@ -395,12 +436,20 @@ class acme_v2:
             self.create_dns_record(
                 identifier_auth['auth_to'], identifier_auth['domain'], identifier_auth['auth_value'])
 
+    #从云端验证域名是否可访问
+    def cloud_check_domain(self,domain):
+        try:
+            result = requests.post('https://www.aapanel.com/api/panel/checkDomain',{"domain":domain,"ssl":1}).json()
+            return result['status']
+        except: return False
+
+
     #清理验证文件
     def claer_auth_file(self,index):
         if not self._config['orders'][index]['auth_type'] in ['http','tls']: 
             return True
         acme_path = '{}/.well-known/acme-challenge'.format(self._config['orders'][index]['auth_to'])
-        write_log(public.getMsg('ACME_V_DIR',(acme_path,)))
+        write_log(public.get_msg_gettext('|-Verify the dir：{}',(acme_path,)))
         if os.path.exists(acme_path):
             public.ExecShell("rm -f {}/*".format(acme_path))
         acme_path = '/www/server/stop/.well-known/acme-challenge'
@@ -429,7 +478,7 @@ class acme_v2:
         except:
             err = public.get_error_info()
             print(err)
-            raise Exception(public.getMsg('ACME_WRITE_V_FILE_ERR',(err,)))
+            raise Exception(public.get_msg_gettext('Writing verification file failed: {}',(err,)))
 
     # 解析域名
     def create_dns_record(self, auth_to, domain, dns_value):
@@ -460,7 +509,7 @@ class acme_v2:
                     key = dc['data'][0]['value']
                     secret = dc['data'][1]['value']
             except:
-                raise Exception(public.getMsg('ACME_DNS_API_ERR'))
+                raise Exception(public.get_msg_gettext('No valid DNSAPI key information found'))
         else:
             key = tmp[1]
             secret = tmp[2]
@@ -479,7 +528,7 @@ class acme_v2:
     # 验证域名
     def auth_domain(self, index):
         if not index in self._config['orders']:
-            raise Exception(public.getMsg('ACME_ORDER_NOT_EXIST'))
+            raise Exception(public.get_msg_gettext('The specified order does not exist!'))
 
         # 开始验证
         for auth in self._config['orders'][index]['auths']:
@@ -506,7 +555,7 @@ class acme_v2:
         number_of_checks = 0
         while True:
             if desired_status == ['valid', 'invalid']:
-                write_log(public.getMsg('ACME_QUERY_V_RESULT',(number_of_checks + 1,)))
+                write_log(public.get_msg_gettext('|-{} Query verification results..',(str(number_of_checks + 1),)))
                 time.sleep(self._wait_time)
             check_authorization_status_response = self.acme_request(url, "")
             a_auth = check_authorization_status_response.json()
@@ -514,7 +563,7 @@ class acme_v2:
             number_of_checks += 1
             if authorization_status in desired_status:
                 if authorization_status == "invalid":
-                    write_log("|-verification failed!")
+                    write_log("|-"+public.get_msg_gettext('Verification failed'))
                     try:
                         if 'error' in a_auth['challenges'][0]:
                             ret_title = a_auth['challenges'][0]['error']['detail']
@@ -528,7 +577,7 @@ class acme_v2:
                     except:
                         ret_title = str(a_auth)
                     raise StopIteration(
-                        "{0} >>>> {1}".format(
+                        "{} >>>> {}".format(
                             ret_title,
                             json.dumps(a_auth)
                         )
@@ -537,75 +586,75 @@ class acme_v2:
 
             if number_of_checks == self._max_check_num:
                 raise StopIteration(
-                    public.getMsg('ACME_V_TIMES',(
-                        number_of_checks,
-                        self._max_check_num,
-                        self._wait_time
+                    public.get_msg_gettext('Error: Attempted verification {} times. The maximum number of verifications is {}. The verification interval is {} seconds.',(
+                        str(number_of_checks),
+                        str(self._max_check_num),
+                        str(self._wait_time)
                     )))
         if desired_status == ['valid', 'invalid']:
-            write_log('ACME_V_SUCCESS')
+            write_log(public.get_msg_gettext('|-Verification succeeded!'))
         return check_authorization_status_response
 
     # 格式化错误输出
     def get_error(self, error):
         if error.find("Max checks allowed") >= 0:
-            return public.getMsg('ACME_ERR_MSG1')
+            return public.get_msg_gettext('CA cannot verify your domain name, please check if the domain name resolution is correct, or wait 5-10 minutes and try again.')
         elif error.find("Max retries exceeded with") >= 0 or error.find('status_code=0 ') != -1:
-            return public.getMsg('ACME_ERR_MSG2')
+            return public.get_msg_gettext('CA server connection timed out, please try again later.')
         elif error.find("The domain name belongs") >= 0:
-            return public.getMsg('ACME_ERR_MSG3')
+            return public.get_msg_gettext('The domain name does not belong to this DNS service provider, please make sure the domain name is filled in correctly.')
         elif error.find('login token ID is invalid') >= 0:
-            return public.getMsg('ACME_ERR_MSG4')
+            return public.get_msg_gettext('DNS server connection failed, please check if the key is correct.')
         elif error.find('Error getting validation data') != -1:
-            return public.getMsg('ACME_ERR_MSG5')
+            return public.get_msg_gettext('Data validation failed and the CA was unable to get the correct captcha from the authenticated connection.')
         elif "too many certificates already issued for exact set of domains" in error:
-            return public.getMsg('ACME_ERR_MSG6',(re.findall("exact set of domains: (.+):", error),))
+            return public.get_msg_gettext('Issuing failed, the domain {} has exceeded the limit of weekly reissues!',(str(re.findall("exact set of domains: (.+):", error)),))
         elif "Error creating new account :: too many registrations for this IP" in error:
-            return public.getMsg('ACME_ERR_MSG7')
+            return public.get_msg_gettext('Issuing failed, the current server IP has reached the limit of creating up to 10 accounts every 3 hours.')
         elif "DNS problem: NXDOMAIN looking up A for" in error:
-            return public.getMsg('ACME_ERR_MSG8')
+            return public.get_msg_gettext('Validation failed, domain name was not resolved, or resolution did not take effect!')
         elif "Invalid response from" in error:
-            return public.getMsg('ACME_ERR_MSG9')
+            return public.get_msg_gettext('Verification failed, domain name resolution error or verification URL cannot be accessed!')
         elif error.find('TLS Web Server Authentication') != -1:
-            return public.getMsg('ACME_ERR_MSG10')
+            return public.get_msg_gettext('Connection to CA server failed, please try again later.')
         elif error.find('Name does not end in a public suffix') != -1:
-            return public.getMsg('ACME_ERR_MSG11',(re.findall("Cannot issue for \"(.+)\":", error),))
+            return public.get_msg_gettext('Unsupported domain name {}, please check the domain name is correct!',(str(re.findall("Cannot issue for \"(.+)\":", error)),))
         elif error.find('No valid IP addresses found for') != -1:
-            return public.getMsg('ACME_ERR_MSG12',(re.findall("No valid IP addresses found for (.+)", error),))
+            return public.get_msg_gettext('No resolution record was found for domain name {}, please check if the domain name resolution takes effect!',(str(re.findall("No valid IP addresses found for (.+)", error)),))
         elif error.find('No TXT record found at') != -1:
-            return public.getMsg('ACME_ERR_MSG13',(re.findall("No TXT record found at (.+)", error),))
+            return public.get_msg_gettext('No valid TXT resolution record was found in the domain name {}, please check whether the TXT record is parsed correctly. If it is applied by DNSAPI, please try again in 10 minutes!',(str(re.findall("No TXT record found at (.+)", error)),))
         elif error.find('Incorrect TXT record') != -1:
-            return public.getMsg('ACME_ERR_MSG14',(re.findall("found at (.+)", error), re.findall("Incorrect TXT record \"(.+)\"", error)))
+            return public.get_msg_gettext('A wrong TXT record was found on {}: {}, please check whether the TXT resolution is correct, if it is applied by DNSAPI, please try again in 10 minutes!',(str(re.findall("found at (.+)", error)), str(re.findall("Incorrect TXT record \"(.+)\"", error))))
         elif error.find('Domain not under you or your user') != -1:
-            return public.getMsg('ACME_ERR_MSG15')
+            return public.get_msg_gettext('This domain name does not exist under this dnspod account, adding resolution failed!')
         elif error.find('SERVFAIL looking up TXT for') != -1:
-            return public.getMsg('ACME_ERR_MSG16',re.findall("looking up TXT for (.+)", error))
+            return public.get_msg_gettext('No valid TXT resolution record was found in the domain name {}, please check whether the TXT record is parsed correctly. If it is applied by DNSAPI, please try again in 10 minutes!',(str(re.findall("looking up TXT for (.+)", error)),))
         elif error.find('Timeout during connect') != -1:
-            return public.getMsg('ACME_ERR_MSG17')
+            return public.get_msg_gettext('The connection timed out and the CA server was unable to access your website!')
         elif error.find("DNS problem: SERVFAIL looking up CAA for") != -1:
-            return public.getMsg('ACME_ERR_MSG18',(re.findall("looking up CAA for (.+)", error),))
+            return public.get_msg_gettext('Domain name {} is currently required to verify the CAA record, please parse the CAA record manually, or retry the application after 1 hour!',(str(re.findall("looking up CAA for (.+)", error)),))
         elif error.find("Read timed out.") != -1:
-            return public.getMsg('ACME_ERR_MSG19')
+            return public.get_msg_gettext('The verification timed out. Please check if the domain name is resolved correctly. If it is resolved correctly, the connection between the server and LetsEncrypt may be abnormal. Please try again later!')
         elif error.find('Cannot issue for') != -1:
-            return public.getMsg('ACME_ERR_MSG20',(re.findall(r'for\s+"(.+)"',error),))
+            return public.get_msg_gettext('Cannot issue a certificate for {}, cannot apply for a wildcard certificate with a domain name suffix directly!',(str(re.findall(r'for\s+"(.+)"',error)),))
         elif error.find('too many failed authorizations recently'):
-            return public.getMsg('ACME_ERR_MSG21')
+            return public.get_msg_gettext('The account has more than 5 failed orders within 1 hour, please wait 1 hour and try again!')
         elif error.find("Error creating new order") != -1:
-            return public.getMsg('ACME_ERR_MSG22')
+            return public.get_msg_gettext('Order creation failed, please try again later!')
         elif error.find("Too Many Requests") != -1:
-            return public.getMsg('ACME_ERR_MSG23')
+            return public.get_msg_gettext('More than 5 verification failures in 1 hour, the application is temporarily banned, please try again later!')
         elif error.find('HTTP Error 400: Bad Request') != -1:
-            return public.getMsg('ACME_ERR_MSG24')
+            return public.get_msg_gettext('CA server denied access, please try again later!')
         elif error.find('Temporary failure in name resolution') != -1:
-            return public.getMsg('ACME_ERR_MSG25')
+            return public.get_msg_gettext('The DNS of the server is faulty and the domain name cannot be resolved. Please use the Linux toolbox to check the DNS configuration')
         elif error.find('Too Many Requests') != -1:
-            return public.getMsg('ACME_ERR_MSG26')
+            return public.get_msg_gettext('Too many requests for this domain name. Please try again 3 hours later')
         else:
             return error
 
     # 发送验证请求
     def respond_to_challenge(self, auth):
-        payload = {"keyAuthorization": "{0}".format(
+        payload = {"keyAuthorization": "{}".format(
             auth['acme_keyauthorization'])}
         respond_to_challenge_response = self.acme_request(
             auth['dns_challenge_url'], payload)
@@ -619,7 +668,7 @@ class acme_v2:
             url=self._config['orders'][index]['finalize'], payload=payload)
         if send_csr_response.status_code not in [200, 201]:
             raise ValueError(
-                public.getMsg('ACME_SEND_CSR_ERR',(send_csr_response.status_code,send_csr_response.json()))
+                public.get_msg_gettext('Error: Sending CSR: Response status {} Response value: {}',(send_csr_response.status_code,send_csr_response.json()))
             )
         send_csr_response_json = send_csr_response.json()
         certificate_url = send_csr_response_json["certificate"]
@@ -642,7 +691,7 @@ class acme_v2:
         res = self.acme_request(
             self._config['orders'][index]['certificate_url'], "")
         if res.status_code not in [200, 201]:
-            raise Exception(public.getMsg('ACME_CERT_DOWNLOAD_ERR',(res.json(),)))
+            raise Exception(public.get_msg_gettext('Failed to download certificate: {}',(str(res.json()),)))
 
         pem_certificate = res.content
         if type(pem_certificate) == bytes:
@@ -709,7 +758,8 @@ fullchain.pem       Paste into certificate input box
     # 替换服务器上的同域名同品牌证书
     def sub_all_cert(self, key_file, pem_file):
         cert_init = self.get_cert_init(pem_file)  # 获取新证书的基本信息
-        paths = ['vhost/cert', 'vhost/ssl']
+        paths = ['/www/server/panel/vhost/cert', '/www/server/panel/vhost/ssl','/www/server/panel']
+        is_panel = False
         for path in paths:
             if not os.path.exists(path):
                 continue
@@ -720,12 +770,23 @@ fullchain.pem       Paste into certificate input box
                 to_info = to_path + '/info.json'
                 # 判断目标证书是否存在
                 if not os.path.exists(to_pem_file):
-                    continue
+                    if p_name not in ['ssl']: continue
+                    to_pem_file = to_path + '/certificate.pem'
+                    to_key_file = to_path + '/privateKey.pem'
+                    if not os.path.exists(to_pem_file):
+                        continue
+                    # _by_panel None 时通过面板请求时不即使续签面板证书也不重启面板以免导致后续请求出错
+                    if not os.path.exists('{}/data/ssl.pl'.format(public.get_panel_path())):
+                        continue
+                    if not self._by_panel:
+                        is_panel = True
                 # 获取目标证书的基本信息
                 to_cert_init = self.get_cert_init(to_pem_file)
                 # 判断证书品牌是否一致
-                if to_cert_init['issuer'] != cert_init['issuer'] and to_cert_init['issuer'].find("Let's Encrypt") == -1:
-                    continue
+                try:
+                    if to_cert_init['issuer'] != cert_init['issuer'] and to_cert_init['issuer'].find("Let's Encrypt") == -1 and to_cert_init['issuer'] != 'R3':
+                        continue
+                except: continue
                 # 判断目标证书的到期时间是否较早
                 if to_cert_init['notAfter'] > cert_init['notAfter']:
                     continue
@@ -745,9 +806,10 @@ fullchain.pem       Paste into certificate input box
                 public.writeFile(
                     to_key_file, public.readFile(key_file, 'rb'), 'wb')
                 public.writeFile(to_info, json.dumps(cert_init))
-                write_log(public.getMsg('ACME_CERT_REPLACE',(to_path,)))
+                write_log(public.get_msg_gettext('|-Detected that the certificate under {} overlaps with the certificate of this application and has an earlier expiration time, and has been replaced with a new certificate!',(to_path,)))
         # 重载web服务
         public.serviceReload()
+        if is_panel: public.restart_panel()
 
     # 检查指定证书是否在订单列表
     def check_order_exists(self, pem_file):
@@ -760,7 +822,7 @@ fullchain.pem       Paste into certificate input box
                 for domain in self._config['orders'][index]['domains']:
                     if domain in cert_init['dns']:
                         return index
-            if cert_init['issuer'].find("Let's Encrypt") != -1:
+            if cert_init['issuer'].find("Let's Encrypt") != -1 or cert_init['issuer'] == 'R3':
                 return pem_file
             return None
         except: return None
@@ -770,10 +832,10 @@ fullchain.pem       Paste into certificate input box
         if not os.path.exists(args.pem_file):
             args.pem_file = 'vhost/cert/{}/fullchain.pem'.format(args.siteName)
             if not os.path.exists(args.pem_file):
-                return public.returnMsg(False, 'ACME_CERT_FILE_ERR')
+                return public.return_msg_gettext(False, 'The specified certificate file does not exist!')
         cert_init = self.get_cert_init(args.pem_file)
         if not cert_init:
-            return public.returnMsg(False, 'ACME_CERT_GET_CERTINFO_ERR')
+            return public.return_msg_gettext(False, 'Certificate information acquisition failed!')
         cert_init['dnsapi'] = json.loads(public.readFile(self._dnsapi_file))
         return cert_init
 
@@ -849,9 +911,10 @@ fullchain.pem       Paste into certificate input box
         return p12.export()
 
     # 拆分根证书
-    def split_ca_data(self, cert):
-        datas = cert.split('-----END CERTIFICATE-----')
-        return {"cert": datas[0] + "-----END CERTIFICATE-----\n", "root": datas[1] + '-----END CERTIFICATE-----\n'}
+    def split_ca_data(self,cert):
+        sp_key = '-----END CERTIFICATE-----\n'
+        datas = cert.split(sp_key)
+        return {"cert": datas[0] + sp_key, "root": sp_key.join(datas[1:])}
 
     # 构造可选名称
     def get_alt_names(self, index):
@@ -863,7 +926,7 @@ fullchain.pem       Paste into certificate input box
 
     # 检查DNS记录
     def check_dns(self, domain, value, s_type='TXT'):
-        write_log(public.getMsg('ACME_CHECK_DNS',(domain, s_type, value)))
+        write_log(public.get_msg_gettext('|-Attempt to verify DNS records locally, domain name: {}, type: {} record value: {}',(domain, s_type, value)))
         time.sleep(10)
         n = 0
         while n < 20:
@@ -874,9 +937,9 @@ fullchain.pem       Paste into certificate input box
                 for j in ns.response.answer:
                     for i in j.items:
                         txt_value = i.to_text().replace('"', '').strip()
-                        write_log(public.getMsg('ACME_CHECK_DNS1',(n,txt_value)))
+                        write_log(public.get_msg_gettext('|-Number of verifications: {}, value: {}',(str(n),txt_value)))
                         if txt_value == value:
-                            write_log(public.getMsg('ACME_CHECK_DNS2'))
+                            write_log(public.get_msg_gettext('|-Local authentication succeeded!'))
                             return True
             except:
                 try:
@@ -884,7 +947,7 @@ fullchain.pem       Paste into certificate input box
                 except:
                     return False
             time.sleep(3)
-        write_log(public.getMsg('ACME_CHECK_DNS3'))
+        write_log(public.get_msg_gettext('|-Local authentication failed!'))
         return True
 
     # 创建CSR
@@ -895,11 +958,11 @@ fullchain.pem       Paste into certificate input box
         X509Req = OpenSSL.crypto.X509Req()
         X509Req.get_subject().CN = domain_name
         if domain_alt_names:
-            SAN = "DNS:{0}, ".format(domain_name).encode("utf8") + ", ".join(
+            SAN = "DNS:{}, ".format(domain_name).encode("utf8") + ", ".join(
                 "DNS:" + i for i in domain_alt_names
             ).encode("utf8")
         else:
-            SAN = "DNS:{0}".format(domain_name).encode("utf8")
+            SAN = "DNS:{}".format(domain_name).encode("utf8")
 
         X509Req.add_extensions(
             [
@@ -925,7 +988,7 @@ fullchain.pem       Paste into certificate input box
         acme_thumbprint = self.calculate_safe_base64(
             hashlib.sha256(acme_header_jwk_json.encode("utf8")).digest()
         )
-        acme_keyauthorization = "{0}.{1}".format(token, acme_thumbprint)
+        acme_keyauthorization = "{}.{}".format(token, acme_thumbprint)
         base64_of_acme_keyauthorization = self.calculate_safe_base64(
             hashlib.sha256(acme_keyauthorization.encode("utf8")).digest()
         )
@@ -935,7 +998,7 @@ fullchain.pem       Paste into certificate input box
     # 构造验证信息
     def get_identifier_auth(self, index, url, auth_info):
         s_type = self.get_auth_type(index)
-        write_log(public.getMsg('ACME_BUILD_AUTH',(s_type,)))
+        write_log(public.get_msg_gettext('|-Verification type: {}',(s_type,)))
         domain = auth_info['identifier']['value']
         wildcard = False
         # 处理通配符
@@ -960,7 +1023,7 @@ fullchain.pem       Paste into certificate input box
     # 获取域名验证方式
     def get_auth_type(self, index):
         if not index in self._config['orders']:
-            raise Exception(public.getMsg('ACME_ORDER_NOT_EXIST'))
+            raise Exception(public.get_msg_gettext('The specified order does not exist!'))
         s_type = 'http-01'
         if 'auth_type' in self._config['orders'][index]:
             if self._config['orders'][index]['auth_type'] == 'dns':
@@ -1028,7 +1091,7 @@ fullchain.pem       Paste into certificate input box
         elif self._config['email']:
             payload = {
                 "termsOfServiceAgreed": True,
-                "contact": ["mailto:{0}".format(self._config['email'])],
+                "contact": ["mailto:{}".format(self._config['email'])],
             }
         else:
             payload = {"termsOfServiceAgreed": True}
@@ -1036,7 +1099,7 @@ fullchain.pem       Paste into certificate input box
         res = self.acme_request(url=self._apis['newAccount'], payload=payload)
 
         if res.status_code not in [201, 200, 409]:
-            raise Exception(public.getMsg('ACME_REGISTERED_ERR',(res.json(),)))
+            raise Exception(public.get_msg_gettext('Registration for ACME account failed: {}',(str(res.json()),)))
         kid = res.headers["Location"]
         return kid
 
@@ -1052,7 +1115,7 @@ fullchain.pem       Paste into certificate input box
         protected = self.get_acme_header(url)
         protected64 = self.calculate_safe_base64(json.dumps(protected))
         signature = self.sign_message(
-            message="{0}.{1}".format(protected64, payload64))  # bytes
+            message="{}.{}".format(protected64, payload64))  # bytes
         signature64 = self.calculate_safe_base64(signature)  # str
         data = json.dumps(
             {"protected": protected64, "payload": payload64,
@@ -1113,7 +1176,7 @@ fullchain.pem       Paste into certificate input box
             public_key_public_numbers = private_key.public_key().public_numbers()
 
             exponent = "{0:x}".format(public_key_public_numbers.e)
-            exponent = "0{0}".format(exponent) if len(
+            exponent = "0{}".format(exponent) if len(
                 exponent) % 2 else exponent
             modulus = "{0:x}".format(public_key_public_numbers.n)
             jwk = {
@@ -1209,23 +1272,25 @@ fullchain.pem       Paste into certificate input box
             index = None
             if 'index' in args:
                 index = args['index']
+            if 'auto_wildcard' in args:
+                self._auto_wildcard = 1
             if not index:  # 判断是否只想验证域名
-                write_log(public.getMsg('ACME_CREAT_ORDER'))
+                write_log(public.get_msg_gettext('|-Creating order..'))
                 index = self.create_order(domains, auth_type, auth_to)
-                write_log('ACME_GET_V')
+                write_log(public.get_msg_gettext('|-Getting verification information..'))
                 self.get_auths(index)
                 if auth_to == 'dns' and len(self._config['orders'][index]['auths']) > 0:
                     return self._config['orders'][index]
-            write_log(public.getMsg('ACME_V_DOMAIN'))
+            write_log(public.get_msg_gettext('|-Verifying domain name..'))
             self.auth_domain(index)
             self.remove_dns_record()
-            write_log(public.getMsg('ACME_SEND_CSR'))
+            write_log(public.get_msg_gettext('|-Sending CSR..'))
             self.send_csr(index)
-            write_log(public.getMsg('ACME_DOWNLOAD_CERT'))
+            write_log(public.get_msg_gettext('|-Downloading certificate..'))
             cert = self.download_cert(index)
             cert['status'] = True
-            cert['msg'] = public.getMsg('ACME_APPLY_SUCCESS')
-            write_log(public.getMsg('ACME_APPLY_SUCCESS1'))
+            cert['msg'] = public.get_msg_gettext('Application successful!')
+            write_log(public.get_msg_gettext('|-Successful application, deploying to site..'))
             return cert
         except Exception as ex:
             self.remove_dns_record()
@@ -1236,60 +1301,220 @@ fullchain.pem       Paste into certificate input box
             else:
                 msg = ex
                 write_log(public.get_error_info())
-            return public.returnMsg(False, msg)
+            return public.return_msg_gettext(False, msg)
 
     # 申请证书 - api
     def apply_cert_api(self, args):
+        # 在面板点击申请证书时不要重启面板以防后续请求出错
+        self._by_panel = True
         # 是否为指定站点
-        if re.match(r"^\d+$", args.auth_to):
-            import panelSite
-            path = public.M('sites').where('id=?',(args.id,)).getField('path')
-            args.auth_to = path + '/' + panelSite.panelSite().GetRunPath(args)
-            args.auth_to = args.auth_to.replace("//","/")
-            if args.auth_to[-1] == '/':
-                args.auth_to = args.auth_to[:-1]
+        if public.M('sites').where('id=? and project_type=?', (args.id, 'Java')).count():
+                project_info = public.M('sites').where('id=?', (args.id,)).getField('project_config')
+                try:
+                    project_info = json.loads(project_info)
+                    if not 'ssl_path' in project_info:
+                        return public.return_msg_gettext(False, 'There is a problem with the current Java project configuration file, please rebuild')
+                    if not os.path.exists(project_info['ssl_path']):
+                        os.makedirs(project_info['ssl_path'])
+                    path = project_info['ssl_path']
+                    args.auth_to=path
+                    check_result = self.check_auth_env(args)
+                    if check_result: return check_result
 
-            if not os.path.exists(args.auth_to):
-                return public.returnMsg(False, 'ACME_DIR_ERR')
-            
-        check_result = self.check_auth_env(args)
-        if check_result: return check_result
-        
-        if args.auto_wildcard == '1':
-            self._auto_wildcard = True
-        return self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
+                    if args.auto_wildcard == '1':
+                        self._auto_wildcard = True
+                    return self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
+                except:
+                    return public.return_msg_gettext(False, 'There is a problem with the current Java project configuration file, please rebuild')
+        else:
+            if re.match(r"^\d+$", args.auth_to):
+                import panelSite
+                path = public.M('sites').where('id=?', (args.id,)).getField('path')
+                args.auth_to = path + '/' + panelSite.panelSite().GetRunPath(args)
+                args.auth_to = args.auth_to.replace("//", "/")
+                if args.auth_to[-1] == '/':
+                    args.auth_to = args.auth_to[:-1]
+
+                if not os.path.exists(args.auth_to):
+                    return public.return_msg_gettext(False, 'Invalid site directory, please check if the specified site exists!')
+
+            check_result = self.check_auth_env(args, check=True)
+            if check_result: return check_result
+            if args.auto_wildcard == '1':
+                self._auto_wildcard = True
+            res = self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
+            if os.path.exists(self._stop_rp_file):
+                self.turnon_redirect_proxy_httptohttps(args)
+            return res
+
+    def turnon_redirect_proxy_httptohttps(self,args):
+        import panelSite
+        s = panelSite.panelSite()
+        if not 'siteName' in args:
+            args.siteName = public.M('sites').where('id=?', (args.id,)).getField('name')
+        args.sitename = args.siteName
+        self.turnon_redirect(args,s)
+        self.turnon_proxy(args, s)
+        self.turnon_httptohttps(args,s)
+        public.serviceReload()
+
+    def turnon_httptohttps(self,args,s):
+        conf_file = '{}/data/stop_httptohttps.pl'.format(public.get_panel_path())
+        if os.path.exists(conf_file):
+            write_log('|-开启http to https')
+            s.HttpToHttps(args)
+            try:
+                os.remove(conf_file)
+            except:
+                pass
+
+    def turnon_proxy(self,args,s):
+        conf_file = '{}/data/stop_p_tmp.pl'.format(public.get_panel_path())
+        if not os.path.exists(conf_file):
+            return
+        write_log('|-开启反向代理')
+        conf = json.loads(public.readFile(conf_file))
+        data = s.GetProxyList(args)
+        for x in data:
+            if x['sitename'] not in conf:
+                continue
+            if x['proxyname'] not in conf[x['sitename']]:
+                continue
+            args.type = 1
+            args.advanced = x['advanced']
+            args.cache = x['cache']
+            args.cachetime = x['cachetime']
+            args.proxydir = x['proxydir']
+            args.proxyname = x['proxyname']
+            args.proxysite = x['proxysite']
+            args.sitename = x['sitename']
+            args.subfilter = json.dumps(x['subfilter'])
+            args.todomain = x['todomain']
+            s.ModifyProxy(args)
+        try:
+            os.remove(conf_file)
+        except:
+            pass
+
+    def turnon_redirect(self,args,s):
+        conf_file = '{}/data/stop_r_tmp.pl'.format(public.get_panel_path())
+        if not os.path.exists(conf_file):
+            return
+        write_log('|-开启重定向')
+        conf = json.loads(public.readFile(conf_file))
+        data = s.GetRedirectList(args)
+        for x in data:
+            if x['sitename'] not in conf:
+                continue
+            if x['redirectname'] not in conf[x['sitename']]:
+                continue
+            args.type = 1
+            args.sitename = x['sitename']
+            args.holdpath = x['holdpath']
+            args.redirectname = x['redirectname']
+            args.redirecttype = x['redirecttype']
+            args.domainorpath = x['domainorpath']
+            args.redirectpath = x['redirectpath']
+            args.redirectdomain = json.dumps(x['redirectdomain'])
+            args.tourl = x['tourl']
+            s.ModifyRedirect(args)
+        try:
+            os.remove(conf_file)
+        except:
+            pass
 
     #检查认证环境
-    def check_auth_env(self,args):
+    def check_auth_env(self,args,check = None):
+        if not check:
+            return
         for domain in json.loads(args.domains):
             if public.checkIp(domain): continue
-            if domain.find('*.') >=0 and args.auth_type in ['http','tls']:
-                raise public.returnMsg(False, 'ACME_PAN_DOMAIN_ERR')
+            if domain.find('*.') != -1 and args.auth_type in ['http','tls']:
+                raise public.return_msg_gettext(False, 'Pan domain names cannot apply for a certificate using [File Verification]!')
         import panelSite
         s = panelSite.panelSite()
         if args.auth_type in ['http','tls']:
             try:
+                rp_conf = public.readFile(self._stop_rp_file)
+                try:
+                    if rp_conf:
+                        rp_conf = json.loads(rp_conf)
+                except:
+                    write_log('|-Failed to parse configuration file')
                 if not 'siteName' in args:
                     args.siteName = public.M('sites').where('id=?',(args.id,)).getField('name')
                 args.sitename = args.siteName
                 data = s.GetRedirectList(args)
+                # 检查重定向是否开启
                 if type(data) == list:
+                    redirect_tmp = {args.sitename:[]}
                     for x in data:
-                        if x['type']: return public.returnMsg(False, 'SITE_SSL_ERR_301')
+                        if rp_conf and x['sitename'] in rp_conf:
+                            if str(x['type']) == '0':
+                                continue
+                            args.type = 0
+                            args.sitename = x['sitename']
+                            args.holdpath = x['holdpath']
+                            args.redirectname = x['redirectname']
+                            args.redirecttype = x['redirecttype']
+                            args.domainorpath = x['domainorpath']
+                            args.redirectpath = x['redirectpath']
+                            args.redirectdomain = json.dumps(x['redirectdomain'])
+                            args.tourl = x['tourl']
+                            args.notreload = True
+                            write_log("|- Turning off redirection {}".format(args.redirectname))
+                            s.ModifyRedirect(args)
+                            redirect_tmp[args.sitename].append(x['redirectname'])
+                        else:
+                            if x['type']: return public.return_msg_gettext(False, 'Your site has 301 Redirect on，Please turn it off first!')
+                    if redirect_tmp[args.sitename]:
+                        public.writeFile('{}/data/stop_r_tmp.pl'.format(public.get_panel_path()),json.dumps(redirect_tmp))
                 data = s.GetProxyList(args)
+                # 检查反向代理是否开启
                 if type(data) == list:
+                    proxy_tmp = {args.sitename: []}
                     for x in data:
-                        if x['open']: return public.returnMsg(False,'ACME_PROXY_ERR')
-
+                        if rp_conf and x['sitename'] in rp_conf:
+                            if str(x['type']) == '0':
+                                continue
+                            args.type = 0
+                            args.advanced = x['advanced']
+                            args.cache = x['cache']
+                            args.cachetime = x['cachetime']
+                            args.proxydir = x['proxydir']
+                            args.proxyname = x['proxyname']
+                            args.proxysite = x['proxysite']
+                            args.sitename = x['sitename']
+                            args.subfilter = json.dumps(x['subfilter'])
+                            args.todomain = x['todomain']
+                            args.notreload = True
+                            s.ModifyProxy(args)
+                            write_log("|- Turning off proxy {}".format(args.proxyname))
+                            proxy_tmp[args.sitename].append(x['proxyname'])
+                        else:
+                            if x['type']: return public.return_msg_gettext(False,'Sites with reverse proxy turned on cannot apply for SSL!')
+                    if proxy_tmp[args.sitename]:
+                        public.writeFile('{}/data/stop_p_tmp.pl'.format(public.get_panel_path()),json.dumps(proxy_tmp))
+                # 检查旧重定向是否开启
+                data = s.Get301Status(args)
+                if data['status']:
+                    return public.return_msg_gettext(False,'The website has been redirected, please close it before applying!')
                 #判断是否强制HTTPS
                 if s.IsToHttps(args.siteName):
-                    return public.returnMsg(False, 'ACME_FORCE_SSL_ERR')
+                    if os.path.exists(self._stop_rp_file):
+                        if rp_conf and args.siteName in rp_conf:
+                            write_log("|- Turning off http to https")
+                            s.CloseToHttps(args)
+                        public.writeFile('{}/data/stop_httptohttps.pl'.format(public.get_panel_path()), '')
+                    else:
+                        return public.return_msg_gettext(False, 'After configuring Force HTTPS, you cannot use [File Verification] to apply for a certificate!')
+                public.serviceReload()
             except:
                 return False
         else:          
             if args.auth_to.find('Dns_com') != -1:
                 if not os.path.exists('plugin/dns/dns_main.py'):
-                    return public.returnMsg(False, 'ACME_DNS_ERR')
+                    return public.return_msg_gettext(False, 'Please go to the software store to install [cloud analysis], and complete the domain name NS binding.')
         return False
 
     # DNS手动验证
@@ -1307,7 +1532,7 @@ fullchain.pem       Paste into certificate input box
             args_obj = public.dict_obj()
             if not cron_id:
                 cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo
-                shell = '{} /www/server/panel/class/acme_v2.py --renew=1'.format(sys.executable)
+                shell = '{} -u /www/server/panel/class/acme_v2.py --renew=1'.format(sys.executable)
                 public.writeFile(cronPath,shell)
                 args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("Renew Let's Encrypt Certificate",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
                 crontab.crontab().set_cron_status(args_obj)
@@ -1321,6 +1546,199 @@ fullchain.pem       Paste into certificate input box
                         crontab.crontab().set_cron_status(args_obj)
         except:pass
 
+
+    # 获取当前正在使用此证书的网站目录
+    def get_ssl_used_site(self,save_path):
+        pkey_file =  '{}/privkey.pem'.format(save_path)
+        pkey = public.readFile(pkey_file)
+        if not pkey: return False
+        cert_paths = 'vhost/cert'
+        import panelSite
+        args = public.dict_obj()
+        args.siteName = ''
+        for c_name in os.listdir(cert_paths):
+            skey_file = '{}/{}/privkey.pem'.format(cert_paths,c_name)
+            skey = public.readFile(skey_file)
+            if not skey: continue
+            if skey == pkey:
+                args.siteName = c_name
+                run_path = panelSite.panelSite().GetRunPath(args)
+                if not run_path: continue
+                sitePath = public.M('sites').where('name=?',c_name).getField('path')
+                if not sitePath: continue
+                to_path = "{}/{}".format(sitePath,run_path)
+                return to_path
+        return False
+
+    def get_site_id(self,domains):
+        site_ids=[]
+        for domain in domains:
+            if '*' in domain:
+                continue
+            site_id = public.M('domain').where('name=?', (domain,)).field('pid').select()
+            if not site_id:
+                continue
+            site_ids.append(site_id[0]['pid'])
+        if not site_ids:
+            return False
+        site_ids = list(set(site_ids))
+        if not len(site_ids) == 1:
+            return False
+        return site_ids[0]
+
+    def get_site_runpath(self,domains):
+        site_id = self.get_site_id(domains)
+        if not site_id:
+            return False
+        import panelSite
+        from collections import namedtuple
+        ps = panelSite.panelSite()
+        # 构造一个类
+        get = namedtuple("get", ["id"])
+        get.id=site_id
+        site_path = public.M('sites').where('id=?', (get.id,)).field('path').select()[0]['path']
+        runpath = ps.GetRunPath(get)
+        return site_path + runpath
+
+    def find_site_stopped(self,domains):
+        site_id = self.get_site_id(domains)
+        if not site_id:
+            return False
+        site_status = public.M('sites').where('id=?', (site_id,)).field('status').select()[0]['status']
+        return site_status
+
+    def get_index(self, domains):
+        '''
+            @name 获取标识
+            @author hwliang<2022-02-10>
+            @param domains<list> 域名列表
+            @return string
+        '''
+        identifiers = []
+        for domain_name in domains:
+            identifiers.append({"type": 'dns', "value": domain_name})
+        return public.md5(json.dumps(identifiers))
+
+    # 续签同品牌其它证书
+    def renew_cert_other(self):
+        '''
+            @name 续签同品牌其它证书
+            @author hwliang<2022-02-10>
+            @return void
+        '''
+        cert_path = "{}/vhost/cert".format(public.get_panel_path())
+        if not os.path.exists(cert_path): return
+        new_time = time.time() + (86400 * 30)
+        n = 0
+        if not 'orders' in self._config: self._config['orders'] = {}
+        import panelSite
+        siteObj = panelSite.panelSite()
+        args = public.dict_obj()
+        for siteName in os.listdir(cert_path):
+            try:
+                cert_file = '{}/{}/fullchain.pem'.format(cert_path, siteName)
+                if not os.path.exists(cert_file): continue  # 无证书文件
+                siteInfo = public.M('sites').where('name=?', siteName).find()
+                if not siteInfo: continue  # 无网站信息
+                cert_init = self.get_cert_init(cert_file)
+                if not cert_init: continue  # 无法获取证书
+                end_time = time.mktime(time.strptime(cert_init['notAfter'], '%Y-%m-%d'))
+                if end_time > new_time: continue  # 未到期
+                try:
+                    if not cert_init['issuer'] in ['R3', "Let's Encrypt"] and cert_init['issuer'].find(
+                            "Let's Encrypt") == -1:
+                        continue  # 非同品牌证书
+                except:
+                    continue
+
+                if isinstance(cert_init['dns'], str): cert_init['dns'] = [cert_init['dns']]
+                index = self.get_index(cert_init['dns'])
+                if index in self._config['orders'].keys(): continue  # 已在订单列表
+
+                n += 1
+                write_log("|-Renewing additional certificate {}, domain name:{}..".format(n, cert_init['subject']))
+                write_log("|-Creating order..")
+                args.id = siteInfo['id']
+                runPath = siteObj.GetRunPath(args)
+                if runPath and not runPath in ['/']:
+                    path = siteInfo['path'] + '/' + runPath
+                else:
+                    path = siteInfo['path']
+
+                self.renew_cert_to(cert_init['dns'],'http',path.replace('//','/'))
+            except:
+                write_log("|-Renewal failed:")
+
+    def renew_cert_to(self, domains, auth_type, auth_to, index=None):
+        siteName = None
+        cert = {}
+        args = public.dict_obj()
+        if auth_to[-1] == "/":
+            auth_to = auth_to[:-1]
+        site_id = public.M('sites').where('path=?', auth_to).getField('id')
+        args.id = site_id
+        if os.path.exists(auth_to):
+            if public.M('sites').where('path=?', auth_to).count() == 1:
+                # site_id = public.M('sites').where('path=?',auth_to).getField('id')
+                siteName = public.M('sites').where('path=?', auth_to).getField('name')
+                import panelSite
+                siteObj = panelSite.panelSite()
+                # args = public.dict_obj()
+                # args.id = site_id
+                runPath = siteObj.GetRunPath(args)
+                if runPath and not runPath in ['/']:
+                    path = auth_to + '/' + runPath
+                    if os.path.exists(path): auth_to = path.replace('//', '/')
+
+            else:
+                siteName = self.get_site_name_by_domains(domains)
+        try:
+            index = self.create_order(
+                domains,
+                auth_type,
+                auth_to.replace('//', '/'),
+                index
+            )
+
+            write_log("|-Getting verification information..")
+            self.get_auths(index)
+            write_log("|-Verifying domain name..")
+            self.auth_domain(index)
+            write_log("|-Sending CSR..")
+            self.remove_dns_record()
+            self.send_csr(index)
+            write_log("|-Downloading certificate..")
+            cert = self.download_cert(index)
+            self._config['orders'][index]['renew_time'] = int(time.time())
+
+            # 清理失败重试记录
+            self._config['orders'][index]['retry_count'] = 0
+            self._config['orders'][index]['next_retry_time'] = 0
+
+            # 保存证书配置
+            self.save_config()
+            cert['status'] = True
+            cert['msg'] = 'Renewed successfully!'
+            write_log("|-Renewed successfully!!")
+        except Exception as e:
+            if str(e).find('please try again later') == -1:  # 受其它证书影响和连接CA失败的的不记录重试次数
+                if index:
+                    # 设置下次重试时间
+                    self._config['orders'][index]['next_retry_time'] = int(time.time() + (86400 * 2))
+                    # 记录重试次数
+                    if not 'retry_count' in self._config['orders'][index].keys():
+                        self._config['orders'][index]['retry_count'] = 1
+                    self._config['orders'][index]['retry_count'] += 1
+                    # 保存证书配置
+                    self.save_config()
+            msg = str(e).split('>>>>')[0]
+            write_log("|-" + msg)
+            return public.returnMsg(False, msg)
+        finally:
+            self.turnon_redirect_proxy_httptohttps(args)
+        write_log("-" * 70)
+        return cert
+
     # 续签证书
     def renew_cert(self, index):
         write_log("", "wb+")
@@ -1329,11 +1747,14 @@ fullchain.pem       Paste into certificate input box
             if index:
                 if type(index) != str:
                     index = index.index
-                if not index in self._config['orders']:
-                    raise Exception(public.getMsg('ACME_RENEW_ERR'))
+                    # 在面板点击申请证书时不要重启面板以防后续请求出错
+                    self._by_panel = True
+                if index not in self._config['orders']:
+                    raise Exception(public.get_msg_gettext('The specified order number does not exist and cannot be renewed!'))
                 order_index.append(index)
             else:
                 s_time = time.time() + (30 * 86400)
+                if not 'orders' in self._config: self._config['orders'] = {}
                 for i in self._config['orders'].keys():
                     if not 'save_path' in self._config['orders'][i]:
                         continue
@@ -1343,43 +1764,104 @@ fullchain.pem       Paste into certificate input box
                         self._config['orders'][i]['cert_timeout'] = int(time.time())
                     if self._config['orders'][i]['cert_timeout'] > s_time or self._config['orders'][i]['auth_to'] == 'dns':
                         continue
+                    if self.find_site_stopped(self._config['orders'][i]['domains']) == '0':
+                        write_log("|-The website has been suspended, skip certificate renewal!")
+                        continue
+
+                    #已删除的网站直接跳过续签
+                    if self._config['orders'][i]['auth_to'].find('|') == -1 and self._config['orders'][i]['auth_to'].find('/') != -1:
+                        if not os.path.exists(self._config['orders'][i]['auth_to']):
+                            auth_to = self.get_ssl_used_site(self._config['orders'][i]['save_path'])
+                            if not auth_to: continue
+                            self._config['orders'][i]['auth_to'] = auth_to
+
+                    # 是否到了允许重试的时间
+                    if 'next_retry_time' in self._config['orders'][i]:
+                        timeout = self._config['orders'][i]['next_retry_time'] - int(time.time())
+                        if timeout > 0:
+                            write_log('|-The domain name skipped this time: {}, because the last renewal failed, you still need to wait {} hours and try again'.format(self._config['orders'][i]['domains'],int(timeout / 60 / 60)))
+                            continue
+
+                    # 是否到了最大重试次数
+                    if 'retry_count' in self._config['orders'][i]:
+                        if self._config['orders'][i]['retry_count'] >= 5:
+                            write_log('|-Skip the domain name this time: {}, this certificate will not be renewed due to failure to renew 5 times in a row, (The number of errors will be reset after manual renewal and success)'.format(self._config['orders'][i]['domains']))
+                            continue
+
+                    # 加入到续签订单
                     order_index.append(i)
 
             if not order_index:
-                write_log(public.getMsg('ACME_NO_NEED_RENEW'))
+                write_log(public.get_msg_gettext('|-No SSL certificate found within 30 days!'))
+                self.get_apis()
+                self.renew_cert_other()
+                # return public.return_msg_gettext(False,public.get_msg_gettext('|-No SSL certificate found within 30 days!'))
+                write_log("|-All tasks have been processed!")
                 return
-            write_log(public.getMsg("ACME_NEED_RENEW",(len(order_index),)))
+            write_log(public.get_msg_gettext('|-A total of {} certificates need to be renewed',(str(len(order_index)),)))
             n = 0
             self.get_apis()
             cert = None
+            args = public.to_dict_obj({})
             for index in order_index:
+                args.domains = json.dumps(self._config['orders'][index]['domains'])
+                args.auth_type = self._config['orders'][index]['auth_type']
+                args.auth_to = self._config['orders'][index]['auth_to']
+                sitename = args.auth_to.split('/')[-1]
+                if not sitename:
+                    sitename = self._config['orders'][index]['auth_to'].split('/')[-2]
+                args.siteName = sitename
+                write_log('|-Renew the visa certificate and start checking the environment')
+                self.check_auth_env(args,check=True)
                 n += 1
-                write_log(public.getMsg("ACME_RENEWING",(n,self._config['orders'][index]['domains'])))
-                write_log(public.getMsg('ACME_CREAT_ORDER'))
-                try:
-                    index = self.create_order(
-                        self._config['orders'][index]['domains'],
-                        self._config['orders'][index]['auth_type'],
-                        self._config['orders'][index]['auth_to'],
-                        index
-                    )
-                    write_log(public.getMsg('ACME_GET_V'))
-                    self.get_auths(index)
-                    write_log(public.getMsg('ACME_V_DOMAIN'))
-                    self.auth_domain(index)
-                    write_log(public.getMsg('ACME_SEND_CSR'))
-                    self.remove_dns_record()
-                    self.send_csr(index)
-                    write_log(public.getMsg('ACME_DOWNLOAD_CERT'))
-                    cert = self.download_cert(index)
-                    self._config['orders'][index]['renew_time'] = int(time.time())
-                    self.save_config()
-                    cert['status'] = True
-                    cert['msg'] = public.getMsg('ACME_RENEW_SUCCESS')
-                    write_log(public.getMsg('ACME_RENEW_SUCCESS1'))
-                except Exception as e:
-                    write_log("|-" + str(e).split('>>>>')[0])
-                write_log("-" * 70)
+                write_log(public.get_msg_gettext('|-Renewing certificate number of {}，domain: {}..',(str(n),str(self._config['orders'][index]['domains']))))
+                write_log(public.get_msg_gettext('|-Creating order..'))
+                cert = self.renew_cert_to(self._config['orders'][index]['domains'],self._config['orders'][index]['auth_type'],self._config['orders'][index]['auth_to'],index)
+                # try:
+                #     run_path = self.get_site_runpath(self._config['orders'][index]['domains'])
+                #     if run_path:
+                #         if self._config['orders'][index]['auth_to'] != run_path:
+                #             self._config['orders'][index]['auth_to'] = run_path
+                #     index = self.create_order(
+                #         self._config['orders'][index]['domains'],
+                #         self._config['orders'][index]['auth_type'],
+                #         self._config['orders'][index]['auth_to'],
+                #         index
+                #     )
+                #     write_log(public.get_msg_gettext('|-Getting verification information..'))
+                #     self.get_auths(index)
+                #     write_log(public.get_msg_gettext('|-Verifying domain name..'))
+                #     self.auth_domain(index)
+                #     write_log(public.get_msg_gettext('|-Sending CSR..'))
+                #     self.remove_dns_record()
+                #     self.send_csr(index)
+                #     write_log(public.get_msg_gettext('|-Downloading certificate..'))
+                #     cert = self.download_cert(index)
+                #     self._config['orders'][index]['renew_time'] = int(time.time())
+                #
+                #     # 清理失败重试记录
+                #     self._config['orders'][index]['retry_count'] = 0
+                #     self._config['orders'][index]['next_retry_time'] = 0
+                #
+                #     # 保存证书配置
+                #     self.save_config()
+                #     cert['status'] = True
+                #     cert['msg'] = public.get_msg_gettext('Renewed successfully!')
+                #     if os.path.exists(self._stop_rp_file):
+                #         self.turnon_redirect_proxy_httptohttps(args)
+                #     write_log(public.get_msg_gettext('|-Renewed successfully!'))
+                # except Exception as e:
+                #     if str(e).find('请稍候重试') == -1: # 受其它证书影响和连接CA失败的的不记录重试次数
+                #         # 设置下次重试时间
+                #         self._config['orders'][index]['next_retry_time'] = int(time.time() + (86400 * 2))
+                #         # 记录重试次数
+                #         if not 'retry_count' in self._config['orders'][index].keys():
+                #             self._config['orders'][index]['retry_count'] = 1
+                #         self._config['orders'][index]['retry_count'] += 1
+                #         # 保存证书配置
+                #         self.save_config()
+                #     write_log("|-" + str(e).split('>>>>')[0])
+                # write_log("-" * 70)
             return cert
         except Exception as ex:
             self.remove_dns_record()
@@ -1390,7 +1872,7 @@ fullchain.pem       Paste into certificate input box
             else:
                 msg = ex
                 write_log(public.get_error_info())
-            return public.returnMsg(False, msg)
+            return public.return_msg_gettext(False, msg)
 
 
 def echo_err(msg):
@@ -1413,22 +1895,22 @@ def write_log(log_str, mode="ab+"):
 
 if __name__ == "__main__":
     import argparse
-    p = argparse.ArgumentParser(usage=public.getMsg('ACME_USE_TIPS'))
+    p = argparse.ArgumentParser(usage=public.get_msg_gettext('Required parameters: --domain list of domain names, multiple separated by commas!'))
     p.add_argument('--domain', default=None,
-                   help=public.getMsg('ACME_USE_TIPS1'), dest="domains")
-    p.add_argument('--type', default=None, help=public.getMsg('ACME_USE_TIPS2'), dest="auth_type")
-    p.add_argument('--path', default=None, help=public.getMsg('ACME_USE_TIPS3'), dest="path")
-    p.add_argument('--dnsapi', default=None, help=public.getMsg('ACME_USE_TIPS4'), dest="dnsapi")
-    p.add_argument('--dns_key', default=None, help=public.getMsg('ACME_USE_TIPS5'), dest="key")
-    p.add_argument('--dns_secret', default=None,help=public.getMsg('ACME_USE_TIPS6'), dest="secret")
-    p.add_argument('--index', default=None, help=public.getMsg('ACME_USE_TIPS7'), dest="index")
-    p.add_argument('--renew', default=None, help=public.getMsg('ACME_USE_TIPS8'), dest="renew")
-    p.add_argument('--revoke', default=None, help=public.getMsg('ACME_USE_TIPS9'), dest="revoke")
+                   help=public.get_msg_gettext('Please specify the domain name to apply for a certificate'), dest="domains")
+    p.add_argument('--type', default=None, help=public.get_msg_gettext('Please specify verification type'), dest="auth_type")
+    p.add_argument('--path', default=None, help=public.get_msg_gettext('Please specify the website document root'), dest="path")
+    p.add_argument('--dnsapi', default=None, help=public.get_msg_gettext('Please specify DNSAPI'), dest="dnsapi")
+    p.add_argument('--dns_key', default=None, help=public.get_msg_gettext('Please specify DNSAPI key'), dest="key")
+    p.add_argument('--dns_secret', default=None,help=public.get_msg_gettext('Please specify DNSAPI secret'), dest="secret")
+    p.add_argument('--index', default=None, help=public.get_msg_gettext('Specify the order index'), dest="index")
+    p.add_argument('--renew', default=None, help=public.get_msg_gettext('renew certificate'), dest="renew")
+    p.add_argument('--revoke', default=None, help=public.get_msg_gettext('Revoke certificate'), dest="revoke")
     args = p.parse_args()
     cert = None
     if args.revoke:
         if not args.index:
-            echo_err(public.getMsg('ACME_USE_TIPS10'))
+            echo_err(public.get_msg_gettext('Please enter the index of the order to be revoked in the --index parameter'))
         p = acme_v2()
         result = p.revoke_order(args.index)
         write_log(result)
@@ -1441,24 +1923,24 @@ if __name__ == "__main__":
         try:
             if not args.index:
                 if not args.domains:
-                    echo_err(public.getMsg('ACME_USE_TIPS11'))
+                    echo_err(public.get_msg_gettext('Please specify the domain name for which you want to apply for a certificate in the --domain parameter, multiple separated by commas (,)'))
                 if not args.auth_type in ['http', 'tls', 'dns']:
-                    echo_err(public.getMsg('ACME_USE_TIPS12'))
+                    echo_err(public.get_msg_gettext('Please specify the correct authentication type in the --type parameter, supporting dns and http'))
                 auth_to = ''
                 if args.auth_type in ['http', 'tls']:
                     if not args.path:
-                        echo_err(public.getMsg('ACME_USE_TIPS13'))
+                        echo_err(public.get_msg_gettext('Please specify the website document root in the --path parameter!'))
                     if not os.path.exists(args.path):
-                        echo_err(public.getMsg('ACME_USE_TIPS14',(args.path,)))
+                        echo_err(public.get_msg_gettext('The specified site root does not exist, please check: {}',(args.path,)))
                     auth_to = args.path
                 else:
                     if args.dnsapi == '0':
                         auth_to = 'dns'
                     else:
                         if not args.key:
-                            echo_err(public.getMsg('ACME_USE_TIPS15'))
+                            echo_err(public.get_msg_gettext('When applying using dnsapi, specify the dnsapi key in the --dns_key parameter!'))
                         if not args.secret:
-                            echo_err(public.getMsg('ACME_USE_TIPS16'))
+                            echo_err(public.get_msg_gettext('When applying using dnsapi, specify the secret of dnsapi in the --dns_secret parameter!'))
                         auth_to = "{}|{}|{}".format(
                             args.dnsapi, args.key, args.secret)
 
@@ -1470,27 +1952,27 @@ if __name__ == "__main__":
                     acme_txt = '_acme-challenge.'
                     acme_caa = '1 issue letsencrypt.org'
                     write_log("=" * 65)
-                    write_log("\033[32m"+public.getMsg('ACME_USE_TIPS17')+"\033[0m")
+                    write_log("\033[32m"+public.get_msg_gettext('|-Manual order submission is successful, please resolve DNS records according to the following tips: ')+"\033[0m")
                     write_log("=" * 65)
-                    write_log(public.getMsg('ACME_USE_TIPS18',(cert['index'],)))
-                    write_log(public.getMsg('ACME_USE_TIPS19')+": ./acme_v2.py --index=\"{}\"".format(cert['index']))
-                    write_log(public.getMsg('ACME_USE_TIPS20',(len(cert['auths']),)))
+                    write_log(public.get_msg_gettext('|-Order index: {}',(cert['index'],)))
+                    write_log(public.get_msg_gettext('|-Retry the command')+": ./acme_v2.py --index=\"{}\"".format(cert['index']))
+                    write_log(public.get_msg_gettext('|-A total of \033[36m{}\033[0m domain name records need to be resolved.',(len(cert['auths']),)))
                     for i in range(len(cert['auths'])):
                         write_log('-' * 70)
-                        write_log(public.getMsg('ACME_USE_TIPS21',(i+1, cert['auths'][i]['domain'])))
-                        write_log(public.getMsg('ACME_USE_TIPS22',(acme_txt + cert['auths'][i]['domain'].replace('*.', ''), cert['auths'][i]['auth_value'])))
-                        write_log(public.getMsg('ACME_USE_TIPS23',(cert['auths'][i]['domain'].replace('*.', ''), acme_caa)))
+                        write_log(public.get_msg_gettext('|-The \033[36m{}\033[0m domain names are: {}, please resolve the following information: ',(str(i+1), cert['auths'][i]['domain'])))
+                        write_log(public.get_msg_gettext('|-Record Type: TXT Record Name: \033[41m{}\033[0m Record Value: \033[41m{}\033 [0m [Required]',(acme_txt + cert['auths'][i]['domain'].replace('*.', ''), cert['auths'][i]['auth_value'])))
+                        write_log(public.get_msg_gettext('|-Record type: CAA Record name: \033[41m{}\033[0m Record value: \033[41m{}\033[0m [Optional]',(cert['auths'][i]['domain'].replace('*.', ''), acme_caa)))
                     write_log('-' * 70)
                     input_data = ""
                     while input_data not in ['y', 'Y', 'n', 'N']:
-                        input_msg = public.getMsg('ACME_USE_TIPS24')
+                        input_msg = public.get_msg_gettext('Please wait 2-3 minutes after completing the resolution and enter Y and press Enter to continue verifying the domain name: ')
                         if sys.version_info[0] == 2:
                             input_data = raw_input(input_msg)
                         else:
                             input_data = input(input_msg)
                     if input_data in ['n', 'N']:
                         write_log("=" * 65)
-                        write_log(public.getMsg('ACME_USE_TIPS25'))
+                        write_log(public.get_msg_gettext('|-The user abandons the application and exits the program!'))
                         exit()
                     cert = p.apply_cert(
                         [], auth_type=args.auth_type, auth_to='dns', index=cert['index'])
@@ -1505,8 +1987,8 @@ if __name__ == "__main__":
     if not cert:
         exit()
     write_log("=" * 65)
-    write_log(public.getMsg('ACME_USE_TIPS26'))
+    write_log(public.get_msg_gettext('|-Certificate obtained successfully!'))
     write_log("=" * 65)
-    write_log(public.getMsg('ACME_USE_TIPS27',(','.join(cert['domains']),)))
-    write_log(public.getMsg('ACME_USE_TIPS28',(public.format_date(times=cert['cert_timeout']),)))
-    write_log(public.getMsg('ACME_USE_TIPS29',(cert['save_path'],)))
+    write_log(public.get_msg_gettext('Certified Domain Name: {}',(','.join(cert['domains']),)))
+    write_log(public.get_msg_gettext('Certificate expiration time: {}',(public.format_date(times=cert['cert_timeout']),)))
+    write_log(public.get_msg_gettext('Certificate saved at: {}/',(cert['save_path'],)))

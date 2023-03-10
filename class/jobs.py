@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-import time,public,db,os,sys,json,re
+import time,public,db,os,sys,json,re,shutil
 os.chdir('/www/server/panel')
 
 def control_init():
@@ -37,8 +37,29 @@ def control_init():
 )'''
         sql.execute(csql,())
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%type_id%')).count():
-        public.M('sites').execute("alter TABLE sites add edate integer DEFAULT '0000-00-00'",())
         public.M('sites').execute("alter TABLE sites add type_id integer DEFAULT 0",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%edate%')).count():
+        public.M('sites').execute("alter TABLE sites add edate integer DEFAULT '0000-00-00'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%project_type%')).count():
+        public.M('sites').execute("alter TABLE sites add project_type STRING DEFAULT 'PHP'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%project_config%')).count():
+        public.M('sites').execute("alter TABLE sites add project_config STRING DEFAULT '{}'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'backup','%ps%')).count():
+        public.M('backup').execute("alter TABLE backup add ps STRING DEFAULT 'No'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'databases','%db_type%')).count():
+        public.M('databases').execute("alter TABLE databases add db_type integer DEFAULT '0'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'databases','%conn_config%')).count():
+        public.M('databases').execute("alter TABLE databases add conn_config STRING DEFAULT '{}'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'databases','%sid%')).count():
+        public.M('databases').execute("alter TABLE databases add sid integer DEFAULT 0",())
+
 
     sql = db.Sql()
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_types')).count():
@@ -74,6 +95,33 @@ def control_init():
 `addtime` INTEGER
 )'''
         sql.execute(csql,())
+
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'temp_login')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `temp_login` (
+`id` INTEGER PRIMARY KEY AUTOINCREMENT,
+`token` REAL,
+`salt` REAL,
+`state` INTEGER,
+`login_time` INTEGER,
+`login_addr` REAL,
+`logout_time` INTEGER,
+`expire` INTEGER,
+`addtime` INTEGER
+)'''
+        sql.execute(csql,())
+
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'database_servers')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `database_servers` (
+`id` INTEGER PRIMARY KEY AUTOINCREMENT,
+`db_host` REAL,
+`db_port` REAL,
+`db_user` INTEGER,
+`db_password` INTEGER,
+`ps` REAL,
+`addtime` INTEGER
+)'''
+        sql.execute(csql,())
+
 
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'logs','%username%')).count():
         public.M('logs').execute("alter TABLE logs add uid integer DEFAULT '1'",())
@@ -122,6 +170,9 @@ def control_init():
     public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config;chown -R root:root /www/server/phpmyadmin;chmod -R 755 /www/server/phpmyadmin")
     if os.path.exists("/www/server/mysql"):
         public.ExecShell("chown mysql:mysql /etc/my.cnf;chmod 600 /etc/my.cnf")
+    public.ExecShell("rm -rf /www/server/panel/temp/*")
+    if not public.is_debug():
+        public.ExecShell("rm -f /www/server/panel/class/pluginAuth.py")
     stop_path = '/www/server/stop'
     if not os.path.exists(stop_path):
         os.makedirs(stop_path)
@@ -135,9 +186,19 @@ def control_init():
         public.ExecShell("rm -rf /www/server/panel/adminer")
     if os.path.exists('/dev/shm/session.db'):
         os.remove('/dev/shm/session.db')
+
+    node_service_bin = '/usr/bin/nodejs-service'
+    node_service_src = '/www/server/panel/script/nodejs-service.py'
+    if os.path.exists(node_service_src): public.ExecShell("chmod 700 " + node_service_src)
+    if not os.path.exists(node_service_bin):
+        if os.path.exists(node_service_src):
+            public.ExecShell("ln -sf {} {}".format(node_service_src,node_service_bin))
+
     #disable_putenv('putenv')
-    clean_session()
+    #clean_session()
     #set_crond()
+    test_ping()
+    set_wp_cache_dir()
     clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
     clean_max_log('/var/log/rsyncd.log',1024*1024*10)
     clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
@@ -148,9 +209,159 @@ def control_init():
     #check_firewall()
     check_dnsapi()
     clean_php_log()
-    #update_py37()
     files_set_mode()
+    set_pma_access()
+    # public.set_open_basedir()
+    clear_fastcgi_safe()
+    update_py37()
+    run_script()
+    set_php_cli_env()
+    check_enable_php()
 
+def set_wp_cache_dir():
+    import one_key_wp
+    one_key_wp.fast_cgi().set_nginx_conf()
+    public.ExecShell("/etc/init.d/nginx restart")
+
+def set_php_cli_env():
+    '''
+        @name 设置php-cli环境变量
+        @author hwliang<2021-09-07>
+        @return void
+    '''
+    php_path = '/www/server/php'
+    bashrc = '/root/.bashrc'
+    if not os.path.exists(php_path): return
+    if not os.path.exists(bashrc): return
+    # 清理所有别名
+    public.ExecShell('sed -i "/alias php/d" {}'.format(bashrc))
+    bashrc_body = public.readFile(bashrc)
+    if not bashrc_body: return
+
+    # 设置默认环境变量版本别名
+    env_php_bin = '/usr/bin/php'
+    if os.path.exists(env_php_bin):
+        if os.path.islink(env_php_bin):
+            env_bin_version = os.readlink(env_php_bin).split('/')[-3]
+            php_cli_ini = "{}/{}/etc/php-cli.ini".format(php_path,env_bin_version)
+            bashrc_body += "alias php='php -c {}'\n".format(php_cli_ini)
+
+
+    # 设置所有已安装的PHP版本环境变量和别名
+    php_versions_list = public.get_php_versions()
+    for php_version in php_versions_list:
+        php_ini = "{}/{}/etc/php.ini".format(php_path,php_version)
+        php_cli_ini = "{}/{}/etc/php-cli.ini".format(php_path,php_version)
+        env_php_bin = "/usr/bin/php{}".format(php_version)
+        php_bin = "{}/{}/bin/php".format(php_path,php_version)
+        php_ize = '/usr/bin/php{}-phpize'.format(php_version)
+        php_ize_src = "{}/{}/bin/phpize".format(php_path,php_version)
+        php_fpm = '/usr/bin/php{}-php-fpm'.format(php_version)
+        php_fpm_src = "{}/{}/sbin/php-fpm".format(php_path,php_version)
+        php_pecl = '/usr/bin/php{}-pecl'.format(php_version)
+        php_pecl_src = "{}/{}/bin/pecl".format(php_path,php_version)
+        php_pear = '/usr/bin/php{}-pear'.format(php_version)
+        php_pear_src = "{}/{}/bin/pear".format(php_path,php_version)
+
+        if os.path.exists(php_bin):
+            # 设置每个版本的环境变量
+            if not os.path.exists(env_php_bin): os.symlink(php_bin,env_php_bin)
+            if not os.path.exists(php_ize) and os.path.exists(php_ize_src): os.symlink(php_ize_src,php_ize)
+            if not os.path.exists(php_fpm) and os.path.exists(php_fpm_src): os.symlink(php_fpm_src,php_fpm)
+            if not os.path.exists(php_pecl) and os.path.exists(php_pecl_src): os.symlink(php_pecl_src,php_pecl)
+            if not os.path.exists(php_pear) and os.path.exists(php_pear_src): os.symlink(php_pear_src,php_pear)
+            public.ExecShell("\cp -f {} {}".format(php_ini,php_cli_ini)) # 每次复制新的php.ini到php-cli.ini
+            public.ExecShell('sed -i "/disable_functions/d" {}'.format(php_cli_ini)) # 清理禁用函数
+            bashrc_body += "alias php{}='php{} -c {}'\n".format(php_version,php_version,php_cli_ini) # 设置别名
+        else:
+            # 清理已卸载的环境变量
+            if os.path.exists(env_php_bin): os.remove(env_php_bin)
+            if os.path.exists(php_ize): os.remove(php_ize)
+            if os.path.exists(php_fpm): os.remove(php_fpm)
+            if os.path.exists(php_pecl): os.remove(php_pecl)
+            if os.path.exists(php_pear): os.remove(php_pear)
+    public.writeFile(bashrc,bashrc_body)
+
+
+def check_enable_php():
+    '''
+        @name 检查nginx下的php配置文件
+    '''
+    php_versions = public.get_php_versions()
+    ngx_php_conf = public.get_setup_path() + '/nginx/conf/enable-php-00.conf'
+    public.writeFile(ngx_php_conf,'')
+    for php_v in php_versions:
+        ngx_php_conf = public.get_setup_path() + '/nginx/conf/enable-php-{}.conf'.format(php_v)
+        if os.path.exists(ngx_php_conf): continue
+        enable_conf = '''
+    location ~ [^/]\.php(/|$)
+	{{
+		try_files $uri =404;
+		fastcgi_pass  unix:/tmp/php-cgi-{}.sock;
+		fastcgi_index index.php;
+		include fastcgi.conf;
+		include pathinfo.conf;
+	}}
+    '''.format(php_v)
+        public.writeFile(ngx_php_conf,enable_conf)
+
+
+
+def write_run_script_log(_log,rn='\n'):
+    _log_file = '/www/server/panel/logs/run_script.log'
+    public.writeFile(_log_file,_log + rn,'a+')
+
+
+def run_script():
+    os.system("{} {}/script/run_script.py".format(public.get_python_bin(),public.get_panel_path()))
+    run_tip = '/dev/shm/bt.pl'
+    if os.path.exists(run_tip): return
+    public.writeFile(run_tip,str(time.time()))
+    uptime = int(public.readFile('/proc/uptime').split()[0])
+    if uptime > 1800: return
+    run_config ='/www/server/panel/data/run_config'
+    script_logs = '/www/server/panel/logs/script_logs'
+    if not os.path.exists(run_config):
+        os.makedirs(run_config,384)
+    if not os.path.exists(script_logs):
+        os.makedirs(script_logs,384)
+
+    for sname in os.listdir(run_config):
+        script_conf_file = '{}/{}'.format(run_config,sname)
+        if not os.path.exists(script_conf_file): continue
+        script_info = json.loads(public.readFile(script_conf_file))
+        exec_log_file = '{}/{}'.format(script_logs,sname)
+
+        if not os.path.exists(script_info['script_file']) \
+            or script_info['script_file'].find('/www/server/panel/plugin/') != 0 \
+                or not re.match('^\w+$',script_info['script_file']):
+            os.remove(script_conf_file)
+            if os.path.exists(exec_log_file): os.remove(exec_log_file)
+            continue
+
+
+        if script_info['script_type'] == 'python':
+            _bin = public.get_python_bin()
+        elif script_info['script_type'] == 'bash':
+            _bin = '/usr/bin/bash'
+            if not os.path.exists(_bin): _bin = 'bash'
+
+        exec_script = 'nohup {} {} &> {} &'.format(_bin,script_info['script_file'],exec_log_file)
+        public.ExecShell(exec_script)
+        script_info['last_time'] = time.time()
+        public.writeFile(script_conf_file,json.dumps(script_info))
+
+
+def clear_fastcgi_safe():
+    try:
+        fastcgifile = '/www/server/nginx/conf/fastcgi.conf'
+        if os.path.exists(fastcgifile):
+            conf = public.readFile(fastcgifile)
+            if conf.find('bt_safe_open') != -1:
+                public.ExecShell('sed -i "/bt_safe_open/d" {}'.format(fastcgifile))
+                public.ExecShell('/etc/init.d/nginx reload')
+    except:
+        pass
 
 #设置文件权限
 def files_set_mode():
@@ -171,7 +382,6 @@ def files_set_mode():
         ["/www/server/stop","","root",755,True],
         ["/www/server/redis","","redis",700,True],
         ["/www/server/redis/redis.conf","","redis",600,False],
-        ["/www/Recycle_bin","","root",600,True],
         ["/www/server/panel/class","","root",600,True],
         ["/www/server/panel/data","","root",600,True],
         ["/www/server/panel/plugin","","root",600,False],
@@ -197,6 +407,10 @@ def files_set_mode():
         ["/www/server/coll","","root",700,True]
     ]
 
+    recycle_list = public.get_recycle_bin_list()
+    for recycle_path in recycle_list:
+        m_paths.append([recycle_path,'','root',600,True])
+
     for m in m_paths:
         if not os.path.exists(m[0]): continue
         path = m[0] + m[1]
@@ -206,17 +420,77 @@ def files_set_mode():
             public.ExecShell("chown {U}:{U} {P}".format(P=m[0],U=m[2],R=rr[m[4]]))
             public.ExecShell("chmod {M} {P}".format(P=m[0],M=m[3],R=rr[m[4]]))
 
+#获取PMA目录
+def get_pma_path():
+    pma_path = '/www/server/phpmyadmin'
+    if not os.path.exists(pma_path): return False
+    for filename in os.listdir(pma_path):
+        filepath = pma_path + '/' + filename
+        if os.path.isdir(filepath):
+            if filename[0:10] == 'phpmyadmin':
+                return str(filepath)
+    return False
+
+
+#处理phpmyadmin访问权限
+def set_pma_access():
+    try:
+        pma_path = get_pma_path()
+        if not pma_path: return False
+        if not os.path.exists(pma_path): return False
+        pma_tmp = pma_path + '/tmp'
+        if not os.path.exists(pma_tmp):
+            os.makedirs(pma_tmp)
+
+        nginx_file = '/www/server/nginx/conf/nginx.conf'
+        if os.path.exists(nginx_file):
+            nginx_conf = public.readFile(nginx_file)
+            if nginx_conf.find('/tmp/') == -1:
+                r_conf = '''/www/server/phpmyadmin;
+            location ~ /tmp/ {
+                return 403;
+            }'''
+
+                nginx_conf = nginx_conf.replace('/www/server/phpmyadmin;',r_conf)
+                public.writeFile(nginx_file,nginx_conf)
+                public.serviceReload()
+
+        apa_pma_tmp = pma_tmp + '/.htaccess'
+        if not os.path.exists(apa_pma_tmp):
+            r_conf = '''order allow,deny
+    deny from all'''
+            public.writeFile(apa_pma_tmp,r_conf)
+            public.set_mode(apa_pma_tmp,755)
+            public.set_own(apa_pma_tmp,'root')
+
+        public.ExecShell("chmod -R 700 {}".format(pma_tmp))
+        public.ExecShell("chown -R www:www {}".format(pma_tmp))
+        return True
+    except:
+        return False
+
+
+
 
 
 #尝试升级到独立环境
 def update_py37():
-    pyenv='/www/server/panel/pyenv/bin/python'
+    pyenv='/www/server/panel/pyenv/bin/python3'
     pyenv_exists='/www/server/panel/data/pyenv_exists.pl'
     if os.path.exists(pyenv) or os.path.exists(pyenv_exists): return False
     download_url = public.get_url()
     public.ExecShell("nohup curl {}/install/update_panel_en.sh|bash &>/tmp/panelUpdate.pl &".format(download_url))
     public.writeFile(pyenv_exists,'True')
     return True
+
+def test_ping():
+    _f = '/www/server/panel/data/ping_token.pl'
+    if os.path.exists(_f): os.remove(_f)
+    try:
+        import panelPing
+        panelPing.Test().create_token()
+    except:
+        pass
 
 #检查dnsapi
 def check_dnsapi():
@@ -308,10 +582,12 @@ def clean_hook_log():
 
 #清理PHP日志
 def clean_php_log():
-    path = '/www/server/panel/php'
+    path = '/www/server/php'
     if not os.path.exists(path): return False
     for name in os.listdir(path):
         filename = path +'/'+name + '/var/log/php-fpm.log'
+        if os.path.exists(filename): clean_max_log(filename)
+        filename = path +'/'+name + '/var/log/php-fpm-test.log'
         if os.path.exists(filename): clean_max_log(filename)
         filename =  path +'/'+name + '/var/log/slow.log'
         if os.path.exists(filename): clean_max_log(filename)
@@ -342,7 +618,7 @@ def disable_putenv(fun_name):
     try:
         is_set_disable = '/www/server/panel/data/disable_%s' % fun_name
         if os.path.exists(is_set_disable): return True
-        php_vs = ('52','53','54','55','56','70','71','72','73','74')
+        php_vs = public.get_php_versions()
         php_ini = "/www/server/php/{0}/etc/php.ini"
         rep = "disable_functions\s*=\s*.*"
         for pv in php_vs:
@@ -375,7 +651,7 @@ def set_crond():
             cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo
             shell = public.get_python_bin() + ' /www/server/panel/class/panelLets.py renew_lets_ssl'
             public.writeFile(cronPath,shell)
-            args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("续签Let's Encrypt证书",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
+            args_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("Renew the Let's Encrypt certificate",'day','','0','10',echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
             crontab.crontab().set_cron_status(args_obj)
         else:
             cron_path = public.get_cron_path()
@@ -407,5 +683,10 @@ def clean_session():
         if old_state: public.ExecShell("rm -f " + session_path + '/*')
         return True
     except:return False
+
+
+
+if __name__ == '__main__':
+    control_init()
 
 

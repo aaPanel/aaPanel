@@ -9,7 +9,8 @@
 import os,sys,json,time,re
 setup_path = '/www/server/panel'
 os.chdir(setup_path)
-sys.path.append("class/")
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
 import http_requests as requests
 import sewer,public
 from OpenSSL import crypto
@@ -70,10 +71,37 @@ class panelLets:
 
     def extract_zone(self,domain_name):
         domain_name = domain_name.lstrip("*.")
-        top_domain_list = ['.ac.cn', '.ah.cn', '.bj.cn', '.com.cn', '.cq.cn', '.fj.cn', '.gd.cn',
-                            '.gov.cn', '.gs.cn', '.gx.cn', '.gz.cn', '.ha.cn', '.hb.cn', '.he.cn',
-                            '.hi.cn', '.hk.cn', '.hl.cn', '.hn.cn', '.jl.cn', '.js.cn', '.jx.cn',
-                            '.ln.cn', '.mo.cn', '.net.cn', '.nm.cn', '.nx.cn', '.org.cn']
+        top_domain_list = ['.ac.cn', '.ah.cn', '.bj.cn', '.com.cn', '.cq.cn', '.fj.cn', '.gd.cn','.gov.cn', '.gs.cn',
+                           '.gx.cn', '.gz.cn', '.ha.cn', '.hb.cn', '.he.cn','.hi.cn', '.hk.cn', '.hl.cn', '.hn.cn',
+                           '.jl.cn', '.js.cn', '.jx.cn','.ln.cn', '.mo.cn', '.net.cn', '.nm.cn', '.nx.cn', '.org.cn',
+                           '.my.id','.com.ac','.com.ad','.com.ae','.com.af','.com.ag','.com.ai','.com.al','.com.am',
+                           '.com.an','.com.ao','.com.aq','.com.ar','.com.as','.com.as','.com.at','.com.au','.com.aw',
+                           '.com.az','.com.ba','.com.bb','.com.bd','.com.be','.com.bf','.com.bg','.com.bh','.com.bi',
+                           '.com.bj','.com.bm','.com.bn','.com.bo','.com.br','.com.bs','.com.bt','.com.bv','.com.bw',
+                           '.com.by','.com.bz','.com.ca','.com.ca','.com.cc','.com.cd','.com.cf','.com.cg','.com.ch',
+                           '.com.ci','.com.ck','.com.cl','.com.cm','.com.cn','.com.co','.com.cq','.com.cr','.com.cu',
+                           '.com.cv','.com.cx','.com.cy','.com.cz','.com.de','.com.dj','.com.dk','.com.dm','.com.do',
+                           '.com.dz','.com.ec','.com.ee','.com.eg','.com.eh','.com.es','.com.et','.com.eu','.com.ev',
+                           '.com.fi','.com.fj','.com.fk','.com.fm','.com.fo','.com.fr','.com.ga','.com.gb','.com.gd',
+                           '.com.ge','.com.gf','.com.gh','.com.gi','.com.gl','.com.gm','.com.gn','.com.gp','.com.gr',
+                           '.com.gt','.com.gu','.com.gw','.com.gy','.com.hm','.com.hn','.com.hr','.com.ht','.com.hu',
+                           '.com.id','.com.id','.com.ie','.com.il','.com.il','.com.in','.com.io','.com.iq','.com.ir',
+                           '.com.is','.com.it','.com.jm','.com.jo','.com.jp','.com.ke','.com.kg','.com.kh','.com.ki',
+                           '.com.km','.com.kn','.com.kp','.com.kr','.com.kw','.com.ky','.com.kz','.com.la','.com.lb',
+                           '.com.lc','.com.li','.com.lk','.com.lr','.com.ls','.com.lt','.com.lu','.com.lv','.com.ly',
+                           '.com.ma','.com.mc','.com.md','.com.me','.com.mg','.com.mh','.com.ml','.com.mm','.com.mn',
+                           '.com.mo','.com.mp','.com.mq','.com.mr','.com.ms','.com.mt','.com.mv','.com.mw','.com.mx',
+                           '.com.my','.com.mz','.com.na','.com.nc','.com.ne','.com.nf','.com.ng','.com.ni','.com.nl',
+                           '.com.no','.com.np','.com.nr','.com.nr','.com.nt','.com.nu','.com.nz','.com.om','.com.pa',
+                           '.com.pe','.com.pf','.com.pg','.com.ph','.com.pk','.com.pl','.com.pm','.com.pn','.com.pr',
+                           '.com.pt','.com.pw','.com.py','.com.qa','.com.re','.com.ro','.com.rs','.com.ru','.com.rw',
+                           '.com.sa','.com.sb','.com.sc','.com.sd','.com.se','.com.sg','.com.sh','.com.si','.com.sj',
+                           '.com.sk','.com.sl','.com.sm','.com.sn','.com.so','.com.sr','.com.st','.com.su','.com.sy',
+                           '.com.sz','.com.tc','.com.td','.com.tf','.com.tg','.com.th','.com.tj','.com.tk','.com.tl',
+                           '.com.tm','.com.tn','.com.to','.com.tp','.com.tr','.com.tt','.com.tv','.com.tw','.com.tz',
+                           '.com.ua','.com.ug','.com.uk','.com.uk','.com.us','.com.uy','.com.uz','.com.va','.com.vc',
+                           '.com.ve','.com.vg','.com.vn','.com.vu','.com.wf','.com.ws','.com.ye','.com.za','.com.zm',
+                           '.com.zw']
         old_domain_name = domain_name
         m_count = domain_name.count(".")
         top_domain = "."+".".join(domain_name.rsplit('.')[-2:])
@@ -107,51 +135,51 @@ class panelLets:
     #格式化错误输出
     def get_error(self,error):
         if error.find("Max checks allowed") >= 0 :
-            return "CA can't verify your domain name, please check if the domain name resolution is correct, or wait 5-10 minutes and try again."
+            return public.get_msg_gettext("CA can't verify your domain name, please check if the domain name resolution is correct, or wait 5-10 minutes and try again.")
         elif error.find("Max retries exceeded with") >= 0 or error.find('status_code=0 ') != -1:
-            return "The CA server connection timed out, please try again later."
+            return public.get_msg_gettext("The CA server connection timed out, please try again later.")
         elif error.find("The domain name belongs") >= 0:
-            return "The domain name does not belong to this DNS service provider. Please ensure that the domain name is filled in correctly."
+            return public.get_msg_gettext("The domain name does not belong to this DNS service provider. Please ensure that the domain name is filled in correctly.")
         elif error.find('login token ID is invalid') >=0:
-            return 'The DNS server connection failed. Please check if the key is correct.'
+            return public.get_msg_gettext('The DNS server connection failed. Please check if the key is correct.')
         elif "too many certificates already issued for exact set of domains" in error:
-            return 'The signing failed, the domain name %s exceeded the weekly number of repeated issuances!' % re.findall("exact set of domains: (.+):", error)
+            return public.get_msg_gettext('The signing failed, the domain name exact set of domains: (.+): {} exceeded the weekly number of repeated issuances!',(error,))
         elif "Error creating new account :: too many registrations for this IP" in error:
-            return 'The signing failed, the current server IP has reached the limit of creating up to 10 accounts every 3 hours..'
+            return public.get_msg_gettext('The signing failed, the current server IP has reached the limit of creating up to 10 accounts every 3 hours..')
         elif "DNS problem: NXDOMAIN looking up A for" in error:
-            return 'The verification failed, the domain name was not resolved, or the resolution did not take effect.!'
+            return public.get_msg_gettext('The verification failed, the domain name was not resolved, or the resolution did not take effect.!')
         elif "Invalid response from" in error:
-            return 'Authentication failed, domain name resolution error or verification URL could not be accessed!'
+            return public.get_msg_gettext('Authentication failed, domain name resolution error or verification URL could not be accessed!')
         elif error.find('TLS Web Server Authentication') != -1:
             public.restart_panel()
-            return "Failed to connect to CA server, please try again later."
+            return public.get_msg_gettext("Failed to connect to CA server, please try again later.")
         elif error.find('Name does not end in a public suffix') != -1:
-            return "Unsupported domain name %s, please check if the domain name is correct!" % re.findall("Cannot issue for \"(.+)\":", error)
+            return public.get_msg_gettext("Unsupported domain name {}, please check if the domain name is correct!",(re.findall("Cannot issue for \"(.+)\":", error),))
         elif error.find('No valid IP addresses found for') != -1:
-            return "The domain name %s did not find a resolution record. Please check if the domain name is resolved.!" % re.findall("No valid IP addresses found for (.+)", error)
+            return public.get_msg_gettext("The domain name {} did not find a resolution record. Please check if the domain name is resolved.!",(re.findall("No valid IP addresses found for (.+)", error),))
         elif error.find('No TXT record found at') != -1:
-            return "If a valid TXT resolution record is not found in the domain name %s, please check if the TXT record is correctly parsed. If it is applied by DNSAPI, please try again in 10 minutes.!" % re.findall(
-                "No TXT record found at (.+)", error)
+            return public.get_msg_gettext("If a valid TXT resolution record is not found in the domain name {}, please check if the TXT record is correctly parsed. If it is applied by DNSAPI, please try again in 10 minutes.!",(re.findall(
+                "No TXT record found at (.+)", error),))
         elif error.find('Incorrect TXT record') != -1:
-            return "Found the wrong TXT record on %s: %s, please check if the TXT resolution is correct. If it is applied by DNSAPI, please try again in 10 minutes.!" % (
-            re.findall("found at (.+)", error), re.findall("Incorrect TXT record \"(.+)\"", error))
+            return public.get_msg_gettext("Found the wrong TXT record on {}: {}, please check if the TXT resolution is correct. If it is applied by DNSAPI, please try again in 10 minutes.!",(
+            re.findall("found at (.+)", error), re.findall("Incorrect TXT record \"(.+)\"", error)))
         elif error.find('Domain not under you or your user') != -1:
-            return "This domain name does not exist under this dnspod account. Adding parsing failed.!"
+            return public.get_msg_gettext("This domain name does not exist under this dnspod account. Adding parsing failed.!")
         elif error.find('SERVFAIL looking up TXT for') != -1:
-            return "If a valid TXT resolution record is not found in the domain name %s, please check if the TXT record is correctly parsed. If it is applied by DNSAPI, please try again in 10 minutes.!" % re.findall(
-                "looking up TXT for (.+)", error)
+            return public.get_msg_gettext("If a valid TXT resolution record is not found in the domain name {}, please check if the TXT record is correctly parsed. If it is applied by DNSAPI, please try again in 10 minutes.!",(re.findall(
+                "looking up TXT for (.+)", error),))
         elif error.find('Timeout during connect') != -1:
-            return "Connection timed out, CA server could not access your website!"
+            return public.get_msg_gettext("Connection timed out, CA server could not access your website!")
         elif error.find("DNS problem: SERVFAIL looking up CAA for") != -1:
-            return "The domain name %s is currently required to verify the CAA record. Please manually resolve the CAA record, or try again after 1 hour.!" % re.findall("looking up CAA for (.+)", error)
+            return public.get_msg_gettext("The domain name {} is currently required to verify the CAA record. Please manually resolve the CAA record, or try again after 1 hour.!" , (re.findall("looking up CAA for (.+)", error),))
         elif error.find("Read timed out.") != -1:
-            return "Verification timeout, please check whether the domain name is correctly resolved. If dns is resolved, the connection between the server and Let'sEncrypt may be abnormal. Please try again later!"
+            return public.get_msg_gettext("Verification timeout, please check whether the domain name is correctly resolved. If dns is resolved, the connection between the server and Let'sEncrypt may be abnormal. Please try again later!")
         elif error.find("Error creating new order") != -1:
-            return "Order creation failed, please try again later!"
+            return public.get_msg_gettext("Order creation failed, please try again later!")
         elif error.find("Too Many Requests") != -1:
-            return "More than 5 verification failures in 1 hour, application is temporarily banned, please try again later!"
+            return public.get_msg_gettext("More than 5 verification failures in 1 hour, application is temporarily banned, please try again later!")
         elif error.find('HTTP Error 400: Bad Request') != -1:
-            return "CA server denied access, please try again later!"
+            return public.get_msg_gettext("CA server denied access, please try again later!")
         else:
             return error;
 
@@ -183,10 +211,10 @@ class panelLets:
     def renew_lest_cert(self,data):  
         #续签网站
         path = self.setupPath + '/panel/vhost/cert/'+ data['siteName']
-        if not os.path.exists(path):  return public.returnMsg(False, 'The renewal failed and the certificate directory does not exist.')
+        if not os.path.exists(path):  return public.return_msg_gettext(False, 'The renewal failed and the certificate directory does not exist.')
 
         account_path = path + "/account_key.key"
-        if not os.path.exists(account_path): return public.returnMsg(False, 'Renewal failed, missing account_key.')
+        if not os.path.exists(account_path): return public.return_msg_gettext(False, 'Renewal failed, missing account_key.')
 
         #续签
         data['account_key'] = public.readFile(account_path)
@@ -198,7 +226,7 @@ class panelLets:
         else:            
             certificate = self.crate_let_by_file(data)       
 
-        if not certificate['status']: return public.returnMsg(False, certificate['msg'])
+        if not certificate['status']: return public.return_msg_gettext(False, certificate['msg'])
                  
         #存储证书
         public.writeFile(path + "/privkey.pem",certificate['key'])
@@ -210,7 +238,7 @@ class panelLets:
         pfx_buffer = p12.export()
         public.writeFile(path + "/fullchain.pfx",pfx_buffer,'wb+')
          
-        return public.returnMsg(True, '[%s]The certificate renewal was successful.' % data['siteName'])
+        return public.return_msg_gettext(True, '[ {} ] The certificate renewal was successful.',(data['siteName'],))
 
 
 
@@ -221,9 +249,9 @@ class panelLets:
         data['domains'] = json.loads(get.domains)
         data['email'] = get.email
         data['dnssleep'] = get.dnssleep
-        self.write_log("Ready to apply for SSL, domain name {}".format(data['domains']))
+        self.write_log(public.get_msg_gettext('Ready to apply for SSL, domain name {}',(data['domains'],)))
         self.write_log("="*50)
-        if len(data['domains']) <=0 : return public.returnMsg(False, 'The list of applied domain names cannot be empty.')
+        if len(data['domains']) <=0 : return public.return_msg_gettext(False, 'The list of applied domain names cannot be empty.')
         
         data['first_domain'] = data['domains'][0]       
      
@@ -231,13 +259,13 @@ class panelLets:
         if not os.path.exists(path): os.makedirs(path)
 
         # 检查是否自定义证书
-        partnerOrderId = path + '/partnerOrderId';
+        partnerOrderId = path + '/partnerOrderId'
         if os.path.exists(partnerOrderId): os.remove(partnerOrderId)
         #清理续签key
-        re_key = path + '/account_key.key';
+        re_key = path + '/account_key.key'
         if os.path.exists(re_key): os.remove(re_key)
 
-        re_password = path + '/password';
+        re_password = path + '/password'
         if os.path.exists(re_password): os.remove(re_password)
         
         data['account_key'] = None   
@@ -268,7 +296,7 @@ class panelLets:
                     if 'status' in result and not result['status']:  return result
                     result['status'] = True
                     public.writeFile(domain_path, json.dumps(result))
-                    result['msg'] = 'Get successful, please manually resolve the domain name'
+                    result['msg'] = public.get_msg_gettext('Get successful, please manually resolve the domain name')
                     result['code'] = 2
                     return result
             elif get.dnsapi == 'dns_bt':
@@ -286,10 +314,10 @@ class panelLets:
             data['site_dir'] = get.site_dir
             certificate = self.crate_let_by_file(data)       
 
-        if not certificate['status']: return public.returnMsg(False, certificate['msg'])
+        if not certificate['status']: return public.return_msg_gettext(False, certificate['msg'])
         
         #保存续签
-        self.write_log("|-Saving certificate..")
+        self.write_log(public.get_msg_gettext('|-Saving certificate..'))
         cpath = self.setupPath + '/panel/vhost/cert/crontab.json'
         config = {}
         if os.path.exists(cpath):
@@ -313,11 +341,11 @@ class panelLets:
         public.writeFile(path + "/README","let") 
         
         #计划任务续签
-        self.write_log("|-Setting up auto-renewal configuration..")
+        self.write_log(public.get_msg_gettext('|-Setting up auto-renewal configuration..'))
         self.set_crond()
-        self.write_log("|-The application is successful and it is being automatically deployed to the website!")
+        self.write_log(public.get_msg_gettext('|-The application is successful and it is being automatically deployed to the website!'))
         self.write_log("="*50)
-        return public.returnMsg(True, 'Application successful.')
+        return public.return_msg_gettext(True, 'Application successful.')
 
     #创建计划任务
     def set_crond(self):
@@ -352,15 +380,15 @@ class panelLets:
 
             #手动解析记录值
             if not 'renew' in data:
-                self.write_log("|-Initializing ACME protocol...")
+                self.write_log(public.get_msg_gettext('|-Initializing ACME protocol...'))
                 BTPanel.dns_client = sewer.Client(domain_name = data['first_domain'],dns_class = None,account_key = data['account_key'],domain_alt_names = data['domains'],contact_email = str(data['email']) ,ACME_AUTH_STATUS_WAIT_PERIOD = 15,ACME_AUTH_STATUS_MAX_CHECKS = 5,ACME_REQUEST_TIMEOUT = 20,ACME_DIRECTORY_URL = self.let_url)
                 domain_dns_value = "placeholder"
                 dns_names_to_delete = []
-                self.write_log("|-Registering account...")
+                self.write_log(public.get_msg_gettext('|-Registering account...'))
                 BTPanel.dns_client.acme_register()
                 authorizations, finalize_url = BTPanel.dns_client.apply_for_cert_issuance()
                 responders = []
-                self.write_log("|-Getting verification information...")
+                self.write_log(public.get_msg_gettext('|-Getting verification information...'))
                 for url in authorizations:
                     identifier_auth = BTPanel.dns_client.get_identifier_authorization(url)
                     authorization_url = identifier_auth["url"]
@@ -385,25 +413,25 @@ class panelLets:
                 dns['dns_names'] = dns_names_to_delete
                 dns['responders'] = responders
                 dns['finalize_url'] = finalize_url
-                self.write_log("|-Return the verification information to the front end, wait for the user to manually resolve the domain name and complete the verification...")
+                self.write_log(public.get_msg_gettext('|-Return the verification information to the front end, wait for the user to manually resolve the domain name and complete the verification...'))
                 return dns
             else:
-                self.write_log("|-User submits verification request...")
+                self.write_log(public.get_msg_gettext('|-User submits verification request...'))
                 responders = data['dns']['responders']
                 dns_names_to_delete = data['dns']['dns_names']
                 finalize_url = data['dns']['finalize_url']
                 for i in responders:  
-                    self.write_log("|-Requesting CA to verify domain name [{}]...".format(i['dns_name']))
+                    self.write_log(public.get_msg_gettext('|-Requesting CA to verify domain name [{}]...',(i['dns_name'],)))
                     auth_status_response = BTPanel.dns_client.check_authorization_status(i["authorization_url"])
                     if auth_status_response.json()["status"] == "pending":
                         BTPanel.dns_client.respond_to_challenge(i["acme_keyauthorization"], i["dns_challenge_url"])
 
                 for i in responders:
-                    self.write_log("|-Get CA verification results [{}]...".format(i['dns_name']))
+                    self.write_log(public.get_msg_gettext('|-Get CA verification results [{}]...',(i['dns_name'],)))
                     BTPanel.dns_client.check_authorization_status(i["authorization_url"], ["valid","invalid"])
-                self.write_log("|-All domain names are verified and CSR is being sent...")
+                self.write_log(public.get_msg_gettext('|-All domain names are verified and CSR is being sent...'))
                 certificate_url = BTPanel.dns_client.send_csr(finalize_url)
-                self.write_log("|-Getting certificate content...")
+                self.write_log(public.get_msg_gettext('|-Getting certificate content...'))
                 certificate = BTPanel.dns_client.download_certificate(certificate_url)
 
                 if certificate:
@@ -415,10 +443,10 @@ class panelLets:
                     result['status'] = True
                     BTPanel.dns_client = None
                 else:
-                    result['msg'] = 'Certificate acquisition failed, please try again later.'
+                    result['msg'] = public.get_msg_gettext('Certificate acquisition failed, please try again later.')
 
         except Exception as e:
-            self.write_log("|-Error: {}, exited the application process.".format(e))
+            self.write_log(public.get_msg_gettext('|-Error: {}, exited the application process.',(e,)))
             self.write_log("=" * 50)
             res = str(e).split('>>>>')
             err = False
@@ -433,10 +461,10 @@ class panelLets:
     def crate_let_by_dns(self,data):
         dns_class = self.get_dns_class(data)
         if not dns_class:
-            self.write_log("|-The DNS connection failed. Please check if the key is correct.")
-            self.write_log("|-Exited the application process!")
+            self.write_log(public.get_msg_gettext('|-Error: {}, exit the application process.'))
+            self.write_log(public.get_msg_gettext('|-Exited the application process!'))
             self.write_log("="*50)
-            return public.returnMsg(False, 'The DNS connection failed. Please check if the key is correct.')
+            return public.return_msg_gettext(False, 'An error occurred while requesting a certificate using dns')
      
         result = {}
         result['status'] = False
@@ -444,16 +472,16 @@ class panelLets:
             log_level = "INFO"
             if data['account_key']: log_level = 'ERROR'
             if not data['email']: data['email'] = public.M('users').getField('email')
-            self.write_log("|-Initializing ACME protocol...")
+            self.write_log(public.get_msg_gettext('|-Initializing ACME protocol...'))
             client = sewer.Client(domain_name = data['first_domain'],domain_alt_names = data['domains'],account_key = data['account_key'],contact_email = str(data['email']),LOG_LEVEL = log_level,ACME_AUTH_STATUS_WAIT_PERIOD = 15,ACME_AUTH_STATUS_MAX_CHECKS = 5,ACME_REQUEST_TIMEOUT = 20, dns_class = dns_class,ACME_DIRECTORY_URL = self.let_url)
             domain_dns_value = "placeholder"
             dns_names_to_delete = []
             try:
-                self.write_log("|-Registering account...")
+                self.write_log(public.get_msg_gettext('|-Registering account...'))
                 client.acme_register()
                 authorizations, finalize_url = client.apply_for_cert_issuance()
                 responders = []
-                self.write_log("|-Getting verification information...")
+                self.write_log(public.get_msg_gettext('|-Getting verification information...'))
                 for url in authorizations:
                     identifier_auth = client.get_identifier_authorization(url)
                     authorization_url = identifier_auth["url"]
@@ -461,7 +489,7 @@ class panelLets:
                     dns_token = identifier_auth["dns_token"]
                     dns_challenge_url = identifier_auth["dns_challenge_url"]
                     acme_keyauthorization, domain_dns_value = client.get_keyauthorization(dns_token)
-                    self.write_log("|-Adding resolution record, domain name [{}], record value [{}]...".format(dns_name,domain_dns_value))
+                    self.write_log(public.get_msg_gettext('|-Adding resolution record, domain name [{}], record value [{}]...',(dns_name,domain_dns_value)))
                     dns_class.create_dns_record(public.de_punycode(dns_name), domain_dns_value)
                     dns_names_to_delete.append({"dns_name": public.de_punycode(dns_name), "domain_dns_value": domain_dns_value})
                     responders.append({"dns_name":dns_name,"domain_dns_value":domain_dns_value,"authorization_url": authorization_url, "acme_keyauthorization": acme_keyauthorization,"dns_challenge_url": dns_challenge_url} )
@@ -470,33 +498,33 @@ class panelLets:
 
                 try:
                     for i in responders:
-                        self.write_log("|-Attempt to verify the resolution result, domain name [{}], record value [{}]...".format(i['dns_name'],i['domain_dns_value']))
+                        self.write_log(public.get_msg_gettext('|-Attempt to verify the resolution result, domain name [{}], record value [{}]...',(i['dns_name'],i['domain_dns_value'])))
                         self.check_dns(self.get_acme_name(i['dns_name']),i['domain_dns_value'])
-                        self.write_log("|-Request CA to verify domain name [{}]...".format(i['dns_name']))
+                        self.write_log(public.get_msg_gettext('|-Request CA to verify domain name [{}]...',(i['dns_name'])))
                         auth_status_response = client.check_authorization_status(i["authorization_url"])
                         r_data = auth_status_response.json()
                         if r_data["status"] == "pending":
                             client.respond_to_challenge(i["acme_keyauthorization"], i["dns_challenge_url"])
 
                     for i in responders:
-                        self.write_log("|-Check CA verification results [{}]...".format(i['dns_name']))
+                        self.write_log(public.get_msg_gettext('|-Check CA verification results [{}]...',(i['dns_name'],)))
                         client.check_authorization_status(i["authorization_url"], ["valid","invalid"])
                 except Exception as ex:
-                    self.write_log("|-An error occurred, try again [{}]".format(ex))
+                    self.write_log(public.get_msg_gettext('|-An error occurred, try again [{}]',(str(ex),)))
                     for i in responders:
-                        self.write_log("|-Attempt to verify the resolution result, domain name [{}], record value [{}]...".format(i['dns_name'],i['domain_dns_value']))
+                        self.write_log(public.get_msg_gettext('|-Attempt to verify the resolution result, domain name [{}], record value [{}]...',(i['dns_name'],i['domain_dns_value'])))
                         self.check_dns(self.get_acme_name(i['dns_name']),i['domain_dns_value'])
-                        self.write_log("|-Request CA to verify domain name [{}]...".format(i['dns_name']))
+                        self.write_log(public.get_msg_gettext('|-Request CA to verify domain name [{}]...',(i['dns_name'])))
                         auth_status_response = client.check_authorization_status(i["authorization_url"])
                         r_data = auth_status_response.json()
                         if r_data["status"] == "pending":
                             client.respond_to_challenge(i["acme_keyauthorization"], i["dns_challenge_url"])
                     for i in responders:
-                        self.write_log("|-Check CA verification results [{}]...".format(i['dns_name']))
+                        self.write_log(public.get_msg_gettext('|-Check CA verification results [{}]...',(i['dns_name'],)))
                         client.check_authorization_status(i["authorization_url"], ["valid","invalid"])
-                self.write_log("|-All domain names are verified and CSR is being sent...")
+                self.write_log(public.get_msg_gettext('|-All domain names are verified and CSR is being sent...'))
                 certificate_url = client.send_csr(finalize_url)
-                self.write_log("|-Fetching certificate content...")
+                self.write_log(public.get_msg_gettext('|-Fetching certificate content...'))
                 certificate = client.download_certificate(certificate_url)
                 if certificate:
                     certificate = self.split_ca_data(certificate)
@@ -511,7 +539,7 @@ class panelLets:
             finally:   
                 try:
                     for i in dns_names_to_delete:
-                        self.write_log("|-Clearing parsing history [{}]".format(i["dns_name"]))
+                        self.write_log(public.get_msg_gettext('|-Clearing resolve history [{}]',(i["dns_name"])))
                         dns_class.delete_dns_record(i["dns_name"], i["domain_dns_value"])
                 except :
                     pass
@@ -519,10 +547,10 @@ class panelLets:
         except Exception as e:
             try:
                 for i in dns_names_to_delete:
-                    self.write_log("|-Clearing parsing history [{}]".format(i["dns_name"]))
+                    self.write_log(public.get_msg_gettext('|-Clearing resolve history [{}]',(i["dns_name"])))
                     dns_class.delete_dns_record(i["dns_name"], i["domain_dns_value"])
             except:pass
-            self.write_log("|-Error: {}, exit the application process.".format(public.get_error_info()))
+            self.write_log(public.get_msg_gettext('|-Error: {}, exit the application process.',(str(public.get_error_info()),)))
             self.write_log("=" * 50)
             res = str(e).split('>>>>')
             err = False
@@ -538,17 +566,17 @@ class panelLets:
         result['status'] = False
         result['clecks'] = []
         try:
-            self.write_log("|-ACME protocol is being initialized...")
+            self.write_log(public.get_msg_gettext('|-Initializing ACME protocol...'))
             log_level = "INFO"
             if data['account_key']: log_level = 'ERROR'
             if not data['email']: data['email'] = public.M('users').getField('email')
             client = sewer.Client(domain_name = data['first_domain'],dns_class = None,account_key = data['account_key'],domain_alt_names = data['domains'],contact_email = str(data['email']),LOG_LEVEL = log_level,ACME_AUTH_STATUS_WAIT_PERIOD = 15,ACME_AUTH_STATUS_MAX_CHECKS = 5,ACME_REQUEST_TIMEOUT = 20,ACME_DIRECTORY_URL = self.let_url)
-            self.write_log("|-Registering account...")
+            self.write_log(public.get_msg_gettext('|-Registering account...'))
             client.acme_register()
             authorizations, finalize_url = client.apply_for_cert_issuance()
             responders = []
             sucess_domains = []
-            self.write_log("|-Getting verification information...")
+            self.write_log(public.get_msg_gettext('|-Getting verification information...'))
             for url in authorizations:
                 identifier_auth = self.get_identifier_authorization(client,url)
              
@@ -563,21 +591,21 @@ class panelLets:
                
                 #写入token
                 wellknown_path = acme_dir + '/' + http_token
-                self.write_log("|-Writing verification file [{}]...".format(wellknown_path))
+                self.write_log(public.get_msg_gettext('|-Writing verification file [{}]...',(wellknown_path,)))
                 public.writeFile(wellknown_path,acme_keyauthorization)
-                wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(http_name, http_token)
+                wellknown_url = "http://{}/.well-known/acme-challenge/{}".format(http_name, http_token)
 
                 result['clecks'].append({'wellknown_url':wellknown_url,'http_token':http_token})
                 is_check = False
                 n = 0
-                self.write_log("|-Attempt to verify file contents via HTTP [{}]...".format(wellknown_url))
+                self.write_log(public.get_msg_gettext('|-Attempt to verify file contents via HTTP [{}]...',(wellknown_url)))
                 while n < 5:
                     print("wait_check_authorization_status")
                     try:
                         retkey = public.httpGet(wellknown_url,20)
                         if retkey == acme_keyauthorization:
                             is_check = True
-                            self.write_log("|-Verified, content [{}]...".format(retkey))
+                            self.write_log(public.get_msg_gettext('|-Verified, content [{}]...',(retkey,)))
                             break
                     except :
                         pass
@@ -589,18 +617,18 @@ class panelLets:
             if len(sucess_domains) > 0: 
                 #验证
                 for i in responders:
-                    self.write_log("|-Request CA to verify domain name [{}]...".format(i['http_name']))
+                    self.write_log(public.get_msg_gettext('|-Request CA to verify domain name [{}]...',(i['http_name'],)))
                     auth_status_response = client.check_authorization_status(i["authorization_url"])
                     if auth_status_response.json()["status"] == "pending":
                         client.respond_to_challenge(i["acme_keyauthorization"], i["http_challenge_url"]).json()
 
                 for i in responders:
-                    self.write_log("|-Query CA verification results [{}]...".format(i['http_name']))
+                    self.write_log(public.get_msg_gettext('|-Check CA verification results [{}]...',(i['http_name'],)))
                     client.check_authorization_status(i["authorization_url"], ["valid","invalid"])
 
-                self.write_log("|-All domain names are verified and CSR is being sent...")
+                self.write_log(public.get_msg_gettext('|-All domain names are verified and CSR is being sent...'))
                 certificate_url = client.send_csr(finalize_url)
-                self.write_log("|-Getting certificate content...")
+                self.write_log(public.get_msg_gettext('|-Getting certificate content...'))
                 certificate = client.download_certificate(certificate_url)
                
                 if certificate:
@@ -612,11 +640,11 @@ class panelLets:
                     result['status'] = True
 
                 else:
-                    result['msg'] = 'Certificate acquisition failed, please try again later.'
+                    result['msg'] = public.get_msg_gettext('Certificate acquisition failed, please try again later.')
             else:
-                result['msg'] = "The signing failed, we were unable to verify your domain name:<p>1. Check if the domain name is bound to the corresponding site.</p><p>2. Check if the domain name is correctly resolved to the server, or the resolution is not fully effective.</p><p>3. If your site has a reverse proxy set up, or if you are using a CDN, please turn it off first.</p><p>4. If your site has a 301 redirect, please turn it off first</p><p>5. If the above checks confirm that there is no problem, please try to change the DNS service provider.</p>'"
+                result['msg'] = public.get_msg_gettext('The signing failed, we were unable to verify your domain name:<p>1. Check if the domain name is bound to the corresponding site.</p><p>2. Check if the domain name is correctly resolved to the server, or the resolution is not fully effective.</p><p>3. If your site has a reverse proxy set up, or if you are using a CDN, please turn it off first.</p><p>4. If your site has a 301 redirect, please turn it off first</p><p>5. If the above checks confirm that there is no problem, please try to change the DNS service provider.</p>')
         except Exception as e:
-            self.write_log("|-Error: {}, exit the application process.".format(public.get_error_info()))
+            self.write_log(public.get_msg_gettext('|-Error: {}, exit the application process.',(str(public.get_error_info()),)))
             self.write_log("=" * 50)
             res = str(e).split('>>>>')
             err = False
@@ -665,7 +693,7 @@ class panelLets:
                     for i in j.items:
                         txt_value = i.to_text().replace('"','').strip()
                         if txt_value == value:
-                            self.write_log("|-Successful verification, domain name [{}], record type [{}], record value [{}]!".format(domain,type,txt_value))
+                            self.write_log(public.get_msg_gettext('|-Successful verification, domain name [{}], record type [{}], record value [{}]!',(domain,type,txt_value)))
                             print("Verification succeeded: %s" % txt_value)
                             return True
             except:
@@ -725,18 +753,18 @@ class panelLets:
     def renew_lets_ssl(self):        
         cpath = self.setupPath + '/panel/vhost/cert/crontab.json'
         if not os.path.exists(cpath):  
-            print("|-There are currently no certificates to renew." )
+            print(public.get_msg_gettext('|-There are currently no certificates to renew.') )
         else:
             old_list = json.loads(public.ReadFile(cpath))    
             print('=======================================================================')
-            print('|-%s Total [%s] renewal of visa tasks' % (time.strftime('%Y-%m-%d %X',time.localtime()),len(old_list)))
+            print(public.get_msg_gettext('|-{} Total [{}] renewal of visa tasks',(time.strftime('%Y-%m-%d %X',time.localtime()),str(len(old_list)))))
             cron_list = self.get_renew_lets_bytimeout(old_list)
 
             tlist = []
             for siteName in old_list:                 
                 if not siteName in cron_list: tlist.append(siteName)
-            print('|-[%s]Not expired or the site does not use the Let\'s Encrypt certificate.' % (','.join(tlist)))
-            print('|-%s Waiting for renewal[%s].' % (time.strftime('%Y-%m-%d %X',time.localtime()),len(cron_list)))
+            print(public.get_msg_gettext('|-[{}] Not expired or the site does not use the Let\s Encrypt certificate.',(','.join(tlist),)))
+            print(public.get_msg_gettext('|-{} Waiting for renewal [{}].',(time.strftime('%Y-%m-%d %X',time.localtime()),str(len(cron_list)))))
             
             sucess_list  = []
             err_list = []
@@ -747,11 +775,11 @@ class panelLets:
                     sucess_list.append(siteName)
                 else:
                     err_list.append({"siteName":siteName,"msg":ret['msg']})
-            print("|-After the task is completed, a total of renewals are required.[%s], renewal success [%s], renewal failed [%s]. " % (len(cron_list),len(sucess_list),len(err_list)))
+            print(public.get_msg_gettext('|-After the task is completed, a total of renewals are required.[{}], renewal success [%s], renewal failed [{}]. ',(str(len(cron_list)),str(len(sucess_list)),str(len(err_list)))))
             if len(sucess_list) > 0:       
-                print("|-Renewal success：%s" % (','.join(sucess_list)))
+                print(public.get_msg_gettext('|-Renewal success：{}',(','.join(sucess_list),)))
             if len(err_list) > 0:       
-                print("|-Renewal failed：")
+                print(public.get_msg_gettext('|-Renewal failed：'))
                 for x in err_list:
                     print("    %s ->> %s" % (x['siteName'],x['msg']))
 

@@ -65,7 +65,6 @@ panel_start()
         get_panel_pids
         if [ "$isStart" == '' ];then
                 rm -f $pidfile
-                panel_port_check
                 echo -e "Starting Bt-Panel...\c"
                 nohup $panel_path/BT-Panel >> $log_file 2>&1 &
                 isStart=""
@@ -81,6 +80,7 @@ panel_start()
                         fi
                 done
                 if [ "$isStart" == '' ];then
+                        panel_port_check
                         echo -e "\033[31mfailed\033[0m"
                         echo '------------------------------------------------------'
                         tail -n 20 $log_file
@@ -231,7 +231,6 @@ panel_reload()
                 kill -9 $p
         done
 		rm -f $pidfile
-		panel_port_check
 		echo -e "Reload Bt-Panel.\c";
                 nohup $panel_path/BT-Panel >> $log_file 2>&1 &
 		isStart=""
@@ -247,6 +246,7 @@ panel_reload()
 			fi
 		done
         if [ "$isStart" == '' ];then
+		panel_port_check
                 echo -e "\033[31mfailed\033[0m"
                 echo '------------------------------------------------------'
                 tail -n 20 $log_file
@@ -268,6 +268,8 @@ install_used()
         fi
         password=$(cat /dev/urandom | head -n 16 | md5sum | head -c 12)
         username=$($pythonV $panel_path/tools.py panel $password)
+        safe_path=$(cat /dev/urandom | head -n 16 | md5sum | head -c 8)
+        echo "/$safe_path" > $panel_path/data/admin_path.pl
         echo "$password" > $panel_path/default.pl
         rm -f $panel_path/aliyun.pl
 }
@@ -314,7 +316,7 @@ case "$1" in
                 	auth_path=$(cat $panel_path/data/admin_path.pl)
                 fi
                 if [ "$address" = "" ];then
-                	address=$(curl -sS --connect-timeout 10 -m 60 https://www.bt.cn/Api/getIpAddress)
+                	address=$(curl -sS --connect-timeout 10 -m 60 https://www.aapanel.com/api/common/getClientIP)
                 fi
 				pool=http
 				if [ -f $panel_path/data/ssl.pl ];then

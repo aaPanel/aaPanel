@@ -1,7 +1,103 @@
-$(document).ready(function() {
-    $(".sub-menu a.sub-menu-a").click(function() {
-        $(this).next(".sub").slideToggle("slow").siblings(".sub:visible").slideUp("slow");
+$(function(){
+    $.fn.extend({
+        fixedThead:function(options){
+            var _that = $(this);
+            console.log(_that);
+            var option = {
+                height:400,
+                shadow:true,
+                resize:true
+            };
+            options = $.extend(option,options);
+            if($(this).find('table').length === 0){
+                return false;
+            }
+            var _height = $(this)[0].style.height,_table_config = _height.match(/([0-9]+)([%\w]+)/);
+            if(_table_config === null){
+                _table_config = [null,options.height,'px'];
+            }else{
+                $(this).css({
+                    'boxSizing': 'content-box',
+                    'paddingBottom':$(this).find('thead').height()
+                });
+            }
+            $(this).css({'position':'relative'});
+            var _thead = $(this).find('thead')[0].outerHTML,
+                _tbody = $(this).find('tbody')[0].outerHTML,
+                _thead_div = $('<div class="thead_div"><table class="table table-hover mb0"></table></div>'),
+                _shadow_top = $('<div class="tbody_shadow_top"></div>'),
+                _tbody_div = $('<div class="tbody_div" style="height:'+ _table_config[1] + _table_config[2] +';"><table class="table table-hover mb0" style="margin-top:-'+ $(this).find('thead').height() +'px"></table></div>'),
+                _shadow_bottom = $('<div class="tbody_shadow_bottom"></div>');
+            _thead_div.find('table').append(_thead);
+            _tbody_div.find('table').append(_thead);
+            _tbody_div.find('table').append(_tbody);
+            $(this).html('');
+            $(this).append(_thead_div);
+            $(this).append(_shadow_top);
+            $(this).append(_tbody_div);
+            $(this).append(_shadow_bottom);
+            var _table_width = _that.find('.thead_div table')[0].offsetWidth,
+                _body_width = _that.find('.tbody_div table')[0].offsetWidth,
+                _length = _that.find('tbody tr:eq(0)>td').length;
+            $(this).find('tbody tr:eq(0)>td').each(function(index,item){
+                var _item = _that.find('thead tr:eq(0)>th').eq(index);
+                if(index === (_length-1)){
+                	_item.attr('width',$(item)[0].clientWidth + (_table_width - _body_width));
+                }else{
+                	_item.attr('width',$(item)[0].offsetWidth);
+                }
+            });
+            if(options.resize){
+                $(window).resize(function(){
+            		var _table_width = _that.find('.thead_div table')[0].offsetWidth,
+	                _body_width = _that.find('.tbody_div table')[0].offsetWidth,
+	                _length = _that.find('tbody tr:eq(0)>td').length;
+		            _that.find('tbody tr:eq(0)>td').each(function(index,item){
+		                var _item = _that.find('thead tr:eq(0)>th').eq(index);
+		                if(index === (_length-1)){
+		                	_item.attr('width',$(item)[0].clientWidth + (_table_width - _body_width));
+		                }else{
+		                	_item.attr('width',$(item)[0].offsetWidth);
+		                }
+		            });
+	            });	
+            }
+            if(options.shadow){
+                var table_body = $(this).find('.tbody_div')[0];
+                if(_table_config[1] >= table_body.scrollHeight){
+                    $(this).find('.tbody_shadow_top').hide();
+                    $(this).find('.tbody_shadow_bottom').hide();
+                }else{
+                    $(this).find('.tbody_shadow_top').hide();
+                    $(this).find('.tbody_shadow_bottom').show();
+                }
+                $(this).find('.tbody_div').scroll(function(e){
+                    var _scrollTop = $(this)[0].scrollTop,
+                        _scrollHeight  = $(this)[0].scrollHeight,
+                        _clientHeight = $(this)[0].clientHeight,
+                        _shadow_top = _that.find('.tbody_shadow_top'),
+                        _shadow_bottom = _that.find('.tbody_shadow_bottom');
+                    if(_scrollTop == 0){
+                        _shadow_top.hide();
+                        _shadow_bottom.show();
+                    }else if(_scrollTop > 0 && _scrollTop < (_scrollHeight - _clientHeight)){
+                        _shadow_top.show();
+                        _shadow_bottom.show();
+                    }else if(_scrollTop == (_scrollHeight - _clientHeight)){
+                        _shadow_top.show();
+                        _shadow_bottom.hide();
+                    }
+                })
+            }
+        }
+        
     });
+}(jQuery))
+
+$(document).ready(function() {
+	$(".sub-menu a.sub-menu-a").click(function() {
+		$(this).next(".sub").slideToggle("slow").siblings(".sub:visible").slideUp("slow");
+	});
 });
 var aceEditor = {
     layer_view: '',
@@ -83,57 +179,67 @@ var aceEditor = {
     // 事件编辑器-方法，事件绑定
     eventEditor: function() {
         var _this = this,_icon = '<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>';
-        $(window).resize(function() {
-            var _id = $('.ace_conter_menu .active').attr('data-id');
-            if (_id != undefined) {
-                aceEditor.editor['ace_editor_' + _id].ace.resize();
-                //_this.setEditorView()
+        $(window).resize(function(){
+			if(_this.ace_active != undefined) _this.setEditorView()
+			if( $('.aceEditors .layui-layer-maxmin').length >0){
+            	$('.aceEditors').css({
+                	'top':0,
+                	'left':0,
+                	'width':$(this)[0].innerWidth,
+                	'height':$(this)[0].innerHeight
+                });
             }
-        });
-        $('.ace_editor_main').on('click',function(){
+		})
+        $(document).click(function(e){
+			$('.ace_toolbar_menu').hide();
+			$('.ace_conter_editor .ace_editors').css('fontSize', _this.aceConfig.aceEditor.fontSize + 'px');
+			$('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
+		});
+		$('.ace_editor_main').on('click',function(){
             $('.ace_toolbar_menu').hide();
         });
-        $(document).click(function(e) {
-                $('.ace_toolbar_menu').hide();
-                $('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
-            })
-            // 显示工具条
-        $('.ace_header .pull-down').click(function() {
-            if ($(this).find('i').hasClass('glyphicon-menu-down')) {
-                $('.ace_header').css({ 'marginTop': '-35px', 'height': '0' });
-                $(this).css({ 'top': '35px', 'height': '40px', 'line-height': '40px' });
-                $(this).find('i').addClass('glyphicon-menu-up').removeClass('glyphicon-menu-down');
-            } else {
-                $('.ace_header').removeAttr('style');
+		$('.ace_toolbar_menu').click(function(e){
+			e.stopPropagation();
+			e.preventDefault();
+		});
+        // 显示工具条
+        $('.ace_header .pull-down').click(function(){
+			if($(this).find('i').hasClass('glyphicon-menu-down')){
+                $('.ace_header').css({'top':'-35px'});
+                $('.ace_overall').css({'top':'0'});
+                $(this).css({'top':'35px','height':'40px','line-height':'40px'});
+				$(this).find('i').addClass('glyphicon-menu-up').removeClass('glyphicon-menu-down');
+			}else{
+				$('.ace_header').css({'top':'0'});
+                $('.ace_overall').css({'top':'35px'});
                 $(this).removeAttr('style');
-                $(this).find('i').addClass('glyphicon-menu-down').removeClass('glyphicon-menu-up');
-            }
-            _this.setEditorView();
-        });
+				$(this).find('i').addClass('glyphicon-menu-down').removeClass('glyphicon-menu-up');
+			}
+			_this.setEditorView();
+		});
         // 切换TAB视图
-        $('.ace_conter_menu').on('click', '.item', function(e) {
-            var _id = $(this).attr('data-id'),
-                _item = _this.editor['ace_editor_' + _id]
-            $('.item_tab_' + _id).addClass('active').siblings().removeClass('active');
-            $('#ace_editor_' + _id).addClass('active').siblings().removeClass('active');
-            _this.ace_active = _id;
-            _this.currentStatusBar(_id);
-            _this.is_file_history(_item);
-        });
-        // 移上TAB按钮变化，仅文件被修改后
-        $('.ace_conter_menu').on('mouseover', '.item .icon-tool', function() {
-            var type = $(this).attr('data-file-state');
-            if (type != '0') {
-                $(this).removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
-            }
-        });
-        // 移出tab按钮变化，仅文件被修改后
-        $('.ace_conter_menu').on('mouseout', '.item .icon-tool', function() {
-            var type = $(this).attr('data-file-state');
-            if (type != '0') {
-                $(this).removeClass('glyphicon-remove').addClass('glyphicon-exclamation-sign');
-            }
-        });
+		$('.ace_conter_menu').on('click', '.item', function (e) {
+			var _id = $(this).attr('data-id'),_item = _this.editor['ace_editor_' + _id];
+			$('.item_tab_'+ _id).addClass('active').siblings().removeClass('active');
+			$('#ace_editor_'+ _id).addClass('active').siblings().removeClass('active');
+			_this.ace_active = _id;
+			_this.currentStatusBar(_id);
+			_this.is_file_history(_item);
+		});
+		// 移上TAB按钮变化，仅文件被修改后
+		$('.ace_conter_menu').on('mouseover', '.item .icon-tool', function () {
+			var type = $(this).attr('data-file-state');
+			if (type != '0') {
+				$(this).removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+			}
+		});
+		// 移出tab按钮变化，仅文件被修改后
+		$('.ace_conter_menu').on('mouseout', '.item .icon-tool', function () {
+			var type = $(this).attr('data-file-state');
+			if (type != '0') {
+				$(this).removeClass('glyphicon-remove').addClass('glyphicon-exclamation-sign');
+			}
+		});
         // 关闭编辑视图
         $('.ace_conter_menu').on('click', '.item .icon-tool', function(e) {
             var file_type = $(this).attr('data-file-state');
@@ -192,8 +298,16 @@ var aceEditor = {
                     });
                     break;
             }
-            e.stopPropagation();
+            $('.ace_toolbar_menu').hide();
+			$('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
+			e.stopPropagation();
+			e.preventDefault();
         });
+        $(window).keyup(function(e){
+			if(e.keyCode === 116 && $('#ace_conter').length == 1){
+				layer.msg('Unable to refresh in editor mode. Please close and try again');
+			}
+		});
         // 新建编辑器视图
         $('.ace_editor_add').click(function() {
             _this.addEditorView();
@@ -220,13 +334,13 @@ var aceEditor = {
                         title: lan.public.history_version + '[ ' + _item.fileName + ' ]',
                         skin: 'historys_layer',
                         content: '<div class="pd20">\
-							<div class="divtable">\
-								<table class="historys table table-hover">\
-									<thead><tr><th>' + lan.public.file_name + '</th><th>' + lan.public.v_time + '</th><th style="text-align:right;">' + lan.public.operate + '</th></tr></thead>\
-									<tbody></tbody>\
-								</table>\
-							</div>\
-						</div>',
+													<div class="divtable" style="overflow:auto;height:450px; border: 1px solid #ddd;">\
+														<table class="historys table table-hover" id="historys-table" style="border: none;">\
+															<thead><tr><th>' + lan.public.file_name + '</th><th>' + lan.public.v_time + '</th><th style="text-align:right;">' + lan.public.operate + '</th></tr></thead>\
+															<tbody></tbody>\
+														</table>\
+													</div>\
+												</div>',
                         success: function(layeo, index) {
                             var _html = '';
                             for (var i = 0; i < _item.historys.length; i++) {
@@ -246,6 +360,7 @@ var aceEditor = {
                             $('.recovery_file_historys').click(function() {
                                 _this.event_ecovery_file(this);
                             });
+														bt.fixed_table('historys-table');
                         }
                     });
                     break;
@@ -327,7 +442,7 @@ var aceEditor = {
             _this.searchRelevance()
         });
         // 顶部状态栏
-        $('.ace_header span').click(function(e) {
+        $('.ace_header>span').click(function(e) {
             var type = $(this).attr('class'),
                 editor_item = _this.editor['ace_editor_' + _this.ace_active];
             var _icon = '<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>';
@@ -658,7 +773,7 @@ var aceEditor = {
 		$('.ace_dir_tools').on('click','.upper_level',function(){
 			var _paths = $(this).attr('data-menu-path');
 			_this.reader_file_dir_menu({path:_paths,is_empty:true});
-			$('.ace_catalogue_title').html('Directory: '+ _paths).attr('title',_paths);
+			$('.ace_catalogue_title').html('Dir: '+ _paths).attr('title',_paths);
 		});
 		// 新建文件（文件目录主菜单）
 		$('.ace_dir_tools').on('click','.new_folder',function(e){
@@ -1272,7 +1387,7 @@ var aceEditor = {
     },
     // 获取文件列表
 	get_file_dir_list:function(obj,callback){
-		var loadT = layer.msg('正在获取文件内容，请稍后...',{time: 0,icon: 16,shade: [0.3, '#000']}),_this = this;
+		var loadT = layer.msg('Getting file content, please wait...',{time: 0,icon: 16,shade: [0.3, '#000']}),_this = this;
 		if(obj['p'] === undefined) obj['p'] = 1;
 		if(obj['showRow'] === undefined) obj['showRow'] = 200;
 		if(obj['sort'] === undefined) obj['sort'] = 'name';
@@ -1917,6 +2032,9 @@ function openEditorView(type, path) {
                 ace.config.set("workerPath", "/static/ace");
                 ace.config.set("themePath", "/static/ace");
                 aceEditor.openEditorView(path);
+                var _left = parseInt( $(layero).css('left')),_top =  parseInt( $(layero).css('top'));
+                _left<0?$(layero).css('left',Math.abs(_left)):$(layero).css('left',_left)
+                _top<0?$(layero).css('top',Math.abs(_top)):$(layero).css('top',_top)
                 // $('.aceEditors .layui-layer-min').click(function(e) {
                 //     aceEditor.isAceView = false;
                 //     setTimeout(function() {
@@ -2095,12 +2213,35 @@ function format_form_data(form_data){
 
 function ajax_encrypt(request){
 	if(!this.type || !this.data || !this.contentType) return;
-	if($("#panel_debug").attr("data") == 'True') return;
+    if($("#panel_debug").attr("data") == 'True') return;
+    if($("#panel_debug").attr("data-pyversion") == '2') return;
 	if(this.type == 'POST' && this.data.length > 1){
 		this.data = format_form_data(this.data);
 	}
 }
 
+// function ajaxSetup() {
+//     var my_headers = {};
+//     var request_token_ele = document.getElementById("request_token_head");
+//     if (request_token_ele) {
+//         var request_token = request_token_ele.getAttribute('token');
+//         if (request_token) {
+//             my_headers['x-http-token'] = request_token
+//         }
+//     }
+//     request_token_cookie = getCookie('request_token');
+//     if (request_token_cookie) {
+//         my_headers['x-cookie-token'] = request_token_cookie
+//     }
+//
+//     if (my_headers) {
+//         $.ajaxSetup({
+// 			headers: my_headers,
+// 			// dataFilter: ajax_decrypt,
+// 			// beforeSend: ajax_encrypt
+// 		});
+//     }
+// }
 function ajaxSetup() {
     var my_headers = {};
     var request_token_ele = document.getElementById("request_token_head");
@@ -2116,12 +2257,65 @@ function ajaxSetup() {
     }
 
     if (my_headers) {
-        $.ajaxSetup({ 
+		$.ajaxSetup({
 			headers: my_headers,
-			dataFilter: ajax_decrypt,
-			beforeSend: ajax_encrypt
+			error: function(jqXHR, textStatus, errorThrown) {
+				if(!jqXHR.responseText) return;
+				if(typeof(String.prototype.trim) === "undefined"){
+					String.prototype.trim = function()
+					{
+						return String(this).replace(/^\s+|\s+$/g, '');
+					};
+				}
+
+				error_key = 'We need to make sure this has a favicon so that the debugger does';
+				error_find = jqXHR.responseText.indexOf(error_key)
+				if(jqXHR.status == 500 && (jqXHR.responseText.indexOf('An error occurred while the panel was running') != -1 || error_find != -1)){
+					// if(jqXHR.responseText.indexOf('请先绑定宝塔帐号!') != -1){
+					// 	bt.pub.bind_btname(function(){
+					// 		window.location.reload();
+					// 	});
+					// 	return;
+					// }
+					if(error_find != -1){
+						var error_body = jqXHR.responseText.split('<!--')[2].replace('-->','')
+						var tmp = error_body.split('During handling of the above exception, another exception occurred:')
+						error_body = tmp[tmp.length-1];
+						var error_msg = '<div>\
+						<h3 style="margin-bottom: 10px;">出错了，面板运行时发生错误！</h3>\
+						<pre style="height:635px;word-wrap: break-word;white-space: pre-wrap;margin: 0 0 0px">'+error_body.trim()+'</pre>\
+						<ul class="help-info-text">\
+							<li style="list-style: none;"><b>很抱歉，面板运行时意外发生错误，请尝试按以下顺序尝试解除此错误：</b></li>\
+							<li style="list-style: none;">1、在[首页]右上角点击修复面板，并退出面板重新登录。</li>\
+							<li style="list-style: none;">2、如上述尝试未能解除此错误，请截图此窗口到宝塔论坛发贴寻求帮助, 论坛地址：<a class="btlink" href="https://www.bt.cn/bbs" target="_blank">https://www.bt.cn/bbs</a></li>\
+						</ul>\
+					</div>'
+
+					}else{
+						var error_msg = jqXHR.responseText;
+					}
+					$(".layui-layer-padding").parents('.layer-anim').remove();
+					$(".layui-layer-shade").remove();
+					setTimeout(function(){
+						layer.open({
+							title: false,
+							content: error_msg,
+							closeBtn:2,
+							area: ["1000px","800px"],
+							btn:false,
+							shadeClose:false,
+							shade:0.3,
+							success:function(){
+								$('pre').scrollTop(100000000000)
+							}
+						});
+					},100)
+				}
+			}
+			// dataFilter: ajax_decrypt,
+			// beforeSend: ajax_encrypt
 		});
-    }
+	}
 }
 ajaxSetup();
 
@@ -2241,7 +2435,7 @@ function ChangePath(d) {
     setCookie("SetName", "");
     var c = layer.open({
         type: 1,
-        area: "650px",
+        area: "680px",
         title: lan.bt.dir,
         closeBtn: 2,
         shift: 5,
@@ -2269,6 +2463,11 @@ function GetDiskList(b) {
     var a = "";
     var c = "path=" + b + "&disk=True";
     $.post("/files?action=GetDir", c, function(h) {
+        if(h.status == false) {
+            layer.close(layer.index);
+            layer.msg(h.msg,{icon: 2});
+            return false;
+        }
         if (h.DISK != undefined) {
             for (var f = 0; f < h.DISK.length; f++) {
                 a += "<dd onclick=\"GetDiskList('" + h.DISK[f].path + "')\"><span class='glyphicon glyphicon-hdd'></span>&nbsp;" + h.DISK[f].path + "</dd>"
@@ -2765,7 +2964,9 @@ function loadScript(arry, param, callback) {
     var ready = 0;
     if (typeof param === 'function') callback = param
     for (var i = 0; i < arry.length; i++) {
-        if (!Array.isArray(bt['loadScript'])) bt['loadScript'] = []
+        if (!Array.isArray(bt['loadScript'])) {
+            bt['loadScript'] = []
+        }
         if (!is_file_existence(arry[i], true)) {
             if ((arry.length - 1) === i && callback) callback();
             continue;
@@ -2788,6 +2989,7 @@ function loadScript(arry, param, callback) {
             } else {
                 (function(i) {
                     script.onload = function() {
+                        if (!bt['loadScript']) bt['loadScript'] = [];
                         bt['loadScript'].push(arry[i]);
                         ready++;
                     };
@@ -2995,7 +3197,7 @@ function setUserName(a) {
         var checks = ['admin', 'root', 'admin123', '123456'];
 
         if ($.inArray(p1, checks) >= 0) {
-            layer.msg(lan.index.usually_username_ban, {
+            layer.msg(lan.public.usually_username_ban, {
                 icon: 2
             });
             return;
@@ -3048,20 +3250,12 @@ function ActionTask() {
     })
 }
 
-function RemoveTask(b) {
-    var a = layer.msg(lan.public.the_del, {
-        icon: 16,
-        time: 0,
-        shade: [0.3, "#000"]
-    });
-    $.post("/files?action=RemoveTask", "id=" + b, function(c) {
-        layer.close(a);
-        layer.msg(c.msg, {
-            icon: c.status ? 1 : 5
-        });
-    }).error(function() {
-        layer.msg(lan.bt.task_close, { icon: 1 });
-    });
+function RemoveTask(id) {
+	var loadT = bt.load(lan.public.the_del);
+	bt.send('RemoveTask','files/RemoveTask',{id:id},function(res){
+		bt.msg(res)
+		reader_realtime_tasks()
+	})
 }
 
 function GetTaskList(a) {
@@ -3569,30 +3763,191 @@ function getSpeed(sele) {
     });
 }
 //消息盒子
-function messagebox() {
-    layer.open({
-        type: 1,
-        title: lan.bt.task_title,
-        area: "750px",
-        closeBtn: 2,
-        shadeClose: false,
-        content: '<div class="bt-form">\
-					<div class="bt-w-main">\
-						<div class="bt-w-menu">\
-							<p class="bgw" id="taskList" onclick="tasklist()">' + lan.bt.task_list + '(<span class="task_count">0</span>)</p>\
-							<p onclick="remind()">' + lan.bt.task_msg + '(<span class="msg_count">0</span>)</p>\
-							<p onclick="execLog()">' + lan.public.exec_log + '</p>\
-						</div>\
-						<div class="bt-w-con pd15">\
-							<div class="taskcon"></div>\
-						</div>\
-					</div>\
-				</div>'
-    });
-    $(".bt-w-menu p").click(function() {
-        $(this).addClass("bgw").siblings().removeClass("bgw");
-    });
-    tasklist();
+function messagebox(){
+	layer.open({
+		type: 1,
+		title: lan.bt.task_title,
+		area: "680px",
+		closeBtn: 2,
+		shadeClose: false,
+		content: '<div class="bt-form">' +
+			'<div class="bt-w-main">' +
+				'<div class="bt-w-menu">' +
+					'<p class="bgw">'+ lan.bt.task_list +' (<span id="taskNum">0</span>)</p>' +
+					'<p>'+ lan.bt.task_msg +' (<span id="taskCompleteNum">0</span>)</p>' +
+					'<p>'+lan.public.exec_log+'</p>' +
+				'</div>' +
+				'<div class="bt-w-con pd15">' +
+					'<div class="bt-w-item active" id="command_install_list">\
+						<ul class="cmdlist"></ul>\
+						<div style="position: fixed;bottom: 15px;">' + lan.public.task_long_time_not_exec + '</div>\
+					</div>'+
+					'<div class="bt-w-item" id="messageContent"></div>'+
+					'<div class="bt-w-item"><pre id="execLog" class="command_output_pre" style="height: 530px;"></pre></div>'+
+				'</div>' +
+			'</div>' +
+		'</div>',
+		success: function(layers,indexs){
+			$(layers).find('.bt-w-menu p').on('click',function(){
+				var index = $(this).index()
+				$(this).addClass('bgw').siblings().removeClass('bgw');
+				$(layers).find('.bt-w-con .bt-w-item:eq('+ index +')').addClass('active').siblings().removeClass('active');
+				switch (index) {
+					case 0:
+						reader_realtime_tasks()
+						break;
+					case 1:
+						reader_message_list()
+						break;
+					case 2:
+						var loadT = bt.load('正在获取执行日志，请稍后...')
+						bt.send('GetExecLog','files/GetExecLog',{},function(res){
+							loadT.close();
+							var exec_log = $('#execLog');
+							// console.log(exec_log)
+							exec_log.html(res)
+							exec_log[0].scrollTop = exec_log[0].scrollHeight
+						})
+						break;
+				}
+			})
+			reader_realtime_tasks()
+			setTimeout(function(){
+				reader_realtime_tasks()
+			},1000)
+			reader_message_list()
+		}
+	});
+}
+
+function get_message_data(page,callback){
+	if(typeof page === "function") callback = page,page = 1;
+	var loadT = bt.load('Getting message list, please wait...');
+	bt.send("getData","data/getData",{
+		tojs:'reader_message_list',
+		table:'tasks',
+		result:'2,4,6,8',
+		limit:'11',
+		search:'1',
+		p:page
+	},function(res){
+		loadT.close();
+		if(callback) callback(res);
+	})
+}
+
+function reader_message_list(page){
+	get_message_data(page,function(res){
+		var html = "",f = false,task_count = 0;
+		for (var i = 0; i < res.data.length; i++) {
+			var item  = res.data[i];
+			if (item.status !== '1') {
+				task_count ++;
+				continue;
+			}
+			html += '<tr><td><div class="titlename c3">' + item.name + '</span><span class="rs-status">【' + lan.bt.task_ok + '】<span><span class="rs-time">' + lan.bt.time + (item.end - item.start) + lan.bt.s + '</span></div></td><td class="text-right c3">' + item.addtime + '</td></tr>'
+		}
+		var con = '<div class="divtable"><table class="table table-hover">\
+					<thead><tr><th>'+ lan.bt.task_name + '</th><th class="text-right">' + lan.bt.task_time + '</th></tr></thead>\
+						<tbody id="remind">'+ html + '</tbody>\
+					</table></div>\
+					<div class="mtb15" style="height:32px">\
+						<div class="pull-left buttongroup" style="display:none;"><button class="btn btn-default btn-sm mr5 rs-del" disabled="disabled">'+ lan.public.del + '</button><button class="btn btn-default btn-sm mr5 rs-read" disabled="disabled">' + lan.bt.task_tip_read + '</button><button class="btn btn-default btn-sm">' + lan.bt.task_tip_all + '</button></div>\
+						<div id="taskPage" class="page"></div>\
+					</div>';
+
+
+		var msg_count = res.page.match(/\'Pcount\'>.+<\/span>/)[0].replace(/[^0-9]/ig, "");
+		$("#taskCompleteNum").text(parseInt(msg_count) - task_count);
+		$("#messageContent").html(con);
+		$("#taskPage").html(res.page);
+	})
+}
+
+
+function get_realtime_tasks(callback){
+	bt.send('GetTaskSpeed','files/GetTaskSpeed',{},function(res){
+		if(callback) callback(res)
+	})
+}
+
+var initTime = null,messageBoxWssock = null;
+
+function reader_realtime_tasks(refresh){
+	get_realtime_tasks(function(res){
+		var command_install_list = $('#command_install_list'),
+			loading = 'data:image/gif;base64,R0lGODlhDgACAIAAAHNzcwAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQFDgABACwAAAAAAgACAAACAoRRACH5BAUOAAEALAQAAAACAAIAAAIChFEAIfkEBQ4AAQAsCAAAAAIAAgAAAgKEUQAh+QQJDgABACwAAAAADgACAAACBoyPBpu9BQA7',
+			html = '',
+			message = res.msg,
+			task = res.task;
+		$('#taskNum').html(typeof res.task === "undefined" ? 0 : res.task.length);
+		if(typeof res.task === "undefined"){
+			html = '<div style="padding:5px;">'+lan.bt.task_not_list+'</div><div style="position: fixed;bottom: 15px;">' + lan.public.task_long_time_not_exec + '</div>'
+			
+			command_install_list.html(html)
+		}else{
+			var shell = '', message_split = message.split("\n");
+      var del_task = '<a style="color:green" onclick="RemoveTask($id)" href="javascript:;">'+ lan.public.del +'</a>',loading_img = "<img src='"+ loading +"'/>";
+			for(var j = 0; j < message_split.length; j++) {
+				shell += message_split[j] + "</br>";
+			}
+			// if(command_install_list.find('li').length){
+			// 	if(command_install_list.find('li').length > res.task.length) command_install_list.find('li:eq(0)').remove();
+			// 	if(task[0].status !== '0' && !command_install_list.find('pre').length) command_install_list.find('li:eq(0)').append('<pre class=\'cmd command_output_pre\'>' + shell +'</pre>')
+			// 	messageBoxWssock.el = command_install_list.find('pre');
+			// }else{
+			for (var i = 0; i < task.length; i++) {
+				var item = task[i], task_html = '';
+				if(item.status === '-1' && item.type === 'download'){
+					task_html = "<div class='line-progress' style='width:" + message.pre + "%'></div><span class='titlename'>" + item.name + "<a style='margin-left:130px;'>" + (ToSize(message.used) + "/" + ToSize(message.total)) + "</a></span><span class='com-progress'>" + message.pre + "%</span><span class='state'>"+ lan.bt.task_downloading +" "+ loading_img +" | "+ del_task.replace('$id', item.id) +"</span>";
+				}else{
+					task_html += '<span class="titlename">' + item.name + '</span>';
+					task_html += '<span class="state">';
+          switch(item.status){
+            case '0':
+              task_html += lan.bt.task_sleep + ' | ' + del_task.replace('$id', item.id);
+              break
+            case '-1':
+              var is_scan = item.name.indexOf("扫描") !== -1;
+              task_html += (is_scan ? lan.bt.task_scan : lan.bt.task_install) + ' ' + loading_img + ' | ' + del_task.replace('$id', item.id);
+              break
+          }
+					task_html += "</span>";
+					if(item.type !== "download" && item.status === "-1"){
+						task_html += '<pre class=\'cmd command_output_pre\'>' + shell +'</pre>'
+					}
+				}
+				html += "<li>"+ task_html +"</li>";
+			}
+			command_install_list.find('ul').html(html);
+			// }
+			if(task.length > 0 && task[0].status === '0'){
+				setTimeout(function(){
+					reader_realtime_tasks(true)
+				},100)
+			}
+			if(command_install_list.find('pre').length){
+				var pre = command_install_list.find('pre')
+				pre.scrollTop(pre[0].scrollHeight)
+			}
+			if(!refresh){
+				messageBoxWssock = bt_tools.command_line_output({
+					el:'#command_install_list .command_output_pre',
+					area:['100%','200px'],
+					shell:'tail -n 100 -f /tmp/panelExec.log',
+					message:function(res){
+							if(res.indexOf('|-Successify ---Script execution completed---') > -1){
+								setTimeout(function(){
+									reader_realtime_tasks(true)
+									reader_message_list()
+								},100)
+							}
+						}
+					}
+				);
+			}
+		}
+	})
 }
 
 //取执行日志
@@ -3812,7 +4167,7 @@ var Term = {
     route: '/webssh', //被访问的方法
     term: null,
     term_box: null,
-    ssh_info: null,
+    ssh_info: {},
     last_body:false,
 	last_cd:null,
 	config:{
@@ -3863,10 +4218,13 @@ var Term = {
     },
     //连接服务器成功
 	on_open:function(ws_event){
-		Term.send(JSON.stringify(Term.ssh_info || {}))
-		Term.term.FitAddon.fit();
-		Term.resize();
-		var f_path = $("#fileInputPath").val();
+      var http_token = $("#request_token_head").attr('token');
+      Term.send(JSON.stringify({'x-http-token':http_token}))
+      if(JSON.stringify(Term.ssh_info) !== '{}') Term.send(JSON.stringify(Term.ssh_info))
+// 		Term.term.FitAddon.fit();
+// 		Term.resize();
+// 		var f_path = $("#fileInputPath").val();
+		var f_path = $("#fileInputPath").attr('data-path');
 		if(f_path){
 			Term.last_cd = "cd " + f_path;
 			Term.send(Term.last_cd  + "\n");
@@ -3892,7 +4250,13 @@ var Term = {
     //     }
     // },
     on_message: function (ws_event) {
-		result = ws_event.data;
+        result = ws_event.data;
+        if ((result.indexOf("@127.0.0.1:") != -1 || result.indexOf("@localhost:") != -1) && result.indexOf('Authentication failed') != -1) {
+            Term.term.write(result);
+            Term.localhost_login_form(result);
+            Term.close();
+            return;
+        }
 		if(Term.last_cd){
 			if(result.indexOf(Term.last_cd) != -1 && result.length - Term.last_cd.length < 3) {
 				Term.last_cd = null;
@@ -3956,7 +4320,7 @@ var Term = {
 			Term.term.FitAddon.fit()
 			Term.send(JSON.stringify({resize:1,rows:Term.term.rows,cols:Term.term.cols}));
 	    	Term.term.focus();
-		},200)
+		},100)
     },
     // resize: function() {
     //     var m_width = 100;
@@ -4036,36 +4400,36 @@ var Term = {
 
     // },
     run: function (ssh_info) {
-		if($("#panel_debug").attr("data") == 'True') {
-			layer.msg('Error: unable to create websocket connection, please close 【Developer mode】 on the settings page!',{icon:2,time:5000});
-			return;
-		}
+		// if($("#panel_debug").attr("data") == 'True') {
+		// 	layer.msg('Error: unable to create websocket connection, please close 【Developer mode】 on the settings page!',{icon:2,time:5000});
+		// 	return;
+		// }
         var loadT = layer.msg('It is loading the files required by the terminal. Please wait...', { icon: 16, time: 0, shade: 0.3 });
         loadScript([
         	"/static/js/xterm.js"
         ],function(){
         	layer.close(loadT);
         	Term.term = new Terminal({
-				rendererType: "canvas",
-				cols: 100, 
-				rows: 34,
-				fontSize:15, 
-				screenKeys: true, 
-				useStyle: true ,
-				});
+    			rendererType: "canvas",
+    			cols: 100, 
+    			rows: 31,
+    			fontSize:15, 
+    			screenKeys: true, 
+    			useStyle: true ,
+			});
 			Term.term.setOption('cursorBlink', true);
 			Term.last_body = false;
 	        Term.term_box = layer.open({
 	            type: 1,
 	            title: lan.public.terminal,
-	            area: ['920px', '630px'],
+	            area: ['925px', '630px'],
 	            closeBtn: 2,
 	            shadeClose: false,
 	            skin:'term_box_all',
 	            content: '<link rel="stylesheet" href="/static/css/xterm.css" />\
-	            <div class="term-box" style="background-color:#000" id="term"></div>',
+	            <div class="term-box" style="background-color:#000;padding-top: 7px;" id="term"></div>',
 	            cancel: function (index,lay) {
-					bt.confirm({msg:'Closing the SSH session, the command in progress in the current command line session may be aborted. Continute?',title: "Cofirm to close the SSH session?"},function(ix){
+					bt.confirm({msg:'<div style="word-break: break-word;">Closing the SSH session, the command in progress in the current command line session may be aborted. Continute?</div>',title: "Cofirm to close the SSH session?"},function(ix){
 						Term.term.dispose();
 						layer.close(index);
 						layer.close(ix);
@@ -4080,6 +4444,7 @@ var Term = {
 					Term.term.loadAddon(Term.term.FitAddon);
 					Term.term.WebLinksAddon = new WebLinksAddon.WebLinksAddon()
 					Term.term.loadAddon(Term.term.WebLinksAddon)
+					Term.term.focus();
 	            }
 	        });
 	        Term.term.onData(function (data) {
@@ -4114,7 +4479,121 @@ var Term = {
             Term.term.scrollToBottom();
             Term.term.focus();
         });
+    },
+    localhost_login_form:function(result){
+        var template = '<div class="localhost-form-shade"><div class="localhost-form-view bt-form-2x"><div class="localhost-form-title"><i class="localhost-form_tip"></i><span style="vertical-align: middle;">Login failed, please fill the local server information!</span></div>\
+        <div class="line input_group">\
+            <span class="tname">Server IP</span>\
+            <div class="info-r">\
+                <input type="text" name="host" class="bt-input-text mr5" style="width:240px" placeholder="Server IP" value="127.0.0.1" autocomplete="off" />\
+                <input type="text" name="port" class="bt-input-text mr5" style="width:60px" placeholder="Port" value="22" autocomplete="off"/>\
+            </div>\
+        </div>\
+        <div class="line">\
+            <span class="tname">SSH account</span>\
+            <div class="info-r">\
+                <input type="text" name="username" class="bt-input-text mr5" style="width:305px" placeholder="SSH account" value="root" autocomplete="off"/>\
+            </div>\
+        </div>\
+        <div class="line">\
+            <span class="tname">Verification</span>\
+            <div class="info-r ">\
+                <div class="btn-group">\
+                    <button type="button" tabindex="-1" class="btn btn-sm auth_type_checkbox btn-success" data-ctype="0">Password</button>\
+                    <button type="button" tabindex="-1" class="btn btn-sm auth_type_checkbox btn-default data-ctype="1">Server key</button>\
+                </div>\
+            </div>\
+        </div>\
+        <div class="line c_password_view show">\
+            <span class="tname">Password</span>\
+            <div class="info-r">\
+                <input type="text" name="password" class="bt-input-text mr5" placeholder="SSH Password" style="width:305px;" value="" autocomplete="off"/>\
+            </div>\
+        </div>\
+        <div class="line c_pkey_view hidden">\
+            <span class="tname">Private key</span>\
+            <div class="info-r">\
+                <textarea rows="4" name="pkey" class="bt-input-text mr5" placeholder="SSH server key" style="width:305px;height: 80px;line-height: 18px;padding-top:10px;"></textarea>\
+            </div>\
+        </div><button type="submit" class="btn btn-sm btn-success">Login</button></div></div>';
+        $('.term-box').after(template);
+        $('.auth_type_checkbox').click(function(){
+            var index = $(this).index();
+            $(this).addClass('btn-success').removeClass('btn-default').siblings().removeClass('btn-success').addClass('btn-default')
+            switch(index){
+                case 0:
+                    $('.c_password_view').addClass('show').removeClass('hidden');
+                    $('.c_pkey_view').addClass('hidden').removeClass('show').find('input').val('');
+                break;
+                case 1:
+                    $('.c_password_view').addClass('hidden').removeClass('show').find('input').val('');
+                    $('.c_pkey_view').addClass('show').removeClass('hidden');
+                break;
+            }
+        });
+        $('.localhost-form-view > button').click(function(){
+            var form = {};
+            $('.localhost-form-view input,.localhost-form-view textarea').each(function(index,el){
+                var name = $(this).attr('name'),value = $(this).val();
+                form[name] = value;
+                switch(name){
+                    case 'port':
+                        if(!bt.check_port(value)){
+                            bt.msg({status:false,msg:'Server port format error!'});
+                            return false;
+                        }
+                    break;
+                    case 'username':
+                        if(value == ''){
+                            bt.msg({status:false,msg:'Server user name cannot be empty!'});
+                            return false;
+                        }
+                    break;
+                    case 'password':
+                        if(value == '' && $('.c_password_view').hasClass('show')){
+                            bt.msg({status:false,msg:'Server password cannot be empty!'});
+                            return false;
+                        }
+                    break;   
+                    case 'pkey':
+                        if(value == '' && $('.c_pkey_view').hasClass('show')){
+                            bt.msg({status:false,msg:'The server key cannot be empty!'});
+                            return false;
+                        }
+                    break;
+                }
+            });
+			form.ps = 'Local server';
+			
+			if(result){
+				if(result.indexOf('@127.0.0.1') != -1){
+					var user = result.split('@')[0].split(',')[1];
+					var port = result.split('1:')[1]
+					$("input[name='username']").val(user);
+					$("input[name='port']").val(port);
+				}
+			}
+            var loadT = bt.load('Adding server information, please wait...');
+            bt.send('create_host','xterm/create_host',form,function(res){
+                loadT.close();
+                 bt.msg(res);
+                if(res.status){
+                    bt.msg({status:true,msg:'Login successful!'});
+                    $('.layui-layer-shade').remove();
+                    $('.term_box_all').remove();
+                    Term.term.dispose();
+    				Term.close();
+    				web_shell();
+                }
+            });
+        });
+        $('.localhost-form-view [name="password"]').keyup(function(e){
+            if(e.keyCode == 13){
+                $('.localhost-form-view > button').click();
+            }
+        }).focus()
     }
+    
 }
 
 function web_shell() {
@@ -4370,7 +4849,7 @@ acme = {
 
     //一键申请
     //domain 域名列表 []
-    //auth_type 验证类型 dns/http
+    //auth_type 验证类型 model/http
     //auth_to 验证路径 网站根目录或dnsapi
     //auto_wildcard 是否自动组合通配符 1.是 0.否 默认0
     apply_cert: function(domains, auth_type, auth_to, auto_wildcard, callback) {
@@ -4425,5 +4904,444 @@ acme = {
             if (msg) layer.close(loadT)
             if (callback) callback(res)
         });
+    }
+}
+
+
+
+/** 消息通道 **/
+function MessageChannelSettings(){
+	MessageChannel.get_channel_settings(function (rdata){
+		layer.open({
+			type: 1,
+			area: "600px",
+			title: "Setting up notification",
+			skin:"layer-channel-auth",
+			closeBtn: 2,
+			shift: 5,
+			shadeClose: false,
+			content: '<div class="bt-form">\
+				<div class="bt-w-main">\
+					<div class="bt-w-menu" style="width: 110px;">\
+						<p class="bgw">Email</p>\
+						<p>Telegram</p>\
+					</div>\
+					<div class="bt-w-con pd15" style="margin-left: 110px">\
+						<div class="plugin_body">\
+							<div class="conter_box active" >\
+								<div class="bt-form">\
+									<div class="line">\
+										<button class="btn btn-success btn-sm" onclick="MessageChannel.add_receive_info()">Add recipient</button>\
+										<button class="btn btn-default btn-sm" onclick="MessageChannel.sender_info_edit()">Sender settings</button>\
+									</div>\
+									<div class="line">\
+										<div class="divtable">\
+											<table class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0"><thead><tr><th>Email</th><th width="80px">Operating</th></tr></thead></table>\
+											<table class="table table-hover"><tbody id="receive_table"></tbody></table>\
+										</div>\
+									</div>\
+								</div>\
+							</div>\
+							<div class="conter_box" style="display:none">\
+                                <div class="line">\
+                                    <span class="tname">ID</span>\
+                                    <div class="info-r">\
+                                        <input name="telegram_id" class="bt-input-text mr5" type="text" placeholder="Telegram ID" style="width: 300px" value="'+rdata.telegram.my_id+'">\
+                                    </div>\
+                                </div>\
+                                <div class="line">\
+                                    <span class="tname">TOKEN</span>\
+                                    <div class="info-r">\
+                                        <input name="telegram_token" class="bt-input-text mr5" type="text" placeholder="Telegram TOKEN" style="width: 300px" value="'+rdata.telegram.bot_token+'">\
+                                    </div>\
+                                </div>\
+                                <div class="line">\
+                                    <span class="tname"></span>\
+                                    <button class="btn btn-success btn-sm addTelegram" style="margin-right: 10px;">Save</button>\
+                                    '+(rdata.telegram.setup?'<button class="btn btn-default btn-sm delTelegram">Clear set</button>':'')+'\
+                                </div>\
+                                <ul class="help-info-text c7" style="margin-top: 315px;">\
+                                    <li>ID: Your telegram user ID</li>\
+                                    <li>Token: Your telegram bot token </li>\
+                                    <li>e.g: [ 12345677:AAAAAAAAA_a0VUo2jjr__CCCCDDD ] <a class="btlink" href="https://forum.aapanel.com/d/5115-how-to-add-telegram-to-panel-notifications" target="_blank" rel="noopener"> Help</a></li>\
+                                </ul>\
+							</div>\
+						</div>\
+					</div>\
+				</div>\
+				</div>',
+			success:function(){
+                $('.addTelegram').click(function(){
+                    var _id = $('[name=telegram_id]').val(),_token = $('[name=telegram_token]').val();
+                    if(_id == '' || _token == '') return layer.msg('input box cannot be empty!');
+                    var loadT = layer.msg('The notification is being generated, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+                    $.post('/config?action=set_tg_bot',{bot_token:_token,my_id:_id},function(rdata){
+                        layer.close(loadT);
+                        layer.msg(rdata.msg,{icon:rdata.status?1:2})
+                    })
+                })
+                $('.delTelegram').click(function(){
+                    var loadTs = layer.msg('Deleting notification, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+                    $.post('/config?action=del_tg_info',function(rdata){
+                        layer.close(loadTs);
+                        layer.msg(rdata.msg,{icon:rdata.status?1:2})
+                        if(rdata.status){
+                            $('[name=telegram_id]').val('');
+                            $('[name=telegram_token]').val('')
+                            $('.delTelegram').hide();
+                        }
+                    })
+                })
+			}
+		})
+		$(".bt-w-menu p").click(function () {
+			var index = $(this).index();
+			$(this).addClass('bgw').siblings().removeClass('bgw');
+			$('.conter_box').eq(index).show().siblings().hide();
+		});
+		MessageChannel.get_receive_list();
+	})
+}
+var MessageChannel = {
+	//获取推送设置
+	get_channel_settings:function(callback){
+		var loadT = layer.msg('Getting profile, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+		$.post('/config?action=get_settings2',function(rdata){
+			layer.close(loadT);
+			if (callback) callback(rdata);
+		})
+	},
+	// 获取收件者列表
+	get_receive_list:function(){
+		$.post('/config?action=get_settings2',function(rdata){
+			var _html = '',_list = rdata.user_mail.mail_list;
+			if(_list.length > 0){
+				for(var i= 0; i<_list.length;i++){
+					_html += '<tr>\
+					<td>'+ _list[i] +'</td>\
+					<td width="80px" style="text-align:right;"><a onclick="MessageChannel.del_email(\''+ _list[i] + '\')" href="javascript:;" style="color:#20a53a">Del</a></td>\
+					</tr>'
+				}
+			}else{
+				_html = '<tr><td colspan="2">No Data</td></tr>'
+			}
+			$('#receive_table').html(_html);
+		})
+	},
+	// 添加收件者
+	add_receive_info:function (){
+		var _this = this
+		layer.open({
+			type: 1,
+			area: "400px",
+			title: "Add recipient email",
+			closeBtn: 2,
+			shift: 5,
+			shadeClose: false,
+			content: '<div class="bt-form pd20 pb70">\
+	        <div class="line">\
+	            <span class="tname">Recipient mailbox</span>\
+	            <div class="info-r">\
+	                <input name="creater_email_value" class="bt-input-text mr5" type="text" style="width: 240px" value="">\
+	            </div>\
+	        </div>\
+	        <div class="bt-form-submit-btn">\
+	            <button type="button" class="btn btn-danger btn-sm smtp_closeBtn">Close</button>\
+	            <button class="btn btn-success btn-sm CreaterReceive">Create</button>\
+	        </div>\
+	        </div>',
+			success:function(layers,index){
+				$(".CreaterReceive").click(function(){
+					var _receive = $('input[name=creater_email_value]').val();
+					if(_receive != ''){
+						var loadT = layer.msg('Please wait while creating recipient list...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+						layer.close(index)
+						$.post('/config?action=add_mail_address',{email:_receive},function(rdata){
+							layer.close(loadT);
+							// 刷新收件列表
+							_this.get_receive_list();
+							layer.msg(rdata.msg,{icon:rdata.status?1:2});
+						})
+					}else{
+						layer.msg('Recipient mailbox cannot be empty！！',{icon:2});
+					}
+				})
+
+				$(".smtp_closeBtn").click(function(){
+					layer.close(index)
+				})
+			}
+		})
+	},
+	// 删除收件者
+	del_email:function(mail){
+		var loadT = layer.msg('Deleting['+mail+'],please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] }),_this = this;
+		$.post('/config?action=del_mail_list',{email:mail},function(rdata){
+			layer.close(loadT);
+			layer.msg(rdata.msg,{icon:rdata.status?1:2})
+			_this.get_receive_list()
+		})
+	},
+	// 设置发送者邮箱信息
+	sender_info_edit:function (){
+		var loadT = layer.msg('Getting profile, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+		$.post('/config?action=get_settings2',function(rdata){
+			layer.close(loadT);
+			var qq_mail = rdata.user_mail.info.msg.qq_mail ? rdata.user_mail.info.msg.qq_mail:'',
+				qq_stmp_pwd = rdata.user_mail.info.msg.qq_stmp_pwd? rdata.user_mail.info.msg.qq_stmp_pwd:'',
+				hosts = rdata.user_mail.info.msg.hosts? rdata.user_mail.info.msg.hosts:'',
+				port = rdata.user_mail.info.msg.port? rdata.user_mail.info.msg.port:'',
+				is_custom = $.inArray(port,['25','465','587','']) != -1    //是否自定义
+			layer.open({
+				type: 1,
+				area: "460px",
+				title: "Set sender email information",
+				closeBtn: 2,
+				shift: 5,
+				shadeClose: false,
+				content: '<div class="bt-form pd20 pb70">\
+        	<div class="line">\
+                <span class="tname">Sender email</span>\
+                <div class="info-r">\
+                    <input name="channel_email_value" class="bt-input-text mr5" type="text" style="width: 300px" value="'+qq_mail+'">\
+                </div>\
+            </div>\
+            <div class="line">\
+                <span class="tname">SMTP password</span>\
+                <div class="info-r">\
+                    <input name="channel_email_password" class="bt-input-text mr5" type="password" style="width: 300px" value="'+qq_stmp_pwd+'">\
+                </div>\
+            </div>\
+            <div class="line">\
+                <span class="tname">SMTP server</span>\
+                <div class="info-r">\
+                    <input name="channel_email_server" class="bt-input-text mr5" type="text" style="width: 300px" value="'+hosts+'">\
+                </div>\
+            </div>\
+            <div class="line">\
+                <span class="tname">SMTP port</span>\
+                <div class="info-r">\
+                    <select class="bt-input-text mr5" id="port_select" style="width:'+(is_custom?'300px':'100px')+'"></select>\
+                    <input name="channel_email_port" class="bt-input-text mr5" type="Number" style="display:'+(is_custom? 'none':'inline-block')+'; width: 190px" value="'+port+'">\
+                </div>\
+            </div>\
+            <ul class="help-info-text c7">\
+            	<li>465 port is recommended, the protocol is SSL/TLS</li>\
+            	<li>Port 25 is SMTP protocol, port 587 is STARTTLS protocol</li>\
+            </ul>\
+            <div class="bt-form-submit-btn">\
+				'+(qq_mail != ''?'<button type="button" class="btn btn-default btn-sm pull-left set_empty">Clear set</button>':'')+'\
+	            <button type="button" class="btn btn-danger btn-sm smtp_closeBtn">Close</button>\
+	            <button class="btn btn-success btn-sm SetChannelEmail">Save</button></div>\
+        	</div>',
+				success:function(layers,index){
+					var _option = '';
+					if(is_custom){
+						if(port == '465' || port == ''){
+							_option = '<option value="465" selected="selected">465</option><option value="25">25</option><option value="587">587</option><option value="other">Customize</option>'
+						}else if(port == '25'){
+							_option = '<option value="465">465</option><option value="25" selected="selected">25</option><option value="587">587</option><option value="other">Customize</option>'
+						}else{
+							_option = '<option value="465">465</option><option value="25">25</option><option value="587" selected="selected">587</option><option value="other">Customize</option>'
+						}
+					}else{
+						_option = '<option value="465">465</option><option value="25">25</option><option value="587" >587</option><option value="other" selected="selected">Customize</option>'
+					}
+					$("#port_select").html(_option)
+					$("#port_select").change(function(e){
+						if(e.target.value == 'other'){
+							$("#port_select").css("width","100px");
+							$('input[name=channel_email_port]').css("display","inline-block");
+						}else{
+							$("#port_select").css("width","300px");
+							$('input[name=channel_email_port]').css("display","none");
+						}
+					})
+					$(".SetChannelEmail").click(function(){
+						var _email = $('input[name=channel_email_value]').val();
+						var _passW = $('input[name=channel_email_password]').val();
+						var _server = $('input[name=channel_email_server]').val(),
+							_port = ''
+						if($('#port_select').val() == 'other'){
+							_port = $('input[name=channel_email_port]').val();
+						}else{
+							_port = $('#port_select').val()
+						}
+						if(!_email) return layer.msg('Email address cannot be empty!',{icon:2});
+						if(!_passW) return layer.msg('STMP password cannot be empty!',{icon:2});
+						if(!_server)return layer.msg('STMP server address cannot be empty!',{icon:2})
+						if(!_port) return layer.msg('STMP server port cannot be empty!',{icon:2})
+
+						var loadT = layer.msg('The notification is being generated, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+						$.post('/config?action=user_mail_send',{email:_email,stmp_pwd:_passW,hosts:_server,port:_port},function(rdata){
+							layer.close(loadT);
+							if(rdata.status){
+								layer.close(index)
+								MessageChannel.get_channel_settings();
+							}
+							layer.msg(rdata.msg,{icon:rdata.status?1:2})
+						})
+					})
+					$(".smtp_closeBtn").click(function(){
+						layer.close(index)
+					})
+					$('.set_empty').click(function(){
+						var loadTs = layer.msg('notification, please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+						$.post('/config?action=set_empty',{type:'mail'},function(rdata){
+							layer.close(loadTs);
+							layer.msg(rdata.msg,{icon:rdata.status?1:2})
+							if(rdata.status){
+								layer.close(index)
+							}
+						})
+					})
+				}
+			})
+		})
+	}
+}
+/** 消息通道 end**/
+var product_recommend = {
+    data:null,
+    /**
+     * @description 初始化
+     */
+    init:function(callback){
+        var _this = this;
+        if(location.pathname.indexOf('bind') > -1) return;
+        this.get_product_type(function (rdata) {
+            _this.data = rdata
+            if(callback) callback(rdata)
+        })
+    },
+    /**
+     * @description 获取推荐类型
+     * @param {object} type 参数{type:类型}
+     */
+    get_recommend_type:function(type){
+        var config = null,pathname = location.pathname.replace('/','') || 'home';
+        for (var i = 0; i < this.data.length; i++) {
+            var item = this.data[i];
+            if(item.type == type && item.show) config = item
+        }
+        return config
+    },
+
+    /**
+     * @description 或指定版本事件
+     * @param {} name
+     */
+    get_version_event:function (item,param) {
+        var pay_status = this.get_pay_status();
+        bt.soft.get_soft_find(item.name,function(res){
+            if((res.type === 12 && pay_status.is_pay && pay_status.advanced !== 'ltd') || !pay_status.is_pay){
+                product_recommend.recommend_product_view(item)
+            }else if(!res.setup){
+                bt.soft.install(item.name)
+            }else{
+                bt.plugin.get_plugin_byhtml(item.name,function(html){
+                    if(typeof html === "string"){
+                        layer.open({
+                            type:1,
+                            shade:0,
+                            skin:'hide',
+                            content:html,
+                            success:function(){
+                                var is_event = false;
+                                for (var i = 0; i < item.eventList.length; i++) {
+                                    var data = item.eventList[i];
+                                    var oldVersion = data.version.replace('.',''),newVersion = res.version.replace('.','');
+                                    if(newVersion <= oldVersion){
+                                        is_event = true
+                                        setTimeout(function () {
+                                            new Function(data.event.replace('$siteName',param))()
+                                        },100)
+                                        break;
+                                    }
+                                }
+                                if(!is_event) new Function(item.eventList[item.eventList.length - 1].event.replace('$siteName',param))()
+                            }
+                        })
+                    }
+                })
+            }
+
+        })
+    },
+    /**
+     * @description 获取支付状态
+     */
+    get_pay_status:function(){
+        var pro_end = parseInt(bt.get_cookie('pro_end') || -1);
+        var ltd_end = parseInt(bt.get_cookie('ltd_end')  || -1);
+        var is_pay = pro_end > -1 || ltd_end > -1; // 是否购买付费版本
+        var advanced = 'pro'; // 已购买，专业版优先显示
+        if(pro_end === -2 || pro_end > -1) advanced = 'pro';
+        if(ltd_end === -2 || ltd_end > -1) advanced = 'ltd';
+        var end_time = advanced === 'ltd'? ltd_end:pro_end; // 到期时间
+        return { advanced: advanced, is_pay:is_pay,  end_time:end_time };
+    },
+
+    pay_product_sign:function (type,source) {
+        switch (type) {
+            case 'pro':
+                bt.soft['updata_' + type](source);
+                break;
+            case 'ltd':
+                bt.soft['updata_' + type](false, source);
+                break;
+        }
+    },
+    /**
+     * @description 获取项目类型
+     * @param {Function} callback 回调函数
+     */
+    get_product_type:function(callback){
+        bt.send('get_pay_type','ajax/get_pay_type',{},function(rdata){
+            bt.set_storage('session','get_pay_type',JSON.stringify(rdata))
+            if(callback) callback(rdata)
+        })
+    },
+    /**
+     * @description 推荐购买产品
+     * @param {Object} pay_id 购买的入口id
+     */
+    recommend_product_view: function (config) {
+        var name = config.name.split('_')[0];
+        var status = this.get_pay_status();
+        console.log(status);
+        bt.open({
+            title:false,
+            area:'650px',
+            btn:false,
+            content:'<div class="ptb15" style="display: flex;">\
+        <div class="product_view"><img src="/static/images/recommend/'+ name +'.png"/></div>\
+        <div class="product_describe ml10">\
+          <div class="describe_title">'+ config.pluginName +'</div>\
+          <div class="describe_ps">'+ config.ps +'</div>\
+          <div class="product_describe_btn">\
+            <a class="btn btn-default mr10 btn-sm productPreview '+ (!config.preview?'hide':'') +'" href="'+ config.preview +'" target="_blank">产品预览</a><button class="btn btn-success btn-sm buyNow">立即购买</button>\
+          </div>\
+        </div>\
+      </div>',
+            success:function () {
+                // 产品预览
+                $('.product_view img').click(function () {
+                    layer.open({
+                        type:1,
+                        title:'查看图片',
+                        area:['650px','450px'],
+                        closeBtn:2,
+                        btn:false,
+                        content:'<img src="/static/images/recommend/'+ name +'.png" style="width:100%" />'
+                    })
+                })
+                // 立即购买
+                $('.buyNow').click(function(){
+                    bt.set_cookie('pay_source',config.pay)
+                    bt.soft['updata_' + status.advanced]()
+                })
+            }
+        })
     }
 }

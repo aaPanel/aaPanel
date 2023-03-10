@@ -40,6 +40,7 @@ class SimpleCache(BaseCache):
                     toremove.append(key)
             for key in toremove:
                 self._cache.pop(key, None)
+                self.del_session_by_file(key)
 
 
     def _normalize_timeout(self, timeout):
@@ -48,70 +49,87 @@ class SimpleCache(BaseCache):
             timeout = time() + timeout
         return timeout
 
-    def get(self, key):
-        try:
-            
-            expires, value = self._cache[key]   
-            if expires == 0 or expires > time():
-                return pickle.loads(value)                        
-
-        except (KeyError, pickle.PickleError):
-            try:
-                if key[:4] == self.__session_key:
-                    filename =  '/'.join((self.__session_basedir,self.md5(key)))                    
-                    if not os.path.exists(filename): return None
-
-                    with open(filename, 'rb') as fp:
-                        _val = fp.read()
-                        fp.close()
-      
-                        expires = struct.unpack('f',_val[:4])[0] 
-                        if expires == 0 or expires > time():
-                            value = _val[4:]
-
-                            self._cache[key] = (expires,value)  
-                            return pickle.loads(value)
-            except :pass
-            return None
-
-    def set(self, key, value, timeout=None):
-        
-        expires = self._normalize_timeout(timeout)
-        self._prune()
-        
-        _val =  pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
-        self._cache[key] = (expires,_val)        
+    def get_session_by_file(self,key):
         try:
             if key[:4] == self.__session_key:
-                if len(_val) < 256: return True
+                filename =  '/'.join((self.__session_basedir,self.md5(key)))
+                if not os.path.exists(filename): return None
+
+                with open(filename, 'rb') as fp:
+                    _val = fp.read()
+                    fp.close()
+                    expires = struct.unpack('f',_val[:4])[0]
+                    if expires == 0 or expires > time():
+                        value = _val[4:]
+
+                        self._cache[key] = (expires,value)
+                        return pickle.loads(value)
+        except :pass
+
+    def set_session_by_file(self,key,_val,expires):
+        try:
+            if key[:4] == self.__session_key:
                 if not os.path.exists(self.__session_basedir): os.makedirs(self.__session_basedir,384)
-            
                 expires = struct.pack('f',expires)
-                filename =  '/'.join((self.__session_basedir,self.md5(key)))                    
+                filename =  '/'.join((self.__session_basedir,self.md5(key)))
                 fp = open(filename, 'wb+')
                 fp.write(expires + _val)
                 fp.close()
                 os.chmod(filename,384)
         except :pass
+
+    def del_session_by_file(self,key):
+        try:
+            if key[:4] == self.__session_key:
+                filename =  '/'.join((self.__session_basedir,self.md5(key)))
+                if os.path.exists(filename): os.remove(filename)
+        except : pass
+
+    def get(self, key):
+        if not isinstance(key,str): return None
+        try:
+            expires, value = self._cache[key]
+            if expires == 0 or expires > time():
+                return pickle.loads(value)
+        except (KeyError, pickle.PickleError):
+            return self.get_session_by_file(key)
+
+    def set(self, key, value, timeout=None):
+
+        # 类型判断
+        if not isinstance(key,str): return False
+        type_list=(int,float,bool,str,list,dict,tuple,set,bytes)
+        if not isinstance(value,type_list): return False
+
+        # 过期清理
+        expires = self._normalize_timeout(timeout)
+        self._prune()
+
+        # 转换
+        _val =  pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
+        self._cache[key] = (expires,_val)
+        self.set_session_by_file(key,_val,expires)
         return True
 
     def add(self, key, value, timeout=None):
+
+        # 类型判断
+        if not isinstance(key,str): return False
+        type_list=(int,float,bool,str,list,dict,tuple,set,bytes)
+        if not isinstance(value,type_list): return False
+
         expires = self._normalize_timeout(timeout)
         self._prune()
-        item = (expires, pickle.dumps(value,
-                                      pickle.HIGHEST_PROTOCOL))
+        item = (expires, pickle.dumps(value,pickle.HIGHEST_PROTOCOL))
         if key in self._cache:
             return False
         self._cache.setdefault(key, item)
+        self.set_session_by_file(key,item[1],expires)
         return True
 
     def delete(self, key):
         result = self._cache.pop(key, None) is not None
-        try:
-            if key[:4] == self.__session_key:
-                filename =  '/'.join((self.__session_basedir,self.md5(key))) 
-                if os.path.exists(filename): os.remove(filename)
-        except : pass
+        self.del_session_by_file(key)
         return result
 
     def has(self, key):
@@ -119,7 +137,16 @@ class SimpleCache(BaseCache):
             expires, value = self._cache[key]
             return expires == 0 or expires > time()
         except KeyError:
+            if self.get_session_by_file(key): return True
             return False
+
+
+    def get_expire_time(self, key):
+        try:
+            expires, value = self._cache[key]
+            return expires
+        except KeyError:
+            return 0
 
     def md5(self,strings):
         """
@@ -129,7 +156,7 @@ class SimpleCache(BaseCache):
         """
         import hashlib
         m = hashlib.md5()
- 
+
         m.update(strings.encode('utf-8'))
         return m.hexdigest()
 

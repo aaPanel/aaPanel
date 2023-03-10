@@ -17,7 +17,7 @@ import os,sys,re,public
 _title = 'Panel password'
 _version = 1.0                              # 版本
 _ps = "Check whether the panel account password is safe"              # 描述
-_level = 3                                  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
+_level = 0                                  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
 _date = '2020-08-04'                        # 最后更新时间
 _ignore = os.path.exists("data/warning/ignore/sw_panel_pass.pl")
 _tips = [
@@ -44,6 +44,7 @@ def check_run():
         return False,'The default password of the panel has not been modified, and there is a security risk'
 
     lower_pass_txt = '''12123
+china
 test
 test12
 test11
@@ -1097,6 +1098,8 @@ winner
             p1 = password_salt(public.md5(lp),uid=1)
             if p1 == find['password']:
                 return False,'The current panel password is too simple and there is a security risk'
+    if not is_strong_password(find["password"]):
+        return False, 'The current panel password is too simple and there is a security risk'
     return True,'Risk-free'
 
 salt = None
@@ -1113,5 +1116,41 @@ def password_salt(password,username=None,uid=None):
     global salt
     if not salt:
         salt = public.M('users').where('id=?',(uid,)).getField('salt')
+        if salt:
+            salt = salt[0]
+        else:
+            salt = ""
     return public.md5(public.md5(password+'_bt.cn')+salt)
-    
+
+
+def is_strong_password(password):
+    """判断密码复杂度是否安全
+
+    非弱口令标准：长度大于等于7，分别包含数字、小写、大写、特殊字符。
+    @password: 密码文本
+    @return: True/False
+    @author: linxiao<2020-9-19>
+    """
+
+    if len(password) < 7:
+        return False
+
+    import re
+    digit_reg = "[0-9]"  # 匹配数字 +1
+    lower_case_letters_reg = "[a-z]"  # 匹配小写字母 +1
+    upper_case_letters_reg = "[A-Z]"  # 匹配大写字母 +1
+    special_characters_reg = r"((?=[\x21-\x7e]+)[^A-Za-z0-9])"  # 匹配特殊字符 +1
+
+    regs = [digit_reg,
+            lower_case_letters_reg,
+            upper_case_letters_reg,
+            special_characters_reg]
+
+    grade = 0
+    for reg in regs:
+        if re.search(reg, password):
+            grade += 1
+
+    if grade == 4 or (grade == 3 and len(password) >= 9):
+        return True
+    return False

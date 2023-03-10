@@ -22,7 +22,13 @@ class panelMysql:
     def __Conn(self):
         if self.__DB_NET: return True
         try:
-            socket = '/tmp/mysql.sock'
+            myconf = public.readFile('/etc/my.cnf')
+            socket_re = re.search(r"socket\s*=\s*(.+)",myconf)
+            if socket_re:
+                socket = socket_re.groups()[0]
+            else:
+                socket = '/tmp/mysql.sock'
+
             try:
                 if sys.version_info[0] != 2:
                     try:
@@ -34,7 +40,7 @@ class panelMysql:
                 import MySQLdb
                 if sys.version_info[0] == 2:
                     reload(MySQLdb)
-            except Exception as ex:
+            except:
                 try:
                     import pymysql
                     pymysql.install_as_MySQLdb()
@@ -43,7 +49,7 @@ class panelMysql:
                     self.__DB_ERR = e
                     return False
             try:
-                myconf = public.readFile('/etc/my.cnf')
+
                 rep = r"port\s*=\s*([0-9]+)"
                 self.__DB_PORT = int(re.search(rep,myconf).groups()[0])
             except:
@@ -65,11 +71,33 @@ class panelMysql:
     def connect_network(self,host,port,username,password):
         self.__DB_NET = True
         try:
+            try:
+                if sys.version_info[0] != 2:
+                    try:
+                        import pymysql
+                    except:
+                        public.ExecShell("pip install pymysql")
+                        import pymysql
+                    pymysql.install_as_MySQLdb()
+                import MySQLdb
+                if sys.version_info[0] == 2:
+                    reload(MySQLdb)
+            except:
+                try:
+                    import pymysql
+                    pymysql.install_as_MySQLdb()
+                    import MySQLdb
+                except Exception as e:
+                    self.__DB_ERR = e
+                    return False
             self.__DB_CONN = MySQLdb.connect(host = host,user = username,passwd = password,port = port,charset="utf8",connect_timeout=10)
             self.__DB_CUR  = self.__DB_CONN.cursor()
+            return True
         except MySQLdb.Error as e:
             self.__DB_ERR = e
             return False
+
+
 
     def execute(self,sql):
         #执行SQL语句返回受影响行
@@ -98,6 +126,7 @@ class panelMysql:
             return data
         except Exception as ex:
             return ex
+
 
     #关闭连接        
     def __Close(self):

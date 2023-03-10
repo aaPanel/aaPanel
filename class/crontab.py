@@ -10,6 +10,7 @@ import public,db,os,time,re
 from BTPanel import session,cache
 class crontab:
     field = 'id,name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sName,sBody,sType,urladdress'
+    field += ",save_local,notice,notice_channel"
     #取计划任务列表
     def GetCrontab(self,get):
         self.checkBackup()
@@ -23,33 +24,40 @@ class crontab:
             public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sBody' TEXT",())
             public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sType' TEXT",())
             public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'urladdress' TEXT",())
+            public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'save_local' INTEGER DEFAULT 0",())
+            public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'notice' INTEGER DEFAULT 0",())
+            public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'notice_channel' TEXT DEFAULT ''",())
             cront = public.M('crontab').order("id desc").field(self.field).select()
-        
         data=[]
         for i in range(len(cront)):
+            tmp = {}
             tmp=cront[i]
             if cront[i]['type']=="day":
-                tmp['type']=public.getMsg('CRONTAB_TODAY')
-                tmp['cycle']= public.getMsg('CRONTAB_TODAY_CYCLE',(str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+                tmp['type']=public.get_msg_gettext('Per Day')
+                tmp['cycle']= public.get_msg_gettext('Per Day, run at {} Hour {} Min',(str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
             elif cront[i]['type']=="day-n":
-                tmp['type']=public.getMsg('CRONTAB_N_TODAY',(str(cront[i]['where1']),))
-                tmp['cycle']=public.getMsg('CRONTAB_N_TODAY_CYCLE',(str(cront[i]['where1']),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+                tmp['type']=public.get_msg_gettext('Every {} Days',(str(cront[i]['where1']),))
+                tmp['cycle']=public.get_msg_gettext('Every {} Days, run at {} Hour {} Min',(str(cront[i]['where1']),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
             elif cront[i]['type']=="hour":
-                tmp['type']=public.getMsg('CRONTAB_HOUR')
-                tmp['cycle']=public.getMsg('CRONTAB_HOUR_CYCLE',(str(cront[i]['where_minute']),))
+                tmp['type']=public.get_msg_gettext('Per Hour')
+                tmp['cycle']=public.get_msg_gettext('Per Hour, run at {} Min',(str(cront[i]['where_minute']),))
             elif cront[i]['type']=="hour-n":
-                tmp['type']=public.getMsg('CRONTAB_N_HOUR',(str(cront[i]['where1']),))
-                tmp['cycle']=public.getMsg('CRONTAB_N_HOUR_CYCLE',(str(cront[i]['where1']),str(cront[i]['where_minute'])))
+                tmp['type']=public.get_msg_gettext('Every {} Hours',(str(cront[i]['where1']),))
+                tmp['cycle']=public.get_msg_gettext('Every {} Hours, run at {} Min',(str(cront[i]['where1']),str(cront[i]['where_minute'])))
             elif cront[i]['type']=="minute-n":
-                tmp['type']=public.getMsg('CRONTAB_N_MINUTE',(str(cront[i]['where1']),))
-                tmp['cycle']=public.getMsg('CRONTAB_N_MINUTE_CYCLE',(str(cront[i]['where1']),))
+                tmp['type']=public.get_msg_gettext('Every {} Minutes',(str(cront[i]['where1']),))
+                tmp['cycle']=public.get_msg_gettext('Run Every {} Minutes',(str(cront[i]['where1']),))
             elif cront[i]['type']=="week":
-                tmp['type']=public.getMsg('CRONTAB_WEEK')
+                tmp['type']=public.get_msg_gettext('Weekly')
                 if not cront[i]['where1']: cront[i]['where1'] = '0'
-                tmp['cycle']= public.getMsg('CRONTAB_WEEK_CYCLE',(self.toWeek(int(cront[i]['where1'])),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+                tmp['cycle']= public.get_msg_gettext('Every {}, run at {} Hour {} Min',(self.toWeek(int(cront[i]['where1'])),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
             elif cront[i]['type']=="month":
-                tmp['type']=public.getMsg('CRONTAB_MONTH')
-                tmp['cycle']=public.getMsg('CRONTAB_MONTH_CYCLE',(str(cront[i]['where1']),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+                tmp['type']=public.get_msg_gettext('Monthly')
+                tmp['cycle']=public.get_msg_gettext('Monthly, run on {}Day {} Hour {}Min',(str(cront[i]['where1']),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+
+            log_file = '/www/server/cron/{}.log'.format(tmp['echo'])
+            if os.path.exists(log_file):
+                tmp['addtime'] = public.format_date(times=int(os.path.getmtime(log_file)))
             data.append(tmp)
         return data
 
@@ -72,13 +80,13 @@ class crontab:
     #转换大写星期
     def toWeek(self,num):
         wheres={
-                0   :   public.getMsg('CRONTAB_SUNDAY'),
-                1   :   public.getMsg('CRONTAB_MONDAY'),
-                2   :   public.getMsg('CRONTAB_TUESDAY'),
-                3   :   public.getMsg('CRONTAB_WEDNESDAY'),
-                4   :   public.getMsg('CRONTAB_THURSDAY'),
-                5   :   public.getMsg('CRONTAB_FRIDAY'),
-                6   :   public.getMsg('CRONTAB_SATURDAY')
+                0   :   public.get_msg_gettext('Sunday'),
+                1   :   public.get_msg_gettext('Monday'),
+                2   :   public.get_msg_gettext('Tuesday'),
+                3   :   public.get_msg_gettext('Wednesday'),
+                4   :   public.get_msg_gettext('Thursday'),
+                5   :   public.get_msg_gettext('Friday'),
+                6   :   public.get_msg_gettext('Saturday')
                 }
         try:
             return wheres[num]
@@ -113,6 +121,7 @@ class crontab:
     def set_cron_status(self,get):
         id = get['id']
         cronInfo = public.M('crontab').where('id=?',(id,)).field(self.field).find()
+        status_msg = ['Stop','Start']
         status = 1
         if cronInfo['status'] == status:
             status = 0
@@ -122,13 +131,13 @@ class crontab:
             self.sync_to_crond(cronInfo)
         
         public.M('crontab').where('id=?',(id,)).setField('status',status)
-        public.WriteLog('TYPE_CRON',"MODIFY_CRON_STATUS",(cronInfo['name'],str(status)))
-        return public.returnMsg(True,'SET_SUCCESS')
+        public.WriteLog('TYPE_CRON',"MODIFY_CRON_STATUS",(cronInfo['name'],str(status_msg[status])))
+        return public.return_msg_gettext(True,'Setup successfully!')
 
     #修改计划任务
     def modify_crond(self,get):
         if len(get['name'])<1:
-             return public.returnMsg(False,'CRONTAB_TASKNAME_EMPTY')
+             return public.return_msg_gettext(False,'Name of task cannot be empty!')
         id = get['id']
         cuonConfig,get,name = self.GetCrondCycle(get)
         cronInfo = public.M('crontab').where('id=?',(id,)).field(self.field).find()
@@ -144,13 +153,21 @@ class crontab:
         cronInfo['backupTo'] = get['backupTo']
         cronInfo['sBody'] = get['sBody']
         cronInfo['urladdress'] = get['urladdress']
-        public.M('crontab').where('id=?',(id,)).save('name,type,where1,where_hour,where_minute,save,backupTo,sBody,urladdress',
-                                                     (get['name'],get['type'],get['where1'],get['hour'],get['minute'],get['save'],get['backupTo'],get['sBody'],get['urladdress']))
-        
+        columns = 'name,type,where1,where_hour,where_minute,save,backupTo,sBody,urladdress'
+        values = (get['name'],get['type'],get['where1'],get['hour'],
+                  get['minute'],get['save'],get['backupTo'],get['sBody']
+                  ,get['urladdress'])
+        if 'save_local' in get:
+            columns += ",save_local, notice, notice_channel"
+            values = (get['name'],get['type'],get['where1'],get['hour'],
+                      get['minute'],get['save'],get['backupTo'],get['sBody'],
+                      get['urladdress'],get['save_local'],get["notice"],
+                      get["notice_channel"])
+        public.M('crontab').where('id=?',(id,)).save(columns,values)
         self.remove_for_crond(cronInfo['echo'])
         self.sync_to_crond(cronInfo)
         public.WriteLog('TYPE_CRON',"MODIFY_CRON",(cronInfo['name']))
-        return public.returnMsg(True,'EDIT_SUCCESS')
+        return public.return_msg_gettext(True,'Setup successfully!')
 
 
     #获取指定任务数据
@@ -158,8 +175,6 @@ class crontab:
         id = int(get.id)
         data = public.M('crontab').where('id=?',(id,)).field(self.field).find()
         return data
-
-
 
     #同步到crond
     def sync_to_crond(self,cronInfo):
@@ -181,7 +196,7 @@ class crontab:
     #添加计划任务
     def AddCrontab(self,get):
         if len(get['name'])<1:
-             return public.returnMsg(False,'CRONTAB_TASKNAME_EMPTY')
+             return public.return_msg_gettext(False,'Name of task cannot be empty!')
         cuonConfig,get,name = self.GetCrondCycle(get)
         cronPath=public.GetConfigValue('setup_path')+'/cron'
         cronName=self.GetShell(get)
@@ -191,13 +206,24 @@ class crontab:
         wRes = self.WriteShell(cuonConfig)
         if type(wRes) != bool: return wRes
         self.CrondReload()
-        addData=public.M('crontab').add(
-            'name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',
-            (get['name'],get['type'],get['where1'],get['hour'],get['minute'],cronName,time.strftime('%Y-%m-%d %X',time.localtime()),1,get['save'],get['backupTo'],get['sType'],get['sName'],get['sBody'],get['urladdress'])
-            )
+        columns = 'name,type,where1,where_hour,where_minute,echo,addtime,\
+                  status,save,backupTo,sType,sName,sBody,urladdress'
+        values = (public.xssencode2(get['name']),get['type'],get['where1'],get['hour'],
+        get['minute'],cronName,time.strftime('%Y-%m-%d %X',time.localtime()),
+        1,get['save'],get['backupTo'],get['sType'],get['sName'],get['sBody'],
+        get['urladdress'])
+        if "save_local" in get:
+            columns += ",save_local,notice,notice_channel"
+            values = (public.xssencode2(get['name']),get['type'],get['where1'],get['hour'],
+        get['minute'],cronName,time.strftime('%Y-%m-%d %X',time.localtime()),
+        1,get['save'],get['backupTo'],get['sType'],get['sName'],get['sBody'],
+        get['urladdress'], get["save_local"], get['notice'], get['notice_channel'])
+        addData=public.M('crontab').add(columns,values)
         if addData>0:
-             return public.returnMsg(True,'ADD_SUCCESS')
-        return public.returnMsg(False,'ADD_ERROR')
+            result = public.return_msg_gettext(True,'Setup successfully!')
+            result['id'] = addData
+            return result
+        return public.return_msg_gettext(False,'Failed to add')
     
     #构造周期
     def GetCrondCycle(self,params):
@@ -205,16 +231,16 @@ class crontab:
         name = ""
         if params['type']=="day":
             cuonConfig = self.GetDay(params)
-            name = public.getMsg('CRONTAB_TODAY')
+            name = public.get_msg_gettext('Per Day')
         elif params['type']=="day-n":
             cuonConfig = self.GetDay_N(params)
-            name = public.getMsg('CRONTAB_N_TODAY',(params['where1'],))
+            name = public.get_msg_gettext('Every {0} Days',(params['where1'],))
         elif params['type']=="hour":
             cuonConfig = self.GetHour(params)
-            name = public.getMsg('CRONTAB_HOUR')
+            name = public.get_msg_gettext('Per Hour')
         elif params['type']=="hour-n":
             cuonConfig = self.GetHour_N(params)
-            name = public.getMsg('CRONTAB_HOUR')
+            name = public.get_msg_gettext('Per Hour')
         elif params['type']=="minute-n":
             cuonConfig = self.Minute_N(params)
         elif params['type']=="week":
@@ -226,36 +252,36 @@ class crontab:
 
     #取任务构造Day
     def GetDay(self,param):
-        cuonConfig ="{0} {1} * * * ".format(param['minute'],param['hour'])
+        cuonConfig ="{} {} * * * ".format(param['minute'],param['hour'])
         return cuonConfig
     #取任务构造Day_n
     def GetDay_N(self,param):
-        cuonConfig ="{0} {1} */{2} * * ".format(param['minute'],param['hour'],param['where1'])
+        cuonConfig ="{} {} */{} * * ".format(param['minute'],param['hour'],param['where1'])
         return cuonConfig
     
     #取任务构造Hour
     def GetHour(self,param):
-        cuonConfig ="{0} * * * * ".format(param['minute'])
+        cuonConfig ="{} * * * * ".format(param['minute'])
         return cuonConfig
     
     #取任务构造Hour-N
     def GetHour_N(self,param):
-        cuonConfig ="{0} */{1} * * * ".format(param['minute'],param['where1'])
+        cuonConfig ="{} */{} * * * ".format(param['minute'],param['where1'])
         return cuonConfig
     
     #取任务构造Minute-N
     def Minute_N(self,param):
-        cuonConfig ="*/{0} * * * * ".format(param['where1'])
+        cuonConfig ="*/{} * * * * ".format(param['where1'])
         return cuonConfig
     
     #取任务构造week
     def Week(self,param):
-        cuonConfig ="{0} {1} * * {2}".format(param['minute'],param['hour'],param['week'])
+        cuonConfig ="{} {} * * {}".format(param['minute'],param['hour'],param['week'])
         return cuonConfig
     
     #取任务构造Month
     def Month(self,param):
-        cuonConfig = "{0} {1} {2} * * ".format(param['minute'],param['hour'],param['where1'])
+        cuonConfig = "{} {} {} * * ".format(param['minute'],param['hour'],param['where1'])
         return cuonConfig
     
     #取数据列表
@@ -265,6 +291,7 @@ class crontab:
         data['orderOpt'] = []
         import json
         tmp = public.readFile('data/libList.conf')
+        if not tmp: return data
         libs = json.loads(tmp)
         for lib in libs:
             if not 'opt' in lib: continue
@@ -281,9 +308,9 @@ class crontab:
         id = get['id']
         echo = public.M('crontab').where("id=?",(id,)).field('echo').find()
         logFile = public.GetConfigValue('setup_path')+'/cron/'+echo['echo']+'.log'
-        if not os.path.exists(logFile):return public.returnMsg(False, 'CRONTAB_TASKLOG_EMPTY')
+        if not os.path.exists(logFile):return public.return_msg_gettext(False, 'log is empty')
         log = public.GetNumLines(logFile,2000)
-        return public.returnMsg(True, log)
+        return public.return_msg_gettext(True, log)
     
     #清理任务日志
     def DelLogs(self,get):
@@ -292,16 +319,16 @@ class crontab:
             echo = public.M('crontab').where("id=?",(id,)).getField('echo')
             logFile = public.GetConfigValue('setup_path')+'/cron/'+echo+'.log'
             os.remove(logFile)
-            return public.returnMsg(True, 'CRONTAB_TASKLOG_CLOSE')
+            return public.return_msg_gettext(True, 'Logs emptied')
         except:
-            return public.returnMsg(False, 'CRONTAB_TASKLOG_CLOSE_ERR')
+            return public.return_msg_gettext(False, 'Failed to empty task logs!')
     
     #删除计划任务
     def DelCrontab(self,get):
         try:
             id = get['id']
             find = public.M('crontab').where("id=?",(id,)).field('name,echo').find()
-            if not self.remove_for_crond(find['echo']): return public.returnMsg(False,'SYSSAFE_CANT_WRITE_FILE')
+            if not self.remove_for_crond(find['echo']): return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
             cronPath = public.GetConfigValue('setup_path') + '/cron'
             sfile = cronPath + '/' + find['echo']
             if os.path.exists(sfile): os.remove(sfile)
@@ -310,18 +337,21 @@ class crontab:
             
             public.M('crontab').where("id=?",(id,)).delete()
             public.WriteLog('TYPE_CRON', 'CRONTAB_DEL',(find['name'],))
-            return public.returnMsg(True, 'DEL_SUCCESS')
+            return public.return_msg_gettext(True, 'Successfully deleted')
         except:
-            return public.returnMsg(False, 'DEL_ERROR')
+            return public.return_msg_gettext(False, 'Failed to delete')
 
     #从crond删除
     def remove_for_crond(self,echo):
-        u_file = '/var/spool/cron/crontabs/root'
         file = self.get_cron_file()
         conf=public.readFile(file)
+        if conf.find(str(echo)) == -1: return True
         rep = ".+" + str(echo) + ".+\n"
         conf = re.sub(rep, "", conf)
-        if not public.writeFile(file,conf): return False
+        try:
+            if not public.writeFile(file,conf): return False
+        except:
+            return False
         self.CrondReload()
         return True
     
@@ -329,12 +359,15 @@ class crontab:
     def GetShell(self,param):
         #try:
         type=param['sType']
+        if not 'echo' in param:
+            cronName=public.md5(public.md5(str(time.time()) + '_bt'))
+        else:
+            cronName = param['echo']
         if type=='toFile':
             shell=param.sFile
         else :
             head="#!/bin/bash\nPATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin\nexport PATH\n"
-
-            python_bin = public.get_python_bin()
+            python_bin = "{} -u".format(public.get_python_bin())
             if public.get_webserver()=='nginx':
                 log='.log'
             elif public.get_webserver()=='apache':
@@ -344,10 +377,11 @@ class crontab:
             if type in ['site','path'] and param['sBody'] != 'undefined' and len(param['sBody']) > 1:
                 exports = param['sBody'].replace("\r\n","\n").replace("\n",",")
                 head += "BT_EXCLUDE=\"" + exports.strip() + "\"\nexport BT_EXCLUDE\n"
+            attach_param = " " + cronName
             wheres={
-                    'path': head + python_bin +" " + public.GetConfigValue('setup_path')+"/panel/script/backup.py path "+param['sName']+" "+str(param['save']),
-                    'site'  :   head +python_bin+ " " + public.GetConfigValue('setup_path')+"/panel/script/backup.py site "+param['sName']+" "+str(param['save']),
-                    'database': head +python_bin+ " " + public.GetConfigValue('setup_path')+"/panel/script/backup.py database "+param['sName']+" "+str(param['save']),
+                    'path': head + python_bin +" " + public.GetConfigValue('setup_path')+"/panel/script/backup.py path "+param['sName']+" "+str(param['save'])+attach_param,
+                    'site'  :   head +python_bin+ " " + public.GetConfigValue('setup_path')+"/panel/script/backup.py site "+param['sName']+" "+str(param['save'])+attach_param,
+                    'database': head +python_bin+ " " + public.GetConfigValue('setup_path')+"/panel/script/backup.py database "+param['sName']+" "+str(param['save'])+attach_param,
                     'logs'  :   head +python_bin+ " " + public.GetConfigValue('setup_path')+"/panel/script/logsBackup "+param['sName']+log+" "+str(param['save']),
                     'rememory' : head + "/bin/bash " + public.GetConfigValue('setup_path') + '/panel/script/rememory.sh',
                     'webshell': head +python_bin+ " " + public.GetConfigValue('setup_path') + '/panel/class/webshell_check.py site ' + param['sName'] +' ' +param['urladdress']
@@ -356,9 +390,9 @@ class crontab:
                 cfile = public.GetConfigValue('setup_path') + "/panel/plugin/" + param['backupTo'] + "/" + param['backupTo'] + "_main.py"
                 if not os.path.exists(cfile): cfile = public.GetConfigValue('setup_path') + "/panel/script/backup_" + param['backupTo'] + ".py"
                 wheres={
-                    'path': head + python_bin+" " + cfile + " path " + param['sName'] + " " + str(param['save']),
-                    'site'  :   head + python_bin+" " + cfile + " site " + param['sName'] + " " + str(param['save']),
-                    'database': head + python_bin+" " + cfile + " database " + param['sName'] + " " + str(param['save']),
+                    'path': head + python_bin+" " + cfile + " path " + param['sName'] + " " + str(param['save'])+attach_param,
+                    'site'  :   head + python_bin+" " + cfile + " site " + param['sName'] + " " + str(param['save'])+attach_param,
+                    'database': head + python_bin+" " + cfile + " database " + param['sName'] + " " + str(param['save'])+attach_param,
                     'logs'  :   head + python_bin+" " + public.GetConfigValue('setup_path')+"/panel/script/logsBackup "+param['sName']+log+" "+str(param['save']),
                     'rememory' : head + "/bin/bash " + public.GetConfigValue('setup_path') + '/panel/script/rememory.sh',
                      'webshell': head + python_bin+" " + public.GetConfigValue('setup_path') + '/panel/class/webshell_check.py site ' + param['sName'] +' ' +param['urladdress']
@@ -380,16 +414,12 @@ echo "--------------------------------------------------------------------------
 '''
         cronPath=public.GetConfigValue('setup_path')+'/cron'
         if not os.path.exists(cronPath): public.ExecShell('mkdir -p ' + cronPath)
-        if not 'echo' in param:
-            cronName=public.md5(public.md5(str(time.time()) + '_bt'))
-        else:
-            cronName = param['echo']
         file = cronPath+'/' + cronName
         public.writeFile(file,self.CheckScript(shell))
         public.ExecShell('chmod 750 ' + file)
         return cronName
         #except Exception as ex:
-            #return public.returnMsg(False, 'FILE_WRITE_ERR' + str(ex))
+            #return public.return_msg_gettext(False, 'Failed to write in file!' + str(ex))
         
     #检查脚本
     def CheckScript(self,shell):
@@ -413,7 +443,7 @@ echo "--------------------------------------------------------------------------
         file = self.get_cron_file()
         if not os.path.exists(file): public.writeFile(file,'')
         conf = public.readFile(file)
-        if type(conf)==bool:return public.returnMsg(False,'Failed to read file!')
+        if type(conf)==bool:return public.return_msg_gettext(False,'Failed to read file!')
         conf += config + "\n"
         if public.writeFile(file,conf):
             if not os.path.exists(u_file):
@@ -421,7 +451,7 @@ echo "--------------------------------------------------------------------------
             else:
                 public.ExecShell("chmod 600 '" + file + "' && chown root.crontab " + file)
             return True
-        return public.returnMsg(False,'SYSSAFE_CANT_WRITE_FILE')
+        return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
     
     #立即执行任务
     def StartTask(self,get):
@@ -429,7 +459,7 @@ echo "--------------------------------------------------------------------------
         execstr = public.GetConfigValue('setup_path') + '/cron/' + echo
         public.ExecShell('chmod +x ' + execstr)
         public.ExecShell('nohup ' + execstr + ' >> ' + execstr + '.log 2>&1 &')
-        return public.returnMsg(True,'CRONTAB_TASK_EXEC')
+        return public.return_msg_gettext(True,'Task has been executed!')
 
     #获取计划任务文件位置
     def get_cron_file(self):
@@ -439,10 +469,11 @@ echo "--------------------------------------------------------------------------
         cron_path = c_file
         if not os.path.exists(u_path):
             cron_path=c_file
-        if os.path.exists('/usr/bin/yum'):
-            cron_path = c_file
-        elif os.path.exists("/usr/bin/apt-get"):
+
+        if os.path.exists("/usr/bin/apt-get"):
             cron_path = u_file
+        elif os.path.exists('/usr/bin/yum'):
+            cron_path = c_file
 
         if cron_path == u_file:
             if not os.path.exists(u_path):

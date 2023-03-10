@@ -11,30 +11,32 @@
 # AUTH验证接口
 #------------------------------
 
-import public,time,json,os
-from BTPanel import session
+import public,time,json,os,requests
+from BTPanel import session,cache
 
 class panelAuth:
     __product_list_path = 'data/product_list.pl'
     __product_bay_path = 'data/product_bay.pl'
     __product_id = '100000011'
-    
+    __official_url = 'https://brandnew.aapanel.com'
+
     def create_serverid(self,get):
         try:
             userPath = 'data/userInfo.json'
-            if not os.path.exists(userPath): return public.returnMsg(False,'LOGIN_FIRST')
+            if not os.path.exists(userPath): return public.return_msg_gettext(False,'Please login with account first')
             tmp = public.readFile(userPath)
             if len(tmp) < 2: tmp = '{}'
             data = json.loads(tmp)
-            if not data: return public.returnMsg(False,'LOGIN_FIRST')
-            if not 'serverid' in data:
-                s1 = self.get_mac_address() + self.get_hostname()
+            data['uid'] = data['id']
+            if not data: return public.return_msg_gettext(False,'Please login with account first')
+            if not 'server_id' in data:
+                s1 = public.get_mac_address() + public.get_hostname()
                 s2 = self.get_cpuname()
                 serverid = public.md5(s1) + public.md5(s2)
-                data['serverid'] = serverid
+                data['server_id'] = serverid
                 public.writeFile(userPath,json.dumps(data))
             return data
-        except: return public.returnMsg(False,'LOGIN_FIRST')
+        except: return public.return_msg_gettext(False,'Please login with account first')
 
 
     def create_plugin_other_order(self,get):
@@ -57,20 +59,28 @@ class panelAuth:
     def check_serverid(self,get):
         if get.serverid != self.create_serverid(get): return False
         return True
-    
-    def get_plugin_price(self,get):
+
+    def get_plugin_price(self, get):
         try:
             userPath = 'data/userInfo.json'
-            if not 'pluginName' in get: return public.returnMsg(False,'INIT_ARGS_ERR')
-            if not os.path.exists(userPath): return public.returnMsg(False,'LOGIN_FIRST')
+            if not 'pluginName' in get and not 'product_id' in get: return public.return_msg_gettext(False,'Parameter ERROR!')
+            if not os.path.exists(userPath): return public.return_msg_gettext(False,'Please login with account first')
             params = {}
-            params['pid'] = self.get_plugin_info(get.pluginName)['id']
-            #params['ajax2'] = '1';
-            data = self.send_cloud('get_product_discount', params)
-            return data
+            if not hasattr(get,'product_id'):
+                params['product_id'] = self.get_plugin_info(get.pluginName)['id']
+            else:
+                params['product_id'] = get.product_id
+            data = self.send_cloud('{}/api/product/prices'.format(self.__official_url), params)
+            if not data:
+                return public.return_msg_gettext(False, 'Please log in to your aaPanel account on the panel first!')
+            if not data['success']:
+                return public.return_msg_gettext(False,data['msg'])
+            # if len(data['res']) == 6:
+            #     return data['res'][3:]
+            return data['res']
         except:
             del(session['get_product_list'])
-            return public.returnMsg(False,'Syncing information, please try again!\n' + public.get_error_info())
+            return public.return_msg_gettext(False,'Syncing information, please try again!\n {}',(public.get_error_info(),))
     
     def get_plugin_info(self,pluginName):
         data = self.get_business_plugin(None)
@@ -88,20 +98,37 @@ class panelAuth:
             data = json.loads(public.readFile(self.__product_bay_path))
             return data
         except: return None
-    
+
     def get_buy_code(self,get):
+        cycle = getattr(get,'cycle',1)
         params = {}
-        params['pid'] = get.pid
-        params['cycle'] = get.cycle
-        data = self.send_cloud('create_order', params)
-        if not data: return public.returnMsg(False,'AJAX_CONN_ERR')
-        return data
-    
+        params['cycle'] = cycle
+        params['cycle_unit'] = get.cycle_unit
+        params['product_id'] = get.pid
+        params['src'] = 2
+        params['trigger_entry'] = get.source
+        params['pay_channel'] = 2
+        params['charge_type'] = get.charge_type
+        env_info = public.fetch_env_info()
+        params['environment_info'] = json.dumps(env_info)
+        params['server_id'] = env_info['install_code']
+        data = self.send_cloud('{}/api/order/product/create'.format(self.__official_url), params)
+        if not data['success']:
+            return public.return_msg_gettext(False,data['res'])
+        return data['res']
+
+    def get_stripe_session_id(self,get):
+        params = {}
+        params['order_no'] = get.order_no
+        data = self.send_cloud('{}/api/order/product/pay'.format(self.__official_url), params)
+        session['focre_cloud'] = True
+        return data['res']
+
     def check_pay_status(self,get):
         params = {}
         params['id'] = get.id
         data = self.send_cloud('check_product_pays', params)
-        if not data: return public.returnMsg(False,'AJAX_CONN_ERR')
+        if not data: return public.return_msg_gettext(False,'Fail to connect to the server!')
         if data['status'] == True:
             self.flush_pay_status(get)
             if 'get_product_bay' in session: del(session['get_product_bay'])
@@ -110,8 +137,8 @@ class panelAuth:
     def flush_pay_status(self,get):
         if 'get_product_bay' in session: del(session['get_product_bay'])
         data = self.get_plugin_list(get)
-        if not data: return public.returnMsg(False,'AJAX_CONN_ERR')
-        return public.returnMsg(True,'FLUSH_STATUS_SUCCESS')
+        if not data: return public.return_msg_gettext(False,'Fail to connect to the server!')
+        return public.return_msg_gettext(True,'Flush status success')
     
     def get_renew_code(self):
         pass
@@ -122,8 +149,8 @@ class panelAuth:
     def get_business_plugin(self,get):
         try:
             if not session.get('get_product_list') or not os.path.exists(self.__product_list_path):
-                data = self.send_cloud('get_product_list', {})
-                if data: public.writeFile(self.__product_list_path,json.dumps(data))
+                data = self.send_cloud('{}/api/product/chargeProducts'.format(self.__official_url), {})
+                if data['success']: public.writeFile(self.__product_list_path,json.dumps(data['res']))
                 session['get_product_list'] = True
             data = json.loads(public.readFile(self.__product_list_path))
             return data
@@ -139,7 +166,7 @@ class panelAuth:
         params = {}
         params['pid'] = getattr(get,'pid',0)
         data = self.send_cloud('get_re_order_status', params)
-        if not data: return public.returnMsg(False,'AJAX_CONN_ERR')
+        if not data: return public.return_msg_gettext(False,'Fail to connect to the server!')
         if data['status'] == True:
             self.flush_pay_status(get)
             if 'get_product_bay' in session: del(session['get_product_bay'])
@@ -147,59 +174,60 @@ class panelAuth:
     
     def get_voucher_plugin(self,get):
         params = {}
-        params['pid'] = getattr(get,'pid',0)
+        params['product_id'] = getattr(get,'pid',0)
         params['status'] = '0'
-        data = self.send_cloud('get_voucher', params)
+        data = self.send_cloud('{}/api/user/productVouchers'.format(self.__official_url), params)
         if not data: return []
-        return data
-    
+        return data['res']
+
     def create_order_voucher_plugin(self,get):
+        cycle = getattr(get,'cycle','1')
         params = {}
-        params['pid'] = getattr(get,'pid',0)
-        params['code'] = getattr(get,'code',0)
-        data = self.send_cloud('create_order_voucher', params)
-        if not data: return public.returnMsg(False,'AJAX_CONN_ERR')
-        if data['status'] == True:
-            self.flush_pay_status(get)
-            if 'get_product_bay' in session: del(session['get_product_bay'])
-        return data
-    
-    
-    def send_cloud(self,module,params):
+        params['cycle'] = cycle
+        params['cycle_unit'] = get.cycle_unit
+        params['coupon_id'] = get.coupon_id
+        params['src'] = 2
+        params['pay_channel'] = 10
+        params['charge_type'] = get.charge_type
+        env_info = public.fetch_env_info()
+        params['environment_info'] = json.dumps(env_info)
+        params['server_id'] = env_info['install_code']
+        data = self.send_cloud('{}/api/order/product/create'.format(self.__official_url), params)
+        session['focre_cloud'] = True
+        if data['success']:
+            return public.return_msg_gettext(True,'Activate successfully')
+        return public.return_msg_gettext(False, 'Activate failed')
+
+    def send_cloud(self,cloudURL,params):
         try:
-            cloudURL = 'http://www.bt.cn/api/Plugin/'
             userInfo = self.create_serverid(None)
-            params['os'] = 'Linux'
-            if 'status' in userInfo:
-                params['uid'] = 0
-                params['serverid'] = ''
-            else:
-                params['uid'] = userInfo['uid']
-                params['serverid'] = userInfo['serverid']
-            result = public.httpPost(cloudURL + module,params)
-            result = json.loads(result.strip())
-            if not result: return None
-            return result
-        except: return None
+            if 'token' not in userInfo:
+                return None
+            url_headers = {"Content-Type": "application/json",
+                           "authorization": "bt {}".format(userInfo['token'])
+                           }
+            resp = requests.post(cloudURL, params=params, headers=url_headers)
+            resp = resp.json()
+            if not resp['res']: return None
+            return resp
+        except: return public.get_error_info()
         
     def send_cloud_pro(self,module,params):
         try:
-            cloudURL = 'http://www.bt.cn/api/invite/'
+            cloudURL = '{}/api/order/product/'.format(self.__official_url)
             userInfo = self.create_serverid(None)
             params['os'] = 'Linux'
             if 'status' in userInfo:
-                params['uid'] = 0
-                params['serverid'] = ''
+                params['server_id'] = ''
             else:
-                params['uid'] = userInfo['uid']
-                params['serverid'] = userInfo['serverid']
-            result = public.httpPost(cloudURL + module,params)
-            
-            result = json.loads(result)
-            if not result: return None
-            return result
+                params['server_id'] = userInfo['server_id']
+            url_headers = {"authorization": "bt {}".format(userInfo['token'])}
+            resp = requests.post(cloudURL, params=params, headers=url_headers)
+            resp = resp.json()['res']
+            if not resp: return None
+            return resp
         except: return None
-    
+
     def get_voucher(self,get):
         params = {}
         params['product_id'] = self.__product_id
@@ -234,19 +262,87 @@ class panelAuth:
         cycle = getattr(get,'cycle','1')
         params = {}
         params['cycle'] = cycle
-        data = self.send_cloud_pro('create_order', params)
+        params['cycle'] = 'month'
+        params['product_id'] = 100000012
+        params['src'] = 2
+        params['pay_channel'] = 2
+        params['charge_type'] = 1
+        params['environment_info'] = json.dumps(public.fetch_env_info())
+        data = self.send_cloud_pro('create', params)
         return data
-    
-    def get_mac_address(self):
-        import uuid
-        mac=uuid.UUID(int = uuid.getnode()).hex[-12:]
-        return ":".join([mac[e:e+2] for e in range(0,11,2)])
-    
-    def get_hostname(self):
-        import socket
-        return socket.getfqdn(socket.gethostname())
-    
+
+    # def fetch_env_info(self):
+    #     userInfo = self.create_serverid(None)
+    #     return json.dumps({'ip': public.GetLocalIp(),
+    #      'is_ipv6': 0,
+    #      'os': 'Centos7',
+    #      'mac': self.get_mac_address(),
+    #      'hdid': public.fetch_disk_SN(),
+    #      'ramid': '16G',
+    #      'cpuid': public.fetch_cpu_ID(),
+    #      'server_name': self.get_hostname(),
+    #      'install_code': userInfo['server_id']
+    #      })
+
     def get_cpuname(self):
         return public.ExecShell("cat /proc/cpuinfo|grep 'model name'|cut -d : -f2")[0].strip()
     
-    
+    def get_product_auth(self,get):
+        params = {}
+        params['page'] = get.page if 'page' in get else 1
+        params['pageSize'] = get.pageSize if 'pageSize' in get else 15
+        data = self.send_cloud('{}/api/user/productAuthorizes'.format(self.__official_url), params)
+        if not data:
+            return []
+        if not data['success']: return []
+        data = data['res']
+        # return [i for i in data['list'] if i['status'] != 'activated' and get.pid == i['product_id']]
+        res = list()
+        for i in data['list']:
+            if i['status'] != 'activated' and str(get.pid) == str(i['product_id']):
+                res.append(i)
+        return res
+
+    def auth_activate(self,get):
+        params = {}
+        params['serial_no'] = get.serial_no
+        params['environment_info'] = json.dumps(public.fetch_env_info())
+        data = self.send_cloud('{}/api/authorize/product/activate'.format(self.__official_url), params)
+        if not data['success']: return public.return_msg_gettext(False,'Activate Failed')
+        session['focre_cloud'] = True
+        return public.return_msg_gettext(True,'Activate successfully')
+
+    def renew_product_auth(self,get):
+        params = {}
+        params['serial_no'] = get.serial_no
+        params['pay_channel'] = get.pay_channel
+        params['cycle'] = get.cycle
+        params['cycle_unit'] = get.cycle_unit
+        params['src'] = 2
+        params['trigger_entry'] = get.source
+        params['environment_info'] = json.dumps(public.fetch_env_info())
+        if hasattr(get,'coupon_id') and get.pay_channel == '10':
+            params['coupon_id'] = get.coupon_id
+        data = self.send_cloud('{}/api/authorize/product/renew'.format(self.__official_url), params)
+        session['focre_cloud'] = True
+        # 使用抵扣券续费直接返回续费结果
+        if get.pay_channel == '10':
+            if not data['success']:
+                return public.return_msg_gettext(False, 'Renew Failed')
+            return public.return_msg_gettext(True,'Renew successfully')
+        # 使用支付续费返回stripe的请求数据
+        return data['res']
+
+    def free_trial(self,get):
+        """
+        每个账号有一次免费试用专业版15天的机会
+        :return:
+        """
+        params = {}
+        params['environment_info'] = json.dumps(public.fetch_env_info())
+        data = self.send_cloud('{}/api/product/obtainProfessionalMemberFree'.format(self.__official_url), params)
+        session['focre_cloud'] = True
+        # 使用抵扣券续费直接返回续费结果
+        if not data['success']:
+            return public.return_msg_gettext(False, 'Apply Failed')
+        return public.return_msg_gettext(True,'Apply successfully')

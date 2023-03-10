@@ -27,8 +27,11 @@ class tomcat:
         self.__ENGINE = self.__TREE.findall('Service/Engine')[0];
         
     #获取虚拟主机列表
-    def GetVhosts(self):        
-        Hosts = self.__ENGINE.getchildren();
+    def GetVhosts(self):
+        try:
+            Hosts = self.__ENGINE.getchildren()
+        except:
+            Hosts = list(self.__ENGINE)
         data = []
         for host in Hosts:
             if host.tag != 'Host': continue;
@@ -63,7 +66,10 @@ class tomcat:
     
     #获取指定虚拟主机
     def GetVhost(self,name):
-        Hosts = self.__ENGINE.getchildren();
+        try:
+            Hosts = self.__ENGINE.getchildren()
+        except:
+            Hosts = list(self.__ENGINE)
         for host in Hosts:
             if host.tag != 'Host': continue;
             if host.attrib['name'] == name:
