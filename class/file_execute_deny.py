@@ -52,9 +52,11 @@ class FileExecuteDeny:
         result = []
         for i in deny_name:
             reg = '#BEGIN_DENY_{}\n\s*location\s*\~\*\s*\^(.*)\.\*.*\((.*)\)\$'.format(i.replace("|","\|"))
-            deny_directory = re.search(reg,conf).groups()[0]
-            deny_suffix = re.search(reg,conf).groups()[1]
-            result.append({'name':i,'dir':deny_directory,'suffix':deny_suffix})
+            re_tmp = re.search(reg,conf)
+            if re_tmp:
+                deny_directory = re_tmp.groups()[0]
+                deny_suffix = re_tmp.groups()[1]
+                result.append({'name':i,'dir':deny_directory,'suffix':deny_suffix})
         return result
 
     def _get_apache_file_deny(self):
@@ -113,6 +115,7 @@ class FileExecuteDeny:
         if tmp:
             return tmp
         deny_name = args.deny_name
+        if not re.match(r"^\w+$",deny_name): return public.return_msg_gettext(False,'The rule name can only be composed of letters, numbers, and underscores!')
         dir = args.dir
         suffix = args.suffix
         website = args.website

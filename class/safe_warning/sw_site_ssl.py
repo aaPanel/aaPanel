@@ -24,6 +24,7 @@ _tips = [
     "Please consider deploying an SSL certificate for your website to improve its security"
     ]
 _help = ''
+_remind = 'SSL certificates ensure that the communication on your website is secure, preventing hackers from stealing data while it is in transit. '
 
 def check_run():
     '''

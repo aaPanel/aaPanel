@@ -11,6 +11,8 @@ import sys
 import time
 import os
 import struct
+import base64
+base64.b64encode
 
 os.chdir('/www/server/panel')
 if 'class/' in sys.path: sys.path.insert(0,"class/")
@@ -18,18 +20,38 @@ import copy
 try:
     import pcap
 except ImportError:
-    if os.path.exists('/usr/bin/apt'):
-        os.system("apt install libpcap-dev")
-    elif os.path.exists('/usr/bin/dnf'):
-        os.system("dnf install libpcap-devel")
-    elif os.path.exists('/usr/bin/yum'):
-        os.system("yum install libpcap-devel")
-    os.system("btpip install pypcap")
-    try:
-        import pcap
-    except ImportError:
-        print("pypcap module install failed.")
-        sys.exit()
+    # 标记只安装一次
+    tip_file = '/www/server/panel/install/tip.json'
+    if not os.path.exists(tip_file):
+        if os.path.exists('/usr/bin/apt'):
+            os.system("apt install libpcap-dev -y")
+        elif os.path.exists('/usr/bin/dnf'):
+            red_file = '/etc/redhat-release'
+            if os.path.exists(red_file):
+                f = open(red_file,'r')
+                red_body = f.read()
+                f.close()
+                if red_body.find('CentOS Linux release 8.') != -1:
+                    rpm_file = '/root/libpcap-1.9.1.rpm'
+                    down_url = "wget -O {} https://node.aapanel.com/src/libpcap-devel-1.9.1-5.el8.x86_64.rpm --no-check-certificate -T 10".format(rpm_file)
+                    if os.path.exists(rpm_file):
+                        os.system(down_url)
+                        os.system("rpm -ivh {}".format(rpm_file))
+                        if os.path.exists(rpm_file): os.remove(rpm_file)
+                else:
+                    os.system("dnf install libpcap-devel -y")
+            else:
+                os.system("dnf install libpcap-devel -y")
+        elif os.path.exists('/usr/bin/yum'):
+            os.system("yum install libpcap-devel -y")
+        os.system("btpip install pypcap")
+        # 写入标记文件
+        os.system("echo True > {}".format(tip_file))
+        try:
+            import pcap
+        except ImportError:
+            print("pypcap module install failed.")
+            sys.exit()
 
 
 class process_network_total:

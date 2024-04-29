@@ -161,7 +161,7 @@ class panelPHP:
 #         if not phpv: return None
 #         cache.set(ikey,phpv[0],3)
 #         return phpv[0]
-#
+
 #     def get_pma_root(self):
 #         '''
 #             @name 获取phpmyadmin根目录
@@ -175,7 +175,7 @@ class panelPHP:
 #             if dname.find('phpmyadmin_') != -1:
 #                 return os.path.join(pma_path,dname)
 #         return None
-#
+
 #     def check_phpmyadmin_phpversion(self):
 #         '''
 #             @name 检查当前phpmyadmin版本可用的php版本列表

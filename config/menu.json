@@ -63,6 +63,13 @@
     "sort": 9
   },
   {
+    "title": "Logs",
+    "href": "/logs",
+    "class": "menu_logs",
+    "id": "memuAlogs",
+    "sort": 10
+},
+  {
     "title": "Terminal",
     "href": "/xterm",
     "class": "menu_xterm",

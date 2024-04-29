@@ -26,7 +26,7 @@ _tips = [
     "Use [ Fail2ban ] plug-in to protect MySQL service"
     ]
 _help = ''
-
+_remind = 'This scheme strengthens the protection of the MySQL database and reduces the risk of the server being stolen data. Before the repair, open up the accessible IP according to the business requirements to ensure that the website is working properly. '
 def check_run():
     '''
         @name 开始检测

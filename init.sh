@@ -65,6 +65,7 @@ panel_start()
         get_panel_pids
         if [ "$isStart" == '' ];then
                 rm -f $pidfile
+                panel_port_check
                 echo -e "Starting Bt-Panel...\c"
                 nohup $panel_path/BT-Panel >> $log_file 2>&1 &
                 isStart=""
@@ -80,7 +81,6 @@ panel_start()
                         fi
                 done
                 if [ "$isStart" == '' ];then
-                        panel_port_check
                         echo -e "\033[31mfailed\033[0m"
                         echo '------------------------------------------------------'
                         tail -n 20 $log_file
@@ -231,6 +231,7 @@ panel_reload()
                 kill -9 $p
         done
 		rm -f $pidfile
+		panel_port_check
 		echo -e "Reload Bt-Panel.\c";
                 nohup $panel_path/BT-Panel >> $log_file 2>&1 &
 		isStart=""
@@ -246,7 +247,6 @@ panel_reload()
 			fi
 		done
         if [ "$isStart" == '' ];then
-		panel_port_check
                 echo -e "\033[31mfailed\033[0m"
                 echo '------------------------------------------------------'
                 tail -n 20 $log_file
@@ -331,7 +331,7 @@ case "$1" in
                 echo -e "password: $password"
                 echo -e "\033[33mWarning:\033[0m"
                 echo -e "\033[33mIf you cannot access the panel, \033[0m"
-                echo -e "\033[33mrelease the following port (8888|888|80|443|20|21) in the security group\033[0m"
+                echo -e "\033[33mrelease the following port (7800|888|80|443|20|21) in the security group\033[0m"
                 echo -e "=================================================================="
                 ;;
         *)

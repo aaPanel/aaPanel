@@ -22,10 +22,11 @@ class panelPlugin:
     __plugin_list = None
     __exists_names = {}
     __plugin_s_list = []
-    __official_url = 'https://brandnew.aapanel.com'
+    __official_url = 'https://www.aapanel.com'
+    # __official_url = 'http://dev.aapanel.com'
     pids = None
     ROWS = 15
-    
+
     def __init__(self):
         self.__install_path = '/www/server/panel/plugin'
 
@@ -58,7 +59,7 @@ class panelPlugin:
     def check_sys_write(self):
         test_file = '/etc/init.d/bt_10000100.pl'
         public.writeFile(test_file,'True')
-        if os.path.exists(test_file): 
+        if os.path.exists(test_file):
             if public.readFile(test_file) == 'True':
                 os.remove(test_file)
                 return True
@@ -184,7 +185,7 @@ class panelPlugin:
             # self.get_cloud_list(get)
         except:pass
         return result
-    
+
     #同步安装
     def install_sync(self,pluginInfo,get):
         import panelAuth
@@ -233,7 +234,7 @@ class panelPlugin:
         return True
 
     #异步安装
-    def install_async(self,pluginInfo,get):            
+    def install_async(self,pluginInfo,get):
         mtype = 'install';
         mmsg = public.get_msg_gettext('Install')
         if hasattr(get, 'upgrade'):
@@ -241,7 +242,7 @@ class panelPlugin:
             mmsg = 'upgrade'
         if not 'type' in get: get.type = '0'
         if int(get.type) > 4: get.type = '0'
-        if get.sName == 'nginx': 
+        if get.sName == 'nginx':
             if get.version == '1.8': return public.return_msg_gettext(False,'Nginx 1.8.1 is too old, no longer available, please choose another version!')
         if get.sName.find('php-') != -1:get.sName = get.sName.split('-')[0]
         ols_execstr = ""
@@ -341,57 +342,51 @@ class panelPlugin:
 
         focre  = 0
         if hasattr(get,'force'): focre = int(get.force)
-        if 'focre_cloud' in session:
-            if session['focre_cloud']:
-                focre = 1
-                session['focre_cloud'] = False
+        if session:
+            if 'focre_cloud' in session:
+                if session['focre_cloud']:
+                    focre = 1
+                    session['focre_cloud'] = False
 
-        if not 'init_cloud' in session:
-            focre = 1
-            session['init_cloud'] = True
+            if not 'init_cloud' in session:
+                focre = 1
+                session['init_cloud'] = True
         if force_refresh == 1:
             focre = 1
         if not softList or focre > 0:
-            requesting_tag_key = "REQUESTING_SERVER_SOFTWARE_LIST"
+            self.clean_panel_log()
+            # cloudUrl = 'https://console.aapanel.com/api/panel/get_soft_list'
+            cloudUrl = '{}/api/panel/getSoftList'.format(self.__official_url)
+            import panelAuth
+            import requests
+            pdata = panelAuth.panelAuth().create_serverid(None)
+            # listTmp = public.httpPost(cloudUrl,pdata,6)
+            url_headers={}
+            if 'token' in pdata:
+                url_headers = {"authorization": "bt {}".format(pdata['token'])}
+            pdata['environment_info'] = json.dumps(public.fetch_env_info())
+
+            # listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers,verify=False,timeout=10)
+            # listTmp=listTmp.json()
+
             try:
-                max_waiting_time = 120
-                has_waiting =  False
-                while cache.get(requesting_tag_key):
-                    has_waiting = True
-                    time.sleep(0.1)
+                listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers, verify=False, timeout=10)
+                listTmp.raise_for_status()  # 检查请求是否成功，如果不成功会抛出异常
+                listTmp = listTmp.json()
+            except:
+                listTmp = False
 
-                if has_waiting:
-                    return self.get_cloud_list(get)
-                    
-                cache.set(requesting_tag_key, True, timeout=max_waiting_time)
-
-                self.clean_panel_log()
-                # cloudUrl = 'https://console.aapanel.com/api/panel/get_soft_list'
-                cloudUrl = '{}/api/panel/getSoftList'.format(self.__official_url)
-                import panelAuth
-                import requests
-                pdata = panelAuth.panelAuth().create_serverid(None)
-                # listTmp = public.httpPost(cloudUrl,pdata,6)
-                url_headers={}
-                if 'token' in pdata:
-                    url_headers = {"authorization": "bt {}".format(pdata['token'])}
-                pdata['environment_info'] = json.dumps(public.fetch_env_info())
-                try:
-                    listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers,verify=False)
-                    listTmp=listTmp.json()
-                    if not listTmp:
-                        listTmp = public.readFile(lcoalTmp)
-                    softList = listTmp
-                except: pass
-                if softList: public.writeFile(lcoalTmp,json.dumps(softList))
-                public.ExecShell('rm -f /tmp/bmac_*')
-                public.run_thread(self.getCloudPHPExt)
-                # 专业版和企业版到期提醒，aaPanel目前没有先注释
-                # self.expire_msg(softList)
+            if listTmp is False:
+                listTmp = public.readFile(lcoalTmp)
+            try:
+                softList = listTmp
             except:
                 pass
-            finally:
-                cache.delete(requesting_tag_key)
+            if softList: public.writeFile(lcoalTmp,json.dumps(softList))
+            public.ExecShell('rm -f /tmp/bmac_*')
+            public.run_thread(self.getCloudPHPExt)
+            # 专业版和企业版到期提醒，aaPanel目前没有先注释
+            # self.expire_msg(softList)
         try:
             public.writeFile("/tmp/" + cache.get('p_token'),str(softList['pro']))
         except:pass
@@ -399,8 +394,31 @@ class panelPlugin:
         try:
             if hasattr(get,'type'): sType = int(get['type'])
             if hasattr(get,'query'):
-                if get.query: sType = 0
+                if get.query:
+                    # 关键词统计     参数keyword
+                    import panelAuth
+                    import requests
+                    countUrl = '{}/api/panel/submit_keyword'.format(self.__official_url)
+                    pdata = panelAuth.panelAuth().create_serverid(None)
+                    url_headers = {}
+                    if 'token' in pdata:
+                        url_headers = {"authorization": "bt {}".format(pdata['token'])}
+                    pdata['environment_info'] = json.dumps(public.fetch_env_info())
+                    keyword = {
+                        "keyword": get.query
+                    }
+                    try:
+                        requests.post(countUrl, params=keyword, headers=url_headers, verify=False, timeout=3)
+                    except:
+                        pass
+                    sType = 0
         except:pass
+
+
+        try:
+            softList = json.loads(softList)
+        except:
+            pass
         softList['list'] = self.get_local_plugin(softList['list'])
         softList['list'] = self.get_types(softList['list'],sType)
         if hasattr(get,'query'):
@@ -565,7 +583,7 @@ class panelPlugin:
         for name in os.listdir('plugin/'):
             isExists = False
             for softInfo in sList:
-                if name == softInfo['name']: 
+                if name == softInfo['name']:
                     isExists = True
                     break
             if isExists: continue
@@ -585,7 +603,7 @@ class panelPlugin:
     def check_setup_task(self,sName):
         if not self.__tasks:
             self.__tasks = public.M('tasks').where("status!=?",('1',)).field('status,name').select()
-        if sName.find('php-') != -1: 
+        if sName.find('php-') != -1:
             tmp = sName.split('-')
             sName = tmp[0]
             version = tmp[1]
@@ -660,7 +678,7 @@ class panelPlugin:
                         }
         except: pluginInfo = None
         return pluginInfo
-                
+
     #处理分类
     def get_types(self,sList,sType):
         if sType <= 0: return sList
@@ -704,11 +722,9 @@ class panelPlugin:
 
     #取软件列表
     def get_soft_list(self,get = None):
-        print("get soft list normal.")
         softList = self.get_cloud_list(get)
         if not softList:
             get.force = 1
-            print("get soft list force.")
             softList = self.get_cloud_list(get)
             if not softList: return public.return_msg_gettext(False,'Failed to get software list ({})',"401")
         softList['list'] = self.set_coexist(softList['list'])
@@ -729,31 +745,43 @@ class panelPlugin:
         check_version_path = '/www/server/apache/version_check.pl'
         if os.path.exists(check_version_path):
             softList['apache24'] = True
-            if public.readFile(check_version_path).find('2.2') == 0: 
+            if public.readFile(check_version_path).find('2.2') == 0:
                 softList['apache22'] = True
                 softList['apache24'] = False
         if os.path.exists('/www/server/nginx/conf/nginx.conf'):
             import one_key_wp
             one_key_wp.fast_cgi().set_nginx_conf()
+            one_key_wp.fast_cgi().set_nginx_init()
             public.ExecShell("/etc/init.d/nginx start")
         return softList
 
     #取首页软件列表
     def get_index_list(self,get=None):
         softList = self.get_cloud_list(get)['list']
-        if not softList: 
+        if not softList:
             get.force = 1
             softList = self.get_cloud_list(get)['list']
             if not softList: return public.return_msg_gettext(False,'Failed to get software list ({})',"401")
         softList = self.set_coexist(softList)
-        if not os.path.exists(self.__index): public.writeFile(self.__index,'[]')
-        indexList = json.loads(public.ReadFile(self.__index))
+        # # 只取应用名
+        # lista = [i['name'] for i in softList]
+        #
+        # public.print_log("23454566777^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^_______________________________"
+        #                  "列表 {}".format(lista))
+        if not os.path.exists(self.__index):
+            public.writeFile(self.__index,'[]')
+        try:
+            indexList = json.loads(public.ReadFile(self.__index))
+        except Exception:
+            os.remove(self.__index)
+            public.writeFile(self.__index, '[]')
+            indexList = []
         dataList = []
         for index in indexList:
             for softInfo in softList:
                 if softInfo['name'] == index: dataList.append(softInfo)
         dataList = self.check_isinstall(dataList)
-        
+
         return dataList
 
     #添加到首页
@@ -798,7 +826,7 @@ class panelPlugin:
         indexList = get.ssort.split('|')
         public.writeFile(self.__index,json.dumps(indexList))
         return public.return_msg_gettext(True,'Setup successfully!')
-    
+
     #取快捷软件列表
     def get_link_list(self,get=None):
         softList = self.get_cloud_list(get)['list']
@@ -905,14 +933,14 @@ class panelPlugin:
             if softInfo['id'] != 10000:
                 self.get_icon(softInfo['name'].split('-')[0])
         else:
-            if 'min_image' in softInfo: 
+            if 'min_image' in softInfo:
                 if softInfo['id'] != 10000:
                     self.get_icon(softInfo['name'],softInfo['min_image'])
             else:
                 # if softInfo['id'] != 10000:
                 self.get_icon(softInfo['name'])
 
-        if softInfo['name'].find('php-') != -1: 
+        if softInfo['name'].find('php-') != -1:
             v2= softInfo['versions'][0]['m_version'].replace('.','')
             softInfo['fpm'] = os.path.exists('/www/server/php/' + v2 + '/sbin/php-fpm')
             softInfo['status'] = self.get_php_status(v2)
@@ -1041,9 +1069,9 @@ class panelPlugin:
                     'openlitespeed': "cat /usr/local/lsws/VERSION",
                     'gitlab':'echo "8.8.5"'
                 }
-            
+
             exec_str = ''
-            if sInfo['name'] in exec_args: exec_str = exec_args[sInfo['name']] 
+            if sInfo['name'] in exec_args: exec_str = exec_args[sInfo['name']]
             if sInfo['version_coexist'] == 1:
                 v_tmp = sInfo['name'].split('-')
                 exec_str = exec_args[v_tmp[0]].replace('{VERSION}',v_tmp[1].replace('.',''))
@@ -1075,13 +1103,13 @@ class panelPlugin:
         if len(versions) == 1:
             versions[0]['setup'] = True
             return versions
-        
+
         for i in range(len(versions)):
             if version == (versions[i]['m_version'] + '.' + versions[i]['version']):
                 versions[i]['setup'] = True
                 continue
             vTmp = versions[i]['m_version'].split('_')
-            if len(vTmp) > 1: 
+            if len(vTmp) > 1:
                 vTmp = vTmp[1]
             else:
                 vTmp = vTmp[0]
@@ -1164,7 +1192,7 @@ class panelPlugin:
         info['return_js'] = ''
         if hasattr(get,'tojs'):
             info['return_js']   = get.tojs
-        
+
         #获取分页数据
         result = {}
         result['page'] = page.GetPage(info)
@@ -1176,17 +1204,17 @@ class panelPlugin:
             n += 1
             result['data'].append(data[i])
         return result
-        
-    
+
+
     #取列表
     def GetList(self,get = None):
         try:
             if not os.path.exists(self.__list): return []
             data = json.loads(public.readFile(self.__list))
-            
+
             #排序
             data = sorted(data, key= lambda b:b['sort'],reverse=False)
-            
+
             #获取非划分列表
             n = 0
             for dirinfo in os.listdir(self.__install_path):
@@ -1194,24 +1222,24 @@ class panelPlugin:
                 for tm in data:
                     if tm['name'] == dirinfo: isTrue = False
                 if not isTrue: continue
-                
+
                 path = self.__install_path + '/' + dirinfo
                 if os.path.isdir(path):
                     jsonFile = path + '/info.json'
                     if os.path.exists(jsonFile):
-                        try:                            
+                        try:
                             tmp = json.loads(public.readFile(jsonFile))
-                            if not hasattr(get,'type'): 
+                            if not hasattr(get,'type'):
                                 get.type = 0
                             else:
                                 get.type = int(get.type)
-                            
+
                             if get.type > 0:
                                 try:
                                     if get.type != tmp['id']: continue
                                 except:
                                     continue
-                            
+
                             tmp['pid'] = len(data) + 1000 + n
                             tmp['status'] = tmp['display']
                             tmp['display'] = 0
@@ -1222,17 +1250,17 @@ class panelPlugin:
             if get:
                 display = None
                 if hasattr(get,'display'): display = True
-                if not hasattr(get,'type'): 
+                if not hasattr(get,'type'):
                     get.type = 0
                 else:
                     get.type = int(get.type)
-                if not hasattr(get,'search'): 
+                if not hasattr(get,'search'):
                     search = None
                     m = 0
                 else:
                     search = get.search.encode('utf-8').lower()
                     m = 1
-                    
+
                 tmp = []
                 for d in data:
                     if d['id'] != 10000:
@@ -1255,8 +1283,8 @@ class panelPlugin:
             return data
         except Exception as ex:
             return str(ex)
-        
-    
+
+
     #获取图标
     def get_icon(self,name,downFile = None):
         iconFile = 'BTPanel/static/img/soft_ico/ico-' + name + '.png'
@@ -1267,7 +1295,7 @@ class panelPlugin:
             if size == 0:
                 public.run_thread(self.download_icon,(name,iconFile,downFile))
                 # self.download_icon(name,iconFile,downFile)
-        
+
     #下载图标
     def download_icon(self,name,iconFile,downFile):
         srcIcon =  'plugin/' + name + '/icon.png'
@@ -1282,7 +1310,7 @@ class panelPlugin:
                 public.ExecShell('wget -O ' + iconFile + ' ' + public.get_url() + '/install/plugin/' + name + '/icon.png' + " &")
         cache.set(skey,1,86400)
 
-    
+
     #取分页
     def GetPage(self,data,get):
         #包含分页类
@@ -1299,7 +1327,7 @@ class panelPlugin:
         info['return_js'] = ''
         if hasattr(get,'tojs'):
             info['return_js']   = get.tojs
-        
+
         #获取分页数据
         result = {}
         result['page'] = page.GetPage(info)
@@ -1311,7 +1339,7 @@ class panelPlugin:
             n += 1
             result['data'].append(data[i])
         return result
-    
+
     #取分类
     def GetType(self,get = None):
         try:
@@ -1320,7 +1348,7 @@ class panelPlugin:
             return data
         except:
             return False
-        
+
     #取单个
     def GetFind(self,name):
         try:
@@ -1330,26 +1358,26 @@ class panelPlugin:
             return None
         except:
             return None
-    
+
     #设置
     def SetField(self,name,key,value):
         data = self.GetList(None)
         for i in range(len(data)):
             if data[i]['name'] != name: continue
             data[i][key] = value
-        
+
         public.writeFile(self.__list,json.dumps(data))
         return True
-    
-    
-    
+
+
+
     #安装插件
     def install(self,get):
         pluginInfo = self.GetFind(get.name)
         if not pluginInfo:
             import json
             pluginInfo = json.loads(public.readFile(self.__install_path + '/' + get.name + '/info.json'))
-        
+
         if pluginInfo['tip'] == 'lib':
             if not os.path.exists(self.__install_path + '/' + pluginInfo['name']): public.ExecShell('mkdir -p ' + self.__install_path + '/' + pluginInfo['name'])
             if not 'download_url' in session: session['download_url'] = public.get_url()
@@ -1369,14 +1397,14 @@ class panelPlugin:
             if not os.path.exists(path): public.ExecShell("mkdir -p " + path)
             issue = public.readFile('/etc/issue')
             if session['server_os']['x'] != 'RHEL': get.type = '3'
-            
+
             apacheVersion='false'
             if public.get_webserver() == 'apache':
-                apacheVersion = public.readFile('/www/server/apache/version.pl')
+                apacheVersion = public.xss_version(public.readFile('/www/server/apache/version.pl'))
             public.writeFile('/var/bt_apacheVersion.pl',apacheVersion)
             public.writeFile('/var/bt_setupPath.conf',public.GetConfigValue('root_path'))
             isTask = '/tmp/panelTask.pl'
-            
+
             mtype = 'install'
             mmsg = 'install'
             if hasattr(get, 'upgrade'):
@@ -1393,8 +1421,8 @@ class panelPlugin:
             public.writeFile(isTask,'True')
             public.write_log_gettext('Installer','Successfully added intallation task [{}-{}]',(get.name,get.version))
             return public.return_msg_gettext(True,'Installation task added to queue')
-        
-        
+
+
     #卸载插件
     def unInstall(self,get):
         pluginInfo = self.GetFind(get.name)
@@ -1416,10 +1444,10 @@ class panelPlugin:
                 public.ExecShell('/bin/bash {} uninstall'.format(toFile))
             elif os.path.exists(pluginPath + '/install.sh'):
                 public.ExecShell('/bin/bash ' + pluginPath + '/install.sh uninstall')
-                
+
             if os.path.exists(pluginPath):
                 public.ExecShell('rm -rf ' + pluginPath)
-                
+
             public.write_log_gettext('Installer','Successfully uninstalled software [{}]',(pluginInfo['title'],))
             return public.return_msg_gettext(True,"Uninstallation succeeded")
         else:
@@ -1431,8 +1459,8 @@ class panelPlugin:
             public.ExecShell(execstr)
             public.WriteLog('TYPE_SETUP','Successfully uninstalled [{}-{}]',(get.name,get.version))
             return public.returnMsg(True,"Uninstallation succeeded")
-    
-    #取产品信息 
+
+    #取产品信息
     def getProductInfo(self,productName):
         if not self.__product_list:
             import panelAuth
@@ -1441,7 +1469,7 @@ class panelPlugin:
         for product in self.__product_list:
             if product['name'] == productName: return product
         return None
-    
+
     #取到期时间
     def getEndDate(self,pluginName):
         if not self.__plugin_list:
@@ -1452,18 +1480,18 @@ class panelPlugin:
             if not 'data' in tmp: return public.get_msg_gettext('NOT opened')
             self.__plugin_list = tmp['data']
         for pluinfo in self.__plugin_list:
-            if pluinfo['product'] == pluginName: 
+            if pluinfo['product'] == pluginName:
                 if not pluinfo['endtime'] or not pluinfo['state']: return public.get_msg_gettext('To be paid')
                 if pluinfo['endtime'] < time.time(): return public.get_msg_gettext('Expired')
                 return time.strftime("%Y-%m-%d",time.localtime(pluinfo['endtime']));
         return public.get_msg_gettext('NOT opened')
-    
+
     #取插件列表
     def getPluginList(self,get):
         import json
         arr = self.GetList(get)
         result = {}
-        if not arr: 
+        if not arr:
             result['data'] = arr
             result['type'] = self.GetType(None)
             return result
@@ -1474,7 +1502,7 @@ class panelPlugin:
                 apacheVersion = public.xss_version(public.readFile(apavFile).strip())
         except:
             pass
-        
+
         result = self.GetPage(arr,get)
         arr = result['data']
         for i in range(len(arr)):
@@ -1484,8 +1512,8 @@ class panelPlugin:
             #        arr[i]['end'] = self.getEndDate(arr[i]['title']);
             #        if os.path.exists('plugin/beta/config.conf'):
             #            if os.path.exists('plugin/' + arr[i]['name'] + '/' + arr[i]['name'] + '_main.py') and arr[i]['end'] == '未开通': arr[i]['end'] = '--';
-                    
-                        
+
+
             if arr[i]['name'] == 'php':
                 if apacheVersion == '2.2':
                     arr[i]['versions'] = '5.2,5.3,5.4'
@@ -1494,29 +1522,29 @@ class panelPlugin:
                     arr[i]['versions'] = '5.3,5.4,5.5,5.6,7.0,7.1,7.2,7.3,7.4'
                     arr[i]['update'] = self.GetPv(arr[i]['versions'], arr[i]['update'])
                 arr[i]['apache'] = apacheVersion
-                    
+
             arr[i]['versions'] = self.checksSetup(arr[i]['name'].replace('_soft',''),arr[i]['checks'],arr[i]['versions'])
-            
+
             try:
                 arr[i]['update'] = arr[i]['update'].split(',')
             except:
                 arr[i]['update'] = []
-            
+
             #是否强制使用插件模板 LIB_TEMPLATE
             if os.path.exists(self.__install_path+'/'+arr[i]['name']): arr[i]['tip'] = 'lib'
-            
-            if arr[i]['tip'] == 'lib': 
+
+            if arr[i]['tip'] == 'lib':
                 arr[i]['path'] = self.__install_path + '/' + arr[i]['name'].replace('_soft','')
                 arr[i]['config'] = os.path.exists(arr[i]['path'] + '/index.html')
             else:
                 arr[i]['path'] = '/www/server/' + arr[i]['name'].replace('_soft','')
         arr.append(public.M('tasks').where("status!=?",('1',)).count())
-        
-        
+
+
         result['data'] = arr
         result['type'] = self.GetType(None)
         return result
-    
+
     #GetPHPV
     def GetPv(self,versions,update):
         versions = versions.split(',')
@@ -1525,7 +1553,7 @@ class panelPlugin:
         for up in update:
             if up[:3] in versions: updates.append(up)
         return ','.join(updates)
-    
+
     #保存插件排序
     def savePluginSort(self,get):
         ssort = get.ssort.split('|')
@@ -1552,7 +1580,7 @@ class panelPlugin:
         versArr = vers.split(',')
         for v in versArr:
             version = {}
-            
+
             v2 = v
             if name == 'php': v2 = v2.replace('.','')
             status = False
@@ -1591,14 +1619,14 @@ class panelPlugin:
                 else:
                     if name1 == 'pure': name1 = 'pure-ftpd'
                     if name1 == name: isTask = task['status']
-            
+
             infoFile = 'plugin/' + name + '/info.json'
             if os.path.exists(infoFile):
                 try:
                     tmps = json.loads(public.readFile(infoFile))
                     if tmps: v1 = tmps['versions']
                 except:pass
-            
+
             if name == 'memcached':
                 if os.path.exists('/etc/init.d/memcached'):
                     v1 = session.get('memcachedv')
@@ -1606,7 +1634,7 @@ class panelPlugin:
                         v1 = public.ExecShell("memcached -V|awk '{print $2}'")[0].strip()
                         session['memcachedv'] = v1
             if name == 'apache':
-                if os.path.exists('/www/server/apache/bin/httpd'): 
+                if os.path.exists('/www/server/apache/bin/httpd'):
                     v1 = session.get('httpdv')
                     if not v1:
                         v1 = public.ExecShell("/www/server/apache/bin/httpd -v|grep Apache|awk '{print $3}'|sed 's/Apache\///'")[0].strip();
@@ -1620,11 +1648,11 @@ class panelPlugin:
             version['no'] = v1
             versions.append(version)
         return self.checkRun(name,versions)
-        
+
     #检查是否启动
     def checkRun(self,name,versions):
         if name == 'php':
-            path = '/www/server/php' 
+            path = '/www/server/php'
             pids = psutil.pids()
             for i in range(len(versions)):
                 if versions[i]['status']:
@@ -1643,7 +1671,7 @@ class panelPlugin:
                     versions[i]['pathinfo'] = phpConfig['pathinfo']
                     versions[i]['display'] = os.path.exists(path + '/' + v4 + '/display.pl')
                     if len(versions) < 5: versions[i]['run'] = True
-                
+
         elif name == 'nginx':
             status = False
             if os.path.exists('/etc/init.d/nginx'):
@@ -1710,7 +1738,7 @@ class panelPlugin:
             for i in range(len(versions)):
                 if versions[i]['status']: versions[i]['run'] = True
         return versions
-    
+
     #取PHPMyAdmin状态
     def getPHPMyAdminStatus(self):
         import re
@@ -1727,7 +1755,7 @@ class panelPlugin:
             rtmp = re.search(rep,conf)
             if rtmp:
                 phpport = rtmp.groups()[0]
-            
+
             if conf.find('AUTH_START') != -1: pauth = True
             if conf.find(setupPath + '/stop') == -1: pstatus = True
             configFile = setupPath + '/nginx/conf/enable-php.conf'
@@ -1746,7 +1774,7 @@ class panelPlugin:
                     rep = r"php-cgi.*\.sock"
                     public.writeFile(configFile,conf)
                     phpversion = '54'
-        
+
         configFile = setupPath + '/apache/conf/extra/httpd-vhosts.conf'
         if os.path.exists(configFile):
             conf = public.readFile(configFile)
@@ -1829,20 +1857,20 @@ class panelPlugin:
             data['maxTime'] = tmp[0]
         except:
             data['maxTime'] = 0
-        
+
         try:
             rep = r"\n;*\s*cgi\.fix_pathinfo\s*=\s*([0-9]+)\s*\n"
             tmp = re.search(rep,phpini).groups()
-            
+
             if tmp[0] == '1':
                 data['pathinfo'] = True
             else:
                 data['pathinfo'] = False
         except:
             data['pathinfo'] = False
-        
+
         return data
-    
+
     #名取PID
     def getPid(self,pname):
         try:
@@ -1851,7 +1879,7 @@ class panelPlugin:
                 if psutil.Process(pid).name() == pname: return True
             return False
         except: return True
-    
+
     #检测指定进程是否存活
     def checkProcess(self,pid):
         try:
@@ -1859,7 +1887,7 @@ class panelPlugin:
             if int(pid) in self.pids: return True
             return False
         except: return False
-    
+
     #获取配置模板
     def getConfigHtml(self,get):
         filename = self.__install_path + '/' + get.name + '/index.html'
@@ -2019,13 +2047,13 @@ class panelPlugin:
         else:
             self.SetField(get.name, 'display', int(get.status))
         return public.return_msg_gettext(True,'Setup successfully!')
-    
+
     #从云端获取插件列表
     def getCloudPlugin(self,get):
         if session.get('getCloudPlugin') and get != None: return public.return_msg_gettext(True,'Your plugin list is already the latest version {}!',("-1",))
         import json
         if not session.get('download_url'): session['download_url'] = 'http://node.aapanel.com'
-        
+
         #获取列表
         try:
             newUrl = public.get_url()
@@ -2065,12 +2093,12 @@ class panelPlugin:
         self.GetCloudWarning(get)
         session['getCloudPlugin'] = True
         return public.return_msg_gettext(True,'Software list updated!')
-    
+
     #刷新缓存
     def flush_cache(self,get):
         self.getCloudPlugin(None)
         return public.return_msg_gettext(True,'Software list updated!')
-    
+
     #获取PHP扩展
     def getCloudPHPExt(self,get=None):
         import json
@@ -2110,7 +2138,7 @@ class panelPlugin:
             return public.get_error_info()
 
 
-        
+
     #获取警告列表
     def GetCloudWarning(self,get):
         import json
@@ -2135,25 +2163,35 @@ class panelPlugin:
         find = self.get_soft_find(get)
         return find['title']
 
-    
-    
+
+
     #请求插件事件
     def a(self,get):
         if not hasattr(get,'name'): return public.return_msg_gettext(False,'Input name of plugin!')
         try:
             if not public.path_safe_check("%s/%s" % (get.name,get.s)): return public.return_msg_gettext(False,'Requested method [{}] does not exist!')
             path = self.__install_path + '/' + get.name
+
+            # aaa = path + '/'+get.name+'_main.py'
+            # public.print_log("@@@@@@@@@@@@@@@@@aaa {}".format(aaa))
+
             if not os.path.exists(path + '/'+get.name+'_main.py'):
                 if os.path.exists(path+'/index.php'):
+                    # bbb = path+'/index.php'
+                    # public.print_log("@@@@@@@@@@@@@@@@@bbb {}".format(bbb))
+
+
                     import panelPHP
                     return panelPHP.panelPHP(get.name).exec_php_script(get)
                 return public.return_msg_gettext(False,'This plugin does NOT have extend function!')
+
             if not self.check_accept(get):return public.return_msg_gettext(False,"You did not purchase [ {} ] or the authorization has expired", (self.get_title_byname(get),))
             public.package_path_append(path)
             plugin_main = __import__(get.name+'_main')
             try:
                 reload(plugin_main)
             except: pass
+
             pluginObject = eval('plugin_main.' + get.name + '_main()')
             if not hasattr(pluginObject,get.s): return public.return_msg_gettext(False,'Requested method [{}] does not exist!',(get.s,))
             execStr = 'pluginObject.' + get.s + '(get)'
@@ -2166,13 +2204,13 @@ class panelPlugin:
     #上传插件包
     def update_zip(self,get = None,tmp_file = None, update = False):
         tmp_path = '/www/server/panel/temp'
-        if not os.path.exists(tmp_path): 
+        if not os.path.exists(tmp_path):
             os.makedirs(tmp_path,mode=384)
 
-        if tmp_file: 
+        if tmp_file:
             if not os.path.exists(tmp_file): return public.return_msg_gettext(False,'File download failed!')
 
-        
+
         if get:
             public.ExecShell("rm -rf " + tmp_path + '/*')
             tmp_file = tmp_path + '/plugin_tmp.zip'
@@ -2196,7 +2234,7 @@ class panelPlugin:
                 if not 'install.sh' in df[2]: continue
                 if not os.path.exists(df[0] + '/info.json'): continue
                 d_path = df[0]
-            if d_path: 
+            if d_path:
                 tmp_path = d_path
                 p_info = tmp_path + '/info.json'
         try:
@@ -2246,13 +2284,13 @@ class panelPlugin:
             return public.return_msg_gettext(True,'Installation succeeded!')
         public.ExecShell("rm -rf " + plugin_path)
         return public.return_msg_gettext(False,'Installation failed')
-        
+
 
     #导出插件包
     def export_zip(self,get):
         plugin_path = '/www/server/panel/plugin/' + get.plugin_name
         if not os.path.exists(plugin_path): return public.return_msg_gettext(False,'The specified plugin does not exist!')
-        
+
         get.sfile = plugin_path + '/'
         get.dfile = '/www/server/panel/temp/bt_plugin_' + get.plugin_name + '.zip'
         get.type = 'zip'

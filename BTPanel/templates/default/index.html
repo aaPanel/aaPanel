@@ -71,20 +71,21 @@
 <div class="main-content">
     <div class="container-fluid" style="padding-bottom: 66px;padding-left: 15px;">
         <div class="index-pos-box bgw mtb15">
-            <div class="position f12 c6 pull-left" style="background:none;padding-left:15px">
-                <span class="bind-user c4">
+            <div class="position f12 c6 pull-left flex" style="background:none;padding-left:15px">
+                <span class="bind-user c4" style="background-position-y: center;">
                     <a href="javascript:bt.pub.bind_btname();" class="btlink">{{data['lan']['ACCOUNT']}}</a>
                 </span>
+<span class="flex" style="align-items: center;margin-right:16px;"><i class="icon-demand"></i><a class="btlink" onClick="javascript:bt.openFeedback({title:'aaPanel demand feedback collection',placeholder:'<span>If you encounter any problems or imperfect functions during use, please describe <br> your problems or needs to us in detail, we will try our best to solve or improve for <br> you</span>',recover:'We pay special attention to your requirements feedback, and we conduct regular weekly requirements reviews. I hope I can help you better',key:993,proType:2});" style="margin-left: 5px;">Feedback</a></span>
                 {% if data['pd'].find("{{data['lan']['ACCOUNT']}}") != -1 %}
-                <span class="bt-dashi">
+                <span class="bt-dashi"  style="background-position-y: center;">
                 <a class="btlink" href="https://www.bt.cn/invite" target="_blank" style="margin-left:5px">{{data['lan']['INVITATION_REWARD']}}</a>
                 </span>
                 {% endif %}
                 <!--<span class="bind-weixin c4"><a href="javascript:bt.weixin.open_wxapp();" class="btlink">{{data['lan']['WECHAT']}}</a></span>-->
-                <span class="ico-system">{{data['lan']['S1']}}</span><span id="info" style="margin-left:10px;"> {{data['lan']['S2']}}</span>&#12288;&#12288;{{data['lan']['S3']}} <span id="running">{{data['lan']['S4']}}</span>
+                <span class="ico-system"  style="background-position-y: center;">{{data['lan']['S1']}}</span><span id="info" style="margin-left:10px;"> {{data['lan']['S2']}}</span>&#12288;&#12288;{{data['lan']['S3']}} <span id="running">{{data['lan']['S4']}}</span>
             </div>
             <span class="pull-right f12 c6" style="line-height:52px; margin-right:15px">
-                {{data['pd']|safe}}
+                {{ data['pd'] | safe }}
                 <span id="btversion" style="margin-right:10px">
                   <a onclick="index.open_log()" style="cursor: pointer;">{{session['version']}}</a>
                 </span>

@@ -29,12 +29,12 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = "This solution reduces the risk of a breach by changing the default SSH login port. Noteafter the fix, you'll need to change the SSH port that the relevant business logs on to. "
 
 def check_run():
     '''
         @name 开始检测
-        @author hwliang<2020-08-03>
+        @author hwliang<2022-08-18>
         @return tuple (status<bool>,msg<string>)
 
         @example   
@@ -45,16 +45,7 @@ def check_run():
                 print('Warning: {}'.format(msg))
         
     '''
-
-    file = '/etc/ssh/sshd_config'
-    conf = public.readFile(file)
-    if not conf: conf = ''
-    rep = r"#*Port\s+([0-9]+)\s*\n"
-    tmp1 = re.search(rep,conf)
-    port = '22'
-    if tmp1:
-        port = tmp1.groups(0)[0]
-    
+    port = public.get_sshd_port()
 
     version = public.readFile('/etc/redhat-release')
     if not version:
@@ -62,16 +53,7 @@ def check_run():
     else:
         version = version.replace('release ','').replace('Linux','').replace('(Core)','').strip()
 
-    if os.path.exists('/usr/bin/apt-get'):
-        if os.path.exists('/etc/init.d/sshd'):
-            status = public.ExecShell("service sshd status | grep -P '(dead|stop)'|grep -v grep")
-        else:
-            status = public.ExecShell("service ssh status | grep -P '(dead|stop)'|grep -v grep")
-    else:
-        if version.find(' 7.') != -1 or version.find(' 8.') != -1 or version.find('Fedora') != -1:
-            status = public.ExecShell("systemctl status sshd.service | grep 'dead'|grep -v grep")
-        else:
-            status = public.ExecShell("/etc/init.d/sshd status | grep -e 'stopped' -e '已停'|grep -v grep")
+    status = public.get_sshd_status()
 
     fail2ban_file = '/www/server/panel/plugin/fail2ban/config.json'
     if os.path.exists(fail2ban_file):
@@ -81,11 +63,6 @@ def check_run():
                 if fail2ban_config['sshd']['act'] == 'true':
                     return True,'Fail2ban is enable'
         except: pass
-
-    if len(status[0]) > 3:
-        status = False
-    else:
-        status = True
 
     if not status:
         return True,'SSH service is not enabled'

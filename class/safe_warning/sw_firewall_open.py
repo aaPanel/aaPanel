@@ -27,24 +27,17 @@ _tips = [
     ]
 
 _help = ''
-
-
+_remind = 'This solution can reduce the risk surface of the server exposure and enhance the protection of the website. However, you need to add the port that needs to be opened at the port rule, otherwise the website will be unreachable. '
 def check_run():
     '''
         @name 开始检测
-        @author hwliang<2020-08-04>
+        @author hwliang<2022-08-18>
         @return tuple (status<bool>,msg<string>)
     '''
-    
-    if os.path.exists('/usr/sbin/firewalld'): 
-        if public.ExecShell("systemctl status firewalld|grep 'active (running)'")[0]:
-            return True,'Risk-free'
-
-    elif os.path.exists('/usr/sbin/ufw'): 
-        if public.ExecShell("ufw status|grep 'Status: active'")[0]:
-            return True,'Risk-free'
+    status = public.get_firewall_status()
+    if status == 1:
+        return True,'Risk-free'
+    elif status == -1:
+        return False,'System firewall is not installed, there are security risks'
     else:
-        if public.ExecShell("service iptables status|grep 'Table: filter'")[0]:
-            return True,'Risk-free'
-    
-    return False,'The system firewall is not opened, and there is a security risk'
+        return False,'System firewall is not installed, there are security risks'

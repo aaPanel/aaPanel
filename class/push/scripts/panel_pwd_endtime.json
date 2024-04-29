@@ -1,0 +1,9 @@
+{
+	"interval": 600,
+	"type": "panel_pwd_endtime",
+	"title": "Panel password Expiration Date",
+	"cycle": 15,
+	"push_count": 1,
+    "module_type":"site_push",
+	"status": true
+}

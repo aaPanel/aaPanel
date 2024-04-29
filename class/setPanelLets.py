@@ -66,7 +66,9 @@ class setPanelLets:
         get.id = site_id
         get.auto_wildcard = '0'
         get.domains = json.dumps([get.domain])
-        cert_info = acme_v2().apply_cert_api(get)
+        get.siteName = get.domain
+        p = acme_v2()
+        cert_info = p.apply_cert_api(get)
         if 'private_key' not in cert_info:
             return public.returnMsg(False, "Failed to apply for a certificate, please try to manually apply for a certificate for the panel domain name on the site management page")
         get.key = cert_info['private_key']
@@ -93,7 +95,6 @@ class setPanelLets:
                 now = time.time()
                 if time_stamp > int(now):
                     return i
-        for i in gcl:
             for d in i['dns']:
                 d = d.split('.')
                 if '*' in d and d[1:] == get.domain.split('.')[1:]:
@@ -140,8 +141,8 @@ class setPanelLets:
         public.writeFile(self.__panel_cert_path + "certificate.pem", self.__tmp_cert)
 
     # 记录证书源
-    def __save_cert_source(self,domain):
-        public.writeFile(self.__panel_cert_path+"lets.info",json.dumps({"domain":domain,"cert_type":"2"}))
+    def __save_cert_source(self,domain,email):
+        public.writeFile(self.__panel_cert_path+"lets.info",json.dumps({"domain":domain,"cert_type":"2","email":email}))
 
     # 获取证书源
     def get_cert_source(self):
@@ -220,7 +221,7 @@ class setPanelLets:
                 return res
             public.writeFile("/www/server/panel/data/ssl.pl", "True")
             # public.writeFile("/www/server/panel/data/reload.pl","1")
-            self.__save_cert_source(domain)
+            self.__save_cert_source(domain,get.email)
             return public.returnMsg(True, 'Setup successfully!')
         if not create_site:
             create_lets = self.__create_lets(get)
@@ -231,7 +232,7 @@ class setPanelLets:
                 self.copy_cert(domain_cert)
                 public.writeFile("/www/server/panel/data/ssl.pl", "True")
                 # public.writeFile("/www/server/panel/data/reload.pl", "1")
-                self.__save_cert_source(domain)
+                self.__save_cert_source(domain, get.email)
                 return  public.returnMsg(True, 'Setup successfully!')
             else:
                 return public.returnMsg(False, create_lets)

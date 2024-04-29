@@ -37,7 +37,7 @@ class Sql():
     def __exit__(self,exc_type,exc_value,exc_trackback):
         self.close()
 
-    def __GetConn(self): 
+    def __GetConn(self):
         #取数据库对象
         try:
             if self.__DB_CONN == None:
@@ -45,17 +45,26 @@ class Sql():
                 self.__DB_CONN.text_factory = str
         except Exception as ex:
             return "error: " + str(ex)
-            
-    def dbfile(self,name):
-        self.__DB_FILE = 'data/' + name + '.db'
+
+    def connect(self):
+        #连接数据库
+        self.__GetConn()
         return self
-    
+
+    def dbfile(self,name):
+        #设置数据库文件
+        if name[0] == '/':
+            self.__DB_FILE = name
+        else:
+            self.__DB_FILE = 'data/' + name + '.db'
+        return self
+
     def table(self,table):
         #设置表名
         self.__DB_TABLE = table
         return self
-    
-    
+
+
     def where(self,where,param):
         #WHERE条件
         if where:
@@ -72,29 +81,31 @@ class Sql():
                 param = (param,)
         return param
 
-    
+
     def order(self,order):
         #ORDER条件
         if len(order):
             self.__OPT_ORDER = " ORDER BY "+order
         return self
-    
-    
-    def limit(self,limit):
+
+
+    def limit(self,limit,offset = 0):
         #LIMIT条件
 
-        if limit:
+        if limit and not offset:
             self.__OPT_LIMIT = " LIMIT {}".format(limit)
+        elif limit and offset:
+            self.__OPT_LIMIT = " LIMIT {},{}".format(offset,limit)
         return self
-    
-    
+
+
     def field(self,field):
         #FIELD条件
         if len(field):
             self.__OPT_FIELD = field
         return self
-    
-    
+
+
     def select(self):
         #查询数据集
         self.__GetConn()
@@ -122,7 +133,7 @@ class Sql():
                 tmp = list(map(list,data))
                 data = tmp
                 del(tmp)
-            self.__close()
+            self._close()
             return data
         except Exception as ex:
             return "error: " + str(ex)
@@ -141,7 +152,7 @@ class Sql():
                 key = key.split(as_tip)[1]
             fields.append(key)
         return fields
-    
+
     def __get_columns(self):
         if self.__OPT_FIELD == '*':
             tmp_cols = self.query('PRAGMA table_info('+self.__DB_TABLE+')',())
@@ -158,13 +169,13 @@ class Sql():
                 return result[0][keyName]
             return result
         except: return None
-    
-    
+
+
     def setField(self,keyName,keyValue):
         #更新指定字段
         return self.save(keyName,(keyValue,))
-        
-    
+
+
     def find(self):
         #取一行数据
         try:
@@ -173,8 +184,8 @@ class Sql():
                 return result[0]
             return result
         except:return None
-    
-    
+
+
     def count(self):
         #取行数
         key="COUNT(*)"
@@ -183,8 +194,8 @@ class Sql():
             return int(data[0][key])
         except:
             return 0
-    
-    
+
+
     def add(self,keys,param):
         #插入数据
         self.write_lock()
@@ -198,7 +209,7 @@ class Sql():
             sql = "INSERT INTO "+self.__DB_TABLE+"("+keys+") "+"VALUES("+values+")"
             result = self.__DB_CONN.execute(sql,self.__to_tuple(param))
             id = result.lastrowid
-            self.__close()
+            self._close()
             self.__DB_CONN.commit()
             self.rm_lock()
             return id
@@ -241,12 +252,12 @@ class Sql():
             return True
         except Exception as ex:
             return "error: " + str(ex)
-        
+
     def commit(self):
-        self.__close()
+        self._close()
         self.__DB_CONN.commit()
-    
-    
+
+
     def save(self,keys,param):
         #更新数据
         self.write_lock()
@@ -265,13 +276,13 @@ class Sql():
                 tmp.append(arg)
             self.__OPT_PARAM = tuple(tmp)
             result = self.__DB_CONN.execute(sql,self.__OPT_PARAM)
-            self.__close()
+            self._close()
             self.__DB_CONN.commit()
             self.rm_lock()
             return result.rowcount
         except Exception as ex:
             return "error: " + str(ex)
-    
+
     def delete(self,id=None):
         #删除数据
         self.write_lock()
@@ -282,14 +293,14 @@ class Sql():
                 self.__OPT_PARAM = (id,)
             sql = "DELETE FROM " + self.__DB_TABLE + self.__OPT_WHERE
             result = self.__DB_CONN.execute(sql,self.__OPT_PARAM)
-            self.__close()
+            self._close()
             self.__DB_CONN.commit()
             self.rm_lock()
             return result.rowcount
         except Exception as ex:
             return "error: " + str(ex)
-        
-    
+
+
     def execute(self,sql,param = ()):
         #执行SQL语句返回受影响行
         self.write_lock()
@@ -324,7 +335,7 @@ class Sql():
         return
         # if os.path.exists(self.__LOCK):
         #     os.remove(self.__LOCK)
-    
+
     def query(self,sql,param = ()):
         #执行SQL语句返回数据集
         self.__GetConn()
@@ -335,7 +346,7 @@ class Sql():
             return data
         except Exception as ex:
             return "error: " + str(ex)
-        
+
     def create(self,name):
         #创建数据表
         self.write_lock()
@@ -345,7 +356,7 @@ class Sql():
         self.__DB_CONN.commit()
         self.rm_lock()
         return result.rowcount
-        
+
     def fofile(self,filename):
         #执行脚本
         self.write_lock()
@@ -355,14 +366,20 @@ class Sql():
         self.__DB_CONN.commit()
         self.rm_lock()
         return result.rowcount
-        
-    def __close(self):
+
+    def _close(self):
         #清理条件属性
         self.__OPT_WHERE = ""
         self.__OPT_FIELD = "*"
         self.__OPT_ORDER = ""
         self.__OPT_LIMIT = ""
         self.__OPT_PARAM = ()
+
+    def is_connect(self):
+        #检查是否连接数据库
+        if not self.__DB_CONN:
+            return False
+        return True
 
 
     def close(self):
@@ -372,4 +389,4 @@ class Sql():
             self.__DB_CONN = None
         except:
             pass
-        
+

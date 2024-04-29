@@ -10,9 +10,123 @@ import time,public,db,os,sys,json,re,shutil
 os.chdir('/www/server/panel')
 
 def control_init():
+    public.chdck_salt()
+    clear_other_files()
+    sql_pacth()
+    #disable_putenv('putenv')
+    #clean_session()
+    #set_crond()
+    clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
+    clean_max_log('/var/log/rsyncd.log',1024*1024*10)
+    clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
+    remove_tty1()
+    clean_hook_log()
+    run_new()
+    clean_max_log('/www/server/cron',1024*1024*5,20)
+    clean_max_log("/www/server/panel/plugin/webhook/script",1024*1024*1)
+    #check_firewall()
+    check_dnsapi()
+    clean_php_log()
+    files_set_mode()
+    set_pma_access()
+    # public.set_open_basedir()
+    clear_fastcgi_safe()
+    update_py37()
+    run_script()
+    set_php_cli_env()
+    check_enable_php()
+    #sync_node_list()
+    check_default_curl_file()
+    null_html()
+    remove_other()
+    deb_bashrc()
+    upgrade_gevent()
+    upgrade_polkit()
+    #hide_docker()
+    rep_pyenv_link()
+    rm_apache_cgi_test()
+
+def rm_apache_cgi_test():
+    '''
+        @name 删除apache测试cgi文件
+        @author hwliang
+        @return void
+    '''
+    test_cgi_file = '/www/server/apache/cgi-bin/test-cgi'
+    if os.path.exists(test_cgi_file):
+        os.remove(test_cgi_file)
+
+def rep_pyenv_link():
+    '''
+        @name 修复pyenv环境软链
+        @author hwliang
+        @return void
+    '''
+
+    pyenv_bin = '/www/server/panel/pyenv/bin/python3'
+    btpython_bin = '/usr/bin/btpython'
+    pip_bin = '/www/server/panel/pyenv/bin/pip3'
+    btpip_bin = '/usr/bin/btpip'
+
+    # 检查btpython软链接
+    if not os.path.exists(pyenv_bin): return
+    if not os.path.exists(btpython_bin):
+        public.ExecShell("ln -sf {} {}".format(pyenv_bin,btpython_bin))
+
+    # 检查btpip软链接
+    if not os.path.exists(pip_bin): return
+    if not os.path.exists(btpip_bin):
+        public.ExecShell("ln -sf {} {}".format(pip_bin,btpip_bin))
+
+def hide_docker():
+    '''
+        @name 隐藏docker菜单
+        @author hwliang
+        @return void
+    '''
+    tip_file = '{}/data/hide_docker.pl'.format(public.get_panel_path())
+    if os.path.exists(tip_file): return
+
+    # 正在使用docker-compose的用户不隐藏
+    docker_compose = "/usr/bin/docker-compose"
+    if os.path.exists(docker_compose): return
+
+    # 获取隐藏菜单配置
+    menu_key = 'memuDocker'
+    hide_menu_json = public.read_config('hide_menu')
+    if not isinstance(hide_menu_json,list):
+        hide_menu_json = []
+    if menu_key in hide_menu_json: return
+
+    # 保存隐藏菜单配置
+    hide_menu_json.append(menu_key)
+    public.save_config('hide_menu',hide_menu_json)
+    public.writeFile(tip_file,'True')
+
+
+
+
+
+def upgrade_polkit():
+    '''
+        @name 修复polkit提权漏洞(CVE-2021-4034)
+        @author hwliang
+        @return void
+    '''
+    upgrade_log_file = '{}/logs/upgrade_polkit.log'.format(public.get_panel_path())
+    tip_file = '{}/data/upgrade_polkit.pl'.format(public.get_panel_path())
+    if os.path.exists(tip_file): return
+    os.system("nohup {} {}/script/polkit_upgrade.py &> {}".format(public.get_python_bin(),public.get_panel_path(),upgrade_log_file))
+
+def clear_other_files():
     dirPath = '/www/server/phpmyadmin/pma'
     if os.path.exists(dirPath):
         public.ExecShell("rm -rf {}".format(dirPath))
+    dirPath = '/www/server/nginx/waf'
+    if os.path.exists(dirPath):
+        public.ExecShell("rm -rf {}".format(dirPath))
+        public.ExecShell("/etc/init.d/nginx reload")
+        public.ExecShell("/etc/init.d/nginx start")
 
     dirPath = '/www/server/adminer'
     if os.path.exists(dirPath):
@@ -22,9 +136,60 @@ def control_init():
     if os.path.exists(dirPath):
         public.ExecShell("rm -rf {}".format(dirPath))
 
+    filename = '/www/server/nginx/off'
+    if os.path.exists(filename): os.remove(filename)
+    filename = "{}/vhost/nginx/waf.conf".format(public.get_panel_path())
+    if os.path.exists(filename):
+        os.remove(filename)
+        public.ExecShell("/etc/init.d/nginx reload")
+        public.ExecShell("/etc/init.d/nginx start")
+    c = public.to_string([99, 104, 97, 116, 116, 114, 32, 45, 105, 32, 47, 119, 119, 119, 47,
+                          115, 101, 114, 118, 101, 114, 47, 112, 97, 110, 101, 108, 47, 99,
+                          108, 97, 115, 115, 47, 42])
+    try:
+        init_file = '/etc/init.d/bt'
+        src_file = '/www/server/panel/init.sh'
+        md51 = public.md5(init_file)
+        md52 = public.md5(src_file)
+        if md51 != md52:
+            import shutil
+            shutil.copyfile(src_file,init_file)
+            if os.path.getsize(init_file) < 10:
+                public.ExecShell("chattr -i " + init_file)
+                public.ExecShell("\cp -arf %s %s" % (src_file,init_file))
+                public.ExecShell("chmod +x %s" % init_file)
+    except:pass
+    public.writeFile('/var/bt_setupPath.conf','/www')
+    public.ExecShell(c)
+    p_file = 'class/plugin2.so'
+    if os.path.exists(p_file): public.ExecShell("rm -f class/*.so")
+    public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config;chown -R root:root /www/server/phpmyadmin;chmod -R 755 /www/server/phpmyadmin")
+    if os.path.exists("/www/server/mysql"):
+        public.ExecShell("chown mysql:mysql /etc/my.cnf;chmod 600 /etc/my.cnf")
+    public.ExecShell("rm -rf /www/server/panel/temp/*")
+    stop_path = '/www/server/stop'
+    if not os.path.exists(stop_path):
+        os.makedirs(stop_path)
+    public.ExecShell("chown -R root:root {path};chmod -R 755 {path}".format(path=stop_path))
+    public.ExecShell('chmod 755 /www;chmod 755 /www/server')
+    if os.path.exists('/www/server/phpmyadmin/pma'):
+        public.ExecShell("rm -rf /www/server/phpmyadmin/pma")
+    if os.path.exists("/www/server/adminer"):
+        public.ExecShell("rm -rf /www/server/adminer")
+    if os.path.exists("/www/server/panel/adminer"):
+        public.ExecShell("rm -rf /www/server/panel/adminer")
+    if os.path.exists('/dev/shm/session.db'):
+        os.remove('/dev/shm/session.db')
 
-    time.sleep(1)
+    node_service_bin = '/usr/bin/nodejs-service'
+    node_service_src = '/www/server/panel/script/nodejs-service.py'
+    if os.path.exists(node_service_src): public.ExecShell("chmod 700 " + node_service_src)
+    if not os.path.exists(node_service_bin):
+        if os.path.exists(node_service_src):
+            public.ExecShell("ln -sf {} {}".format(node_service_src,node_service_bin))
 
+
+def sql_pacth():
     sql = db.Sql().dbfile('system')
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'load_average')).count():
         csql = '''CREATE TABLE IF NOT EXISTS `load_average` (
@@ -38,6 +203,9 @@ def control_init():
         sql.execute(csql,())
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%type_id%')).count():
         public.M('sites').execute("alter TABLE sites add type_id integer DEFAULT 0",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'database_servers','%db_type%')).count():
+        public.M('databases').execute("alter TABLE database_servers add db_type REAL DEFAULT 'mysql'",())
 
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%edate%')).count():
         public.M('sites').execute("alter TABLE sites add edate integer DEFAULT '0000-00-00'",())
@@ -60,6 +228,30 @@ def control_init():
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'databases','%sid%')).count():
         public.M('databases').execute("alter TABLE databases add sid integer DEFAULT 0",())
 
+    ndb = public.M('databases').order("id desc").field('id,pid,name,username,password,accept,ps,addtime,type').select()
+    if type(ndb) == str: public.M('databases').execute("alter TABLE databases add type TEXT DEFAULT MySQL",())
+
+    # 计划任务表处理
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%status%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'status' INTEGER DEFAULT 1",())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%save%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'save' INTEGER DEFAULT 3",())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%backupTo%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'backupTo' TEXT DEFAULT off",())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%sName%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sName' TEXT",())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%sBody%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sBody' TEXT",())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%sType%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'sType' TEXT",())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%urladdress%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'urladdress' TEXT",())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%save_local%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'save_local' INTEGER DEFAULT 0",())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%notice%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'notice' INTEGER DEFAULT 0",())
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'crontab','%notice_channel%')).count():
+        public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'notice_channel' TEXT DEFAULT ''",())
 
     sql = db.Sql()
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_types')).count():
@@ -122,7 +314,17 @@ def control_init():
 )'''
         sql.execute(csql,())
 
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'security')).count():
+        csql = '''CREATE TABLE IF NOT EXISTS `security` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `type` TEXT,
+    `log` TEXT,
+    `addtime` INTEGER DEFAULT 0
+    )'''
+        sql.execute(csql, ())
 
+
+    test_ping()
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'logs','%username%')).count():
         public.M('logs').execute("alter TABLE logs add uid integer DEFAULT '1'",())
         public.M('logs').execute("alter TABLE logs add username TEXT DEFAULT 'system'",())
@@ -141,82 +343,94 @@ def control_init():
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'users','%salt%')).count():
         public.M('users').execute("ALTER TABLE 'users' ADD 'salt' TEXT",())
 
-    public.chdck_salt()
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'messages','%retry_num%')).count():
+        public.M('messages').execute("alter TABLE messages add send integer DEFAULT 0",())
+        public.M('messages').execute("alter TABLE messages add retry_num integer DEFAULT 0",())
+
+
+def upgrade_gevent():
+    '''
+        @name 升级gevent
+        @author hwliang
+        @return void
+    '''
+    tip_file = '{}/data/upgrade_gevent.lock'.format(public.get_panel_path())
+    upgrade_script_file = '{}/script/upgrade_gevent.sh'.format(public.get_panel_path())
+    if os.path.exists(upgrade_script_file) and not os.path.exists(tip_file):
+        public.writeFile(tip_file,'1')
+        os.system("bash {}".format(upgrade_script_file))
+        if os.path.exists(tip_file): os.remove(tip_file)
+
+
+def deb_bashrc():
+    '''
+        @name 针对debian/ubuntu未调用bashrc导致的问题
+        @author hwliang
+        @return void
+    '''
+    bashrc = '/root/.bashrc'
+    bash_profile = '/root/.bash_profile'
+    apt_get = '/usr/bin/apt-get'
+    if not os.path.exists(apt_get): return
+    if not os.path.exists(bashrc): return
+    if not os.path.exists(bash_profile): return
+
+    profile_body = public.readFile(bash_profile)
+    if not isinstance(profile_body,str): return
+    if profile_body.find('.bashrc') == -1:
+        public.writeFile(bash_profile,'source ~/.bashrc\n' + profile_body.strip() + "\n")
 
 
 
-    filename = '/www/server/nginx/off'
-    if os.path.exists(filename): os.remove(filename)
-    c = public.to_string([99, 104, 97, 116, 116, 114, 32, 45, 105, 32, 47, 119, 119, 119, 47, 
-                          115, 101, 114, 118, 101, 114, 47, 112, 97, 110, 101, 108, 47, 99, 
-                          108, 97, 115, 115, 47, 42])
-    try:
-        init_file = '/etc/init.d/bt'
-        src_file = '/www/server/panel/init.sh'
-        md51 = public.md5(init_file)
-        md52 = public.md5(src_file)
-        if md51 != md52:
-            import shutil
-            shutil.copyfile(src_file,init_file)
-            if os.path.getsize(init_file) < 10:
-                public.ExecShell("chattr -i " + init_file)
-                public.ExecShell("\cp -arf %s %s" % (src_file,init_file))
-                public.ExecShell("chmod +x %s" % init_file)
-    except:pass
-    public.writeFile('/var/bt_setupPath.conf','/www')
-    public.ExecShell(c)
-    p_file = 'class/plugin2.so'
-    if os.path.exists(p_file): public.ExecShell("rm -f class/*.so")
-    public.ExecShell("chmod -R  600 /www/server/panel/data;chmod -R  600 /www/server/panel/config;chmod -R  700 /www/server/cron;chmod -R  600 /www/server/cron/*.log;chown -R root:root /www/server/panel/data;chown -R root:root /www/server/panel/config;chown -R root:root /www/server/phpmyadmin;chmod -R 755 /www/server/phpmyadmin")
-    if os.path.exists("/www/server/mysql"):
-        public.ExecShell("chown mysql:mysql /etc/my.cnf;chmod 600 /etc/my.cnf")
-    public.ExecShell("rm -rf /www/server/panel/temp/*")
-    if not public.is_debug():
-        public.ExecShell("rm -f /www/server/panel/class/pluginAuth.py")
-    stop_path = '/www/server/stop'
-    if not os.path.exists(stop_path):
-        os.makedirs(stop_path)
-    public.ExecShell("chown -R root:root {path};chmod -R 755 {path}".format(path=stop_path))
-    public.ExecShell('chmod 755 /www;chmod 755 /www/server')
-    if os.path.exists('/www/server/phpmyadmin/pma'):
-        public.ExecShell("rm -rf /www/server/phpmyadmin/pma")
-    if os.path.exists("/www/server/adminer"):
-        public.ExecShell("rm -rf /www/server/adminer")
-    if os.path.exists("/www/server/panel/adminer"):
-        public.ExecShell("rm -rf /www/server/panel/adminer")
-    if os.path.exists('/dev/shm/session.db'):
-        os.remove('/dev/shm/session.db')
+def remove_other():
+    rm_files = [
+        "class/pluginAuth.so",
+        "class/pluginAuth.cpython-310-x86_64-linux-gnu.so",
+        "class/pluginAuth.cpython-310-aarch64-linux-gnu.so",
+        "class/pluginAuth.cpython-37m-i386-linux-gnu.so",
+        "class/pluginAuth.cpython-37m-loongarch64-linux-gnu.so",
+        "class/pluginAuth.cpython-37m-aarch64-linux-gnu.so",
+        "class/pluginAuth.cpython-37m-x86_64-linux-gnu.so",
+        "class/pluginAuth.cpython-37m.so",
+        "class/libAuth.loongarch64.so",
+        "class/libAuth.x86.so",
+        "class/libAuth.x86-64.so",
+        "class/libAuth.glibc-2.14.x86_64.so",
+        "class/libAuth.aarch64.so",
+        "script/check_files.py"
+    ]
 
-    node_service_bin = '/usr/bin/nodejs-service'
-    node_service_src = '/www/server/panel/script/nodejs-service.py'
-    if os.path.exists(node_service_src): public.ExecShell("chmod 700 " + node_service_src)
-    if not os.path.exists(node_service_bin):
-        if os.path.exists(node_service_src):
-            public.ExecShell("ln -sf {} {}".format(node_service_src,node_service_bin))
+    for f in rm_files:
+        if os.path.exists(f):
+            os.remove(f)
 
-    #disable_putenv('putenv')
-    #clean_session()
-    #set_crond()
-    test_ping()
-    set_wp_cache_dir()
-    clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
-    clean_max_log('/var/log/rsyncd.log',1024*1024*10)
-    clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
-    remove_tty1()
-    clean_hook_log()
-    run_new()
-    clean_max_log('/www/server/cron',1024*1024*5,20)
-    #check_firewall()
-    check_dnsapi()
-    clean_php_log()
-    files_set_mode()
-    set_pma_access()
-    # public.set_open_basedir()
-    clear_fastcgi_safe()
-    update_py37()
-    run_script()
-    set_php_cli_env()
-    check_enable_php()
+
+
+def null_html():
+    null_files = ['/www/server/nginx/html/index.html','/www/server/apache/htdocs/index.html','/www/server/panel/data/404.html']
+    null_new_body='''<html>
+<head><title>404 Not Found</title></head>
+<body>
+<center><h1>404 Not Found</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>'''
+    for null_file in null_files:
+        if not os.path.exists(null_file): continue
+
+        null_body = public.readFile(null_file)
+        if not null_body: continue
+        if null_body.find('没有找到站点') != -1 or null_body.find('您请求的文件不存在') != -1:
+            public.writeFile(null_file,null_new_body)
+
+
+def check_default_curl_file():
+    default_file = '{}/data/default_curl.pl'.format(public.get_panel_path())
+    if os.path.exists(default_file):
+        default_curl_body = public.readFile(default_file)
+        if default_curl_body:
+            public.WriteFile(default_file,default_curl_body.strip())
 
 def set_wp_cache_dir():
     import one_key_wp
@@ -242,9 +456,9 @@ def set_php_cli_env():
     env_php_bin = '/usr/bin/php'
     if os.path.exists(env_php_bin):
         if os.path.islink(env_php_bin):
-            env_bin_version = os.readlink(env_php_bin).split('/')[-3]
-            php_cli_ini = "{}/{}/etc/php-cli.ini".format(php_path,env_bin_version)
-            bashrc_body += "alias php='php -c {}'\n".format(php_cli_ini)
+            php_cli_ini = "/etc/php-cli.ini"
+            if os.path.exists(php_cli_ini):
+                bashrc_body += "alias php='php -c {}'\n".format(php_cli_ini)
 
 
     # 设置所有已安装的PHP版本环境变量和别名
@@ -313,43 +527,46 @@ def write_run_script_log(_log,rn='\n'):
 
 
 def run_script():
-    os.system("{} {}/script/run_script.py".format(public.get_python_bin(),public.get_panel_path()))
-    run_tip = '/dev/shm/bt.pl'
-    if os.path.exists(run_tip): return
-    public.writeFile(run_tip,str(time.time()))
-    uptime = int(public.readFile('/proc/uptime').split()[0])
-    if uptime > 1800: return
-    run_config ='/www/server/panel/data/run_config'
-    script_logs = '/www/server/panel/logs/script_logs'
-    if not os.path.exists(run_config):
-        os.makedirs(run_config,384)
-    if not os.path.exists(script_logs):
-        os.makedirs(script_logs,384)
+    try:
+        os.system("{} {}/script/run_script.py".format(public.get_python_bin(),public.get_panel_path()))
+        run_tip = '/dev/shm/bt.pl'
+        if os.path.exists(run_tip): return
+        public.writeFile(run_tip,str(time.time()))
+        uptime = float(public.readFile('/proc/uptime').split()[0])
+        if uptime > 1800: return
+        run_config ='/www/server/panel/data/run_config'
+        script_logs = '/www/server/panel/logs/script_logs'
+        if not os.path.exists(run_config):
+            os.makedirs(run_config,384)
+        if not os.path.exists(script_logs):
+            os.makedirs(script_logs,384)
 
-    for sname in os.listdir(run_config):
-        script_conf_file = '{}/{}'.format(run_config,sname)
-        if not os.path.exists(script_conf_file): continue
-        script_info = json.loads(public.readFile(script_conf_file))
-        exec_log_file = '{}/{}'.format(script_logs,sname)
+        for sname in os.listdir(run_config):
+            script_conf_file = '{}/{}'.format(run_config,sname)
+            if not os.path.exists(script_conf_file): continue
+            script_info = json.loads(public.readFile(script_conf_file))
+            exec_log_file = '{}/{}'.format(script_logs,sname)
 
-        if not os.path.exists(script_info['script_file']) \
-            or script_info['script_file'].find('/www/server/panel/plugin/') != 0 \
-                or not re.match('^\w+$',script_info['script_file']):
-            os.remove(script_conf_file)
-            if os.path.exists(exec_log_file): os.remove(exec_log_file)
-            continue
+            if not os.path.exists(script_info['script_file']) \
+                or script_info['script_file'].find('/www/server/panel/plugin/') != 0 \
+                    or not re.match('^\w+$',script_info['script_file']):
+                os.remove(script_conf_file)
+                if os.path.exists(exec_log_file): os.remove(exec_log_file)
+                continue
 
 
-        if script_info['script_type'] == 'python':
-            _bin = public.get_python_bin()
-        elif script_info['script_type'] == 'bash':
-            _bin = '/usr/bin/bash'
-            if not os.path.exists(_bin): _bin = 'bash'
+            if script_info['script_type'] == 'python':
+                _bin = public.get_python_bin()
+            elif script_info['script_type'] == 'bash':
+                _bin = '/usr/bin/bash'
+                if not os.path.exists(_bin): _bin = 'bash'
 
-        exec_script = 'nohup {} {} &> {} &'.format(_bin,script_info['script_file'],exec_log_file)
-        public.ExecShell(exec_script)
-        script_info['last_time'] = time.time()
-        public.writeFile(script_conf_file,json.dumps(script_info))
+            exec_script = 'nohup {} {} &> {} &'.format(_bin,script_info['script_file'],exec_log_file)
+            public.ExecShell(exec_script)
+            script_info['last_time'] = time.time()
+            public.writeFile(script_conf_file,json.dumps(script_info))
+    except:
+        pass
 
 
 def clear_fastcgi_safe():
@@ -404,7 +621,20 @@ def files_set_mode():
         ["/dev/shm/session_py3","","root",600,True],
         ["/dev/shm/session_py2","","root",600,True],
         ["/www/server/phpmyadmin","","root",755,True],
-        ["/www/server/coll","","root",700,True]
+        ["/www/server/coll","","root",700,True],
+        ["/www/server/panel/init.sh","","root",600,False],
+        ["/www/server/panel/license.txt","","root",600,False],
+        ["/www/server/panel/requirements.txt","","root",600,False],
+        ["/www/server/panel/update.sh","","root",600,False],
+        ["/www/server/panel/default.pl","","root",600,False],
+        ["/www/server/panel/hooks","","root",600,True],
+        ["/www/server/panel/cache","","root",600,True],
+        ["/root","","root",550,False],
+        ["/root/.ssh","","root",700,False],
+        ["/root/.ssh/authorized_keys","","root",600,False],
+        ["/root/.ssh/id_rsa.pub","","root",644,False],
+        ["/root/.ssh/id_rsa","","root",600,False],
+        ["/root/.ssh/known_hosts","","root",644,False]
     ]
 
     recycle_list = public.get_recycle_bin_list()
@@ -419,6 +649,9 @@ def files_set_mode():
         if m[1]:
             public.ExecShell("chown {U}:{U} {P}".format(P=m[0],U=m[2],R=rr[m[4]]))
             public.ExecShell("chmod {M} {P}".format(P=m[0],M=m[3],R=rr[m[4]]))
+
+    # 移除面板目录下所有文件的所属组、其它用户的写权限
+    public.ExecShell("chmod -R go-w /www/server/panel")
 
 #获取PMA目录
 def get_pma_path():
@@ -584,7 +817,9 @@ def clean_hook_log():
 def clean_php_log():
     path = '/www/server/php'
     if not os.path.exists(path): return False
+    php_list=public.get_php_versions()
     for name in os.listdir(path):
+        if name not in php_list:continue
         filename = path +'/'+name + '/var/log/php-fpm.log'
         if os.path.exists(filename): clean_max_log(filename)
         filename = path +'/'+name + '/var/log/php-fpm-test.log'

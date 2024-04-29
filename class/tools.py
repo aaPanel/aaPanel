@@ -418,7 +418,7 @@ def bt_cli():
     nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
     if not u_input in nums:
         print(raw_tip)
-        print(public.get_msg_gettext('Cacelled!'))
+        print(public.get_msg_gettext('Cancelled!'))
         exit()
 
     print(raw_tip)

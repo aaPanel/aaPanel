@@ -200,7 +200,7 @@ server
 	                    }],
 	                    "proxy": {
 		                    "open": False,
-		                    "url": "https://www.bt.cn",
+		                    "url": "http://www.bt.cn",
 		                    "host": "www.bt.cn",
 		                    "subOpen": False,
 		                    "src": "",

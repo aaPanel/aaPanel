@@ -2846,7 +2846,6 @@ var bt_file = {
      * @return void
     */
     open_property_view:function (data) {
-      console.log(data)
       var _this = this;
       _this.$http('get_file_attribute',{filename:data.path},function (res) {
         layer.open({
@@ -2873,9 +2872,12 @@ var bt_file = {
                   <div class="attr-name">Type:</div>\
                   <div class="attr-content">'+ ((res.is_dir || res.is_link)?res.st_type:_this.ext_type_tips(res.st_type)) +'</div>\
                 </div>\
-                <div class="attr-box" >\
+                <div class="attr-box">\
                   <div class="attr-name">Location:</div>\
-                  <div class="attr-content"><span title="'+ res.path +'">'+ res.path +'</span></div>\
+                  <div class="attr-content" style="display: flex; align-items: center;">\
+										<span title="'+ (res.path + '/' +data.filename).replace('//','/') + '">'+ (res.path + '/' + data.filename).replace('//','/') +'</span>\
+										<i class="ico-copy cursor btcopy ml5 copyProperytPath" data-clipboard-text="' + (res.path + '/' +data.filename).replace('//','/') + '" title="' + lan.files.file_menu_copy + '"></i>\
+									</div>\
                 </div>\
                 <div class="attr-box" >\
                   <div class="attr-name">Size:</div>\
@@ -2919,6 +2921,12 @@ var bt_file = {
             </div>\
           </div>',
           success:function(layero,index){
+						var copy_properyt_path = new ClipboardJS('.copyProperytPath');
+						copy_properyt_path.on('success', function (e) {
+							layer.msg(lan.public.cp_success, {
+								icon: 1
+							});
+						});
             $('.bt-property-setting .tab-nav span').click(function () {
               var index =  $(this).index();
               $(this).addClass('on').siblings().removeClass('on');
@@ -4334,7 +4342,7 @@ var bt_file = {
     get_disk_list:function(callback){
         bt_tools.send('system/GetDiskInfo',function (res) {
             if (callback) callback(res);
-        },'Getting disk list, please wait...');
+        },'Getting disk list');
     },
 
     // 新建文件（文件和文件夹）
@@ -4466,7 +4474,7 @@ var bt_file = {
      * @return void
     */
     get_file_size: function (data, callback){
-        bt_tools.send('files/get_path_size',{path:data.path},callback,'Getting directory size, please wait...');
+        bt_tools.send('files/get_path_size',{path:data.path},callback,'Getting directory size');
     },
     /**
      * @description 获取目录大小

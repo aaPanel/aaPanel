@@ -26,7 +26,7 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = 'This solution can prevent hackers from stealing server information across directories, and strengthen the protection of the website. '
 
 def check_run():
     '''

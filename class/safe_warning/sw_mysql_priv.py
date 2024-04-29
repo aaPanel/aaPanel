@@ -25,7 +25,7 @@ _tips = [
 ]
 
 _help = ''
-
+_remind = 'This scheme ensures that the root user has the permission to backup the database and ensures that the database backup work is carried out. '
 
 def check_run():
     """检测root用户是否具备数据库备份权限

@@ -336,7 +336,8 @@ var soft = {
                                     type:item.type,
                                     plugin:true,
                                     renew:item.endtime,
-                                    totalNum:buy_type
+                                    totalNum:buy_type,
+																		ps: item.ps
                                 }) +')\'>' + re_msg + '</a>';
                             } else {
                                 pay_opt = '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',' + re_status + ',' + item.price + ')">' + re_msg + '</a>';
@@ -460,8 +461,15 @@ var soft = {
                     }
                 }
             ],
-            data: data
+            data: data,
+						empty:'<a class="btlink"  onClick="javascript:bt.openFeedback({title:\'aaPanel demand feedback collection\',placeholder:\'<span>If you encounter any problems or imperfect functions during use, please describe <br> your problems or needs to us in detail, we will try our best to solve or improve for <br> you</span>\',recover:\'We pay special attention to your requirements feedback, and we conduct regular weekly requirements reviews. I hope I can help you better\',key:993,proType:2});" style="margin-left: 10px;display:block;margin:10px 10px;white-space: nowrap;">If the search content is not found, submit the demand feedback</a>'
         })
+				// 需求反馈
+				if(data.length == 0){
+					$('.feedback-btn').remove();
+			$('.soft-filter-box .soft-search').after('<span style="display:inline-block; margin-left:10px;margin-top:8px;vertical-align: bottom;" class="feedback-btn"><span class="flex" style="align-items: center;margin-right:16px;width:100px;"><i class="icon-demand"></i><a class="btlink" onClick="javascript:bt.openFeedback({title:\'aaPanel demand feedback collection\',placeholder:\'<span>If you encounter any problems or imperfect functions during use, please describe <br> your problems or needs to us in detail, we will try our best to solve or improve for <br> you</span>\',recover:\'We pay special attention to your requirements feedback, and we conduct regular weekly requirements reviews. I hope I can help you better\',key:993,proType:2});" style="margin-left: 10px;">Feedback</a></span></span>');
+			
+				}
     },
     // 渲染列表
     render_promote_list:function(data){
@@ -585,7 +593,7 @@ var soft = {
             var ltd = parseInt(bt.get_cookie('ltd_end') || -1),pro = parseInt(bt.get_cookie('pro_end')  || -1),todayDate = parseInt(new Date().getTime()/1000),_ltd = null;
             if((ltd > 0 && (ltd == pro || pro < 0)) || (ltd < 0 && pro >= 0) || (ltd > 0 && pro >= 0)){
                 _ltd = ((ltd > 0 && (ltd == pro || pro < 0)) || (ltd > 0 && pro >= 0))?1:0;
-                explain.html('The '+ (_ltd?'Pro':'Pro') +' edition can use the '+ (_ltd?'专业版及企业版插件':'professional plug-in for free,') + (!(pro == 0 && ltd < 0)?('expiration time: '+ (bt.format_data((_ltd?ltd:pro),'yyyy/MM/dd') ) +''+((((_ltd?ltd:pro) - todayDate) <= 15*24*60*60)?('，<span style="color:red">Only '+ Math.round(((_ltd?ltd:pro) - todayDate) / (24*60*60)) +' days until expiration</span>'):'')):'，过期时间：<span style="color: #fc6d26;font-weight: bold;">永久授权</span>'));
+                explain.html('The '+ (_ltd?'Pro':'Pro') +' edition can use the '+ (_ltd?'专业版及企业版插件':'professional plug-in for free,') + (!(pro == 0 && ltd < 0)?('expiration time: '+ (bt.format_data((_ltd?ltd:pro),'yyyy/MM/dd') ) +''+((((_ltd?ltd:pro) - todayDate) <= 15*24*60*60)?('，<span style="color:red">Only '+ Math.round(((_ltd?ltd:pro) - todayDate) / (24*60*60)) +' days until expiration</span>'):'')):' Expire: <span style="color: #fc6d26;font-weight: bold;">Lifetime</span>'));
             }else if(ltd == -1 && pro == -1){
                 explain.html('Upgrade to Pro edition, all plugins, free to use!');
             }else if(pro == 0 && ltd < 0){
@@ -613,13 +621,20 @@ var soft = {
                   $(el).append(tips_info.addClass('alert-ltd-success'));
                   return false;
                 }else{
-                    var btn = $('<a title="' + (is_buy ? 'Renew Now' : 'Upgrade now') + '" href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">' + (is_buy ? 'Renew Now' : 'Upgrade now') + '</a>')
-                    btn.on('click', function () {
-                        genre ? bt.soft.updata_pro(buy_type) : bt.soft.updata_ltd(undefined,buy_type)
-                    })
-                    tips_info.addClass('showprofun').find('.btn-ground').append(btn)
+                    // var btn = $('<a title="' + (is_buy ? 'Renew Now' : 'Upgrade now') + '" href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">' + (is_buy ? 'Renew Now' : 'Upgrade now') + '</a>')
+                    // btn.on('click', function () {
+                    //     genre ? bt.soft.updata_pro(buy_type) : bt.soft.updata_ltd(undefined,buy_type)
+                    // })
+                    // tips_info.addClass('showprofun').find('.btn-ground').append(btn)
                 }
               }
+							if (pro !== 0) {
+								var btn = $('<a title="' + (is_buy ? 'Renew Now' : 'Upgrade now') + '" href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">' + (is_buy ? 'Renew Now' : 'Upgrade now') + '</a>')
+								btn.on('click', function () {
+										genre ? bt.soft.updata_pro(buy_type) : bt.soft.updata_ltd(undefined,buy_type)
+								})
+								tips_info.addClass('showprofun').find('.btn-ground').append(btn)
+							}
               // if(_ltd != 2){
               //   if(!(pro == 0 && ltd < 0)){
               //     btn_ground  = soft.render_tips_btn(btn_ground);
@@ -627,24 +642,24 @@ var soft = {
               // }
               $(el).append(tips_info.addClass(_ltd == 1?'alert-ltd-success':'alert-success'));
               if(_this.trail){
-                setTimeout(function (){
-                  $('.btn-ground').after('<span class="pro_trail" style="font-weight: 700;margin-left:25px;">Try the Pro edition for free</span>')
-                  var trail = $('<a href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">Click to try</a>');
-                  trail.click((!res.status || !res)?fun:function(){
-                    var loadT = bt.load()
-                    bt.confirm({
-                      title:"Pro Edition",
-                      msg:"Get 7-day Pro edition free, get it now?"
-                    },function (){
-                      bt.send('free_trial','auth/free_trial',{},function(res){
-                        loadT.close()
-                        bt.msg(res)
-                        setTimeout(function () { window.location.reload() },2000)
-                      })
-                    })
-                  })
-                  $('.pro_trail').after(trail)
-                },100)
+                // setTimeout(function (){
+                //   $('.btn-ground').after('<span class="pro_trail" style="font-weight: 700;margin-left:25px;">Try the Pro edition for free</span>')
+                //   var trail = $('<a href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">Click to try</a>');
+                //   trail.click((!res.status || !res)?fun:function(){
+                //     var loadT = bt.load()
+                //     bt.confirm({
+                //       title:"Pro Edition",
+                //       msg:"Get 7-day Pro edition free, get it now?"
+                //     },function (){
+                //       bt.send('free_trial','auth/free_trial',{},function(res){
+                //         loadT.close()
+                //         bt.msg(res)
+                //         setTimeout(function () { window.location.reload() },2000)
+                //       })
+                //     })
+                //   })
+                //   $('.pro_trail').after(trail)
+                // },100)
               }
             }
             var bt_user_info = bt.get_cookie('bt_user_info');
@@ -1099,6 +1114,7 @@ var soft = {
                 var arrs = datas.public;
                 if (name == 'phpmyadmin') arrs = [];
                 if (name == 'openlitespeed') arrs.length = 1;
+								if(name === 'pureftpd') arrs.push({type: 'pureftpd_log',title: 'Logs Manage'});
                 arrs = arrs.concat(datas[name]);
                 if (arrs) {
                     for (var i = 0; i < arrs.length; i++) {
@@ -1131,7 +1147,7 @@ var soft = {
             var menu = $('.bt-soft-menu').data("data", rdata);
             setTimeout(function() {
                 menu.append($('<p class="bgw bt_server" onclick="soft.get_tab_contents(\'service\',this)">' + lan.soft.service + '</p>'))
-                if (rdata.version_coexist) {
+								if (rdata.version_coexist) {
                     var ver = name.split('-')[1].replace('.', '');
                     var opt_list = [{
                             type: 'set_php_config',
@@ -1255,6 +1271,27 @@ var soft = {
             var version = data.name;
             if (data.name.indexOf('php-') >= 0) version = data.name.split('-')[1].replace('.', '');
             switch (key) {
+									case 'pureftpd_log': //ftp日志管理
+									var tabCon = $(".soft-man-con").empty();
+									bt.pub.get_ftp_logs(function (_status) {
+										tabCon.append('<div class="inlineBlock" style="height: 30px;">\
+												<span style="vertical-align: middle;">Logs manage switch</span>\
+												<div class="ftp-log ml5" style="float: inherit;display: inline-block;vertical-align: middle;">\
+														<input class="btswitch btswitch-ios" id="isFtplog" type="checkbox" '+ (_status ? 'checked' : '') +'>\
+														<label class="btswitch-btn isFtplog" for="isFtplog"></label>\
+												</div>\
+										</div><ul class="help-info-text c7"><li>After enabling it, all login and operation records of FTP users will be logged.</li></ul>');
+										$('.ftp-log .isFtplog').unbind('click').click(function () {
+											var status = $(this).prev().prop('checked');
+											bt.pub.set_ftp_logs(status ? 'stop' : 'start')
+										})
+										var pro = parseInt(bt.get_cookie('pro_end')  || -1)
+										if(pro < 0){
+											tabCon.append('<div class="mask_layer">\
+												<div class="prompt_description" style="margin-top: -60px;"><i class="layui-layer-ico layui-layer-ico0" style="width: 20px;height: 20px;display: inline-block;margin-right: 15px;vertical-align: middle;background-size: 700%;"></i>This feature is exclusive to the Professional version, <a class="btlink" onclick="bt.soft.product_pay_view({totalNum:56,limit:\''+ "ltd" +'\',closePro:false})">Buy Now</a></div></div>')
+										}
+									})
+								break;
                 case 'service':
                     var tabCon = $(".soft-man-con").empty();
                     var status_list = [{

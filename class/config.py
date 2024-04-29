@@ -133,27 +133,15 @@ class config:
             return public.return_msg_gettext(False, 'Failed to send')
 
     # 查看能使用的告警通道
-    def get_settings(self, get=None):
-        qq_mail_info = json.loads(public.ReadFile(self.__mail_config))
-        if len(qq_mail_info) == 0:
-            user_mail = False
-        else:
-            user_mail = True
-        dingding_info = json.loads(public.ReadFile(self.__dingding_config))
-        if len(dingding_info) == 0:
-            dingding = False
-        else:
-            dingding = True
-        ret = {}
-        ret['user_mail'] = {"user_name": user_mail, "mail_list": self.__mail_list,"info":self.get_user_mail(get)}
-        ret['dingding'] = {"dingding": dingding,"info":self.get_dingding(get)}
-        return ret
+    def get_settings(self, get):
+        sm = send_mail.send_mail()
+        return sm.get_settings()
 
     def get_settings2(self, get=None):
         import panel_telegram_bot
         tg = panel_telegram_bot.panel_telegram_bot()
         tg = tg.get_tg_conf()
-        conf = self.get_settings()
+        conf = self.get_settings(get)
         conf['telegram'] = tg
         return conf
 
@@ -164,19 +152,32 @@ class config:
         if get.atall=='True' or  get.atall=='1':
             get.atall = 'True'
         else: get.atall = 'False'
-        self.mail.dingding_insert(get.url.strip(), get.atall)
-        if self.mail.dingding_send(public.get_msg_gettext('aaPanel alarm test')):
-            return public.return_msg_gettext(True, 'Successfully set')
+        push_url = get.url.strip()
+        channel = "dingding"
+        if push_url.find("weixin.qq.com") != -1:
+            channel = "weixin"
+        msg = ""
+        try:
+            from panelMessage import panelMessage
+            pm = panelMessage()
+            if hasattr(pm, "init_msg_module"):
+                msg_module = pm.init_msg_module(channel)
+                if msg_module:
+                    _res = msg_module.set_config(get)
+                    if _res["status"]:
+                        return _res
+        except Exception as e:
+            msg = str(e)
+            print("设置钉钉配置异常: {}".format(msg))
+        if not msg:
+            return public.returnMsg(False, 'Add failed, please check if the URL is correct')
         else:
-            ret = []
-            public.writeFile(self.__dingding_config, json.dumps(ret))
-            return public.return_msg_gettext(False, 'Add failed, please check if the URL is correct')
+            return public.returnMsg(False, msg)
+
     # 查看钉钉
     def get_dingding(self, get):
-        qq_mail_info = json.loads(public.ReadFile(self.__dingding_config))
-        if len(qq_mail_info) == 0:
-            return public.return_msg_gettext(False, 'No Data')
-        return public.return_msg_gettext(True, qq_mail_info)
+        sm = send_mail.send_mail()
+        return sm.get_dingding()
 
     # 使用钉钉发送消息
     def user_dingding_send(self, get):
@@ -333,6 +334,17 @@ class config:
         public.WriteLog('TYPE_PANEL','Set the password expiration time to [{}] days'.format(expire))
         return public.returnMsg(True,'The password expiration time is set to [{}] days'.format(expire))
 
+    def setlastPassword(self, get):
+        public.add_security_logs("Change Password", "Successfully used last password!")
+        self.reload_session()
+        # 密码过期时间
+        expire_time_file = public.get_panel_path() + '/data/password_expire_time.pl'
+        if os.path.exists(expire_time_file): os.remove(expire_time_file)
+        self.get_password_config(None)
+        if session.get('password_expire', False):
+            session['password_expire'] = False
+        return public.returnMsg(True, 'USER_PASSWORD_SUCCESS')
+
     def get_password_config(self,get=None):
         '''
             @name 获取密码配置
@@ -379,8 +391,8 @@ class config:
 
 
     def setPassword(self,get):
-        get.password1 = public.url_decode(get.password1)
-        get.password2 = public.url_decode(get.password2)
+        get.password1 = public.url_decode(public.rsa_decrypt(get.password1))
+        get.password2 = public.url_decode(public.rsa_decrypt(get.password2))
         if get.password1 != get.password2: return public.return_msg_gettext(False,'The passwords entered twice are inconsistent, please try again!')
         if len(get.password1) < 5: return public.return_msg_gettext(False,'Password cannot be less than 5 characters!')
         if not self.check_password_safe(get.password1): return public.returnMsg(False,'The password must be at least eight characters in length and contain at least three combinations of digits, uppercase letters, lowercase letters, and special characters')
@@ -397,8 +409,8 @@ class config:
         return public.return_msg_gettext(True,'Setup successfully!')
 
     def setUsername(self,get):
-        get.username1 = public.url_decode(get.username1)
-        get.username2 = public.url_decode(get.username2)
+        get.username1 = public.url_decode(public.rsa_decrypt(get.username1))
+        get.username2 = public.url_decode(public.rsa_decrypt(get.username2))
         if get.username1 != get.username2: return public.return_msg_gettext(False,'The usernames entered twice are inconsistent, plesea try again!')
         if len(get.username1) < 3: return public.return_msg_gettext(False,'Username cannot be less than 3 characters')
         public.M('users').where("username=?",(session['username'],)).setField('username',get.username1.strip())
@@ -494,8 +506,12 @@ class config:
                 isReWeb = True
 
         if get.domain:
+            if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", get.domain): return public.return_msg_gettext(False, 'Domain cannot bind ip address')
             reg = r"^([\w\-\*]{1,100}\.){1,4}(\w{1,10}|\w{1,10}\.\w{1,10})$"
             if not re.match(reg, get.domain): return public.return_msg_gettext(False,'Format of primary domain is incorrect')
+        if get.address:
+            if not re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", get.address):
+                return public.return_msg_gettext(False, 'Please set the correct Server IP')
         oldPort = public.GetHost(True)
         if not 'port' in get:
             get.port = oldPort
@@ -556,12 +572,13 @@ class config:
 
 
     def set_admin_path(self,get):
-        get.admin_path = get.admin_path.strip()
+        get.admin_path = public.rsa_decrypt(get.admin_path.strip()).strip()
         if len(get.admin_path) < 6: return public.return_msg_gettext(False,'Security Entrance cannot be less than 6 characters!')
         if get.admin_path in admin_path_checks: return public.return_msg_gettext(False,'This entrance has been used by the panel, please set another entrances!')
         if not public.path_safe_check(get.admin_path) or get.admin_path[-1] == '.':  return public.returnMsg(False,'Entrance address format is incorrect, e.g. /my_panel')
         if get.admin_path[0] != '/': return public.return_msg_gettext(False,'Entrance address format is incorrect, e.g. /my_panel')
-
+        if get.admin_path.find("//") != -1:
+            return public.return_msg_gettext(False, 'Entrance address format is incorrect, e.g. /my_panel')
         admin_path_file = 'data/admin_path.pl'
         admin_path = '/'
         if os.path.exists(admin_path_file): admin_path = public.readFile(admin_path_file).strip()
@@ -798,10 +815,32 @@ class config:
 
     #同步时间
     def syncDate(self,get):
+        """
+        @name 同步时间
+        @author hezhihong
+        """
+        #取国际标准0时时间戳
         time_str = public.HttpGet(public.GetConfigValue('home') + '/api/index/get_time')
-        new_time = int(time_str)
-        time_arr = time.localtime(new_time)
-        date_str = time.strftime("%Y-%m-%d %H:%M:%S", time_arr)
+        try:
+            new_time = int(time_str)-28800
+        except:
+            return public.returnMsg(False,'Failed to connect to the time server!')
+        if not new_time: public.returnMsg(False,'Failed to connect to the time server!')
+        #取所在时区偏差秒数
+        add_time='+0000'
+        try:
+            add_time=public.ExecShell('date +"%Y-%m-%d %H:%M:%S %Z %z"')[0].replace('\n','').strip().split()[-1]
+            print(add_time)
+        except:pass
+        add_1=False
+        if add_time[0]=='+':
+            add_1=True
+        add_v=int(add_time[1:-2])*3600+int(add_time[-2:])*60
+        if add_1:
+            new_time+=add_v
+        else:new_time-=add_v
+        #设置所在时区时间
+        date_str = public.format_date(times=new_time)
         public.ExecShell('date -s "%s"' % date_str)
         public.write_log_gettext("Panel configuration", 'Update Succeeded!')
         return public.return_msg_gettext(True,'Setup successfully!')
@@ -915,6 +954,8 @@ class config:
 
     #设置面板SSL
     def SetPanelSSL(self, get):
+        if not os.path.exists("/www/server/panel/ssl/"):
+             os.makedirs("/www/server/panel/ssl/")
         if hasattr(get, "cert_type") and str(get.cert_type) == "2":
             # rep_mail = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
             # if not re.search(rep_mail,get.email):
@@ -925,7 +966,7 @@ class config:
             return sps
         else:
             sslConf = self._setup_path + '/data/ssl.pl'
-            if os.path.exists(sslConf):
+            if os.path.exists(sslConf) and not 'cert_type' in get:
                 public.ExecShell('rm -f ' + sslConf + '&& rm -f /www/server/panel/ssl/*')
                 g.rm_ssl = True
                 return public.return_msg_gettext(True, 'SSL turned off，Please use http protocol to access the panel!')
@@ -933,6 +974,13 @@ class config:
                 public.ExecShell('btpip install cffi')
                 public.ExecShell('btpip install cryptography')
                 public.ExecShell('btpip install pyOpenSSL')
+                if not 'cert_type' in get:
+                    return public.returnMsg(False,'Please refresh the page and try again!')
+                if get.cert_type in [0,'0']:
+                    result = self.SavePanelSSL(get)
+                    if not result['status']: return result
+                    public.writeFile(sslConf,'True')
+                    public.writeFile('data/reload.pl','True')
                 try:
                     if not self.CreateSSL():
                         return public.return_msg_gettext(False,
@@ -985,14 +1033,14 @@ class config:
         result = json.loads(public.httpPost(cert_api, {'data': json.dumps(pdata)}))
         if 'status' in result:
             if result['status']:
-                # if os.path.exists('ssl/certificate.pem'):
-                #     os.remove('ssl/certificate.pem')
-                # if os.path.exists('ssl/privateKey.pem'):
-                #     os.remove('ssl/privateKey.pem')
-                # if os.path.exists('ssl/baota_root.pfx'):
-                #     os.remove('ssl/baota_root.pfx')
-                # if os.path.exists('ssl/root_password.pl'):
-                #     os.remove('ssl/root_password.pl')
+                if os.path.exists('ssl/certificate.pem'):
+                    os.remove('ssl/certificate.pem')
+                if os.path.exists('ssl/privateKey.pem'):
+                    os.remove('ssl/privateKey.pem')
+                if os.path.exists('ssl/baota_root.pfx'):
+                    os.remove('ssl/baota_root.pfx')
+                if os.path.exists('ssl/root_password.pl'):
+                    os.remove('ssl/root_password.pl')
                 public.writeFile('ssl/certificate.pem', result['cert'])
                 public.writeFile('ssl/privateKey.pem', result['key'])
                 public.writeFile('ssl/baota_root.pfx', base64.b64decode(result['pfx']), 'wb+')
@@ -1001,7 +1049,25 @@ class config:
                 # public.ExecShell("/etc/init.d/bt reload")
                 print('1')
                 return True
-        print('0')
+        if os.path.exists('ssl/input.pl'): return True
+        import OpenSSL
+        key = OpenSSL.crypto.PKey()
+        key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+        cert = OpenSSL.crypto.X509()
+        cert.set_serial_number(0)
+        cert.get_subject().CN = public.GetLocalIp()
+        cert.set_issuer(cert.get_subject())
+        cert.gmtime_adj_notBefore( 0 )
+        cert.gmtime_adj_notAfter(86400 * 3650)
+        cert.set_pubkey( key )
+        cert.sign( key, 'md5' )
+        cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
+        private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+
+        if len(cert_ca) > 100 and len(private_key) > 100:
+            public.writeFile('ssl/certificate.pem',cert_ca,'wb+')
+            public.writeFile('ssl/privateKey.pem',private_key,'wb+')
+            return True
         return False
 
     def get_ipaddress(self):
@@ -1212,9 +1278,9 @@ class config:
         else:
             save_handler = "files"
 
-        reppath = r'\nsession.save_path\s*=\s*"tcp\:\/\/([\d\.]+):(\d+).*\r?\n'
+        reppath = r'\nsession.save_path\s*=\s*"tcp\:\/\/([\w\.]+):(\d+).*\r?\n'
         passrep = r'\nsession.save_path\s*=\s*"tcp://[\w\.\?\:]+=(.*)"\r?\n'
-        memcached = r'\nsession.save_path\s*=\s*"([\d\.]+):(\d+)"'
+        memcached = r'\nsession.save_path\s*=\s*"([\w\.]+):(\d+)"'
         save_path = re.search(reppath, phpini)
         if not save_path:
             save_path = re.search(memcached, phpini)
@@ -1236,13 +1302,15 @@ class config:
     def SetSessionConf(self, get):
         import glob
         g = get.save_handler
-        ip = get.ip
+        ip = get.ip.strip()
         port = get.port
         passwd = get.passwd
         if g != "files":
             iprep = r"(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})\.(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})\.(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})\.(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})"
-            if not re.search(iprep, ip):
-                return public.return_msg_gettext(False, 'IP address is illegal!')
+            rep_domain = "^(?=^.{3,255}$)[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62}(\.[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62})+$"
+            if not re.search(iprep, ip) and not re.search(rep_domain, ip):
+                if ip != "localhost":
+                    return public.returnMsg(False, 'Please enter the correct [domain or IP]!')
             try:
                 port = int(port)
                 if port >= 65535 or port < 1:
@@ -1254,7 +1322,8 @@ class config:
                 return public.return_msg_gettext(False, 'Please do NOT enter the following special characters {}', ('" ~ ` / = "'))
         filename = '/www/server/php/' + get.version + '/etc/php.ini'
         filename_ols = None
-        if os.path.exists("/usr/local/lsws/bin/lswsctrl"):
+        ols_exist = os.path.exists("/usr/local/lsws/bin/lswsctrl")
+        if ols_exist:
             filename_ols = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version, get.version[0],
                                                                                         get.version[1])
             if os.path.exists('/etc/redhat-release'):
@@ -1275,45 +1344,86 @@ class config:
             rep = r'session.save_handler\s*=\s*(.+)\r?\n'
             val = r'session.save_handler = ' + g + '\n'
             phpini = re.sub(rep, val, phpini)
-            if g == "memcached":
-                if not re.search("memcached.so", phpini) and "memcached.so" not in ols_so_list:
-                    return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
-                rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
-                val = r'\nsession.save_path = "%s:%s" \n' % (ip,port)
-                if re.search(rep, phpini):
-                    phpini = re.sub(rep, val, phpini)
-                else:
-                    phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
-            if g == "memcache":
-                if not re.search("memcache.so", phpini) and "memcache.so" not in ols_so_list:
-                    return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
-                rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
-                val = r'\nsession.save_path = "tcp://%s:%s"\n' % (ip, port)
-                if re.search(rep, phpini):
-                    phpini = re.sub(rep, val, phpini)
-                else:
-                    phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
-            if g == "redis":
-                if not re.search("redis.so", phpini) and "redis.so" not in ols_so_list:
-                    return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
-                if passwd:
-                    passwd = "?auth=" + passwd
-                else:
-                    passwd = ""
-                rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
-                val = r'\nsession.save_path = "tcp://%s:%s%s"\n' % (ip, port, passwd)
-                res = re.search(rep, phpini)
-                if res:
-                    phpini = re.sub(rep, val, phpini)
-                else:
-                    phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
-            if g == "files":
-                rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
-                val = r'\nsession.save_path = "/tmp"\n'
-                if re.search(rep, phpini):
-                    phpini = re.sub(rep, val, phpini)
-                else:
-                    phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
+            if not ols_exist:
+                if g == "memcached":
+                    if not re.search("memcached.so", phpini):
+                        return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
+                    rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
+                    val = r'\nsession.save_path = "%s:%s" \n' % (ip,port)
+                    if re.search(rep, phpini):
+                        phpini = re.sub(rep, val, phpini)
+                    else:
+                        phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
+                if g == "memcache":
+                    if not re.search("memcache.so", phpini):
+                        return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
+                    rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
+                    val = r'\nsession.save_path = "tcp://%s:%s"\n' % (ip, port)
+                    if re.search(rep, phpini):
+                        phpini = re.sub(rep, val, phpini)
+                    else:
+                        phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
+                if g == "redis":
+                    if not re.search("redis.so", phpini):
+                        return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
+                    if passwd:
+                        passwd = "?auth=" + passwd
+                    else:
+                        passwd = ""
+                    rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
+                    val = r'\nsession.save_path = "tcp://%s:%s%s"\n' % (ip, port, passwd)
+                    res = re.search(rep, phpini)
+                    if res:
+                        phpini = re.sub(rep, val, phpini)
+                    else:
+                        phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
+                if g == "files":
+                    rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
+                    val = r'\nsession.save_path = "/tmp"\n'
+                    if re.search(rep, phpini):
+                        phpini = re.sub(rep, val, phpini)
+                    else:
+                        phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
+            else:
+                if g == "memcached":
+                    if "memcached.so" not in ols_so_list:
+                        return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
+                    rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
+                    val = r'\nsession.save_path = "%s:%s" \n' % (ip,port)
+                    if re.search(rep, phpini):
+                        phpini = re.sub(rep, val, phpini)
+                    else:
+                        phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
+                if g == "memcache":
+                    if "memcache.so" not in ols_so_list:
+                        return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
+                    rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
+                    val = r'\nsession.save_path = "tcp://%s:%s"\n' % (ip, port)
+                    if re.search(rep, phpini):
+                        phpini = re.sub(rep, val, phpini)
+                    else:
+                        phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
+                if g == "redis":
+                    if "redis.so" not in ols_so_list:
+                        return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))
+                    if passwd:
+                        passwd = "?auth=" + passwd
+                    else:
+                        passwd = ""
+                    rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
+                    val = r'\nsession.save_path = "tcp://%s:%s%s"\n' % (ip, port, passwd)
+                    res = re.search(rep, phpini)
+                    if res:
+                        phpini = re.sub(rep, val, phpini)
+                    else:
+                        phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
+                if g == "files":
+                    rep = r'\nsession.save_path\s*=\s*(.+)\r?\n'
+                    val = r'\nsession.save_path = "/tmp"\n'
+                    if re.search(rep, phpini):
+                        phpini = re.sub(rep, val, phpini)
+                    else:
+                        phpini = re.sub('\n;session.save_path = "/tmp"', '\n;session.save_path = "/tmp"' + val, phpini)
             public.writeFile(f, phpini)
         public.ExecShell('/etc/init.d/php-fpm-' + get.version + ' reload')
         public.serviceReload()
@@ -1359,11 +1469,33 @@ class config:
         else:
             return public.return_msg_gettext(True, 'Failed to delete')
 
-    # 获取面板证书
-    def GetPanelSSL(self, get):
+    #获取面板证书
+    def GetPanelSSL(self,get):
         cert = {}
-        cert['privateKey'] = public.readFile('ssl/privateKey.pem')
-        cert['certPem'] = public.readFile('ssl/certificate.pem')
+        key_file = 'ssl/privateKey.pem'
+        cert_file = 'ssl/certificate.pem'
+        if not os.path.exists(key_file):
+            self.CreateSSL()
+        cert['privateKey'] = public.readFile(key_file)
+        cert['certPem'] = public.readFile(cert_file)
+        cert['download_root'] = False
+        cert['info'] = {}
+        if not cert['privateKey']:
+            cert['privateKey'] = ''
+            cert['certPem'] = ''
+        else:
+            cert['info'] = public.get_cert_data(cert_file)
+            if not cert['info']:
+                self.CreateSSL()
+                cert['info'] = public.get_cert_data(cert_file)
+            if cert['info']:
+                if cert['info']['issuer'] == '宝塔面板':
+                    if os.path.exists('ssl/baota_root.pfx'):
+                        cert['download_root'] = True
+                        cert['root_password'] = public.readFile('ssl/root_password.pl')
+
+
+
         cert['rep'] = os.path.exists('ssl/input.pl')
         return cert
 
@@ -1372,25 +1504,48 @@ class config:
         keyPath = 'ssl/privateKey.pem'
         certPath = 'ssl/certificate.pem'
         checkCert = '/tmp/cert.pl'
+        ssl_pl = 'data/ssl.pl'
+        if not 'certPem' in get: return public.returnMsg(False,'The certPem parameter is missing!')
+        if not 'privateKey' in get: return public.returnMsg(False,'The privateKey parameter is missing!')
         public.writeFile(checkCert,get.certPem)
         if get.privateKey:
             public.writeFile(keyPath,get.privateKey)
         if get.certPem:
             public.writeFile(certPath, get.certPem)
         if not public.CheckCert(checkCert): return public.return_msg_gettext(False, 'Certificate ERROR, please check!')
-        public.writeFile('ssl/input.pl', 'True')
+        public.writeFile('ssl/input.pl','True')
+        if os.path.exists(ssl_pl): public.writeFile('data/reload.pl','True')
         return public.return_msg_gettext(True, 'Certificate saved!')
+
+    # 获取ftp端口
+    def get_ftp_port(self):
+        # 获取FTP端口
+        if 'port' in session: return session['port']
+        import re
+        try:
+            file = public.GetConfigValue('setup_path') + '/pure-ftpd/etc/pure-ftpd.conf'
+            conf = public.readFile(file)
+            rep = r"\n#?\s*Bind\s+[0-9]+\.[0-9]+\.[0-9]+\.+[0-9]+,([0-9]+)"
+            port = re.search(rep, conf).groups()[0]
+        except:
+            port = '21'
+        session['port'] = port
+        return port
 
     #获取配置
     def get_config(self,get):
+        data = {}
         if 'config' in session:
             session['config']['distribution'] = public.get_linux_distribution()
             session['webserver'] = public.get_webserver()
             session['config']['webserver'] = session['webserver']
-            return session['config']
-        data = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find()
+            data = session['config']
+        if not data:
+            data = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find()
         data['webserver'] = public.get_webserver()
         data['distribution'] = public.get_linux_distribution()
+        data['request_iptype'] = self.get_request_iptype()
+        data['request_type'] = self.get_request_type()
         return data
 
 
@@ -1517,15 +1672,18 @@ class config:
         php_pecl_src = "/www/server/php/%s/bin/pecl" % get.php_version
         php_pear = '/usr/bin/pear'
         php_pear_src = "/www/server/php/%s/bin/pear" % get.php_version
+        php_cli_ini = '/etc/php-cli.ini'
+        php_cli_ini_src = "/www/server/php/%s/etc/php-cli.ini" % get.php_version
         if not os.path.exists(php_bin_src): return public.return_msg_gettext(False,'Specified PHP version not installed')
         is_chattr = public.ExecShell('lsattr /usr|grep /usr/bin')[0].find('-i-')
         if is_chattr != -1: public.ExecShell('chattr -i /usr/bin')
-        public.ExecShell("rm -f " + php_bin + ' '+ php_ize + ' ' + php_fpm + ' ' + php_pecl + ' ' + php_pear)
+        public.ExecShell("rm -f " + php_bin + ' '+ php_ize + ' ' + php_fpm + ' ' + php_pecl + ' ' + php_pear + ' ' + php_cli_ini)
         public.ExecShell("ln -sf %s %s" % (php_bin_src,php_bin))
         public.ExecShell("ln -sf %s %s" % (php_ize_src,php_ize))
         public.ExecShell("ln -sf %s %s" % (php_fpm_src,php_fpm))
         public.ExecShell("ln -sf %s %s" % (php_pecl_src,php_pecl))
         public.ExecShell("ln -sf %s %s" % (php_pear_src,php_pear))
+        public.ExecShell("ln -sf %s %s" % (php_cli_ini_src,php_cli_ini))
         import jobs
         jobs.set_php_cli_env()
         if is_chattr != -1:  public.ExecShell('chattr +i /usr/bin')
@@ -1572,21 +1730,27 @@ class config:
         public.writeFile(path,json.dumps(ba_conf))
         os.chmod(path,384)
         public.write_log_gettext('Panel settings','Set the BasicAuth status to: {}', (is_open,))
+        public.add_security_logs('Panel settings',' Set the BasicAuth status to: %s' % is_open)
         public.writeFile('data/reload.pl','True')
         return public.return_msg_gettext(True,'Setup successfully!')
+
+    # xss 防御
+    def xsssec(self,text):
+        return text.replace('<', '&lt;').replace('>', '&gt;')
 
     #取面板运行日志
     def get_panel_error_logs(self,get):
         filename = 'logs/error.log'
         if not os.path.exists(filename): return public.return_msg_gettext(False,"Logs emptied")
         result = public.GetNumLines(filename,2000)
-        return public.return_msg_gettext(True,result)
+        return public.returnMsg(True,self.xsssec(result))
 
     #清空面板运行日志
     def clean_panel_error_logs(self,get):
         filename = 'logs/error.log'
         public.writeFile(filename,'')
         public.write_log_gettext('Panel settings','Clearing log info')
+        public.add_security_logs('Panel settings', 'Clearing log info')
         return public.return_msg_gettext(True,'Cleared!')
 
     # 获取lets证书
@@ -1673,11 +1837,12 @@ class config:
     def get_php_session_path(self,get):
         import panelSite
         site_info = public.M('sites').where('id=?', (get.id,)).field('name,path').find()
-        run_path = panelSite.panelSite().GetSiteRunPath(get)["runPath"]
-        user_ini_file = "{site_path}{run_path}/.user.ini".format(site_path=site_info["path"], run_path=run_path)
-        conf = public.readFile(user_ini_file)
-        if conf and "session.save_path" in conf:
-            return True
+        if site_info:
+            run_path = panelSite.panelSite().GetSiteRunPath(get)["runPath"]
+            user_ini_file = "{site_path}{run_path}/.user.ini".format(site_path=site_info["path"], run_path=run_path)
+            conf = public.readFile(user_ini_file)
+            if conf and "session.save_path" in conf:
+                return True
         return False
 
     def _create_key(self):
@@ -1758,6 +1923,16 @@ class config:
             session['tmp_login'] = True
         else:
             session['tmp_login'] = False
+        return public.return_msg_gettext(True,'Setup successfully!')
+
+
+    # 是否显示软件推荐
+    def show_recommend(self,get):
+        pfile = 'data/not_recommend.pl'
+        if os.path.exists(pfile):
+            os.remove(pfile)
+        else:
+            public.writeFile(pfile,'True')
         return public.return_msg_gettext(True,'Setup successfully!')
 
     # 获取菜单列表
@@ -1841,14 +2016,15 @@ class config:
         return data
 
     # 设置临时登录
-    def set_temp_login(self, args):
+    def set_temp_login(self, get):
         '''
             @name 设置临时登录
             @author hwliang<2020-09-2>
             @return dict
         '''
-        if 'tmp_login_expire' in session: return public.return_msg_gettext(False, 'Permission denied!')
         s_time = int(time.time())
+        expire_time = get.expire_time if "expire_time" in get else s_time + 3600
+        if 'tmp_login_expire' in session: return public.return_msg_gettext(False, 'Permission denied!')
         public.M('temp_login').where('state=? and expire>?', (0, s_time)).delete()
         token = public.GetRandomString(48)
         salt = public.GetRandomString(12)
@@ -1859,7 +2035,7 @@ class config:
             'state': 0,
             'login_time': 0,
             'login_addr': '',
-            'expire': s_time + 3600,
+            'expire': int(expire_time),
             'addtime': s_time
         }
 
@@ -1976,40 +2152,24 @@ class config:
         import file_execute_deny
         p = file_execute_deny.FileExecuteDeny()
         return p.del_file_deny(args)
-    #查看告警
-    def get_login_send(self,get):
-        result={}
-        import time
-        time.sleep(0.01)
-        if os.path.exists('/www/server/panel/data/login_send_mail.pl'):
-            result['mail']=True
-        else:
-            result['mail']=False
-        if os.path.exists('/www/server/panel/data/login_send_dingding.pl'):
-            result['dingding']=True
-        else:
-            result['dingding']=False
-        if result['mail'] or result['dingding']:
-            return public.return_msg_gettext(True, result)
-        return public.return_msg_gettext(False, result)
 
-    #设置告警
-    def set_login_send(self,get):
-        type=get.type.strip()
-        if type=='mail':
-            if not os.path.exists("/www/server/panel/data/login_send_mail.pl"):
-                os.mknod("/www/server/panel/data/login_send_mail.pl")
-            if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
-                os.remove("/www/server/panel/data/login_send_dingding.pl")
-            return public.return_msg_gettext(True, 'Setup Successfully')
-        elif type=='dingding':
-            if not os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
-                os.mknod("/www/server/panel/data/login_send_dingding.pl")
-            if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
-                os.remove("/www/server/panel/data/login_send_mail.pl")
-            return public.return_msg_gettext(True, 'Setup Successfully')
+    #查看告警
+    def get_login_send(self, get):
+        send_type = ""
+        login_send_type_conf = "/www/server/panel/data/panel_login_send.pl"
+        if os.path.exists(login_send_type_conf):
+            send_type = public.ReadFile(login_send_type_conf).strip()
         else:
-            return public.return_msg_gettext(False,'The delivery type is not supported')
+
+            if os.path.exists("/www/server/panel/data/login_send_type.pl"):
+                send_type = public.readFile("/www/server/panel/data/login_send_type.pl")
+            else:
+                if os.path.exists('/www/server/panel/data/login_send_mail.pl'):
+                    send_type = "mail"
+                if os.path.exists('/www/server/panel/data/login_send_dingding.pl'):
+                    send_type = "dingding"
+        return public.returnMsg(True, send_type)
+
 
     #取消告警
     def clear_login_send(self,get):
@@ -2017,13 +2177,134 @@ class config:
         if type == 'mail':
             if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
                 os.remove("/www/server/panel/data/login_send_mail.pl")
-            return public.return_msg_gettext(True, 'Setup successfully!')
         elif type == 'dingding':
             if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
                 os.remove("/www/server/panel/data/login_send_dingding.pl")
-            return public.return_msg_gettext(True, 'Setup successfully!')
-        else:
-            return public.return_msg_gettext(False, 'The send type is not supported')
+
+        login_send_type_conf = "/www/server/panel/data/login_send_type.pl"
+        if os.path.exists(login_send_type_conf):
+            os.remove(login_send_type_conf)
+        login_send_type_conf = "/www/server/panel/data/panel_login_send.pl"
+        if os.path.exists(login_send_type_conf):
+            os.remove(login_send_type_conf)
+        return public.returnMsg(True, 'Canceling the login alarm succeeded.！')
+
+
+    def get_login_area(self,get):
+        """
+        @获取面板登录告警
+        @return
+            login_status 是否开启面板登录告警
+            login_area 是否开启面板异地登录告警
+        """
+        result = {}
+        result['login_status'] = self.get_login_send(get)['msg']
+
+        result['login_area'] = ''
+        sfile =  '{}/data/panel_login_area.pl'.format(public.get_panel_path())
+        if os.path.exists(sfile):
+            result['login_area_status'] = public.readFile(sfile)
+        return result
+
+
+    def set_login_area(self,get):
+        """
+        @name 设置异地登录告警
+        @param get
+        """
+        sfile =  '{}/data/panel_login_area.pl'.format(public.get_panel_path())
+        set_type=get.type.strip()
+        obj = public.init_msg(set_type)
+        if not obj:
+            return public.returnMsg(False, "The alarm module is not installed.")
+
+        public.writeFile(sfile, set_type)
+        return public.returnMsg(True, 'successfully set')
+
+    def get_login_area_list(self,get):
+        """
+        @name 获取面板常用地区登录
+
+        """
+        data = {}
+        sfile = '{}/data/panel_login_area.json'.format(public.get_panel_path())
+        try:
+            data = json.loads(public.readFile(sfile))
+        except:pass
+
+        result = []
+        for key in data.keys():
+            result.append({'area':key,'count':data[key]})
+
+        result = sorted(result, key=lambda x: x['count'], reverse=True)
+        return result
+
+    def clear_login_list(self,get):
+        """
+        @name 清理常用登录地区
+        """
+        sfile = '{}/data/panel_login_area.json'.format(public.get_panel_path())
+        if os.path.exists(sfile):
+            os.remove(sfile)
+        return public.returnMsg(True,'Successful operation.')
+
+
+
+
+
+    # def get_login_send(self,get):
+    #     result={}
+    #     import time
+    #     time.sleep(0.01)
+    #     if os.path.exists('/www/server/panel/data/login_send_mail.pl'):
+    #         result['mail']=True
+    #     else:
+    #         result['mail']=False
+    #     if os.path.exists('/www/server/panel/data/login_send_dingding.pl'):
+    #         result['dingding']=True
+    #     else:
+    #         result['dingding']=False
+    #     if result['mail'] or result['dingding']:
+    #         return public.returnMsg(True, result)
+    #     return public.returnMsg(False, result)
+
+    #设置告警
+    def set_login_send(self,get):
+        login_send_type_conf = "/www/server/panel/data/panel_login_send.pl"
+
+        set_type=get.type.strip()
+        msg_configs = self.get_msg_configs(get)
+        if set_type not in msg_configs.keys():
+            return public.returnMsg(False,'This send type is not supported')
+        _conf = msg_configs[set_type]
+        if "data" not in _conf or not _conf["data"]:
+            return public.returnMsg(False, "This channel is not configured, please select again.")
+
+        from panelMessage import panelMessage
+        pm = panelMessage()
+        obj = pm.init_msg_module(set_type)
+        if not obj:
+            return public.returnMsg(False, "The message channel is not installed.")
+
+        public.writeFile(login_send_type_conf, set_type)
+        return public.returnMsg(True, 'successfully set')
+
+        # if type=='mail':
+        #     if not os.path.exists("/www/server/panel/data/login_send_mail.pl"):
+        #         os.mknod("/www/server/panel/data/login_send_mail.pl")
+        #     if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
+        #         os.remove("/www/server/panel/data/login_send_dingding.pl")
+        #     return public.returnMsg(True, '设置成功')
+        # elif type=='dingding':
+        #     if not os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
+        #         os.mknod("/www/server/panel/data/login_send_dingding.pl")
+        #     if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
+        #         os.remove("/www/server/panel/data/login_send_mail.pl")
+        #     return public.returnMsg(True, '设置成功')
+        # else:
+        #     return public.returnMsg(False,'不支持该发送类型')
+
+
 
     #告警日志
     def get_login_log(self,get):
@@ -2103,27 +2384,52 @@ class config:
         public.WriteFile(path, json.dumps([]))
         return public.return_msg_gettext(True, "Successfully created")
 
-
     def get_panel_ssl_status(self,get):
         import os
         if os.path.exists(self._setup_path+'/data/ssl.pl'):
             return public.return_msg_gettext(True,'success')
         return public.return_msg_gettext(False,'false')
 
-    def set_backup_notification(self,get):
-        import os
-        f = self._setup_path+'/data/send_back_error.pl'
-        if os.path.exists(f):
-            public.ExecShell('rm -f {}'.format(f))
-            return public.return_msg_gettext(True,'Disable successfully')
-        public.writeFile(f,'1')
-        return public.return_msg_gettext(True,'Enable Successfully')
+    def set_ssl_verify(self,get):
+        """
+        设置双向认证
+        """
+        sslConf = 'data/ssl_verify_data.pl'
+        status = int(get.status)
+        if status:
+            if not os.path.exists('data/ssl.pl'): return public.returnMsg(False,'The panel SSL function needs to be enabled first!')
+            public.writeFile(sslConf,'True')
+        else:
+            if os.path.exists(sslConf): os.remove(sslConf)
+        if 'crl' in get and 'ca' in get:
+            crl = 'ssl/crl.pem'
+            ca = 'ssl/ca.pem'
+            if get.crl:
+                public.writeFile(crl,get.crl.strip())
+            if get.ca:
+                public.writeFile(ca,get.ca.strip())
+            return public.returnMsg(True,'The panel two-way authentication certificate has been saved!')
+        else:
+            msg = 'Enable'
+            if not status:msg = 'Disable'
+            return public.returnMsg(True,'Panel two-way authentication {} succeeded!'.format(msg))
 
-    def get_backup_notification(self,get):
-        import os
-        if os.path.exists(self._setup_path+'/data/send_back_error.pl'):
-            return public.returnMsg(True,'success')
-        return public.returnMsg(False,'false')
+    def get_ssl_verify(self, get):
+        """
+        获取双向认证
+        """
+        result = {'status': False, 'ca': '', 'crl': ''}
+        sslConf = 'data/ssl_verify_data.pl'
+        if os.path.exists(sslConf): result['status'] = True
+
+        ca = 'ssl/ca.pem'
+        crl = 'ssl/crl.pem'
+        if os.path.exists(crl):
+            result['crl'] = public.readFile(crl)
+        if os.path.exists(crl):
+            result['ca'] = public.readFile(ca)
+        return result
+
 
     def set_not_auth_status(self,get):
         '''
@@ -2158,3 +2464,718 @@ class config:
             return status_code
         except:
             return 404
+
+    def get_request_iptype(self,get = None):
+        '''
+            @name 获取云端请求线路
+            @author hwliang<2022-02-09>
+            @return auto/ipv4/ipv6
+        '''
+
+        v4_file = '{}/data/v4.pl'.format(public.get_panel_path())
+        if not os.path.exists(v4_file): return 'auto'
+        iptype = public.readFile(v4_file).strip()
+        if not iptype: return 'auto'
+        if iptype == '-4': return 'ipv4'
+        return 'ipv6'
+
+    def get_request_type(self,get= None):
+        '''
+            @name 获取云端请求方式
+            @author hwliang<2022-02-09>
+            @return python/curl/php
+        '''
+        http_type_file = '{}/data/http_type.pl'.format(public.get_panel_path())
+        if not os.path.exists(http_type_file): return 'python'
+        http_type = public.readFile(http_type_file).strip()
+        if not http_type:
+            os.remove(http_type_file)
+            return 'python'
+        return http_type
+
+    def get_msg_configs(self,get):
+        """
+        获取消息通道配置列表
+        """
+        cpath = 'data/msg.json'
+
+        #cpath = '{}/data/msg.json'.format(public.get_panel_path())
+        example = 'config/examples/msg.example.json'
+
+        if not os.path.exists(cpath) and os.path.exists(example):
+            import shutil
+            shutil.copy(example, cpath)
+        try:
+            # 配置文件异常处理
+            json.loads(public.readFile(cpath))
+        except:
+            if os.path.exists(cpath): os.remove(cpath)
+        data = {}
+        if os.path.exists(cpath):
+            msgs = json.loads(public.readFile(cpath))
+
+            for x in msgs:
+                x['data'] = {}
+                x['setup'] = False
+                x['info'] = False
+                key = x['name']
+                try:
+                    obj =  public.init_msg(x['name'])
+                    if obj:
+                        x['setup'] = True
+                        x['data'] = obj.get_config(None)
+                        x['info'] = obj.get_version_info(None)
+                except :
+                    pass
+                data[key] = x
+        return data
+
+    def get_module_template(self,get):
+        """
+        获取模块模板
+        """
+        panelPath = public.get_panel_path()
+        module_name = get.module_name
+        sfile = '{}/class/msg/{}.html'.format(panelPath, module_name)
+        if not os.path.exists(sfile):
+            return public.returnMsg(False, 'The template file does not exist.')
+
+        if module_name in ["sms"]:
+
+            obj = public.init_msg(module_name)
+            if obj:
+                args = public.dict_obj()
+                args.reload = True
+                data = obj.get_config(args)
+                from flask import render_template_string
+                shtml = public.readFile(sfile)
+                return public.returnMsg(True, render_template_string(shtml, data=data))
+        else:
+            shtml = public.readFile(sfile)
+            return public.returnMsg(True, shtml)
+
+
+
+    def set_default_channel(self,get):
+        """
+        设置默认消息通道
+        """
+        default_channel_pl = "/www/server/panel/data/default_msg_channel.pl"
+
+        new_channel = get.channel
+        default = False
+        if "default" in get:
+            _default = get.default
+            if not _default or _default in ["false"]:
+                default = False
+            else:
+                default = True
+
+        ori_default_channel = ""
+        if os.path.exists(default_channel_pl):
+            ori_default_channel = public.readFile(ori_default_channel)
+
+        if default:
+            # 设置为默认
+            from panelMessage import panelMessage
+            pm = panelMessage()
+            obj =  pm.init_msg_module(new_channel)
+            if not obj: return public.returnMsg(False, 'Setup failed, [{}] is not installed'.format(new_channel))
+
+            public.writeFile(default_channel_pl, new_channel)
+            if ori_default_channel:
+                return public.returnMsg(True, 'Successfully changed [{}] to [{}] panel default notification.'.format(ori_default_channel, new_channel))
+            else:
+                return public.returnMsg(True, '[{}] has been set as the default notification.'.format(new_channel))
+        else:
+            # 取消默认设置
+            if os.path.exists(default_channel_pl):
+                os.remove(default_channel_pl)
+            return public.returnMsg(True, "[{}] has been removed as panel default notification.".format(new_channel))
+
+    def set_msg_config(self,get):
+        """
+        设置消息通道配置
+        """
+        from panelMessage import panelMessage
+        pm = panelMessage()
+        obj =  pm.init_msg_module(get.name)
+        if not obj: return public.returnMsg(False, 'Setup failed, [{}] is not installed'.format(get.name))
+        return obj.set_config(get)
+
+    # def install_msg_module(self,get):
+    #     """
+    #     安装/更新消息通道模块
+    #     @name 需要安装的模块名称
+    #     """
+    #     module_name = ""
+    #     try:
+    #         module_name = get.name
+    #         down_url = public.get_url()
+    #
+    #         local_path = '{}/class/msg'.format(public.get_panel_path())
+    #         if not os.path.exists(local_path): os.makedirs(local_path)
+    #
+    #         import panelTask
+    #         task_obj = panelTask.bt_task()
+    #
+    #         sfile1 = '{}/{}_msg.py'.format(local_path,module_name)
+    #         down_url1 = '{}/linux/panel/msg/{}_msg.py'.format(down_url,module_name)
+    #
+    #         sfile2 = '{}/class/msg/{}.html'.format(public.get_panel_path(),module_name)
+    #         down_url2 = '{}/linux/panel/msg/{}.html'.format(down_url,module_name)
+    #
+    #         public.WriteLog('Install module', 'Install [{}]'.format(module_name))
+    #         task_obj.create_task('Download file', 1, down_url1, sfile1)
+    #         task_obj.create_task('Download file', 1, down_url2, sfile2)
+    #
+    #         timeout = 0
+    #         is_install = False
+    #         while timeout < 5:
+    #             try:
+    #                 if os.path.exists(sfile1) and os.path.exists(sfile2):
+    #                     msg_obj = public.init_msg(module_name)
+    #                     if  msg_obj and msg_obj.get_version_info:
+    #                         is_install = True
+    #                         break
+    #             except: pass
+    #             time.sleep(0.1)
+    #             is_install = True
+    #
+    #         if not is_install:
+    #             return public.returnMsg(False, 'Failed to install [{}] module. Please check the network.'.format(module_name))
+    #
+    #         public.set_module_logs('msg_push', 'install_module', 1)
+    #         return public.returnMsg(True, '[{}] Module is installed successfully.'.format(module_name))
+    #     except:
+    #         pass
+    #     return public.returnMsg(False, '[{}] Module installation failed.'.format(module_name))
+
+    def install_msg_module(self,get):
+        """
+        aapanel 不与面板相同，不删除通道模块
+        安装/更新消息通道模块
+        @name 需要安装的模块名称
+        """
+        module_name = ""
+        try:
+            module_name = get.name
+
+            local_path = '{}/class/msg'.format(public.get_panel_path())
+            if not os.path.exists(local_path): os.makedirs(local_path)
+
+            sfile1 = '{}/{}_msg.py'.format(local_path,module_name)
+
+            if os.path.exists(sfile1):
+                return public.returnMsg(True, '[{}] Module is installed successfully.'.format(module_name))
+
+        except:
+            return public.returnMsg(False, '[{}] Module installation failed.'.format(module_name))
+
+
+    # def uninstall_msg_module(self,get):
+    #     """
+    #     卸载消息通道模块
+    #     @name 需要卸载的模块名称
+    #     @is_del 是否需要删除配置文件
+    #     """
+    #     module_name = get.name
+    #     obj = public.init_msg(module_name)
+    #     if 'is_del' in get:
+    #         try:
+    #             obj.uninstall()
+    #         except:pass
+    #
+    #     sfile = '{}/class/msg/{}_msg.py'.format(public.get_panel_path(),module_name)
+    #     if os.path.exists(sfile): os.remove(sfile)
+    #
+    #     # public.print_log(sfile)
+    #     default_channel_pl = "{}/data/default_msg_channel.pl".format(public.get_panel_path())
+    #     default_channel = public.readFile(default_channel_pl)
+    #     if default_channel and default_channel == module_name:
+    #         os.remove(default_channel_pl)
+    #     return public.returnMsg(True, '[{}] Module uninstallation succeeds'.format(module_name))
+
+    def uninstall_msg_module(self,get):
+        """
+        aapanel 不与面板相同，不删除通道模块，只删除配置文件
+        @module_name 是删除配置文件
+        """
+        module_name = get.name
+
+        # sfile = '{}/class/msg/{}_msg.py'.format(public.get_panel_path(),module_name)
+        # if os.path.exists(sfile): os.remove(sfile)
+
+        if module_name in ["dingding", "feishu", "weixin"]:
+            msg_conf_file = "{{}}/data/{}.json".format(module_name).format(public.get_panel_path())
+            if os.path.exists(msg_conf_file): os.remove(msg_conf_file)
+        elif module_name == "mail":
+            for conf_file in ["stmp_mail", "mail_list"]:
+                msg_conf_file = "{}/data/{}.json".format(public.get_panel_path(), conf_file)
+                if os.path.exists(msg_conf_file): os.remove(msg_conf_file)
+        elif module_name == "tg":
+            msg_conf_file = "{}/data/tg_bot.json".format(public.get_panel_path())
+            if os.path.exists(msg_conf_file): os.remove(msg_conf_file)
+
+
+        # public.print_log(sfile)
+        default_channel_pl = "{}/data/default_msg_channel.pl".format(public.get_panel_path())
+        default_channel = public.readFile(default_channel_pl)
+        if default_channel and default_channel == module_name:
+            os.remove(default_channel_pl)
+        return public.returnMsg(True, '[{}] Module uninstallation succeeds'.format(module_name))
+
+
+    def get_msg_fun(self,get):
+        """
+        @获取消息模块指定方法
+        @auther: cjxin
+        @date: 2022-08-16
+        @param: get.module_name 消息模块名称(如：sms,weixin,dingding)
+        @param: get.fun_name 消息模块方法名称(如：send_sms,push_msg)
+        """
+        module_name = get.module_name
+        fun_name = get.fun_name
+
+        m_objs = public.init_msg(module_name)
+        if not m_objs: return public.returnMsg(False, 'Setup failed, [{}] is not installed'.format(module_name))
+
+        return getattr(m_objs,fun_name)(get)
+
+
+    def get_msg_configs_by(self,get):
+        """
+        @name 获取单独消息通道配置
+        @auther: cjxin
+        @date: 2022-08-16
+        @param: get.name 消息模块名称(如：sms,weixin,dingding)
+        """
+        name = get.name
+        res = {}
+        res['data'] = {}
+        res['setup'] = False
+        res['info'] = False
+        try:
+            obj =  public.init_msg(name)
+            if obj:
+                res['setup'] = True
+                res['data'] = obj.get_config(None)
+                res['info'] = obj.get_version_info(None);
+        except: pass
+        return res
+
+
+
+    def get_msg_push_list(self,get):
+        """
+        @name 获取消息通道配置列表
+        @auther: cjxin
+        @date: 2022-08-16
+        """
+        cpath = 'data/msg.json'
+        try:
+            if 'force' in get or not os.path.exists(cpath):
+                if not 'download_url' in session: session['download_url'] = public.get_url()
+                public.downloadFile('{}/linux/panel/msg/msg.json'.format(session['download_url']),cpath)
+        except : pass
+
+        data = {}
+        if os.path.exists(cpath):
+            msgs = json.loads(public.readFile(cpath))
+            for x in msgs:
+                x['setup'] = False
+                x['info'] = False
+                key = x['name']
+                try:
+                    obj =  public.init_msg(x['name'])
+                    if obj:
+                        x['setup'] = True
+                        x['info'] = obj.get_version_info(None)
+                except :
+                    print(public.get_error_info())
+                    pass
+                data[key] = x
+        return data
+
+
+    # 检查是否提交过问卷
+    def check_nps(self, get):
+        if 'product_type' not in get:
+            public.returnMsg(False, 'Parameter error')
+        ikey = 'check_nps'
+        result = cache.get(ikey)
+        if result:
+            return result
+
+        url = "https://www.aapanel.com/api/panel/nps/check"
+
+        data = {
+            'product_type': get.get('product_type', 1),
+            #'server_id':  user_info['server_id'],
+        }
+
+        try:
+            user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
+            data['server_id'] = user_info['server_id']
+
+        except:
+            pass
+        res = public.httpPost(url, data)
+        try:
+            res = json.loads(res)
+        except:
+            pass
+
+        # 连不上官网时使用默认数据
+        if not isinstance(res, dict):
+            res = {
+                "nonce": 0,
+                "success": False,
+                "res": False
+            }
+
+
+        # 判断运行天数
+        safe_day = 0
+        cur_timestamp = int(time.time())
+        # if os.path.exists("data/%s_nps_time.pl" % software_name):
+        if os.path.exists("/www/server/panel/data/panel_nps_time.pl"):
+            try:
+                # nps_time = float(public.ReadFile("/www/server/panel/data/panel_nps_time.pl"))
+                nps_time = float(public.ReadFile("data/panel_nps_time.pl"))
+                safe_day = int((cur_timestamp - nps_time) / 86400)
+
+            except:
+                public.WriteFile("data/panel_nps_time.pl", "%s" % cur_timestamp)
+        else:
+            public.WriteFile("data/panel_nps_time.pl", "%s" % cur_timestamp)
+
+        datas = {'nonce': res.get('nonce', 0),
+                 'success': res.get('success', False),
+                 'res': {
+                     'safe_day': safe_day,
+                     'is_submit': res.get('res', False)
+                 }}
+
+        cache.set(ikey, datas, 3600)
+        # if res['success']:
+            # return public.returnMsg(True, 'Questionnaire has been submitted')
+
+        # return public.returnMsg(False, 'No questionnaire has been submitted')
+        return datas
+
+    def get_nps_new(self, get):
+        """
+        获取问卷
+        """
+        try:
+            # 官网接口 需替换
+            url = "https://www.aapanel.com/api/panel/nps/questions"
+            data = {
+                'product_type': get.get('product_type', 1),
+                # 'action': "list",
+                # 'version': get.get('version', -1)
+            }
+            # request发送post请求并指定form_data参数
+            res = public.httpPost(url, data)
+            # public.print_log("获取问卷@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   {}".format(res))
+            try:
+                res = json.loads(res)
+            except:
+                pass
+            return res
+
+        except:
+            return public.returnMsg(False, "Failed to obtain questionnaire")
+
+    def write_nps_new(self, get):
+        '''
+            @name nps 提交
+            @param rate 评分
+            @param feedback 反馈内容
+        '''
+        if 'product_type' not in get:
+            public.returnMsg(False, 'Parameter error')
+
+        # if 'questions' not in get:
+        #     public.returnMsg(False, '参数错误')
+        if 'rate' not in get:
+            public.returnMsg(False, 'Parameter error')
+
+        # try:
+        # if not hasattr(get, 'software_name'):
+        #     public.returnMsg(False, '参数错误')
+
+        # software_name = get['software_name']
+        # public.WriteFile("data/{}_nps.pl".format(software_name), "1")
+
+        data = {
+            # 'action': "submit",
+            # 'uid': user_info['uid'],  # 用户ID
+            # 'access_key': user_info['access_key'],  # 用户密钥
+            # 'is_paid': get['is_paid'],  # 是否付费
+            # 'phone_back': get['back_phone'],  # 是否回访
+            # 'feedback': get['feedback']  # 反馈内容
+            # 'reason_tags': get['reason_tags'],  # 问题标签
+            'rate': get.get('rate', 1),  # 评分  1~10
+            'product_type': get.get('product_type', 1),  # 产品类型
+            #'server_id': user_info['server_id'],  # 服务器ID
+            'questions': get['questions'],  # 问题列表
+            'panel_version': public.version(),  # 面板版本
+
+        }
+        url_headers = {
+            # "authorization": "bt {}".format(user_info['token'])
+        }
+
+        try:
+            user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
+            data[ 'server_id']= user_info['server_id']
+            url_headers = {
+                "authorization": "bt {}".format(user_info['token'])
+            }
+        except:
+            pass
+
+        url = 'https://www.aapanel.com/api/panel/nps/submit'
+        if not hasattr(get, 'questions'):
+            return public.returnMsg(False, "questions Parameter error")
+        else:
+            try:
+                content = json.loads(get.questions)
+                for _, i in content.items():
+                    if len(i) > 512:
+                        # public.ExecShell("rm -f data/{}_nps.pl".format(software_name))
+                        return public.returnMsg(False, "The submitted text is too long, please adjust and resubmit (MAX: 512)")
+            except:
+                return public.returnMsg(False, "questions Parameter error")
+        # if not hasattr(get, 'product_type'):
+        #     return public.returnMsg(False, "参数错误")
+        # if not hasattr(get, 'rate'):
+        #     return public.returnMsg(False, "参数错误")
+        # if not hasattr(get, 'reason_tags'):
+        #     get['reason_tags'] = "1"
+        # if not hasattr(get, 'is_paid'):
+        #     get['is_paid'] = 0  # 是否付费
+        # if not hasattr(get, 'phone_back'):
+        #     get.phone_back = 0
+        # if not hasattr(get, 'phone_back'):
+        #     get.feedback = ""
+
+        res = public.httpPost(url, data=data, headers=url_headers)
+        try:
+            res = json.loads(res)
+        except:
+            pass
+
+        # 连不上官网时使用默认数据
+        if not isinstance(res, dict):
+            res = {
+                "nonce": 0,
+                "success": False,
+                "res": "The submission failed, please check to connect to the node"
+            }
+
+        if res['success']:
+            return public.returnMsg(True, "Submitted successfully")
+
+        return public.returnMsg(False, res['res'] if 'res' in res else "The submission failed, please check to connect to the node")
+
+
+    # # nps问卷
+    # def stop_nps(self, get):
+    #     if 'software_name' not in get:
+    #         public.returnMsg(False, '参数错误')
+    #     if get.software_name == "panel":
+    #         self._stop_panel_nps()
+    #     else:
+    #         public.WriteFile("data/%s_nps.pl" % get.software_name, "")
+    #     return public.returnMsg(True, '关闭成功')
+
+    # def get_nps(self, get):
+    #     if 'software_name' not in get: public.returnMsg(False, '参数错误')
+    #     software_name = get.software_name
+    #     if software_name == "panel":
+    #         return self._get_panel_nps()
+    #     data = {'safe_day': 0}
+    #     # conf = self.get_config(None)
+    #     # 判断运行天数
+    #     if os.path.exists("data/%s_nps_time.pl" % software_name):
+    #         try:
+    #             nps_time = float(public.ReadFile("data/%s_nps_time.pl" % software_name))
+    #             data['safe_day'] = int((time.time() - nps_time) / 86400)
+    #
+    #         except:
+    #             public.WriteFile("data/%s_nps_time.pl" % software_name, "%s" % time.time())
+    #     else:
+    #         public.WriteFile("data/%s_nps_time.pl" % software_name, "%s" % time.time())
+    #
+    #     if not os.path.exists("data/%s_nps.pl" % software_name):
+    #         # 如果安全运行天数大于5天 并且没有没有填写过nps的信息
+    #         data['nps'] = False
+    #     else:
+    #         data['nps'] = True
+    #     return data
+
+    # def write_nps(self, get):
+    #     '''
+    #         @name nps 提交
+    #         @param rate 评分
+    #         @param feedback 反馈内容
+    #
+    #     '''
+    #     if 'product_type' not in get: public.returnMsg(False, '参数错误')
+    #     if 'software_name' not in get: public.returnMsg(False, '参数错误')
+    #     software_name = get.software_name
+    #     product_type = get.product_type
+    #     import json, requests
+    #     api_url = 'https://www.bt.cn/api/v2/contact/nps/submit'
+    #     user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
+    #     if 'rate' not in get:
+    #         return public.returnMsg(False, "参数错误")
+    #     if 'feedback' not in get:
+    #         get.feedback = ""
+    #     if 'phone_back' not in get:
+    #         get.phone_back = 0
+    #     else:
+    #         if get.phone_back == 1:
+    #             get.phone_back = 1
+    #         else:
+    #             get.phone_back = 0
+    #
+    #     if 'questions' not in get:
+    #         return public.returnMsg(False, "参数错误")
+    #
+    #     try:
+    #         get.questions = json.loads(get.questions)
+    #     except:
+    #         return public.returnMsg(False, "参数错误")
+    #
+    #     data = {
+    #         "uid": user_info['uid'],
+    #         "access_key": user_info['access_key'],
+    #         "server_id": user_info['server_id'],
+    #         "product_type": product_type,
+    #         "rate": get.rate,
+    #         "feedback": get.feedback,
+    #         "phone_back": get.phone_back,
+    #         "questions": json.dumps(get.questions)
+    #     }
+    #     try:
+    #         requests.post(api_url, data=data, timeout=10).json()
+    #         if software_name == "panel":
+    #             self._stop_panel_nps(is_complete=True)
+    #         else:
+    #             public.WriteFile("data/{}_nps.pl".format(software_name), "1")
+    #     except:
+    #         pass
+    #     return public.returnMsg(True, "提交成功")
+
+
+
+
+    # @staticmethod
+    # def _get_panel_nps_data():
+    #     panel_path = public.get_panel_path()
+    #     try:
+    #         nps_file = "{}/data/btpanel_nps_data".format(panel_path)
+    #         if os.path.exists(nps_file):
+    #             with open(nps_file, mode="r") as fp:
+    #                 nps_data = json.load(fp)
+    #         else:
+    #             time_file = "{}/data/panel_nps_time.pl".format(panel_path)
+    #             post_nps_done = "{}/data/panel_nps.pl".format(panel_path)
+    #             if not os.path.exists(time_file):
+    #                 install_time = time.time()
+    #             else:
+    #                 with open(time_file, mode="r") as fp:
+    #                     install_time = float(fp.read())
+    #             nps_data = {
+    #                 "time": install_time,
+    #                 "status": "complete" if os.path.exists(post_nps_done) else "waiting",
+    #                 "popup_count": 0
+    #             }
+    #
+    #             with open(nps_file, mode="w") as fp:
+    #                 fp.write(json.dumps(nps_data))
+    #     except:
+    #         nps_data = {
+    #             "time": time.time(),
+    #             "status": "waiting",
+    #             "popup_count": 0
+    #         }
+    #
+    #     return nps_data
+    #
+    # @staticmethod
+    # def _save_panel_nps_data(nps_data):
+    #     panel_path = public.get_panel_path()
+    #     nps_file = "{}/data/btpanel_nps_data".format(panel_path)
+    #     with open(nps_file, mode="w") as fp:
+    #         fp.write(json.dumps(nps_data))
+    #
+    # def _get_panel_nps(self):
+    #     nps_data = self._get_panel_nps_data()
+    #     safe_day = int((time.time() - nps_data["time"]) / 86400)
+    #     res = {'safe_day': safe_day}
+    #     if nps_data["status"] == "complete":
+    #         res["nps"] = False
+    #     elif nps_data["status"] == "stopped":
+    #         res["nps"] = False
+    #     else:
+    #         if safe_day >= 10:
+    #             res["nps"] = True
+    #     return res
+    #
+    # def _stop_panel_nps(self, is_complete: bool = False):
+    #     nps_data = self._get_panel_nps_data()
+    #     if is_complete:
+    #         nps_data["status"] = "complete"
+    #     else:
+    #         nps_data["status"] = "stopped"
+    #
+    #     self._save_panel_nps_data(nps_data)
+
+    # 错误收集
+    def err_collection(self, get):
+        # 提交错误登录信息
+        _form = get.get("form_data", {})
+        if 'username' in _form: _form['username'] = '******'
+        if 'password' in _form: _form['password'] = '******'
+        if 'phone' in _form: _form['phone'] = '******'
+
+        error = get.get("errinfo", "")
+        # 获取面板地址
+        panel_addr = public.get_server_ip() + ":" + str(public.get_panel_port())
+        if panel_addr in error:
+            error = error.replace(panel_addr, "127.0.0.1:10086")
+
+
+        # 错误信息
+        error_infos = {
+            "REQUEST_DATE": public.getDate(),  # 请求时间
+            "PANEL_VERSION": public.version(),  # 面板版本
+            "OS_VERSION": public.get_os_version(),  # 操作系统版本
+            "REMOTE_ADDR": public.GetClientIp(),  # 请求IP
+            "REQUEST_URI": get.get("uri", ""),  # 请求URI
+            "REQUEST_FORM": public.xsssec(str(_form)),  # 请求表单
+            "USER_AGENT": public.xsssec(request.headers.get('User-Agent')),  # 客户端连接信息
+            "ERROR_INFO": error,  # 错误信息
+            "PACK_TIME": public.readFile("/www/server/panel/config/update_time.pl") if os.path.exists("/www/server/panel/config/update_time.pl") else public.getDate(),  # 打包时间
+            "TYPE": 1,
+            "ERROR_ID": "{}_{}".format(error.split("\n")[0].strip(),get.get("uri", ""))
+        }
+        pkey = public.Md5(error_infos["ERROR_INFO"])
+
+        # 提交
+        if not public.cache_get(pkey):
+            try:
+                public.run_thread(public.httpPost("https://api.bt.cn/bt_error/index.php", error_infos))
+                public.cache_set(pkey, 1, 1800)
+            except Exception as e:
+                pass
+
+        return public.returnMsg(True, "OK")
+
+
+

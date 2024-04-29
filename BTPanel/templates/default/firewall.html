@@ -1,742 +1,846 @@
 {% extends "layout.html" %}
-
 {% block content %}
-<style>
-   .weblog {
-        font-size: 14px;
-        display: inline-block;
-        line-height: 30px;
-    }
-	.weblog em {
-		font-style: normal;
-		color: #666;
-		margin: 0 15px;
-		font-size:12px;
-	}
-	.weblog span {
-		margin-right: 10px;
-	}
-	.weblog a {
-		color: #20a53a;
-	}
-	.firewall-port-box{
-		margin-bottom:15px;
-	}
-	.ssl_login_config_view span{
-        vertical-align: 5px;
-        margin-right: 10px;
-    }
-    .ssl_login_config_view .btswitch-ios+.btswitch-btn{
-        display: inline-block;
-        margin: 5px 0 0 0;
-    }
-    .overflow_hide_style{
-		overflow: hidden;
-		text-overflow:ellipsis;
-		white-space:nowrap;
-		display: inline-block;
-		cursor: default;
-    }
-    .detail.security_detail {
-        padding: 20px;
-    }
-    .detail_block {
-        padding: 10px 0;
-        border-bottom: 1px #ececec dashed;
-    }
-    .detail_title {
-        font-weight: 600;
-        margin-bottom: 5px;
-        color: #333;
-    }
-    pre.layui-code {
-        position: relative;
-        margin: 10px 0;
-        padding: 15px;
-        line-height: 20px;
-        border: 1px solid #ddd;
-        border-left-width: 6px;
-        background-color: #F2F2F2;
-        color: red;
-        font-family: Courier New;
-        font-size: 12px;
-    }
+<style type="text/css">
+.ml30 {
+	margin-left: 30px;
+}
+.no-show {
+	display: none;
+}
+.tab-con .tab-block {
+	width: 100%;
+	height: 100%;
+}
+.divtable .btswitch + .btswitch-btn {
+	width: 2.8rem;
+	height: 1.75rem;
+}
 
-   .security_detail pre {
-       white-space: pre-wrap;
-       white-space: -moz-pre-wrap;
-       white-space: -pre-wrap;
-       white-space: -o-pre-wrap;
-       word-wrap: break-word;
-   }
+/* 安全页面头部 */
+.state-content .bt-form-new {
+	align-items: center;
+}
+.state-content .bt-form-new .form-label {
+	padding-right: 15px;
+}
+.state-content .form-inline-line {
+	width: 1px;
+	height: 20px;
+	margin: 0 18px;
+	background-color: #ccc;
+}
+/* end */
 
-   .detail_tips {
-       margin-top: 15px;
-   }
+/* 安全页面内容 */
+.firewall-tab-view .tab-con {
+	padding: 0;
+}
+.firewall-tab-view .tab-nav-con {
+	padding-top: 15px;
+}
+.firewall-tab-view .tab-nav-border span i {
+  font-style: initial;
+}
+/* end */
+/* 系统防火墙 */
+.safety-header .ping-item {
+	margin-right: 15px;
+}
+.safety-header-info {
+	display: flex;
+	align-items: center;
+}
+.port-import-form {
+	padding: 20px;
+}
+.detect_input {
+	display: flex;
+	justify-content: center;
+}
+.detect_input .input_file {
+	width: 170px;
+	height: 35px;
+	border: 0.1px dashed #D0D0D0;
+	padding: 0 0 0 10px;
+	font-size: 14px;
+	outline: none;
+}
+.detect_input .select_file {
+	height: 35px;
+	padding: 0 14px;
+	font-size: 14px;
+	color: #fff;
+	background: #10952a;
+	border: none;
+}
+/* end */
+/* SSH管理 */
+.ssh-login-info .sep {
+	margin: 0 4px;
+}
+.ssh-config {
+	padding: 6px 0;
+}
+.ssh-config-title {
+	line-height: 30px;
+	font-size: 14px;
+	border-bottom: 1px solid #e7e7e7;
+	padding: 5px 5px 8px 10px;
+	font-weight: bold;
+	color: #666;
+	margin-bottom: 10px;
+}
+.ssh-config .line .line-input {
+	display: inline-block;
+	position: relative;
+}
+.ssh-config .line:hover {
+	background: #a5a5a514;
+	transition: background 0.2s;
+	cursor: pointer;
+}
+.ssh-config .line-title {
+	font-size: 12px;
+	color: #333;
+	display: inline-block;
+	width: 150px;
+	text-align: right;
+	padding-right: 15px;
+	height: 30px;
+	line-height: 30px;
+	vertical-align: top;
+}
+.ssh-config .line-item {
+	display: inline-block;
+	vertical-align: top;
+	height: 30px;
+	line-height: 30px;
+}
+.ssh-config .line-row {
+	vertical-align: top;
+}
+.line-row,
+.line-row-tips {
+	height: 30px;
+	line-height: 30px;
+	display: inline-block;
+}
+.line-input input {
+	height: 30px;
+	line-height: 30px;
+}
+.line-row-tips {
+	margin-left: 10px !important;
+	color: #999;
+	vertical-align: top;
+}
+#sshView .tab-nav-con {
+	padding-top: 10px;
+}
+.cutLoginLogsType {
+	margin-top: -4px;
+}
+.btn-sshkey-group {
+	display: flex;
+	align-items: center;
+}
+.news-channel .bt-form-new .form-label {
+	padding-right: 10px;
+}
+/* end */
+/* 入侵防御 */
+#intrusion .divtable {
+	margin-top: 0;
+}
+#antiProcessWhiteList .divtable {
+	margin-top: 10px;
+}
+.logs-data-select {
+	margin-bottom: 15px;
+}
+.logs-title {
+	display: inline-block;
+	width: auto;
+	height: 35px;
+	font-size: 12px;
+	line-height: 35px;
+	margin-right: 5px;
+}
+.logs-unselect {
+	position: relative;
+	display: inline-block;
+	height: 30px;
+	border: 1px solid #e6e6e6;
+	border-radius: 2px;
+	font-size: 13px;
+	line-height: 28px;
+}
+.logs-unselect.active .logs-input-list {
+	display: block;
+}
+.logs-unselect.active .logs-input-list {
+	animation-name: layui-upbit;
+	animation-duration: .3s;
+	animation-fill-mode: both;
+}
+.logs-inputs {
+	box-sizing: border-box;
+	padding: 0 30px 0 10px;
+	height: 30px;
+	cursor: pointer;
+}
+.logs-unselect .logs-inputs:after {
+	position: absolute;
+	top: 0.8pc;
+	right: 6pt;
+	display: block;
+	width: 0;
+	height: 0;
+	border-color: #c2c2c2 transparent transparent;
+	border-style: solid;
+	border-width: 6px 6px 0;
+	content: '';
+	transition: transform .5s;
+}
+.logs-input-list {
+	position: absolute;
+	top: 30px;
+	right: -1px;
+	left: -1px;
+	z-index: 899;
+	display: none;
+	box-sizing: border-box;
+	padding: 5px 0;
+	height: auto;
+	min-width: 100%;
+	border: 1px solid #d2d2d2;
+	border-radius: 2px;
+	background-color: #fff;
+	box-shadow: 0 2px 4px rgba(0,0,0,.12);
+}
+.logs-input-list dd {
+	padding: 5px 15px;
+	height: 30x;
+}
 
-   .setchmod {
-       padding-top: 0;
-   }
+.logs-input-list dd:hover {
+	background-color: #f2f2f2;
+	cursor: pointer;
+}
+.logs-input-list dd.logs_checked {
+	background: #20a532!important;
+	color: #fff;
+}
+.logs-page.page-style {
+	padding: 0 5px;
+	height: 30px;
+	font-size: 13px;
+	margin-top: 5px;
+}
+.page-style .nextPage{
+	display: inline-block;
+	margin: 0 3px;
+	padding: 0 10px;
+	height: 30px;
+	border-radius: 2px;
+	background-color: #f5f5f5;
+	color: #666;
+	text-align: center;
+	line-height: 30px;
+	cursor: pointer;
+}
+.page-style .Pcount {
+	margin-right: 0;
+	margin-left: 5px;
+}
+.page a:last-of-type {
+	border-right: 1px solid #ececec;
+}
+/* end */
+/* 系统加固 */
+#system .divtable {
+	margin: 0;
+}
+#reinforceBlockIp .divtable {
+	margin-top: 10px;
+}
+#reinforceLog .divtable {
+	margin-bottom: 10px;
+}
+/* end */
+/* 日志审计 */
+.logAuditContent {
+	padding: 0 0 0 15px;
+	margin-left: 15px;
+	width: 100%;
+	flex: 1;
+	border-left: 1px solid #ececec;
+}
+
+.logAuditTabContent {
+	display: flex;
+	height: 100%;
+}
+
+.logAuditTabContent .logAuditTab .logAuditItem {
+	height: 35px;
+	line-height: 35px;
+	padding: 0 10px;
+	border-bottom: 1px solid #ececec;
+	cursor: pointer;
+}
+
+.logAuditTabContent .logAuditTab .logAuditItem:hover,
+.logAuditTabContent .logAuditTab .logAuditItem.active {
+	background-color: #f2f2f2;
+}
+
+.logAuditTabContent .logAuditTab {
+	border: 1px solid #ececec;
+	overflow: auto;
+}
+/* end */
+/* 面板日志 */
+.crontab-log {
+	min-height: 250px;
+	margin-top: 10px;
+	margin-bottom: 0;
+	padding: 15px;
+	line-height: 16px;
+	background-color: rgb(51, 51, 51);
+	white-space: pre-wrap;
+	overflow: auto;
+	border: none;
+	color: #f1f1f1;
+}
+/* end */
+/* 功能介绍 */
+.daily-thumbnail {
+	width: 1200px;
+	margin: 80px auto;
+}
+.thumbnail-box {
+	position: relative;
+	display: flex;
+	justify-content: center;
+}
+
+.thumbnail-introduce {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-bottom: 40px;
+}
+.thumbnail-introduce span {
+	font-size: 24px;
+	font-weight: bold;
+}
+.thumbnail-introduce ul {
+	display: flex;
+	font-size: 16px;
+	line-height: 30px;
+	margin: 20px 0;
+	list-style-type: square;
+}
+.thumbnail-introduce ul li + li {
+	margin-left: 40px;
+}
+.pluginTipsGg {
+	position: relative;
+	width: 950px;
+	height: 720px;
+	background-color: #f1f1f1;
+	background-size: 100%;
+	background-repeat: no-repeat;
+	background-position: top;
+	border-radius: 4px;
+}
+/*.pluginTipsGg:hover::before{*/
+/*  display: inline-block;*/
+/*}*/
+.pluginTipsGg::before {
+	content: '点击预览';
+	display: none;
+	background: #000;
+	opacity: 0.2;
+	color: #fff;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	line-height: 621px;
+	font-size: 18px;
+	vertical-align: bottom;
+	text-align: center;
+	border-radius: 4px;
+	transition: all 1s;
+}
+.tab-list .tabs-item.active:after {
+	content: '';
+	width: 20px;
+	height: 2px;
+	position: absolute;
+	left: 50%;
+	bottom: 0px;
+	background: red;
+	margin-left: -10px;
+	background: #20a53a;
+}
+.thumbnail-box .thumbnail-tab {
+	margin-right: 20px;
+	width: 180px;
+	border-left: 1px solid #def2e2;
+}
+.thumbnail-tab li {
+	padding: 0 20px;
+	line-height: 36px;
+	cursor: pointer;
+	font-size: 14px;
+}
+.thumbnail-tab li.on {
+	border-left: 2px solid #20a53a;
+	color: #20a53a;
+	font-size: 16px;
+	font-weight: bold;
+}
+.thumbnail-item {
+	display: none;
+}
+.thumbnail-item.show {
+	display: block;
+}
+.bt_warning {
+	color: #fc6d26;
+}
+/* end */
 </style>
 <div class="main-content">
-    <div class="container-fluid" style="padding-bottom: 50px;">
-        <div class="pos-box bgw mtb15">
-            <div class="position f14 c9 pull-left">
-                <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
-            </div>
-        </div>
-        <div class="safe container-fluid bgw mtb15 pd15">
-            <div class="mr20 pull-left">
-                <form>
-                    <div class="ss-text pull-left">
-                        <em>{{data['lan']['BTN1']}}</em>
-                        <div class='ssh-item' id="in_safe">
-                        	<input class='btswitch btswitch-ios' id='sshswitch' type='checkbox' checked><label class='btswitch-btn sshswitch' for='sshswitch' ></label>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="mr20 pull-left">
-                <div class="ss-text pull-left mr5">
-                    <em>{{data['lan']['BTN2']}}</em>
-                    <input type="text" class="bt-input-text" id="mstscPort" value="" />
-                </div>
-                <div class="ss-text pull-left">
-					<button id="mstscSubmit" onclick='bt.firewall.set_mstsc($("#mstscPort").prop("value"))' class="btn btn-default btn-sm" type="button">{{data['lan']['BTN3']}}</button>
-					<button onclick='firewall.open_sshsafe_config_view()' class="btn btn-default btn-sm" type="button">SSH Safety</button>
-                </div>
-            </div>
-            <div class="mr50 pull-left" style="border-right: 1px solid #ccc; padding-right: 40px;">
-                <div class="ss-text pull-left">
-                    <em>{{data['lan']['BTN4']}}</em>
-                    <div class='ssh-item' id="isPing">
-                    	<input class='btswitch btswitch-ios' id='noping' type='checkbox' checked><label class='btswitch-btn noping' for='noping' ></label>
-                    </div>
-                </div>
-            </div>
-            <div class="weblog">
-                <span class="f12 c5">{{data['lan']['S1']}}</span><a href="javascript:openPath('{{session['logsPath']}}');">{{session['logsPath']}}</a><em id="logSize">0KB</em>
-                <button class="btn btn-default btn-sm" onclick="firewall.clear_logs_files();">{{data['lan']['BTN5']}}</button>
-            </div>
-        </div>
-        <div class="white-black-ip bgw mtb15">
-            <div class="black-ip">
-                <div class="def-log">
-                    <div class="title c6 plr15">
-                        <h3 class="f16">{{data['lan']['H3']}}</h3>
-                    </div>
-                    <div class="divtable pd15">
-						<div class="firewall-port-box">
-							<select id="firewalldType" class="bt-input-text c5 mr5" name="type">
-								<option value="port">{{data['lan']['F1']}}</option>
-								<option value="address">{{data['lan']['F2']}}</option>
-                            </select><input type="text" class="bt-input-text mr5" style="width: 117px;" id="AcceptPort" placeholder="{{data['lan']['F3']}}"><input type="text" class="bt-input-text mr5" id="Ps" placeholder="{{data['lan']['F4']}}"><button id="toAccept" onclick="firewall.add_accept_port()" class="btn btn-default btn-sm va0" type="button">{{data['lan']['F5']}}</button>
-                            <button class="btn btn-default btn-sm sys_firewall" type="button">SYS Firewall</button>
-							<span id="f-ps" class="c9" style="margin-left: 10px;">{{data['lan']['F6']}}</span>
+	<div class="container-fluid" style="padding-bottom: 50px;">
+		<div id="cutTab" class="pos-box bgw mtb15">
+			<div class="tab-list">
+				<div class="tabs-item active" data-name="safety">{{ data['lan']['H1'] }}</div>
+				<div class="tabs-item" data-name="ssh">{{ data['lan']['H2'] }}</div>
+				<div class="tabs-item" data-name="intrusion">{{ data['lan']['H3'] }}</div>
+				<div class="tabs-item" data-name="system">{{ data['lan']['H4'] }}</div>
+<!--				<div class="tabs-item" data-name="logAudit">{{ data['lan']['H5'] }}</div>-->
+<!--				<div class="tabs-item" data-name="logs">{{ data['lan']['H6'] }}</div>-->
+			</div>
+		</div>
+		<div class="container-fluid bgw mtb15 pd15 radius4 safe state-content">
+			<div class="safety-header">
+				<div class="bt-form-new inline">
+					<div class="form-item">
+						<div class="form-label">{{ data['lan']['TURN1'] }}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="isFirewall" type="checkbox" />
+								<label class="btswitch-btn isFirewall" for="isFirewall"></label>
+							</div>
 						</div>
-                        <div class="tablescroll">
-                            <table id="firewallBody" class="table table-hover" style="min-width: 640px;border: 0 none;">                               
-                            </table>
-                        </div>
-                        <div class="dataTables_paginate paging_bootstrap page firewallBody" style="margin-bottom:0">
-                            
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="white-black-ip bgw mtb15">
-            <div class="black-ip">
-                <div class="def-log">
-                    <div class="tootls_group" style="height: 40px;">
-                        <div class="pull-right">
-                            <div class="bt_search" style="margin-top: 10px;margin-right: 15px;">
-                                <input type="text" style="width:260px" class="search_input" placeholder="Please enter a keyword search log"><span onclick="firewall.on_search()" class="glyphicon glyphicon-search" aria-hidden="true"></span>
-                            </div>
-                        </div>
-                        <div class="title c6 plr15">
-                            <h3 class="f16">{{data['lan']['H4']}}</h3>
-                            <a class="btn btn-default btn-sm va0" onclick="bt.firewall.clear_logs(function(){firewall.get_log_list()});">{{data['lan']['BTN5']}}</a>
-                            <span class="btn btn-default btn-sm" style="margin-top: 10px;" onclick="firewall.get_panel_error_logs()">{{data['lan']['PANEL_LOG']}}</span>
-                        </div>
-                    </div>
-                    <div class="divtable pd15">
-                        <div class="tablescroll">
-                            <table id="logsBody" class="table table-hover" style="min-width: 640px;border: 0 none;">
-                                                        
-                            </table>
-                        </div>
-                         <div class="dataTables_paginate paging_bootstrap page logsBody" style="margin-bottom:0">
-                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="form-item ping-item">
+						<div class="form-label">{{ data['lan']['TURN2'] }}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="ssh_ping" type="checkbox" />
+                <label class="btswitch-btn" for="ssh_ping"></label>
+							</div>
+						</div>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="safety-header-info">
+						<span class="mr5">{{ data['lan']['S1'] }}</span>
+						<a class="btlink" href="javascript:openPath('/www/wwwlogs');">{{ session['logsPath'] }}</a>
+						<span class="mlr15" id="logSize">0 B</span>
+						<button class="btn btn-default btn-sm" id="clearWebLogs">{{ data['lan']['BTN1'] }}</button>
+					</div>
+				</div>
+			</div>
+			<div class="ssh-header no-show">
+				<div class="bt-form-new inline">
+					<div class="form-item">
+						<div class="form-label">{{data['lan']['TURN3']}}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="isSsh" type="checkbox" />
+								<label class="btswitch-btn isSsh" for="isSsh"></label>
+							</div>
+						</div>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="ssh-login-info" id="sshDetailed">
+						<span>{{ data['lan']['S4'] }}：</span>
+						<a class="btlink" data-index="1" href="javascript:;">{{ data['lan']['S5'] }}: 0</a>
+						<span class="sep">/</span>
+						<a class="bterror" data-index="2" href="javascript:;">{{ data['lan']['S6'] }}: 0</a>
+					</div>
+				</div>
+			</div>
+			<div class="intrusion-header no-show">
+				<div class="bt-form-new inline">
+					<div class="form-item">
+						<div class="form-label">{{ data['lan']['AI1'] }}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="isIntrusion" type="checkbox" />
+								<label class="btswitch-btn isIntrusion" for="isIntrusion"></label>
+							</div>
+						</div>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="form-item">
+						<span class="mr5">{{ data['lan']['AI2'] }}</span>
+						<span class="totlaDays">0</span>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="form-item">
+						<span class="mr5">{{ data['lan']['AI3'] }}</span>
+						<span class="totlaTimes">0</span>
+					</div>
+				</div>
+			</div>
+			<div class="system-header no-show">
+				<div class="bt-form-new inline">
+					<div class="form-item">
+						<div class="form-label">{{ data['lan']['SH1'] }}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="isReinforcement" type="checkbox" />
+								<label class="btswitch-btn isReinforcement" for="isReinforcement"></label>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="mtb15 pd15 bgw tab-view-box firewall-tab-view">
+			<div class="tab-con show w-full" id="safety">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['F1'] }}: <i>0</i></span>
+					<span>{{ data['lan']['F2'] }}: <i>0</i></span>
+					<span>{{ data['lan']['F3'] }}: <i>0</i></span>
+					<span>{{ data['lan']['F4'] }}: <i>0</i></span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on" id="portRules"></div>
+					<div class="tab-block" id="ipRule"></div>
+					<div class="tab-block" id="portForward"></div>
+					<div class="tab-block" id="countryRegion"></div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="sshView">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['S2'] }}</span>
+					<span>{{ data['lan']['S3'] }}</span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on">
+						<div class="ssh-config">
+							<div class="ptb10">
+								<div class="line" title="{{ data['lan']['SS1'] }}">
+									<div class="line-title">{{ data['lan']['SS1'] }}</div>
+									<div class="line-input">
+										<input type="text" class="bt-input-text" value="22" name="ssh_port" style="width: 120px" />
+										<button type="button" class="btn btn-success btn-sm ml5 save_ssh_port">{{ data['lan']['SS2'] }}</button>
+									</div>
+									<div class="line-row-tips">{{ data['lan']['SS3'] }}</div>
+								</div>
+								<div class="line" title="{{ data['lan']['SS4'] }}">
+									<div class="line-title">{{ data['lan']['SS4'] }}</div>
+									<div class="line-item">
+										<!-- <div class="line-row">
+													<div class="ssh-item" style="margin-left: 0; margin-top: 5px;padding: 0;">
+															<input class="btswitch btswitch-ios" id="root_login" type="checkbox" name="root_login">
+															<label class="btswitch-btn" for="root_login" style="margin-bottom: 0;"></label>
+													</div>
+											</div>
+											<div class="line-row-tips">是否允许root登录ssh</div> -->
+										<select class="bt-input-text" name="root_login">
+											<option value="yes">{{ data['lan']['SS5'] }}</option>
+										</select>
+									</div>
+								</div>
+								<div class="line" title="{{ data['lan']['SS6'] }}">
+									<div class="line-title">{{ data['lan']['SS6'] }}</div>
+									<div class="line-item">
+										<div class="line-row">
+											<div class="ssh-item" style="margin-left: 0; margin-top: 5px; padding: 0">
+												<input class="btswitch btswitch-ios" id="ssh_paw" type="checkbox" name="ssh_paw" />
+												<label class="btswitch-btn" for="ssh_paw" style="margin-bottom: 0"></label>
+											</div>
+										</div>
+										<div class="line-row-tips">{{ data['lan']['SS7'] }}</div>
+									</div>
+								</div>
+								<div class="line" title="{{ data['lan']['SS8'] }}">
+									<div class="line-title">{{ data['lan']['SS8'] }}</div>
+									<div class="line-item">
+										<div class="line-row">
+											<div class="ssh-item" style="margin-left: 0; margin-top: 5px; padding: 0">
+												<input class="btswitch btswitch-ios" id="ssh_pubkey" type="checkbox" name="ssh_pubkey" />
+												<label class="btswitch-btn" for="ssh_pubkey" style="margin-bottom: 0"></label>
+											</div>
+										</div>
+										<button type="button" class="btn btn-success btn-xs ml5 checkKey" style="vertical-align: initial">{{ data['lan']['SS9'] }}</button>
+										<button type="button" class="btn btn-default btn-xs ml5 downloadKey" style="vertical-align: initial">{{ data['lan']['SS10'] }}</button>
+										<div class="line-row-tips">{{ data['lan']['SS11'] }}</div>
+									</div>
+								</div>
+								<div class="line" title="{{ data['lan']['SS12'] }}">
+									<div class="line-title">{{ data['lan']['SS12'] }}</div>
+									<div class="line-item">
+										<div class="line-row mr5">
+											<a href="javascript:;" class="bt_warning setSshLoginAlarm">{{ data['lan']['SS13'] }}</a>
+										</div>
+										<button type="button" class="btn btn-success btn-xs ml5 setSshLoginAlarm" style="vertical-align: initial">{{ data['lan']['SS14'] }}</button>
+										<div class="line-row-tips">{{ data['lan']['SS15'] }}</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="tab-block">
+						<div id="loginLogsContent">
+							<div class="w-full">
+								<div id="loginAllLogs"></div>
+							</div>
+							<div class="w-full no-show">
+								<div id="loginSuccessLogs"></div>
+							</div>
+							<div class="w-full no-show">
+								<div id="loginErrorLogs"></div>
+							</div>
+						</div>
+						<div class="daily-thumbnail" style="display: none">
+							<div class="thumbnail-introduce">
+								<span>{{ data['lan']['S7'] }}</span>
+								<ul>
+									<li>{{ data['lan']['S8'] }}</li>
+								</ul>
+								<div class="daily-product-buy">
+									<a href="javascript:;" class="btn btn-success va0 mr10 " onclick="product_recommend.pay_product_sign('pro', 100)">{{ data['lan']['BTN7'] }}</a>
+								</div>
+							</div>
+							<div class="thumbnail-box">
+								<ul class="thumbnail-tab">
+									<li class="on">{{ data['lan']['S7'] }}</li>
+								</ul>
+								<div class="thumbnail-item show">
+									<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/ssh/1.png');"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="intrusion">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['AI4'] }}</span>
+					<span>{{ data['lan']['AI5'] }}</span>
+					<span>{{ data['lan']['AI6'] }}</span>
+					<span>{{ data['lan']['AI7'] }}</span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on">
+						<div id="antiOverviewList"></div>
+						<ul class="help-info-text c7">
+							<li>{{ data['lan']['AI8'] }}</li>
+							<li>{{ data['lan']['AI9'] }}</li>
+							<li>{{ data['lan']['AI10'] }}</li>
+						</ul>
+					</div>
+					<div class="tab-block">
+						<div id="antiProcessWhiteList"></div>
+					</div>
+					<div class="tab-block">
+						<div id="antiInterceptLog"></div>
+					</div>
+					<div class="tab-block">
+						<div id="antiOperationLog"></div>
+					</div>
+				</div>
+				<div class="installSoft no-show">
+					<div class="daily-thumbnail">
+						<div class="thumbnail-introduce">
+							<span>{{ data['lan']['H3'] }}{{ data['lan']['PF'] }}</span>
+							<ul>
+								<li>{{ data['lan']['AI12'] }}</li>
+								<li>{{ data['lan']['AI13'] }}</li>
+								<li>{{ data['lan']['AI14'] }}</li>
+							</ul>
+							<div class="daily-product-buy">
+								<a href="javascript:;" class="btn btn-success va0 mr10 installIntrusion">{{ data['lan']['BTN6'] }}</a>
+								<a href="javascript:;" class="btn btn-success va0 ml15 buyIntrusion" onclick="product_recommend.pay_product_sign('pro',105)">{{ data['lan']['BTN7'] }}</a>
+							</div>
+						</div>
+						<div class="thumbnail-box">
+							<ul class="thumbnail-tab">
+								<li class="on">{{ data['lan']['AI15'] }}</li>
+								<li>{{ data['lan']['AI16'] }}</li>
+								<li>{{ data['lan']['AI17'] }}</li>
+								<li>{{ data['lan']['AI18'] }}</li>
+							</ul>
+							<div class="thumbnail-item show">
+								<div class="pluginTipsGg" style="background-image: url(/static/images/firewall/intrusion/1.png)"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url(/static/images/firewall/intrusion/2.png)"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url(/static/images/firewall/intrusion/3.png)"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url(/static/images/firewall/intrusion/4.png)"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="system">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['SH2'] }}</span>
+					<span>{{ data['lan']['SH3'] }}</span>
+					<span>{{ data['lan']['SH4'] }}</span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on">
+						<div id="reinforceSystem"></div>
+						<ul class="help-info-text c7">
+							<li>{{ data['lan']['SH5'] }}</li>
+							<li>{{ data['lan']['SH6'] }}</li>
+							<li>{{ data['lan']['SH7'] }}</li>
+							<li style="color: red">{{ data['lan']['SH8'] }}</li>
+						</ul>
+					</div>
+					<div class="tab-block">
+						<div>
+							<input class="bt-input-text" name="system_address" type="text" value="" placeholder="{{ data['lan']['SH9'] }}" style="width: 250px; margin-right: 6px" />
+							<button class="btn btn-success btn-sm system_add_ip">{{ data['lan']['SH10'] }}</button>
+						</div>
+						<div id="reinforceBlockIp"></div>
+						<ul class="help-info-text c7">
+							<li>{{ data['lan']['SH11'] }}</li>
+							<li>{{ data['lan']['SH12'] }}</li>
+						</ul>
+					</div>
+					<div class="tab-block">
+						<div id="reinforceLog"></div>
+						<div id="reinforceLogPage" class="page"></div>
+					</div>
+				</div>
+				<div class="installSoft no-show">
+					<div class="daily-thumbnail">
+						<div class="thumbnail-introduce">
+							<span>{{ data['lan']['H4'] }}{{ data['lan']['PF'] }}</span>
+							<ul>
+								<li>{{ data['lan']['SH14'] }}</li>
+								<li>{{ data['lan']['SH15'] }}</li>
+							</ul>
+							<div class="daily-product-buy">
+								<a href="javascript:;" class="btn btn-success va0 mr10 installSystem">{{ data['lan']['BTN6'] }}</a>
+								<a href="javascript:;" class="btn btn-success va0 ml15 buySystem" onclick="product_recommend.pay_product_sign('pro',102)">{{ data['lan']['BTN7'] }}</a>
+							</div>
+						</div>
+						<div class="thumbnail-box">
+							<ul class="thumbnail-tab">
+								<li class="on">{{ data['lan']['SH16'] }}</li>
+								<li>{{ data['lan']['SH17'] }}</li>
+								<li>{{ data['lan']['SH18'] }}</li>
+							</ul>
+							<div class="thumbnail-item show">
+								<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/system/1.png')"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/system/2.png')"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/system/3.png')"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="logAudit">
+				<div class="logAuditTabContent">
+					<div class="logAuditTab"></div>
+					<div class="logAuditContent">
+						<div id="logAuditTable"></div>
+						<div id="logAuditPages" class="page" style="display: flex;justify-content: flex-end"></div>
+						<div id="logAuditPre" style="display: none;"></div>
+					</div>
+				</div>
+				<div class="daily-thumbnail" style="display: none">
+					<div class="logAuditTabContent">
+						<div class="logAuditTab"></div>
+						<div class="logAuditContent">
+							<div id="logAuditTable"></div>
+							<div id="logAuditPages" class="page" style="display: flex; justify-content: flex-end"></div>
+							<div id="logAuditPre" style="display: none"></div>
+						</div>
+					</div>
+					<div class="daily-thumbnail" style="display: none">
+						<div class="thumbnail-introduce">
+							<span>{{ data['lan']['H3'] }}</span>
+							<ul>
+								<li>{{ data['lan']['L3'] }}</li>
+							</ul>
+							<div class="daily-product-buy">
+								<a href="javascript:;" class="btn btn-success va0 mr10" onclick="product_recommend.pay_product_sign('pro',103)">{{ data['lan']['BTN7'] }}</a>
+							</div>
+						</div>
+						<div class="thumbnail-box">
+							<ul class="thumbnail-tab">
+								<li class="on">{{ data['lan']['H3'] }}</li>
+							</ul>
+							<div class="thumbnail-item show">
+								<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/logAudit/1.png')"></div>
+							</div>
+						</div>
+					</div>
+					<div class="installSoft" style="display: none">
+						<div class="daily-thumbnail">
+							<div class="thumbnail-introduce">
+								<span>{{ data['lan']['H3'] }}{{ data['lan']['PF'] }}</span>
+								<ul>
+									<li>{{ data['lan']['L4'] }}</li>
+								</ul>
+								<div class="daily-product-buy">
+									<a href="javascript:;" class="btn btn-success va0 ml15 buyLogAudit" onclick="product_recommend.pay_product_sign('pro',104)">{{ data['lan']['BTN7'] }}</a>
+								</div>
+							</div>
+							<div class="thumbnail-box">
+								<ul class="thumbnail-tab">
+									<li class="on">{{ data['lan']['L5'] }}</li>
+								</ul>
+								<div class="thumbnail-item show">
+									<div class="pluginTipsGg" style="background-image: url(/static/img/logAudit/1.png)"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="logsBody">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['L1'] }}</span>
+					<span>{{ data['lan']['L2'] }}</span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on">
+						<div id="operationLog"></div>
+					</div>
+					<div class="tab-block">
+						<div id="runningLog"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 {% endblock %}
-
 {% block scripts %}
 {{ super() }}
-<script type="text/javascript">
-
-    var firewall = {
-        ssl_scanning_list: [], //扫描列表
-        on_search: function () {
-            firewall.get_log_list(1, $('.search_input').val());
-        },
-        get_init: function () {
-            firewall.flush_init();
-            firewall.get_list();
-			firewall.get_log_list();
-			firewall.get_logs_size();			
-			$('.sshswitch').click(function(){
-				var status = $("#sshswitch").prop("checked")==true?1:0;
-				bt.firewall.set_mstsc_status(status,function(rdata){
-					if(rdata===-1){
-						if(status){
-							$("#sshswitch").prop("checked","checked")
-						}else{
-							$("#sshswitch").removeAttr('checked');
-						}
-					}else{						
-						bt.msg(rdata);
-						firewall.flush_init();
-					}
-				})
-			})
-			$('.noping').click(function(){
-				var status = $("#noping").prop("checked")==true?1:0;
-				bt.firewall.ping(status,function(rdata){
-					if(rdata===-1){
-						if(status){
-							$("#noping").prop("checked","checked")
-						}else{
-							$("#noping").removeAttr('checked');
-						}
-					}else{						
-						bt.msg(rdata);
-						firewall.flush_init();
-					}
-				})
-            });
-            $('.sys_firewall').on('click', function () {
-                $.post('/plugin?action=getConfigHtml', {name: 'firewall'}, function (rdata) {
-                    if(rdata.status == false) {
-                        layer.confirm('The SYS Firewall plugin is not installed, <br>please leave to &quot;<a href="/soft" class="btlink">APP Store > Tools</a>&quot;<br> install SYS Firewall plugin first.',
-                            {title: 'No SYS Firewall', icon: 7, closeBtn: 2,}, function () {
-                            window.location.href = '/soft';
-                        });
-                    } else {
-                        bt.soft.set_lib_config('firewall','SYS Firewall');
-                    }
-                });
-            });			
-			$("#firewalldType").change(function(){
-				var type = $(this).val();
-				var w = '120px';
-				var p = lan.firewall.port;
-				var t = lan.firewall.accept;
-				var m = lan.firewall.port_ps;
-				if(type == 'address'){
-					w = '150px';
-					p = lan.firewall.ip;
-					t = lan.firewall.drop;
-					m = lan.firewall.ip_ps;
-				}
-				$("#AcceptPort").css("width",w);
-				$("#AcceptPort").attr('placeholder',p);
-				$("#toAccept").html(t);
-				$("#f-ps").html(m);			
-			});
-		},
-		flush_init:function(){
-			bt.firewall.get_ssh_info(function(rdata){				
-				if(!rdata.status){
-					$("#mstscSubmit").attr('disabled','disabled')
-					$("#mstscPort").attr('disabled','disabled')
-					$('#sshswitch').removeAttr('checked');
-				}
-				else{
-					$("#mstscSubmit").removeAttr('disabled')
-					$("#mstscPort").removeAttr('disabled')
-					$('#sshswitch').attr('checked','checked');
-				}
-				if(rdata.ping){
-					$('#noping').removeAttr('checked');
-				}else{
-					$('#noping').attr('checked','checked');
-				}
-				$("#mstscPort").val(rdata.port);
-			})
-		},
-		///////////SSH安全管理功能开始
-		open_sshsafe_config_view:function(){
-            var _this = this;
-            layer.open({
-                type: 1,
-                title: "SSH Safety",
-                area: '700px',
-                closeBtn: 2,
-                shadeClose: false,
-                content:'<div class="bt-form">\
-                <div class="bt-w-main">\
-                    <div class="bt-w-menu" style="width: 130px;"><p class="bgw">Risk reminder</p><p>Login Method</p><p>Login alarm</p><p>Login logs</p></div>\
-                    <div class="bt-w-con pd15 divtable" style="margin-left: 130px;">\
-                        <div class="bt-box">\
-                            <div class="divtable">\
-                                <table class="table table-hover">\
-                                    <thead><tr><th width="100">Risk name</th><th>Recommendations for hardening</th><th style="text-align: right;">Operation</th></tr></thead>\
-                                </table>\
-							</div>\
-							<div class="divtable ssh_list_switch" style="height: 479px;overflow: auto;">\
-                                <table class="table table-hover"><thead></thead><tbody id="ssh_scanning"></tbody></table>\
-                            </div>\
-                        </div>\
-                        <div class="bt-box" style="display: none;">\
-                            <div class="bt-form">\
-                                <div class="line">\
-                                    <span class="tname">Password login</span>\
-                                    <div class="info-r c4">\
-                                        <input class="btswitch btswitch-ios" id="ssh_paw" type="checkbox"><label class="btswitch-btn" for="ssh_paw" title="SSH Password login" style="display: inline-block;"></label>\
-                                        <div style="margin-left:40px;display: inline-block;"><span class="tname">Key login</span>\
-                                            <input class="btswitch btswitch-ios" id="ssh_key" type="checkbox">\
-                                            <label class="btswitch-btn" for="ssh_key" title="SSH Key login"style="margin: 5px 0 0 117px;"></label>\
-                                        </div>\
-                                    </div>\
-                                </div>\
-                                <div class="line">\
-                                    <span class="tname">SSH Key</span>\
-                                    <div class="info-r c4">\
-                                        <textarea id="ssh_text_key" class="bt-input-text mr20" style="height:180px;width:330px"></textarea>\
-                                    </div>\
-                                </div>\
-                                <div style="margin-left:123px" class="btn-sshkey-group">\
-                                    <button type="button" class="btn btn-success btn-sm btn-copy-sshkey">Copy</button>\
-                                    <button type="button" class="btn btn-success btn-sm btn-download-sshkey">Download</button>\
-                                </div>\
-                            </div>\
-                        </div>\
-                        <div class="bt-box" style="display: none;">\
-                            <button class="btn btn-success btn-sm add_white_ip" type="button">Add IP white list</button>\
-                            <div class="pull-right ssl_login_config_view"><span>Monitor root login</span><input class="btswitch btswitch-ios" id="ssh_root_login" type="checkbox"><label class="btswitch-btn" for="ssh_root_login" title="Monitor root login"></label></div>\
-                            <div class="divtable mtb15" style="max-height: 441px;overflow: auto;">\
-                                <table id="ssh_ip_white_table" class="table table-hover" style="min-width: 500px;"></table>\
-							</div>\
-							<ul class="help-info-text c7">\
-								<li>This list is an IP whitelist, and no alarm will be issued when these IPs log in</li>\
-							</ul>\
-                        </div>\
-                        <div class="bt-box" style="display: none;">\
-                            <table id="ssh_logs_table" class="table table-hover" style="min-width: 500px;"></table>\
-                            <div class="page">\
-                                <div id="ssh_logs"></div>\
-                            </div>\
-                        </div>\
-                    </div>\
-                </div></div>',
-                success(layers,index){
-                    firewall.ssh_list_view();
-                    //导航事件
-                    $(".bt-w-menu p").click(function(){
-                        var index = $(this).index();
-                        $(this).addClass("bgw").siblings().removeClass("bgw");
-                        $('.bt-w-con .bt-box').eq(index).show().siblings().hide();
-                        switch(index){
-                            case 0:
-                                firewall.ssh_list_view();
-                                break;
-                            case 1:
-                                firewall.get_ssh_config();
-                                break;
-                            case 2:
-                                firewall.get_white_ip();
-                                break;
-                            case 3:
-                                firewall.get_logs_view({p:1});
-                                break;
-                        }
-                    });
-                    // 复制按钮
-                    $('.btn-copy-sshkey').click(function(){
-                        bt.pub.copy_pass($('#ssh_text_key').val());
-                    })
-                    // 下载
-                    $('.btn-download-sshkey').click(function(){
-                        window.open('/download?filename=/root/.ssh/id_rsa')
-                    })
-                    // 添加ip白名单
-                    $(".add_white_ip").click(function(){
-                        layer.open({
-                            type: 1,
-                            title: "Add detection IP white list",
-                            area: '340px',
-                            closeBtn: 2,
-                            shadeClose: false,
-					        btn:['Confirm','Cancel'],
-                            content: '<div class="bt-form pd20">\
-                            			<div class="line">\
-                                        	<span class="tname" style="width: 83px;">IP address</span>\
-                                            <div class="info-r" style="margin-left: 83px;">\
-                                                <input name="ip_white" placeholder="Please enter the correct IP address" class="bt-input-text mr5" type="text" style="width: 211px;">\
-                                            </div>\
-                                        </div>\
-                                    </div>',
-                            yes:function(index,layers){
-                                var ip_white = $('[name="ip_white"]').val();
-                                if (ip_white == '') {
-                                    layer.msg('NO IP address!', {icon: 2});
-                                    return false;
-                                }else if(!bt.check_ip(ip_white)){
-                                    layer.msg('Wrong IP address，Please enter the correct IP address!', {icon: 2})
-                                    return false;
-                                }
-                                $.post('/ssh_security?action=add_return_ip', {ip:ip_white}, function (res) {
-                                    layer.msg(res.msg,{icon:res.status?1:2})
-                                    if(res.status){
-                                        layer.close(index);
-                                        firewall.get_white_ip();
-                                    }
-                                })
-                            }
-                        })
-                    })
-                    // 密码开关
-                    $('#ssh_paw').change(function(){
-                        var start = $('#ssh_paw').prop("checked");
-                        if(start){
-                            $.post('/ssh_security?action=set_password', {}, function (res) {layer.msg(res.msg,{icon:res.status?1:2})})
-                        }else{
-                            $.post('/ssh_security?action=stop_password', {}, function (res) {layer.msg(res.msg,{icon:res.status?1:2})})
-                        }
-                    })
-                    // 密钥开关
-                    $('#ssh_key').change(function(){
-                        var start = $('#ssh_key').prop("checked");
-                        if(start){
-                            firewall.set_template_sshkey();
-                        }else{
-                            $.post('/ssh_security?action=stop_key', {}, function (res) {
-                                layer.msg(res.msg,{icon:res.status?1:2})
-                                firewall.get_ssh_config();
-                            })
-                        }
-                    });
-                    // root监控开关
-                    $('#ssh_root_login').change(function(){
-                        var start = $('#ssh_root_login').prop("checked");
-                        if(start){
-                            $.post('/config?action=get_settings2',function(res){
-                                if(res['user_mail']['user_name']){
-                                    $.post('/ssh_security?action=start_jian', {}, function (res) {layer.msg(res.msg,{icon:res.status?1:2})})
-                                }else{
-                                    layer.msg('Please go to panel Settings-->Message channel-->Set email',{icon:2,time:10000})
-                                    $('#ssh_root_login').attr("checked",false);
-                                }
-                            })
-                        }else{
-                            $.post('/ssh_security?action=stop_jian', {}, function (res) {layer.msg(res.msg,{icon:res.status?1:2})})
-                        }
-                    })
-                    $('#ssh_logs').on('click','a',function(e){
-                        var page = $(this).attr('href').replace('/ssh_security?action=get_logs?p=','');
-                        firewall.get_logs_view({p:page});
-                        e.preventDefault();
-                        e.stopPropagation();
-                    });
-                }
-            })
-        },
-        // 风险提醒
-        ssh_list_view:function(){
-            var that = this;
-            $.post('/ssh_security?action=san_ssh_security',function(res){
-                that.ssl_scanning_list = res.result;
-                var _tbody = ''
-                if(res.result.length > 1){
-                    for(var i =0; i<res.result.length; i++){
-                        _tbody += '<tr>\
-                            <td><span title="'+res.result[i].name+'" style="width:95px" class="overflow_hide_style">'+res.result[i].name+'</span></td>\
-                            <td><span title="'+res.result[i].Suggestions+'" style="width:333px" class="overflow_hide_style">'+res.result[i].Suggestions+'</span></td>\
-                            <td style="text-align:right"><a href="javascript:;" class="btlink" onclick="firewall.ssh_scanning_detail('+i+')">Detail</a></td>\
-                        </tr>'
-                    }
-                }else{
-                    _tbody='<tr><td colspan="3" style="text-align:center">No data</td></tr>'
-                }
-                $('#ssh_scanning').html(_tbody)
-            })
-        },
-        // 详情视图
-        ssh_scanning_detail:function(index){
-            var item = this.ssl_scanning_list[index];
-            layer.open({
-                type: 1,
-                title:'View details [ '+ item.name  +' ]',
-                area: '500px',
-                closeBtn:2,
-                btn: ['Confirm'],
-                content:'<div class="detail security_detail">\
-                    <div class="detail_block">\
-                        <div class="detail_title">Risk name</div>\
-                        <div class="detail_conter"><span style="color:red">'+item.name+'</span></div>\
-                    </div>\
-                    <div class="detail_block">\
-                        <div class="detail_title">Reinforcement recommendations</div>\
-                        <div class="detail_conter">\
-                        <span>'+(item.Suggestions || item.ps || '')+'</span>'+(item.repair != item.Suggestions? '<pre class="layui-code">'+item.repair+'</pre>': '')+''+(item.list != undefined ? '<pre class="layui-code">'+item.list+'</pre>' : '')+'\
-                        </div>\
-                    </div>\
-                    <div class="detail_tips">It is recommended to make records and backup during operation</div>\
-                    </div>',
-                yes:function(index, layero){
-                    layer.close(index);
-                }
-            })
-        },
-        // 安全扫描详情
-        ssh_scanning_move:function(num){
-            console.log(num)
-        },
-        set_template_sshkey:function(){
-            var _this = this;
-            var loadT = layer.open({
-                title:'Enable SSH key login',
-                area:'300px',
-                type:1,
-                closeBtn: 2,
-                content:'<div class="bt-form bt-form pd20 pb70">'+
-                            '<div class="line "><span class="tname" style="width:155px">SSH password login</span><div class="info-r "><select class="bt-input-text mr5 ssh_select_login" style="width:79px"><option value="yes">Open</option><option value="no">Close</option></select></div></div>'+
-                            '<div class="line "><span class="tname" style="width:155px">Key encryption method</span><div class="info-r "><select class="bt-input-text mr5 ssh_select_encryption" style="width:79px"><option value="ed25519">ed25519</option><option value="rsa">rsa</option><option value="dsa">dsa</option></select></div></div>'+
-                            '<div class="bt-form-submit-btn"><button type="button" class="btn btn-sm btn-danger close_ssh_key">Close</button><button type="button" class="btn btn-sm btn-success submit_ssh_key">Submit</button></div>'+
-						'</div>',
-				cancel: function(){ 
-					$('#ssh_key').prop('checked',false);
-				}
-            });
-			$('.close_ssh_key').click(function(){
-				$('#ssh_key').prop('checked',false);
-                layer.close(loadT);
-            });
-            $('.submit_ssh_key').click(function(){
-                var ssh_select_login = $('.ssh_select_login').val();
-                var ssh_select_encryption = $('.ssh_select_encryption').val();
-                $.post('/ssh_security?action=set_sshkey', {ssh:ssh_select_login,type:ssh_select_encryption}, function (res) {
-                    layer.msg(res.msg,{icon:res.status?1:2})
-                    _this.get_ssh_config();
-                    layer.close(loadT);
-                })
-            });
-        },
-        // 获取SSH密钥状态
-        get_ssh_config:function(){
-            $.post('/ssh_security?action=get_config', {}, function (res) {
-                var paw = res.password == 'yes'?true:false;
-                var key = (res.pubkey == 'yes' && res.rsa_auth == 'yes') ? true : false;
-                $('#ssh_paw').prop('checked',paw);
-                $('#ssh_key').prop('checked',key);
-                if(key){
-                    $.post('/ssh_security?action=get_key', {}, function (res) {
-                        if(res.status){
-                            $('#ssh_text_key').val(res.msg).removeAttr('disabled');
-                            $('.btn-sshkey-group').show();
-                        }else{
-                            layer.msg(res.msg,{icon:2});
-                        }
-                    });
-                }else{
-                    $('.btn-sshkey-group').hide();
-                    $('#ssh_text_key').val('').attr('disabled','disabled')
-                }
-                
-            })
-        },
-        // 获取ip地址白名单列表、root用户登录状态
-        get_white_ip:function(){
-            // 监控状态
-            $.post('/ssh_security?action=get_jian', {}, function (res) {
-                $('#ssh_root_login').prop("checked",res.status)
-            })
-            $.post('/ssh_security?action=return_ip',{}, function(res){
-                var _tab =  bt.render({
-                    table:'#ssh_ip_white_table',
-                    columns:[						
-                        { title: "IP address",templet:function(item){
-                            return item;
-                        }},
-                        { field: 'opt',align:'right',width:50, title: "Operation",templet:function(item){
-                            return '<a href="javascript:;" class="btlink" onclick="firewall.remove_ip_white(\''+item+'\')">Delete</a>';
-                        }}
-                    ],
-                    data:res.msg
-                })
-            })	
-        },
-        // 删除ip白名单
-        remove_ip_white:function(obj){
-            $.post('/ssh_security?action=del_return_ip', {ip:obj}, function (res) {
-                layer.msg(res.msg,{icon:res.status?1:2})
-                if(res.status){
-                    firewall.get_white_ip();
-                }
-            })
-        },
-        // 登录日志
-        get_logs_view:function(obj){
-            $.post('/ssh_security?action=get_logs',{p:obj.p}, function(res){
-                $("#ssh_logs").html(res.page)
-                var _tab =  bt.render({
-                    table:'#ssh_logs_table',
-                    columns:[						    
-                        { title: "Detail",templet:function(item){
-                            return '<span title="'+item.log+'" class="overflow_hide_style" style="width:330px">'+item.log+'</span>';
-                        }},
-                        { field: 'Login time',align:'right',width:140, title: "Login time",templet:function(item){
-                            return item.addtime
-                        }}
-                    ],
-                    data:res.data
-                })
-            })	
-		},
-		///////////SSH安全管理功能结束
-		get_logs_size:function(){
-			bt.firewall.get_logs_size(function(rdata){
-				$("#logSize").text(rdata);
-			})
-		},
-		clear_logs_files:function(){
-			bt.firewall.clear_logs_files(function(rdata){
-				$("#logSize").text(rdata);						
-				bt.msg({msg:lan.firewall.empty,icon:1});
-			})
-		},
-		add_accept_port:function(){
-			var type = $("#firewalldType").val();
-			var port = $("#AcceptPort").val();
-			var ps = $("#Ps").val();
-			bt.firewall.add_accept_port(type,port,ps,function(rdata){
-				if(rdata.status){
-					firewall.get_list();
-					$("#AcceptPort").val('');
-					$("#Ps").val('');
-				}
-				bt.msg(rdata);
-			})
-        },
-        remove_accept_port: function (id,port) {
-            bt.firewall.del_accept_port(id, port, function (rdata) {
-                if (rdata.status) {
-                    firewall.get_list();
-                }
-                bt.msg(rdata);
-            })
-        },
-		get_list:function(page,search){
-            if (page == undefined) page = 1;
-            if (!search) search = $("#SearchValue").val();
-            bt.firewall.get_list(page, search, function (rdata) {
-                $('.firewallBody').html(rdata.page);
-                var ports_ps = {"80": lan.firewall.site_default_port, "3306": lan.firewall.mysql_default_port, "888": lan.firewall.phpmmyadmin_default_port, "22": lan.firewall.ssh_default_port, "20": lan.firewall.ftp1_default_port, "21": lan.firewall.ftp_default_port, "39000-40000": lan.firewall.ftp2_default_port, "30000-40000": lan.firewall.ftp2_default_port,"11211":lan.firewall.mem_default_port,"873":lan.firewall.rsync_default_port,"8888":lan.firewall.bt_default_port}
-				var _tab =  bt.render({
-					table:'#firewallBody',
-					columns:[						
-						{ field: 'id', title: lan.firewall.number},
-						{ field: 'port', title: lan.firewall.behavior,templet:function(item){
-							var _ps = lan.firewall.accept_port;
-							if(bt.contains(item.port,'.')){
-								_ps = lan.firewall.drop_ip;
-							}
-							_ps += ':['+item.port+']'
-							return _ps;
-						}},
-						{ field: 'status', title: lan.firewall.status,templet:function(item){
-							var status = '';
-							switch(item.status){
-								case 0:
-									status = lan.firewall.status_not;
-									break;
-								case 1:
-									status = lan.firewall.status_net;
-									break;
-								default:
-									status = lan.firewall.status_ok;
-									break;
-							}
-							return status;
-						},help:'https://forum.aapanel.com/d/1088-description-of-firewall-status'},
-                        { field: 'addtime', title: lan.firewall.add_time},
-                        { field: 'ps', title: lan.firewall.instructions, templet: function (item) {
-                            if (item.port in ports_ps) return ports_ps[item.port];
-                            return item.ps;
-                         }},	
-						{ field: 'opt',align:'right',width:50, title: lan.firewall.operate,templet:function(item){
-							return '<a href="javascript:;" class="btlink" onclick="firewall.remove_accept_port('+item.id+',\''+item.port+'\')">'+lan.firewall.del+'</a>';
-						}}
-					],
-					data:rdata.data
-				})		
-			})	
-		},
-		get_log_list:function(page,search){
-            if (page == undefined) page = 1;
-            if (search == undefined) search = $("#SearchValue").val();
-			bt.firewall.get_log_list(page,search,function(rdata){
-				$('.logsBody').html(rdata.page);
-				var _tab =  bt.render({
-					table:'#logsBody',
-					columns:[						
-						{ field: 'id', title: lan.firewall.number},
-						{ field: 'type', title: lan.firewall.operate_type},
-						{ field: 'log', title: lan.firewall.detail},
-						{ field: 'addtime', title: lan.firewall.operate_time}
-					],
-					data:rdata.data
-				})		
-			})			
-        },
-        //查看面板运行日志
-        get_panel_error_logs: function () {
-            layer.msg(lan.public.the_get, { icon: 16, time: 0, shade: [0.3, '#000'] });
-            $.post('/config?action=get_panel_error_logs', {}, function (rdata) {
-                layer.closeAll();
-                if (!rdata.status) {
-                    layer.msg(rdata.msg, { icon: 2 });
-                    return;
-                };
-                layer.open({
-                    type: 1,
-                    title: '{{data["lan"]["PANEL_LOG"]}}',
-                    area: ['700px', '496px'],
-                    shadeClose: false,
-                    closeBtn: 2,
-                    content: '<div class="setchmod bt-form  pb70">'
-                        + '<pre class="crontab-log" style="overflow: auto; border: 0px none; line-height:23px;padding: 15px; margin: 0px; white-space: pre-wrap; height: 405px; background-color: rgb(51,51,51);color:#f1f1f1;border-radius:0px;font-family: \"微软雅黑\"">' + (rdata.msg == '' ? '{{data["lan"]["LOG_EMPTY"]}}' : rdata.msg) + '</pre>'
-                        + '<div class="bt-form-submit-btn" style="margin-top: 0px;">'
-                        + '<button type="button" class="btn btn-danger btn-sm btn-title" style="margin-right:15px;" onclick="firewall.clean_panel_error_logs()">' + lan.public.empty + '</button>'
-                        + '<button type="button" class="btn btn-success btn-sm btn-title" onclick="layer.closeAll()">' + lan.public.close + '</button>'
-                        + '</div>'
-                        + '</div>'
-                });
-                setTimeout(function () {
-                    $("#crontab-log").text(rdata.msg);
-                    var div = document.getElementsByClassName('crontab-log')[0]
-                    div.scrollTop = div.scrollHeight;
-                }, 200)
-            }).error(function () {
-                layer.closeAll();
-                layer.msg('{{data["lan"]["UNABLE_RETRIEVE_LOG"]}}', { icon: 2 });
-            });
-        },
-        //清空面板错误日志
-        clean_panel_error_logs:function() {
-            layer.msg(lan.public.the_get, { icon: 16, time: 0, shade: [0.3, '#000'] });
-            $.post('/config?action=clean_panel_error_logs', {}, function (rdata) {
-                layer.closeAll();
-                layer.msg(rdata.msg, { icon: 1 });
-            });
-        }
-	}
-	firewall.get_init();
-</script>
+<script type="text/javascript" src="{{ static_url }}static/js/firewall.js"></script>
 {% endblock %}

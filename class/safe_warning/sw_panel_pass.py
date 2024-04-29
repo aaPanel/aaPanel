@@ -25,7 +25,7 @@ _tips = [
     "Note: Please do not use too simple account password, so as not to cause security risks"
     ]
 _help = ''
-
+_remind = 'This scheme can strengthen the complexity of the panel login account password and reduce the risk of being successfully exploded. '
 def check_run():
     '''
         @name 开始检测

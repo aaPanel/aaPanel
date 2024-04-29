@@ -1,7 +1,7 @@
 #!/www/server/panel/pyenv/bin/python
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板 
+# | 宝塔Linux面板
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
@@ -18,6 +18,14 @@ upgrade_file = 'script/upgrade_flask.sh'
 if os.path.exists(upgrade_file):
     os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
 
+upgrade_file = 'script/upgrade_gevent.sh'
+if os.path.exists(upgrade_file):
+    os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
+
+upgrade_file = 'script/upgrade_telegram.sh'
+if os.path.exists(upgrade_file):
+    os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
+
 if os.path.exists('class/flask'):
     os.system('rm -rf class/flask')
 
@@ -28,23 +36,23 @@ from BTPanel import app,sys,public
 is_debug = os.path.exists('data/debug.pl')
 
 
-# # 检查加载器
-# def check_plugin_loader():
-#     plugin_loader_file = 'class/PluginLoader.so'
-#     machine = 'x86_64'
-#     try:
-#         machine = os.uname().machine
-#     except:
-#         pass
-#     plugin_loader_src_file = "class/PluginLoader.{}.Python3.7.so".format(machine)
-#     if machine == 'x86_64':
-#         glibc_version = public.get_glibc_version()
-#         if glibc_version in ['2.14','2.13','2.12','2.11','2.10']:
-#             plugin_loader_src_file = "class/PluginLoader.{}.glibc214.Python3.7.so".format(machine)
-#     if os.path.exists(plugin_loader_src_file):
-#         os.system("\cp -f {} {}".format(plugin_loader_src_file, plugin_loader_file))
+# 检查加载器
+def check_plugin_loader():
+    plugin_loader_file = 'class/PluginLoader.so'
+    machine = 'x86_64'
+    try:
+        machine = os.uname().machine
+    except:
+        pass
+    plugin_loader_src_file = "class/PluginLoader.{}.Python3.7.so".format(machine)
+    if machine == 'x86_64':
+        glibc_version = public.get_glibc_version()
+        if glibc_version in ['2.14','2.13','2.12','2.11','2.10']:
+            plugin_loader_src_file = "class/PluginLoader.{}.glibc214.Python3.7.so".format(machine)
+    if os.path.exists(plugin_loader_src_file):
+        os.system("\cp -f {} {}".format(plugin_loader_src_file, plugin_loader_file))
 
-# check_plugin_loader()
+check_plugin_loader()
 
 
 if is_debug:
@@ -103,8 +111,7 @@ if is_debug:
 
         def process_IN_MOVED_TO(self,event):
             if not self.is_ext(event.pathname): return
-            self.panel_reload(event.pathname,'[覆盖]')
-
+            self.panel_reload(event.pathname,'[Cover]')
     def debug_event():
         logger.debug('Launch the panel in debug mode')
         logger.debug('Listening port：0.0.0.0:{}'.format(public.readFile('data/port.pl')))
@@ -248,7 +255,11 @@ if __name__ == '__main__':
 
     is_process = os.path.exists('data/is_process.pl')
     if not is_process:
-        http_server.serve_forever()
+        try:
+            http_server.serve_forever()
+        except:
+            pass
+        app.run(host=HOST, port=PORT, threaded=True)
     else:
         http_server.start()
         from multiprocessing import Process

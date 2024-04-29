@@ -24,7 +24,7 @@ class ftp:
             import files,time
             fileObj=files.files()
             if get['ftp_username'].strip().find(' ') != -1: return public.returnMsg(False,'Username cannot contain spaces')
-            if re.search("\W + ",get['ftp_username']): return {'status':False,'code':501,'msg':public.get_msg_gettext('Username is illegal, special characters are NOT allowed!')}
+            if re.search("\W+",get['ftp_username']): return {'status':False,'code':501,'msg':public.get_msg_gettext('Username is illegal, special characters are NOT allowed!')}
             if len(get['ftp_username']) < 3: return {'status':False,'code':501,'msg':public.get_msg_gettext('Username is illegal, cannot be less than 3 characters!')}
             if not fileObj.CheckDir(get['path']): return {'status':False,'code':501,'msg':public.get_msg_gettext('System critical directory cannot be used as FTP directory!')}
             if public.M('ftps').where('name=?',(get.ftp_username.strip(),)).count(): return public.return_msg_gettext(False,'User [{}] exists!',(get.ftp_username,))
@@ -57,6 +57,8 @@ class ftp:
         try:
             username = get['username']
             id = get['id']
+            if public.M('ftps').where("id=? and name=?", (id,username, )).count()==0:
+                return public.return_msg_gettext(False, 'DEL_ERROR')
             public.ExecShell(self.__runPath + '/pure-pw userdel "' + username + '"')
             self.FtpReload()
             public.M('ftps').where("id=?",(id,)).delete()
@@ -73,6 +75,8 @@ class ftp:
             id = get['id']
             username = get['ftp_username'].strip()
             password = get['new_password'].strip()
+            if public.M('ftps').where("id=? and name=?", (id,username, )).count()==0:
+                return public.return_msg_gettext(False, 'DEL_ERROR')
             if len(password) < 6: return public.return_msg_gettext(False,'Password must be at least [{}] characters',("6",))
             public.ExecShell(self.__runPath + '/pure-pw passwd "' + username + '"<<EOF \n' + password + '\n' + password + '\nEOF')
             self.FtpReload()
@@ -92,6 +96,8 @@ class ftp:
             id = get['id']
             username = get['username']
             status = get['status']
+            if public.M('ftps').where("id=? and name=?", (id,username, )).count()==0:
+                return public.return_msg_gettext(False, 'DEL_ERROR')
             if int(status)==0:
                 public.ExecShell(self.__runPath + '/pure-pw usermod "' + username + '" -r 1')
             else:
@@ -136,6 +142,21 @@ class ftp:
     #重载配置
     def FtpReload(self):
         public.ExecShell(self.__runPath + '/pure-pw mkdb /www/server/pure-ftpd/etc/pureftpd.pdb')
+
+    def get_login_logs(self, get):
+        import ftplog
+        ftpobj = ftplog.ftplog()
+        return ftpobj.get_login_log(get)
+    def get_action_logs(self, get):
+        import ftplog
+        ftpobj = ftplog.ftplog()
+        return ftpobj.get_action_log(get)
+
+    def set_ftp_logs(self, get):
+        import ftplog
+        ftpobj = ftplog.ftplog()
+        result = ftpobj.set_ftp_log(get)
+        return result
 
     #修改用户密码
     def set_user_home(self,get):

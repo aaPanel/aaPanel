@@ -24,10 +24,11 @@ _tips = [
     "If not necessary, please do not configure Redis bind to 0.0.0.0",
     "If bind is 0.0.0.0, be sure to set an access password for Redis",
     "Do not use too simple password as Redis access password",
-    "Once Redis has a security problem, this will cause the server to be invaded with a high probability, please be sure to deal with it carefully"
+    "Strong passwords are recommended: numeric, upper - and lowercase, special characters, and no less than seven characters long.",
+    "If there is a security problem in Redis, it will lead to a high probability of server intrusion, please be sure to deal with it carefully."
     ]
 _help = ''
-
+_remind = 'This solution can strengthen the protection of Redis database and reduce the risk of server intrusion. When fixing the risk, make sure that you have opened the IP access of the relevant website, and change the access password synchronously to prevent the server from being unable to access Redis. '
 def check_run():
     '''
         @name 开始检测

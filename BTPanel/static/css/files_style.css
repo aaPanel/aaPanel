@@ -64,7 +64,7 @@
     box-sizing: border-box;
     border-radius: 2px;
     cursor: pointer;
-    transition: all 200ms;
+    transition: all .2s;
     background-color: #fff;
 }
 .file_list_header .file_main_title{
@@ -105,16 +105,16 @@
     display: none;
 }
 
-.file_table_view.icon_view .file_name .iconfont,
-.file_table_view.icon_view .file_checkbox,
-.file_table_view.icon_view .file_ps,
-.file_table_view.icon_view .file_type,
-.file_table_view.icon_view .file_size,
-.file_table_view.icon_view .file_mtime,
-.file_table_view.icon_view .file_user,
+.file_table_view.icon_view .app_menu_group,
 .file_table_view.icon_view .file_accept,
-.file_table_view.icon_view .app_menu_group {
-    display: none;
+.file_table_view.icon_view .file_checkbox,
+.file_table_view.icon_view .file_mtime,
+.file_table_view.icon_view .file_name .iconfont,
+.file_table_view.icon_view .file_ps,
+.file_table_view.icon_view .file_size,
+.file_table_view.icon_view .file_type,
+.file_table_view.icon_view .file_user {
+	display: none
 }
 
 .file_table_view.icon_view .file_tr {
@@ -265,7 +265,7 @@
     display: inline-block;
     height: 40px;
     line-height: 40px;
-    transition: all 500ms;
+    transition: all .5s;
     float: right;
 }
 
@@ -281,8 +281,8 @@
     width: 100%;
     height: 8px;
     position: absolute;
-    left: 0px;
-    right: 0px;
+    left: 0;
+    right: 0;
     background: -webkit-linear-gradient(top, rgba(220, 220, 220, .5), rgba(255, 255, 255, 0));
     z-index: 99;
 }
@@ -558,13 +558,7 @@
     display: inline-block;
     position: relative;
 }
-.file_table_view.list_view .file_list_content .file_ico_type img.file_images{
-  width: 22px;
-  height: 22px;
-  position: absolute;
-  top: 50%;
-  margin-top: -11px;
-}
+
 .file_table_view.list_view .file_title {
     vertical-align: top;
     padding-left: 38px;
@@ -600,7 +594,7 @@
     border-radius: 2px;
 }
 
-.file_table_view .file_list_content .file_icon {
+.file_list_content .file_icon {
     width: 100%;
     width: 30px;
     height: 30px;
@@ -614,39 +608,39 @@
     cursor: pointer;
 }
 
-.file_table_view .file_list_content .file_html {
+.file_list_content .file_html {
     background-image: url(../img/file_icon/html.png);
 }
 
-.file_table_view .file_list_content .file_css {
+.file_list_content .file_css {
     background-image: url(../img/file_icon/css.png);
 }
 
-.file_table_view .file_list_content .file_js {
+.file_list_content .file_js {
     background-image: url(../img/file_icon/javascript.png);
 }
 
-.file_table_view .file_list_content .file_json {
+.file_list_content .file_json {
     background-image: url(../img/file_icon/json.png);
 }
 
-.file_table_view .file_list_content .file_folder {
+.file_list_content .file_folder {
     background-image: url(../img/file_icon/folder.png);
 }
 
-.file_table_view .file_list_content .file_php {
+.file_list_content .file_php {
     background-image: url(../img/file_icon/php.png);
 }
 
-.file_table_view .file_list_content .file_log {
+.file_list_content .file_log {
     background-image: url(../img/file_icon/log.png);
 }
 
-.file_table_view .file_list_content .file_txt {
+.file_list_content .file_txt {
     background-image: url(../img/file_icon/file.png);
 }
 
-.file_table_view .file_list_content .file_py {
+.file_list_content .file_py {
     background-image: url(../img/file_icon/python.png);
     width: 30px;
     height: 30px;
@@ -654,11 +648,11 @@
     top: 10px;
 }
 
-.file_table_view .file_list_content .file_png {
+.file_list_content .file_png {
     background-image: url(../img/file_icon/png.png);
 }
 
-.file_table_view .file_list_content .file_lua {
+.file_list_content .file_lua  {
     background-image: url(../img/file_icon/lua.png);
     width: 30px;
     height: 30px;
@@ -666,151 +660,144 @@
     top: 10px;
 }
 
-/* .file_table_view .file_list_content .file_sh{
-    background-image: url(../img/file_icon/shell.png);
-    width: 30px;
-    height: 30px;
-    left: 2.5px;
-    top: 10px;
-} */
-.file_table_view .file_list_content .file_access {
+.file_list_content .file_access {
     background-image: url(../img/file_icon/access.png);
 }
 
-.file_table_view .file_list_content .file_apk {
+.file_list_content .file_apk {
     background-image: url(../img/file_icon/apk.png);
 }
 
-.file_table_view .file_list_content .file_avi {
+.file_list_content .file_avi {
     background-image: url(../img/file_icon/avi.png);
 }
 
-.file_table_view .file_list_content .file_bmp {
+.file_list_content .file_bmp {
     background-image: url(../img/file_icon/bmp.png);
 }
 
-.file_table_view .file_list_content .file_cdr {
+.file_list_content .file_cdr {
     background-image: url(../img/file_icon/cdr.png);
 }
 
-.file_table_view .file_list_content .file_gif {
+.file_list_content .file_gif {
     background-image: url(../img/file_icon/gif.png);
 }
 
-.file_table_view .file_list_content .file_ico {
+.file_list_content .file_ico {
     background-image: url(../img/file_icon/ico.png);
 }
 
-.file_table_view .file_list_content .file_java {
+.file_list_content .file_java {
     background-image: url(../img/file_icon/java.png);
 }
 
-.file_table_view .file_list_content .file_jpeg {
+.file_list_content .file_jpeg {
     background-image: url(../img/file_icon/jpeg.png);
 }
 
-.file_table_view .file_list_content .file_jpg {
+.file_list_content .file_jpg {
     background-image: url(../img/file_icon/jpg.png);
 }
 
-.file_table_view .file_list_content .file_mkv {
+.file_list_content .file_mkv {
     background-image: url(../img/file_icon/mkv.png);
 }
 
-.file_table_view .file_list_content .file_mov {
+.file_list_content .file_mov {
     background-image: url(../img/file_icon/mov.png);
 }
 
-.file_table_view .file_list_content .file_mp4 {
+.file_list_content .file_mp4 {
     background-image: url(../img/file_icon/mp4.png);
 }
 
-.file_table_view .file_list_content .file_mpeg {
+.file_list_content .file_mpeg {
     background-image: url(../img/file_icon/mpeg.png);
 }
 
-.file_table_view .file_list_content .file_mpg {
+.file_list_content .file_mpg {
     background-image: url(../img/file_icon/mpg.png);
 }
 
-.file_table_view .file_list_content .file_pdf {
+.file_list_content .file_pdf {
     background-image: url(../img/file_icon/pdf.png);
 }
 
-.file_table_view .file_list_content .file_pptx,
-.file_table_view .file_list_content .file_ppt {
+.file_list_content .file_pptx,
+.file_list_content .file_ppt {
     background-image: url(../img/file_icon/ppt.png);
     width: 30px;
     height: 30px;
     left: 2.5px;
 }
 
-.file_table_view .file_list_content .file_rar {
+.file_list_content .file_rar {
     background-image: url(../img/file_icon/rar.png);
 }
 
-.file_table_view .file_list_content .file_rm {
+.file_list_content .file_rm {
     background-image: url(../img/file_icon/rm.png);
 }
 
-.file_table_view .file_list_content .file_rmvb {
+.file_list_content .file_rmvb {
     background-image: url(../img/file_icon/rmvb.png);
 }
 
-.file_table_view .file_list_content .file_sql {
+.file_list_content .file_sql {
     background-image: url(../img/file_icon/sql.png);
 }
 
-.file_table_view .file_list_content .file_swf {
+.file_list_content .file_swf {
     background-image: url(../img/file_icon/swf.png);
 }
 
-.file_table_view .file_list_content .file_tar {
+.file_list_content .file_tar {
     background-image: url(../img/file_icon/tar.png);
 }
 
-.file_table_view .file_list_content .file_webm {
+.file_list_content .file_webm {
     background-image: url(../img/file_icon/webm.png);
 }
 
-.file_table_view .file_list_content .file_webp {
+.file_list_content .file_webp {
     background-image: url(../img/file_icon/webp.png);
 }
 
-.file_table_view .file_list_content .file_wma {
+.file_list_content .file_wma {
     background-image: url(../img/file_icon/wma.png);
 }
 
-.file_table_view .file_list_content .file_wmv {
+.file_list_content .file_wmv {
     background-image: url(../img/file_icon/wmv.png);
 }
 
-.file_table_view .file_list_content .file_docx,
-.file_table_view .file_list_content .file_doc {
+.file_list_content .file_docx,
+.file_list_content .file_doc {
     background-image: url(../img/file_icon/doc.png);
     width: 30px;
     height: 30px;
     left: 2.5px;
 }
 
-.file_table_view .file_list_content .file_xlsx,
-.file_table_view .file_list_content .file_xls {
+.file_list_content .file_xlsx,
+.file_list_content .file_xls {
     background-image: url(../img/file_icon/xls.png);
     width: 30px;
     height: 30px;
     left: 2.5px;
 }
 
-.file_table_view .file_list_content .file_xml {
+.file_list_content .file_xml {
     background-image: url(../img/file_icon/xml.png);
 }
 
-.file_table_view .file_list_content .file_zip {
+.file_list_content .file_zip {
     background-image: url(../img/file_icon/zip.png);
 }
 
-.file_table_view .file_list_content .file_tar,
-.file_table_view .file_list_content .file_gz {
+.file_list_content .file_tar,
+.file_list_content .file_gz {
     background-image: url(../img/file_icon/tar.png);
 }
 
@@ -885,7 +872,11 @@
     top: 50%;
     margin-top: -8px;
     font-style: normal;
+}
 
+.selection_right_menu li .property_file_icon {
+	background-image: url(data:image/png;
+	base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA7klEQVQ4T6WTQUrDUBCG///lBnZboeAFvEBvUcWV0BIy3dadJ3CnSzNJcF20d+giF/AALRTi1t7gZaQhkVJ0kb5ZDMyb+T+YNzPEiRVFceG9nwAYkxwf0mZWAiijKFrFcbw/lvA4yLLszsyeAIxOwW28I/mYJMmyy/8CVNX+Ef35LCKNtnGq+gxg0QcA4EVEHpjn+bCu608Ag56Ab+fcNdM0nZJ86yluys1sdgC8kpyfCUipqhsAVy3gQ0RuVbUCMCR5772vnHNrAF8icqmq7wBu2vptOCC4heBPDB5j8CJ14wta5Q4SdEwdpO85/wAdKopJjTYPqgAAAABJRU5ErkJggg==)!important
 }
 
 .nav_down_list:before {
@@ -1229,8 +1220,8 @@
 
 @-webkit-keyframes uplaod {
     0% {
-        -webkit-transform: translateY(0px);
-        transform: translateY(0px);
+        -webkit-transform: translateY(0);
+        transform: translateY(0);
     }
 
     100% {
@@ -1241,9 +1232,9 @@
 
 @keyframes uplaod {
     0% {
-        -ms-transform: translateY(0px);
-        -webkit-transform: translateY(0px);
-        transform: translateY(0px);
+        -ms-transform: translateY(0);
+        -webkit-transform: translateY(0);
+        transform: translateY(0);
     }
 
     100% {
@@ -1254,7 +1245,7 @@
 }
 
 .file_nav_view {
-    height: 32px;
+    min-height: 32px;
     margin: 15px 0;
     font-size: 0;
 }
@@ -1338,7 +1329,7 @@
     box-sizing: border-box;
     cursor: pointer;
     border-radius: 2px;
-    transition: all 100ms;
+    transition: all .1s;
     position: relative;
     padding: 7px 10px;
 }
@@ -1471,11 +1462,11 @@
 
 .nav_down_list {
     display: none;
-    transition: all 500ms;
+    transition: all .5s;
     list-style: none;
-    background: #ffffff;
+    background: #fff;
     border-radius: 2px;
-    box-shadow: 4px 2px 5px 0px #ececec;
+    box-shadow: 4px 2px 5px 0 #ececec;
     border: 1px solid #cfcfcf;
     position: absolute;
     left: -1px;
@@ -1502,7 +1493,7 @@
     box-sizing: border-box;
     cursor: pointer;
     position: relative;
-    transition: all 500ms;
+    transition: all .5s;
 }
 
 .nav_group.mount_disk_list .file_disk_list .nav_btn:last-child {
@@ -1632,7 +1623,7 @@
     left: 0;
     border: 1px solid #cfcfcf;
     border-radius: 2px;
-    box-shadow: 4px 2px 5px 0px #ececec;
+    box-shadow: 4px 2px 5px 0 #ececec;
     z-index: 9999;
     background-color: #fff;
 }
@@ -1702,10 +1693,10 @@
 /* end */
 
 /* 重命名和新建 - 列表*/
-.file_table_view.list_view .createModel input ,
+.file_table_view.list_view .createModel input,
 .file_table_view .file_list_content .file_tr.editr_tr input{
     width: 100%;
-    padding: 0px 0 0 5px;
+    padding: 0 0 0 5px;
     height: 25px;
     border: 1px solid #ececec;
     outline: none;
@@ -1915,7 +1906,7 @@
     background: #efefef;
     box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.1);
     cursor: no-drop;
-    transition: all 500ms;
+    transition: all .5s;
 }
 
 .file_path_views .forward_path span:first-child {
@@ -1985,7 +1976,7 @@
     display: inline-block;
     font-size: 14px;
     background-image: url(../img/file_icon/file_menu_icon.png);
-    background-position: 0px -16px;
+    background-position: 0 -16px;
     background-size: auto;
     height: 16px;
     position: absolute;
@@ -2093,7 +2084,7 @@
     display: inline-block;
     border-left: 1px solid #f3f3f3;
     border-right: 1px solid #f3f3f3;
-    transition: all 500ms;
+    transition: all .5s;
     background: #f3f3f3;
 }
 
@@ -2122,11 +2113,11 @@
 .file_dir_item .nav_down_list li.active {
     font-weight: 600;
     color: #333;
-    background-color: #eeeeee;
+    background-color: #eee;
 }
 
 .file_dir_item .nav_down_list li:hover {
-    background: #eeeeee;
+    background: #eee;
 }
 
 .file_dir_item:first-child .file_dir {
@@ -2270,7 +2261,7 @@
     width: 210px;
     height: 30px;
     background: #fff;
-    box-shadow: 4px 2px 5px 0px #ececec;
+    box-shadow: 4px 2px 5px 0 #ececec;
     z-index: 9999;
     border: 1px solid #ececec;
     border-radius: 2px;
@@ -2278,7 +2269,7 @@
 
 .search_path_views .file_search_config {
     position: absolute;
-    right: 35px;
+    right: 40px;
     font-size: 12px;
     color: #666;
     width: 105px;
@@ -2349,7 +2340,7 @@
 }
 
 .file_bodys {
-    background-color: white;
+    background-color: #fff;
     margin: 10px 15px;
     padding: 15px 20px;
     font-size: 12px;
@@ -2703,7 +2694,7 @@
 .preview_images_mask .preview_body img {
     position: absolute;
     display: none;
-    transition: all 200ms;
+    transition: all .2s;
     cursor: all-scroll;
     display: inline-block;
     opacity: 0;
@@ -2724,7 +2715,7 @@
     font-size: 18px;
     z-index: 999;
     opacity: 0;
-    transition: all 1000ms;
+    transition: all 1s;
 }
 
 .preview_images_mask .preview_toolbar a {
@@ -2733,7 +2724,7 @@
     line-height: 45px;
     text-align: center;
     display: inline-block;
-    transition: all 500ms;
+    transition: all .5s;
     border-radius: 3px;
 }
 
@@ -2752,7 +2743,7 @@
 
 .preview_images_mask .preview_cut_view {
     opacity: 0;
-    transition: all 500ms;
+    transition: all .5s;
 }
 
 .preview_images_mask .preview_cut_view a:hover {
@@ -2771,7 +2762,7 @@
     margin-top: -25px;
     background-color: rgb(194 194 194 / 80%);
     border-radius: 50%;
-    transition: all 200ms;
+    transition: all .2s;
     z-index: 999;
 }
 
@@ -2858,7 +2849,7 @@
     color: #fff;
 }
 .bt-property-setting .tab-nav{
-  font-size: 0px;
+  font-size: 0;
 }
 .bt-property-setting .tab-nav span{
   font-size: 12px;
@@ -2882,13 +2873,13 @@
 
 
 .bt-property-setting .property-box .attr-name{
-  width: 90px;
+  width: 120px;
   padding-left: 10px;
   float: left;
 }
 
 .bt-property-setting .property-box .attr-content{
-  margin-left: 80px;
+  margin-left: 120px;
 }
 .bt-property-setting .property-box .attr-content input{
   height: 32px;
@@ -2925,7 +2916,7 @@
   line-height: 25px;
 }
 .bt-property-setting .property-box .attr-box .attr-content span{
-  width: 450px;
+  max-width: 400px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2937,7 +2928,7 @@
 .details_box_view,
 .history_box_view,
 .property-box{
-  height:388px !important;
+  height:386px !important;
   overflow:auto;
 }
 .details_box_view table,
@@ -2967,6 +2958,10 @@
   padding: 5px;
   height: 30px;
   line-height: 20px;
+}
+.details_box_view td div {
+	min-height: 30px;
+	height: auto;
 }
 .details_box_view thead,
 .history_box_view thead{

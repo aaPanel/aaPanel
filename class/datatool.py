@@ -36,6 +36,7 @@ class datatools:
         db_name=get.db_name
         if not db_name:return False
         if not self.DB_MySQL:self.DB_MySQL = public.get_mysql_obj(db_name)
+        if not self.DB_MySQL: return self.DB_MySQL
         ret = {}
         tables = self.map_to_list(self.DB_MySQL.query('show tables from `%s`' % db_name))
         if type(tables) == list:

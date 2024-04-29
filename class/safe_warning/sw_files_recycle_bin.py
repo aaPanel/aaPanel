@@ -26,7 +26,7 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = 'This solution prevents files from being deleted by mistake and restores them through the recycle bin in time. '
 
 def check_run():
     '''

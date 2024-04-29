@@ -22,11 +22,9 @@
         </form>
         <iframe name='hid' id="hid" style="display:none"></iframe>
       </div> -->
-      <div class="pos-box bgw mtb15">
-        <div class="tab-list" id="cutMode">
-          <div class="tabs-item active">{{data['lan']['H2']}}</div>
-        </div>
-      </div>
+			<div class="tab-list" id="cutMode">
+				<div class="tabs-item active">{{data['lan']['H2']}}</div>
+			</div>
     </div>
     <div class="safe bgw mtb15 pd15">
       <div class="info-title-tips">
@@ -43,11 +41,13 @@
 <script>
 	bt.set_cookie('sites_path',"{{session['config']['sites_path']}}");
   
-  {% if not data['isSetup'] %}
-		layer.msg('{{data["lan"]["JS1"]}}<a href="/soft" style="color:#20a53a; float: right;">{{data["lan"]["JS2"]}}</a>',{icon:7,time:0,shade: [0.3, '#000']});
+	var isSetup = '{{data["isSetup"]}}';
+
+	if (isSetup !== 'True') {
+		layer.msg('{{data["lan"]["JS1"]}}<a href="javascript:;" onclick="bt.soft.install(\'pureftpd\');" style="color:#20a53a; float: right;">{{data["lan"]["JS2"]}}</a>',{icon:7,time:0,shade: [0.3, '#000']});
 		$(".layui-layer-shade").css("margin-left", "180px");
-  {% else %}
-    var ftp_table = bt_tools.table({
+	} else {
+		var ftp_table = bt_tools.table({
       el: '#bt_ftp_table',
       url: '/data?action=getData',
       param: { table: 'ftps' },
@@ -381,7 +381,6 @@
         }
       ]
     });
-  {% endif %}
-
+	}
 </script>
 {% endblock %}

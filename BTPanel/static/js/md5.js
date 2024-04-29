@@ -257,7 +257,6 @@
   }
 
   function md5 (spassord, key, raw) {
-  	console.log(spassord)
   	spassord = spassord + '';
     if (!key) {
       if (!raw) {

@@ -11,17 +11,28 @@ if not 'class/' in sys.path:
     sys.path.insert(0,'class/')
 import db,public,panelMysql
 import json
-
+import public
 class data:
     __ERROR_COUNT = 0
+    #自定义排序字段
+    __SORT_DATA = ['site_ssl','php_version','backup_count']
     DB_MySQL = None
     web_server = None
     setupPath = '/www/server'
+    siteorder_path = '/www/server/panel/data/siteorder.pl'
+    limit_path = '/www/server/panel/data/limit.pl'
+
+    # 删除排序记录
+    def del_sorted(self, get):
+        public.ExecShell("rm -rf {}".format(self.siteorder_path))
+        return public.returnMsg(True, '清除排序成功！')
+
+
     '''
      * 设置备注信息
      * @param String _GET['tab'] 数据库表名
      * @param String _GET['id'] 条件ID
-     * @return Bool 
+     * @return Bool
     '''
     def setPs(self,get):
         id = get.id
@@ -29,7 +40,7 @@ class data:
         if public.M(get.table).where("id=?",(id,)).setField('ps',get.ps):
             return public.return_msg_gettext(True,'Setup successfully!')
         return public.return_msg_gettext(False,'Failed to modify')
-    
+
     #端口扫描
     def CheckPort(self,port):
         import socket
@@ -44,7 +55,7 @@ class data:
             s.close()
         except:
             temp['local'] = False
-        
+
         result = 0
         if temp['local']: result +=2
         return result
@@ -213,11 +224,63 @@ class data:
     '''
     def getData(self,get):
         import one_key_wp
+        # # net_flow_type = {
+        # #     "total_flow": "总流量",
+        # #     "7_day_total_flow": "近7天流量",
+        # #     "one_day_total_flow": "近1天流量",
+        # #     "one_hour_total_flow": "近1小时流量"
+        # # }
+        # # net_flow_json_file = "/www/server/panel/plugin/total/panel_net_flow.json"
+        #
+        # if get.table == 'sites':
+        #     if not hasattr(get, 'order'):
+        #         if os.path.exists(self.siteorder_path):
+        #             order = public.readFile(self.siteorder_path)
+        #             if order.split(' ')[0] in self.__SORT_DATA:
+        #                 get.order = order
+        #
+        #     if not hasattr(get, 'limit') or get.limit == '' or int(get.limit) == 0:
+        #         try:
+        #             if os.path.exists(self.limit_path):
+        #                 get.limit = int(public.readFile(self.limit_path))
+        #             else:
+        #                 get.limit = 20
+        #         except:
+        #             get.limit = 20
+        # if "order" in get:
+        #     order = get.order
+        #     if get.table == 'sites':
+        #         public.writeFile(self.siteorder_path, order)
+        #     # o_list = order.split(' ')
+        #     # net_flow_dict = {}
+        #     # order_type = None
+        #     # if o_list[0].strip() in net_flow_type.keys():
+        #     #     # net_flow_dict["flow_type"] = o_list[0].strip()
+        #     #     if len(o_list) > 1:
+        #     #         order_type = o_list[1].strip()
+        #     #     else:
+        #     #         get.order = 'id desc'
+        #     #     # net_flow_dict["order_type"] = order_type
+        #         # public.writeFile(net_flow_json_file, json.dumps(net_flow_dict))
+
+        # 如果网站列表包含 rname 字段排序  先检查表内是否有 rname字段
+        if hasattr(get, "order") and get.table == 'sites':
+            if get.order.startswith('rname'):
+                data = public.M('sites').find()
+                if 'rname' not in data.keys():
+                    public.M('sites').execute("ALTER TABLE 'sites' ADD 'rname' text DEFAULT ''", ())
+
+        table = get.table
+        data = self.GetSql(get)
+        SQL = public.M(table)
+        user_Data = self.get_user_power()
+        if user_Data != 'all' and table in ['sites', 'databases', 'ftps']:
+            data['data'] = [i for i in data['data'] if str(i['id']) in user_Data.get(table, [])]
+
         try:
-            table = get.table
-            data = self.GetSql(get)
-            SQL = public.M(table)
-        
+            # table = get.table
+            # data = self.GetSql(get)
+            # SQL = public.M(table)
             if table == 'backup':
                 import os
                 backup_path = public.M('config').where('id=?',(1,)).getField('backup_path')
@@ -229,19 +292,41 @@ class data:
                         if not os.path.exists(data['data'][i]['filename']):
                             if (data['data'][i]['filename'].find('/www/') != -1 or data['data'][i]['filename'].find(backup_path) != -1) and data['data'][i]['filename'][0] == '/' and data['data'][i]['filename'].find('|') == -1:
                                 data['data'][i]['size'] = 0
-                                data['data'][i]['ps'] = public.get_msg_gettext("File does not exist!")
-        
+                                data['data'][i]['ps'] = '文件不存在'
+                    if data['data'][i]['ps'] in ['','无']:
+                        if data['data'][i]['name'][:3] == 'db_' or (data['data'][i]['name'][:4] == 'web_' and data['data'][i]['name'][-7:] == '.tar.gz'):
+                            data['data'][i]['ps'] = '自动备份'
+                        else:
+                            data['data'][i]['ps'] = '手动备份'
+                    #判断本地文件是否存在，以确定能否下载
+                    data['data'][i]['local']=data['data'][i]['filename'].split('|')[0]
+                    data['data'][i]['localexist']=0 if os.path.isfile(data['data'][i]['local']) else 1
+
             elif table == 'sites' or table == 'databases':
                 type = '0'
-                if table == 'databases': type = '1'
+                if table == 'databases':
+                    type = '1'
                 for i in range(len(data['data'])):
-                    data['data'][i]['backup_count'] = SQL.table('backup').where("pid=? AND type=?",(data['data'][i]['id'],type)).count()
+                    backup_count = 0
+                    try:
+                        backup_count = SQL.table('backup').where("pid=? AND type=?",(data['data'][i]['id'],type)).count()
+                    except:pass
+
+
+                    data['data'][i]['backup_count'] = backup_count
                     if table == 'databases': data['data'][i]['conn_config'] = json.loads(data['data'][i]['conn_config'])
                     data['data'][i]['quota'] = self.get_database_quota(data['data'][i]['name'])
+
                 if table == 'sites':
                     for i in range(len(data['data'])):
+
                         data['data'][i]['domain'] = SQL.table('domain').where("pid=?",(data['data'][i]['id'],)).count()
-                        data['data'][i]['ssl'] = self.get_site_ssl_info(data['data'][i]['name'])
+                        # data['data'][i]['ssl'] = self.get_site_ssl_info(data['data'][i]['name'])
+
+                        ssl_info = self.get_site_ssl_info(data['data'][i]['name'])
+                        data['data'][i]['ssl'] = ssl_info
+                        data['data'][i]['site_ssl'] = ssl_info['endtime'] if ssl_info != -1 else -1
+
                         data['data'][i]['php_version'] = self.get_php_version(data['data'][i]['name'])
                         data['data'][i]['attack'] = self.get_analysis(get,data['data'][i])
                         data['data'][i]['project_type'] = SQL.table('sites').where('id=?',(data['data'][i]['id'])).field('project_type').find()['project_type']
@@ -250,6 +335,20 @@ class data:
                         if not data['data'][i]['status'] in ['0','1',0,1]:
                             data['data'][i]['status'] = '1'
                         data['data'][i]['quota'] = self.get_site_quota(data['data'][i]['path'])
+                        site1 = SQL.table('sites').where('id=?', (data['data'][i]['id'])).find()
+                        if hasattr(site1, 'rname'):
+                            data['data'][i]['rname'] = \
+                            SQL.table('sites').where('id=?', (data['data'][i]['id'])).field('rname').find()['rname']
+                        if not data['data'][i].get('rname', ''):
+                            data['data'][i]['rname'] = data['data'][i]['name']
+                        data["net_flow_info"] = {}
+                    # try:
+                    #     net_flow_json_info = json.loads(public.readFile(net_flow_json_file))
+                    #     data["net_flow_info"] = net_flow_json_info
+                    # except Exception:
+                    #     data["net_flow_info"] = {}
+
+
             elif table == 'firewall':
                 for i in range(len(data['data'])):
                     if data['data'][i]['port'].find(':') != -1 or data['data'][i]['port'].find('.') != -1 or data['data'][i]['port'].find('-') != -1:
@@ -270,10 +369,149 @@ class data:
                 pass
 
             #返回
-            return data
+            return self.get_sort_data(data)
         except:
             return public.get_error_info()
-    
+
+    def get_data_list(self, get):
+
+            try:
+                self.check_and_add_stop_column()
+                if get.table == 'sites':
+                    if not hasattr(get, 'order'):
+                        if os.path.exists(self.siteorder_path):
+                            order = public.readFile(self.siteorder_path)
+                            if order.split(' ')[0] in self.__SORT_DATA:
+                                get.order = order
+                    else:
+                        public.writeFile(self.siteorder_path, get.order)
+                    if not hasattr(get, 'limit') or get.limit == '' or int(get.limit) == 0:
+                        try:
+                            if os.path.exists(self.limit_path):
+                                get.limit = int(public.readFile(self.limit_path))
+                            else:
+                                get.limit = 20
+                        except:
+                            get.limit = 20
+                    else:
+                        public.writeFile(self.limit_path, get.limit)
+                if not hasattr(get, 'order'):
+                    get.order = 'addtime desc'
+                get = self._get_args(get)
+                try:
+                    s_list = self.func_models(get, 'get_data_where')
+                except:
+                    s_list = []
+
+                where_sql, params = self.get_where(get, s_list)
+                data = self.get_page_data(get, where_sql, params)
+                get.data_list = data['data']
+                try:
+                    data['data'] = self.func_models(get, 'get_data_list')
+                except :
+                    print(traceback.format_exc())
+                if get.table == 'sites':
+                    if isinstance(data, dict):
+                        file_path = os.path.join(public.get_panel_path(), "data/sort_list.json")
+                        if os.path.exists(file_path):
+                            sort_list_raw = public.readFile(file_path)
+                            sort_list = json.loads(sort_list_raw)
+                            sort_list_int = [int(item) for item in sort_list["list"]]
+
+                            for i in range(len(data['data'])):
+                                if int(data['data'][i]['id']) in sort_list_int:
+                                    data['data'][i]['sort'] = 1
+                                else:
+                                    data['data'][i]['sort'] = 0
+
+                            top_list = sort_list["list"]
+                            if top_list:
+                                top_list = top_list[::-1]
+                            top_data = [item for item in data["data"] if str(item['id']) in top_list]
+                            data1 = [item for item in data["data"] if str(item['id']) not in top_list]
+                            top_data.sort(key=lambda x: top_list.index(str(x['id'])))
+                            data['data'] = top_data + data1
+                public.set_search_history(get.table, get.search_key, get.search)  # 记录搜索历史
+                # 字段排序
+                data = self.get_sort_data(data)
+                if 'type_id' in get:
+                    type_id=int(get['type_id'])
+                    if type_id:
+                        filtered_data = []
+                        target_type_id = type_id
+                        # print(data['data'])
+                        for item in data['data']:
+                            if item.get('type_id') == target_type_id:
+                                filtered_data.append(item)
+                        data['data'] = filtered_data
+                    if get.get("db_type",""):
+                        if  type_id < 0:
+                            filtered_data = []
+                            target_type_id = type_id
+                            for item in data['data']:
+                                if item.get('type_id') == target_type_id:
+                                    filtered_data.append(item)
+                            data['data'] = filtered_data
+                return data
+            except:
+                return traceback.format_exc()
+
+
+    # 获取用户权限列表
+    def get_user_power(self, get=None):
+        user_Data = 'all'
+        try:
+            uid = session.get('uid')
+            if uid != 1 and uid:
+                plugin_path = '/www/server/panel/plugin/users'
+                if os.path.exists(plugin_path):
+                    user_authority = os.path.join(plugin_path, 'authority')
+                    if os.path.exists(user_authority):
+                        if os.path.exists(os.path.join(user_authority, str(uid))):
+                            try:
+                                data = json.loads(self._decrypt(public.ReadFile(os.path.join(user_authority, str(uid)))))
+                                if data['role'] == 'administrator':
+                                    user_Data = 'all'
+                                else:
+                                    user_Data = json.loads(self._decrypt(public.ReadFile(os.path.join(user_authority, str(uid) + '.data'))))
+                            except:
+                                user_Data = {}
+                        else:
+                            user_Data = {}
+        except:
+            pass
+        return user_Data
+
+
+    def get_sort_data(self,data):
+        """
+        @获取自定义排序数据
+        @param data: 数据
+        """
+        if 'plist' in data:
+            plist = data['plist']
+            o_list = plist['order'].split(' ')
+
+            reverse = False
+            sort_key = o_list[0].strip()
+
+            if o_list[1].strip()  == 'desc':
+                reverse = True
+
+            if sort_key in ['site_ssl']:
+                for info in data['data']:
+                    if type(info['ssl']) == int:
+                        info[sort_key] = info['ssl']
+                    else:
+                        try:
+                           info[sort_key] = info['ssl']['endtime']
+                        except :
+                           info[sort_key] = ''
+
+            data['data'] = sorted(data['data'],key=lambda x:x[sort_key],reverse=reverse)
+            data['data'] = data['data'][plist['shift'] : plist['row'] ]
+        return data
+
     '''
      * 取数据库行
      * @param String _GET['tab'] 数据库表名
@@ -322,12 +560,13 @@ class data:
     '''
     def GetSql(self,get,result = '1,2,3,4,5,8'):
         #判断前端是否传入参数
-        order = "id desc"
+        order = 'id desc'
         if hasattr(get,'order'):
             # 验证参数格式
             if re.match(r"^[\w\s\-\.]+$",get.order):
                 order = get.order
 
+        search_key = 'get_list'
         limit = 20
         if hasattr(get,'limit'):
             limit = int(get.limit)
@@ -342,15 +581,27 @@ class data:
         data = {}
         #取查询条件
         where = ''
+        search = ''
         param = ()
         if hasattr(get,'search'):
+            search = get.search
             if sys.version_info[0] == 2: get.search = get.search.encode('utf-8')
             where,param = self.GetWhere(get.table,get.search)
             if get.table == 'backup':
                 where += " and type='{}'".format(int(get.type))
 
             if get.table == 'sites' and get.search:
-                pid = SQL.table('domain').where("name LIKE ?",("%{}%".format(get.search),)).getField('pid')
+                conditions = ''
+                if '_' in get.search:
+                    cs = ''
+                    for i in get.search:
+                        if i == '_':
+                            cs += '/_'
+                        else:
+                            cs += i
+                    get.search = cs
+                    conditions = " escape '/'"
+                pid = SQL.table('domain').where("name LIKE ?{}".format(conditions),("%{}%".format(get.search),)).getField('pid')
                 if pid:
                     if where:
                         where += " or id=" + str(pid)
@@ -358,8 +609,9 @@ class data:
                         where += "id=" + str(pid)
 
         if get.table == 'sites':
+            search_key = 'php'
             if where:
-                where = "({}) AND project_type='PHP'".format(where)
+                where = "({}) AND (project_type='PHP' OR project_type='WP')".format(where)
             else:
                 where = "(project_type='PHP' OR project_type='WP')"
 
@@ -379,9 +631,15 @@ class data:
                 else:
                     where = "sid='{}'".format(int(get.sid))
 
+            if where:
+                where += " and type='MySQL'"
+            else:
+                where = 'type = "MySQL"'
+
         field = self.GetField(get.table)
         #实例化数据库对象
 
+        public.set_search_history(get.table,search_key,search)  #记录搜索历史
 
         #是否直接返回所有列表
         if hasattr(get,'list'):
@@ -420,7 +678,17 @@ class data:
         #获取分页数据
         data['page'] = page.GetPage(info,result)
         #取出数据
-        data['data'] = SQL.table(get.table).where(where,param).order(order).field(field).limit(str(page.SHIFT)+','+str(page.ROW)).select()
+        #data['data'] = SQL.table(get.table).where(where,param).order(order).field(field).limit(str(page.SHIFT)+','+str(page.ROW)).select()
+
+        o_list = order.split(' ')
+        if o_list[0] in self.__SORT_DATA:
+            data['data'] = SQL.table(get.table).where(where,param).field(field).select()
+            data['plist'] = {'shift':page.SHIFT,'row':page.ROW,'order':order}
+        else:
+            data['data'] = SQL.table(get.table).where(where,param).order(order).field(field).limit(str(page.SHIFT)+','+str(page.ROW)).select()      #取出数据
+
+        data['search_history'] =  public.get_search_history(get.table,search_key)
+
         return data
 
     #获取条件
@@ -432,16 +700,42 @@ class data:
             search = re.search(r"[\w\x80-\xff\.\_\-]+",search).group()
         except:
             return '',()
+        conditions = ''
+        if '_' in search:
+            cs = ''
+            for i in search:
+                if i == '_':
+                    cs += '/_'
+                else:
+                    cs += i
+            search = cs
+            conditions = " escape '/'"
         wheres = {
-            'sites'     :   ("name LIKE ? OR ps LIKE ?",('%'+search+'%','%'+search+'%')),
-            'ftps'      :   ("name LIKE ? OR ps LIKE ?",('%'+search+'%','%'+search+'%')),
-            'databases' :   ("(name LIKE ? OR ps LIKE ?)",("%"+search+"%","%"+search+"%")),
-            'logs'      :   ("username=? OR type LIKE ? OR log LIKE ?",(search,'%'+search+'%','%'+search+'%')),
+            'sites': ("name LIKE ? OR ps LIKE ?{}".format(conditions), ('%' + search + '%', '%' + search + '%')),
+            'ftps': ("name LIKE ? OR ps LIKE ?{}".format(conditions), ('%' + search + '%', '%' + search + '%')),
+            'databases': (
+                "(name LIKE ? {} OR ps LIKE ?{})".format(conditions, conditions),
+                ("%" + search + "%", "%" + search + "%")),
+            'crontab': ("name LIKE ?{}".format(conditions), ('%' + (search) + '%')),
+            'logs': ("username=? OR type LIKE ?{} OR log LIKE ?{}".format(conditions, conditions),
+                     (search, '%' + search + '%', '%' + search + '%')),
             'backup'    :   ("pid=?",(search,)),
             'users'     :   ("id='?' OR username=?",(search,search)),
             'domain'    :   ("pid=? OR name=?",(search,search)),
             'tasks'     :   ("status=? OR type=?",(search,search)),
             }
+
+        # wheres = {
+        #     'sites'     :   ("name LIKE ? OR ps LIKE ?",('%'+search+'%','%'+search+'%')),
+        #     'ftps'      :   ("name LIKE ? OR ps LIKE ?",('%'+search+'%','%'+search+'%')),
+        #     'databases' :   ("(name LIKE ? OR ps LIKE ?)",("%"+search+"%","%"+search+"%")),
+        #     'logs'      :   ("username=? OR type LIKE ? OR log LIKE ?",(search,'%'+search+'%','%'+search+'%')),
+        #     'backup'    :   ("pid=?",(search,)),
+        #     'users'     :   ("id='?' OR username=?",(search,search)),
+        #     'domain'    :   ("pid=? OR name=?",(search,search)),
+        #     'tasks'     :   ("status=? OR type=?",(search,search)),
+        #     }
+
         try:
             return wheres[tableName]
         except:

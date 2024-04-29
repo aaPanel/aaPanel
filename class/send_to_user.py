@@ -39,6 +39,9 @@ class send_to_user:
         data={"name":name,"send_type":send_type,"msg":msg,"is_send":False,"type":type,"inser_time":inser_time}
         return  public.M('send_msg').insert(data)
 
+    def insert_msg(self, name, send_type, msg, type, insert_time):
+        return self.inser_send_msg(name, send_type, msg, type, insert_time)
+
     def dtchg(self,x):
         try:
             time_local = time.localtime(float(x))

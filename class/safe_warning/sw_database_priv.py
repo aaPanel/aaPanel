@@ -16,16 +16,16 @@ import os, re, public, panelMysql
 
 _title = 'Database backup permission detection'
 _version = 1.0  # 版本
-_ps = "Check whether the MySQL root user has database backup permissions"  # 描述
+_ps = "Check whether the MySQL root user has database backup privileges"  # 描述
 _level = 3  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
 _date = '2020-09-19'  # 最后更新时间
 _ignore = os.path.exists("data/warning/ignore/sw_database_priv.pl")
 _tips = [
-    "To temporarily access the database without authorization, it is recommended to restore all permissions of the root user.",
+    "To temporarily enter the database without authorization, it is recommended to restore all permissions of the root user.",
 ]
 
 _help = ''
-
+_remind = 'This scheme ensures that the root user has the permission to backup the database and ensures that the database backup work is carried out. '
 
 def check_run():
     """检测root用户是否具备数据库备份权限
@@ -49,9 +49,9 @@ def check_run():
                  "-1);".format(",".join(base_backup_privs))
     select_result = panelMysql.panelMysql().query(select_sql)
     if not select_result:
-        return False, "The root user has insufficient authority to execute mysqldump backup."
+        return False, "The root user has insufficient privileges to perform mysqldump backups."
     select_result = select_result[0]
     for priv in select_result:
         if priv.lower() != "y":
-            return False, "The root user has insufficient authority to execute mysqldump backup."
+            return False, "The root user has insufficient privileges to perform mysqldump backups."
     return True, 'Risk-free'

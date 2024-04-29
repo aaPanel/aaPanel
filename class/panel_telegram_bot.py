@@ -51,10 +51,9 @@ class panel_telegram_bot:
             return {"setup":False,"bot_token":"","my_id":""}
 
     def process_character(self,content):
-        character = ['.',',','!',':','%','[',']','\/','_','-','>']
+        character = ['\\', '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
         for c in character:
-            if c in content and '\\{}'.format(c) not in content:
-                content = content.replace(c,'\\'+c)
+            content = content.replace(c, '\\' + c)
         return content
 
 
@@ -63,6 +62,9 @@ class panel_telegram_bot:
         "parse_mode 消息格式  html/markdown/markdownv2"
         content = self.process_character(content)
         conf = self.get_tg_conf()
-        bot = telegram.Bot(conf['bot_token'])
-        result = bot.send_message(text=content, chat_id=int(conf['my_id']), parse_mode="MarkdownV2")
-        return result
+        try:
+            bot = telegram.Bot(conf['bot_token'])
+            result = bot.send_message(text=content, chat_id=int(conf['my_id']), parse_mode="MarkdownV2")
+            return result
+        except:
+            return False

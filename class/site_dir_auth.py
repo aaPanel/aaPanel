@@ -88,14 +88,14 @@ class SiteDirAuth:
             return public.return_msg_gettext(False, 'Site password protection has been set, please cancel and then set. Site directory --> Password access')
         if self._check_dir_auth(site_name, name,site_dir):
             return public.return_msg_gettext(False, 'Directory has been protected')
-        auth = "{user}:{passwd}".format(user=get.username,passwd=passwd)
+        auth = "{user}:{passwd}".format(user=username,passwd=passwd)
         auth_file = '{setup_path}/pass/{site_name}'.format(setup_path=self.setup_path,site_name=site_name)
         if not os.path.exists(auth_file):
             os.makedirs(auth_file)
         auth_file = auth_file+"/{}.pass".format(name)
         public.writeFile(auth_file,auth)
         # 配置独立认证文件
-        self.set_dir_auth_file(site_info["site_path"],site_name,name,get.username,site_dir,auth_file)
+        self.set_dir_auth_file(site_info["site_path"],site_name,name,username,site_dir,auth_file)
         # 配置站点主文件
         result = self.set_conf(site_name,"create")
         if result:
@@ -184,8 +184,6 @@ class SiteDirAuth:
     %s
     #AUTH_END
 }''' % (site_dir,auth_file,php_conf)
-                public.writeFile("/tmp/2", conf)
-
             else:
             # 设置apache
                 conf = '''<Directory "{site_path}{site_dir}">

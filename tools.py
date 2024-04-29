@@ -10,7 +10,10 @@
 #------------------------------
 # 工具箱
 #------------------------------
-import sys,os
+import sys
+import os
+import re
+
 panelPath = '/www/server/panel/'
 os.chdir(panelPath)
 sys.path.insert(0,panelPath + "class/")
@@ -37,7 +40,7 @@ if [ "$m_version" != "" ];then
 elif [ "$m2_version" != "" ];then
     mysql -uroot -e "FLUSH PRIVILEGES;alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
 else
-    m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.7.|8.0.)")
+    m_version=$(cat /www/server/mysql/version.pl|grep -E "(5\.7\.|8\.[0-9]+\..*)")
     if [ "$m_version" != "" ];then
         mysql -uroot -e "FLUSH PRIVILEGES;update mysql.user set authentication_string='' where user='root' and (host='127.0.0.1' or host='localhost');alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
     else
@@ -63,6 +66,11 @@ echo "The root password set ${pwd}  successuful"''';
 
 #设置面板密码
 def set_panel_pwd(password,ncli = False):
+    password = password.strip()
+    re_list = re.findall("[^\w\d,.]+", password)
+    if re_list:
+        print("|-Error: password cannot contain special characters: {}".format(" ".join(re_list)))
+        return
     import db
     sql = db.Sql()
     result = sql.table('users').where('id=?',(1,)).setField('password',public.password_salt(public.md5(password),uid=1))
@@ -209,22 +217,28 @@ def get_host_all():
         if ip in local_ip: continue
         if ip in ip_list: continue
         ip_list.append(ip)
-    net_ip = public.httpGet("https://api.bt.cn/api/getipaddress")
+    net_ip = public.httpGet("https://ifconfig.me/ip")
 
     if net_ip:
         net_ip = net_ip.strip()
         if not net_ip in ip_list:
             ip_list.append(net_ip)
-    ip_list = [ip_list[-1],ip_list[0]]
+    if len(ip_list) > 1:
+        ip_list = [ip_list[-1],ip_list[0]]
     return ip_list
 
 #自签证书
 def CreateSSL():
     import base64
     userInfo = public.get_user_info()
+
     if not userInfo:
         userInfo['uid'] = 0
         userInfo['access_key'] = 'B' * 32
+
+    if 'access_key' not in userInfo or not userInfo['access_key']:
+        userInfo['access_key'] = 'B' * 32
+
     domains = get_host_all()
     pdata = {
         "action":"get_domain_cert",
@@ -395,6 +409,10 @@ def set_panel_username(username = None):
     import db
     sql = db.Sql()
     if username:
+        re_list = re.findall("[^\w\d,.]+", username)
+        if re_list:
+            print("|-Error: username cannot contain special characters: {}".format(" ".join(re_list)))
+            return
         if len(username) < 3:
             print(public.GetMsg("USER_NAME_LEN_ERR"))
             return;
@@ -468,15 +486,16 @@ def bt_cli(u_input = 0):
         print("(1) %s                           (8) %s" % (public.GetMsg("RESTART_PANEL"),public.GetMsg("CHANGE_PANEL_PORT")))
         print("(2) %s                              (9) %s"% (public.GetMsg("STOP_PANEL"),public.GetMsg("CLEAR_PANEL_CACHE")))
         print("(3) %s                             (10) %s"% (public.GetMsg("START_PANEL"),public.GetMsg("CLEAR_PANEL_LIMIT")))
-        print("(4) %s                            (11) %s"% (public.GetMsg("RELOAD_PANEL"),public.GetMsg("CANCEL_ENTRY")))
+        print("(4) %s                            (11) Turn on/off IP + User-Agent Authenticator "% (public.GetMsg("RELOAD_PANEL")))
         print("(5) %s                   (12) %s"% (public.GetMsg("CHANGE_PANEL_PASS"),public.GetMsg("CANCEL_DOMAIN_BIND")))
         print("(6) %s                   (13) %s"% (public.GetMsg("CHANGE_PANEL_USER"),public.GetMsg("CANCEL_IP_LIMIT")))
         print("(7) %s     (14) %s"% (public.GetMsg("CHANGE_MYSQL_PASS_FORCE"),public.GetMsg("GET_PANEL_DEFAULT_MSG")))
         print("(22) %s                (15) %s"% ("Display panel error log",public.GetMsg("CLEAR_SYS_RUBBISH")))
-        print("(23) %s      (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
+        print("(23) %s       (16) %s"% ("Turn off BasicAuth Authenticator","Repair panel (check for errors and update panel files to the latest version)"))
         print("(24) Turn off Google Authenticator          (17) Set log cutting on/off compression")
-        print("(25) Set whether to save a historical copy of the file  (18) Set whether to back up the panel automatically")
+        print("(25) Save copy when modify file in panel    (18) Set whether to back up the panel automatically")
         print("(26) Keep/Remove local backup when backing up to cloud storage")
+        print("(27) Turn on/off panel SSL                  (28) Modify panel security entrance")
         print("(0) Cancel")
         print(raw_tip)
         try:
@@ -531,7 +550,7 @@ def bt_cli(u_input = 0):
         exit()
     except: pass
 
-    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25,26]
+    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25,26,27,28]
     if not u_input in nums:
         print(raw_tip)
         print(public.GetMsg("CANCELLED"))
@@ -540,6 +559,51 @@ def bt_cli(u_input = 0):
     print(raw_tip)
     print(public.GetMsg("EXECUTING",(u_input,)))
     print(raw_tip)
+
+    # 开启或者关闭面板SSL
+    if u_input == 27:
+        ssl_file = '/www/server/panel/data/ssl.pl'
+        if os.path.exists(ssl_file):
+            os.remove(ssl_file)
+            os.system("/etc/init.d/bt reload")
+            os.system("/etc/init.d/bt default")
+            print("Please use http access panel, If cannot login, please change the browser or use the incognito mode of browser access")
+        else:
+            certificate_file="/www/server/panel/ssl/certificate.pem"
+            privateKey_file="/www/server/panel/ssl/privateKey.pem"
+            if os.path.exists(certificate_file) and os.path.exists(privateKey_file):
+                public.writeFile(ssl_file, 'True')
+                os.system("/etc/init.d/bt reload")
+                os.system("/etc/init.d/bt default")
+                print("If cannot login, please change the browser or use the incognito mode of browser access")
+
+            elif not os.path.exists(certificate_file):
+                try:
+                    if not os.path.exists("/www/server/panel/ssl/"):
+                        os.makedirs("/www/server/panel/ssl/")
+                    CreateSSL()
+                    os.system("/etc/init.d/bt default")
+                    print("If cannot login, please change the browser or use the incognito mode of browser access")
+                except:
+                    print("Failed turn on panel ssl, Please use http access panel")
+    # 修改安全入口
+    if u_input == 28:
+        admin_path = input('Please enter new security entrance:')
+        msg = ''
+        from BTPanel import admin_path_checks
+        if len(admin_path) < 6: msg = 'The security entrance address length cannot be less than 6 digits!'
+        if admin_path in admin_path_checks: msg = 'This entrance is already occupied by the panel, please use another entrance!'
+        if not public.path_safe_check(admin_path) or admin_path[-1] == '.': msg = 'The entrance address format is incorrect, example: /my_panel'
+        if admin_path[0] != '/': msg = 'The entrance address format is incorrect, ex: /my_panel'
+        admin_path_file = 'data/admin_path.pl'
+        admin_path1 = '/'
+        if os.path.exists(admin_path_file): admin_path1 = public.readFile(admin_path_file).strip()
+        if msg != '':
+            print('setting error:{}'.format(msg))
+            return
+        public.writeFile(admin_path_file, admin_path)
+        public.restart_panel()
+        print('Security entrance set successfully：{}'.format(admin_path))
 
     if u_input == 1:
         os.system("/etc/init.d/bt restart")
@@ -575,7 +639,7 @@ def bt_cli(u_input = 0):
             return;
 
         import re
-        rep = "^[\w@\._]+$"
+        rep = r"^[\w@\._]+$"
         if not re.match(rep, input_mysql):
             print(public.GetMsg("PASS_SPECIAL_CHARACTRES_ERR"))
             return;
@@ -622,10 +686,20 @@ def bt_cli(u_input = 0):
     elif u_input == 10:
         os.system("/etc/init.d/bt reload")
     elif u_input == 11:
-        auth_file = 'data/admin_path.pl'
-        if os.path.exists(auth_file): os.remove(auth_file)
-        os.system("/etc/init.d/bt reload")
-        print(public.GetMsg("CHANGE_LIMITED_CANCEL"))
+        # auth_file = 'data/admin_path.pl'
+        # if os.path.exists(auth_file): os.remove(auth_file)
+        # os.system("/etc/init.d/bt reload")
+        # print(public.GetMsg("CHANGE_LIMITED_CANCEL"))
+        not_tip = '{}/data/not_check_ip.pl'.format(public.get_panel_path())
+        if os.path.exists(not_tip):
+            os.remove(not_tip)
+            print("|-Turned on IP + User-Agent Authenticator")
+            print("|-This feature can effectively prevent [replay attacks]")
+        else:
+            public.writeFile(not_tip, 'True')
+            print("|-Turned off IP + User-Agent Authenticator")
+            print("|-Note: Turned off this function has the risk of being [replay attack]")
+
     elif u_input == 12:
         auth_file = 'data/domain.conf'
         if os.path.exists(auth_file): os.remove(auth_file)
@@ -642,7 +716,7 @@ def bt_cli(u_input = 0):
         ClearSystem()
     elif u_input == 16:
         os.system("/www/server/panel/pyenv/bin/pip install cachelib")
-        os.system("curl https://download.bt.cn/install/update6_en.sh|bash")
+        os.system("curl -k https://node.aapanel.com/install/update6_en.sh|bash")
     elif u_input == 17:
         l_path = '/www/server/panel/data/log_not_gzip.pl'
         if os.path.exists(l_path):

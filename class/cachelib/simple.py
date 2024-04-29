@@ -7,6 +7,28 @@ except ImportError:  # pragma: no cover
     import pickle
 
 from cachelib.base import BaseCache
+import io
+import builtins
+
+safe_builtins = {
+    'range',
+    'complex',
+    'set',
+    'frozenset',
+    'slice',
+}
+
+class RestrictedUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == "builtins" and name in safe_builtins:
+            # print(name)
+            return getattr(builtins, name)
+        return None
+
+def restricted_loads(s):
+    # return RestrictedUnpickler(io.BytesIO(s)).load()
+    return True
+
 
 
 class SimpleCache(BaseCache):
@@ -99,11 +121,17 @@ class SimpleCache(BaseCache):
         # 类型判断
         if not isinstance(key,str): return False
         type_list=(int,float,bool,str,list,dict,tuple,set,bytes)
-        if not isinstance(value,type_list): return False
+        value_type=type(value)
+        if value_type not in type_list:
+            return False
 
         # 过期清理
         expires = self._normalize_timeout(timeout)
         self._prune()
+        try:
+            restricted_loads(pickle.dumps(value))
+        except:
+            return False
 
         # 转换
         _val =  pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
@@ -116,10 +144,16 @@ class SimpleCache(BaseCache):
         # 类型判断
         if not isinstance(key,str): return False
         type_list=(int,float,bool,str,list,dict,tuple,set,bytes)
-        if not isinstance(value,type_list): return False
+        value_type=type(value)
+        if value_type not in type_list:
+            return False
 
         expires = self._normalize_timeout(timeout)
         self._prune()
+        try:
+            restricted_loads(pickle.dumps(value))
+        except:
+            return False
         item = (expires, pickle.dumps(value,pickle.HIGHEST_PROTOCOL))
         if key in self._cache:
             return False

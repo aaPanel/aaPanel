@@ -104,7 +104,7 @@ class plugin_deployment:
         try:
             jsonFile = self.__setupPath + '/deployment_list.json'
             if not 'package' in session or not os.path.exists(jsonFile) or hasattr(get,'force'):
-                downloadUrl = 'https://www.bt.cn/api/panel/get_deplist'
+                downloadUrl = 'http://www.bt.cn/api/panel/get_deplist'
                 pdata = public.get_pdata()
                 tmp = json.loads(public.httpPost(downloadUrl,pdata,3))
                 if not tmp: return public.returnMsg(False,'Failed to get from the cloud!')
@@ -270,7 +270,7 @@ class plugin_deployment:
         #下载文件
         if isDownload:
             self.WriteLogs(json.dumps({'name':'Downloading file ...','total':0,'used':0,'pre':0,'speed':0}))
-            if pinfo['versions'][0]['download']: self.DownloadFile('https://www.bt.cn/api/Pluginother/get_file?fname=' + pinfo['versions'][0]['download'], packageZip)
+            if pinfo['versions'][0]['download']: self.DownloadFile('http://www.bt.cn/api/Pluginother/get_file?fname=' + pinfo['versions'][0]['download'], packageZip)
 
         if not os.path.exists(packageZip): return public.returnMsg(False,'File download failed!' + packageZip)
 
@@ -471,7 +471,7 @@ class plugin_deployment:
         p = panelAuth.panelAuth()
         pdata = p.create_serverid(None);
         pdata['pid'] = id;
-        p_url = 'https://www.bt.cn/api/pluginother/create_order_okey'
+        p_url = 'http://www.bt.cn/api/pluginother/create_order_okey'
         public.httpPost(p_url,pdata)
 
     #获取进度

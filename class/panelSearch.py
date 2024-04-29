@@ -34,7 +34,7 @@ class panelSearch:
         return public.M('panel_search_log').insert(data)
 
     '''目录下所有的文件'''
-    def get_dir(self, path,exts,text,mode=0,isword=0,iscase=0,noword=0,is_backup=0,rtext=False):
+    def get_dir(self, path,exts,text,mode=0,isword=0,iscase=0,noword=0,is_backup=0,rtext=False,get=None):
         if rtext or noword:
             result=[]
         else:
@@ -47,12 +47,17 @@ class panelSearch:
             zfile=False
             back_zip=False
         return_data = []
-        [[return_data.append(os.path.join(root, file)) for file in files] for root, dirs, files in os.walk(path)]
+        [[return_data.append(os.path.join(root, file)) for file in files]
+         for root, dirs, files in os.walk(path)]
+        num = 0
+        total_num = len(return_data)
+        if return_data: public.writeSpeed('files_search', num, total_num)
         for i in return_data:
+            is_send = False
             for i2 in exts:
                 i3 = i.split('.')
                 if i3[-1] == i2:
-
+                    is_send = True
                     temp = self.get_files_lin(i, text, mode, isword, iscase, noword,is_backup,rtext,zfile)
                     if temp:
                         if rtext or noword:
@@ -60,6 +65,20 @@ class panelSearch:
                                 result.append(temp)
                         else:
                             result[i] = temp
+            num += 1
+            public.writeSpeed('files_search', num, total_num)
+            progress = int(public.getSpeed()['progress'])
+            if '_ws' in get:
+                get._ws.send(
+                    public.getJson({
+                        "end": False if progress < 100 else True,
+                        "ws_callback": get.ws_callback,
+                        "file": i if is_send else '',
+                        "progress": progress,
+                        "total": total_num,
+                        "num": num,
+                        "type": "files_search"
+                    }))
         if is_backup:
             if zfile:
                 zfile.close()
@@ -68,7 +87,18 @@ class panelSearch:
         return result
 
     '''获取单目录'''
-    def get_dir_files(self,path,exts,text,mode=0,isword=0,iscase=0,noword=0,is_backup=0,rtext=False):
+
+    def get_dir_files(self,
+                      path,
+                      exts,
+                      text,
+                      mode=0,
+                      isword=0,
+                      iscase=0,
+                      noword=0,
+                      is_backup=0,
+                      rtext=False,
+                      get=None):
         is_list = rtext or noword
         if is_list:
             result=[]
@@ -85,16 +115,37 @@ class panelSearch:
         for root, dirs, files in os.walk(path):
             list_data=files
             break
-        for i in exts:
-            for i2 in list_data:
-                i3=i2.split('.')
-                if i3[-1]==i:
-                    temp=self.get_files_lin(path+'/'+i2, text,mode,isword,iscase,noword,is_backup,rtext,zfile)
+        num = 0
+        total_num = len(list_data)
+        if list_data: public.writeSpeed('files_search', num, total_num)
+        for i2 in list_data:
+            is_send = False
+            for i in exts:
+                i3 = i2.split('.')
+                if i3[-1] == i:
+                    is_send = True
+                    temp = self.get_files_lin(path + '/' + i2, text, mode,
+                                              isword, iscase, noword,
+                                              is_backup, rtext, zfile)
                     if temp:
                         if isinstance(result,list):
                             result.append(path+'/'+i2)
                         else:
-                            result[path+'/'+i2]=temp
+                            result[path + '/' + i2] = temp
+            num += 1
+            public.writeSpeed('files_search', num, total_num)
+            progress = int(public.getSpeed()['progress'])
+            if '_ws' in get:
+                get._ws.send(
+                    public.getJson({
+                        "end": False if progress < 100 else True,
+                        "ws_callback": get.ws_callback,
+                        "file": i2 if is_send else '',
+                        "progress": progress,
+                        "total": total_num,
+                        "num": num,
+                        "type": "files_search"
+                    }))
         if is_backup:
             if zfile:
                 zfile.close()
@@ -103,12 +154,42 @@ class panelSearch:
     '''
         获取目录下所有的后缀文件
     '''
-    def get_exts_files(self,path,exts,text,mode=0,isword=0,iscase=0,noword=0,is_subdir=0,is_backup=0,rtext=False):
+
+    def get_exts_files(self,
+                       path,
+                       exts,
+                       text,
+                       mode=0,
+                       isword=0,
+                       iscase=0,
+                       noword=0,
+                       is_subdir=0,
+                       is_backup=0,
+                       rtext=False,
+                       get=None):
         if len(exts)==0:return []
         if is_subdir==0:
-            return self.get_dir_files(path,exts,text,mode,isword,iscase,noword,is_backup,rtext)
+            return self.get_dir_files(path,
+                                      exts,
+                                      text,
+                                      mode,
+                                      isword,
+                                      iscase,
+                                      noword,
+                                      is_backup,
+                                      rtext,
+                                      get=get)
         elif is_subdir==1:
-            return self.get_dir(path,exts,text,mode,isword,iscase,noword,is_backup,rtext)
+            return self.get_dir(path,
+                                exts,
+                                text,
+                                mode,
+                                isword,
+                                iscase,
+                                noword,
+                                is_backup,
+                                rtext,
+                                get=get)
 
     '''
        获取文件内的关键词
@@ -202,7 +283,15 @@ class panelSearch:
         isword = int(args.isword) if 'isword' in args else 0
         noword = int(args.noword) if 'noword' in args else 0
         exts=exts.split(',')
-        is_tmpe_files=self.get_exts_files(path,exts,text,mode,isword,iscase,noword,is_subdir)
+        is_tmpe_files = self.get_exts_files(path,
+                                            exts,
+                                            text,
+                                            mode,
+                                            isword,
+                                            iscase,
+                                            noword,
+                                            is_subdir,
+                                            get=args)
         return is_tmpe_files
 
     '''

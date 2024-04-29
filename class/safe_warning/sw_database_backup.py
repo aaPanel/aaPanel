@@ -9,7 +9,7 @@
 # -------------------------------------------------------------------
 
 # -------------------------------------------------------------------
-# 数据库备份检测
+# 数据库定时备份检测
 # -------------------------------------------------------------------
 
 
@@ -27,17 +27,20 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = 'This solution prevents data loss in the database and keeps data safe. '
 
 def check_run():
     '''
         @name 开始检测
         @author hwliang<2020-08-03>
-        @return tuple (status<bool>,msg<string>)        
+        @return tuple (status<bool>,msg<string>)
     '''
 
-    if public.M('crontab').where('sType=? AND sName=?',('database','ALL')).count():
+    if os.path.exists('/www/server/panel/plugin/enterprise_backup'):
         return True,'Risk-free'
+    if public.M('crontab').where('sType=? AND sName=?',
+                                 ('database', 'ALL')).count():
+        return True, 'Risk-free'
 
     db_list = public.M('databases').field('name').select()
 
@@ -50,7 +53,7 @@ def check_run():
 
     if not_backups:
         return False ,'The following databases are not set up for regular backup: <br />' + ('<br />'.join(not_backups))
-    
+
     return True,'Risk-free'
     
 

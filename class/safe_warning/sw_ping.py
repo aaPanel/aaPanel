@@ -27,7 +27,7 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = 'This scheme can reduce the risk of the real IP of the server being found, and enhance the security of the server. '
 
 def check_run():
     '''

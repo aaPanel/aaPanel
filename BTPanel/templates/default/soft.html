@@ -4,10 +4,13 @@
 <div class="main-content">
   <div class="container-fluid" style="padding-bottom:54px">
     <div class="pos-box bgw mtb15">
-        <div class="position f14 c9 pull-left">
+        <!-- <div class="position f14 c9 pull-left">
             <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
         </div>
-        <div class="search pull-right"></div>
+        <div class="search pull-right"></div> -->
+			<div class="tab-list">
+        <div class="tabs-item active">{{data['lan']['H2']}}</div>
+			</div>
     </div>
     <div class="softbox bgw mtb15">
         <div class="softlist">
@@ -16,10 +19,10 @@
         <div class="col-md-12">
           <span class="filter-title f14 c4">{{data['lan']['SEARCH_APP']}}</span>
           <div class="soft-search">
-            <form target="hid" onsubmit='soft.get_list(1,0,$("#SearchValue").val())'>
+            <!-- <form target="hid" onsubmit='soft.get_list(1,0,$("#SearchValue").val())'> -->
               <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="search" style="width:232px" />
               <button type="button" class="ser-sub pull-left" onclick='soft.get_list(1,0,$("#SearchValue").val())'></button>
-            </form>
+            <!-- </form> -->
             <iframe name='hid' id="hid" style="display:none"></iframe>
           </div>
         </div>
@@ -54,6 +57,11 @@
     $(document).ready(function () {
         soft.get_list();
         soft.render_soft_recommend()
+		$('#SearchValue').keyup(function (e) {
+			if (e.keyCode == 13) {
+				soft.get_list(1, 0, $("#SearchValue").val());
+			}
+		});
         setTimeout(function () {
             soft_td_width_auto();
         }, 500);

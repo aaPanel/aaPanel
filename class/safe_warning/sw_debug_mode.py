@@ -27,7 +27,7 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = 'This solution prevents the disclosure of sensitive information and reduces the risk of your website being compromised. '
 
 def check_run():
     '''

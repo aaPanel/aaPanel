@@ -25,7 +25,7 @@ _tips = [
     "If bindIP is 0.0.0.0, be sure to set IP access restrictions through the [SYS firewall] plugin or the Security group"
     ]
 _help = ''
-
+_remind = 'This solution can reduce the risk exposure of the server and strengthen the protection of the website. However, it is necessary to set the accessible IP according to the business requirements. '
 def check_run():
     '''
         @name 开始检测

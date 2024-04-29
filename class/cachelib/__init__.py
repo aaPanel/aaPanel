@@ -2,6 +2,7 @@
 
 from cachelib.base import BaseCache, NullCache
 from cachelib.simple import SimpleCache
+from cachelib.session_simpile import SimpleCacheSession
 from cachelib.file import FileSystemCache
 from cachelib.memcached import MemcachedCache
 from cachelib.redis import RedisCache
@@ -15,6 +16,7 @@ __all__ = [
     'MemcachedCache',
     'RedisCache',
     'UWSGICache',
+    'SimpleCacheSession'
 ]
 
 __version__ = '0.1'

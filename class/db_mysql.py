@@ -27,6 +27,7 @@ class panelMysql:
     __OPT_FIELD  = "*"             # field条件
     __OPT_PARAM  = ()              # where值
     _USER = None
+    _ex = None
 
     def __init__(self):
         pass
@@ -48,15 +49,26 @@ class panelMysql:
         self._USER = str(username)
         self.__DB_PASS = str(password)
         self.__DB_PREFIX = prefix
-        self.__GetConn()
+        if not self.__GetConn(): return False
         return self
 
     #连接MYSQL数据库
     def __GetConn(self):
         try:
+           # print(self.__DB_HOST,self.__DB_PORT,self.__DB_NAME,self.__DB_USER,self.__DB_PASS)
             self.__DB_CONN = pymysql.connect(host=self.__DB_HOST,user=self.__DB_USER,passwd=str(self.__DB_PASS),db=self.__DB_NAME,port=self.__DB_PORT,connect_timeout=15,read_timeout=60,write_timeout=60)
-        except:
-            self.__DB_CONN = pymysql.connect(host=self.__DB_HOST,user=self.__DB_USER,passwd=str(self.__DB_PASS),db=self.__DB_NAME,port=self.__DB_PORT)
+        except Exception as ex:
+            self.__DB_ERR = "error: " + str(ex)
+            self._ex = ex
+            print(ex)
+            if self.__DB_ERR.find("timed out") != -1 or self.__DB_ERR.find("is not allowed to connect") != -1: return False
+            try:
+                self.__DB_CONN = pymysql.connect(host=self.__DB_HOST,user=self.__DB_USER,passwd=str(self.__DB_PASS),db=self.__DB_NAME,port=self.__DB_PORT)
+            except Exception as ex:
+                self.__DB_ERR = "error: " + str(ex)
+                self._ex = ex
+                print(ex)
+                return False
         self.__DB_CUR  = self.__DB_CONN.cursor()
         return True
 
@@ -79,27 +91,31 @@ class panelMysql:
             if type(param) == list:
                 param = tuple(param)
             else:
-                param = (param, )
+                param = (param,)
         return param
 
-    def order(self, order):
+
+    def order(self,order):
         #ORDER条件
         if len(order):
-            self.__OPT_ORDER = " ORDER BY " + order
+            self.__OPT_ORDER = " ORDER BY "+order
         return self
 
-    def limit(self, limit):
+
+    def limit(self,limit):
         #LIMIT条件
         limit = str(limit)
         if len(limit):
-            self.__OPT_LIMIT = " LIMIT " + limit
+            self.__OPT_LIMIT = " LIMIT "+ limit
         return self
 
-    def field(self, field):
+
+    def field(self,field):
         #FIELD条件
         if len(field):
             self.__OPT_FIELD = field
         return self
+
 
     def select(self):
         #查询数据集
@@ -108,14 +124,14 @@ class panelMysql:
         try:
             self.__get_columns()
             sql = "SELECT " + self.__OPT_FIELD + " FROM " + self.__DB_TABLE + self.__OPT_WHERE + self.__OPT_ORDER + self.__OPT_LIMIT
-            self.__DB_CUR.execute(sql, self.__OPT_PARAM)
+            self.__DB_CUR.execute(sql,self.__OPT_PARAM)
             data = self.__DB_CUR.fetchall()
             #构造字典系列
             if self.__OPT_FIELD != "*":
                 fields = self.__format_field(self.__OPT_FIELD.split(','))
                 tmp = []
                 for row in data:
-                    i = 0
+                    i=0
                     tmp1 = {}
                     for key in fields:
                         tmp1[key.strip('`')] = row[i]
@@ -132,6 +148,7 @@ class panelMysql:
             self.__close()
             return data
         except Exception as ex:
+            self._ex = ex
             return "error: " + str(ex)
 
     def get(self):
@@ -208,6 +225,7 @@ class panelMysql:
             self.__DB_CONN.commit()
             return id
         except Exception as ex:
+            self._ex = ex
             return "error: " + str(ex)
 
     #插入数据
@@ -249,6 +267,7 @@ class panelMysql:
             result = self.__DB_CUR.execute(sql, self.__to_tuple(param))
             return True
         except Exception as ex:
+            self._ex = ex
             return "error: " + str(ex)
 
     def commit(self):
@@ -267,15 +286,19 @@ class panelMysql:
             sql = "UPDATE " + self.__DB_TABLE + " SET " + opt + self.__OPT_WHERE
 
             #处理拼接WHERE与UPDATE参数
-            tmp = list(self.__to_tuple(param))
-            for arg in self.__OPT_PARAM:
-                tmp.append(arg)
-            self.__OPT_PARAM = tuple(tmp)
-            self.__DB_CUR.execute(sql, self.__OPT_PARAM)
+            if param:
+                tmp = list(self.__to_tuple(param))
+                for arg in self.__OPT_PARAM:
+                    tmp.append(arg)
+                self.__OPT_PARAM = tuple(tmp)
+                self.__DB_CUR.execute(sql,self.__OPT_PARAM)
+            else:
+                self.__DB_CUR.execute(sql)
             self.__close()
             self.__DB_CONN.commit()
             return self.__DB_CUR.rowcount
         except Exception as ex:
+            self._ex = ex
             return "error: " + str(ex)
 
     def delete(self, id=None):
@@ -297,12 +320,16 @@ class panelMysql:
         #执行SQL语句返回受影响行
         if not self.__GetConn(): return self.__DB_ERR
         try:
-            self.__OPT_PARAM = list(self.__to_tuple(param))
-            result = self.__DB_CUR.execute(sql,self.__OPT_PARAM)
+            if param:
+                self.__OPT_PARAM = list(self.__to_tuple(param))
+                result = self.__DB_CUR.execute(sql,self.__OPT_PARAM)
+            else:
+                result = self.__DB_CUR.execute(sql)
             self.__DB_CONN.commit()
             self.__close()
             return result
         except Exception as ex:
+            self._ex = ex
             return ex
 
 
@@ -310,14 +337,18 @@ class panelMysql:
         #执行SQL语句返回数据集
         if not self.__GetConn(): return self.__DB_ERR
         try:
-            self.__OPT_PARAM = list(self.__to_tuple(param))
-            self.__DB_CUR.execute(sql,self.__OPT_PARAM)
+            if param:
+                self.__OPT_PARAM = list(self.__to_tuple(param))
+                self.__DB_CUR.execute(sql,self.__OPT_PARAM)
+            else:
+                self.__DB_CUR.execute(sql)
             result = self.__DB_CUR.fetchall()
             #将元组转换成列表
             data = list(map(list,result))
             if is_close: self.__Close()
             return data
         except Exception as ex:
+            self._ex = ex
             return ex
 
 

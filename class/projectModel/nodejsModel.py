@@ -123,6 +123,12 @@ class main(projectBase):
         if not os.path.exists(self._nodejs_path): return nodejs_list
         for v in os.listdir(self._nodejs_path):
             if v[0] != 'v' or v.find('.') == -1: continue
+            node_path = os.path.join(self._nodejs_path,v)
+            node_bin = '{}/bin/node'.format(node_path)
+            if not os.path.exists(node_bin):
+                if os.path.exists(node_path + '/bin'):
+                    public.ExecShell('rm -rf {}'.format(node_path))
+                continue
             nodejs_list.append(v)
         return nodejs_list
 
@@ -193,12 +199,12 @@ class main(projectBase):
             _bin = '{}/node_modules/.bin'.format(project_cwd)
             if os.path.exists(_bin):
                 nodejs_bin_path = _bin + ':' + nodejs_bin_path
-        
+
         last_env = '''PATH={nodejs_bin_path}:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 '''.format(nodejs_bin_path = nodejs_bin_path)
         return last_env
-        
+
 
     def install_packages(self,get):
         '''
@@ -658,7 +664,7 @@ export PATH
         '''
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return public.return_error('The specified item does not exist')
+            return public.return_error('The specified item does not exist',data='')
         project_id = project_find['id']
         
         domains = get.domains
@@ -1297,6 +1303,7 @@ echo $! > {pid_file}
             n+=1
         if not os.path.exists(pid_file):
             p = '\n'.join(p)
+            public.writeFile(log_file,p,"a+")
             if p.find('[Errno 0]') != -1:
                 if os.path.exists('{}/bt_security'.format(public.get_plugin_path())):
                     return public.return_error('The start command was intercepted by [Fort Tower Defense Privilege], please turn off {} user protection'.format(project_find['project_config']['run_user']))
@@ -1369,6 +1376,11 @@ cd {}
         if not res['status']: return res
         return public.return_data(True, 'Successful restart')
 
+    # xss 防御
+    def xsssec(self,text):
+        return text.replace('<', '&lt;').replace('>', '&gt;')
+
+
     def get_project_log(self,get):
         '''
             @name 获取项目日志
@@ -1380,7 +1392,7 @@ cd {}
         '''
         log_file = "{}/{}.log".format(self._node_logs_path,get.project_name)
         if not os.path.exists(log_file): return public.return_error('Log file does not exist')
-        return public.GetNumLines(log_file,200)
+        return self.xsssec(public.GetNumLines(log_file,200))
     
 
     def get_project_load_info(self,get = None,project_name = None):
@@ -1528,8 +1540,10 @@ cd {}
             @param p: Process<进程对像>
             @return list
         '''
+
         skey = "io_speed_{}".format(p.pid)
         old_pio = cache.get(skey)
+        if not hasattr(p,'io_counters'): return 0,0
         pio = p.io_counters()
         if not old_pio:
             cache.set(skey,[pio,time.time()],3600)

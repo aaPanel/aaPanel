@@ -25,7 +25,7 @@ _tips = [
     "Note: Servers with [Security Group] should release the new port in the [Security Group] in advance to prevent the new port cannot be opened"
     ]
 _help = ''
-
+_remind = 'This solution can strengthen the panel protection and reduce the risk of the panel being attacked. '
 def check_run():
     '''
         @name 开始检测
@@ -37,7 +37,7 @@ def check_run():
     port = public.readFile(port_file)
     if not port: return True,'Rick-free'
     port = int(port)
-    if port != 8888:
+    if port != 7800:
         return True,'Rick-free'
     return False,'The panel port is the default port ({}), which may cause unnecessary security risks'.format(port)
     

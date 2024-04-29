@@ -50,6 +50,44 @@ class ssh_terminal:
     _s_code = None
     _last_num = 0
     _key_passwd = None
+    _video_addr = ""
+    _host_row_id = ""
+
+    def __init__(self):
+        # 创建jp_login_record表记录ssh登录记录
+        if not public.M('sqlite_master').where('type=? AND name=?', ('table', 'ssh_login_record')).count():
+            public.M('').execute('''CREATE TABLE ssh_login_record (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                addr TEXT,
+                server_ip TEXT,
+                user_agent TEXT,
+                ssh_user TEXT,
+                login_time INTEGER DEFAULT 0,
+                close_time INTEGER DEFAULT 0,
+                video_addr TEXT);''')
+            public.M('').execute('CREATE INDEX ssh_login_record ON ssh_login_record (addr);')
+        self.time = time.time()
+
+    def record(self, rtype, data):
+        if os.path.exists(public.get_panel_path() + "/data/open_ssh_login.pl") and  self._video_addr:
+            path=self._video_addr
+            if rtype == 'header':
+                with open(path, 'w') as fw:
+                    fw.write(json.dumps(data) + '\n')
+                    return True
+            else:
+                with open(path, 'r') as fr:
+                    content = json.loads(fr.read())
+                    stdout = content["stdout"]
+                atime = time.time()
+                iodata = [atime - self.time, data]
+                stdout.append(iodata)
+                content["stdout"] = stdout
+                with open(path, 'w') as fw:
+                    fw.write(json.dumps(content) + '\n')
+                    self.time = atime
+                    return True
+        return False
 
     def connect(self):
         '''
@@ -68,6 +106,7 @@ class ssh_terminal:
 
         if self._host in ['127.0.0.1','localhost']:
             self._port = public.get_ssh_port()
+            self.set_sshd_config(True)
 
         num = 0
         while num < 5:
@@ -94,7 +133,7 @@ class ssh_terminal:
         import paramiko
 
         self._tp = paramiko.Transport(sock)
-        pkey = None
+
         try:
             self._tp.start_client()
             if not self._pass and not self._pkey:
@@ -111,6 +150,7 @@ class ssh_terminal:
                     p_file = BytesIO(self._pkey)
                 else:
                     p_file = StringIO(self._pkey)
+
                 try:
                     if self._key_passwd:
                         pkey = paramiko.RSAKey.from_private_key(p_file,password=self._key_passwd)
@@ -119,7 +159,7 @@ class ssh_terminal:
                     self.debug("尝试使用RSA私钥认证")
                 except Exception as ex:
                     try:
-                        p_file.seek(0)
+                        p_file.seek(0) # 重置游标
                         if self._key_passwd:
                             pkey = paramiko.Ed25519Key.from_private_key(p_file,password=self._key_passwd)
                         else:
@@ -141,14 +181,14 @@ class ssh_terminal:
                                 except Exception as ex:
                                     ex = str(ex)
                                     if ex.find('OpenSSH private key file checkints do not match') != -1:
-                                        return public.returnMsg(False,'Incorrect private key password: {}'.format(ex))
+                                        return public.returnMsg(False,'Incorrect private key password:{}'.format(ex))
                                     elif ex.find('encountered RSA key, expected DSA key') != -1:
                                         pkey = paramiko.RSAKey.from_private_key(p_file,password=self._key_passwd)
                                     else:
-                                        return public.returnMsg(False,'private key error: {}'.format(ex))
+                                        return public.returnMsg(False,'Private key error: {}'.format(ex))
                             else:
                                 pkey = paramiko.DSSKey.from_private_key(p_file)
-                if not pkey: return public.returnMsg(False,'Incorrect private key!')
+                if not pkey: return public.returnMsg(False,'Private key error!')
                 self._tp.auth_publickey(username=self._user, key=pkey)
             else:
                 try:
@@ -174,13 +214,13 @@ class ssh_terminal:
                 self.debug("认证超时{}".format(e))
                 return public.return_msg_gettext(False,'Authentication timed out, please press enter to try again!{}',(e,))
             if e.find('Authentication failed') != -1:
-                self.debug(public.get_msg_gettext('Authentication failed {}',(str(e),)))
+                self.debug('认证失败{}'.format(e))
                 if self._key_passwd:
                     sshd_config = public.readFile('/etc/ssh/sshd_config')
                     if sshd_config and sshd_config.find('ssh-dss') == -1:
                         return returnMsg(False,'The private key verification fails, the private key may be incorrect, or the ssh-dss private key authentication type may not be enabled in the /etc/ssh/sshd_config configuration file')
                     return returnMsg(False,'Authentication failed, please check whether the private key is correct: {}'.format(e + "," + self._user + "@" + self._host + ":" +str(self._port)))
-                return returnMsg(False,'account or password incorrect:{}'.format(e + "," + self._user + "@" + self._host + ":" +str(self._port)))
+                return public.return_msg_gettext(False,'Account or Password incorrect: {}',(str(e + "," + self._user + "@" + self._host + ":" +str(self._port)),))
             if e.find('Bad authentication type; allowed types') != -1:
                 self.debug(public.get_msg_gettext('Authentication failed {}',(str(e),)))
                 if self._host in ['127.0.0.1','localhost'] and self._pass == 'none':
@@ -217,6 +257,30 @@ class ssh_terminal:
         self.history_send(public.get_msg_gettext("Login success\n"))
         self.set_sshd_config(True)
         self.debug(public.get_msg_gettext('Login success'))
+        from BTPanel import session
+        self._video_addr = "/www/server/panel/plugin/jumpserver/static/video/%s.json" % str(int(self._connect_time))
+        if not os.path.exists("/www/server/panel/plugin/jumpserver/static/video/"):
+            os.makedirs("/www/server/panel/plugin/jumpserver/static/video/")
+        # 如果开启了录像功能
+        user_agent = str(request.headers.get('User-Agent'))
+        if os.path.exists(public.get_panel_path() + "/data/open_ssh_login.pl"):
+            self._host_row_id = public.M('ssh_login_record').add(
+                'addr,server_ip,ssh_user,user_agent,login_time,video_addr',
+                (self._client, self._host, self._user, user_agent
+                 , int(self._connect_time),
+                 self._video_addr))
+
+            self.record('header', {
+                "version": 1,
+                "width": 100,
+                "height": 29,
+                "timestamp": int(self._connect_time),
+                "env": {
+                    "TERM": "xterm",
+                    "SHELL": "/bin/bash",
+                },
+                "stdout": []
+            })
         return public.return_msg_gettext(True,'connection succeeded')
 
     def _auth_interactive(self):
@@ -253,8 +317,6 @@ class ssh_terminal:
             return tuple(resp)
 
         self._tp.auth_interactive(self._user, handler)
-
-
 
     def get_login_user(self):
         '''
@@ -344,7 +406,6 @@ class ssh_terminal:
                             if not os.path.exists(host_path):
                                 os.makedirs(host_path,384)
                             return
-
 
 
                 if not self._pass or not self._pkey or not self._user:
@@ -450,8 +511,6 @@ class ssh_terminal:
                     self.restart_ssh()
                 return True
 
-
-
             pin = r'^\s*PubkeyAuthentication\s+(yes|no)'
             pubkey_status = re.findall(pin,sshd_config,re.I)
             if pubkey_status:
@@ -550,7 +609,7 @@ class ssh_terminal:
                         result = resp_line.decode()
                     except:
                         result = str(resp_line)
-
+                self.record('iodata', result)
                 self._ws.send(result)
 
                 # self.history_recv(result)
@@ -654,7 +713,6 @@ class ssh_terminal:
             self._last_cmd = self._last_cmd[:-1]
             return
 
-
         #过滤特殊符号
         if send_data in ["\x1b[C","\x1b[D","\x1b[K","\x07","\x08","\x03","\x01","\x02","\x04","\x05","\x06","\x1bOB","\x1bOA","\x1b[8P","\x1b","\x1b[4P","\x1b[6P","\x1b[5P"]:
             return
@@ -680,8 +738,6 @@ class ssh_terminal:
         else:
             if self._last_num >= 0:
                 self._last_cmd += send_data
-            else:
-                self._last_cmd.insert(len(self._last_cmd) + self._last_num, send_data)
 
 
     def close(self):
@@ -691,6 +747,9 @@ class ssh_terminal:
             @return void
         '''
         try:
+            if self._host_row_id:
+                public.M('ssh_login_record').where('id=?', self._host_row_id).update(
+                    {'close_time': int(time.time())})
             if self._ssh:
                 self._ssh.close()
             if self._tp:  # 关闭宿主服务
@@ -773,7 +832,6 @@ class ssh_terminal:
             result = self.set_attr(ssh_info)
         else:
             result = public.get_msg_gettext(True,'ALREADY_CONNECTED')
-
         if result['status']:
             sendt = threading.Thread(target=self.send)
             recvt = threading.Thread(target=self.recv)
@@ -1165,7 +1223,7 @@ class ssh_host_admin(ssh_terminal):
             }
             @return dict
         '''
-        title = args.title.strip()
+        args.title = args.title.strip()
         command = self.get_command_list(sys_cmd=True)
         if not self.command_exists(command,args.title):
             return public.return_msg_gettext(False,'The specified command does not exist')

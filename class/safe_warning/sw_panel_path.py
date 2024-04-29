@@ -26,7 +26,7 @@ _tips = [
     "Note: Please do not set up too simple safety entrance, which may cause safety hazards"
     ]
 _help = ''
-
+_remind = 'This solution can strengthen the panel login entry protection, improve server security. '
 def check_run():
     '''
         @name 开始检测
