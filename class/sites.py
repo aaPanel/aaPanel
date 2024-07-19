@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2017 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -42,7 +42,7 @@ class sites:
         return self._generate_nginx_conf(pdata['siteName'])
         
         
-        '''
+        r'''
 server
 {
     listen 80;
@@ -142,7 +142,7 @@ server
     #检查域名格式是否不正确
     def domain_format(self,domains):
         if type(domains) == str: domains = [domains]
-        reg = "^([\w\-\*]{1,100}\.){1,8}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$";
+        reg = r"^([\w\-\*]{1,100}\.){1,8}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$";
         for domain in domains:
             if not re.match(reg,domain): return domain
         return False

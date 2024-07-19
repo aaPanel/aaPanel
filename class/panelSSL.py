@@ -1,10 +1,10 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2016 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 # -------------------------------------------------------------------
 
 # ------------------------------
@@ -34,7 +34,7 @@ class panelSSL:
 
 
     __BINDURL = 'https://www.aapanel.com/api/user'  # 获取token 获取官网token
-    # __BINDURL = 'https:///dev.aapanel.com/api/user'  # 获取token 获取官网token
+    # __BINDURL = 'http://dev.aapanel.com/api/user'  # 获取token 获取官网token
 
     __CODEURL = 'https://api.bt.cn/Auth/GetBindCode'  # 获取绑定验证码
     __UPATH = 'data/userInfo.json'
@@ -66,7 +66,6 @@ class panelSSL:
             else:
                 self.__userInfo = {}
 
-            # public.print_log('初始化 !!!!!!!!!!!!!!!!!!!用户信息:  {}'.format(self.__userInfo))
             try:
                 if self.__userInfo:
                     # 记录里没有这两个key
@@ -141,7 +140,7 @@ class panelSSL:
             # public.print_log("写入用户信息  @@@@222 {}".format(self.__APIURL + '/user/login'))
             result = json.loads(rtmp)
             # public.print_log("写入用户信息  @@@@ {}".format(rtmp))
-            public.print_log("写入用户信息  @@@@ {}".format(result))
+            # public.print_log("写入用户信息  @@@@ {}".format(result))
             if result['success']:
                 bind = 'data/bind.pl'
                 if os.path.exists(bind): os.remove(bind)
@@ -1056,7 +1055,7 @@ class panelSSL:
         if cert_list and all_domain:
             for cert in cert_list:
                 d_cert = ''
-                if re.match("^\*\..*", cert):
+                if re.match(r"^\*\..*", cert):
                     d_cert = cert.replace('*.', '')
                 for domain in all_domain:
                     if cert == domain:

@@ -8,7 +8,7 @@ from .config import ACME_DIRECTORY_URL_STAGING, ACME_DIRECTORY_URL_PRODUCTION
 
 
 def main():
-    """
+    r"""
     Usage:
         1. To get a new certificate:
         CLOUDFLARE_EMAIL=example@example.com \
@@ -29,7 +29,7 @@ def main():
     """
     parser = argparse.ArgumentParser(
         prog="sewer",
-        description="""Sewer is a Let's Encrypt(ACME) client.
+        description=r"""Sewer is a Let's Encrypt(ACME) client.
             Example usage::
             CLOUDFLARE_EMAIL=example@example.com \
             CLOUDFLARE_API_KEY=api-key \

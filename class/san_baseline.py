@@ -327,7 +327,7 @@ class san_baseline:
                             "Suggestions": "加固建议, 在%s expose_php的值修改为Off中修改" % (php_path + i + '/etc/php.ini'),
                             "repair": "expose_php = Off",
                             "rule": [
-                                {"re": "\nexpose_php\s*=\s*(\w+)", "check": {"type": "string", "value": ['Off']}}]
+                                {"re": "\nexpose_php\\s*=\\s*(\\w+)", "check": {"type": "string", "value": ['Off']}}]
                         }
                         if not self.check_san_baseline(php_data):
                             ret.append(php_data)
@@ -354,7 +354,7 @@ class san_baseline:
                             "Suggestions": "加固建议, 在%s 中 disable_functions= 修改成如下:" % (php_path + i + '/etc/php.ini'),
                             "repair": "disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv",
                             "rule": [
-                                {"re": "\ndisable_functions\s?=\s?(.+)", "check": {"type": "string", "value": [
+                                {"re": "\ndisable_functions\\s?=\\s?(.+)", "check": {"type": "string", "value": [
                                     'passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv']}}]
                         }
                         if not self.check_san_baseline(php_data):
@@ -402,7 +402,7 @@ class san_baseline:
                             "Suggestions": "加固建议, 在%s expose_php的值修改为Off中修改" % (php_path + i + '/etc/php.ini'),
                             "repair": "expose_php = Off",
                             "rule": [
-                                {"re": "\nexpose_php\s*=\s*(\w+)", "check": {"type": "string", "value": ['Off']}}]
+                                {"re": "\nexpose_php\\s*=\\s*(\\w+)", "check": {"type": "string", "value": ['Off']}}]
                         }
                         if not self.check_san_baseline(php_data):
                             ret.append(php_data)
@@ -422,7 +422,7 @@ class san_baseline:
                             "Suggestions": "加固建议, 在%s 中 disable_functions= 修改成如下:" % (php_path + i + '/etc/php.ini'),
                             "repair": "disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv",
                             "rule": [
-                                {"re": "\ndisable_functions\s?=\s?(.+)", "check": {"type": "string", "value": [
+                                {"re": "\ndisable_functions\\s?=\\s?(.+)", "check": {"type": "string", "value": [
                                     'passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv']}}]
                         }
                         if not self.check_san_baseline(php_data):
@@ -460,7 +460,7 @@ class san_baseline:
             "Suggestions": "加固建议, 在%s 中的监听IP设置为127.0.0.1 例如" % ('/www/server/redis/redis.conf'),
             "repair": "bind 127.0.0.1",
             "rule": [
-                {"re": "\nbind\s*(.+)", "check": {"type": "string", "value": ['0.0.0.0']}}]
+                {"re": "\nbind\\s*(.+)", "check": {"type": "string", "value": ['0.0.0.0']}}]
         }
         if self.check_san_baseline(redis_server_ip):
             ret.append(redis_server_ip)
@@ -478,7 +478,7 @@ class san_baseline:
             "Suggestions": "加固建议, 在%s 中的为未设置密码 例如" % ('/www/server/redis/redis.conf'),
             "repair": "requirepass requirepassQWERQQQQQQQ",
             "rule": [
-                {"re": "\nrequirepass\s*(.+)", "check": {"type": "string", "value": []}}]
+                {"re": "\nrequirepass\\s*(.+)", "check": {"type": "string", "value": []}}]
         }
         if not self.check_san_baseline(redis_server_not_pass):
             ret.append(redis_server_not_pass)
@@ -496,7 +496,7 @@ class san_baseline:
             "Suggestions": "加固建议, 在%s 中requirepass 设置为强密码" % ('/www/server/redis/redis.conf'),
             "repair": "requirepass requirepassQWERQQQQQQQ",
             "rule": [
-                {"re": "\nrequirepass\s*(.+)", "check": {"type": "string", "value": ['123456', 'admin', 'damin888']}}]
+                {"re": "\nrequirepass\\s*(.+)", "check": {"type": "string", "value": ['123456', 'admin', 'damin888']}}]
         }
         if not self.check_san_baseline(redis_server_pass):
             ret.append(redis_server_pass)
@@ -534,7 +534,7 @@ class san_baseline:
             "Suggestions": "加固建议, 在%s 中的监听IP设置为127.0.0.1 例如" % ('/etc/init.d/memcached'),
             "repair": "IP=127.0.0.1",
             "rule": [
-                {"re": "\nIP\s?=\s?(.+)", "check": {"type": "string", "value": ['0.0.0.0']}}]
+                {"re": "\nIP\\s?=\\s?(.+)", "check": {"type": "string", "value": ['0.0.0.0']}}]
         }
         if self.check_san_baseline(self.__repair['46']):
             ret.append(self.__repair['46'])
@@ -629,7 +629,7 @@ class san_baseline:
             "name": "存在非root 的管理员用户(危险)",
             "ps": "除root以为的其他的UID为0的用户的应该删除。或者为其分配新的UID",
             "cmd": '''cat /etc/passwd | awk -F: '($3 == 0) { print $1 }'|grep -v '^root$' ''',
-            "find": {"re": "\w+"}
+            "find": {"re": r"\w+"}
         }
         if not self.check_san_baseline(get_root_0):
             result.append(get_root_0)
@@ -845,7 +845,7 @@ class san_baseline:
         tls = []
         if os.path.exists('/www/server/panel/vhost/nginx/%s.conf' % siteName):
             ret = public.ReadFile('/www/server/panel/vhost/nginx/%s.conf' % siteName)
-            valuse = re.findall('ssl_protocols\s+(.+)', ret)
+            valuse = re.findall(r'ssl_protocols\s+(.+)', ret)
             print(valuse)
             if not valuse: return tls
             if not valuse[0]: return tls
@@ -1071,7 +1071,7 @@ class san_baseline:
             "Suggestions": "加固建议, 在%s expose_php的值修改为Off中修改" % ('/www/server/nginx/conf/nginx.conf'),
             "repair": "expose_php = Off",
             "rule": [
-                {"re": "server_tokens\s*(.+)", "check": {"type": "string", "value": ['off;']}}]
+                {"re": r"server_tokens\s*(.+)", "check": {"type": "string", "value": ['off;']}}]
         }
         if not self.check_san_baseline(Nginx_Get_version):
             ret.append(Nginx_Get_version)

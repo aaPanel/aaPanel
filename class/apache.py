@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2018 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2018 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -52,7 +52,7 @@ class apache:
         data = {}
 
         # 计算启动时间
-        Uptime = re.search("ServerUptimeSeconds:\s+(.*)",result)
+        Uptime = re.search(r"ServerUptimeSeconds:\s+(.*)",result)
         if not Uptime:
             return public.return_msg_gettext(False, "Get worker Uptime False")
         Uptime = int(Uptime.group(1))
@@ -63,11 +63,11 @@ class apache:
         min = math.floor(min - (days * 60 * 24) - (hours * 60))
 
         #格式化重启时间
-        restarttime = re.search("RestartTime:\s+(.*)",result)
+        restarttime = re.search(r"RestartTime:\s+(.*)",result)
         if not restarttime:
             return public.return_msg_gettext(False, "Get worker Restart Time False")
         restarttime = restarttime.group(1)
-        rep = "\w+,\s([\w-]+)\s([\d\:]+)\s\w+"
+        rep = r"\w+,\s([\w-]+)\s([\d\:]+)\s\w+"
         date = re.search(rep,restarttime)
         if not date:
             return public.return_msg_gettext(False, "Get worker date False")
@@ -85,28 +85,28 @@ class apache:
         date = date.split("-")
         date = "%s-%s-%s" % (date[2],date[1],date[0])
 
-        reqpersec = re.search("ReqPerSec:\s+(.*)", result)
+        reqpersec = re.search(r"ReqPerSec:\s+(.*)", result)
         if not reqpersec:
             return public.return_msg_gettext(False, "Get worker reqpersec False")
         reqpersec = reqpersec.group(1)
-        if re.match("^\.", reqpersec):
+        if re.match(r"^\.", reqpersec):
             reqpersec = "%s%s" % (0,reqpersec)
         data["RestartTime"] = "%s %s" % (date,timedetail)
         data["UpTime"] = "%s day %s hour %s minute" % (str(int(days)),str(int(hours)),str(int(min)))
-        total_acc = re.search("Total Accesses:\s+(\d+)",result)
+        total_acc = re.search(r"Total Accesses:\s+(\d+)",result)
         if not total_acc:
             return public.return_msg_gettext(False, "Get worker TotalAccesses False")
         data["TotalAccesses"] = total_acc.group(1)
-        total_kb = re.search("Total kBytes:\s+(\d+)",result)
+        total_kb = re.search(r"Total kBytes:\s+(\d+)",result)
         if not total_kb:
             return public.return_msg_gettext(False, "Get worker TotalKBytes False")
         data["TotalKBytes"] = total_kb.group(1)
         data["ReqPerSec"] = round(float(reqpersec), 2)
-        busywork = re.search("BusyWorkers:\s+(\d+)",result)
+        busywork = re.search(r"BusyWorkers:\s+(\d+)",result)
         if not busywork:
             return public.return_msg_gettext(False, "Get worker BusyWorkers False")
         data["BusyWorkers"] = busywork.group(1)
-        idlework = re.search("IdleWorkers:\s+(\d+)",result)
+        idlework = re.search(r"IdleWorkers:\s+(\d+)",result)
         if not idlework:
             return public.return_msg_gettext(False, "Get worker IdleWorkers False")
         data["IdleWorkers"] = idlework.group(1)
@@ -119,7 +119,7 @@ class apache:
         apachempmcontent = public.readFile(self.apachempmfile)
         if not "mpm_event_module" in apachempmcontent:
             return public.returnMsg(False,"mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty")
-        apachempmcontent = re.search("\<IfModule mpm_event_module\>(\n|.)+?\</IfModule\>",apachempmcontent).group()
+        apachempmcontent = re.search(r"\<IfModule mpm_event_module\>(\n|.)+?\</IfModule\>",apachempmcontent).group()
         ps = ["%s，%s" % (public.get_msg_gettext('Second'),public.get_msg_gettext('Request timeout')),
               public.get_msg_gettext('Keep alive'),
               "%s，%s" % (public.get_msg_gettext('Second'),public.get_msg_gettext('Connection timeout')),
@@ -131,7 +131,7 @@ class apache:
         conflist = []
         n = 0
         for i in gets:
-            rep = "(%s)\s+(\w+)" % i
+            rep = r"(%s)\s+(\w+)" % i
             k = re.search(rep, apachedefaultcontent)
             if not k:
                 return public.return_msg_gettext(False, "Get Key {} False",(i,))
@@ -154,7 +154,7 @@ class apache:
         gets = ["StartServers","MaxSpareThreads","MinSpareThreads","ThreadsPerChild","MaxRequestWorkers","MaxConnectionsPerChild"]
         n = 0
         for i in gets:
-            rep = "(%s)\s+(\w+)" % i
+            rep = r"(%s)\s+(\w+)" % i
             k = re.search(rep, apachempmcontent)
             if not k:
                 return public.return_msg_gettext(False, "Get Key {} False",(i,))
@@ -175,7 +175,7 @@ class apache:
         if not "mpm_event_module" in apachempmcontent:
             return public.return_msg_gettext(False,"mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty")
         conflist = []
-        getdict = get.__dict__
+        getdict = get.get_items()
         for i in getdict.keys():
             if i != "__module__" and i != "__doc__" and i != "data" and i != "args" and i != "action":
                 getpost = {
@@ -189,11 +189,11 @@ class apache:
                     return public.return_msg_gettext(False, 'Parameter ERROR!')
             else:
                 print(c["value"])
-                if not re.search("\d+", c["value"]):
+                if not re.search(r"\d+", c["value"]):
                     print(c["name"],c["value"])
                     return public.return_msg_gettext(False, 'Parameter ERROR!')
 
-            rep = "%s\s+\w+" % c["name"]
+            rep = r"%s\s+\w+" % c["name"]
             if re.search(rep,apachedefaultcontent):
                 newconf = "%s %s" % (c["name"],c["value"])
                 apachedefaultcontent = re.sub(rep,newconf,apachedefaultcontent)
@@ -214,7 +214,7 @@ class apache:
     def add_httpd_access_log_format(self,args):
         '''
         @name 添加httpd日志格式
-        @author zhwen<zhw@bt.cn>
+        @author zhwen<zhw@aapanel.com>
         @param log_format 需要设置的日志格式["$server_name","$remote_addr","-"....]
         @param log_format_name
         @param act 操作方式 add/edit
@@ -244,13 +244,13 @@ class apache:
     def del_httpd_access_log_format(self,args):
         '''
         @name 删除日志格式
-        @author zhwen<zhw@bt.cn>
+        @author zhwen<zhw@aapanel.com>
         @param log_format_name
         '''
         conf = public.readFile(self.httpdconf)
         if not conf:
             return public.return_msg_gettext(False, 'Configuration file not exist')
-        reg = '\s*#LOG_FORMAT_BEGIN_{n}(\n|.)+#LOG_FORMAT_END_{n}\n?'.format(n=args.log_format_name)
+        reg = r'\s*#LOG_FORMAT_BEGIN_{n}(\n|.)+#LOG_FORMAT_END_{n}\n?'.format(n=args.log_format_name)
         conf = re.sub(reg,'',conf)
         self._del_format_log_of_website(args.log_format_name)
         public.writeFile(self.httpdconf,conf)
@@ -270,7 +270,7 @@ class apache:
                 if not site_format_log_status[s]:
                     continue
                 website_conf_file = '/www/server/panel/vhost/apache/{}.conf'.format(s)
-                format_exist_reg = 'CustomLog\s+"/www.*"\s+{}'.format(log_format_name)
+                format_exist_reg = r'CustomLog\s+"/www.*"\s+{}'.format(log_format_name)
                 conf = public.readFile(website_conf_file)
                 if not conf:continue
                 if not re.search(format_exist_reg,conf):continue
@@ -323,7 +323,7 @@ class apache:
             format_name = [i.split('LOG_FORMAT_BEGIN_')[-1] for i in data]
             format_log = {}
             for i in format_name:
-                format_reg = "#LOG_FORMAT_BEGIN_{n}(\n|.)+LogFormat\s+\'(.*)\'\s+{n}".format(n=i)
+                format_reg = r"#LOG_FORMAT_BEGIN_{n}(\n|.)+LogFormat\s+\'(.*)\'\s+{n}".format(n=i)
                 tmp = re.search(format_reg,conf)
                 if not tmp:
                     continue
@@ -336,7 +336,7 @@ class apache:
     def set_httpd_format_log_to_website(self,args):
         '''
         @name 设置网站日志格式
-        @author zhwen<zhw@bt.cn>
+        @author zhwen<zhw@aapanel.com>
         @param sites aaa.com,bbb.com
         @param log_format_name
         '''
@@ -344,13 +344,13 @@ class apache:
         sites = loads(args.sites)
         try:
             all_site = public.M('sites').field('name').select()
-            reg = 'CustomLog\s+"/www.*{}\s*'.format(args.log_format_name)
+            reg = r'CustomLog\s+"/www.*{}\s*'.format(args.log_format_name)
             for site in all_site:
                 website_conf_file = '/www/server/panel/vhost/apache/{}.conf'.format(site['name'])
                 conf = public.readFile(website_conf_file)
                 if not conf:
                     return public.return_msg_gettext(False, 'Configuration file not exist')
-                format_exist_reg = '(CustomLog\s+"/www.*\_log).*'
+                format_exist_reg = r'(CustomLog\s+"/www.*\_log).*'
                 access_log = re.search(format_exist_reg, conf).groups()[0] + '" ' + args.log_format_name
                 if site['name'] not in sites and re.search(format_exist_reg,conf):
                     access_log = ' '.join(access_log.split()[:-1])

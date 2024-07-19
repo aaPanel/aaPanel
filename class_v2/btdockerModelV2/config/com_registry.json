@@ -1,0 +1,11 @@
+{
+  "docker.io": "docker official mirror site",
+  "swr.cn-north-4.myhuaweicloud.com": "Huawei Cloud Mirror Station (North China-Beijing 4)",
+  "ccr.ccs.tencentyun.com": "Tencent Cloud Mirror Station",
+  "registry.cn-hongkong.aliyuncs.com": "Alibaba Cloud Mirror Station (Hong Kong)",
+  "registry.ap-southeast-1.aliyuncs.com": "Alibaba Cloud Mirror Station (Singapore)",
+  "registry.us-west-1.aliyuncs.com": "Alibaba Cloud Mirror Station (Silicon Valley, USA)",
+  "registry.eu-west-1.aliyuncs.com": "Alibaba Cloud Mirror Station (London, UK)",
+  "registry.eu-central-1.aliyuncs.com": "Alibaba Cloud Mirror Station (Frankfurt, Germany)",
+  "registry.ap-northeast-1.aliyuncs.com": "Alibaba Cloud Mirror Station (Japan)"
+}

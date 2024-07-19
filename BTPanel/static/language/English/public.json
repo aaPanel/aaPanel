@@ -549,7 +549,7 @@
 	"WITH_BT_CUSTOM_EDITION": "Customized edition with aaPanel",
 	"PANEL": "Panel",
 	"PLUG_UPDATEING": "Updating plugin...",
-	"PLUG_UPDATE_TO_6": "All plugins successfully updated to 6.0 compatible!",
+	"PLUG_UPDATE_TO_6": "All plugins successfully updated to 7.0 compatible!",
 	"PANEL_SHELL": "aaPanel CLI",
 	"RESTART_PANEL": "Restart panel",
 	"CHANGE_PANEL_PORT": "Change panel port",

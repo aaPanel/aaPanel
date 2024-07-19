@@ -1,13 +1,13 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2099 宝塔软件(http:#bt.cn) All rights reserved.
+# | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import public,db,os,time,re, json
-from BTPanel import session,cache
+from BTPanel import session, cache
 class crontab:
     field = 'id,name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sName,sBody,sType,urladdress'
     field += ",save_local,notice,notice_channel"
@@ -401,6 +401,7 @@ class crontab:
             id = get['id']
             find = public.M('crontab').where("id=?",(id,)).field('name,echo').find()
             if not find: return public.return_msg_gettext(False, 'The specified task does not exist!')
+
             if not self.remove_for_crond(find['echo']): return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
             cronPath = public.GetConfigValue('setup_path') + '/cron'
             sfile = cronPath + '/' + find['echo']

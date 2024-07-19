@@ -1,11 +1,11 @@
 #!/usr/bin/python
 #coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 # -------------------------------------------------------------------
 
 # -------------------------------------------------------------------
@@ -49,7 +49,7 @@ def check_run():
 
     version = public.readFile('/etc/redhat-release')
     if not version:
-        version = public.readFile('/etc/issue').strip().split("\n")[0].replace('\\n','').replace('\l','').strip()
+        version = public.readFile('/etc/issue').strip().split("\n")[0].replace('\\n','').replace(r'\l','').strip()
     else:
         version = version.replace('release ','').replace('Linux','').replace('(Core)','').strip()
 

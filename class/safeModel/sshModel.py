@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 # ssh信息
@@ -43,6 +43,7 @@ class main(safeBase):
                 result['error'] = int(public.ExecShell("journalctl -u ssh --no-pager |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[0]) + int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Connection closed by authenticating user' |grep -a 'preauth' |wc -l")[0])
                 result['success'] = int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Accepted' |wc -l")[0])
                 return result
+                # return public.return_message(0, 0, result)
         data = self.get_ssh_cache()
         for sfile in self.get_ssh_log_files(None):
             for stype in result.keys():
@@ -69,10 +70,11 @@ class main(safeBase):
                 result[stype] += count
         self.set_ssh_cache(data)
         return result
+        # return public.return_message(0, 0, result)
 
     def get_ssh_cache(self):
         """
-        @获取换成ssh记录
+        @获取缓存ssh记录
         """
         file = '{}/data/ssh_cache.json'.format(public.get_panel_path())
         if not os.path.exists(file):

@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2017 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -32,8 +32,8 @@ class ProjectController:
             if args['mod_name'] in ['base']: return public.return_status_code(1000,'wrong call!')
             public.exists_args('def_name,mod_name',args)
             if args['def_name'].find('__') != -1: return public.return_status_code(1000,'Called method name cannot contain [ __ ] characters')
-            if not re.match(r"^\w+$",args['mod_name']): return public.return_status_code(1000,'The called module name cannot contain characters other than \w')
-            if not re.match(r"^\w+$",args['def_name']): return public.return_status_code(1000,'The called module name cannot contain characters other than \w')
+            if not re.match(r"^\w+$",args['mod_name']): return public.return_status_code(1000,r'The called module name cannot contain characters other than \w')
+            if not re.match(r"^\w+$",args['def_name']): return public.return_status_code(1000,r'The called module name cannot contain characters other than \w')
         except:
             return public.get_error_object()
 

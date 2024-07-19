@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 # sqlite模型
@@ -76,7 +76,7 @@ class panelRedisDB():
         keys = ["bind","port","timeout","maxclients","databases","requirepass","maxmemory"]
         for k in keys:
             v = ""
-            rep = "\n%s\s+(.+)" % k
+            rep = "\n%s\\s+(.+)" % k
             group = re.search(rep,redis_conf)
             if not group:
                 if k == "maxmemory":
@@ -102,6 +102,7 @@ class main(databaseBase):
         pass
 
 
+
     def GetCloudServer(self,args):
         '''
             @name 获取远程服务器列表
@@ -109,6 +110,7 @@ class main(databaseBase):
             @return list
         '''
         return self.GetBaseCloudServer(args)
+        # return public.return_message(0, 0,  self.GetBaseCloudServer(args))
 
 
     def AddCloudServer(self,args):
@@ -373,7 +375,8 @@ class main(databaseBase):
 
         nlist = []
         cloud_list = {}
-        for x in self.GetCloudServer({'type':'redis'}): cloud_list['id-' + str(x['id'])] = x
+        for x in self.GetCloudServer({'type':'redis'}):
+            cloud_list['id-' + str(x['id'])] = x
 
         path  = session['config']['backup_path'] + '/database/redis/'
         if not os.path.exists(path): os.makedirs(path)

@@ -15,7 +15,7 @@ class safeBase:
 
     #转换时间格式
     def to_date(self,date_str):
-        tmp = re.split('\s+',date_str)
+        tmp = re.split(r'\s+',date_str)
         if len(tmp) < 3: return date_str
         s_date = str(datetime.now().year) + '-' + self._months.get(tmp[0]) + '-' + tmp[1] + ' ' + tmp[2]
         time_array = time.strptime(s_date, "%Y-%m-%d %H:%M:%S")

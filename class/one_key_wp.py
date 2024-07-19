@@ -1,10 +1,10 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: zhwen <zhwen@bt.cn>
+# | Author: zhwen <zhwen@aapanel.com>
 # +-------------------------------------------------------------------
 import os
 import time
@@ -73,7 +73,7 @@ class one_key_wp:
         else:
             self.get_plugin_page()
             resp = self.__plugin_page_content
-        _ajax_nonce_rep = '"ajax_nonce\\\"\:\\\"(\w+)'
+        _ajax_nonce_rep = '"ajax_nonce\\\"\\:\\\"(\\w+)'
         rex = re.search(_ajax_nonce_rep, resp)
         if rex:
             self.__ajax_nonce = rex.group(1)
@@ -130,7 +130,7 @@ class one_key_wp:
         # hosts = public.readFile('/etc/hosts')
         # if not hosts:
         #     return False
-        # if not re.search('127.0.0.1\s+{}'.format(self.__domain),hosts):
+        # if not re.search(r'127.0.0.1\s+{}'.format(self.__domain),hosts):
         #     public.writeFile('/etc/hosts','\n127.0.0.1 {}'.format(self.__domain),'a+')
 
         self.__session_resp = retry(
@@ -270,7 +270,7 @@ class one_key_wp:
         hosts = public.readFile('/etc/hosts')
         if not hosts:
             return False
-        if not re.search('127.0.0.1\s+{}'.format(values['site_name']), hosts):
+        if not re.search(r'127.0.0.1\s+{}'.format(values['site_name']), hosts):
             public.writeFile('/etc/hosts', '\n127.0.0.1 {}'.format(values['site_name']), 'a+')
 
         self.write_logs("|-Start initializing Wordpress...")
@@ -362,7 +362,7 @@ class one_key_wp:
     def get_update_wp_nonce(self):
         url = "http://{}/wp-admin/update-core.php".format(self.__domain)
         # res = self.action_plugin_get(url)
-        _wp_nonce_rep = '"_wpnonce\\\"\svalue=\\\"(\w+)'
+        _wp_nonce_rep = '"_wpnonce\\\"\\svalue=\\\"(\\w+)'
         # rex = re.search(_wp_nonce_rep,res)
         # if rex:
         #     self.__wp_nonce = rex.group(1)
@@ -414,7 +414,7 @@ class one_key_wp:
 
     def get_smart_http_expire_form_nonce(self, url):
         public.writeFile('/tmp/2', str(self.action_plugin_get(url)))
-        smart_http_expire_form_nonce = '"smart_http_expire_form_nonce\\\"\svalue=\\\"(\w+)'
+        smart_http_expire_form_nonce = '"smart_http_expire_form_nonce\\\"\\svalue=\\\"(\\w+)'
         return self.get_wp_nonce(self.action_plugin_get(url), smart_http_expire_form_nonce)
 
     def set_nginx_helper(self, values):
@@ -557,7 +557,7 @@ class one_key_wp:
         conf_file = "{}/wp-includes/version.php".format(path)
         conf = public.readFile(conf_file)
         try:
-            version = re.search('\$wp_version\s*=\s*[\'\"]{1}([\d\.]*)[\'\"]{1}', conf).groups(1)[0]
+            version = re.search('\\$wp_version\\s*=\\s*[\'\"]{1}([\\d\\.]*)[\'\"]{1}', conf).groups(1)[0]
         except:
             version = "00"
         return version
@@ -569,7 +569,7 @@ class one_key_wp:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36'
         }
         result = requests.get(url, headers=headers)
-        result = re.search('Download\s+WordPress\s+([\d\.]+)', result.text)
+        result = re.search(r'Download\s+WordPress\s+([\d\.]+)', result.text)
         if result:
             return result.group(1)
         return "00"
@@ -793,13 +793,13 @@ class one_key_wp:
         rep_domain = r"^(?=^.{3,255}$)[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62}(\.[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62})+$"
         values = {}
         if hasattr(args, 'd_id'):
-            if re.search('\d+', args.d_id):
+            if re.search(r'\d+', args.d_id):
                 values["d_id"] = args.d_id
             else:
                 return public.return_msg_gettext(False, "Please check if the [{}] format is correct For example: {}",
                                                  ("d_id", "99"))
         if hasattr(args, 's_id'):
-            if re.search('\d+', args.s_id):
+            if re.search(r'\d+', args.s_id):
                 values["s_id"] = args.s_id
             else:
                 return public.return_msg_gettext(False, "Please check if the [{}] format is correct For example: {}",
@@ -1218,7 +1218,7 @@ class optimize_db:
 class fast_cgi:
 
     def get_fastcgi_conf(self, version):
-        conf = """
+        conf = r"""
  set $skip_cache 0;
  if ($request_method = POST) {
      set $skip_cache 1;
@@ -1294,7 +1294,7 @@ class fast_cgi:
             one_key_wp().write_logs("|-Nginx FastCgi cache configuration already exists")
             print("Nginx FastCgi cache configuration already exists")
             return public.return_msg_gettext(True, "Nginx FastCgi cache configuration already exists")
-        rep = "http\s*\n\s*{"
+        rep = "http\\s*\n\\s*{"
         content = re.sub(rep, "http\n\t{" + conf, content)
         public.writeFile(conf_path, content)
 
@@ -1328,7 +1328,7 @@ class fast_cgi:
             print("Nginx init FastCgi cache configuration already exists")
             return public.return_msg_gettext(True, "Nginx init FastCgi cache configuration already exists")
         # content_init = re.sub(r"\$NGINX_BIN -c \$CONFIGFILE", + conf2, content_init)
-        rep2 = "\$NGINX_BIN -c \$CONFIGFILE"
+        rep2 = r"\$NGINX_BIN -c \$CONFIGFILE"
         content_init = re.sub(rep2, conf2 + "        $NGINX_BIN -c $CONFIGFILE", content_init)
         public.writeFile(init_path, content_init)
 
@@ -1366,7 +1366,7 @@ class fast_cgi:
                 print("FastCgi configuration does not exist in website configuration")
                 one_key_wp().write_logs("|-FastCgi configuration does not exist in website configuration, skip")
                 return public.return_msg_gettext(False, "FastCgi configuration does not exist in website configuration")
-            rep = "include\s+enable-php-{}-wpfastcgi.conf;".format(version)
+            rep = r"include\s+enable-php-{}-wpfastcgi.conf;".format(version)
             conf = re.sub(rep, "include enable-php-{}.conf;".format(version), conf)
         else:
             fastcgi_conf = "include enable-php-{}-wpfastcgi.conf;".format(version)
@@ -1375,7 +1375,7 @@ class fast_cgi:
                     "|-The FastCgi configuration already exists in the website configuration, skip it")
                 return public.return_msg_gettext(True,
                                                  "The FastCgi configuration already exists in the website configuration")
-            rep = "include\s+enable-php-{}.conf;".format(version)
+            rep = r"include\s+enable-php-{}.conf;".format(version)
             conf = re.sub(rep, fastcgi_conf, conf)
         public.writeFile(conf_path, conf)
         conf_pass = public.checkWebConfig()

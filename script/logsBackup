@@ -1,7 +1,8 @@
 #!/usr/bin/python
 #coding: utf-8
 #-----------------------------
-#宝塔Linux面板网站日志切割脚本
+#aaPanel
+# 网站日志切割脚本
 #-----------------------------
 import sys
 import os

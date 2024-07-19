@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2017 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: zhwen <zhw@bt.cn>
+# Author: zhwen <zhw@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -126,13 +126,13 @@ class SiteDirAuth:
         try:
             conf = public.readFile(self.setup_path + '/panel/vhost/'+public.get_webserver()+'/'+siteName+'.conf');
             if public.get_webserver() == 'nginx':
-                rep = "enable-php-(\w{2,5})\.conf"
+                rep = r"enable-php-(\w{2,5})\.conf"
                 tmp = re.search(rep,conf)
                 if not tmp:
-                    rep = "enable-php-(\d+-wpfastcgi).conf"
+                    rep = r"enable-php-(\d+-wpfastcgi).conf"
                     re.search(rep, conf)
             else:
-                rep = "php-cgi-(\w{2,5})\.sock"
+                rep = r"php-cgi-(\w{2,5})\.sock"
             tmp = re.search(rep,conf).groups()
             if tmp:
                 return tmp[0]
@@ -216,24 +216,24 @@ class SiteDirAuth:
                 conf = public.readFile(file)
                 if i == "apache":
                     if act == "create":
-                        rep = "IncludeOptional.*\/dir_auth\/.*conf(\n|.)+<\/VirtualHost>"
+                        rep = "IncludeOptional.*\\/dir_auth\\/.*conf(\n|.)+<\\/VirtualHost>"
                         rep1 = "</VirtualHost>"
                         if not re.search(rep, conf):
                             conf = conf.replace(rep1,
                                                 "\n\t#Directory protection rules, do not manually delete\n\tIncludeOptional {}\n</VirtualHost>".format(
                                                     dir_auth_file))
                     else:
-                        rep = "\n*#Directory protection rules, do not manually delete\n+\s+IncludeOptional[\s\w\/\.\*]+"
+                        rep = "\n*#Directory protection rules, do not manually delete\n+\\s+IncludeOptional[\\s\\w\\/\\.\\*]+"
                         conf = re.sub(rep, '', conf)
                     public.writeFile(file, conf)
                 else:
                     if act == "create":
-                        rep = "#SSL-END(\n|.)+include.*\/dir_auth\/.*conf;"
+                        rep = "#SSL-END(\n|.)+include.*\\/dir_auth\\/.*conf;"
                         rep1 = "#SSL-END"
                         if not re.search(rep,conf):
                             conf = conf.replace(rep1, rep1 + "\n\t#Directory protection rules, do not manually delete\n\tinclude {};".format(dir_auth_file))
                     else:
-                        rep = "\n*#Directory protection rules, do not manually delete\n+\s+include[\s\w\/\.\*]+;"
+                        rep = "\n*#Directory protection rules, do not manually delete\n+\\s+include[\\s\\w\\/\\.\\*]+;"
                         conf = re.sub(rep, '', conf)
                     public.writeFile(file, conf)
 
@@ -338,7 +338,7 @@ class SiteDirAuth:
             password = get.password.strip()
             if len(password) < 3:
                 return public.returnMsg(False, 'Password cannot be less than 3 characters')
-            if re.search('\s', password):
+            if re.search(r'\s', password):
                 return public.returnMsg(False, 'Password cannot contain spaces')
             values['password'] = password
 
@@ -348,7 +348,7 @@ class SiteDirAuth:
             username = get.username.strip()
             if len(username) < 3:
                 return public.returnMsg(False, 'Username cannot be less than 3 characters')
-            if re.search('\s', username):
+            if re.search(r'\s', username):
                 return public.returnMsg(False, 'Username cannot contain spaces')
             values['username'] = username
 
@@ -358,9 +358,9 @@ class SiteDirAuth:
             name = get.name.strip()
             if len(name) < 3:
                 return public.returnMsg(False, 'Name cannot be less than 3 characters')
-            if re.search('\s', name):
+            if re.search(r'\s', name):
                 return public.returnMsg(False, 'Name cannot contain spaces')
-            if re.search('[\/\"\'\!@#$%^&*()+={}\[\]\:\;\?><,./\\\]+', name):
+            if re.search('[\\/\"\'\\!@#$%^&*()+={}\\[\\]\\:\\;\\?><,./\\\\]+', name):
                 return public.returnMsg(False, 'Name format must be [ aaa_bbb ]')
             values['name'] = name
 

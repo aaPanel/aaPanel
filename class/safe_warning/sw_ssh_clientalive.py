@@ -1,11 +1,11 @@
 #!/usr/bin/python
 #coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: lkq <lkq@bt.cn>
+# Author: lkq <lkq@aapanel.com>
 # -------------------------------------------------------------------
 # Time: 2022-08-10
 # -------------------------------------------------------------------
@@ -40,8 +40,8 @@ def check_run():
         try:
             info_data=public.ReadFile('/etc/ssh/sshd_config')
             if info_data:
-                if re.search('ClientAliveInterval\s+\d+',info_data):
-                    clientalive=re.findall('ClientAliveInterval\s+\d+',info_data)[0]
+                if re.search(r'ClientAliveInterval\s+\d+',info_data):
+                    clientalive=re.findall(r'ClientAliveInterval\s+\d+',info_data)[0]
                     #clientalive 需要大于600 小于900
                     if int(clientalive.split(' ')[1]) >= 600 and int(clientalive.split(' ')[1]) <= 900:
                         return True,'Rick-free'

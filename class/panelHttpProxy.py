@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -29,9 +29,9 @@ class HttpProxy:
         '''
         headers = {}
         for h in p_res.headers.keys():
-            if h in ['Content-Encoding','Transfer-Encoding']: continue
+            if h in ['content-encoding', 'Content-Encoding', 'transfer-encoding', 'Transfer-Encoding']: continue
             headers[h] = p_res.headers[h]
-            if h in ['Location']:
+            if h in ['location', 'Location']:
                 
                 if headers[h].find('phpmyadmin_') != -1:
                     if not self._pma_path: 

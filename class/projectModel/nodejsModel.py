@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -464,7 +464,7 @@ export PATH
             return public.return_error('Please install nodejs version manager first')
 
         project_name = get.project_name.strip()
-        if not re.match("^\w+$",project_name): 
+        if not re.match(r"^\w+$",project_name): 
             return public.return_error('The project name format is incorrect and supports letters, numbers, underscores, and expressions: ^[0-9A-Za-z_]$')
 
         if public.M('sites').where('name=?',(get.project_name,)).count():

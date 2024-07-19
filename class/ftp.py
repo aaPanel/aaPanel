@@ -1,10 +1,10 @@
 #coding: utf-8
 #  + -------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 #  + -------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http:#bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 #  + -------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 #  + -------------------------------------------------------------------
 import public,db,re,os,firewalls
 try:
@@ -24,13 +24,13 @@ class ftp:
             import files,time
             fileObj=files.files()
             if get['ftp_username'].strip().find(' ') != -1: return public.returnMsg(False,'Username cannot contain spaces')
-            if re.search("\W+",get['ftp_username']): return {'status':False,'code':501,'msg':public.get_msg_gettext('Username is illegal, special characters are NOT allowed!')}
+            if re.search(r"\W+",get['ftp_username']): return {'status':False,'code':501,'msg':public.get_msg_gettext('Username is illegal, special characters are NOT allowed!')}
             if len(get['ftp_username']) < 3: return {'status':False,'code':501,'msg':public.get_msg_gettext('Username is illegal, cannot be less than 3 characters!')}
             if not fileObj.CheckDir(get['path']): return {'status':False,'code':501,'msg':public.get_msg_gettext('System critical directory cannot be used as FTP directory!')}
             if public.M('ftps').where('name=?',(get.ftp_username.strip(),)).count(): return public.return_msg_gettext(False,'User [{}] exists!',(get.ftp_username,))
             username = get['ftp_username'].strip()
-            if re.search("[\/\\\:\*\?\"\'\<\>\|]+",username):
-                return public.return_msg_gettext(False,"Name cannot contain /\:*?\"<>| symbol")
+            if re.search("[\\/\\\\:\\*\\?\"\'\\<\\>\\|]+",username):
+                return public.return_msg_gettext(False,"Name cannot contain /\\:*?\"<>| symbol")
             password = get['ftp_password'].strip()
             if len(password) < 6: return public.return_msg_gettext(False, 'Password must be at least [{}] characters',("6",))
             get.path = get['path'].replace(' ','')
@@ -122,7 +122,7 @@ class ftp:
             if int(port) < 1 or int(port) > 65535: return public.return_msg_gettext(False,'Port range is incorrect!')
             file = '/www/server/pure-ftpd/etc/pure-ftpd.conf'
             conf = public.readFile(file)
-            rep = u"\n#?\s*Bind\s+[0-9]+\.[0-9]+\.[0-9]+\.+[0-9]+,([0-9]+)"
+            rep = u"\n#?\\s*Bind\\s+[0-9]+\\.[0-9]+\\.[0-9]+\\.+[0-9]+,([0-9]+)"
             #preg_match(rep,conf,tmp)
             conf = re.sub(rep,"\nBind        0.0.0.0," + port,conf)
             public.writeFile(file,conf)

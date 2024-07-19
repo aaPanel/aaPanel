@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: zouhw <zhw@bt.cn>
+# Author: zouhw <zhw@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -128,7 +128,7 @@ class main :#line:22
         import re #line:293
         import projectModel .bt_docker .dk_container as dc #line:294
         OO00OOOOO0O0OOOOO =[]#line:295
-        O0OOOO000O00OOO0O =re .findall ("container_name\s*:\s*[\"\']+(.*)[\'\"]",OO0OOOO0O00OO0OO0 )#line:296
+        O0OOOO000O00OOO0O =re .findall ("container_name\\s*:\\s*[\"\']+(.*)[\'\"]",OO0OOOO0O00OO0OO0 )#line:296
         O0O0OO0O00OOO0O00 =dc .main ().get_list (OOO0OO00OO0OO00OO )#line:297
         if not O0O0OO0O00OOO0O00 ["status"]:#line:298
             return public .return_msg_gettext (False ,"Error getting container list!")#line:299
@@ -138,7 +138,7 @@ class main :#line:22
                 OO00OOOOO0O0OOOOO .append (O0OOO0O0OO0O0OO00 ['name'])#line:303
         if OO00OOOOO0O0OOOOO :#line:304
             return public .return_msg_gettext (False ,"The container name in the template: <br>[{}] already exists!".format (", ".join (OO00OOOOO0O0OOOOO )))#line:305
-        OO0000O0OO00OO0O0 ="(\d+):\d+"#line:307
+        OO0000O0OO00OO0O0 =r"(\d+):\d+"#line:307
         O00O00OOOO0OO00O0 =re .findall (OO0000O0OO00OO0O0 ,OO0OOOO0O00OO0OO0 )#line:308
         for O0OOO00O00O0OOOOO in O00O00OOOO0OO00O0 :#line:309
             if dp .check_socket (O0OOO00O00O0OOOOO ):#line:310

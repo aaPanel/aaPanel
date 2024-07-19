@@ -141,7 +141,7 @@ if [ -d "/www/server/phpmyadmin/pma" ];then
 	rm -rf /www/server/phpmyadmin/pma
 	EN_CHECK=$(cat /www/server/panel/config/config.json |grep English)
 	if [ "${EN_CHECK}" ];then
-		curl http://download.bt.cn/install/update6_en.sh|bash
+		curl http://download.bt.cn/install/update_7.x_en.sh|bash
 	else
 		curl http://download.bt.cn/install/update6.sh|bash
 	fi

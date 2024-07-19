@@ -1,0 +1,1 @@
+import{a,r as s}from"./index.js?v=1721298337096";import{S as r,U as t,V as o,q as e}from"./vue.js?v=1721298337096";import"./pinia.js?v=1721298337096";const n=a({},[["render",function(a,n){const i=s;return r(),t(i,{class:"p-16px"},{default:o((()=>[e("aaaa")])),_:1})}]]);export{n as default};

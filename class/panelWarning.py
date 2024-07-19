@@ -1,8 +1,8 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: hwliang <2020-08-04>
 # +-------------------------------------------------------------------
@@ -227,7 +227,7 @@ class panelWarning:
         if not os.path.exists(self.new_vul_list):
             if zip_file != '':
                 downfile = self.__path+'/'+zip_file
-                public.downloadFile("/safe_warning/{}".format(public.get_url(),zip_file), downfile)
+                public.downloadFile("{}/safe_warning/{}".format(public.get_url(), zip_file), downfile)
                 o, e = public.ExecShell("unzip -o {} -d {}".format(downfile, self.__path))
                 # 解压报错
                 if e != "":
@@ -1433,9 +1433,9 @@ if __name__ == "__main__":
 
 # #coding: utf-8
 # # +-------------------------------------------------------------------
-# # | 宝塔Linux面板
+# # | aaPanel
 # # +-------------------------------------------------------------------
-# # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# # | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # # +-------------------------------------------------------------------
 # # | Author: hwliang <2020-08-04>
 # # +-------------------------------------------------------------------

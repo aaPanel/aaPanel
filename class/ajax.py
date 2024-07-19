@@ -1,10 +1,10 @@
  #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 from flask import session,request
 
@@ -794,19 +794,19 @@ class ajax:
         if not os.path.exists(filename): return public.return_msg_gettext(False,'Requested PHP version does NOT exist!')
         phpini = public.readFile(filename)
         data = {}
-        rep = "disable_functions\s*=\s{0,1}(.*)\n"
+        rep = "disable_functions\\s*=\\s{0,1}(.*)\n"
 
         tmp = re.search(rep,phpini)
         if tmp:
             data['disable_functions'] = tmp.groups()[0]
         
-        rep = "upload_max_filesize\s*=\s*([0-9]+)(M|m|K|k)"
+        rep = r"upload_max_filesize\s*=\s*([0-9]+)(M|m|K|k)"
 
         tmp = re.search(rep,phpini)
         if tmp:
             data['max'] = tmp.groups()[0]
         
-        rep = u"\n;*\s*cgi\.fix_pathinfo\s*=\s*([0-9]+)\s*\n"
+        rep = u"\n;*\\s*cgi\\.fix_pathinfo\\s*=\\s*([0-9]+)\\s*\n"
         tmp = re.search(rep,phpini)
         if tmp:
             if tmp.groups()[0] == '0':
@@ -1048,7 +1048,7 @@ class ajax:
         #AUTH_END
 """
         # nginx配置文件
-            ssl_conf = """server
+            ssl_conf = r"""server
     {
         listen 887 ssl;
         server_name phpmyadmin;
@@ -1095,7 +1095,7 @@ class ajax:
         #AUTH_END
             """
             # apache配置
-            ssl_conf = '''Listen 887
+            ssl_conf = r'''Listen 887
 <VirtualHost *:887>
     ServerAdmin webmaster@example.com
     DocumentRoot "/www/server/phpmyadmin"
@@ -1134,6 +1134,13 @@ class ajax:
     </Directory>
 </VirtualHost>'''.format(public.get_php_proxy(v["ext"]["phpversion"],'apache'),auth)
             public.writeFile("/www/server/panel/vhost/apache/phpmyadmin.conf", ssl_conf)
+
+            import firewalls
+            fw = firewalls.firewalls()
+            fw.AddAcceptPort(public.to_dict_obj({
+                'port': '887',
+                'ps': public.get_msg_gettext('New phpMyAdmin SSL Port'),
+            }))
         else:
             if os.path.exists("/www/server/panel/vhost/nginx/phpmyadmin.conf"):
                 os.remove("/www/server/panel/vhost/nginx/phpmyadmin.conf")
@@ -1331,9 +1338,9 @@ class ajax:
         conf = public.readFile('/etc/init.d/memcached')
         result = {}
         result['bind'] = re.search('IP=(.+)',conf).groups()[0]
-        result['port'] = int(re.search('PORT=(\d+)',conf).groups()[0])
-        result['maxconn'] = int(re.search('MAXCONN=(\d+)',conf).groups()[0])
-        result['cachesize'] = int(re.search('CACHESIZE=(\d+)',conf).groups()[0])
+        result['port'] = int(re.search(r'PORT=(\d+)',conf).groups()[0])
+        result['maxconn'] = int(re.search(r'MAXCONN=(\d+)',conf).groups()[0])
+        result['cachesize'] = int(re.search(r'CACHESIZE=(\d+)',conf).groups()[0])
         tn = telnetlib.Telnet(result['bind'],result['port'])
         tn.write(b"stats\n")
         tn.write(b"quit\n")
@@ -1358,9 +1365,9 @@ class ajax:
         confFile = '/etc/init.d/memcached'
         conf = public.readFile(confFile)
         conf = re.sub('IP=.+','IP='+get.ip,conf)
-        conf = re.sub('PORT=\d+','PORT='+get.port,conf)
-        conf = re.sub('MAXCONN=\d+','MAXCONN='+get.maxconn,conf)
-        conf = re.sub('CACHESIZE=\d+','CACHESIZE='+get.cachesize,conf)
+        conf = re.sub(r'PORT=\d+','PORT='+get.port,conf)
+        conf = re.sub(r'MAXCONN=\d+','MAXCONN='+get.maxconn,conf)
+        conf = re.sub(r'CACHESIZE=\d+','CACHESIZE='+get.cachesize,conf)
         public.writeFile(confFile,conf)
         public.ExecShell(confFile + ' reload')
         return public.return_msg_gettext(True,'Setup successfully!')
@@ -1369,8 +1376,8 @@ class ajax:
     def GetRedisStatus(self,get):
         import re
         c = public.readFile('/www/server/redis/redis.conf')
-        port = re.findall('\n\s*port\s+(\d+)',c)[0]
-        password = re.findall('\n\s*requirepass\s+(.+)',c)
+        port = re.findall('\n\\s*port\\s+(\\d+)',c)[0]
+        password = re.findall('\n\\s*requirepass\\s+(.+)',c)
         if password: 
             password = ' -a ' + password[0]
         else:
@@ -1431,113 +1438,9 @@ class ajax:
         if not os.path.exists(get.path): return public.return_msg_gettext(False,'Log file does NOT exist!')
         return public.returnMsg(True,public.xsssec(public.GetNumLines(get.path,1000)))
 
-    def get_pd(self,get):
-        from BTPanel import cache
-        tmp = -1
-        try:
-            import panelPlugin
-            # get = public.dict_obj()
-            # get.init = 1
-            tmp1 = panelPlugin.panelPlugin().get_cloud_list(get)
-        except:
-            tmp1 = None
-        if tmp1:
-            tmp = tmp1[public.to_string([112, 114, 111])]
-            ltd = tmp1.get('ltd', -1)
-        else:
-            ltd = -1
-            tmp4 = cache.get(public.to_string([112, 95, 116, 111, 107, 101, 110]))
-            if tmp4:
-                tmp_f = public.to_string([47, 116, 109, 112, 47]) + tmp4
-                if not os.path.exists(tmp_f): public.writeFile(tmp_f, '-1')
-                tmp = public.readFile(tmp_f)
-                if tmp: tmp = int(tmp)
-        if not ltd: ltd = -1
-        if tmp == None: tmp = -1
-        if ltd < 1:
-            if ltd == -2:
-                tmp3 = public.to_string(
-                    [60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 108, 116, 100,
-                     45, 103, 114, 97, 121, 34, 62, 60, 115, 112, 97, 110, 32, 115, 116, 121, 108, 101,
-                     61, 34, 99, 111, 108, 111, 114, 58, 32, 35, 102, 99, 54, 100, 50, 54, 59, 102, 111,
-                     110, 116, 45, 119, 101, 105, 103, 104, 116, 58, 32, 98, 111, 108, 100, 59, 109, 97,
-                     114, 103, 105, 110, 45, 114, 105, 103, 104, 116, 58, 53, 112, 120, 34, 62, 24050, 36807,
-                     26399, 60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
-                     108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105, 99, 107, 61, 34, 98, 116, 46, 115, 111,
-                     102, 116, 46, 117, 112, 100, 97, 116, 97, 95, 108, 116, 100, 40, 41, 34, 62, 82, 69, 78, 69, 87,
-                     60, 47, 97,
-                     62, 60, 47, 115, 112, 97, 110, 62])
-            elif tmp == -1:
-                tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98,
-                                         116, 112, 114, 111, 45, 102, 114, 101, 101, 34, 32, 111, 110, 99, 108, 105, 99,
-                                         107,
-                                         61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95, 112,
-                                         114,
-                                         111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 67, 108, 105, 99, 107,
-                                         32, 116, 111, 32,
-                                         103, 101, 116, 32, 80, 82, 79, 34, 62, 20813, 36153, 29256, 60, 47, 115, 112,
-                                         97, 110, 62])
-            elif tmp == -2:
-                tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
-                                         112, 114, 111, 45, 103, 114, 97, 121, 34, 62, 60, 115, 112, 97, 110, 32,
-                                         115, 116, 121, 108, 101, 61, 34, 99, 111, 108, 111, 114, 58, 32, 35,
-                                         102, 99, 54, 100, 50, 54, 59, 102, 111, 110, 116, 45, 119, 101, 105, 103,
-                                         104, 116, 58, 32, 98, 111, 108, 100, 59, 109, 97, 114, 103, 105, 110, 45,
-                                         114, 105, 103, 104, 116, 58, 53, 112, 120, 34, 62, 24050, 36807, 26399,
-                                         60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108, 97, 115, 115, 61, 34,
-                                         98, 116, 108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105, 99, 107, 61,
-                                         34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95, 112, 114,
-                                         111, 40, 41, 34, 62, 82, 69, 78, 69, 87, 60, 47, 97, 62, 60, 47, 115, 112, 97,
-                                         110, 62])
-            if tmp >= 0 and ltd in [-1, -2]:
-                if tmp == 0:
-
-                    tmp2 = public.to_string([76, 105, 102, 101, 116, 105, 109, 101])
-                    tmp3 = public.to_string(
-                        [60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 112, 114,
-                         111, 34, 62, 69, 120, 112, 105, 114, 101, 58, 60, 115, 112, 97, 110, 32, 115,
-                         116, 121, 108, 101, 61, 34, 99, 111, 108, 111, 114, 58, 32, 35, 102, 99, 54,
-                         100, 50, 54, 59, 102, 111, 110, 116, 45, 119, 101, 105, 103, 104, 116, 58, 32,
-                         98, 111, 108, 100, 59, 34, 62, 123, 48, 125, 60, 47, 115, 112, 97, 110, 62, 60,
-                         47, 115, 112, 97, 110, 62]).format(tmp2)
-                else:
-                    tmp2 = time.strftime(public.to_string([37, 89, 45, 37, 109, 45, 37, 100]), time.localtime(tmp))
-                    tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116,
-                                             112, 114, 111, 34, 62, 69, 120, 112, 105, 114, 101, 58, 32, 60, 115, 112,
-                                             97, 110, 32, 115, 116, 121, 108, 101, 61, 34, 99, 111, 108, 111, 114,
-                                             58, 32, 35, 102, 99, 54, 100, 50, 54, 59, 102, 111, 110, 116, 45, 119,
-                                             101, 105, 103, 104, 116, 58, 32, 98, 111, 108, 100, 59, 109, 97, 114,
-                                             103, 105, 110, 45, 114, 105, 103, 104, 116, 58, 53, 112, 120, 34, 62, 123,
-                                             48, 125, 60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108, 97, 115,
-                                             115, 61, 34, 98, 116, 108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105,
-                                             99,
-                                             107, 61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119,
-                                             95,
-                                             112, 114, 111, 40, 41, 34, 62, 82, 69, 78, 69, 87, 60, 47, 97, 62, 60,
-                                             47, 115, 112, 97, 110, 62]).format(tmp2)
-            else:
-                tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 112,
-                                         114, 111, 45, 103, 114, 97, 121, 34, 32, 111, 110, 99, 108, 105, 99, 107,
-                                         61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 117, 112, 100, 97, 116, 97, 95, 112,
-                                         114, 111, 40, 41, 34, 32, 116, 105, 116, 108, 101, 61, 34, 67, 108, 105, 99,
-                                         107, 32, 116,
-                                         111, 32, 103, 101, 116, 32, 80, 82, 79, 34, 62, 70, 82,
-                                         69, 69, 60, 47, 115, 112, 97, 110, 62])
-        else:
-            tmp3 = public.to_string([60, 115, 112, 97, 110, 32, 99, 108, 97, 115, 115, 61, 34, 98, 116, 108, 116,
-                                     100, 34, 62, 69, 120, 112, 105, 114, 101, 58, 32, 60, 115, 112, 97, 110, 32, 115,
-                                     116,
-                                     121, 108, 101, 61, 34, 99, 111, 108, 111, 114, 58, 32, 35, 102, 99, 54, 100, 50,
-                                     54, 59, 102, 111, 110, 116, 45, 119, 101, 105, 103, 104, 116, 58, 32, 98, 111,
-                                     108, 100, 59, 109, 97, 114, 103, 105, 110, 45, 114, 105, 103, 104, 116, 58, 53,
-                                     112, 120, 34, 62, 123, 125, 60, 47, 115, 112, 97, 110, 62, 60, 97, 32, 99, 108,
-                                     97, 115, 115, 61, 34, 98, 116, 108, 105, 110, 107, 34, 32, 111, 110, 99, 108, 105,
-                                     99, 107, 61, 34, 98, 116, 46, 115, 111, 102, 116, 46, 114, 101, 110, 101, 119, 95,
-                                     112, 114, 111, 40, 41, 34, 62, 82, 69, 78, 69, 87, 60, 47, 97, 62, 60, 47, 115,
-                                     112, 97, 110, 62]).format(
-                time.strftime(public.to_string([37, 89, 45, 37, 109, 45, 37, 100]), time.localtime(ltd)))
-
-        return tmp3, tmp, ltd
+    # 获取授权信息
+    def get_pd(self, get):
+        return public.get_pd(get)
 
     #检查用户绑定是否正确
     def check_user_auth(self,get):

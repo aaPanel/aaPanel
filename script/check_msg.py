@@ -14,7 +14,7 @@ data = msgObj.get_messages()
 for x in data:
     if x['level'] in ['danger', 'error'] and not x['send'] and x['retry_num'] < 5:
         msg = '服务器IP【{}】: {}'.format(
-            public.GetLocalIp(), re.sub('，?<a\s*.+</a>', '', x['msg']))
+            public.GetLocalIp(), re.sub(r'，?<a\s*.+</a>', '', x['msg']))
         is_send = False
 
         ret = public.return_is_send_info()

@@ -1,10 +1,10 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: lkq <lkq@bt.cn>
+# | Author: lkq <lkq@aapanel.com>
 # |
 # | 日志分析工具
 # +-------------------------------------------------------------------
@@ -21,7 +21,7 @@ class log_analysis:
     def __init__(self):
         if not os.path.exists(self.path + '/log/'): os.makedirs(self.path + '/log/')
         if not os.path.exists(self.log_analysis_path):
-            log_analysis_data = '''help(){
+            log_analysis_data = r'''help(){
 	echo  "Usage: ./action.sh [options] [FILE] [OUTFILE]     "
 	echo  "Options:"
 	echo  "xxx.sh san_log     [FILE] Get the log list with the keywords xss|sql|mingsense information|php code execution in the successful request  [OUTFILE]   11"
@@ -231,7 +231,7 @@ echo "[*] shut down"
             result['is_status'] = True
         else:
             result['is_status'] = False
-        if os.path.exists(speed+".time"):
+        if os.path.exists(speed+".time") and os.path.getsize(speed+".time") > 0:
             time_data, start_time, status = public.ReadFile(self.path + '/log/' + log_path + ".time").split("[]")
             if status == '1' or start_time==1:
                 result['time']=time_data

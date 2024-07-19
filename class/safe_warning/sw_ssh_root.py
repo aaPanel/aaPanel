@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 # -------------------------------------------------------------------
 
 # -------------------------------------------------------------------
@@ -36,7 +36,7 @@ def check_run():
         try:
             info_data = public.ReadFile('/etc/ssh/sshd_config')
             if info_data:
-                if re.search('PermitRootLogin\s+no', info_data):
+                if re.search(r'PermitRootLogin\s+no', info_data):
                     return True, 'Risk-free'
                 else:
                     return True, 'Risk-free'

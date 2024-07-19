@@ -1,10 +1,10 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2020 宝塔软件(https://www.bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 沐落 <cjx@bt.cn>
+# | Author: 沐落 <cjx@aapanel.com>
 # | Author: lx
 # +-------------------------------------------------------------------
 import sys,os,time,psutil,re
@@ -93,7 +93,7 @@ class panel_push:
             return status
         elif name == 'mysql':
             res = public.ExecShell("service mysqld status")
-            if res and not re.search("not\s+running", res[0]):
+            if res and not re.search(r"not\s+running", res[0]):
                 return True
             return False
         elif name == 'tomcat':

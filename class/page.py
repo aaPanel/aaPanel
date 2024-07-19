@@ -1,10 +1,10 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import math,string,public,re
 
@@ -200,8 +200,8 @@ class Page():
     def __SetUri(self,request_uri):
         #构造URI
         try:
-            request_uri = re.sub("&p=\d+",'&',request_uri)
-            request_uri = re.sub("\?p=\d+",'?',request_uri)
+            request_uri = re.sub(r"&p=\d+",'&',request_uri)
+            request_uri = re.sub(r"\?p=\d+",'?',request_uri)
             if request_uri.find('&') == -1:
                 if request_uri[-1] != '?': request_uri += '?'
             else:

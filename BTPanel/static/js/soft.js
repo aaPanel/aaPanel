@@ -593,7 +593,7 @@ var soft = {
             var ltd = parseInt(bt.get_cookie('ltd_end') || -1),pro = parseInt(bt.get_cookie('pro_end')  || -1),todayDate = parseInt(new Date().getTime()/1000),_ltd = null;
             if((ltd > 0 && (ltd == pro || pro < 0)) || (ltd < 0 && pro >= 0) || (ltd > 0 && pro >= 0)){
                 _ltd = ((ltd > 0 && (ltd == pro || pro < 0)) || (ltd > 0 && pro >= 0))?1:0;
-                explain.html('The '+ (_ltd?'Pro':'Pro') +' edition can use the '+ (_ltd?'专业版及企业版插件':'professional plug-in for free,') + (!(pro == 0 && ltd < 0)?('expiration time: '+ (bt.format_data((_ltd?ltd:pro),'yyyy/MM/dd') ) +''+((((_ltd?ltd:pro) - todayDate) <= 15*24*60*60)?('，<span style="color:red">Only '+ Math.round(((_ltd?ltd:pro) - todayDate) / (24*60*60)) +' days until expiration</span>'):'')):' Expire: <span style="color: #fc6d26;font-weight: bold;">Lifetime</span>'));
+                explain.html('The '+ (_ltd?'Pro':'Pro') +' edition can use the '+ (_ltd?'专业版及企业版插件':'professional plug-in for free,') + (!(pro == 0 && ltd < 0)?('expiration time: '+ (bt.format_data((_ltd?ltd:pro),'yyyy/MM/dd') ) +''+((((_ltd?ltd:pro) - todayDate) <= 15*24*60*60)?('，<span style="color:red">Only '+ Math.round(((_ltd?ltd:pro) - todayDate) / (24*60*60)) +' days until expiration</span>'):'')):'，过期时间：<span style="color: #fc6d26;font-weight: bold;">永久授权</span>'));
             }else if(ltd == -1 && pro == -1){
                 explain.html('Upgrade to Pro edition, all plugins, free to use!');
             }else if(pro == 0 && ltd < 0){
@@ -621,20 +621,13 @@ var soft = {
                   $(el).append(tips_info.addClass('alert-ltd-success'));
                   return false;
                 }else{
-                    // var btn = $('<a title="' + (is_buy ? 'Renew Now' : 'Upgrade now') + '" href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">' + (is_buy ? 'Renew Now' : 'Upgrade now') + '</a>')
-                    // btn.on('click', function () {
-                    //     genre ? bt.soft.updata_pro(buy_type) : bt.soft.updata_ltd(undefined,buy_type)
-                    // })
-                    // tips_info.addClass('showprofun').find('.btn-ground').append(btn)
+                    var btn = $('<a title="' + (is_buy ? 'Renew Now' : 'Upgrade now') + '" href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">' + (is_buy ? 'Renew Now' : 'Upgrade now') + '</a>')
+                    btn.on('click', function () {
+                        genre ? bt.soft.updata_pro(buy_type) : bt.soft.updata_ltd(undefined,buy_type)
+                    })
+                    tips_info.addClass('showprofun').find('.btn-ground').append(btn)
                 }
               }
-							if (pro !== 0) {
-								var btn = $('<a title="' + (is_buy ? 'Renew Now' : 'Upgrade now') + '" href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">' + (is_buy ? 'Renew Now' : 'Upgrade now') + '</a>')
-								btn.on('click', function () {
-										genre ? bt.soft.updata_pro(buy_type) : bt.soft.updata_ltd(undefined,buy_type)
-								})
-								tips_info.addClass('showprofun').find('.btn-ground').append(btn)
-							}
               // if(_ltd != 2){
               //   if(!(pro == 0 && ltd < 0)){
               //     btn_ground  = soft.render_tips_btn(btn_ground);
@@ -642,24 +635,24 @@ var soft = {
               // }
               $(el).append(tips_info.addClass(_ltd == 1?'alert-ltd-success':'alert-success'));
               if(_this.trail){
-                // setTimeout(function (){
-                //   $('.btn-ground').after('<span class="pro_trail" style="font-weight: 700;margin-left:25px;">Try the Pro edition for free</span>')
-                //   var trail = $('<a href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">Click to try</a>');
-                //   trail.click((!res.status || !res)?fun:function(){
-                //     var loadT = bt.load()
-                //     bt.confirm({
-                //       title:"Pro Edition",
-                //       msg:"Get 7-day Pro edition free, get it now?"
-                //     },function (){
-                //       bt.send('free_trial','auth/free_trial',{},function(res){
-                //         loadT.close()
-                //         bt.msg(res)
-                //         setTimeout(function () { window.location.reload() },2000)
-                //       })
-                //     })
-                //   })
-                //   $('.pro_trail').after(trail)
-                // },100)
+                setTimeout(function (){
+                  $('.btn-ground').after('<span class="pro_trail" style="font-weight: 700;margin-left:25px;">Try the Pro edition for free</span>')
+                  var trail = $('<a href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">Click to try</a>');
+                  trail.click((!res.status || !res)?fun:function(){
+                    var loadT = bt.load()
+                    bt.confirm({
+                      title:"Pro Edition",
+                      msg:"Get 7-day Pro edition free, get it now?"
+                    },function (){
+                      bt.send('free_trial','auth/free_trial',{},function(res){
+                        loadT.close()
+                        bt.msg(res)
+                        setTimeout(function () { window.location.reload() },2000)
+                      })
+                    })
+                  })
+                  $('.pro_trail').after(trail)
+                },100)
               }
             }
             var bt_user_info = bt.get_cookie('bt_user_info');

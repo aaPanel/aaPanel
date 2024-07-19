@@ -1,170 +1,170 @@
-#coding: utf-8
-#-------------------------------------------------------------------
-# 宝塔Linux面板
-#-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
-#-------------------------------------------------------------------
-# Author: cjxin <cjxin@bt.cn>
-#-------------------------------------------------------------------
-
-# 上传文件至oss
-#------------------------------
-import os
-from filesModel.base import filesBase
-import public,smtplib
-
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr
-
-class main(filesBase):
-
-
-    def __init__(self):
-        pass
-
-
-    def get_oss_objects(self,get):
-        """
-        @name 获取可上传的对象存储
-        """
-        return  self.get_all_objects(get)
-
-
-
-    def get_file_list(self,get):
-        """
-        @name 获取可上传的对象存储
-        """
-        return self.get_base_objects(get)
-
-
-
-    def check_email_config(self,get):
-        """
-        @name 检测邮箱是否配置
-        """
-        import config
-
-        c_obj = config.config()
-        mail_config = c_obj.get_msg_configs(get)['mail']
-
-        return mail_config
-
-    def send_to_email(self,get):
-        """
-        @name 发送文件到邮件
-        @flist list 文件列表
-        @msg string  邮件正文
-        @to string 邮件接收人，多个逗号隔开
-        """
-
-        import config
-        c_obj = config.config()
-
-        try:
-            mail_config = c_obj.get_msg_configs(get)['mail']['data']
-            if not mail_config :
-                return public.returnMsg(False,'未正确配置邮箱信息。')
-
-            if not mail_config['send']['qq_mail']:
-                return public.returnMsg(False,'未正确配置邮箱信息。')
-        except:
-            return public.returnMsg(False,'未正确配置邮箱信息。')
-
-        msg = get.msg
-        receive_list = get.to_email.split(',')
-        if len(receive_list) <= 0:
-            return public.returnMsg(False,'发送失败，接收者不能为空.')
-
-
-        #附件文件
-        flist = []
-        if 'flist' in get: flist = get.flist
-
-        result = {}
-        result['status'] = True
-        result['list'] = {}
-        for email in receive_list:
-            slist = {}
-            try:
-                data = MIMEMultipart()
-                data['From'] = formataddr([mail_config['send']['qq_mail'], mail_config['send']['qq_mail']])
-                data['To'] = formataddr([mail_config['send']['qq_mail'], email.strip()])
-                data['Subject'] = '宝塔面板消息通知'
-                if int(mail_config['send']['port']) == 465:
-                    server = smtplib.SMTP_SSL(str(mail_config['send']['hosts']), str(mail_config['send']['port']))
-                else:
-                    server = smtplib.SMTP(str(mail_config['send']['hosts']), str(mail_config['send']['port']))
-
-                data.attach(MIMEText(msg, 'html', 'utf-8'))
-
-                slist['error'] = {}
-                #添加附件
-                for filename in flist:
-                    if not os.path.exists(filename):
-                        slist['error'][filename] = '文件不存在'
-                        continue
-
-                    #超过50M无法发送
-                    if os.path.getsize(filename) > 50 * 1024 *1024:
-                        slist['error'][filename] = '文件大于50M'
-                        continue
-
-                    #中文无法发送
-                    if public.check_chinese(filename):
-                        slist['error'][filename] = '文件名包含中文，发送失败.'
-                        continue
-
-                    att1 = MIMEText(open(filename, 'rb').read(), 'base64', 'utf-8')
-                    att1["Content-Type"] = 'application/octet-stream'
-                    att1["Content-Disposition"] = 'attachment; filename="' + os.path.basename(filename) + '"'
-                    data.attach(att1)
-
-                server.login(mail_config['send']['qq_mail'], mail_config['send']['qq_stmp_pwd'])
-                server.sendmail(mail_config['send']['qq_mail'], [email.strip(), ], data.as_string())
-                server.quit()
-                slist['status'] = True
-            except :
-                slist = '发送失败,' + public.get_error_info()
-
-            result['list'][email] = slist
-        public.set_module_logs('files_send_to_email', 'send_to_email', 1)
-        return result
-
-
-
-    def upload_file(self,args):
-        """
-        @name 上传文件到指定的对象存储
-        """
-
-        name = args.name
-        filename = args.filename
-        bucket = args.object_name.rstrip('/')
-
-        if not os.path.exists(filename):
-            return public.returnMsg(False,'FILE_NOT_EXIST')
-
-        info = self.get_soft_find(name)
-        if not info['setup']:
-            return public.returnMsg(False,'未安装[{}]插件'.format(info['title']))
-
-        sfile = '{path}/plugin/{name}/{name}_main.py'.format(path=public.get_panel_path(),name=name)
-        if public.readFile(sfile).find('upload_to') == -1:
-            return public.returnMsg(False,'暂不支持该操作，请将[{}]插件升级到最新版'.format(info['title']))
-
-        #创建任务
-        import panelTask
-        task_obj = panelTask.bt_task()
-        msg = '上传文件{}到{}'.format(filename,info['title'])
-        exec_shell = 'btpython -u {spath} upload_to {file} {bucket}/{filename}'.format(spath=sfile,file=filename,bucket=bucket,filename=os.path.basename(filename))
-        task_obj.create_task(msg, 0, exec_shell)
-
-        public.set_module_logs('files_upload_to_file', 'upload_file', 1)
-        public.WriteLog('TYPE_FILE', msg)
-        return public.returnMsg(True, '已添加到上传队列.')
-
-
-
-
+QRASP55VO/1DQ98p1csw9A==
+I8MGJUwtjfcKc5w4E0SmjHtl5KRuv0WI7NyW3SlEwCrZmcmaREiC99KS4CzwW5Su330khbLdQaeuAWr4x/NqQCTep2zIARzdXiKXPh1Fe+M=
+dBZyCsfrbwqvA0sbdGrIGg==
+I8MGJUwtjfcKc5w4E0SmjHtl5KRuv0WI7NyW3SlEwCrZmcmaREiC99KS4CzwW5Su330khbLdQaeuAWr4x/NqQCTep2zIARzdXiKXPh1Fe+M=
+n+0ptngHIPIjFuMNQ53bfj+Na/fdhk6k1yTpAwW7j353Dw920mEqQQZjykAHeRmp0ZD/P3ftGifsmPOMf2b7XdEqyZH0yl9kjaUugj3dYPI=
+I8MGJUwtjfcKc5w4E0SmjHtl5KRuv0WI7NyW3SlEwCrZmcmaREiC99KS4CzwW5Su330khbLdQaeuAWr4x/NqQCTep2zIARzdXiKXPh1Fe+M=
+jh3cxzkA2htccqfZRKAUdI8r17q57nOGP4OxbJlL1NAnrF4weHnS0MpT6C6jbrX5
+I8MGJUwtjfcKc5w4E0SmjHtl5KRuv0WI7NyW3SlEwCrZmcmaREiC99KS4CzwW5Su330khbLdQaeuAWr4x/NqQCTep2zIARzdXiKXPh1Fe+M=
+1u+XjG/2+GSQRv6EzCaWRQ==
+kEPo6lgxLBQavG1DxRrlnEK5KohxBShsQIeNCGHkEP4=
+I8MGJUwtjfcKc5w4E0SmjHwLsErBQ84ek459TV1n0Iir/P4mdpfwDI34s6+8CBN0
+dTLQ8Wr3wPn7w6pte1B1YA==
+X9BNoFOwiQAnMPqEk6FnbzU/oA+chL/aEAzGH80mBrNNxRMBdiGPqgDUeLF6rer2
+bPP96Leq4/6bN59hBCaYlI8pXwmlcWoHnMhS0JRYMuI=
+1u+XjG/2+GSQRv6EzCaWRQ==
+NbgOlQKOVjgcHXr2EWkJqQWzgWH6Vq8RJ/AUSzSss8IVUY2HzghyE71ZaXPBTLGv
+NbgOlQKOVjgcHXr2EWkJqeTgbDhQ7kNNY/wz8y2GqwZTfVZH1snrz7MBnfOT91tS
+E9KwiiXGE37hdLvk/mY+UIznMbuZ/AbAoo9N1G0YvoLz61bIHX5Q0KQJryQ9TSuJ
+1u+XjG/2+GSQRv6EzCaWRQ==
+CjJS7KrzKM18mlLqJK9jKTB717Vvrubu5ix9tb047ao=
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+9GxZpCRwMRDPejWR2Vvf+LKn0tNtFKp8Eh2tnr4Da9U=
+6c3cWGGlsEf4q4E+EjPFyg==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+9bJD7OGVYIbkQwcqio3pMkEQ5Tepk1KAKJBdik81BOHNSVFwrMdl2gFGwZvvpYDQ
+Z8UsPk1Q7HtwjRd4g01ryw==
+NNh1PlSD8WUnUEbz+BU/P5ZvVL4YjAgUVrqKtQwmJSm1F1KbG0/rNY/6xTjx3EA3
+Z8UsPk1Q7HtwjRd4g01ryw==
+lt0ONPc5ulpyg8e5cXCrlcNbN4AJdkj3/jMJ6CSe6OnifSM9+lA1O2PeRoAR/q0t
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+J24jXQQti6wQv5pCoF2ZrcF30x6jIElrdtnLwh7xjCTUby5LexzwAUmLxkZ6OZp9
+Z8UsPk1Q7HtwjRd4g01ryw==
+NNh1PlSD8WUnUEbz+BU/P5ZvVL4YjAgUVrqKtQwmJSm1F1KbG0/rNY/6xTjx3EA3
+Z8UsPk1Q7HtwjRd4g01ryw==
+CAhn8dRUItEbEErp4w+lX9NUcXl4jGRSijSFq7galTkLvLnalDlhEukOn7KLDmPy
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+mz/fdzicrSUPVLp6o7PwCSAYjWkN2zpyX6N0H3XQ+Re/2H8C5nEqNaf5oXzlLd5r
+Z8UsPk1Q7HtwjRd4g01ryw==
+0LFyB+q/4AUBkCrX53xYJZNkGwqwopNQ7HR7+KY/2yjfRImCHWTpijZdrdo/d8l8
+Z8UsPk1Q7HtwjRd4g01ryw==
+KbLSYqE/CR9TL3ZELtBVg8UiZep5zt9moZHOJ5ffCHo=
+1u+XjG/2+GSQRv6EzCaWRQ==
+iTSUWsaHz8xtfxXo170oO/0vr9reANk6j9ykbM5WiCYFw3OvMYMGyJ3KgPGMrF0H
+PXCtqxQPPqk7Lcqhz/3AoGaqmPHjN4rP7NSesY70x/92ifCLZ8Okvt9nT27s6jtrmbW9pJXGLgLNf+3meuER5A==
+1u+XjG/2+GSQRv6EzCaWRQ==
+FEZSdYhAV26PfOeirhfda9fPkPkpgcLIU1bSxCG9qHs=
+1u+XjG/2+GSQRv6EzCaWRQ==
+DJtqiO8w/dKi7HwLds9peNr7IF6LPtUssSL3IuNOYGLlHjOwFmfwe9OK3nxxRRgN
+Z8UsPk1Q7HtwjRd4g01ryw==
+a1WCYQuoRJeK3mOCGHQIliYA3yrJMlMcLCMVYxV0uObw5q3Q+Zn4+NYyZBHBqFEE
++kvn6XYS2Dcvt6Ptafb+egXt7PQiX4xuk1EJQthbw8LHHFksw4XlK/hEZYEN6MEz
+Nl6FAwmBymcnkmQ2v1saoWguYo5PAJb10t78p9wNmQ967hJsaE/VyX2nuWwy3sK2
+JEQfGov5ldbBWaI3aZWXDNAOlBZZiYaTkM41OkhTw7DxlEAMKtlD3FDpetB/Ra/HrMZWBT2ISI5K4C7FovZIWg==
+Z8UsPk1Q7HtwjRd4g01ryw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+KbLSYqE/CR9TL3ZELtBVg8UiZep5zt9moZHOJ5ffCHo=
+iTSUWsaHz8xtfxXo170oO/0vr9reANk6j9ykbM5WiCYFw3OvMYMGyJ3KgPGMrF0H
+1u+XjG/2+GSQRv6EzCaWRQ==
+b4OJVZe8QyIpjuTpKXDL9A==
+HNqEbxya75q97PmRdMU8Fq0RpPGtQqmyQcXNysvYcIzmzwtTL2CB6nQWsuCPipUki6fsBjosP5fyCX/lXfWtP2aHIN8g6JRrW4TZbYQNKv4=
+1V2v8QerKOmubvSxgB4eTATuLP/YkzXuFS9s9v29gfLs7HzcbbjmTiso+zmsCZ3S
+VmVrGQo2zRokW/ZuO9bN6zM/X2hHBCd+n2OGnnATmrRQLiV7W1lz/PImX//PWNLkFIuv7VUgU3+a6PwWzgXXaB4nsglac/VuhWclPIvVlgOIAaNg2YXbEjwkZqivaweq
+1u+XjG/2+GSQRv6EzCaWRQ==
+1V2v8QerKOmubvSxgB4eTJ841yfu7l5arGk2XF/kO8mJfg3iuq4dIggjGJ90dwx8t4CE+4HLudLp33Sh9joOLg==
+VmVrGQo2zRokW/ZuO9bN6zM/X2hHBCd+n2OGnnATmrRQLiV7W1lz/PImX//PWNLkFIuv7VUgU3+a6PwWzgXXaB4nsglac/VuhWclPIvVlgOIAaNg2YXbEjwkZqivaweq
+mfT8DrNbUmxQ2BnZ1bZFTLh9MEuZKOpmAfF70OnZ9TU=
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmWg3MlyzvlsDpJ2tFZppFlDIgMeiVDQ2HRCla7COtNJPjhTSrDI29qVP4xDeSndmdE=
+1u+XjG/2+GSQRv6EzCaWRQ==
+uIl0RcuWgRCPZivR9HE5K6P0KAPh0+c0Ci+5o0mjZKg=
+KHVPPgRdeAM1K9qeWQ6AiqCJ1c6DyhB9VCKPe+SB8o/S5eT66VcxZqE1Abf23JR5
+gApoKqs53F0hB+0nTxFBUK0sDmJFt2pcRuqhtiHPJ+voEfz/6grsNrnqbl6KL3aq
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmVf/86mCDVHuaSE/lwim7QrFi5TEaeF6XshC8H9LAxRJInVUSAqtWixvfFY8aKz+m1a1RsFEpCSFGYL1Q+qZONa
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+gHZvnjbK0+c2DWpdjJTIKjYmDJs6pOpneqykoeukYiI=
+RAcgdll7MZc9X2PbkeTvEzNyiOpuxHuwyFCiwlCwtBo=
+NgkU9z71J5Awi50+35yVrVFRMlqzLfxgW8oRH+8xszId0swAa3xYf+cQPC3GoRX8
+1u+XjG/2+GSQRv6EzCaWRQ==
+/0ULpLqgTvInFD0r5hHANoosZ+xywkOR5dozStfmlYk=
+YSlit6erKXylrjSZnvyW8I3FYH6DLcfYpMAlko6lQqVBBd1eDeDGaujrHWIOJkcI
+YSlit6erKXylrjSZnvyW8Dke2RKJMhjXyxnQzpVZgOM=
+Ys4BPYSOoHeIx+ql4jJylD2VLnaOQOBr+k3Ytq5owd23kxsNazPnVuATSOUovBrq
+bWoUv86VLMtyRQlo14Ahu3xfaGKmZUw7MPoURoMwHGI=
+vQwaisdUFOt9b0SJYuH/nrHigrTUtycF35lf58xGUQo=
+VmVrGQo2zRokW/ZuO9bN68uMQcDaeKFBnSol/Upw31Zbihi4vGENQHlL+dj6DCvT
+VmVrGQo2zRokW/ZuO9bN61HRAGek/auc8b4JvIZlfzGQ/b8xNkzKFp1KEGLxgbuwAYkeWczxvXCQWc0loQzSHyq5aP4vAsBP8KIObacZsHW2l0eK/68p8LwM/KD04HbjIFDKWSdnqDmGI5E/oEv2+A==
+VmVrGQo2zRokW/ZuO9bN6/0hFCJypSh6x2UIBkV7VvXsU+cO8B7S9xx1VVZWBeu0eYDfkAI5IGvcY5NDn0MqTPYuqy5Bl3zY8pT547cBMFbo51+sa93m7/eHEKuy5GXE
+VmVrGQo2zRokW/ZuO9bN6wHsvvxh4guxHr80r9yaINtJrvRK6UdvNL8JUA1IT/spxWK1U/dlzvPRDq60WZSm+w==
+VmVrGQo2zRokW/ZuO9bN6xd9hVVPG/da3jOneq2RZCcce997vOo+rQywLRgLWiWuNr25+4z1FY+siXTO3eViyQ==
+VmVrGQo2zRokW/ZuO9bN6/CxiXZULdhjyOp1jTEufd+jVXQuLPUTInFNcnpN1I4wKnR+4QeoyJLsqr/3r41c5otdZB5U+KnTPi6U0yHupXO5fT2t9XsGdz3dQ6SMRN8yg9FL1qHp4ThJ4cz/lg4X6o4uGI+UWHWKQ4ipM/V7GcM=
+VmVrGQo2zRokW/ZuO9bN65hAGaICagbU0z0X3nArVjY=
+VmVrGQo2zRokW/ZuO9bN6/CxiXZULdhjyOp1jTEufd8fOViMKvV/4EBLt4qPjTM3P8imZTOW0FDMijb9jSuw0FVDpqK7f2sMpzWe9pEkHJdj7JuaHPwQym1UOAXnaGko///EYYbAEydMFZn+m+korg==
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN63WsPkEtKdp9rQFEV0mc0Bp0wD1zMIehj9MyHLROd0aILFdAc3MAmaemnxPAUiPekw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN6zsXuunPbx71ngX6BaQenPNbA+Mg7i1nazF95o2HQtU5
+VmVrGQo2zRokW/ZuO9bN6xTkk9WeCniuLJmLBef2m+U=
+VmVrGQo2zRokW/ZuO9bN65Mk3nfYCJEpzMz8EnuHOsgreh18KDp4UtHG8fOCTUhO
+VmVrGQo2zRokW/ZuO9bN62oRed6hCMosT7UP35UqsiKbQbJoCKHWLyJn/Vx814Ro/Ee5KiD6gqXP3nh6dppi/w==
+VmVrGQo2zRokW/ZuO9bN6waLqc54ChZODKGJgS1pLojVY2evr/6W6eipUfB4kUV4tIbbM82aET5PVAdbZXXdUO/Z4wJ1V7uPGDDu8Cb4YmQ=
+VmVrGQo2zRokW/ZuO9bN68wHZtGYQdFVE6PwKTgvaNuRprwNE+dzFP36dxj7lYWb
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN6x8dPCIFym0qQ4B6l0auqv3VSU3SG/i9eUcnpJrb1L+X
+VmVrGQo2zRokW/ZuO9bN6ziVGg/SZJQ2a2ljdz3XhcVn97lFqgG8ziUZ47BfMFG9UXbT2kS6y93cABsoh/aDUSuKrmA11kGt+hTSze7FVyk=
+VmVrGQo2zRokW/ZuO9bN6waLqc54ChZODKGJgS1pLojVY2evr/6W6eipUfB4kUV4jBljvu51ZnW8hS8WXSpu7pv1/kMj8Ak/oIB5g6oKubA=
+VmVrGQo2zRokW/ZuO9bN68wHZtGYQdFVE6PwKTgvaNuRprwNE+dzFP36dxj7lYWb
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN6+Hp+GvFtSASnTbptRcIg2lSnsLRR4J22UX96CUCq+KR
+VmVrGQo2zRokW/ZuO9bN64qagL+89Aq4rR/hcuQ6/QaZLgJxtVesokbhCUzfxCwfKcyVGoV3zyER2vrKLj8C4A==
+VmVrGQo2zRokW/ZuO9bN6waLqc54ChZODKGJgS1pLojVY2evr/6W6eipUfB4kUV40d40RaKmxMWpfhvj8ZyruQ/Q/AdiPvG5CMZanDD6YE98WLACskd36bpmVVS7VPAS
+VmVrGQo2zRokW/ZuO9bN68wHZtGYQdFVE6PwKTgvaNuRprwNE+dzFP36dxj7lYWb
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN6xUIvvF7vKpIldg0eDQ2GLdixkmDxxbU+OXh2/259dgakzCXh2oDJ0AfTKNrUbZ5d31ZrBNmK8mELWMQzPcKOzPm5KFJw1Mu/Hkb1SkNQs1d
+VmVrGQo2zRokW/ZuO9bN69P4p4urRz6LNH8T7D85tUmvT6fU8K2BiEON885R0KsYZZwTue89GlNh5Rj+HJ/0l8p8Xk8+ZEyH9zTSoSVrZuM=
+VmVrGQo2zRokW/ZuO9bN69P4p4urRz6LNH8T7D85tUnJY2h08qZtVSMViVJ80aOFEB7NOmEnSXBDfiqhTqlpxqE7hd3sxipptIDNtiux052BIE9Ab59zGW7HA4ampTWIfcrnofD4U94ciAzYjH7cMQ==
+VmVrGQo2zRokW/ZuO9bN68SNBDbgryQsl/pB0VGbLvqWKmuDEMs3IPB8IEm2OG3x
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN6+UgxYwTsTpiHdnLypOQ/kZoFZH3aRRa3jGRdR795Y1mA6vXFA8gZ85TG3MqCavIWvAJnmCjVt23ZkwLlEM33Qocr5vG2sgJeT2xmYYZ/iICcOfrgbcyhaRW17sPNkIRlw==
+VmVrGQo2zRokW/ZuO9bN6yYgZ33nPjoy4tOZmNaX7mQaiu/N7s/Mw1Ei0aMstGjWDlGg9LgiJMyZKxaW8bZyIjtyH8MUjBVG9J4w3mR65uirBBRQcKVp1rVnwRuAvlAOObnzQPL0B/HA/xlJ0/WDfA==
+VmVrGQo2zRokW/ZuO9bN60vhRuPY/LJZF8HROzC0dFI=
+VmVrGQo2zRokW/ZuO9bN6/6qy3lEE/QMSwWTRtFJoaMcGV0W2eYWCTCr8Hkveve9
+M0ZySqkmhuHCw6olbCKv99p0Om1sGOCLOPcvWBGiKm4=
+VmVrGQo2zRokW/ZuO9bN6wgdH+0DZQge5QIlnRbbyGVIwpFYFAZXcG4ciFkbD8xGTtzX6dDhJzsy6JEW1M67sQDPORs3az4NjR88iM8Lcnk=
+1u+XjG/2+GSQRv6EzCaWRQ==
+o6QhOIN2Sc4SHELnst17uQbQrK2Z34ZMKBCsEar9NNzRcJW4KMeQ4yhsPKTJaw1j
+Ic1WBp01nLyRxbqJnsu2pypx+Gb9M9+y4CZIw5enWs9jY9CEkJ+mtN1RRkcQDmMZqWpTNzdr+Hy3p75kNCSdGSik+k6MbKPBA27LVqGIPTg=
+ruTTNFTdswRs4Mc+srnRk818d9d/TGGXzgPjSrVtMi8=
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+jGPLgFRMa/gLI5pn0C8oszLqa5isI224m2QOfckbxLELIVt69gRzqdxrFQlcGXIa
+Z8UsPk1Q7HtwjRd4g01ryw==
+n3tXewq2IYqiwFREjJjsxQv5FBS89YO3jVo+BgMdPGUBLkZx5+ZpOpx7LWu6PFKo8b9SqRNn6c5JZVzlsIkp+A==
+Z8UsPk1Q7HtwjRd4g01ryw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+xsCYviGksjEQaKpL56on/X7AnEB6uKwmFpBflqwZHQ4=
+BIa0ibHnqUboaK9kYHYO4um2nnLtPSMsHb7nUhh0kKQ6CdlvwTSeB4h8LEiuwG9t
+a7gbuXC0s2yINkxKhLLBokQAN48UxYxa6jCVIMQ9FeJoGd91ZEhhcfiymqUdYGqf
+1u+XjG/2+GSQRv6EzCaWRQ==
+wgR07xfoapmx6eEnFHXXYsXheOqb+ac7ivrKomECGJh6sAOIfkvF5oIqf+7bT65s
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmW/27EoqfC0X59kkH7imoHQ/iPzQ+uFBITVsVoGpItD5Q==
+1u+XjG/2+GSQRv6EzCaWRQ==
+AN33R+yjfqqAkAsFnmP/r/WGRgGkDEv8Fnc8kjQsJ7c32mbK3YgEYOi8MYXpOqJy
+cbvASHjpysrsjdY5RctXmG9wund6qoaXAfnCgO+o1nY=
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmXHKWKUVVa/rOrR3+fgEd7tp63QHMzA34qukyTQgDFJrLVYVJL/Ye3kNmAIiExi//aTWiBsWXWTJE2/bLQwR3ie
+1u+XjG/2+GSQRv6EzCaWRQ==
+YdUmdqAC07VhbSt1h6KCDGWrMrUVsu+cay2sf0G/q6n9TVdK0jEcTi9z8Mi4uhlIHBQoCZCJNLutARg3AcC9GZkJHoO5OtM5wGrnT579QQ/33LGKQp33LdowTPKOj8mg+5XvwqiamHNJ4b6qkc35ZA==
+TQRmC0vOvJ1P+lfyS3Os4fdA9rnIPjSDuS8zcTDjbSEVtc81+Y4AUEIsuAgPRMzVhLwEUrXGM6DCeZ1rhkVK8w==
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmUzJgj0ZVdf8DkqZrnrpLRzKvaQBgq7m7DBF8Wb/aWuxeFqQz2lv84Je+M0d4O8q9Ux2G7KTGW8VqvvCK6513pJrAuADi3mTtgVX9Y0JiEdnx9iCVypIiCmLG0BR48sQeM=
+1u+XjG/2+GSQRv6EzCaWRQ==
+y9uLKqgxuwiJJuaISH8LNlJR2o2Cr2uNLeYPxMDYl/0=
+q4nc/jwATOMUyfSjLibfEelnou8pLYpfebj3/LvnkGg=
+7fBvPEAf72Uv1YEDXbbQ3CN3MWrD+3vkr2VJCCzzEPRhwccGf00/aNA1BGgdy8WH
+59Mj0OVU6q9AFARXxvxfN1dW2G3zJI+4zsdXTWh4XwFG18UDXnpLmLIfLIZ41jcpe1yBIt+f+JDrMrCbBNf/9Xy836/xgiba8x96DZU3Wlg=
+pcGeDqO6jWjADfc8Oyd0b2PTNAiWtNjPy+4ZuJym09tcrllO4bi9TB9YXcFHDN8ulWbcZDzkd3vYSjeW6cb+7a07iV7nvIzEjupMBYIINGsixBBRFVjl2m3gGdMptbNGHA9dcrK5ewH6POHu2UFt2t23FwcWAqOHzR3sL67HAErpzje2T7IZlttmY5tQ/RPJ4QDTGGJ3YSogtm9/Z9ZSs7wMVRGX8M2Eia5bIBLZuxk=
+7fBvPEAf72Uv1YEDXbbQ3Kl5asOP7Hk9Z+oJF57QC0c//DIVOxrgJlRJ07hlZuLdNPXnVpbKF/o/zidPewH4xQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+Ic1WBp01nLyRxbqJnsu2pypx+Gb9M9+y4CZIw5enWs8ZqmZBUF1OtUXbF0cnfKWhyLN47Y9VJ4gMAghwAahsZHCVXCB6/L26wmeLJb9nC4o=
+2+RceSNjD2iq0sRzepMyse3K/6KDWrRQWf3bA9DlS0lC8P1AVP/ryfVnqkju1FOT
+96orka/uERLyRst14azQwhCOqhTfcgFhXNAQS0hmuOEvWExeU8Y5S6VzOcEFIF/zQLgeURpx14jzr1s57LjK94c4cdiNmekvORipQcUMeV4=
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==

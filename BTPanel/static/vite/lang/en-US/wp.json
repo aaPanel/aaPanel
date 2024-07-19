@@ -1,0 +1,150 @@
+{
+	"WP": {
+		"index_1": "Clone",
+		"index_2": "Clone site",
+		"index_3": "Manage in WP",
+		"index_4": "Please enter domain",
+		"index_5": "Add Wordpress",
+		"index_6": "Server is not installed, ",
+		"index_7": "Install PHP",
+		"index_8": "Install Mysql",
+		"index_9": "Will update from current version {0} to latest version {1}, continue?",
+		"index_10": "Are you sure to delete this plugin?",
+		"index_11": "Are you sure to delete this theme?",
+		"index_12": "At least 1 theme is active, activate another theme before disable it",
+		"index_13": "Not Set",
+		"Add": {
+			"Title": "Add site - Support batch site building",
+			"Tips": "Versions 5.6.0+ automatically turn on automatic version updates",
+			"Awp": "Allow weak passwords",
+			"CacheNginx": "Enable caching, currently only supports nginx",
+			"EnableWPS": "Enable WPS-Hide-Login",
+			"WPSHL": "WPS-Hide-Login",
+			"Login": "Change Admin Login url",
+			"Redirection": "Redirection url",
+			"index_1": "Create site",
+			"index_2": "Create from backup",
+			"import_1": "Backup Type",
+			"import_2": "Local",
+			"import_3": "Plesk or CPanel",
+			"import_4": "Backup File Path",
+			"import_5": "Subdirectory, blank in the root directory",
+			"import_6": "Please enter backup file path"
+		},
+		"Back": {
+			"File": "File Only",
+			"DB": "DB Only",
+			"Full": "Full Backup"
+		},
+		"Migrate": {
+			"Title": "Migrate Site",
+			"content": "About to migrate sites, are you sure you want to continue",
+			"Tips": {
+				"1": "After the migration you will be able to manage your wordpress sites in WP Toolkit, but you will not be able to continue to manage your wordpress sites in [Website]!",
+				"2": "There are no wordpress that can be migrated from the Website",
+				"3": "Are you sure about this?",
+				"4": "* Unable to restore wordpress website to [Website] after migration"
+			}
+		},
+		"Integrity": {
+			"Title": "Check WordPress Integrity",
+			"index_1": "If you suspect that this site is infected by malware, check the integrity of WordPress corefiles by verifying them against their reference checksums from wordpress.org.",
+			"index_2": "Verify Checksums",
+			"index_3": "Reinstall WP",
+			"index_4": "This will reinstall the WordPress core files without losing site content. It is recommended that you back up your website before reinstalling.",
+			"index_5": "If checksums fail to match, you can quickly reinstall WordPress core files without affecting your site content."
+		},
+		"TableRow": {
+			"Caching": "Caching(nginx)",
+			"WP": "WordPress",
+			"Setting": "WP Setting",
+			"Protection": "Protection",
+			"Integrity": "Integrity check",
+			"Plugin": "Plugin",
+			"Theme": "Theme",
+			"Active": "Active",
+			"Autoupdate": "Auto update",
+			"Update": "Update",
+			"Uninstall": "Uninstall"
+		},
+		"Config": {
+			"LoginUrl": "Login URL",
+			"Upgrade": "Upgrade",
+			"Clear": "Clear",
+			"Generate": "Generate",
+			"EnableWPS": "Enable WPS-Hide-Login",
+			"Save": "Save",
+			"Protection": {
+				"Title": "Security Tools",
+				"Setup": "Setup",
+				"Blocked": "modifications blocked today",
+				"Requests": "malicious requests blocked today"
+			},
+			"RedirectionTips": {
+				"0": "Protect your website by changing the login URL and preventing access to the wp-login.php page and the wp-admin directory to non-connected people.",
+				"1": "Redirect URL when someone tries to access the wp-login.php page and the wp-admin directory while not logged in."
+			}
+		},
+		"Label": {
+			"RePassword": "Reset password",
+			"EmailAddress": "Email address",
+			"Language": "Website Language",
+			"WPS": "WPS-Hide-Login",
+			"Setup": "Setup Complete",
+			"FileProtection": "File Protection",
+			"Application": "Nginx WAF",
+			"Permission": "File permission hardening",
+			"WPAdmin": "wp-admin Protection",
+			"Changed": "Changed to",
+			"Hotlink": "Hotlink Protection"
+		},
+		"Placeholder": {
+			"Password": "Please enter a new password"
+		},
+		"RulesError": {
+			"LastVersion": "is already the latest version",
+			"NewVersion": "There is a new version",
+			"NewVersionLast": "available for update"
+		},
+		"clone": {
+			"index_1": "Source site",
+			"index_2": "Target site",
+			"index_3": "Create subdomain",
+			"index_4": "Create new domain",
+			"index_5": "New domain",
+			"index_6": "Please enter subdomain",
+			"index_7": "Please enter new domain",
+			"index_8": "Clone path",
+			"index_9": "Empty clone path means clone in the root directory",
+			"index_10": "Fastcgi cache"
+		},
+		"api": {
+			"index_1": "Site being cloned, please wait...",
+			"index_2": "Adding site, please wait...",
+			"tamper_1": "Setting status, please wait...",
+			"tamper_2": "Adding, please wait...",
+			"tamper_3": "Deleting, please wait...",
+			"tamper_4": "Adding whitelist, please wait...",
+			"tamper_5": "Editing remark, please wait...",
+			"tamper_6": "Deleting whitelist, please wait...",
+			"tamper_7": "Creating website, please wait...",
+			"tamper_8": "Processing, please wait...",
+			"tamper_9": "Backing up, please wait...",
+			"tamper_10": "Restoring, please wait...",
+			"tamper_11": "Migrating, please wait...",
+			"tamper_12": "Integrity checking, please wait...",
+			"tamper_13": "Reinstallation in progress, please wait...",
+			"tamper_14": "Uninstalling, please wait...",
+			"tamper_15": "Updating, please wait..."
+		},
+		"Transition": {
+			"index_1": "WordPress Toolkit introdution",
+			"index_2": "OneClick Install WordPress",
+			"index_3": "Special safety protection",
+			"index_4": "Full Backup",
+			"index_5": "Fastcgi Cache",
+			"index_6": "More features are under development, looking forward to your feedback",
+			"index_7": "Buy now"
+		}
+	}
+}

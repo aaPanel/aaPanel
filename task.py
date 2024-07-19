@@ -1,11 +1,11 @@
 #!/bin/python
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 
 # ------------------------------
@@ -625,7 +625,7 @@ def daemon_panel():
 
 
 def update_panel():
-    os.system("curl -k https://node.aapanel.com/install/update6_en.sh|bash &")
+    os.system("curl -k https://node.aapanel.com/install/update_7.x_en.sh|bash &")
 
 
 def service_panel(action='reload'):
@@ -730,7 +730,7 @@ def push_msg():
 def JavaProDaemons():
     '''
         @name Java 项目守护进程
-        @author lkq@bt.cn
+        @author lkq@aapanel.com
         @time 2022-07-19
         @param None
     '''
@@ -816,6 +816,7 @@ def run_thread():
         "update_software_list": update_software_list,
         "send_mail_time": send_mail_time,
         "check_panel_msg": check_panel_msg,
+        # "check_panel_auth": check_panel_auth,
         "push_msg": push_msg,
         "ProDadmons":ProDadmons,
         "process_task_thread":process_task_thread
@@ -853,6 +854,21 @@ def scan_log_site():
 #     while True:
 #         os.system('{} {}/script/check_msg.py &'.format(python_bin,base_path))
 #         time.sleep(600)
+
+# # 检测面板授权
+# def check_panel_auth():
+#     python_bin = get_python_bin()
+#     from BTPanel import cache
+#     if cache: 
+#         key='pro_check_sdfjslk'
+#         res = cache.get(key)
+#     while True:
+#         update_file='/www/server/panel/data/now_update_pro.pl'
+#         # pro_file='/www/server/panel/data/panel_pro.pl'
+#         if os.path.exists(update_file) or res is None:
+#             os.system('nohup {} /www/server/panel/script/check_auth.py > /dev/null 2>&1 &'.format(python_bin))
+#         if cache: 
+#             cache.set(key, 'sddsf', 3600)
 
 
 def main():

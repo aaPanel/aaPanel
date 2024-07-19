@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 # -------------------------------------------------------------------
 
 # -------------------------------------------------------------------
@@ -34,7 +34,7 @@ def check_run():
         p_file = '/etc/login.defs'
         p_body = public.readFile(p_file)
         if not p_body: return True, 'Risk-free'
-        tmp = re.findall("\nPASS_MIN_DAYS\s+(.+)", p_body, re.M)
+        tmp = re.findall("\nPASS_MIN_DAYS\\s+(.+)", p_body, re.M)
         if not tmp: return True, 'Risk-free'
         maxdays = tmp[0].strip()
         #7-14

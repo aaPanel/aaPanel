@@ -2529,7 +2529,7 @@ var system = {
 
 		$('.installSystem ').unbind('click').on('click',function (){
 			bt.soft.install('syssafe',function (rdata) {
-				location.reload();
+				// location.reload();
 			});
 		});
 

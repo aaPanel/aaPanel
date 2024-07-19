@@ -1261,7 +1261,7 @@ var index = {
 			}
 
 			_this.get_server_info(rdata);
-			
+
 			// 未安装环境时弹出
 			if (rdata.installed === false) bt.index.rec_install();
 

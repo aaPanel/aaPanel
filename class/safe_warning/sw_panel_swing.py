@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: lkq <lkq@bt.cn>
+# Author: lkq <lkq@aapanel.com>
 # -------------------------------------------------------------------
 # Time: 2022-08-10
 # -------------------------------------------------------------------
@@ -28,7 +28,7 @@ def check_run():
     '''
         @name 面板登录告警是否开启
         @time 2022-08-12
-        @author lkq@bt.cn
+        @author lkq@aapanel.com
     '''
     send_type = ""
     tip_files = ['panel_login_send.pl','login_send_type.pl','login_send_mail.pl','login_send_dingding.pl']

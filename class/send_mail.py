@@ -1,10 +1,10 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板 x3
+# | aaPanel x3
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2017 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2017 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: lkqiang <lkq@bt.cn>
+# | Author: lkqiang <lkq@aapanel.com>
 # +-------------------------------------------------------------------
 # +--------------------------------------------------------------------
 # |   宝塔内置消息通道
@@ -181,9 +181,9 @@ class send_mail:
                 opener = urllib2.urlopen(url)
                 m_str = opener.read()
                 if isinstance(m_str, bytes):
-                    ipaddress = re.search('\d+.\d+.\d+.\d+', m_str.decode('utf-8')).group(0)
+                    ipaddress = re.search(r'\d+.\d+.\d+.\d+', m_str.decode('utf-8')).group(0)
                 else:
-                    ipaddress = re.search('\d+.\d+.\d+.\d+', m_str).group(0)
+                    ipaddress = re.search(r'\d+.\d+.\d+.\d+', m_str).group(0)
                 public.WriteFile(filename, ipaddress)
             c_ip = public.check_ip(ipaddress)
             if not c_ip:

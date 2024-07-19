@@ -178,7 +178,7 @@ class databaseBase:
         if data_name in checks or len(data_name) < 1:
             return public.returnMsg(False,'Database name is invalid!');
 
-        reg = "^\w+$"
+        reg = r"^\w+$"
         if not re.match(reg, data_name):
             return public.returnMsg(False,'DATABASE_NAME_ERR_T')
 

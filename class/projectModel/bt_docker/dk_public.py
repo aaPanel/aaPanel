@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: zouhw <zhw@bt.cn>
+# Author: zouhw <zhw@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -42,7 +42,7 @@ def docker_client_low (url ="unix:///var/run/docker.sock"):#line:25
 def get_cpu_count ():#line:39
     import re #line:40
     OOO00O00O0000O00O =open ('/proc/cpuinfo','r').read ()#line:41
-    OO00O0000OO000OOO ="processor\s*:"#line:42
+    OO00O0000OO000OOO =r"processor\s*:"#line:42
     OO0OOO0O00O0O0OOO =re .findall (OO00O0000OO000OOO ,OOO00O00O0000O00O )#line:43
     if not OO0OOO0O00O0O0OOO :#line:44
         return 0 #line:45

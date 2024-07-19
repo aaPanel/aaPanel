@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hezhihong <bt_ahong@qq.com>
+# Author: hezhihong <bt_ahong@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -154,7 +154,7 @@ class main(databaseBase,panelPgsql):
         if not self.__soft_path:self.__soft_path='{}/pgsql'.format(public.get_setup_path())
         conf = public.readFile('{}/data/postgresql.conf'.format(self.__soft_path))
         for opt in options:
-            tmp = re.findall("\s+" +opt + "\s*=\s*(.+)#",conf)
+            tmp = re.findall(r"\s+" +opt + r"\s*=\s*(.+)#",conf)
             if not tmp: continue;
             data[opt] = tmp[0].strip()
             if opt == 'listen_addresses':
@@ -223,7 +223,8 @@ class main(databaseBase,panelPgsql):
             @return list
         '''
         check_result = os.system('/www/server/pgsql/bin/psql --version')
-        if check_result !=0 and not public.M('database_servers').where('db_type=?','pgsql').count():return []
+        if check_result !=0 and not public.M('database_servers').where('db_type=?','pgsql').count():
+            return []
         return self.GetBaseCloudServer(args)
 
 
@@ -302,7 +303,7 @@ class main(databaseBase,panelPgsql):
         id = get['id']
         find = public.M('databases').where("id=?",(id,)).field('id,pid,name,username,password,accept,ps,addtime,db_type,conn_config,sid,type').find();
         if not find: return public.returnMsg(False,'The specified database does not exist.')
-           
+
         name = get['name']
         username = find['username']
 
@@ -323,15 +324,15 @@ class main(databaseBase,panelPgsql):
 
         find = public.M('databases').where("id=?",(id,)).find()
         if not find: return public.returnMsg(False,'Database does not exist!')
- 
+
         if not find['password'].strip(): 
             return public.returnMsg(False,'The database password is empty. Set the password first.')
-            
+
         sql_dump = '{}/bin/pg_dump'.format(self.__soft_path)
         # return sql_dump
         if not os.path.isfile(sql_dump): 
             return public.returnMsg(False,'Lack of backup tools, please first through the software store PGSQL manager!')       
-        
+
         back_path = session['config']['backup_path'] + '/database/pgsql/'
         # return back_path
         if not os.path.exists(back_path): os.makedirs(back_path)
@@ -358,7 +359,7 @@ class main(databaseBase,panelPgsql):
 
         if os.path.getsize(backupName) < 2048:
             return public.returnMsg(True, 'The backup file size is smaller than 2Kb. Check the backup integrity.')
-        else:              
+        else:
             return public.returnMsg(True, 'BACKUP_SUCCESS')
 
     def DelBackup(self,args):
@@ -397,7 +398,7 @@ class main(databaseBase,panelPgsql):
         ext = tmp[len(tmp) -1]
         if ext not in exts:
             return public.returnMsg(False, 'DATABASE_INPUT_ERR_FORMAT')
-        
+
         sql_dump = '{}/bin/psql'.format(self.__soft_path)
         if not os.path.exists(sql_dump): 
             return public.returnMsg(False,'Lack of recovery tool, please use software management to install PGSQL!')    

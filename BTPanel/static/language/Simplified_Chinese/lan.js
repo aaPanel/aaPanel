@@ -483,7 +483,7 @@ var lan = {
 		"task_the": "Processing",
 		"task_ok": "Finished",
 		"task_close": "Task canceled!",
-		"time": "Time-consuming",
+		"time": "Times",
 		"s": "second",
 		"install_title": "Recommended software packages",
 		"install_ps": "Recommend to use one-click packages, use as needed or in",

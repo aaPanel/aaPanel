@@ -594,7 +594,7 @@ var logs = {
         url: '/safe/syslog/get_sys_logfiles'
       }, function (rdata) {
         if(rdata.hasOwnProperty('status') ){
-          if(!rdata.status && rdata.msg.indexOf('Pro users') > -1){
+          if(!rdata.status && rdata.msg.indexOf('professional member only') > -1){
             $('.logAuditTabContent').hide();
             $('#logAudit .installSoft').show()
             return false
@@ -655,10 +655,10 @@ var logs = {
      */
     renderLogsAuditTable: function (param, rdata){
       var that = this;
-      var column = [], data = rdata[0] ? rdata[0] : { 时间: '--', '角色': '--', '事件': '--' }, i = 0;
+      var column = [], data = rdata[0] ? rdata[0] : { Time: '--', 'Role': '--', 'Event': '--'}, i = 0;
       $.each(data, function (key) {
         // console.log(key === '时间',i)
-        column.push({ title: key, fid: key,width: (key === '时间' &&  i === 0) ? '200px' : (key === '时间'?'300px':'') })
+        column.push({ title: key, fid: key,width: (key === 'Time' &&  i === 0) ? '200px' : (key === 'Time'?'300px':'') })
         i++;
       })
       $('#logAuditTable').empty()

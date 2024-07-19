@@ -1,0 +1,10 @@
+{
+	"Global": {
+		"Api": {
+			"Index_1": "Loading, please wait...",
+			"Index_2": "Binding, please wait...",
+			"Index_3": "Submit feedbook, please wait..",
+			"Index_4": "Uploading file, please wait..."
+		}
+	}
+}

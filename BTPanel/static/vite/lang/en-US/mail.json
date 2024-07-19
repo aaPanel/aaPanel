@@ -1,0 +1,16 @@
+{
+	"Mail": {
+		"Email": {
+			"index_1": "Email Address",
+			"index_2": "Sender",
+			"index_3": "Theme",
+			"index_4": "Time",
+			"index_5": "View",
+			"index_6": "Spam",
+			"index_7": "Check Mail [{0}]",
+			"index_8": "Mark spam",
+			"index_9": "Are you sure you want to mark this message as spam?",
+			"index_10": "Unmark"
+		}
+	}
+}

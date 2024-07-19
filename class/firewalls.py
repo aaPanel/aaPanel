@@ -1,10 +1,10 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板 x3
+# | aaPanel x3
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http:#bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import sys,os,public,re,firewalld,time
 
@@ -310,15 +310,13 @@ class firewalls:
 
     #改远程端口
     def SetSshPort(self,get):
+
         port = get.port
-        if not port:
-            return public.return_msg_gettext(False, 'Port range must be between 22 and 65535!')
-        try:
-            if int(port) < 22 or int(port) > 65535: return public.return_msg_gettext(False,'Port range must be between 22 and 65535!')
-        except:
-            return public.return_msg_gettext(False, 'Port range must be between 22 and 65535!')
+
         ports = ['21','25','80','443','8080','888','8888','7800']
-        if port in ports: return public.return_msg_gettext(False,'Do NOT use common default port!')
+        if port in ports:
+            return public.return_msg_gettext(False,'Do NOT use common default port!')
+            # return public.return_message(-1, 0, 'Do NOT use common default port!')
         file = '/etc/ssh/sshd_config'
         conf = public.readFile(file)
         
@@ -343,6 +341,7 @@ class firewalls:
         public.M('firewall').add('port,ps,addtime',(port,'SSH remote service',time.strftime('%Y-%m-%d %X',time.localtime())))
         public.WriteLog("TYPE_FIREWALL", "FIREWALL_SSH_PORT",(port,))
         return public.return_msg_gettext(True,'Setup successfully!')
+        # return public.return_message(0, 0, 'Setup successfully!')
     
     #取SSH信息
     def GetSshInfo(self,get):

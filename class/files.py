@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 #coding:utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 from base64 import b64encode
 import sys
@@ -124,7 +124,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 filename = public.get_vhost_path() + '/nginx/' + siteName + '.conf'
                 if os.path.exists(filename):
                     conf = public.readFile(filename)
-                    rep = '\s*root\s+(.+);'
+                    rep = r'\s*root\s+(.+);'
                     tmp1 = re.search(rep, conf)
                     if tmp1:
                         path = tmp1.groups()[0]
@@ -132,7 +132,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 filename = public.get_vhost_path() + '/apache/' + siteName + '.conf'
                 if os.path.exists(filename):
                     conf = public.readFile(filename)
-                    rep = '\s*DocumentRoot\s*"(.+)"\s*\n'
+                    rep = '\\s*DocumentRoot\\s*"(.+)"\\s*\n'
                     tmp1 = re.search(rep, conf)
                     if tmp1:
                         path = tmp1.groups()[0]
@@ -398,9 +398,86 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         for m in ms.keys():
             filename = filename.replace(m,ms[m])
         return filename
+    def files_list(self, path, search=None, my_sort='off', reverse=False):
+        '''
+            @name 遍历目录，并获取全量文件信息列表
+            @param path<string> 目录路径
+            @param search<string> 搜索关键词
+            @param my_sort<string> 排序字段
+            @param reverse<bool> 是否降序
+            @return tuple (int,list)
+        '''
+
+        nlist = []
+        count = 0
+
+        # 文件不存在
+        if not os.path.exists(path):
+            return count, nlist
+
+        sort_key = -1
+        if my_sort == 'off':  # 不排序
+            sort_key = -1
+        elif my_sort == 'name':  # 按文件名排序
+            sort_key = 0
+        elif my_sort == 'size':  # 按文件大小排序
+            sort_key = 1
+        elif my_sort == 'mtime':  # 按修改时间排序
+            sort_key = 2
+        elif my_sort == 'accept':  # 按文件权限排序
+            sort_key = 3
+        elif my_sort == 'user':  # 按文件所有者排序
+            sort_key = 4
+
+        with os.scandir(path) as it:
+            try:
+                for entry in it:
+                    # 是否搜索
+                    if search:
+                        if entry.name.lower().find(search) == -1:
+                            continue
+
+                    # 是否需要获取文件信息
+                    sort_val = 0
+                    if sort_key == 0 or sort_key == -1:
+                        # 通过文件名或不排序时，不获取文件信息
+                        sort_val = 0
+                    else:
+                        try:
+                            fstat = entry.stat()
+                            if sort_key == 1:
+                                sort_val = fstat.st_size
+                            elif sort_key == 2:
+                                sort_val = fstat.st_mtime
+                            elif sort_key == 3:
+                                sort_val = fstat.st_mode
+                            elif sort_key == 4:
+                                sort_val = fstat.st_uid
+                        except:
+                            pass
+
+                    nlist.append((entry.name, sort_val))
+
+                    # 计数
+                    count += 1
+            except:
+                pass
+
+        if sort_key == 0:
+            # 按文件名排序
+            nlist = sorted(nlist, key=lambda x: x[0], reverse=reverse)
+        elif sort_key > 0:
+            # 按指定字段排序
+            nlist = sorted(nlist, key=lambda x: x[1], reverse=reverse)
+        else:
+            # 否则文件数量小于10000时，按文件名排序
+            if count < 10000:
+                nlist = sorted(nlist, key=lambda x: x[0], reverse=reverse)
+
+        return count, nlist
 
     # 取文件/目录列表
-    def GetDir(self, get):
+    def GetDir(self, get: public.dict_obj):
         if not hasattr(get, 'path'):
             # return public.returnMsg(False,'错误的参数!')
             get.path = public.get_site_path() #'/www/wwwroot'
@@ -425,7 +502,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if not os.path.isdir(get.path):
             return public.return_msg_gettext(False,'This is not a directory')
 
-        import pwd
         dirnames = []
         filenames = []
 
@@ -441,7 +517,16 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         # 实例化分页类
         page = page.Page()
         info = {}
-        info['count'] = self.GetFilesCount(get.path, search)
+
+        if not hasattr(get, 'reverse'): get.reverse = 'False'
+        if not hasattr(get, 'sort'): get.sort = 'off'
+        reverse = bool(get.reverse)
+        if get.reverse == 'False':
+            reverse = False
+
+        info['count'], _nlist = self.files_list(get.path, search, my_sort=get.sort, reverse=reverse)
+        # 改1
+        # info['count'] = self.GetFilesCount(get.path, search)
         info['row'] = 500
         if 'disk' in get:
             if get.disk == 'true': info['row'] = 2000
@@ -472,13 +557,18 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         data['STORE'] = self.get_files_store(None)
         data['FILE_RECYCLE'] = os.path.exists('data/recycle_bin.pl')
 
-        if not hasattr(get, 'reverse'): get.reverse = 'False'
-        if not hasattr(get, 'sort'): get.sort = 'name'
-        reverse = bool(get.reverse)
-        if get.reverse == 'False':
-            reverse = False
-        for file_info in self.__list_dir(get.path, get.sort, reverse):
-            filename = os.path.join(get.path, file_info[0])
+        # if info['count'] >= 200 and not os.path.exists('data/max_files_sort.pl'):
+        #     get.reverse = 'False'
+        #     reverse = False
+        #     get.sort = ''
+
+        #     _nlist = self.__default_list_dir(get.path,page.SHIFT,page.ROW)
+        #     data['SORT'] = 0
+        # else:
+        # _nlist = self.__list_dir(get.path, get.sort, reverse)
+
+        for file_info in _nlist:
+
             if search:
                 if file_info[0].lower().find(search) == -1:
                     continue
@@ -487,19 +577,25 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 break
             if i < page.SHIFT:
                 continue
-            if not os.path.exists(filename) and not os.path.islink(filename): continue
-            file_info = self.__format_stat(filename, get.path)
-            if not file_info: continue
-            favorite = self.__check_favorite(filename, data['STORE'])
-            r_file = self.__filename_flater(file_info['name']) + ';' + str(file_info['size']) + ';' + str(file_info['mtime']) + ';' + str(
-                file_info['accept']) + ';' + file_info['user'] + ';' + file_info['link']+';'\
-                        + self.get_download_id(filename) + ';' + self.is_composer_json(filename)+';'\
-                        + favorite+';'+self.__check_share(filename)
-            if os.path.isdir(filename):
-                dirnames.append(r_file)
-            else:
-                filenames.append(r_file)
-            n += 1
+
+            try:
+                fname = file_info[0].encode('unicode_escape').decode("unicode_escape")
+                filename = os.path.join(get.path, fname)
+                if not os.path.exists(filename) and not os.path.islink(filename): continue
+                file_info = self.__format_stat(filename, get.path)
+                if not file_info: continue
+                favorite = self.__check_favorite(filename, data['STORE'])
+                r_file = self.__filename_flater(file_info['name']) + ';' + str(file_info['size']) + ';' + str(file_info['mtime']) + ';' + str(
+                    file_info['accept']) + ';' + file_info['user'] + ';' + file_info['link']+';'\
+                            + self.get_download_id(filename) + ';' + self.is_composer_json(filename)+';'\
+                            + favorite+';'+self.__check_share(filename)
+                if os.path.isdir(filename):
+                    dirnames.append(r_file)
+                else:
+                    filenames.append(r_file)
+                n += 1
+            except:
+                continue
 
         data['DIR'] = dirnames
         data['FILES'] = filenames
@@ -536,7 +632,76 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         data['search_history'] = public.get_search_history('files','get_list')
         public.set_dir_history('files','GetDirList',data['PATH'])
 
+        # 2023-3-6,增加融入企业级防篡改
+        data = self._check_tamper(data)
+        data = self._get_bt_sync_status_old(data)
         return data
+
+    # ———————————————————
+    #  融合企业级防篡改  |
+    # ———————————————————
+
+    # 防篡改：获取文件是否在保护列表中
+
+    def _check_tamper(self, data):
+        try:
+            import PluginLoader
+        except:
+            return {}
+        args = public.dict_obj()
+        args.client_ip = public.GetClientIp()
+        args.fun = "check_dir_safe"
+        args.s = "check_dir_safe"
+        args.file_data = {
+            "base_path": data['PATH'],
+            "dirs": [i.split(";", 1)[0] for i in data["DIR"]],
+            "files": [i.split(";", 1)[0] for i in data["FILES"]]
+        }
+        data["tamper_data"] = PluginLoader.plugin_run("tamper_core", "check_dir_safe", args)
+
+        return data
+
+
+
+    # 获取文件同步状态
+    @staticmethod
+    def _get_bt_sync_status_old(data):
+        config_file = "{}/plugin/rsync/config4.json".format(public.get_panel_path())
+        if not os.path.exists(config_file):
+            data["bt_sync"] = {}
+            return data
+        try:
+            conf = json.loads(public.readFile(config_file))
+        except json.JSONDecodeError:
+            data["bt_sync"] = {}
+            return data
+
+        dirs = [data['PATH'] + "/" + i.split(";", 1)[0] for i in data["DIR"]]
+        res = [{} for _ in range(len(dirs))]
+        for idx, d in enumerate(dirs):
+            for value in conf.get("modules", []):
+                if value.get("path", "").rstrip("/") == d:
+                    res[idx] = {
+                        "type": "modules",
+                        "name": value.get("name", ""),
+                        "status": value.get("recv_status", True),
+                        "path": d,
+                    }
+
+        for idx, d in enumerate(dirs):
+            for value in conf.get("senders", []):
+                if value.get("source", "").rstrip("/") == d:
+                    target = value.get("target_list", [{}])[0]
+                    res[idx] = {
+                        "type": "senders",
+                        "name": target.get("name", ""),
+                        "status": target.get("status", True),
+                        "path": d,
+                    }
+
+        data["bt_sync"] = res
+        return data
+
 
 
     def get_file_ps(self,filename):
@@ -548,13 +713,17 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         '''
 
         ps_path = public.get_panel_path() + '/data/files_ps'
-        f_key1 = '/'.join((ps_path,public.md5(filename)))
-        if os.path.exists(f_key1):
-            return public.readFile(f_key1)
+        try:
+            f_key1 = '/'.join((ps_path,public.md5(filename)))
 
-        f_key2 = '/'.join((ps_path,public.md5(os.path.basename(filename))))
-        if os.path.exists(f_key2):
-            return public.readFile(f_key2)
+            if os.path.exists(f_key1):
+                return public.readFile(f_key1)
+
+            f_key2 = '/'.join((ps_path,public.md5(os.path.basename(filename))))
+            if os.path.exists(f_key2):
+                return public.readFile(f_key2)
+        except:
+            pass
 
         pss = {
             '/www/server/data':'MySQL data storage directory!',
@@ -600,10 +769,17 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             '/usr/local/sbin': 'System script directory',
             '/usr/local/bin': 'System script directory'
         }
-        if filename in pss:  return "PS：" + pss[filename]
 
-        if not self.recycle_list: self.recycle_list = public.get_recycle_bin_list()
-        if filename + '/' in self.recycle_list: return 'PS: Recycle Bin Directory'
+        if str(filename).endswith(".bt_split_json"):
+            return "PS: Split the recovery profile"
+        if str(filename).endswith(".bt_split"):
+            return "PS: Split unit file"
+        if filename in pss: return "PS：" + pss[filename]
+        try:
+            if not self.recycle_list: self.recycle_list = public.get_recycle_bin_list()
+        except:
+            pass
+        if filename + '/' in self.recycle_list:'PS: Recycle Bin Directory'
         if filename in self.recycle_list: return 'PS: Recycle Bin Directory'
         return ''
 
@@ -930,8 +1106,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             public.WriteLog('TYPE_FILE', 'Successfully deleted directory [{}]!', (get.path,))
             self.remove_file_ps(get)
             return public.return_msg_gettext(True, ' Successfully deleted directory!')
-        except Exception as e:
-            public.print_log("DeleteDir error info :{}".format(e))
+        except:
             return public.return_msg_gettext(False, 'Failed to delete directory!')
 
     # 删除 空目录
@@ -1256,9 +1431,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 public.write_log_gettext('File manager','[{}] renamed to [{}]',(get.sfile,get.dfile))
                 return public.return_msg_gettext(True,'Successfully renamed!')
             else:
-                public.write_log_gettext('File manager', 'Database moved!',
+                public.write_log_gettext('File manager', 'File moved!',
                                 (get.sfile, get.dfile))
-                return public.return_msg_gettext(True, 'Database moved!')
+                return public.return_msg_gettext(True, 'File moved!')
         except:
             return public.return_msg_gettext(False, 'Failed to move file!')
 
@@ -1795,11 +1970,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         return self.GetDirSize(get)
 
     # 批量操作
-    def SetBatchData(self, get):
+    def SetBatchData(self, get: public.dict_obj):
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
         if get.type == '1' or get.type == '2':
-            session['selected'] = get
+            session['selected'] = get.get_items()
             return public.return_msg_gettext(True, 'Successfully marked, please click Paste All button in the target directory!')
         elif get.type == '3':
             for key in json.loads(get.data):
@@ -2428,7 +2603,7 @@ cd %s
             pdata['password'] = get.password
             if len(pdata['password']) < 4 and len(pdata['password']) > 0:
                 return public.return_msg_gettext(False,'The length of the extracted password cannot be less than 4 digits')
-            if not re.match('^\w+$',pdata['password']):
+            if not re.match(r'^\w+$',pdata['password']):
                 return public.return_msg_gettext(False,'The password only supports a combination of uppercase and lowercase letters and numbers')
 
         if 'ps' in get: pdata['ps'] = get.ps
@@ -2455,7 +2630,7 @@ cd %s
             pdata['token'] += "." + exts[-1]
         if len(pdata['password']) < 4 and len(pdata['password']) > 0:
             return public.return_msg_gettext(False,' Please do not enter the following special characters [ ~ ` / =  ]')
-        if not re.match('^\w+$',pdata['password']) and pdata['password']:
+        if not re.match(r'^\w+$',pdata['password']) and pdata['password']:
             return public.return_msg_gettext(False,'The password only supports a combination of uppercase and lowercase letters and numbers')
         #更新 or 插入
         token = public.M(my_table).where('filename=?',(get.filename,)).getField('token')
@@ -3254,7 +3429,7 @@ CREATE TABLE index_tb(
     def restore_website(self,args):
         """
             @name 恢复站点文件
-            @author zhwen<zhw@bt.cn>
+            @author zhwen<zhw@aapanel.com>
             @parma file_name 备份得文件名
             @parma site_id 网站id
         """
@@ -3265,7 +3440,7 @@ CREATE TABLE index_tb(
     def get_progress(self,args):
         """
             @name 获取进度日志
-            @author zhwen<zhw@bt.cn>
+            @author zhwen<zhw@aapanel.com>
         """
         import panel_restore
         pr=panel_restore.panel_restore()

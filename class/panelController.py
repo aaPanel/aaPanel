@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2017 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -32,8 +32,8 @@ class Controller:
             if args['mod_name'] in ['base']: return public.return_status_code(1000,'错误的调用!')
             public.exists_args('def_name,mod_name',args)
             if args['def_name'].find('__') != -1: return public.return_status_code(1000,'调用的方法名称中不能包含“__”字符')
-            if not re.match(r"^\w+$",args['mod_name']): return public.return_status_code(1000,'调用的模块名称中不能包含\w以外的字符')
-            if not re.match(r"^\w+$",args['def_name']): return public.return_status_code(1000,'调用的方法名称中不能包含\w以外的字符')
+            if not re.match(r"^\w+$",args['mod_name']): return public.return_status_code(1000,r'调用的模块名称中不能包含\w以外的字符')
+            if not re.match(r"^\w+$",args['def_name']): return public.return_status_code(1000,r'调用的方法名称中不能包含\w以外的字符')
         except:
             return public.get_error_object()
         # 参数处理

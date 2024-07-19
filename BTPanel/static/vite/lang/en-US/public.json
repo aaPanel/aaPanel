@@ -1,0 +1,126 @@
+{
+	"Public": {
+		"Name": "aaPanel",
+		"Site": "Site",
+		"Help": "Help",
+		"Type": "Type",
+		"All": "All",
+		"SelectAll": "Select All",
+		"MoreTips": "More config, click to view",
+		"tableRow": {
+			"Username": "Username",
+			"Password": "Password"
+		},
+		"Time": {
+			"Today": "Today",
+			"Yesterday": "Yesterday",
+			"7Days": "Last 7 days",
+			"30Days": "Last 30 days"
+		},
+		"Punctuation": {
+			"Colon": ": ",
+			"Comma": ", "
+		},
+		"Unit": {
+			"Item": "",
+			"Time": "Times",
+			"Seconds": "s",
+			"Num": "",
+			"Day": "Day",
+			"Hour": "Hour",
+			"Minute": "Min"
+		},
+		"Btn": {
+			"Add": "Add",
+			"Save": "Save",
+			"Config": "Config",
+			"Refresh": "Refresh",
+			"Set": "Set",
+			"Del": "Del",
+			"Edit": "Edit",
+			"Modify": "Modify",
+			"Cancel": "Cancel",
+			"Confirm": "Confirm",
+			"ClearHit": "ClearHits",
+			"Submit": "Submit",
+			"Apply": "Apply",
+			"Search": "Search",
+			"Help": "Help",
+			"LearnMore": "LearnMore",
+			"Details": "Details",
+			"Tutorial": "Tutorial",
+			"Sync": "Sync",
+			"Click": "View",
+			"Deploy": "Deploy",
+			"Conf": "Conf",
+			"More": "More",
+			"Install": "Install",
+			"Uninstall": "Uninstall",
+			"Setup": "Setup",
+			"Import": "Import",
+			"Preview": "Preview",
+			"Finish": "Finish",
+			"Delete": "Delete",
+			"Copy": "Copy"
+		},
+		"Batch": {
+			"Del": "Batch delete",
+			"ChooseDel": "Please choose del"
+		},
+		"Confirm": {
+			"Title": "Tips",
+			"Enable": "Enable",
+			"Disable": "Close"
+		},
+		"Form": {
+			"Ps": "Remark",
+			"PsPlace": "Please enter remarks"
+		},
+		"Table": {
+			"Ps": "Remark",
+			"Status": "Status",
+			"Action": "OPT",
+			"Operation": "Operation",
+			"NotAction": "Not actionable",
+			"Enable": "Enable",
+			"Disable": "Disable",
+			"Total": "Total {total}"
+		},
+		"SiteCheckbox": {
+			"Search": "Please enter the site name",
+			"All": "Select all",
+			"NotAll": "Do not select all",
+			"CurSite": "Current site"
+		},
+		"Status": {
+			"Enable": "Enable",
+			"Running": "Running",
+			"Stopped": "Stopped",
+			"Paused": "Paused",
+			"TurnOn": "Turn on",
+			"TurnOff": "Turn off",
+			"Start": "Start",
+			"start": "start",
+			"Stop": "Stop",
+			"stop": "stop",
+			"Pause": "Pause",
+			"Unpause": "Unpause",
+			"Restart": "Restart",
+			"Kill": "Kill",
+			"Reload": "Reload"
+		},
+		"Api": {
+			"Load": "{0}, please wait..."
+		},
+		"Terminal": {
+			"index_3": "The connection has been disconnected, pressing enter will attempt to reconnect!",
+			"index_4": "Trying to reconnect!"
+		},
+		"Pay": {
+			"index_1": "FREE",
+			"index_2": "RENEW",
+			"index_3": "Buy now",
+			"index_4": "Expired: "
+		}
+	}
+}

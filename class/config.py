@@ -1,10 +1,10 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板 x3
+# | aaPanel x3
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2017 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2017 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import base64
 import public,re,os,nginx,apache,json,time,ols
@@ -510,7 +510,8 @@ class config:
             reg = r"^([\w\-\*]{1,100}\.){1,4}(\w{1,10}|\w{1,10}\.\w{1,10})$"
             if not re.match(reg, get.domain): return public.return_msg_gettext(False,'Format of primary domain is incorrect')
         if get.address:
-            if not re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", get.address):
+            from public.regexplib import match_ipv4, match_ipv6
+            if not match_ipv4.match(get.address) and not match_ipv6.match(get.address) :
                 return public.return_msg_gettext(False, 'Please set the correct Server IP')
         oldPort = public.GetHost(True)
         if not 'port' in get:
@@ -1307,7 +1308,7 @@ class config:
         passwd = get.passwd
         if g != "files":
             iprep = r"(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})\.(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})\.(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})\.(2(5[0-5]{1}|[0-4]\d{1})|[0-1]?\d{1,2})"
-            rep_domain = "^(?=^.{3,255}$)[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62}(\.[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62})+$"
+            rep_domain = r"^(?=^.{3,255}$)[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62}(\.[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62})+$"
             if not re.search(iprep, ip) and not re.search(rep_domain, ip):
                 if ip != "localhost":
                     return public.returnMsg(False, 'Please enter the correct [domain or IP]!')
@@ -2441,7 +2442,7 @@ class config:
         if not 'status_code' in get:
             return public.return_msg_gettext(False,'Parameter ERROR!')
 
-        if re.match("^\d+$", get.status_code):
+        if re.match(r"^\d+$", get.status_code):
             status_code = int(get.status_code)
             if status_code != 0:
                 if status_code < 100 or status_code > 999:
@@ -2878,7 +2879,7 @@ class config:
             }
             # request发送post请求并指定form_data参数
             res = public.httpPost(url, data)
-            # public.print_log("获取问卷@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   {}".format(res))
+
             try:
                 res = json.loads(res)
             except:
@@ -3162,7 +3163,7 @@ class config:
             "USER_AGENT": public.xsssec(request.headers.get('User-Agent')),  # 客户端连接信息
             "ERROR_INFO": error,  # 错误信息
             "PACK_TIME": public.readFile("/www/server/panel/config/update_time.pl") if os.path.exists("/www/server/panel/config/update_time.pl") else public.getDate(),  # 打包时间
-            "TYPE": 1,
+            "TYPE": 101,
             "ERROR_ID": "{}_{}".format(error.split("\n")[0].strip(),get.get("uri", ""))
         }
         pkey = public.Md5(error_infos["ERROR_INFO"])
@@ -3170,12 +3171,9 @@ class config:
         # 提交
         if not public.cache_get(pkey):
             try:
-                public.run_thread(public.httpPost("https://api.bt.cn/bt_error/index.php", error_infos))
+                public.run_thread(public.httpPost("https://geterror.aapanel.com/bt_error/index.php", error_infos))
                 public.cache_set(pkey, 1, 1800)
             except Exception as e:
                 pass
 
         return public.returnMsg(True, "OK")
-
-
-

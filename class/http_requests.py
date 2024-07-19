@@ -1,10 +1,10 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 
 # +-------------------------------------------------------------------
@@ -440,13 +440,19 @@ exit($header."\r\n\r\n".json_encode($body));
         match = re.search("(.|\n)+\r\n\r\n",req)
         if not match: return req,{},0
         tmp = match.group().split("\r\n")
-        i = 0
-        if tmp[i].find('Continue') != -1: i+=1
-        if not tmp[i]: i+=1
-        try:
-            status_code = int(tmp[i].split()[1])
-        except:
-            status_code = 0
+
+        status_code = 0
+
+        from public.regexplib import search_http_response_status_line
+
+        for i in range(len(tmp) - 1):
+            m = search_http_response_status_line.search(tmp[i])
+            if not m:
+                continue
+
+            status_code = int(m.group(1))
+            break
+
         body = req.replace(match.group(),'')
         return body,tmp,status_code
 

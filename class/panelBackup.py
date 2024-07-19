@@ -1,10 +1,10 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 # -------------------------------------------------------------------
 
 # ------------------------------
@@ -422,10 +422,30 @@ class backup:
     def backup_site(self, siteName, save=3, exclude=[], echo_id=None):
         try:
             self.echo_start()
-            find = public.M('sites').where('name=?', (siteName,)).field('id,path').find()
+            find = public.M('sites').where('name=?', (siteName,)).field('id,path,project_type').find()
             public.print_log(find)
-            if not find:
+            if not find or not isinstance(find, dict):
                 raise Exception(' The directory for does not exist')
+
+            # Wordpress
+            if find['project_type'] == 'WP2':
+                import PluginLoader
+                if PluginLoader.get_auth_state() < 1:
+                    self.echo_info(public.get_msg_gettext('Authorization is invalid or expired'))
+                    return None
+
+                try:
+                    from wp_toolkit import wpbackup
+                    bak_info = wpbackup(find['id']).backup_full_get_data()
+                    self.echo_info(public.get_msg_gettext('Backup wordpress [{}] successfully', (siteName,)))
+                    self.echo_end()
+                    return bak_info.bak_file
+                except Exception as e:
+                    public.print_error()
+                    self.echo_info(str(e))
+                    self.echo_end()
+                    return None
+
             spath = find['path']
             pid = find['id']
             fname = 'web_{}_{}.tar.gz'.format(siteName, public.format_date("%Y%m%d_%H%M%S"))

@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: lkq <lkq@bt.cn>
+# Author: lkq <lkq@aapanel.com>
 # -------------------------------------------------------------------
 # Time: 2022-08-10
 # -------------------------------------------------------------------
@@ -32,7 +32,7 @@ def check_run():
     '''
         @name CVE-2021-4034 polkit pkexec 本地提权漏洞检测
         @time 2022-08-12
-        @author lkq@bt.cn
+        @author lkq@aapanel.com
     '''
 
     st = os.stat('/usr/bin/pkexec')

@@ -1,10 +1,10 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: zhwwen <zhw@bt.cn>
+# Author: zhwwen <zhw@aapanel.com>
 # -------------------------------------------------------------------
 #
 # ------------------------------
@@ -26,7 +26,7 @@ class ols:
         conf = public.readFile(self._main_conf_path)
         data = {}
         for k in keys:
-            rep = '{}\s+(\w+)'.format(k)
+            rep = r'{}\s+(\w+)'.format(k)
             tmp = re.search(rep,conf)
             if tmp:
                 data[k] = tmp.groups(1)
@@ -43,7 +43,7 @@ class ols:
         conf = public.readFile(self._main_conf_path)
         data = json.loads(get.array)
         for k in data:
-            rep = '{}\s+(\w+)'.format(k)
+            rep = r'{}\s+(\w+)'.format(k)
             tmp = re.search(rep,conf)
             if tmp:
                 conf = re.sub('{}.*'.format(k),'{} {}'.format(k,data[k]),conf)
@@ -58,24 +58,24 @@ class ols:
         data = {}
         sitename = public.M('sites').where("id=?", (get.id,)).getField('name')
         conf = public.readFile(self._detail_conf_path.format(sitename))
-        rep = 'expiresByType\s+(.*)'
+        rep = r'expiresByType\s+(.*)'
         tmp = re.search(rep,conf)
 
         if tmp:
             tmp = tmp.groups(1)[0].split(',')
             for i in tmp:
                 if 'image' in i:
-                    rep = 'image\/\*=A(\d+)'
+                    rep = r'image\/\*=A(\d+)'
                     data['image'] = re.search(rep,conf).groups(1)[0]
                     print(data['image'])
                 if 'css' in i:
-                    rep = 'css=A(\d+)'
+                    rep = r'css=A(\d+)'
                     data['css'] = re.search(rep, conf).groups(1)[0]
                 if 'javascript' in i:
-                    rep = 'javascript=A(\d+)'
+                    rep = r'javascript=A(\d+)'
                     data['javascript'] = re.search(rep, conf).groups(1)[0]
                 if 'font' in i:
-                    rep = 'font.*=A(\d+)'
+                    rep = r'font.*=A(\d+)'
                     data['font'] = re.search(rep, conf).groups(1)[0]
         return data
 
@@ -92,12 +92,12 @@ class ols:
             print(self._detail_conf_path.format(sitename))
             values = json.loads(get.values)
             for k in values:
-                rep = '{}/[\*\w+=]=A\d+'.format(k)
+                rep = r'{}/[\*\w+=]=A\d+'.format(k)
                 old_cache = re.search(rep,conf)
                 if not old_cache:
                     continue
                 old_cache = old_cache.group()
-                new_cache = re.sub('\d+',values[k],old_cache)
+                new_cache = re.sub(r'\d+',values[k],old_cache)
                 conf = conf.replace(old_cache,new_cache)
             public.writeFile(self._detail_conf_path.format(sitename),conf)
             public.serviceReload()
@@ -127,13 +127,13 @@ class ols:
         if tmp:
             # 获取排除文件
             tmp = tmp.group()
-            rep = '#\s*excluding.*\n.*\((.*)\)'
+            rep = r'#\s*excluding.*\n.*\((.*)\)'
             tmp = re.search(rep,tmp)
             if tmp:
                 data['exclude_file'] = [i+'.php' for i in tmp.groups(1)[0].split('|')]
             print(data)
             # 获取缓存时间
-            rep = 'max-age=(\d+)'
+            rep = r'max-age=(\d+)'
             tmp = re.search(rep,conf)
             if tmp:
                 data['maxage'] = tmp.groups(1)[0]
@@ -154,7 +154,7 @@ class ols:
         conf = self.get_private_cache_conf(get.id)[0]
         file = self.get_private_cache_conf(get.id)[1]
         if 'BTLSCACHE_BEGIN' not in conf:
-            confstr = """#######################BTLSCACHE_BEGIN#######################
+            confstr = r"""#######################BTLSCACHE_BEGIN#######################
 
 <IfModule LiteSpeed>
 RewriteEngine on
@@ -206,10 +206,10 @@ RewriteRule (.*\.php)?$ - [E=Cache-Control:private]
             for file in get.exclude_file.split('\n'):
                 exclude_files.append(file.split('.')[0])
             exclude_file = "|".join(exclude_files)
-            old_exc_rep = 'RewriteCond\s+\%\{REQUEST_URI\}\s+\!/\(.*\)\\\.php\$'
-            new_exc = 'RewriteCond %{REQUEST_URI} !/(' + exclude_file + ')\.php$'
+            old_exc_rep = r'RewriteCond\s+\%\{REQUEST_URI\}\s+\!/\(.*\)\\\.php\$'
+            new_exc = 'RewriteCond %{REQUEST_URI} !/(' + exclude_file + r')\.php$'
             bt_conf = re.sub(old_exc_rep,new_exc,bt_conf)
-            old_max_age_rep = 'max-age=\d+'
+            old_max_age_rep = r'max-age=\d+'
             new_max_age = 'max-age={}'.format(int(get.max_age))
             bt_conf = re.sub(old_max_age_rep,new_max_age,bt_conf)
             conf = re.sub(bt_conf_rep,bt_conf,conf)
@@ -247,11 +247,11 @@ RewriteRule (.*\.php)?$ - [E=Cache-Control:private]
             conf = public.readFile(path)
             ap_path = '/www/server/panel/vhost/apache/{}.conf'.format(s['sitename'])
             ap_conf = public.readFile(ap_path)
-            tmp = re.search('ServerName\s+SSL\.(.*)',ap_conf)
+            tmp = re.search(r'ServerName\s+SSL\.(.*)',ap_conf)
             s['phpv'] = re.search(phpv_reg,conf).groups(1)[0]
             s['rundir']  = re.search(rundir_reg.format(s),conf).groups(1)[0]
             s['ssl_domain'] =tmp.groups(1)[0] if tmp else None
-            s['port'] = re.search('listen\s+(\d+);',conf).groups(1)[0]
+            s['port'] = re.search(r'listen\s+(\d+);',conf).groups(1)[0]
         return siteinfo
 
     def _make_args(self):

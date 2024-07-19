@@ -1,0 +1,1 @@
+import{a as s}from"./index.js?v=1721298337096";import{S as t,Z as e,D as l}from"./vue.js?v=1721298337096";const o={class:"bt-tips-ul flex flex-col gap-4px list-outside list-disc leading-20px text-[#777]"};const a=s({},[["render",function(s,a){return t(),e("ul",o,[l(s.$slots,"default")])}]]);export{a as _};

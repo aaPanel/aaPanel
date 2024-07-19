@@ -1,243 +1,243 @@
-#coding: utf-8
-#-------------------------------------------------------------------
-# 宝塔Linux面板
-#-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
-#-------------------------------------------------------------------
-# Author: cjxin <cjxin@bt.cn>
-#-------------------------------------------------------------------
-
-#
-#------------------------------
-
-import os,sys,re
-from filesModel.base import filesBase
-import public,json
-import zipfile,shutil
-try:
-    from unrar import rarfile
-except:
-    os.system('btpip install unrar')
-    from unrar import rarfile
-
-
-class main(filesBase):
-
-    def __init__(self):
-        pass
-
-
-    def __check_zipfile(self,sfile,is_close = False):
-        '''
-        @name 检查文件是否为zip文件
-        @param sfile 文件路径
-        @return bool
-        '''
-
-        zip_file = None
-        try:
-            zip_file =  rarfile.RarFile(sfile)
-        except:pass
-
-        if is_close and zip_file:
-            zip_file.close()
-
-        return zip_file
-
-    def get_zip_files(self,args):
-        '''
-        @name 获取压缩包内文件列表
-        @param args['path'] 压缩包路径
-        @return list
-        '''
-        sfile = args.sfile
-        if not os.path.exists(sfile):
-            return public.returnMsg(False,'FILE_NOT_EXISTS')
-
-        zip_file = self.__check_zipfile(sfile)
-        if not zip_file:
-            return public.returnMsg(False,'NOT_ZIP_FILE')
-
-        data = {}
-        for item in zip_file.infolist():
-
-            sub_data = data
-            f_name = self.__get_zip_filename(item)
-
-            f_dirs = f_name.split('/')
-            for d in f_dirs:
-                if not d: continue
-                if not d in sub_data:
-                    if d == f_name[-len(d):]:
-                        tmps = item.date_time
-
-                        sub_data[d] = {
-                            'file_size': item.file_size,
-                            'compress_size': item.compress_size,
-                            'filename':d,
-                            'fullpath':f_name,
-                            'date_time': public.to_date(times = '{}-{}-{} {}:{}:{}'.format(tmps[0],tmps[1],tmps[2],tmps[3],tmps[4],tmps[5])),
-                            'is_dir': 0
-                        }
-                        if item.flag_bits == 32:
-                            sub_data[d]['is_dir'] = 1
-                    else:
-                        sub_data[d] = {}
-                sub_data = sub_data[d]
-
-        return data
-
-
-    def get_fileinfo_by(self,args):
-        '''
-        @name 获取压缩包内文件信息
-        @param args['path'] 压缩包路径
-        @param args['filename'] 文件名
-        @return dict
-        '''
-
-        sfile = args.sfile
-        filename = args.filename
-        if not os.path.exists(sfile):
-            return public.returnMsg(False,'FILE_NOT_EXISTS')
-
-        result = {}
-        result['status'] = True
-        result['data'] = ''
-        with rarfile.RarFile(sfile,'r') as zip_file:
-            for item in zip_file.infolist():
-                z_filename = self.__get_zip_filename(item)
-                if z_filename == filename:
-
-                    buff = zip_file.read(item.filename)
-                    encoding,srcBody = public.decode_data(buff)
-                    result['encoding'] = encoding
-                    result['data'] = srcBody
-                    break
-        return result
-
-    def delete_zip_file(self,args):
-        '''
-        @name 删除压缩包内文件
-        @param args['path'] 压缩包路径
-        @param args['filenames'] 文件名列表，数组格式
-        @return dict
-        '''
-        sfile = args.sfile
-        filenames = args.filenames
-
-        return public.returnMsg(False,'RAR archive files do not support file deletion')
-
-    def write_zip_file(self,args):
-        '''
-        @name 写入压缩包内文件
-        @param args['path'] 压缩包路径
-        @param args['filename'] 文件名
-        @param args['data'] 写入数据
-        @return dict
-        '''
-
-        sfile = args.sfile
-        filename = args.filename
-        data = args.data
-        return public.returnMsg(False,'RAR archive does not support this function!')
-
-    def extract_byfiles(self,args):
-        """
-        @name 解压部分文件
-        @param args['path'] 压缩包路径
-        @param args['extract_path'] 解压路径
-        @param args['filenames'] 文件名列表，数组格式
-        """
-        sfile = args.sfile
-        filenames = args.filenames
-        extract_path = args.extract_path
-        if not os.path.exists(sfile):
-            return public.returnMsg(False,'FILE_NOT_EXISTS')
-
-        if not os.path.exists(extract_path):
-            os.makedirs(extract_path,384)
-
-        tmp_path = '{}/tmp/{}'.format(public.get_soft_path(),public.md5(public.GetRandomString(32)))
-        if not os.path.exists(tmp_path):
-            os.makedirs(tmp_path,384)
-
-        with rarfile.RarFile(sfile) as zip_file:
-            try:
-                m_list = {}
-
-                f_infos = zip_file.infolist()
-                f_infos = sorted(f_infos,key=lambda x:x.filename)
-                for item in f_infos:
-                    filename = self.__get_zip_filename(item)
-
-                    if filename in filenames:
-                        spath = os.path.join(tmp_path,filename).strip('/')
-                        if item.flag_bits == 32:
-                            m_list[spath] = []
-                        else:
-                            if not 'other' in m_list:
-                                m_list['other'] = []
-
-                            dir_key = os.path.dirname(spath)
-                            info = {'src':spath,'dst':'{}/{}'.format(extract_path,os.path.basename(spath))}
-                            if dir_key in m_list:
-                                info['dst'] = '{}/{}'.format(extract_path,'/'.join(filename.split('/')[1:]))
-                                s_path = os.path.dirname(info['dst'])
-                                if not os.path.exists(s_path): os.makedirs(s_path,384)
-
-                                m_list[dir_key].append(info)
-                            else:
-                                m_list['other'].append(info)
-                        zip_file.extract(filename.strip('/').replace('/','\\'),tmp_path)
-                for key in m_list:
-                    try:
-                        # if key != 'other':
-                        #     dir_name = '{}/{}'.format(extract_path,os.path.basename(key))
-                        #     if not os.path.exists(dir_name): os.makedirs(dir_name,384)
-
-                        for info in m_list[key]:
-                            shutil.copyfile(info['src'],info['dst'])
-                    except:pass
-
-                shutil.rmtree(tmp_path, True)
-            except:
-                return public.returnMsg(False,'Decompression failed,error:' + public.get_error_info())
-        return public.returnMsg(True,'The file was decompressed successfully')
-
-    def add_zip_file(self,args):
-        '''
-        @name 添加文件到压缩包
-        @param args['r_path'] 跟路径
-        @param args['filename'] 文件名
-        @param args['f_list'] 写入数据
-        @return dict
-        '''
-
-        sfile = args.sfile
-        r_path = args.r_path
-        f_list = args.f_list
-        return public.returnMsg(False,'RAR archive does not support this function!')
-
-
-
-    def __get_zip_filename(self,item):
-        '''
-        @name 获取压缩包文件名
-        @param item 压缩包文件对象
-        @return string
-        '''
-        filename = item.filename
-        try:
-            filename = item.filename.encode('cp437').decode('gbk')
-        except:pass
-        if item.flag_bits == 32:
-            filename  += '/'
-
-        return filename.replace('\\','/')
-
-
-
-
-
-
+QRASP55VO/1DQ98p1csw9A==
+I8MGJUwtjfcKc5w4E0SmjHtl5KRuv0WI7NyW3SlEwCrZmcmaREiC99KS4CzwW5Su330khbLdQaeuAWr4x/NqQCTep2zIARzdXiKXPh1Fe+M=
+dBZyCsfrbwqvA0sbdGrIGg==
+I8MGJUwtjfcKc5w4E0SmjHtl5KRuv0WI7NyW3SlEwCrZmcmaREiC99KS4CzwW5Su330khbLdQaeuAWr4x/NqQCTep2zIARzdXiKXPh1Fe+M=
+n+0ptngHIPIjFuMNQ53bfj+Na/fdhk6k1yTpAwW7j353Dw920mEqQQZjykAHeRmp0ZD/P3ftGifsmPOMf2b7XdEqyZH0yl9kjaUugj3dYPI=
+I8MGJUwtjfcKc5w4E0SmjHtl5KRuv0WI7NyW3SlEwCrZmcmaREiC99KS4CzwW5Su330khbLdQaeuAWr4x/NqQCTep2zIARzdXiKXPh1Fe+M=
+jh3cxzkA2htccqfZRKAUdI8r17q57nOGP4OxbJlL1NAnrF4weHnS0MpT6C6jbrX5
+I8MGJUwtjfcKc5w4E0SmjHtl5KRuv0WI7NyW3SlEwCrZmcmaREiC99KS4CzwW5Su330khbLdQaeuAWr4x/NqQCTep2zIARzdXiKXPh1Fe+M=
+1u+XjG/2+GSQRv6EzCaWRQ==
+Hf+bBTgRv9pVfall8ODpvg==
+I8MGJUwtjfcKc5w4E0SmjHwLsErBQ84ek459TV1n0Iir/P4mdpfwDI34s6+8CBN0
+1u+XjG/2+GSQRv6EzCaWRQ==
+K3QJU/hV27C5FAVoZ+avNNMfDMygeonfI5TFnvUHjhU=
+X9BNoFOwiQAnMPqEk6FnbzU/oA+chL/aEAzGH80mBrNNxRMBdiGPqgDUeLF6rer2
+hUVhKZtvg+FKessuieMZGkP/5FS8EfJsx7HCvhsTdvM=
+KbrESL0Rr2jC6vOleUlueMUgBS8ubHMHEf/dewOmXjc=
+f3AsbhS4PaN1B4cUkY9T+A==
+7slA6OC5VJa1dhNh0P/HjCGJmXVn2u3xkCMlnoSxSoA=
+MMZtIZZuuuWy0CLBzKekTg==
+0cnYXLPu1n3c2VaQ3tVc+NKPyveC0ERGp532EiLQZU5gtpnLWSMk9qn8OtVlUlvH
+7slA6OC5VJa1dhNh0P/HjCGJmXVn2u3xkCMlnoSxSoA=
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+CjJS7KrzKM18mlLqJK9jKTB717Vvrubu5ix9tb047ao=
+1u+XjG/2+GSQRv6EzCaWRQ==
+9GxZpCRwMRDPejWR2Vvf+LKn0tNtFKp8Eh2tnr4Da9U=
+6c3cWGGlsEf4q4E+EjPFyg==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+6d8NLnHX3WuS3g79bJvyhLTeka+iJoxis1kUHdyggy+yXh3Xc8xsyir/5NbKP+Sj41j2UHgL27dZFRsmbh/P+Q==
+KZTmaJLp+FU9X93j5Tpqtw==
+0LFyB+q/4AUBkCrX53xYJedFoNZHYELHOLu/R25oBrqozNv9g917+/ANMSb6X+WR
+yqM179SzW9HnBHozkU+IlaI6kf6Fax7Db/qE4wQMDFqfwVE+4rG3+IJ9S3c+p3Wf
+akHibliG6j9uvBEg96vRehUZmhX3a+KyYm/Obf/H764=
+KZTmaJLp+FU9X93j5Tpqtw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1VHvxkEcO4espNMpWHmnH1EgArAJXS2MAairjwNzV9c=
+b4OJVZe8QyIpjuTpKXDL9A==
+wQn8ViRVbUL8OLSIgBD0IAeRdK41R3m/PKt9hFbBzr88nFZgyZVILp1bIMP5rZUJ
+usrsES3VVkgHW6tBbEkpHTeLztsByVaJibbFv8kSFIM=
+1u+XjG/2+GSQRv6EzCaWRQ==
+l+sL2BKY+z3yDMAsWI51b39VWekdKmbfrOabwvVHTbGfiUobxgPhHW2OIZyeGUJ9
+wQn8ViRVbUL8OLSIgBD0IO53Ya1+ckG2IX47+ykaGJU=
+1u+XjG/2+GSQRv6EzCaWRQ==
+MxWDzXEQjj6mgdfarjHFtAA6unJa5l9pTo0P8ga3JDU=
+1u+XjG/2+GSQRv6EzCaWRQ==
+x41zVQ6DCtWXndDIq7U8L+5quM3ARMCnVm34NUX7l/TJzZZ100EvdUXHXI2cFH4H
+KZTmaJLp+FU9X93j5Tpqtw==
+NNh1PlSD8WUnUEbz+BU/P7D7U0y87ntgFdQV5REShmme9ACxsySMBZr2gsEQniKL
+c1XU6vxl7MsQKGo3r4amMsSWef3BumXlCWI6QCsp6pMACoHb/XNQfx2cpKV7J/MH
+akHibliG6j9uvBEg96vRer/Fg5zTlM8oj8hSAsYq018=
+KZTmaJLp+FU9X93j5Tpqtw==
+YdUmdqAC07VhbSt1h6KCDASPIXTwTSkv8cm4ToJ+lpo=
+wgR07xfoapmx6eEnFHXXYmnjxw2aWD9jyym26bSe8wdUky12ZBuFKfAUxS++Pix0
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmW/27EoqfC0X59kkH7imoHQb/TQW5074PHVFRKqgD5aSA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1VHvxkEcO4espNMpWHmnHy+YX2/U7Ip4Uqt3suxNhindpukzgQ1aM+PshcW/1dV1
+LuO0LAjc92aYQU4tSUEvi4x4NJPWR/eKWjRfKMSRL8o=
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmV/41TA4054wrqxXx/Q1i8cmtFJNrxypDZNiWIVVjiYLA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+JbnXIK/axHVmA2plDNFCpPYlXWvPB/7lIz9ynMkifTY=
+ei/1A+2pKZSasjYF/t4qojBnh7Bi8Fen8Fcf8mKjT9IuWg8ZCZGedub8Eqjf8qUh
+1u+XjG/2+GSQRv6EzCaWRQ==
+4nsuLyRybkZg8C3fJCsRPXDWwLMccXwEpFBdFK0JOvg=
+ZFD6pnBshb3mpu7xvvuMLemrazA4ssXDDuW5SINX4ZLsvLIwaJ4YyDANze64OGqUEj7NCJs+t+zkcUskHr+gqw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+g5xFPP9LKBd4uktrRYzGf+p1NdL+k6huN6CrzYXY3fPVQzhtKStMTpRTZpRqmhGR
+wlLHv6kT3Q/RmtMBN4nDAbqo0o2IA7mU8WVNqZvoB5I=
+VmVrGQo2zRokW/ZuO9bN6+qRbBr2ygG3RGcAIOk727ylzODmV8VRqZ4YKvduSUCu
+VmVrGQo2zRokW/ZuO9bN62psx0nYMGJaQ1S1BUtE6l8lgsopQJ3Qf5syQpAasAAf
+VmVrGQo2zRokW/ZuO9bN69Woqo49I0Fga24Nj55N9ZL81I98txu56TEAiJ0hswK9
+VmVrGQo2zRokW/ZuO9bN61e1I6gZaVwmbMEHc7jd9wFEHpeilcxXyCkd5bmWx/yK
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN69+qNrAfkaoVno2zP/PIMh/5aA4AiEej6zodAVzZFzS0
+VmVrGQo2zRokW/ZuO9bN6xT3wQu8/ZV37F/D/EekYn8LNRE5UkGbTG1UxYqNO1dyU2pay/FWt6r8mJiKZ4UU/g==
+VmVrGQo2zRokW/ZuO9bN64KhHtDRs0SmcOS1WVIbDs4jrgwkpIqneJssR9hHHlJ3UJd9tZzLLz6C+UQLUJWWGbgxXo0UEEapI14RLzluAUk=
+VmVrGQo2zRokW/ZuO9bN6xT3wQu8/ZV37F/D/EekYn92m0FWAHkcFEifdcSefZI3
+VmVrGQo2zRokW/ZuO9bN6xQU/k6xhXMbxscs7Gix8nNqUkjAknQH3LrGVvAyjYtQ
+VmVrGQo2zRokW/ZuO9bN6xOutEc9teLv333RLphPxTSZMBPTZ5nEHEAZCqisJAYdx733inB6pPVPHnS53cxkslRzdzhPLD4mmySs0XcaZo8Yb7xMuMGGlmbahCRF6eC3yiiMtXXp0R7BViTpiJ04fqWtzkElISMu7z4pkkwr23TjUMjTjCelUG9Lwgmt+EiK
+VmVrGQo2zRokW/ZuO9bN6wv73IH9kSzXKMUmUPacSk1KDsdrjROzTN1kzduuP0l3
+VmVrGQo2zRokW/ZuO9bN69lJPu1G3iX01kmj1/0ynPc=
+VmVrGQo2zRokW/ZuO9bN63p1oaV/8/rZOHP3bxdBsLvjL/YDIWVk4lhx62fOdGpioi6WGXoNG40BaJlgn48VjQ==
+VmVrGQo2zRokW/ZuO9bN6/kiIWH8hJ6dJOo/fnNj9VLcBHtqpOZ/Rc4AjXcEm1edHKkbtiFAlXrzE+rfp/AeMQ==
+VmVrGQo2zRokW/ZuO9bN69jIxF5VISZtC2vxWRknx7k=
+VmVrGQo2zRokW/ZuO9bN69+qNrAfkaoVno2zP/PIMh80w0dM3z0phdMS+lT6j/xo
+VmVrGQo2zRokW/ZuO9bN65abAZ39yZLyKCl4nd6eov4HdKauw4+toNc5YoXvsAeW
+1u+XjG/2+GSQRv6EzCaWRQ==
++plE/1bhdo64kO07cLlUXzzWH25pNAS0eDxp8hnHILg=
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+J24jXQQti6wQv5pCoF2ZrRvdf2ev6P6vInKuFAO8eQfewP9/G67aA1dZDLRwjari
+KZTmaJLp+FU9X93j5Tpqtw==
+NNh1PlSD8WUnUEbz+BU/P7D7U0y87ntgFdQV5REShmlP+1p+XjT1dvUjFUZHsqC6
+c1XU6vxl7MsQKGo3r4amMsSWef3BumXlCWI6QCsp6pMACoHb/XNQfx2cpKV7J/MH
+c1XU6vxl7MsQKGo3r4amMpPnl/Q0nxs4Ul/v+JmLHipRvS1iO3+JhmWzafMyTI0p
+akHibliG6j9uvBEg96vResIm2pvfeBRQxNU2J0BQeUc=
+KZTmaJLp+FU9X93j5Tpqtw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+YdUmdqAC07VhbSt1h6KCDASPIXTwTSkv8cm4ToJ+lpo=
+BIa0ibHnqUboaK9kYHYO4um2nnLtPSMsHb7nUhh0kKQ6CdlvwTSeB4h8LEiuwG9t
+wgR07xfoapmx6eEnFHXXYmnjxw2aWD9jyym26bSe8wdUky12ZBuFKfAUxS++Pix0
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmW/27EoqfC0X59kkH7imoHQb/TQW5074PHVFRKqgD5aSA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+/0ULpLqgTvInFD0r5hHANoosZ+xywkOR5dozStfmlYk=
+YSlit6erKXylrjSZnvyW8I3FYH6DLcfYpMAlko6lQqVBBd1eDeDGaujrHWIOJkcI
+YSlit6erKXylrjSZnvyW8CCccEStX4fvFvduMtCGi54=
+d2Ww7zhXROgo6Qq8ml3vsgVOxob/5TKf0KTWSmheRnqYA/wEs2DzrY8Dpm7Fq44lbdZ2N/U6naG4DD7karinEw==
+wlLHv6kT3Q/RmtMBN4nDAdAMeIPpwO0Pgawv937x0Zw4iwEVDD1EIlJA37GxF8mZ
+VmVrGQo2zRokW/ZuO9bN64/tCOCyKu41lsl+3BVlFMtjVa1DXtvHbVFGS5luzEIFtQp9eHGpneVvKz65gzXCXQ==
+VmVrGQo2zRokW/ZuO9bN69Z4WTbfjflDn+PHJe4HyeBCMRIQIdsxtS/SkQUyTK46
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN64IUBVOpZieySJUi/5Xp7IP9i2hr//841YnIEqNDctKsA4PCQR7FmaZMQHs7tdC+NQ==
+VmVrGQo2zRokW/ZuO9bN63KtgQxYoQMLiw/swXgEzq6F5dbUK15QUQFhJ/fqYDb2bGgnr3J8HSW6FkIPXw/QAPGbSGA6euyj6sY6jr9uD88=
+VmVrGQo2zRokW/ZuO9bN60+Gj1vDNaFgHQa9qY+WYQ/+8quDVQ7mW+ZFMiCB6dK3zTXaMhAFlgEsY2XTlgH4hQ==
+VmVrGQo2zRokW/ZuO9bN60dNkfoHcjUpCVMrBt5WSA9PCuYzYl0QLyyWqlMopPgY
+VmVrGQo2zRokW/ZuO9bN6zZcpHqbLPCfucCocPyjGlY=
+ruTTNFTdswRs4Mc+srnRk818d9d/TGGXzgPjSrVtMi8=
+1u+XjG/2+GSQRv6EzCaWRQ==
+6JhaWzGWadTJ3yzCk9OQNgkLy/m1ahTUuEy+6FiV49HNwHkAN2ZMxFTsufeIA0ig
+KZTmaJLp+FU9X93j5Tpqtw==
+dar6N0tUAb9rU8/aX1b3tGumQ1hhfk8O6qr6gmiQ1+eBvZwFkpECn+RP444+i510
+c1XU6vxl7MsQKGo3r4amMsSWef3BumXlCWI6QCsp6pMACoHb/XNQfx2cpKV7J/MH
+c1XU6vxl7MsQKGo3r4amMlEDkaPg52QqeaL1e16aTiZGdP9MF1i1K/F0icaNF/FRZY8CjFaji8Ecm2WEpXZbMiyduIw57U2lMT6kzLqch3Y=
+akHibliG6j9uvBEg96vResIm2pvfeBRQxNU2J0BQeUc=
+KZTmaJLp+FU9X93j5Tpqtw==
+YdUmdqAC07VhbSt1h6KCDASPIXTwTSkv8cm4ToJ+lpo=
+BIa0ibHnqUboaK9kYHYO4kqIZZgv1yXQHpqfJ4aNJ54bUNUYTYq/0A+dhHby52Au
+1u+XjG/2+GSQRv6EzCaWRQ==
+96orka/uERLyRst14azQwhCOqhTfcgFhXNAQS0hmuOGJEf1Y6VNXDjyNkW1vEjRDaMkNWHl1CoN0rBoEBVHY67QP37rmJsbUJ2x6ftwGYtZYSf3Kk0VjMvB+nFonZq5o
+1u+XjG/2+GSQRv6EzCaWRQ==
+O2CqINTuIULxX7Gu5GskT/Nm15YFovaVXDj8ylNfQi3d2Qbp7uZYhyvrRE1b06DK
+KZTmaJLp+FU9X93j5Tpqtw==
+t987AUZxQR72IPRcAqvQ/tuxrpVopv9MhEHHX4HHOFnF6WZD8PVxYK60YbaBpzoa
+c1XU6vxl7MsQKGo3r4amMsSWef3BumXlCWI6QCsp6pMACoHb/XNQfx2cpKV7J/MH
+c1XU6vxl7MsQKGo3r4amMpPnl/Q0nxs4Ul/v+JmLHipRvS1iO3+JhmWzafMyTI0p
+c1XU6vxl7MsQKGo3r4amMgGxGyqG90Nz+St+6838nV5Hy3ZAmDi9Ecxx2gyS4yZO
+akHibliG6j9uvBEg96vResIm2pvfeBRQxNU2J0BQeUc=
+KZTmaJLp+FU9X93j5Tpqtw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+YdUmdqAC07VhbSt1h6KCDASPIXTwTSkv8cm4ToJ+lpo=
+BIa0ibHnqUboaK9kYHYO4um2nnLtPSMsHb7nUhh0kKQ6CdlvwTSeB4h8LEiuwG9t
+XKWK9LfYDT5w2LEWWxwkc6l2k+0eByijzzjX3gaj5k8=
+96orka/uERLyRst14azQwhCOqhTfcgFhXNAQS0hmuOGJEf1Y6VNXDjyNkW1vEjRD4/QxBrfqq90D/lFkSa20blyxshNDPqg3WrN+80ZCLiv67pSFMB4Brq3qmKK1ZCax
+1u+XjG/2+GSQRv6EzCaWRQ==
+D5nlraEpeGmKL9lxoq591txjX2tGuFl4D7WJZ/91lnMQ6WZrDXvU2okqtgoaqWSS
+Z8UsPk1Q7HtwjRd4g01ryw==
+VcOpbkIFMz59VlIHGus1M+TodC/Ia97E/RilXZKKBR29V7X/RlCXQzuWibEOEJfo
+c1XU6vxl7MsQKGo3r4amMsSWef3BumXlCWI6QCsp6pMACoHb/XNQfx2cpKV7J/MH
+c1XU6vxl7MsQKGo3r4amMjvzqCkQbmHuG+orSe7QiThO3NRqf8lDLQklcqf6u2x4yWOeax5QyyroyrE443cDvw==
+c1XU6vxl7MsQKGo3r4amMlEDkaPg52QqeaL1e16aTiZGdP9MF1i1K/F0icaNF/FRZY8CjFaji8Ecm2WEpXZbMiyduIw57U2lMT6kzLqch3Y=
+Z8UsPk1Q7HtwjRd4g01ryw==
+YdUmdqAC07VhbSt1h6KCDASPIXTwTSkv8cm4ToJ+lpo=
+BIa0ibHnqUboaK9kYHYO4kqIZZgv1yXQHpqfJ4aNJ54bUNUYTYq/0A+dhHby52Au
+77Mf9+1xBvZiUeNTtU/s60Kyn+UEu/OgKFt23E+wd8BiTmgbWFTzjcyPW/imPN9p
+wgR07xfoapmx6eEnFHXXYmnjxw2aWD9jyym26bSe8wdUky12ZBuFKfAUxS++Pix0
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmW/27EoqfC0X59kkH7imoHQb/TQW5074PHVFRKqgD5aSA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+wgR07xfoapmx6eEnFHXXYmSt8oPS+2lwNla/wCY62SBZ7HAsGrtjJH7dzi+5hXSr
+NqhMbY8+EQI8zhTG6Zh2I5csQ+/eG6egKX2sKZJStJZk02bOBi20A8UHGNy6sybt
+1u+XjG/2+GSQRv6EzCaWRQ==
+IZj4TYq2HlScfSdRkI+QP263Ug7hf7sm5bqxRn1G7j8CZM6KmOHJcbEZNXo2mkEA3MxUp7pEuHhp8IfRMvwD6SZPogdTtHhT5unY8iIrUiU6GaMq6uosuXq8hjxV9nUgwa2iqC1n6Ziz6tiDdPy1mw==
+wgR07xfoapmx6eEnFHXXYm7IOJ/6J1NThWNK2EdPRzYwWPvLP+jlqDp61mwE1mzG
+NqhMbY8+EQI8zhTG6Zh2I0BiMnuwr8mLUTT6rraGmzoW2r/izQNInq2UmHNhRbv+
+1u+XjG/2+GSQRv6EzCaWRQ==
+d2Ww7zhXROgo6Qq8ml3vsgVOxob/5TKf0KTWSmheRnquRJLMVVVt2mgyaZFKv044NjiViQAAPm85lrCa2jWZ2Q==
+vQwaisdUFOt9b0SJYuH/nrHigrTUtycF35lf58xGUQo=
+VmVrGQo2zRokW/ZuO9bN61lflwobhmxel33RwHEAzsw=
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN67AsrXUPIcMWmsNJ6skMzcKlx905HWgBAV8CDz0otLpU
+VmVrGQo2zRokW/ZuO9bN64dz5HIueoVr5d2RnbNUIG5nWBmTbO/nPqZZ/WWusF8B2fWzSHjB5SEduhXLHWwpbFrG7MHMtEZh0rgim/Nvx4Q=
+VmVrGQo2zRokW/ZuO9bN66NLXvUSFhBjtRrUbZsPQNOrrRiOaX/5u3wb0Rfqy+pv
+VmVrGQo2zRokW/ZuO9bN6wsF8dCAuyXrReoI3w9Yj8ejyyRZrswtbKGtDKu6ywDGElhkS5s5y7BVqVo+FqDhvA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN6wOXhaCTOJSjUCWUfjx+YyYNeSRhAnvmOzc5j0wt6pWe
+VmVrGQo2zRokW/ZuO9bN61ODJTwuVdYa2e77kV4UyyiKC6xmDTYLpzmUEL6iaKIotT6XRfjdpuPhvefHRzC+7lCYolxcDYktKmTY39wnf+k=
+VmVrGQo2zRokW/ZuO9bN63p1oaV/8/rZOHP3bxdBsLvjL/YDIWVk4lhx62fOdGpioi6WGXoNG40BaJlgn48VjQ==
+VmVrGQo2zRokW/ZuO9bN655297gigIv+4Ufy0bubbx7ffTJUoURR64bKe908x4ap
+VmVrGQo2zRokW/ZuO9bN62cJZxyhxghVn78AgYWoneU=
+VmVrGQo2zRokW/ZuO9bN63LTkM1jyAeOymc1jas3GbdSOgZt1gFP6QuzR+PijaPfkXI6n5+LDNetR25SN0GXgg==
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6Hkns33MIHJ07fAs3bEPA9prEegTrYMIIXPrzC4jD9xKXsA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN6+VE/nQEHJOLSC1DnxvG5TiVhVg6gVuqdGuJQhlv12yWuKoI97jUkrKrXkDjch0nxA==
+VmVrGQo2zRokW/ZuO9bN66Stm18E9cFphVzr4DVvkp0eMQP2KdIRCCvQSRwvi/ogRLfVX0ez0AMMWvL6BswFfzkKtdTc18Qoh/tgpwV2o+ISRqfA+Zum4wzK337qVQa8uzWtdDX/DDCp8lweCdFZUw==
+VmVrGQo2zRokW/ZuO9bN6zsPJOFHzvayEpAPvGiJ0lAWXca0TugmxSi8hINZZvoHQ1Y8EIw5ZU/3qx6IfU7mzw==
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6HkmgImK713UKKRnRLyQBV8gyjNySqhD1ER71FyIggw6WuTb4tOz+zOmUJvBAa9I7hKop6pGwEoB2371+83RgakZhyjMJWosIoeLReEb5GcqHNA==
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6HkkrikeB3PyYnRyHWKvzXceKTTsB9Sbgf9uM/v0isHHFakzQxpTSrdsYuODmqyQGE3Q=
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6Hknz2So+gFu+BijKlvPtsNKCIi0RkX1BFpd3GhHKBMdoB6DedipwufkrnDIRLB493gRtMiXCiHSsTBNmIXqRl2RK
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6HkkqG04WXvd0zYTVxLMDUCWknQtobuOLFvBEBrZieoy/MQ==
+VmVrGQo2zRokW/ZuO9bN61TKHwbNGf/2Ub0vd756U9O0Gtl0vapnf7HpdYx4U2ib
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6Hkk6a/inNeVFTn9NarE6P/3LG5P9KtqHegfYsmaf6Actxw==
+VmVrGQo2zRokW/ZuO9bN67FJHoI0w8vvrPd3RbddRrD2Em+ygcQFnOdLaXNs8ffOckKjgP3gK8cG/TTtMkpW3DL4StNcG/wbkijZS1ecn2uSboPx9VWF3PIGue3h88Yd
+VmVrGQo2zRokW/ZuO9bN65aFRI029wWEhVZc+cvXTRpzda0UlKTw9izNui/xkgdD
+VmVrGQo2zRokW/ZuO9bN62HWtxZ2I/oCwtyWP0WSTIg=
+VmVrGQo2zRokW/ZuO9bN6yfyDpG+MDWCM+I7xrm6yMNHAsN4/aIr7LH++fbWW227
+VmVrGQo2zRokW/ZuO9bN61RP3YbpVjqNga0la0+UFBO8any5NddZFrxwPV3C0M24EIcWBMjLzVvJvQ44t1iabGq/xokqYehL60ehDQbn9KxCN13a+8iVaZY1iG866Qqj
+VmVrGQo2zRokW/ZuO9bN62eRNBkbzSoIoWrmVfjVYrLET/E/3Y6o68HoLFuelGsQJP2af8rBXdv1FclI3SNTly4xPKYQA8oVfyimWnwTn5ty/z6nec9yo4C3p/VcdNxW
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN6ylpzdD3c1E8cbuPHoSW5RFJzxWCEvXq+6grREYT2q2eRpfKq4CUkXaSg9PBb07Brg==
+VmVrGQo2zRokW/ZuO9bN6zS5woMmxkovFr1YPmCwVjomnwjs8yJd8vJ968XXd0m0pndaSK8+qOGykyY0WQyhZ6POo4IRkaJlDhmmPU4hQ+8=
+VmVrGQo2zRokW/ZuO9bN643JcJR2kB926iqWdGz5U79RHIfKNGRE8o6dVdz5ZS7F
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmVrGQo2zRokW/ZuO9bN67XKiXTToYD4Xj8EJf9tU1/Vu+G41TBzTVvAU2KLSeCv
+M0ZySqkmhuHCw6olbCKv9zQJzSQJo4Zslq06bXS41SQ=
+VmVrGQo2zRokW/ZuO9bN6zM/X2hHBCd+n2OGnnATmrTcB3+DRCAF+pezmRjCID0udaZbU9+Bp25aQzLB8QDwQjJOciYA4ZMGenxD3oVSnPjhf/xssdSo8p33UNNP+7LnwEXEbYt+fXn2F5oiKjC6Gw==
+96orka/uERLyRst14azQwhCOqhTfcgFhXNAQS0hmuOGez0gsOf0QeJW43sHDXr/9AmAy18p0NZvV4WTviIGdP9rl3wBU2+XWJNGEpDCn6tY=
+1u+XjG/2+GSQRv6EzCaWRQ==
+mObL0pW76xtWwwYeubgb11DPfOo/O10pxYUkfDIVCjm8OCRNT0T/bbX1vgDt/X1W
+KZTmaJLp+FU9X93j5Tpqtw==
+H7d2MP+WgR9k+129/mRN7ij0WzXIk6KGh6j7E1fgHISsYBh1T2OGWCH8QUwPOkcn
+c1XU6vxl7MsQKGo3r4amMvdbawOnt/oBPSHXSrswDVS5Xue1Y7sB0F2vPYt641B/
+c1XU6vxl7MsQKGo3r4amMpPnl/Q0nxs4Ul/v+JmLHipRvS1iO3+JhmWzafMyTI0p
+c1XU6vxl7MsQKGo3r4amMqf9zivp0Qb6thhCnxaiYdHXwUNLWpYP828px7Gieygp
+akHibliG6j9uvBEg96vResIm2pvfeBRQxNU2J0BQeUc=
+KZTmaJLp+FU9X93j5Tpqtw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+YdUmdqAC07VhbSt1h6KCDASPIXTwTSkv8cm4ToJ+lpo=
+g8q6WqkWsk4SUh3d5nzGDIJanaAux29CDdQxdeG/k+U=
+Vyh8kMpaq2Q+odra9mDJ3Acz3kaMgWRroPCWRIzYRMY=
+96orka/uERLyRst14azQwhCOqhTfcgFhXNAQS0hmuOGJEf1Y6VNXDjyNkW1vEjRD4/QxBrfqq90D/lFkSa20blyxshNDPqg3WrN+80ZCLiv67pSFMB4Brq3qmKK1ZCax
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+VmA0y/dvI19s9e1BRFCkk/QzH4UG1JBu620e7CQwjbQOOUvlgFJz4yLxls8aSEEo
+KZTmaJLp+FU9X93j5Tpqtw==
+NNh1PlSD8WUnUEbz+BU/P+yZLrQY+X/LEpSBMw7xwfahIuTImHO5EcUQN9HQmgqX
+LikBEoRjt8wwWzUZNw+jJqDVmHo0aqmO8fx4adbRXm90KhRgBH5ZfsJyfEAx+4JR
+akHibliG6j9uvBEg96vRei563dWr9knc+JrDspjHc/A=
+KZTmaJLp+FU9X93j5Tpqtw==
+BIa0ibHnqUboaK9kYHYO4qFxMPyUysXdjYA1FqqhK4UMv4PoX1vehXtIZKdqRHbG
+b4OJVZe8QyIpjuTpKXDL9A==
+PRG/YRzXVD8iVR3bzEcUnlkfSwESl/MBfBcCyRS23XAS+yqB8BD2Fws8ohDlx4dxPS4gXd1cpWdmGRHNT+D6KSwXWu5PYPEs39ffK4i+qWM=
+usrsES3VVkgHW6tBbEkpHTeLztsByVaJibbFv8kSFIM=
+6XDh38s4HWrzA9ChHtrpYfoDrFj6al2d9qt+zDQaqfaH1G08yJkGG2cvEJO5JVMs
+PRG/YRzXVD8iVR3bzEcUngb7XqhS9BqrxYAnnSw8i/s=
+1u+XjG/2+GSQRv6EzCaWRQ==
+5wsVwKLrIjIWqeTNpSVp9UQ8Pi6XZeLfFubLS2iQfjkZO92jH5vXc8qvq/7p/iKy
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==

@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: lkq <lkq@bt.cn>
+# Author: lkq <lkq@aapanel.com>
 # -------------------------------------------------------------------
 # Time: 2022-08-10
 # -------------------------------------------------------------------
@@ -45,7 +45,7 @@ def check_run():
     '''
         @name 面板登录告警是否开启
         @time 2022-08-12
-        @author lkq@bt.cn
+        @author lkq@aapanel.com
     '''
     try:
         if os.path.exists("/lib/systemd/system/docker.service"):

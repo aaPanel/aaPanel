@@ -14,26 +14,26 @@ class safe:
     ev = public.GetMsg("EXPLOITABLE_VULNERABILITIES")
     dc = public.GetMsg("DANGEROUS_CITATION")
     rulelist = [
-        {'msg':get_post_ev,'level':danger,'code':'(\$_(GET|POST|REQUEST)\[.{0,15}\]\s{0,10}\(\s{0,10}\$_(GET|POST|REQUEST)\[.{0,15}\]\))'},
-        {'msg':one_word_th,'level':high_risk,'code':'((eval|assert)(\s|\n)*\((\s|\n)*\$_(POST|GET|REQUEST)\[.{0,15}\]\))'},
-        {'msg':one_word_th,'level':high_risk,'code':'(eval(\s|\n)*\(base64_decode(\s|\n)*\((.|\n){1,200})'},
-        {'msg':webshell,'level':danger,'code':'(function\_exists\s*\(\s*[\'|\"](shell\_exec|system|popen|exec|proc\_open|passthru)+[\'|\"]\s*\))'},
-        {'msg':webshell,'level':danger,'code':'((exec|shell\_exec|passthru)+\s*\(\s*\$\_(\w+)\[(.*)\]\s*\))'},
-        {'msg':ev,'level':danger,'code':'(\$(\w+)\s*\(\s.chr\(\d+\)\))'},
-        {'msg':webshell,'level':danger,'code':'(\$(\w+)\s*\$\{(.*)\})'},
-        {'msg':get_post_cookie_ev,'level':danger,'code':'(\$(\w+)\s*\(\s*\$\_(GET|POST|REQUEST|COOKIE|SERVER)+\[(.*)\]\s*\))'},
-        {'msg':get_post_cookie_ev,'level':danger,'code':'(\$\_(GET|POST|REQUEST|COOKIE|SERVER)+\[(.*)\]\(\s*\$(.*)\))'},
-        {'msg':webshell,'level':danger,'code':'(\$\_\=(.*)\$\_)'},
-        {'msg':webshell,'level':danger,'code':'(\$(.*)\s*\((.*)\/e(.*)\,\s*\$\_(.*)\,(.*)\))'},
-        {'msg':webshell,'level':danger,'code':'(new com\s*\(\s*[\'|\"]shell(.*)[\'|\"]\s*\))'},
-        {'msg':webshell,'level':danger,'code':'(echo\s*curl\_exec\s*\(\s*\$(\w+)\s*\))'},
-        {'msg':public.GetMsg("HAZARDOUS_FILE_OPERATION_VULNERABILITIES"),'level':high_risk,'code':'((fopen|fwrite|fputs|file\_put\_contents)+\s*\((.*)\$\_(GET|POST|REQUEST|COOKIE|SERVER)+\[(.*)\](.*)\))'},
-        {'msg':public.GetMsg("DANGEROUS_UPLOAD_VULNERABILITIES"),'level':danger,'code':'(\(\s*\$\_FILES\[(.*)\]\[(.*)\]\s*\,\s*\$\_(GET|POST|REQUEST)+\[(.*)\]\[(.*)\]\s*\))'},
-        {'msg':dc,'level':high_risk,'code':'(\$\_(\w+)(.*)(eval|assert|include|require|include\_once|require\_once)+\s*\(\s*\$(\w+)\s*\))'},
-        {'msg':dc,'level':high_risk,'code':'((include|require|include\_once|require\_once)+\s*\(\s*[\'|\"](\w+)\.(jpg|gif|ico|bmp|png|txt|zip|rar|htm|css|js)+[\'|\"]\s*\))'},
-        {'msg':ev,'level':danger,'code':'(eval\s*\(\s*\(\s*\$\$(\w+))'},
-        {'msg':one_word_th,'level':high_risk,'code':'((eval|assert|include|require|include\_once|require\_once|array\_map|array\_walk)+\s*\(\s*\$\_(GET|POST|REQUEST|COOKIE|SERVER|SESSION)+\[(.*)\]\s*\))'},
-        {'msg':one_word_th,'level':danger,'code':'(preg\_replace\s*\((.*)\(base64\_decode\(\$)'}
+        {'msg':get_post_ev,'level':danger,'code':r'(\$_(GET|POST|REQUEST)\[.{0,15}\]\s{0,10}\(\s{0,10}\$_(GET|POST|REQUEST)\[.{0,15}\]\))'},
+        {'msg':one_word_th,'level':high_risk,'code':'((eval|assert)(\\s|\n)*\\((\\s|\n)*\\$_(POST|GET|REQUEST)\\[.{0,15}\\]\\))'},
+        {'msg':one_word_th,'level':high_risk,'code':'(eval(\\s|\n)*\\(base64_decode(\\s|\n)*\\((.|\n){1,200})'},
+        {'msg':webshell,'level':danger,'code':'(function\\_exists\\s*\\(\\s*[\'|\"](shell\\_exec|system|popen|exec|proc\\_open|passthru)+[\'|\"]\\s*\\))'},
+        {'msg':webshell,'level':danger,'code':r'((exec|shell\_exec|passthru)+\s*\(\s*\$\_(\w+)\[(.*)\]\s*\))'},
+        {'msg':ev,'level':danger,'code':r'(\$(\w+)\s*\(\s.chr\(\d+\)\))'},
+        {'msg':webshell,'level':danger,'code':r'(\$(\w+)\s*\$\{(.*)\})'},
+        {'msg':get_post_cookie_ev,'level':danger,'code':r'(\$(\w+)\s*\(\s*\$\_(GET|POST|REQUEST|COOKIE|SERVER)+\[(.*)\]\s*\))'},
+        {'msg':get_post_cookie_ev,'level':danger,'code':r'(\$\_(GET|POST|REQUEST|COOKIE|SERVER)+\[(.*)\]\(\s*\$(.*)\))'},
+        {'msg':webshell,'level':danger,'code':r'(\$\_\=(.*)\$\_)'},
+        {'msg':webshell,'level':danger,'code':r'(\$(.*)\s*\((.*)\/e(.*)\,\s*\$\_(.*)\,(.*)\))'},
+        {'msg':webshell,'level':danger,'code':'(new com\\s*\\(\\s*[\'|\"]shell(.*)[\'|\"]\\s*\\))'},
+        {'msg':webshell,'level':danger,'code':r'(echo\s*curl\_exec\s*\(\s*\$(\w+)\s*\))'},
+        {'msg':public.GetMsg("HAZARDOUS_FILE_OPERATION_VULNERABILITIES"),'level':high_risk,'code':r'((fopen|fwrite|fputs|file\_put\_contents)+\s*\((.*)\$\_(GET|POST|REQUEST|COOKIE|SERVER)+\[(.*)\](.*)\))'},
+        {'msg':public.GetMsg("DANGEROUS_UPLOAD_VULNERABILITIES"),'level':danger,'code':r'(\(\s*\$\_FILES\[(.*)\]\[(.*)\]\s*\,\s*\$\_(GET|POST|REQUEST)+\[(.*)\]\[(.*)\]\s*\))'},
+        {'msg':dc,'level':high_risk,'code':r'(\$\_(\w+)(.*)(eval|assert|include|require|include\_once|require\_once)+\s*\(\s*\$(\w+)\s*\))'},
+        {'msg':dc,'level':high_risk,'code':'((include|require|include\\_once|require\\_once)+\\s*\\(\\s*[\'|\"](\\w+)\\.(jpg|gif|ico|bmp|png|txt|zip|rar|htm|css|js)+[\'|\"]\\s*\\))'},
+        {'msg':ev,'level':danger,'code':r'(eval\s*\(\s*\(\s*\$\$(\w+))'},
+        {'msg':one_word_th,'level':high_risk,'code':r'((eval|assert|include|require|include\_once|require\_once|array\_map|array\_walk)+\s*\(\s*\$\_(GET|POST|REQUEST|COOKIE|SERVER|SESSION)+\[(.*)\]\s*\))'},
+        {'msg':one_word_th,'level':danger,'code':r'(preg\_replace\s*\((.*)\(base64\_decode\(\$)'}
         ]
     
     ruleFile = '/www/server/panel/data/ruleList.conf';
@@ -101,7 +101,7 @@ class safe:
     def checkPHPINI(self):
         setupPath = '/www/server';
         phps = public.get_php_versions()
-        rep = "disable_functions\s*=\s*(.+)\n"
+        rep = "disable_functions\\s*=\\s*(.+)\n"
         defs = ['passthru','exec','system','chroot','chgrp','chown','shell_exec','popen','ini_alter','ini_restore','dl','openlog','syslog','readlink','symlink','popepassthru']
         data = []
         for phpv in phps:

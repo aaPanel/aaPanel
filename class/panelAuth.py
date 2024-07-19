@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2019 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2019 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -60,8 +60,8 @@ class panelAuth:
     def check_serverid(self,get):
         if get.serverid != self.create_serverid(get): return False
         return True
-    # 旧接口 没有永久版
-    def get_plugin_price2(self, get):
+
+    def get_plugin_price(self, get):
         try:
             userPath = 'data/userInfo.json'
             if not 'pluginName' in get and not 'product_id' in get: return public.return_msg_gettext(False,'Parameter ERROR!')
@@ -71,7 +71,7 @@ class panelAuth:
                 params['product_id'] = self.get_plugin_info(get.pluginName)['id']
             else:
                 params['product_id'] = get.product_id
-            data = self.send_cloud('{}/api/product/prices'.format(self.__official_url), params)
+            data = self.send_cloud('{}/api/product/pricesV3'.format(self.__official_url), params)
             if not data:
                 return public.return_msg_gettext(False, 'Please log in to your aaPanel account on the panel first!')
             if not data['success']:
@@ -82,61 +82,7 @@ class panelAuth:
         except:
             del(session['get_product_list'])
             return public.return_msg_gettext(False,'Syncing information, please try again!\n {}',(public.get_error_info(),))
-
-    # 获取永久版信息
-    def get_plugin_price3(self, get):
-        try:
-            userPath = 'data/userInfo.json'
-            if not 'pluginName' in get and not 'product_id' in get:
-                return public.return_msg_gettext(False,'Parameter ERROR!')
-            if not os.path.exists(userPath):
-                return public.return_msg_gettext(False,'Please login with account first')
-            params = {}
-            if not hasattr(get,'product_id'):
-                params['product_id'] = self.get_plugin_info(get.pluginName)['id']
-            else:
-                params['product_id'] = get.product_id
-
-            data = self.send_cloud('{}/api/product/pricesV2'.format(self.__official_url), params)
-
-            if not data:
-                return public.return_msg_gettext(False, 'Please log in to your aaPanel account on the panel first!')
-            if not data['success']:
-                return public.return_msg_gettext(False,data['msg'])
-            return data['res']
-        except:
-            # del(session['get_product_list'])
-            return public.return_msg_gettext(False,'Syncing information, please try again!\n {}',(public.get_error_info(),))
-
-    # 获取价格列表  新增多机购买
-    def get_plugin_price(self, get):
-        try:
-            userPath = 'data/userInfo.json'
-            if not 'pluginName' in get and not 'product_id' in get:
-                return public.return_msg_gettext(False, 'Parameter ERROR!')
-            if not os.path.exists(userPath):
-                return public.return_msg_gettext(False, 'Please login with account first')
-            params = {}
-            if not hasattr(get, 'product_id'):
-                params['product_id'] = self.get_plugin_info(get.pluginName)['id']
-            else:
-                params['product_id'] = get.product_id
-
-            data = self.send_cloud('{}/api/product/pricesV3'.format(self.__official_url), params)
-
-            if not data:
-                return public.return_msg_gettext(False, 'Please log in to your aaPanel account on the panel first!')
-            if not data['success']:
-                return public.return_msg_gettext(False, data['msg'])
-            return data['res']
-        except Exception as ex:
-            public.print_log("获取价格报错   {}".format(ex))
-            # del(session['get_product_list'])
-            return public.return_msg_gettext(False, 'Syncing information, please try again!\n {}',
-                                             (public.get_error_info(),))
-
-
-
+    
     def get_plugin_info(self,pluginName):
         data = self.get_business_plugin(None)
         if not data: return None
@@ -182,7 +128,6 @@ class panelAuth:
         if not data['success']:
             return public.return_msg_gettext(False, data['res'])
         return data['res']
-
 
     def get_stripe_session_id(self,get):
 
@@ -413,8 +358,7 @@ class panelAuth:
         data = self.send_cloud('{}/api/user/productAuthorizes'.format(self.__official_url), params)
         if not data:
             return []
-        if not data['success']:
-            return []
+        if not data['success']: return []
         data = data['res']
         # return [i for i in data['list'] if i['status'] != 'activated' and get.pid == i['product_id']]
         res = list()
@@ -444,7 +388,7 @@ class panelAuth:
         if hasattr(get,'coupon_id') and get.pay_channel == '10':
             params['coupon_id'] = get.coupon_id
         data = self.send_cloud('{}/api/authorize/product/renew'.format(self.__official_url), params)
-        # public.print_log('############ 续费接口 {}'.format(data))
+
         if not data['success']:
             data['res'] = 'Invalid authorize OR authorize not found!'
             return data

@@ -4,7 +4,7 @@
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2020 宝塔软件(https://www.bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 沐落 <cjx@bt.cn>
+# | Author: 沐落 <cjx@aapanel.com>
 # +-------------------------------------------------------------------
 import sys, os, time, json, re, psutil
 
@@ -158,7 +158,7 @@ class site_push:
             return status
         elif name == 'mysql':
             res = public.ExecShell("service mysqld status")
-            if res and not re.search("not\s+running", res[0]):
+            if res and not re.search(r"not\s+running", res[0]):
                 return True
             return False
         elif name == 'tomcat':

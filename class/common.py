@@ -1,12 +1,12 @@
-#coding: utf-8
+# coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
-from BTPanel import session, cache , request, redirect, g,abort
+from BTPanel import session, cache , request, redirect, g,abort, Response
 from datetime import datetime
 from public import dict_obj
 import os
@@ -21,13 +21,13 @@ class panelSetup:
         panel_path = public.get_panel_path()
         if os.getcwd() != panel_path: os.chdir(panel_path)
 
-        g.ua = request.headers.get('User-Agent','')
+        g.ua = request.headers.get('User-Agent', '')
         if g.ua:
             ua = g.ua.lower()
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return abort(403)
 
-        g.version = '6.8.37'
+        g.version = '7.0.6'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
@@ -55,7 +55,6 @@ class panelSetup:
         self.other_import()
         return None
 
-
     def other_import(self):
         g.o = public.readFile('data/o.pl')
         g.other_css = []
@@ -71,7 +70,6 @@ class panelSetup:
             if os.path.exists(js_file): g.other_js.append('/static/other/{}'.format(js_name))
 
 
-
 class panelAdmin(panelSetup):
     setupPath = '/www/server'
 
@@ -82,6 +80,7 @@ class panelAdmin(panelSetup):
             return result
         result = self.check_login()
         if result:
+            # public.print_log("local 2登录检查返回 {}".format(result))
             return result
         result = self.setSession()
         if result:
@@ -100,7 +99,8 @@ class panelAdmin(panelSetup):
         if request.method == 'GET':
             g.menus = public.get_menus()
             g.yaer = datetime.now().year
-        session["top_tips"] = public.get_msg_gettext("The current IE browser version is too low to display some features, please use another browser. Or if you use a browser developed by a Chinese company, please switch to Extreme Mode!")
+        session["top_tips"] = public.get_msg_gettext(
+            "The current IE browser version is too low to display some features, please use another browser. Or if you use a browser developed by a Chinese company, please switch to Extreme Mode!")
         session["bt_help"] = public.get_msg_gettext("For Support|Suggestions, please visit the aaPanel Forum")
         session["download"] = public.get_msg_gettext("Downloading:")
         if not 'brand' in session:
@@ -121,7 +121,7 @@ class panelAdmin(panelSetup):
 
     # 检查Web服务器类型
     def checkWebType(self):
-        #if request.method == 'GET':
+        # if request.method == 'GET':
         if not 'webserver' in session:
             if os.path.exists('/usr/local/lsws/bin/lswsctrl'):
                 session['webserver'] = 'openlitespeed'
@@ -130,11 +130,12 @@ class panelAdmin(panelSetup):
             else:
                 session['webserver'] = 'nginx'
         if not 'webversion' in session:
-            if os.path.exists(self.setupPath+'/'+session['webserver']+'/version.pl'):
-                session['webversion'] = public.ReadFile(self.setupPath+'/'+session['webserver']+'/version.pl').strip()
+            if os.path.exists(self.setupPath + '/' + session['webserver'] + '/version.pl'):
+                session['webversion'] = public.ReadFile(
+                    self.setupPath + '/' + session['webserver'] + '/version.pl').strip()
 
         if not 'phpmyadminDir' in session:
-            filename = self.setupPath+'/data/phpmyadminDirName.pl'
+            filename = self.setupPath + '/data/phpmyadminDirName.pl'
             if os.path.exists(filename):
                 session['phpmyadminDir'] = public.ReadFile(filename).strip()
         return False
@@ -144,15 +145,38 @@ class panelAdmin(panelSetup):
         if os.path.exists('data/close.pl'):
             return redirect('/close')
 
+    # 跳转到登录页面
+    def to_login(self, url, msg=" Login has expired, please log in again"):
+        x_http_token = request.headers.get('X-Http-Token', '')
+        if x_http_token:
+            # 如果是ajax请求
+            # res = {"status": False, "msg": msg, "redirect": url}
+            # 修改为通用返回方式
+            res = {
+                "status": -1,
+                "timestamp": int(time.time()),
+                "message": {
+                    # "result": "successfully added!",
+                    "msg": msg,
+                    "redirect": url
+                }
+            }
+
+            # public.print_log("有x_http_token res --{}".format(res))
+            return Response(json.dumps(res), content_type='application/json')
+
+        # public.print_log("无x_http_token 跳转 --{}".format(url))
+        return redirect(url)
+
     # 检查登录
-    def check_login(self):
+    def check_login1(self):
         try:
             api_check = True
             g.api_request = False
             if not 'login' in session:
                 api_check = self.get_sk()
                 if api_check:
-                    if not isinstance(api_check,dict):
+                    if not isinstance(api_check, dict):
                         if public.get_admin_path() == '/login':
                             return redirect('/login?err=1')
                     return api_check
@@ -178,12 +202,12 @@ class panelAdmin(panelSetup):
 
             if api_check:
                 now_time = time.time()
-                session_timeout = session.get('session_timeout',0)
+                session_timeout = session.get('session_timeout', 0)
                 if session_timeout < now_time and session_timeout != 0:
                     session.clear()
                     return redirect(public.get_admin_path())
 
-            login_token = session.get('login_token','')
+            login_token = session.get('login_token', '')
             if login_token:
                 if login_token != public.get_login_token_auth():
                     session.clear()
@@ -201,10 +225,74 @@ class panelAdmin(panelSetup):
             self.check_session()
 
         except:
-            # public.print_log(public.get_error_info())
+            public.print_log(public.get_error_info())
             session.clear()
             public.print_error()
+
             return redirect('/login?id=2')
+
+    # 检查登录
+    def check_login(self):
+        try:
+            api_check = True
+            g.api_request = False
+            if not 'login' in session:
+                api_check = self.get_sk()
+                if api_check:
+                    # if not isinstance(api_check, dict):
+                        # if public.get_admin_path() == '/login':
+                            # return redirect('/login?err=1')
+                    return api_check
+                g.api_request = True
+            else:
+                if session['login'] == False:
+                    session.clear()
+                    return self.to_login(public.get_admin_path())
+
+                if 'tmp_login_expire' in session:
+                    s_file = 'data/session/{}'.format(session['tmp_login_id'])
+                    if session['tmp_login_expire'] < time.time():
+                        session.clear()
+                        if os.path.exists(s_file): os.remove(s_file)
+                        return self.to_login(public.get_admin_path(), 'The temporary login has expired, please log in again')
+                    if not os.path.exists(s_file):
+                        session.clear()
+                        return self.to_login(public.get_admin_path(),'The temporary login has expired, please log in again')
+
+                # 检查客户端hash -- 不要删除
+                if not public.check_client_hash():
+                    session.clear()
+                    return self.to_login(public.get_admin_path(),'Client verification failed, please log in again')
+
+            if api_check:
+                now_time = time.time()
+                session_timeout = session.get('session_timeout', 0)
+                if session_timeout < now_time and session_timeout != 0:
+                    session.clear()
+                    return self.to_login(public.get_admin_path(),"Login session has expired, please log in again")
+
+            login_token = session.get('login_token', '')
+            if login_token:
+                if login_token != public.get_login_token_auth():
+                    session.clear()
+                    return self.to_login(public.get_admin_path(),'Login verification failed, please log in again')
+
+            # if api_check:
+            #     filename = 'data/sess_files/' + public.get_sess_key()
+            #     if not os.path.exists(filename):
+            #         session.clear()
+            #         return redirect(public.get_admin_path())
+
+            # 标记新的会话过期时间
+            self.check_session()
+
+        except:
+            public.print_log(public.get_error_info())
+            session.clear()
+            public.print_error()
+            public.print_log("except  Login has expired, please log in again")
+            return self.to_login('/login',' Login has expired, please log in again')
+
 
     def check_session(self):
         white_list = ['/favicon.ico', '/system?action=GetNetWork']
@@ -212,40 +300,45 @@ class panelAdmin(panelSetup):
             return
         session['session_timeout'] = time.time() + public.get_session_timeout()
 
-
-
     # 获取sk
     def get_sk(self):
         save_path = '/www/server/panel/config/api.json'
         if not os.path.exists(save_path):
-            return public.redirect_to_login()
+            return public.redirect_to_login(None)
+            # return self.to_login(public.get_admin_path(), "Login session has expired, please log in again")
 
         try:
             api_config = json.loads(public.ReadFile(save_path))
         except:
             os.remove(save_path)
-            return public.redirect_to_login()
+            return public.redirect_to_login(None)
+            # return self.to_login(public.get_admin_path(), "Login session has expired, please log in again")
 
         if not api_config['open']:
-            return public.redirect_to_login()
+            return public.redirect_to_login(None)
+            # return self.to_login(public.get_admin_path(), "Login session has expired, please log in again")
         from BTPanel import get_input
         get = get_input()
         client_ip = public.GetClientIp()
+
         if not 'client_bind_token' in get:
             if not 'request_token' in get or not 'request_time' in get:
-                return public.redirect_to_login()
+                return public.redirect_to_login(None)
+                # return self.to_login(public.get_admin_path(), "Login session has expired, please log in again")
 
             num_key = client_ip + '_api'
             if not public.get_error_num(num_key, 20):
-                return public.returnJson(False,'20 consecutive verification failures, prohibited for 1 hour')
+                return public.returnJson(False, '20 consecutive verification failures, prohibited for 1 hour')
 
-            if not public.is_api_limit_ip(api_config['limit_addr'], client_ip):  # client_ip in api_config['limit_addr']:
+            if not public.is_api_limit_ip(api_config['limit_addr'],
+                                          client_ip):  # client_ip in api_config['limit_addr']:
                 public.set_error_num(num_key)
-                return public.returnJson(False,'%s[' % public.get_msg_gettext("20 consecutive verification failures, prohibited for 1 hour")+client_ip+']')
+                return public.returnJson(False, '%s[' % public.get_msg_gettext(
+                    "IP validation failed, your access IP is") + client_ip + ']')
         else:
             num_key = client_ip + '_app'
-            if not public.get_error_num(num_key,20):
-                return public.returnJson(False,'20 consecutive verification failures, prohibited for 1 hour')
+            if not public.get_error_num(num_key, 20):
+                return public.returnJson(False, '20 consecutive verification failures, prohibited for 1 hour')
             a_file = '/dev/shm/' + get.client_bind_token
 
             if not public.path_safe_check(get.client_bind_token):
@@ -256,8 +349,8 @@ class panelAdmin(panelSetup):
                 import panelApi
                 if not panelApi.panelApi().get_app_find(get.client_bind_token):
                     public.set_error_num(num_key)
-                    return public.returnJson(False,'Unbound device')
-                public.writeFile(a_file,'')
+                    return public.returnJson(False, 'Unbound device')
+                public.writeFile(a_file, '')
 
             if not 'key' in api_config:
                 public.set_error_num(num_key)
@@ -275,17 +368,23 @@ class panelAdmin(panelSetup):
             g.aes_key = api_config['key']
         request_token = public.md5(get.request_time + api_config['token'])
         if get.request_token == request_token:
-            public.set_error_num(num_key,True)
+            public.set_error_num(num_key, True)
             return False
         public.set_error_num(num_key)
-        return public.returnJson(False,'Secret key verification failed')
+        return public.returnJson(False, 'Secret key verification failed')
 
     # 检查系统配置
     def checkConfig(self):
         if not 'config' in session:
             session['config'] = public.M('config').where("id=?", ('1',)).field(
                 'webserver,sites_path,backup_path,status,mysql_root').find()
-            if not 'email' in session['config']:
+
+            # 4.29 修复config可能是空列表导致赋值不上的问题
+            if not session['config']:
+                session['config'] = {}
+
+            # if not 'email' in session['config']:
+            if session['config'] and not 'email' in session['config']:
                 session['config']['email'] = public.M(
                     'users').where("id=?", ('1',)).getField('email')
             if not 'address' in session:
@@ -310,8 +409,7 @@ class panelAdmin(panelSetup):
             session['server_os'] = tmp
         return False
 
-
-    def get_osname(self,i_file):
+    def get_osname(self, i_file):
         '''
             @name 从指定文件中获取系统名称
             @author hwliang<2021-04-07>

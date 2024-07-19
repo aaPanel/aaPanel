@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2018 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2018 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -21,7 +21,7 @@ class panelRedirect:
     #匹配目标URL的域名并返回
     def GetToDomain(self,tourl):
         if tourl:
-            rep = "https?://([\w\-\.]+)"
+            rep = r"https?://([\w\-\.]+)"
             tu = re.search(rep, tourl)
             return tu.group(1)
 
@@ -105,7 +105,7 @@ class panelRedirect:
         if os.path.exists(ng_file):
             ng_conf = public.readFile(ng_file)
             if not p_conf:
-                rep = "#SSL-END(\n|.)*\/redirect\/.*\*.conf;"
+                rep = "#SSL-END(\n|.)*\\/redirect\\/.*\\*.conf;"
                 ng_conf = re.sub(rep, '#SSL-END', ng_conf)
                 public.writeFile(ng_file, ng_conf)
                 return
@@ -114,13 +114,13 @@ class panelRedirect:
                 sitenamelist.append(i["sitename"])
 
             if get.sitename in sitenamelist:
-                rep = "include.*\/redirect\/.*\*.conf;"
+                rep = r"include.*\/redirect\/.*\*.conf;"
                 if not re.search(rep,ng_conf):
                     ng_conf = ng_conf.replace("#SSL-END","#SSL-END\n\t%s\n\t" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid') + "include " + ng_redirectfile + ";")
                     public.writeFile(ng_file,ng_conf)
 
             else:
-                rep = "#SSL-END(\n|.)*\/redirect\/.*\*.conf;"
+                rep = "#SSL-END(\n|.)*\\/redirect\\/.*\\*.conf;"
                 ng_conf = re.sub(rep,'#SSL-END',ng_conf)
                 public.writeFile(ng_file, ng_conf)
 
@@ -134,18 +134,18 @@ class panelRedirect:
         if os.path.exists(ap_file):
             ap_conf = public.readFile(ap_file)
             if p_conf == "[]":
-                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid')
+                rep = "\n*%s\n+\\s+IncludeOptiona[\\s\\w\\/\\.\\*]+" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid')
                 ap_conf = re.sub(rep, '', ap_conf)
                 public.writeFile(ap_file, ap_conf)
                 return
             if sitename in p_conf:
-                rep = "%s(\n|.)+IncludeOptional.*\/redirect\/.*conf" % public.get_msg_gettext('#referenced redirect rule')
+                rep = "%s(\n|.)+IncludeOptional.*\\/redirect\\/.*conf" % public.get_msg_gettext('#referenced redirect rule')
                 rep1 = "combined"
                 if not re.search(rep,ap_conf):
                     ap_conf = ap_conf.replace(rep1, rep1 + "\n\t%s" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid') +"\n\tIncludeOptional " + ap_redirectfile)
                     public.writeFile(ap_file,ap_conf)
             else:
-                rep = "\n*%s\n+\s+IncludeOptiona[\s\w\/\.\*]+" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid')
+                rep = "\n*%s\n+\\s+IncludeOptiona[\\s\\w\\/\\.\\*]+" % public.get_msg_gettext('#referenced redirect rule, if commented, the configured redirect rule will be invalid')
                 ap_conf = re.sub(rep,'', ap_conf)
                 public.writeFile(ap_file, ap_conf)
 
@@ -167,7 +167,7 @@ class panelRedirect:
             if self.__CheckRedirect(get.sitename,get.redirectname,is_error_page):
                 return public.return_msg_gettext(False, 'Specified redirect name already exists')
         #检测目标URL格式
-        rep = "http(s)?\:\/\/([a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.)+([a-zA-Z0-9][a-zA-Z0-9]{0,62})+.?"
+        rep = r"http(s)?\:\/\/([a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.)+([a-zA-Z0-9][a-zA-Z0-9]{0,62})+.?"
         if 'tourl' in get and not re.match(rep, get.tourl):
             return public.returnMsg(False, 'Target URL format is wrong %s' + get.tourl)
 
@@ -180,12 +180,12 @@ class panelRedirect:
             else:
                 if not get.redirectpath:
                     return public.return_msg_gettext(False, 'Please enter redirected path')
-                #repte = "[\?\=\[\]\)\(\*\&\^\%\$\#\@\!\~\`{\}\>\<\,\',\"]+"
+                #repte = "[\\?\\=\\[\\]\\)\\(\\*\\&\\^\\%\\$\\#\\@\\!\\~\\`{\\}\\>\\<\\,\',\"]+"
                 # 检测路径格式
                 if "/" not in get.redirectpath:
                     return public.return_msg_gettext(False, 'Path format is incorrect, the format is /xxx')
                 #if re.search(repte, get.redirectpath):
-                #    return public.return_msg_gettext(False, "代理目录不能有以下特殊符号 ?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\,',\"]")
+                #    return public.return_msg_gettext(False, "代理目录不能有以下特殊符号 ?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\\,',\"]")
             #检测域名是否已经存在配置文件
             repeatdomain = self.__CheckRepeatDomain(get,action)
             if repeatdomain:
@@ -384,7 +384,7 @@ class panelRedirect:
         """
         if self.__firsturl:redirect_path=self.__firsturl
         add_type=',R={}]'.format(str(r_type))
-        add_str='#REWRITE-START\n<IfModule mod_rewrite.c>\n    RewriteEngine on\n    RewriteCond %\{REQUEST_FILENAME\} !-f\n    RewriteCond %{REQUEST_FILENAME} !-d\n    RewriteRule . '+redirect_path+' [L'+add_type+'\n</IfModule>\n#REWRITE-END'
+        add_str='#REWRITE-START\n<IfModule mod_rewrite.c>\n    RewriteEngine on\n    RewriteCond %\\{REQUEST_FILENAME\\} !-f\n    RewriteCond %{REQUEST_FILENAME} !-d\n    RewriteRule . '+redirect_path+' [L'+add_type+'\n</IfModule>\n#REWRITE-END'
         redirectname_md5 = self.__calc_md5(redirectname)
         file_path= "%s/panel/vhost/apache/redirect/%s" % (self.setupPath,site_name)
         public.ExecShell("mkdir -p %s" % file_path)
@@ -620,9 +620,9 @@ class panelRedirect:
             old_conf = public.readFile(conf_path)
             rep =""
             if i == "nginx":
-                rep += "#301-START\n+[\s\w\:\/\.\;\$]+#301-END"
+                rep += "#301-START\n+[\\s\\w\\:\\/\\.\\;\\$]+#301-END"
             if i == "apache":
-                rep += "#301-START[\n\<\>\w\.\s\^\*\$\/\[\]\(\)\:\,\=]+#301-END"
+                rep += "#301-START[\n\\<\\>\\w\\.\\s\\^\\*\\$\\/\\[\\]\\(\\)\\:\\,\\=]+#301-END"
             conf = re.sub(rep, "", old_conf)
             public.writeFile(conf_path, conf)
         public.serviceReload()

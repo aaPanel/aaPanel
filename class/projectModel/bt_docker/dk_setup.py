@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: zouhw <zhw@bt.cn>
+# Author: zouhw <zhw@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -41,7 +41,7 @@ class main :#line:1
             O00OO000O0OO0000O ="SAVE={}".format (OOO00O0000000OO0O )#line:36
             public .writeFile (OOOO0O0OO00O00O00 ,O00OO000O0OO0000O )#line:37
             return public .returnMsg (True ,"Set up successfully!")#line:38
-        O00OO000O0OO0000O =re .sub ("SAVE\s*=\s*\d+","SAVE={}".format (OOO00O0000000OO0O ),O00OO000O0OO0000O )#line:39
+        O00OO000O0OO0000O =re .sub (r"SAVE\s*=\s*\d+","SAVE={}".format (OOO00O0000000OO0O ),O00OO000O0OO0000O )#line:39
         public .writeFile (OOOO0O0OO00O00O00 ,O00OO000O0OO0000O )#line:40
         dp .write_log ("Set the monitoring time to [] days!".format (OOO00O0000000OO0O ))#line:41
         return public .returnMsg (True ,"Set up successfully!")#line:42

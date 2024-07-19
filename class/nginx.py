@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -38,7 +38,7 @@ class nginx:
         gets = ["worker_processes","worker_connections","keepalive_timeout","gzip","gzip_min_length","gzip_comp_level","client_max_body_size","server_names_hash_bucket_size","client_header_buffer_size"]
         n = 0
         for i in gets:
-            rep = "(%s)\s+(\w+)" % i
+            rep = r"(%s)\s+(\w+)" % i
             k = re.search(rep, ngconfcontent)
             if not k:
                 return public.return_msg_gettext(False,"Get key {} False".format(k))
@@ -64,7 +64,7 @@ class nginx:
         gets = ["client_body_buffer_size"]
         n = 0
         for i in gets:
-            rep = "(%s)\s+(\w+)" % i
+            rep = r"(%s)\s+(\w+)" % i
             k = re.search(rep, proxycontent)
             if not k:
                 return public.return_msg_gettext(False,"Get key {} False".format(k))
@@ -88,14 +88,14 @@ class nginx:
             n+=1
         return conflist
 
-    def SetNginxValue(self,get):
+    def SetNginxValue(self, get: public.dict_obj):
         ngconfcontent = public.readFile(self.nginxconf)
         proxycontent = public.readFile(self.proxyfile)
         if public.get_webserver() == 'nginx':
             shutil.copyfile(self.nginxconf, '/tmp/ng_file_bk.conf')
             shutil.copyfile(self.proxyfile, '/tmp/proxyfile_bk.conf')
         conflist = []
-        getdict = get.__dict__
+        getdict = get.get_items()
         for i in getdict.keys():
             if i != "__module__" and i != "__doc__" and i != "data" and i != "args" and i != "action":
                 getpost = {
@@ -105,13 +105,13 @@ class nginx:
                 conflist.append(getpost)
 
         for c in conflist:
-            rep = "%s\s+[^kKmMgG\;\n]+" % c["name"]
+            rep = r"%s\s+[^kKmMgG\;\n]+" % c["name"]
             if c["name"] == "worker_processes" or c["name"] == "gzip":
-                if not re.search("auto|on|off|\d+", c["value"]):
-                    return public.return_msg_gettext(False, 'Parameter ERROR!')
+                if not re.search(r"auto|on|off|\d+", c["value"]):
+                    return public.return_msg_gettext(False, 'Parameter ERROR! -1')
             else:
-                if not re.search("\d+", c["value"]):
-                    return public.return_msg_gettext(False, 'Parameter ERROR!')
+                if not re.search(r"\d+", c["value"]):
+                    return public.return_msg_gettext(False, 'Parameter ERROR! -2')
             if re.search(rep,ngconfcontent):
                 newconf = "%s %s" % (c["name"],c["value"])
                 ngconfcontent = re.sub(rep,newconf,ngconfcontent)
@@ -132,7 +132,7 @@ class nginx:
     def add_nginx_access_log_format(self,args):
         '''
         @name 添加日志格式
-        @author zhwen<zhw@bt.cn>
+        @author zhwen<zhw@aapanel.com>
         @param log_format 需要设置的日志格式["$server_name","$remote_addr","-"....]
         @param log_format_name
         @param act 操作方式 add/edit
@@ -151,7 +151,7 @@ class nginx:
             conf = public.readFile(self.nginxconf)
             if not conf:
                 return public.return_msg_gettext(False,'Nginx configuration file does not exist!')
-            reg = 'http(\n|\s)+{'
+            reg = r'http(\n|\s)+{'
             conf = re.sub(reg,'http\n\t{'+data,conf)
             public.writeFile(self.nginxconf,conf)
             public.serviceReload()
@@ -162,14 +162,14 @@ class nginx:
     def del_nginx_access_log_format(self,args):
         '''
         @name 删除日志格式
-        @author zhwen<zhw@bt.cn>
+        @author zhwen<zhw@aapanel.com>
         @param log_format_name
         '''
         log_format_name = args.log_format_name
         conf = public.readFile(self.nginxconf)
         if not conf:
             return public.return_msg_gettext(False, 'Nginx configuration file does not exist!')
-        reg = '\s*#LOG_FORMAT_BEGIN_{n}(\n|.)+#LOG_FORMAT_END_{n}\n?'.format(n=args.log_format_name)
+        reg = r'\s*#LOG_FORMAT_BEGIN_{n}(\n|.)+#LOG_FORMAT_END_{n}\n?'.format(n=args.log_format_name)
         conf = re.sub(reg,'',conf)
         self._del_format_log_of_website(log_format_name)
         public.writeFile(self.nginxconf,conf)
@@ -227,7 +227,7 @@ class nginx:
             format_name = [i.split('LOG_FORMAT_BEGIN_')[-1] for i in data]
             format_log = {}
             for i in format_name:
-                format_reg = "#LOG_FORMAT_BEGIN_{n}(\n|.)+log_format\s+{n}\s*(.*);".format(n=i)
+                format_reg = r"#LOG_FORMAT_BEGIN_{n}(\n|.)+log_format\s+{n}\s*(.*);".format(n=i)
                 tmp = re.search(format_reg,conf)
                 if not tmp:
                     continue
@@ -240,7 +240,7 @@ class nginx:
     def set_format_log_to_website(self,args):
         '''
         @name 设置日志格式
-        @author zhwen<zhw@bt.cn>
+        @author zhwen<zhw@aapanel.com>
         @param sites aaa.com,bbb.com
         @param log_format_name
         '''
@@ -248,13 +248,13 @@ class nginx:
         sites = loads(args.sites)
         try:
             all_site = public.M('sites').field('name').select()
-            reg = 'access_log\s+/www.*{}\s*;'.format(args.log_format_name)
+            reg = r'access_log\s+/www.*{}\s*;'.format(args.log_format_name)
             for site in all_site:
                 website_conf_file = '/www/server/panel/vhost/nginx/{}.conf'.format(site['name'])
                 conf = public.readFile(website_conf_file)
                 if not conf:
                     return public.return_msg_gettext(False, 'Nginx configuration file does not exist!')
-                format_exist_reg = '(access_log\s+/www.*\.log).*;'
+                format_exist_reg = r'(access_log\s+/www.*\.log).*;'
                 access_log = self.get_nginx_access_log(conf)
                 if not access_log:
                     continue
@@ -272,7 +272,7 @@ class nginx:
 
     def get_nginx_access_log(self,nginx_conf):
         try:
-            reg = 'access_log\s+(.*\.log)'
+            reg = r'access_log\s+(.*\.log)'
             log_path = re.findall(reg, nginx_conf)
             if not log_path:
                 return False
@@ -309,7 +309,7 @@ class nginx:
                 if not site_format_log_status[s]:
                     continue
                 website_conf_file = '/www/server/panel/vhost/nginx/{}.conf'.format(s)
-                format_exist_reg = 'access_log\s+/www.*\.log\s+{};'.format(log_format_name)
+                format_exist_reg = r'access_log\s+/www.*\.log\s+{};'.format(log_format_name)
                 conf = public.readFile(website_conf_file)
                 if not conf:continue
                 if not re.search(format_exist_reg,conf):continue

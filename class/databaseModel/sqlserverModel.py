@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -87,6 +87,8 @@ class main(databaseBase):
         '''
         @添加远程数据库
         '''
+
+
         return self.AddBaseCloudServer(args)
 
     def RemoveCloudServer(self,args):
@@ -107,17 +109,18 @@ class main(databaseBase):
 
         """
         res = self.add_base_database(args)
-        if not res['status']: return res
+        if not res['status']:
+            return res
 
         data_name = res['data_name']
         username = res['username']
         password = res['data_pwd']
 
-        if re.match("^\d+",data_name):
+        if re.match(r"^\d+",data_name):
             return public.returnMsg(False,'SQLServer databases cannot start with numbers!')
 
         reg_count = 0
-        regs = ['[a-z]','[A-Z]','\W','[0-9]']
+        regs = ['[a-z]','[A-Z]',r'\W','[0-9]']
         for x in regs:
             if re.search(x,password): reg_count += 1
 
@@ -361,7 +364,7 @@ class main(databaseBase):
         try:
             if not newpassword:
                 return public.returnMsg(False, 'The password of database [' + username + '] cannot be empty.');
-            if len(re.search("^[\w@\.]+$", newpassword).groups()) > 0:
+            if len(re.search(r"^[\w@\.]+$", newpassword).groups()) > 0:
                 return public.returnMsg(False, 'The database password cannot be empty or contain special characters')
         except :
             return public.returnMsg(False, 'The database password cannot be empty or contain special characters')
@@ -402,7 +405,7 @@ class main(databaseBase):
         try:
             if not password:
                 return public.returnMsg(False, 'The password of database [' + username + '] cannot be empty.')
-            if len(re.search("^[\w@\.]+$", password).groups()) > 0:
+            if len(re.search(r"^[\w@\.]+$", password).groups()) > 0:
                 return public.returnMsg(False, 'saThe password cannot be empty or have special symbols')
         except :
             return public.returnMsg(False, 'saThe password cannot be empty or have special symbols')

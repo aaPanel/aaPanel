@@ -1,0 +1,1 @@
+System.register(["./index-legacy.js?v=1721298337096","./vue-legacy.js?v=1721298337096","./pinia-legacy.js?v=1721298337096"],(function(e,n){"use strict";var t,a,r;return{setters:[e=>{t=e.a},e=>{a=e.S,r=e.Z},null],execute:function(){e("default",t({},[["render",function(e,n){return a(),r("div",null,"aaaaa")}]]))}}}));

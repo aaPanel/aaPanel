@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 #-------------------------------------------------------------------
 #角色说明：
 #read：允许用户读取指定数据库
@@ -105,7 +105,7 @@ class panelMongoDB():
         conf = self.get_config(None)
 
         for opt in options:
-            tmp = re.findall(opt + ":\s+(.+)",conf)
+            tmp = re.findall(opt + r":\s+(.+)",conf)
             if not tmp: continue;
             data[opt] = tmp[0]
 
@@ -177,9 +177,9 @@ class main(databaseBase):
 
         conf = public.readFile(self.__conf_path)
         if status:
-            conf = re.sub('authorization\s*\:\s*disabled','authorization: enabled',conf)
+            conf = re.sub(r'authorization\s*\:\s*disabled','authorization: enabled',conf)
         else:
-            conf = re.sub('authorization\s*\:\s*enabled','authorization: disabled',conf)
+            conf = re.sub(r'authorization\s*\:\s*enabled','authorization: disabled',conf)
 
         public.writeFile(self.__conf_path,conf)
         self.restart_services()
@@ -201,7 +201,7 @@ class main(databaseBase):
         if status:
             if hasattr(get,'password'):
                 password = get['password'].strip()
-                if not password or not re.search("^[\w@\.]+$", password):
+                if not password or not re.search(r"^[\w@\.]+$", password):
                     return public.return_msg_gettext(False, 'Database password cannot be empty or have special characters!')
 
                 # if re.search('[\u4e00-\u9fa5]',password):
@@ -670,7 +670,7 @@ class main(databaseBase):
         try:
             if not newpassword:
                 return public.returnMsg(False, 'Modify the failure，The database[' + username + ']password cannot be empty.');
-            if len(re.search("^[\w@\.]+$", newpassword).groups()) > 0:
+            if len(re.search(r"^[\w@\.]+$", newpassword).groups()) > 0:
                 return public.returnMsg(False, 'The database password cannot be empty or contain special characters')
 
             if re.search('[\u4e00-\u9fa5]',newpassword):

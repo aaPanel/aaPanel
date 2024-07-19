@@ -1,10 +1,10 @@
 #coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2019-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2019-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 # -------------------------------------------------------------------
 
 # ------------------------------
@@ -369,7 +369,7 @@ class bt_task:
                 self.install_rar()
             pass_opt = '-p-'
             if password:
-                password = password.replace("&","\&").replace('"','\"')
+                password = password.replace("&",r"\&").replace('"','\"')
                 pass_opt = '-p"{}"'.format(password)
 
             public.ExecShell(rar_file + ' x '+ pass_opt +' -u -y "' + sfile + '" "' + dfile + '" &> ' + log_file)
@@ -571,7 +571,7 @@ class bt_task:
         public.ExecShell("sed -i '/password=/d' " + my_cnf)
         if act:
             mycnf = public.readFile(my_cnf)
-            rep = "\[mysqldump\]\nuser=root"
+            rep = "\\[mysqldump\\]\nuser=root"
             sea = "[mysqldump]\n"
             subStr = sea + "user=root\npassword=\"" + root + "\"\n"
             mycnf = mycnf.replace(sea, subStr)

@@ -1,10 +1,10 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2017 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 # -------------------------------------------------------------------
 
 # ------------------------------
@@ -418,7 +418,7 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
             reg = "ssl-ca=/www.*\n.*\n.*server-key.pem\n"
             conf = re.sub(reg, "", conf)
             if os.path.exists('/www/server/mysql/mysql-test/std_data/server-cert.pem'):
-                conf = re.sub('\[mysqld\]', '[mysqld]\nskip_ssl', conf)
+                conf = re.sub(r'\[mysqld\]', '[mysqld]\nskip_ssl', conf)
             public.writeFile(conf_file, conf)
             return public.return_msg_gettext(True, 'Setup successfully!')
         # create_ssl = None
@@ -429,7 +429,7 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
         # if create_ssl:
         # self._create_mysql_ssl()
         if "ssl-ca" not in conf:
-            conf = re.sub('\[mysqld\]', '[mysqld]' + ssl_original_path, conf)
+            conf = re.sub(r'\[mysqld\]', '[mysqld]' + ssl_original_path, conf)
         conf = re.sub('skip_ssl\n', '', conf)
         public.writeFile(conf_file, conf)
         # public.ExecShell('chown mysql.mysql /www/server/data/*.pem')
@@ -792,7 +792,7 @@ SetLink
         password = get['password'].strip()
         try:
             if not password: return public.return_msg_gettext(False, 'Root password cannot be empty')
-            rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
+            rep = r"^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
             if not re.match(rep, password): return public.return_msg_gettext(False,
                                                                              'Database password cannot contain special characters!')
             self.sid = get.get('sid/d', 0)
@@ -864,7 +864,7 @@ SetLink
         db_find = public.M('databases').where('id=?', (id,)).find()
         name = db_find['name']
 
-        rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
+        rep = r"^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
         if not re.match(rep, newpassword): return public.return_msg_gettext(False,
                                                                             'Database password cannot contain special characters!')
         # 修改MYSQL
@@ -1252,7 +1252,7 @@ SetLink
                 ps = public.get_msg_gettext('Test Database')
 
             # XSS filter
-            if not re.match("^[\w+\.-]+$", value[0]): continue
+            if not re.match(r"^[\w+\.-]+$", value[0]): continue
 
             addTime = time.strftime('%Y-%m-%d %X', time.localtime())
 
@@ -1317,9 +1317,9 @@ SetLink
             public.CheckMyCnf()
             myfile = '/etc/my.cnf'
             mycnf = public.readFile(myfile)
-            rep = "datadir\s*=\s*(.+)\n"
+            rep = "datadir\\s*=\\s*(.+)\n"
             data['datadir'] = re.search(rep, mycnf).groups()[0]
-            rep = "port\s*=\s*([0-9]+)\s*\n"
+            rep = "port\\s*=\\s*([0-9]+)\\s*\n"
             data['port'] = re.search(rep, mycnf).groups()[0]
         except:
             data['datadir'] = '/www/server/data'
@@ -1338,7 +1338,7 @@ SetLink
                                                                                  'The same as the current storage directory, file cannot be moved!')
 
         public.ExecShell('/etc/init.d/mysqld stop')
-        public.ExecShell('\cp -arf ' + mysqlInfo['datadir'] + '/* ' + get.datadir + '/')
+        public.ExecShell(r'\cp -arf ' + mysqlInfo['datadir'] + '/* ' + get.datadir + '/')
         public.ExecShell('chown -R mysql.mysql ' + get.datadir)
         public.ExecShell('chmod -R 755 ' + get.datadir)
         public.ExecShell('rm -f ' + get.datadir + '/*.pid')
@@ -1365,7 +1365,7 @@ SetLink
     def SetMySQLPort(self, get):
         myfile = '/etc/my.cnf'
         mycnf = public.readFile(myfile)
-        rep = r"port\s*=\s*([0-9]+)\s*\n"
+        rep = "port\\s*=\\s*([0-9]+)\\s*\n"
         mycnf = re.sub(rep, 'port = ' + get.port + '\n', mycnf)
         public.writeFile(myfile, mycnf)
         public.ExecShell('/etc/init.d/mysqld restart')
@@ -1429,19 +1429,19 @@ SetLink
                 mysql_cnf = re.sub(r"\nlog-bin", "\n#log-bin", mysql_cnf)
             mysql_cnf = re.sub(r"\nbinlog_format", "\n#binlog_format", mysql_cnf)
             if not is_off_bin_log:
-                if re.search("\n#\s*skip-log-bin", mysql_cnf):
-                    mysql_cnf = re.sub("\n#\s*skip-log-bin", "\nskip-log-bin", mysql_cnf)
+                if re.search("\n#\\s*skip-log-bin", mysql_cnf):
+                    mysql_cnf = re.sub("\n#\\s*skip-log-bin", "\nskip-log-bin", mysql_cnf)
                 else:
-                    mysql_cnf = re.sub("\n#\s*log-bin", "\nskip-log-bin\n#log-bin", mysql_cnf)
+                    mysql_cnf = re.sub("\n#\\s*log-bin", "\nskip-log-bin\n#log-bin", mysql_cnf)
             # public.ExecShell("rm -f {}/mysql-bin.*".format(mysql_data_dir))
         else:  # 开启 binlog 日志
-            if re.search("\n#\s*log-bin", mysql_cnf):
-                mysql_cnf = re.sub("\n#\s*log-bin", "\nlog-bin", mysql_cnf)
+            if re.search("\n#\\s*log-bin", mysql_cnf):
+                mysql_cnf = re.sub("\n#\\s*log-bin", "\nlog-bin", mysql_cnf)
             else:
                 mysql_cnf = re.sub("[mysqld]", "[mysqld]\nlog-bin=mysql-bin", mysql_cnf)
 
-            if re.search("\n#\s*binlog_format", mysql_cnf):
-                mysql_cnf = re.sub(r"\n#\s*binlog_format", "\nbinlog_format", mysql_cnf)
+            if re.search("\n#\\s*binlog_format", mysql_cnf):
+                mysql_cnf = re.sub("\n#\\s*binlog_format", "\nbinlog_format", mysql_cnf)
             else:
                 mysql_cnf = re.sub("[mysqld]", "[mysqld]\nbinlog_format=mixed", mysql_cnf)
 

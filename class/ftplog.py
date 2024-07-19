@@ -1,8 +1,8 @@
 #coding: utf-8
 #  + -------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 #  + -------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http:#bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 #  + -------------------------------------------------------------------
 # | Author: hezhihong <272267659@@qq.cn>
 #  + -------------------------------------------------------------------
@@ -30,6 +30,8 @@ month_list = {
 
 
 class ftplog:
+    __AUTH_MSG =public.to_string ([84 ,104 ,105 ,115 ,32 ,102 ,101 ,97 ,116 ,117 ,114 ,101 ,32 ,105 ,115 ,32 ,101 ,120 ,99 ,108 ,117 ,115 ,105 ,118 ,101 ,32 ,116 ,111 ,32 ,116 ,104 ,101 ,32 ,112 ,114 ,111 ,32 ,101 ,100 ,105 ,116 ,105 ,111 ,110 ,44 ,32 ,112 ,108 ,101 ,97 ,115 ,101 ,32 ,97 ,99 ,116 ,105 ,118 ,97 ,116 ,101 ,32 ,105 ,116 ,32 ,102 ,105 ,114 ,115 ,116 ])
+
     def __init__(self):
         self.__messages_file = "/var/log/"
         self.__ftp_backup_path = public.get_backup_path() + '/pure-ftpd/'
@@ -75,128 +77,44 @@ class ftplog:
                                 reverse=False)
         return file_name_list
 
+    def __check_auth(self):
+        from plugin_auth_v2 import Plugin as Plugin
+        plugin_obj = Plugin(False)
+        plugin_list = plugin_obj.get_plugin_list()
+        import PluginLoader
+        self.__IS_PRO_MEMBER = PluginLoader.get_auth_state() > 0
+        return int(plugin_list["pro"]) > time.time() or self.__IS_PRO_MEMBER
+
     def set_ftp_log(self, get):
         """
-        @name 开启、关闭、获取日志状态 
+        @name 开启、关闭、获取日志状态
         @author hezhihong
         @param get.exec_name 执行的动作
         """
+        if not self.__check_auth():
+            return public.returnMsg(False, self.__AUTH_MSG)
         if not hasattr(get, 'exec_name'):
             return public.returnMsg(False, 'The parameter is incorrect！')
-        conf_path = '/etc/rsyslog.conf'
-        conf = public.readFile(conf_path)
-        import re
-        search_str = r"ftp\.\*.*\t*.*\t*.*-/var/log/pure-ftpd.log"
-        search_str_two = "ftp.none"
-        rep_str = '\nftp.*\t\t-/var/log/pure-ftpd.log\n'
-        result = re.search(search_str, conf)
+        ftp_file='/etc/rsyslog.d/pure-ftpd.conf'
+        write_string = '\nftp.*\t\t-/var/log/pure-ftpd.log\n'
         #获取日志状态
         if get.exec_name == 'getlog':
-            if result:
-                return_result = 'start'
+            if os.path.exists(ftp_file):
+                return public.returnMsg(True, 'start')
             else:
-                return_result = 'stop'
-            return public.returnMsg(True, return_result)
-        #开启日志审计
+                return public.returnMsg(True, 'stop')
+            
+        # 开启日志审计
         elif get.exec_name == 'start':
-            # 兼容之前开启，会将配置文件搞坏
-            if conf.count('ftp.nonenftp') > 5:
-                conf = '''
-# /etc/rsyslog.conf configuration file for rsyslog
-#
-# For more information install rsyslog-doc and see
-# /usr/share/doc/rsyslog-doc/html/configuration/index.html
-#
-# Default logging rules can be found in /etc/rsyslog.d/50-default.conf
-
-
-#################
-#### MODULES ####
-#################
-
-module(load="imuxsock") # provides support for local system logging
-#module(load="immark")  # provides --MARK-- message capability
-
-# provides UDP syslog reception
-#module(load="imudp")
-#input(type="imudp" port="514")
-
-# provides TCP syslog reception
-#module(load="imtcp")
-#input(type="imtcp" port="514")
-
-# provides kernel logging support and enable non-kernel klog messages
-module(load="imklog" permitnonkernelfacility="on")
-
-###########################
-#### GLOBAL DIRECTIVES ####
-###########################
-
-#
-# Use traditional timestamp format.
-# To enable high precision timestamps, comment out the following line.
-#
-$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
-
-# Filter duplicated messages
-$RepeatedMsgReduction on
-
-#
-# Set the default permissions for all log files.
-#
-$FileOwner syslog
-$FileGroup adm
-$FileCreateMode 0640
-$DirCreateMode 0755
-$Umask 0022
-$PrivDropToUser syslog
-$PrivDropToGroup syslog
-
-
-
-#
-# Where to place spool and state files
-#
-$WorkDirectory /var/spool/rsyslog
-
-#
-# Include all config files in /etc/rsyslog.d/
-#
-$IncludeConfig /etc/rsyslog.d/*.conf
-
-
-
-                                        '''
-                public.writeFile(conf_path, conf)
-                return self.set_ftp_log(get)
-            if '*.info;mail.none;authpriv.none;' not in conf:
-                conf += '\n*.info;mail.none;authpriv.none;cron.none                /var/log/messages\n'
-            if result:
-                conf = conf.replace(search_str, rep_str)
-            else:
-                conf += rep_str
-            #禁止ftp日志写入/var/log/messages
-
-            d_conf = conf[conf.rfind('info;'):]
-            d_conf = d_conf[:d_conf.find('/')]
-            s_conf = d_conf.replace(',', ';')
-            if s_conf.find(search_str_two) == -1:
-                str_index = s_conf.rfind(';')
-                s_conf = s_conf[:str_index +
-                                1] + search_str_two + s_conf[str_index + 1:]
-                conf = conf.replace(d_conf, s_conf)
+            public.writeFile(ftp_file, write_string)
             self.add_crontab()
-        #关闭日志审计
+        # 关闭日志审计
         elif get.exec_name == 'stop':
-            if result:
-                conf = re.sub(search_str, '', conf)
-            #取消禁止ftp日志写入/var/log/messages
-            if conf.find(search_str_two) != -1:
-                conf = conf.replace(search_str_two, '')
-                for i in [';;', ',,', ';,', ',;']:
-                    if conf.find(i) != -1: conf = conf.replace(i, '')
+            if os.path.exists(ftp_file):
+                os.remove(ftp_file)
+                if os.path.exists(ftp_file):
+                    return public.returnMsg(False, 'failed to close the log')
             self.del_crontab()
-        public.writeFile(conf_path, conf)
         public.ExecShell('systemctl restart rsyslog')
         return public.returnMsg(True, 'successfully set')
 
@@ -404,6 +322,7 @@ $IncludeConfig /etc/rsyslog.d/*.conf
                 if search_str not in line: continue
 
                 tmp_v = line.split(search_str)
+                if len(tmp_v[0].strip().split())<3:continue
                 hostname = tmp_v[0].strip().split()[3].strip()
                 action_time = tmp_v[0].replace(hostname, '').strip()
                 action_info['time'] = self.get_format_time(action_time)

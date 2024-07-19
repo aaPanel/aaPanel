@@ -1,10 +1,10 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http:#bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import sys,os,re,time
 if not 'class/' in sys.path:
@@ -223,7 +223,6 @@ class data:
      * @return Json  page.分页数 , count.总行数   data.取回的数据
     '''
     def getData(self,get):
-        import one_key_wp
         # # net_flow_type = {
         # #     "total_flow": "总流量",
         # #     "7_day_total_flow": "近7天流量",
@@ -262,14 +261,12 @@ class data:
         #     #         get.order = 'id desc'
         #     #     # net_flow_dict["order_type"] = order_type
         #         # public.writeFile(net_flow_json_file, json.dumps(net_flow_dict))
-
         # 如果网站列表包含 rname 字段排序  先检查表内是否有 rname字段
         if hasattr(get, "order") and get.table == 'sites':
             if get.order.startswith('rname'):
                 data = public.M('sites').find()
                 if 'rname' not in data.keys():
                     public.M('sites').execute("ALTER TABLE 'sites' ADD 'rname' text DEFAULT ''", ())
-
         table = get.table
         data = self.GetSql(get)
         SQL = public.M(table)
@@ -331,6 +328,7 @@ class data:
                         data['data'][i]['attack'] = self.get_analysis(get,data['data'][i])
                         data['data'][i]['project_type'] = SQL.table('sites').where('id=?',(data['data'][i]['id'])).field('project_type').find()['project_type']
                         if data['data'][i]['project_type'] == 'WP':
+                            import one_key_wp
                             data['data'][i]['cache_status'] = one_key_wp.one_key_wp().get_cache_status(data['data'][i]['id'])
                         if not data['data'][i]['status'] in ['0','1',0,1]:
                             data['data'][i]['status'] = '1'

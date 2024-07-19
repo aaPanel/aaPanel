@@ -1,11 +1,11 @@
 #!/usr/bin/python
 #coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
-# Author: hwliang <hwl@bt.cn>
+# Author: hwliang <hwl@aapanel.com>
 # -------------------------------------------------------------------
 
 # -------------------------------------------------------------------
@@ -35,7 +35,7 @@ def check_run():
         p_file = '/etc/security/pwquality.conf'
         p_body = public.readFile(p_file)
         if not p_body: return True, 'Risk-free'
-        tmp = re.findall("\s*minlen\s+=\s+(.+)", p_body, re.M)
+        tmp = re.findall(r"\s*minlen\s+=\s+(.+)", p_body, re.M)
         if not tmp: return True, 'Risk-free'
         minlen = tmp[0].strip()
         if int(minlen) < 9:

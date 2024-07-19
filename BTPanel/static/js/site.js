@@ -573,13 +573,12 @@ var site = {
 		 */
 		upgrade_node_module: function (param, callback) {
 			this.http({ upgrade_module: 'Update Node module' }, param, callback);
-		}
+		},
 		/**
 		 * @description 删除指定模块
 		 * @param param {object} 请求参数
 		 * @param callback {function} 回调行数
-		 */,
-		uninstall_node_module: function (param, callback) {
+		 */ uninstall_node_module: function (param, callback) {
 			this.http({ uninstall_module: 'Uninstall the Node module' }, param, callback);
 		},
 		/**

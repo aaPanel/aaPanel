@@ -1,10 +1,10 @@
 #coding: utf-8
 #-------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2020 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2020 aaPanel(www.aapanel.com) All rights reserved.
 #-------------------------------------------------------------------
-# Author: zhwen <zhw@bt.cn>
+# Author: zhwen <zhw@aapanel.com>
 #-------------------------------------------------------------------
 
 #------------------------------
@@ -25,7 +25,7 @@ class website_auto_index:
     def get_auto_index(self, args):
         '''
         # 添加某个网站禁止运行PHP
-        author: zhwen<zhw@bt.cn>
+        author: zhwen<zhw@aapanel.com>
         :param args: website 网站名 str
         :return:
         '''
@@ -46,7 +46,7 @@ class website_auto_index:
         deny_name = [i.split('_')[-1] for i in data]
         result = []
         for i in deny_name:
-            reg = '#BEGIN_AUTOINDEX_{}\n\s*location\s*\~\*\s*\^(.*)\.\*.*\((.*)\)\$'.format(i)
+            reg = '#BEGIN_AUTOINDEX_{}\n\\s*location\\s*\\~\\*\\s*\\^(.*)\\.\\*.*\\((.*)\\)\\$'.format(i)
             deny_directory = re.search(reg, conf).groups()[0]
             deny_suffix = re.search(reg, conf).groups()[1]
             result.append({'name': i, 'dir': deny_directory, 'suffix': deny_suffix})
@@ -60,7 +60,7 @@ class website_auto_index:
         deny_name = [i.split('_')[-1] for i in data]
         result = []
         for i in deny_name:
-            reg = '#BEGIN_AUTOINDEX_{}\n\s*<Directory\s*\~\s*"(.*)\.\*.*\((.*)\)\$'.format(i)
+            reg = '#BEGIN_AUTOINDEX_{}\n\\s*<Directory\\s*\\~\\s*"(.*)\\.\\*.*\\((.*)\\)\\$'.format(i)
             deny_directory = re.search(reg, conf).groups()[0]
             deny_suffix = re.search(reg, conf).groups()[1]
             result.append({'name': i, 'dir': deny_directory, 'suffix': deny_suffix})
@@ -69,7 +69,7 @@ class website_auto_index:
     def set_auto_index(self, args):
         '''
         # 添加自动索引目录
-        author: zhwen<zhw@bt.cn>
+        author: zhwen<zhw@aapanel.com>
         :param args: website 网站名 str
         :param args: index_name 规则名称 str
         :param args: dir 自动索引目录 str
@@ -108,7 +108,7 @@ class website_auto_index:
         if not conf:
             return False
         if not dir:
-            reg = '\s*#BEGIN_AUTOINDEX_{n}\n(.|\n)*#END_AUTOINDEX_{n}\n'.format(n=name)
+            reg = '\\s*#BEGIN_AUTOINDEX_{n}\n(.|\n)*#END_AUTOINDEX_{n}\n'.format(n=name)
             conf = re.sub(reg, '', conf)
         else:
             new = '''
@@ -133,7 +133,7 @@ class website_auto_index:
         if not conf:
             return False
         if not dir:
-            reg = '\s*#BEGIN_AUTOINDEX_{n}\n(.|\n)*#END_AUTOINDEX_{n}'.format(n=name)
+            reg = '\\s*#BEGIN_AUTOINDEX_{n}\n(.|\n)*#END_AUTOINDEX_{n}'.format(n=name)
             conf = re.sub(reg, '', conf)
         else:
             new = '''
@@ -147,7 +147,7 @@ class website_auto_index:
     '''.format(n=name, d=dir)
             if '#BEGIN_AUTOINDEX_{}'.format(name) in conf:
                 return True
-            conf = re.sub('#DENY\s*FILES', new + '\n    #DENY FILES', conf)
+            conf = re.sub(r'#DENY\s*FILES', new + '\n    #DENY FILES', conf)
         public.writeFile(self.ap_website_conf, conf)
         return True
 
@@ -155,7 +155,7 @@ class website_auto_index:
     def del_auto_index(self, args):
         '''
         # 添加某个网站禁止运行PHP
-        author: zhwen<zhw@bt.cn>
+        author: zhwen<zhw@aapanel.com>
         :param args: website 网站名 str
         :param args: deny_name 规则名称 str
         :return:

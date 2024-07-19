@@ -2,9 +2,9 @@
 # +-------------------------------------------------------------------
 # | 宝塔Windows面板
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: 沐落 <cjx@bt.cn>
+# | Author: 沐落 <cjx@aapanel.com>
 # +-------------------------------------------------------------------
 
 import re,os,sys,public
@@ -43,7 +43,8 @@ class panelMssql:
         try:
             import pymssql
         except :
-            os.system("btpip install pymssql==2.1.4")
+            os.system("btpip install pymssql==2.3.0")
+            # os.system("btpip install pymssql==2.1.4")
             import pymssql        
                
         
@@ -53,17 +54,29 @@ class panelMssql:
             self.__DB_PORT = self.get_port()
 
         try:
-   
-            if self.__DB_CLOUD:                
-                self.__DB_CONN = pymssql.connect(server = self.__DB_HOST, port= str(self.__DB_PORT),user=self.__DB_USER,password=self.__DB_PASS,database = None,login_timeout = 30,timeout = 0,autocommit = True)        
+
+            if self.__DB_CLOUD:
+                try:
+                    self.__DB_CONN = pymssql.connect(server=self.__DB_HOST, port=str(self.__DB_PORT),
+                                                     user=self.__DB_USER,
+                                                     password=self.__DB_PASS, database=None, login_timeout=30,
+                                                     timeout=0, autocommit=True, charset="CP936", tds_version='7.0')
+                except:
+                    self.__DB_ERR = 'Failed to connect to database! Check that the remote database information is correct'
+                    return False
+            #     self.__DB_CONN = pymssql.connect(server=self.__DB_HOST, port=str(self.__DB_PORT),
+            #                                      user=self.__DB_USER,
+            #                                      password=self.__DB_PASS, database=None, login_timeout=30,
+            #                                      timeout=0, autocommit=True, charset="CP936", tds_version='7.0')
             else:
-                self.__DB_CONN = pymssql.connect(server = self.__DB_HOST, port= str(self.__DB_PORT),login_timeout = 30,timeout = 0,autocommit = True)      
-            self.__DB_CUR = self.__DB_CONN.cursor()  #将数据库连接信息，赋值给cur。
-            self.__DB_CUR = self.__DB_CONN.cursor()  #将数据库连接信息，赋值给cur。
+                self.__DB_CONN = pymssql.connect(server=self.__DB_HOST, port=str(self.__DB_PORT), login_timeout=30,
+                                                 timeout=0, autocommit=True, charset="CP936", tds_version='7.0')
+            self.__DB_CUR = self.__DB_CONN.cursor()  # 将数据库连接信息，赋值给cur。
+            self.__DB_CUR = self.__DB_CONN.cursor()  # 将数据库连接信息，赋值给cur。
             if self.__DB_CUR:
                 return True
             else:
-                self.__DB_ERR = '连接数据库失败,请检查是否安装SQL Server'
+                self.__DB_ERR = 'Failed to connect to the database, please check whether SQL Server is installed'
                 return False
         except Exception as ex:
             self.__DB_ERR = public.get_error_info()

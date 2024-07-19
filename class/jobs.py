@@ -1,15 +1,16 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板 
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import time,public,db,os,sys,json,re,shutil
 os.chdir('/www/server/panel')
 
 def control_init():
+    update_py312()
     public.chdck_salt()
     clear_other_files()
     sql_pacth()
@@ -21,6 +22,7 @@ def control_init():
     clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
     remove_tty1()
     clean_hook_log()
+    acme_crond_reinit()
     run_new()
     clean_max_log('/www/server/cron',1024*1024*5,20)
     clean_max_log("/www/server/panel/plugin/webhook/script",1024*1024*1)
@@ -31,7 +33,7 @@ def control_init():
     set_pma_access()
     # public.set_open_basedir()
     clear_fastcgi_safe()
-    update_py37()
+    # update_py37()
     run_script()
     set_php_cli_env()
     check_enable_php()
@@ -45,6 +47,7 @@ def control_init():
     #hide_docker()
     rep_pyenv_link()
     rm_apache_cgi_test()
+    uninstall_pip_lxml()
 
 def rm_apache_cgi_test():
     '''
@@ -55,6 +58,32 @@ def rm_apache_cgi_test():
     test_cgi_file = '/www/server/apache/cgi-bin/test-cgi'
     if os.path.exists(test_cgi_file):
         os.remove(test_cgi_file)
+
+def uninstall_pip_lxml():
+    '''
+        @name 如果lxml版本大于5.0.0卸载它，解决部分机器 import bs4 程序崩溃的问题
+    '''
+    try:
+        import lxml
+        if lxml.__version__ > '5.0.0':
+            public.ExecShell('/www/server/panel/pyenv/bin/pip3 uninstall lxml -y')
+    except:
+        pass
+
+def acme_crond_reinit():
+    '''
+        @name 修复acme定时任务
+        @return void
+    '''
+    try:
+        lets_config_file = os.path.join(public.get_panel_path(),'config/letsencrypt_v2.json')
+        if not os.path.exists(lets_config_file): return
+
+        import acme_v2
+        acme_v2.acme_v2().set_crond()
+    except:
+        pass
+
 
 def rep_pyenv_link():
     '''
@@ -156,7 +185,7 @@ def clear_other_files():
             shutil.copyfile(src_file,init_file)
             if os.path.getsize(init_file) < 10:
                 public.ExecShell("chattr -i " + init_file)
-                public.ExecShell("\cp -arf %s %s" % (src_file,init_file))
+                public.ExecShell(r"\cp -arf %s %s" % (src_file,init_file))
                 public.ExecShell("chmod +x %s" % init_file)
     except:pass
     public.writeFile('/var/bt_setupPath.conf','/www')
@@ -484,7 +513,7 @@ def set_php_cli_env():
             if not os.path.exists(php_fpm) and os.path.exists(php_fpm_src): os.symlink(php_fpm_src,php_fpm)
             if not os.path.exists(php_pecl) and os.path.exists(php_pecl_src): os.symlink(php_pecl_src,php_pecl)
             if not os.path.exists(php_pear) and os.path.exists(php_pear_src): os.symlink(php_pear_src,php_pear)
-            public.ExecShell("\cp -f {} {}".format(php_ini,php_cli_ini)) # 每次复制新的php.ini到php-cli.ini
+            public.ExecShell(r"\cp -f {} {}".format(php_ini,php_cli_ini)) # 每次复制新的php.ini到php-cli.ini
             public.ExecShell('sed -i "/disable_functions/d" {}'.format(php_cli_ini)) # 清理禁用函数
             bashrc_body += "alias php{}='php{} -c {}'\n".format(php_version,php_version,php_cli_ini) # 设置别名
         else:
@@ -507,7 +536,7 @@ def check_enable_php():
     for php_v in php_versions:
         ngx_php_conf = public.get_setup_path() + '/nginx/conf/enable-php-{}.conf'.format(php_v)
         if os.path.exists(ngx_php_conf): continue
-        enable_conf = '''
+        enable_conf = r'''
     location ~ [^/]\.php(/|$)
 	{{
 		try_files $uri =404;
@@ -549,7 +578,7 @@ def run_script():
 
             if not os.path.exists(script_info['script_file']) \
                 or script_info['script_file'].find('/www/server/panel/plugin/') != 0 \
-                    or not re.match('^\w+$',script_info['script_file']):
+                    or not re.match(r'^\w+$',script_info['script_file']):
                 os.remove(script_conf_file)
                 if os.path.exists(exec_log_file): os.remove(exec_log_file)
                 continue
@@ -594,6 +623,7 @@ def files_set_mode():
         ["/www/backup","","root",600,True],
         ["/www/wwwlogs","","www",700,True],
         ["/www/enterprise_backup","","root",600,True],
+        ["/www/server/panel/webserver", "", "root", 755, False],
         ["/www/server/cron","","root",700,True],
         ["/www/server/cron","/*.log","root",600,True],
         ["/www/server/stop","","root",755,True],
@@ -602,7 +632,7 @@ def files_set_mode():
         ["/www/server/panel/class","","root",600,True],
         ["/www/server/panel/data","","root",600,True],
         ["/www/server/panel/plugin","","root",600,False],
-        ["/www/server/panel/BTPanel","","root",600,True],
+        ["/www/server/panel/BTPanel","","root",755,True],
         ["/www/server/panel/vhost","","root",600,True],
         ["/www/server/panel/rewrite","","root",600,True],
         ["/www/server/panel/config","","root",600,True],
@@ -617,6 +647,7 @@ def files_set_mode():
         ["/www/server/panel/BT-Panel","","root",700,False],
         ["/www/server/panel/BT-Task","","root",700,False],
         ["/www/server/panel","/*.py","root",600,False],
+        ["/www/server/panel","","root",755,False],
         ["/dev/shm/session.db","","root",600,False],
         ["/dev/shm/session_py3","","root",600,True],
         ["/dev/shm/session_py2","","root",600,True],
@@ -706,7 +737,7 @@ def set_pma_access():
 
 
 
-#尝试升级到独立环境
+#尝试升级到独立环境3.7
 def update_py37():
     pyenv='/www/server/panel/pyenv/bin/python3'
     pyenv_exists='/www/server/panel/data/pyenv_exists.pl'
@@ -714,6 +745,16 @@ def update_py37():
     download_url = public.get_url()
     public.ExecShell("nohup curl {}/install/update_panel_en.sh|bash &>/tmp/panelUpdate.pl &".format(download_url))
     public.writeFile(pyenv_exists,'True')
+    return True
+
+#尝试升级到独立环境3.12
+def update_py312():
+    pyenv='/www/server/panel/pyenv/bin/python3.12'
+    if os.path.exists(pyenv): return False
+    download_url = public.get_url()
+    only_update_pyenv312 = '/tmp/only_update_pyenv312.pl'
+    public.writeFile(only_update_pyenv312, 'True')
+    public.ExecShell("nohup curl -k {}/install/update_7.x_en.sh|bash &>/tmp/panelUpdate.pl &".format(download_url))
     return True
 
 def test_ping():
@@ -855,7 +896,7 @@ def disable_putenv(fun_name):
         if os.path.exists(is_set_disable): return True
         php_vs = public.get_php_versions()
         php_ini = "/www/server/php/{0}/etc/php.ini"
-        rep = "disable_functions\s*=\s*.*"
+        rep = r"disable_functions\s*=\s*.*"
         for pv in php_vs:
             php_ini_path = php_ini.format(pv)
             if not os.path.exists(php_ini_path): continue

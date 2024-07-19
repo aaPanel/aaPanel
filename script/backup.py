@@ -1,12 +1,15 @@
 #!/usr/bin/python
 #coding: utf-8
 #-----------------------------
-# 宝塔Linux面板网站备份工具
+# aaPanel
+# 网站备份工具
 #-----------------------------
 
 import sys,os
 os.chdir('/www/server/panel')
+sys.path.append("./")
 sys.path.append("class/")
+sys.path.append("class_v2/")
 if sys.version_info[0] == 2:
     reload(sys)
     sys.setdefaultencoding('utf-8')
@@ -24,10 +27,8 @@ class backupTools(panelBackup.backup):
     def backupPath(self,path,count,echo_id=None):
         self.backup_path(path,save=count,echo_id=echo_id)
 
-
     def backupSiteAll(self,save,echo_id=None):
         self.backup_site_all(save,echo_id=echo_id)
-
 
     def backupDatabaseAll(self,save,echo_id=None):
         self.backup_database_all(save,echo_id=echo_id)

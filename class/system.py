@@ -1,10 +1,10 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板 x3
+# | aaPanel x3
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2016 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2016 aaPanel(www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
-# | Author: hwliang <hwl@bt.cn>
+# | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import psutil,time,os,public,re,sys
 try:
@@ -61,7 +61,7 @@ class system:
             try:
                 if os.path.exists(configFile):
                     conf = public.readFile(configFile)
-                    rep = "listen\s+([0-9]+)\s*;"
+                    rep = r"listen\s+([0-9]+)\s*;"
                     rtmp = re.search(rep,conf)
                     if rtmp:
                         phpport = rtmp.groups()[0]
@@ -70,7 +70,7 @@ class system:
                     if conf.find(self.setupPath + '/stop') == -1: pstatus = True
                     configFile = self.setupPath + '/nginx/conf/enable-php.conf'
                     conf = public.readFile(configFile)
-                    rep = "php-cgi-([0-9]+)\.sock"
+                    rep = r"php-cgi-([0-9]+)\.sock"
                     rtmp = re.search(rep,conf)
                     if rtmp:
                         phpversion = rtmp.groups()[0]
@@ -85,11 +85,11 @@ class system:
             try:
                 if os.path.exists(configFile):
                     conf = public.readFile(configFile)
-                    rep = "php-cgi-([0-9]+)\.sock"
+                    rep = r"php-cgi-([0-9]+)\.sock"
                     rtmp = re.search(rep,conf)
                     if rtmp:
                         phpversion = rtmp.groups()[0]
-                    rep = "Listen\s+([0-9]+)\s*\n"
+                    rep = "Listen\\s+([0-9]+)\\s*\n"
                     rtmp = re.search(rep,conf)
                     if rtmp:
                         phpport = rtmp.groups()[0]
@@ -105,12 +105,12 @@ class system:
             try:
                 if os.path.exists(configFile):
                     conf = public.readFile('/www/server/panel/vhost/openlitespeed/detail/phpmyadmin.conf')
-                    rep = "/usr/local/lsws/lsphp(\d+)/bin/lsphp"
+                    rep = r"/usr/local/lsws/lsphp(\d+)/bin/lsphp"
                     rtmp = re.search(rep,conf)
                     if rtmp:
                         phpversion = rtmp.groups()[0]
                     conf = public.readFile('/www/server/panel/vhost/openlitespeed/listen/888.conf')
-                    rep = "address\s+\*\:(\d+)"
+                    rep = r"address\s+\*\:(\d+)"
                     rtmp = re.search(rep,conf)
                     if rtmp:
                         phpport = rtmp.groups()[0]
@@ -206,13 +206,13 @@ class system:
         phpfpm = public.readFile(file)
         data = {}
         try:
-            rep = "upload_max_filesize\s*=\s*([0-9]+)M"
+            rep = r"upload_max_filesize\s*=\s*([0-9]+)M"
             tmp = re.search(rep,phpini).groups()
             data['max'] = tmp[0]
         except:
             data['max'] = '50'
         try:
-            rep = "request_terminate_timeout\s*=\s*([0-9]+)\n"
+            rep = "request_terminate_timeout\\s*=\\s*([0-9]+)\n"
             tmp = re.search(rep,phpfpm).groups()
             data['maxTime'] = tmp[0]
         except:
@@ -564,6 +564,7 @@ class system:
         networkInfo['downPackets'] = 0
         networkInfo['upPackets'] = 0
         networkIo_list = psutil.net_io_counters(pernic = True)
+
         for net_key in networkIo_list.keys():
             networkIo = networkIo_list[net_key][:4]
             up_key = "{}_up".format(net_key)
@@ -623,7 +624,9 @@ class system:
         networkInfo['database_total'] = public.M('databases').count()
         networkInfo['system'] = self.GetSystemVersion()
         networkInfo['installed'] = self.CheckInstalled()
+
         import panelSSL
+
         networkInfo['user_info'] = panelSSL.panelSSL().GetUserInfo(None)
         networkInfo['up'] = round(float(networkInfo['up']),2)
         networkInfo['down'] = round(float(networkInfo['down']),2)
@@ -683,7 +686,7 @@ class system:
         #取网络流量信息
         import time;
         pnet = public.readFile('/proc/net/dev')
-        rep = '([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)'
+        rep = r'([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)'
         pnetall = re.findall(rep,pnet)
         networkInfo = {}
         networkInfo['upTotal'] = networkInfo['downTotal'] = networkInfo['up'] = networkInfo['down'] = networkInfo['downPackets'] = networkInfo['upPackets'] = 0
@@ -777,7 +780,7 @@ class system:
             if not os.path.exists(mypath): return False
             public.set_mode(mypath,644)
             mycnf = public.readFile(mypath)
-            tmp = re.findall('datadir\s*=\s*(.+)',mycnf)
+            tmp = re.findall(r'datadir\s*=\s*(.+)',mycnf)
             if not tmp: return False
             datadir = tmp[0]
 
@@ -988,12 +991,12 @@ class system:
     #修复面板
     def RepPanel(self,get):
         public.writeFile('data/js_random.pl','1')
-        public.ExecShell("wget --no-check-certificate -O update.sh " + public.get_url() + "/install/update6_en.sh && bash update.sh")
+        public.ExecShell("wget --no-check-certificate -O update.sh " + public.get_url() + "/install/update_7.x_en.sh && bash update.sh")
         self.ReWeb(None)
         return True
     
     #升级到专业版
     def UpdatePro(self,get):
-        public.ExecShell("wget --no-check-certificate -O update.sh " + public.get_url() + "/install/update6_en.sh && bash update.sh")
+        public.ExecShell("wget --no-check-certificate -O update.sh " + public.get_url() + "/install/update_7.x_en.sh && bash update.sh")
         self.ReWeb(None)
         return True
