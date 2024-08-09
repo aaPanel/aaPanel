@@ -8238,11 +8238,14 @@ var site = {
 		});
 	},
 	reload: function (index) {
-		if (index == undefined) index = 0;
-
-		var _sel = $('.site-menu p.bgw');
-		if (_sel.length == 0) _sel = $('.site-menu p:eq(0)');
-		_sel.trigger('click');
+		if (window.siteConfigInit) {
+			window.siteConfigInit();
+		} else {
+			if (index == undefined) index = 0;
+			var _sel = $('.site-menu p.bgw');
+			if (_sel.length == 0) _sel = $('.site-menu p:eq(0)');
+			_sel.trigger('click');
+		}
 	},
 	plugin_firewall: function (callback) {
 		var typename = bt.get_cookie('serverType');

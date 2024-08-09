@@ -1,0 +1,1 @@
+System.register(["./index.vue_vue_type_script_setup_true_lang-legacy10.js?v=1723125373998","./index-legacy.js?v=1723125373998","./vue-legacy.js?v=1723125373998","./pinia-legacy.js?v=1723125373998"],(function(e,t){"use strict";return{setters:[t=>{t._,e("default",t._)},null,null,null],execute:function(){}}}));

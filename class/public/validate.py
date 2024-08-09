@@ -1,3 +1,4 @@
+import copy
 import re
 import json
 import socket
@@ -5,6 +6,7 @@ import os
 import typing
 from .regexplib import match_ipv4, match_ipv6, match_safe_path, match_based_host
 from .exceptions import HintException
+from .structures import aap_t_simple_result
 
 
 class Param:
@@ -325,15 +327,15 @@ class Param:
 
         return self
 
-    def do_filter(self, val, extra_filters: typing.List[callable] = []) -> any:
+    def do_filter(self, val, extra_filters: typing.Union[typing.List[callable], typing.Tuple[callable]] = ()) -> any:
         """
             执行参数过滤器
             @param val: any
-            @param extra_filters: list[callable]
+            @param extra_filters: list[callable]|tuple[callable]
             @return: any
         """
         from functools import reduce
-        return reduce(lambda x, y: y(x), extra_filters + self.__filters, val)
+        return reduce(lambda x, y: y(x), list(extra_filters) + self.__filters, val)
 
 
 class _ValidateRule:
@@ -1251,3 +1253,35 @@ def _get_number_data_type(s):
         pass
 
     return float
+
+
+# 参数验证器
+class Validator:
+    def __init__(self, rules: typing.Union[typing.Tuple[Param], typing.List[Param]], raise_exc: bool = True):
+        self.__RULES = list(rules)
+        self.__RAISE_EXC = raise_exc
+
+    # 参数格式校验
+    def check(self, args: dict) -> aap_t_simple_result:
+        try:
+            for v in self.__RULES:
+                v.do_validate(args)
+        except Exception as e:
+            if self.__RAISE_EXC:
+                raise
+
+            return aap_t_simple_result(False, str(e))
+
+        return aap_t_simple_result(True, 'ok')
+
+    # 参数列表过滤
+    def filter(self, args: dict) -> typing.Dict:
+        new_args = {}
+
+        for v in self.__RULES:
+            if v.name not in args:
+                continue
+
+            new_args = v.do_filter(args[v.name])
+
+        return new_args

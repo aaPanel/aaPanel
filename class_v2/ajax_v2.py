@@ -699,6 +699,7 @@ class ajax:
                 public.print_log("error info: {}".format(ex))
                 return public.return_message(-1, 0, str(ex))
 
+
         try:
             import json
             conf_status = public.M('config').where("id=?",('1',)).field('status').find()
@@ -760,7 +761,27 @@ class ajax:
                     updateInfo['ignore'] = json.loads(public.readFile(no_path))
                 except:
                     pass
+            # 更新时默认安装pflogsumm
+            if not os.path.exists('/usr/sbin/pflogsumm'):
+                linux_distr = public.get_linux_distribution().lower()
+                if linux_distr == 'centos7':
+                    public.ExecShell('yum install postfix-pflogsumm -y')
+                elif linux_distr == 'centos8':
+                    public.ExecShell('yum install postfix-pflogsumm -y')
+                elif linux_distr == 'ubuntu':
+                    public.ExecShell('apt install pflogsumm -y')
 
+            # 判断邮局版本并更新
+            if os.path.exists('/www/server/panel/plugin/mail_sys/info.json'):
+                versions = public.get_plugin_info("mail_sys")['versions']
+                # 5开头的版本  且版本不是最新的
+                if versions.startswith('5') and versions < "5.2":
+                    import panelPlugin
+                    args = public.dict_obj()
+                    args.sName = "mail_sys"
+                    args.version = "5.2"
+                    args.upgrade = "5.2"
+                    panelPlugin.panelPlugin().install_plugin(args)
             # 重启面板 默认开启系统监控
             public.writeFile('data/control.conf', '30')
 
@@ -788,7 +809,7 @@ class ajax:
                 setupPath = public.GetConfigValue('setup_path')
                 uptype = 'update'
                 httpUrl = public.get_url()
-                if httpUrl: updateInfo['downUrl'] =  httpUrl + '/install/' + uptype + '/LinuxPanel_EN-' + updateInfo['version'] + '.zip'
+                if httpUrl: updateInfo['downUrl'] = httpUrl + '/install/' + uptype + '/LinuxPanel_EN-' + updateInfo['version'] + '.zip'
                 public.downloadFile(updateInfo['downUrl'],'panel.zip')
                 if os.path.getsize('panel.zip') < 1048576: return public.return_message(-1,0,'File download failed, please try again or update manually!')
                 public.ExecShell('unzip -o panel.zip -d ' + setupPath + '/')

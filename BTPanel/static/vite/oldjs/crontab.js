@@ -858,7 +858,7 @@ var crontab = {
           config: {
             icon: true,
             list: [
-              [1, 'Normal', 'bt_success', 'glyphicon-play'],
+              [1, 'Enable', 'bt_success', 'glyphicon-play'],
               [0, 'Disable', 'bt_danger', 'glyphicon-pause']
             ]
           },

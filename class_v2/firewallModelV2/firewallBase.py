@@ -22,21 +22,23 @@ import public
 class Base(object):
 
     def __init__(self):
-        self.config_path = "{}/class/firewallModelV2/config".format(public.get_panel_path())
+        self.config_path = "{}/class_v2/firewallModelV2/config".format(public.get_panel_path())
+        self.m_time_file = "/www/server/panel/data/firewall/geoip_mtime.pl"
         self._isUfw = False
         self._isFirewalld = False
         self._isIptables = False
-        if os.path.exists('/usr/sbin/ufw'):
+        if (os.path.exists('/usr/sbin/ufw') or os.path.exists('/usr/bin/ufw') or
+                not os.path.exists('/etc/redhat-release') or os.path.exists('/usr/bin/apt-get')):
             self._isUfw = True
             from firewallModelV2.app.ufw import Ufw
             self.firewall = Ufw()
-        elif os.path.exists('/usr/sbin/firewalld'):
+        elif os.path.exists('/usr/sbin/firewalld') or os.path.exists('/etc/redhat-release'):
             self._isFirewalld = True
             from firewallModelV2.app.firewalld import Firewalld
             self.firewall = Firewalld()
         elif not self._isUfw and not self._isFirewalld:
             self._isIptables = True
-            from firewallModelv2.app.iptables import Iptables
+            from firewallModelV2.app.iptables import Iptables
             self.firewall = Iptables()
         _months = {'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07',
                    'Aug': '08', 'Sep': '09', 'Sept': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'}
@@ -95,15 +97,14 @@ class Base(object):
 
         if public.writeFile(filename, conf):
             public.ExecShell('sysctl -p')
-            return public.returnMsg(True, 'SUCCESS')
+            return public.return_message(0, 0, 'SUCCESS')
         else:
-            return public.returnMsg(
-                False,
-                '<a style="color:red;">错误：设置失败，sysctl.conf不可写!</a><br>'
-                '1、如果安装了[宝塔系统加固]，请先关闭<br>'
-                '2、如果安装了云锁，请关闭[系统加固]功能<br>'
-                '3、如果安装了安全狗，请关闭[系统防护]功能<br>'
-                '4、如果使用了其它安全软件，请先卸载<br>'
+            return public.return_message(-1, 0,
+                '<a style="color:red;">Error: Setting failed, sysctl.conf is not writable! </a><br>'
+                '1. If aApanel [System Hardening] is installed, please close it first<br>'
+                '2. If Cloud Lock is installed, please turn off the [System Collagen] function<br>'
+                '3. If a security dog is installed, please turn off the [System Protection] function<br>'
+                '4. If you use other security software, please uninstall it first<br>'
             )
 
     # 2024/3/14 上午 11:37 获取网站日志目录的大小
@@ -114,11 +115,14 @@ class Base(object):
             @param
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        path_size = public.get_size_total("/www/wwwlogs")
-        if not path_size:
-            return {"log_path": "/www/wwwlogs", "size": "0B"}
+        # path_size = public.get_size_total("/www/wwwlogs")
+        # if not path_size:
+        #     return public.return_message(0, 0,{"log_path": "/www/wwwlogs", "size": "0B"})
+        #
+        # return public.return_message(0, 0,{"log_path": "/www/wwwlogs", "size": public.to_size(path_size["/www/wwwlogs"])})
 
-        return {"log_path": "/www/wwwlogs", "size": public.to_size(path_size["/www/wwwlogs"])}
+        aa = public.to_size(public.get_path_size("/www/wwwlogs"))
+        return public.return_message(0, 0, {"log_path": "/www/wwwlogs", "size": aa})
 
     # 2024/3/25 上午 10:50 获取防火墙类型，firewall或ufw
     def _get_firewall_type(self) -> str:
@@ -156,9 +160,9 @@ class Base(object):
         '''
         python_path = "{}/pyenv/bin/python".format(public.get_panel_path())
 
-        if not public.M('crontab').where('name=?', ('[勿删]系统防火墙域名解析检测任务',)).count():
+        if not public.M('crontab').where('name=?', ('[Do not delete] system firewall domain name resolution detection tasks',)).count():
             cmd = '{} {}'.format(python_path, '/www/server/panel/script/firewall_domain.py')
-            args = {"name": "[勿删]系统防火墙域名解析检测任务", "type": 'minute-n', "where1": '5', "hour": '',
+            args = {"name": "[Do not delete] system firewall domain name resolution detection tasks", "type": 'minute-n', "where1": '5', "hour": '',
                     "minute": '', "sName": "",
                     "sType": 'toShell', "notice": '', "notice_channel": '', "save": '', "save_local": '1',
                     "backupTo": '', "sBody": cmd,
@@ -180,7 +184,7 @@ class Base(object):
         '''
 
         if not public.M('firewall_domain').count():
-            pdata = public.M('crontab').where('name=?', '[勿删]系统防火墙域名解析检测任务').select()
+            pdata = public.M('crontab').where('name=?', '[Do not delete] system firewall domain name resolution detection tasks').select()
             if pdata:
                 import crontab
                 for i in pdata:

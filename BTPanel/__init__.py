@@ -76,6 +76,8 @@ app.secret_key = public.md5(
     str(os.uname()) +
     str(psutil.boot_time()))  # uuid.UUID(int=uuid.getnode()).hex[-12:]
 local_ip = None
+intranet_local_ip=public.get_local_ip()
+if intranet_local_ip=='':intranet_local_ip=public.get_local_ip_2()
 my_terms = {}
 app.config['SESSION_MEMCACHED'] = SimpleCacheSession(1000, 86400)
 app.config['SESSION_TYPE'] = 'memcached'
@@ -155,6 +157,7 @@ admin_path_checks = [
     '/userRegister',  # 面板内注册
     '/docker',
     '/btdocker',
+    '/breaking_through',
 ]
 if admin_path in admin_path_checks: admin_path = '/bt'
 if admin_path[-1] == '/': admin_path = admin_path[:-1]
@@ -176,6 +179,33 @@ load_translations()
 @app.before_request
 def request_check():
     if request.method not in ['GET', 'POST']: return abort(404)
+
+    #防爆破检测
+    now_time=limit_time=time.time()
+    white_ips=''
+    #获取限制时间
+    try:
+        limit_time=float(public.readFile('data/limit_login.pl'))
+        white_ips=public.readFile('data/limit_login.pl')
+    except:pass
+    if 'address' not in session:session['address']=public.GetLocalIp()
+    if now_time<limit_time and (white_ips=='' or session['address'] not in white_ips and  intranet_local_ip not in white_ips):
+        data={}
+        data['lan'] = public.GetLan('login')
+        data['last_login_token'] = public.GetRandomString(32)
+        data['app_login'] = os.path.exists('data/app_login.pl')
+        data['secret_key'] = os.urandom(16).hex()
+        data['public_key'] = public.get_rsa_public_key()
+        host_string = '[]'
+        hosts_file = 'plugin/static_cdn/hosts.json'
+        if os.path.exists(hosts_file):
+            host_string = public.get_cdn_hosts()
+            if type(host_string) == dict:
+                host_string = '[]'
+            else:
+                host_string = json.dumps(host_string)
+        return render_template('login.html',g={"title": "aapanel Linux"}, data=data)
+
 
     # 获取客户端真实IP
     x_real_ip = request.headers.get('X-Real-Ip')
@@ -254,7 +284,7 @@ def request_check():
     # 适配docker----  '/docker',
     if request.path in [
         '/site', '/ftp', '/database', '/soft', '/control', '/firewall',
-        '/files', '/xterm', '/crontab', '/config', '/docker', '/btdocker',
+        '/files', '/xterm', '/crontab', '/config', '/docker', '/btdocker','/breaking_through',
     ]:
         if public.is_error_path():
             return redirect('/error', 302)
@@ -329,7 +359,7 @@ def request_end(reques=None):
             if (session_timeout > now_time or session_timeout == 0) and not request.path.startswith('/v2/plugin'):
                 # 首页涉及的请求模块，暂不强制
                 prefixes = ["/v2/site", "/v2/ftp", "/v2/database", "/v2/docker", "/v2/safe/security/set_security",
-                            "/v2/safe/security/get_repair_bar"]
+                            "/v2/safe/security/get_repair_bar","/v2/breaking_through"]
                 for prefix in prefixes:
                     if request.path.startswith(prefix):
                         if 'return_message' in g:
@@ -691,6 +721,7 @@ def modify_password():
     if comReturn: return comReturn
     # if not session.get('password_expire',False): return redirect  ('/',302)
     data = {}
+    data['public_key'] = public.get_rsa_public_key()
     g.title = public.get_msg_gettext(
         'The password has expired, please change it!')
     return render_template('modify_password.html', data=data)
@@ -907,6 +938,7 @@ def firewall(pdata=None):
             'SetSshStatus', 'SetPing', 'SetSshPort', 'GetSshInfo',
             'SetFirewallStatus')
     return publicObject(firewallObject, defs, None, pdata)
+
 
 
 @app.route('/ssh_security', methods=method_all)
@@ -2167,7 +2199,7 @@ def panel_public():
 @app.route('/<name>/<fun>', methods=method_all)
 @app.route('/<name>/<fun>/<path:stype>', methods=method_all)
 def panel_other(name=None, fun=None, stype=None):
-    if name in ('site', 'database', 'docker', 'wp', 'mail'):
+    if name in ('site', 'database', 'docker', 'wp', 'mail', 'security'):
         return index_new('{}/{}'.format(name, fun))
 
     # 插件接口
@@ -3398,6 +3430,14 @@ def site_v2(pdata=None):
         'wp_set_theme_auto_update',
         'wp_switch_theme',
         'wp_uninstall_theme',
+        'wp_all_sites',
+        'wp_set_list',
+        'wp_create_set',
+        'wp_remove_set',
+        'wp_add_items_to_set',
+        'wp_update_item_state_with_set',
+        'wp_remove_items_from_set',
+        'wp_install_with_set',
     )
     return publicObject(siteObject, defs, None, pdata)
 
@@ -3563,6 +3603,24 @@ def firewall_v2(pdata=None):
             'SetSshStatus', 'SetPing', 'SetSshPort', 'GetSshInfo',
             'SetFirewallStatus')
     return publicObject(firewallObject, defs, None, pdata)
+
+@app.route(route_v2 + '/firewall/com/<def_name>', methods=method_all)
+def firewall_v22(def_name, pdata=None):
+    if request.method not in ['GET', 'POST']: return
+    path_split = request.path.split("/")
+    if len(path_split) < 5: return
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    # from panelSafeControllerV2 import SafeController
+    from panelFireControllerV2 import FirewallController
+    project_obj = FirewallController()
+    defs = ('model',)
+    get = get_input()
+    get.action = 'model'
+    get.mod_name = path_split[3]
+    get.def_name = def_name
+
+    return publicObject(project_obj, defs, None, get)
 
 
 @app.route(route_v2 + '/ssh_security', methods=method_all)
@@ -5694,6 +5752,30 @@ def bind():
     data['lan'] = public.GetLan('index_new')
     # g.title = '请先绑定宝塔帐号'
     return render_template('index_new.html', data=data)
+
+@app.route(route_v2 + '/breaking_through', methods=method_all)
+def breaking_through_v2(pdata=None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import breaking_through
+    breakingObject = breaking_through.main()
+    get = get_input()
+    defs = (
+        'set_config',
+        'get_config',
+        'get_history_record',
+        'set_history_record_limit',
+        'clear_history_record_limit',
+        'get_black_white',
+        'add_black_white',
+        'modify_black_white',
+        'del_balck_white',
+        'check_local_ip_white',
+        'panel_ip_white',
+        'get_protected_services',
+    )
+    return publicObject(breakingObject, defs, None, pdata)
+
 
 
 

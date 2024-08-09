@@ -1824,7 +1824,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
         public.write_log_gettext('File manager', 'Site Logs emptied!')
         get.path = public.GetConfigValue('logs_path')
-        return self.GetDirSize(get)
+        return public.return_message(0, 0,self.GetDirSize(get))
 
     # 批量操作
     def SetBatchData(self, get):

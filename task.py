@@ -15,6 +15,7 @@
 import sys
 import os
 import logging
+from datetime import datetime
 from json import dumps, loads
 from psutil import Process, pids, cpu_count, cpu_percent, net_io_counters, disk_io_counters, virtual_memory
 os.environ['BT_TASK'] = '1'
@@ -802,6 +803,143 @@ def process_task_thread():
     net_task_obj = process_task.process_network_total()
     net_task_obj.start()
 
+def count_ssh_logs():
+    '''
+        @name 统计SSH登录日志
+        @return None
+    '''
+    if os.path.exists("/etc/debian_version"):
+        version = public.readFile('/etc/debian_version').strip()
+        if 'bookworm' in version or 'jammy' in version or 'impish' in version:
+            version = 12
+        else:
+            try:
+                version = float(version)
+            except:
+                version = 11
+
+        if version >= 12:
+            while True:
+                filepath = "/www/server/panel/data/ssh_login_counts.json"
+
+                # 获取今天的日期
+                today = datetime.now().strftime('%Y-%m-%d')
+                result = {
+                    'date': today,  # 添加日期字段
+                    'error': 0,
+                    'success': 0,
+                    'today_error': 0,
+                    'today_success': 0
+                }
+                # public.print_log("进入计算count_ssh_logs--{}")
+                try:
+                    filedata = public.readFile(filepath) if os.path.exists(filepath) else public.writeFile(filepath,
+                                                                                                           "[]")
+                    try:
+                        data_list = json.loads(filedata)
+                    except:
+                        data_list = []
+
+                    # 检查是否已有今天的记录，避免重复统计
+                    found_today = False
+                    for day in data_list:
+                        if day['date'] == today:
+                            found_today = True
+                            # public.print_log("进入计算count_ssh_logs--{退出1}")
+                            break
+
+                    if found_today:
+                        # public.print_log("进入计算count_ssh_logs--{退出2}")
+                        break  # 如果找到今天的记录，跳出while循环
+
+
+                    today_err_num1 = int(public.ExecShell(
+                        "journalctl -u ssh --no-pager -S today |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[
+                                             0])
+
+                    today_err_num2 = int(public.ExecShell(
+                        "journalctl -u ssh --no-pager -S today |grep -a 'Connection closed by authenticating user' |grep -a 'preauth' |wc -l")[
+                                             0])
+
+                    today_success = int(
+                        public.ExecShell("journalctl -u ssh --no-pager -S today |grep -a 'Accepted' |wc -l")[0])
+
+                    # 查看文件大小 判断是否超过5G
+                    is_bigfile = False
+
+                    res, err = public.ExecShell("journalctl --disk-usage")
+                    # import re
+                    import json
+                    total_bytes = parse_journal_disk_usage(res)
+                    # public.print_log("文件大小--{}".format(total_bytes))
+                    limit_bytes = 5 * 1024 * 1024 * 1024
+                    if total_bytes > limit_bytes:
+                        is_bigfile = True
+
+                    if is_bigfile:
+                        # public.print_log("取30天--{}".format(total_bytes))
+                        err_num1 = int(public.ExecShell("journalctl -u ssh --since '30 days ago' --no-pager | grep -a 'Failed password for' | grep -v 'invalid' | wc -l")[0])
+                        err_num2 = int(public.ExecShell("journalctl -u ssh --since '30 days ago' --no-pager --grep='Connection closed by authenticating user|preauth' | wc -l")[0])
+                        success = int(public.ExecShell("journalctl -u ssh --since '30 days ago' --no-pager | grep -a 'Accepted' | wc -l")[0])
+                    else:
+                         # public.print_log("取所有--{}")
+                        # 统计失败登陆次数
+                        err_num1 = int(public.ExecShell("journalctl -u ssh --no-pager |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[0])
+                        err_num2 = int(public.ExecShell("journalctl -u ssh --no-pager --grep='Connection closed by authenticating user|preauth' |wc -l")[0])
+                        success = int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Accepted' |wc -l")[0])
+                    # public.print_log("计算完毕22--{}")
+                    result['error'] = err_num1 + err_num2
+                    # 统计成功登录次数
+                    result['success'] = success
+                    result['today_error'] = today_err_num1 + today_err_num2
+                    result['today_success'] = today_success
+
+                    data_list.insert(0, result)
+                    data_list = data_list[:7]
+                    public.writeFile(filepath, json.dumps(data_list))
+                except:
+                    public.print_log(public.get_error_info())
+                    public.writeFile(filepath, json.dumps([{
+                        'date': today,  # 添加日期字段
+                        'error': 0,
+                        'success': 0,
+                        'today_error': 0,
+                        'today_success': 0
+                    }]))
+                time.sleep(86400)
+
+
+def parse_journal_disk_usage(output):
+    import re
+    # 使用正则表达式来提取数字和单位
+    match = re.search(r'take up (\d+(\.\d+)?)\s*([KMGTP]?)', output)
+    total_bytes = 0
+    if match:
+        value = float(match.group(1))  # 数字
+        unit = match.group(3)  # 单位
+        # public.print_log("匹配字符--value>{}   unit>{}".format(value, unit))
+        # 将所有单位转换为字节
+        if unit == '':
+            unit_value = 1
+        elif unit == 'K':
+            unit_value = 1024
+        elif unit == 'M':
+            unit_value = 1024 * 1024
+        elif unit == 'G':
+            unit_value = 1024 * 1024 * 1024
+        elif unit == 'T':
+            unit_value = 1024 * 1024 * 1024 * 1024
+        elif unit == 'P':
+            unit_value = 1024 * 1024 * 1024 * 1024 * 1024
+        else:
+            unit_value = 0
+
+        # 计算总字节数
+        total_bytes = value * unit_value
+    return total_bytes
+
+
+
 def run_thread():
     global thread_dict,task_obj
     tkeys = thread_dict.keys()
@@ -819,7 +957,8 @@ def run_thread():
         # "check_panel_auth": check_panel_auth,
         "push_msg": push_msg,
         "ProDadmons":ProDadmons,
-        "process_task_thread":process_task_thread
+        "process_task_thread":process_task_thread,
+        "count_ssh_logs": count_ssh_logs
     }
 
     for skey in thread_list.keys():
@@ -871,6 +1010,7 @@ def scan_log_site():
 #             cache.set(key, 'sddsf', 3600)
 
 
+
 def main():
     main_pid = 'logs/task.pid'
     if os.path.exists(main_pid):
@@ -897,6 +1037,7 @@ def main():
     logging.info('Service Up')
     time.sleep(5)
     run_thread()
+    # time.sleep(15)
     startTask()
 
 

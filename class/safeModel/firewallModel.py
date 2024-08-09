@@ -3979,6 +3979,7 @@ class Sqlite():
         if 'ports' not in create_table_str:
             public.M('firewall_country').execute('ALTER TABLE "firewall_country" ADD "ports" TEXT DEFAULT ""')
 
+
     def create_trigger(self, sql):
         self.GetConn()
         self.connection.text_factory = str

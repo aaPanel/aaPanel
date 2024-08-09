@@ -70,6 +70,7 @@ class acme_v2:
     _conf_file = 'config/letsencrypt.json'
     _conf_file_v2 = 'config/letsencrypt_v2.json'
     _request_type = 'curl'
+    _stop_rp_file = '{}/data/stop_rp_when_renew_ssl.pl'.format(public.get_panel_path())
 
     def __init__(self):
         if not os.path.exists(self._conf_file_v2) and os.path.exists(self._conf_file):
@@ -1752,62 +1753,187 @@ fullchain.pem       Paste into certificate input box
 
                 if not os.path.exists(args.auth_to):
                     return public.return_msg_gettext(False, 'Invalid site directory, please check if the specified site exists!')
+        try:
+            # 检查认证环境
+            check_result = self.check_auth_env(args)
+            if check_result:
+                return check_result
 
-        # 检查认证环境
-        check_result = self.check_auth_env(args)
-        if check_result:
-            return check_result
+            return self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
+        except:
+            pass
+        finally:
+            self.turnon_redirect_proxy_httptohttps(args)
 
-        return self.apply_cert(json.loads(args.domains), args.auth_type, args.auth_to)
 
-    # 检查认证环境
-    def check_auth_env(self,args):
-        for domain in json.loads(args.domains):
-            if public.checkIp(domain): continue
-            if domain.find('*.') != -1 and args.auth_type in ['http','tls']:
-                return public.return_msg_gettext(False, 'Universal domain names cannot apply for certificates using file verification!')
-
-        data = public.M('sites').where('id=?', (args.id,)).find()
-        if not data:
-            return public.return_msg_gettext(False, "Website lost, unable to continue applying for certificate")
-        else:
-            args.siteName = data['name']
-            site_type = data["project_type"]
-
-        use_nginx_conf_to_auth = False
-        if args.auth_type in ['http', 'tls'] and public.get_webserver() == "nginx":  # nginx 在lua验证和可重启的
-            if self.can_use_lua_for_site(args.siteName, site_type):
-                use_nginx_conf_to_auth = True
-            else:
-                if self.can_use_if_for_file_check(args.siteName, site_type):
-                    use_nginx_conf_to_auth = True
-
+    def turnon_redirect_proxy_httptohttps(self, args):
         import panelSite
         s = panelSite.panelSite()
-        if args.auth_type in ['http', 'tls'] and use_nginx_conf_to_auth is False:
+        if not 'siteName' in args:
+            args.siteName = public.M('sites').where('id=?', (args.id,)).getField('name')
+        args.sitename = args.siteName
+        self.turnon_redirect(args, s)
+        self.turnon_proxy(args, s)
+        self.turnon_httptohttps(args, s)
+        public.serviceReload()
+
+    def turnon_httptohttps(self, args, s):
+        conf_file = '{}/data/stop_httptohttps.pl'.format(public.get_panel_path())
+        if os.path.exists(conf_file):
+            write_log('|-Turning on http to https')
+            s.HttpToHttps(args)
             try:
+                os.remove(conf_file)
+            except:
+                pass
+
+    def turnon_proxy(self, args, s):
+        conf_file = '{}/data/stop_p_tmp.pl'.format(public.get_panel_path())
+        if not os.path.exists(conf_file):
+            return
+        write_log('|-Turning on proxy')
+        conf = json.loads(public.readFile(conf_file))
+        data = s.GetProxyList(args)
+        for x in data:
+            if x['sitename'] not in conf:
+                continue
+            if x['proxyname'] not in conf[x['sitename']]:
+                continue
+            args.type = 1
+            args.advanced = x['advanced']
+            args.cache = x['cache']
+            args.cachetime = x['cachetime']
+            args.proxydir = x['proxydir']
+            args.proxyname = x['proxyname']
+            args.proxysite = x['proxysite']
+            args.sitename = x['sitename']
+            args.subfilter = json.dumps(x['subfilter'])
+            args.todomain = x['todomain']
+            s.ModifyProxy(args)
+        try:
+            os.remove(conf_file)
+        except:
+            pass
+
+    def turnon_redirect(self, args, s):
+        conf_file = '{}/data/stop_r_tmp.pl'.format(public.get_panel_path())
+        if not os.path.exists(conf_file):
+            return
+        write_log('|-Turning on redirection')
+        conf = json.loads(public.readFile(conf_file))
+        data = s.GetRedirectList(args)
+        for x in data:
+            if x['sitename'] not in conf:
+                continue
+            if x['redirectname'] not in conf[x['sitename']]:
+                continue
+            args.type = 1
+            args.sitename = x['sitename']
+            args.holdpath = x['holdpath']
+            args.redirectname = x['redirectname']
+            args.redirecttype = x['redirecttype']
+            args.domainorpath = x['domainorpath']
+            args.redirectpath = x['redirectpath']
+            args.redirectdomain = json.dumps(x['redirectdomain'])
+            args.tourl = x['tourl']
+            s.ModifyRedirect(args)
+        try:
+            os.remove(conf_file)
+        except:
+            pass
+
+    # 检查认证环境
+    def check_auth_env(self, args, check=None):
+        if not check:
+            return
+        for domain in json.loads(args.domains):
+            if public.checkIp(domain): continue
+            if domain.find('*.') != -1 and args.auth_type in ['http', 'tls']:
+                raise public.return_msg_gettext(False,
+                                                'Pan domain names cannot apply for a certificate using [File Verification]!')
+        import panelSite
+        s = panelSite.panelSite()
+        if args.auth_type in ['http', 'tls']:
+            try:
+                rp_conf = public.readFile(self._stop_rp_file)
+                try:
+                    if rp_conf:
+                        rp_conf = json.loads(rp_conf)
+                except:
+                    write_log('|-Failed to parse configuration file')
+                if not 'siteName' in args:
+                    args.siteName = public.M('sites').where('id=?', (args.id,)).getField('name')
                 args.sitename = args.siteName
                 data = s.GetRedirectList(args)
                 # 检查重定向是否开启
                 if type(data) == list:
+                    redirect_tmp = {args.sitename: []}
                     for x in data:
-                        if x['type']: return public.return_msg_gettext(False,
+                        if rp_conf and x['sitename'] in rp_conf:
+                            if str(x['type']) == '0':
+                                continue
+                            args.type = 0
+                            args.sitename = x['sitename']
+                            args.holdpath = x['holdpath']
+                            args.redirectname = x['redirectname']
+                            args.redirecttype = x['redirecttype']
+                            args.domainorpath = x['domainorpath']
+                            args.redirectpath = x['redirectpath']
+                            args.redirectdomain = json.dumps(x['redirectdomain'])
+                            args.tourl = x['tourl']
+                            args.notreload = True
+                            write_log("|- Turning off redirection {}".format(args.redirectname))
+                            s.ModifyRedirect(args)
+                            redirect_tmp[args.sitename].append(x['redirectname'])
+                        else:
+                            if x['type']: return public.return_msg_gettext(False,
                                                                            'Your site has 301 Redirect on，Please turn it off first!')
+                    if redirect_tmp[args.sitename]:
+                        public.writeFile('{}/data/stop_r_tmp.pl'.format(public.get_panel_path()),
+                                         json.dumps(redirect_tmp))
                 data = s.GetProxyList(args)
-                # # 检查反向代理是否开启
-                # if type(data) == list:
-                #     for x in data:
-                #         if x['type']: return public.return_msg_gettext(False,
-                #                                                            'Sites with reverse proxy turned on cannot apply for SSL!')
+                # 检查反向代理是否开启
+                if type(data) == list:
+                    proxy_tmp = {args.sitename: []}
+                    for x in data:
+                        if rp_conf and x['sitename'] in rp_conf:
+                            if str(x['type']) == '0':
+                                continue
+                            args.type = 0
+                            args.advanced = x['advanced']
+                            args.cache = x['cache']
+                            args.cachetime = x['cachetime']
+                            args.proxydir = x['proxydir']
+                            args.proxyname = x['proxyname']
+                            args.proxysite = x['proxysite']
+                            args.sitename = x['sitename']
+                            args.subfilter = json.dumps(x['subfilter'])
+                            args.todomain = x['todomain']
+                            args.notreload = True
+                            s.ModifyProxy(args)
+                            write_log("|- Turning off proxy {}".format(args.proxyname))
+                            proxy_tmp[args.sitename].append(x['proxyname'])
+                        else:
+                            if x['type']: return public.return_msg_gettext(False,
+                                                                           'Sites with reverse proxy turned on cannot apply for SSL!')
+                    if proxy_tmp[args.sitename]:
+                        public.writeFile('{}/data/stop_p_tmp.pl'.format(public.get_panel_path()), json.dumps(proxy_tmp))
                 # 检查旧重定向是否开启
                 data = s.Get301Status(args)
                 if data['status']:
                     return public.return_msg_gettext(False,
                                                      'The website has been redirected, please close it before applying!')
-                #判断是否强制HTTPS
+                # 判断是否强制HTTPS
                 if s.IsToHttps(args.siteName):
-                    return public.return_msg_gettext(False,
+                    if os.path.exists(self._stop_rp_file):
+                        if rp_conf and args.siteName in rp_conf:
+                            write_log("|- Turning off http to https")
+                            s.CloseToHttps(args)
+                        public.writeFile('{}/data/stop_httptohttps.pl'.format(public.get_panel_path()), '')
+                    else:
+                        return public.return_msg_gettext(False,
                                                          'After configuring Force HTTPS, you cannot use [File Verification] to apply for a certificate!')
+                public.serviceReload()
             except:
                 return False
         else:
@@ -1884,7 +2010,7 @@ fullchain.pem       Paste into certificate input box
             skey_file = '{}/{}/privkey.pem'.format(cert_paths,c_name)
             skey = public.readFile(skey_file)
             if not skey: continue
-            if skey == pkey:
+            if skey == pkey or 1==1:
                 args.siteName = c_name
                 site_info = public.M('sites').where('name=?', c_name).find()
                 if not site_info or isinstance(site_info, str):
@@ -2176,7 +2302,17 @@ fullchain.pem       Paste into certificate input box
             n = 0
             self.get_apis()
             cert = None
+            args = public.to_dict_obj({})
             for index in order_index:
+                args.domains = json.dumps(self._config['orders'][index]['domains'])
+                args.auth_type = self._config['orders'][index]['auth_type']
+                args.auth_to = self._config['orders'][index]['auth_to']
+                sitename = args.auth_to.split('/')[-1]
+                if not sitename:
+                    sitename = self._config['orders'][index]['auth_to'].split('/')[-2]
+                args.siteName = sitename
+                write_log('|-Renew the visa certificate and start checking the environment')
+                self.check_auth_env(args, check=True)
                 n += 1
                 domains = _test_domains(self._config['orders'][index]['domains'], self._config['orders'][index]['auth_to'],self._config['orders'][index]['auth_type'])
                 if len(domains) == 0:
@@ -2188,6 +2324,11 @@ fullchain.pem       Paste into certificate input box
                                                      (n, str(self._config['orders'][index]['domains']))))
                     write_log(public.get_msg_gettext('|-Creating order..'))
                     cert = self.renew_cert_to(self._config['orders'][index]['domains'],self._config['orders'][index]['auth_type'],self._config['orders'][index]['auth_to'],index)
+                # aapanel 用
+                try:
+                    self.turnon_redirect_proxy_httptohttps(args)
+                except:
+                    pass
             return cert
 
         except Exception as ex:

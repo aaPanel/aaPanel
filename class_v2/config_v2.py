@@ -1552,7 +1552,7 @@ class config:
         
         
     def get_config(self, get):
-        public.print_log('v2-get_config')
+        # public.print_log('v2-get_config')
         import system_v2 as system
         data = {}
         data.update(system.system().GetConcifInfo())

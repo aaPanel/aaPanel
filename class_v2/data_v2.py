@@ -230,8 +230,8 @@ class data:
                 return res
             return res
         except:
-            from traceback import format_exc
-            public.print_log(format_exc())
+            # from traceback import format_exc
+            # public.print_log(format_exc())
             return res
         #最新版本v2版本
         # try:

@@ -42,7 +42,7 @@ def control_init():
     null_html()
     remove_other()
     deb_bashrc()
-    upgrade_gevent()
+    # upgrade_gevent()
     upgrade_polkit()
     #hide_docker()
     rep_pyenv_link()
@@ -670,7 +670,7 @@ def files_set_mode():
 
     recycle_list = public.get_recycle_bin_list()
     for recycle_path in recycle_list:
-        m_paths.append([recycle_path,'','root',600,True])
+        m_paths.append([recycle_path,'','root',600,False])
 
     for m in m_paths:
         if not os.path.exists(m[0]): continue

@@ -265,7 +265,7 @@
     },
     {
         "CH": "Lithuania",
-        "b rief": "LT"
+        "brief": "LT"
     },
     {
         "CH": "Serbia",
@@ -309,7 +309,7 @@
     },
     {
         "CH": "Estonia",
-        "brief ": "EE"
+        "brief": "EE"
     },
     {
         "CH": "Sudan",

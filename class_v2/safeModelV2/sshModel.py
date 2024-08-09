@@ -16,20 +16,75 @@ import time
 
 import public
 from safeModelV2.base import safeBase
-
-
+from datetime import datetime
 class main(safeBase):
 
     def __init__(self):
         pass
 
+    # 获取当天登陆失败/登陆成功计数
+    def __get_today_stats(self):
+        today_err_num1 = int(public.ExecShell(
+            "journalctl -u ssh --no-pager -S today |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[0])
+        today_err_num2 = int(public.ExecShell(
+            "journalctl -u ssh --no-pager -S today |grep -a 'Connection closed by authenticating user' |grep -a 'preauth' |wc -l")[0])
+        today_success = int(public.ExecShell("journalctl -u ssh --no-pager -S today |grep -a 'Accepted' |wc -l")[0])
+        return today_err_num1 + today_err_num2, today_success
+
+    # 更新ssh统计记录
+    def __update_record_with_today_stats(self, record):
+        today_err_num, today_success = self.__get_today_stats()
+        if record["today_success"] < today_success: record["success"] += today_success
+        if record["today_error"] < today_err_num: record["error"] += today_err_num
+        record['today_error'] = today_err_num
+        record['today_success'] = today_success
+
+    # 获取终端执行命令记录
+    def ssh_cmd_history(self, get):
+        try:
+            result = []
+            file_path = "/root/.bash_history"
+            data = public.readFile(file_path) if os.path.exists(file_path) else None
+
+            danger_cmd = ['rm', 'rmi', 'kill', 'stop', 'pause', 'unpause', 'restart', 'update', 'exec', 'init',
+                          'shutdown', 'reboot', 'chmod', 'chown', 'dd', 'fdisk', 'killall', 'mkfs', 'mkswap', 'mount',
+                          'swapoff', 'swapon', 'umount', 'userdel', 'usermod', 'passwd', 'groupadd', 'groupdel',
+                          'groupmod', 'chpasswd', 'chage', 'usermod', 'useradd', 'userdel', 'pkill']
+
+            if data:
+                data_list = data.split("\n")
+                for i in data_list:
+                    if len(result) >= 200: break
+                    if not i or i.startswith("#"):
+                        continue
+
+                    is_dangerous = any(cmd in i for cmd in danger_cmd)
+
+                    result.append({
+                        "command": i,
+                        "is_dangerous": is_dangerous
+                    })
+            else:
+                result = []
+
+            return public.returnMsg(True, {
+                "data": result,
+                "total": len(result)
+            })
+        except:
+            return public.returnMsg(False, {
+                "data": [],
+                "total": 0
+            })
 
     def get_ssh_intrusion(self,get):
         """
         @获取SSH爆破次数
         @param get:
         """
-        result = {'error':0,'success':0}
+        result = {'error': 0, 'success': 0, 'today_error': 0, 'today_success': 0}
+
+        # debian系统处理
         if os.path.exists("/etc/debian_version"):
             version = public.readFile('/etc/debian_version').strip()
             if 'bookworm' in version or 'jammy' in version or 'impish' in version:
@@ -40,35 +95,141 @@ class main(safeBase):
                 except:
                     version = 11
             if version >= 12:
-                result['error'] = int(public.ExecShell("journalctl -u ssh --no-pager |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[0]) + int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Connection closed by authenticating user' |grep -a 'preauth' |wc -l")[0])
-                result['success'] = int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Accepted' |wc -l")[0])
-                return result
-                # return public.return_message(0, 0, result)
-        data = self.get_ssh_cache()
-        for sfile in self.get_ssh_log_files(None):
-            for stype in result.keys():
-                count = 0
-                if  sfile in data[stype] and not sfile in ['/var/log/auth.log','/var/log/secure']:
-                    count += data[stype][sfile]
-                else:
+                try:
+                    # # 优先取缓存
+                    pkey = "version_12_ssh_login_counts"
+                    if public.cache_get(pkey):
+                        return public.cache_get(pkey)
+
+                    # 读取记录文件
+                    filepath = "/www/server/panel/data/ssh_login_counts.json"
+                    filedata = public.readFile(filepath) if os.path.exists(filepath) else public.writeFile(filepath, "[]")
+                    today = datetime.now().strftime('%Y-%m-%d')
+                    # 解析记录文件的内容
                     try:
-                        if stype == 'error':
-                            num1,num2 = 0,0
-                            try:
-                                num1 = int(public.ExecShell("cat %s|grep -a 'Failed password for' |grep -v 'invalid' |wc -l" % (sfile))[0].strip())
-                            except:pass
-                            try:
-                                num2 += int(public.ExecShell("cat %s|grep -a 'Connection closed by authenticating user' |grep -a 'preauth' |wc -l" % (sfile))[0].strip())
-                            except:pass
+                        data_list = json.loads(filedata)
+                    except:
+                        data_list = []
 
-                            count = num1 + num2
+                    if data_list:
+                        for index, record in enumerate(data_list):
+                            # 如果记录中有当天的数据，则直接返回
+                            if record['date'] == today:
+                                self.__update_record_with_today_stats(record)
+                                if index == 0:  # 确保只在首次找到匹配项时返回
+                                    data_list[0] = record
+                                    # 设置缓存
+                                    public.cache_set(pkey, record, 30)
+                                    return record
+                            else:
+                                record = data_list[0]
+                                self.__update_record_with_today_stats(record)
+                                # 设置缓存
+                                public.cache_set(pkey, record, 30)
+                                return record
+
+                    # 没有记录文件   按原先的方式获取
+                    err_num1 = int(public.ExecShell(
+                        "journalctl -u ssh --no-pager |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[0])
+                    err_num2 = int(public.ExecShell(
+                        "journalctl -u ssh --no-pager --grep='Connection closed by authenticating user|preauth' |wc -l")[0])
+                    result['error'] = err_num1 + err_num2
+                    result['success'] = int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Accepted' |wc -l")[0])
+
+                    today_err_num, today_success = self.__get_today_stats()
+                    result['today_error'] = today_err_num
+                    result['today_success'] = today_success
+                    # 设置缓存
+                    public.cache_set(pkey, result, 30)
+                except:
+                    pass
+                return result
+
+        # 记录文件
+        ssh_intrusion_file = '/www/server/panel/config/ssh_intrusion.json'
+        today = datetime.now().strftime('%Y-%m-%d')
+        wf = True
+        # 读取文件
+        try:
+            ssh_intrusion_data = json.loads(public.readFile(ssh_intrusion_file))
+            if "time" in ssh_intrusion_data and ssh_intrusion_data['time'] == today:
+                wf = False
+                result['error'] = ssh_intrusion_data["data"]["error"]
+                result['success'] = ssh_intrusion_data["data"]["success"]
+        except:
+            ssh_intrusion_data = {'time': '', 'data': result}
+
+        logs_path_info = self.get_ssh_log_files_list(None)
+        time_formatted = time.strftime('%b  %d', time.localtime())
+        month, day = time_formatted.split()
+        day = day.lstrip('0')
+
+        formatted_time = "{}  {}".format(month, day)
+        formatted_time1 = "{} {} ".format(month, day)
+
+        for sfile in logs_path_info:
+            if not os.path.exists(sfile):
+                continue
+
+            for stype in result.keys():
+                # count = 0
+                # if  sfile in data[stype] and not sfile in ['/var/log/auth.log','/var/log/secure']:
+                #    count += data[stype][sfile]
+                # else:
+                try:
+                    if stype in ["error", "success"] and ssh_intrusion_data and ssh_intrusion_data["time"] == today\
+                            and ssh_intrusion_data["data"][stype] != 0:
+                        continue
+
+                    if stype == 'error':
+                        cmds = [
+                            "cat {} | grep -a 'Failed password for' | grep -v 'invalid' | awk '{{print $5}}'".format(sfile),
+                            "cat {} | grep -a 'Connection closed by authenticating user' | grep -a 'preauth' | awk '{{print $5}}'".format(sfile),
+                            "cat {} | grep -a 'PAM service(sshd) ignoring max retries' | awk '{{print $5}}'".format(sfile)
+                        ]
+                    elif stype == 'success':
+                        cmds = [
+                            "cat {} | grep -a 'Accepted' | awk '{{print $5}}'".format(sfile),
+                            "cat {} | grep -a 'sshd\\[.*session opened for user' | awk '{{print $5}}'".format(sfile)
+                        ]
+                    elif stype == 'today_error' and sfile in ["/var/log/secure", "/var/log/auth.log"]:
+                        cmds = [
+                            "cat {} | grep -a 'Failed password for' | grep -v 'invalid' | grep -aE '{}|{}' | awk '{{print $5}}'".format(sfile, formatted_time, formatted_time1),
+                            "cat {} | grep -a 'Connection closed by authenticating user' | grep -a 'preauth' | grep -aE '{}|{}' | awk '{{print $5}}'".format(sfile, formatted_time, formatted_time1),
+                            "cat {} | grep -a 'PAM service(sshd) ignoring max retries' | grep -aE '{}|{}' | awk '{{print $5}}'".format(sfile, formatted_time, formatted_time1)
+                        ]
+                    elif stype == 'today_success' and sfile in ["/var/log/secure", "/var/log/auth.log"]:
+                        cmds = [
+                            "cat {} | grep -a 'Accepted' | grep -aE '{}|{}' | awk '{{print $5}}'".format(sfile, formatted_time, formatted_time1),
+                            "cat {} | grep -a 'sshd\\[.*session opened for user' | grep -aE '{}|{}' | awk '{{print $5}}'".format(sfile, formatted_time, formatted_time1)
+                        ]
+                    else:
+                        continue
+
+                    log_entries = []
+                    for cmd in cmds:
+                        output = public.ExecShell(cmd)[0].strip()
+                        if output:
+                            log_entries.extend(output.split('\n'))
+
+                        # 去重处理
+                        if stype in ["success", "today_success"]:
+                            count = len(set(log_entries))
                         else:
-                            count = int(public.ExecShell("cat %s|grep -a 'Accepted' |wc -l" % (sfile))[0].strip())
-                    except: pass
-                    data[stype][sfile] = count
+                            count = len(log_entries)
 
-                result[stype] += count
-        self.set_ssh_cache(data)
+                        result[stype] += count
+
+                except Exception as e:
+                    continue
+
+            result['success'] = result['today_success'] if result['today_success'] >= result['success'] else result['success'] + result['today_success']
+            result['error'] = result['today_error'] if result['today_error'] >= result['error'] else result['error'] + result['today_error']
+            # 写入到文件中
+            if wf:
+                ssh_intrusion_data = {'time': today, 'data': result}
+                public.writeFile(ssh_intrusion_file, json.dumps(ssh_intrusion_data))
+
         return result
         # return public.return_message(0, 0, result)
 
@@ -77,9 +238,16 @@ class main(safeBase):
         @获取缓存ssh记录
         """
         file = '{}/data/ssh_cache.json'.format(public.get_panel_path())
+        cache_data = {'success': {}, 'error': {}, 'today_success': {}, 'today_error': {}}
         if not os.path.exists(file):
-            public.writeFile(file,json.dumps({'success':{},'error':{}}))
-        data = json.loads(public.readFile(file))
+            public.writeFile(file, json.dumps(cache_data))
+            return cache_data
+
+        try:
+            data = json.loads(public.readFile(file))
+        except:
+            public.writeFile(file, json.dumps(cache_data))
+            data = cache_data
 
         return data
 
@@ -114,25 +282,46 @@ class main(safeBase):
         data['status'] = status
         data['ping'] = isPing
         data['firewall_status'] = self.CheckFirewallStatus()
-        data['error'] = self.get_ssh_intrusion(get)
-        data['fail2ban'] = self.get_ssh_fail2ban(get)
+        # data['error'] = self.get_ssh_intrusion(get)
+        data['fail2ban'] = self._get_ssh_fail2ban()
         return data
 
+    def get_ssh_login_info(self, get):
+        """
+        @获取SSH登录信息
+        """
+        # return self.get_ssh_intrusion(get)
 
-    def get_ssh_fail2ban(self,get):
+        return public.return_message(0, 0, self.get_ssh_intrusion(get))
+
+    @staticmethod
+    def _get_ssh_fail2ban():
         """
-        @防爆破开关
+        @name 获取fail2ban的服务和SSH防爆破状态
+        @return:
         """
-        data = {}
+        plugin_path = "/www/server/panel/plugin/fail2ban"
+        result_data = {"status": 0, "installed": 1}
+        if not os.path.exists("{}".format(plugin_path)):
+            result_data['installed'] = 0
+            return result_data
+
+        sock = "{}/fail2ban.sock".format(plugin_path)
+        if not os.path.exists(sock):
+            return result_data
+
         s_file = '{}/plugin/fail2ban/config.json'.format(public.get_panel_path())
         if os.path.exists(s_file):
             try:
                 data = json.loads(public.readFile(s_file))
-            except: pass
-        if 'sshd' in data:
-            if data['sshd']['act'] == 'true':
-                return 1
-        return 0
+                if 'sshd' in data:
+                    if data['sshd']['act'] == 'true':
+                                result_data['status'] = 1
+                                return result_data
+            except:
+                pass
+
+        return result_data
 
     #改远程端口
     def SetSshPort(self,get):
@@ -171,6 +360,7 @@ class main(safeBase):
         """
         @设置SSH状态
         """
+        get.exists(["status"])
         if int(get['status'])==1:
             msg = public.getMsg('FIREWALL_SSH_STOP')
             act = 'stop'

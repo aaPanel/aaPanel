@@ -836,14 +836,16 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             get.address = '127.0.0.1'
             get.ps = self.siteName
             result = database.database().AddDatabase(get)
-
-            public.print_log(result)
-
             if result['status']:
                 data['databaseStatus'] = True
                 data['databaseUser'] = get.datauser
                 data['databasePass'] = get.datapassword
                 data['d_id'] = str(public.M('databases').where('pid=?', (get.pid,)).field('id').find()['id'])
+            else:
+                # 已经存在数据库 用之前数据库 修改pid public.print_log("存在 更新pid   ---{}".format(result))
+                if result['msg'].find('Database exists') != -1:
+                    datauser = get['name'].strip().lower()
+                    public.M('databases').where('name=?', (datauser,)).update({"pid":get.pid})
         if not multiple:
             public.serviceReload()
         data = self._set_ssl(get, data, siteMenu)
@@ -1422,8 +1424,8 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         listen_conf = public.readFile(listen_file)
         try:
             get.webname = json.loads(get.webname)
-            get.domain = get.webname['domain'].replace('\r', '')
-            get.webname = get.domain + "," + ",".join(get.webname["domainlist"])
+            get.domain = str(get.webname['domain']).replace('\r', '').lower()
+            get.webname = str(get.domain) + "," + ",".join(map(lambda x: str(x).lower(), list(get.webname["domainlist"])))
             if get.webname[-1] == ',':
                 get.webname = get.webname[:-1]
         except:
@@ -7371,9 +7373,28 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         return public.success_v2(msg)
 
-    # TODO 获取可安装的插件列表
+    # 获取可安装的插件列表
     def wp_plugin_list(self, args: public.dict_obj):
-        pass
+        # 参数校验
+        args.validate([
+            public.Param('s_id').Integer('>', 0).Filter(int),
+            public.Param('keyword'),
+            public.Param('p').Integer('>', 0).Filter(int),
+            public.Param('p_size').Integer('>', 0).Filter(int),
+            public.Param('set_id').Integer('>', 0).Filter(int),
+        ])
+
+        from wp_toolkit import wpmgr
+
+        if 's_id' in args:
+            ok, msg = wpmgr(args.s_id).search_plugins(args.get('keyword', ''), args.get('p', 1), args.get('p_size', 20))
+        else:
+            ok, msg = wpmgr.query_plugins(args.get('keyword', ''), args.get('p', 1), args.get('p_size', 20), args.get('set_id', None))
+
+        if not ok:
+            return public.fail_v2(msg)
+
+        return public.success_v2(msg)
 
     # 安装插件
     def wp_install_plugin(self, args: public.dict_obj):
@@ -7488,9 +7509,28 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         return public.success_v2('Success')
 
-    # TODO 获取可安装的主题列表
+    # 获取可安装的主题列表
     def wp_theme_list(self, args: public.dict_obj):
-        pass
+        # 参数校验
+        args.validate([
+            public.Param('s_id').Integer('>', 0).Filter(int),
+            public.Param('keyword'),
+            public.Param('p').Integer('>', 0).Filter(int),
+            public.Param('p_size').Integer('>', 0).Filter(int),
+            public.Param('set_id').Integer('>', 0).Filter(int),
+        ])
+
+        from wp_toolkit import wpmgr
+
+        if 's_id' in args:
+            ok, msg = wpmgr(args.s_id).search_themes(args.get('keyword', ''), args.get('p', 1), args.get('p_size', 20))
+        else:
+            ok, msg = wpmgr.query_themes(args.get('keyword', ''), args.get('p', 1), args.get('p_size', 20), args.get('set_id', None))
+
+        if not ok:
+            return public.fail_v2(msg)
+
+        return public.success_v2(msg)
 
     # 安装主题
     def wp_install_theme(self, args: public.dict_obj):
@@ -7594,6 +7634,163 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             return public.fail_v2(msg)
 
         return public.success_v2('Success')
+
+    # 获取所有WP站点
+    def wp_all_sites(self, args: public.dict_obj):
+        from wp_toolkit import wpmgr
+        return public.success_v2(wpmgr.all_sites())
+
+    # TODO 获取WP整合包列表
+    def wp_set_list(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('keyword'),
+            public.Param('p').Filter(int),
+            public.Param('p_size').Filter(int),
+        ])
+
+        from wp_toolkit import wp_sets
+        return public.success_v2(wp_sets().fetch_list(args.get('keyword', ''), args.get('p', 1), args.get('p_size', 20)))
+
+    # TODO 新建WP整合包
+    def wp_create_set(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('name').Require(),
+        ])
+
+        from wp_toolkit import wp_sets
+
+        if wp_sets().create_set(args.name) < 1:
+            raise public.HintException(public.get_msg_gettext('Failed to create Set'))
+
+        return public.success_v2('Success')
+
+    # TODO 删除WP整合包
+    def wp_remove_set(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Regexp(r'^\d+(?:,\d+)*$'),
+        ])
+
+        from wp_toolkit import wp_sets
+
+        if not wp_sets().remove_set(list(map(lambda x: int(x), str(args.set_id).split(',')))):
+            raise public.HintException(public.get_msg_gettext('Failed to remove Sets'))
+
+        return public.success_v2('Success')
+
+    # TODO 添加插件or主题到WP整合包中
+    def wp_add_items_to_set(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0).Filter(int),
+            public.Param('items').Require().Array(),
+            public.Param('type').Require().Integer('in', [1, 2]).Filter(int),
+        ])
+
+        from wp_toolkit import wp_sets
+
+        typ = int(args.type)
+
+        # 添加插件
+        if typ == 1:
+            ok, msg = wp_sets().add_plugins(int(args.set_id), json.loads(args.items))
+
+        # 添加主题
+        elif typ == 2:
+            ok, msg = wp_sets().add_themes(int(args.set_id), json.loads(args.items))
+
+        # 无效类型
+        else:
+            raise public.HintException(public.get_msg_gettext('Invalid type of Set items'))
+
+        if not ok:
+            raise public.HintException(msg)
+
+        return public.success_v2('Success')
+
+    # TODO 将插件or主题从WP整合包中移除
+    def wp_remove_items_from_set(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('item_ids').Require().Regexp(r'^\d+(?:,\d+)*$'),
+            public.Param('type').Require().Integer('in', [1, 2]).Filter(int),
+        ])
+
+        from wp_toolkit import wp_sets
+
+        item_ids = list(map(lambda x: int(x), str(args.item_ids).split(',')))
+        typ = int(args.type)
+
+        # 删除插件
+        if typ == 1:
+            ok = wp_sets().remove_plugins(item_ids)
+
+        # 删除主题
+        elif typ == 2:
+            ok = wp_sets().remove_themes(item_ids)
+
+        # 无效类型
+        else:
+            raise public.HintException(public.get_msg_gettext('Invalid type of Set items'))
+
+        if not ok:
+            raise public.HintException(public.get_msg_gettext('Failed to remove items from Set'))
+
+        return public.success_v2('Success')
+
+    # TODO 更改WP整合包中插件or主题的激活状态
+    def wp_update_item_state_with_set(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('item_ids').Require().Regexp(r'^\d+(?:,\d+)*$'),
+            public.Param('state').Require().Integer('in', [0, 1]),
+            public.Param('type').Require().Integer('in', [1, 2]).Filter(int),
+        ])
+
+        from wp_toolkit import wp_sets
+
+        item_ids = list(map(lambda x: int(x), str(args.item_ids).split(',')))
+        state = int(args.state)
+        typ = int(args.type)
+
+        # 删除插件
+        if typ == 1:
+            ok = wp_sets().update_plugins_state(state, item_ids)
+
+        # 删除主题
+        elif typ == 2:
+            ok = wp_sets().update_theme_state(state, item_ids[0])
+
+        # 无效类型
+        else:
+            raise public.HintException(public.get_msg_gettext('Invalid type of Set items'))
+
+        if not ok:
+            raise public.HintException(public.get_msg_gettext('Failed to change items state from Set'))
+
+        return public.success_v2('Success')
+
+    # TODO 通过WP整合包安装插件&主题
+    def wp_install_with_set(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0),
+            public.Param('site_ids').Require().Regexp(r'^\d+(?:,\d+)*$'),
+        ])
+
+        from wp_toolkit import wp_sets
+
+        set_id = int(args.set_id)
+        site_ids = list(map(lambda x: int(x), str(args.site_ids).split(',')))
+
+        ok, msg = wp_sets().install(set_id, site_ids)
+
+        if not ok:
+            raise public.HintException(msg)
+
+        return public.success_v2(msg)
 
     # *********** WP Toolkit --End-- *************
 

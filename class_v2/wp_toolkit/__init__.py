@@ -9,7 +9,8 @@ wpfastcgi_cache = core_m.wpfastcgi_cache
 wpbackup = core_m.wpbackup
 wpmigration = core_m.wpmigration
 wpdeployment = core_m.wpdeployment
-# from .core import wpmgr, wp_version, wpfastcgi_cache, wpbackup, wpmigration, wpdeployment
+wp_sets = core_m.wp_sets
+# from .core import wpmgr, wp_version, wpfastcgi_cache, wpbackup, wpmigration, wpdeployment, wp_sets
 
 
 

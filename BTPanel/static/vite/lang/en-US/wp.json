@@ -13,6 +13,13 @@
 		"index_11": "Are you sure to delete this theme?",
 		"index_12": "At least 1 theme is active, activate another theme before disable it",
 		"index_13": "Not Set",
+		"index_14": "Please enter plugin name",
+		"index_15": "Install Plugins",
+		"index_16": "Install Themes",
+		"index_17": "Author",
+		"index_18": "WP",
+		"index_19": "Rating",
+		"index_20": "Installation Success",
 		"Add": {
 			"Title": "Add site - Support batch site building",
 			"Tips": "Versions 5.6.0+ automatically turn on automatic version updates",
@@ -62,10 +69,14 @@
 			"Integrity": "Integrity check",
 			"Plugin": "Plugin",
 			"Theme": "Theme",
+			"URL": "URL",
 			"Active": "Active",
+			"State": "State",
 			"Autoupdate": "Auto update",
 			"Update": "Update",
-			"Uninstall": "Uninstall"
+			"Uninstall": "Uninstall",
+			"Install": "Install",
+			"Installed": "Installed"
 		},
 		"Config": {
 			"LoginUrl": "Login URL",
@@ -135,7 +146,9 @@
 			"tamper_12": "Integrity checking, please wait...",
 			"tamper_13": "Reinstallation in progress, please wait...",
 			"tamper_14": "Uninstalling, please wait...",
-			"tamper_15": "Updating, please wait..."
+			"tamper_15": "Updating, please wait...",
+			"tamper_16": "Installing, please wait...",
+			"tamper_17": "Loading, please wait..."
 		},
 		"Transition": {
 			"index_1": "WordPress Toolkit introdution",
@@ -145,6 +158,26 @@
 			"index_5": "Fastcgi Cache",
 			"index_6": "More features are under development, looking forward to your feedback",
 			"index_7": "Buy now"
+		},
+		"Sets": {
+			"index_1": "Create Set",
+			"index_2": "Select Websites",
+			"index_3": "Plugins",
+			"index_4": "{0} total(Add Plugins)",
+			"index_5": "Add Plugins",
+			"index_6": "Themes",
+			"index_7": "{0} total(Add Themes)",
+			"index_8": "Add Themes",
+			"index_9": "Are you sure you want to remove this set?",
+			"index_10": "Create a New Set",
+			"index_11": "Please enter the sets name",
+			"index_12": "A set is a template containing several plugins and themes. You can install a set on a specific WordPress site with a single click. After you create and name your set, add plugins and themes to it",
+			"index_13": "To add a plugin to this set, enter the plugin name in the search field, press Enter, select the desired plugin, and then click Add",
+			"index_14": "Please select a theme or plugin to add",
+			"index_15": "Please enter keywords",
+			"index_16": "No items found",
+			"index_17": "Select WordPress sites where you want to install the set",
+			"index_18": "Please select website"
 		}
 	}
 }

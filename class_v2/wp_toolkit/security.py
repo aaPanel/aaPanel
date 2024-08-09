@@ -63,16 +63,18 @@ class wp_security:
         if get.path[-1] !='/':
             get.path+='/'
         #取文件防护配置
-        tamper_core_status = public.run_plugin('tamper_core', 'get_service_status', public.to_dict_obj({}))
-        if tamper_core_status["kernel_module_status"] and tamper_core_status["controller_status"]:
-            result= public.run_plugin('tamper_core', 'get_tamper_paths', public.to_dict_obj({}))
-            if type(result)==list:
-                for i in result:
-                    if i['path']==get.path and i['status']==1:
-                        return_result['file_status']=1
-                        today=i['total']['today']
-                        return_result['file_count']=int(today['create'])+int(today['modify'])+int(today['unlink'])+int(today['rename'])+int(today['mkdir'])+int(today['rmdir'])+int(today['chmod'])+int(today['chown'])+int(today['link'])
-                        break
+        try:
+            tamper_core_status = public.run_plugin('tamper_core', 'get_service_status', public.to_dict_obj({}))
+            if tamper_core_status["kernel_module_status"] and tamper_core_status["controller_status"]:
+                result= public.run_plugin('tamper_core', 'get_tamper_paths', public.to_dict_obj({}))
+                if type(result)==list:
+                    for i in result:
+                        if i['path']==get.path and i['status']==1:
+                            return_result['file_status']=1
+                            today=i['total']['today']
+                            return_result['file_count']=int(today['create'])+int(today['modify'])+int(today['unlink'])+int(today['rename'])+int(today['mkdir'])+int(today['rmdir'])+int(today['chmod'])+int(today['chown'])+int(today['link'])
+                            break
+        except:pass
 
         #取防火墙配置
         result= public.run_plugin('btwaf', 'get_site_config_byname', public.to_dict_obj({'siteName':get.site_name}))

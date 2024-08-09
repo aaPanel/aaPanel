@@ -425,6 +425,7 @@ class panelPlugin:
 
         softList = public.load_soft_list(True if force == 1 else False)
 
+
         if get and 'init' in get:
             if softList:
                 if 'success' not in softList:
@@ -809,7 +810,7 @@ class panelPlugin:
             import one_key_wp
             one_key_wp.fast_cgi().set_nginx_conf()
             one_key_wp.fast_cgi().set_nginx_init()
-            public.ExecShell("/etc/init.d/nginx start")
+            public.ExecShell("/etc/init.d/nginx reload")
         return softList
 
     #取首页软件列表
@@ -1093,6 +1094,7 @@ class panelPlugin:
                             softInfo["php_ini"] = "/usr/local/lsws/lsphp{}/etc/php.ini".format(v1)
                     else:
                         softInfo["php_ini"] = "/www/server/php/{}/etc/php.ini".format(v1)
+
                 return self.check_status(softInfo)
 
         return False

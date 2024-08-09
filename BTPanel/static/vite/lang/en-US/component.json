@@ -1,0 +1,16 @@
+{
+	"Component": {
+		"UploadFile": {
+			"index_1": "Click or drag the file to the area",
+			"index_2": "Only support {0} file format import",
+			"index_3": "File name",
+			"index_4": "Size",
+			"index_5": "Status",
+			"index_6": "Select file",
+			"index_7": "The file [{0}] size cannot exceed {1}M",
+			"index_8": "Waiting for upload",
+			"index_9": "Upload success",
+			"index_10": "Please select the file to upload"
+		}
+	}
+}

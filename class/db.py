@@ -212,6 +212,7 @@ class Sql():
             self._close()
             self.__DB_CONN.commit()
             self.rm_lock()
+
             return id
         except Exception as ex:
             return "error: " + str(ex)

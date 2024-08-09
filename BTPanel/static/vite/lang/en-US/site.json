@@ -49,7 +49,7 @@
 			"index_42": "path error",
 			"index_43": "Category set",
 			"index_44": "Site category manager",
-			"index_45": "Category manager",
+			"index_45": "All categories",
 			"index_46": "Please input category name",
 			"index_47": "Category name",
 			"index_48": "Edit category",
@@ -110,7 +110,7 @@
 			"add_site_22": "Site category",
 			"add_site_23": "Please enter the domain name",
 			"add_site_24": "Current domain name is in the wrong format, line {0}, content: {1}",
-			"add_site_25": "The length of the domain name on line {0} is greater than 3 and less than 40.",
+			"add_site_25": "The length of the domain name on line {0} is greater than 3 and less than 100.",
 			"add_site_26": "Please select the website path",
 			"add_site_27": "Please select the PHP version",
 			"add_site_28": "Please select the site category",
@@ -133,7 +133,90 @@
 			"add_site_45": "Eq, bt.cn,test.cn:8081|/www/wwwroot/bt.cn|1|1|56",
 			"add_site_46": "Please select site category"
 		},
-
+		"Proxy": {
+			"index_1": "Target",
+			"index_2": "Send Host",
+			"index_3": "Remark",
+			"index_4": "The hostname when the request is forwarded to the back-end server, usually $http_host, if the target URL is a domain name, you need to change it to a domain name",
+			"index_5": "Please enter a comment to be empty",
+			"index_6": "Target: you can fill in the site you need to proxy, the target if you choose the URL address must be a normal access to the URL, if you choose UNIX must be a socket file",
+			"index_7": "Send domain name: add the domain name to the request header to pass to the back-end server, the default is the target URL domain name, if not set properly may lead to the proxy can not be accessed properly, for example:",
+			"index_8": "http://192.168.100.20:19888, then just send the domain name keeping $http_host",
+			"index_9": "http://www.bt.cn, then the sending domain should be changed to www.bt.cn",
+			"index_10": "The above examples are only common cases, please refer to the actual situation",
+			"index_11": "URL address",
+			"index_12": "Unix address",
+			"index_13": "Port range is incorrect! should be between 100-65535",
+			"index_14": "Please input the URL address",
+			"index_15": "Risky operation, this operation is irreversible, after deleting the [{0}] project you will not be able to manage the project, do you continue to operate?",
+			"index_16": "After batch deleting the selected items, the items will not be restored, should I continue the operation?",
+			"index_17": "Also delete the root directory",
+			"index_18": "IP",
+			"index_19": "Line by line configuration, multiple IPs please line feed",
+			"index_20": "Please enter the ip address",
+			"index_21": "Add IP Black List",
+			"index_22": "Add IP White List",
+			"index_23": "Are you sure to delete this IP?",
+			"index_24": "Cache Switch",
+			"index_25": "Cache Time",
+			"index_26": "Please input cache time",
+			"index_27": "Clear cache",
+			"index_28": "Caching is a technology used to speed up website performance and improve user experience",
+			"index_29": "Resources will be cached when turned on, turn it off if it affects site access",
+			"index_30": "The cache key consists of a hostname, URI, and request parameters",
+			"index_31": "Response headers that are ignored by default are: Set-Cookie{'|'}Cache-Control{'|'}expires{'|'}X-Accel-Expires",
+			"index_32": "Default static resources cached are: ",
+			"index_33": "The cache of the site containing all URLs will be cleared after the cleanup, should I continue?",
+			"index_34": "Compressed content",
+			"index_35": "Compression type",
+			"index_36": "Compression level",
+			"index_37": "Minimum length",
+			"index_38": "Used to compress the content of HTTP responses to reduce the amount of data transferred and improve site performance and loading speeds",
+			"index_39": "Compression level 1-9, e.g. 1 is the fastest compression speed but lower compression rate; 9 is the slowest compression speed but highest compression rate, it is recommended to default to",
+			"index_40": "If gzip is turned on and it affects the normal access to the website, please turn off this feature and the request parameters",
+			"index_41": "Please input",
+			"index_42": "Enter the path: /text/，/test/api",
+			"index_43": "After the path is protected, you need to enter the account password to access it",
+			"index_44": "For example, if I set the protection directory /test/ , then I need to enter the account password to access http://aaa.com/test/",
+			"index_45": "Add Http Certification",
+			"index_46": "After setting, you need to enter the password to access it",
+			"index_47": "For example, if I set the limit path /test/, then I need to enter the account password to access http://aaa.com/test/",
+			"index_48": "Remove HTTP authentication",
+			"index_49": "Are you sure to delete this HTTP authentication?",
+			"index_50": "Edit Http Certification",
+			"index_51": "Logs",
+			"index_52": "Visits log",
+			"index_53": "Receive address",
+			"index_54": "Default",
+			"index_55": "No logging",
+			"index_56": "Specify Log",
+			"index_57": "Send to remote server",
+			"index_58": "Websocket Support",
+			"index_59": "Domain name cannot be empty",
+			"index_60": "Failed to get",
+			"index_61": "Compressed",
+			"index_62": "Black list",
+			"index_63": "White list",
+			"index_64": "Http approve",
+			"index_65": "Websocket",
+			"index_66": "Main Configuration File",
+			"index_67": "Customized Configuration Files",
+			"index_68": "Select Configuration Block: ",
+			"index_69": "Please check if the input configuration file is correct before saving, incorrect configuration may lead to abnormal access to the site",
+			"index_70": "If you are not familiar with this configuration, do not add a custom configuration!",
+			"index_71": "The official nginx configuration documentation for the server block: ",
+			"index_72": "click to jump to the",
+			"index_73": "The main configuration file is not allowed to be modified, if you need to customize the configuration, please go to the custom configuration file above.",
+			"index_74": "Root directory cannot be deleted",
+			"index_75": "The hostname when the request is forwarded to the back-end server, usually $http_host, if the target URL is a domain name, you need to change it to a domain name",
+			"index_76": "Target: you can fill in the site you need to proxy, the target if you choose the URL address must be a normal access to the URL, if you choose UNIX must be a socket file",
+			"index_77": "Send domain name: add the domain name to the request header to pass to the back-end server, the default is the target URL domain name, if not set properly may lead to the proxy can not be accessed properly, for example:",
+			"index_78": "http://192.168.100.20:19888, then just send the domain name keeping $http_host",
+			"index_79": "http://www.bt.cn, then the sending domain should be changed to www.bt.cn",
+			"index_80": "The above examples are only common cases, please refer to the actual situation",
+			"index_81": "Add Content Replacement",
+			"index_82": "Add a reverse proxy project"
+		},
 		"Cert": {
 			"Save": "Save",
 			"Switch": "Switch",
@@ -212,7 +295,15 @@
 			"DelHolder": {
 				"Title": "Delete certificate",
 				"Content": "Are you sure to delete the certificate from the certificate holder?"
-			}
+			},
+			"index_1": "Successfully copied",
+			"index_2": "Copy failure",
+			"index_3": "Log size",
+			"index_4": "Support for ngnix servers only,",
+			"index_5": "Add proxy",
+			"index_6": "Delete Project",
+			"index_7": "Batch Delete Items",
+			"index_8": "After batch deleting the selected items, the items will not be restored, should I continue the operation?"
 		},
 		"Config": {
 			"Manager": "Domain Manager",
@@ -222,6 +313,7 @@
 			"Limit": "Limit access",
 			"Traffic": "Traffic control",
 			"URL": "URL rewrite",
+			"ProxyURL": "URL Proxy",
 			"Indexes": "Default indexes",
 			"Conf": "Config",
 			"SSL": "SSL",
@@ -232,8 +324,10 @@
 			"Setup": "Base setup",
 			"Plugin": "Plugin",
 			"Theme": "Theme",
+			"Sets": "WP Sets",
 			"Composer": "Composer",
 			"Redirect": "Redirect",
+			"Replacement": "Replacement",
 			"Proxy": "Reverse proxy",
 			"Hotlink": "Hotlink Protection",
 			"Response": "Response log",
@@ -326,7 +420,8 @@
 					"3": "Keep URI parameters: Whether the redirected URL has the sub-path or parameters of the source URL",
 					"4": "Keep URI parameters: http://b.com/1.html ---> http://a.com/1.html",
 					"5": "NOT Keep URI parameters: http://b.com/1.html ---> http://a.com",
-					"6": "This is the configuration file of the load balancing. Not modify if you do not understand the configuration rules."
+					"6": "This is the configuration file of the load balancing. Not modify if you do not understand the configuration rules.",
+					"7": "After setting a domain redirect, the 404 redirect for that domain will be invalidated"
 				}
 			},
 			"ProxyConfig": {
@@ -338,7 +433,9 @@
 					"1": "Target URL:Fill in the website you need to proxy, the target URL must be an accessible URL",
 					"2": "Sent Domain: Add the domain name to the request header and pass it to the proxy server",
 					"3": "Content replacement: Nginx exclusive, replace the content of the website with the specified content"
-				}
+				},
+				"index_1": "Add URL Proxy",
+				"index_2": "URL Proxy Setting"
 			},
 			"HotlinkConfig": {
 				"Protection": "Enable hotlink protection",
@@ -438,7 +535,8 @@
 			},
 			"DeleteProxy": {
 				"Label": "Delete reverse proxy",
-				"Content": "Are you sure to delete from list?"
+				"Content": "Are you sure to delete from list?",
+				"Content1": "Do you really want to remove reverse proxy"
 			},
 			"DeleteBlack": {
 				"Label": "Delete backup file",
@@ -455,6 +553,8 @@
 			"Scan": "Scan",
 			"IPTop": "IP (top100)",
 			"URLTop": "URL (top100)",
+			"Redirected": "Redirected",
+			"RedirectsTo": "Redirects to",
 			"Type": "Type",
 			"Mode": "Mode",
 			"KeepUP": "Keep URI param",
@@ -465,6 +565,7 @@
 			"Suffix": "Suffix",
 			"Domain": "Domain name",
 			"BackUp": "Back up",
+			"Catalog": "Proxy Catalog",
 			"FileName": "File name",
 			"FileSize": "File size",
 			"BackupTime": "Backup time",
@@ -475,11 +576,15 @@
 			"Extra": "Extra commands",
 			"SSL": "SSL",
 			"Operation": "Operation",
-			"OPT": "OPT"
+			"WAF": "WAF",
+			"ProxyAddress": "Proxy Address",
+			"OPT": "OPT",
+			"ProxyPath": "Proxy path"
 		},
 		"TableOP": {
 			"Login": "Login",
 			"Conf": "Conf",
+			"Set": "Set",
 			"Restore": "Restore",
 			"Download": "Download",
 			"Delete": "Delete",
@@ -506,8 +611,11 @@
 			"Auto": "Auto",
 			"Response": "Response",
 			"PasswordAccess": "Password access",
+			"Alternative": "Alternative Word",
+			"Rule": "Rule",
 			"Authorized": "Authorized account",
 			"RepeatPassword": "Repeat password",
+			"Original": "Original Keyword",
 			"WebTitle": "Website Title",
 			"Language": "Language",
 			"PHPVersion": "PHP version",
@@ -532,6 +640,9 @@
 			"CacheTime": "Cache time",
 			"Limit": "Limit plan",
 			"Concurrency": "Limit of concurrency",
+			"Connection": "Connection Timeout",
+			"Backend": "Backend request timeout",
+			"Proxy": "Proxy Response Timeout",
 			"BlockIP": "Block single IP"
 		},
 		"Placeholder": {
@@ -551,7 +662,11 @@
 			"Index_4": "Please enter the name",
 			"Index_5": "Please enter the path",
 			"Index_6": "Please enter the username",
-			"Index_7": "Please leave blank if not modified"
+			"Index_7": "Please leave blank if not modified",
+			"Index_8": "Please enter the password",
+			"Index_9": "Please enter proxy path Example:/web",
+			"Index_10": "Please enter",
+			"Index_11": "Domain or Note"
 		},
 		"RulesError": {
 			"Domain": "Example: aapanel.com",
@@ -591,7 +706,8 @@
 			"Suffix": "URL suffix cannot be empty!",
 			"AntiTheft": "Anti-theft chain domain name cannot be empty!",
 			"Index_1": "Domain cannot be empty",
-			"Index_2": "Subdirectory name cannot be empty"
+			"Index_2": "Subdirectory name cannot be empty",
+			"Index_3": "Please enter proxy catalog"
 		},
 		"Api": {
 			"Index_1": "Deploying wordpress, please wait...",
@@ -605,6 +721,25 @@
 			"Index_9": "Submitting, please wait...",
 			"Index_10": "Getting, please wait...",
 			"Index_11": "Delete Node project, please wait..."
+		},
+		"Tips": {
+			"index_1": "Note: For line by line configurations, please end with ;",
+			"index_2": "Case in point:",
+			"index_3": "Please check if the configuration is correct before saving the configuration, incorrect configuration may cause the reverse proxy can not be accessed normally",
+			"index_4": "Redirect request: return 301 /new-page;",
+			"index_5": "Rewrite URL: rewrite ^/blog/(. *)$ /$1 break;",
+			"index_6": "File upload limit: client_max_body_size 10M;",
+			"index_7": "Handling specific http methods:",
+			"index_8": "limit_except POST ",
+			"index_9": "allow 192.168.1.0/24;",
+			"index_10": "deny all;",
+			"index_11": "Limit request rate: limit_rate 100k;",
+			"index_12": "Case insensitive",
+			"index_13": "Only replace the first",
+			"index_14": "Regular expression",
+			"index_15": "Default effect: Replace all 'http://www.bt.cn' with 'https://www.bt.cn'.",
+			"index_16": "Global websockets are enabled and are not allowed to be disabled individually",
+			"index_17": "Delete reverse proxy project"
 		}
 	}
 }

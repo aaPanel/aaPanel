@@ -61,7 +61,8 @@
 			"Preview": "Preview",
 			"Finish": "Finish",
 			"Delete": "Delete",
-			"Copy": "Copy"
+			"Copy": "Copy",
+			"Repair": "Repair"
 		},
 		"Batch": {
 			"Del": "Batch delete",
@@ -74,7 +75,9 @@
 		},
 		"Form": {
 			"Ps": "Remark",
-			"PsPlace": "Please enter remarks"
+			"PsPlace": "Please enter remarks",
+			"index_1": "Please enter your email address",
+			"index_2": "Please enter your password"
 		},
 		"Table": {
 			"Ps": "Remark",
@@ -82,6 +85,9 @@
 			"Action": "OPT",
 			"Operation": "Operation",
 			"NotAction": "Not actionable",
+			"Date": "Date",
+			"Model": "Model",
+			"Permissions": "Permissions",
 			"Enable": "Enable",
 			"Disable": "Disable",
 			"Total": "Total {total}"
@@ -120,7 +126,92 @@
 			"index_1": "FREE",
 			"index_2": "RENEW",
 			"index_3": "Buy now",
-			"index_4": "Expired: "
+			"index_4": "Expired: ",
+			"index_5": "Upgrade now",
+			"index_6": "Authorization information",
+			"index_7": "Payment successful",
+			"index_8": "Pay Now",
+			"index_9": "Loading, please wait...",
+			"index_10": "Payment order failed, please contact administrator!",
+			"index_11": "Vouchers",
+			"index_12": "Stripe",
+			"index_13": "Paypal",
+			"index_14": "Voucher",
+			"index_15": "Authorization",
+			"index_16": "Change",
+			"index_17": "After discount",
+			"index_18": "OFF or",
+			"index_19": "payment",
+			"index_20": "Pay for subscription",
+			"index_21": "first",
+			"index_22": "when subscription creation, your authorization will auto generated",
+			"index_23": "when subscription renewal, your authorization will auto renewed",
+			"index_24": "Choose your plan",
+			"index_25": "Most popular",
+			"index_26": "Loading, please wait!",
+			"index_27": "Number of authorizations",
+			"index_28": "Questions? Email us anytime: support{'@'}aapanel.com",
+			"index_29": "Pro Feature",
+			"index_30": "Plug-in description",
+			"index_31": "Feature contrast",
+			"index_32": "Save more",
+			"index_33": "Linux Pro Edition is available for free use this plugin and all other pro features"
+		},
+		"Coupon": {
+			"Text": "Coupon",
+			"index_1": "Get coupons for a limited time",
+			"index_2": "OFF",
+			"index_3": "Valid for ",
+			"index_4": "day",
+			"index_5": "Get it now",
+			"index_6": "No more reminders for today",
+			"index_7": "No reminders in the past 7 days",
+			"index_8": "Never remind you forever",
+			"index_9": "do you confirm?",
+			"index_10": "End at ",
+			"index_11": "You have {0} coupons to be collected",
+			"index_12": "{0} coupons"
+		},
+		"Feedback": {
+			"Text": "Feedback",
+			"index_1": "aaPanel demand feedback collection",
+			"index_2": "If you encounter any problems or imperfect functions during use, please describe",
+			"index_3": "your problems or needs to us in detail, we will try our best to solve or improve for",
+			"index_4": "We pay special attention to your requirements feedback, and we conduct regular weekly requirements reviews. I hope I can help you better",
+			"index_5": "Please fill in the feedback",
+			"index_6": "Thank you for your participation!"
+		},
+		"File": {
+			"index_1": "Return",
+			"index_2": "Current path",
+			"index_3": "File name",
+			"index_4": "Modification time",
+			"index_5": "Permission",
+			"index_6": "Owner"
+		},
+		"Components": {
+			"index_1": "Select directory",
+			"index_2": "Execute",
+			"index_3": "Selected",
+			"index_4": "Successfully copied",
+			"index_5": "Copy failure",
+			"index_6": "Tips：Ctrl+F Search keywords，Ctrl+S Save，Ctrl+H Search and replace",
+			"index_7": "Bind aaPanel account",
+			"index_8": "No account, go to register",
+			"index_9": "Log in",
+			"index_10": "Batching {0}, current progress: ",
+			"index_11": "Wait",
+			"index_12": "Not set",
+			"index_13": "Quota already set",
+			"index_14": "Click Modify Capacity Quota",
+			"index_15": "Set new quota",
+			"index_16": "Reminder: This feature is exclusive to the pro edition",
+			"index_17": "Requires an XFS filesystem and includes the [prjquota] parameter to use",
+			"index_18": "Example of fstab: /dev/vdc1 /data xfs defaults,prjquota 0 0",
+			"index_19": "Quota: To cancel quota, set to \"0\"",
+			"index_20": "aaPanel Linux panel ©2014-{year} aaPanel (bt.cn)",
+			"index_21": "For Support Suggestions, please visit the aaPanel Forum",
+			"index_22": "Documentation"
 		}
 	}
 }

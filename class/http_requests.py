@@ -8,26 +8,43 @@
 # +-------------------------------------------------------------------
 
 # +-------------------------------------------------------------------
-# | 宝塔HTTP通信库
+# |  宝塔HTTP通信库
 # +-------------------------------------------------------------------
 import os,sys,re
 import ssl
+
 import public
 import json
 import socket
 import requests
-import config
 import requests.packages.urllib3.util.connection as urllib3_conn
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+
 class http:
     _ip_type = None
     def __init__(self):
-        self._ip_type = config.config().get_request_iptype()
+        self._ip_type = self.get_request_iptype()
 
-    def get(self,url,timeout = 60,headers = {},verify = False,type = 'python'):
+
+    def get_request_iptype(self, get=None):
+        '''
+            @name 获取云端请求线路
+            @author hwliang<2022-02-09>
+            @return auto/ipv4/ipv6
+        '''
+
+        v4_file = '{}/data/v4.pl'.format(public.get_panel_path())
+        if not os.path.exists(v4_file): return 'auto'
+        iptype = public.readFile(v4_file).strip()
+        if not iptype: return 'auto'
+        if iptype == '-4': return 'ipv4'
+        return 'ipv6'
+
+    def get(self,url,timeout = (6,60),headers = {},verify = False,type = 'python'):
         url = self.quote(url)
+        # url = public.get_home_node(url)
         if type in ['python','src','php']:
             old_family = urllib3_conn.allowed_gai_family
             try:
@@ -90,8 +107,9 @@ class http:
                 result = self._get_py3(url,timeout,headers,verify)
         return result
 
-    def post(self,url,data,timeout = 60,headers = {},verify = False,type = 'python'):
+    def post(self,url,data,timeout = (6,60),headers = {},verify = False,type = 'python'):
         url = self.quote(url)
+        # url = public.get_home_node(url)
         if type in ['python','src','php']:
             old_family = urllib3_conn.allowed_gai_family
             try:
@@ -102,7 +120,6 @@ class http:
 
                 result = requests.post(url,data,timeout=timeout,headers=headers,verify=verify)
             except:
-                public.print_log(public.get_error_info())
                 try:
                     # IPV6？
                     if self._ip_type != 'ipv6':
@@ -219,6 +236,8 @@ class http:
 
     #POST请求，通过CURL
     def _post_curl(self,url,data,timeout,headers,verify):
+        if isinstance(timeout,tuple):
+            timeout = timeout[1]
         headers_str = self._str_headers(headers)
         pdata = self._str_post(data,headers_str)
         _ssl_verify = ''
@@ -229,6 +248,8 @@ class http:
 
     #POST请求，通过PHP
     def _post_php(self,url,data,timeout,headers,verify):
+        if isinstance(timeout,tuple):
+            timeout = timeout[1]
         php_version = self._get_php_version()
         if not php_version:
             raise Exception('No PHP version available!')
@@ -337,6 +358,8 @@ exit($header."\r\n\r\n".json_encode($body));
 
     #GET请求，通过CURL
     def _get_curl(self,url,timeout,headers,verify):
+        if isinstance(timeout,tuple):
+            timeout = timeout[1]
         headers_str = self._str_headers(headers)
         _ssl_verify = ''
         if not verify: _ssl_verify = ' -k'
@@ -346,9 +369,12 @@ exit($header."\r\n\r\n".json_encode($body));
 
     #GET请求，通过PHP
     def _get_php(self,url,timeout,headers,verify):
+        if isinstance(timeout,tuple):
+            timeout = timeout[1]
         php_version = self._get_php_version()
         if not php_version:
             raise Exception('No PHP version available!')
+
         ip_type = ''
         if self._ip_type == 'ipv6':
             ip_type = 'curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);'
@@ -439,21 +465,21 @@ exit($header."\r\n\r\n".json_encode($body));
     def _curl_format(self,req):
         match = re.search("(.|\n)+\r\n\r\n",req)
         if not match: return req,{},0
-        tmp = match.group().split("\r\n")
-
-        status_code = 0
-
-        from public.regexplib import search_http_response_status_line
-
-        for i in range(len(tmp) - 1):
-            m = search_http_response_status_line.search(tmp[i])
-            if not m:
-                continue
-
-            status_code = int(m.group(1))
-            break
-
-        body = req.replace(match.group(),'')
+        tmp = match.group()
+        body = req.replace(tmp,'')
+        try:
+            for line in tmp.split('\r\n'):
+                if line.find('HTTP/') != -1:
+                    if line.find('Continue') != -1: continue
+                    status_code = int(re.search(r'HTTP/[\d\.]+\s(\d+)',line).groups()[0])
+                    break
+            if status_code == 100:
+                status_code = 200
+        except:
+            if body: 
+                status_code = 200
+            else:
+                status_code = 0
         return body,tmp,status_code
 
     #构造适用于PHP的headers
@@ -475,13 +501,13 @@ exit($header."\r\n\r\n".json_encode($body));
         str_pdata = ''
         if headers.find('application/jose') != -1 \
             or headers.find('application/josn') != -1:
-            if type(pdata) == dict: 
+            if type(pdata) == dict:
                 pdata = json.dumps(pdata)
             if type(pdata) == bytes:
                 pdata = pdata.decode('utf-8')
             str_pdata += " -d '{}'".format(pdata)
             return str_pdata
-        
+
         for key in pdata.keys():
             str_pdata += " -F '{}={}'".format(key ,pdata[key])
         return str_pdata
@@ -491,12 +517,13 @@ exit($header."\r\n\r\n".json_encode($body));
         if 'Content-Type' in headers:
             if headers['Content-Type'].find('application/jose') != -1 \
                or headers['Content-Type'].find('application/josn') != -1:
-                if type(pdata) == dict: 
+                if type(pdata) == dict:
                     pdata = json.dumps(pdata)
                 if type(pdata) == str:
                     pdata = pdata.encode('utf-8')
                 return pdata
         return public.url_encode(pdata)
+
 
 #响应头对象
 class http_headers:
@@ -527,6 +554,12 @@ class response:
         self.format_headers(headers)
 
     def format_headers(self,raw_headers):
+        if isinstance(raw_headers,str):
+            raw_headers = raw_headers.strip().split('\r\n')
+        if isinstance(raw_headers,dict):
+            for k in raw_headers.keys():
+                self.headers[k] = raw_headers[k]
+            return
         raw = []
         for h in raw_headers:
             if not h: continue
@@ -563,7 +596,7 @@ __version__ = 1.0
 
 #请请求方法
 def get_stype(s_type):
-    if not s_type: 
+    if not s_type:
         s_type_file = '/www/server/panel/data/http_type.pl'
         if os.path.exists(s_type_file):
             tmp_type = public.readFile(s_type_file)
@@ -585,7 +618,7 @@ def get_headers(headers):
         headers['User-Agent'] = DEFAULT_HEADERS['User-Agent']
     return headers
 
-def post(url,data = {},timeout = 60,headers = {},verify = False,s_type = None):
+def post(url,data = {},timeout = (15,120),headers = {},verify = False,s_type = None):
     '''
         POST请求
         @param [url] string URL地址
@@ -595,13 +628,15 @@ def post(url,data = {},timeout = 60,headers = {},verify = False,s_type = None):
         @param [verify] bool 是否验证ssl证书 默认False
         @param [s_type] string 请求方法 默认python 可选：curl或php
     '''
+    if isinstance(timeout,list):
+        timeout = tuple(timeout)
     p = http()
     try:
         return p.post(url,data,timeout,get_headers(headers),verify,get_stype(s_type))
     except:
         raise Exception(public.get_error_info())
 
-def get(url,timeout = 60,headers = {},verify = False,s_type = None):
+def get(url,timeout = (15,120),headers = {},verify = False,s_type = None):
     '''
         GET请求
         @param [url] string URL地址
@@ -610,6 +645,8 @@ def get(url,timeout = 60,headers = {},verify = False,s_type = None):
         @param [verify] bool 是否验证ssl证书 默认False
         @param [s_type] string 请求方法 默认python 可选：curl或php
     '''
+    if isinstance(timeout,list):
+        timeout = tuple(timeout)
     p = http()
     try:
         return p.get(url,timeout,get_headers(headers),verify,get_stype(s_type))

@@ -33,15 +33,16 @@ pwd=$1
 mysqld_safe --skip-grant-tables&
 echo 'Changing password...';
 sleep 6
-m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.1.|5.5.|5.6.|10.0|10.1)")
-m2_version=$(cat /www/server/mysql/version.pl|grep -E "10.([4-9]|[1-9][0-9]).")
+m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.1.|5.5.|5.6.|10.0.|10.1\.)")
+m2_version=$(cat /www/server/mysql/version.pl|grep -E "(10.5.|10.4.|10.6.|10.7.|10.11.|11.3.)")
+m9_version=$(cat /www/server/mysql/version.pl|grep -E "(9.0|9.1)")
 if [ "$m_version" != "" ];then
     mysql -uroot -e "UPDATE mysql.user SET password=PASSWORD('${pwd}') WHERE user='root'";
 elif [ "$m2_version" != "" ];then
     mysql -uroot -e "FLUSH PRIVILEGES;alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
 else
     m_version=$(cat /www/server/mysql/version.pl|grep -E "(5\.7\.|8\.[0-9]+\..*)")
-    if [ "$m_version" != "" ];then
+    if [ "$m_version" != "" ] || [ "${m9_version}" ];then
         mysql -uroot -e "FLUSH PRIVILEGES;update mysql.user set authentication_string='' where user='root' and (host='127.0.0.1' or host='localhost');alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
     else
         mysql -uroot -e "update mysql.user set authentication_string=password('${pwd}') where user='root';"
@@ -50,7 +51,6 @@ fi
 mysql -uroot -e "FLUSH PRIVILEGES";
 pkill -9 mysqld_safe
 pkill -9 mysqld
-pkill -9 mysql
 sleep 2
 /etc/init.d/mysqld start
 
@@ -61,7 +61,7 @@ echo "The root password set ${pwd}  successuful"''';
     os.system("/bin/bash mysql_root.sh " + password)
     os.system("rm -f mysql_root.sh")
 
-    result = sql.table('config').where('id=?',(1,)).setField('mysql_root',password)
+    result = public.M('config').where('id=?', (1,)).setField('mysql_root', password)
     print(result)
 
 #设置面板密码

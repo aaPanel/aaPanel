@@ -1102,10 +1102,46 @@ class panelPlugin:
                             softInfo["php_ini"] = "/usr/local/lsws/lsphp{}/etc/php.ini".format(v1)
                     else:
                         softInfo["php_ini"] = "/www/server/php/{}/etc/php.ini".format(v1)
-
+                if sName == 'mail_sys':
+                    softInfo['mail_sys_status'] = self._check_mail_sys(None)["status"]
                 return public.success_v2(self.check_status(softInfo))
 
         return public.fail_v2('failed to get soft info')
+    def _check_mail_sys(self, args):
+        if os.path.exists('/etc/postfix/sqlite_virtual_domains_maps.cf'):
+            public.ExecShell('{} -e "message_size_limit = 102400000"'.format(self._get_postconf()))
+            # 修改postfix mydestination配置项
+            result = public.readFile("/etc/postfix/main.cf")
+            if not result:
+                return public.returnMsg(False, "No postfix configuration file found")
+            result = re.search(r"\n*mydestination\s*=(.+)", result)
+            if not result:
+                return public.returnMsg(False,
+                                        "The postfix configuration file did not find the mydestination parameter")
+            result = result.group(1)
+            if 'localhost' in result or '$myhostname' in result or '$mydomain' in result:
+                public.ExecShell('{} -e "mydestination =" && systemctl restart postfix'.format(self._get_postconf()))
+            # 修改dovecot配置
+            dovecot_conf = public.readFile("/etc/dovecot/dovecot.conf")
+            if not dovecot_conf or not re.search(r"\n*protocol\s*imap", dovecot_conf):
+                return public.returnMsg(False, 'Failed to configure dovecot')
+            # 修复之前版本未安装opendkim的问题
+            # if not (os.path.exists("/usr/sbin/opendkim") and os.path.exists("/etc/opendkim.conf") and os.path.exists("/etc/opendkim")):
+            #     if not self.setup_opendkim():
+            #         return public.returnMsg(False, 'Failed to configure opendkim 1')
+
+            return public.returnMsg(True, 'MAIL_SERVER_EXIST')
+        else:
+
+            return public.returnMsg(False, 'NOT_INSTALL_MAIL_SERVER')
+
+    def _get_postconf(self):
+        if os.path.exists("/usr/sbin/postconf"):
+            return "/usr/sbin/postconf"
+        elif os.path.exists("/sbin/postconf"):
+            return "/sbin/postconf"
+        else:
+            return "postconf"
 
 
     #获取版本信息

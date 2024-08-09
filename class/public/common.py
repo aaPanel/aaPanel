@@ -5,17 +5,12 @@ import json, os, sys, time, re, socket, importlib, binascii, base64, io, string,
 import gettext
 import typing
 import werkzeug.datastructures
+from .exceptions import PanelError
 from .validate import Param, trim_filter
 from .regexplib import match_ipv4, match_ipv6, match_class_private_property, match_safe_path, match_based_host, \
-    find_url_root
+    find_url_root, search_sql_special_chars
 from .tools import is_number
-
-
-import collections
-
-# Common structures
-aap_t_simple_result = collections.namedtuple('aap_t_simple_result', ['success', 'msg'])
-aap_t_mysql_dump_info = collections.namedtuple('aap_t_mysql_dump_info', ['db_name', 'file', 'dump_time'])
+from .structures import aap_t_simple_result, aap_t_mysql_dump_info
 
 
 es = gettext.translation('en', localedir='/www/server/panel/BTPanel/static/language', languages=['en'])
@@ -46,6 +41,24 @@ def M(table):
     with db.Sql() as sql:
         # sql = db.Sql()
         return sql.table(table)
+
+
+# Easy Sqlite Toolkit for query
+def S(table_name: typing.Optional[str] = None, db_name: str = 'default'):
+    from .sqlite_easy import Db
+
+    query = Db(db_name).query()
+
+    if table_name is not None and str(table_name).strip() != '':
+        query.table(str(table_name).strip())
+
+    return query
+
+
+# Easy Sqlite Toolkit for connection
+def SqliteConn(db_name: str = 'default'):
+    from .sqlite_easy import Db
+    return Db(db_name)
 
 
 # 连接MYSQL数据库
@@ -1471,30 +1484,30 @@ def checkWebConfig(repair_num=2):
             "ulimit -n 8192 ; {setup_path}/nginx/sbin/nginx -t -c {setup_path}/nginx/conf/nginx.conf".format(
                 setup_path=setup_path))
         writeFile('/tmp/nginx_new.conf', readFile('/www/server/nginx/conf/nginx.conf'))
-        print_log('checkWebConfig--result:{}'.format(result))
+        # print_log('checkWebConfig--result:{}'.format(result))
         searchStr = 'successful'
         nginx_version = ExecShell("{}/nginx/sbin/nginx -v".format(setup_path))
-        print_log('nginx')
+        # print_log('nginx')
         version_info = nginx_version[1]
     elif web_s == 'apache':
-        print_log('apache')
+        # print_log('apache')
         # else:
         result = ExecShell("ulimit -n 8192 ; {setup_path}/apache/bin/apachectl -t".format(setup_path=setup_path))
         searchStr = 'Syntax OK'
         apache_version = ExecShell("{}/apache/bin/httpd -v".format(setup_path))
         version_info = apache_version[1]
     else:
-        print_log('other')
+        # print_log('other')
         result = ["1", "1"]
         searchStr = "1"
         version_info = "Unknow"
-    print_log('checkWebConfig--result1:{}'.format(result))
+    # print_log('checkWebConfig--result1:{}'.format(result))
     if result[1].find(
             'the "listen ... http2" directive is deprecated, use the "http2" directive instead') != -1 and web_s == "nginx" and is_change_nginx_http2():
         if repair_num > 0:
             repair_num -= 1
             change_nginx_http2()
-            print_log('nginx----1')
+            # print_log('nginx----1')
             return checkWebConfig(repair_num)
 
     if result[1].find(searchStr) == -1:
@@ -1503,14 +1516,14 @@ def checkWebConfig(repair_num=2):
             if repair_num > 0:
                 repair_num -= 1
                 change_nginx_old_http2()
-                print_log('nginx----2')
+                # print_log('nginx----2')
                 return checkWebConfig(repair_num)
 
         if result[1].find('[emerg] invalid parameter "quic" in') != -1 and web_s == "nginx" and not is_nginx_http3():
             if repair_num > 0:
                 repair_num -= 1
                 remove_nginx_quic()
-                print_log('nginx----3')
+                # print_log('nginx----3')
                 return checkWebConfig(repair_num)
 
         WriteLog("TYPE_SOFT", 'CONF_CHECK_ERR', (result[1],))
@@ -1525,9 +1538,9 @@ def checkWebConfig(repair_num=2):
                     0, result[1].split("\n")[0].strip())
         except Exception as e:
             err_collect(result[1], 0, result[1].split("\n")[0].strip())
-        print_log('nginx----4')
+        # print_log('nginx----4')
         return result[1]
-    print_log('nginx----5')
+    # print_log('nginx----5')
     return True
 
 
@@ -2326,6 +2339,31 @@ def get_os_version():
         version = "{} (Py{}.{}.{})".format(version, v_info.major, v_info.minor, v_info.micro)
     return xsssec(version)
 
+#获取总大小
+def get_size_total(paths = []):
+
+    data = {}
+    try:
+        if type(paths) == str:
+            paths = [paths]
+
+        n_list = []
+        for path in paths:
+            if os.path.exists(path):
+                n_list.append(path)
+            else:
+                data[path] = 0
+
+        if len(n_list) > 0:
+            shell = 'du -s {}'.format(' '.join(n_list).strip())
+            res = ExecShell(shell)[0]
+            for n in res.split("\n"):
+                tmp = n.split("\t")
+                if len(tmp) < 2: continue
+                data[tmp[1]] = int(tmp[0]) * 1024
+    except:pass
+    return data
+
 
 # 取文件或目录大小
 def get_path_size(path, exclude=[]):
@@ -2813,6 +2851,24 @@ def is_local():
     return os.path.exists(s_file)
 
 
+# Dump面板数据库结构+数据
+def dump_panel_databases():
+    backup_path = '{}/data/db_backups'.format(get_panel_path())
+
+    if not os.path.exists(backup_path):
+        os.makedirs(backup_path, 0o755)
+
+    backup_databases = (
+        'default',
+    )
+
+    def row_check_func(row: str) -> bool:
+        return row.find('INSERT INTO "logs" ') < 0
+
+    for db_name in backup_databases:
+        with SqliteConn(db_name) as db:
+            db.dump('{}/{}.sql'.format(backup_path, db_name), row_check_func)
+
 # 自动备份面板数据
 def auto_backup_panel():
     try:
@@ -2824,6 +2880,10 @@ def auto_backup_panel():
         backup_path = b_path + '/' + day_date
         backup_file = backup_path + '.zip'
         if os.path.exists(backup_path) or os.path.exists(backup_file): return True
+
+        # 导出面板数据库结构+数据
+        dump_panel_databases()
+
         ignore_default = ''
         ignore_system = ''
         max_size = 100 * 1024 * 1024
@@ -4425,6 +4485,22 @@ def get_local_ip():
     except:
         return '127.0.0.1'
 
+def get_local_ip_2():
+        """获取内网IP"""
+        import socket
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(('8.8.8.8', 80))
+            ip = s.getsockname()[0]
+            return ip
+        except:
+            pass
+        finally:
+            if s is not None:
+                s.close()
+        return '127.0.0.1'
+
 
 def create_logs():
     import db
@@ -4771,19 +4847,6 @@ def check_site_path(site_path):
 def is_debug():
     debug_file = "{}/data/debug.pl".format(get_panel_path())
     return os.path.exists(debug_file)
-
-
-class PanelError(Exception):
-    '''
-        @name 宝塔通用异常对像
-        @author hwliang<2021-06-25>
-    '''
-
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return ("An error occurred while the panel was running: {}".format(str(self.value)))
 
 
 def sys_path_append(path):
@@ -6107,7 +6170,9 @@ def return_area(result, key):
         tmps.append(data[key])
 
     res = get_ips_area(tmps)
-    if 'status' in res: return result
+    if 'status' in res:
+
+        return result
 
     for data in result:
         if data[key] in res:
@@ -8099,6 +8164,7 @@ def run_plugin_v2(plugin_name: str, def_name: str, args: dict_obj):
             if isinstance(res['msg'], str):
                 if res['msg'].find('Traceback ') != -1:
                     raise PanelError(res['msg'])
+
     if isinstance(res, dict):
         if 'status' in res and 'msg' in res:
             status = 0 if res['status'] else -1
@@ -8107,9 +8173,11 @@ def run_plugin_v2(plugin_name: str, def_name: str, args: dict_obj):
         else:
             # 改返回
             res = return_message(0, 0, res)
-    if isinstance(res, list):
+    if isinstance(res, (list, str, int)):
         res = return_message(0, 0, res)
     return res
+
+
 # 加载插件列表与授权列表
 def load_soft_list(force: bool = True):
     local_cache_file = '{}/data/plugin_bin.pl'.format(get_panel_path())
@@ -8124,12 +8192,33 @@ def load_soft_list(force: bool = True):
             url_headers = {"authorization": "bt {}".format(pdata['token'])}
         pdata['environment_info'] = json.dumps(fetch_env_info())
 
-        resp = requests.post(cloudUrl, params=pdata, headers=url_headers, verify=False, timeout=10)
+        update_ok = False
+        ex = None
 
-        # 请求成功后将授权密文信息写入本地文件
-        if resp.status_code == 200:
-            with open(local_cache_file, 'w') as fp:
-                fp.write(resp.text)
+        # 默认重试5次
+        for _ in range(5):
+            try:
+                resp = requests.post(cloudUrl, params=pdata, headers=url_headers, verify=False, timeout=10)
+
+                # 请求成功后将授权密文信息写入本地文件
+                if resp.status_code == 200:
+                    with open(local_cache_file, 'w') as fp:
+                        fp.write(resp.text)
+                    update_ok = True
+                    break
+            except Exception as ex:
+                pass
+
+        # 本地缓存存在则让其读取本地缓存
+        if not update_ok:
+            update_ok = os.path.exists(local_cache_file) and os.path.getsize(local_cache_file) >= 10
+
+        # 本地缓存都不存在，如果捕获到异常则抛出异常，否则抛出获取软件列表与授权信息失败的提示
+        if not update_ok:
+            if ex is not None:
+                raise ex
+
+            raise PanelError(get_msg_gettext('Load softlist and authorizations failed, please wait for few moment and try again.'))
 
     import PluginLoader
 
@@ -8275,3 +8364,6 @@ def make_panel_tmp_path_with_context():
         shutil.rmtree(tmp_path)
 
 
+# 处理SQL语句中的特殊字符
+def escape_sql_str(s: str) -> str:
+    return search_sql_special_chars.sub(r'\\\g<0>', s)

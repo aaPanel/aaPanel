@@ -245,15 +245,9 @@ class main(safeBase):
 
         if public.writeFile(filename, conf):
             public.ExecShell('sysctl -p')
-            return public.returnMsg(True, 'SUCCESS')
+            return public.return_message(0, 0, 'SUCCESS')
         else:
-            return public.returnMsg(
-                False,
-                # '<a style="color:red;">错误：设置失败，sysctl.conf不可写!</a><br>'
-                # '1、如果安装了[宝塔系统加固]，请先关闭<br>'
-                # '2、如果安装了云锁，请关闭[系统加固]功能<br>'
-                # '3、如果安装了安全狗，请关闭[系统防护]功能<br>'
-                # '4、如果使用了其它安全软件，请先卸载<br>'
+            return public.return_message(-1, 0,
                 '<a style="color:red;">Error: Setting failed, sysctl.conf is not writable!</a><br>'
                 '1. If [System Hardening] is installed, please close it first<br>'
                 '2. If Cloud Lock is installed, please turn off the [System Hardening] function<br>'
@@ -266,16 +260,16 @@ class main(safeBase):
     # 服务状态控制 dict_obj.
     def firewall_admin(self, get: dict_obj):
 
-        try:
-            get.validate([
-                Param('status').Require().String('in', ['start', 'stop']).Xss(),
-
-            ], [
-                public.validate.trim_filter(),
-            ])
-        except Exception as ex:
-            public.print_log("error info: {}".format(ex))
-            return public.return_message(-1, 0, str(ex))
+        # try:
+        #     get.validate([
+        #         Param('status').Require().String('in', ['start', 'stop', 'restart']).Xss(),
+        #
+        #     ], [
+        #         public.validate.trim_filter(),
+        #     ])
+        # except Exception as ex:
+        #     public.print_log("error info: {}".format(ex))
+        #     return public.return_message(-1, 0, str(ex))
 
         order = ['reload', 'restart', 'stop', 'start']
         if not get.status in order:
@@ -2710,19 +2704,21 @@ class main(safeBase):
             where = " country like '%{search}%' or brief like '%{search}%'".format(
                 search=args.query)
 
-        count = sql.where(where, ()).count()
+        # count = sql.where(where, ()).count()
+        count = sql.count()
         data = public.get_page(count, int(p), int(limit))
         data['data'] = sql.where(where, ()).limit('{},{}'.format(
             data['shift'], data['row'])).order('addtime desc').select()
         # return data
         return public.return_message(0, 0, data)
 
-    def create_countrys(self, get):
+    def create_countries(self, get):
         try:
             if not hasattr(get, 'country'):
-                return public.returnMsg(False, 'Please enter the country name!')
+                return public.return_message(-1, 0, 'Please enter the country name!')
             input_country = get.country
-            countrys = self.get_countrys(None)
+            countrys = self._get_countries(None)
+
             countrys = countrys[1:]
 
             # 2024/1/6 下午 5:00 获取防火墙状态，如果没有启动则启动防火墙
@@ -2740,7 +2736,7 @@ class main(safeBase):
                     get.country = i
                     self.create_country(get, True, content)
             else:
-                countrys_dict = {i['CH']: i['brief'] for i in countrys}
+                countrys_dict = {i['CH']: i['brief'] for i in countrys if 'brief' in i}
                 if isinstance(input_country, str):
                     input_country = [input_country]
                 for i in input_country:
@@ -2749,10 +2745,11 @@ class main(safeBase):
                     self.create_country(get, True)
             get.status = "restart"
             self.firewall_admin(get)
-            return public.returnMsg(True, 'Added successfully')
+            return public.return_message(0, 0, 'Added successfully')
         except:
+            public.print_log(public.get_error_info())
             print(traceback.format_exc())
-            return public.returnMsg(False, 'Add failed')
+            return public.return_message(-1, 0,  'Add failed')
 
     # 添加区域规则
     def create_country(self, get, is_mutil=False, _ips_paths=None):
@@ -2777,7 +2774,7 @@ class main(safeBase):
         rep = r"^\d{1,5}(:\d{1,5})?$"
         port_list = []
 
-        # 检测该区域是否已添加过全部端口规则 hezhihong
+        # 检测该区域是否已添加过全部端口规则 hezhihong  status must in ['start', 'stop']
         add_list = public.M('firewall_country').where("country=?", (country,)).field('ports').select()
 
         for add in add_list:
@@ -2792,8 +2789,7 @@ class main(safeBase):
                     return public.return_message(-1, 0, 'PORT_CHECK_RANGE')
                 if public.M('firewall_country').where(
                         "country=? and ports=?", (country, port)).count() > 0:
-                    public.print_log('############ 地区接口8{}'.format(port))
-                    # return public.returnMsg(False, 'This area has already been added, please do not add it again!')
+                    # public.print_log('############ 地区接口8{}'.format(port))
                     return public.return_message(-1, 0, 'This area has already been added, please do not add it again!')
         self.get_os_info()
         if _ips_paths is None:
@@ -2801,13 +2797,13 @@ class main(safeBase):
         else:
             content = _ips_paths
         result = json.loads(content)
+        # public.print_log('############ 地区接口7 {}'.format(result))
         ip_list = []
         for r in result:
             if brief == r["brief"]:
                 ip_list = r["ips"]
                 break
         if not ip_list:
-            public.print_log('############ 地区接口7'.format())
             # return public.returnMsg(True, "Please enter the correct area name!")
             return public.return_message(0, 0, 'Please enter the correct area name!')
         if self.__isUfw:
@@ -2817,7 +2813,6 @@ class main(safeBase):
                 result = self.handle_firewall_country(brief, ip_list, types,
                                                       port_list)
                 if result:
-                    public.print_log('############ 地区接口6{}'.format(result))
                     # return result
                     return public.return_message(0, 0, result)
             else:
@@ -2828,10 +2823,12 @@ class main(safeBase):
                 public.M('firewall_country').add(
                     'country,types,brief,ports,addtime',
                     (country, types, brief, port, addtime))
+
         else:
             public.M('firewall_country').add(
                 'country,types,brief,ports,addtime',
                 (country, types, brief, '', addtime))
+
         if is_mutil is False:
             # self.FirewallReload()
             get.status = "restart"
@@ -2962,9 +2959,9 @@ class main(safeBase):
         ori_get.ports = data.get("ports", "")
         ori_get.not_reload = "true"
         rm_res = self.remove_country(ori_get)
-        if rm_res["status"]:
+        if rm_res["status"] == 0:
             create_res = self.create_country(get)
-            if create_res["status"]:
+            if create_res["status"] == 0:
                 # return public.returnMsg(True, "Successful operation")
                 return public.return_message(0, 0, "Successful operation")
         # return public.returnMsg(False, "operation failed")
@@ -3082,8 +3079,8 @@ class main(safeBase):
                     write_string += str(i[v]) + "|"
                 write_string += '\n'
         public.writeFile(filename, write_string)
-        public.WriteLog("system firewall", "导出端口规则")
-        return public.returnMsg(True, filename)
+        public.WriteLog("system firewall", "Export port rules")
+        return  public.return_message(0, 0, filename)
 
     # 规则导出：本地  todo
     def get_file(self, args):
@@ -3166,28 +3163,31 @@ class main(safeBase):
                 except:
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                    return public.ReturnMsg(False, "The file content is incorrect!！")
+                    return public.return_message(-1, 0,  "The file content is incorrect!！")
             if data_list:
                 if isinstance(data_list, dict):
                     data_list = [data_list]
                 if not isinstance(data_list, list):
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                    return public.ReturnMsg(False, "The file content is incorrect!！")
+                    return public.return_message(-1, 0, "The file content is incorrect!！")
                 if len(data_list) == 0:
-                    return public.ReturnMsg(False, "The file is empty!")
+                    return public.return_message(-1, 0,"The file is empty!")
                 result = self.hand_import_rules(rule_name, data_list)
             os.remove(file_path)
             if not_pay_list:
                 not_pay_list = ("<br/>" + "-" * 20 + "<br/>").join(not_pay_list)
-                return public.ReturnMsg(
-                    result["status"],
+                st = 0 if result["status"] else -1
+                return public.return_message(st, 0,
                     "{}<br/>The designated domain name function is exclusive to the Enterprise Edition, and the following rules are not imported:<br/>{}".format(result["msg"], not_pay_list)
                 )
             public.WriteLog("system firewall", "Import port rules")
-            return public.ReturnMsg(result["status"], result["msg"])
+            # return public.ReturnMsg(result["status"], result["msg"])
+            st = 0 if result["status"] else -1
+            return public.return_message(st, 0, result["msg"])
         except Exception:
-            return public.ReturnMsg(False, "The import failed. The format of the rules is wrong. Please try again according to the format of the export rules!")
+            public.print_log(public.get_error_info())
+            return public.return_message(-1, 0, "The import failed. The format of the rules is wrong. Please try again according to the format of the export rules!")
 
     # 处理规则导入，读取json文件内容
     def hand_import_rules(self, rule_name, data_list):
@@ -3285,7 +3285,16 @@ class main(safeBase):
             return {"status": False, "msg": "Import failed!"}
         return {"status": True, "msg": "Imported successfully!"}
 
-    def get_countrys(self, get):
+    def get_countries(self, get):
+        result = []
+        content = self.get_profile(self._country_path)
+        result = json.loads(content)
+        result = sorted(result, key=lambda x : x['CH'], reverse=True);
+
+        if isinstance(result, list):
+            result.insert(0, {"CH": "Except China", "brief": "OTHER"})
+        return public.return_message(0, 0, result)
+    def _get_countries(self, get):
         result = []
         content = self.get_profile(self._country_path)
         result = json.loads(content)
@@ -3294,9 +3303,9 @@ class main(safeBase):
         if isinstance(result, list):
             result.insert(0, {"CH": "Except China", "brief": "OTHER"})
         return result
-
     # 读取配置文件
     def get_profile(self, path):
+        # https://www.aapanel.com/install/lib/country.txt   --path: /www/server/panel/data/firewall/country.txt
 
         if not os.path.exists(path):
             b_path = os.path.dirname(path)
@@ -3305,9 +3314,12 @@ class main(safeBase):
             if path in [
                     self._ips_path, self._country_path, self._white_list_file
             ]:
-                public.downloadFile(
-                    'https://download.bt.cn/install/lib/{}'.format(
-                        os.path.basename(path)), path)
+                # 取英文版本 country_en.txt
+                namep = os.path.basename(path)
+                if namep == 'country.txt':
+                    namep = 'country_en.txt'
+                public.downloadFile('https://node.aapanel.com/install/lib/{}'.format(namep), path)
+
 
         content = ""
         with open(path, "r") as fr:
@@ -3427,7 +3439,8 @@ class main(safeBase):
             # 2024/1/6 下午 5:00 获取防火墙状态，如果没有启动则启动防火墙
             if not self.get_firewall_status():
                 get = public.dict_obj()
-                get.status = 1
+                # get.status = 1
+                get.status = 'start'
                 self.firewall_admin(get)
 
             for port in port_list:
@@ -4204,7 +4217,11 @@ class Sqlite():
                 "types" TEXT,
                 "address" TEXT DEFAULT '',
                 "brief" TEXT DEFAULT '',
-                "addtime" TEXT DEFAULT '');''')
+                "addtime" TEXT DEFAULT '',
+                "sid" INTEGER DEFAULT 0,
+                "domain" TEXT DEFAULT '',
+                "chain" TEXT DEFAULT ''
+                );''')
             public.M('').execute(
                 'CREATE INDEX firewall_ip_addr ON firewall_ip (address);')
 
@@ -4261,6 +4278,8 @@ class Sqlite():
             public.M('firewall_new').execute('ALTER TABLE "firewall_new" ADD "domain" TEXT DEFAULT ""')
         if 'sid' not in create_table_str:
             public.M('firewall_new').execute('ALTER TABLE "firewall_new" ADD "sid"  int DEFAULT 0')
+        if 'chain' not in create_table_str:
+            public.M('firewall_new').execute('ALTER TABLE "firewall_new" ADD "chain" TEXT DEFAULT ""')
         # 修复之前已经创建的 firewall_ip 表无 domain 字段的问题
         create_table_str = public.M('firewall_ip').table('sqlite_master').where(
             'type=? AND name=?', ('table', 'firewall_ip')).getField('sql')
@@ -4268,6 +4287,8 @@ class Sqlite():
             public.M('firewall_ip').execute('ALTER TABLE "firewall_ip" ADD "sid"  int DEFAULT 0')
         if 'domain' not in create_table_str:
             public.M('firewall_ip').execute('ALTER TABLE "firewall_ip" ADD "domain" TEXT DEFAULT ""')
+        if 'chain' not in create_table_str:
+            public.M('firewall_ip').execute('ALTER TABLE "firewall_ip" ADD "chain" TEXT DEFAULT ""')
 
         # 修复之前已经创建的 firewall_country 表无 ports 字段的问题
         create_table_str = public.M('firewall_country').table('sqlite_master').where(

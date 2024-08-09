@@ -1,5 +1,28 @@
 {
 	"Mail": {
+		"Router": {
+			"index_1": "Overview",
+			"index_2": "Domain",
+			"index_3": "Mailbox",
+			"index_4": "BCC",
+			"index_5": "Mail forward",
+			"index_6": "Inbox",
+			"index_7": "Spam",
+			"index_8": "Outbox",
+			"index_9": "Send mail",
+			"index_10": "Backup",
+			"index_11": "Setting"
+		},
+		"Overview": {
+			"today_1": "Send success rate",
+			"today_2": "Send success",
+			"today_3": "Send fail",
+			"today_4": "Receive success",
+			"today_5": "Receive fail",
+			"today_6": "Receive success rate",
+			"today_7": "Send today",
+			"today_8": "Reject today"
+		},
 		"Email": {
 			"index_1": "Email Address",
 			"index_2": "Sender",

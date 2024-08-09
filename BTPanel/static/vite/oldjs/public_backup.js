@@ -8583,7 +8583,9 @@ bt.site = {
 			loadT.close();
 			site.reload();
 			if (callback) callback(rdata);
-			bt.msg(rdata);
+			setTimeout(() => {
+			    bt.msg(rdata);
+			}, 100);
 		});
 	},
 	remove_cert_ssl: function (certName, callback) {

@@ -1016,7 +1016,10 @@ SetLink
                                 admin_user, my_host[0]))
                         mysql_obj.execute(
                             "ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % (admin_user, my_host[0], password))
-                elif m_version.find('10.5.') != -1 or m_version.find('10.4.') != -1:
+                # elif m_version.find('10.5.') != -1 or m_version.find('10.4.') != -1:
+                elif any(mariadb_ver in m_version for mariadb_ver in
+                             ['10.5.', '10.4.', '10.6.', '10.7.', '10.11.', '11.3.']):
+
                     accept = self.map_to_list(
                         mysql_obj.query("select Host from mysql.user where User='{}'".format(admin_user)))
                     for my_host in accept:
@@ -1089,14 +1092,14 @@ SetLink
 
         if m_version.find('5.7') == 0 or m_version.find('8.0') == 0:
             accept = self.map_to_list(
-                mysql_obj.query("select Host from mysql.user where User='" + name + "' AND Host!='localhost'"))
+                mysql_obj.query("select Host from mysql.user where User='" + username + "' AND Host!='localhost'"))
             mysql_obj.execute("update mysql.user set authentication_string='' where User='" + username + "'")
             result = mysql_obj.execute("ALTER USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username, newpassword))
             for my_host in accept:
                 mysql_obj.execute("ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % (username, my_host[0], newpassword))
-        elif m_version.find('10.5.') != -1 or m_version.find('10.4.') != -1:
+        elif any(mariadb_ver in m_version for mariadb_ver in ['10.5.', '10.4.', '10.6.', '10.7.', '10.11.', '11.3.']):
             accept = self.map_to_list(
-                mysql_obj.query("select Host from mysql.user where User='" + name + "' AND Host!='localhost'"))
+                mysql_obj.query("select Host from mysql.user where User='" + username + "' AND Host!='localhost'"))
             result = mysql_obj.execute("ALTER USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username, newpassword))
             for my_host in accept:
                 mysql_obj.execute("ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % (username, my_host[0], newpassword))
@@ -1887,7 +1890,13 @@ SetLink
 
         if not 'Run' in result and result:
             result['Run'] = int(time.time()) - int(result['Uptime'])
-        tmp = panelMysql.panelMysql().query('show master status')
+        # tmp = panelMysql.panelMysql().query('show master status')
+        m_version = public.readFile(public.GetConfigValue('setup_path') + '/mysql/version.pl')
+        if m_version.find('8.4') != -1 or m_version.find('9.0') != -1:
+            tmp = panelMysql.panelMysql().query('SHOW BINARY LOG STATUS')
+        else:
+            tmp = panelMysql.panelMysql().query('show master status')
+
         try:
 
             result['File'] = tmp[0][0]
@@ -1911,7 +1920,12 @@ SetLink
 
         text = public.readFile(index_file)
 
-        rows = panelMysql.panelMysql().query("show master status")
+        # rows = panelMysql.panelMysql().query("show master status")
+        m_version = public.readFile(public.GetConfigValue('setup_path') + '/mysql/version.pl')
+        if m_version.find('8.4') != -1 or m_version.find('9.0') != -1:
+            rows = panelMysql.panelMysql().query("SHOW BINARY LOG STATUS")
+        else:
+            rows = panelMysql.panelMysql().query("show master status")
 
         current_log = ""
         if not isinstance(rows, list):

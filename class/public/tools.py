@@ -1,6 +1,18 @@
 import typing
 
 
+# 创建一个管道函数
+def make_pipe(fs: typing.List[callable]) -> callable:
+    """
+        创建一个管道函数
+        @param fs: callable 数据过滤函数
+        @return: any
+    """
+    def helper(val: any) -> any:
+        return my_pipe(val, fs)
+    return helper
+
+
 def my_pipe(val: any, fs: typing.List[callable]) -> any:
     """
         管道数据过滤函数

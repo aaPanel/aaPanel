@@ -62,33 +62,40 @@
     "id": "memu_btwaf",
     "sort": 8
   },
+    {
+    "title": "Mail Server",
+    "href": "/mail",
+    "class": "memu_mailsys",
+    "id": "memu_mailsys",
+    "sort": 9
+  },
   {
     "title": "Files",
     "href": "/files",
     "class": "menu_folder",
     "id": "memuAfiles",
-    "sort": 9
+    "sort": 10
   },
   {
     "title": "Logs",
     "href": "/logs",
     "class": "menu_logs",
     "id": "memuAlogs",
-    "sort": 10
+    "sort": 11
 },
   {
     "title": "Terminal",
     "href": "/xterm",
     "class": "menu_xterm",
     "id": "memuAxterm",
-    "sort": 10
+    "sort": 12
   },
   {
     "title": "Cron",
     "href": "/crontab",
     "class": "menu_day",
     "id": "memuAcrontab",
-    "sort": 11
+    "sort": 13
   },
 
   {
@@ -96,20 +103,20 @@
     "href": "/soft",
     "class": "menu_soft",
     "id": "memuAsoft",
-    "sort": 12
+    "sort": 14
   },
   {
     "title": "Settings",
     "href": "/config",
     "class": "menu_set",
     "id": "memuAconfig",
-    "sort": 13
+    "sort": 15
   },
   {
     "title": "Log out",
     "href": "/login?dologin=True",
     "class": "menu_exit",
     "id": "dologin",
-    "sort": 14
+    "sort": 16
   }
 ]

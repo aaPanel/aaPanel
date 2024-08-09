@@ -62,7 +62,7 @@ class Ufw(Base):
             info = result.stdout.replace("\n", "")
             return info.replace("ufw ", "")
         except Exception as e:
-            return "未知版本"
+            return "Unknown version"
 
     # 2024/3/19 下午 5:00 启动防火墙
     def start(self):
@@ -75,10 +75,10 @@ class Ufw(Base):
         try:
             stdout, stderr = public.ExecShell("echo y | {} enable".format(self.cmd_str))
             if stderr:
-                return self._result(False, "启动防火墙失败:{}".format(stderr))
-            return self._result(True, "启动防火墙成功")
+                return self._result(False, "Failed to start firewall:{}".format(stderr))
+            return self._result(True, "The firewall was started successfully")
         except Exception as e:
-            return self._result(False, "启动防火墙失败:{}".format(str(e)))
+            return self._result(False, "Failed to start firewall:{}".format(str(e)))
 
     # 2024/3/19 下午 5:00 停止防火墙
     def stop(self):
@@ -91,10 +91,10 @@ class Ufw(Base):
         try:
             stdout, stderr = public.ExecShell("{} disable".format(self.cmd_str))
             if stderr:
-                return self._result(False, "停止防火墙失败:{}".format(stderr))
-            return self._result(True, "停止防火墙成功")
+                return self._result(False, "Failed to stop the firewall:{}".format(stderr))
+            return self._result(True, "The firewall was stopped")
         except Exception as e:
-            return self._result(False, "停止防火墙失败:{}".format(str(e)))
+            return self._result(False, "Failed to stop the firewall:{}".format(str(e)))
 
     # 2024/3/19 下午 4:59 重启防火墙
     def restart(self):
@@ -108,7 +108,7 @@ class Ufw(Base):
             self.stop()
             self.start()
         except Exception as e:
-            return self._result(False, "重启防火墙失败:{}".format(str(e)))
+            return self._result(False, "Failed to restart the firewall:{}".format(str(e)))
 
     # 2024/3/19 下午 4:59 重载防火墙
     def reload(self):
@@ -121,7 +121,7 @@ class Ufw(Base):
         try:
             subprocess.run([self.cmd_str, "reload"], check=True, stdout=subprocess.PIPE)
         except Exception as e:
-            return self._result(False, "重载防火墙失败:{}".format(str(e)))
+            return self._result(False, "Overloaded firewall failed:{}".format(str(e)))
 
     # 2024/3/19 上午 10:39 列出防火墙中所有端口规则
     def list_port(self):
@@ -343,15 +343,15 @@ class Ufw(Base):
 
             if stderr:
                 if "setlocale" in stderr:
-                    return self._result(True, "设置端口规则成功")
-                return self._result(False, "设置端口规则失败:{}".format(stderr))
+                    return self._result(True, "The port rule was successfully configured")
+                return self._result(False, "Failed to set a port rule:{}".format(stderr))
 
-            return self._result(True, "设置端口规则成功")
+            return self._result(True, "The port rule was successfully configured")
 
         except Exception as e:
             if "setlocale" in str(e):
-                return self._result(True, "设置端口规则成功")
-            return self._result(False, "设置端口规则失败:{}".format(str(e)))
+                return self._result(True, "The port rule was successfully configured")
+            return self._result(False, "Failed to set a port rule:{}".format(str(e)))
 
     # 2024/3/24 下午 11:28 设置output端口策略
     def output_port(self, info, operation):
@@ -380,13 +380,13 @@ class Ufw(Base):
             stdout, stderr = public.ExecShell(cmd)
             if stderr:
                 if "setlocale" in stderr:
-                    return self._result(True, "设置端口规则成功")
-                return self._result(False, "设置output端口规则失败:{}".format(stderr))
-            return self._result(True, "设置output端口规则成功")
+                    return self._result(True, "The port rule was successfully configured")
+                return self._result(False, "Failed to set the output port rule:{}".format(stderr))
+            return self._result(True, "The output port rule is set successfully")
         except Exception as e:
             if "setlocale" in str(e):
-                return self._result(True, "设置output端口规则成功")
-            return self._result(False, "设置output端口规则失败:{}".format(str(e)))
+                return self._result(True, "The output port rule is set successfully")
+            return self._result(False, "Failed to set the output port rule:{}".format(str(e)))
 
     # 2024/3/19 下午 4:58 复杂一些的规则管理
     def rich_rules(self, info, operation):
@@ -402,7 +402,10 @@ class Ufw(Base):
             elif info["Strategy"] == "drop":
                 info["Strategy"] = "deny"
             else:
-                return self._result(False, "未知的策略参数:{}".format(info["Strategy"]))
+                return self._result(False, "Unknown policy parameters:{}".format(info["Strategy"]))
+
+            if info["Port"].find('-') != -1:
+                info["Port"] = info["Port"].replace('-', ':')
 
             rule_str = "{} insert 1 {} ".format(self.cmd_str, info["Strategy"])
             if "Address" in info and public.is_ipv6(info['Address']):
@@ -419,15 +422,16 @@ class Ufw(Base):
             stdout, stderr = public.ExecShell(rule_str)
             if stderr:
                 if "Rule added" in stdout or "Rule deleted" in stdout or "Rule updated" in stdout or "Rule inserted" in stdout or "Skipping adding existing rule" in stdout:
-                    return self._result(True, "设置规则成功")
+                    return self._result(True, "The rule is set successfully")
                 if "setlocale" in stderr:
-                    return self._result(True, "设置规则成功")
-                return self._result(False, "规则设置失败:{}".format(stderr))
-            return self._result(True, "设置规则成功")
+                    return self._result(True, "The rule is set successfully")
+                return self._result(False, "The rule setup failed:{}".format(stderr))
+            return self._result(True, "The rule is set successfully")
         except Exception as e:
+            public.print_log(public.get_error_info())
             if "setlocale" in str(e):
-                return self._result(True, "设置规则成功")
-            return self._result(False, "规则设置失败:{}".format(e))
+                return self._result(True, "The rule is set successfully")
+            return self._result(False, "The rule setup failed:{}".format(e))
 
     # 2024/3/24 下午 11:29 设置output rich_rules
     def output_rich_rules(self, info, operation):
@@ -460,15 +464,15 @@ class Ufw(Base):
             stdout, stderr = public.ExecShell(rule_str)
             if stderr:
                 if "Rule added" in stdout or "Rule deleted" in stdout or "Rule updated" in stdout or "Rule inserted" in stdout or "Skipping adding existing rule" in stdout:
-                    return self._result(True, "设置output规则成功")
+                    return self._result(True, "The output rule is set successfully")
                 if "setlocale" in stderr:
-                    return self._result(True, "设置规则成功")
-                return self._result(False, "outpu规则设置失败:{}".format(stderr))
-            return self._result(True, "设置output规则成功")
+                    return self._result(True, "The rule is set successfully")
+                return self._result(False, "outpuThe rule setup failed:{}".format(stderr))
+            return self._result(True, "The output rule is set successfully")
         except Exception as e:
             if "setlocale" in str(e):
-                return self._result(True, "设置output规则成功")
-            return self._result(False, "outpu规则设置失败:{}".format(e))
+                return self._result(True, "The output rule is set successfully")
+            return self._result(False, "outpuThe rule setup failed:{}".format(e))
 
     # 2024/3/19 下午 5:01 解析防火墙规则信息，返回字典格式数据，用于添加或删除防火墙规则
     def _load_info(self, line, fire_type):
@@ -494,7 +498,7 @@ class Ufw(Base):
                     item_info["Chain"] = "INPUT"
                 elif fields[2] == "OUT":
                     item_info["Chain"] = "OUTPUT"
-                item_info["Address"] = fields[3]
+                item_info["Address"] = fields[3] if fields[3] != "Anywhere" else "all"
                 item_info["Family"] = "ipv4"
             else:
                 if fields[2] == "ALLOW":
@@ -503,7 +507,7 @@ class Ufw(Base):
                     item_info["Chain"] = "INPUT"
                 elif fields[3] == "OUT":
                     item_info["Chain"] = "OUTPUT"
-                item_info["Address"] = fields[4]
+                item_info["Address"] = fields[4] if fields[4] != "Anywhere" else "all"
                 item_info["Family"] = "ipv6"
 
             return item_info
@@ -526,7 +530,7 @@ class Ufw(Base):
                 item_info["Chain"] = "INPUT"
             elif fields[3] == "OUT":
                 item_info["Chain"] = "OUTPUT"
-            item_info["Address"] = fields[4]
+            item_info["Address"] = fields[4] if fields[4] != "Anywhere" else "all"
 
         else:
             item_info["Family"] = "ipv4" if ":" not in fields[3] else "ipv6"
@@ -540,7 +544,7 @@ class Ufw(Base):
                 item_info["Chain"] = "INPUT"
             elif fields[2] == "OUT":
                 item_info["Chain"] = "OUTPUT"
-            item_info["Address"] = fields[3]
+            item_info["Address"] = fields[3] if fields[3] != "Anywhere" else "all"
 
         return item_info
 
@@ -553,7 +557,7 @@ class Ufw(Base):
             @param operation: 操作
             @return None
         '''
-        from firewallModel.app.iptables import Iptables
+        from firewallModelV2.app.iptables import Iptables
         self.firewall = Iptables()
         return self.firewall.port_forward(info, operation)
 
@@ -563,7 +567,7 @@ class Ufw(Base):
             @name 获取所有端口转发列表
             @return None
         '''
-        from firewallModel.app.iptables import Iptables
+        from firewallModelV2.app.iptables import Iptables
         self.firewall = Iptables()
         return self.firewall.get_nat_prerouting_rules()
 
@@ -577,8 +581,8 @@ if __name__ == '__main__':
         print("Firewall status is :", ufw_status)
         print("Firewall version: ", firewall.version())
         if ufw_status == "not running":
-            print("ufw未启动,请启动ufw后再执行命令!")
-            print("启动命令: start")
+            print("ufw is not started, please start ufw and then execute the command!")
+            print("Start the command: start")
             print()
             sys.exit(1)
         print()

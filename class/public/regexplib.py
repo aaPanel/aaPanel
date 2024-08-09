@@ -27,3 +27,6 @@ match_general_version_format = re.compile(r'^\d+(?:\.\d+){1,2}$')
 
 # md5格式验证
 match_md5_format = re.compile(r'^[a-fA-F0-9]{32}$')
+
+# SQL字符串中的常用特殊字符
+search_sql_special_chars = re.compile(r'''(?<!\\)(?:[%_]|\\(?![^\\abfnrtvxuUN'"0-7]))''')

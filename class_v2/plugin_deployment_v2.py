@@ -15,8 +15,9 @@ import public,json,os,time,sys,re
 from BTPanel import session,cache
 class obj: id=0
 class plugin_deployment:
-    __setupPath = 'data'
+    # __setupPath = 'data'
     __panelPath = '/www/server/panel'
+    __setupPath = '{}/data'.format(__panelPath)
     logPath = 'data/deployment_speed.json'
     __tmp = '/www/server/panel/temp/'
     timeoutCount = 0
@@ -106,7 +107,7 @@ class plugin_deployment:
             if not 'package' in session or not os.path.exists(jsonFile) or hasattr(get,'force'):
                 downloadUrl = 'http://www.bt.cn/api/panel/get_deplist'
                 pdata = public.get_pdata()
-                tmp = json.loads(public.httpPost(downloadUrl,pdata,3))
+                tmp = json.loads(public.httpPost(downloadUrl,pdata,30))
                 if not tmp: return public.returnMsg(False,'Failed to get from the cloud!')
                 public.writeFile(jsonFile,json.dumps(tmp))
                 session['package'] = True
@@ -206,7 +207,7 @@ class plugin_deployment:
             path = os.path.dirname(filename)
             if not os.path.exists(path): os.makedirs(path)
             import urllib,socket
-            socket.setdefaulttimeout(10)
+            socket.setdefaulttimeout(20)
             self.pre = 0
             self.oldTime = time.time()
             if sys.version_info[0] == 2:
@@ -465,7 +466,7 @@ class plugin_deployment:
         except: return False
 
 
-    #提交安装统计
+    #提交安装统计  todo 改提交aapanel
     def depTotal(self,id):
         import panelAuth
         p = panelAuth.panelAuth()
@@ -517,3 +518,172 @@ class plugin_deployment:
     #获取站点标识
     def GetSiteId(self,get):
         return public.M('sites').where('name=?',(get.webname,)).getField('id')
+
+    # 邮局插件安装roundcube调用  目录放到 'plugin/mail_sys';
+    def SetupPackage_roundcube(self, get):
+        name = get.dname
+        site_name = get.site_name
+        php_version = get.php_version
+        # 取基础信息
+        find = public.M('sites').where('name=?', (site_name,)).field('id,path').find()
+        path = find['path']
+
+        pinfo = {
+            "username": "",
+            "ps": "Free and Open Source Webmail Software",
+            "php": "56,70,71,72,73,74,80",
+            "run": "",
+            "name": "roundcube",
+            "title": "Roundcube",
+            "type": 6,
+            "chmod": "",
+            "ext": "pathinfo,exif",
+            "version": "1.5.0",
+            "install": "",
+            # "download": "{Download}/roundcubemail.zip",
+            "download": "https://node.aapanel.com/install/package/roundcubemail.zip",
+            # "download": "http://127.0.0.1/roundcube.zip",
+            "password": "",
+            "config": "/config/config.inc.php",
+            "md5": "785660db6540692b5c0eb240b41816e9"
+        }
+
+        # 检查本地包
+        self.WriteLogs(
+            json.dumps({'name': public.GetMsg("VERIFYING_PACKAGE"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+        # 安装包
+        packageZip = 'plugin/mail_sys/' + name + '.zip'
+        isDownload = False
+        if os.path.exists(packageZip):
+            md5str = self.GetFileMd5(packageZip)
+            if md5str != pinfo['md5']:
+                isDownload = True
+        else:
+            isDownload = True
+
+        # 删除多余文件
+        rm_file = path + '/index.html'
+        if os.path.exists(rm_file): os.remove(rm_file)
+
+        # 下载文件
+        if isDownload:
+            self.WriteLogs(
+                json.dumps({'name': public.GetMsg("DOWNLOAD"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+            self.DownloadFile(pinfo['download'], packageZip)
+
+        if not os.path.exists(packageZip):
+            return public.returnMsg(False, 'DOWNLOAD_FILE_FAIL')
+
+        self.WriteLogs(json.dumps({'name': public.GetMsg("UNPACKING"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+        public.ExecShell('unzip -o ' + packageZip + ' -d ' + path + '/')
+
+        # 设置权限
+        self.WriteLogs(
+            json.dumps({'name': public.GetMsg("SET_PERMISSION"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+        public.ExecShell('chmod -R 755 ' + path)
+        public.ExecShell('chown -R www.www ' + path)
+
+        if pinfo['chmod'] != "":
+            access = pinfo['chmod'].split(',')
+            for chm in access:
+                tmp = chm.split('|')
+                if len(tmp) != 2: continue;
+                public.ExecShell('chmod -R ' + tmp[0] + ' ' + path + '/' + tmp[1])
+
+        # 安装PHP扩展
+        self.WriteLogs(json.dumps(
+            {'name': public.GetMsg("INSTALL_NECESSARY_PHP_EXT"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+        if pinfo['ext'] != '':
+            exts = pinfo['ext'].split(',')
+            import files
+            mfile = files.files()
+            for ext in exts:
+                if ext == 'pathinfo':
+                    import config
+                    con = config.config()
+                    get.version = php_version
+                    get.type = 'on'
+                    con.setPathInfo(get)
+                else:
+                    get.name = ext
+                    get.version = php_version
+                    get.type = '1'
+                    mfile.InstallSoft(get)
+
+        # 执行额外shell进行依赖安装
+        self.WriteLogs(
+            json.dumps({'name': public.GetMsg("EXECUTE_EXTRA_SHELL"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+        if os.path.exists(path + '/install.sh'):
+            public.ExecShell('cd ' + path + ' && bash ' + 'install.sh')
+            public.ExecShell('rm -f ' + path + '/install.sh')
+
+        # 是否执行Composer
+        if os.path.exists(path + '/composer.json'):
+            self.WriteLogs(json.dumps({'name': 'Execute Composer', 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+            if not os.path.exists(path + '/composer.lock'):
+                execPHP = '/www/server/php/' + php_version + '/bin/php'
+                if execPHP:
+                    if public.get_url().find('125.88'):
+                        public.ExecShell(
+                            'cd ' + path + ' && ' + execPHP + ' /usr/bin/composer config repo.packagist composer https://packagist.phpcomposer.com')
+                    import panelSite
+                    phpini = '/www/server/php/' + php_version + '/etc/php.ini'
+                    phpiniConf = public.readFile(phpini)
+                    phpiniConf = phpiniConf.replace('proc_open,proc_get_status,', '')
+                    public.writeFile(phpini, phpiniConf)
+                    public.ExecShell(
+                        'nohup cd ' + path + ' && ' + execPHP + ' /usr/bin/composer install -vvv > /tmp/composer.log 2>&1 &')
+
+        # 写伪静态
+        self.WriteLogs(
+            json.dumps({'name': public.GetMsg("SET_URL_REWRITE"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+        swfile = path + '/nginx.rewrite'
+        if os.path.exists(swfile):
+            rewriteConf = public.readFile(swfile)
+            dwfile = self.__panelPath + '/vhost/rewrite/' + site_name + '.conf'
+            public.writeFile(dwfile, rewriteConf)
+
+        # 删除伪静态文件
+        public.ExecShell("rm -f " + path + '/*.rewrite')
+
+        # 设置运行目录
+        self.WriteLogs(json.dumps({'name': public.GetMsg("SET_RUN_DIR"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+        if pinfo['run'] != '/':
+            import panelSite
+            siteObj = panelSite.panelSite()
+            mobj = obj()
+            mobj.id = find['id']
+            mobj.runPath = pinfo['run']
+            # return find['id']
+            siteObj.SetSiteRunPath(mobj)
+
+        # 导入数据
+        self.WriteLogs(json.dumps({'name': public.GetMsg("IMPORT_DB"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+
+        if os.path.exists(path + '/import.sql'):
+            databaseInfo = public.M('databases').where('pid=?', (find['id'],)).field('username,password').find()
+            if databaseInfo:
+                public.ExecShell('/www/server/mysql/bin/mysql -u' + databaseInfo['username'] + ' -p' + databaseInfo[
+                    'password'] + ' ' + databaseInfo['username'] + ' < ' + path + '/import.sql')
+
+                public.ExecShell('rm -f ' + path + '/import.sql')
+                # /www/wwwroot/moyumao.top + '/' + /config/config.inc.php
+
+                siteConfigFile = path + '/' + pinfo['config']
+                if os.path.exists(siteConfigFile):
+
+                    siteConfig = public.readFile(siteConfigFile)
+                    siteConfig = siteConfig.replace('BT_DB_USERNAME', databaseInfo['username'])
+                    siteConfig = siteConfig.replace('BT_DB_PASSWORD', databaseInfo['password'])
+                    siteConfig = siteConfig.replace('BT_DB_NAME', databaseInfo['username'])
+                    # public.print_log("写入数据库文件  ---{}".format(siteConfigFile))
+                    public.writeFile(siteConfigFile, siteConfig)
+
+
+        public.serviceReload()
+        self.depTotal(name)
+        self.WriteLogs(
+            json.dumps({'name': public.GetMsg("READY_DEPLOY"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+
+        return public.returnMsg(True, pinfo)
+

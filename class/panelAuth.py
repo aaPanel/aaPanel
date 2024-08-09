@@ -37,7 +37,8 @@ class panelAuth:
                 data['server_id'] = serverid
                 public.writeFile(userPath,json.dumps(data))
             return data
-        except: return public.return_msg_gettext(False,'Please login with account first')
+        except:
+            return public.return_msg_gettext(False,'Please login with account first')
 
 
     def create_plugin_other_order(self,get):
