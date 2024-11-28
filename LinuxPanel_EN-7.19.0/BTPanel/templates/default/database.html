@@ -1,0 +1,260 @@
+{% extends "layout.html" %} {% block content %}
+<style>
+	.tab-view-box {
+		padding: 15px;
+	}
+	.db_table_view > .tab-con {
+		padding: 0;
+		overflow: inherit;
+	}
+	.info-title-tips .glyphicon-alert {
+		margin-right: 10px;
+		color: #f39c12;
+	}
+	.db_tools_info {
+		display: flex;
+		justify-content: space-between;
+	}
+	.db_tools_info .info {
+		display: flex;
+		align-items: center;
+		height: 35px;
+		padding: 0 15px;
+		border-radius: 4px;
+		background: #ececec;
+		color: #555;
+		font-weight: 600;
+		font-size: 13px;
+	}
+	.db_tools_info .info .name {
+		max-width: 240px;
+		margin-right: 12px;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+	#bt_database_table .tootls_top .pull-left button:nth-child(5):after,
+	#bt_sqldatabase_table .tootls_top .pull-left button:nth-child(3):after,
+	#bt_mongodb_table .tootls_top .pull-left button:nth-child(5):after,
+	#bt_redis_view .tool_list .emptyRedisDB:after {
+    content: ' ';
+    position: relative;
+    left: -72px;
+    border-left: 1px solid #ececec;
+	}
+	#bt_redis_view .tool_list .emptyRedisDB:after {
+		left: -80px;
+	}
+	.tool_list {
+		position: relative;
+		justify-content: space-between;
+		margin-bottom: 10px;
+	}
+	.tool_list .emptyRedisDB {
+		margin-left: 30px;
+	}
+	.tool_list_right {
+		align-items: center;
+	}
+	.tool_list_right .tips {
+		margin-right: 12px;
+		color: #f0ad4e;
+	}
+	.tool_list_right .bt-input-text {
+		margin-right: 0;
+	}
+	/* 清空数据库样式 */
+  .rule_content_list {
+    overflow: auto;
+    width: 230px;
+    max-height: 200px;
+    border: 1px solid #ececec;
+    padding: 5px;
+    border-radius: 2px;
+  }
+
+  .rule_content_list li {
+    line-height: 30px;
+  }
+
+  .rule_content_list > li:last-child {
+    border-bottom: none;
+  }
+
+  .rule_content_list .rule_checkbox_group {
+    height: 30px;
+    line-height: 30px;
+    position: relative;
+    font-size: 0px;
+    cursor: pointer;
+    padding-left: 10px;
+  }
+  .bt_checkbox_groups.active {
+    border: none;
+    position: relative;
+    top: 1px;
+    display: inline-block;
+    font-family: 'Glyphicons Halflings';
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    background: #20a53a;
+    color: #fff;
+  }
+  .rule_content_list .bt_checkbox_groups {
+    position: relative;
+    top: 7px;
+  }
+
+  .rule_checkbox_find_list {
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .rule_checkbox_find_list li {
+    position: relative;
+  }
+
+  .rule_content_list .rule_checkbox_group:hover {
+    background-color: #efefef;
+    cursor: pointer;
+  }
+
+  .rule_checkbox_find_list .rule_checkbox_group {
+    background: transparent;
+    padding-left: 45px;
+    margin-left: 10px;
+  }
+
+  .rule_content_list .rule_checkbox_group .glyphicon {
+    width: 25px;
+    display: inline-block;
+    height: 30px;
+    line-height: 28px;
+    text-align: center;
+    color: #bbb;
+  }
+
+  .rule_checkbox_list span, .rule_content_list .rule_checkbox_title {
+    font-size: 12px;
+    color: #666;
+    vertical-align: middle;
+    display: inline-block;
+  }
+
+  .rule_content_list .rule_checkbox_title {
+    margin-left: 10px;
+  }
+
+  .rule_content_list .rule_checkbox_title i {
+    font-style: normal;
+    color: #bbb;
+  }
+  .bt_checkbox_groups {
+    display: inline-block;
+    height: 16px;
+    width: 16px;
+    border-radius: 1px;
+    cursor: pointer;
+    border: 1px solid #c2c2c2;
+    position: relative;
+    text-align: center;
+    line-height: 20px;
+    margin: 0;
+    vertical-align: top;
+  }
+  .bt_checkbox_groups.active:after {
+    content: "\e013";
+    font-size: 12px;
+    transform: scale(.85);
+    position: absolute;
+    left: 2px;
+    top: 2px;
+  }
+
+  .choose_redis_library.layui-layer-page .layui-layer-content{
+    overflow: inherit;
+  }
+</style>
+<div class="main-content pb55">
+	<div class="container-fluid">
+		<div class="database-pos pos-box bgw mtb15">
+			<div class="tab-list">
+				<div class="tabs-item" data-type="mysql">{{ data['lan']['H3'] }}</div>
+				<div class="tabs-item" data-type="sqlserver">{{ data['lan']['H4'] }}</div>
+				<div class="tabs-item" data-type="mongodb">{{ data['lan']['H5'] }}</div>
+				<div class="tabs-item" data-type="redis">{{ data['lan']['H6'] }}</div>
+				<div class="tabs-item" data-type="pgsql">{{ data['lan']['H7'] }}</div>
+			</div>
+		</div>
+		<div class="db_table_view safe bgw mtb15 pd15 tab-view-box">
+			<div class="tab-con">
+				<div class="tab-con-block hide">
+					<div class="info-title-tips">
+						<p>
+							<span class="glyphicon glyphicon-alert"></span>
+							<span>After adding the database, be sure to</span>
+							<a class="btlink" href="/crontab">[Cron]</a>
+							<span>page adds scheduled backup tasks to ensure your data security.</span>
+						</p>
+					</div>
+					<div id="bt_database_table"></div>
+				</div>
+				<div class="tab-con-block hide">
+					<div id="bt_sqldatabase_table"></div>
+				</div>
+				<div class="tab-con-block hide">
+					<div id="bt_mongodb_table"></div>
+				</div>
+				<div class="tab-con-block hide">
+					<div id="bt_redis_view">
+						<div class="tool_list flex">
+							<div>
+								<button type="button" class="btn btn-success btn-sm mr5 addRedisDB">
+									<span>Add Key</span>
+								</button>
+								<button type="button" class="btn btn-default btn-sm mr5 RedisCloudDB">
+									<span>Remote DB</span>
+								</button>
+								<button type="button" class="btn btn-default btn-sm mr5 backupRedis">
+									<span>Backup list</span>
+								</button>
+								<button type="button" class="btn btn-default btn-sm emptyRedisDB">
+									<span>Clear DB</span>
+								</button>
+							</div>
+							<div class="tool_list_right flex">
+								<span class="mr5 tips">
+									<span class="glyphicon glyphicon-info-sign"></span>
+									<span>All current action items are associated with</span>
+								</span>
+							</div>
+						</div>
+						<div class="redis_content_view"></div>
+					</div>
+				</div>
+				<div class="tab-con-block hide">
+					<div id="bt_pgsql_table"></div>
+				</div>
+			</div>
+			<div class="mask_layer hide">
+				<div class="prompt_description"></div>
+			</div>
+		</div>
+		<form id="toPHPMyAdmin" public-data="{{session['phpmyadminDir']}}/index.php" action="{{session['phpmyadminDir']}}/index.php" method="post" style="display: none" target="_blank">
+			<input type="text" name="pma_username" id="pma_username" value="" />
+			<input type="password" name="pma_password" id="pma_password" value="" />
+			<input type="text" name="server" value="1" />
+			<input type="text" name="target" value="index.php" />
+			<input type="text" name="db" id="db" value="" />
+		</form>
+	</div>
+</div>
+{% endblock %} {% block scripts %} {{ super() }}
+<script type="text/javascript" src="/static/js/bt_upload.js?version={{g['version']}}"></script>
+<script src="/static/js/database.js?date={{g['version']}}"></script>
+<script type="text/javascript">
+	bt.set_cookie('backup_path', "{{session['config']['backup_path']}}");
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+{
+	"Term": {
+		"idnex_1": "Veuillez saisir le nom de la commande",
+		"index_2": "Veuillez saisir le contenu de la commande",
+		"index_3": "Ajouter la commande",
+		"index_4": "Nom de commande",
+		"index_5": "Commande de modification",
+		"index_6": "Supprimer des informations",
+		"index_7": "Supprimer les informations de service [{0}], continuer?",
+		"index_8": "IP de serveur",
+		"index_9": "Veuillez saisir le serveur IP",
+		"index_10": "Compte SSH",
+		"index_11": "Veuillez saisir le compte SSH",
+		"index_12": "Vérification",
+		"index_13": "Clé privée",
+		"index_14": "Veuillez saisir le mot de passe SSH",
+		"index_15": "Veuillez saisir la clé privée SSH",
+		"index_16": "Mot de passe clé",
+		"index_17": "Veuillez saisir le mot de passe clé, peut être vide",
+		"index_18": "Veuillez saisir les remarques, peut être vide",
+		"index_19": "Ajouter un serveur",
+		"index_20": "Supprimer la commande",
+		"index_21": "Supprimer la commande [{0}], continue?",
+		"index_22": "Modifier le serveur",
+		"index_23": "Liste de serveurs",
+		"index_24": "Commandes",
+		"index_25": "Un serveur de terminal est requis",
+		"index_26": "Veuillez saisir une adresse IP correcte",
+		"index_27": "Êtes-vous sûr de vous déconnecter?"
+	}
+}

@@ -1,0 +1,1 @@
+import{k as s}from"./page_layout.js?v=1732601582185";import{O as t,P as e,m as l}from"./vue.js?v=1732601582185";const o={class:"bt-tips-ul flex flex-col gap-4px list-outside list-disc leading-20px text-[#777]"};const a=s({},[["render",function(s,a){return t(),e("ul",o,[l(s.$slots,"default")])}]]);export{a as _};

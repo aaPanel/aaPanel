@@ -1,0 +1,205 @@
+{
+  "id": "3192672",
+  "name": "panel",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "面板文件图标",
+  "glyphs": [
+    {
+      "icon_id": "5767878",
+      "name": "alarm",
+      "font_class": "alarm",
+      "unicode": "ec35",
+      "unicode_decimal": 60469
+    },
+    {
+      "icon_id": "6251649",
+      "name": "demand",
+      "font_class": "demand",
+      "unicode": "e6c3",
+      "unicode_decimal": 59075
+    },
+    {
+      "icon_id": "929535",
+      "name": "linux",
+      "font_class": "linux",
+      "unicode": "e769",
+      "unicode_decimal": 59241
+    },
+    {
+      "icon_id": "11219386",
+      "name": "sms-hot",
+      "font_class": "hot",
+      "unicode": "e605",
+      "unicode_decimal": 58885
+    },
+    {
+      "icon_id": "5698509",
+      "name": "全屏缩小",
+      "font_class": "full-resume",
+      "unicode": "e62a",
+      "unicode_decimal": 58922
+    },
+    {
+      "icon_id": "5698510",
+      "name": "全屏显示",
+      "font_class": "full-screen",
+      "unicode": "e62b",
+      "unicode_decimal": 58923
+    },
+    {
+      "icon_id": "2678626",
+      "name": "扫描",
+      "font_class": "saomiao",
+      "unicode": "e657",
+      "unicode_decimal": 58967
+    },
+    {
+      "icon_id": "21721551",
+      "name": "文件类型-标准图-文件夹",
+      "font_class": "file",
+      "unicode": "e6a5",
+      "unicode_decimal": 59045
+    },
+    {
+      "icon_id": "21151020",
+      "name": "暂停",
+      "font_class": "stop",
+      "unicode": "e65a",
+      "unicode_decimal": 58970
+    },
+    {
+      "icon_id": "1160220",
+      "name": "scan",
+      "font_class": "scan",
+      "unicode": "e699",
+      "unicode_decimal": 59033
+    },
+    {
+      "icon_id": "15838432",
+      "name": "browse",
+      "font_class": "browse",
+      "unicode": "e666",
+      "unicode_decimal": 58982
+    },
+    {
+      "icon_id": "15838471",
+      "name": "eye-close",
+      "font_class": "eye-close",
+      "unicode": "e66f",
+      "unicode_decimal": 58991
+    },
+    {
+      "icon_id": "1435240",
+      "name": "设置",
+      "font_class": "shezhi",
+      "unicode": "e634",
+      "unicode_decimal": 58932
+    },
+    {
+      "icon_id": "5653301",
+      "name": "监控",
+      "font_class": "jiankong",
+      "unicode": "e61d",
+      "unicode_decimal": 58909
+    },
+    {
+      "icon_id": "11462315",
+      "name": "概览",
+      "font_class": "gailan1",
+      "unicode": "e65f",
+      "unicode_decimal": 58975
+    },
+    {
+      "icon_id": "12316654",
+      "name": "授权",
+      "font_class": "shouquan",
+      "unicode": "e61f",
+      "unicode_decimal": 58911
+    },
+    {
+      "icon_id": "12088237",
+      "name": "概览",
+      "font_class": "gailan",
+      "unicode": "e694",
+      "unicode_decimal": 59028
+    },
+    {
+      "icon_id": "27243734",
+      "name": "debian",
+      "font_class": "debian",
+      "unicode": "e7cb",
+      "unicode_decimal": 59339
+    },
+    {
+      "icon_id": "11372648",
+      "name": "成功",
+      "font_class": "chenggong",
+      "unicode": "e8ad",
+      "unicode_decimal": 59565
+    },
+    {
+      "icon_id": "17573819",
+      "name": "检查新版本",
+      "font_class": "toUpdate",
+      "unicode": "e64a",
+      "unicode_decimal": 58954
+    },
+    {
+      "icon_id": "11203440",
+      "name": "运行",
+      "font_class": "start",
+      "unicode": "e6e3",
+      "unicode_decimal": 59107
+    },
+    {
+      "icon_id": "4766293",
+      "name": "user",
+      "font_class": "user",
+      "unicode": "e7ae",
+      "unicode_decimal": 59310
+    },
+    {
+      "icon_id": "1713553",
+      "name": "红包",
+      "font_class": "recommend",
+      "unicode": "e633",
+      "unicode_decimal": 58931
+    },
+    {
+      "icon_id": "3846904",
+      "name": "Windows",
+      "font_class": "windows",
+      "unicode": "e6a0",
+      "unicode_decimal": 59040
+    },
+    {
+      "icon_id": "4392575",
+      "name": "ubuntu",
+      "font_class": "ubuntu",
+      "unicode": "e60e",
+      "unicode_decimal": 58894
+    },
+    {
+      "icon_id": "10413543",
+      "name": "centOS",
+      "font_class": "centos",
+      "unicode": "e60f",
+      "unicode_decimal": 58895
+    },
+    {
+      "icon_id": "27681162",
+      "name": "fedora",
+      "font_class": "fedora",
+      "unicode": "e69a",
+      "unicode_decimal": 59034
+    },
+    {
+      "icon_id": "592049",
+      "name": "菜单",
+      "font_class": "drag",
+      "unicode": "e790",
+      "unicode_decimal": 59280
+    }
+  ]
+}

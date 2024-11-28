@@ -1,0 +1,129 @@
+@font-face {
+  font-family: "iconfont"; /* Project id 3192672 */
+  /* Color fonts */
+  src: 
+       url('iconfont.woff2?t=1697615415136') format('woff2'),
+       url('iconfont.woff?t=1697615415136') format('woff'),
+       url('iconfont.ttf?t=1697615415136') format('truetype');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-alarm:before {
+  content: "\ec35";
+}
+
+.icon-demand:before {
+  content: "\e6c3";
+}
+
+.icon-linux:before {
+  content: "\e769";
+}
+
+.icon-hot:before {
+  content: "\e605";
+}
+
+.icon-full-resume:before {
+  content: "\e62a";
+}
+
+.icon-full-screen:before {
+  content: "\e62b";
+}
+
+.icon-saomiao:before {
+  content: "\e657";
+}
+
+.icon-file:before {
+  content: "\e6a5";
+}
+
+.icon-stop:before {
+  content: "\e65a";
+}
+
+.icon-scan:before {
+  content: "\e699";
+}
+
+.icon-browse:before {
+  content: "\e666";
+}
+
+.icon-eye-close:before {
+  content: "\e66f";
+}
+
+.icon-shezhi:before {
+  content: "\e634";
+}
+
+.icon-jiankong:before {
+  content: "\e61d";
+}
+
+.icon-gailan1:before {
+  content: "\e65f";
+}
+
+.icon-shouquan:before {
+  content: "\e61f";
+}
+
+.icon-gailan:before {
+  content: "\e694";
+}
+
+.icon-debian:before {
+  content: "\e7cb";
+}
+
+.icon-chenggong:before {
+  content: "\e8ad";
+}
+
+.icon-toUpdate:before {
+  content: "\e64a";
+}
+
+.icon-start:before {
+  content: "\e6e3";
+}
+
+.icon-user:before {
+  content: "\e7ae";
+}
+
+.icon-recommend:before {
+  content: "\e633";
+}
+
+.icon-windows:before {
+  content: "\e6a0";
+}
+
+.icon-ubuntu:before {
+  content: "\e60e";
+}
+
+.icon-centos:before {
+  content: "\e60f";
+}
+
+.icon-fedora:before {
+  content: "\e69a";
+}
+
+.icon-drag:before {
+  content: "\e790";
+}
+

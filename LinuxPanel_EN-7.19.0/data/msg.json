@@ -1,0 +1,44 @@
+[
+		
+    {
+        "name":"mail",
+        "title":"Email",
+        "version":"1.1",
+        "date":"2022-08-10",
+        "help":"https://www.bt.cn/bbs/thread-66183-1-1.html",
+        "ps":"Use email to send and receive panel notifications"
+    },
+    {
+        "name":"dingding",
+        "title":"Dingding",
+        "version":"1.2",
+        "date":"2022-08-10",
+        "help":"https://www.bt.cn/bbs/thread-44497-1-1.html",
+        "ps":"Use dingding to send and receive panel notifications"
+    },
+    
+	{
+        "name":"weixin",
+        "title":"WeCom",
+        "version":"1.2",
+        "date":"2022-08-10",
+        "help":"https://www.bt.cn/bbs/thread-52540-1-1.html",
+        "ps":"Use WeCom to send and receive panel notifications"
+    },
+	{
+        "name":"feishu",
+        "title":"Feishu",
+        "version":"1.2",
+        "date":"2022-08-10",
+        "help":"https://www.aapanel.com/forum/d/16942-aapanel-how-does-set-lark-or-feishu-notification",
+        "ps":"Use Feishu to send and receive panel notifications"
+    },
+	{
+        "name":"tg",
+        "title":"Telegram",
+        "version":"1.1",
+        "date":"2022-08-02",
+        "help":"https://www.aapanel.com/forum/d/5115-how-to-add-telegram-to-panel-notifications",
+        "ps":"Use Telegram to send and receive panel notifications"
+    }
+]

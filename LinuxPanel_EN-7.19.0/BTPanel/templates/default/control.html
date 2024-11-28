@@ -1,0 +1,488 @@
+{% extends "layout.html" %}
+{% block content %}
+<style>
+.main-content > .container-fluid {
+	padding-bottom: 50px;
+}
+.control-item-block .row {
+	padding: 0 15px;
+}
+/* 监控右键进程 */
+.echarts-tooltip {
+	width: 400px;
+	/* padding: 10px; */
+	display: flex;
+	flex-direction: column;
+	color: #444;
+	border-radius: 4px;
+	transition: all 500ms;
+}
+.echarts-tooltip .formatter-header {
+	padding: 0 15px;
+	background-color: #f9f9f9;
+	height: 40px;
+	line-height: 40px;
+	font-size: 14px;
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	display: flex;
+	align-items: center;
+}
+.echarts-tooltip .formatter-header img {
+	margin-right: 5px;
+	height: 20px;
+	width: 20px;
+}
+.echarts-tooltip .formatter-body {
+	padding: 20px;
+}
+
+.select-data {
+	display: flex;
+	align-items: center;
+	font-size: 14px;
+	margin-bottom: 8px;
+	padding: 0 2px;
+}
+.select-data .flex {
+	display: flex;
+	align-items: center;
+	margin-right: 15px;
+}
+.select-data .flex:last-child {
+	margin-right: 0;
+}
+.select-data .status {
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background-color: #ff8c00;
+	margin-right: 5px;
+}
+
+.process-top5.hide {
+	display: none;
+}
+.process-header {
+	padding-left: 8px;
+	margin-left: 2px;
+	margin-bottom: 15px;
+	border-bottom: 1px solid #f5f5f5;
+}
+.process-top5 table {
+	width: 100%;
+	border-collapse: collapse;
+}
+.process-top5 table thead th,
+.process-top5 table tbody td {
+	padding: 5px 10px;
+	border: 0;
+	font-size: 12px;
+}
+.process-top5 table thead tr,
+.process-top5 table tbody tr {
+	border: none;
+}
+.process-top5 table thead tr {
+	background: #f2f7fed6;
+	color: #555;
+}
+.process-top5 table thead th {
+	height: 24px;
+	line-height: 24px;
+	text-align: left;
+	font-weight: 600;
+}
+.process-top5 table tbody tr {
+	height: 22px;
+	line-height: 22px;
+	text-align: left;
+}
+.process-top5 table tbody tr {
+	border-bottom: 0.5px solid #ececec;
+}
+.process-top5 table tbody tr:last-child {
+	border-bottom: none;
+}
+/* end */
+.control-item {
+	display: inline-block;
+	padding: 0 25px;
+	font-size: 15px;
+	height: 50px;
+	line-height: 50px;
+	cursor: pointer;
+}
+.control-item.active {
+	color: #20a53a;
+	font-weight: 500;
+	border-bottom: #20a53a 2px solid;
+}
+.bt-crontab-select-button {
+	display: inline-block;
+	position: relative;
+	border: 1px solid #ccc;
+	border-radius: 2px;
+	font-size: 12px;
+	vertical-align: middle;
+}
+
+.bt-crontab-select-button .select-picker-search:hover {
+	background: #ebf1f5;
+	cursor: pointer;
+}
+
+.bt-crontab-select-button .select-picker-search {
+	height: 25px;
+	line-height: 25px;
+	border: none;
+	outline: none;
+}
+
+.bt-crontab-select-button .select-picker-search span {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	display: block;
+}
+
+.bt-crontab-select-button .picker-text-list {
+	margin-right: 25px;
+	padding-left: 10px;
+}
+
+.bt-crontab-select-button input {
+	padding: 5px 10px;
+	height: 35px;
+	line-height: 35px;
+	border: none;
+	border-bottom: 1px solid #ccc;
+}
+
+.bt-crontab-select-button input:focus {
+	outline: none;
+}
+
+.bt-crontab-select-button .only-one {
+	position: relative;
+}
+
+.bt-crontab-select-button .down-select-full {
+	display: inline-block;
+	width: 0;
+	height: 0;
+	border-width: 5px;
+	border-style: solid;
+	border-color: #777 transparent transparent transparent;
+	position: absolute;
+	top: 10px;
+	right: 10px;
+}
+
+.bt-crontab-select-button .select-list-item {
+	transition: all 500ms;
+	background: #fff;
+	position: absolute;
+	top: 28px;
+	display: none;
+	box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+	border-radius: 4px;
+	z-index: 9999;
+}
+
+.bt-crontab-select-button .select-list-item.active {
+	display: block;
+	z-index: 2;
+}
+
+.bt-crontab-select-button .select-list-item ul {
+	overflow: auto;
+	border-radius: 4px;
+}
+
+.bt-crontab-select-button .select-list-item li:hover {
+	background: #20a53a;
+	color: #fff;
+}
+
+.bt-crontab-select-button .only-one .select-list-item li.active {
+	background-color: #20a53a;
+	color: #fff;
+}
+
+.bt-crontab-select-button .select-list-item li .select-name-full {
+	white-space: nowrap;
+	padding: 0 23px 0 10px;
+	height: 30px;
+	line-height: 30px;
+	cursor: pointer;
+	display: inline-block;
+}
+
+.bt-crontab-select-button .select-check-full {
+	display: inline-block;
+	height: 16px;
+	width: 16px;
+	border-radius: 1px;
+	margin-right: 5px;
+	cursor: pointer;
+	border: 1px solid #c2c2c2;
+	position: relative;
+	line-height: 20px;
+	transition: all 200ms;
+	vertical-align: sub;
+}
+
+.bt-crontab-select-button .select-list-item li.active .select-check-full {
+	border: none;
+	position: relative;
+	top: 1px;
+	display: inline-block;
+	font-family: 'Glyphicons Halflings';
+	font-style: normal;
+	font-weight: 400;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+	background: #5fb878;
+	color: #fff;
+}
+
+.bt-crontab-select-button .select-list-item li.active .select-check-full:after {
+	content: '\e013';
+	font-size: 12px;
+	transform: scale(0.85);
+	position: absolute;
+	left: 2px;
+	top: 2px;
+}
+</style>
+<div class="main-content">
+	<div class="container-fluid">
+		<div class="pos-box bgw mtb15">
+			<div class="tab-list" id="tabs-cut">
+				<div class="tabs-item active" data-name="control">{{data['lan']['H2']}}</div>
+			</div>
+		</div>
+		<div class="control-content">
+			<div class="control-item-block">
+				<div class="safe container-fluid radius4 bgw mb15 pd15" style="overflow: hidden">
+					<div class="mr50 pull-left">
+						<div class="ss-text pull-left">
+							<em>{{data['lan']['C1']}}</em>
+							<div class="ssh-item" id="openJK"></div>
+						</div>
+					</div>
+					<div class="mr50 pull-left">
+						<div class="ss-text pull-left">
+							<em>{{data['lan']['C2']}}</em>
+							<input class="bt-input-text" id="saveDay" value="" type="number" />
+						</div>
+						<div class="ss-text pull-left" style="margin-left: 10px">
+							<button class="btn btn-default btn-sm" type="button" onclick="controlObj.conTrolView.SetControl(true);">{{data['lan']['C3']}}</button>
+						</div>
+					</div>
+					<div class="mr50 pull-left" style="padding-left: 50px; border-left: #ccc 1px solid; margin-right: 0">
+						<button class="btn btn-default btn-sm" type="button" onclick="controlObj.conTrolView.CloseControl()">{{data['lan']['C4']}}</button>
+					</div>
+				</div>
+				<div class="control">
+					<div class="row">
+						<div class="col-xs-12 col-sm-12 col-md-12 pull-left pd0 view0">
+							<div class="mb15">
+								<div class="bgw pb15 radius4">
+									<div class="title c6 plr15 mb15">
+										<h3 class="c-tit f16">{{data['lan']['LOAD_BALANCE']}}</h3>
+										<div class="searcTime pull-right">
+											<span class="tit">{{data['lan']['S1']}}</span><span class="gt" onclick="controlObj.conTrolView.Wday(1,'getload')">{{data['lan']['D1']}}</span
+											><span class="gt on" onclick="controlObj.conTrolView.Wday(0,'getload')">{{data['lan']['D2']}}</span>
+											<span class="gt" onclick="controlObj.conTrolView.Wday(7,'getload')">{{data['lan']['D3']}}</span
+											><span class="gt" onclick="controlObj.conTrolView.Wday(30,'getload')">{{data['lan']['D4']}}</span>
+											<div class="ss">
+												<span class="st">{{data['lan']['S2']}}</span>
+												<div class="time">
+													<span class="bt">{{data['lan']['G1']}}<input class="btime" type="text" value="2017/1/10 00:00:00" /></span>
+													<span class="et">{{data['lan']['G2']}}<input class="etime" type="text" value="2017/1/13 00:00:00" /></span>
+													<div class="sbtn time_range_submit" data-type="getload">{{data['lan']['G3']}}</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div id="getloadview" style="width: 100%; height: 330px"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-xs-12 col-sm-12 col-md-6 pull-left pd0 view1">
+							<div class="pr8">
+								<div class="bgw pb15 radius4">
+									<div class="title c6 plr15">
+										<h3 class="c-tit f16">{{data['lan']['T1']}}</h3>
+										<div class="searcTime pull-right">
+											<span class="tit">{{data['lan']['S1']}}</span><span class="gt" onclick="controlObj.conTrolView.Wday(1,'cpu')">{{data['lan']['D1']}}</span
+											><span class="gt on" onclick="controlObj.conTrolView.Wday(0,'cpu')">{{data['lan']['D2']}}</span>
+											<span class="gt" onclick="controlObj.conTrolView.Wday(7,'cpu')">{{data['lan']['D3']}}</span
+											><span class="gt" onclick="controlObj.conTrolView.Wday(30,'cpu')">{{data['lan']['D4']}}</span>
+											<div class="ss">
+												<span class="st">{{data['lan']['S2']}}</span>
+												<div class="time">
+													<span class="bt">{{data['lan']['G1']}}<input class="btime" type="text" value="2017/1/10 00:00:00" /></span>
+													<span class="et">{{data['lan']['G2']}}<input class="etime" type="text" value="2017/1/13 00:00:00" /></span>
+													<div class="sbtn time_range_submit" data-type="cpu">{{data['lan']['G3']}}</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div id="cpuview" style="width: 100%; height: 330px"></div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xs-12 col-sm-12 col-md-6 pull-left pd0 view2">
+							<div class="pl7">
+								<div class="bgw pb15 radius4">
+									<div class="title c6 plr15">
+										<h3 class="c-tit f16">{{data['lan']['T2']}}</h3>
+										<div class="searcTime pull-right">
+											<span class="tit">{{data['lan']['S1']}}</span><span class="gt" onclick="controlObj.conTrolView.Wday(1,'mem')">{{data['lan']['D1']}}</span
+											><span class="gt on" onclick="controlObj.conTrolView.Wday(0,'mem')">{{data['lan']['D2']}}</span>
+											<span class="gt" onclick="controlObj.conTrolView.Wday(7,'mem')">{{data['lan']['D3']}}</span
+											><span class="gt" onclick="controlObj.conTrolView.Wday(30,'mem')">{{data['lan']['D4']}}</span>
+											<div class="ss">
+												<span class="st">{{data['lan']['S2']}}</span>
+												<div class="time">
+													<span class="bt">{{data['lan']['G1']}}<input class="btime" type="text" value="2017/1/10 00:00:00" /></span>
+													<span class="et">{{data['lan']['G2']}}<input class="etime" type="text" value="2017/1/13 00:00:00" /></span>
+													<div class="sbtn time_range_submit" data-type="mem">{{data['lan']['G3']}}</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div id="memview" style="width: 100%; height: 330px"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-xs-12 col-sm-12 col-md-6 pull-left pd0 view1">
+							<div class="pr8">
+								<div class="bgw pb15 radius4">
+									<div class="title c6 plr15 mb15">
+										<h3 class="c-tit f16">{{data['lan']['T3']}}</h3>
+										<div class="searcTime pull-right">
+											<span class="tit">{{data['lan']['S1']}}</span><span class="gt" onclick="controlObj.conTrolView.Wday(1,'disk')">{{data['lan']['D1']}}</span
+											><span class="gt on" onclick="controlObj.conTrolView.Wday(0,'disk')">{{data['lan']['D2']}}</span>
+											<span class="gt" onclick="controlObj.conTrolView.Wday(7,'disk')">{{data['lan']['D3']}}</span
+											><span class="gt" onclick="controlObj.conTrolView.Wday(30,'disk')">{{data['lan']['D4']}}</span>
+											<div class="ss">
+												<span class="st">{{data['lan']['S2']}}</span>
+												<div class="time">
+													<span class="bt">{{data['lan']['G1']}}<input class="btime" type="text" value="2017/1/10 00:00:00" /></span>
+													<span class="et">{{data['lan']['G2']}}<input class="etime" type="text" value="2017/1/13 00:00:00" /></span>
+													<div class="sbtn time_range_submit" data-type="disk">{{data['lan']['G3']}}</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div style="position: relative">
+										<div id="diskview" style="width: 100%; height: 330px"></div>
+										<div style="position: absolute; top: 15px; left: 6%" class="hide">
+											{{data['lan']['UNIT']}}
+											<div class="bt-crontab-select-button">
+												<div class="bt-select-full only-one disk-unit">
+													<div class="select-picker-search">
+														<span class="picker-text-list">KB/s</span>
+														<span class="down-select-full"></span>
+													</div>
+													<div class="select-list-item">
+														<ul style="width: auto; max-height: auto">
+															<li data-attr="KB/s"><span class="select-name-full">KB/s</span></li>
+															<li data-attr="MB/s"><span class="select-name-full">MB/s</span></li>
+															<li data-attr="GB/s"><span class="select-name-full">GB/s</span></li>
+														</ul>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xs-12 col-sm-12 col-md-6 pull-left pd0 view2">
+							<div class="pl7">
+								<div class="bgw pb15 radius4">
+									<div class="title c6 plr15 mb15">
+										<h3 class="c-tit f16">
+											<span class="mr5" style="vertical-align: middle">{{data['lan']['T4']}}:</span>
+											<select class="bt-input-text hide" style="vertical-align: middle; font-size: 13px" name="network-io">
+												<option value="all">{{ data['lan']['ALL'] }}</option>
+											</select>
+										</h3>
+										<div class="searcTime pull-right">
+											<span class="tit">{{data['lan']['S1']}}</span>
+											<span class="gt" onclick="controlObj.conTrolView.Wday(1,'network')">{{data['lan']['D1']}}</span>
+											<span class="gt on" onclick="controlObj.conTrolView.Wday(0,'network')">{{data['lan']['D2']}}</span>
+											<span class="gt" onclick="controlObj.conTrolView.Wday(7,'network')">{{data['lan']['D3']}}</span>
+											<span class="gt" onclick="controlObj.conTrolView.Wday(30,'network')">{{data['lan']['D4']}}</span>
+											<div class="ss">
+												<span class="st">{{data['lan']['S2']}}</span>
+												<div class="time">
+													<span class="bt">{{data['lan']['G1']}}<input class="btime" type="text" value="2017/1/10 00:00:00" /></span>
+													<span class="et">{{data['lan']['G2']}}<input class="etime" type="text" value="2017/1/13 00:00:00" /></span>
+													<div class="sbtn time_range_submit" data-type="network">{{data['lan']['G3']}}</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div style="position: relative">
+										<div id="network" style="width: 100%; height: 330px"></div>
+										<div style="position: absolute; top: 15px; left: 6%" class="hide">
+											{{data['lan']['UNIT']}}
+											<div class="bt-crontab-select-button">
+												<div class="bt-select-full only-one network-unit">
+													<div class="select-picker-search">
+														<span class="picker-text-list">KB/s</span>
+														<span class="down-select-full"></span>
+													</div>
+													<div class="select-list-item">
+														<ul style="width: auto; max-height: auto">
+															<li data-attr="KB/s"><span class="select-name-full">KB/s</span></li>
+															<li data-attr="MB/s"><span class="select-name-full">MB/s</span></li>
+															<li data-attr="GB/s"><span class="select-name-full">GB/s</span></li>
+														</ul>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script src="/static/js/echarts.min.js"></script>
+<script src="/static/js/control.js?date={{g['version']}}"></script>
+<script type="text/javascript">
+	var tabsCut = $('#tabs-cut'),controlType = bt.get_cookie('controlType') || 'control';
+	tabsCut.on('click', '.tabs-item', function() {
+		var name = $(this).data('name'),index = $(this).index();
+		bt.set_cookie('controlType', name);
+		$(this).addClass('active').siblings().removeClass('active');
+		$('.control-content .control-item-block').eq(index).show().siblings().hide()
+		switch (name) {
+			case 'control':
+				controlObj.conTrolView.init();
+				break;
+		}
+	});
+	controlObj.conTrolView.init();
+</script>
+{% endblock %}
+

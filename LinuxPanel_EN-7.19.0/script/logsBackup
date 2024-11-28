@@ -1,0 +1,251 @@
+#!/usr/bin/python
+# coding: utf-8
+# -----------------------------
+# 宝塔Linux面板网站日志切割脚本
+# -----------------------------
+import glob
+import os
+import re
+import shutil
+import sys
+import time
+
+os.chdir("/www/server/panel")
+sys.path.append('class/')
+import public
+
+print('==================================================================')
+print('★[' + time.strftime("%Y/%m/%d %H:%M:%S") + '] Cutting log')
+print('==================================================================')
+print('|--Currently keeping the latest copies of [' + sys.argv[2] + ']')
+
+logsPath = '/www/wwwlogs/'
+is_gzip = not os.path.exists('/www/server/panel/data/log_not_gzip.pl')
+is_nginx = False
+if os.path.exists('/www/server/nginx/logs/nginx.pid'): is_nginx = True
+px = '.log'
+if not is_nginx: px = '-access_log'
+
+def build_errlog(sitename):
+    if is_nginx:
+        log = sitename + '.error.log'
+    elif os.path.exists('/usr/local/lsws/bin/lswsctrl'):
+        log = sitename + '_ols.error_log'
+    else:
+        log = sitename + '-error_log'
+    return log
+
+def clean_backlog(logname,num):
+    logs=sorted(glob.glob(logname+"_*"))
+    count=len(logs)
+    num=count - num
+
+    for i in range(count):
+        if i>num: break;
+        os.remove(logs[i])
+        print('|---The extra log ['+logs[i]+'] has been deleted!')
+
+def split_logs(oldFileName,num,site_name):
+    global logsPath
+    errlog_name = build_errlog(site_name)
+    old_errlog = logsPath + errlog_name
+
+    if not os.path.exists(oldFileName):
+        print('|---'+oldFileName+'file does not exist!')
+        return
+
+    clean_backlog(oldFileName,num)
+    clean_backlog(old_errlog,num)
+
+    newFileName=oldFileName+'_'+time.strftime("%Y-%m-%d_%H%M%S")+'.log'
+    shutil.move(oldFileName,newFileName)
+    new_errlog = old_errlog+'_'+time.strftime("%Y-%m-%d_%H%M%S")+'.log'
+    shutil.move(old_errlog, new_errlog)
+    if not os.path.exists('/www/server/panel/data/log_not_gzip.pl'):
+        os.system("gzip %s" % newFileName)
+        os.system("gzip %s" % new_errlog)
+        print('|---The log has been cut to:' + newFileName + '.gz')
+        print('|---The log has been cut to:' + new_errlog + '.gz')
+    else:
+        print('|---The log has been cut to:'+newFileName+'.log')
+        print('|---The log has been cut to:' + new_errlog + '.log')
+
+
+
+def split_log(siteName, num, log_cut_path):
+    global logsPath, is_gzip
+    res = public.M('sites').where('name=?', (siteName,)).select()[0]['project_type'].lower()
+    if res == 'php':
+        res = ''
+    else:
+        res = res + '_'
+    # print(res)
+    directory = '/etc/init.d/'
+    files = os.listdir(directory)
+    file_list = list(files)
+    print('|-Processing website: {}'.format(siteName))
+    if 'nginx' in file_list:
+        config_path = '/www/server/panel/vhost/nginx/{}.conf'.format(res + siteName)
+        config = public.readFile(config_path)
+        if not config:
+            print('|-Processing website: logs for {} site not detected'.format(siteName))
+            return
+        tmp, _ = nginx_get_log_path(config, is_error_log=False)
+        if tmp is not None:
+            logsPath = tmp
+    elif 'httpd' in file_list:
+        config_path = '/www/server/panel/vhost/apache/{}.conf'.format(res + siteName)
+        config = public.readFile(config_path)
+        if not config:
+            print('|-Processing website: logs for [{}] site not detected'.format(siteName))
+            return
+        tmp, _ = apache_get_log_path(config, is_error_log=False)
+        if tmp is not None:
+            logsPath = tmp
+
+    # print('|-正在处理网站: {}'.format(siteName))
+    # print(logsPath)
+    log_path = os.path.join(log_cut_path, 'history_backups', siteName)
+    log_path = log_path.replace('history_backups/history_backups/', 'history_backups/')
+    if not os.path.exists(log_path): os.makedirs(log_path, 384)
+    logs = sorted(glob.glob(log_path + '/' + siteName + "_access_*"))
+    old_logs = sorted(glob.glob(logsPath + '/' + siteName + "*log_*.log"))
+    count = len(logs)
+    remove_num = count - num
+    # print('|-当前日志数量: {}, 删除：{}'.format(count,remove_num))
+    old_list = old_logs[:remove_num+1]
+    for i in old_list:
+        if os.path.exists(i):
+            os.remove(old_logs[i])
+            print('|---The extra log [' + i + '] has been deleted!')
+    remove_num = remove_num - len(old_list)
+    for i in logs[:remove_num+1]:
+        if os.path.exists(i):
+            os.remove(i)
+            print('|---The extra log [' + i + '] has been deleted!')
+        err_file = i.replace('access', 'error')
+        if os.path.exists(err_file):
+            os.remove(err_file)
+            print('|---The extra log [' + err_file + '] has been deleted!')
+
+    his_date = time.strftime("%Y-%m-%d_%H%M%S")
+    ngx_access_log = os.path.join(logsPath, siteName + '.log')
+    ngx_error_log = os.path.join(logsPath, siteName + '.error.log')
+    if os.path.exists(ngx_access_log):
+        history_log_file = log_path + '/' + siteName + '_access_' + his_date + '.log'
+        shutil.move(ngx_access_log, history_log_file)
+        if is_gzip:
+            os.system('gzip {}'.format(history_log_file))
+            print('|---Cut logs to:' + history_log_file + '.gz')
+        else:
+            print('|---Cut logs to:' + history_log_file + '.gz')
+    if os.path.exists(ngx_error_log):
+        history_log_file = log_path + '/' + siteName + '_error_' + his_date + '.log'
+        shutil.move(ngx_error_log, history_log_file)
+        if is_gzip:
+            os.system('gzip {}'.format(history_log_file))
+            print('|---Cut logs to:' + history_log_file + '.gz')
+        else:
+            print('|---Cut logs to:' + history_log_file + '.gz')
+
+    httpd_access_log = os.path.join(logsPath, siteName + '-access_log')
+    httpd_error_log = os.path.join(logsPath, siteName + '-error_log')
+    if os.path.exists(httpd_access_log):
+        history_log_file = log_path + '/' + siteName + '_access_' + his_date + '.log'
+        if not os.path.exists(history_log_file):
+            shutil.move(httpd_access_log, history_log_file)
+            if is_gzip:
+                os.system('gzip {}'.format(history_log_file))
+                print('|---Cut logs to:' + history_log_file + '.gz')
+            else:
+                print('|---Cut logs to:' + history_log_file + '.gz')
+    if os.path.exists(httpd_error_log):
+        history_log_file = log_path + '/' + siteName + '_error_' + his_date + '.log'
+        if not os.path.exists(history_log_file):
+            shutil.move(httpd_error_log, history_log_file)
+            if is_gzip:
+                os.system('gzip {}'.format(history_log_file))
+                print('|---Cut logs to:' + history_log_file + '.gz')
+            else:
+                print('|---Cut logs to:' + history_log_file + '.gz')
+                
+    ols_access_log = os.path.join(logsPath, siteName + '_ols.access_log')
+    ols_error_log = os.path.join(logsPath, siteName + '_ols.error_log')
+    if os.path.exists(ols_access_log):
+        history_log_file = log_path + '/' + siteName + '_access_' + his_date + '.log'
+        if not os.path.exists(history_log_file):
+            shutil.move(ols_access_log, history_log_file)
+            if is_gzip:
+                os.system('gzip {}'.format(history_log_file))
+                print('|---Cut logs to:' + history_log_file + '.gz')
+            else:
+                print('|---Cut logs to:' + history_log_file + '.gz')
+    if os.path.exists(ols_error_log):
+        history_log_file = log_path + '/' + siteName + '_error_' + his_date + '.log'
+        if not os.path.exists(history_log_file):
+            shutil.move(ols_error_log, history_log_file)
+            if is_gzip:
+                os.system('gzip {}'.format(history_log_file))
+                print('|---Cut logs to:' + history_log_file + '.gz')
+            else:
+                print('|---Cut logs to:' + history_log_file + '.gz')
+
+
+def split_all(save,log_cut_path):
+    sites = public.M('sites').field('name').select()
+    for site in sites:
+        split_log(site['name'], save,log_cut_path)
+
+
+def nginx_get_log_path(nginx_config: str, is_error_log: bool = False):
+    if is_error_log:
+        re_data = re.findall(r"error_log +(/(\S+/?)+) ?(.*?);", nginx_config)
+    else:
+        re_data = re.findall(r"access_log +(/(\S+/?)+) ?(.*?);", nginx_config)
+    if re_data is None:
+        return None, None
+    for i in re_data:
+        file_path = i[0].strip(";")
+        if file_path != "/dev/null":
+            return os.path.dirname(file_path), os.path.basename(file_path)
+    return None, None
+
+
+def apache_get_log_path(apache_config: str, is_error_log: bool = False):
+    if is_error_log:
+        re_data = re.findall(r'''ErrorLog +['"]?(/(\S+/?)+)['"]? ?(.*?)\n''', apache_config)
+    else:
+        re_data = re.findall(r'''CustomLog +['"]?(/(\S+/?)+)['"]? ?(.*?)\n''', apache_config)
+    if re_data is None:
+        return None
+    for i in re_data:
+        file_path = i[0].strip('"').strip("'")
+        if file_path != "/dev/null":
+            return os.path.dirname(file_path), os.path.basename(file_path)
+    return None, None
+
+
+if __name__ == '__main__':
+    num = int(sys.argv[2])
+    if len(sys.argv) > 3:
+        log_cut_path = sys.argv[3]
+    else:
+        log_cut_path = '/www/wwwlogs/'
+    if sys.argv[1].find('ALL') == 0:
+        split_all(num, log_cut_path)
+    else:
+        siteName = sys.argv[1]
+        try:
+            public.M('sites').where('name=?', (siteName,)).select()[0]['project_type'].lower()
+            split_log(sys.argv[1], num, log_cut_path)
+        except:
+            siteName = sys.argv[1]
+            if siteName[-4:] == '.log':
+                siteName = siteName[:-4]
+            elif siteName[-11:] == '-access_log':
+                siteName = siteName.replace("-access_log",'')
+            else:
+                siteName = siteName.replace("_ols.access_log", '')
+            oldFileName = logsPath+sys.argv[1]
+            split_logs(oldFileName,num,siteName)
+    public.serviceReload()

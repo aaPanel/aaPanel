@@ -1,0 +1,32 @@
+[
+  {
+    "protocol": "https://",
+    "address": "node.aapanel.com",
+    "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "https://",
+    "address": "128.1.164.196",
+    "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "https://",
+    "address": "45.76.53.20",
+    "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "https://",
+    "address": "dg2.bt.cn",
+    "port": "80",
+    "ping": 500
+  },
+  {
+    "protocol": "https://",
+    "address": "dg1.bt.cn",
+    "port": "80",
+    "ping": 500
+  }
+]

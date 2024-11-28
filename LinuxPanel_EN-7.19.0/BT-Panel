@@ -1,0 +1,408 @@
+#!/www/server/panel/pyenv/bin/python
+#coding: utf-8
+# +-------------------------------------------------------------------
+# | aaPanel
+# +-------------------------------------------------------------------
+# | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
+# +-------------------------------------------------------------------
+# | Author: hwliang <hwl@aapanel.com>
+# +-------------------------------------------------------------------
+from gevent import monkey
+
+
+monkey.patch_all()
+
+
+import os
+import sys
+import ssl
+import time
+import logging
+import psutil
+
+
+_PATH = '/www/server/panel'
+os.chdir(_PATH)
+
+# upgrade_file = 'script/upgrade_flask.sh'
+# if os.path.exists(upgrade_file):
+#     os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
+#
+# upgrade_file = 'script/upgrade_gevent.sh'
+# if os.path.exists(upgrade_file):
+#     os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
+
+upgrade_file = 'script/upgrade_telegram.sh'
+if os.path.exists(upgrade_file):
+    os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
+
+if os.path.exists('class/flask'):
+    os.system('rm -rf class/flask')
+
+
+if not 'class/' in sys.path:
+    sys.path.insert(0,'class/')
+from BTPanel import app,sys,public
+is_debug = os.path.exists('data/debug.pl')
+
+
+# 检查加载器
+def check_plugin_loader():
+    plugin_loader_file = 'class/PluginLoader.so'
+    machine = 'x86_64'
+    try:
+        machine = os.uname().machine
+    except:
+        pass
+    plugin_loader_src_file = "class/PluginLoader.{}.Python3.12.so".format(machine)
+    if machine == 'x86_64':
+        glibc_version = public.get_glibc_version()
+        if glibc_version in ['2.14','2.13','2.12','2.11','2.10']:
+            plugin_loader_src_file = "class/PluginLoader.{}.glibc214.Python3.12.so".format(machine)
+    if os.path.exists(plugin_loader_src_file):
+        os.system(r"\cp -f {} {}".format(plugin_loader_src_file, plugin_loader_file))
+
+check_plugin_loader()
+
+
+if is_debug:
+    import pyinotify,time,logging,re
+    logging.basicConfig(level=logging.DEBUG,format="[%(asctime)s][%(levelname)s] - %(message)s")
+    logger = logging.getLogger()
+
+    class PanelEventHandler(pyinotify.ProcessEvent):
+        _exts = ['py','html','BT-Panel','so']
+        _explude_patts = [
+            re.compile('{}/plugin/.+'.format(_PATH)),
+            re.compile('{}/(tmp|temp)/.+'.format(_PATH)),
+            re.compile('{}/pyenv/.+'.format(_PATH)),
+            re.compile('{}/class/projectModel/.+'.format(_PATH)),
+            re.compile('{}/class/databaseModel/.+'.format(_PATH)),
+            re.compile('{}/panel/data/mail/in_bulk/content/.+'.format(_PATH))
+        ]
+        _lsat_time = 0
+
+
+        def is_ext(self,filename):
+            fname = os.path.basename(filename)
+            result = fname.split('.')[-1] in self._exts
+            if not result: return False
+            for e in self._explude_patts:
+                if e.match(filename): return False
+            return True
+
+        def panel_reload(self,filename,in_type):
+            stime = time.time()
+            if stime - self._lsat_time < 2:
+                return
+            self._lsat_time = stime
+            logger.debug('File detected: {} -> {}'.format(filename,in_type))
+
+            fname = os.path.basename(filename)
+            if fname in ['task.py','BT-Task']:
+                logger.debug('Background task...')
+                public.ExecShell("{} {}/BT-Task".format(public.get_python_bin(),_PATH))
+                logger.debug('Background task started!')
+            else:
+                logger.debug('Restarting panel...')
+                public.ExecShell("bash {}/init.sh reload &>/dev/null &".format(_PATH))
+
+        def process_IN_CREATE(self, event):
+            if not self.is_ext(event.pathname): return
+            self.panel_reload(event.pathname,'[Create]')
+
+        def process_IN_DELETE(self,event):
+            if not self.is_ext(event.pathname): return
+            self.panel_reload(event.pathname,'[Delete]')
+
+        def process_IN_MODIFY(self,event):
+
+            if not self.is_ext(event.pathname): return
+            self.panel_reload(event.pathname,'[Modify]')
+
+        def process_IN_MOVED_TO(self,event):
+            if not self.is_ext(event.pathname): return
+            self.panel_reload(event.pathname,'[Cover]')
+    def debug_event():
+        logger.debug('Launch the panel in debug mode')
+        logger.debug('Listening port：0.0.0.0:{}'.format(public.readFile('data/port.pl')))
+
+        event = PanelEventHandler()
+        watchManager = pyinotify.WatchManager()
+        mode = pyinotify.IN_CREATE | pyinotify.IN_DELETE | pyinotify.IN_MODIFY | pyinotify.IN_MOVED_TO
+        watchManager.add_watch(_PATH, mode, auto_add=True, rec=True)
+        notifier = pyinotify.Notifier(watchManager, event)
+        notifier.loop()
+
+def run_task():
+    public.ExecShell("chmod 700 {}/BT-Task".format(_PATH))
+    public.ExecShell("{}/BT-Task".format(_PATH))
+
+def daemon_task():
+    cycle = 60
+    task_pid_file = "{}/logs/task.pid".format(_PATH)
+    while 1:
+        time.sleep(cycle)
+
+        # 检查pid文件是否存在
+        if not os.path.exists(task_pid_file):
+            continue
+
+        # 读取pid文件
+        task_pid = public.readFile(task_pid_file)
+        if not task_pid:
+            run_task()
+            continue
+
+        # 检查进程是否存在
+        comm_file = "/proc/{}/comm".format(task_pid)
+        if not os.path.exists(comm_file):
+            run_task()
+            continue
+
+        # 是否为面板进程
+        comm = public.readFile(comm_file)
+        if comm.find('BT-Task') == -1:
+            run_task()
+            continue
+
+def get_process_count():
+    '''
+        @name 获取进程数量
+        @return int
+    '''
+
+    # 如果存在用户配置，则直接返回用户配置的进程数量
+    process_count_file = "{}/data/process_count.pl".format(_PATH)
+    if os.path.exists(process_count_file):
+        str_count = public.readFile(process_count_file).strip()
+        try:
+            if str_count: return int(str_count)
+        except: pass
+
+    # 否则根据内存和CPU核心数来决定启动进程数量
+    memory = psutil.virtual_memory().total / 1024 / 1024
+    cpu_count = psutil.cpu_count()
+    if memory < 4000 or cpu_count < 4: return 1   # 内存小于4G或CPU核心小于4核,则只启动1个进程
+    if memory < 8000 and cpu_count > 3: return 2   # 内存大于4G且小于8G,且CPU核心大于3核,则启动2个进程
+    if memory > 14000 and cpu_count > 7: return 3   # 内存大于8G且14G,且CPU核心大于7核,则启动3个进程
+    if memory > 30000 and cpu_count > 15: return 4   # 内存大于30G且CPU核心大于15核,则启动4个进程
+    return 1
+
+if __name__ == '__main__':
+    pid_file = "{}/logs/panel.pid".format(_PATH)
+    if os.path.exists(pid_file):
+        public.ExecShell("kill -9 {}".format(public.readFile(pid_file)))
+    pid = os.fork()
+    if pid: sys.exit(0)
+
+    os.setsid()
+
+    _pid = os.fork()
+    if _pid:
+        public.writeFile(pid_file,str(_pid))
+        sys.exit(0)
+
+    sys.stdout.flush()
+    sys.stderr.flush()
+
+    # 面板启动任务初始化
+    os.system("nohup ./pyenv/bin/python3 class/jobs.py &>/dev/null &")
+
+    try:
+        f = open('data/port.pl')
+        PORT = int(f.read())
+        f.close()
+        if not PORT: PORT = 7800
+    except:
+        PORT = 7800
+    HOST = '0.0.0.0'
+    if os.path.exists('data/ipv6.pl'):
+        HOST = "0:0:0:0:0:0:0:0"
+
+    keyfile = 'ssl/privateKey.pem'
+    certfile = 'ssl/certificate.pem'
+    is_ssl = False
+    if os.path.exists('data/ssl.pl') and os.path.exists(keyfile) and os.path.exists(certfile):
+        is_ssl = True
+
+    if not is_ssl or is_debug:
+        try:
+            err_f = open('logs/error.log','a+')
+            os.dup2(err_f.fileno(),sys.stderr.fileno())
+            err_f.close()
+        except Exception as ex:
+            print(ex)
+
+    import threading
+    task_thread = threading.Thread(target=daemon_task, daemon=True)
+    task_thread.start()
+
+    if is_ssl:
+        ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_context.load_cert_chain(certfile=certfile,keyfile=keyfile)
+        if hasattr(ssl_context, "minimum_version"):
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        else:
+            ssl_context.options = (ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
+
+        ssl_context.set_ciphers("ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE")
+        is_ssl_verify = os.path.exists('/www/server/panel/data/ssl_verify_data.pl')
+        if is_ssl_verify:
+            crlfile = '/www/server/panel/ssl/crl.pem'
+            rootcafile = '/www/server/panel/ssl/ca.pem'
+            #注销列表
+            # ssl_context.load_verify_locations(crlfile)
+            # ssl_context.verify_flags |= ssl.VERIFY_CRL_CHECK_CHAIN
+            #加载证书
+            ssl_context.load_verify_locations(rootcafile)
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+            ssl_context.set_default_verify_paths()
+
+    # 设置日志格式
+    _level = logging.WARNING
+    if is_debug: _level = logging.NOTSET
+    logging.basicConfig(level=_level,format="[%(asctime)s][%(levelname)s] - %(message)s")
+    logger = logging.getLogger()
+    app.logger = logger
+
+    from  gevent.pywsgi import WSGIServer
+    import webserver
+
+    class BtWSGIServer(WSGIServer):
+        def wrap_socket_and_handle(self, client_socket, address):
+            try:
+                return super(BtWSGIServer, self).wrap_socket_and_handle(client_socket, address)
+            except OSError as e:
+                pass
+                # public.print_exc_stack(e)
+
+        def do_read(self):
+            try:
+                return super(BtWSGIServer, self).do_read()
+            except OSError as e:
+                pass
+                # public.print_exc_stack(e)
+
+    webserver_obj = webserver.webserver()
+    is_webserver = webserver_obj.run_webserver()
+    # is_webserver = False
+
+    if is_webserver:
+        from gevent import socket
+        listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        unix_socket = '/tmp/panel.sock'
+        if os.path.exists(unix_socket):
+            os.remove(unix_socket)
+        listener.bind(unix_socket)
+        listener.listen(500)
+        os.chmod(unix_socket, 0o777)
+        try:
+            import flask_sock
+            http_server = BtWSGIServer(listener, app,log=app.logger)
+        except:
+            from geventwebsocket.handler import WebSocketHandler
+            http_server = BtWSGIServer(listener, app,handler_class=WebSocketHandler,log=app.logger)
+    else:
+        if is_ssl:
+            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_context.load_cert_chain(certfile=certfile, keyfile=keyfile)
+            if hasattr(ssl_context, "minimum_version"):
+                ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+            else:
+                ssl_context.options = (ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
+
+            ssl_context.set_ciphers("ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE")
+            is_ssl_verify = os.path.exists('/www/server/panel/data/ssl_verify_data.pl')
+            if is_ssl_verify:
+                crlfile = '/www/server/panel/ssl/crl.pem'
+                rootcafile = '/www/server/panel/ssl/ca.pem'
+                #注销列表
+                # ssl_context.load_verify_locations(crlfile)
+                # ssl_context.verify_flags |= ssl.VERIFY_CRL_CHECK_CHAIN
+                #加载证书
+                ssl_context.load_verify_locations(rootcafile)
+                ssl_context.verify_mode = ssl.CERT_REQUIRED
+                ssl_context.set_default_verify_paths()
+
+        try:
+            import flask_sock
+            if is_ssl:
+                http_server = BtWSGIServer((HOST, PORT), app,ssl_context = ssl_context,log=app.logger)
+            else:
+                http_server = BtWSGIServer((HOST, PORT), app,log=app.logger)
+        except:
+            from geventwebsocket.handler import WebSocketHandler
+            if is_ssl:
+                http_server = BtWSGIServer((HOST, PORT), app,ssl_context = ssl_context,handler_class=WebSocketHandler,log=app.logger)
+            else:
+                http_server = BtWSGIServer((HOST, PORT), app,handler_class=WebSocketHandler,log=app.logger)
+
+
+    if is_debug:
+        try:
+            dev = threading.Thread(target=debug_event)
+            dev.start()
+        except:
+            pass
+
+    is_process = os.path.exists('data/is_process.pl')
+    if not is_process:
+        try:
+            http_server.serve_forever()
+        except:
+            from traceback import format_exc
+            public.print_log(format_exc())
+        app.run(host=HOST, port=PORT, threaded=True)
+    else:
+        http_server.start()
+        from multiprocessing import Process
+
+
+        def serve_forever():
+            http_server.start_accepting()
+            http_server._stop_event.wait()
+
+
+        # 获取最大进程数量，最小为2个
+        process_count = get_process_count()
+        if process_count < 2: process_count = 2
+
+        # 启动主进程
+        main_p = Process(target=serve_forever)
+        main_p.daemon = True
+        main_p.start()
+        main_psutil = psutil.Process(main_p.pid)
+
+        # 动态按需调整子进程数量
+        process_dict = {}
+        while 1:
+            t = time.time()
+            # 当主进程CPU占用率超过90%时，尝试启动新的子进程协同处理
+            cpu_percent = main_psutil.cpu_percent(interval=1)
+            if cpu_percent > 90:
+                is_alive = 0
+                process_num = 0
+
+                # 检查是否存在空闲的子进程
+                for i in process_dict.keys():
+                    process_num += 1
+                    if process_dict[i][2].cpu_percent(interval=1) > 0:
+                        is_alive += 1
+
+                # 如果没有空闲的子进程，且当前子进程数量小于最大进程数量，则启动新的子进程
+                if process_num == is_alive and process_num < process_count:
+                    p = Process(target=serve_forever)
+                    p.daemon = True
+                    p.start()
+                    process_dict[p.pid] = [p, t, psutil.Process(p.pid)]
+
+            # 结束创建时间超过60秒，且连续空闲5秒钟以上的子进程
+            keys = list(process_dict.keys())
+            for i in keys:
+                if t - process_dict[i][1] < 60: continue
+                if process_dict[i][2].cpu_percent(interval=5) > 0: continue
+                process_dict[i][0].kill()
+                process_dict.pop(i)
+
+            time.sleep(1)

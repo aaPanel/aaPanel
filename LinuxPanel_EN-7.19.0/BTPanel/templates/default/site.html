@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="https://at.alicdn.com/t/font_1508259_3g6fa6pdt7k.css" />
+<style>
+    #webBody .webPath,#webBody .ssl_tips{
+        white-space: nowrap;
+        display: inline-block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: auto;
+    }
+		/* php分类选择器宽度 */
+		.site_class_type.bt_select_updown {
+			width: 150px;
+		}
+</style>
+<div class="main-content pb55">
+    <div class="container-fluid">
+        <!-- <div class="pos-box bgw mtb15">
+            <div class="position f14 c9 pull-left">
+                <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
+            </div>
+            <div class="search pull-right" style="display: none;">
+                <form target="hid" onsubmit='site.get_list(1,$("#SearchValue").val())'>
+                    <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="{{data['lan']['SEARCH']}}" />
+                    <button type="button" class="ser-sub pull-left" onclick='site.get_list(1,$("#SearchValue").val())'></button>
+                </form>
+                <iframe name='hid' id="hid" style="display:none"></iframe>
+            </div>
+        </div> -->
+        <div class="pos-box bgw mtb15">
+            <div class="tab-list" id="cutMode">
+                <div class="tabs-item active" data-type="php">PHP Project</div>
+                <div class="tabs-item" data-type="nodejs">Node Project</div>
+            </div>
+        </div>
+        <div id="site_table_view" class="site_table_view bgw mtb15 pd15">
+            <!-- <div class="info-title-tips">
+                <p><span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px;"></span> {{data['lan']['PS']}}after the site is successfully established, please<a class="btlink" href="/crontab">[Cron]</a>add scheduled backup tasks to the page!</p>
+            </div>
+            <div class="tab-nav" id="cutMode">
+                <span class="on">PHP Project</span>
+                <span >Node Project</span>
+            </div> -->
+            <div class="tab-con" style="padding: 0;overflow: inherit;">
+                <div class="tab-con-block">
+                    <div id="bt_site_table"></div>
+                    <div class="mask_layer hide">
+                        <div class="prompt_description"></div>
+                    </div>
+                </div>
+                <div class="tab-con-block">
+                    <div id="bt_node_table"></div>
+                    <div class="mask_layer hide">
+                        <div class="prompt_description node-model"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+    bt.set_cookie('sites_path', "{{session['config']['sites_path']}}");
+    bt.set_cookie('serverType', "{{session['webserver']}}");
+    var isSetup = "{{data['isSetup']}}" === 'True'?true:false
+    // {% if not data['isSetup'] %}
+    //     layer.msg(lan.site.install_web_server_first+'<a href="/soft" style="color:#20a53a; float: right;">'+lan.site.to_install+'</a>', { icon: 7, shade: [0.3, '#000'], time: 0 });
+    //     $(".layui-layer-shade").css("margin-left", "180px");
+    // {% else %}
+    //     //site.get_list();
+    //     site.plugin_firewall();
+    // {% endif %}
+    // function reverse(array){
+    //     var reverse_array = [];
+    //     for(var i = array.length - 1; i >= 0 ; i-- ){
+    //         reverse_array.push(array[i]);
+    //     }
+    //     return reverse_array
+    // }
+</script>
+<script type="text/javascript" src="/static/laydate/laydate.js?date=20180301"></script>
+<script type="text/javascript" src="{{g.cdn_url}}/js/site.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+<script type="text/javascript" src="{{g.cdn_url}}/ace/ace.js?version={{g['version']}}" defer></script>
+<!-- 以下文件未来将被剔除 -->
+<script type="text/javascript" src="{{g.cdn_url}}/js/bootstrap-select.min.js" defer></script>
+
+<script type="text/javascript">
+if(isSetup) site.plugin_firewall()
+</script>
+{% endblock %}

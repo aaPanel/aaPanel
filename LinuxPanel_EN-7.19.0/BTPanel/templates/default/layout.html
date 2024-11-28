@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="referer" content="never" />
+		<meta name="renderer" content="webkit" />
+		<title>{{g.title}}</title>
+		<link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon" />
+		<link href="{{g.cdn_url}}/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+		<link href="{{g.cdn_url}}/codemirror/lib/codemirror.css?20191127={{g['version']}}" rel="stylesheet" />
+		<link href="{{g.cdn_url}}/css/site.css?version={{g['version']}}&repair={{data['js_random']}}" rel="stylesheet" />
+		{% for css_f in g['other_css'] %}
+		<link href="{{css_f}}" rel="stylesheet" />
+		{% endfor %}
+		<!--[if lte IE 9]>
+			<script src="/static/js/requestAnimationFrame.js"></script>
+		<![endif]-->
+		<style>
+			.contextmenu {
+				position: absolute;
+				width: 120px;
+				background: #ffffff;
+				border-radius: 5px;
+				overflow: hidden;
+				z-index: 99999999;
+			}
+
+			.contextmenu li {
+				border-left: 3px solid transparent;
+				transition: ease 0.3s;
+			}
+
+			.contextmenu li:hover {
+				background: #707070;
+				border-left: 3px solid #333;
+			}
+
+			.contextmenu li a {
+				display: block;
+				padding: 5px 10px;
+				color: #000000;
+				text-decoration: none;
+				transition: ease 0.3s;
+				cursor: default;
+			}
+
+			.contextmenu li:hover a {
+				color: #fff;
+			}
+			.toolbar-right {
+				width: 35px;
+				height: 35px;
+				position: fixed;
+				right: 0;
+				bottom: 120px;
+				display: flex;
+				background-color: #fff;
+				box-shadow: 0 0 4px 0 #ccc;
+				flex-direction: column;
+				flex-wrap: nowrap;
+				align-items: center;
+				justify-content: center;
+				border-radius: 4px;
+			}
+
+			.toolbar-right .feedback {
+				display: inline-block;
+				height: 35px;
+				width: 35px;
+				position: relative;
+				background-repeat: no-repeat;
+				background-position: center center;
+				border-radius: 4px;
+				background-size: 13.5px;
+			}
+			.toolbar-right .feedback {
+				background-image: url('/static/img/feedback.svg');
+				border-bottom-left-radius: 4px;
+				border-bottom-right-radius: 4px;
+			}
+
+			.feedback-iframe .layui-layer-content {
+				overflow: hidden !important;
+			}
+		</style>
+		<script type="text/javascript">
+			var recycle_bin_db_open = !!{{g['recycle_bin_db_open']}};
+			var recycle_bin_open = !!{{g['recycle_bin_open']}};
+			var ie_version = (function() {
+			  var userAgent = navigator.userAgent;
+			  var isLessIE11 = userAgent.indexOf('compatible') > -1 && userAgent.indexOf('MSIE') > -1;
+			  var isEdge = userAgent.indexOf('Edge') > -1 && !isLessIE11;
+			  var isIE11 = userAgent.indexOf('Trident') > -1 && userAgent.indexOf('rv:11.0') > -1;
+			  if (isLessIE11) {
+			    var IEReg = new RegExp('MSIE (\\d+\\.\\d+);');
+			    IEReg.test(userAgent);
+			    var IEVersionNum = parseFloat(RegExp['$1']);
+			    if (IEVersionNum === 7) {// IE7
+			      return 7
+			    } else if (IEVersionNum === 8) {// IE8
+			      return 8
+			    } else if (IEVersionNum === 9) {// IE9
+			      return 9
+			    } else if (IEVersionNum === 10) { // IE10
+			      return 10
+			    } else {
+			      return 6
+			    }
+			  } else if (isEdge) { // edge
+			    return 'edge'
+			  } else if (isIE11) {// IE11
+			    return 11
+			  } else {// 不是ie浏览器
+			    return -1
+			  }
+			}());
+			if (ie_version != -1 && ie_version < 10 && ie_version != 'edge') {
+			  window.location.href = '/tips';
+			}
+			if(ie_version != -1 && ( ie_version >= 10 || ie_version === 'edge')){
+			  var title = document.createElement('div');
+			  title.setAttribute('class', 'content');
+			  title.setAttribute('style', 'height: 50px;position: absolute;top: 0;left: 0;right: 0;line-height: 50px;z-index: 9999999;background: rgba(0,0,0,.5);text-align: center;color: #ff922e;font-size: 19px;font-weight: 600;')
+			  title.innerHTML = '<span>The current version of IE browser is too low, some functions cannot be displayed, please change to other browsers!</span><span class="compatibility_tips" style="position: absolute;right: 15px;top: 10px;font-size: 14px;display: inline-block; height: 30px;line-height: 28px;padding: 0 12px;font-weight: 500;color: #ffffff; border-radius: 4px;cursor: pointer;border: 2px solid #ffffff;font-weight: 500;">Close Tips</span>';
+			  title.querySelector('.compatibility_tips').addEventListener('click',function(res){
+			      var parentNode = this.parentElement;
+			      parentNode.parentElement.removeChild(parentNode);
+			  });
+			  document.querySelector('html').appendChild(title);
+			}
+			if (!window.location.origin) {
+			  window.location.origin = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '');
+			}
+		</script>
+	</head>
+	<body>
+		<div class="bt-warp bge6">
+			<a style="display: none" id="panel_debug" data="{{g['debug']}}" data-pyversion="{{g['pyversion']}}"></a>
+			<a style="display: none" id="request_token_head" token="{{session['request_token_head']}}"></a>
+			<div id="container" class="container-fluid">
+				<div class="sidebar-scroll" id="showMainView">
+					<!-- <div class="sidebar-auto">
+						<div id="task" class="task cw" onclick="messagebox()">0</div>
+						<h3 class="mypcip">
+							<span class="f14 cw">{{session['address']}}</span>
+						</h3>
+						<ul class="menu">
+							{% for menu in g['menus'] %} {% if menu['href'] == g.uri %}
+							<li id="{{menu['id']}}" class="current"><a class="{{menu['class']}}" href="{{menu['href']}}">{{menu['title']}}</a></li>
+							{% else %}
+							<li id="{{menu['id']}}"><a class="{{menu['class']}}" href="{{menu['href']}}">{{menu['title']}}</a></li>
+							{% endif %} {% endfor %}
+						</ul>
+						<div id="newbtpc"></div>
+						<div class="btpc-plus" onclick="bindBTPanel(0,'b')">+</div>
+					</div> -->
+				</div>
+				<button style="display: none" id="bt_copys" class="bt_copy" data-clipboard-text=""></button>
+				<a style="display: none" id="defaultPath">{{session['config']['sites_path']}}</a> {% block content %}{% endblock %}
+				<div class="toolbar-right">
+					<a href="javascript:;" class="feedback"></a>
+				</div>
+				<div class="footer bgw">
+					{{session['brand']}}{{session['product']}} &copy;2014-{{session['yaer']}} {{session['brand']}} (bt.cn)
+					<!--<a style="margin-left:20px;color:#20a53a;" href="http://www.bt.cn/bbs" target="_blank">求助|建议请上宝塔论坛</a>-->
+					<a style="margin-left: 20px; color: #20a53a" href="http://www.aapanel.com/forum" target="_blank">{{session['bt_help']}}</a>
+					<a style="margin-left: 20px; color: #20a53a" href="https://doc.aapanel.com/web/#/3?page_id=117" target="_blank">Documentation</a>
+				</div>
+			</div>
+			<script type="text/javascript">
+				var recycle_bin_db_open = "{{g['recycle_bin_db_open']}}" === '1';
+				var recycle_bin_open = "{{g['recycle_bin_open']}}" === '1';
+				var update_code = "{{data['js_random']}}";
+				var panel_version = "{{g['version']}}";
+				var cdn_url = '{{g.cdn_url}}';
+			</script>
+
+			{% if request.path == '/btwaf/index' %}
+			<script type="text/javascript" src="{{g.cdn_url}}/js/jquery-2.2.4.min.js"></script>
+			<script type="text/javascript" src="{{g.cdn_url}}/layer/layer.js?version={{g['version']}}"></script>
+			<script type="text/javascript" src="{{g.cdn_url}}/language/{{session['lan']}}/lan.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+			<script type="text/javascript" src="{{g.cdn_url}}/js/clipboard.min.js" defer></script>
+			<script type="text/javascript" src="{{g.cdn_url}}/laydate/laydate.js" defer></script>
+			<script type="text/javascript" src="{{g.cdn_url}}/js/jquery.qrcode.min.js"></script>
+			<script type="text/javascript" src="{{g.cdn_url}}/js/public.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+			<script type="text/javascript" src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+			<script type="text/javascript" src="{{g.cdn_url}}/js/tools.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+			<script src="{{g.cdn_url}}/js/jsencrypt.min.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+			{% endif %} {% block scripts %}
+			<script src="{{g.cdn_url}}/js/jquery-1.10.2.min.js"></script>
+			<script src="{{g.cdn_url}}/layer/layer.js?version={{g['version']}}"></script>
+			<script src="{{g.cdn_url}}/language/{{session['lan']}}/lan.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+			<script src="{{g.cdn_url}}/js/clipboard.min.js" defer></script>
+			<script src="{{g.cdn_url}}/laydate/laydate.js" defer></script>
+			<script src="{{g.cdn_url}}/js/jquery.qrcode.min.js" defer></script>
+
+			<!-- 以下文件未来将被剔除 -->
+			<script src="{{g.cdn_url}}/js/bootstrap.min.js"></script>
+			<script src="{{g.cdn_url}}/js/public.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+			<script src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+			<script src="{{g.cdn_url}}/codemirror/lib/codemirror.js" defer></script>
+			<!-- End -->
+			<script type="text/javascript" src="{{g.cdn_url}}/js/tools.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+			{% for js_f in g['other_js'] %}
+			<script type="text/javascript" src="{{js_f}}"></script>
+			{% endfor %}
+			<script type="text/javascript">
+				// 评分
+				var id = 0;
+				$('.feedback').hover(
+					function () {
+						$('.toolbar-right .service').attr('style', '');
+						$('.toolbar-right').attr('style', '');
+						too = false;
+						num = 0;
+						$('#wechat-customer').addClass('hide');
+						id = layer.tips('Click to open the survey', '.feedback', {
+							tips: [4, 'rgb(54, 58, 80)'],
+							id: 'feedback_id',
+							time: 0,
+							success: function (layero, index) {
+								var top = layero.css('top');
+								layero.css('top', parseInt(top) + 'px');
+							},
+						});
+						$('.toolbar-right').css({
+							'border-bottom-left-radius': '4px',
+							'border-bottom-right-radius': '4px',
+						});
+						$(this).css({
+							'background-image': 'url(/static/img/feedback_2.svg)',
+							'background-color': 'rgb(32, 165, 58)',
+						});
+					},
+					function () {
+						layer.close(id);
+						$(this).attr('style', '');
+						$('.toolbar-right').attr('style', '');
+					}
+				);
+				var isNps = window.localStorage.getItem('NPS');
+				$('.toolbar-right .feedback').on('click', function () {
+					if ($('.nps_survey').length >= 1) return false; //防止多层
+					if (window.localStorage.getItem('panelNPS') == null) window.localStorage.setItem('panelNPS', true);
+					layer.open({
+						type: 1,
+						title: false,
+						offset: 'auto',
+						btn: false,
+						area: '580px',
+						skin: 'nps_survey',
+						closeBtn: 2,
+						content:
+							'<div class="nps_survey_box"">\
+	           <div class="nps_survey_banner">\
+	                <span>\
+	                    <i></i>\
+	                    <span style="vertical-align: 4px;">aaPanel product experience survey</span>\
+	                </span>\
+	           </div>\
+	           <div style="padding:30px 40px;">\
+    	           <div class="nps_survey_score" style="height: 130px;">\
+                   <div class="survey_title">How likely are you to recommend a aaPanel to a friend or colleague?</div>\
+                   <ul class="survey_score_num small">\
+                        <li data-content="0">0</li>\
+                        <li data-content="1">1</li>\
+                        <li data-content="2">2</li>\
+                        <li data-content="3">3</li>\
+                        <li data-content="4">4</li>\
+                        <li data-content="5">5</li>\
+                        <li data-content="6">6</li>\
+                    </ul>\
+                    <ul class="survey_score_num medium">\
+                        <li data-content="7">7</li>\
+                        <li data-content="8">8</li>\
+                    </ul>\
+                    <ul class="survey_score_num large">\
+                        <li data-content="9">9</li>\
+                        <li data-content="10">10</li>\
+                    </ul>\
+    	           </div>\
+    	           <div class="nps_survey_content hide">\
+											<div class="nps_survey_line">\
+												<span class="nps_survey_title"><i>* </i>1.What needs of yours have not yet been met on the aaPpanel?</span>\
+												<textarea type="text" name="problem_one" placeholder=""></textarea>\
+												<div class="placeholder c9 problem_tips" style="top: 36px; left: 10px; display: block;font-size: 12px;">When you use the product, what needs have not been met, or what bugs have not <br /> been solved, please describe your problems or needs to us in detail, and we will try <br /> our best to solve and develop corresponding functions for you</div>\
+											</div>\
+    	                <div class="nps_survey_line hide">\
+    	                    <span class="nps_survey_title">2.What is your main reason for giving this score?</span>\
+    	                    <span class="nps_surver_tips">For example, the factors that affect your rating: features, actions, etc</span>\
+    	                    <input type="text" name="problem_two">\
+    	                </div>\
+    	                <div class="nps_survey_line hide">\
+    	                    <span class="nps_survey_title">3.Which of your needs are not being met on the aaPanel?</span>\
+    	                    <span class="nps_surver_tips">Your suggestions are likely to be released in the next version update</span>\
+    	                    <input type="text" name="problem_three">\
+    	                </div>\
+    	                <div class="score_title"><span>We pay special attention to your requirements feedback, and we conduct regular weekly requirements reviews. I hope I can help you better</span></div>\
+    	           </div>\
+                   <button class="btn btn-success set_survey_info" style="margin-top:30px">Submit</button>\
+    	       </div>\
+	        </div>\
+	        <style>\
+	        .nps_survey_banner{position: relative;background: url(/static/img/feedback/QA_banner.png);width:100%;background-size: 100%;height: 92px;margin-top: -1px;}\
+	        .nps_survey_banner>span{position: absolute;left: 32px;top: 16px;font-size: 17px;color: #fff;}\
+	        .nps_survey_banner i{background-image: url(/static/images/svg/logo-white.svg);background-repeat: no-repeat;background-size: 18px;display: inline-block;width: 20px;height: 20px;}\
+	        .survey_title {font-size: 19px;font-weight: bold;text-align: center;color: #000;}\
+	        .score_title{font-size:13px;color:#20a53a;text-align:center;line-height: 35px;}\
+	        .nps_survey_score ul{position: relative;margin-top:25px;display: inline-block;border: 1px solid #ccc;border-radius: 2px;font-size:0;cursor: pointer;}\
+            .survey_score_num::before {content: "";height: 35px;width: 100%;display: inline-block;position: absolute;bottom: -37px;cursor: auto;}\
+            .nps_survey_score ul.small::before{background:linear-gradient(to bottom,#ffdfdd,#fff)}\
+            .nps_survey_score ul.medium::before{background:linear-gradient(to bottom,#fff2db,#fff);}\
+            .nps_survey_score ul.large::before{background:linear-gradient(to bottom,#ebf9e0,#fff)}\
+            .survey_score_num.small::after {content: "Impossible";position: absolute;top: 48px;left: 117px;font-size: 12px;cursor: auto;}\
+            .survey_score_num.medium::after {content: "May";position: absolute;top: 48px;left: 18px;font-size: 12px;cursor: auto;}\
+            .survey_score_num.large::after {content: "Definitely";position: absolute;top: 48px;left: 18px;font-size: 12px;cursor: auto;}\
+            .survey_score_num li {position: relative;display: inline-block;width: 42px;height: 42px;line-height: 42px;text-align: center;font-size:15px;font-weight: bold;}\
+            .survey_score_num .act::before {content: attr(data-content);color: #fff;height: 52px;line-height: 52px;width: 100%;position: absolute;top: -5px;font-size: 19px;background: inherit;border-radius: 4px;font-weight: initial;text-align: left;padding-left: 10px;}\
+            .survey_score_num .ten::before {content: attr(data-content);color: #fff;height: 52px;line-height: 52px;width: 100%;position: absolute;top: -5px;font-size: 19px;background: inherit;border-radius: 4px;font-weight: initial;text-align: left;padding-left: 2px;}\
+            .survey_score_num .act::after {content: "Pt";font-size:12px;color: #fff;position: absolute;left:21px;margin-left: 2px;}\
+            .survey_score_num .ten::after {content: "Pt";font-size:12px;color: #fff;position: absolute;left:25px;}\
+            .survey_score_num li::before{content:"";position: absolute;right: 0;top:10px;border-right-style: solid;border-right-width: 1px;border-color: rgb(255 255 255 / 30%);height: 25px;}\
+            .survey_score_num li:last-child::before{border:none}\
+            .survey_score_num.small{border-color: #f3a8a5;background: #f7cfce;color: #ed6d68;}\
+            .survey_score_num.medium{border-color: #f4cf8f;background: #fbe6c0;color: #f7be56;margin: 0 12px;}\
+            .survey_score_num.large{border-color: #a7db88;background: #d8f0ca;color: #69be3d;}\
+            .nps_survey_content{margin-top: 35px;}\
+            .nps_survey_line{ font-size:15px;position: relative;}\
+            .nps_survey_line.problem_rule input,.nps_survey_line.problem_rule textarea{border-color:#f56c6c}\
+            .nps_survey_line.problem_rule::before{content:"Please enter your requirements before submitting~";position:absolute;top:72px;font-size:12px;color:#f56c6c}\
+						.nps_survey_line.problem_rule1::before{content:"Please enter your requirements before submitting~";position:absolute;top:190px;font-size:12px;color:#f56c6c}\
+            .nps_survey_line .nps_survey_title{margin:20px 0 7px 0;font-weight: bold;}\
+            .nps_survey_line .nps_survey_title i{color:red;}\
+            .nps_survey_line .nps_surver_tips{font-size:12px;color:#999;}\
+            .nps_survey_line p{color:#999;font-size:12px;margin-bottom:5px;}\
+            .nps_survey_line input{width:500px;height:45px;border:1px solid #cccccc;font-size:12px;margin-top: 5px;margin-bottom: 20px;padding-left: 5px;}\
+            .nps_survey_line textarea{width:500px;height:160px;border:1px solid #cccccc;font-size:12px;margin-top: 5px;margin-bottom: 20px;padding: 5px 10px;line-height: 22px;}\
+            .set_survey_info{margin: 5px auto 0;display: block;padding: 6px 40px;}\
+	        </style>',
+						success: function (layers, indexs) {
+							window.localStorage.setItem('NPS', true);
+							// 动态获取问卷内容
+							var nps_content = '',
+								nps_data = [];
+							bt_tools.send(
+								{
+									url: '/config?action=get_nps_new',
+									data: {
+										product_type: 1,
+									},
+								},
+								function (ress) {
+									if (!ress.success) {
+										layer.msg('Unable to score the survey, please refresh and try again', {
+											icon: 2,
+										});
+										return false;
+									}
+									nps_data = ress.res;
+									for (var i = 0; i < ress.res.length; i++) {
+										var item = ress.res[i];
+										nps_content +=
+											'<div class="nps_survey_line">\
+												<span class="nps_survey_title">' +
+											(item.required ? '<i class="icon-required icon-required-' + i + '">* </i>' : '') +
+											item.question +
+											' </span>\
+												<span class="nps_surver_tips">' +
+											item.hint +
+											'</span>\
+												<input type="text" name="problem_' +
+											item.id +
+											'">\
+										</div>';
+									}
+									$(layers).find('.nps_survey_content').html(nps_content);
+								},
+								'Loading...'
+							);
+							var goNum = 0;
+							var chooseScore = null;
+							//评分栏目鼠标经过事件
+							$('.survey_score_num').on('mouseenter', 'li', function () {
+								if (goNum < 1) {
+									$(window).resize();
+									goNum++;
+								}
+								var _mouseScore = $(this).text();
+								if (!$(this).hasClass('act') && !$(this).hasClass('ten')) {
+									$.each($('.survey_score_num li'), function (i, v) {
+										if (i != chooseScore) {
+											$(v).removeAttr('class');
+											$(v).removeAttr('style');
+										}
+									});
+									$(this).addClass('act');
+									if (_mouseScore <= 6) {
+										$(this).css({
+											'background-color': 'red',
+											opacity: '0.8',
+										});
+									} else if (_mouseScore == 7 || _mouseScore == 8) {
+										$(this).css({
+											'background-color': '#ff7f00',
+											opacity: '0.8',
+										});
+									} else if (_mouseScore == 10) {
+										$(this).css({
+											'background-color': '#20a53a',
+											opacity: '0.8',
+										});
+										$(this).addClass('ten');
+									} else {
+										$(this).css({
+											'background-color': '#20a53a',
+											opacity: '0.8',
+										});
+									}
+								}
+							});
+							$('.survey_score_num').on('mouseout', 'li', function () {
+								$.each($('.survey_score_num li'), function (i, v) {
+									if (i != chooseScore) {
+										$(v).removeAttr('class');
+										$(v).removeAttr('style');
+									}
+								});
+							});
+							$('.survey_score_num').on('click', 'li', function (e) {
+								chooseScore = $(this).text();
+								$.each($('.survey_score_num li'), function (i, v) {
+									if (i != chooseScore) {
+										$(v).removeAttr('class');
+										$(v).removeAttr('style');
+									}
+								});
+								$(this).css('opacity', '1');
+								$('.nps_survey_content').removeClass('hide');
+								$('.nps_survey').css('top', ($(window).height() - 663) / 2 + 'px');
+
+								// 取消按钮样式
+								$('.set_survey_info').removeAttr('style');
+							});
+							// 聚焦问题1取消验证类名
+							$('[name=problem_one]').focus(function () {
+								$('.nps_survey_line').removeClass('problem_rule');
+							});
+
+							// 文本域触发隐藏显示
+							$('.nps_survey_line .problem_tips').click(function () {
+								$(this).prev().focus();
+							});
+							$('.nps_survey_line textarea').on('focus', function () {
+								$('.nps_survey_line').removeClass('problem_rule1');
+								$(this).next().hide();
+								layer.tips($(this).next().html(), $(this), {
+									tips: [1, '#20a53a'],
+									time: 0,
+									area: $(this).width(),
+								});
+							});
+							$('.nps_survey_line textarea').on('blur', function () {
+								if ($(this).val() === '') $(this).next().show();
+								layer.closeAll('tips');
+							});
+
+							// 设置调查信息
+							$('.set_survey_info').click(function () {
+								var _score = $('.act').text();
+								// _one = $('input[name=problem_one]').val(),
+								// _two = $('input[name=problem_two]').val(),
+								// _three = $('input[name=problem_three]').val()
+
+								// _two = _two == '' ? ' ' : _two
+								// _three = _three == '' ? ' ' : _three
+								if (_score == '')
+									layer.msg('Please give me a score before you submit, thank you', {
+										icon: 0,
+									});
+								var answer_arr = {};
+								// 清除所有校验
+								$('input').parent('.nps_survey_line').removeClass('problem_rule');
+								// 排查未填写的必填项
+								for (var j = 0; j < nps_data.length; j++) {
+									var data_item = nps_data[j];
+									var answer = $('[name=problem_' + data_item.id + ']').val();
+									if (data_item.required && answer == '') {
+										$('input[name=problem_' + data_item.id + ']')
+											.parent('.nps_survey_line')
+											.addClass('problem_rule');
+										return false;
+									}
+									$('input[name=problem_' + data_item.id + ']')
+										.parent('.nps_survey_line')
+										.removeClass('problem_rule');
+									answer_arr[data_item.id] = answer;
+								}
+								// 文本域问题 清除所有校验
+								$('textarea').parent('.nps_survey_line').removeClass('problem_rule1');
+								// 排查未填写的必填项
+								answer_arr[4] = $('textarea[name=problem_one]').val();
+								if (answer_arr[4] == '') {
+									$('textarea[name=problem_one]').parent('.nps_survey_line').addClass('problem_rule1');
+									return false;
+								}
+								$('textarea[name=problem_one]').parent('.nps_survey_line').removeClass('problem_rule1');
+								// 文本域问题 end
+
+								// nps请求 product_type：0-宝塔面板
+								bt_tools.send(
+									{
+										url: '/config?action=write_nps_new',
+										data: {
+											product_type: 1,
+											rate: _score,
+											questions: JSON.stringify(answer_arr),
+										},
+									},
+									function (rdata) {
+										if (rdata.status) {
+											layer.close(indexs);
+											layer.open({
+												title: false,
+												btn: false,
+												shadeClose: true,
+												shade: 0.1,
+												closeBtn: 0,
+												skin: 'qa_thank_dialog',
+												area: '230px',
+												content:
+													'<div class="qa_thank_box" style="background-color:#F1F9F3;text-align: center;padding: 20px 0;"><img src="/static/img/feedback/QA_like.png" style="width: 55px;"><p style="margin-top: 15px;">Thank you for your participation!</p></div>',
+												success: function (layero, index) {
+													$(layero).find('.layui-layer-content').css({
+														padding: '0',
+														'border-radius': '5px',
+													});
+													$(layero).css({
+														'border-radius': '5px',
+														'min-width': '230px',
+													});
+													setTimeout(function () {
+														layer.close(index);
+													}, 3000);
+												},
+											});
+										}
+									},
+									'submit a questionnaire'
+								);
+
+								// 旧版nps
+								//       $.post('/config?action=write_nps',{software_name:'panel',product_type:0,rate:_score,questions:JSON.stringify({
+								//                   "LMdrUlYWLMjhjYjczNTUyMDIwcoCSWTt": _one,
+								//                   "PCpsJvGUmMjRjYjczNTUyMDExLGAMKPd": _two,
+								//                   "IYlVujIciMmM4YjczNTUyMDMzfselTpB":_three,
+								//                   "RS4shJeBIMmIwYjczNTUyMDJim9MuCVq":'v1-'+window.localStorage.getItem('panelVersion')})},
+								//           function (rdata) {
+								//             if(rdata.status){
+								//               layer.close(indexs)
+								//               layer.open({
+								//                 title: false,
+								//                 btn: false,
+								//                 shadeClose: true,
+								//                 shade:0.1,
+								//                 closeBtn: 0,
+								//                 skin:'qa_thank_dialog',
+								//                 area: '230px',
+								//                 content: '<div class="qa_thank_box" style="background-color:#F1F9F3;text-align: center;padding: 20px 0;"><img src="/static/img/feedback/QA_like.png" style="width: 55px;"><p style="margin-top: 15px;">感谢您的参与!</p></div>',
+								//                 success: function (layero,index) {
+								//                   $(layero).find('.layui-layer-content').css({'padding': '0','border-radius': '5px'})
+								//                   $(layero).css({'border-radius': '5px','min-width': '230px'})
+								// 						setTimeout(function () {
+								// 							layer.close(index)
+								// 						}, 3000)
+								// 					}
+								// 				})
+								// 			}
+								// 		});
+							});
+							//
+						},
+						cancel: function (index) {
+							var _width = $(window).width(),
+								revers = Math.abs(_width) * -1,
+								_height = $(window).height();
+							$('.nps_survey_box').append(
+								'<style>\
+                .nps_survey {-webkit-animation: slide-out-elliptic-right-bck 0.7s ease-in both;animation: slide-out-elliptic-right-bck 0.7s ease-in both;}\
+                @-webkit-keyframes slide-out-elliptic-right-bck {\
+                  0% {\
+                    -webkit-transform: translateX(0) rotateY(0) scale(1);\
+                            transform: translateX(0) rotateY(0) scale(1);\
+                    -webkit-transform-origin: ' +
+									revers +
+									'px 200%;\
+                            transform-origin: ' +
+									revers +
+									'px 200%;\
+                    opacity: 1;\
+                  }\
+                  100% {\
+                    -webkit-transform: translateX(' +
+									(Number(_width) + 200) +
+									'px) rotateY(-30deg) scale(0);\
+                            transform: translateX(' +
+									(Number(_width) + 200) +
+									'px) rotateY(-30deg) scale(0);\
+                    -webkit-transform-origin: -60% 100%;\
+                            transform-origin: -60% ' +
+									(_height - (_height - 600)) +
+									'px;\
+                    opacity: 1;\
+                  }\
+                }\
+              </style>'
+							);
+							setTimeout(function () {
+								layer.close(index);
+							}, 700);
+							// 关闭nps
+							bt.send('check_nps', 'config/check_nps', { product_type: 1 });
+							return false;
+						},
+					});
+				});
+				if (!isNps) {
+					$.post('/config?action=check_nps', { product_type: 1 }, function (rdata) {
+						var npsStatus = rdata.res;
+						if (npsStatus.is_submit && npsStatus.safe_day >= 3) $('.toolbar-right .feedback').click();
+					});
+				}
+				$('#setBox').click(function () {
+					if ($(this).prop('checked')) {
+						$('input[name=id]').prop('checked', true);
+					} else {
+						$('input[name=id]').prop('checked', false);
+					}
+				});
+				setCookie('order', 'id desc');
+				var is_files_html = false;
+				var task_open = 0;
+				var task_close = false;
+				if ($('.current').attr('id') == 'memuAfiles') {
+					is_files_html = true;
+				}
+				function task_stat(my_init) {
+					if (!my_init) {
+						my_init = 0;
+						if (task_open) return;
+					}
+					if (task_close) return;
+					$.post(
+						'/task?action=get_task_lists',
+						{
+							status: -3,
+						},
+						function (task_list) {
+							if (task_list.length == 0) {
+								if (my_init && is_files_html) GetFiles(getCookie('Path'));
+								if (task_open) {
+									layer.close(task_open);
+									task_open = false;
+								}
+								return;
+							}
+							console.log(task_list.length);
+							var msg_body = '';
+							var is_add = false;
+							for (var i = 0; i < task_list.length; i++) {
+								if (task_list[i]['status'] == -1) {
+									if (!task_open || !$('.message-list').attr('class')) {
+										show_task();
+									}
+									if (task_list[i]['type'] == '1') {
+										msg_body +=
+											'<div class="mw-con">\
+                      <ul class="waiting-down-list">\
+                        <li>\
+                          <div class="down-filse-name"><span class="fname" style="width:80%;" title="Downloading: ' +
+											task_list[i].shell +
+											'">Downloading: ' +
+											task_list[i].shell +
+											'</span><span style="position: absolute;left: 84%;top: 25px;color: #999;">' +
+											task_list[i].log.pre +
+											'%</span><span class="btlink" onclick="remove_task(' +
+											task_list[i].id +
+											')" style="position: absolute;top: 25px;right: 20px;">Cancel</span></div>\
+                          <div class="down-progress"><div class="done-progress" style="width:' +
+											task_list[i].log.pre +
+											'%"></div></div>\
+                          <div class="down-info"><span class="total-size"> ' +
+											task_list[i].log.used +
+											'/' +
+											ToSize(task_list[i].log.total) +
+											'</span><span class="speed-size">' +
+											(task_list[i].log.speed == 0 ? 'On connection..' : task_list[i].log.speed) +
+											'/s</span><span style="margin-left: 20px;">Estimate: ' +
+											task_list[i].log.time +
+											'</span></div>\
+                        </li>\
+                            </ul>\
+                        </div>';
+									} else {
+										msg_body +=
+											'\<div class="mw-title">\
+                    <span style="max-width: 88%;display: block;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;">' +
+											task_list[i].name +
+											': ' +
+											task_list[i].shell +
+											'</span><span class="btlink" onclick="remove_task(' +
+											task_list[i].id +
+											')"  style="position: absolute;top: 10px;right: 15px;">Cancel</span></div>\
+                      <div class="mw-con codebg">\
+                        <code>' +
+											task_list[i].log +
+											'</code>\
+                      </div>';
+									}
+								} else {
+									if (!is_add) {
+										msg_body += '<div class="mw-title">Waiting to execute task</div><div class="mw-con"><ul class="waiting-list">';
+										is_add = true;
+									}
+									msg_body +=
+										'<li><span class="wt-list-name" style="width: 90%;">' +
+										task_list[i].name +
+										': ' +
+										task_list[i].shell +
+										'</span><span class="mw-cancel" onclick="remove_task(' +
+										task_list[i].id +
+										')">X</span></li>';
+								}
+							}
+							if (task_open) {
+								if (is_add) {
+									msg_body += '</ul></div>';
+								}
+								$('.message-list').html(msg_body);
+							}
+							if (my_init > 3) {
+								if (is_files_html) GetFiles(getCookie('Path'));
+								my_init = 1;
+							}
+							my_init += 1;
+							setTimeout(function () {
+								task_stat(my_init);
+							}, 1000);
+						}
+					);
+				}
+				function show_task() {
+					task_open = layer.open({
+						type: 1,
+						title: 'Real time task queue',
+						area: '500px',
+						closeBtn: 2,
+						shadeClose: false,
+						shade: false,
+						offset: 'auto',
+						content: '<div style="margin: 10px;" class="message-list"></div>',
+						cancel: function () {
+							task_close = true;
+						},
+					});
+				}
+				function remove_task(id) {
+					layer.confirm(
+						'Do you want to cancel the current task queue?',
+						{
+							title: 'Cancel task queue',
+							icon: 0,
+						},
+						function (indexs) {
+							layer.close(indexs);
+							var loadT = bt.load('Canceling task...');
+							$.post(
+								'/task?action=remove_task',
+								{
+									id: id,
+								},
+								function (rdata) {
+									loadT.close();
+									bt.msg(rdata);
+								}
+							);
+						}
+					);
+				}
+				loadScript(['{{g.cdn_url}}/laydate/laydate.js', '{{g.cdn_url}}/js/jquery.qrcode.min.js', '{{g.cdn_url}}/js/clipboard.min.js'], function (e) {});
+				task_stat();
+
+				// 获取支付状态
+				function getPaymentStatus() {
+					bt.send('get_pd', 'ajax/get_pd', {}, function (res) {
+						var tab = $('.pos-box .tab-list'),
+							proHTML = '',
+							_index = res[1] > 0 ? 1 : 2,
+							is_pay = res[1] >= 0 || res[2] > 0, //是否购买
+							advanced = res[1] == 0 || res[1] > 0 ? 'pro' : 'ltd';
+
+						bt.set_cookie('pro_end', res[1]);
+						bt.set_cookie('ltd_end', res[2]);
+
+						// 已购买
+						if (is_pay) {
+							proHTML =
+								'<div class="product-buy" style="margin-right:0;font-size: 12px;">Expire: <span style="vertical-align: initial">' +
+								(res[1] === 0
+									? '永久授权'
+									: (res[1] === -2 && res[2] === -2 ? 'Expired' : bt.format_data(res[_index], 'yyyy-MM-dd')) +
+									  '&nbsp;&nbsp;<a class="btlink" href="javascript:;" onclick="product_recommend.pay_product_sign(\'' +
+									  advanced +
+									  "',81,'" +
+									  advanced +
+									  '\')">RENEW</a>') +
+								'</span></div>';
+						} else {
+							proHTML =
+								'<div class="product-buy" style="margin-right:0;"><button type="button" class="btn btn-success btn-xs" style="vertical-align: 1px;" onclick="product_recommend.pay_product_sign(\'pro\',80,\'pro\')">Upgrade now</button></div>';
+						}
+
+						$(window).resize(function () {
+							if ($(window).innerWidth() < 1080) {
+								$('.recommend-immediate-icon').next().addClass('hide');
+							} else {
+								$('.recommend-immediate-icon').next().removeClass('hide');
+							}
+						});
+
+						if (tab.children().length * 105 + 306.28 < tab.parent().width()) {
+							tab.parent().css({ display: 'flex', 'justify-content': 'space-between' });
+
+							var _html =
+								'<div class="authState" style="line-height: 45px;padding-right: 20px;"><span class="' +
+								(!is_pay ? 'btpro-gray' : 'bt' + advanced) +
+								'" ' +
+								(is_pay ? 'onclick="product_recommend.pay_product_sign(\'' + advanced + "',90,'" + advanced + '\')"' : "onclick=\"product_recommend.pay_product_sign('pro',80,'pro')\"") +
+								' style="vertical-align: bottom;"></span><div style="display: inline-block;font-size: 12px;color:#666" class=" product_version mr10">' +
+								(!is_pay ? 'FREE&nbsp;&nbsp;' : '') +
+								' {{session["version"]}}</div> ' +
+								proHTML +
+								'</div>';
+
+							if (tab.next().hasClass('authState')) tab.next().remove();
+
+							tab.after(_html);
+						}
+					});
+				}
+
+				if (bt.get_cookie('bt_user_info') == null || bt.get_cookie('bt_user_info') == '') {
+					bt.pub.get_user_info(function (userInfo) {
+						if (userInfo.status) {
+							bt.set_cookie('bt_user_info', JSON.stringify(userInfo));
+							getPaymentStatus();
+						}
+					});
+				} else {
+					getPaymentStatus();
+				}
+			</script>
+			{% endblock %}
+			<script type="text/javascript">
+				const showMainView = document.getElementById('showMainView');
+
+				showMainView.addEventListener('mouseover', function (event) {
+					window.parent.postMessage('showMainView', '*');
+				});
+
+				window.addEventListener('message', event => {
+					if (event.data === 'init') {
+						$('.sidebar-scroll').html('').css('background', 'none');
+						$('body').css('background', 'none');
+						$('.bge6').css('background', 'none');
+						$('.toolbar-right').remove();
+					}
+				});
+			</script>
+		</div>
+	</body>
+</html>

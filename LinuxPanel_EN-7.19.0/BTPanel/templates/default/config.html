@@ -1,0 +1,757 @@
+{% extends "layout.html" %} {% block content %}
+<link href="{{g.cdn_url}}/layer/skin/default/layer.css" rel="stylesheet" />
+<div class="main-content">
+	<div class="container-fluid" style="padding-bottom: 54px">
+		<div class="pos-box bgw mtb15 radius4">
+			<div class="tab-list" id="configTab">
+				<div class="tabs-item" data-type="allConfig">{{data['lan']['GLOBAL']}}</div>
+				<div class="tabs-item" data-type="panelConfig">{{data['lan']['H2']}}</div>
+				<div class="tabs-item" data-type="securityConfig">{{data['lan']['SECURITY']}}</div>
+				<div class="tabs-item" data-type="pushConfig">{{data['lan']['NOTIFY']}}</div>
+				<div class="tabs-item" data-type="alertConfig">{{data['lan']['ALARM']}}</div>
+			</div>
+		</div>
+		<div class="setbox bgw mtb15 tab-view-box configure-box">
+			<!-- 面板设置 -->
+			<div class="panel-config hide" data-type="panelConfig">
+				<div class="configure-title">{{data['lan']['H2']}}</div>
+				<div class="configure-block">
+					<!-- 关闭面板 -->
+					<div class="line" title="{{data['lan']['I1']}}">
+						<div class="line-title">{{data['lan']['I1']}}</div>
+						<div class="line-form">
+							<div class="line-row">
+								<div class="ssh-item" style="margin-left: 0; padding: 0">
+									<input class="btswitch btswitch-ios" id="closePanel" type="checkbox" name="close_panel" />
+									<label class="btswitch-btn" for="closePanel" style="margin-bottom: 0"></label>
+								</div>
+							</div>
+							<div class="line-row-tips">{{data['lan']['CLOSE_PANEL']}}</div>
+						</div>
+					</div>
+					<!-- 监听IPv6 -->
+					<div class="line" title="IPv6">
+						<div class="line-title">IPv6</div>
+						<div class="line-form">
+							<div class="line-row">
+								<div class="ssh-item" style="margin-left: 0; padding: 0">
+									<input class="btswitch btswitch-ios" id="monitorIPv6" type="checkbox" name="ipv6" />
+									<label class="btswitch-btn" for="monitorIPv6" style="margin-bottom: 0"></label>
+								</div>
+							</div>
+							<div class="line-row-tips">{{data['lan']['ALLOW_IPV6']}}</div>
+						</div>
+					</div>
+					<!-- 离线模式 -->
+					<div class="line" title="Offline mode">
+						<div class="line-title">{{data['lan']['OFFLINE_MODE']}}</div>
+						<div class="line-form">
+							<div class="line-row">
+								<div class="ssh-item" style="margin-left: 0; padding: 0">
+									<input class="btswitch btswitch-ios" id="offlineMode" type="checkbox" name="is_local" />
+									<label class="btswitch-btn" for="offlineMode" style="margin-bottom: 0"></label>
+								</div>
+							</div>
+						</div>
+						<div class="line-row-tips">{{data['lan']['OFFLINE']}}</div>
+					</div>
+					<!-- 开发者模式 -->
+					<div class="line" title="Developer mode">
+						<div class="line-title">{{data['lan']['DEV_MODE']}}</div>
+						<div class="line-form">
+							<div class="line-row">
+								<div class="ssh-item" style="margin-left: 0; padding: 0">
+									<input class="btswitch btswitch-ios" id="developerMode" type="checkbox" name="debug" />
+									<label class="btswitch-btn" for="developerMode" style="margin-bottom: 0"></label>
+								</div>
+							</div>
+							<div class="line-row-tips">{{data['lan']['DEV_MODE_DESC']}}</div>
+						</div>
+					</div>
+					<!-- API -->
+					<div class="line" title="API">
+						<div class="line-title">API</div>
+						<div class="line-form">
+							<div class="line-row">
+								<div class="ssh-item" style="margin-left: 0; margin-top: -3px; padding: 0">
+									<input class="btswitch btswitch-ios" id="apiInterface" type="checkbox" name="api" />
+									<label class="btswitch-btn" for="apiInterface" style="margin-bottom: 0"></label>
+								</div>
+								<button type="button" class="btn btn-default btn-xs apiInterfaceBtn" style="margin-left: 10px">{{data['lan']['CONFIG']}}</button>
+							</div>
+							<div class="line-row-tips">
+								{{data['lan']['API_DESC']}},<a href="https://www.aapanel.com/forum/d/482-api-interface-tutorial" class="btlink" target="_blank">{{data['lan']['HELP']}}</a>
+							</div>
+						</div>
+					</div>
+					<!-- Language -->
+					<div class="line" title="Language">
+						<div class="line-title">
+							<span>Language</span>
+							<svg
+								t="1723620279379"
+								class="icon"
+								viewBox="0 0 1088 1024"
+								version="1.1"
+								xmlns="http://www.w3.org/2000/svg"
+								p-id="4252"
+								xmlns:xlink="http://www.w3.org/1999/xlink"
+								width="18"
+								height="18"
+							>
+								<path d="M729.6 294.4c19.2 57.6 44.8 102.4 89.6 147.2 38.4-38.4 64-89.6 83.2-147.2H729.6z m-422.4 320h166.4l-83.2-224z" fill="#666" p-id="4253"></path>
+								<path
+									d="M947.2 0h-768c-70.4 0-128 57.6-128 128v768c0 70.4 57.6 128 128 128h768c70.4 0 128-57.6 128-128V128c0-70.4-51.2-128-128-128zM633.6 825.6c-12.8 12.8-25.6 12.8-38.4 12.8-6.4 0-19.2 0-25.6-6.4s-12.8 0-12.8-6.4-6.4-12.8-12.8-25.6-6.4-19.2-12.8-32l-25.6-70.4h-224L256 768c-12.8 25.6-19.2 44.8-25.6 57.6-6.4 12.8-19.2 12.8-38.4 12.8-12.8 0-25.6-6.4-38.4-12.8-12.8-12.8-19.2-19.2-19.2-32 0-6.4 0-12.8 6.4-25.6s6.4-19.2 12.8-32l140.8-358.4c6.4-12.8 6.4-25.6 12.8-38.4s12.8-25.6 19.2-32 12.8-19.2 25.6-25.6c12.8-6.4 25.6-6.4 38.4-6.4 12.8 0 25.6 0 38.4 6.4 12.8 6.4 19.2 12.8 25.6 25.6 6.4 6.4 12.8 19.2 19.2 32 6.4 12.8 12.8 25.6 19.2 44.8l140.8 352c12.8 25.6 19.2 44.8 19.2 57.6-6.4 6.4-12.8 19.2-19.2 32z m352-249.6c-70.4-25.6-121.6-57.6-166.4-96-44.8 44.8-102.4 76.8-172.8 96l-19.2-32c70.4-19.2 128-44.8 172.8-89.6-44.8-44.8-83.2-102.4-96-166.4h-64v-25.6h172.8c-12.8-19.2-25.6-44.8-38.4-64l19.2-6.4c12.8 19.2 32 44.8 44.8 70.4h160v32h-64c-19.2 64-51.2 121.6-89.6 160 44.8 38.4 96 70.4 166.4 89.6l-25.6 32z"
+									fill="#666"
+									p-id="4254"
+								></path>
+							</svg>
+						</div>
+						<div class="line-form">
+							<div class="line-row">
+								<select class="bt-input-text" name="language" style="width: 150px"></select>
+								<!-- <button type="button" class="btn btn-default btn-sm uploadLanguage" style="margin-left: 8px">Upload my translation file</button> -->
+								<!-- <button type="button" class="btn btn-success btn-sm downloadLanguage" style="margin-left: 8px">I want to translate</button> -->
+							</div>
+						</div>
+					</div>
+					<!-- 面板别名 -->
+					<div class="line" title="{{data['lan']['CT1']}}">
+						<div class="line-title">{{data['lan']['CT1']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="webname" />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 savePanelConfig" disabled>{{data['lan']['CY12']}}</button>
+						<div class="line-row-tips">{{data['lan']['CY1']}}</div>
+					</div>
+					<!-- 超时时间 -->
+					<div class="line" title="Timeout">
+						<div class="line-title">Timeout</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="session_timeout" />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 savePanelConfig" disabled>{{data['lan']['CY12']}}</button>
+						<div class="line-row-tips">{{data['lan']['CY13']}} <span class="color-red seconds">0</span> {{data['lan']['CY14']}}</div>
+					</div>
+					<!-- 默认建站目录 -->
+					<div class="line" title="{{data['lan']['CT5']}}">
+						<div class="line-title">{{data['lan']['CT5']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="sites_path" />
+							<div class="selected-file sitesPath"><span class="glyphicon glyphicon-folder-open cursor"></span></div>
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 savePanelConfig" disabled>{{data['lan']['CY12']}}</button>
+						<div class="line-row-tips">{{data['lan']['CY5']}}</div>
+					</div>
+					<!-- 默认备份目录 -->
+					<div class="line" title="{{data['lan']['CT6']}}">
+						<div class="line-title">{{data['lan']['CT6']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="backup_path" />
+							<div class="selected-file backupPath"><span class="glyphicon glyphicon-folder-open cursor"></span></div>
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 savePanelConfig" disabled>{{data['lan']['CY12']}}</button>
+						<div class="line-row-tips">{{data['lan']['CY6']}}</div>
+					</div>
+					<!-- 服务器IP -->
+					<div class="line" title="{{data['lan']['CT7']}}">
+						<div class="line-title">{{data['lan']['CT7']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="address" />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 savePanelConfig" disabled>{{data['lan']['CY12']}}</button>
+						<div class="line-row-tips">{{data['lan']['CY7']}}</div>
+					</div>
+					<!-- 服务器时间 -->
+					<div class="line" title="{{data['lan']['CT8']}}">
+						<div class="line-title">{{data['lan']['CT8']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="systemdate" disabled />
+						</div>
+					</div>
+					<!-- 面板账号 -->
+					<div class="line" title="{{data['lan']['CT9']}}">
+						<div class="line-title">{{data['lan']['CT9']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="username" disabled />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 editPanelAccount">{{data['lan']['CONFIG']}}</button>
+						<div class="line-row-tips">&nbsp;</div>
+					</div>
+					<!-- 面板密码 -->
+					<div class="line" title="{{data['lan']['CT10']}}">
+						<div class="line-title">{{data['lan']['CT10']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="password" disabled />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 editPanelPassword">{{data['lan']['CONFIG']}}</button>
+						<div class="line-row-tips">&nbsp;</div>
+					</div>
+					<!-- 绑定宝塔账号 -->
+					<div class="line" title="Bind account">
+						<div class="line-title">{{data['lan']['BIND_ACCOUNT']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="bind_user_info" disabled />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 bindBtUser">{{data['lan']['CONFIG']}}</button>
+						<button type="button" class="btn btn-default btn-sm ml5 unbindBtUser">{{data['lan']['UNBIND']}}</button>
+						<div class="line-row-tips">&nbsp;</div>
+					</div>
+					<!-- 面板菜单栏隐藏 -->
+					<div class="line" title="Menu bar hidden">
+						<div class="line-title">{{data['lan']['HIDE_MENU_BAR']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="menu_hide_list" disabled />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 menuBarManage">{{data['lan']['CONFIG']}}</button>
+						<div class="line-row-tips">{{data['lan']['HIDE_MENU_BAR_DESC']}}</div>
+					</div>
+				</div>
+			</div>
+			<!-- 安全设置 -->
+			<div class="panel-config hide" data-type="securityConfig">
+				<div class="configure-title">{{data['lan']['SECURITY']}}</div>
+				<div class="configure-block">
+					<div class="public_key" style="display: block" data="{{data['public_key']}}"></div>
+					<!-- 面板SSL -->
+					<div class="line" title="{{data['lan']['I3']}}">
+						<div class="line-title">{{data['lan']['I3']}}</div>
+						<div class="line-form">
+							<div class="line-row">
+								<div class="ssh-item" style="margin-left: 0; padding: 0">
+									<input class="btswitch btswitch-ios" id="panelSsl" type="checkbox" name="ssl" />
+									<label class="btswitch-btn" for="panelSsl" style="margin-bottom: 0"></label>
+								</div>
+								<button ype="button" class="btn btn-default btn-xs panelSslConfig" style="vertical-align: middle; margin-left: 10px">{{data['lan']['CONFIG']}}</button>
+							</div>
+							<div class="line-row-tips">{{data['lan']['SET_SSL']}},<a href="http://www.bt.cn/bbs/thread-704-1-1.html" class="btlink" target="_blank">{{data['lan']['HELP']}}</a></div>
+						</div>
+					</div>
+					<!-- BasicAuth认证 -->
+					<div class="line" title="BasicAuth">
+						<div class="line-title">BasicAuth</div>
+						<div class="line-form">
+							<div class="line">
+								<div class="ssh-item" style="margin-left: 0; padding: 0">
+									<input class="btswitch btswitch-ios" id="basicAuth" type="checkbox" name="basic_auth" />
+									<label class="btswitch-btn" for="basicAuth" style="margin-bottom: 0"></label>
+								</div>
+							</div>
+						</div>
+						<div class="line-row-tips">{{data['lan']['BASEAUTH_DESC']}},<a href="https://www.bt.cn/bbs/thread-34374-1-1.html" class="btlink" target="_blank">{{data['lan']['HELP']}}</a></div>
+					</div>
+					<!-- 动态口令认证 -->
+					<div class="line" title="Google authentication">
+						<div class="line-title">Google authentication</div>
+						<div class="line-form">
+							<div class="line-row">
+								<div class="ssh-item" style="margin-left: 0; padding: 0">
+									<input class="btswitch btswitch-ios" id="checkTwoStep" type="checkbox" name="check_two_step" />
+									<label class="btswitch-btn" for="checkTwoStep" style="margin-bottom: 0"></label>
+								</div>
+								<button ype="button" class="btn btn-default btn-xs checkTwoStepConfig" style="vertical-align: middle; margin-left: 10px">{{data['lan']['CONFIG']}}</button>
+							</div>
+							<div class="line-row-tips">
+								{{data['lan']['GOOGLE_AUTH_DESC']}},<a href="https://www.aapanel.com/forum/d/357-how-to-use-google-authenticator-in-the-aapanel" class="btlink" target="_blank"
+									>{{data['lan']['HELP']}}</a
+								>
+							</div>
+						</div>
+					</div>
+					<!-- 访问设备验证 -->
+					<!-- <div class="line" title="访问设备验证">
+                      <div class="line-title">访问设备验证</div>
+                      <div class="line-form">
+                        <div class="line-row">
+                          <div class="ssh-item" style="margin-left: 0;padding: 0;">
+                            <input class="btswitch btswitch-ios" id="sslVerify" type="checkbox" name="ssl_verify"/>
+                            <label class="btswitch-btn" for="sslVerify" style="margin-bottom: 0;"></label>
+                          </div>
+                          <button ype="button" class="btn btn-default btn-xs sslVerifyConfig" style="vertical-align: middle;
+                          margin-left: 10px;">访问设备验证配置</button>
+                        </div>
+                        <div class="line-row-tips">基于SSL证书双向验证，开启后电脑需要安装此证书，否则将无法访问，属于极高安全级别的访问限制方式，类似银行账号U盘密钥登录。<a href="https://www.bt.cn/bbs/thread-77863-1-1.html" class="btlink" target="_blank">了解详情</a></div>
+                      </div>
+                    </div> -->
+					<!-- 密码复杂度验证 -->
+					<div class="line" title="{{data['lan']['STRONG_PASSWORD']}}">
+						<div class="line-title">{{data['lan']['STRONG_PASSWORD']}}</div>
+						<div class="line-form">
+							<div class="line-row">
+								<div class="ssh-item" style="margin-left: 0; padding: 0">
+									<input class="btswitch btswitch-ios" id="passwordSafe" type="checkbox" name="paw_complexity" />
+									<label class="btswitch-btn" for="passwordSafe" style="margin-bottom: 0"></label>
+								</div>
+							</div>
+							<div class="line-row-tips">{{data['lan']['STRONG_PASS_DESC']}}<span class="color-red">{{data['lan']['STRONG_PASS_DESC1']}}</span></div>
+						</div>
+					</div>
+					<!-- 绑定域名 -->
+					<div class="line" title="{{data['lan']['CT3']}}">
+						<div class="line-title">{{data['lan']['CT3']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="domain" />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 savePanelConfig" disabled>Save</button>
+						<div class="line-row-tips">{{data['lan']['CY3']}},<span class="color-red">{{data['lan']['CY31']}}</span></div>
+					</div>
+					<!-- 授权IP -->
+					<div class="line" title="{{data['lan']['CT4']}}">
+						<div class="line-title">{{data['lan']['CT4']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" placeholder="1.1.1.1,2.2.2.1-2.2.2.2" name="limitip" />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 savePanelConfig" disabled>Save</button>
+						<div class="line-row-tips">{{data['lan']['CY4']}}<span class="color-red">{{data['lan']['CY41']}}</span></div>
+					</div>
+					<!-- 面板端口 -->
+					<div class="line" title="{{data['lan']['CT2']}}">
+						<div class="line-title">{{data['lan']['CT2']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="port" disabled />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 setPanelPort">Set</button>
+						<div class="line-row-tips">{{data['lan']['CY2']}}, <span class="color-red">{{data['lan']['S_PORT_TIPS']}}</span></div>
+					</div>
+					<!-- 安全入口 -->
+					<div class="line" title="Security Entrance">
+						<div class="line-title">Security Entrance</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="admin_path" disabled />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 setSafetyEntrance">Set</button>
+						<div class="line-row-tips">Panel Admin entrance. After setting, you can ONLY log in to the panel through the specified Security Entrance, e.g. /www_bt_cn</div>
+					</div>
+					<!-- 未认证的响应状态 -->
+					<div class="line" title="{{data['lan']['NOT_LOGGED_IN_RESPONSE']}}">
+						<div class="line-title">{{data['lan']['NOT_LOGGED_IN_RESPONSE']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="status_code" disabled />
+						</div>
+						<button type="button" class="btn btn-success btn-sm ml5 setStatusCodeView">Set</button>
+						<div class="line-row-tips">{{data['lan']['NOT_LOGGED_IN_RESPONSE_DESC']}}</div>
+					</div>
+					<!-- 密码过期时间 -->
+					<div class="line" title="{{data['lan']['PASSWORD_EXPIRE']}}">
+						<div class="line-title">{{data['lan']['PASSWORD_EXPIRE']}}</div>
+						<div class="line-input">
+							<input type="text" class="bt-input-text" name="paw_expire_time" disabled />
+							<button type="button" class="btn btn-success btn-sm ml5 setPawExpiration">Set</button>
+						</div>
+						<div class="line-row-tips">{{data['lan']['PASSWORD_EXPIRE_DESC']}}</div>
+					</div>
+					<!-- 临时访问授权 -->
+					<div class="line" title="{{data['lan']['TEMP_ACCESS']}}">
+						<div class="line-title">{{data['lan']['TEMP_ACCESS']}}</div>
+						<div class="line-input">
+							<button type="button" class="btn btn-success btn-sm setTempAuthView">{{data['lan']['CONFIG']}}</button>
+						</div>
+						<div class="line-row-tips">{{data['lan']['TEMP_ACCESS_DESC']}}</div>
+					</div>
+				</div>
+			</div>
+			<!-- 通知设置 -->
+			<div class="panel-config hide" data-type="pushConfig">
+				<div class="configure-title">{{data['lan']['NOTIFY']}}</div>
+				<div class="configure-block">
+					<!-- 登录告警 -->
+					<div class="line" title="{{data['lan']['LOGIN_ALARM']}}">
+						<div class="line-title">{{data['lan']['LOGIN_ALARM']}}</div>
+						<div class="line-input">
+							<div class="line-row"><a href="javascript:;" class="bt_warning setAlarmMail">{{data['lan']['EMAIL_NOT_SET']}}</a>&nbsp;&nbsp;&nbsp;&nbsp;</div>
+							<button type="button" class="btn btn-success btn-xs setAlarmMailBtn">{{data['lan']['CONFIG']}}</button>
+						</div>
+						<div class="line-row-tips">{{data['lan']['LOGIN_ALARM_DESC']}}</div>
+					</div>
+				</div>
+			</div>
+			<div class="panel-config alert-view-box hide" data-type="alertConfig">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['ALARM_LIST'] }}</span>
+					<span>{{ data['lan']['ALARM_SETTING'] }}</span>
+					<span>{{ data['lan']['ALARM_LOG'] }}</span>
+				</div>
+				<div class="tab-con" style="padding: 10px 0">
+					<div class="tab-block on">
+						<div id="addAlertTask" style="padding: 15px 45px"></div>
+						<div id="alertList"></div>
+					</div>
+					<div class="tab-block" id="alertConfig"></div>
+					<div class="tab-block" id="alertLog"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<style>
+		.configure-box {
+			padding: 20px;
+		}
+
+		.configure-block > .line {
+			padding: 6px 0;
+		}
+
+		.configure-block > .line:hover {
+			background: #a5a5a514;
+			transition: background 0.2s;
+			cursor: pointer;
+		}
+
+		.configure-title {
+			line-height: 30px;
+			font-size: 14px;
+			border-bottom: 1px solid #e7e7e7;
+			padding: 5px 5px 8px 10px;
+			font-weight: bold;
+			color: #666;
+		}
+
+		.configure-box .configure-block {
+			padding: 25px 0;
+		}
+
+		.configure-box .line .line-title {
+			font-size: 12px;
+			color: #333;
+			display: inline-block;
+			width: 160px;
+			text-align: right;
+			padding-right: 15px;
+			height: 30px;
+			line-height: 30px;
+			vertical-align: top;
+		}
+
+		.configure-box .line .line-title .icon {
+			position: relative;
+			top: 5px;
+		}
+
+		.configure-box .line input[type='text'] {
+			width: 260px;
+		}
+
+		.configure-box .line .line-tips {
+			margin-top: 5px;
+			color: #999;
+			margin-left: 135px;
+		}
+
+		.configure-box .line > button {
+			height: 30px;
+			vertical-align: top;
+		}
+
+		.configure-box .line .line-input input,
+		.configure-box .line .line-form input {
+			height: 30px;
+			line-height: 30px;
+		}
+
+		.configure-box .line .line-input {
+			display: inline-block;
+			position: relative;
+		}
+
+		.configure-box .line .line-form {
+			display: inline-block;
+			vertical-align: top;
+		}
+
+		.configure-box .line .line-form .ssh-item {
+			display: inline-block;
+			margin: 0;
+			padding: 0;
+			float: none;
+			vertical-align: middle;
+		}
+
+		.line-row,
+		.line-row-tips {
+			height: 30px;
+			line-height: 30px;
+			display: inline-block;
+		}
+
+		.line-row-tips {
+			margin-left: 10px !important;
+			color: #999;
+		}
+
+		.bt_warning {
+			color: #fc6d26;
+		}
+
+		.line-split {
+			border-bottom: 1px #ececec dashed;
+			margin: 10px 0;
+		}
+
+		.selected-file {
+			height: 30px;
+			line-height: 30px;
+			width: 40px;
+			text-align: center;
+			background: #fafafa;
+			position: absolute;
+			right: 0;
+			top: 0;
+			border: 1px solid #cccccc;
+			border-top-right-radius: 2px;
+			border-bottom-right-radius: 2px;
+			cursor: pointer;
+		}
+
+		.btn-success[disabled] {
+			opacity: 0.65;
+		}
+
+		.info-title-tips {
+			width: 100%;
+			margin: 0 auto;
+			margin-bottom: 25px;
+			padding-left: 25px;
+		}
+
+		.download_Qcode {
+			overflow: hidden;
+			padding: 10px 0;
+		}
+
+		.download_Qcode .item_down {
+			width: 100%;
+			text-align: center;
+			border-right: 1px solid #ececee;
+			text-align: center;
+			box-sizing: border-box;
+		}
+
+		.download_Qcode .item_down:last-child {
+			border-right: none;
+		}
+
+		.download_Qcode .qcode_title {
+			margin-bottom: 5px;
+		}
+
+		.download_Qcode .item_down img {
+			width: 120px;
+		}
+
+		.create_temp_view {
+			padding: 15px 20px;
+		}
+
+		.create_temp_view .line .tname {
+			text-align: left;
+			float: inherit;
+		}
+
+		.create_temp_view .info-r {
+			margin: 0;
+		}
+
+		.info-block {
+			display: inline-block;
+			height: 100%;
+		}
+
+		.verify_title {
+			color: #555;
+			text-align: center;
+			font-size: 20px;
+			height: 40px;
+			line-height: 40px;
+			margin-bottom: 20px;
+		}
+
+		.verify_item {
+			padding: 0 35px;
+		}
+
+		.verify_item .verify_vice_title {
+			font-size: 15.5px;
+			color: #666;
+			margin-bottom: 10px;
+		}
+
+		.verify_box {
+			background: #f8f8f8;
+			padding: 15px 25px;
+			margin-bottom: 20px;
+			border-radius: 4px;
+		}
+
+		.verify_box .verify_box_line {
+			height: 25px;
+			line-height: 25px;
+			font-size: 14px;
+			color: #444;
+			font-weight: 500;
+		}
+
+		.verify_box .verify_box_line span {
+			color: #666;
+		}
+
+		.verify_tips {
+			margin: 0 15px;
+			margin-top: 25px;
+			padding: 20px 25px;
+			font-size: 14px;
+			color: #666;
+			border-top: 1px solid #ececec;
+		}
+
+		.bt-w-menu {
+			width: 110px;
+		}
+
+		.bt-w-con {
+			margin-left: 110px;
+		}
+
+		/*消息推送模块*/
+		.layui-layer.layui-layer-page.panel_push_form .bt-form .form-checkbox-label {
+			height: 18px;
+			line-height: 18px;
+		}
+		.layui-layer.layui-layer-page.panel_push_form .bt-form .inlineBlock.group span.unit {
+			line-height: 28px;
+		}
+
+		/*消息推送模块 end*/
+		#panel_menu_tab .bterror {
+			text-decoration: underline;
+		}
+		.line-row-tips i,
+		.line-title i {
+			display: inline-flex;
+			line-height: 1.4;
+			background-color: yellow;
+			font-style: normal;
+		}
+
+		.show-default {
+			position: relative;
+			top: -3px;
+			display: inline-block;
+			width: 4px;
+			height: 4px;
+			margin-left: 6px;
+			background-color: #cbcbcb;
+			border-radius: 50%;
+		}
+
+		/* 配置模块图标 */
+		.config-alert-icon {
+			width: 36px;
+			height: 36px;
+			display: inline-block;
+			background: url(../../static/img/config_alert.png);
+			background-size: 100%;
+			border-radius: 7px;
+			margin-right: 8px;
+		}
+		.alert-icon-mail {
+			background-position: 0 36px;
+		}
+		.alert-icon-feishu {
+			background-position: 0 144px;
+		}
+		.alert-icon-weixin {
+			background-position: 0 72px;
+		}
+		.alert-icon-tg {
+			background-position: 0 180px;
+		}
+		.alert-icon-wx_account {
+			background-position: 0 108px;
+		}
+
+		.alert-config-content {
+			display: inline-block;
+			vertical-align: top;
+		}
+		.alert-config-content span {
+			font-weight: bold;
+			font-size: 14px;
+		}
+		.alert-config-content p {
+			font-size: 12px;
+		}
+
+		/* 添加告警任务 */
+		.panel_alert_task_view .bt_select_updown .bt_select_list {
+			max-height: 140px;
+		}
+
+		#addAlertTask .line .tname {
+			height: 35px;
+			line-height: 35px;
+			font-size: 13px;
+		}
+		#addAlertTask .bt_select_updown {
+			height: 35px;
+			line-height: 35px;
+		}
+		#addAlertTask .info-r .bt-input-text {
+			height: 35px;
+			line-height: 35px;
+		}
+		#addAlertTask .bt_select_updown .bt_select_value {
+			height: 33px;
+			line-height: 33px;
+		}
+		#addAlertTask .bt_select_updown .bt_select_list .item {
+			height: 30px;
+			line-height: 30px;
+		}
+		#addAlertTask .bt_select_updown .bt_select_content {
+			font-size: 13px;
+		}
+		#addAlertTask .btn {
+			font-size: 13px;
+			padding: 7px 30px;
+		}
+		#addAlertTask .line .info-r {
+			margin-bottom: 15px;
+		}
+		.alert-view-box .bt_select_updown .bt_select_list {
+			top: 35px;
+		}
+		/* 添加告警任务 end*/
+	</style>
+	{% endblock %} {% block scripts %}
+	<script src="{{g.cdn_url}}/js/jquery-2.2.4.min.js"></script>
+	<script src="{{g.cdn_url}}/language/{{session['lan']}}/lan.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+	<script src="{{g.cdn_url}}/js/jsencrypt.min.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+	<script src="{{g.cdn_url}}/js/tools.js?version_20200217={{g['version']}}"></script>
+	<script src="{{g.cdn_url}}/js/public.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+	<script src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+	<script src="{{g.cdn_url}}/js/bt_upload.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+	<script src="{{g.cdn_url}}/amd/require.min.js" data-main="{{g.cdn_url}}/amd/main"></script>
+	<script>
+		var sessionInfo = {
+			title: "{{session['title']}}",
+			username: "{{session['username']}}",
+			statusCode: "{{data['status_code']}}",
+		};
+		$.fn.serializeObject = function () {
+			var o = {};
+			var a = this.serializeArray();
+			$.each(a, function () {
+				if (o[this.name]) {
+					if (!o[this.name].push) {
+						o[this.name] = [o[this.name]];
+					}
+					o[this.name].push(this.value || '');
+				} else {
+					o[this.name] = this.value || '';
+				}
+			});
+			return o;
+		};
+	</script>
+	{% endblock %}
+</div>

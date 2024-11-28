@@ -1,0 +1,43 @@
+{
+	"Monitor": {
+		"System": {
+			"index_1": "Status de monitoramento",
+			"index_2": "Número de dias para salvar: ",
+			"index_3": "Modificar",
+			"index_4": "Torros limpos",
+			"index_5": "Por favor, insira o número de dias para salvar",
+			"index_6": "O número de dia de economia é ilegal!",
+			"index_7": "Você tem certeza de limpar todos os logs do monitor?",
+			"index_8": "Carga média",
+			"index_9": "1 min",
+			"index_10": "5 min",
+			"index_11": "15 min",
+			"index_12": "Uso do recurso do sistema",
+			"index_13": "Carregar detalhes",
+			"index_14": "Uso de recursos do sistema: ",
+			"index_15": "Data: ",
+			"index_16": "Memória",
+			"index_17": "E/S de disco",
+			"index_18": "Ler",
+			"index_19": "Escrever",
+			"index_20": "R/W vezes",
+			"index_21": "r/w Espere",
+			"index_22": "Unidade: {0}/s",
+			"index_23": "E/S da rede: ",
+			"index_24": "A montante",
+			"index_25": "A jusante",
+			"index_26": "Tela cheia",
+			"index_27": "Saia de tela cheia",
+			"index_28": "Nome do processo",
+			"index_29": "Uso da CPU",
+			"index_30": "Usuário de inicialização",
+			"index_31": "Uso de memória",
+			"index_32": "Uso do disco",
+			"index_33": "Monitorar o tamanho do log: "
+		},
+		"API": {
+			"system_1": "Definindo o status de monitoramento, aguarde ...",
+			"system_2": "Limpe os registros de monitoramento, aguarde ..."
+		}
+	}
+}

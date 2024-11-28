@@ -1,0 +1,292 @@
+{% extends "layout.html" %} {% block content %}
+<style>
+	.pos-box {
+		height: auto;
+	}
+	.control-item {
+		display: inline-block;
+		height: 45px;
+		min-width: 100px;
+		padding: 0 20px;
+		line-height: 45px;
+		font-size: 13px;
+		cursor: pointer;
+		position: relative;
+		text-align: center;
+	}
+	.control-item.active {
+		color: #20a53a;
+		background: #20a53a10;
+	}
+	.daily-thumbnail {
+		width: 1200px;
+		margin: 80px auto;
+	}
+	.thumbnail-box {
+		position: relative;
+		display: flex;
+		justify-content: center;
+	}
+
+	.thumbnail-introduce {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin-bottom: 40px;
+	}
+	.thumbnail-introduce span {
+		font-size: 20px;
+		font-weight: bold;
+	}
+	.thumbnail-introduce ul {
+		display: flex;
+		font-size: 16px;
+		line-height: 30px;
+		margin: 20px 0;
+		list-style-type: square;
+	}
+	.thumbnail-introduce ul li + li {
+		margin-left: 40px;
+	}
+	.pluginTipsGg {
+		position: relative;
+		width: 950px;
+		height: 678px;
+		background-color: #f1f1f1;
+		background-size: 100%;
+		background-repeat: no-repeat;
+		background-position: top;
+		border: 1px solid #f2f2f2;
+		border-radius: 4px;
+		image-rendering: -webkit-optimize-contrast;
+	}
+	/*.pluginTipsGg:hover::before{*/
+	/*  display: inline-block;*/
+	/*}*/
+	.pluginTipsGg::before {
+		content: '点击预览';
+		display: none;
+		background: #000;
+		opacity: 0.2;
+		color: #fff;
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		line-height: 621px;
+		font-size: 18px;
+		vertical-align: bottom;
+		text-align: center;
+		border-radius: 4px;
+		transition: all 1s;
+	}
+	.tab-list .tabs-item.active:after {
+		content: '';
+		width: 20px;
+		height: 2px;
+		position: absolute;
+		left: 50%;
+		bottom: 0px;
+		background: red;
+		margin-left: -10px;
+		background: #20a53a;
+	}
+	.thumbnail-box .thumbnail-tab {
+		margin-right: 20px;
+		width: 120px;
+		border-left: 1px solid #def2e2;
+	}
+	.thumbnail-tab li {
+		padding: 0 20px;
+		line-height: 36px;
+		cursor: pointer;
+		font-size: 14px;
+	}
+	.thumbnail-tab li.on {
+		border-left: 2px solid #20a53a;
+		color: #20a53a;
+		font-size: 16px;
+		font-weight: bold;
+	}
+	.thumbnail-item {
+		display: none;
+	}
+	.thumbnail-item.show {
+		display: block;
+	}
+</style>
+<div class="main-content pb55" style="min-height: 525px">
+	<div class="container-fluid">
+		{% if 'error_msg' in data %}
+		<div class="pos-box bgw mtb15">
+			<div class="control-nav">
+				<div class="control-item active" name="control">aaPanel WAF</div>
+			</div>
+		</div>
+		<div class="mtb15 pd15 bgw daily-view">
+			<div class="info-title-tips">
+				<p><span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px"></span>Tip: This page can be turned off in the panel settings</p>
+			</div>
+			<div class="daily-thumbnail">
+				<div class="thumbnail-introduce">
+					<span>Nginx WAF function introduction</span>
+					<ul>
+						<li>Only supports Nginx</li>
+						<li>Defend against CC attacks</li>
+						<li>Keyword blocking</li>
+						<li>Block malicious scans</li>
+						<li>Stop hackers</li>
+					</ul>
+					<div class="daily-product-buy">
+						<a title="Buy professional" href="javascript:;" class="btn btn-success va0 ml15 payPlugin">Buy now</a>
+					</div>
+				</div>
+				<div class="thumbnail-box">
+					<ul class="thumbnail-tab">
+						<li class="on">Overview</li>
+						<li>Report</li>
+						<li>Global</li>
+						<li>WebSite</li>
+						<li>Blockade</li>
+					</ul>
+					<div class="thumbnail-item show">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/1.png)"></div>
+					</div>
+					<div class="thumbnail-item">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/2.png)"></div>
+					</div>
+					<div class="thumbnail-item">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/3.png)"></div>
+					</div>
+					<div class="thumbnail-item">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/4.png)"></div>
+					</div>
+					<div class="thumbnail-item">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/5.png)"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		{% else %}
+		<div class="pos-box bgw mtb15">
+			<div class="control-nav">
+				<div class="control-item active" name="control">aaPanel WAF</div>
+			</div>
+		</div>
+		<div class="mtb15 pd15 bgw daily-view">
+			<div class="info-title-tips">
+				<p><span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px"></span>Tip: This page can be turned off in the panel settings</p>
+			</div>
+			<div class="daily-thumbnail">
+				<div class="thumbnail-introduce">
+					<span>Nginx WAF function introduction</span>
+					<ul>
+						<li>Only supports Nginx</li>
+						<li>Defend against CC attacks</li>
+						<li>Keyword blocking</li>
+						<li>Block malicious scans</li>
+						<li>Stop hackers</li>
+					</ul>
+					<div class="daily-product-buy">
+						<a title="Buy professional" href="javascript:;" class="btn btn-success va0 ml15 payPlugin">Buy now</a>
+					</div>
+				</div>
+				<div class="thumbnail-box">
+					<ul class="thumbnail-tab">
+						<li class="on">Overview</li>
+						<li>Report</li>
+						<li>Global</li>
+						<li>WebSite</li>
+						<li>Blockade</li>
+					</ul>
+					<div class="thumbnail-item show">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/1.png)"></div>
+					</div>
+					<div class="thumbnail-item">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/2.png)"></div>
+					</div>
+					<div class="thumbnail-item">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/3.png)"></div>
+					</div>
+					<div class="thumbnail-item">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/4.png)"></div>
+					</div>
+					<div class="thumbnail-item">
+						<div class="pluginTipsGg" style="background-image: url(/static/img/nginx_firewall/5.png)"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		{% endif %}
+	</div>
+</div>
+{% endblock %} {% block scripts %} {{ super() }}
+<script type="text/javascript" src="/static/js/soft.js?version_20200109={{g['version']}}"></script>
+<script type="text/javascript">
+	bt.send(
+		'get_soft_find',
+		'plugin/get_soft_find',
+		{
+			sName: 'btwaf',
+		},
+		function (res) {
+			if (res.endtime >= 0) {
+				$('.payPlugin').after('<a href="javascript:;" class="btn btn-success va0 ml15 installWaf">Install now</a>');
+				$('.payPlugin').remove();
+			}
+		}
+	);
+
+	$('.daily-product-buy').on('click', '.installWaf', function () {
+		bt.soft.install('btwaf');
+		// change_install_success();
+	});
+
+	$('.payPlugin').on('click', function () {
+		bt.soft.get_soft_find('btwaf', function (rdata) {
+			window.parent.usePay({ source: 25, plugin: { name: rdata.title, pid: rdata.pid, type: rdata.type, plugin: true, ps: rdata.ps } });
+			// bt.soft.product_pay_view();
+			// setTimeout(function(){
+			//   $('.lib_ltd').click();
+			// },500);
+		});
+	});
+
+	$('.thumbnail-tab li').click(function () {
+		var index = $(this).index();
+		$(this).addClass('on').siblings('.on').removeClass('on');
+		$('.thumbnail-item').eq(index).addClass('show').siblings('.show').removeClass('show');
+	});
+
+	function change_install_success() {
+		var timer = setInterval(function () {
+			bt.send(
+				'get_soft_find',
+				'plugin/get_soft_find',
+				{
+					sName: 'btwaf',
+				},
+				function (res) {
+					if (res.setup) {
+						clearInterval(timer);
+						setTimeout(function () {
+							location.reload();
+						}, 2000);
+					}
+				}
+			);
+		}, 1000);
+	}
+	// $('.thumbnail-box').on('click',function(){
+	//   layer.open({
+	//     title:false,
+	//     btn:false,
+	//     shadeClose:true,
+	//     closeBtn: 2,
+	//     area:['950px','725px'],
+	//     content:'<div class="pd10"><img src="/static/img/btwaf-nginx.png" style="width:100%"/></div>'
+	//   })
+	// })
+</script>
+{% endblock %}

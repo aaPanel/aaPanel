@@ -1,0 +1,31 @@
+{
+	"Term": {
+		"idnex_1": "Bitte geben Sie den Befehlsnamen ein",
+		"index_2": "Bitte geben Sie den Befehlsinhalt ein",
+		"index_3": "Befehl hinzufügen",
+		"index_4": "Befehlsname",
+		"index_5": "Befehl bearbeiten",
+		"index_6": "Informationen löschen",
+		"index_7": "Serviceinformationen löschen [{0}], fahren Sie fort?",
+		"index_8": "Server IP",
+		"index_9": "Bitte geben Sie Server IP ein",
+		"index_10": "SSH -Konto",
+		"index_11": "Bitte geben Sie ein SSH -Konto ein",
+		"index_12": "Überprüfung",
+		"index_13": "Privatschlüssel",
+		"index_14": "Bitte geben Sie das SSH -Passwort ein",
+		"index_15": "Bitte geben Sie SSH Private Key ein",
+		"index_16": "Schlüsselkennwort",
+		"index_17": "Bitte geben Sie ein Schlüsselkennwort ein, kann leer sein",
+		"index_18": "Bitte geben Sie Bemerkungen ein, können leer sein",
+		"index_19": "Server hinzufügen",
+		"index_20": "Befehl löschen",
+		"index_21": "Befehl löschen [{0}], fahren Sie fort?",
+		"index_22": "Server bearbeiten",
+		"index_23": "Serverliste",
+		"index_24": "Befehle",
+		"index_25": "Ein Terminalserver ist erforderlich",
+		"index_26": "Bitte geben Sie die richtige IP -Adresse ein",
+		"index_27": "Bist du sicher, dich abzumelden?"
+	}
+}

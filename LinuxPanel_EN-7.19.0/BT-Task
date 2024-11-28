@@ -1,0 +1,14 @@
+#!/www/server/panel/pyenv/bin/python
+#coding: utf-8
+# +-------------------------------------------------------------------
+# | aaPanel
+# +-------------------------------------------------------------------
+# | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
+# +-------------------------------------------------------------------
+# | Author: hwliang <hwl@aapanel.com>
+# +-------------------------------------------------------------------
+
+import os,sys
+os.chdir('/www/server/panel')
+import task
+task.main()

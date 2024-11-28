@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="main-content">
+  <div class="container-fluid" style="padding-bottom:54px">
+    <div class="pos-box bgw mtb15">
+        <!-- <div class="position f14 c9 pull-left">
+            <a class="plr10 c4" href="/">{{data['lan']['H1']}}</a>/<span class="plr10 c4">{{data['lan']['H2']}}</span>
+        </div>
+        <div class="search pull-right"></div> -->
+			<div class="tab-list">
+        <div class="tabs-item active">{{data['lan']['H2']}}</div>
+			</div>
+    </div>
+    <div class="softbox bgw mtb15">
+        <div class="softlist">
+    <div class="soft-filter pd15">
+      <div class="row soft-filter-box">
+        <div class="col-md-12">
+          <span class="filter-title f14 c4">{{data['lan']['SEARCH_APP']}}</span>
+          <div class="soft-search">
+            <!-- <form target="hid" onsubmit='soft.get_list(1,0,$("#SearchValue").val())'> -->
+              <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="search" style="width:232px" />
+              <button type="button" class="ser-sub pull-left" onclick='soft.get_list(1,0,$("#SearchValue").val())'></button>
+            <!-- </form> -->
+            <iframe name='hid' id="hid" style="display:none"></iframe>
+          </div>
+        </div>
+      </div>
+      <div class="row soft-filter-box"><div class="col-md-12"><span class="filter-title f14 c4">{{data['lan']['APP_SORT']}}</span><div class="menu-sub softtype"></div></div></div>
+      </div>
+        <div class="divtable pd15 relative">
+          <button class="btn btn-default btn-sm" onclick="soft.flush_cache()" title="{{data['lan']['UPDATE_FROM_CLOUD']}}" style="position:absolute;top:-49px;right:15px">{{data['lan']['UPDATE_APP_LIST']}}</button>
+            <div id="updata_pro_info">
+              <div class="alert alert-success" style="margin-bottom:15px"><strong>{{data['lan']['PS']}}</strong><button class="btn btn-success btn-xs va0 updata_pro" onclick="bt.soft.updata_pro()" title="{{data['lan']['UPDATE_PRO_NOW']}}" style="margin-left:8px">"{{data['lan']['UPDATE_NOW']}}"</button></div>
+            </div>
+            <div id="commonly_software" class="commonly_software"><div class="commonly_software_title">Recently visited plugin:</div><div class="commonly_software_list"></div></div>
+          <table id="softList" class="table table-hover" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:10px"></table>
+          <div id='softPage' class="dataTables_paginate paging_bootstrap page"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
+<script type="text/javascript" src="/static/laydate/laydate.js?date=20180301"></script>
+<script type="text/javascript" src="/static/ace/ace.js?date={{g.version}}"></script>
+<script type="text/javascript" src="/static/js/soft.js?version_20200109={{g['version']}}"></script>
+<script type="text/javascript">
+    bt.set_cookie('sites_path', "{{session['config']['sites_path']}}");
+    bt.set_cookie('serverType', "{{session['webserver']}}");
+    bt.set_cookie('distribution', "{{session['config']['distribution']}}");
+    $(document).ready(function () {
+        soft.get_list();
+        soft.render_soft_recommend()
+		$('#SearchValue').keyup(function (e) {
+			if (e.keyCode == 13) {
+				soft.get_list(1, 0, $("#SearchValue").val());
+			}
+		});
+        setTimeout(function () {
+            soft_td_width_auto();
+        }, 500);
+    });
+    $(window).resize(function () {
+        soft_td_width_auto();
+    });
+
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{
+    "default": "en",
+    "languages": [
+        {
+            "name": "cht",
+            "google": "zh-tw",
+            "title": "繁體中文",
+            "cn": "繁體中文"
+        },
+        {
+            "name": "en",
+            "google": "en",
+            "title": "English",
+            "cn": "英语"
+        },
+        {
+            "name": "de",
+            "google": "de",
+            "title": "Deutsch",
+            "cn": "德语"
+        },
+        {
+            "name": "fra",
+            "google": "fr",
+            "title": "Français",
+            "cn": "法语"
+        },
+        {
+            "name": "spa",
+            "google": "es",
+            "title": "Español",
+            "cn": "西班牙语"
+        },
+        {
+            "name": "pt",
+            "google": "pt",
+            "title": "Português",
+            "cn": "葡萄牙语"
+        }
+    ]
+}

@@ -1,0 +1,149 @@
+<div class="conter_box box_tg">
+	<!-- <div style="padding-bottom: 12px; margin-bottom: 18px; border-bottom: #ccc 1px dashed;">
+			<div class="flex" style="align-item: center; height: 32px;">
+					<span class="tname" style="width: 99px; line-height: 30px; padding-right: 20px; text-align: right;"><i class="total_tips">?</i>设为默认</span>
+					<div>
+							<input class="btswitch btswitch-ios" id="default_setting" type="checkbox" />
+							<label style="position: relative;top: 5px;" class="btswitch-btn" for="default_setting"></label>
+					</div>
+			</div>
+	</div> -->
+	<div class="bt-form">
+			<div class="line">
+					<span class="tname" style="width: 100px;">ID</span>
+					<div class="info-r" style="height:28px; margin-left:100px;">
+						<input type="text" name="telegram_id" class="bt-input-text " style="width: 280px;" placeholder="Telegram ID">
+					</div>
+			</div>
+			<div class="line">
+					<span class="tname" style="width: 100px;">TOKEN</span>
+					<div class="info-r">
+						<input type="text" name="telegram_token" class="bt-input-text" style="width: 280px;" placeholder="Telegram TOKEN">
+					</div>
+					<button class="btn btn-success btn-sm tg_submit" style="margin: 10px 0 0 100px;">Save</button>
+			</div>
+	</div>
+	<ul class="help-info-text c7">
+		<li>ID: Your telegram user ID</li>
+		<li>Token: Your telegram bot token</li>
+		<li>e.g: [ 12345677:AAAAAAAAA_a0VUo2jjr__CCCCDDD ] <a class="btlink" href="https://www.aapanel.com/forum/d/5115-how-to-add-telegram-to-panel-notifications" target="_blank" rel="noopener">Help</a></li>
+	</ul>
+</div>
+
+<style type="text/css">
+.total_tips {
+	border: 1px solid #cbcbcb;
+	border-radius: 8px;
+	color: #cbcbcb;
+	cursor: pointer;
+	display: inline-block;
+	font-family: arial;
+	font-size: 12px;
+	font-style: normal;
+	height: 14px;
+	line-height: 14px;
+	margin-right: 5px;
+	text-align: center;
+	width: 14px;
+}
+</style>
+<!--tg模块-->
+<script type="text/javascript">
+	var tg = {
+			all_info: {},
+			init: function () {
+					var that = this;
+					this.all_info = $('.alarm-view .bt-w-menu p.bgw').data('data'); //设置全局数据
+
+					this.get_data();
+
+					 // 设置默认
+					$('#default_setting').change(function () {
+							var _default = $(this).prop('checked');
+							var token = that.all_info.data.bot_token;
+							var id = that.all_info.data.my_id;
+							if (!id || !token) {
+									layer.msg('Telegram is not configured', { icon: 2 });
+									$(this).prop('checked', !_default);
+									return
+							}
+							var loadTs = layer.msg('Setting Telegram module，please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+							$.post('/config?action=set_default_channel&channel=tg', { default: _default }, function (res) {
+									layer.close(loadTs);
+									layer.msg(res.msg, { icon: res.status ? 1 : 2 })
+									if (res.status) that.refresh_data();
+							});
+					});
+
+					var showTips = ''
+					$('.total_tips').hover(function(){
+							showTips = setTimeout(function(){
+									layer.tips('After setting as default, message notifications will be sent using this message channel first.', $('.total_tips'), {
+											tips: [1, '#20a53a'],
+											time: 0,
+											success:function(layero,indexs){
+													layero.css("left", $('.total_tips').offset().left - 10);
+									}})
+							},200)
+					},function(){
+							clearTimeout(showTips)
+							layer.closeAll('tips');
+					})
+			},
+			/**
+					*@description 获取，保存按钮添加事件
+			*/
+			get_data: function () {
+					var that = this;
+					var data = this.all_info.data;
+
+					if (data) {
+							var _default = data.hasOwnProperty('default') ? data.default : false
+
+							$('input[name=telegram_id]').val(data.my_id || '');
+							$('input[name=telegram_token]').val(data.bot_token || '');
+							$('#default_setting').prop('checked', _default);
+					}
+					// 保存按钮点击事件
+					$('.tg_submit').click(function () {
+							that.set_submit();
+					});
+			},
+			/**
+					*@description 保存信息
+			*/
+			set_submit: function () {
+					var that = this;
+
+					var id = $('input[name=telegram_id]').val(),
+							token = $('input[name=telegram_token]').val(),
+							_isAll = $('#panel_alert_all').prop('checked');
+					if (id == '') return layer.msg('Please enter Telegram ID!', { icon: 2 });
+					if (token == '') return layer.msg('Please enter Telegram token!', { icon: 2 });
+					var loadT = layer.msg('Setting Telegram module，please wait...', { icon: 16, time: 0, shade: [0.3, '#000'] });
+					$.post('/config?action=set_msg_config&name=tg', { my_id: id, bot_token: token, atall: _isAll ? 'True' : 'False' }, function (rdata) {
+							layer.close(loadT);
+							layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 })
+							if (rdata.status) that.refresh_data();
+					})
+			},
+			refresh_data: function () {
+					var that = this
+					$.post('/config?action=get_msg_configs', function (rdata) {
+							$.each(rdata, function (key, item) {
+									var $el = $('.alarm-view .bt-w-menu .men_' + key);
+									if (item.data && item.data.default) {
+											$el.html($el.text() + '<span class="show-default"></span>');
+									} else {
+											$el.find('span').remove();
+									}
+									$('.alarm-view .bt-w-menu .men_' + key).data('data', item);
+									if (key === 'tg') {
+											that.all_info = item
+									}
+							});
+					})
+			}
+	}
+
+</script>

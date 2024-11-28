@@ -1,0 +1,41 @@
+[
+  {
+    "name": "CloudxnsDns",
+    "title": "CloudXns",
+    "ps": "Automatically resolve application SSL using cloudxns API interface",
+    "help": "CloudxnsBackground > User Center > API Management, follow the instructions to get AccessKey/SecretKey",
+    "data": [
+      {
+        "key": "SAVED_CX_Key",
+        "name": "AccessKey",
+        "value": ""
+      },
+      {
+        "key": "SAVED_CX_Secret",
+        "name": "SecretKey",
+        "value": ""
+      }
+    ]
+  },
+  {
+	"ps": "Use CloudFlare's API interface to automatically parse and apply for SSL",
+	"title": "CloudFlare",
+	"data": [{
+		"value": "",
+		"key": "SAVED_CF_MAIL",
+		"name": "E-Mail"
+	}, {
+		"value": "",
+		"key": "SAVED_CF_KEY",
+		"name": "API Key"
+	}],
+	"help": "How to get API Token",
+	"name": "CloudFlareDns"
+},
+  {
+    "name": "dns",
+    "title": "Manual resolution",
+    "ps": "Returns the host and txt values, which are manually parsed by the user",
+    "data": false
+  }
+]

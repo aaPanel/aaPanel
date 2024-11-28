@@ -1,0 +1,127 @@
+[
+  {
+    "id": "70",
+    "ver": "1",
+    "used": true,
+    "source": "domain_endtime",
+    "title": "Domain expiration",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.ssl_push",
+      "name": "DomainEndTimeTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "project",
+          "name": "domain",
+          "type": "select",
+          "default": "all",
+          "items": [
+            {
+              "title": "All domain",
+              "value": "all"
+            }
+          ]
+        },
+        {
+          "attr": "cycle",
+          "name": "Remaining days",
+          "type": "number",
+          "suffix": "",
+          "unit": "day(s)",
+          "default": 30
+        }
+      ],
+      "sorted": [
+        [
+          "project"
+        ],
+        [
+          "cycle"
+        ]
+      ]
+    },
+    "default": {
+      "project": "all",
+      "cycle": 30
+    },
+    "advanced_default": {
+      "number_rule": {
+        "total": 2
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": false
+  },
+    {
+    "id": "71",
+    "ver": "1",
+    "used": true,
+    "source": "cert_endtime",
+    "title": "Certificate expiration",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.ssl_push",
+      "name": "CertEndTimeTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "project",
+          "name": "Certificate",
+          "type": "select",
+          "default": "all",
+          "items": [
+            {
+              "title": "all certificates",
+              "value": "all"
+            }
+          ]
+        },
+        {
+          "attr": "cycle",
+          "name": "Remaining days",
+          "type": "number",
+          "suffix": "",
+          "unit": "day(s)",
+          "default": 30
+        }
+      ],
+      "sorted": [
+        [
+          "project"
+        ],
+        [
+          "cycle"
+        ]
+      ]
+    },
+    "default": {
+      "project": "all",
+      "cycle": 30
+    },
+    "advanced_default": {
+      "number_rule": {
+        "total": 2
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": false
+  }
+]
+

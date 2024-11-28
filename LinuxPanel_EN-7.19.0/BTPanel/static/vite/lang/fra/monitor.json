@@ -1,0 +1,43 @@
+{
+	"Monitor": {
+		"System": {
+			"index_1": "Statut de surveillance",
+			"index_2": "Nombre de jours à économiser: ",
+			"index_3": "Modifier",
+			"index_4": "Nettoyer les journaux",
+			"index_5": "Veuillez saisir le nombre de jours pour économiser",
+			"index_6": "Le nombre de jours d'épargne est illégal!",
+			"index_7": "Êtes-vous sûr de nettoyer tous les journaux de monitoire?",
+			"index_8": "Moyenne de chargement",
+			"index_9": "1 min",
+			"index_10": "5 min",
+			"index_11": "15 min",
+			"index_12": "Utilisation des ressources système",
+			"index_13": "Détails de chargement",
+			"index_14": "Utilisation des ressources système: ",
+			"index_15": "Date: ",
+			"index_16": "Mémoire",
+			"index_17": "IO disque",
+			"index_18": "Lire",
+			"index_19": "Écrire",
+			"index_20": "r / w fois",
+			"index_21": "r / w attendez",
+			"index_22": "Unité: {0} / s",
+			"index_23": "Réseau IO: ",
+			"index_24": "En amont",
+			"index_25": "En aval",
+			"index_26": "Plein écran",
+			"index_27": "Sortir en plein écran",
+			"index_28": "Nom de processus",
+			"index_29": "Utilisation du processeur",
+			"index_30": "Startup utilisateur",
+			"index_31": "Utilisation de la mémoire",
+			"index_32": "Utilisation du disque",
+			"index_33": "Taille du journal du moniteur: "
+		},
+		"API": {
+			"system_1": "Définition de l'état de surveillance, veuillez patienter ...",
+			"system_2": "Effacer les enregistrements de surveillance, veuillez patienter ..."
+		}
+	}
+}

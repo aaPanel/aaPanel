@@ -1,0 +1,201 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-21 10:03+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:68
+msgid "IP filter program compilation failed"
+msgstr "IP filter program compilation failed"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:106
+#: /www/server/panel/plugin/monitor/monitor_main.py:174
+msgid "IP address cannot be empty!"
+msgstr "IP address cannot be empty!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:111
+msgid "The specified blocking time cannot exceed 24 days!"
+msgstr "The specified blocking time cannot exceed 24 days!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:181
+msgid "IP address format is wrong!"
+msgstr "IP address format is wrong!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:246
+#: /www/server/panel/plugin/monitor/monitor_main.py:485
+#: /www/server/panel/plugin/monitor/monitor_main.py:511
+#: /www/server/panel/plugin/monitor/monitor_main.py:643
+#: /www/server/panel/plugin/monitor/monitor_main.py:737
+#: /www/server/panel/plugin/monitor/monitor_main.py:758
+#: /www/server/panel/plugin/monitor/monitor_main.py:1419
+#: /www/server/panel/plugin/monitor/monitor_main.py:1519
+#: /www/server/panel/plugin/monitor/monitor_main.py:2024
+#: /www/server/panel/plugin/monitor/monitor_main.py:2155
+#: /www/server/panel/plugin/monitor/monitor_main.py:2342
+#: /www/server/panel/plugin/monitor/monitor_main.py:2380
+#: /www/server/panel/plugin/monitor/monitor_main.py:2416
+#: /www/server/panel/plugin/monitor/monitor_main.py:2467
+#: /www/server/panel/plugin/monitor/monitor_main.py:2531
+#: /www/server/panel/plugin/monitor/monitor_main.py:2569
+#: /www/server/panel/plugin/monitor/monitor_main.py:2691
+#: /www/server/panel/plugin/monitor/monitor_main.py:2880
+#: /www/server/panel/plugin/monitor/monitor_main.py:2945
+#: /www/server/panel/plugin/monitor/monitor_main.py:3004
+#: /www/server/panel/plugin/monitor/monitor_main.py:3034
+#: /www/server/panel/plugin/monitor/monitor_main.py:3090
+#: /www/server/panel/plugin/monitor/monitor_main.py:3116
+#: /www/server/panel/plugin/monitor/monitor_main.py:3218
+#: /www/server/panel/plugin/monitor/monitor_main.py:3293
+#: /www/server/panel/plugin/monitor/monitor_main.py:3357
+#: /www/server/panel/plugin/monitor/monitor_main.py:3464
+#: /www/server/panel/plugin/monitor/monitor_main.py:3548
+msgid "Website name cannot be empty!"
+msgstr "Website name cannot be empty!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:249
+msgid "Set successfully!"
+msgstr "Set successfully!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:513
+msgid "Website configuration does not exist!"
+msgstr "Website configuration does not exist!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:635
+#: /www/server/panel/plugin/monitor/monitor_main.py:959
+msgid "Setup successful!"
+msgstr "Setup successful!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:739
+#: /www/server/panel/plugin/monitor/monitor_main.py:760
+msgid "URI cannot be empty!"
+msgstr "URI cannot be empty!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:745
+msgid "The URI already exists, please do not add it again!"
+msgstr "The URI already exists, please do not add it again!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:750
+msgid "Added successfully!"
+msgstr "Added successfully!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:763
+#: /www/server/panel/plugin/monitor/monitor_main.py:765
+msgid "URI does not exist"
+msgstr "URI does not exist"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:769
+msgid "successfully deleted!"
+msgstr "successfully deleted!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:838
+msgid "The listening address format is wrong!"
+msgstr "The listening address format is wrong!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:841
+msgid "Wrong listening port range!, requirement: 1024-65535"
+msgstr "Wrong listening port range!, requirement: 1024-65535"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:857
+msgid "IP statistics mode error, requirement: 0 or 1"
+msgstr "IP statistics mode error, requirement: 0 or 1"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:1174
+#: /www/server/panel/plugin/monitor/monitor_main.py:1332
+#: /www/server/panel/plugin/monitor/monitor_main.py:1521
+#: /www/server/panel/plugin/monitor/monitor_main.py:2892
+#: /www/server/panel/plugin/monitor/monitor_main.py:2957
+#: /www/server/panel/plugin/monitor/monitor_main.py:3046
+#: /www/server/panel/plugin/monitor/monitor_main.py:3305
+#: /www/server/panel/plugin/monitor/monitor_main.py:3369
+msgid "Start time format error!"
+msgstr "Start time format error!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:1175
+#: /www/server/panel/plugin/monitor/monitor_main.py:1333
+#: /www/server/panel/plugin/monitor/monitor_main.py:1522
+#: /www/server/panel/plugin/monitor/monitor_main.py:2893
+#: /www/server/panel/plugin/monitor/monitor_main.py:2958
+#: /www/server/panel/plugin/monitor/monitor_main.py:3047
+#: /www/server/panel/plugin/monitor/monitor_main.py:3306
+#: /www/server/panel/plugin/monitor/monitor_main.py:3370
+msgid "End time format error!"
+msgstr "End time format error!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:1181
+#: /www/server/panel/plugin/monitor/monitor_main.py:1338
+msgid "The start time cannot be greater than the end time!"
+msgstr "The start time cannot be greater than the end time!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:1418
+#: /www/server/panel/plugin/monitor/monitor_main.py:2463
+#: /www/server/panel/plugin/monitor/monitor_main.py:2530
+#: /www/server/panel/plugin/monitor/monitor_main.py:3002
+#: /www/server/panel/plugin/monitor/monitor_main.py:3088
+#: /www/server/panel/plugin/monitor/monitor_main.py:3216
+#: /www/server/panel/plugin/monitor/monitor_main.py:3463
+msgid "Date format error!"
+msgstr "Date format error!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:1524
+msgid "Time granularity error, support: minute, hour, date"
+msgstr "Time granularity error, support: minute, hour, date"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:2343
+msgid "Access ID cannot be empty!"
+msgstr "Access ID cannot be empty!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:2347
+msgid "Access ID does not exist!"
+msgstr "Access ID does not exist!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:2385
+msgid "file does not exist"
+msgstr "file does not exist"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:2397
+msgid "Clear successfully"
+msgstr "Clear successfully"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:2828
+#: /www/server/panel/plugin/monitor/monitor_main.py:2833
+msgid "Parameter cannot be empty!"
+msgstr "Parameter cannot be empty!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:3549
+msgid "session_id cannot be empty!"
+msgstr "session_id cannot be empty!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:3910
+msgid "Configuration check completed!"
+msgstr "Configuration check completed!"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:3943
+msgid "Configuration cleanup completed"
+msgstr "Configuration cleanup completed"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:4052
+msgid "Closed successfully"
+msgstr "Closed successfully"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:4133
+#: /www/server/panel/plugin/monitor/monitor_main.py:4145
+#: /www/server/panel/plugin/monitor/monitor_main.py:4150
+msgid "Parameter error"
+msgstr "Parameter error"
+
+#: /www/server/panel/plugin/monitor/monitor_main.py:4167
+msgid "Submitted successfully"
+msgstr "Submitted successfully"

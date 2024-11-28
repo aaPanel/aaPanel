@@ -1,0 +1,288 @@
+[
+  {
+    "id": "20",
+    "ver": "1",
+    "used": true,
+    "source": "system_disk",
+    "title": "Home disk alerts",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.system_push",
+      "name": "PanelSysDiskTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "project",
+          "name": "disk information",
+          "type": "select",
+          "items": [
+          ]
+        },
+        {
+          "attr": "cycle",
+          "name": "detection type",
+          "type": "radio",
+          "suffix": "",
+          "default": 2,
+          "items": [
+            {
+              "title": "Remaining capacity",
+              "value": 1
+            },
+            {
+              "title": "percentage occupied",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "attr": "count",
+          "name": "occupancy rate exceeds",
+          "type": "number",
+          "unit": "%",
+          "suffix": "will trigger an alarm",
+          "default": 80,
+          "err_msg_prefix": "disk threshold"
+        }
+      ],
+      "sorted": [
+        [
+          "project"
+        ],
+        [
+          "cycle"
+        ],
+        [
+          "count"
+        ]
+      ]
+    },
+    "default": {
+      "project": "/",
+      "cycle": 2,
+      "count": 80
+    },
+    "send_type_list": [
+
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "sms",
+      "tg"
+    ],
+    "unique": false
+  },
+  {
+    "id": "21",
+    "ver": "1",
+    "used": true,
+    "source": "system_cpu",
+    "title": "Home CPU alarms",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.system_push",
+      "name": "PanelSysCPUTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "cycle",
+          "name": "every time",
+          "type": "select",
+          "unit": "minute(s)",
+          "suffix": "average  ",
+          "width": "70px",
+          "disabled": true,
+          "default": 5,
+          "items": [
+            {
+              "title": "1",
+              "value": 3
+            },
+            {
+              "title": "5",
+              "value": 5
+            },
+            {
+              "title": "15",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "attr": "count",
+          "name": "CPU usage exceeded",
+          "type": "number",
+          "unit": "%",
+          "suffix": "will trigger an alarm",
+          "default": 80,
+          "err_msg_prefix": "CPU"
+        }
+      ],
+      "sorted": [
+        [
+          "cycle",
+          "count"
+        ]
+      ]
+    },
+    "default": {
+      "cycle": 5,
+      "count": 80
+    },
+    "send_type_list": [
+
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "sms",
+      "tg"
+    ],
+    "unique": true
+  },
+  {
+    "id": "22",
+    "ver": "1",
+    "used": true,
+    "source": "system_load",
+    "title": "Home load alerts",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.system_push",
+      "name": "PanelSysLoadTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "cycle",
+          "name": "every time",
+          "type": "select",
+          "unit": "minute(s)",
+          "suffix": "average  ",
+          "default": 5,
+          "width": "70px",
+          "disabled": true,
+          "items": [
+            {
+              "title": "1",
+              "value": 1
+            },
+            {
+              "title": "5",
+              "value": 5
+            },
+            {
+              "title": "15",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "attr": "count",
+          "name": " load over",
+          "type": "number",
+          "unit": "%",
+          "suffix": "will trigger an alarm",
+          "default": 80,
+          "err_msg_prefix": "Load"
+        }
+      ],
+      "sorted": [
+        [
+          "cycle",
+          "count"
+        ]
+      ]
+    },
+    "default": {
+      "cycle": 5,
+      "count": 80
+    },
+    "send_type_list": [
+
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg",
+      "sms"
+    ],
+    "unique": true
+  },
+  {
+    "id": "23",
+    "ver": "1",
+    "used": true,
+    "source": "system_mem",
+    "title": "Home memory alarms",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.system_push",
+      "name": "PanelSysMEMTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "cycle",
+          "name": "every time",
+          "type": "select",
+          "unit": "minute(s)",
+          "suffix": "average  ",
+          "width": "70px",
+          "disabled": true,
+          "default": 5,
+          "items": [
+            {
+              "title": "1",
+              "value": 3
+            },
+            {
+              "title": "5",
+              "value": 5
+            },
+            {
+              "title": "15",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "attr": "count",
+          "name": "Memory usage is more than",
+          "type": "number",
+          "unit": "%",
+          "suffix": "will trigger an alarm",
+          "default": 80,
+          "err_msg_prefix": "Memory"
+        }
+      ],
+      "sorted": [
+        [
+          "cycle",
+          "count"
+        ]
+      ]
+    },
+    "default": {
+      "cycle": 5,
+      "count": 80
+    },
+    "send_type_list": [
+
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg",
+      "sms"
+    ],
+    "unique": true
+  }
+]

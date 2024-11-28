@@ -1,0 +1,437 @@
+{% extends "layout.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{g.cdn_url}}/ace/styles/icons.css">
+<link rel="stylesheet" type="text/css" href="{{g.cdn_url}}/css/files_style.css">
+<style id="file_list_info">.file_checkbox{width:40px !important;}.file_name{width:300px !important;}.file_ps{width:200px !important;}.file_size{width:100px !important;}.file_mtime{width:180px !important;}.file_user{width:80px !important;}.file_accept{width:80px !important;}.file_operation{width:220px !important;}.file_table_view.list_view .file_list_content .file_tr{width:auto;}.file_table_view.list_view .file_list_content{width:auto;}</style>
+<div class="main-content">
+    <a style="display: none;" id="recycle_bin" data="{{data['recycle_bin']}}"></a>
+	<div class="bt_file_updated">
+		<div class="updated_icon">
+			<div class="btn download">
+				<div class="cloud">
+					<div class="file"></div>
+				</div>
+			</div>
+		</div>
+		<div class="updated_title">Release the mouse to upload files or folders</div>
+	</div>
+	<!-- aceEditors -->
+	<div class="file_bodys">
+		<div class="file_path_views">
+            <div class="file_path_upper" title="Back">
+                <span class="glyphicon glyphicon-arrow-left"></span>
+                <!-- <span>Back</span> -->
+            </div>
+			<div class="file_path_input">
+				<div class="file_path_shadow"></div>
+				<div class="file_dir_view"></div>
+				<input type="text" data-path="/www/wwwroot" data-backspace class="path_input" id="fileInputPath"/>
+			</div>
+			<div class="file_path_refresh" title="Refresh"><i class="icon-file icon-file-refresh"></i></div>
+			<div class="search_path_views">
+                <input type="text" placeholder="Search file content" class="file_search_input">
+                <span class="iconfont icon-shezhi1 is_search_children"></span>
+                <button type="submit" class="path_btn"><i class="iconfont icon-search"></i></button>
+                <div class="file_search_config">
+                    <div id="search_all" class="file_search_checked"></div>
+                    <label for="search_all">Include subdir</label>
+                </div>
+			</div>
+		</div>
+		<div class="file_nav_view clearfix">
+            <div class="nav_group">
+				<div class="nav_btn upload_file">
+					<span class="nav_btn_title">Upload</span>
+				</div>
+			</div>
+            <div class="nav_group">
+				<div class="nav_btn upload_download">
+					<span class="nav_btn_title">Remote download</span>
+				</div>
+			</div>
+			<div class="nav_group">
+				<div class="nav_btn create_file_or_dir">
+					<span class="nav_btn_title">New</span><i class="iconfont icon-xiala"></i>
+					<ul class="nav_down_list" data-menu="newFileType">
+						<li data-type="newBlankDir"><i class="file_menu_icon create_file_icon"></i><span>New directory</span></li>
+						<li data-type="newBlankFile"><i class="file_new_icon"></i><span>New blank file</span></li>
+            <li data-type="newBlankFile"><i class="file_new_icon soft_link_file_icon"></i><span>Softlink</span></li>
+					</ul>
+				</div>
+			</div>
+			<div class="nav_group">
+                <div class="nav_btn replace_content">
+                    <span class="nav_btn_title">Search Files Content</span>
+                </div>
+            </div>
+			<div class="nav_group">
+				<div class="nav_btn favorites_file_path">
+					<span class="nav_btn_title" data-menu="favorites">Favorites</span><i class="iconfont icon-xiala"></i>
+					<ul class="nav_down_list"></ul>
+				</div>
+            </div>
+            <div class="nav_group">
+				<div class="nav_btn share_file_list">
+					<span class="nav_btn_title">Share List</span>
+				</div>
+            </div>
+            <div class="nav_group ">
+                <div class="nav_btn terminal_view">
+                    <i class="iconfont icon-terminal"></i>
+                    <span class="nav_btn_title">Terminal</span>
+                </div>
+            </div>
+            <!-- 挂载磁盘列表 -->
+            <div class="nav_group mount_disk_list"></div>
+			<div class="float_r menu-header-foot">
+                <div class="nav_group multi hide">
+                    <div class="batch_multi_title">
+                        <span>Please choose</span>
+                        <i class="iconfont icon-xiala"></i>
+                        <div class="batch_group_list">
+                            <div class="nav_btn_group" data-type="copy"><i class="file_menu_icon copy_file_icon"></i><span
+                                class="nav_btn_title">Copy</span></div>
+                            <div class="nav_btn_group" data-type="shear"><i class="file_menu_icon shear_file_icon"></i><span
+                                    class="nav_btn_title">Cut</span></div>
+                            <div class="nav_btn_group" data-type="compress"><i class="file_menu_icon compress_file_icon"></i><span
+                                    class="nav_btn_title">Compress</span></div>
+                            <div class="nav_btn_group" data-type="authority"><i class="file_menu_icon power_file_icon"></i><span
+                                    class="nav_btn_title">Permission</span></div>
+                            <div class="nav_btn_group" data-type="del"><i class="file_menu_icon del_file_icon"></i><span
+                                    class="nav_btn_title">Del</span></div>
+                            <div class="nav_btn_group hide" style="padding-left:10px;border-left: 1px solid #cfcfcf;margin-left: -1px;">
+                                <span class="nav_btn_title">More</span><i class="iconfont icon-xiala"></i>
+                                <ul class="nav_down_list">
+                                    <li data-type="copy"><i class="file_menu_icon copy_file_icon"></i><span>Copy</span></li>
+                                    <li data-type="shear"><i class="file_menu_icon shear_file_icon"></i><span>Cut</span></li>
+                                    <li data-type="compress"><i class="file_menu_icon compress_file_icon"></i><span>Compress</span></li>
+                                    <li data-type="authority"><i class="file_menu_icon power_file_icon"></i><span>Permission</span></li>
+                                    <li data-type="del"><i class="file_menu_icon del_file_icon"></i><span>Del</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="nav_group file_all_paste hide">
+                    <div class="nav_btn_group">
+                        <i class="file_menu_icon paste_file_icon"></i><span class="nav_btn_title">Paste</span>
+                    </div>
+                </div>
+                <div class="nav_group manage_backup">
+                    <div class="nav_btn"><span class="glyphicon glyphicon-trash"></span><span class="nav_btn_title">Backup PMSN</span></div>
+				</div>
+				<div class="nav_group recycle_bin">
+					<div class="nav_btn"><span class="glyphicon glyphicon-trash"></span><span class="nav_btn_title">Recycle bin</span></div>
+				</div>
+				<div class="nav_group btn-group btn-group-sm">
+                    <div class="btn btn-default cut_view_model" data-type="icon"><i class="glyphicon glyphicon-th"></i></div>
+                    <div class="btn btn-default cut_view_model" data-type="list"><i class="glyphicon glyphicon-th-list"></i></div>
+				</div>
+			</div>
+		</div>
+		<div class="file_table_view">
+			<div class="file_list_header">
+                <div class="file_main_title">
+                    <div class="file_checkbox file_th">
+                        <div class="file_check" data-type="all" data-checkbox="0"></div>
+                    </div>
+                    <div class="file_name file_th" data-tid="name">
+                        <span>File name</span>
+                        <div class="icon_sort"></div>
+                    </div>
+                    <!-- <div class="file_width_resize"></div>
+                    <div class="file_type file_th" data-tid="type">
+                        <span>类型</span>
+                        <div class="icon_sort"></div>
+                    </div> -->
+                    <div class="file_width_resize"></div>
+                    <div class="file_accept file_th" data-tid="accept">
+                        <span>PMSN/Owner</span>
+                        <div class="icon_sort"></div>
+                    </div>
+                    <div class="file_width_resize"></div>
+                    <div class="file_size file_th" data-tid="size">
+                        <span>Size</span>
+                        <div class="icon_sort"></div>
+                    </div>
+                    <div class="file_width_resize"></div>
+                    <div class="file_mtime file_th" data-tid="mtime">
+                        <span>Modification time</span>
+                        <div class="icon_sort"></div>
+                    </div>
+                    <div class="file_width_resize"></div>
+                    <div class="file_ps file_th" data-tid="ps">
+                        <span>Ps</span>
+                        <div class="icon_sort"></div>
+                    </div>
+                    <div class="file_width_resize"></div>
+                    <div class="file_operation file_th align-right" data-tid="operation">
+                        <span>Opt</span>
+                    </div>
+                </div>
+            </div>
+            <div class="file_list_shadow file_shadow_top" style="opacity: 0;"></div>
+            <div class="file_list_content"></div>
+            <div class="file_list_shadow file_shadow_bottom" style="opacity: 0;"></div>
+            <div class="onselectstart"></div>
+        </div>
+			<div class="file_right_menu file_menu_list">
+				<ul class="set_group">
+					<!-- <li data-id="open_file"><i class="file_menu_icon open_file_icon"></i><span>打开文件夹</span></li> -->
+					<li data-id="edit_file"><i class="file_menu_icon edit_file_icon"></i><span>Open</span></li>
+					<li data-id="download_file"><i class="file_menu_icon download_file_icon"></i><span>Download</span></li>
+					<li class="separate"></li>
+					<li data-id="copy_file"><i class="file_menu_icon copy_file_icon"></i><span>Copy</span></li>
+					<li data-id="paste_file"><i class="file_menu_icon paste_file_icon"></i><span>Paste</span></li>
+					<!-- 判断类型是文件夹时，提示是否复制文件至该文件夹 -->
+					<li data-id="shear_file"><i class="file_menu_icon shear_file_icon"></i><span>Cut</span></li>
+					<li class="separate"></li>
+					<li data-id="rename_file"><i class="file_menu_icon rename_file_icon"></i><span>Rename</span></li>
+					<li data-id="power_file"><i class="file_menu_icon power_file_icon"></i><span>Permission</span></li>
+					<li data-id="decompression_file"><i
+							class="file_menu_icon decompression_file_icon"></i><span>Decompress</span></li>
+					<li data-id="compress_file">
+						<i class="file_menu_icon compress_file_icon"></i><span>Compress</span>
+						<div class="file_menu_down">
+							<span class="glyphicon glyphicon-triangle-right" aria-hidden="true"></span>
+							<ul class="set_group">
+								<li><i class="file_menu_icon compress_file_icon"></i><span>tar.gz (Default)</span></li>
+								<li><i class="file_menu_icon compress_file_icon"></i><span>zip (General format)</span></li>
+								<li><i class="file_menu_icon compress_file_icon"></i><span>rar (WinRAR is compatible with Chinese)</span>
+								</li>
+							</ul>
+						</div>
+					</li>
+					<li data-id="del_file"><i class="file_menu_icon del_file_icon"></i><span>Del</span></li>
+					<li class="separate"></li>
+					<li data-id="add_favorites"><i class="file_menu_icon add_favorites_icon"></i><span>Favorites</span>
+					</li>
+				</ul>
+			</div>
+			<div class="selection_right_menu file_menu_list">
+				<ul class="set_group">
+					<li data-id="copy_file"><i class="file_menu_icon copy_file_icon"></i><span>Copy</span></li>
+					<li data-id="paste_file"><i class="file_menu_icon shear_file_icon"></i><span>Cut</span></li>
+					<li data-id="download_file"><i class="file_menu_icon download_file_icon"></i><span>Download</span></li>
+					<li class="separate"></li>
+					<li data-id="del_file"><i class="file_menu_icon del_file_icon"></i><span>Del</span></li>
+					<li class="separate"></li>
+					<li data-id="paste_file"><i class="file_menu_icon copy_file_icon"></i><span>Copy to</span></li>
+					<li data-id="paste_file"><i class="file_menu_icon shear_file_icon"></i><span>Move to</span></li>
+					<li class="separate"></li>
+					<li data-id="compress_file">
+						<i class="file_menu_icon compress_file_icon"></i><span>Compress</span>
+						<div class="file_menu_down"><span class="glyphicon glyphicon-triangle-right"
+						                                  aria-hidden="true"></span></div>
+					</li>
+				</ul>
+			</div>
+			<div class="content_right_menu file_menu_list">
+				<ul class="set_group">
+					<li data-id="refresh_file"><i class="file_menu_icon refresh_file_icon"></i><span>Refresh</span></li>
+					<li class="separate"></li>
+					<li data-id="upload_file"><i class="file_menu_icon upload_file_icon"></i><span>Upload</span></li>
+					<li data-id="newly_file"><i class="file_menu_icon newly_file_icon"></i><span>New file/directory</span></li>
+					<li class="separate"></li>
+					<li data-id="paste_file"><i class="file_menu_icon paste_file_icon"></i><span>Paste</span></li>
+				</ul>
+        </div>
+        <div class="filePage pagination page"></div>
+    </div>
+</div>
+<script type="text/template" id="upload_file_template">
+	<div class="upload_or_download_view">
+		<div class="upload_or_download_content active" data-type="upload">
+			<div class="upload_btn_groud">
+				<div class="btn-group">
+					<button type="button" class="btn btn-primary btn-sm upload_file_btn">Upload file</button>
+					<button type="button" class="btn btn-primary  btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<span class="caret"></span>
+						<span class="sr-only">Toggle Dropdown</span>
+					</button>
+					<ul class="dropdown-menu">
+						<li><a href="#" data-type="file">Upload file</a></li>
+						<li><a href="#" data-type="dir">Upload directory</a></li>
+					</ul>
+				</div>
+				<div class="file_upload_info" style="display:none;">
+					<span>Total press&nbsp;<i class="uploadProgress"></i>, uploading&nbsp;<i class="uploadNumber"></i>,</span>
+					<span style="display:none">Fail&nbsp;<i class="uploadError"></i></span>
+					<span>Speed&nbsp;<i class="uploadSpeed">getting</i>,</span>
+					<span>Expect time&nbsp;<i class="uploadEstimate">getting</i></span><i></i>
+				</div>
+			</div>
+			<div class="upload_file_body active"><span>Please drag the file here</span></div>
+			<div class="upload_btn_group"><button type="button" class="btn btn-danger btn-sm upload_file_clear">Cancel upload</button><button type="button" class="btn btn-success btn-sm upload_file_submit">Start upload</button></div>
+		</div>
+	</div>
+</script>
+<script type="text/template" id="aceTmplate">
+    <div id="ace_conter">
+        <div class="ace_header" style="top: 0">
+            <span class="saveFile"><i class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></i><span>Save</span></span>
+            <span class="saveFileAll"><i class="glyphicon glyphicon-duplicate" aria-hidden="true"></i><span>Save All</span></span>
+            <span class="refreshs"><i class="glyphicon glyphicon-refresh" aria-hidden="true"></i><span>Refresh</span></span>
+            <span class="searchs"><i class="glyphicon glyphicon-search" aria-hidden="true"></i><span>Search</span></span>
+            <span class="replaces"><i class="glyphicon glyphicon-retweet" aria-hidden="true"></i><span>Replace</span></span>
+            <span class="jumpLine"><i class="glyphicon glyphicon-pushpin" aria-hidden="true"></i><span>JumpLine</span></span>
+            <span class="fontSize"><i class="glyphicon glyphicon-text-width" aria-hidden="true"></i><span>Font</span></span>
+            <span class="themes"><i class="glyphicon glyphicon-magnet" aria-hidden="true"></i><span>Theme</span></span>
+            <span class="setUp"><i class="glyphicon glyphicon-cog" aria-hidden="true"></i><span>Set</span></span>
+            <span class="helps"><i class="glyphicon glyphicon-question-sign" aria-hidden="true"></i><span>Help</span></span>
+            <div class="pull-down" title="Hide toolbar" style="top: 0"><i class="glyphicon glyphicon-menu-down" aria-hidden="true"></i></div>
+        </div>
+        <div class="ace_overall" style="top: 35px;">
+            <!-- 编辑器目录 -->
+            <div class="ace_catalogue" style="left:0px">
+                <div class="ace_catalogue_title">Directory<div class="dir-menu-right"><span class="glyphicon glyphicon-minus" aria-hidden="true"></span></div></div>
+            	<div class="ace_dir_tools">
+            		<div class="upper_level"  title="Return to parent directory">
+            			<i class="glyphicon glyphicon-share-alt" aria-hidden="true"></i>
+            			<span>Back</span>
+            		</div>
+            		<div class="search_file" title="Search File">
+            			<i class="glyphicon glyphicon-search" aria-hidden="true"></i>
+            			<span>Search</span>
+            		</div>
+            		<div class="new_folder" title="File/Folder">
+            			<i class="glyphicon glyphicon-plus"  aria-hidden="true"></i>
+            			<span>New</span>
+            			<ul class="folder_down_up">
+            				<li data-type="2"><i class="folder-icon"></i>Folder</li>
+	                    	<li data-type="3"><i class="text-icon"></i>File</li>
+            			</ul>
+            		</div>
+            		<div class="refresh_dir" title="Refresh list">
+            			<span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+            			<span>Refresh</span>
+            		</div>
+            		<span class="ace_editor_main_storey"></span>
+            	</div>
+
+                <div class="ace_catalogue_list">
+                    <ul class="cd-accordion-menu"></ul>
+                    <ul class="ace_catalogue_menu">
+                    	<li data-type="0"><i class="glyphicon glyphicon-refresh" aria-hidden="true"></i><span>Refresh</span></li>
+                    	<li data-type="1"><i class="glyphicon glyphicon-folder-open" aria-hidden="true"></i><span>Subdirectory</span></li>
+	                    <li data-type="2"><i class="folder-icon"></i><span>New Folder</span></li>
+	                    <li data-type="3"><i class="text-icon"></i><span>New File</span></li>
+	                    <li data-type="4"><i class="rename-icon img-icon"></i><span>Rename</span></li>
+	                    <li data-type="5"><i class="down-icon img-icon"></i><span>Download</span></li>
+	                    <li data-type="6"><i class="del-icon img-icon"></i><span>Delete</span></li>
+	                </ul>
+                </div>
+                <div class="ace_catalogue_drag_icon">
+                    <div class="drag_icon_conter"></div>
+                    <span class="fold_icon_conter" title="Hide file directory"></span>
+                </div>
+
+            </div>
+            <!-- 编辑内容 -->
+            <div class="ace_editor_main">
+                <ul class="ace_conter_menu"></ul>
+                <div class="ace_conter_tips"><div class="tips"></div></div>
+                <div class="ace_editor_main_storey"></div>
+                <div class="ace_conter_editor"></div>
+                <div class="ace_conter_toolbar">
+                    <div class="pull-left size_ellipsis">
+                        <span data-type="path" class="size_ellipsis"></span>
+                    </div>
+                    <div class="pull-right">
+                        <span data-type="cursor"></span>
+                        <span data-type="history"></span>
+                        <span data-type="tab"></span>
+                        <span data-type="encoding"></span>
+                        <span data-type="lang"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="ace_toolbar_menu" style="display: none;">
+                <div class="menu-item menu-tabs" style="display: none;">
+                    <div class="menu-title">Set tabs</div>
+                    <ul class="tabsType">
+                        <li data-value="nbsp">Indent using spaces</li>
+                        <li data-value="tabs">Indent using "Tab"</li>
+                    </ul>
+                    <div class="menu-title" style="margin-top:15px">Set the tab length</div>
+                    <ul class="tabsSize">
+                        <li data-value="1">1</li>
+                        <li data-value="2">2</li>
+                        <li data-value="3">3</li>
+                        <li data-value="4">4</li>
+                        <li data-value="5">5</li>
+                        <li data-value="6">6</li>
+                    </ul>
+                </div>
+                <div class="menu-item menu-encoding" style="display: none;">
+                    <div class="menu-title">Set file save encoding format</div>
+                    <ul></ul>
+                </div>
+                <div class="menu-item menu-files" style="display: none;">
+                    <div class="menu-conter">
+                    	<input type="text" class="menu-input" placeholder="Input language mode">
+                    	<i class="fa fa-close" aria-hidden="true"></i>
+                    </div>
+                    <div class="menu-title">Set file language association</div>
+                    <ul></ul>
+                </div>
+                <div class="menu-item menu-fontSize" style="display: none;">
+                    <div class="menu-title">Set editor font size</div>
+                    <div class="menu-conter">
+                        <div class="set_font_size">
+                            <input type="number" min="12" max="45"/>
+                            <span class="tips error">Font setting range 12-45</span>
+                            <button class="btn-save">Save</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-item menu-jumpLine" style="display: none;">
+                    <div class="menu-title">Jump to specified line</div>
+                    <div class="menu-conter">
+                        <div class="set_jump_line">
+                            <input type="number" min="0"/>
+                            <button class="btn-save">Jump</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-item menu-themes" style="display: none;">
+                    <div class="menu-title">Set editor theme</div>
+                    <ul></ul>
+                </div>
+                <div class="menu-item menu-history" style="display: none;">
+                    <div class="menu-title">History version</div>
+                    <ul></ul>
+                </div>
+                <div class="menu-item menu-setUp"  style="display: none;">
+                	<div class="menu-title">Editor setting [ Some settings need to be restart editor ]</div>
+                	<ul class="editor_menu">
+                		<li data-type="wrap">Auto wrap</li>
+                		<li data-type="enableLiveAutocompletion">Code autocomplete</li>
+                		<li data-type="enableSnippets">Enable snippets</li>
+                		<li data-type="showInvisibles">Show hidden characters</li>
+                        <li data-type="showLineNumbers">Show line numbers</li>
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript" src="{{g.cdn_url}}/js/jquery.dragsort-0.5.2.min.js" defer></script>
+<script type="text/javascript" src="{{g.cdn_url}}/js/jquery.qrcode.min.js" defer></script>
+<script type="text/javascript"
+        src="{{g.cdn_url}}/js/public.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+<script type="text/javascript"
+        src="{{g.cdn_url}}/js/public_backup.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+<script type="text/javascript" src="{{g.cdn_url}}/js/clipboard.min.js" defer></script>
+<script type="text/javascript" src="{{g.cdn_url}}/js/polyfill.js"></script>
+<script type="text/javascript" src="{{g.cdn_url}}/ace/ace.js" defer></script>
+<script type="text/javascript" src="{{g.cdn_url}}/ace/ext-language_tools.js" defer></script>
+<script type="text/javascript"
+        src="{{g.cdn_url}}/js/files.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+<script type="text/javascript"
+        src="{{g.cdn_url}}/js/upload-drog.js?version={{g['version']}}&repair={{data['js_random']}}"></script>
+{% endblock %}

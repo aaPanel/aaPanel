@@ -1,0 +1,51 @@
+{
+	"Logs": {
+		"Panel": {
+			"index_1": "Logs de operação",
+			"index_2": "Executar logs",
+			"index_3": "Toges Cron",
+			"index_4": "Por favor, insira o nome do log",
+			"index_5": "Troncos claros",
+			"index_6": "Tipo de operação",
+			"index_7": "Tempo de operação",
+			"index_13": "Hora da varredura",
+			"index_14": "Ataque PHP",
+			"index_15": "Prestes a limpar os logs, continue?"
+		},
+		"Website": {
+			"index_1": "URL (TOP100)",
+			"index_2": "Logs de acesso",
+			"index_3": "Recomenda -se realizar análises de segurança quando a carga do servidor é baixa. Desta vez, o arquivo de log [{0}]. Será digitalizado e o tempo de espera pode ser mais longo. Você quer continuar?",
+			"index_4": "Logs de erro",
+			"index_5": "IP (TOP100)"
+		},
+		"Audit": {
+			"index_1": "Por favor, insira origem/porta/função/evento"
+		},
+		"SSH": {
+			"index_1": "IP: porta"
+		},
+		"Soft": {
+			"index_1": "Nome de usuário do FTP",
+			"index_2": "Operação IP",
+			"index_3": "Arquivo",
+			"index_4": "Tempo de pouso",
+			"index_5": "Logs FTP",
+			"index_6": "MySQL Logs lentos",
+			"index_7": "Logs de erro do MySQL",
+			"index_8": "Log de operação",
+			"index_9": "Por favor, insira as palavras -chave de pesquisa"
+		},
+		"Conversion": {
+			"index_1": "Auditoria de logs - Introdução",
+			"index_2": "Analisar e analisar toras comuns",
+			"index_3": "Colete, analise e audite informações como várias operações, eventos e situações anormais registradas pelo sistema, rede e programas de aplicativos.",
+			"index_4": "Logs FTP - Introdução",
+			"index_5": "Registre e visualize o login de login FTP atual e o log de operação",
+			"index_6": "Registre informações de login de login do cliente FTP",
+			"index_7": "Login SSH - Introdução",
+			"index_8": "Registre e veja os logs de login SSH atuais",
+			"index_9": "Registre informações atuais de login de login"
+		}
+	}
+}

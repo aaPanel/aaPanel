@@ -1,0 +1,902 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+	/*日志审计*/
+	#logAudit .tootls_group,
+	#panelRun .tootls_group.tools_bottom {
+		display: flex;
+		flex-wrap: wrap;
+		height: auto;
+		line-height: inherit;
+	}
+
+	#logAudit .tootls_group.tools_top {
+		justify-content: space-between;
+	}
+
+	.tootls_group.tools_top .tools_left {
+		display: flex;
+		align-items: center;
+	}
+
+	.tootls_group .tools_item {
+		display: flex;
+		align-items: center;
+		margin-right: 15px;
+	}
+
+	.tools_item .tools_label {
+		margin-right: 15px;
+	}
+
+	#logAudit .divtable {
+		border-top: 1px solid #ddd;
+	}
+
+	#logAudit .divtable .table {
+		border-top: none;
+	}
+
+	#logAudit .table thead {
+		position: relative;
+		z-index: 1;
+	}
+
+	#logAudit .checkbox-text {
+		margin: 0;
+	}
+
+	.checkbox_group {
+		display: flex;
+		align-items: center;
+		height: 30px;
+	}
+
+	.checkbox_group .checkbox_item {
+		display: flex;
+		align-items: center;
+		cursor: default;
+	}
+
+	.checkbox_item+.checkbox_item {
+		margin-left: 15px;
+	}
+
+	.checkbox_item span {
+		display: block;
+		padding-left: 5px;
+	}
+
+	#logAudit .page .page_select_number {
+		border-left: 1px solid #ececec;
+	}
+
+	#logAudit .tools_bottom,
+	#panelRun .tools_bottom {
+		justify-content: flex-end;
+	}
+
+	#logAudit .bt_select_value {
+		max-width: 200px;
+	}
+
+	#logAudit .bt_select_list {
+		width: auto;
+		min-width: 100%;
+		max-height: 240px;
+	}
+
+	.bt-property-setting .tab-con {
+		padding: 15px;
+	}
+
+	.event_info .rows {
+		display: flex;
+		margin: 5px 0;
+	}
+
+	.event_info .rows .cols {
+		flex: 1;
+		display: flex;
+		height: 25px;
+		line-height: 25px;
+	}
+
+	.event_info .cols+.cols {
+		margin-left: 15px;
+	}
+
+	.event_info .cols .name {
+		width: 90px;
+	}
+
+	.event_info .cols .value {
+		flex: 1;
+		width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		position: relative;
+		white-space: nowrap;
+	}
+
+	.event_info .desc {
+		margin-bottom: 10px;
+	}
+
+	.event_info .desc textarea {
+		width: 100%;
+		padding: 8px;
+		box-sizing: border-box;
+		resize: none;
+	}
+
+	.ml10 {
+		margin-left: 10px;
+	}
+
+	.tab-view-box {
+		padding: 15px;
+	}
+
+	.crontab-log {
+		overflow: auto;
+		border: 0 none;
+		line-height: 16px;
+		padding: 15px;
+		white-space: pre-wrap;
+		min-height: 250px;
+		background-color: rgb(51, 51, 51);
+		color: #f1f1f1;
+		margin-top: 10px;
+		margin-bottom: 0;
+	}
+
+	.tabContent {
+		display: flex;
+		height: 100%;
+	}
+
+	.tabContent .Tab {
+		border: 1px solid #ececec;
+		overflow: auto;
+		width: 200px;
+	}
+
+	.Content {
+		padding: 0 0 0 10px;
+		margin-left: 15px;
+		width: 100%;
+		flex: 1;
+	}
+
+	.tabContent .Tab .Item.active {
+		background-color: #EEF8F0;
+		color: #20a53a;
+	}
+
+	.tabContent .Tab .Item.active:hover {
+		background-color: #EEF8F0;
+	}
+
+	.tabContent .Tab .Item {
+		line-height: 18px;
+		padding: 10px;
+		border-bottom: 1px solid #ececec;
+		cursor: pointer;
+		word-wrap: break-word;
+	}
+
+	.tabContent .Tab .Item:hover {
+		background-color: rgb(245, 247, 250);
+	}
+
+	.daily-thumbnail {
+		width: 1200px;
+		margin:40px auto;
+	}
+    @media screen and (max-width: 1440px) {
+    	.daily-thumbnail {
+		    width: auto;
+	}
+    }
+	.thumbnail-box {
+		position: relative;
+		display: flex;
+		justify-content: center;
+	}
+
+	.thumbnail-introduce {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin-bottom: 40px;
+	}
+
+	.thumbnail-introduce span {
+		font-size: 20px;
+		font-weight: bold;
+	}
+
+	.thumbnail-introduce ul {
+		display: flex;
+		font-size: 16px;
+		line-height: 30px;
+		margin: 20px 0;
+		list-style-type: square;
+	}
+
+	.thumbnail-introduce ul li+li {
+		margin-left: 40px;
+	}
+
+	.pluginTipsGg {
+		position: relative;
+		width: 950px;
+		height: 720px;
+		background-color: #f1f1f1;
+		background-size: 100%;
+		background-repeat: no-repeat;
+		background-position: top;
+		border-radius: 4px;
+	}
+
+	/*.pluginTipsGg:hover::before{*/
+	/*  display: inline-block;*/
+	/*}*/
+	.pluginTipsGg::before {
+		content: '点击预览';
+		display: none;
+		background: #000;
+		opacity: 0.2;
+		color: #fff;
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		line-height: 621px;
+		font-size: 18px;
+		vertical-align: bottom;
+		text-align: center;
+		border-radius: 4px;
+		transition: all 1s;
+	}
+
+	.tab-list .tabs-item.active:after {
+		content: '';
+		width: 20px;
+		height: 2px;
+		position: absolute;
+		left: 50%;
+		bottom: 0px;
+		background: red;
+		margin-left: -10px;
+		background: #20a53a;
+	}
+
+	.thumbnail-box .thumbnail-tab {
+    margin-right: 40px;
+    width: 130px;
+    border-right: 1px solid #def2e2;
+	}
+
+	.thumbnail-tab li {
+		padding: 0 20px;
+    line-height: 46px;
+    width: 130px;
+		cursor: pointer;
+		font-size: 14px;
+	}
+
+	.thumbnail-tab li.on {
+    border-right: 2px solid #20a53a;
+		color: #20a53a;
+    font-size: 14px;
+	}
+
+	.thumbnail-item {
+		display: none;
+	}
+
+	.thumbnail-item.show {
+		display: block;
+	}
+
+	.bt_warning {
+		color: #fc6d26;
+	}
+
+	.line-row,
+	.line-row-tips {
+		height: 30px;
+		line-height: 30px;
+		display: inline-block;
+	}
+
+	.line-input input {
+		height: 30px;
+		line-height: 30px;
+	}
+
+	.line-row-tips {
+		margin-left: 10px !important;
+		color: #999;
+		vertical-align: top;
+	}
+
+	.crontab-log {
+		overflow: auto;
+		border: 0 none;
+		line-height: 16px;
+		padding: 15px;
+		white-space: pre-wrap;
+		min-height: 250px;
+		background-color: rgb(51, 51, 51);
+		color: #f1f1f1;
+		margin-top: 10px;
+		margin-bottom: 0;
+	}
+
+	.input_file {
+		float: left;
+		height: 35px;
+		border: 0.1px dashed #D0D0D0;
+		padding: 0 0 0 10px;
+		font-size: 14px;
+		outline: none;
+		margin-bottom: 20px;
+	}
+
+	.select_file {
+		float: left;
+		width: 80px;
+		height: 35px;
+		font-size: 14px;
+		color: #fff;
+		background: #10952a;
+		position: absolute;
+		left: 170px;
+		border: none;
+
+	}
+
+	.dividing-line {
+		width: 1px;
+		background: #ccc;
+		height: 20px;
+		vertical-align: middle;
+	}
+
+	#antiOverviewList .divtable,
+	#reinforceSystem .divtable {
+		margin: 0;
+	}
+
+	.logs-data-select {
+		margin-bottom: 15px;
+	}
+
+	.logs-title {
+		display: inline-block;
+		width: auto;
+		height: 35px;
+		font-size: 12px;
+		line-height: 35px;
+		margin-right: 5px;
+	}
+
+	.logs-unselect {
+		position: relative;
+		display: inline-block;
+		height: 30px;
+		border: 1px solid #e6e6e6;
+		border-radius: 2px;
+		font-size: 13px;
+		line-height: 28px;
+	}
+
+	.logs-unselect.active .logs-input-list {
+		display: block;
+	}
+
+	.logs-unselect.active .logs-input-list {
+		animation-name: layui-upbit;
+		animation-duration: .3s;
+		animation-fill-mode: both;
+	}
+
+	.logs-inputs {
+		box-sizing: border-box;
+		padding: 0 30px 0 10px;
+		height: 30px;
+		cursor: pointer;
+	}
+
+	.logs-unselect .logs-inputs:after {
+		position: absolute;
+		top: 0.8pc;
+		right: 6pt;
+		display: block;
+		width: 0;
+		height: 0;
+		border-color: #c2c2c2 transparent transparent;
+		border-style: solid;
+		border-width: 6px 6px 0;
+		content: '';
+		transition: transform .5s;
+	}
+
+	.logs-input-list {
+		position: absolute;
+		top: 30px;
+		right: -1px;
+		left: -1px;
+		z-index: 899;
+		display: none;
+		box-sizing: border-box;
+		padding: 5px 0;
+		height: auto;
+		min-width: 100%;
+		border: 1px solid #d2d2d2;
+		border-radius: 2px;
+		background-color: #fff;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, .12);
+	}
+
+	.logs-input-list dd {
+		padding: 5px 15px;
+		height: 30x;
+	}
+
+	.logs-input-list dd:hover {
+		background-color: #f2f2f2;
+		cursor: pointer;
+	}
+
+	.logs-input-list dd.logs_checked {
+		background: #20a532 !important;
+		color: #fff;
+	}
+
+	.logs-page.page-style {
+		padding: 0 5px;
+		height: 30px;
+		font-size: 13px;
+		margin-top: 5px;
+	}
+
+	.page-style .nextPage {
+		display: inline-block;
+		margin: 0 3px;
+		padding: 0 10px;
+		height: 30px;
+		border-radius: 2px;
+		background-color: #f5f5f5;
+		color: #666;
+		text-align: center;
+		line-height: 30px;
+		cursor: pointer;
+	}
+
+	.page-style .Pcount {
+		margin-right: 0;
+		margin-left: 5px;
+	}
+
+	.page a:last-of-type {
+		border-right: 1px solid #ececec;
+	}
+
+	.firewall-tab-view .tab-nav-border span i {
+		font-style: initial;
+	}
+
+	.firewall-tab-view .tab-con {
+		padding: 0;
+	}
+
+	.firewall-tab-view .tab-con .btswitch+.btswitch-btn {
+		width: 2.8rem;
+		height: 1.75rem;
+	}
+
+	#logAudit .tootls_group {
+		justify-content: space-between;
+	}
+
+	#logAudit .tootls_group::after {
+		display: none;
+	}
+
+	.logAuditContent {
+		padding: 0 0 0 15px;
+		margin-left: 15px;
+		width: 100%;
+		flex: 1;
+		border-left: 1px solid #ececec;
+	}
+
+	.logAuditTabContent {
+		display: flex;
+		height: 100%;
+	}
+
+	.logAuditTabContent .logAuditTab .logAuditItem {
+		height: 35px;
+		line-height: 35px;
+		padding: 0 10px;
+		border-bottom: 1px solid #ececec;
+		cursor: pointer;
+	}
+
+	.logAuditTabContent .logAuditTab .logAuditItem:hover,
+	.logAuditTabContent .logAuditTab .logAuditItem.active {
+		background-color: #f2f2f2;
+	}
+
+	.logAuditTabContent .logAuditTab {
+		border: 1px solid #ececec;
+		overflow: auto;
+	}
+	.thumbnail-introduce-new {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 50px;
+	}
+	.thumbnail-introduce-title-new {
+    display: flex;
+    align-items: flex-start;
+    width: 92%;
+    justify-content: space-between;
+	}
+	.thumbnail-title-left-new {
+    display: flex;
+    align-items: center;
+	}
+	.thumbnail-title-text-new p {
+    color: #666;
+	}
+	.thumbnail-title-text-new p:first-child {
+    font-weight: bold;
+    font-size: 24px;
+    margin-bottom: 12px;
+	}
+	.thumbnail-title-text-new p:last-child {
+    font-size: 12px;
+    line-height: 24px;
+	}
+	.thumbnail-title-button-new {
+    display: flex;
+    align-items: center;
+    margin-left: 54px;
+	}
+	.thumbnail-introduce-hr {
+    width: 92%;
+    height: 1px;
+    margin: 36px 0;
+    border: 1px dashed #e1e1e185;
+	}
+	.thumbnail-introduce-ul-new {
+    width: 90%;
+	}
+	.thumbnail-title-button-new {
+    display: flex;
+    align-items: center;
+    margin-left: 54px;
+	}
+	.thumbnail-title-button-new a {
+    padding: 10px 16px;
+	}
+	.fz-select-btn, li {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+	}
+	.bt-search {
+		position: relative;
+	}
+	.bt-search .search-input {
+		height: 30px;
+		line-height: 30px;
+		border-radius: 2px;
+		border: 1px solid #ccc;
+		outline: none;
+		padding-left: 8px;
+		vertical-align: top;
+		width: 200px;
+	}
+	.bt-search .search-input:focus {
+		border-color: #20a53a;
+	}
+
+	.bt-search .glyphicon-search {
+		height: 28px;
+		line-height: 28px;
+		padding: 0 10px;
+		color: #888;
+		position: absolute;
+		right: 0;
+		font-size: 14px;
+		cursor: pointer;
+	}
+</style>
+<div class="main-content">
+	<div class="container-fluid" style="padding-bottom: 50px;">
+		<div id="cutTab" class="pos-box bgw mtb15" style="height:45px">
+			<div class="tab-list">
+				<div class="tabs-item active" data-name="panelLogs">Panel Logs</div>
+				<div class="tabs-item" data-name="siteLogs">Website Logs</div>
+				<div class="tabs-item" data-name="logAudit">Logs Audit</div>
+				<div class="tabs-item" data-name="loginLogs">SSH Login Logs</div>
+				<div class="tabs-item" data-name="softwareLogs">Soft Logs</div>
+			</div>
+		</div>
+		<div class="bgw mtb15 pd15 tab-view-box firewall-tab-view">
+			<div class="tab-con show w-full" id="panelLogs" style="padding: 0">
+				<div class="tab-nav-border">
+					<span class="on">Operation logs</span>
+					<span>Run logs</span>
+					<span>Cron logs</span>
+				</div>
+				<div class="tab-con" style="padding: 15px 0 0;overflow: none;">
+					<div class="tab-block on">
+						<div class="divtable">
+							<div id="operationLog"></div>
+							<div class="dataTables_paginate paging_bootstrap page operationLog" style="margin-bottom:0">
+							</div>
+						</div>
+					</div>
+					<div class="tab-block">
+						<div id="errorLog"></div>
+					</div>
+					<div class="tab-block" id="panelCrontab">
+						<div class="tabContent">
+							<div>
+								<div class="bt-search mb10">
+									<input type="text" class="search-input" placeholder="Please enter Cron task name">
+									<span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+								</div>
+								<div class="Tab"></div>
+							</div>
+							<div class="Content">
+								<button type="button" title="Refresh"
+									class="btn btn-default btn-sm mr5 refreshCrontabLogs"><span>Refresh</span></button>
+								<pre class="crontab-log"></pre>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="siteLogs" style="padding: 0">
+				<div class="tabContent">
+					<div class="TabGroup">
+						<div class="bt-search mb10">
+							<input type="text" class="search-input" placeholder="Please enter site name">
+							<span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+						</div>
+						<div class="Tab"></div>
+					</div>
+					<div class="Content">
+						<div class="tab-nav-border">
+							<span class="on">Operation logs</span>
+							<span>Access logs</span>
+							<span>Error logs</span>
+							<span>Log Security Analysis</span>
+						</div>
+						<div class="tab-con" style="padding: 15px 0 0;overflow: none;">
+							<div class="tab-block on" id="siteOnesite"></div>
+							<div class="tab-block" id="siteRun"></div>
+							<div class="tab-block" id="siteError"></div>
+							<div class="tab-block" id="siteWeb"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="logAudit">
+				<div class="logAuditTabContent">
+					<div class="logAuditTab"></div>
+					<div class="logAuditContent">
+						<div id="logAuditTable"></div>
+						<!-- <div id="logAuditPages" class="page" style="display: flex;justify-content: flex-end"></div> -->
+						<div id="logAuditPre" style="display: none;"></div>
+					</div>
+				</div>
+				<div class="installSoft" style="display: none">
+					<div class="daily-thumbnail">
+					    <div class="thumbnail-introduce-new">
+                                <div class="thumbnail-introduce-title-new" style="width: 92%">
+                                  <div class="thumbnail-title-left-new">
+                                      <div class="thumbnail-title-text-new">
+                                          <p>Logs Audit - introduction</p>
+                                          <p>Collect, analyze and audit information such as various operations, events, and abnormal situations recorded by the system, network, and application programs. Through the audit of these log information, security problems in the system can be found, and timely measures are taken to repair and Take precautions.</p>
+                                      </div>
+
+                                  </div>
+                                   <div class="thumbnail-title-button-new daily-product-buy" >
+								<a href="javascript:;" class="btn btn-success va0 ml15 buyLogAudit"
+									onclick="product_recommend.pay_product_sign('pro',104,'pro')">Buy now</a>
+							</div>
+						</div>
+                              <div class="thumbnail-introduce-hr"></div>
+                              <div class="thumbnail-introduce-ul-new">
+                                  <ul style="display: flex;">
+                                      <li><span class="li-icon"></span>Analyze and parse common logs</li>
+                                      <!--<li><span class="li-icon"></span>安全扫描加固</li>-->
+                                      <!--<li><span class="li-icon"></span>漏洞扫描</li>-->
+                                    </ul>
+                              </div>
+                          </div>
+						<!--<div class="thumbnail-introduce">-->
+						<!--	<span>日志审计功能介绍</span>-->
+						<!--	<ul>-->
+						<!--		<li>分析和解析常用日志</li>-->
+						<!--	</ul>-->
+						<!--	<div class="daily-product-buy">-->
+						<!--		<a href="javascript:;" class="btn btn-success va0 ml15 buyLogAudit"-->
+						<!--			onclick="product_recommend.pay_product_sign('ltd',104,'ltd')">立即购买</a>-->
+						<!--	</div>-->
+						<!--</div>-->
+						<div class="thumbnail-box">
+							<ul class="thumbnail-tab">
+								<li class="on">Logs list</li>
+							</ul>
+							<div class="thumbnail-item show" style="overflow:auto">
+								<div class="pluginTipsGg" style="background-image: url('/static/img/logAudit/logAudit.png');height: 380px;"></div>
+
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="loginLogs" style="padding: 0">
+				<div class="tab-con" style="padding: 0;overflow: none;">
+					<div class="tab-block on">
+						<div id="loginLogsContent">
+							<div class="w-full">
+								<div id="loginAllLogs"></div>
+							</div>
+							<div class="w-full" style="display: none">
+								<div id="loginSuccessLogs"></div>
+							</div>
+							<div class="w-full" style="display: none">
+								<div id="loginErrorLogs"></div>
+							</div>
+						</div>
+						<div class="daily-thumbnail" style="display: none;">
+							<!--<div class="thumbnail-introduce">-->
+							<!--	<span>SSH登录日志</span>-->
+							<!--	<ul>-->
+							<!--		<li>记录和查看当前SSH登录日志</li>-->
+							<!--	</ul>-->
+							<!--	<div class="daily-product-buy">-->
+							<!--		<a href="javascript:;" class="btn btn-success va0 mr10 "-->
+							<!--			onclick="product_recommend.pay_product_sign('ltd',100,'ltd')">立即购买</a>-->
+							<!--	</div>-->
+							<!--</div>-->
+							 <div class="thumbnail-introduce-new">
+                                <div class="thumbnail-introduce-title-new">
+                                  <div class="thumbnail-title-left-new">
+                                      <div class="thumbnail-title-text-new">
+                                          <p>SSH login logs - introduction</p>
+                                          <p>Record current aaPanel login logs information.</p>
+                                      </div>
+
+                                  </div>
+                                   <div class="thumbnail-title-button-new daily-product-buy" >
+                                        <a href="javascript:;" class="btn btn-success va0" onclick="product_recommend.pay_product_sign('pro',130,'pro')">Buy now</a>
+                                  </div>
+                              </div>
+                              <div class="thumbnail-introduce-hr"></div>
+                              <div class="thumbnail-introduce-ul-new">
+                                  <uls>
+                                      <li><span class="li-icon"></span>Record and view the current SSH login logs</li>
+								</ul>
+								</div>
+							</div>
+							<div class="thumbnail-box">
+								 <ul class="thumbnail-tab">
+                                    <li class="on">SSH logs</li>
+                                </ul>
+								<div class="thumbnail-item show">
+									<div class="pluginTipsGg" style="background-image: url('/static/img/ssh/login-logs.png');height: 308px;"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="softwareLogs" style="padding: 0">
+				<div class="tab-nav-border">
+					<span class="on">FTP logs</span>
+					<span>MySql Slow logs</span>
+					<span>MySql Error logs</span>
+				</div>
+				<div class="tab-con" style="padding: 15px 0 0;overflow: none">
+					<div class="tab-block on" id="softwareFtp">
+						<div class="tabContent">
+							<div class="TabGroup">
+								<div class="bt-search mb10">
+									<input type="text" class="search-input" placeholder="Enter User name">
+										<span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+									</div>
+								<div class="Tab"></div>
+                                  </div>
+							<div class="Content" id="ftpLogsTable"></div>
+							</div>
+						<div class="daily-thumbnail" style="display: none;margin: 20px auto;">
+							<!--<div class="thumbnail-introduce">-->
+							<!--	<span>FTP日志</span>-->
+							<!--	<ul>-->
+							<!--		<li>记录FTP登录记录，FTP上传、下载、重命名和删除记录</li>-->
+							<!--	</ul>-->
+							<!--	<div class="daily-product-buy">-->
+							<!--		<a href="javascript:;" class="btn btn-success va0 mr10 "-->
+							<!--			onclick="product_recommend.pay_product_sign('ltd',101,'ltd')">立即购买</a>-->
+							<!--	</div>-->
+							<!--</div>-->
+								 <div class="thumbnail-introduce-new">
+                                <div class="thumbnail-introduce-title-new" style="width:100%">
+                                  <div class="thumbnail-title-left-new">
+                                      <div class="thumbnail-title-text-new">
+                                          <p>FTP logs - introduction</p>
+                                          <p>Record FTP user client login log and file operation log information</p>
+                                  </div>
+                              </div>
+                                   <div class="thumbnail-title-button-new daily-product-buy" >
+                                        <a href="javascript:;" class="btn btn-success va0" onclick="product_recommend.pay_product_sign('pro',131,'pro')">Buy now</a>
+								</div>
+							</div>
+                              <div class="thumbnail-introduce-hr" style="width: 100%;"></div>
+                              <div class="thumbnail-introduce-ul-new" style="width:98%">
+                                  <ul>
+                                      <li><span class="li-icon"></span>Record and view the current FTP login log and operation log</li>
+								</ul>
+								</div>
+							</div>
+							<div class="thumbnail-box">
+								 <ul class="thumbnail-tab">
+																		<li class="on">FTP logs</li>
+								</ul>
+								<div class="thumbnail-item show" style="width: 100%;max-height:430px;overflow:auto">
+									<div class="pluginTipsGg" style="width: 100%;background-image: url('/static/img/ftp/ftp-logs.png');height: 308px;"></div>
+							</div>
+					</div>
+					</div>
+				</div>
+					<div class="tab-block" id="softwareMysqlSlow">
+						<div
+							style="margin-bottom: 5px; position: relative; height:30px;line-height:30px;display: flex;justify-content: space-between;">
+							<button type="button" title="Refresh"
+								class="btn btn-success btn-sm mr5 refreshMysqlSlow"><span>Refresh</span></button>
+							<div class="bt-search mb10">
+								<input type="text" class="search-input" placeholder="Please enter log">
+								<span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+							</div>
+						</div>
+						<pre class="crontab-log"></pre>
+					</div>
+					<div class="tab-block" id="softwareMysqlError">
+						<div
+							style="margin-bottom: 5px; position: relative; height:30px;line-height:30px;display: flex;justify-content: space-between;">
+							<button type="button" title="Refresh"
+								class="btn btn-success btn-sm mr5 refreshMysqlError"><span>Refresh</span></button>
+						</div>
+						<pre class="crontab-log"></pre>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+
+</script>
+<script type="text/javascript" src="{{ static_url }}static/js/logs.js"></script>
+<script type="text/javascript" src="{{g.cdn_url}}/laydate/laydate.js"></script>
+{% endblock %}

@@ -1,0 +1,203 @@
+[{
+		"type": 0,
+		"pay": "45",
+		"describe": "首页-专业版推荐",
+		"show": true,
+		"route": "home",
+		"name": "pro",
+		"price": "188.3",
+	"ps": [
+		"All paid plugins",
+		"15 days no reason to refund",
+		"Replaceable authorized IP",
+		"2 free 1-year DV SSL (for year)",
+		"Priority response service",
+		"Paid service group (for year)"
+
+	]
+},
+	{
+		"type": 1,
+		"describe": "首页-软件管理-常用软件推荐",
+		"show": true,
+		"route": "home",
+		"list": [{
+			"pay": "40",
+			"title": "Website Firewall",
+			"name": "btwaf",
+			"isBuy":false,
+			"install": false,
+			"pid": 100000010,
+			"dependent": "nginx",
+			"preview": "https://www.aapanel.com/forum/d/3351-nginx-waf-instructions",
+			"ps": "Mitigating DDOS attacks, easily creating custom rules, protecting your website and reducing the risk of malicious attacks and data leakage, it is recommended to use Nginx 1.18 and above"
+		}, {
+			"pay": "40",
+			"title": "Website Firewall",
+			"name": "btwaf_httpd",
+			"install": false,
+			"isBuy":false,
+			"pid": 100000063,
+			"dependent": "apache",
+			"preview": "https://www.aapanel.com/forum/d/3351-nginx-waf-instructions",
+			"ps": "Mitigating DDOS attacks, easily creating custom rules, protecting your website and reducing the risk of malicious attacks and data leakage, it is recommended to use Nginx 1.18 and above"
+		}, {
+			"pay": "41",
+			"title": "Website statistics",
+			"name": "total",
+			"isBuy":false,
+			"install": false,
+			"pid": 100000057,
+			"preview": "https://www.aapanel.com/forum/d/3789-website-statistics-instructions",
+			"ps": "Real-time accurate statistics of website traffic, ip, uv, pv, requests, spiders and other data"
+		}, {
+			"pay": "42",
+			"title": "Website Tamper-proof for Enterprise",
+			"name": "tamper_core",
+			"isBuy":false,
+			"install": false,
+			"pid": 100000071,
+			"preview": "https://www.aapanel.com/forum/d/17491-how-to-use-tamper-proof-for-enterprise",
+			"ps": "Effectively intercept 99.9% of illegal modification of web pages, tampering of files, etc. Note: Cannot be used with other anti-tamper software"
+		}, {
+			"pay": "43",
+			"title": "Anti-intrusion",
+			"name": "bt_security",
+			"isBuy":false,
+			"install": false,
+			"pid": 100000067,
+			"preview": "https://www.aapanel.com/forum/d/12760-anti-intrusion",
+			"ps": "Effective defense against intrusion into the system through processes such as websites, redis, mysql, etc."
+		}]
+	}, {
+		"type": 2,
+		"pay": "33",
+		"describe": "首页-状态-任务管理器",
+		"show": true,
+		"route": "home",
+		"list": []
+	}, {
+		"type": 3,
+		"pay": "34",
+		"describe": "首页-安全入口-推荐安全软件",
+		"show": true,
+		"route": "home",
+		"list": []
+	}, {
+		"type": 4,
+		"pay": "35",
+		"describe": "网站-网站加速",
+		"show": false,
+		"name": "waf_nginx",
+		"title": "网站加速",
+		"pluginName": "堡塔nginx站点加速",
+		"ps": "基于nginx页面缓存的网站加速插件,推荐WordPress用户安装，效果显著，仅支持Nginx",
+		"preview": "",
+		"eventList": [{
+			"event": "",
+			"version": ""
+		}]
+	}, {
+		"type": 5,
+		"describe": "网站-设置推荐",
+		"show": true,
+		"list": [{
+				"title": "防火墙",
+				"name": "btwaf",
+				"pay": "46",
+
+				"pluginName": "Nginx网站防火墙",
+				"ps": "有效拦截SQL 注入、XSS跨站、恶意代码、网站挂马等常见攻击，过滤恶意访问，降低数据泄露的风险，保障网站的可用性。",
+				"preview": "https://www.bt.cn/new/product_nginx_firewall.html",
+				"dependent": "nginx",
+				"eventList": [{
+					"event": "site_waf_config('$siteName')",
+					"version": "5.2.0"
+				}]
+			}, {
+				"title": "防火墙",
+				"name": "btwaf_httpd",
+				"pay": "46",
+				"pluginName": "网站防火墙",
+				"ps": "有效拦截SQL 注入、XSS跨站、恶意代码、网站挂马等常见攻击，过滤恶意访问，降低数据泄露的风险，保障网站的可用性。",
+				"preview": "https://www.bt.cn/new/product_nginx_firewall.html",
+				"dependent": "apache",
+				"eventList": [{
+					"event": "site_waf_config('$siteName')",
+					"version": "5.2.0"
+				}]
+			}, {
+				"title": "统计",
+				"name": "total",
+				"pay": "47",
+				"pluginName": "网站监控报表",
+				"ps": "快速分析网站运行状况，实时精确统计网站流量、ip、uv、pv、请求、蜘蛛等数据，网站SEO优化利器",
+				"preview": "https://www.bt.cn/new/product_website_total.html",
+				"dependent": "apache",
+				"eventList": [{
+					"event": "WebsiteReport('$siteName')",
+					"version": "5.0"
+				}]
+			}
+
+			, {
+				"title": "统计",
+				"name": "total",
+				"pay": "47",
+				"pluginName": "网站监控报表",
+				"ps": "快速分析网站运行状况，实时精确统计网站流量、ip、uv、pv、请求、蜘蛛等数据，网站SEO优化利器",
+				"preview": "https://www.bt.cn/new/product_website_total.html",
+				"dependent": "nginx",
+				"eventList": [{
+					"event": "WebsiteReport('$siteName')",
+					"version": "5.0"
+				}]
+			}
+		]
+	},
+	{
+		"type": 6,
+		"show": true,
+		"describe": "网站管理-推荐安全软件",
+		"list": [{
+			"title": "网站防篡改程序",
+			"pay": "60",
+			"name": "tamper_proof",
+			"product_introduce": ["保护站点内容安全", "阻止黑客非法修改网页", "阻止网站被挂马", "阻止其他入侵行为"],
+			"previewImg": "/static/img/preview/tamper_proof_preview.png",
+			"menu_id": 15,
+			"isBuy":false,
+			"pid": 100000015,
+			"preview": "",
+			"ps": "事件型防篡改程序,可有效保护网站重要文件不被木马篡改"
+		}, {
+			"title": "限制访问型证书",
+			"pay": "61",
+			"name": "ssl_verify",
+			"product_introduce": ["限制指定人员访问", "双向认证", "内网自签SSL"],
+			"previewImg": "/static/img/preview/ssl_verify_preview.png",
+			"menu_id": 3,
+			"isBuy":false,
+			"pid": 100000062,
+			"preview": "",
+			"ps": "提供双向认证证书，可用于限制指定人员访问"
+		}]
+	},
+	{
+		"type": 7,
+		"show": true,
+		"describe": "文件管理-推荐安全软件",
+		"list": [{
+			"title": "数据同步",
+			"pluginName": "数据同步",
+			"pay": "70",
+			"name": "rsync",
+			"ps": "基于rsync开发的数据同步工具，可用于异地备份、多台主机之间的文件实时或增量同步",
+			"previewImg": "/static/img/preview/rsync_preview.png",
+			"menu_id": 15,
+			"isBuy":false,
+			"pid": 100000005,
+			"preview": ""
+		}]
+	}
+]

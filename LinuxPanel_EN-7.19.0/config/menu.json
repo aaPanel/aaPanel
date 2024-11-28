@@ -1,0 +1,129 @@
+[
+  {
+    "title": "Home",
+    "href": "/",
+    "class": "menu_home",
+    "id": "memuA",
+    "sort": 1
+  },
+  {
+    "title": "Website",
+    "href": "/site",
+    "class": "menu_web",
+    "id": "memuAsite",
+    "sort": 2
+  },
+  {
+    "title": "WP Toolkit",
+    "href": "/wp/toolkit",
+    "class": "menu_wp_toolkit",
+    "id": "memuAwptoolkit",
+    "sort": 2
+  },
+  {
+    "title": "FTP",
+    "href": "/ftp",
+    "class": "menu_ftp",
+    "id": "memuAftp",
+    "sort": 3
+  },
+  {
+    "title": "Databases",
+    "href": "/database",
+    "class": "menu_data",
+    "id": "memuAdatabase",
+    "sort": 4
+  },
+    {
+    "title": "Docker",
+    "href": "/docker",
+    "class": "menu_docker",
+    "id": "memuDocker",
+    "sort": 5
+  },
+  {
+    "title": "Monitor",
+    "href": "/control",
+    "class": "menu_control",
+    "id": "memuAcontrol",
+    "sort": 6
+  },
+  {
+    "title": "Security",
+    "href": "/firewall",
+    "class": "menu_firewall",
+    "id": "memuAfirewall",
+    "sort": 7
+  },
+  {
+    "title": "Waf",
+    "href": "/waf",
+    "class": "menu_btwaf",
+    "id": "memu_btwaf",
+    "sort": 8
+  },
+    {
+    "title": "Mail Server",
+    "href": "/mail",
+    "class": "memu_mailsys",
+    "id": "memu_mailsys",
+    "sort": 9
+  },
+  {
+    "title": "Files",
+    "href": "/files",
+    "class": "menu_folder",
+    "id": "memuAfiles",
+    "sort": 10
+  },
+  {
+    "title": "Logs",
+    "href": "/logs",
+    "class": "menu_logs",
+    "id": "memuAlogs",
+    "sort": 11
+},
+  {
+    "title": "Terminal",
+    "href": "/xterm",
+    "class": "menu_xterm",
+    "id": "memuAxterm",
+    "sort": 12
+  },
+  {
+    "title": "Account",
+    "href": "/whm",
+    "class": "menu_account",
+    "id": "memuAccount",
+    "sort": 13
+  },
+  {
+    "title": "Cron",
+    "href": "/crontab",
+    "class": "menu_day",
+    "id": "memuAcrontab",
+    "sort": 13
+  },
+
+  {
+    "title": "App Store",
+    "href": "/soft",
+    "class": "menu_soft",
+    "id": "memuAsoft",
+    "sort": 14
+  },
+  {
+    "title": "Settings",
+    "href": "/config",
+    "class": "menu_set",
+    "id": "memuAconfig",
+    "sort": 15
+  },
+  {
+    "title": "Log out",
+    "href": "/login?dologin=True",
+    "class": "menu_exit",
+    "id": "dologin",
+    "sort": 16
+  }
+]

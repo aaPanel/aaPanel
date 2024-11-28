@@ -1,0 +1,118 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="main-content pb55">
+    <div class="container-fluid">
+        <div class="safe bgw mtb15 pd15" style="height: 100%;">
+            <link rel="stylesheet" href="/static/css/xterm.css" />
+            <div class="quick_links">
+                <div class="quick_links_title"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span>SSH://</div>
+                <input type="text" class="quick_links_input" placeholder="root@192.168.1.1:21, support temporary SSH connection.">
+                <span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>
+            </div>
+            <div class="term_box" id="term_box_view">
+                <div class="term_item_tab">
+                    <div class="list"></div>
+                    <span class="addServer" title="Add server SSH information">
+                        <span class="glyphicon glyphicon-plus" aria-hidden="true" ></span>
+                    </span>
+                    <span class="tab_tootls">
+                        <span class="glyphicon glyphicon-resize-full" aria-hidden="true" title="Full Screen"></span><span>Full Screen</span>
+                        <!-- <span class="glyphicon glyphicon-triangle-top" aria-hidden="true"></span>
+                        <span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span> -->
+                    </span>
+                </div>
+                <div class="term_content_tab">
+                    <div class="term-tool-button tool-hide"><span class="glyphicon glyphicon-menu-right"></span></div>
+                </div>
+            </div>
+            <div class="term_tootls">
+                <div class="tootls_tab"><span class="active">Server list</span><a href="javascript:;" data-type="host" title="Add server SSH information"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a></div>
+                <ul class="tootls_host_list"></ul>
+                <div class="tootls_tab"><span class="active">Commands<i>(Click to copy)</i></span><a href="javascript:;"  data-type="shell" title="Add common commands"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a></div>
+                <ul class="tootls_commonly_list"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/html" id="host_form_view">
+    <div class="bt-form bt-form-2x pd20" id="host_form">
+        <input type="text" name="sort" class="hidden" value="<% this.form.sort %>" />
+        <div class="line input_group">
+            <span class="tname">Server IP</span>
+            <div class="info-r">
+                <input type="text" name="host" class="bt-input-text mr5" style="width:240px" value="<% this.form.host %>" placeholder="Enter server IP" val="" autocomplete="off" />
+                <input type="text" name="port" class="bt-input-text mr5" style="width:60px" placeholder="Port" value="<% this.form.port %>" autocomplete="off"/>
+            </div>
+        </div>
+        <div class="line">
+            <span class="tname">SSH account</span>
+            <div class="info-r">
+                <input type="text" name="username" class="bt-input-text mr5" style="width:305px" placeholder="Enter SSH account" value="<% this.form.username %>" autocomplete="off"/>
+            </div>
+        </div>
+        <div class="line">
+            <span class="tname">Verification</span>
+            <div class="info-r ">
+                <div class="btn-group">
+                    <button type="button" tabindex="-1" class="btn btn-sm auth_type_checkbox  <% !(this.form.password != '' || this.form.pkey == '' && this.form.password == '')?'btn-default':'btn-success' %>" data-ctype="0">Password</button>
+                    <button type="button" tabindex="-1" class="btn btn-sm auth_type_checkbox  <% this.form.pkey == ''?'btn-default':'btn-success' %>" data-ctype="1">Private key</button>
+                </div>
+            </div>
+        </div>
+        <div class="line c_password_view <% (this.form.password != '' || this.form.pkey == '' && this.form.password == '')?'show':'hidden'%>">
+            <span class="tname">Password</span>
+            <div class="info-r">
+                <input type="text" name="password" class="bt-input-text mr5" placeholder="Please enter SSH password"
+                       style="width:305px;" value="<% this.form.password %>" autocomplete="off"/>
+            </div>
+        </div>
+        <div class="line c_pkey_view <% this.form.pkey != ''?'show':'hidden'%>">
+            <span class="tname">Private key</span>
+            <div class="info-r">
+                <textarea rows="4" name="pkey" class="bt-input-text mr5" placeholder="Please enter SSH Private key"
+                          style="width:305px;height: 80px;line-height: 18px;padding-top:10px;"><% this.form.pkey %></textarea>
+            </div>
+        </div>
+        <div class="line key_pwd_line <% this.form.pkey != '' ? 'show' : 'hidden' %>">
+            <span class="tname">Key password</span>
+            <div class="info-r">
+                <input type="text" name="pkey_passwd" class="bt-input-text mr5" placeholder="Please enter Key password, can be blank" style="width:305px;"
+                       value="<% this.form.pkey_passwd %>" autocomplete="off"/>
+            </div>
+        </div>
+        <div class="line">
+            <span class="tname">Remarks</span>
+            <div class="info-r">
+                <input type="text" name="ps" class="bt-input-text mr5" placeholder="Please enter remarks, can be blank"
+                       style="width:305px;" value="<% this.form.ps %>" autocomplete="off"/>
+            </div>
+        </div>
+    </div>
+</script>
+<script type="text/html" id="shell_form_view">
+    <div class="bt-form bt-form-2x pd20" id="host_form">
+        <div class="line">
+            <span class="tname">Name</span>
+            <div class="info-r">
+                <input type="text" name="title" class="bt-input-text mr5" style="width:305px" placeholder="Please enter command description, required" value="<% this.form.title %>" autocomplete="off"/>
+            </div>
+        </div>
+        <div class="line">
+            <span class="tname">Content</span>
+            <div class="info-r">
+                <textarea rows="4" name="shell" class="bt-input-text mr5"
+                          placeholder="Please enter command content, required"
+                          style="width:305px;height: 150px;line-height: 18px;padding-top:10px;"><% this.form.shell %></textarea>
+            </div>
+        </div>
+    </div>
+</script>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript" src="/static/js/jquery.dragsort-0.5.2.min.js"></script>
+<script type="text/javascript" src="/static/js/clipboard.min.js"></script>
+<script type="text/javascript" src="/static/js/xterm.js"></script>
+<script type="text/javascript" src="/static/js/term.js"></script>
+{% endblock %}

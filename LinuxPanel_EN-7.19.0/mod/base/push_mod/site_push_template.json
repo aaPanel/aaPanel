@@ -1,0 +1,428 @@
+[
+  {
+    "id": "1",
+    "ver": "1",
+    "used": true,
+    "source": "site_ssl",
+    "title": "Site Certificate (SSL) expiration",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.site_push",
+      "name": "SSLTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "project",
+          "name": "Site",
+          "type": "select",
+          "default": "all",
+          "items": [
+            {
+              "title": "All sites",
+              "value": "all"
+            }
+          ]
+        },
+        {
+          "attr": "cycle",
+          "name": "Remaining days",
+          "type": "number",
+          "suffix": "",
+          "unit": "day(s)",
+          "default": 15
+        }
+      ],
+      "sorted": [
+        [
+          "project"
+        ],
+        [
+          "cycle"
+        ]
+      ]
+    },
+    "default": {
+      "project": "all",
+      "cycle": 15
+    },
+    "advanced_default": {
+      "number_rule": {
+        "total": 2
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "sms",
+      "tg"
+    ],
+    "unique": false
+  },
+  {
+    "id": "2",
+    "ver": "1",
+    "used": true,
+    "source": "site_end_time",
+    "title": "Website expiration",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.site_push",
+      "name": "SiteEndTimeTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "cycle",
+          "name": "Remaining days",
+          "type": "number",
+          "unit": "day(s)",
+          "suffix": "",
+          "default": 7
+        }
+      ],
+      "sorted": [
+        [
+          "cycle"
+        ]
+      ]
+    },
+    "default": {
+      "cycle": 7
+    },
+    "advanced_default": {
+      "number_rule": {
+        "total": 2
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": true
+  },
+  {
+    "id": "3",
+    "ver": "1",
+    "used": true,
+    "source": "panel_pwd_end_time",
+    "title": "aaPanel password expiration date",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.site_push",
+      "name": "PanelPwdEndTimeTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "cycle",
+          "name": "Remaining days",
+          "type": "number",
+          "unit": "day(s)",
+          "suffix": "",
+          "default": 15
+        }
+      ],
+      "sorted": [
+        [
+          "cycle"
+        ]
+      ]
+    },
+    "default": {
+      "cycle": 15
+    },
+    "advanced_default": {
+      "number_rule": {
+        "total": 2
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": true
+  },
+  {
+    "id": "4",
+    "ver": "1",
+    "used": true,
+    "source": "ssh_login_error",
+    "title": "SSH login failure alarm",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.site_push",
+      "name": "SSHLoginErrorTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "cycle",
+          "name": "Trigger conditions",
+          "type": "number",
+          "unit": "minute(s)",
+          "suffix": "less than  ",
+          "default": 30
+        },
+        {
+          "attr": "count",
+          "name": "Login failed",
+          "type": "number",
+          "unit": "time(s)",
+          "suffix": "",
+          "default": 3
+        },
+        {
+          "attr": "interval",
+          "name": "Interval",
+          "type": "number",
+          "unit": "second(s)",
+          "suffix": "more than  ",
+          "default": 600
+        }
+      ],
+      "sorted": [
+        [
+          "cycle",
+          "count"
+        ],
+        [
+          "interval"
+        ]
+      ]
+    },
+    "default": {
+      "cycle": 30,
+      "count": 3,
+      "interval": 600
+    },
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 3
+      },
+      "time_rule": {
+        "send_interval": 600
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": true
+  },
+  {
+    "id": "5",
+    "ver": "1",
+    "used": true,
+    "source": "services",
+    "title": "Service Stop Alert",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.site_push",
+      "name": "ServicesTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "project",
+          "name": "Notification type",
+          "type": "select",
+          "default": null,
+          "items": [
+          ]
+        },
+        {
+          "attr": "count",
+          "name": "Auto-restart",
+          "type": "radio",
+          "suffix": "",
+          "default": 1,
+          "items": [
+            {
+              "title": "Automatically attempt to restart the project",
+              "value": 1
+            },
+            {
+              "title": "Do not attempt to restart",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "attr": "interval",
+          "name": "Interval",
+          "type": "number",
+          "unit": "second(s)",
+          "suffix": "more than  ",
+          "default": 600
+        }
+      ],
+      "sorted": [
+        [
+          "project"
+        ],
+        [
+          "count"
+        ],
+        [
+          "interval"
+        ]
+      ]
+    },
+    "default": {
+      "project": "",
+      "count": 2,
+      "interval": 600
+    },
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 3
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": false
+  },
+  {
+    "id": "6",
+    "ver": "1",
+    "used": true,
+    "source": "panel_safe_push",
+    "title": "aaPanel security alarms",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.site_push",
+      "name": "PanelSafePushTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "help",
+          "name": "Alarm content",
+          "type": "help",
+          "unit": "",
+          "style": {
+            "margin-top": "6px"
+          },
+          "list": [
+            "Panel user changes, panel logs are deleted, panels are opened for developers"
+          ],
+          "suffix": "",
+          "default": 600
+        }
+      ],
+      "sorted": [
+        [
+          "help"
+        ]
+      ]
+    },
+    "default": {
+    },
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 3
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": true
+  },
+  {
+    "id": "7",
+    "ver": "1",
+    "used": true,
+    "source": "ssh_login",
+    "title": "SSH login alert",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.site_push",
+      "name": "SSHLoginTask"
+    },
+    "template": {
+      "field": [
+      ],
+      "sorted": [
+      ]
+    },
+    "default": {
+    },
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 3
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": true
+  },
+  {
+    "id": "8",
+    "ver": "1",
+    "used": true,
+    "source": "panel_login",
+    "title": "aaPanel login alarm",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.site_push",
+      "name": "PanelLoginTask"
+    },
+    "template": {
+      "field": [
+      ],
+      "sorted": [
+      ]
+    },
+    "default": {
+    },
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 3
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "sms",
+      "tg"
+    ],
+    "unique": true
+  }
+]
+

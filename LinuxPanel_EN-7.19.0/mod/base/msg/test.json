@@ -1,0 +1,105 @@
+[
+  {
+    "id": "f4e98e478b85e876",
+    "used": true,
+    "sender_type": "sms",
+    "data": {}
+  },
+  {
+    "id": "fb3e9e409b9d7c27",
+    "sender_type": "mail",
+    "data": {
+      "send": {
+        "qq_mail": "1191604998@qq.com",
+        "qq_stmp_pwd": "alvonbfcwhlahbcg",
+        "hosts": "smtp.qq.com",
+        "port": "465"
+      },
+      "title": "test_mail",
+      "receive": [
+        "1191604998@qq.com",
+        "225326944@qq.com"
+      ]
+    },
+    "used": true
+  },
+  {
+    "id": "79900d4fb37fa83d",
+    "sender_type": "feishu",
+    "data": {
+      "url": "https://open.feishu.cn/open-apis/bot/v2/hook/ba6a3f77-0349-4492-a8ad-0b4c99435bf1",
+      "user": [],
+      "title": "test_feishu",
+      "isAtAll": true
+    },
+    "used": true
+  },
+  {
+    "id": "8f70de4baa89133e",
+    "sender_type": "webhook",
+    "data": {
+      "title": "webhook",
+      "url": "http://192.168.69.172:11211",
+      "query": {},
+      "headers": {},
+      "body_type": "json",
+      "custom_parameter": {},
+      "method": "POST",
+      "ssl_verify": null,
+      "status": true
+    },
+    "used": true
+  },
+  {
+    "id": "10bcf5439299d9dd",
+    "used": true,
+    "sender_type": "wx_account",
+    "data": {
+      "id": "jsbRCBBinMmFjYjczNTQyYmUzxNDiWQw",
+      "uid": 1228262,
+      "is_subscribe": 1,
+      "head_img": "https://thirdwx.qlogo.cn/mmopen/vi_32/DYAIOgq83epBUaqBcCkkxtKwuaOHLy1qjGeDvmf1hZsrkFGNrldyRgSuA3sYB1xlgKv1Z98PUciaxju71PUKchA/132",
+      "nickname": "沈涛",
+      "status": 1,
+      "create_time": "2023-12-27 11:30:15",
+      "update_time": "2023-12-27 11:30:15",
+      "remaining": 98,
+      "title": "沈涛"
+    }
+  },
+  {
+    "id": "2c7c094eb23ddaae",
+    "used": true,
+    "sender_type": "webhook",
+    "data": {
+      "url": "http://192.168.69.159:8888/hook?access_key=IUSEViIMMhQio1WyP0ztCyoa8sIBjaWulihhcJX4rRJ4sW79",
+      "query": {},
+      "headers": {},
+      "body_type": "json",
+      "custom_parameter": {},
+      "method": "GET",
+      "ssl_verify": 1,
+      "status": true,
+      "name": "aaa",
+      "title": "aaa"
+    }
+  },
+  {
+    "id": "63c30845916fa722",
+    "used": true,
+    "sender_type": "feishu",
+    "data": {
+      "url": "https://open.feishu.cn/open-apis/bot/v2/hook/c6906d9f-01c5-4a74-80bd-3ccda33bf4ec",
+      "title": "amber"
+    }
+  },
+  {
+    "id": "6ccf834a95010bed",
+    "used": true,
+    "sender_type": "dingding",
+    "data": {
+      "url": "https://oapi.dingtalk.com/robot/send?access_token=00732dec605edc1c07f441eb9d470c8bdfa301c4ce89959916fe535d08c09043",
+      "title": "dd"
+    }
+  }
+]

@@ -1,0 +1,847 @@
+{% extends "layout.html" %}
+{% block content %}
+<style type="text/css">
+.ml30 {
+	margin-left: 30px;
+}
+.no-show {
+	display: none;
+}
+.tab-con .tab-block {
+	width: 100%;
+	height: 100%;
+}
+.divtable .btswitch + .btswitch-btn {
+	width: 2.8rem;
+	height: 1.75rem;
+}
+
+/* 安全页面头部 */
+.state-content .bt-form-new {
+	align-items: center;
+}
+.state-content .bt-form-new .form-label {
+	padding-right: 15px;
+}
+.state-content .form-inline-line {
+	width: 1px;
+	height: 20px;
+	margin: 0 18px;
+	background-color: #ccc;
+}
+/* end */
+
+/* 安全页面内容 */
+.firewall-tab-view .tab-con {
+	padding: 0;
+}
+.firewall-tab-view .tab-nav-con {
+	padding-top: 15px;
+}
+.firewall-tab-view .tab-nav-border span i {
+  font-style: initial;
+}
+/* end */
+/* 系统防火墙 */
+.safety-header .ping-item {
+	margin-right: 15px;
+}
+.safety-header-info {
+	display: flex;
+	align-items: center;
+}
+.port-import-form {
+	padding: 20px;
+}
+.detect_input {
+	display: flex;
+	justify-content: center;
+}
+.detect_input .input_file {
+	width: 170px;
+	height: 35px;
+	border: 0.1px dashed #D0D0D0;
+	padding: 0 0 0 10px;
+	font-size: 14px;
+	outline: none;
+}
+.detect_input .select_file {
+	height: 35px;
+	padding: 0 14px;
+	font-size: 14px;
+	color: #fff;
+	background: #10952a;
+	border: none;
+}
+/* end */
+/* SSH管理 */
+.ssh-login-info .sep {
+	margin: 0 4px;
+}
+.ssh-config {
+	padding: 6px 0;
+}
+.ssh-config-title {
+	line-height: 30px;
+	font-size: 14px;
+	border-bottom: 1px solid #e7e7e7;
+	padding: 5px 5px 8px 10px;
+	font-weight: bold;
+	color: #666;
+	margin-bottom: 10px;
+}
+.ssh-config .line .line-input {
+	display: inline-block;
+	position: relative;
+}
+.ssh-config .line:hover {
+	background: #a5a5a514;
+	transition: background 0.2s;
+	cursor: pointer;
+}
+.ssh-config .line-title {
+	font-size: 12px;
+	color: #333;
+	display: inline-block;
+	width: 150px;
+	text-align: right;
+	padding-right: 15px;
+	height: 30px;
+	line-height: 30px;
+	vertical-align: top;
+}
+.ssh-config .line-item {
+	display: inline-block;
+	vertical-align: top;
+	height: 30px;
+	line-height: 30px;
+}
+.ssh-config .line-row {
+	vertical-align: top;
+}
+.line-row,
+.line-row-tips {
+	height: 30px;
+	line-height: 30px;
+	display: inline-block;
+}
+.line-input input {
+	height: 30px;
+	line-height: 30px;
+}
+.line-row-tips {
+	margin-left: 10px !important;
+	color: #999;
+	vertical-align: top;
+}
+#sshView .tab-nav-con {
+	padding-top: 10px;
+}
+.cutLoginLogsType {
+	margin-top: -4px;
+}
+.btn-sshkey-group {
+	display: flex;
+	align-items: center;
+}
+.news-channel .bt-form-new .form-label {
+	padding-right: 10px;
+}
+/* end */
+/* 入侵防御 */
+#intrusion .divtable {
+	margin-top: 0;
+}
+#antiProcessWhiteList .divtable {
+	margin-top: 10px;
+}
+.logs-data-select {
+	margin-bottom: 15px;
+}
+.logs-title {
+	display: inline-block;
+	width: auto;
+	height: 35px;
+	font-size: 12px;
+	line-height: 35px;
+	margin-right: 5px;
+}
+.logs-unselect {
+	position: relative;
+	display: inline-block;
+	height: 30px;
+	border: 1px solid #e6e6e6;
+	border-radius: 2px;
+	font-size: 13px;
+	line-height: 28px;
+}
+.logs-unselect.active .logs-input-list {
+	display: block;
+}
+.logs-unselect.active .logs-input-list {
+	animation-name: layui-upbit;
+	animation-duration: .3s;
+	animation-fill-mode: both;
+}
+.logs-inputs {
+	box-sizing: border-box;
+	padding: 0 30px 0 10px;
+	height: 30px;
+	cursor: pointer;
+}
+.logs-unselect .logs-inputs:after {
+	position: absolute;
+	top: 0.8pc;
+	right: 6pt;
+	display: block;
+	width: 0;
+	height: 0;
+	border-color: #c2c2c2 transparent transparent;
+	border-style: solid;
+	border-width: 6px 6px 0;
+	content: '';
+	transition: transform .5s;
+}
+.logs-input-list {
+	position: absolute;
+	top: 30px;
+	right: -1px;
+	left: -1px;
+	z-index: 899;
+	display: none;
+	box-sizing: border-box;
+	padding: 5px 0;
+	height: auto;
+	min-width: 100%;
+	border: 1px solid #d2d2d2;
+	border-radius: 2px;
+	background-color: #fff;
+	box-shadow: 0 2px 4px rgba(0,0,0,.12);
+}
+.logs-input-list dd {
+	padding: 5px 15px;
+	height: 30x;
+}
+
+.logs-input-list dd:hover {
+	background-color: #f2f2f2;
+	cursor: pointer;
+}
+.logs-input-list dd.logs_checked {
+	background: #20a532!important;
+	color: #fff;
+}
+.logs-page.page-style {
+	padding: 0 5px;
+	height: 30px;
+	font-size: 13px;
+	margin-top: 5px;
+}
+.page-style .nextPage{
+	display: inline-block;
+	margin: 0 3px;
+	padding: 0 10px;
+	height: 30px;
+	border-radius: 2px;
+	background-color: #f5f5f5;
+	color: #666;
+	text-align: center;
+	line-height: 30px;
+	cursor: pointer;
+}
+.page-style .Pcount {
+	margin-right: 0;
+	margin-left: 5px;
+}
+.page a:last-of-type {
+	border-right: 1px solid #ececec;
+}
+/* end */
+/* 系统加固 */
+#system .divtable {
+	margin: 0;
+}
+#reinforceBlockIp .divtable {
+	margin-top: 10px;
+}
+#reinforceLog .divtable {
+	margin-bottom: 10px;
+}
+/* end */
+/* 日志审计 */
+.logAuditContent {
+	padding: 0 0 0 15px;
+	margin-left: 15px;
+	width: 100%;
+	flex: 1;
+	border-left: 1px solid #ececec;
+}
+
+.logAuditTabContent {
+	display: flex;
+	height: 100%;
+}
+
+.logAuditTabContent .logAuditTab .logAuditItem {
+	height: 35px;
+	line-height: 35px;
+	padding: 0 10px;
+	border-bottom: 1px solid #ececec;
+	cursor: pointer;
+}
+
+.logAuditTabContent .logAuditTab .logAuditItem:hover,
+.logAuditTabContent .logAuditTab .logAuditItem.active {
+	background-color: #f2f2f2;
+}
+
+.logAuditTabContent .logAuditTab {
+	border: 1px solid #ececec;
+	overflow: auto;
+}
+/* end */
+/* 面板日志 */
+.crontab-log {
+	min-height: 250px;
+	margin-top: 10px;
+	margin-bottom: 0;
+	padding: 15px;
+	line-height: 16px;
+	background-color: rgb(51, 51, 51);
+	white-space: pre-wrap;
+	overflow: auto;
+	border: none;
+	color: #f1f1f1;
+}
+/* end */
+/* 功能介绍 */
+.daily-thumbnail {
+	width: 1200px;
+	margin: 80px auto;
+}
+.thumbnail-box {
+	position: relative;
+	display: flex;
+	justify-content: center;
+}
+
+.thumbnail-introduce {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-bottom: 40px;
+}
+.thumbnail-introduce span {
+	font-size: 24px;
+	font-weight: bold;
+}
+.thumbnail-introduce ul {
+	display: flex;
+	font-size: 16px;
+	line-height: 30px;
+	margin: 20px 0;
+	list-style-type: square;
+}
+.thumbnail-introduce ul li + li {
+	margin-left: 40px;
+}
+.pluginTipsGg {
+	position: relative;
+	width: 950px;
+	height: 720px;
+	background-color: #f1f1f1;
+	background-size: 100%;
+	background-repeat: no-repeat;
+	background-position: top;
+	border-radius: 4px;
+}
+/*.pluginTipsGg:hover::before{*/
+/*  display: inline-block;*/
+/*}*/
+.pluginTipsGg::before {
+	content: '点击预览';
+	display: none;
+	background: #000;
+	opacity: 0.2;
+	color: #fff;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	line-height: 621px;
+	font-size: 18px;
+	vertical-align: bottom;
+	text-align: center;
+	border-radius: 4px;
+	transition: all 1s;
+}
+.tab-list .tabs-item.active:after {
+	content: '';
+	width: 20px;
+	height: 2px;
+	position: absolute;
+	left: 50%;
+	bottom: 0px;
+	background: red;
+	margin-left: -10px;
+	background: #20a53a;
+}
+.thumbnail-box .thumbnail-tab {
+	margin-right: 20px;
+	width: 180px;
+	border-left: 1px solid #def2e2;
+}
+.thumbnail-tab li {
+	padding: 0 20px;
+	line-height: 36px;
+	cursor: pointer;
+	font-size: 14px;
+}
+.thumbnail-tab li.on {
+	border-left: 2px solid #20a53a;
+	color: #20a53a;
+	font-size: 16px;
+	font-weight: bold;
+}
+.thumbnail-item {
+	display: none;
+}
+.thumbnail-item.show {
+	display: block;
+}
+.bt_warning {
+	color: #fc6d26;
+}
+/* end */
+</style>
+<div class="main-content">
+	<div class="container-fluid" style="padding-bottom: 50px;">
+		<div id="cutTab" class="pos-box bgw mtb15">
+			<div class="tab-list">
+				<div class="tabs-item active" data-name="safety">{{ data['lan']['H1'] }}</div>
+				<div class="tabs-item" data-name="ssh">{{ data['lan']['H2'] }}</div>
+				<div class="tabs-item" data-name="intrusion">{{ data['lan']['H3'] }}</div>
+				<div class="tabs-item" data-name="system">{{ data['lan']['H4'] }}</div>
+<!--				<div class="tabs-item" data-name="logAudit">{{ data['lan']['H5'] }}</div>-->
+<!--				<div class="tabs-item" data-name="logs">{{ data['lan']['H6'] }}</div>-->
+			</div>
+		</div>
+		<div class="container-fluid bgw mtb15 pd15 radius4 safe state-content">
+			<div class="safety-header">
+				<div class="bt-form-new inline">
+					<div class="form-item">
+						<div class="form-label">{{ data['lan']['TURN1'] }}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="isFirewall" type="checkbox" />
+								<label class="btswitch-btn isFirewall" for="isFirewall"></label>
+							</div>
+						</div>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="form-item ping-item">
+						<div class="form-label">{{ data['lan']['TURN2'] }}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="ssh_ping" type="checkbox" />
+                <label class="btswitch-btn" for="ssh_ping"></label>
+							</div>
+						</div>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="safety-header-info">
+						<span class="mr5">{{ data['lan']['S1'] }}</span>
+						<a class="btlink" href="javascript:openPath('/www/wwwlogs');">{{ session['logsPath'] }}</a>
+						<span class="mlr15" id="logSize">0 B</span>
+						<button class="btn btn-default btn-sm" id="clearWebLogs">{{ data['lan']['BTN1'] }}</button>
+					</div>
+				</div>
+			</div>
+			<div class="ssh-header no-show">
+				<div class="bt-form-new inline">
+					<div class="form-item">
+						<div class="form-label">{{data['lan']['TURN3']}}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="isSsh" type="checkbox" />
+								<label class="btswitch-btn isSsh" for="isSsh"></label>
+							</div>
+						</div>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="ssh-login-info" id="sshDetailed">
+						<span>{{ data['lan']['S4'] }}：</span>
+						<a class="btlink" data-index="1" href="javascript:;">{{ data['lan']['S5'] }}: 0</a>
+						<span class="sep">/</span>
+						<a class="bterror" data-index="2" href="javascript:;">{{ data['lan']['S6'] }}: 0</a>
+					</div>
+				</div>
+			</div>
+			<div class="intrusion-header no-show">
+				<div class="bt-form-new inline">
+					<div class="form-item">
+						<div class="form-label">{{ data['lan']['AI1'] }}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="isIntrusion" type="checkbox" />
+								<label class="btswitch-btn isIntrusion" for="isIntrusion"></label>
+							</div>
+						</div>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="form-item">
+						<span class="mr5">{{ data['lan']['AI2'] }}</span>
+						<span class="totlaDays">0</span>
+					</div>
+					<div class="form-inline-line"></div>
+					<div class="form-item">
+						<span class="mr5">{{ data['lan']['AI3'] }}</span>
+						<span class="totlaTimes">0</span>
+					</div>
+				</div>
+			</div>
+			<div class="system-header no-show">
+				<div class="bt-form-new inline">
+					<div class="form-item">
+						<div class="form-label">{{ data['lan']['SH1'] }}</div>
+						<div class="form-value">
+							<div class="bt-form-switch">
+								<input class="btswitch btswitch-ios" id="isReinforcement" type="checkbox" />
+								<label class="btswitch-btn isReinforcement" for="isReinforcement"></label>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="mtb15 pd15 bgw tab-view-box firewall-tab-view">
+			<div class="tab-con show w-full" id="safety">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['F1'] }}: <i>0</i></span>
+					<span>{{ data['lan']['F2'] }}: <i>0</i></span>
+					<span>{{ data['lan']['F3'] }}: <i>0</i></span>
+					<span>{{ data['lan']['F4'] }}: <i>0</i></span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on" id="portRules"></div>
+					<div class="tab-block" id="ipRule"></div>
+					<div class="tab-block" id="portForward"></div>
+					<div class="tab-block" id="countryRegion"></div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="sshView">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['S2'] }}</span>
+					<span>{{ data['lan']['S3'] }}</span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on">
+						<div class="ssh-config">
+							<div class="ptb10">
+								<div class="line" title="{{ data['lan']['SS1'] }}">
+									<div class="line-title">{{ data['lan']['SS1'] }}</div>
+									<div class="line-input">
+										<input type="text" class="bt-input-text" value="22" name="ssh_port" style="width: 120px" />
+										<button type="button" class="btn btn-success btn-sm ml5 save_ssh_port">{{ data['lan']['SS2'] }}</button>
+									</div>
+									<div class="line-row-tips">{{ data['lan']['SS3'] }}</div>
+								</div>
+								<div class="line" title="{{ data['lan']['SS4'] }}">
+									<div class="line-title">{{ data['lan']['SS4'] }}</div>
+									<div class="line-item">
+										<!-- <div class="line-row">
+													<div class="ssh-item" style="margin-left: 0; margin-top: 5px;padding: 0;">
+															<input class="btswitch btswitch-ios" id="root_login" type="checkbox" name="root_login">
+															<label class="btswitch-btn" for="root_login" style="margin-bottom: 0;"></label>
+													</div>
+											</div>
+											<div class="line-row-tips">是否允许root登录ssh</div> -->
+										<select class="bt-input-text" name="root_login">
+											<option value="yes">{{ data['lan']['SS5'] }}</option>
+										</select>
+									</div>
+								</div>
+								<div class="line" title="{{ data['lan']['SS6'] }}">
+									<div class="line-title">{{ data['lan']['SS6'] }}</div>
+									<div class="line-item">
+										<div class="line-row">
+											<div class="ssh-item" style="margin-left: 0; margin-top: 5px; padding: 0">
+												<input class="btswitch btswitch-ios" id="ssh_paw" type="checkbox" name="ssh_paw" />
+												<label class="btswitch-btn" for="ssh_paw" style="margin-bottom: 0"></label>
+											</div>
+										</div>
+										<div class="line-row-tips">{{ data['lan']['SS7'] }}</div>
+									</div>
+								</div>
+								<div class="line" title="{{ data['lan']['SS8'] }}">
+									<div class="line-title">{{ data['lan']['SS8'] }}</div>
+									<div class="line-item">
+										<div class="line-row">
+											<div class="ssh-item" style="margin-left: 0; margin-top: 5px; padding: 0">
+												<input class="btswitch btswitch-ios" id="ssh_pubkey" type="checkbox" name="ssh_pubkey" />
+												<label class="btswitch-btn" for="ssh_pubkey" style="margin-bottom: 0"></label>
+											</div>
+										</div>
+										<button type="button" class="btn btn-success btn-xs ml5 checkKey" style="vertical-align: initial">{{ data['lan']['SS9'] }}</button>
+										<button type="button" class="btn btn-default btn-xs ml5 downloadKey" style="vertical-align: initial">{{ data['lan']['SS10'] }}</button>
+										<div class="line-row-tips">{{ data['lan']['SS11'] }}</div>
+									</div>
+								</div>
+								<div class="line" title="{{ data['lan']['SS12'] }}">
+									<div class="line-title">{{ data['lan']['SS12'] }}</div>
+									<div class="line-item">
+										<div class="line-row mr5">
+											<a href="javascript:;" class="bt_warning setSshLoginAlarm">{{ data['lan']['SS13'] }}</a>
+										</div>
+										<button type="button" class="btn btn-success btn-xs ml5 setSshLoginAlarm" style="vertical-align: initial">{{ data['lan']['SS14'] }}</button>
+										<div class="line-row-tips">{{ data['lan']['SS15'] }}</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="tab-block">
+						<div id="loginLogsContent">
+							<div class="w-full">
+								<div id="loginAllLogs"></div>
+							</div>
+							<div class="w-full no-show">
+								<div id="loginSuccessLogs"></div>
+							</div>
+							<div class="w-full no-show">
+								<div id="loginErrorLogs"></div>
+							</div>
+						</div>
+						<div class="daily-thumbnail" style="display: none">
+							<div class="thumbnail-introduce">
+								<span>{{ data['lan']['S7'] }}</span>
+								<ul>
+									<li>{{ data['lan']['S8'] }}</li>
+								</ul>
+								<div class="daily-product-buy">
+									<a href="javascript:;" class="btn btn-success va0 mr10 " onclick="product_recommend.pay_product_sign('pro', 100)">{{ data['lan']['BTN7'] }}</a>
+								</div>
+							</div>
+							<div class="thumbnail-box">
+								<ul class="thumbnail-tab">
+									<li class="on">{{ data['lan']['S7'] }}</li>
+								</ul>
+								<div class="thumbnail-item show">
+									<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/ssh/1.png');"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="intrusion">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['AI4'] }}</span>
+					<span>{{ data['lan']['AI5'] }}</span>
+					<span>{{ data['lan']['AI6'] }}</span>
+					<span>{{ data['lan']['AI7'] }}</span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on">
+						<div id="antiOverviewList"></div>
+						<ul class="help-info-text c7">
+							<li>{{ data['lan']['AI8'] }}</li>
+							<li>{{ data['lan']['AI9'] }}</li>
+							<li>{{ data['lan']['AI10'] }}</li>
+						</ul>
+					</div>
+					<div class="tab-block">
+						<div id="antiProcessWhiteList"></div>
+					</div>
+					<div class="tab-block">
+						<div id="antiInterceptLog"></div>
+					</div>
+					<div class="tab-block">
+						<div id="antiOperationLog"></div>
+					</div>
+				</div>
+				<div class="installSoft no-show">
+					<div class="daily-thumbnail">
+						<div class="thumbnail-introduce">
+							<span>{{ data['lan']['H3'] }}{{ data['lan']['PF'] }}</span>
+							<ul>
+								<li>{{ data['lan']['AI12'] }}</li>
+								<li>{{ data['lan']['AI13'] }}</li>
+								<li>{{ data['lan']['AI14'] }}</li>
+							</ul>
+							<div class="daily-product-buy">
+								<a href="javascript:;" class="btn btn-success va0 mr10 installIntrusion">{{ data['lan']['BTN6'] }}</a>
+								<a href="javascript:;" class="btn btn-success va0 ml15 buyIntrusion" onclick="product_recommend.pay_product_sign('pro',105)">{{ data['lan']['BTN7'] }}</a>
+							</div>
+						</div>
+						<div class="thumbnail-box">
+							<ul class="thumbnail-tab">
+								<li class="on">{{ data['lan']['AI15'] }}</li>
+								<li>{{ data['lan']['AI16'] }}</li>
+								<li>{{ data['lan']['AI17'] }}</li>
+								<li>{{ data['lan']['AI18'] }}</li>
+							</ul>
+							<div class="thumbnail-item show">
+								<div class="pluginTipsGg" style="background-image: url(/static/images/firewall/intrusion/1.png)"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url(/static/images/firewall/intrusion/2.png)"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url(/static/images/firewall/intrusion/3.png)"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url(/static/images/firewall/intrusion/4.png)"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="system">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['SH2'] }}</span>
+					<span>{{ data['lan']['SH3'] }}</span>
+					<span>{{ data['lan']['SH4'] }}</span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on">
+						<div id="reinforceSystem"></div>
+						<ul class="help-info-text c7">
+							<li>{{ data['lan']['SH5'] }}</li>
+							<li>{{ data['lan']['SH6'] }}</li>
+							<li>{{ data['lan']['SH7'] }}</li>
+							<li style="color: red">{{ data['lan']['SH8'] }}</li>
+						</ul>
+					</div>
+					<div class="tab-block">
+						<div>
+							<input class="bt-input-text" name="system_address" type="text" value="" placeholder="{{ data['lan']['SH9'] }}" style="width: 250px; margin-right: 6px" />
+							<button class="btn btn-success btn-sm system_add_ip">{{ data['lan']['SH10'] }}</button>
+						</div>
+						<div id="reinforceBlockIp"></div>
+						<ul class="help-info-text c7">
+							<li>{{ data['lan']['SH11'] }}</li>
+							<li>{{ data['lan']['SH12'] }}</li>
+						</ul>
+					</div>
+					<div class="tab-block">
+						<div id="reinforceLog"></div>
+						<div id="reinforceLogPage" class="page"></div>
+					</div>
+				</div>
+				<div class="installSoft no-show">
+					<div class="daily-thumbnail">
+						<div class="thumbnail-introduce">
+							<span>{{ data['lan']['H4'] }}{{ data['lan']['PF'] }}</span>
+							<ul>
+								<li>{{ data['lan']['SH14'] }}</li>
+								<li>{{ data['lan']['SH15'] }}</li>
+							</ul>
+							<div class="daily-product-buy">
+								<a href="javascript:;" class="btn btn-success va0 mr10 installSystem">{{ data['lan']['BTN6'] }}</a>
+								<a href="javascript:;" class="btn btn-success va0 ml15 buySystem" onclick="product_recommend.pay_product_sign('pro',102)">{{ data['lan']['BTN7'] }}</a>
+							</div>
+						</div>
+						<div class="thumbnail-box">
+							<ul class="thumbnail-tab">
+								<li class="on">{{ data['lan']['SH16'] }}</li>
+								<li>{{ data['lan']['SH17'] }}</li>
+								<li>{{ data['lan']['SH18'] }}</li>
+							</ul>
+							<div class="thumbnail-item show">
+								<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/system/1.png')"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/system/2.png')"></div>
+							</div>
+							<div class="thumbnail-item">
+								<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/system/3.png')"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="logAudit">
+				<div class="logAuditTabContent">
+					<div class="logAuditTab"></div>
+					<div class="logAuditContent">
+						<div id="logAuditTable"></div>
+						<div id="logAuditPages" class="page" style="display: flex;justify-content: flex-end"></div>
+						<div id="logAuditPre" style="display: none;"></div>
+					</div>
+				</div>
+				<div class="daily-thumbnail" style="display: none">
+					<div class="logAuditTabContent">
+						<div class="logAuditTab"></div>
+						<div class="logAuditContent">
+							<div id="logAuditTable"></div>
+							<div id="logAuditPages" class="page" style="display: flex; justify-content: flex-end"></div>
+							<div id="logAuditPre" style="display: none"></div>
+						</div>
+					</div>
+					<div class="daily-thumbnail" style="display: none">
+						<div class="thumbnail-introduce">
+							<span>{{ data['lan']['H3'] }}</span>
+							<ul>
+								<li>{{ data['lan']['L3'] }}</li>
+							</ul>
+							<div class="daily-product-buy">
+								<a href="javascript:;" class="btn btn-success va0 mr10" onclick="product_recommend.pay_product_sign('pro',103)">{{ data['lan']['BTN7'] }}</a>
+							</div>
+						</div>
+						<div class="thumbnail-box">
+							<ul class="thumbnail-tab">
+								<li class="on">{{ data['lan']['H3'] }}</li>
+							</ul>
+							<div class="thumbnail-item show">
+								<div class="pluginTipsGg" style="background-image: url('/static/images/firewall/logAudit/1.png')"></div>
+							</div>
+						</div>
+					</div>
+					<div class="installSoft" style="display: none">
+						<div class="daily-thumbnail">
+							<div class="thumbnail-introduce">
+								<span>{{ data['lan']['H3'] }}{{ data['lan']['PF'] }}</span>
+								<ul>
+									<li>{{ data['lan']['L4'] }}</li>
+								</ul>
+								<div class="daily-product-buy">
+									<a href="javascript:;" class="btn btn-success va0 ml15 buyLogAudit" onclick="product_recommend.pay_product_sign('pro',104)">{{ data['lan']['BTN7'] }}</a>
+								</div>
+							</div>
+							<div class="thumbnail-box">
+								<ul class="thumbnail-tab">
+									<li class="on">{{ data['lan']['L5'] }}</li>
+								</ul>
+								<div class="thumbnail-item show">
+									<div class="pluginTipsGg" style="background-image: url(/static/img/logAudit/1.png)"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-con hide" id="logsBody">
+				<div class="tab-nav-border">
+					<span class="on">{{ data['lan']['L1'] }}</span>
+					<span>{{ data['lan']['L2'] }}</span>
+				</div>
+				<div class="tab-nav-con">
+					<div class="tab-block on">
+						<div id="operationLog"></div>
+					</div>
+					<div class="tab-block">
+						<div id="runningLog"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript" src="/static/js/soft.js?version_20200109={{g['version']}}"></script>
+<script type="text/javascript" src="{{ static_url }}static/js/firewall.js"></script>
+{% endblock %}

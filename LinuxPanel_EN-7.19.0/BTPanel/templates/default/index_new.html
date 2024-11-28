@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="referer" content="never" />
+		<meta name="renderer" content="webkit" />
+		<link rel="shortcut icon" href="/static/vite/favicon.ico" type="image/x-icon" />
+		<link rel="stylesheet" href="/static/bootstrap-3.3.5/css/bootstrap.min.css?v=1732601582185" />
+		<link rel="stylesheet" href="/static/codemirror/lib/codemirror.css?v=1732601582185" />
+		<link rel="stylesheet" href="/static/oldcss/site.css?v=1732601582185" />
+		<link rel="stylesheet" href="/static/vite/iconfont/iconfont.css?v=1732601582185" />
+		<!-- naive-ui 的样式会出现在这里 -->
+		<meta name="naive-ui-style" />
+		<title>aaPanel Linux Panel</title>
+		<script>
+			window.sites_path = "{{session['config']['sites_path']}}"
+			window.webserver = "{{session['webserver']}}"
+			window.distribution = "{{session['config']['distribution']}}"
+			window.panelVersion = "{{session['version']}}"
+			window.vite_menus = "{{g['menus']}}"
+			window.isSetup = "{{data['isSetup']}}" === 'True' ? true : false
+			window.public_key = "{{data['public_key']}}"
+			window.translations = "{{data['translations']}}"
+
+			var sessionInfo = {
+				title: "{{session['title']}}",
+				username: "{{session['username']}}",
+				statusCode: "{{data['status_code']}}",
+			}
+		</script>
+		<script type="module" crossorigin src="/static/vite/js/index.js?v=1732601582185"></script>
+		<link rel="modulepreload" crossorigin href="/static/vite/js/__commonjsHelpers__.js?v=1732601582185">
+		<link rel="modulepreload" crossorigin href="/static/vite/js/vue.js?v=1732601582185">
+		<link rel="modulepreload" crossorigin href="/static/vite/js/common.js?v=1732601582185">
+		<link rel="modulepreload" crossorigin href="/static/vite/js/naive.js?v=1732601582185">
+		<link rel="modulepreload" crossorigin href="/static/vite/js/page_layout.js?v=1732601582185">
+		<link rel="modulepreload" crossorigin href="/static/vite/js/public.js?v=1732601582185">
+		<link rel="stylesheet" crossorigin href="/static/vite/css/public.css?v=1732601582185">
+		<link rel="stylesheet" crossorigin href="/static/vite/css/page_layout.css?v=1732601582185">
+		<link rel="stylesheet" crossorigin href="/static/vite/css/index80.css?v=1732601582185">
+		<script type="module">import.meta.url;import("_").catch(()=>1);(async function*(){})().next();if(location.protocol!="file:"){window.__vite_is_modern_browser=true}</script>
+		<script type="module">!function(){if(window.__vite_is_modern_browser)return;console.warn("vite: loading legacy chunks, syntax error above and the same error below should be ignored");var e=document.getElementById("vite-legacy-polyfill"),n=document.createElement("script");n.src=e.src,n.onload=function(){System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))},document.body.appendChild(n)}();</script>
+	</head>
+	<body>
+		<a
+			style="display: none"
+			id="panel_debug"
+			data="{{g['debug']}}"
+			data-pyversion="{{g['pyversion']}}"></a>
+		<a style="display: none" id="request_token_head" token="{{session['request_token_head']}}"></a>
+		<a style="display: none" id="recycle_bin" data="{{data['recycle_bin']}}"></a>
+
+		<div id="app"></div>
+
+		<script nomodule>!function(){var e=document,t=e.createElement("script");if(!("noModule"in t)&&"onbeforeload"in t){var n=!1;e.addEventListener("beforeload",(function(e){if(e.target===t)n=!0;else if(!e.target.hasAttribute("nomodule")||!n)return;e.preventDefault()}),!0),t.type="module",t.src=".",e.head.appendChild(t),t.remove()}}();</script>
+		<script nomodule crossorigin id="vite-legacy-polyfill" src="/static/vite/js/polyfills-legacy.js?v=1732601582185"></script>
+		<script nomodule crossorigin id="vite-legacy-entry" data-src="/static/vite/js/index-legacy.js?v=1732601582185">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>
+	</body>
+</html>
