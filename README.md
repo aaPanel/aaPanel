@@ -1,91 +1,119 @@
-# aaPanel - The Ultimate Hosting Control Panel
+<div align="center">
+  <img src="https://www.aapanel.com/static/images/bt_logo.png" alt="aaPanel Logo" width="200"/>
+  <h1>aaPanel - Professional Linux Panel</h1>
+  <p>A simple but powerful hosting control panel for your Linux server</p>
+</div>
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/aapanel/aapanel.svg?style=for-the-badge)](https://hub.docker.com/r/aapanel/aapanel)
-[![License](https://img.shields.io/github/license/aapanel/aaPanel.svg?style=for-the-badge)](https://github.com/aapanel/aaPanel/blob/master/LICENSE)
+<div align="center">
 
-aaPanel is a powerful, user-friendly hosting control panel designed to revolutionize server management. With its sleek interface and extensive feature set, aaPanel has become a go-to choice for web developers and hosting providers worldwide.
+[![Docker Pulls](https://img.shields.io/docker/pulls/aapanel/aapanel.svg)](https://hub.docker.com/r/aapanel/aapanel)
+[![Docker Stars](https://img.shields.io/docker/stars/aapanel/aapanel.svg)](https://hub.docker.com/r/aapanel/aapanel)
+[![Docker Image Size](https://img.shields.io/docker/image-size/aapanel/aapanel)](https://hub.docker.com/r/aapanel/aapanel)
+[![GitHub Stars](https://img.shields.io/github/stars/Rekt-Developer/aaPanel.svg?style=social)](https://github.com/Rekt-Developer/aaPanel)
+[![GitHub Issues](https://img.shields.io/github/issues/Rekt-Developer/aaPanel.svg)](https://github.com/Rekt-Developer/aaPanel/issues)
+[![GitHub Forks](https://img.shields.io/github/forks/Rekt-Developer/aaPanel.svg)](https://github.com/Rekt-Developer/aaPanel/network)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Key Features
+</div>
 
-- **Open-Source Freedom:** aaPanel is open-source, allowing customization and community contributions.
-- **Intuitive Interface:** Enjoy a modern, user-friendly control panel for efficient server management.
-- **Comprehensive Management:** Effortlessly manage websites, databases, email, FTP, and more.
-- **WP Toolkit Integration:** Optimize your WordPress sites with the built-in WP Toolkit.
-- **Enhanced Security:** Protect your server with WAF and file protection features.
-- **Scalability:** Support for shared hosting and multiple user accounts.
-- **Bulk Email Sending:** Send emails in bulk for marketing and newsletters.
+## 📑 Table of Contents
 
-## Getting Started
+- [Introduction](#introduction)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Documentation](#documentation)
+- [Support](#support)
+- [Contributing](#contributing)
+- [License](#license)
 
-### Docker Deployment
+## 🚀 Introduction
 
-aaPanel's official Docker image simplifies deployment. Follow these steps:
+aaPanel is a powerful and user-friendly control panel for managing your Linux server. With over 3,000,000 installations since 2017, it provides comprehensive tools for website management, hosting services, and server administration.
+
+## ✨ Features
+
+### Free Version
+- 🌐 WP Toolkit Management
+- 🔧 Website Management
+- 📧 Mail Server Management
+- 📁 FTP Management
+- 🗄️ MySQL Management
+- 📂 File Management
+- 💻 Online Code Editor
+
+### Pro Version
+- 👥 Multi-User Account Management
+- 🛡️ WAF (Web Application Firewall)
+- 📊 Advanced Analytics
+- 🔒 Enhanced File Protection
+- 📨 Bulk Email Management
+
+## 🏃 Quick Start
 
 ```bash
-# Pull the aaPanel Docker image
-$ docker pull aapanel/aapanel:lib
-
-# Run aaPanel with the following command
-$ docker run -d \
-  -p 8886:8888 \
-  -p 22:21 \
-  -p 443:443 \
-  -p 80:80 \
-  -p 889:888 \
-  -v ~/website_data:/www/wwwroot \
-  -v ~/mysql_data:/www/server/data \
-  -v ~/vhost:/www/server/panel/vhost \
+docker run -d \\
+  -p 8886:8888 \\
+  -p 22:21 \\
+  -p 443:443 \\
+  -p 80:80 \\
+  -p 889:888 \\
+  -v ~/website_data:/www/wwwroot \\
+  -v ~/mysql_data:/www/server/data \\
+  -v ~/vhost:/www/server/panel/vhost \\
   aapanel/aapanel:lib
 ```
 
-Access aaPanel at `http://youripaddress:8886/`.
+## 🔧 Installation
 
-**Default Credentials:**
+### Default Access Information
+- URL: `http://youripaddress:8886/`
 - Username: `aapanel`
-- Password: `aapanel123` (Change immediately!)
+- Password: `aapanel123`
 
-### Port Usage
-
-- Control Panel: `8888`
-- PhpMyAdmin: `888`
+### Port Configuration
+| Service | Port |
+|---------|------|
+| Control Panel | 8888 |
+| PhpMyAdmin | 888 |
+| HTTP | 80 |
+| HTTPS | 443 |
+| FTP | 21 |
 
 ### Directory Structure
+| Purpose | Path |
+|---------|------|
+| Website Data | /www/wwwroot |
+| MySQL Data | /www/server/data |
+| Vhost Files | /www/server/panel/vhost |
 
-- Website Data: `/www/wwwroot`
-- Mysql Data: `/www/server/data`
-- Vhost File: `/www/server/panel/vhost`
+## 📖 Documentation
 
-## Upgrade to Paid Version
+For detailed documentation and guides, visit our [official website](https://www.aapanel.com).
 
-Unlock additional features and support by upgrading to the paid version:
+## 🤝 Contributing
 
-1. Log in to aaPanel.
-2. Navigate to "Settings."
-3. Choose "Upgrade" and follow the process.
+We welcome contributions! Please follow these steps:
 
-## Community and Support
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Join the aaPanel community for support and collaboration:
+## 📝 License
 
-- [aaPanel Forum](https://www.aapanel.com/forum/)
-- [GitHub Issues](https://github.com/aapanel/aaPanel/issues)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contributing
+## 📞 Support
 
-We value your contributions! Follow our [Contribution Guidelines](https://github.com/aapanel/aaPanel/blob/master/CONTRIBUTING.md) to get involved.
-
-## License
-
-aaPanel is licensed under the [MIT License](https://github.com/aapanel/aaPanel/blob/master/LICENSE).
-
-## Installation Guide
-
-For detailed installation instructions, refer to our [Installation Guide](https://github.com/Rekt-Developer/aaPanel/blob/master/INSTALL.md).
+- 📧 Email: support@aapanel.com
+- 🌐 Website: [www.aapanel.com](https://www.aapanel.com)
+- 📝 Issues: [GitHub Issues](https://github.com/Rekt-Developer/aaPanel/issues)
 
 ---
 
-# Installation Index
-
-This repository houses the aaPanel Docker image. To begin, follow the [README.md](https://github.com/Rekt-Developer/aaPanel/blob/master/README.md) for deployment. For comprehensive guides, visit the [aaPanel Documentation](https://www.aapanel.com/doc/).
-
-```
+<div align="center">
+  <sub>Built with ❤️ by the aaPanel Team</sub>
+</div>
