@@ -1,0 +1,261 @@
+
+```html project="aaPanel" file="index.html" type="html"
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://www.aapanel.com https://img.shields.io; script-src 'self' 'unsafe-inline' https://www.google-analytics.com">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+    
+    <!-- Primary Meta Tags -->
+    <title>aaPanel - Enterprise Linux Server Management Platform</title>
+    <meta name="title" content="aaPanel - Enterprise Linux Server Management Platform">
+    <meta name="description" content="Professional Linux server management panel with advanced features for website hosting, security, and server administration. Used by over 3,000,000 servers worldwide.">
+    <meta name="keywords" content="aaPanel, Linux panel, web hosting, server management, control panel, WordPress toolkit, MySQL management, WAF, server security">
+    <meta name="author" content="aaPanel Team">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    <meta name="revisit-after" content="7 days">
+    <meta name="generator" content="aaPanel v7.7.0">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://rekt-developer.github.io/aaPanel/">
+    <meta property="og:title" content="aaPanel - Enterprise Linux Server Management Platform">
+    <meta property="og:description" content="Professional Linux server management panel with advanced features for website hosting, security, and server administration.">
+    <meta property="og:image" content="https://www.aapanel.com/static/images/bt_logo.png">
+    <meta property="og:site_name" content="aaPanel">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="zh_CN">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@aapanel">
+    <meta name="twitter:creator" content="@aapanel">
+    <meta name="twitter:title" content="aaPanel - Enterprise Linux Server Management Platform">
+    <meta name="twitter:description" content="Professional Linux server management panel with advanced features for website hosting, security, and server administration.">
+    <meta name="twitter:image" content="https://www.aapanel.com/static/images/bt_logo.png">
+    
+    <!-- Apple Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="aaPanel">
+    
+    <!-- Microsoft Meta Tags -->
+    <meta name="msapplication-TileColor" content="#2b5797">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    <meta name="theme-color" content="#ffffff">
+    
+    <!-- Links -->
+    <link rel="canonical" href="https://rekt-developer.github.io/aaPanel/">
+    <link rel="alternate" href="https://rekt-developer.github.io/aaPanel/zh/" hreflang="zh-CN">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/css/main.css" as="style">
+    <link rel="preload" href="/js/main.js" as="script">
+    
+    <style>
+        /* Critical CSS */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+        
+        /* Modern CSS Reset */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter var', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+            background-color: var(--light-color);
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 4rem 0;
+            background: linear-gradient(135deg, var(--primary-color), #0056b3);
+            color: white;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+        
+        .feature-card {
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: white;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .cta-button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header {
+                padding: 2rem 0;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <img src="https://www.aapanel.com/static/images/bt_logo.png" alt="aaPanel Logo" width="200">
+            <h1>aaPanel - Enterprise Linux Server Management</h1>
+            <p>Professional server management made simple</p>
+            <a href="https://github.com/Rekt-Developer/aaPanel" class="cta-button">Get Started</a>
+        </header>
+
+        <section class="features">
+            <div class="feature-card">
+                <h2>Community Edition</h2>
+                <ul>
+                    <li>Website Management</li>
+                    <li>Database Management</li>
+                    <li>FTP Management</li>
+                    <li>File Management</li>
+                    <li>Online Code Editor</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h2>Enterprise Edition</h2>
+                <ul>
+                    <li>Advanced Security (WAF)</li>
+                    <li>Load Balancing</li>
+                    <li>Cluster Management</li>
+                    <li>Team Management</li>
+                    <li>Priority Support</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h2>Quick Installation</h2>
+                <pre><code>docker run -d \
+  -p 8886:8888 \
+  -p 22:21 \
+  -p 443:443 \
+  -p 80:80 \
+  -p 889:888 \
+  aapanel/aapanel:lib</code></pre>
+            </div>
+        </section>
+    </div>
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "aaPanel",
+      "applicationCategory": "ServerApplication",
+      "operatingSystem": "Linux",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "Professional Linux server management panel with advanced features for website hosting, security, and server administration.",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "3000000"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "aaPanel Team",
+        "url": "https://www.aapanel.com"
+      }
+    }
+    </script>
+
+    <!-- Organization Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "aaPanel",
+      "url": "https://www.aapanel.com",
+      "logo": "https://www.aapanel.com/static/images/bt_logo.png",
+      "sameAs": [
+        "https://github.com/Rekt-Developer/aaPanel",
+        "https://twitter.com/aapanel",
+        "https://forum.aapanel.com"
+      ]
+    }
+    </script>
+
+    <!-- Deferred JavaScript -->
+    <script defer src="/js/main.js"></script>
+    
+    <!-- Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-XXXXXXXXXX');
+    </script>
+</body>
+</html>
