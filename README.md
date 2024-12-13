@@ -28,6 +28,6 @@ Website Data: /www/wwwroot
 MySQL Data: /www/server/data
 
 VHost File: /www/server/panel/vhost 
-
-**Note: after the deployment is complete, please immediately modify the user name and password in the panel settings and add the installation entry**
+> [!NOTE]
+> After the deployment is complete, please immediately modify the user name and password in the panel settings and add the installation entry
 
