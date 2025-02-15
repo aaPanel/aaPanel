@@ -764,7 +764,13 @@ if ( $uri ~ "^/.well-known/" ) {
           local file_body = fp:read("*a")
           fp:close()
           if file_body then
-            ngx.header['content-type'] = 'text/plain'
+            if ngx.re.match(m[1], "\\.json$", "isjo") or 
+               m[1] == "apple-app-site-association" or 
+               m[1] == "apple-developer-merchantid-domain-association" then
+              ngx.header['content-type'] = 'application/json'
+            else
+              ngx.header['content-type'] = 'text/plain'
+            end
             return file_body
           end
         end
