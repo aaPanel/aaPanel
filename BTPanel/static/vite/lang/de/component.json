@@ -1,0 +1,168 @@
+{
+	"Component": {
+		"Batch": {
+			"index_1": "Bitte wählen Sie",
+			"index_2": "(Ausgewählt {0})",
+			"index_3": "Batching {0}, aktueller Fortschritt:"
+		},
+		"Auth": {
+			"index_1": "FREI",
+			"index_2": "Erneuerung",
+			"index_3": "Jetzt kaufen",
+			"index_4": "Verfallen auf: ",
+			"index_5": "Upgrade jetzt",
+			"index_6": "Lebensdauer"
+		},
+		"Feedback": {
+			"index_7": "Rückmeldung",
+			"index_1": "Aapanel -Nachfrage -Feedback -Sammlung",
+			"index_2": "Wenn Sie während der Verwendung auf Probleme oder unvollständige Funktionen stoßen, beschreiben Sie bitte",
+			"index_3": "Ihre Probleme oder Bedürfnisse für uns im Detail, wir werden unser Bestes geben, um zu lösen oder zu verbessern",
+			"index_4": "Wir achten besonders auf das Feedback für die Anforderungen und führen regelmäßige wöchentliche Anforderungen überprüft. Ich hoffe ich kann dir besser helfen",
+			"index_5": "Bitte füllen Sie das Feedback aus",
+			"index_6": "Vielen Dank für Ihre Teilnahme!"
+		},
+		"Coupon": {
+			"index_1": "Holen Sie sich Gutscheine für eine begrenzte Zeit",
+			"index_2": "AUS",
+			"index_3": "Gültig für ",
+			"index_4": "Coupon",
+			"index_5": "Holen Sie es sich jetzt",
+			"index_6": "Keine Erinnerungen mehr für heute",
+			"index_7": "Keine Erinnerungen in den letzten 7 Tagen",
+			"index_8": "Erinnere dich niemals für immer",
+			"index_9": "{0}, bist du sicher?",
+			"index_10": "Ende bei ",
+			"index_11": "Holen Sie sich $ {0} Coupon",
+			"index_12": "{0} Coupons",
+			"index_13": "Wählen Sie Zeit ohne vorherige Ankündigung"
+		},
+		"Pay": {
+			"index_1": "Pro",
+			"index_2": "Empfohlen",
+			"index_3": "Pro -Funktion",
+			"index_4": "Plug-in-Beschreibung",
+			"index_5": "Feature -Kontrast",
+			"index_6": "Sparen Sie mehr",
+			"index_7": "Die Linux Pro Edition ist kostenlos zur Verfügung. Verwenden Sie dieses Plugin und alle anderen Pro -Funktionen",
+			"index_8": "Fragen? Senden Sie uns jederzeit eine E -Mail: {0}",
+			"index_9": "Wählen Sie Ihren Plan",
+			"index_10": "Am beliebtesten",
+			"index_11": "Anzahl der Lizenz",
+			"index_12": "Laden, bitte warten ...",
+			"index_13": "{0} aus",
+			"index_14": "{0} {1}",
+			"index_15": "{0} {1}",
+			"index_16": "Op: {0}",
+			"index_17": "Nur Plug-in",
+			"index_18": "Coupon ({0})",
+			"index_19": "$ {0} Aus {1} Zahlung",
+			"index_20": "Kein bevorzugter Gutschein",
+			"index_21": "Gutschein",
+			"index_22": "Lizenz",
+			"index_23": "Konto: ",
+			"index_24": "Ändern",
+			"index_25": "Gesamt: ",
+			"index_26": "Streifenzahl",
+			"index_27": "Wenn {0} nicht zahlt, können Sie versuchen, es zu verwenden",
+			"index_28": "Zahlungsauftrag fehlgeschlagen, bitte wenden Sie sich an Administrator!",
+			"index_29": "Abonnement: ",
+			"index_30": "* Wenn die Lizenz abläuft, wird sie automatisch verlängert",
+			"index_31": "* Wenn Sie das Abonnement überprüfen, können Sie nicht in lokaler Währung bezahlen",
+			"index_32": "Lokale Währung:",
+			"index_33": "* Bezahlen Sie mit Ihrer örtlichen Zahlungsmethode und Ihrer Währung",
+			"index_34": "Lizenzinformationen",
+			"index_35": "Keine Lizenz",
+			"index_36": "Lizenz",
+			"index_37": "Gutscheine",
+			"index_38": "Keine Gutscheine",
+			"index_39": "Verwenden",
+			"index_40": "Läuft danach ab",
+			"index_41": "Bitte beantragen Sie SSL vor dem Kauf!",
+			"index_42": "SSL einschalten",
+			"index_43": "Begrenzte Zeitangebot: ",
+			"index_44": "Sparen Sie bis zu $ ​​{0}",
+			"index_45": "Andere Zahlung",
+			"index_46": "Konvertieren Sie die Zahlungswährung automatisch anhand Ihres Standorts",
+			"index_47": "Jetzt bezahlen"
+		},
+		"BindAccount": {
+			"index_1": "Binden Sie einen Aapanel -Konto",
+			"index_2": "Kein Konto, gehen Sie zur Registrierung",
+			"index_3": "Einloggen",
+			"index_4": "Bitte geben Sie Ihre E -Mail -Adresse ein",
+			"index_5": "Bitte geben Sie Ihr Passwort ein",
+			"index_6": "Binden Sie einen Aapanel -Konto",
+			"index_7": "Ihre E-Mail-Adresse",
+			"index_8": "Ihr Passwort"
+		},
+		"Logs": {
+			"index_1": "Keine Protokolle"
+		},
+		"SelectPath": {
+			"index_1": "Zurückkehren",
+			"index_2": "Strompfad",
+			"index_3": "Dateiname",
+			"index_4": "Änderungszeit",
+			"index_5": "Erlaubnis",
+			"index_6": "Eigentümer",
+			"index_7": "Verzeichnis auswählen"
+		},
+		"Editor": {
+			"index_1": "Tipps: Strg+f Suchschlüsselwörter ， Strg+S Speichern ， Strg+H -Suche und Ersetzen"
+		},
+		"Quota": {
+			"index_1": "Quote",
+			"index_2": "Nicht gesetzt",
+			"index_3": "Aktuelle Gebrauchtfähigkeit: {0}",
+			"index_4": "Klicken Sie auf die Kapazitätsquote ändern",
+			"index_5": "{1} Setzen Sie neue Quoten [{0}]",
+			"index_6": "Strom gebrauchte Kapazität",
+			"index_7": "Aktuelle Kapazitätsquote",
+			"index_8": "Erinnerung: Diese Funktion ist exklusiv für die Pro Edition",
+			"index_9": "Benötigt ein XFS -Dateisystem und enthält den zu verwendenden Parameter [prjquota]",
+			"index_10": "Beispiel für fstab: /dev /vdc1 /data xfs Standards, prjquota 0 0",
+			"index_11": "Quote: Um das Kontingent zu stornieren, auf \"0\" festgelegt, setzen Sie sich",
+			"index_12": "Aktuelle Kapazitätsquote: {0}"
+		},
+		"Terminal": {
+			"index_1": "Die Verbindung wurde getrennt. Drücken Sie die Eingabetaste wird versuchen, sich wieder zu verbinden!",
+			"index_2": "Ich versuche wieder zu verbinden!"
+		},
+		"Upload": {
+			"index_1": "Datei auswählen",
+			"index_2": "Nicht ausgewählt"
+		},
+		"UploadFile": {
+			"index_1": "Klicken oder ziehen Sie die Datei in den Bereich",
+			"index_2": "Unterstützen Sie nur {0} Dateiformat importieren",
+			"index_3": "Dateiname",
+			"index_4": "Größe",
+			"index_5": "Status",
+			"index_6": "Datei auswählen",
+			"index_7": "Die Datei [{0}] kann {1} m nicht überschreiten",
+			"index_8": "Warten auf Upload",
+			"index_9": "Erfolg hochladen",
+			"index_10": "Bitte wählen Sie die Datei zum Hochladen aus"
+		},
+		"FormMore": {
+			"index_1": "Weitere Konfigurationen klicken Sie, um anzuzeigen, um anzuzeigen"
+		},
+		"Confirm": {
+			"index_1": "Wenn Sie die Operation bestätigen, geben Sie sie manuell \"{text_}\" ein.",
+			"index_2": "Eingabefehler, bitte versuchen Sie es erneut",
+			"index_3": "{0} wurde abgeschlossen, insgesamt {1} Aufgaben, {2} Erfolge, {3} Fehler",
+			"index_4": "Ergebnis: ",
+			"index_5": "Das Ergebnis ist falsch, bitte versuchen Sie es erneut"
+		},
+		"SoftState": {
+			"index_1": "Sind Sie sicher, dass Sie den {1} -Dienst {0} und fortsetzen müssen?"
+		},
+		"Api": {
+			"index_1": "Laden, bitte warten ...",
+			"index_2": "Bindung, bitte warten ...",
+			"index_3": "Feedback einreichen, bitte warten ..",
+			"index_4": "Datei hochladen, bitte warte ..."
+		}
+	}
+}

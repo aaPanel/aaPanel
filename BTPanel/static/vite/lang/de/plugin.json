@@ -1,0 +1,99 @@
+{
+	"Plugin": {
+		"Mysql": {
+			"index_1": "Dies ist die Hauptkonfigurationsdatei von {0}. Wenn Sie die Konfigurationsregeln nicht verstehen, ändern Sie sie bitte nicht.",
+			"index_2": "Alarmieren mich, wenn der Status aufhört",
+			"index_3": "Status Stopp Alarmeinstellung",
+			"index_4": "Auto-RESTART",
+			"index_5": "Sind Sie sicher {0} {1} Service?",
+			"index_6": "Binärprotokoll",
+			"index_7": "Warm Tipps: Das Binärprotokoll von MySQL besteht darin, das aktuelle Betriebsprotokoll aufzuzeichnen, kann zur Datenwiederherstellung und zur Datensicherung verwendet werden.",
+			"index_8": "Letzte modifizierte Zeit",
+			"index_9": "Protokoll löschen",
+			"index_10": "Möchten Sie das [{0}] -Protokoll wirklich löschen?",
+			"index_11": "Das Einschalten von Binärprotokollierung kann die mySQL -Datensicherheit schützen, wird gleichzeitig jedoch eine bestimmte Menge an Speicherspeicher konsumieren, ob sie fortgesetzt werden sollen?",
+			"index_12": "Wenn Sie das Binärprotokoll ausschalten, werden nicht mehr alle Modifikationsvorgänge in das Binärprotokoll der Datenbank aufgezeichnet?",
+			"index_13": "Bewegen",
+			"index_14": "Risikowarnung: MySQL wird während des Migrationsprozesses aufhören, vorsichtig zu laufen. Bitte seien Sie vorsichtig",
+			"index_15": "Risikowarnung: Bitte warten Sie, bis die Migration abgeschlossen ist, bevor Sie während des Migrationsprozesses andere Operationen ausführen",
+			"index_16": "Datenbankmigration",
+			"index_17": "Sicher möchten Sie die Datenbank auf [{0}] migrieren?",
+			"index_18": "Speicherschutz",
+			"index_19": "Hinweis: Nachdem es aktiviert ist, wird die MySQL -Speicherpriorität angepasst und MySQL wird niemals vom System getötet, was den stabilen Betrieb von MySQL sicherstellen kann. Dies kann jedoch abnormal getötet werden, was den Betrieb des Systems ernsthaft beeinträchtigen kann. Es wird empfohlen, es zu aktivieren, wenn MySQL stabil laufen muss.",
+			"index_20": "Optimierungsplan",
+			"index_21": "Max RAM -Nutzung",
+			"index_22": "Starten Sie den {0} Service neu",
+			"index_23": "Starten Sie die Datenbank neu, damit die Konfiguration wirksam wird",
+			"index_24": "Haben Sie den {0} -Dienst neu gestartet?",
+			"index_25": "Wenn Sie die MySQL -Version ändern müssen, sichern Sie Ihre Daten, deinstallieren Sie MySQL und installieren Sie sie neu.",
+			"index_26": "Speicherort",
+			"index_27": "Optimierung",
+			"index_28": "Langsames Protokoll",
+			"index_29": "Intervallzeit",
+			"index_30": "Unterstützung"
+		},
+		"Ftp": {
+			"index_1": "Diese Funktion ist exklusiv für die professionelle Version {a}",
+			"index_2": "Protokollverwaltungsschalter",
+			"index_3": "Nach dem Einschalten werden alle Anmeldungs- und Operationsdatensätze der FTP -Benutzer aufgezeichnet.",
+			"index_4": "Protokollverwaltung",
+			"index_5": "Nach dem Einschalten des Pure-FFTPD-Protokollmanagements werden die Anmeldungs- und Betriebsdatensätze aller FTP-Benutzer aufgezeichnet, ob die Operation fortgesetzt werden soll?",
+			"index_6": "Nach dem Ausschalten des Pure-FFTPD-Protokollmanagements kann es nicht in der Lage sein, die Anmelde- und Betriebsdatensätze aller FTP-Benutzer aufzuzeichnen, ob der Vorgang fortgesetzt werden soll?",
+			"index_7": "Aktuelle FTP -Adresse lautet",
+			"index_8": "Laden Sie das FTP -Verbindungswerkzeug (Filezilla, kostenlose Open Source) herunter",
+			"index_9": "Versionsversion",
+			"index_10": "Benutzerverwaltung",
+			"index_11": "Die aktuelle Version ist die gleiche wie die ausgewählte Version!",
+			"index_12": "Sind Sie sicher {0}-{1} installieren"
+		},
+		"Redis": {
+			"index_1": "Nachdem Sie die Konfiguration geändert haben, müssen Sie Redis neu starten, um wirksam zu werden. Wenn Ihre Daten bestehen müssen, führen Sie bitte zuerst die Speichernoperation aus.",
+			"index_2": "WARNUNG: Schalten Sie den Zugang zum Redis -Extranet nicht ein, da uneingeschränkter Zugriff auf die IP sehr wahrscheinlich zu einem Eindringen von Server führt.",
+			"index_3": "Nach der Einstellung wird das neue redis_cache -Verzeichnis im ausgewählten Verzeichnis erstellt und erteilt Redis -Berechtigungen",
+			"index_4": "Persistierter Dateispeicherpfad",
+			"index_5": "Aof Persistenz",
+			"index_6": "RDB -Persistenz",
+			"index_7": "Beharrlichkeit setzen"
+		},
+		"Apache": {
+			"index_1": "Zeit neu starten",
+			"index_2": "Startzeit",
+			"index_3": "Gesamtverbindungen",
+			"index_4": "Gesamtbytes übertragen",
+			"index_5": "Anfragen pro Sekunde",
+			"index_6": "Geschäftiger Prozess",
+			"index_7": "Leerlaufprozess",
+			"index_8": "Apache verwendet CPU",
+			"index_9": "Apache verwendet Speicher",
+			"index_10": "Dämon",
+			"index_11": "Der Daemon kann automatisch gestartet werden, nachdem der {0} -Dienst gestoppt wurde, um sicherzustellen, dass der {0} -Dienst immer ausgeführt wird.",
+			"index_12": "Felder",
+			"index_13": "Aktueller Wert",
+			"index_14": "Standardprüfung alle 1 Minute kann in Cron geändert werden"
+		},
+		"Mencached": {
+			"index_1": "Hören Sie IP, bitte ändern Sie es nicht frei",
+			"index_2": "Höranschluss, im Allgemeinen nicht zu ändern",
+			"index_3": "MB, Cache -Größe, es wird empfohlen, 512 m nicht zu überschreiten",
+			"index_4": "Maximale Anzahl von Verbindungen, empfohlen, 40960 nicht zu überschreiten"
+		},
+		"MongoDB": {
+			"index_1": "Erstellen Sie nach der Einstellung ein neues BT_MONGODB -Verzeichnis im ausgewählten Verzeichnis und geben Sie der Mongo -Berechtigung",
+			"index_2": "Ändern Sie die Überwachungs -IP nicht nach Belieben",
+			"index_3": "Datenspeicherort",
+			"index_4": "Protokolldateispeicherort",
+			"index_5": "PID Save Save Pfad",
+			"index_6": "Höranschluss, im Allgemeinen nicht zu ändern",
+			"index_7": "Bitte starten Sie zuerst den MongoDB -Service!",
+			"index_8": "Möchten Sie die Datenbank wirklich löschen [{0}]?"
+		},
+		"Openlitespeed": {
+			"index_1": "Gibt die maximale Leerlaufzeit (Sekunden) an, die während der Verarbeitung einer Anforderung zulässig ist",
+			"index_2": "Ermöglicht die Gzip/Brotli -Komprimierung sowohl für statische als auch für dynamische Reaktionen",
+			"index_3": "Gibt den Niveau der GZIP -Komprimierung an, die auf dynamischen Inhalt angewendet werden. Reicht von 1 (niedrigsten) bis 9 (höchste)",
+			"index_4": "Gibt die maximale Anzahl von gleichzeitigen Verbindungen an, die der Server akzeptieren kann. Dies umfasst sowohl einfache TCP -Verbindungen als auch SSL -Verbindungen",
+			"index_5": "Gibt die maximale Anzahl von Anfragen an, die durch eine Keep-Alive-Sitzung (persistierende) Sitzung zugestellt werden können",
+			"index_6": "Gibt die maximale Anzahl der gleichzeitigen SSL-Verbindungen an, die der Server akzeptiert, da die gesamten gleichzeitigen SSL- und Nicht-SSL-Verbindungen die durch „maximale Verbindungen“ angegebene Grenze nicht überschreiten können. Die tatsächliche Anzahl der zulässigen gleichzeitigen SSL-Verbindungen muss niedriger sein"
+		}
+	}
+}

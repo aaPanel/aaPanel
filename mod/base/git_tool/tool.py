@@ -86,11 +86,11 @@ class GitTool:
 
         ExecShell(sh_str)
         if not os.path.isfile(self.tmp_path + "/.git/config"):
-            return "git 初始化失败"
+            return "git Initialization failed"
 
         git_conf = read_file(self.tmp_path + "/.git/config")
         if not (isinstance(git_conf, str) and git_conf.find("origin") != -1 and git_conf.find(self.git_url) != -1):
-            return "git 设置远程路由失败"
+            return "git Failed to set up a remote route"
 
         if self.git_url.find("ssh://") != -1:  # ssh的情况下不做处理
             return
@@ -191,7 +191,7 @@ esac
     def git_bin() -> str:
         if not installed():
             if not install_git():
-                raise ValueError("没有git工具，且安装失败，无法使用此功能")
+                raise ValueError("There is no git tool and the installation fails, so this feature cannot be used")
         default = "/usr/bin/git"
         git_path = shutil.which("git")
         if git_path is None:
@@ -219,7 +219,7 @@ esac
 
         ExecShell(shell_command_str)
         if not os.path.isdir(self.tmp_path + "/" + git_name):
-            return "拉取错误"
+            return "Pull error"
 
         ExecShell(r"\cp -rf {}/{}/* {}/".format(self.tmp_path, git_name, self.project_path))
         if isinstance(set_own, str):
@@ -285,13 +285,13 @@ class RealGitMager:
     def add_git(self, git_url: str, site_name: str, git_path: str, user_config: Optional[dict]) -> Union[str, list]:
         url = parse_url(git_url)
         if not (isinstance(url, Url) and url.scheme and url.host and url.path):
-            return "url格式错误"
+            return "The URL format is incorrect"
 
         if user_config and not (isinstance(user_config, dict) and "name" in user_config and "password" in user_config):
-            return "用户信息输入错误"
+            return "User information is entered incorrectly"
 
         if not os.path.exists(git_path):
-            return "git目标目录不存在"
+            return "The git target directory does not exist"
         else:
             path_ino = os.stat(git_path).st_ino
 
@@ -300,7 +300,7 @@ class RealGitMager:
 
         for c in self.configure[site_name]:
             if c["path_ino"] == path_ino or git_path == c["git_path"]:
-                return "该路径已存在，请不要重复添加"
+                return "The path already exists, so please do not add it repeatedly"
 
         try:
             GitTool.git_bin()
@@ -343,16 +343,16 @@ class RealGitMager:
                 break
 
         if target is None:
-            return '指定的git配置不存在'
+            return 'The specified git configuration does not exist'
         if git_url:
             url = parse_url(git_url)
             if not (isinstance(url, Url) and url.scheme and url.host and url.path):
-                return "url格式错误"
+                return "The URL format is incorrect"
             target["url"] = git_url
 
         if git_path:
             if not os.path.exists(git_path):
-                return "git目标目录不存在"
+                return "The git target directory does not exist"
             else:
                 path_ino = os.stat(git_path).st_ino
             target["path_ino"] = path_ino
@@ -360,7 +360,7 @@ class RealGitMager:
 
         if user_config:
             if not (isinstance(user_config, dict) and "name" in user_config and "password" in user_config):
-                return "用户信息输入错误"
+                return "User information is entered incorrectly"
             target["config"] = user_config
 
         git = GitTool(project_path=target['git_path'],
@@ -382,7 +382,7 @@ class RealGitMager:
                 break
 
         if target is None:
-            return '指定的git配置不存在'
+            return 'The specified git configuration does not exist'
 
         self.configure[site_name].remove(target)
         self.save_configure()
@@ -422,7 +422,7 @@ class RealGitMager:
                 break
 
         if target is None:
-            return '指定的git配置不存在'
+            return 'The specified git configuration does not exist'
 
         g = GitTool(
             project_path=target['git_path'],
@@ -444,7 +444,7 @@ class GitMager:
             if hasattr(get, "config") and get.config.strip():
                 user_config = json.loads(get.config.strip())
         except (json.JSONDecoder, AttributeError, TypeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="The parameter is incorrect")
         res = RealGitMager().add_git(git_url, site_name, git_path, user_config)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
@@ -466,7 +466,7 @@ class GitMager:
             if hasattr(get, "user_config") and get.user_config.strip():
                 user_config = json.loads(get.user_config.strip())
         except (json.JSONDecoder, AttributeError, TypeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="parameter error")
         res = RealGitMager().modify_git(git_id, site_name, git_url, git_path, user_config)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
@@ -479,7 +479,7 @@ class GitMager:
             git_id = get.git_id.strip()
             site_name = get.site_name.strip()
         except (json.JSONDecoder, AttributeError, TypeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="parameter error")
         res = RealGitMager().remove_git(git_id, site_name)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
@@ -488,14 +488,14 @@ class GitMager:
     @staticmethod
     def site_git_configure(get):
         if not version_1_5_3():
-            return json_response(status=False, msg="git 版本低于1.5.3无法使用")
+            return json_response(status=False, msg="Git versions earlier than 1.5.3 are not available")
         refresh = ''
         try:
             site_name = get.site_name.strip()
             if "refresh" in get:
                 refresh = get.refresh.strip()
         except (AttributeError, TypeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="parameter error")
         if refresh in ("true", "1"):
             refresh = True
         else:
@@ -516,10 +516,10 @@ class GitMager:
             if "email" in get:
                 email = get.email.strip()
         except (AttributeError, TypeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="parameter error")
 
         RealGitMager().set_global_user(name, password, email)
-        return json_response(status=True, msg="设置成功")
+        return json_response(status=True, msg="The setup was successful")
 
     @staticmethod
     def git_pull(get):
@@ -528,7 +528,7 @@ class GitMager:
             git_id = get.git_id.strip()
             branch = get.branch.strip()
         except (AttributeError, TypeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="parameter error")
         res = RealGitMager().git_pull(git_id, site_name, branch)
         if isinstance(res, str):
             return json_response(status=False, msg=res)

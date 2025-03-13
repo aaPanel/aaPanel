@@ -4562,8 +4562,8 @@ var soft = {
 		});
 	},
 
-	input_zip: function (plugin_name, tmp_path, data, callback) {
-		bt.soft.show_speed_window({ title: 'Installing, this may take a few minutes...', status: true }, function () {
+	input_zip: function (plugin_name, tmp_path, title, callback) {
+		bt.soft.show_speed_window({ title: title ? title : 'Installing, this may take a few minutes...', status: true }, function () {
 			$.post('/plugin?action=input_zip', { plugin_name: plugin_name, tmp_path: tmp_path }, function (rdata) {
 				layer.closeAll();
 				if (rdata.status) {

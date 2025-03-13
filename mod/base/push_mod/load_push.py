@@ -13,7 +13,8 @@ class NginxLoadTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "nginx_load_push"
-        self.template_name = "负载均衡告警"
+        self.template_name = "Load balancing alarm"
+        # self.title = "Load balancing alarm"
         self._tip_counter = None
 
     @property
@@ -36,18 +37,18 @@ class NginxLoadTask(BaseTask):
 
     def get_title(self, task_data: dict) -> str:
         if task_data["project"] == "all":
-            return "负载节点异常告警"
-        return "负载节点[{}]异常告警".format(task_data["project"])
+            return "Load balancing alarm"
+        return "Load balancing alarm -- [{}] ".format(task_data["project"])
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         all_upstream_name = DB("upstream").field("name").select()
         if isinstance(all_upstream_name, str) and all_upstream_name.startswith("error"):
-            return '没有负载均衡配置，无法设置告警'
+            return 'Alarms cannot be set without load balancing configuration'
         all_upstream_name = [i["name"] for i in all_upstream_name]
         if not bool(all_upstream_name):
-            return '没有负载均衡配置，无法设置告警'
+            return 'Alarms cannot be set without load balancing configuration'
         if task_data["project"] not in all_upstream_name and task_data["project"] != "all":
-            return '没有该负载均衡配置，无法设置告警'
+            return 'Without this load balancer configuration, alarms cannot be set'
 
         cycle = []
         for i in task_data["cycle"].split("|"):
@@ -56,7 +57,7 @@ class NginxLoadTask(BaseTask):
                 if 100 <= code < 600:
                     cycle.append(str(code))
         if not bool(cycle):
-            return '没有指定任何错误码，无法设置告警'
+            return 'If no error code is specified, the alarm cannot be set'
 
         task_data["cycle"] = "|".join(cycle)
         return task_data
@@ -99,12 +100,13 @@ class NginxLoadTask(BaseTask):
         err_nodes = self._check_func(task_data["project"], task_data["cycle"])
         if not err_nodes:
             return None
-        pj = "负载均衡:【{}】".format(task_data["project"]) if task_data["project"] != "all" else "负载均衡"
+        pj = "load balancing:【{}】".format(task_data["project"]) if task_data["project"] != "all" else "load balancing"
         nodes = '、'.join(err_nodes)
+        self.title = self.get_title(task_data)
         return {
             "msg_list": [
-                ">通知类型：企业版负载均衡告警",
-                ">告警内容：<font color=#ff0000>{}配置下的节点【{}】出现访问错误，请及时关注节点情况并处理。</font> ".format(
+                ">Notification type: Enterprise Edition load balancing alarm",
+                ">Content of alarm: <font color=#ff0000>{}The node [{}] under the configuration has access error, please pay attention to the node situation in time and deal with it.</font> ".format(
                     pj, nodes),
             ],
             "pj": pj,
@@ -132,8 +134,8 @@ class NginxLoadTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "负载均衡告警"
-        msg.msg = "负载均衡出现节点异常，请登录面板查看"
+        msg.thing_type = "Load balancing alarm"
+        msg.msg = "If the node is abnormal, log in to the panel"
         return msg
 
     def task_config_create_hook(self, task: dict) -> None:
@@ -189,7 +191,7 @@ def load_load_template():
             "ver": "1",
             "used": True,
             "source": "nginx_load_push",
-            "title": "负载均衡",
+            "title": "load balancing",
             "load_cls": {
                 "load_type": "path",
                 "cls_path": "mod.base.push_mod.load_push",
@@ -199,29 +201,29 @@ def load_load_template():
                 "field": [
                     {
                         "attr": "project",
-                        "name": "负载名称",
+                        "name": "The name of the payload",
                         "type": "select",
                         "default": "all",
                         "unit": "",
                         "suffix": (
                             "<i style='color: #999;font-style: initial;font-size: 12px;margin-right: 5px'>*</i>"
-                            "<span style='color:#999'>选中的负载配置中，出现节点访问失败时，触发告警</span>"
+                            "<span style='color:#999'>If a node fails to access a node in the selected load configuration, an alarm is triggered</span>"
                         ),
                         "items": [
                             {
-                                "title": "所有已配置的负载",
+                                "title": "All configured loads",
                                 "value": "all"
                             }
                         ]
                     },
                     {
                         "attr": "cycle",
-                        "name": "成功的状态码",
+                        "name": "The status code of the success",
                         "type": "textarea",
                         "unit": "",
                         "suffix": (
                             "<br><i style='color: #999;font-style: initial;font-size: 12px;margin-right: 5px'>*</i>"
-                            "<span style='color:#999'>状态码以竖线分隔，如：200|301|302|403|404</span>"
+                            "<span style='color:#999'>Status codes are separated by vertical bars, for example:200|301|302|403|404</span>"
                         ),
                         "width": "400px",
                         "style": {
@@ -254,7 +256,8 @@ def load_load_template():
                 "feishu",
                 "mail",
                 "weixin",
-                "webhook"
+                "webhook",
+                "tg",
             ],
             "unique": False
         }]
@@ -266,6 +269,6 @@ class ViewMsgFormat(object):
     @staticmethod
     def get_msg(task: dict) -> Optional[str]:
         if task["template_id"] == "50":
-            return "<span>节点访问异常时，推送告警信息(每日推送{}次后不在推送)<span>".format(
+            return "<span>When the node access is abnormal, the alarm message is pushed (it is not pushed after {} times per day)<span>".format(
                 task.get("number_rule", {}).get("day_num"))
         return None

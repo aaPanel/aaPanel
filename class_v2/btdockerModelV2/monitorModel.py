@@ -56,7 +56,7 @@ class main:
         """
         # while True:
         args = public.to_dict_obj({})
-        container_list = dc.main().get_list(args)
+        container_list = dc.main().get_list(args)['message']
         for c in container_list['container_list']:
             args.id = c['id']
             args.write = 1
@@ -72,7 +72,7 @@ class main:
         for i in hosts:
             args = public.to_dict_obj({})
             args.url = i['url']
-            container_list = dc.main().get_list(args)
+            container_list = dc.main().get_list(args)['message']
             n += len(container_list)
         pdata = {
             "time": int(time.time()),
@@ -91,7 +91,7 @@ class main:
         for i in hosts:
             args = public.to_dict_obj({})
             args.url = i['url']
-            res = di.main().image_for_host(args)
+            res = di.main().image_for_host(args)['message']
             num += res['num']
             size += res['size']
         pdata = {

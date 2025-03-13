@@ -258,7 +258,8 @@ class panelWarning:
                 return public.return_message(-1, 0, str(ex))
 
         import subprocess
-        public.set_module_logs("panel_warning_v2", "get_list")
+        if hasattr(args, 'open') and args.open == "1":
+            public.set_module_logs("panel_warning_v2", "get_list")
         public.WriteFile(self.__path + '/kill.pl', "False")  # 用来判断这次的扫描是否被中断，默认没中断
         command = "btpython /www/server/panel/class_v2/panel_warning_v2.py"
         process = subprocess.Popen(command, shell=True)
@@ -353,7 +354,7 @@ class panelWarning:
             os.remove(ignore_file)
         else:
             public.writeFile(ignore_file, '1')
-        return public.return_message(0,0, 'successfully set!')
+        return public.return_message(0, 0, public.lang("successfully set!"))
 
     def check_find(self, args):
         '''
@@ -406,9 +407,9 @@ class panelWarning:
             m_info['check_time'] = int(time.time())
             public.writeFile(result_file, json.dumps(
                 [m_info['status'], m_info['msg'], m_info['check_time'], m_info['taking']]))
-            return public.return_message(0,0, 'It has been retested.')
+            return public.return_message(0, 0, public.lang("It has been retested."))
         except:
-            return public.return_message(-1,0, 'Detection failed')
+            return public.return_message(-1, 0, public.lang("Detection failed"))
 
 
     def system_scan(self):
@@ -421,10 +422,10 @@ class panelWarning:
         sys_version = self.get_sys_version()
 
         # if sys_version == 'None':
-        #     return public.returnMsg(False, '当前系统暂不支持')
+        #     return public.returnMsg(False, public.lang("It is not supported by the current system"))
         sys_product = self.get_sys_product()
         # if not os.path.exists(self.__vul_list):
-        #     return public.returnMsg(False, "扫描失败")
+        #     return public.returnMsg(False, public.lang("The scan failed"))
         vul_list = self.get_vul_list()
 
         new_risk_list = []
@@ -504,9 +505,9 @@ class panelWarning:
         public.WriteFile(self._vuln_result, json.dumps(result_dict))
         # try:
         #     public.WriteFile(self._vuln_result, json.dumps(result_dict))
-        #     return public.returnMsg(True, "扫描完成")
+        #     return public.returnMsg(True, public.lang("扫描完成"))
         # except:
-        #     return public.returnMsg(False, "扫描失败")
+        #     return public.returnMsg(False, public.lang("扫描失败"))
 
     # 版本比较
     def version_compare(self, ver_a, ver_b):
@@ -705,7 +706,7 @@ class panelWarning:
         product_version = {}
         sys_version = self.get_sys_version()
 
-        # if sys_version == 'None':return public.returnMsg(False,'当前系统暂不支持')
+        # if sys_version == 'None':return public.returnMsg(False, public.lang("当前系统暂不支持"))
         if "centos" in sys_version:
             result = public.ExecShell('rpm -qa --qf \'%{NAME};%{VERSION}-%{RELEASE}\\n\'')[0].strip().split('\n')
         elif "ubuntu" in sys_version:
@@ -840,9 +841,8 @@ class panelWarning:
 
         public.WriteFile(self._vuln_ignore, json.dumps(ignore_list))
         # public.WriteFile(self.__result, json.dumps(result_dict))
-        return public.return_message(0,0, 'successfully set!')
-        # except:
-        #     return public.returnMsg(False, '{}设置失败!'.format(cve_list))
+        return public.return_message(0, 0, public.lang("successfully set!"))
+
 
     def count_repair(self, now_list):
         '''
@@ -878,7 +878,7 @@ class panelWarning:
         '''
         sys_product = self.get_sys_product()
         if not sys_product:
-            return public.returnMsg(True, 'Detection failed')
+            return public.returnMsg(True, public.lang("Detection failed"))
         cve_id = args.cve_id.strip()
         result_dict = json.loads(public.ReadFile(self._vuln_result))
         risk_list = result_dict["risk"]
@@ -910,9 +910,9 @@ class panelWarning:
         result_dict["ignore"] = ignore_list
         public.WriteFile(self._vuln_result, json.dumps(result_dict))
         if tmptmp == 0:
-            return public.returnMsg(True, 'It has been retested.')
+            return public.returnMsg(True, public.lang("It has been retested."))
         else:
-            return public.returnMsg(True, 'It has been retested.')
+            return public.returnMsg(True, public.lang("It has been retested."))
 
     def compare_md5(self):
         '''
@@ -1621,7 +1621,7 @@ if __name__ == "__main__":
 #             os.remove(ignore_file)
 #         else:
 #             public.writeFile(ignore_file,'1')
-#         return public.returnMsg(True,'Successfully set!')
+#         return public.returnMsg(True, public.lang("Successfully set!"))
 #
 #     def check_find(self, args):
 #         '''
@@ -1663,6 +1663,6 @@ if __name__ == "__main__":
 #             m_info['check_time'] = int(time.time())
 #             public.writeFile(result_file, json.dumps(
 #                 [m_info['status'], m_info['msg'], m_info['check_time'], m_info['taking']]))
-#             return public.returnMsg(True, 'Retested')
+#             return public.returnMsg(True, public.lang("Retested"))
 #         except:
-#             return public.returnMsg(False, 'Detection failed')
+#             return public.returnMsg(False, public.lang("Detection failed"))

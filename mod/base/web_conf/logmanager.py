@@ -803,7 +803,7 @@ class LogMgr:
         msg = self._real_log_mgr.remove_log_format(format_name)
         if isinstance(msg, str):
             return json_response(status=False, msg=msg)
-        return json_response(status=True, msg="删除成功")
+        return json_response(status=True, msg="Successfully delete")
 
     def set_site_log_format(self, get):
         try:

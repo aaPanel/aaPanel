@@ -62,7 +62,7 @@ class panel_restore:
         # 判断备份文件是否存在，如果不存在继续检查是否远程备份
         if not os.path.exists(local_backup_file_path):
             self._progress_rewrite('No backup file found: {}'.format(str(local_backup_file_path)))
-            return public.return_message(-1,0, 'Panel does not find the backup file: {}'.format(local_backup_file_path))
+            return public.return_message(-1, 0, public.lang("Panel does not find the backup file: {}",local_backup_file_path))
         # 将网站目录移至回收站
         self._progress_rewrite('Move the current website directory to the recycle bin: {}'.format(str(args.path)))
         self._remove_old_website_file_to_trush(args)
@@ -154,6 +154,8 @@ class panel_restore:
         self._progress_rewrite('Get the site path:{}'.format(str(site_info['site_path'])))
         local_backup_path = self._get_local_backup_path()
         local_backup_file_path = local_backup_path +'/site/'+ args.file_name
+        if not os.path.exists(local_backup_file_path):
+            local_backup_file_path = local_backup_path +'/site/'+ site_info['site_name']+'/'+args.file_name
         self._progress_rewrite('Get the local backup file path: {}'.format(str(local_backup_path)))
         backup_method = self._get_backfile_method(args.file_name)
         self._progress_rewrite('Get the backup method: {}'.format(str(backup_method)))
@@ -180,7 +182,7 @@ class panel_restore:
             self._progress_rewrite('Recovery failed: {}'.format(str(site_info['site_path'])))
             return result
         self._progress_rewrite('Successful recovery: {}'.format(str(site_info['site_path'])))
-        return public.return_message(0,0,'Restore Successful')
+        return public.return_message(0, 0, public.lang("Restore Successful"))
 
     # 取任务进度
     def get_progress(self, get):
@@ -191,7 +193,7 @@ class panel_restore:
         # result = public.GetNumLines(self._progress_file, 20)
         result = public.ExecShell('tail -n 20 {}'.format(self._progress_file))[0]
         if len(result) < 1:
-            return public.return_message(0,0,"Wait for the restore to start")
+            return public.return_message(0, 0, public.lang("Wait for the restore to start"))
         return public.return_message(0,0,result)
 
     # 恢复数据库

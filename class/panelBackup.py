@@ -21,6 +21,8 @@ os.chdir('/www/server/panel')
 if not 'class/' in sys.path:
     sys.path.insert(0, 'class/')
 import public
+from public.hook_import import hook_import
+hook_import()
 
 _VERSION = 1.5
 
@@ -65,12 +67,12 @@ class backup:
 
     def echo_start(self):
         print("=" * 90)
-        print("|-" + public.get_msg_gettext('Start backup') + "[{}]".format(public.format_date()))
+        print("|-" + public.lang("Start backup") + "[{}]".format(public.format_date()))
         print("=" * 90)
 
     def echo_end(self):
         print("=" * 90)
-        print("|-" + public.get_msg_gettext('Backup completed') + "[{}]".format(public.format_date()))
+        print("|-" + public.lang("Backup completed") + "[{}]".format(public.format_date()))
         print("=" * 90)
         print("\n")
 
@@ -167,7 +169,7 @@ class backup:
         error_msg = ""
         self.echo_start()
         if not os.path.exists(spath):
-            error_msg = public.get_msg_gettext('The specified directory {} does not exist!', (spath,))
+            error_msg = public.lang('The specified directory {} does not exist!', spath)
             self.echo_error(error_msg)
             self.send_failture_notification(error_msg, target=f"{spath}|path")
             return False
@@ -189,15 +191,15 @@ class backup:
             return False
 
         if self._cloud:
-            self.echo_info(public.get_msg_gettext('Uploading to {}, please wait ...', (self._cloud._title,)))
+            self.echo_info(public.lang('Uploading to {}, please wait ...', self._cloud._title))
             if self._cloud.upload_file(dfile, 'path'):
-                self.echo_info(public.get_msg_gettext('Successfully uploaded to {}', (self._cloud._title,)))
+                self.echo_info(public.lang('Successfully uploaded to {}', self._cloud._title))
             else:
                 if hasattr(self._cloud, "error_msg"):
                     if self._cloud.error_msg:
                         error_msg = self._cloud.error_msg
                 if not error_msg:
-                    error_msg = public.get_msg_gettext('File upload failed, skip this backup!')
+                    error_msg = public.lang("File upload failed, skip this backup!")
                 self.echo_error(error_msg)
                 if os.path.exists(dfile):
                     os.remove(dfile)
@@ -248,9 +250,9 @@ class backup:
                 if os.path.exists(dfile):
                     os.remove(dfile)
                     self.echo_info(
-                        public.get_msg_gettext('User settings do not retain local backups, deleted {}', (dfile,)))
+                        public.lang('User settings do not retain local backups, deleted {}', dfile))
             else:
-                self.echo_info(public.get_msg_gettext('Local backup has been kept'))
+                self.echo_info(public.lang("Local backup has been kept"))
 
         if not self._cloud:
             backups = public.M('backup').where("cron_id=? and type=? and pid=? and name=? and filename NOT LIKE '%|%'",
@@ -268,9 +270,9 @@ class backup:
     # 清理过期备份文件
     def delete_old(self, backups, save, data_type=None, site_name=None):
         if type(backups) == str:
-            self.echo_info(public.get_msg_gettext('Failed to clean expired backup, error: {}', (backups,)))
+            self.echo_info(public.lang('Failed to clean expired backup, error: {}', backups))
             return
-        self.echo_info(public.get_msg_gettext('Keep the latest number of backups: {} copies', (str(save),)))
+        self.echo_info(public.lang('Keep the latest number of backups: {} copies', str(save),))
 
         # 跳过手动备份文件
         new_backups = []
@@ -298,15 +300,15 @@ class backup:
                 if os.path.exists(backup['filename']):
                     try:
                         os.remove(backup['filename'])
-                        self.echo_info(public.get_msg_gettext('Expired backup files have been cleaned from disk: {}',
-                                                              (backup['filename'],)))
+                        self.echo_info(public.lang('Expired backup files have been cleaned from disk: {}',
+                                                              backup['filename']))
                     except:
                         pass
                 # 尝试删除远程文件
                 if self._cloud:
                     self._cloud.delete_file(backup['name'], data_type)
-                    self.echo_info(public.get_msg_gettext('Expired backup files have been cleaned from {}: {}',
-                                                          (self._cloud._title, backup['name'])))
+                    self.echo_info(public.lang('Expired backup files have been cleaned from {}: {}',
+                                                          self._cloud._title, backup['name']))
 
                 # 从数据库清理
                 public.M('backup').where('id=?', (backup['id'],)).delete()
@@ -343,7 +345,7 @@ class backup:
     # 压缩目录
     def backup_path_to(self, spath, dfile, exclude=[], siteName=None):
         if not os.path.exists(spath):
-            self.echo_error(public.get_msg_gettext('The specified directory {} does not exist!', (spath,)))
+            self.echo_error(public.lang('The specified directory {} does not exist!', spath))
             return False
 
         if spath[-1] == '/':
@@ -363,38 +365,26 @@ class backup:
             exclude_config = "Not set"
 
         if siteName:
-            self.echo_info(public.get_msg_gettext('Backup site: {}', (siteName,)))
-            self.echo_info(public.get_msg_gettext('Website document root: {}', (spath,)))
+            self.echo_info(public.lang('Backup site: {}', siteName))
+            self.echo_info(public.lang('Website document root: {}', spath))
         else:
-            self.echo_info(public.get_msg_gettext('Backup directory: {}', (spath,)))
+            self.echo_info(public.lang('Backup directory: {}', spath))
 
-        self.echo_info(public.get_msg_gettext(
-            'Directory size: {}',
-            (str(public.to_size(p_size), ))
-        ))
-        self.echo_info(public.get_msg_gettext('Exclusion setting: {}', (exclude_config,)))
+        self.echo_info(public.lang('Directory size: {}',str(public.to_size(p_size))))
+        self.echo_info(public.lang('Exclusion setting: {}', exclude_config))
         disk_path, disk_free, disk_inode = self.get_disk_free(dfile)
-        self.echo_info(public.get_msg_gettext(
-            'Partition {} available disk space is: {}, available Inode is: {}',
-            (disk_path, str(public.to_size(disk_free)), str(disk_inode))
-        ))
+        self.echo_info(public.lang('Partition {} available disk space is: {}, available Inode is: {}',disk_path, str(public.to_size(disk_free)), str(disk_inode)))
         if disk_path:
             if disk_free < p_size:
-                self.echo_error(public.get_msg_gettext(
-                    'The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!',
-                    (str(public.to_size(p_size)),)
-                ))
+                self.echo_error(public.lang('The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!',str(public.to_size(p_size))))
                 return False
 
             if disk_inode < self._inode_min:
-                self.echo_error(public.get_msg_gettext(
-                    'The available Inode of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!',
-                    (str(self._inode_min, ))
-                ))
+                self.echo_error(public.lang('The available Inode of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!',str(self._inode_min) ))
                 return False
 
         stime = time.time()
-        self.echo_info(public.get_msg_gettext('Start compressing files: {}', (public.format_date(times=stime),)))
+        self.echo_info(public.lang('Start compressing files: {}', public.format_date(times=stime)))
         if os.path.exists(dfile):
             os.remove(dfile)
         public.ExecShell("cd " + os.path.dirname(
@@ -402,18 +392,15 @@ class backup:
             err_log=self._err_log))
         tar_size = os.path.getsize(dfile)
         if tar_size < 1:
-            self.echo_error(public.get_msg_gettext('Compression failed!'))
+            self.echo_error(public.lang("Compression failed!"))
             self.echo_info(public.readFile(self._err_log))
             return False
         compression_time = str('{:.2f}'.format(time.time() - stime))
-        self.echo_info(public.get_msg_gettext(
-            'Compression completed, took {} seconds, compressed package size: {}',
-            (compression_time, str(public.to_size(tar_size)))
-        ))
+        self.echo_info(public.lang('Compression completed, took {} seconds, compressed package size: {}',compression_time, str(public.to_size(tar_size))))
         if siteName:
-            self.echo_info(public.get_msg_gettext('Site backed up to: {}', (dfile,)))
+            self.echo_info(public.lang('Site backed up to: {}', dfile))
         else:
-            self.echo_info(public.get_msg_gettext('Directory has been backed up to: {}', (dfile,)))
+            self.echo_info(public.lang('Directory has been backed up to: {}', dfile))
         if os.path.exists(self._err_log):
             os.remove(self._err_log)
         return dfile
@@ -429,15 +416,10 @@ class backup:
 
             # Wordpress
             if find['project_type'] == 'WP2':
-                import PluginLoader
-                if PluginLoader.get_auth_state() < 1:
-                    self.echo_info(public.get_msg_gettext('Authorization is invalid or expired'))
-                    return None
-
                 try:
                     from wp_toolkit import wpbackup
                     bak_info = wpbackup(find['id']).backup_full_get_data()
-                    self.echo_info(public.get_msg_gettext('Backup wordpress [{}] successfully', (siteName,)))
+                    self.echo_info(public.lang('Backup wordpress [{}] successfully', siteName))
                     self.echo_end()
                     return bak_info.bak_file
                 except Exception as e:
@@ -462,15 +444,15 @@ class backup:
                 return False
 
             if self._cloud:
-                self.echo_info(public.get_msg_gettext('Uploading to {}, please wait ...', (self._cloud._title,)))
+                self.echo_info(public.lang('Uploading to {}, please wait ...', self._cloud._title))
                 if self._cloud.upload_file(dfile, 'site'):
-                    self.echo_info(public.get_msg_gettext('Successfully uploaded to {}', (self._cloud._title,)))
+                    self.echo_info(public.lang('Successfully uploaded to {}', self._cloud._title))
                 else:
                     if hasattr(self._cloud, "error_msg"):
                         if self._cloud.error_msg:
                             error_msg = self._cloud.error_msg
                     if not error_msg:
-                        error_msg = public.get_msg_gettext('File upload failed, skip this backup!')
+                        error_msg = public.lang("File upload failed, skip this backup!")
                     self.echo_error(error_msg)
                     if os.path.exists(dfile):
                         os.remove(dfile)
@@ -522,9 +504,9 @@ class backup:
                         print(dfile)
                         os.remove(dfile)
                         self.echo_info(
-                            public.get_msg_gettext('User settings do not retain local backups, deleted {}', (dfile,)))
+                            public.lang('User settings do not retain local backups, deleted {}', dfile))
                 else:
-                    self.echo_info(public.get_msg_gettext('Local backup has been kept'))
+                    self.echo_info(public.lang("Local backup has been kept"))
 
             # 清理多余备份
             if not self._cloud:
@@ -757,7 +739,7 @@ class backup:
             # self.mypass(False)
             gz_size = os.path.getsize(dfile)
             if gz_size < 400:
-                error_msg = public.get_msg_gettext('Database export failed!')
+                error_msg = public.lang("Database export failed!")
                 self.echo_error(error_msg)
                 self.send_failture_notification(error_msg, target=f"{db_name}|database")
                 self.echo_info(public.readFile(self._err_log))
@@ -778,7 +760,7 @@ class backup:
                         if self._cloud.error_msg:
                             error_msg = self._cloud.error_msg
                     if not error_msg:
-                        error_msg = public.get_msg_gettext('File upload failed, skip this backup!')
+                        error_msg = public.lang("File upload failed, skip this backup!")
                     self.echo_error(error_msg)
                     if os.path.exists(dfile):
                         os.remove(dfile)
@@ -837,7 +819,7 @@ class backup:
                         self.echo_info(
                             public.get_msg_gettext('User settings do not retain local backups, deleted {}', (dfile,)))
                 else:
-                    self.echo_info(public.get_msg_gettext('Local backup has been kept'))
+                    self.echo_info(public.lang("Local backup has been kept"))
 
             # 清理多余备份
             if not self._cloud:
@@ -971,7 +953,7 @@ class backup:
             msg = self.generate_failture_notice(task_name, error_msg, remark)
             res = self.send_notification(notice_channel, title, msg)
             if res:
-                self.echo_info(public.get_msg_gettext('Notification has been sent'))
+                self.echo_info(public.lang("Notification has been sent"))
 
     def send_all_failture_notification(self, backup_type, results, remark=""):
 
@@ -1013,18 +995,18 @@ class backup:
 
             if failture_count > 0:
                 if self._cloud:
-                    remark = public.get_msg_gettext('Backup to {}, a total of {} {}, and failures {}.'), (
+                    remark = public.lang("Backup to {}, a total of {} {}, and failures {}."), (
                         self._cloud._title, total, backup_type_desc, failture_count)
                 else:
-                    remark = public.get_msg_gettext('Backup failed {}/total {} sites'), (
+                    remark = public.lang("Backup failed {}/total {} sites"), (
                         failture_count, total, backup_type_desc)
 
             msg = self.generate_all_failture_notice(task_name, content, backup_type_desc, remark)
             res = self.send_notification(notice_channel, title, msg=msg, total=total, failture_count=failture_count)
             if res:
-                self.echo_info(public.get_msg_gettext('Notification has been sent'))
+                self.echo_info(public.lang("Notification has been sent"))
             else:
-                self.echo_error(public.get_msg_gettext('Failed to send notification'))
+                self.echo_error(public.lang("Failed to send notification"))
 
     def send_notification(self, channel, title, msg="", total=0, failture_count=0):
 

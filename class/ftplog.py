@@ -94,15 +94,15 @@ class ftplog:
         if not self.__check_auth():
             return public.returnMsg(False, self.__AUTH_MSG)
         if not hasattr(get, 'exec_name'):
-            return public.returnMsg(False, 'The parameter is incorrect！')
+            return public.returnMsg(False, public.lang("The parameter is incorrect！"))
         ftp_file='/etc/rsyslog.d/pure-ftpd.conf'
         write_string = '\nftp.*\t\t-/var/log/pure-ftpd.log\n'
         #获取日志状态
         if get.exec_name == 'getlog':
             if os.path.exists(ftp_file):
-                return public.returnMsg(True, 'start')
+                return public.returnMsg(True, public.lang("start"))
             else:
-                return public.returnMsg(True, 'stop')
+                return public.returnMsg(True, public.lang("stop"))
             
         # 开启日志审计
         elif get.exec_name == 'start':
@@ -113,10 +113,10 @@ class ftplog:
             if os.path.exists(ftp_file):
                 os.remove(ftp_file)
                 if os.path.exists(ftp_file):
-                    return public.returnMsg(False, 'failed to close the log')
+                    return public.returnMsg(False, public.lang("failed to close the log"))
             self.del_crontab()
         public.ExecShell('systemctl restart rsyslog')
-        return public.returnMsg(True, 'successfully set')
+        return public.returnMsg(True, public.lang("successfully set"))
 
     def get_format_time(self, englist_time):
         """
@@ -146,7 +146,7 @@ class ftplog:
         search_str = 'pure-ftpd:'
         search_str2 = 'pure-ftpd['
         if not hasattr(get, 'user_name'):
-            return public.returnMsg(False, 'The parameter is incorrect！')
+            return public.returnMsg(False, public.lang("The parameter is incorrect！"))
         args = public.dict_obj()
         args.exec_name = 'getlog'
         file_name = self.__ftp_backup_path
@@ -308,7 +308,7 @@ class ftplog:
             is_backup = False
         file_list = self.get_file_list(file_name, is_backup)
         if not hasattr(get, 'user_name'):
-            return public.returnMsg(False, 'The parameter is incorrect！')
+            return public.returnMsg(False, public.lang("The parameter is incorrect！"))
         data = []
         tmp_data = []
         sortid = 0

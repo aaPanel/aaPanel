@@ -1,9 +1,9 @@
 #!/www/server/panel/pyenv/bin/python3.7
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2014-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2014-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -71,7 +71,7 @@ class Iptables(Base):
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        return self._result(True, "The current system firewall is iptables and does not support setting status.")
+        return self._result(True, public.lang("The current system firewall is iptables and does not support setting status."))
 
     # 2024/3/19 下午 5:00 停止防火墙
     def stop(self):
@@ -81,7 +81,7 @@ class Iptables(Base):
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        return self._result(True, "The current system firewall is iptables and does not support stopping.")
+        return self._result(True, public.lang("The current system firewall is iptables and does not support stopping."))
 
     # 2024/3/19 下午 4:59 重启防火墙
     def restart(self):
@@ -91,7 +91,7 @@ class Iptables(Base):
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        return self._result(True, "The current system firewall is iptables and does not support restarting.")
+        return self._result(True, public.lang("The current system firewall is iptables and does not support restarting."))
 
     # 2024/3/19 下午 4:59 重载防火墙
     def reload(self):
@@ -101,7 +101,7 @@ class Iptables(Base):
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        return self._result(True, "The current system firewall is iptables,which does not support reloading. ")
+        return self._result(True, public.lang("The current system firewall is iptables,which does not support reloading. "))
 
     # 2024/3/19 下午 3:36 检查表名是否合法
     def check_table_name(self, table_name):
@@ -456,7 +456,7 @@ class Iptables(Base):
         try:
             return self.set_chain_port(info, operation, "INPUT")
         except Exception as e:
-            return self._result(False, "Failed to set a port rule:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
 
     # 2024/4/29 下午2:50 设置output端口策略
     def output_port(self, info, operation):
@@ -469,7 +469,7 @@ class Iptables(Base):
         try:
             return self.set_chain_port(info, operation, "OUTPUT")
         except Exception as e:
-            return self._result(False, "Failed to set a port rule:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
 
     # 2024/4/29 下午4:49 添加/删除指定链的端口规则
     def set_chain_port(self, info, operation, chain):
@@ -481,10 +481,10 @@ class Iptables(Base):
         '''
         try:
             if not chain in ["INPUT", "OUTPUT"]:
-                return self._result(False, "Failed to set a port rule:{}".format("Unsupported chain types"))
+                return self._result(False, public.lang("Failed to set a port rule:{}","Unsupported chain types"))
 
             if info['Protocol'] not in ["tcp", "udp"]:
-                return self._result(False, "Failed to set a port rule:{}".format("Unsupported protocol types"))
+                return self._result(False, public.lang("Failed to set a port rule:{}","Unsupported protocol types"))
             if info["Strategy"] == "accept":
                 info["Strategy"] = "ACCEPT"
             elif info["Strategy"] == "drop":
@@ -492,7 +492,7 @@ class Iptables(Base):
             elif info["Strategy"] == "reject":
                 info["Strategy"] = "REJECT"
             else:
-                return self._result(False, "Failed to set a port rule:{}".format("The type of policy that is not supported"))
+                return self._result(False, public.lang("Failed to set a port rule:{}","The type of policy that is not supported"))
 
             if operation == "add":
                 operation = "-I"
@@ -509,10 +509,10 @@ class Iptables(Base):
             )
             stdout, stderr = public.ExecShell(rule)
             if stderr:
-                return self._result(False, "Failed to set a port rule:{}".format(stderr))
-            return self._result(True, "The port rule was successfully configured")
+                return self._result(False, public.lang("Failed to set a port rule:{}",stderr))
+            return self._result(True, public.lang("The port rule was successfully configured"))
         except Exception as e:
-            return self._result(False, "Failed to set a port rule:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
 
     # 2024/4/29 下午5:01 添加/删除指定链的复杂端口规则
     def set_chain_rich_port(self, info, operation, chain):
@@ -523,15 +523,15 @@ class Iptables(Base):
         '''
         try:
             if not chain in ["INPUT", "OUTPUT"]:
-                return self._result(False, "Failed to set a port rule:{}".format("Unsupported chain types"))
+                return self._result(False, public.lang("Failed to set a port rule:{}","Unsupported chain types"))
 
             if "Address" in info and info["Address"] == "":
                 info["Address"] = "all"
             if "Address" in info and public.is_ipv6(info['Address']):
-                return self._result(False, "Failed to set a port rule:{}".format("IPV 6 addresses that are not supported"))
+                return self._result(False, public.lang("Failed to set a port rule:{}","IPV 6 addresses that are not supported"))
 
             if info['Protocol'] not in ["tcp", "udp"]:
-                return self._result(False, "Failed to set a port rule:{}".format("Unsupported protocol types"))
+                return self._result(False, public.lang("Failed to set a port rule:{}","Unsupported protocol types"))
             if info["Strategy"] == "accept":
                 info["Strategy"] = "ACCEPT"
             elif info["Strategy"] == "drop":
@@ -539,7 +539,7 @@ class Iptables(Base):
             elif info["Strategy"] == "reject":
                 info["Strategy"] = "REJECT"
             else:
-                return self._result(False, "Failed to set a port rule:{}".format("The type of policy that is not supported"))
+                return self._result(False, public.lang("Failed to set a port rule:{}","The type of policy that is not supported"))
 
             if operation == "add":
                 operation = "-I"
@@ -597,10 +597,10 @@ class Iptables(Base):
 
             stdout, stderr = public.ExecShell(rule)
             if stderr:
-                return self._result(False, "Failed to set a port rule:{}".format(stderr))
-            return self._result(True, "The port rule was successfully configured")
+                return self._result(False, public.lang("Failed to set a port rule:{}",stderr))
+            return self._result(True, public.lang("The port rule was successfully configured"))
         except Exception as e:
-            return self._result(False, "Failed to set a port rule:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
 
     # 2024/4/29 下午5:01 添加/删除指定链的复杂ip规则
     def set_chain_rich_ip(self, info, operation, chain):
@@ -611,12 +611,12 @@ class Iptables(Base):
         '''
         try:
             if not chain in ["INPUT", "OUTPUT"]:
-                return self._result(False, "Failed to set the rule:{}".format("Unsupported chain types"))
+                return self._result(False, public.lang("Failed to set the rule:{}","Unsupported chain types"))
 
             if "Address" in info and info["Address"] == "":
                 info["Address"] = "all"
             if "Address" in info and public.is_ipv6(info['Address']):
-                return self._result(False, "Failed to set the rule:{}".format("IPV 6 addresses that are not supported"))
+                return self._result(False, public.lang("Failed to set the rule:{}","IPV 6 addresses that are not supported"))
 
             if info["Strategy"] == "accept":
                 info["Strategy"] = "ACCEPT"
@@ -625,7 +625,7 @@ class Iptables(Base):
             elif info["Strategy"] == "reject":
                 info["Strategy"] = "REJECT"
             else:
-                return self._result(False, "Failed to set the rule:{}".format("The type of policy that is not supported"))
+                return self._result(False, public.lang("Failed to set the rule:{}","The type of policy that is not supported"))
 
             if operation == "add":
                 operation = "-I"
@@ -654,10 +654,10 @@ class Iptables(Base):
 
             stdout, stderr = public.ExecShell(rule)
             if stderr:
-                return self._result(False, "Failed to set the rule:{}".format(stderr))
-            return self._result(True, "The rule is set successfully")
+                return self._result(False, public.lang("Failed to set the rule:{}", stderr))
+            return self._result(True, public.lang("The rule is set successfully"))
         except Exception as e:
-            return self._result(False, "Failed to set the rule:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to set the rule:{}",str(e)))
 
     # 2024/4/29 下午2:51 INPUT复杂一些的规则管理
     def rich_rules(self, info, operation):
@@ -673,7 +673,7 @@ class Iptables(Base):
             else:
                 return self.set_chain_rich_port(info, operation, "INPUT")
         except Exception as e:
-            return self._result(False, "Failed to set a port rule:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
 
     # 2024/4/29 下午2:52 OUTPUT复杂一些的规则管理
     def output_rich_rules(self, info, operation):
@@ -688,7 +688,7 @@ class Iptables(Base):
             else:
                 return self.set_chain_rich_port(info, operation, "OUTPUT")
         except Exception as e:
-            return self._result(False, "Failed to set a port rule:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
 
     # 2024/3/19 下午 3:03 清空指定链中的所有规则
     def flush_chain(self, chain_name):
@@ -764,7 +764,7 @@ class Iptables(Base):
                 parm['type'] = "-D"
             return self.rule_manage(parm)
         except Exception as e:
-            return self._result(False, "Failed to set a port forwarding rule:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to set a port forwarding rule:{}",str(e)))
 
     # 2024/3/19 下午 3:03 在指定链中管理规则
     def rule_manage(self, parm):
@@ -776,18 +776,18 @@ class Iptables(Base):
         '''
         try:
             if not self.check_table_name(parm['table']):
-                return self._result(False, "Unsupported table names: {}".format(parm['table']))
+                return self._result(False, public.lang("Unsupported table names: {}",parm['table']))
 
             rule = "{} -t {} {} {} {}".format(
                 self.cmd_str, parm['table'], parm['type'], parm['chain_name'], parm['rule']
             )
             stdout, stderr = public.ExecShell(rule)
             if stderr:
-                return self._result(False, "The rule setup failed:{}".format(stderr))
+                return self._result(False, public.lang("The rule setup failed:{}",stderr))
 
-            return self._result(True, "The rule is set successfully")
+            return self._result(True, public.lang("The rule is set successfully"))
         except Exception as e:
-            return self._result(False, "The rule setup failed: {}".format(str(e)))
+            return self._result(False, public.lang("The rule setup failed: {}",str(e)))
 
     # 2024/4/29 下午5:55 获取所有端口转发列表
     def list_port_forward(self):

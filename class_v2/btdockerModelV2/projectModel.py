@@ -7,9 +7,6 @@
 # Author: wzz <wzz@aapanel.com>
 # -------------------------------------------------------------------
 
-
-import gettext
-_ = gettext.gettext
 # ------------------------------
 # Docker模型
 # ------------------------------
@@ -164,8 +161,8 @@ class main(dockerBase):
         url = "{}/install/lib/docker_project/docker_project_info.json".format(public.get_url())
         dp.download_file(url, info_path)
         if os.path.exists(info_path):
-            return public.returnMsg(True, "info.json is downloaded!")
-        return public.returnMsg(False, "The info.json download failed!")
+            return public.return_message(0, 0, public.lang("info.json is downloaded!"))
+        return public.return_message(-1, 0, public.lang("The info.json download failed!"))
 
     def __download_project_yml(self, server_name):
         '''
@@ -180,18 +177,18 @@ class main(dockerBase):
             url = "{}/install/lib/docker_project/templates/{}.tar.gz".format(public.get_url(), server_name)
             dp.download_file(url, filename)
             if not os.path.exists(filename):
-                return public.returnMsg(False, "{} Download failed, please resync!".format(server_name))
+                return public.return_message(-1, 0, public.lang("{} Download failed, please resync!", server_name))
             if os.path.getsize(filename) == 0:
                 os.remove(filename)
-                return public.returnMsg(False, "{} Download failed, please resync!".format(server_name))
+                return public.return_message(-1, 0, public.lang("{} Download failed, please resync!", server_name))
             self.__tar_x_yml(server_name, path, filename)
             if os.path.exists(compose_file):
                 check_conf = self.__check_conf(compose_file)
                 if check_conf[1]:
-                    return public.returnMsg(False, "{}yml file test failed,{}".format(server_name, check_conf[1]))
-                return public.returnMsg(True, "{} Download completed!".format(server_name))
+                    return public.return_message(-1, 0, public.lang("{}yml file test failed,{}", server_name, check_conf[1]))
+                return public.return_message(0, 0, public.lang("{} Download completed!", server_name))
         except:
-            return public.returnMsg(False, "{} Download failed, please resync!".format(server_name))
+            return public.return_message(-1, 0, public.lang("{} Download failed, please resync!", server_name))
 
     def __tar_x_yml(self, server_name, path=None, filename=None):
         '''
@@ -205,8 +202,8 @@ class main(dockerBase):
         if tar_result[1]:
             os.remove(path)
             os.remove(filename)
-            return public.returnMsg(False, "{} Decompression failed".format(server_name))
-        return public.returnMsg(True, "{} extracted successfully".format(server_name))
+            return public.return_message(-1, 0, public.lang("{} Decompression failed", server_name))
+        return public.return_message(0, 0, public.lang("{} extracted successfully", server_name))
 
     def create_project_volume(self, server_name, project_name, dir_names, volume_path):
         '''
@@ -235,13 +232,13 @@ class main(dockerBase):
             else:
                 path = "{}/data/{}".format(volume_path, dir_name)
             is_mkdir = public.ExecShell("mkdir -p {}".format(path))
-            if is_mkdir[1]: return public.returnMsg(False, "Directory creation failed for the following reasons: {}".format(is_mkdir[1]))
+            if is_mkdir[1]: return public.return_message(-1, 0, public.lang("Directory creation failed for the following reasons: {}", is_mkdir[1]))
             args.name = "{}_{}_{}".format(project_name, server_name, dir_name)
             args.driver = "local"
             args.driver_opts = {'type': 'none', 'device': path, 'o': 'bind'}
             args.labels = {}
             dv.main().add(args)
-        return public.returnMsg(True, "The storage volume has been created")
+        return public.return_message(0, 0, public.lang("The storage volume has been created"))
 
     def get_project(self, get):
         '''
@@ -320,7 +317,6 @@ class main(dockerBase):
         print(self.log_file)
         get._log_path = self.log_file
         return self.get_ws_log(get)
-
     def create_project(self, get):
         '''
         创建一键部署的项目
@@ -353,11 +349,11 @@ class main(dockerBase):
             if conf["key"] != "REMARK" and type(conf["value"]) != list:
                 if re.search(r'\s', conf["value"]):
                     server_ps = self.__get_server_ps(project_conf, conf["key"])
-                    return public.return_message(-1, 0, _( "{} cannot contain Spaces".format(server_ps)))
+                    return public.return_message(-1, 0, public.lang("{} cannot contain Spaces", server_ps))
             if conf["key"] != "VOLUME_PATH" and conf["key"] != "REMARK":
                 if conf["value"] == "":
                     server_ps = self.__get_server_ps(project_conf, conf["key"])
-                    return public.return_message(-1, 0, _( "{} cannot be null!".format(server_ps)))
+                    return public.return_message(-1, 0, public.lang("{} cannot be null!", server_ps))
             if conf["key"].upper() == "PROJECT_NAME": project_name = conf["value"].strip()
             if conf["key"].upper() == "VOLUME_PATH": project_volume = conf["value"].strip()
             if conf["key"].upper() == "SERVER_NAME": server_name = conf["value"].strip()
@@ -365,7 +361,7 @@ class main(dockerBase):
                 volumes = conf["value"]
             if conf["key"].upper() == "PORT":
                 if dp.check_socket(conf["value"]):
-                    return public.return_message(-1, 0, _( "Server port [{}] is occupied, please change to another port!".format(conf['value'])))
+                    return public.return_message(-1, 0, public.lang("Server port [ {}] is occupied, please change to another port!", conf['value']))
                 project_port = conf["value"]
             if conf["key"] == "REMARK": remark = conf["value"]
 
@@ -410,7 +406,7 @@ class main(dockerBase):
         filename = "{}/docker-compose.yml".format(project_dir)
         check_result = self.__check_conf(filename)
         if check_result[1]:
-            return public.returnMsg(False, "Project startup failed {}".format(check_result[1]))
+            return public.return_message(-1, 0, public.lang("Project startup failed {}", check_result[1]))
 
         public.ExecShell("echo -n > {}".format(self.log_file))
         public.ExecShell("nohup {} -f {}/docker-compose.yml up -d >> {} 2>&1 &&"
@@ -422,7 +418,7 @@ class main(dockerBase):
             self.log_file,
             self.log_file
         ))
-        return public.returnMsg(True, "Start creating the project")
+        return public.return_message(0, 0, public.lang("Start creating the project"))
 
     def __create_dir(self, project_dir, project_name, server_name, server_dir):
         '''
@@ -433,12 +429,12 @@ class main(dockerBase):
         @return:
         '''
         if self.__check_repeat(project_dir, project_name, server_name):
-            return public.returnMsg(False, "{} already exists, please change the project name".format(project_name))
+            return public.return_message(-1, 0, public.lang("{} already exists, please change the project name", project_name))
         mk_result = public.ExecShell("mkdir -p {}".format(project_dir))
-        if mk_result[1]: return public.returnMsg(False, "User project directory failed to create,details: {}".format(mk_result[1]))
+        if mk_result[1]: return public.return_message(-1, 0, public.lang("User project directory failed to create,details: {}", mk_result[1]))
         cp_result = public.ExecShell("cp -a {}/. {}/".format(server_dir, project_dir))
-        if cp_result[1]: return public.returnMsg(False, "Failed to copy project directory. Details: {}".format(cp_result[1]))
-        return public.returnMsg(True, "")
+        if cp_result[1]: return public.return_message(-1, 0, public.lang("Failed to copy project directory. Details: {}", cp_result[1]))
+        return public.return_message(0, 0, public.lang(""))
 
     def __add_sql(self, project_dir, project_name, server_name, remark):
         '''
@@ -467,7 +463,7 @@ class main(dockerBase):
         local_ip = public.GetLocalIp()
         data = {"protocol": "http", "server_ip": server_ip, "local_ip": local_ip,
                 "port": project_port}
-        return public.returnMsg(True, data)
+        return public.return_message(0, 0, data)
 
     def __check_repeat(self, project_dir, project_name, server_name):
         '''

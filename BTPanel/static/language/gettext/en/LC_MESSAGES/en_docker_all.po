@@ -1,0 +1,579 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-14 02:03+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "There is no volume to back up"
+msgstr ""
+
+msgid "The backup task was created successfully."
+msgstr ""
+
+msgid "Failed to create a backup task {}"
+msgstr ""
+
+msgid "successfully delete"
+msgstr ""
+
+msgid "{} Failed to delete the file, reason: {}"
+msgstr ""
+
+msgid "This template name already exists!"
+msgstr ""
+
+msgid "Template added successfully!"
+msgstr ""
+
+msgid "Did not change the template!"
+msgstr ""
+
+msgid "Modified template successfully!"
+msgstr ""
+
+msgid "This template was not found!"
+msgstr ""
+
+msgid "successfully delete!"
+msgstr ""
+
+msgid "This template was not found, or file is corrupt!"
+msgstr ""
+
+msgid "Template file does not exist"
+msgstr ""
+
+msgid "The project name already exists!"
+msgstr ""
+
+msgid "Successful deployment!"
+msgstr ""
+
+msgid "The project name was not found!"
+msgstr ""
+
+msgid "Clean up successfully!"
+msgstr ""
+
+msgid "The template was not found!"
+msgstr ""
+
+msgid "Pull successfully!"
+msgstr ""
+
+msgid "Unable to scan the root directory"
+msgstr ""
+
+msgid "Modify successfully!"
+msgstr ""
+
+msgid "Only the docker run command can be executed"
+msgstr ""
+
+msgid "Dangerous command exists: [{}],Execution is not allowed!"
+msgstr ""
+
+msgid "There are danger symbols: [{}],Execution is not allowed!"
+msgstr ""
+
+msgid "The command has been executed!"
+msgstr ""
+
+msgid "The port format is wrong, this method is not supported!"
+msgstr ""
+
+msgid "Server port [{}] is occupied, please change to another port!"
+msgstr ""
+
+msgid "Please pull the image you need"
+msgstr ""
+
+msgid "The image does not exist!"
+msgstr ""
+
+msgid "The memory quota has exceeded the available amount!"
+msgstr ""
+
+msgid "The memory quota cannot be less than 6MB!"
+msgstr ""
+
+msgid "Image [{}] does not exist, You can try [Forced Pull]!"
+msgstr ""
+
+msgid "Image [{}] does not exist!"
+msgstr ""
+
+msgid "cpu quota has exceeded available cores!"
+msgstr ""
+
+msgid "Memory reservation cannot be less than 6MB!"
+msgstr ""
+
+msgid "The image name format is incorrect.such as:nginx:latest"
+msgstr ""
+
+msgid "Container creation failed, details: {}!"
+msgstr ""
+
+msgid "The memory quota cannot be less than the memory reserve!"
+msgstr ""
+
+msgid "The container name or network bridge already exists. Please change the container name and try again!"
+msgstr ""
+
+msgid "There is no startup command in this image, please specify the container startup command!"
+msgstr ""
+
+msgid "Permission exception! Details:{}"
+msgstr ""
+
+msgid "Container creation failed! Please restart the docker service at the appropriate time!"
+msgstr ""
+
+msgid "Container name already exists!"
+msgstr ""
+
+msgid "The container name is invalid"
+msgstr ""
+
+msgid "Server port {} in use! Change the other port"
+msgstr ""
+
+msgid "Creation failure! {}"
+msgstr ""
+
+msgid "The container creation failed and the connection to docker timed out!"
+msgstr ""
+
+msgid "Container failed to run! {}"
+msgstr ""
+
+msgid "Created successfully, but the IP [{}] is illegal and the IP has been automatically assigned."
+msgstr ""
+
+msgid "Creation failure!"
+msgstr ""
+
+msgid "Container ID is abnormal"
+msgstr ""
+
+msgid "The new image name cannot be empty!"
+msgstr ""
+
+msgid "The mirror does not exist!"
+msgstr ""
+
+msgid "Container editing failed and the connection to docker timed out."
+msgstr ""
+
+msgid "Update failed!{}"
+msgstr ""
+
+msgid "Editing successful, [{}] has not specified a subnet, and the IP has been automatically assigned!"
+msgstr ""
+
+msgid "Editing successful, network [{}] setting failed, IP has been automatically assigned to you, error details: {}!"
+msgstr ""
+
+msgid "Update successfully!"
+msgstr ""
+
+msgid "Container does not exist!"
+msgstr ""
+
+msgid "The image has been generated, and{}"
+msgstr ""
+
+msgid "submit successfully!"
+msgstr ""
+
+msgid "Submission Failed!{}"
+msgstr ""
+
+msgid "Failed to get container"
+msgstr ""
+
+msgid "Successfully exported to:{}"
+msgstr ""
+
+msgid "operation failure:"
+msgstr ""
+
+msgid "Successfully deleted!"
+msgstr ""
+
+msgid "Delete failed! {}"
+msgstr ""
+
+msgid "The container has been deleted!"
+msgstr ""
+
+msgid "ipv6 server port [{}] is occupied!"
+msgstr ""
+
+msgid "ipv4 server port [{}] is occupied!"
+msgstr ""
+
+msgid "Setup failed! {}"
+msgstr ""
+
+msgid "Stop failing!"
+msgstr ""
+
+msgid "Stop succeeding!"
+msgstr ""
+
+msgid "The container has paused."
+msgstr ""
+
+msgid "Container stopped and deleted"
+msgstr ""
+
+msgid "Stop failing!{}"
+msgstr ""
+
+msgid "boot failed!"
+msgstr ""
+
+msgid "starting success!"
+msgstr ""
+
+msgid "Container pause failed!"
+msgstr ""
+
+msgid "Container pause successfully!"
+msgstr ""
+
+msgid "The container has been suspended!"
+msgstr ""
+
+msgid "The container is not started and cannot be paused!"
+msgstr ""
+
+msgid "The container is not paused or has been deleted. Check if the container has the option to delete immediately after stopping!"
+msgstr ""
+
+msgid "The container unpaused successfully"
+msgstr ""
+
+msgid "The container was reloaded successfully!"
+msgstr ""
+
+msgid "Container restarts successfully!"
+msgstr ""
+
+msgid "The container has been stopped and deleted because containers have the option to automatically delete when stopped"
+msgstr ""
+
+msgid "The container has paused"
+msgstr ""
+
+msgid "The container ID is empty"
+msgstr ""
+
+msgid "Failed to get container information!{}"
+msgstr ""
+
+msgid "docker connection failed"
+msgstr ""
+
+msgid "parameter error,Pass: type"
+msgstr ""
+
+msgid "Container log directory does not exist, log cut cannot be set!"
+msgstr ""
+
+msgid "parameter error"
+msgstr ""
+
+msgid "Opened successfully!"
+msgstr ""
+
+msgid "Closed successfully!"
+msgstr ""
+
+msgid "The log file does not exist"
+msgstr ""
+
+msgid "Log cleaning was successful!"
+msgstr ""
+
+msgid "No useless containers!"
+msgstr ""
+
+msgid "successfully deleted!"
+msgstr ""
+
+msgid "Please turn off enterprise tamper protection before trying again!"
+msgstr ""
+
+msgid "failed to delete! {}"
+msgstr ""
+
+msgid "Update failed! {}"
+msgstr ""
+
+msgid "The container is not started and cannot be renamed!"
+msgstr ""
+
+msgid "Rename successfully!"
+msgstr ""
+
+msgid "Renaming failed! {}"
+msgstr ""
+
+msgid "The type only supports add/del"
+msgstr ""
+
+msgid "Please select a container"
+msgstr ""
+
+msgid "Set top successfully!"
+msgstr ""
+
+msgid "Unpinned successfully!"
+msgstr ""
+
+msgid "Setup successful!"
+msgstr ""
+
+msgid "Parameter error, Please pass in: ws_callback!"
+msgstr ""
+
+msgid "Parameter error, Please pass in: _ws!"
+msgstr ""
+
+msgid "Please pass in cmd"
+msgstr ""
+
+msgid "Only docker run or docker pull commands can be executed"
+msgstr ""
+
+msgid "Dangerous command exists: [{}], execution is not allowed!"
+msgstr ""
+
+msgid "Dangerous symbol exists: [{}], execution is not allowed!"
+msgstr ""
+
+msgid "The image name cannot contain /"
+msgstr ""
+
+msgid "The docker service is running abnormally, please restart and try again!"
+msgstr ""
+
+msgid "The gateway setting is wrong, Please enter a gateway that matches the subnet: {}"
+msgstr ""
+
+msgid "Subnet address format error, please enter for example: 172.16.0.0/16"
+msgstr ""
+
+msgid "IP range format error, please enter the appropriate IP range for this subnet:"
+msgstr ""
+
+msgid "IP range [{}] already exists!"
+msgstr ""
+
+msgid "Failed to add network! {}"
+msgstr ""
+
+msgid "Added network successfully!"
+msgstr ""
+
+msgid "The system default network cannot be deleted!"
+msgstr ""
+
+msgid "The network cannot be deleted while it is in use!"
+msgstr ""
+
+msgid "There are no useless networks!"
+msgstr ""
+
+msgid "Network ID cannot be empty"
+msgstr ""
+
+msgid "Container ID cannot be empty"
+msgstr ""
+
+msgid "Network disconnection was successful!"
+msgstr ""
+
+msgid "Container ID: {}, does not exist!"
+msgstr ""
+
+msgid "Network ID: {}, does not exist!"
+msgstr ""
+
+msgid "Network disconnection failed! {}"
+msgstr ""
+
+msgid "Network connection successful!"
+msgstr ""
+
+msgid "Failed to connect to network! {}"
+msgstr ""
+
+msgid "{} cannot contain Spaces"
+msgstr ""
+
+msgid "{} cannot be null!"
+msgstr ""
+
+msgid "Project Type [{}] Existing Domain: {}"
+msgstr ""
+
+msgid "Server port [{}] is not used, please enter the port in use to reverse!"
+msgstr ""
+
+msgid "Add failure, database cannot be written!"
+msgstr ""
+
+msgid "successfully added!"
+msgstr ""
+
+msgid "Add failed, error {}!"
+msgstr ""
+
+msgid "No reverse proxy information was detected!"
+msgstr ""
+
+msgid "parameter error!"
+msgstr ""
+
+msgid "Certificate does not exist!"
+msgstr ""
+
+msgid "The name already exists! <br><br>name: {}"
+msgstr ""
+
+msgid "Repository information already exists!"
+msgstr ""
+
+msgid "Editing failed! Reason: Account password decryption failed! Please delete the repository and add it again"
+msgstr ""
+
+msgid "Editing failed! Reason:{}"
+msgstr ""
+
+msgid "This repository could not be found"
+msgstr ""
+
+msgid "Edit success!"
+msgstr ""
+
+msgid "Delete failed,The repository id may not exist!"
+msgstr ""
+
+msgid "The monitoring save time needs to be a positive integer!"
+msgstr ""
+
+msgid "Monitoring data cannot be retained for more than 999 days!"
+msgstr ""
+
+msgid "Successfully set!"
+msgstr ""
+
+msgid "There's no way to do that"
+msgstr ""
+
+msgid "Docker service setup failed, please turn off aapanel anti-intrusion and try again!"
+msgstr ""
+
+msgid "Setup failed! Reason for failure:{}"
+msgstr ""
+
+msgid "{} success"
+msgstr ""
+
+msgid "Global configuration file error, please check {}!"
+msgstr ""
+
+msgid "Speedup address [{}] Format error <br> Reference: https://mirror.ccs.tencentyun.com"
+msgstr ""
+
+msgid "successfully set"
+msgstr ""
+
+msgid "Setup failed! Failure reason :{}"
+msgstr ""
+
+msgid "Start monitoring successfully!"
+msgstr ""
+
+msgid "Failed to start monitoring!"
+msgstr ""
+
+msgid "Docker monitoring stopped successfully!"
+msgstr ""
+
+msgid "docker-compose file path cannot be empty!"
+msgstr ""
+
+msgid "docker-compose file does not exist!"
+msgstr ""
+
+msgid "docker-compose file is not executable or is not a docker-compose file!"
+msgstr ""
+
+msgid "The installation task already exists, please do not add it again!"
+msgstr ""
+
+msgid "The installation task has been added to the queue!"
+msgstr ""
+
+msgid "The repair task has been added to the queue!"
+msgstr ""
+
+msgid "Saved successfully!"
+msgstr ""
+
+msgid "Saving failed, reason: daemon.json configuration file format error!"
+msgstr ""
+
+msgid "Save failed, reason: {}"
+msgstr ""
+
+msgid "Please manually delete all containers and images before uninstalling!"
+msgstr ""
+
+msgid "The container does not exist, please refresh the browser and try again!"
+msgstr ""
+
+msgid "Failed to get container status: "
+msgstr ""
+
+msgid "Volume names can be no less than 2 characters long!"
+msgstr ""
+
+msgid "Volume name already exists!"
+msgstr ""
+
+msgid "addition failed {}"
+msgstr ""
+
+msgid "Driver option tags must be dictionary/key-value pairs!"
+msgstr ""
+
+msgid "Add failed! {}"
+msgstr ""
+
+msgid "The storage volume is in use and cannot be deleted!"
+msgstr ""
+
+msgid "The storage volume does not exist!"
+msgstr ""
+
+msgid "No useless storage volumes!"
+msgstr ""

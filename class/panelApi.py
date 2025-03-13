@@ -35,25 +35,25 @@ class panelApi:
         from BTPanel import cache
         import uuid
         tid = get.tid
-        if(len(tid) != 32): return public.return_msg_gettext(False,'Invalid login key1')
+        if(len(tid) != 32): return public.return_msg_gettext(False, public.lang("Invalid login key1"))
         session_id = cache.get(tid)
-        if not session_id: return public.return_msg_gettext(False,'The specified key does not exist or has expired1')
-        if(len(session_id) != 64): return public.return_msg_gettext(False,'Invalid login key2')
+        if not session_id: return public.return_msg_gettext(False, public.lang("The specified key does not exist or has expired1"))
+        if(len(session_id) != 64): return public.return_msg_gettext(False, public.lang("Invalid login key2"))
         try:
-            if not os.path.exists('/www/server/panel/data/app_login_check.pl'):return public.returnMsg(False,'Invalid login key3')
+            if not os.path.exists('/www/server/panel/data/app_login_check.pl'):return public.returnMsg(False, public.lang("Invalid login key3"))
             key, init_time, tid2, status = public.readFile('/www/server/panel/data/app_login_check.pl').split(':')
-            if session_id!=key:return public.returnMsg(False,'Invalid login key4')
-            if tid != tid2: return public.returnMsg(False, 'The specified key does not exist or has expired5')
+            if session_id!=key:return public.returnMsg(False, public.lang("Invalid login key4"))
+            if tid != tid2: return public.returnMsg(False, public.lang("The specified key does not exist or has expired5"))
             if time.time() - float(init_time) > 60:
-                return public.returnMsg(False, 'QR code validity time expired6')
+                return public.returnMsg(False, public.lang("QR code validity time expired6"))
             cache.set(session_id,public.md5(uuid.UUID(int=uuid.getnode()).hex),120)
             import uuid
             data = key + ':' + init_time + ':' + tid2 + ':' + uuid.UUID(int=uuid.getnode()).hex[-12:]
             public.writeFile("/www/server/panel/data/app_login_check.pl", data)
-            return public.return_msg_gettext(True,'Scan code successfully, log in!')
+            return public.return_msg_gettext(True, public.lang("Scan code successfully, log in!"))
         except:
             os.remove("/www/server/panel/data/app_login_check.pl")
-            return public.return_msg_gettext(False, 'Invalid login key')
+            return public.return_msg_gettext(False, public.lang("Invalid login key"))
 
     def get_api_config(self):
         tmp = public.ReadFile(self.save_path)
@@ -95,11 +95,11 @@ class panelApi:
 
         bind = self.get_bind_token(args.bind_token)
         if bind['token'] != args.bind_token:
-            return public.get_msg_gettext('The current QR code has expired, please refresh the page and rescan the code!')
+            return public.lang("The current QR code has expired, please refresh the page and rescan the code!")
 
         apps = self.get_apps()
         if len(apps) >= self.max_bind:
-            return public.get_msg_gettext('This server is bound to a maximum of {} devices, which has reached the limit!',(self.max_bind,))
+            return public.lang('This server is bound to a maximum of {} devices, which has reached the limit!',self.max_bind)
 
         bind['status'] = 1
         bind['brand'] = args.client_brand
@@ -147,10 +147,10 @@ class panelApi:
     def add_bind_app(self,args):
         bind = self.get_bind_token(args.bind_token)
         if bind['status'] == 0:
-            return public.return_msg_gettext(False,'Failed verification!')
+            return public.return_msg_gettext(False, public.lang("Failed verification!"))
         apps = self.get_apps()
         if len(apps) >= self.max_bind:
-            return public.return_msg_gettext(False,'A server allows up to {} device bindings!'.format(self.max_bind))
+            return public.return_msg_gettext(False, public.lang("A server allows up to {} device bindings!", self.max_bind))
 
         args.bind_app = args.bind_token
         self.remove_bind_app(args)
@@ -158,7 +158,7 @@ class panelApi:
         data['apps'].append(bind)
         self.save_api_config(data)
         self.remove_bind_token(args.bind_token)
-        return public.return_msg_gettext(True,'Bind successfully!')
+        return public.return_msg_gettext(True, public.lang("Bind successfully!"))
 
     def remove_bind_token(self,bind_token):
         data = self.get_api_config()
@@ -182,7 +182,7 @@ class panelApi:
         s_file = '/dev/shm/{}'.format(args.bind_app)
         if os.path.exists(s_file):
             os.remove(s_file)
-        return public.return_msg_gettext(True,'Successfully deleted!')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted!"))
 
     def get_bind_token(self,token = None):
         data = self.get_api_config()
@@ -217,7 +217,7 @@ class panelApi:
 
 
     def set_token(self,get):
-        if 'request_token' in get: return public.return_msg_gettext(False,'Cannot configure API through API interface')
+        if 'request_token' in get: return public.return_msg_gettext(False, public.lang("Cannot configure API through API interface"))
         data = self.get_api_config()
         if get.t_type == '1':
             token = public.GetRandomString(32)
@@ -244,7 +244,7 @@ class panelApi:
         return public.return_msg_gettext(True,token)
 
     def get_tmp_token(self,get):
-        if not 'request_token' in get: return public.return_msg_gettext(False,'Temporary keys can only be obtained through the API interface')
+        if not 'request_token' in get: return public.return_msg_gettext(False, public.lang("Temporary keys can only be obtained through the API interface"))
         data = self.get_api_config()
         data['tmp_token'] = public.GetRandomString(64)
         data['tmp_time'] = time.time()

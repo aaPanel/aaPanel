@@ -165,7 +165,12 @@ class Base:
                 self.event.set()
                 break
 
-            self.ws.receive_data(in_data)
+            try:
+                self.ws.receive_data(in_data)
+            except:
+                self.connected = False
+                return
+
             self.connected = self._handle_events()
         sel.close() if sel else None
         self.sock.close()

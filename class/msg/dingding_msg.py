@@ -77,7 +77,7 @@ class dingding_msg:
         """
 
         if not hasattr(get, 'url') or not hasattr(get, 'atall'):
-            return public.returnMsg(False, 'Please fill in the complete information')
+            return public.returnMsg(False, public.lang("Please fill in the complete information"))
 
         user = []
         status = 1
@@ -92,7 +92,7 @@ class dingding_msg:
         if hasattr(get, 'title'):
             title = get.title
             if len(title) > 7:
-                return public.returnMsg(False, 'Note name cannot exceed 7 characters')
+                return public.returnMsg(False, public.lang("Note name cannot exceed 7 characters"))
 
         self.__dingding_info  = {"dingding_url": get.url.strip(),"isAtAll": atall, "user":user,"title":title}
 
@@ -107,10 +107,10 @@ class dingding_msg:
                 public.writeFile(self.__default_pl, self.__module_name)
 
             if ret['success'] <= 0:
-                return public.returnMsg(False, 'Failed to add, please check whether the URL is correct')
+                return public.returnMsg(False, public.lang("Failed to add, please check whether the URL is correct"))
 
             public.writeFile(self.conf_path, json.dumps(self.__dingding_info))
-            return public.returnMsg(True, 'Notification set successfully')
+            return public.returnMsg(True, public.lang("Notification set successfully"))
         else:
             return ret
 
@@ -138,10 +138,10 @@ class dingding_msg:
         """
 
         if not self.__dingding_info :
-            return public.returnMsg(False,'DingTalk information is incorrectly configured.')
+            return public.returnMsg(False, public.lang("DingTalk information is incorrectly configured."))
 
         if isinstance(self.__dingding_info['user'],int):
-            return public.returnMsg(False,'DingTalk configuration error, please reconfigure the DingTalk robot.')
+            return public.returnMsg(False, public.lang("DingTalk configuration error, please reconfigure the DingTalk robot."))
 
         at_info = ''
         for user in self.__dingding_info['user']:

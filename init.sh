@@ -47,9 +47,9 @@ panel_init(){
         chmod 700 $panel_path/BT-Task
         log_file=$panel_path/logs/error.log
         task_log_file=$panel_path/logs/task.log
-#        if [ -f $panel_path/data/ssl.pl ];then
-#                log_file=/dev/null
-#        fi
+        if [ -f $panel_path/data/ssl.pl ];then
+                log_file=/dev/null
+        fi
 
         port=$(cat $panel_path/data/port.pl)
 }

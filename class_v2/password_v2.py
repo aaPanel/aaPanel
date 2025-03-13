@@ -56,7 +56,7 @@ class password:
             resutl=self.__database.SetupPassword(get)
             return resutl
         else:
-            return public.returnMsg(False, 'password参数不能为空')
+            return public.returnMsg(False, public.lang("password参数不能为空"))
 
 
     # MySQL 的其他账户设置
@@ -96,7 +96,7 @@ class password:
             file_result = re.sub(ssh_password, '\nPasswordAuthentication yes', file)
         self.Wirte('/etc/ssh/sshd_config', file_result)
         self.RestartSsh()
-        return public.returnMsg(True, '开启成功')
+        return public.returnMsg(True, public.lang("开启成功"))
 
     # 设置ssh_key
     def SetSshKey(self, get):
@@ -104,9 +104,9 @@ class password:
         type_list = ['rsa', 'dsa']
         ssh_type = ['yes', 'no']
         ssh = get.ssh
-        if not ssh in ssh_type: return public.returnMsg(False, 'ssh选项失败')
+        if not ssh in ssh_type: return public.returnMsg(False, public.lang("ssh选项失败"))
         type = get.type
-        if not type in type_list: return public.returnMsg(False, '加密方式错误')
+        if not type in type_list: return public.returnMsg(False, public.lang("加密方式错误"))
         file = ['/root/.ssh/id_rsa.pub', '/root/.ssh/id_rsa', '/root/.ssh/authorized_keys']
         for i in file:
             if os.path.exists(i):
@@ -129,9 +129,9 @@ class password:
                     file_result = re.sub(ssh_password, '\nPasswordAuthentication no', file_result)
             self.Wirte('/etc/ssh/sshd_config', file_result)
             self.RestartSsh()
-            return public.returnMsg(True, '开启成功')
+            return public.returnMsg(True, public.lang("开启成功"))
         else:
-            return public.returnMsg(False, '开启失败')
+            return public.returnMsg(False, public.lang("开启失败"))
 
 
     # 关闭sshkey
@@ -145,7 +145,7 @@ class password:
         self.Wirte('/etc/ssh/sshd_config', file_result)
         self.SetPassword(get)
         self.RestartSsh()
-        return public.returnMsg(True, '关闭成功')
+        return public.returnMsg(True, public.lang("关闭成功"))
         # 读取配置文件 获取当前状态
 
     def GetConfig(self, get):
@@ -187,12 +187,12 @@ class password:
         file_result = re.sub(ssh_password, '\nPasswordAuthentication no', file)
         self.Wirte('/etc/ssh/sshd_config', file_result)
         self.RestartSsh()
-        return public.returnMsg(True, '关闭成功')
+        return public.returnMsg(True, public.lang("关闭成功"))
 
     #显示key文件
     def GetKey(self, get):
         file = '/root/.ssh/id_rsa'
-        if not os.path.exists(file): return public.returnMsg(True, '')
+        if not os.path.exists(file): return public.returnMsg(True, public.lang(""))
         ret = public.readFile(file)
         return public.returnMsg(True, ret)
 

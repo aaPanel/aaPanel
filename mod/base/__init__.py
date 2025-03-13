@@ -17,15 +17,20 @@ def json_response(
         for i in range(len(args)):
             rep = '{' + str(i + 1) + '}'
             msg = msg.replace(rep, args[i])
-
+    stn = 0 if status else -1
     if msg is None:
-        msg = "ok"
+        msg = data
+
+    # return {
+    #     "status": status,
+    #     "msg": msg,
+    #     "data": data,
+    #     "code": code,
+    #     "timestamp": int(time.time())
+    # }
 
     return {
-        "status": status,
-        "msg": msg,
-        "data": data,
-        "code": code,
-        "timestamp": int(time.time())
+        "status": stn,
+        "timestamp": int(time.time()),
+        "message": msg
     }
-

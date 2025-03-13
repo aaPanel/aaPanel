@@ -139,9 +139,9 @@ class firewalls:
         import time
         import re
         rep = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
-        if not re.search(rep,get.port): return public.return_msg_gettext(False,'IP address youve entered is illegal!');
+        if not re.search(rep,get.port): return public.return_msg_gettext(False, public.lang("IP address youve entered is illegal!"));
         address = get.port
-        if public.M('firewall').where("port=?",(address,)).count() > 0: return public.return_msg_gettext(False,'The IP exists in block list, no need to repeat processing!')
+        if public.M('firewall').where("port=?",(address,)).count() > 0: return public.return_msg_gettext(False, public.lang("The IP exists in block list, no need to repeat processing!"))
         if self.__isUfw:
             public.ExecShell('ufw deny from ' + address + ' to any');
         else:
@@ -158,7 +158,7 @@ class firewalls:
         addtime = time.strftime('%Y-%m-%d %X',time.localtime())
         public.M('firewall').add('port,ps,addtime',(address,get.ps,addtime))
         self.FirewallReload()
-        return public.return_msg_gettext(True,'Successfully added')
+        return public.return_msg_gettext(True, public.lang("Successfully added"))
 
 
 
@@ -182,7 +182,7 @@ class firewalls:
         public.M('firewall').where("id=?",(id,)).delete()
         
         self.FirewallReload();
-        return public.return_msg_gettext(True,'Successfully deleted')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted"))
     
     
     #添加放行端口
@@ -190,28 +190,28 @@ class firewalls:
         flag=False
         import re
         rep = r"^\d{1,5}(:\d{1,5})?$"
-        if not re.search(rep,get.port): return public.return_msg_gettext(False,'Port range is incorrect!');
+        if not re.search(rep,get.port): return public.return_msg_gettext(False, public.lang("Port range is incorrect!"));
         import time
         port = get.port
         ps = get.ps
         types=get.type
         type_list=['tcp','udp']
-        if types not in type_list:return public.return_msg_gettext(False, 'The port exists, no need to repeat the release!')
+        if types not in type_list:return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
         notudps = ['80', '443', '8888', '888', '39000:40000', '21', '22']
         if port in notudps:flag=True
         #return public.M('firewall').where("port=?", (port,)).count()
         if types=='tcp':
             if flag:
-                if public.M('firewall').where("port=?", (port,)).count() > 0: return public.return_msg_gettext(False, 'The port exists, no need to repeat the release!')
+                if public.M('firewall').where("port=?", (port,)).count() > 0: return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
             else:
-                 if public.M('firewall').where("port=? and type='tcp'",(port,)).count() > 0: return public.return_msg_gettext(False,'The port exists, no need to repeat the release!')
+                 if public.M('firewall').where("port=? and type='tcp'",(port,)).count() > 0: return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
         elif types=='udp':
             if flag:
                 if public.M('firewall').where("port=?", (port,)).count() > 0: return public.return_msg_gettext( False, 'The port exists, no need to repeat the release!')
             else:
-                if public.M('firewall').where("port=? and type='udp'", (port,)).count() > 0: return public.return_msg_gettext(False,'The port exists, no need to repeat the release!')
+                if public.M('firewall').where("port=? and type='udp'", (port,)).count() > 0: return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
         else:
-            return public.return_msg_gettext(False, 'The port exists, no need to repeat the release!')
+            return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
 
         if self.__isUfw:
             if port in notudps:
@@ -236,7 +236,7 @@ class firewalls:
         result = public.M('firewall').add('port,ps,addtime,types',(port,ps,addtime,types))
         #return result
         self.FirewallReload()
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
     
     
     #删除放行端口
@@ -245,9 +245,9 @@ class firewalls:
         id = get.id
         types=get.type
         type_list = ['tcp', 'udp']
-        if not types in type_list: return public.return_msg_gettext(False, 'The port exists, no need to repeat the release!')
+        if not types in type_list: return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
         try:
-            if(port == public.GetHost(True)): return public.return_msg_gettext(False,'Failed，cannot delete current port of the panel!')
+            if(port == public.GetHost(True)): return public.return_msg_gettext(False, public.lang("Failed，cannot delete current port of the panel!"))
             if self.__isUfw:
                 public.ExecShell('ufw delete allow ' + port + '/' + types+ '');
             else:
@@ -259,9 +259,9 @@ class firewalls:
             public.M('firewall').where("id=?",(id,)).delete()
             
             self.FirewallReload()
-            return public.return_msg_gettext(True,'Successfully deleted')
+            return public.return_msg_gettext(True, public.lang("Successfully deleted"))
         except:
-            return public.return_msg_gettext(False,'Failed to delete')
+            return public.return_msg_gettext(False, public.lang("Failed to delete"))
 
 
 
@@ -269,10 +269,10 @@ class firewalls:
     def SetSshStatus(self,get):
         version = public.readFile('/etc/redhat-release')
         if int(get['status'])==1:
-            msg = public.get_msg_gettext('SSH service turned off')
+            msg = public.lang("SSH service turned off")
             act = 'stop'
         else:
-            msg = public.get_msg_gettext('SSH service turned on')
+            msg = public.lang("SSH service turned on")
             act = 'start'
         
         if not os.path.exists('/etc/redhat-release'):
@@ -283,7 +283,7 @@ class firewalls:
             public.ExecShell("/etc/init.d/sshd "+act)
         
         public.write_log_gettext("Firewall manager", msg)
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
         
     
@@ -305,17 +305,17 @@ class firewalls:
         
         public.writeFile(filename,conf)
         public.ExecShell('sysctl -p')
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         
     
     
     #改远程端口
     def SetSshPort(self,get):
-        #return public.returnMsg(False,'演示服务器，禁止此操作!');
+        #return public.returnMsg(False, public.lang("演示服务器，禁止此操作!"));
         port = get.port
-        if int(port) < 22 or int(port) > 65535: return public.return_msg_gettext(False,'Port range must be between 22 and 65535!');
+        if int(port) < 22 or int(port) > 65535: return public.return_msg_gettext(False, public.lang("Port range must be between 22 and 65535!"));
         ports = ['21','25','80','443','8080','888','8888'];
-        if port in ports: return public.return_msg_gettext(False,'');
+        if port in ports: return public.return_msg_gettext(False, public.lang(""));
         
         file = '/etc/ssh/sshd_config'
         conf = public.readFile(file)
@@ -337,9 +337,9 @@ class firewalls:
             public.ExecShell("/etc/init.d/sshd restart")
         
         self.FirewallReload()
-        public.M('firewall').where("ps=?",(public.get_msg_gettext('SSH Server'),)).setField('port',port)
+        public.M('firewall').where("ps=?",(public.lang("SSH Server"),)).setField('port',port)
         public.write_log_gettext("Firewall manager", "Successfully changed SSH port to [{}]!",(port,))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
     
     #取SSH信息
     def GetSshInfo(self,get):
@@ -398,11 +398,11 @@ class firewalls:
         import re
         # 判断端口是否正确
         rep = r"^\d{1,5}(:\d{1,5})?$"
-        if not re.search(rep, get.port): return public.return_msg_gettext(False, 'Port range is incorrect! should be between 100-65535');
+        if not re.search(rep, get.port): return public.return_msg_gettext(False, public.lang("Port range is incorrect! should be between 100-65535"));
 
         # 判断IP是否正确
         rep2 = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
-        if not re.search(rep2, get.address): return public.return_msg_gettext(False, 'IP address is illegal!');
+        if not re.search(rep2, get.address): return public.return_msg_gettext(False, public.lang("IP address is illegal!"));
         import time
         ports = get.port
         ps = get.ps
@@ -414,10 +414,10 @@ class firewalls:
         type_list=['reject','accept']
         # 判断type类型是否正确
 
-        if types not in type_list:return public.return_msg_gettext(False, 'The port exists, no need to repeat the release!')
+        if types not in type_list:return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
         # 判断protocol 类型是否正确
 
-        if protocol not in protocol_list: return public.return_msg_gettext(False, 'The port exists, no need to repeat the release!')
+        if protocol not in protocol_list: return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
 
         notudps = ['80', '443', '8888', '888', '39000:40000', '21', '22']
         if ports in notudps: flag = True
@@ -426,7 +426,7 @@ class firewalls:
         #sql="select * from firewall where ports='%s' and address_ip='%s' and protocol='%s' and types='%s';" % (str(ports), str(address_ip), str(protocol), str(types))
         query_result = public.M('firewall').where('ports=? and address_ip=? and protocol=? and types=?',(ports, address_ip, protocol, types)).count()
         # 这里大于0 表示存在
-        if query_result > 0 : return public.return_msg_gettext(False,'The port exists, no need to repeat the release!')
+        if query_result > 0 : return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
 
         if self.__isUfw:
             if type=='accept':
@@ -451,7 +451,7 @@ class firewalls:
         addtime = time.strftime('%Y-%m-%d %X', time.localtime())
         result = public.M('firewall').add('protocol,types,port,address_ip,ps,addtime', (protocol,types,ports,address_ip,ps,addtime))
         self.FirewallReload()
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     # 删除指定放行端口
     def DelSpecifiesIp(self, get):
@@ -470,7 +470,7 @@ class firewalls:
         address_ip=get.address
         protocol_list = ['tcp', 'udp']
         id = get.id
-        if protocol not in protocol_list: return public.return_msg_gettext(False, 'Specified protocol does NOT exist!')
+        if protocol not in protocol_list: return public.return_msg_gettext(False, public.lang("Specified protocol does NOT exist!"))
         if self.__isUfw:
             if type=='accept':
                 public.ExecShell('ufw delete allow proto ' + protocol + ' from ' + address_ip + ' to any port ' + ports + '')
@@ -489,6 +489,6 @@ class firewalls:
         public.M('firewall').where("id=?", (id,)).delete()
 
         self.FirewallReload()
-        return public.return_msg_gettext(True, 'Successfully deleted')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted"))
 
 

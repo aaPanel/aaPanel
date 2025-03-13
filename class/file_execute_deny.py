@@ -115,7 +115,7 @@ class FileExecuteDeny:
         if tmp:
             return tmp
         deny_name = args.deny_name
-        if not re.match(r"^\w+$",deny_name): return public.return_msg_gettext(False,'The rule name can only be composed of letters, numbers, and underscores!')
+        if not re.match(r"^\w+$",deny_name): return public.return_msg_gettext(False, public.lang("The rule name can only be composed of letters, numbers, and underscores!"))
         dir = args.dir
         suffix = args.suffix
         website = args.website
@@ -129,16 +129,16 @@ class FileExecuteDeny:
         exist_deny_name = [i.split('_')[-1] for i in data]
         if args.act == 'edit':
             if deny_name not in exist_deny_name:
-                return public.return_msg_gettext(False, 'The specify rule name is not exists! [ {} ]'.format(deny_name))
+                return public.return_msg_gettext(False, public.lang("The specify rule name is not exists! [ {} ]", deny_name))
             self.del_file_deny(args)
         else:
             if deny_name in exist_deny_name:
-                return public.return_msg_gettext(False,'The specify rule name is already exists! [ {} ]'.format(deny_name))
+                return public.return_msg_gettext(False, public.lang("The specify rule name is already exists! [ {} ]", deny_name))
         self._set_nginx_file_deny(deny_name,dir,suffix)
         self._set_apache_file_deny(deny_name,dir,suffix)
         self._set_ols_file_deny(deny_name,dir,suffix)
         public.serviceReload()
-        return public.returnMsg(True,'Setup successfully!')
+        return public.returnMsg(True, public.lang("Setup successfully!"))
 
     def _set_nginx_file_deny(self,name,dir=None,suffix=None):
         conf = public.readFile(self.ng_website_conf)
@@ -221,16 +221,16 @@ class FileExecuteDeny:
         self._set_apache_file_deny(deny_name)
         self._set_ols_file_deny(deny_name)
         public.serviceReload()
-        return public.returnMsg(True,'Successfully deleted!')
+        return public.returnMsg(True, public.lang("Successfully deleted!"))
 
     # 检查传入参数
     def _check_args(self,args):
         if hasattr(args,'deny_name'):
             if len(args.deny_name) < 3:
-                return public.return_msg_gettext(False, 'Rule name needs to be greater than 3 bytes')
+                return public.return_msg_gettext(False, public.lang("Rule name needs to be greater than 3 bytes"))
         if hasattr(args,'suffix'):
             if not args.suffix:
-                return public.return_msg_gettext(False, 'File suffix cannot be empty')
+                return public.return_msg_gettext(False, public.lang("File suffix cannot be empty"))
         if hasattr(args,'dir'):
             if not args.dir:
-                return public.return_msg_gettext(False, 'Directory cannot be empty')
+                return public.return_msg_gettext(False, public.lang("Directory cannot be empty"))

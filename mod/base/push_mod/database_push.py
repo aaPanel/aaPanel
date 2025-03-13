@@ -25,108 +25,108 @@ def is_ipaddress(ip_data: str) -> bool:
     return True
 
 
-class MysqlPwdEndTimeTask(BaseTask):
-
-    def __init__(self):
-        super().__init__()
-        self.template_name = "MySQL数据库密码到期"
-        self.source_name = "mysql_pwd_end"
-
-        self.push_db_user = ""
-
-    def get_title(self, task_data: dict) -> str:
-        return "Msql:" + task_data["project"][1] + "用户密码到期提醒"
-
-    def check_task_data(self, task_data: dict) -> Union[dict, str]:
-        task_data["interval"] = 600
-        if not (isinstance(task_data["project"], list) and len(task_data["project"]) == 3):
-            return "设置的用户格式错误"
-        project = task_data["project"]
-        if not (isinstance(project[0], int) and isinstance(project[1], str) and is_ipaddress(project[2])):
-            return "设置的检测用户格式错误"
-
-        if not (isinstance(task_data["cycle"], int) and task_data["cycle"] >= 1):
-            return "到期时间参数错误，至少为 1 天"
-        return task_data
-
-    def get_keyword(self, task_data: dict) -> str:
-        return "_".join([str(i) for i in task_data["project"]])
-
-    def check_num_rule(self, num_rule: dict) -> Union[dict, str]:
-        num_rule["day_num"] = 1
-        return num_rule
-
-    def get_push_data(self, task_id: str, task_data: dict) -> Optional[dict]:
-        sid = task_data["project"][0]
-        username = task_data["project"][1]
-        host = task_data["project"][2]
-
-        if "/www/server/panel/class" not in sys.path:
-            sys.path.insert(0, "/www/server/panel/class")
-        try:
-            import panelMysql
-            import db_mysql
-        except ImportError:
-            return None
-
-        if sid == 0:
-            try:
-                db_port = int(panelMysql.panelMysql().query("show global variables like 'port'")[0][1])
-                if db_port == 0:
-                    db_port = 3306
-            except:
-                db_port = 3306
-            conn_config = {
-                "db_host": "localhost",
-                "db_port": db_port,
-                "db_user": "root",
-                "db_password": DB("config").where("id=?", (1,)).getField("mysql_root"),
-                "ps": "本地服务器",
-            }
-        else:
-            conn_config = DB("database_servers").where("id=? AND LOWER(db_type)=LOWER('mysql')", (sid,)).find()
-        if not conn_config:
-            return None
-
-        mysql_obj = db_mysql.panelMysql().set_host(conn_config["db_host"], conn_config["db_port"], None,
-                                                   conn_config["db_user"], conn_config["db_password"])
-        if isinstance(mysql_obj, bool):
-            return None
-
-        data_list = mysql_obj.query(
-            "SELECT password_last_changed FROM mysql.user WHERE user='{}' AND host='{}';".format(username, host))
-
-        if not isinstance(data_list, list) or not data_list:
-            return None
-
-        try:
-            # todo：检查这里的时间转化逻辑问题
-            last_time = data_list[0][0]
-            expire_time = last_time + timedelta(days=task_data["cycle"])
-        except:
-            return None
-
-        if datetime.now() > expire_time:
-            self.title = self.get_title(task_data)
-            self.push_db_user = username
-            return {"msg_list": [
-                ">告警类型：MySQL密码即将到期",
-                ">告警内容：{} {}@{} 密码过期时间<font color=#ff0000>{} 天</font>".format(
-                    conn_config["ps"], username, host, expire_time.strftime("%Y-%m-%d %H:%M:%S"))
-            ]}
-
-    def filter_template(self, template: dict) -> Optional[dict]:
-        return template
-
-    def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
-        return "", {}
-
-    def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
-        msg = WxAccountMsg.new_msg()
-        msg.thing_type = "MySQL数据库密码到期"
-        msg.msg = "Mysql用户：{}的密码即将过期，请注意".format(self.push_db_user)
-        msg.next_msg = "请登录面板，查看主机情况"
-        return msg
+# class MysqlPwdEndTimeTask(BaseTask):
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.template_name = "MySQL数据库密码到期"
+#         self.source_name = "mysql_pwd_end"
+#
+#         self.push_db_user = ""
+#
+#     def get_title(self, task_data: dict) -> str:
+#         return "Msql:" + task_data["project"][1] + "用户密码到期提醒"
+#
+#     def check_task_data(self, task_data: dict) -> Union[dict, str]:
+#         task_data["interval"] = 600
+#         if not (isinstance(task_data["project"], list) and len(task_data["project"]) == 3):
+#             return "设置的用户格式错误"
+#         project = task_data["project"]
+#         if not (isinstance(project[0], int) and isinstance(project[1], str) and is_ipaddress(project[2])):
+#             return "设置的检测用户格式错误"
+#
+#         if not (isinstance(task_data["cycle"], int) and task_data["cycle"] >= 1):
+#             return "到期时间参数错误，至少为 1 天"
+#         return task_data
+#
+#     def get_keyword(self, task_data: dict) -> str:
+#         return "_".join([str(i) for i in task_data["project"]])
+#
+#     def check_num_rule(self, num_rule: dict) -> Union[dict, str]:
+#         num_rule["day_num"] = 1
+#         return num_rule
+#
+#     def get_push_data(self, task_id: str, task_data: dict) -> Optional[dict]:
+#         sid = task_data["project"][0]
+#         username = task_data["project"][1]
+#         host = task_data["project"][2]
+#
+#         if "/www/server/panel/class" not in sys.path:
+#             sys.path.insert(0, "/www/server/panel/class")
+#         try:
+#             import panelMysql
+#             import db_mysql
+#         except ImportError:
+#             return None
+#
+#         if sid == 0:
+#             try:
+#                 db_port = int(panelMysql.panelMysql().query("show global variables like 'port'")[0][1])
+#                 if db_port == 0:
+#                     db_port = 3306
+#             except:
+#                 db_port = 3306
+#             conn_config = {
+#                 "db_host": "localhost",
+#                 "db_port": db_port,
+#                 "db_user": "root",
+#                 "db_password": DB("config").where("id=?", (1,)).getField("mysql_root"),
+#                 "ps": "local server",
+#             }
+#         else:
+#             conn_config = DB("database_servers").where("id=? AND LOWER(db_type)=LOWER('mysql')", (sid,)).find()
+#         if not conn_config:
+#             return None
+#
+#         mysql_obj = db_mysql.panelMysql().set_host(conn_config["db_host"], conn_config["db_port"], None,
+#                                                    conn_config["db_user"], conn_config["db_password"])
+#         if isinstance(mysql_obj, bool):
+#             return None
+#
+#         data_list = mysql_obj.query(
+#             "SELECT password_last_changed FROM mysql.user WHERE user='{}' AND host='{}';".format(username, host))
+#
+#         if not isinstance(data_list, list) or not data_list:
+#             return None
+#
+#         try:
+#             # todo：检查这里的时间转化逻辑问题
+#             last_time = data_list[0][0]
+#             expire_time = last_time + timedelta(days=task_data["cycle"])
+#         except:
+#             return None
+#
+#         if datetime.now() > expire_time:
+#             self.title = self.get_title(task_data)
+#             self.push_db_user = username
+#             return {"msg_list": [
+#                 ">告警类型：MySQL密码即将到期",
+#                 ">Content of alarm: {} {}@{} 密码过期时间<font color=#ff0000>{} 天</font>".format(
+#                     conn_config["ps"], username, host, expire_time.strftime("%Y-%m-%d %H:%M:%S"))
+#             ]}
+#
+#     def filter_template(self, template: dict) -> Optional[dict]:
+#         return template
+#
+#     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
+#         return "", {}
+#
+#     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
+#         msg = WxAccountMsg.new_msg()
+#         msg.thing_type = "MySQL数据库密码到期"
+#         msg.msg = "Mysql用户：{}的密码即将过期，请注意".format(self.push_db_user)
+#         msg.next_msg = "Please log in to the panel to view the host status"
+#         return msg
 
 
 class MysqlReplicateStatusTask(BaseTask):
@@ -165,7 +165,7 @@ class MysqlReplicateStatusTask(BaseTask):
         self.slave_ip = task_data["project"]
         if len(res.get("data", [])) == 0:
             s_list = [">告警类型：MySQL主从复制异常告警",
-                      ">告警内容：<font color=#ff0000>从库 {} 主从复制已停止，请尽快登录面板查看详情</font>".format(
+                      ">Content of alarm: <font color=#ff0000>从库 {} 主从复制已停止，请尽快登录面板查看详情</font>".format(
                           task_data["project"])]
             return {"msg_list": s_list}
 
@@ -185,7 +185,7 @@ class MysqlReplicateStatusTask(BaseTask):
                 repair_txt = "，正在尝试修复"
 
             s_list = [">告警类型：MySQL主从复制异常告警",
-                      ">告警内容：<font color=#ff0000>从库 {} 主从复制发生异常{}</font>".format(
+                      ">Content of alarm: <font color=#ff0000>从库 {} 主从复制发生异常{}</font>".format(
                           task_data["project"], repair_txt)]
             return {"msg_list": s_list}
         return None

@@ -29,7 +29,7 @@
 			"install": false,
 			"pid": 100000010,
 			"dependent": "nginx",
-			"preview": "https://forum.aapanel.com/d/3351-nginx-waf-instructions",
+			"preview": "https://www.aapanel.com/forum/d/3351-nginx-waf-instructions",
 			"ps": "Mitigating DDOS attacks, easily creating custom rules, protecting your website and reducing the risk of malicious attacks and data leakage, it is recommended to use Nginx 1.18 and above"
 		}, {
 			"pay": "40",
@@ -39,16 +39,16 @@
 			"isBuy":false,
 			"pid": 100000063,
 			"dependent": "apache",
-			"preview": "https://forum.aapanel.com/d/3351-nginx-waf-instructions",
+			"preview": "https://www.aapanel.com/forum/d/3351-nginx-waf-instructions",
 			"ps": "Mitigating DDOS attacks, easily creating custom rules, protecting your website and reducing the risk of malicious attacks and data leakage, it is recommended to use Nginx 1.18 and above"
 		}, {
 			"pay": "41",
-			"title": "Website statistics",
-			"name": "total",
+			"title": "Website statistics-v2",
+			"name": "monitor",
 			"isBuy":false,
 			"install": false,
-			"pid": 100000057,
-			"preview": "https://forum.aapanel.com/d/3789-website-statistics-instructions",
+			"pid": 100000074,
+			"preview": "https://www.aapanel.com/forum/d/3789-website-statistics-instructions",
 			"ps": "Real-time accurate statistics of website traffic, ip, uv, pv, requests, spiders and other data"
 		}, {
 			"pay": "42",
@@ -57,7 +57,7 @@
 			"isBuy":false,
 			"install": false,
 			"pid": 100000071,
-			"preview": "https://forum.aapanel.com/d/17491-how-to-use-tamper-proof-for-enterprise",
+			"preview": "https://www.aapanel.com/forum/d/17491-how-to-use-tamper-proof-for-enterprise",
 			"ps": "Effectively intercept 99.9% of illegal modification of web pages, tampering of files, etc. Note: Cannot be used with other anti-tamper software"
 		}, {
 			"pay": "43",
@@ -66,7 +66,7 @@
 			"isBuy":false,
 			"install": false,
 			"pid": 100000067,
-			"preview": "https://forum.aapanel.com/d/12760-anti-intrusion",
+			"preview": "https://www.aapanel.com/forum/d/12760-anti-intrusion",
 			"ps": "Effective defense against intrusion into the system through processes such as websites, redis, mysql, etc."
 		}]
 	}, {

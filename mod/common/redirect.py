@@ -151,7 +151,7 @@ rewrite ^%s(.*) %s%s %s;
 
         if not is_modify:
             if not redirect_name:
-                return "参数错误，配置名称不能为空"
+                return "Parameter error, configuration name cannot be empty"
             # 检测名称是否重复
             if not (3 < len(redirect_name) < 15):
                 return '名称必须大于3小于15个字符串'
@@ -598,7 +598,7 @@ rewrite ^%s(.*) %s%s %s;
             site_name = get.sitename.strip()
             redirect_name = get.redirectname.strip()
         except AttributeError:
-            return public.returnMsg(False, "参数错误")
+            return public.returnMsg(False, "Parameter error")
         target_idx = None
         have_other_redirect = False
         target_conf = None
@@ -635,7 +635,7 @@ rewrite ^%s(.*) %s%s %s;
             redirect_names = json.loads(get.redirectnames.strip())
             site_name = json.loads(get.sitename.strip())
         except (AttributeError, json.JSONDecodeError, TypeError):
-            return public.returnMsg(False, "参数错误")
+            return public.returnMsg(False, "Parameter error")
         del_successfully = []
         del_failed = {}
         get_obj = public.dict_obj()
@@ -666,7 +666,7 @@ rewrite ^%s(.*) %s%s %s;
             if "errorpage" in get:
                 error_page = int(get.errorpage)
         except (AttributeError, ValueError, TypeError):
-            return public.returnMsg(False, "参数错误")
+            return public.returnMsg(False, "Parameter error")
         redirect_list = []
         webserver = public.get_webserver()
         if webserver == 'openlitespeed':

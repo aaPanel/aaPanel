@@ -33,27 +33,27 @@ class crontab:
             tmp = {}
             tmp=cront[i]
             if cront[i]['type']=="day":
-                tmp['type']=public.get_msg_gettext('Per Day')
-                tmp['cycle']= public.get_msg_gettext('Per Day, run at {} Hour {} Min',(str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+                tmp['type']=public.lang("Per Day")
+                tmp['cycle']= public.lang('Per Day, run at {} Hour {} Min',str(cront[i]['where_hour']),str(cront[i]['where_minute']))
             elif cront[i]['type']=="day-n":
-                tmp['type']=public.get_msg_gettext('Every {} Days',(str(cront[i]['where1']),))
-                tmp['cycle']=public.get_msg_gettext('Every {} Days, run at {} Hour {} Min',(str(cront[i]['where1']),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+                tmp['type']=public.lang('Every {} Days',str(cront[i]['where1']))
+                tmp['cycle']=public.lang('Every {} Days, run at {} Hour {} Min',str(cront[i]['where1']),str(cront[i]['where_hour']),str(cront[i]['where_minute']))
             elif cront[i]['type']=="hour":
-                tmp['type']=public.get_msg_gettext('Per Hour')
-                tmp['cycle']=public.get_msg_gettext('Per Hour, run at {} Min',(str(cront[i]['where_minute']),))
+                tmp['type']=public.lang("Per Hour")
+                tmp['cycle']=public.lang('Per Hour, run at {} Min',str(cront[i]['where_minute']))
             elif cront[i]['type']=="hour-n":
-                tmp['type']=public.get_msg_gettext('Every {} Hours',(str(cront[i]['where1']),))
-                tmp['cycle']=public.get_msg_gettext('Every {} Hours, run at {} Min',(str(cront[i]['where1']),str(cront[i]['where_minute'])))
+                tmp['type']=public.lang('Every {} Hours',str(cront[i]['where1']))
+                tmp['cycle']=public.lang('Every {} Hours, run at {} Min',str(cront[i]['where1']),str(cront[i]['where_minute']))
             elif cront[i]['type']=="minute-n":
-                tmp['type']=public.get_msg_gettext('Every {} Minutes',(str(cront[i]['where1']),))
-                tmp['cycle']=public.get_msg_gettext('Run Every {} Minutes',(str(cront[i]['where1']),))
+                tmp['type']=public.lang('Every {} Minutes',str(cront[i]['where1']))
+                tmp['cycle']=public.lang('Run Every {} Minutes',str(cront[i]['where1']))
             elif cront[i]['type']=="week":
-                tmp['type']=public.get_msg_gettext('Weekly')
+                tmp['type']=public.lang("Weekly")
                 if not cront[i]['where1']: cront[i]['where1'] = '0'
-                tmp['cycle']= public.get_msg_gettext('Every {}, run at {} Hour {} Min',(self.toWeek(int(cront[i]['where1'])),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+                tmp['cycle']= public.lang('Every {}, run at {} Hour {} Min',self.toWeek(int(cront[i]['where1'])),str(cront[i]['where_hour']),str(cront[i]['where_minute']))
             elif cront[i]['type']=="month":
-                tmp['type']=public.get_msg_gettext('Monthly')
-                tmp['cycle']=public.get_msg_gettext('Monthly, run on {}Day {} Hour {}Min',(str(cront[i]['where1']),str(cront[i]['where_hour']),str(cront[i]['where_minute'])))
+                tmp['type']=public.lang("Monthly")
+                tmp['cycle']=public.lang('Monthly, run on {}Day {} Hour {}Min',str(cront[i]['where1']),str(cront[i]['where_hour']),str(cront[i]['where_minute']))
 
             log_file = '/www/server/cron/{}.log'.format(tmp['echo'])
             if os.path.exists(log_file):
@@ -133,13 +133,13 @@ class crontab:
     #转换大写星期
     def toWeek(self,num):
         wheres={
-                0   :   public.get_msg_gettext('Sunday'),
-                1   :   public.get_msg_gettext('Monday'),
-                2   :   public.get_msg_gettext('Tuesday'),
-                3   :   public.get_msg_gettext('Wednesday'),
-                4   :   public.get_msg_gettext('Thursday'),
-                5   :   public.get_msg_gettext('Friday'),
-                6   :   public.get_msg_gettext('Saturday')
+                0   :   public.lang("Sunday"),
+                1   :   public.lang("Monday"),
+                2   :   public.lang("Tuesday"),
+                3   :   public.lang("Wednesday"),
+                4   :   public.lang("Thursday"),
+                5   :   public.lang("Friday"),
+                6   :   public.lang("Saturday")
                 }
         try:
             return wheres[num]
@@ -186,16 +186,16 @@ class crontab:
         else:
             cronInfo['status'] = 1
             if not self.sync_to_crond(cronInfo):
-                return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
+                return public.return_msg_gettext(False,  public.lang("Unable to write to file, please check if [System hardening] is enabled!"))
         
         public.M('crontab').where('id=?',(id,)).setField('status',status)
         public.WriteLog('TYPE_CRON',"MODIFY_CRON_STATUS",(cronInfo['name'],str(status_msg[status])))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     #修改计划任务
     def modify_crond(self,get):
         if len(get['name'])<1:
-             return public.return_msg_gettext(False,'Name of task cannot be empty!')
+             return public.return_msg_gettext(False, public.lang("Name of task cannot be empty!"))
         id = get['id']
         cuonConfig,get,name = self.GetCrondCycle(get)
         cronInfo = public.M('crontab').where('id=?',(id,)).field(self.field).find()
@@ -222,13 +222,13 @@ class crontab:
                       get['urladdress'],get['save_local'],get["notice"],
                       get["notice_channel"])
         self.remove_for_crond(cronInfo['echo'])
-        if cronInfo['status'] == 0: return public.return_msg_gettext(False, 'The current task is Disable status, please open the task before modifying!')
+        if cronInfo['status'] == 0: return public.return_msg_gettext(False, public.lang("The current task is Disable status, please open the task before modifying!"))
         if not self.sync_to_crond(cronInfo):
-            return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
+            return public.return_msg_gettext(False,  public.lang("Unable to write to file, please check if [System hardening] is enabled!"))
         public.M('crontab').where('id=?',(id,)).save(columns,values)
 
         public.WriteLog('TYPE_CRON',"MODIFY_CRON",(cronInfo['name'],))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
 
     #获取指定任务数据
@@ -258,7 +258,7 @@ class crontab:
     #添加计划任务
     def AddCrontab(self,get):
         if len(get['name'])<1:
-             return public.return_msg_gettext(False,'Name of task cannot be empty!')
+             return public.return_msg_gettext(False, public.lang("Name of task cannot be empty!"))
         cuonConfig,get,name = self.GetCrondCycle(get)
         cronPath=public.GetConfigValue('setup_path')+'/cron'
         cronName=self.GetShell(get)
@@ -289,7 +289,7 @@ class crontab:
             result = public.return_msg_gettext(True,'Setup successfully!')
             result['id'] = addData
             return result
-        return public.return_msg_gettext(False,'Failed to add')
+        return public.return_msg_gettext(False, public.lang("Failed to add"))
     
     #构造周期
     def GetCrondCycle(self,params):
@@ -297,16 +297,16 @@ class crontab:
         name = ""
         if params['type']=="day":
             cuonConfig = self.GetDay(params)
-            name = public.get_msg_gettext('Per Day')
+            name = public.lang("Per Day")
         elif params['type']=="day-n":
             cuonConfig = self.GetDay_N(params)
             name = public.get_msg_gettext('Every {0} Days',(params['where1'],))
         elif params['type']=="hour":
             cuonConfig = self.GetHour(params)
-            name = public.get_msg_gettext('Per Hour')
+            name = public.lang("Per Hour")
         elif params['type']=="hour-n":
             cuonConfig = self.GetHour_N(params)
-            name = public.get_msg_gettext('Per Hour')
+            name = public.lang("Per Hour")
         elif params['type']=="minute-n":
             cuonConfig = self.Minute_N(params)
         elif params['type']=="week":
@@ -380,7 +380,7 @@ class crontab:
         id = get['id']
         echo = public.M('crontab').where("id=?",(id,)).field('echo').find()
         logFile = public.GetConfigValue('setup_path')+'/cron/'+echo['echo']+'.log'
-        if not os.path.exists(logFile):return public.return_msg_gettext(False, 'log is empty')
+        if not os.path.exists(logFile):return public.return_msg_gettext(False, public.lang("log is empty"))
         log = public.GetNumLines(logFile,2000)
         return public.return_msg_gettext(True, log)
     
@@ -391,18 +391,18 @@ class crontab:
             echo = public.M('crontab').where("id=?",(id,)).getField('echo')
             logFile = public.GetConfigValue('setup_path')+'/cron/'+echo+'.log'
             os.remove(logFile)
-            return public.return_msg_gettext(True, 'Logs emptied')
+            return public.return_msg_gettext(True, public.lang("Logs emptied"))
         except:
-            return public.return_msg_gettext(False, 'Failed to empty task logs!')
+            return public.return_msg_gettext(False, public.lang("Failed to empty task logs!"))
     
     #删除计划任务
     def DelCrontab(self,get):
         try:
             id = get['id']
             find = public.M('crontab').where("id=?",(id,)).field('name,echo').find()
-            if not find: return public.return_msg_gettext(False, 'The specified task does not exist!')
+            if not find: return public.return_msg_gettext(False, public.lang("The specified task does not exist!"))
 
-            if not self.remove_for_crond(find['echo']): return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
+            if not self.remove_for_crond(find['echo']): return public.return_msg_gettext(False,  public.lang("Unable to write to file, please check if [System hardening] is enabled!"))
             cronPath = public.GetConfigValue('setup_path') + '/cron'
             sfile = cronPath + '/' + find['echo']
             if os.path.exists(sfile): os.remove(sfile)
@@ -412,9 +412,9 @@ class crontab:
             public.M('crontab').where("id=?",(id,)).delete()
             public.add_security_logs("Delete cron", "Delete cron:" + find['name'])
             public.WriteLog('TYPE_CRON', 'CRONTAB_DEL',(find['name'],))
-            return public.return_msg_gettext(True, 'Successfully deleted')
+            return public.return_msg_gettext(True, public.lang("Successfully deleted"))
         except:
-            return public.return_msg_gettext(False, 'Failed to delete')
+            return public.return_msg_gettext(False, public.lang("Failed to delete"))
 
     #从crond删除
     def remove_for_crond(self,echo):
@@ -521,7 +521,7 @@ echo "--------------------------------------------------------------------------
         file = self.get_cron_file()
         if not os.path.exists(file): public.writeFile(file,'')
         conf = public.readFile(file)
-        if type(conf)==bool:return public.return_msg_gettext(False,'Failed to read file!')
+        if type(conf)==bool:return public.return_msg_gettext(False, public.lang("Failed to read file!"))
         conf += config + "\n"
         if public.writeFile(file,conf):
             if not os.path.exists(u_file):
@@ -529,7 +529,7 @@ echo "--------------------------------------------------------------------------
             else:
                 public.ExecShell("chmod 600 '" + file + "' && chown root.crontab " + file)
             return True
-        return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
+        return public.return_msg_gettext(False,  public.lang("Unable to write to file, please check if [System hardening] is enabled!"))
     
     #立即执行任务
     def StartTask(self,get):
@@ -537,7 +537,7 @@ echo "--------------------------------------------------------------------------
         execstr = public.GetConfigValue('setup_path') + '/cron/' + echo
         public.ExecShell('chmod +x ' + execstr)
         public.ExecShell('nohup ' + execstr + ' >> ' + execstr + '.log 2>&1 &')
-        return public.return_msg_gettext(True,'Task has been executed!')
+        return public.return_msg_gettext(True, public.lang("Task has been executed!"))
 
     #获取计划任务文件位置
     def get_cron_file(self):

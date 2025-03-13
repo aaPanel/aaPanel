@@ -70,13 +70,13 @@ class _IpRestrict(_BaseRestrict):
 
     def save(self) -> Tuple[bool, str]:
         if not self._conf:  # 没有的时候不操作
-            return True, "操作成功"
+            return True, "operate successfully"
         write_file(self._conf_file, json.dumps(self._conf))
 
         if self.restrict_type == "closed":
             write_file(self.nginx_sub_file, "")
             service_reload()
-            return True, "操作成功"
+            return True, "operate successfully"
 
         tmp_conf = []
         if self.restrict_type == "white":
@@ -96,7 +96,7 @@ class _IpRestrict(_BaseRestrict):
             write_file(self.nginx_sub_file, "")
             return False, "操作失败"
         service_reload()
-        return True, "操作成功"
+        return True, "operate successfully"
 
     # 删除网站时调用，删除配置文件
     def remove_config_for_remove_site(self):
@@ -261,7 +261,7 @@ class IpRestrict:
         try:
             site_name = get.site_name.strip()
         except (AttributeError, json.JSONDecodeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         f, d = self._ri.restrict_conf(site_name)
         if not f:
@@ -274,7 +274,7 @@ class IpRestrict:
             site_name = get.site_name.strip()
             set_ip_restrict = get.set_type.strip()
         except (AttributeError, json.JSONDecodeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         f, m = self._ri.set_ip_restrict(site_name, set_ip_restrict)
         return json_response(status=f, msg=m)
@@ -285,7 +285,7 @@ class IpRestrict:
             site_name = get.site_name.strip()
             value = get.value.strip()
         except AttributeError:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         f, m = self._ri.add_black_ip_restrict(site_name, value)
         return json_response(status=f, msg=m)
@@ -296,7 +296,7 @@ class IpRestrict:
             site_name = get.site_name.strip()
             value = get.value.strip()
         except (AttributeError, json.JSONDecodeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         f, m = self._ri.remove_black_ip_restrict(site_name, value)
         return json_response(status=f, msg=m)
@@ -307,7 +307,7 @@ class IpRestrict:
             site_name = get.site_name.strip()
             value = get.value.strip()
         except (AttributeError, json.JSONDecodeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         f, m = self._ri.add_white_ip_restrict(site_name, value)
         return json_response(status=f, msg=m)
@@ -318,7 +318,7 @@ class IpRestrict:
             site_name = get.site_name.strip()
             value = get.value.strip()
         except (AttributeError, json.JSONDecodeError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         f, m = self._ri.remove_white_ip_restrict(site_name, value)
         return json_response(status=f, msg=m)

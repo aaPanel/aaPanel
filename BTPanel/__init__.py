@@ -7,6 +7,9 @@
 # | Author: hwliang <hwl@aapanel.com>
 # +---
 
+from public.hook_import import hook_import
+hook_import()
+
 # from .app import *
 # from .routes.flask_hook import *
 # from .routes.v1 import *
@@ -21,6 +24,7 @@ import time
 import re
 import uuid
 import psutil
+import zipfile
 
 panel_path = '/www/server/panel'
 if not os.name in ['nt']:
@@ -29,8 +33,11 @@ if not 'class/' in sys.path:
     sys.path.insert(0, 'class/')
 if not 'class_v2/' in sys.path:
     sys.path.insert(0, 'class_v2/')
-from flask import Flask, session, render_template, send_file, request, redirect, g, make_response, \
+
+from flask import (
+    Flask, session, render_template, send_file, request, redirect, g,
     render_template_string, abort, stream_with_context, Response as Resp
+)
 from cachelib import SimpleCache, SimpleCacheSession
 from werkzeug.wrappers import Response
 from flask_session import Session
@@ -40,9 +47,10 @@ cache = SimpleCache(5000)
 import public
 
 # 初始化Flask应用
-app = Flask(__name__,
-            template_folder="templates/{}".format(
-                public.GetConfigValue('template')))
+app = Flask(
+    __name__,
+    template_folder="templates/{}".format(public.GetConfigValue('template'))
+)
 Compress(app)
 try:
     from flask_sock import Sock
@@ -76,8 +84,6 @@ app.secret_key = public.md5(
     str(os.uname()) +
     str(psutil.boot_time()))  # uuid.UUID(int=uuid.getnode()).hex[-12:]
 local_ip = None
-intranet_local_ip=public.get_local_ip()
-if intranet_local_ip=='':intranet_local_ip=public.get_local_ip_2()
 my_terms = {}
 app.config['SESSION_MEMCACHED'] = SimpleCacheSession(1000, 86400)
 app.config['SESSION_TYPE'] = 'memcached'
@@ -86,11 +92,12 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'BT_:'
 app.config['SESSION_COOKIE_NAME'] = public.md5(app.secret_key)
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30
+app.config['SESSION_COOKIE_SAMESITE'] = None
+
 if app.config['SSL']:
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['SESSION_COOKIE_SECURE'] = True
-else:
-    app.config['SESSION_COOKIE_SAMESITE'] = None
+
 
 Session(app)
 
@@ -155,6 +162,7 @@ admin_path_checks = [
     '/message',
     '/warning',
     '/userRegister',  # 面板内注册
+    '/userLang',  # 登录设语言
     '/docker',
     '/btdocker',
     '/breaking_through',
@@ -170,56 +178,104 @@ route_v2 = '/v2'  # v2版本路由前缀
 # load translations
 from public.translations import load_translations
 load_translations()
+# 登录页语言包
+from public.translations import load_login_translations
+load_login_translations()
+
+# ========================== Ignore Zipfile Encode Error ==============
+# hook zipfile.ZipInfo._encodeFilenameFlags, ignore the encode error
+_oldEncodeFilenameFlags = zipfile.ZipInfo._encodeFilenameFlags
+
+def _newEncodeFilenameFlags(self):
+    try:
+        return _oldEncodeFilenameFlags(self)
+    except:
+        return self.filename.encode('utf-8', 'ignore'), self.flag_bits | zipfile._MASK_UTF_FILENAME
+
+zipfile.ZipInfo._encodeFilenameFlags = _newEncodeFilenameFlags
+
+# ========================== Ignore Error End =========================
+
+
+# ========================== Init Menu Path Map =======================
+menu_map = {
+        'memua': '/',                     # Home
+        'memuasite': '/site',             # Website
+        'memuawptoolkit': '/wp/toolkit',  # WP Toolkit
+        'memuaftp': '/ftp',               # FTP
+        'memuadatabase': '/database',     # Databases
+        'memudocker': '/docker',          # Docker
+        'memuacontrol': '/control',       # Monitor
+        'memuafirewall': '/firewall',     # Security
+        'memu_btwaf': '/btwaf',           # Waf
+        'memu_mailsys': '/mail',          # Mail Server
+        'memuafiles': '/files',           # Files
+        'memualogs': '/logs',             # Logs
+        'memuaxterm': '/xterm',           # Terminal
+        'memuaccount': '/whm',            # Account
+        'memuacrontab': '/crontab',       # Cron
+        'memuasoft': '/soft',             # App Store
+        'memuaconfig': '/config',         # Settings
+        'dologin': '/login'               # Log out
+}
+try:
+    menu_default_conf_path = os.path.join(panel_path, 'config/menu.json')
+    if os.path.exists(menu_default_conf_path):
+        menu_read = public.readFile(menu_default_conf_path)
+        menu_list = json.loads(menu_read) if menu_read else []
+        menu_map = {
+            x.get('id').lower(): x.get('href') for x in menu_list if x.get('id') and x.get('href')
+        } if menu_list else menu_map
+except Exception as e:
+    public.print_log(f"menu config error, {e}")
+
+# ========================== Menu Map End ============================
 
 
 # ===================================Flask HOOK========================#
-
-
 # Flask请求勾子
 @app.before_request
 def request_check():
-    if request.method not in ['GET', 'POST']: return abort(404)
-
-    #防爆破检测
-    now_time=limit_time=time.time()
-    white_ips=''
-    #获取限制时间
-    try:
-        limit_time=float(public.readFile('data/limit_login.pl'))
-        white_ips=public.readFile('data/limit_login.pl')
-    except:pass
-    if 'address' not in session:session['address']=public.GetLocalIp()
-    if now_time<limit_time and (white_ips=='' or session['address'] not in white_ips and  intranet_local_ip not in white_ips):
-        data={}
-        data['lan'] = public.GetLan('login')
-        data['last_login_token'] = public.GetRandomString(32)
-        data['app_login'] = os.path.exists('data/app_login.pl')
-        data['secret_key'] = os.urandom(16).hex()
-        data['public_key'] = public.get_rsa_public_key()
-        host_string = '[]'
-        hosts_file = 'plugin/static_cdn/hosts.json'
-        if os.path.exists(hosts_file):
-            host_string = public.get_cdn_hosts()
-            if type(host_string) == dict:
-                host_string = '[]'
-            else:
-                host_string = json.dumps(host_string)
-        return render_template('login.html',g={"title": "aapanel Linux"}, data=data)
-
-
     # 获取客户端真实IP
     x_real_ip = request.headers.get('X-Real-Ip')
     if x_real_ip:
         request.remote_addr = x_real_ip
         request.environ.setdefault('REMOTE_PORT', public.get_remote_port())
-
+    # 过滤菜单
+    if 'uid' in session and session['uid'] != 1 and not public.user_router_authority():
+        if public.M('users').where('id=?', (session['uid'],)).select():
+            import config_v2
+            menus = config_v2.config().get_menu_list()
+            show_menus = []
+            if menus.get('status') == 0:
+                show_menus = [
+                    i.get('id', '').lower() for i in menus.get('message', []) if i.get('show') is True
+                ]
+            if request.path == '/':
+                try:
+                    path = menu_map[show_menus[0]]
+                    if path == '/login':
+                        return abort(403)
+                    return redirect('{}'.format(path.lower()), 302)
+                except Exception:
+                    return abort(403)
+            if len(show_menus) < 2:
+                return abort(403)
+            if not public.user_router_authority():
+                return abort(403)
+    if request.method not in ['GET', 'POST']: return abort(404)
     g.request_time = time.time()
     g.return_message = False
-    # 路由和URI长度过滤
-    if len(request.path) > 256: return abort(403)
-    if len(request.url) > 1024: return abort(403)
-    # URI过滤
+
+    # URI过滤 1
+    if not request.path.startswith('/v2/pmta/'):
+        # 路由和URI长度过滤
+        if len(request.path) > 256: return abort(403)
+        if len(request.url) > 1024: return abort(403)
+
+    # URI过滤 2
     if not uri_match.match(request.path): return abort(403)
+
     # POST参数过滤
     if request.path in [
         '/login',
@@ -230,6 +286,7 @@ def request_check():
         '/get_app_bind_status',
         '/check_bind',
         '/userRegister',
+        '/userLang',
     ]:
         pdata = request.form.to_dict()
         for k in pdata.keys():
@@ -278,18 +335,33 @@ def request_check():
     if public.is_local():
         not_networks = ['uninstall_plugin', 'install_plugin', 'UpdatePanel']
         if request.args.get('action') in not_networks:
-            return public.returnJson(
-                False,
-                'This feature cannot be used in offline mode!'), json_header
+            return public.returnJson( False, 'This feature cannot be used in offline mode!'), json_header
     # 适配docker----  '/docker',
-    if request.path in [
-        '/site', '/ftp', '/database', '/soft', '/control', '/firewall',
+
+    path_list = (
+       '/site', '/ftp', '/database', '/soft', '/control', '/firewall',
         '/files', '/xterm', '/crontab', '/config', '/docker', '/btdocker','/breaking_through',
-    ]:
+    )
+    if (request.path.startswith(path_list) or request.path == "/") and request.method == "GET":
+        if request.args.get('action') in [
+            'get_tmp_token','download_cert'
+        ]:
+            return
+    # if request.path in [
+    #     '/site', '/ftp', '/database', '/soft', '/control', '/firewall',
+    #     '/files', '/xterm', '/crontab', '/config', '/docker', '/btdocker','/breaking_through',
+    # ]:
         if public.is_error_path():
             return redirect('/error', 302)
-        if not request.path in ['/config']:
-            if session.get('password_expire', False):
+        # 密码过期相关功能
+        if request.path not in ['/config', '/modify_password', '/login']:
+            if not session.get("login", False):  # 没有登录时不触发密码过期修改
+                return
+            reslut = session.get('password_expire', None)
+            if reslut is None:
+                reslut = not public.password_expire_check()
+                session['password_expire'] = reslut
+            if reslut:
                 return redirect('/modify_password', 302)
 
     # 新增   适配docker时增加 未测试
@@ -382,7 +454,7 @@ def request_end(reques=None):
 
 # Flask 405页面勾子
 @app.errorhandler(405)
-def error_404(e):
+def error_405(e):
     if request.method not in ['GET', 'POST']: return
     if not session.get('login', None):
         g.auth_error = True
@@ -564,14 +636,17 @@ REQUEST_FORM: {request_form}
 @app.route('/', methods=method_get)
 @app.route('/<path:sub_path>', methods=method_get)
 def index_new(sub_path: str = ''):
+
+    if sub_path == 'unsubscribe.html':
+        return render_template('unsubscribe.html')
+
     # 面板首页
     comReturn = comm.local()
     if comReturn: return comReturn
     data = {}
 
     if sub_path == '':
-        data[public.to_string([112,
-                               100])], data['pro_end'], data['ltd_end'] = get_pd()
+        data[public.to_string([112, 100])], data['pro_end'], data['ltd_end'] = get_pd()
         data['siteCount'] = public.M('sites').count()
         data['ftpCount'] = public.M('ftps').count()
         data['databaseCount'] = public.M('databases').count()
@@ -693,11 +768,17 @@ def index_new(sub_path: str = ''):
             and os.path.exists('/usr/local/lsws/bin/lswsctrl') == False:
         data['isSetup'] = False
 
-    import base64
-
     # load translations
-    data['translations'] = base64.b64encode(json.dumps(load_translations()).encode()).decode()
+    # 登录成功后重启面板 使翻译切换生效
+    # public.ExecShell("/etc/init.d/bt start")
+    # public.writeFile('data/restart.pl', 'True')
 
+    from public.translations import load_translations
+    load_translations()
+
+    import base64
+    data['translations'] = base64.b64encode(json.dumps(load_translations()).encode()).decode()
+    data['public_key'] = public.get_rsa_public_key().replace("\n", "")
     return render_template('index_new.html', data=data)
 
 
@@ -714,17 +795,21 @@ def xterm():
             'get_command_find', 'modify_command', 'remove_command')
     return publicObject(ssh_host_admin, defs, None)
 
-
+# 密码过期路由
 @app.route('/modify_password', methods=method_get)
 def modify_password():
     comReturn = comm.local()
     if comReturn: return comReturn
     # if not session.get('password_expire',False): return redirect  ('/',302)
     data = {}
+    from public.translations import load_translations
+    load_translations()
+
+    import base64
+    data['translations'] = base64.b64encode(json.dumps(load_translations()).encode()).decode()
     data['public_key'] = public.get_rsa_public_key()
-    g.title = public.get_msg_gettext(
-        'The password has expired, please change it!')
-    return render_template('modify_password.html', data=data)
+    g.title = 'The password has expired, please change it!'
+    return render_template('index_new.html', data=data)
 
 
 @app.route('/site', methods=method_post)
@@ -1331,7 +1416,16 @@ def config(pdata=None):
         'get_nps_new',
         "check_nps",
         # 提交报错信息 # 错误收集
-        'err_collection'
+        'err_collection',
+        # 语言包 测试接口
+        # 'get_language',
+        # 'get_languageinfo',
+        'set_language',
+        'download_language',
+        'upload_language',
+        # 'test_language',
+         'set_hou',
+         'replace_data',
 
     )
     return publicObject(config.config(), defs, None, pdata)
@@ -1702,16 +1796,17 @@ def proxy_rspamd_requests(path):
         ]:
             if i in path:
                 url = "http://127.0.0.1:11334/" + path + "?" + param
+        if os.path.exists('/etc/rspamd/passwd'):
+            headers['Password'] = public.readFile('/etc/rspamd/passwd')
         req = requests.get(url, headers=headers, stream=True)
         return Resp(stream_with_context(req.iter_content()),
-                    content_type=req.headers['content-type'])
+                    content_type=req.headers['content-type'], status=req.status_code)
     else:
         url = "http://127.0.0.1:11334/" + path
         for i in request.form.keys():
             data = '{}='.format(i)
         # public.writeFile('/tmp/2',data+"\n","a+")
         req = requests.post(url, data=data, headers=headers, stream=True)
-
         return Resp(stream_with_context(req.iter_content()),
                     content_type=req.headers['content-type'])
 
@@ -1749,6 +1844,13 @@ def login():
         is_auth_path = True
     # 登录输入验证
     if request.method == method_post[0]:
+        #防爆破检测
+        import breaking_through
+        _breaking_through_obj = breaking_through.main()
+        limit_login = _breaking_through_obj.get_login_limit()
+        if limit_login:
+            return public.return_msg_gettext(False, 'Aapanel explosion-proof limit, cancel command: bt 33'), json_header
+
         if is_auth_path:
             g.auth_error = True
             return public.error_not_login(None)
@@ -1837,6 +1939,7 @@ def login():
                 return public.error_not_login(None)
 
     session['admin_auth'] = True
+
     comReturn = common.panelSetup().init()
     if comReturn:
         return comReturn
@@ -1880,7 +1983,20 @@ def login():
             session[last_time_key] = s_time
 
         data[last_key] = session[last_key]
+        import base64
+        data['login_translations'] = base64.b64encode(json.dumps(load_login_translations()).encode()).decode()
+        settings = '{}/BTPanel/languages/settings.json'.format(public.get_panel_path())
+        default = json.loads(public.readFile(settings))['default']
+        if default == '':
+            default = 'en'
+        data['login_lang'] = default if default else 'en'
         data['public_key'] = public.get_rsa_public_key()
+
+        import userLang
+        get_language = userLang.userLang().get_language(None)['message']
+        data['language'] = get_language['default']
+        data['language_list'] = get_language['languages']
+
         return render_template('login.html', data=data)
         # -----------
 
@@ -1902,7 +2018,22 @@ def userRegister():
 
     return publicObject(reg, defs, None, None)
 
-
+# 新增登录设置语言
+@app.route('/userLang', methods=method_all)
+def userLang():
+    g.is_aes = False
+    import userLang
+    reg = userLang.userLang()
+    defs = ('get_language', 'set_language')
+    return publicObject(reg, defs, None, None)
+# 邮局调用退订接口
+@app.route('/mailUnsubscribe', methods=method_all)
+def mailUnsubscribe():
+    g.is_aes = False
+    import mailUnsubscribe
+    reg = mailUnsubscribe.mailUnsubscribe()
+    defs = ('Unsubscribe', 'Subscribe', 'get_mail_type_list')
+    return publicObject(reg, defs, None, None)
 @app.route('/close', methods=method_get)
 def close():
     # 面板已关闭页面
@@ -2199,7 +2330,9 @@ def panel_public():
 @app.route('/<name>/<fun>', methods=method_all)
 @app.route('/<name>/<fun>/<path:stype>', methods=method_all)
 def panel_other(name=None, fun=None, stype=None):
-    if name in ('site', 'database', 'docker', 'wp', 'mail', 'security'):
+    # 左侧栏路由
+    if name in ('site', 'database', 'docker', 'wp', 'mail', 'security', 'crontab', 'waf', 'setting', 'logs',
+                'monitor/system', 'control', 'binds', 'softs', 'modify_password', 'flow'):
         return index_new('{}/{}'.format(name, fun))
 
     # 插件接口
@@ -2218,6 +2351,8 @@ def panel_other(name=None, fun=None, stype=None):
             stype = tmp[1]
         if fun:
             if name == 'btwaf' and fun == 'index':
+                pass
+            if name == 'waf':
                 pass
             elif name == 'firewall' and fun == 'get_file':
                 pass
@@ -2292,7 +2427,6 @@ def panel_other(name=None, fun=None, stype=None):
     if not args: args = get_input()
     args.client_ip = public.GetClientIp()
     args.fun = fun
-
     # 初始化插件对象
     try:
 
@@ -2493,7 +2627,10 @@ class run_exec:
         if not get.action in defs:
             return public.ReturnJson(
                 False, 'Specific parameters are invalid!'), json_header
-
+        # if get.action == 'change':
+        #     public.print_log("查询  666 toObject --{}".format(vars(toObject)))
+        #     # {'mail': <send_mail.send_mail object at 0x7f9fc98737d0>, '_config__mail_list': []}
+        #     public.print_log("查询  666 get.action --{}".format(get.action))
         result = getattr(toObject, get.action)(get)
         if not hasattr(get, 'html') and not hasattr(get, 's_module'):
             r_type = type(result)
@@ -2635,6 +2772,15 @@ def get_input():
         except:
             pass
 
+    # 获取json数据
+    if request.is_json:
+        try:
+            json_data = request.get_json()
+            for k in json_data.keys():
+                data[k] = json_data[k]
+        except:
+            pass
+
     if 'form_data' in g:
         for k in g.form_data.keys():
             data.set(k, str(g.form_data[k]))
@@ -2689,6 +2835,7 @@ def workorder_client(ws):
     toObject = panelWorkorder.panelWorkorder()
     get = get_input()
     toObject.client(ws, get)
+
 
 
 @sockets.route('/ws_panel')
@@ -2847,6 +2994,23 @@ def ws_model(ws):
         get.model_index = get.model_index.strip()
         p = threading.Thread(target=ws_model_thread, args=(model_obj, get))
         p.start()
+
+def ws_mod_thread(_obj, get):
+    '''
+        @name 模型控制器ws线程
+        @author hwliang<2021-07-24>
+        @param _obj<Controller> 控制器对像
+        @param get<dict> 请求参数
+        @return void
+    '''
+    mod_result = _obj.model(get)
+    if mod_result is None:
+        return
+    try:
+        result = {'callback': get.ws_callback, 'result': _obj.model(get)}
+        get._ws.send(public.getJson(result))
+    except:
+        return
 
 
 def ws_model_thread(_obj, get):
@@ -3058,12 +3222,13 @@ def webssh(ws):
         if 'pkey' in get:
             ssh_info['pkey'] = get['pkey'].strip()
 
-        if get['host'] in ['127.0.0.1', 'localhost'
-                           ] and 'port' not in ssh_info:
-            ssh_info = sp.get_ssh_info('127.0.0.1')
+        if get['host'] in ['127.0.0.1', 'localhost']:
+            if not 'password' in ssh_info:
+                ssh_info = sp.get_ssh_info('127.0.0.1')
             if not ssh_info: ssh_info = sp.get_ssh_info('localhost')
             if not ssh_info: ssh_info = {"host": "127.0.0.1"}
-            ssh_info['port'] = public.get_ssh_port()
+            if not 'port' in ssh_info:
+                ssh_info['port'] = public.get_ssh_port()
     else:
         ssh_info = sp.get_ssh_info('127.0.0.1')
         if not ssh_info: ssh_info = sp.get_ssh_info('localhost')
@@ -3189,6 +3354,7 @@ def ws_model_v2(ws):
     # 开发时暂时注释----------------
     comReturn = comm.local()
     if comReturn: return comReturn
+
     get = ws.receive()
     get = json.loads(get)
 
@@ -3214,6 +3380,48 @@ def ws_model_v2(ws):
         p = threading.Thread(target=ws_model_thread, args=(model_obj, get))
         p.start()
 
+# 2024/2/19 上午 10:34 新场景模型控制器ws入口，无默认return
+@sockets.route(route_v2 + '/ws_modsoc')
+def ws_modsoc(ws):
+    '''
+        @name 新场景模型控制器ws入口
+        @author wzz<2024-02-19>
+        @param ws<ws_parameter> websocket会话对像
+        @return void
+    '''
+
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    get = ws.receive()
+    get = json.loads(get)
+
+    if not check_csrf_websocket(ws, get):
+        return
+
+    # try:
+    # from panelController import Controller
+    # model_obj = Controller()
+    from mod.modController import Controller
+    model_obj = Controller()
+    while True:
+        pdata = ws.receive()
+        if pdata in ['{}', {}, None, '']:
+            ws.send(json.dumps(public.return_status_code(1000, 'The request parameter cannot be empty')))
+            break
+        try:
+            get = public.to_dict_obj(json.loads(pdata))
+        except:
+            request.form = {
+                "error": pdata
+            }
+            raise Exception('json load error !')
+        get._ws = ws
+        get.model_index = "mod"
+        p = threading.Thread(target=ws_mod_thread, args=(model_obj, get))
+        p.start()
+    # except:
+    #     import traceback
+    #     public.print_log(traceback.format_exc())
 
 # ======================普通路由区start============================#
 
@@ -3257,10 +3465,9 @@ def modify_password_v2():
     if comReturn: return comReturn
     # if not session.get('password_expire',False): return redirect('/',302)
     data = {}
-    g.title = public.get_msg_gettext(
-        'The password has expired, please change it!')
-    return render_template('modify_password.html', data=data)
-
+    g.title = 'The password has expired, please change it!'
+    # return render_template('modify_password.html', data=data)
+    return render_template('index1.html', data=data)
 
 @app.route(route_v2 + '/site', methods=method_all)
 def site_v2(pdata=None):
@@ -3404,6 +3611,12 @@ def site_v2(pdata=None):
         'wp_remove_backup',
         'get_wp_security_info',
         'open_wp_file_protection',
+        "wordpress_vulnerabilities_scan",
+        "ignore_vuln",
+        "get_ignore_vuln",
+        "set_auth_scan",
+        "get_auth_scan_status",
+        "wordpress_vulnerabilities_time",
         'close_wp_file_protection',
         'get_wp_file_info',
         'open_wp_firewall_protection',
@@ -3434,12 +3647,41 @@ def site_v2(pdata=None):
         'wp_set_list',
         'wp_create_set',
         'wp_remove_set',
+        'wp_get_items_from_set',
         'wp_add_items_to_set',
         'wp_update_item_state_with_set',
         'wp_remove_items_from_set',
         'wp_install_with_set',
+        'wp_remote_add',
+        'wp_remote_add_manually',
+        'wp_remote_remove',
+        'wp_remote_sites',
+        'wp_add_onekey_database',
+        'set_restart_task',
+        'get_restart_task',
+        'set_https_mode',
+        'get_https_mode',
     )
     return publicObject(siteObject, defs, None, pdata)
+
+# @app.route(route_v2 + '/ssl_domain', methods=method_all)
+# def domain_v2(pdata=None):
+#     # 域名管理
+#     comReturn = comm.local()
+#     if comReturn: return comReturn
+#     import panel_domain_v2
+#     domain_obj = panel_domain_v2.DomainObject()
+#     defs = (
+#         "get_dns_support",
+#         "create_dns_api",
+#         "delete_dns_api",
+#         "list_dns_api",
+#         "edit_dns_api",
+#         "list_dns_record",
+#         "create_dns_record",
+#         "delete_dns_record",
+#     )
+#     return publicObject(domain_obj, defs, None, pdata)
 
 
 @app.route(route_v2 + '/ftp', methods=method_all)
@@ -3530,6 +3772,18 @@ def database_v2(pdata=None):
         'write_ssl_to_mysql',
         'GetdataInfo',
         'GetBackup',
+        'GetMysqlUser',
+        'GetDatabasesList',
+        'AddMysqlUser',
+        'DelMysqlUser',
+        'ChangeUserPass',
+        'GetUserGrants',
+        'GetUserHostDbGrant',
+        'AddUserGrants',
+        'DelUserGrants',
+        'GetmvDataDirSpeed',
+        'GetMySQLBinlogs',
+        'mysql_oom_adj',
     )
     return publicObject(databaseObject, defs, None, pdata)
 
@@ -3644,7 +3898,7 @@ def ssh_security_v2(pdata=None):
             'stop_jian', 'get_jian', 'get_logs', 'set_root', 'stop_root',
             'start_auth_method', 'stop_auth_method', 'get_auth_method',
             'check_so_file', 'get_so_file', 'get_pin', 'set_login_send',
-            'get_login_send', 'get_msg_push_list', 'clear_login_send')
+            'get_login_send', 'get_msg_push_list', 'clear_login_send', 'set_root_password')
     return publicObject(firewallObject, defs, None, pdata, is_csrf)
 
 
@@ -3709,6 +3963,8 @@ def panel_warning_v2(pdata=None):
                 return result
             except:
                 pass
+        if hasattr(get, 'open') and get.open == "1":
+            public.set_module_logs("panel_warning_v2", "get_list")
         return result
 
     defs = ('get_list', 'set_ignore', 'check_find', 'check_cve',
@@ -3895,21 +4151,33 @@ def files_v2(pdata=None):
 
 
 @app.route(route_v2 + '/crontab', methods=method_all)
-def crontab_v2(pdata=None):
+@app.route(route_v2 + '/crontab/<action>', methods=method_all)
+@app.route(route_v2 + '/crontab_ifame', methods=method_all)
+def crontab_v2(pdata=None,action=None):
     # 计划任务
     comReturn = comm.local()
     if comReturn: return comReturn
-    if request.method == method_get[0] and not pdata:
-        import system_v2
-        data = system_v2.system().GetConcifInfo()
+    if request.method == method_get[0] and not pdata and not request.args:
+        import system
+        data = system.system().GetConcifInfo()
         data['lan'] = public.GetLan('crontab')
         data['js_random'] = get_js_random()
-        return render_template('crontab.html', data=data)
-    import crontab_v2
-    crontabObject = crontab_v2.crontab()
-    defs = ('GetCrontab', 'AddCrontab', 'GetDataList', 'GetLogs', 'DelLogs',
-            'DelCrontab', 'StartTask', 'set_cron_status', 'get_crond_find',
-            'modify_crond', 'get_backup_list')
+        if request.path in ['/crontab_ifame']:
+            return render_template('crontab.html', data=data)
+        return render_template('index1.html', data=data)
+
+    import class_v2.crontab_v2 as crontab
+    crontabObject = crontab.crontab()
+    defs = (
+        'set_cron_status_all', 'get_zone', 'get_domain', 'cancel_top', 'set_task_top', 'GetCrontab', 'AddCrontab',
+        'GetDataList', 'GetLogs', 'DelLogs', 'download_logs', 'clear_logs',
+        'DelCrontab', 'StartTask', 'set_cron_status', 'get_crond_find', 'set_atuo_start_syssafe',
+        'modify_crond', 'get_backup_list', 'check_url_connecte', 'cloud_backup_download',
+        'GetDatabases', 'get_crontab_types', 'add_crontab_type', 'remove_crontab_type',
+        'modify_crontab_type_name', 'set_crontab_type', 'export_crontab_to_json', 'import_crontab_from_json',
+        'set_rotate_log', 'get_rotate_log_config', 'get_restart_project_config', 'set_restart_project',
+        'get_system_user_list','get_databases', 'get_auto_config', 'set_auto_config'
+    )
     return publicObject(crontabObject, defs, None, pdata)
 
 
@@ -4058,6 +4326,7 @@ def config_v2(pdata=None):
         'setPassword',
         'setUsername',
         'setPanel',
+        'clearBackup',
         'setPathInfo',
         'setPHPMaxSize',
         'get_msg_fun',
@@ -4093,12 +4362,27 @@ def config_v2(pdata=None):
         'get_password_config',
         'set_password_expire',
         'set_password_safe',
+        'setlastPassword',
         'get_module_template',
         # 新增nps评分
         'write_nps_new',
         'get_nps_new',
         "check_nps",
         'get_translations',
+        'get_login_translations',
+        # 语言包 测试接口
+        # 'get_language',
+        # 'get_languageinfo',
+        'set_language',
+        'download_language',
+        'upload_language',
+        # 设置ua限制
+        'set_ua',
+        'get_limit_ua',
+        'modify_ua',
+        'delete_ua',
+
+
     )
     return publicObject(config_v2.config(), defs, None, pdata)
 
@@ -4188,6 +4472,7 @@ def ssl_v2(pdata=None):
         'again_verify',
         'DelToken',
         'GetToken',
+        'GetToken_New',
         'GetUserInfo',
         'GetOrderList',
         'GetDVSSL',
@@ -4216,6 +4501,7 @@ def ssl_v2(pdata=None):
         'get_cert_admin',
         'apply_order_ca',
         'apply_cert_install_pay',
+        'verify_mail_any',
 
         # 'pay_test'
     )
@@ -4306,7 +4592,9 @@ def auth_v2(pdata=None):
             'get_coupon_list', 'ignore_coupon_time', 'set_user_adviser', 'rest_unbind_count',
             'unbind_authorization', 'get_all_voucher_plugin', 'get_pay_unbind_count',
             'get_coupons', 'get_credits', 'create_with_credit_by_panel', 'get_last_paid_time',
-            'get_all_coupons')
+            'get_all_coupons', 'detect_order_status',
+            'get_expand_pack_prices',
+            )
     result = publicObject(toObject, defs, None, pdata)
     return result
 
@@ -4884,6 +5172,8 @@ def safeModel_v2(def_name):
 @app.route(route_v2 + '/logs/ftp/<def_name>', methods=method_all)
 @app.route(route_v2 + '/logs/panel/<def_name>', methods=method_all)
 @app.route(route_v2 + '/logs/site/<def_name>', methods=method_all)
+@app.route(route_v2 + '/crontab/trigger/<def_name>', methods=method_all)
+@app.route(route_v2 + '/crontab/script/<def_name>', methods=method_all)
 def allModule_v2(def_name):
     if request.method not in ['GET', 'POST']: return
     path_split = request.path.split("/")
@@ -4973,6 +5263,7 @@ def panel_public_v2():
 @app.route(route_v2 + '/<name>/<fun>', methods=method_all)
 @app.route(route_v2 + '/<name>/<fun>/<path:stype>', methods=method_all)
 def panel_other_v2(name=None, fun=None, stype=None):
+
     # 插件接口
     if public.is_error_path():
         return redirect('/error', 302)
@@ -5066,57 +5357,20 @@ def panel_other_v2(name=None, fun=None, stype=None):
 
     # 初始化插件对象
     try:
-        is_php = os.path.exists(p_path + '/index.php')
-        if not is_php:
-            import panel_plugin_v2
-            plu_panel = panel_plugin_v2.panelPlugin()
-            plugin_list = plu_panel.get_cloud_list()
-            waf = 0
-            if not 'pro' in plugin_list: plugin_list['pro'] = -1
-            for p in plugin_list['list']:
-                if p['name'] in ['btwaf']:
-                    if p['endtime'] != 0 and p['endtime'] < time.time():
-                        waf = -1
-            try:
-                public.package_path_append(p_path)
-                plugin_main = __import__(name + '_main')
-                if name == 'btwaf' and fun == 'index' and waf == -1 and plugin_list[
-                    'pro'] == -1:
-                    return render_template('error3.html', data={})
-            except:
-                if name == 'btwaf' and fun == 'index' and waf == -1 and plugin_list[
-                    'pro'] == -1:
-                    return render_template('error3.html', data={})
-                if os.path.exists("{}/btwaf".format(public.get_plugin_path())):
-                    return render_template('error3.html', data={})
-            try:
-                if sys.version_info[0] == 2:
-                    reload(plugin_main)
-                else:
-                    from imp import reload
-                    reload(plugin_main)
-            except:
-                pass
 
-            plu = eval('plugin_main.' + name + '_main()')
-
-            if not hasattr(plu, fun):
-                return public.returnJson(False,
-                                         'Plugin does not exist'), json_header
-        # 执行插件方法
-        if not is_php:
-            if is_accept:
-                checks = plu._check(args)
-                if type(checks) != bool or not checks:
-                    return public.getJson(checks), json_header
-            data = eval('plu.' + fun + '(args)')
-        else:
-            comReturn = comm.local()
-            if comReturn: return comReturn
-            import panel_php_v2
+        import PluginLoader
+        try:
             args.s = fun
-            args.name = name
-            data = panel_php_v2.panelPHP(name).exec_php_script(args)
+            data = PluginLoader.plugin_run(name, fun, args)
+            if isinstance(data, dict):
+                if 'status' in data and data['status'] == False and 'msg' in data:
+                    if isinstance(data['msg'], str):
+                        if data['msg'].find('加载失败') != -1 or data['msg'].find('Traceback ') == 0:
+                            raise public.PanelError(data['msg'])
+        except Exception as ex:
+            if name == 'btwaf' and fun == 'index' and str(ex).find('未购买') != -1:
+                return render_template('error3.html', data={})
+            return public.get_error_object(None, plugin_name=name)
 
         r_type = type(data)
         if r_type in [Response, Resp]:
@@ -5124,6 +5378,17 @@ def panel_other_v2(name=None, fun=None, stype=None):
 
         # 处理响应
         if stype == 'json':  # 响应JSON
+            # 兼容btwaf插件 v2调用改返回 v2/btwaf/xxx.json
+            if name == 'btwaf':
+                # public.print_log("插件调用22---{}".format(type(data)))
+                if type(data) == dict:
+                    if 'msg' in data:
+                        status = 0 if data['status'] else -1
+                        data = public.return_message(status, 0, data['msg'])
+                    else:
+                        data = public.return_message(0, 0, data)
+                else:
+                    data = public.return_message(0, 0, data)
             return public.getJson(data), json_header
         elif stype == 'html':  # 使用模板
             t_path_root = p_path + '/templates/'
@@ -5153,13 +5418,13 @@ def panel_other_v2(name=None, fun=None, stype=None):
                                            data={"error_msg": data['msg']})
                 return public.returnJson(
                     False,
-                    public.getMsg('Bad return type [{}]').format(
-                        r_type)), json_header
+                    public.getMsg('Bad return type [{}]').format(r_type)), json_header
+                # public.getMsg('PUBLIC_ERR_RETURN')), json_header
+            if name == 'btwaf':
+                data = public.return_message(0, 0, data)
             return data
     except:
         return public.get_error_info()
-        return public.get_error_object(None, plugin_name=name)
-
 
 @app.route(route_v2 + '/hook', methods=method_all)
 def panel_hook_v2():
@@ -5486,7 +5751,7 @@ def webssh_v2(ws):
     get = json.loads(get)
     if not check_csrf_websocket(ws, get):
         return
-
+    # public.print_log("传入信息-get:{}".format(get))
     import ssh_terminal_v2
     sp = ssh_terminal_v2.ssh_host_admin()
     if 'host' in get:
@@ -5501,13 +5766,15 @@ def webssh_v2(ws):
         if 'pkey' in get:
             ssh_info['pkey'] = get['pkey'].strip()
 
-        if get['host'] in ['127.0.0.1', 'localhost'
-                           ] and 'port' not in ssh_info:
-            ssh_info = sp.get_ssh_info('127.0.0.1')
+        if get['host'] in ['127.0.0.1', 'localhost']:
+            if not 'password' in ssh_info:
+                ssh_info = sp.get_ssh_info('127.0.0.1')
             if not ssh_info: ssh_info = sp.get_ssh_info('localhost')
             if not ssh_info: ssh_info = {"host": "127.0.0.1"}
-            ssh_info['port'] = public.get_ssh_port()
+            if not 'port' in ssh_info:
+                ssh_info['port'] = public.get_ssh_port()
     else:
+        # public.print_log("无host")
         ssh_info = sp.get_ssh_info('127.0.0.1')
         if not ssh_info: ssh_info = sp.get_ssh_info('localhost')
         if not ssh_info: ssh_info = {"host": "127.0.0.1"}
@@ -5522,6 +5789,7 @@ def webssh_v2(ws):
                 )
                 return
     p = ssh_terminal_v2.ssh_terminal()
+    # public.print_log("传入信息----ws:{}---ssh_info:{}".format(ws, ssh_info))
     p.run(ws, ssh_info)
     del (p)
     if ws.connected:
@@ -5625,8 +5893,12 @@ def push_v2(pdata=None):
 # def panel_mod_v2(name=None, sub_name=None, fun=None, stype=None):
 # @app.route('/mod/proxy/com/<fun>', methods=method_all)
 # @app.route('/mod/proxy/com/<fun>/<path:stype>', methods=method_all)
+@app.route(route_v2 + '/mod/push/msgconf/<fun>', methods=method_all)
+@app.route(route_v2 + '/mod/push/task/<fun>', methods=method_all)
 @app.route(route_v2 + '/mod/proxy/com/<fun>', methods=method_all)
 @app.route(route_v2 + '/mod/proxy/com/<fun>/<path:stype>', methods=method_all)
+@app.route(route_v2 + '/mod/docker/com/<fun>', methods=method_all)
+@app.route(route_v2 + '/mod/docker/com/<fun>/<path:stype>', methods=method_all)
 # @app.route(route_v2 + '/project/proxy/<fun>', methods=method_all)
 # @app.route(route_v2 + '/project/proxy/<fun>/<path:stype>', methods=method_all)
 def panel_mod_v2(fun=None, stype=None):
@@ -5645,11 +5917,21 @@ def panel_mod_v2(fun=None, stype=None):
     #     return redirect('/bind', 302)
     if public.is_error_path():
         return redirect('/error', 302)
-    if not name: return abort(404)
-    if not sub_name: return abort(404)
-    if not re.match(r"^[\w\-]+$", name): return abort(404)
-    if not re.match(r"^[\w\-]+$", sub_name): return abort(404)
-    if fun and not re.match(r"^[\w\-\.]+$", fun): return abort(404)
+    if not name:
+
+        return abort(404)
+    if not sub_name:
+
+        return abort(404)
+    if not re.match(r"^[\w\-]+$", name):
+
+        return abort(404)
+    if not re.match(r"^[\w\-]+$", sub_name):
+
+        return abort(404)
+    if fun and not re.match(r"^[\w\-\.]+$", fun):
+
+        return abort(404)
 
     comReturn = comm.local()
     if comReturn: return comReturn
@@ -5773,13 +6055,52 @@ def breaking_through_v2(pdata=None):
         'check_local_ip_white',
         'panel_ip_white',
         'get_protected_services',
+        'get_linux_users',
+        'get_compiler_info',
+        'add_user_to_compiler',
+        'del_user_to_compiler',
+        'set_compiler_status',
     )
     return publicObject(breakingObject, defs, None, pdata)
 
+@app.route(route_v2 + '/virtual/<def_name>', methods=method_all)
+@app.route(route_v2 + '/aapanelsub/<def_name>', methods=method_all)
+@app.route('/aapanelsub/<def_name>', methods=method_all)
+def virtualModel_v2(def_name):
+    if request.method in ['GET'] and request.path.startswith('/aapanelsub'):
+        return index_new(request.path)
+    path_split = request.path.split("/")
+    if len(path_split) < 3: return
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import public.PluginLoader as plugin_loader
+    mod_file = '{}/class_v2/virtualModelV2/virtualModel.py'.format(public.get_panel_path())
+    plugin_class = plugin_loader.get_module(mod_file)
+    plugin_object = getattr(plugin_class,"main")()
+    get= get_input()
+    if def_name.endswith('.json'):
+        def_name = def_name[:-5]
+    result = getattr(plugin_object,def_name)(get)
+    return result
 
 
+@app.route(route_v2 + '/campaign/<def_name>', methods=method_all)
+def campaign_v2(def_name: str):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from power_mta import actions
+    return getattr(actions, def_name)(get_input())
 
 
+@app.route(route_v2 + '/userRegister', methods=method_all)
+def userRegister_v2():
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import userRegister_v2
+    reg = userRegister_v2.userRegister()
+    defs = ('toRegister',)
+
+    return publicObject(reg, defs, None, None)
 # ===========================================================v2路由区end===========================================================#
 
 @app.route('/v2/install_finish', methods=method_post)
@@ -5790,13 +6111,35 @@ def install_finish():
 
 
 @app.route('/v2/wp/login/<int:site_id>', methods=method_get)
-def wp_login(site_id: int):
+@app.route('/v2/wp/login/<int:site_id>/<wp_site_type>', methods=method_get)
+def wp_login(site_id: int, wp_site_type: str = 'local'):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+
     if site_id < 1:
         return public.gettext_msg('Invalid site_id')
 
-    from wp_toolkit import wpmgr
+    # wp_site_type
+    # 1 Local
+    # 2 Remote
+    if wp_site_type.lower() == 'local':
+        from wp_toolkit import wpmgr
+        return wpmgr(site_id).auto_login()
+    elif wp_site_type.lower() == 'remote':
+        from wp_toolkit import wpmgr_remote
+        return wpmgr_remote(site_id).auto_login()
+    else:
+        return public.gettext_msg('Invalid site_type')
 
-    return wpmgr(site_id).auto_login()
+
+@app.route('/v2/pmta/<enc_str>', methods=method_get)
+def mail_campaign_handler(enc_str: str):
+    try:
+        from power_mta.maillog_stat import campaign_event_handler
+        return campaign_event_handler(enc_str)
+    except:
+        public.print_error()
+        return public.lang('Server has been crashed')
 
 
 # 获取新场景模型的传参数据

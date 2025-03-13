@@ -25,7 +25,7 @@ class data:
     # 删除排序记录
     def del_sorted(self, get):
         public.ExecShell("rm -rf {}".format(self.siteorder_path))
-        return public.returnMsg(True, '清除排序成功！')
+        return public.returnMsg(True, public.lang("Clear sorting successfully"))
 
 
     '''
@@ -38,8 +38,8 @@ class data:
         id = get.id
         get.ps = public.xssencode2(get.ps)
         if public.M(get.table).where("id=?",(id,)).setField('ps',get.ps):
-            return public.return_msg_gettext(True,'Setup successfully!')
-        return public.return_msg_gettext(False,'Failed to modify')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
+        return public.return_msg_gettext(False, public.lang("Failed to modify"))
 
     #端口扫描
     def CheckPort(self,port):
@@ -222,7 +222,7 @@ class data:
      * @param Int _GET['p'] 分页号  要取第几页数据
      * @return Json  page.分页数 , count.总行数   data.取回的数据
     '''
-    def getData(self,get):
+    def getData(self, get):
         # # net_flow_type = {
         # #     "total_flow": "总流量",
         # #     "7_day_total_flow": "近7天流量",

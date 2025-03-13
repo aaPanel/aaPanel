@@ -15,7 +15,7 @@ import public, panelTask
 import config_v2 as config
 
 try:
-    from BTPanel import cache
+    from BTPanel import cache,session
 except:pass
 
 class main(panelBase):
@@ -35,9 +35,11 @@ class main(panelBase):
 
             skey = 'panel_update_logs'
             res = cache.get(skey)
-            if res: return res
+            if res:
+                return public.return_message(0, 0, res)
 
-            res = public.httpPost('https://www.bt.cn/Api/getUpdateLogs?type=Linux',{})
+            # res = public.httpPost('https://wafapi2.aapanel.com/api/getUpdateLogs?type=Linux',{})
+            res = public.httpPost('https://wafapi2.aapanel.com/Api/getUpdateLogs?type=Linux',{})
 
             start_index = res.find('(') + 1
             end_index = res.rfind(')')
@@ -48,15 +50,14 @@ class main(panelBase):
         except:
             res = []
 
-        return res
+        return public.return_message(0, 0, res)
 
     def get_public_config(self, args):
         """
         @name 获取公共配置
         """
-        # public.print_log("error 3366666: {}".format())
         _config_obj = config.config()
-        data = _config_obj.get_config(args)['message']
+        data = _config_obj.get_config(args)
 
         data['task_list'] = self.task_obj.get_task_lists(args)
         data['task_count'] = public.M('tasks').where("status!=?", ('1',)).count()
@@ -81,7 +82,22 @@ class main(panelBase):
                 data['api'] = ''
         else:
             data['api'] = ''
-        return public.return_message(0,0,data)
+
+
+        data['total'] = os.path.exists('/www/server/panel/plugin/total') or os.path.exists('/www/server/panel/plugin/monitor')
+        data['disk_usage'] = public.get_disk_usage(public.get_panel_path())
+        data['uid'] = ''
+        if os.path.exists('/www/server/panel/data/userInfo.json'):
+            res = public.readFile('/www/server/panel/data/userInfo.json')
+            if res:
+                try:
+                    res = json.loads(res)
+                    data['uid'] = res['uid']
+                except:
+                    pass
+        data['panel']['backup_info'] = self.get_panel_backup_info()
+        return public.return_message(0, 0, data)
+
 
     # 获取公共配置（精简版）
     def get_public_config_simple(self, args):
@@ -102,11 +118,47 @@ class main(panelBase):
 
         data["webname"] = public.GetConfigValue("title")
 
-        data['menu_list'] = config.config().get_menu_list(args)
+        data['menu_list'] = config.config().get_menu_list()['message']
 
         data['install_finished'] = os.path.exists('{}/data/install_finished.mark'.format(public.get_panel_path()))
+        import breaking_through as breaking_through
+        _breaking_through_obj = breaking_through.main()
+        data['limit_login'] = _breaking_through_obj.get_login_limit()
+        # 增加语言设置数据
+        lang = config.config().get_language()
+        data['language'] = lang['default']
+        data['language_list'] = lang['languages']
+
+        data['isPro'] = True if os.path.exists("/www/server/panel/data/panel_pro.pl") else False
 
         return public.return_message(0, 0, data)
+
+    #统计面板备份占用空间
+    def get_panel_backup_info(self):
+        auto_backup=0 if os.path.exists('{}/data/not_auto_backup.pl'.format(public.get_panel_path())) else 1
+        backup_number=30
+        result={"total_size":0,"auto_backup":auto_backup,"backup_number":backup_number}
+        backup_number_file='{}/data/panel_backup_number.pl'.format(public.get_panel_path())
+        if os.path.exists(backup_number_file):
+            try:
+                result["backup_number"]=int(open(backup_number_file, 'r').read())
+            except:pass
+        b_path = '{}/panel'.format(public.get_backup_path())
+        if not os.path.exists(b_path): return result
+        for f in os.listdir(b_path):
+            f_path=b_path + '/' +f
+            try:
+                zip_string=""
+                if f.endswith('.zip'):zip_string=".zip"
+                mktime=time.mktime(time.strptime(f,"%Y-%m-%d"+zip_string))
+                day_date=public.format_date("%Y-%m-%d",times=mktime)
+                backup_path = b_path + '/' + day_date
+                backup_file = backup_path + '.zip'
+                if f_path==backup_file or (f_path==backup_path and os.path.isdir(f_path)):
+                    result["total_size"] += public.get_path_size(f_path)
+            except:
+                pass
+        return result
 
     # 获取常用软件安装状态
     def get_public_config_setup(self, args):
@@ -145,10 +197,10 @@ class main(panelBase):
         try:
             backup_path = get.backup_path.strip().rstrip("/")
         except AttributeError:
-            return public.returnMsg(False, "参数错误")
+            return public.return_message(-1, 0, public.lang("The parameter is incorrect"))
 
         if not os.path.exists(backup_path):
-            return public.returnMsg(False, "指定目录不存在")
+            return public.return_message(-1, 0, public.lang("The specified directory does not exist"))
 
         if backup_path[-1] == "/":
             backup_path = backup_path[:-1]
@@ -161,7 +213,7 @@ class main(panelBase):
         fs = files.files()
 
         if not fs.CheckDir(get.backup_path):
-            return public.returnMsg(False, '不能使用系统关键目录作为默认备份目录')
+            return public.return_message(-1, 0, public.lang("You cannot use the system critical directory as the default backup directory"))
         if session is not None:
             session['config']['backup_path'] = os.path.join('/', backup_path)
         db_backup = backup_path + '/database'
@@ -183,11 +235,11 @@ class main(panelBase):
         public.WriteLog('TYPE_PANEL', 'PANEL_SET_SUCCESS', (get.backup_path,))
 
         public.restart_panel()
-        return public.returnMsg(True, "设置成功")
+        return public.return_message(0, 0, public.lang("The setup was successful"))
 
 
     def get_soft_status(self, get):
-        if not hasattr(get, 'name'): return public.return_message(-1, 0,'Parameter error')
+        if not hasattr(get, 'name'): return public.return_message(-1, 0, public.lang("Parameter error"))
         s_status = False
         status = False
         setup = False
@@ -215,7 +267,8 @@ class main(panelBase):
                 "pure-ftpd": "/var/run/pure-ftpd.pid",
                 "redis": "/www/server/redis/redis.pid",
                 "pgsql": "/www/server/pgsql/data_directory/postmaster.pid",
-                "openlitespeed": "/tmp/lshttpd/lshttpd.pid"
+                "openlitespeed": "/tmp/lshttpd/lshttpd.pid",
+                "mongodb": "/www/server/mongodb/log/configsvr.pid",
             }
             if name == 'mysql':
                 datadir = public.get_datadir()
@@ -245,13 +298,16 @@ class main(panelBase):
             "pgsql": "/www/server/pgsql/data/PG_VERSION",
             "apache": "/www/server/apache/version.pl",
             "pure-ftpd": "/www/server/pure-ftpd/version.pl",
-            "openlitespeed": "/usr/local/lsws/VERSION"
+            "openlitespeed": "/usr/local/lsws/VERSION",
+            "redis": "/www/server/redis/version.pl",
+            "mongodb": "/www/server/mongodb/version.pl",
+            "memcached": "/usr/local/memcached/version_check.pl",
         }
         if name in version_data.keys():
             if os.path.exists(version_data[name]):
                 version = public.readFile(version_data[name]).strip()
         title_data = {
-            "nagix": "Nginx",
+            "nginx": "Nginx",
             "mysql": "MySQL",
             "pgsql": "PostgreSQL",
             "mongodb": "MongoDB",
@@ -259,6 +315,7 @@ class main(panelBase):
             "apache": "Apache",
             "openlitespeed": "OpenLiteSpeed",
             "pure-ftpd": "Pure-FTPd",
+            "memcached": "Memcached",
         }
         s_version_data = {
             'mysql': 'mysqld',

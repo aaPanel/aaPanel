@@ -41,7 +41,7 @@ class ftplog:
         self.__AUTH_MSG =public .to_string ([84 ,104 ,105 ,115 ,32 ,102 ,101 ,97 ,116 ,117 ,114 ,101 ,32 ,105 ,115 ,32 ,101 ,120 ,99 ,108 ,117 ,115 ,105 ,118 ,101 ,32 ,116 ,111 ,32 ,116 ,104 ,101 ,32 ,112 ,114 ,111 ,32 ,101 ,100 ,105 ,116 ,105 ,111 ,110 ,44 ,32 ,112 ,108 ,101 ,97 ,115 ,101 ,32 ,97 ,99 ,116 ,105 ,118 ,97 ,116 ,101 ,32 ,105 ,116 ,32 ,102 ,105 ,114 ,115 ,116 ])
 
 
-    def __check_auth(cls):
+    def __check_auth(self):
         from plugin_auth_v2 import Plugin as Plugin
         plugin_obj = Plugin(False)
         plugin_list = plugin_obj.get_plugin_list()
@@ -96,11 +96,11 @@ class ftplog:
         if not self.__check_auth():
             return public.return_message(-1,0, self.__AUTH_MSG)
         if not hasattr(get, 'exec_name'):
-            return public.return_message(-1,0, 'The parameter is incorrect！')
+            return public.return_message(-1, 0, public.lang("The parameter is incorrect！"))
         conf_path = '/etc/rsyslog.conf'
         conf = public.readFile(conf_path)
         if not os.path.exists(conf_path):
-            return public.return_message(-1,0, 'The rsyslog configuration file does not exist!\nPlease check if rsyslog is installed or if /ect/rsyslog.cn exists!\nIf the debain system is not installed, please execute：apt-get install rsyslog\nPlease execute the Centos system：yum install rsyslog')
+            return public.return_message(-1, 0, public.lang("The rsyslog configuration file does not exist!\nPlease check if rsyslog is installed or if /ect/rsyslog.cn exists!\nIf the debain system is not installed, please execute：apt-get install rsyslog\nPlease execute the Centos system：yum install rsyslog"))
         conf = public.readFile(conf_path)
         import re
         search_str = r"ftp\.\*.*\t*.*\t*.*-/var/log/pure-ftpd.log"
@@ -215,7 +215,7 @@ $IncludeConfig /etc/rsyslog.d/*.conf
             self.del_crontab()
         public.writeFile(conf_path, conf)
         public.ExecShell('systemctl restart rsyslog')
-        return public.return_message(0,0, 'successfully set')
+        return public.return_message(0, 0, public.lang("successfully set"))
 
     def get_format_time(self, englist_time):
         """
@@ -246,9 +246,7 @@ $IncludeConfig /etc/rsyslog.d/*.conf
         search_str = 'pure-ftpd:'
         search_str2 = 'pure-ftpd['
         if not hasattr(get, 'user_name'):
-            return_message=public.returnMsg(False, 'The parameter is incorrect！')
-            del return_message['status']
-            return public.return_message(-1,0, return_message['msg'])
+            return public.return_message(-1,0, public.lang("The parameter is incorrect!"))
         args = public.dict_obj()
         args.exec_name = 'getlog'
         file_name = self.__ftp_backup_path

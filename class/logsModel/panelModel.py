@@ -138,7 +138,7 @@ class main(logsBase):
             search = get.search
         filename = '{}/logs/error.log'.format(public.get_panel_path())
         if not os.path.exists(filename):
-            return public.returnMsg(False,'No error log')
+            return public.returnMsg(False, public.lang("No error log"))
 
         res = {}
         res['data'] = public.xssdecode(self.GetNumLines(filename,2000,1,search))
@@ -226,11 +226,11 @@ class main(logsBase):
 
         my_info = public.get_mysql_info()
         if not my_info['datadir']:
-            return public.returnMsg(False,'MySQL is not installed!')
+            return public.returnMsg(False, public.lang("MySQL is not installed!"))
 
         path = my_info['datadir'] + '/mysql-slow.log'
         if not os.path.exists(path):
-            return public.returnMsg(False,'Log file does not exist!')
+            return public.returnMsg(False, public.lang("Log file does not exist!"))
         # mysql慢日志有顺序问题,倒序显示不利于排查问题
         return public.returnMsg(True, public.xsssec(public.GetNumLines(path, limit)))
 

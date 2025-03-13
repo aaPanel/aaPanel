@@ -208,7 +208,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         os.chmod(filename, p_stat.st_mode)
         public.WriteLog('TYPE_FILE', 'FILE_UPLOAD_SUCCESS',
                         (filename, get['path']))
-        return public.returnMsg(True, 'FILE_UPLOAD_SUCCESS')
+        return public.returnMsg(True, public.lang("uccessfully uploaded!"))
 
     def f_name_check(self,filename):
         '''
@@ -233,7 +233,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         '''
         filename = args.filename.strip()
         if not os.path.exists(filename):
-            return public.returnMsg(False,'File does not exist!')
+            return public.returnMsg(False, public.lang("File does not exist!"))
         file_info = {}
         _stat = os.stat(filename)
         file_info['size'] = _stat.st_size
@@ -267,16 +267,16 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             args.f_name = args.f_name.encode('utf-8')
             args.f_path = args.f_path.encode('utf-8')
         try:
-            if self.get_real_len(args.f_name) > 256: return public.return_msg_gettext(False,'The file name contains more than 256 bytes')
+            if self.get_real_len(args.f_name) > 256: return public.return_msg_gettext(False, public.lang("The file name contains more than 256 bytes"))
         except:
             pass
-        if not self.f_name_check(args.f_name): return public.return_msg_gettext(False,'No special characters can be included in the file name!')
+        if not self.f_name_check(args.f_name): return public.return_msg_gettext(False, public.lang("No special characters can be included in the file name!"))
 
         if args.f_path == '/':
-            return public.return_msg_gettext(False,'Cannot upload files to the system document root!')
+            return public.return_msg_gettext(False, public.lang("Cannot upload files to the system document root!"))
 
         if args.f_name.find('./') != -1 or args.f_path.find('./') != -1:
-            return public.return_msg_gettext(False, 'Wrong parameter')
+            return public.return_msg_gettext(False, public.lang("Wrong parameter"))
         if not os.path.exists(args.f_path):
             os.makedirs(args.f_path, 493)
             if not 'dir_mode' in args or not 'file_mode' in args:
@@ -303,7 +303,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         except Exception as ex:
             ex = str(ex)
             if ex.find('No space left on device') != -1:
-                return public.returnMsg(False, 'Not enough disk space')
+                return public.returnMsg(False, public.lang("Not enough disk space"))
         f_size = os.path.getsize(save_path)
         if f_size != int(args.f_size):
             return f_size
@@ -331,7 +331,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
         public.write_log_gettext('File manager', 'Successfully uploaded [ {} ] !',(new_name,),
                         (args.f_name, args.f_path))
-        return public.return_msg_gettext(True, 'Successfully uploaded!')
+        return public.return_msg_gettext(True, public.lang("Successfully uploaded!"))
 
     # 设置文件和目录权限
     def set_mode(self, path):
@@ -479,7 +479,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     # 取文件/目录列表
     def GetDir(self, get: public.dict_obj):
         if not hasattr(get, 'path'):
-            # return public.returnMsg(False,'错误的参数!')
             get.path = public.get_site_path() #'/www/wwwroot'
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
@@ -495,12 +494,12 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.path = public.get_site_path()
             #return public.ReturnMsg(False, '指定目录不存在!')
         if os.path.basename(get.path) == '.Recycle_bin':
-            return public.return_msg_gettext(False,'Recovery failed!')
+            return public.return_msg_gettext(False, public.lang("Recovery failed!"))
         if not os.path.isdir(get.path):
             get.path = os.path.dirname(get.path)
 
         if not os.path.isdir(get.path):
-            return public.return_msg_gettext(False,'This is not a directory')
+            return public.return_msg_gettext(False, public.lang("This is not a directory"))
 
         dirnames = []
         filenames = []
@@ -813,7 +812,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if os.path.exists(f_key):
                 os.remove(f_key)
                 public.write_log_gettext('File manager','Clear file notes [{}]',(f_name))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
 
 
@@ -1001,7 +1000,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             size = data_list[5]
             disk_path = data_list[6]
             if int(use_size) < 1024 and str(size).rstrip("%") == "100" and disk_path in ["/","/www"]:
-                return public.return_msg_gettext(False, f"File creation failed! The disk is full! please clear the space first!")
+                return public.return_msg_gettext(False, public.lang("File creation failed! The disk is full! please clear the space first!"))
 
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8').strip()
@@ -1010,20 +1009,20 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             fpath = os.path.dirname(get.path).strip()
             get.path = os.path.join(fpath,fname)
             if get.path[-1] == '.':
-                return public.return_msg_gettext(False, 'It is not recommended to use [ . ] at the end of the file because there may be security risks')
+                return public.return_msg_gettext(False, public.lang("It is not recommended to use [ . ] at the end of the file because there may be security risks"))
             if not self.CheckFileName(get.path):
-                return public.return_msg_gettext(False, 'File names can NOT contain special characters!')
+                return public.return_msg_gettext(False, public.lang("File names can NOT contain special characters!"))
             if os.path.exists(get.path):
-                return public.return_msg_gettext(False, 'Requested file exists!')
+                return public.return_msg_gettext(False, public.lang("Requested file exists!"))
             path = os.path.dirname(get.path)
             if not os.path.exists(path):
                 os.makedirs(path)
             open(get.path, 'w+').close()
             self.SetFileAccept(get.path)
             public.write_log_gettext('File manager', 'Successfully created file [{}]!', (get.path,))
-            return public.return_msg_gettext(True, 'Successfully created file!')
+            return public.return_msg_gettext(True, public.lang("Successfully created file!"))
         except:
-            return public.return_msg_gettext(False, 'Failed to create file!')
+            return public.return_msg_gettext(False, public.lang("Failed to create file!"))
 
     #创建软链
     def CreateLink(self,get):
@@ -1037,18 +1036,17 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             @return dict
         '''
         if not get.dfile or get.dfile[-1] == "/":
-            return public.return_msg_gettext(False,
-                                             'The specified soft link file name must contain the full path (full path)')
-        if not 'sfile' in get: return public.return_msg_gettext(False,'Parameter ERROR!')
-        if not os.path.exists(get.sfile): return public.return_msg_gettext(False,'Configuration file not exist')
-        if os.path.exists(get.dfile): return public.return_msg_gettext(False,'The specified soft link file name already exists')
+            return public.return_msg_gettext(False, public.lang("The specified soft link file name must contain the full path (full path)"))
+        if not 'sfile' in get: return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
+        if not os.path.exists(get.sfile): return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
+        if os.path.exists(get.dfile): return public.return_msg_gettext(False, public.lang("The specified soft link file name already exists"))
         l_name = os.path.basename(get.dfile)
-        if re.match(r"^[\w\-\.]+$", l_name) == None: return public.returnMsg(False, 'Link file name is illegal!')
-        if get.dfile[0] != '/': return public.return_msg_gettext(False,'The specified soft link file name must contain the full path (full path)')
+        if re.match(r"^[\w\-\.]+$", l_name) == None: return public.returnMsg(False, public.lang("Link file name is illegal!"))
+        if get.dfile[0] != '/': return public.return_msg_gettext(False, public.lang("The specified soft link file name must contain the full path (full path)"))
         public.ExecShell("ln -sf {} {}".format(get.sfile,get.dfile))
-        if not os.path.exists(get.dfile): return public.return_msg_gettext(False,'Softlink file creation failed')
+        if not os.path.exists(get.dfile): return public.return_msg_gettext(False, public.lang("Softlink file creation failed"))
         public.write_log_gettext('Firewall manager','Create softlink: {} -> {}',(get.dfile,get.sfile))
-        return public.return_msg_gettext(True,'The softlink file was created successfully')
+        return public.return_msg_gettext(True, public.lang("The softlink file was created successfully"))
 
 
 
@@ -1058,30 +1056,30 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.path = get.path.encode('utf-8').strip()
         try:
             if get.path[-1] == '.':
-                return public.return_msg_gettext(False, 'It is not recommended to use [ . ] at the end of the directory, because there may be safety risks')
+                return public.return_msg_gettext(False, public.lang("It is not recommended to use [ . ] at the end of the directory, because there may be safety risks"))
             if not self.CheckFileName(get.path):
-                return public.return_msg_gettext(False, 'Directory names cannot contain special characters!')
+                return public.return_msg_gettext(False, public.lang("Directory names cannot contain special characters!"))
             if os.path.exists(get.path):
-                return public.return_msg_gettext(False, 'Requested directory exists!')
+                return public.return_msg_gettext(False, public.lang("Requested directory exists!"))
             os.makedirs(get.path)
             self.SetFileAccept(get.path)
             public.write_log_gettext('File manager', 'Successfully created directory [ {} ]!', (get.path,))
-            return public.return_msg_gettext(True, 'Successfully created directory!')
+            return public.return_msg_gettext(True, public.lang("Successfully created directory!"))
         except:
-            return public.return_msg_gettext(False,'Failed to create directory!')
+            return public.return_msg_gettext(False, public.lang("Failed to create directory!"))
 
     #删除目录
     def DeleteDir(self,get):
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
         if os.path.basename(get.path) in ['Recycle_bin','.Recycle_bin']:
-            return public.return_msg_gettext(False,'Recovery failed!')
+            return public.return_msg_gettext(False, public.lang("Recovery failed!"))
         if not os.path.exists(get.path):
-            return public.return_msg_gettext(False, 'Requested directory does not exist')
+            return public.return_msg_gettext(False, public.lang("Requested directory does not exist"))
 
         # 检查是否敏感目录
         if not self.CheckDir(get.path):
-            return public.return_msg_gettext(False, 'Editing this directory may cause service exceptions!')
+            return public.return_msg_gettext(False, public.lang("Editing this directory may cause service exceptions!"))
 
         try:
             # 检查是否存在.user.ini
@@ -1090,14 +1088,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             public.ExecShell("chattr -R -i " + get.path)
             if hasattr(get, 'empty'):
                 if not self.delete_empty(get.path):
-                    return public.return_msg_gettext(False, 'Cannot delete non-empty directory!')
+                    return public.return_msg_gettext(False, public.lang("Cannot delete non-empty directory!"))
 
             if os.path.exists('data/recycle_bin.pl') and session.get('debug') != 1:
                 if self.Mv_Recycle_bin(get):
                     self.site_path_safe(get)
                     self.remove_file_ps(get)
                     public.add_security_logs("Del dir","Delete directory: "+get.path)
-                    return public.return_msg_gettext(True, 'Directory moved to recycle bin!')
+                    return public.return_msg_gettext(True, public.lang("Directory moved to recycle bin!"))
 
             import shutil
             shutil.rmtree(get.path)
@@ -1105,9 +1103,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             public.add_security_logs("Del dir", "Delete directory: " + get.path)
             public.WriteLog('TYPE_FILE', 'Successfully deleted directory [{}]!', (get.path,))
             self.remove_file_ps(get)
-            return public.return_msg_gettext(True, ' Successfully deleted directory!')
+            return public.return_msg_gettext(True, public.lang(" Successfully deleted directory!"))
         except:
-            return public.return_msg_gettext(False, 'Failed to delete directory!')
+            return public.return_msg_gettext(False, public.lang("Failed to delete directory!"))
 
     # 删除 空目录
     def delete_empty(self, path):
@@ -1122,7 +1120,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
         if not os.path.exists(get.path)and not os.path.islink(get.path):
-            return public.return_msg_gettext(False, 'Configuration file not exist')
+            return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
 
         # 检查是否为.user.ini
         if get.path.find('.user.ini') != -1:
@@ -1133,15 +1131,15 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     self.site_path_safe(get)
                     self.remove_file_ps(get)
                     public.add_security_logs("Del file", "Delete file: " + get.path)
-                    return public.return_msg_gettext(True, 'File moved to recycle bin!')
+                    return public.return_msg_gettext(True, public.lang('File moved to recycle bin!'))
             os.remove(get.path)
             self.site_path_safe(get)
             public.write_log_gettext('File manager', 'Successfully permanent deleted file: [{}]!', (get.path,))
             public.add_security_logs("Del file", "Delete file: " + get.path)
             self.remove_file_ps(get)
-            return public.return_msg_gettext(True, 'Successfully deleted file!')
+            return public.return_msg_gettext(True, public.lang('Successfully deleted file!'))
         except:
-            return public.return_msg_gettext(False, 'Failed to delete file!')
+            return public.return_msg_gettext(False, public.lang("Failed to delete file!"))
 
 
     def remove_file_ps(self,get):
@@ -1195,10 +1193,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 shutil.move(dFile,dFile + "_{}.bak".format(public.format_date("%Y%m%d%H%M%S")))
             shutil.move(get.path, dFile)
             public.write_log_gettext('File manager', 'Successfully recovered [{}] from recycle bin!', (dFile,))
-            return public.return_msg_gettext(True, 'Recovery succeeded!')
+            return public.return_msg_gettext(True, public.lang("Recovery succeeded!"))
         except:
             public.write_log_gettext('File manager', 'Failed to recover [{}] from recycle bin!', (dFile,))
-            return public.return_msg_gettext(False, 'Recovery failed!')
+            return public.return_msg_gettext(False, public.lang("Recovery failed!"))
 
     # 获取回收站信息
     def Get_Recycle_bin(self, get):
@@ -1276,7 +1274,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             import database
             return database.database().DeleteTo(filename)
         if not self.CheckDir(filename):
-            return public.return_msg_gettext(False, 'Never trouble troubles till troubles trouble you!')
+            return public.return_msg_gettext(False, public.lang("Never trouble troubles till troubles trouble you!"))
 
         public.ExecShell('chattr -R -i ' + filename)
         if os.path.isdir(filename):
@@ -1292,7 +1290,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             except:
                 public.ExecShell("rm -f " + filename)
         public.write_log_gettext('File manager', 'Parmanently deleted {} from recycle bin!', (tfile,))
-        return public.return_msg_gettext(True, 'Parmanently deleted {} from recycle bin!', (tfile,))
+        return public.return_msg_gettext(True, public.lang('Parmanently deleted {} from recycle bin!', tfile))
 
     # 清空回收站
     def Close_Recycle_bin(self, get):
@@ -1327,7 +1325,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
         public.writeSpeed(None, 0, 0)
         public.write_log_gettext('File manager', 'Recycle bin emptied!')
-        return public.return_msg_gettext(True, 'Recycle bin emptied!')
+        return public.return_msg_gettext(True, public.lang("Recycle bin emptied!"))
 
     # 回收站开关
     def Recycle_bin(self, get):
@@ -1337,11 +1335,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if os.path.exists(c):
             os.remove(c)
             public.write_log_gettext('File manager', 'Recycle bin feature turned off!')
-            return public.return_msg_gettext(True, 'Recycle bin feature turned off!')
+            return public.return_msg_gettext(True, public.lang("Recycle bin feature turned off!"))
         else:
             public.writeFile(c, 'True')
             public.write_log_gettext('File manager', 'Recycle bin feature turned on!')
-            return public.return_msg_gettext(True, 'Recycle bin feature turned on!')
+            return public.return_msg_gettext(True, public.lang("Recycle bin feature turned on!"))
 
     # 复制文件
     def CopyFile(self, get):
@@ -1349,12 +1347,12 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.sfile = get.sfile.encode('utf-8')
             get.dfile = get.dfile.encode('utf-8')
         if get.dfile[-1] == '.':
-            return public.return_msg_gettext(False, 'It is not recommended to use [.] at the end of the file because there may be security risks')
+            return public.return_msg_gettext(False, public.lang("It is not recommended to use [.] at the end of the file because there may be security risks"))
         if not os.path.exists(get.sfile):
-            return public.return_msg_gettext(False, 'Configuration file not exist')
+            return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
 
         # if os.path.exists(get.dfile):
-        #    return public.return_msg_gettext(False,'Requested file exists!')
+        #    return public.return_msg_gettext(False, public.lang("Requested file exists!"))
 
         if os.path.isdir(get.sfile):
             return self.CopyDir(get)
@@ -1367,9 +1365,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             stat = os.stat(get.sfile)
             os.chmod(get.dfile,stat.st_mode)
             os.chown(get.dfile, stat.st_uid, stat.st_gid)
-            return public.return_msg_gettext(True, 'Successfully copied file!')
+            return public.return_msg_gettext(True, public.lang("Successfully copied file!"))
         except:
-            return public.return_msg_gettext(False, 'Failed to copy file!')
+            return public.return_msg_gettext(False, public.lang("Failed to copy file!"))
 
     # 复制文件夹
     def CopyDir(self, get):
@@ -1377,15 +1375,15 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.sfile = get.sfile.encode('utf-8')
             get.dfile = get.dfile.encode('utf-8')
         if get.dfile[-1] == '.':
-            return public.return_msg_gettext(False, 'It is not recommended to use [.] at the end of the directory, because there may be safety risks')
+            return public.return_msg_gettext(False, public.lang("It is not recommended to use [.] at the end of the directory, because there may be safety risks"))
         if not os.path.exists(get.sfile):
-            return public.return_msg_gettext(False, 'Requested directory does not exist')
+            return public.return_msg_gettext(False, public.lang("Requested directory does not exist"))
 
         # if os.path.exists(get.dfile):
-        #    return public.return_msg_gettext(False,'Requested directory exists!')
+        #    return public.return_msg_gettext(False, public.lang("Requested directory exists!"))
 
         # if not self.CheckDir(get.dfile):
-        #    return public.return_msg_gettext(False,'Never trouble troubles till troubles trouble you!')
+        #    return public.return_msg_gettext(False, public.lang("Never trouble troubles till troubles trouble you!"))
 
         try:
             self.copytree(get.sfile, get.dfile)
@@ -1394,9 +1392,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             os.chown(get.dfile, stat.st_uid, stat.st_gid)
             public.write_log_gettext('File manager', 'Successfully copied directory!',
                             (get.sfile, get.dfile))
-            return public.return_msg_gettext(True, 'Successfully copied directory!')
+            return public.return_msg_gettext(True, public.lang("Successfully copied directory!"))
         except:
-            return public.return_msg_gettext(False, 'Failed to copy directory!')
+            return public.return_msg_gettext(False, public.lang("Failed to copy directory!"))
 
     # 移动文件或目录
     def MvFile(self, get):
@@ -1404,38 +1402,38 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.sfile = get.sfile.encode('utf-8')
             get.dfile = get.dfile.encode('utf-8')
         if get.dfile[-1] == '.':
-            return public.return_msg_gettext(False, 'It is not recommended to use [.] at the end of the file because there may be security risks')
+            return public.return_msg_gettext(False, public.lang("It is not recommended to use [.] at the end of the file because there may be security risks"))
         if not self.CheckFileName(get.dfile):
-            return public.return_msg_gettext(False,'File names can NOT contain special characters!')
+            return public.return_msg_gettext(False, public.lang("File names can NOT contain special characters!"))
         if os.path.basename(get.sfile) == '.Recycle_bin':
-            return public.return_msg_gettext(False,'Recovery failed!')
+            return public.return_msg_gettext(False, public.lang("Recovery failed!"))
         if not os.path.exists(get.sfile):
-            return public.return_msg_gettext(False, 'Configuration file not exist')
+            return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
 
         if hasattr(get, 'rename'):
             if os.path.exists(get.dfile):
-                return public.return_msg_gettext(False,'The target file name already exists!')
+                return public.return_msg_gettext(False, public.lang("The target file name already exists!"))
 
         if get.dfile[-1] == '/':
             get.dfile = get.dfile[:-1]
 
         if get.dfile == get.sfile:
-            return public.return_msg_gettext(False,'Meaningless operation')
+            return public.return_msg_gettext(False, public.lang("Meaningless operation"))
         
         if not self.CheckDir(get.sfile):
-            return public.return_msg_gettext(False,'Never trouble troubles till troubles trouble you!')
+            return public.return_msg_gettext(False, public.lang("Never trouble troubles till troubles trouble you!"))
         try:
             self.move(get.sfile,get.dfile)
             self.site_path_safe(get)
             if hasattr(get,'rename'):
                 public.write_log_gettext('File manager','[{}] renamed to [{}]',(get.sfile,get.dfile))
-                return public.return_msg_gettext(True,'Successfully renamed!')
+                return public.return_msg_gettext(True, public.lang("Successfully renamed!"))
             else:
                 public.write_log_gettext('File manager', 'File moved!',
                                 (get.sfile, get.dfile))
-                return public.return_msg_gettext(True, 'File moved!')
+                return public.return_msg_gettext(True, public.lang("File moved!"))
         except:
-            return public.return_msg_gettext(False, 'Failed to move file!')
+            return public.return_msg_gettext(False, public.lang("Failed to move file!"))
 
     # 检查文件是否存在
     def CheckExistsFiles(self, get):
@@ -1484,14 +1482,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
         if not os.path.exists(get.path):
             if get.path.find('rewrite') == -1:
-                return public.return_msg_gettext(False,'Configuration file not exist')
+                return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
             public.writeFile(get.path,'')
         if self.__get_ext(get.path) in ['gz','zip','rar','exe','db','pdf','doc','xls','docx','xlsx','ppt','pptx','7z','bz2','png','gif','jpg','jpeg','bmp','icon','ico','pyc','class','so','pyd']:
-            return public.return_msg_gettext(False,'The file format does not support online editing!')
+            return public.return_msg_gettext(False, public.lang("The file format does not support online editing!"))
         # if os.path.getsize(get.path) > 3145928:
-        #     return public.return_msg_gettext(False,'Cannot edit files larger than 2MB online!')
+        #     return public.return_msg_gettext(False, public.lang("Cannot edit files larger than 2MB online!"))
         if os.path.isdir(get.path):
-            return public.return_msg_gettext(False,'Writing verification file failed: {}')
+            return public.return_msg_gettext(False, public.lang("Writing verification file failed: {}"))
 
         # 处理my.cnf为空的情况
         myconf_file = '/etc/my.cnf'
@@ -1511,7 +1509,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 if info_data=="":return public.return_msg_gettext(False, u'The file encoding is not compatible, the file cannot be read correctly!')
                 data["data"]=info_data
                 data["only_read"]=True
-            except:return public.return_msg_gettext(False, u'The file encoding is not compatible, the file cannot be read correctly!')
+                return data
+            except:
+                public.print_error()
+                return public.return_msg_gettext(False, u'The file encoding is not compatible, the file cannot be read correctly!')
         else:
             fp = open(get.path, 'rb')
             if fp:
@@ -1529,9 +1530,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                             data['encoding'] = 'BIG5'
                             data['data'] = srcBody.decode(data['encoding'])
                         except:
-                            return public.return_msg_gettext(False, 'File encoding is not compatible and cannot be read correctly!')
+                            return public.return_msg_gettext(False, public.lang("File encoding is not compatible and cannot be read correctly!"))
             else:
-               return public.return_msg_gettext(False,'Failed to open file, file may be occupied by other processes!')
+               return public.return_msg_gettext(False, public.lang("Failed to open file, file may be occupied by other processes!"))
             if hasattr(get,'filename'):
                 get.path = get.filename
             data['historys'] = self.get_history(get.path)
@@ -1544,7 +1545,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         block = ''
         nl_count = 0
         start = 0
-        fsock = open(filename, 'rU')
+        fsock = open(filename, 'r')
         try:
             fsock.seek(0, 2)
             curpos = fsock.tell()
@@ -1568,7 +1569,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     # 保存文件
     def SaveFileBody(self, get):
         if not 'path' in get:
-            return public.return_msg_gettext(False,'[path] parameter cannot be empty!')
+            return public.return_msg_gettext(False, public.lang("[path] parameter cannot be empty!"))
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
 
@@ -1581,27 +1582,27 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
         if not os.path.exists(get.path):
             if get.path.find('.htaccess') == -1:
-                return public.return_msg_gettext(False, 'Configuration file not exist')
+                return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
         elif os.path.getsize(get.path) > 3145928:
-            return public.returnMsg(False, 'Files larger than 3MB cannot be edited online!')
+            return public.returnMsg(False, public.lang("Files larger than 3MB cannot be edited online!"))
         nginx_conf_path = public.get_vhost_path() + '/nginx/'
         if get.path.find(nginx_conf_path) != -1:
             if get.data.find('#SSL-START') != -1 and get.data.find('#SSL-END') != -1:
                 if get.data.find('#error_page 404/404.html;') == -1:
-                    str1 = public.get_msg_gettext('Failed to save the configuration file')
-                    str2 = public.get_msg_gettext('Do not modify the 404 rule commented in the SSL config')
-                    str3 = public.get_msg_gettext('To modify the 404 config, find the following config location')
+                    str1 = public.lang("Failed to save the configuration file")
+                    str2 = public.lang("Do not modify the 404 rule commented in the SSL config")
+                    str3 = public.lang("To modify the 404 config, find the following config location")
 
-                    # return public.returnMsg(False,'Failed to save the configuration file:<p style="color:red;">Do not modify the 404 rule commented in the SSL config</p><p>To modify the 404 config, find the following config location:</p><pre>#ERROR-PAGE-START  Error page configuration, allowed to be commented</pre>')
-                    return public.get_msg_gettext(False,'{}:<p style="color:red;">{}</p><p>:</p><pre>#ERROR-PAGE-START  Error page configuration, allowed to be commented</pre>'.format(str1,str2,str3))
+                    # return public.returnMsg(False, public.lang("Failed to save the configuration file:<p style="color:red;">Do not modify the 404 rule commented in the SSL config</p><p>To modify the 404 config, find the following config location:</p><pre>#ERROR-PAGE-START  Error page configuration, allowed to be commented</pre>"))
+                    return public.get_msg_gettext(False,public.lang('{}:<p style="color:red;">{}</p><p>:</p><pre>#ERROR-PAGE-START  Error page configuration, allowed to be commented</pre> {}',str1,str2,str3))
 
         if 'st_mtime' in get:
             st_mtime = str(int(os.stat(get.path).st_mtime))
-            if st_mtime != get['st_mtime']: return public.returnMsg(False,'Failed to save, {} file has been changed, please refresh the content and modify it again.'.format(get.path))
+            if st_mtime != get['st_mtime']: return public.returnMsg(False, public.lang("Failed to save, {} file has been changed, please refresh the content and modify it again.", get.path))
 
         his_path = '/www/backup/file_history/'
         if get.path.find(his_path) != -1:
-            return public.return_msg_gettext(False,'Cannot modify history copy directly!')
+            return public.return_msg_gettext(False, public.lang("Cannot modify history copy directly!"))
         try:
             if 'base64' in get:
                 import base64
@@ -1617,7 +1618,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     public.ExecShell('\\cp -a '+get.path+' /tmp/backup.conf')
 
             data = get.data
-            if data == 'undefined': return public.return_msg_gettext(False,'Wrong file content, please save again!')
+            if data == 'undefined': return public.return_msg_gettext(False, public.lang("Wrong file content, please save again!"))
             userini = False
             if get.path.find('.user.ini') != -1:
                 userini = True
@@ -1651,14 +1652,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 isError = public.checkWebConfig()
                 if isError != True:
                     public.ExecShell('\\cp -a /tmp/backup.conf '+get.path)
-                    return public.return_msg_gettext(False, 'ERROR:<br><font style="color:red;">'+isError.replace("\n", '<br>')+'</font>')
+                    return public.return_msg_gettext(False, public.lang('ERROR:<br><font style="color:red;">'+isError.replace("\n", '<br>')+'</font>'))
                 public.serviceReload()
 
             if userini:
                 public.ExecShell('chattr +i ' + get.path)
 
             public.write_log_gettext('File manager', 'Successfully saved file [{}]!', (get.path,))
-            data = public.return_msg_gettext(True, 'Saved!')
+            data = public.return_msg_gettext(True, public.lang('Saved!'))
             data['historys'] = self.get_history(get.path)  # 获取历史记录
             data['st_mtime'] = str(int(os.stat(get.path).st_mtime))
             return data
@@ -1763,7 +1764,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                      args.filename).replace('//', '/')
         args.path = save_path + '/' + args.history
         if not os.path.exists(args.path):
-            return public.return_msg_gettext(False,'The specified historical copy does not exist!')
+            return public.return_msg_gettext(False, public.lang("The specified historical copy does not exist!"))
         import shutil
         shutil.copyfile(args.path, args.filename)
         return self.GetFileBody(args)
@@ -1778,9 +1779,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             f_md5 = public.FileMd5(filename)
             s_md5 = public.md5(args.body)
             if f_md5 == s_md5:
-                return public.return_msg_gettext(True,'Not Edit')
+                return public.return_msg_gettext(True, public.lang("Not Edit"))
         public.writeFile(filename,args.body)
-        return public.return_msg_gettext(True,'Automatically saved successfully!')
+        return public.return_msg_gettext(True, public.lang("Automatically saved successfully!"))
 
     # 取上一次自动保存的结果
     def get_auto_save_body(self, args):
@@ -1847,7 +1848,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
         if get.z_type == 'rar':
             if os.uname().machine != 'x86_64':
-                return public.return_msg_gettext(False,'RAR component does not support aarch 64 platform')
+                return public.return_msg_gettext(False, public.lang("RAR component does not support aarch 64 platform"))
 
         import panelTask
         task_obj = panelTask.bt_task()
@@ -1868,21 +1869,21 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return task_obj._zip(get.path,get.sfile,get.dfile,'/tmp/zip.log',get.z_type)
 
         # 否则在后台线程压缩
-        task_obj.create_task('压缩文件', 3, get.path, json.dumps(
+        task_obj.create_task('Compress files', 3, get.path, json.dumps(
             {"sfile": get.sfile, "dfile": get.dfile, "z_type": get.z_type}))
         public.WriteLog("TYPE_FILE", 'ZIP_SUCCESS', (get.sfile, get.dfile))
-        return public.returnMsg(True, '已将压缩任务添加到消息队列!')
+        return public.returnMsg(True, public.lang("A compaction task has been added to the message queue!"))
 
     # 文件解压
     def UnZip(self, get):
         if get.sfile[-4:] == '.rar':
             if os.uname().machine != 'x86_64':
-                return public.return_msg_gettext(False,'RAR component does not support aarch 64 platform')
+                return public.return_msg_gettext(False, public.lang("RAR component does not support aarch 64 platform"))
         import panelTask
         if not 'password' in get:
             get.password = ''
         if not os.path.exists(get.sfile):
-            return public.returnMsg(False, 'The specified archive does not exist!')
+            return public.returnMsg(False, public.lang("The specified archive does not exist!"))
         if not os.path.exists(get.dfile):
             os.makedirs(get.dfile)
         zip_size = os.path.getsize(get.sfile)
@@ -1893,7 +1894,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         task_obj.create_task(public.get_msg_gettext('Decompress the file'), 2, get.sfile,
                              json.dumps({"dfile": get.dfile, "password": get.password}))
         public.write_log_gettext("File manager", 'Successfully uncompressed file from [{}] to [{}]!',(get.sfile,get.dfile))
-        return public.return_msg_gettext(True,'Decompression task added to the message queue!')
+        return public.return_msg_gettext(True, public.lang("Decompression task added to the message queue!"))
 
     # 获取文件/目录 权限信息
     def GetFileAccess(self, get):
@@ -1919,17 +1920,17 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 all = ''
         try:
             if not self.CheckDir(get.filename):
-                return public.return_msg_gettext(False, 'Never trouble troubles till troubles trouble you!')
+                return public.return_msg_gettext(False, public.lang("Never trouble troubles till troubles trouble you!"))
             if not os.path.exists(get.filename):
-                return public.return_msg_gettext(False, 'Configuration file not exist')
+                return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
             public.ExecShell('chmod '+all+' '+get.access+" '"+get.filename+"'")
             public.ExecShell('chown '+all+' '+get.user+':' +
                              get.user+" '"+get.filename+"'")
             public.write_log_gettext('File manager', "Set [{}]'s permission to [{}] and authorized user to [{}]",
                             (get.filename, get.access, get.user))
-            return public.return_msg_gettext(True, 'Setup successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         except:
-            return public.return_msg_gettext(False, 'Failed to set')
+            return public.return_msg_gettext(False, public.lang("Failed to set"))
 
     def SetFileAccept(self, filename):
         public.ExecShell('chown -R www:www ' + filename)
@@ -1975,7 +1976,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.path = get.path.encode('utf-8')
         if get.type == '1' or get.type == '2':
             session['selected'] = get.get_items()
-            return public.return_msg_gettext(True, 'Successfully marked, please click Paste All button in the target directory!')
+            return public.return_msg_gettext(True, public.lang("Successfully marked, please click Paste All button in the target directory!"))
         elif get.type == '3':
             for key in json.loads(get.data):
                 try:
@@ -1983,7 +1984,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                         key = key.encode('utf-8')
                     filename = get.path+'/'+key
                     if not self.CheckDir(filename):
-                        return public.return_msg_gettext(False, 'Never trouble troubles till troubles trouble you!')
+                        return public.return_msg_gettext(False, public.lang("Never trouble troubles till troubles trouble you!"))
                     ret = ' -R '
                     if 'all' in get:
                         if get.all == 'False':
@@ -1994,7 +1995,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 except:
                     continue
             public.write_log_gettext('File manager', 'Batch setting permission successful!')
-            return public.return_msg_gettext(True, 'Batch setting permission successful!')
+            return public.return_msg_gettext(True, public.lang("Batch setting permission successful!"))
         else:
             isRecyle = os.path.exists('data/recycle_bin.pl') and session.get('debug') != 1
             path = get.path
@@ -2014,7 +2015,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     public.writeSpeed(key, i, l)
                     if os.path.isdir(filename):
                         if not self.CheckDir(filename):
-                            return public.return_msg_gettext(False, 'Never trouble troubles till troubles trouble you!')
+                            return public.return_msg_gettext(False, public.lang("Never trouble troubles till troubles trouble you!"))
                         public.ExecShell("chattr -R -i " + filename)
                         if isRecyle:
                             self.Mv_Recycle_bin(get)
@@ -2038,10 +2039,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             self.site_path_safe(get)
             if not isRecyle:
                 public.write_log_gettext('File manager', 'Batch deleting successful!')
-                return public.return_msg_gettext(True, 'Batch deleting successful!')
+                return public.return_msg_gettext(True, public.lang("Batch deleting successful!"))
             else:
                 public.write_log_gettext('File manager', '{} files or directories have been moved to the recycle bin in batches'.format(i))
-                return public.return_msg_gettext(True, '{} files or directories have been moved to the recycle bin in batches'.format(i))
+                return public.return_msg_gettext(True, public.lang("{} files or directories have been moved to the recycle bin in batches", i))
 
     # 批量粘贴
     def BatchPaste(self, get):
@@ -2049,12 +2050,12 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
         if not self.CheckDir(get.path):
-            return public.return_msg_gettext(False,'Never trouble troubles till troubles trouble you!')
+            return public.return_msg_gettext(False, public.lang("Never trouble troubles till troubles trouble you!"))
         if not 'selected' in session:
-            return public.return_msg_gettext(False,'TCOPY_PRESS_ERR')
+            return public.return_msg_gettext(False, public.lang("The operation failed, please re-copy the copy or cut process"))
         i = 0
         if not 'selected' in session:
-            return public.return_msg_gettext(False,'The operation failed, please re-operate')
+            return public.return_msg_gettext(False, public.lang("The operation failed, please re-operate"))
         myfiles = json.loads(session['selected']['data'])
         l = len(myfiles)
         if get.type == '1':
@@ -2069,7 +2070,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     dfile = get.path + '/' + key
 
                 if os.path.commonpath([dfile, sfile]) == sfile:
-                    return public.return_msg_gettext(False,'Wrong copy logic, from {} copy to {} has an inclusive relationship, there is an infinite loop copy risk!'.format(sfile,dfile))
+                    return public.return_msg_gettext(False, public.lang("Wrong copy logic, from {} copy to {} has an inclusive relationship, there is an infinite loop copy risk!", sfile,dfile))
 
             for key in myfiles:
                 i += 1
@@ -2167,7 +2168,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def DownloadFile(self, get):
         import panelTask
         task_obj = panelTask.bt_task()
-        task_obj.create_task(public.get_msg_gettext('Download file'),1,get.url,get.path + '/' + get.filename)
+        task_obj.create_task(public.get_msg_gettext('Download file'), 1, get.url, get.path + '/' + get.filename)
         #if sys.version_info[0] == 2: get.path = get.path.encode('utf-8');
         #import db,time
         #isTask = '/tmp/panelTask.pl'
@@ -2177,7 +2178,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         # public.writeFile(isTask,'True')
         # self.SetFileAccept(get.path+'/'+get.filename)
         public.write_log_gettext('File manager', 'Downloaded file [{}] to [{}]', (get.url, get.path))
-        return public.return_msg_gettext(True, 'Download task added into the queue!')
+        return public.return_msg_gettext(True, public.lang("Download task added into the queue!"))
 
     # 添加安装任务
     def InstallSoft(self, get):
@@ -2211,7 +2212,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         public.writeFile(isTask, 'True')
         public.write_log_gettext('Installer', 'Download task added to queue!', (get.name, get.version))
         time.sleep(0.1)
-        return public.return_msg_gettext(True, 'Download task added to queue!')
+        return public.return_msg_gettext(True, public.lang("Download task added to queue!"))
 
     # 删除任务队列
     def RemoveTask(self, get):
@@ -2244,13 +2245,13 @@ done
                 public.ExecShell('/etc/init.d/bt start')
         except:
             public.ExecShell('/etc/init.d/bt start')
-        return public.return_msg_gettext(True, 'Task deleted')
+        return public.return_msg_gettext(True, public.lang("Task deleted"))
 
     # 重新激活任务
     def ActionTask(self, get):
         isTask = '/tmp/panelTask.pl'
         public.writeFile(isTask, 'True')
-        return public.return_msg_gettext(True, 'Task queue activated')
+        return public.return_msg_gettext(True, public.lang("Task queue activated"))
 
     # 卸载软件
     def UninstallSoft(self, get):
@@ -2267,7 +2268,7 @@ done
                 default_ext.append("gmp")
                 default_ext.append("opcache")
             if get.name.lower() in default_ext:
-                return public.return_msg_gettext(False, 'This extension is the default extension of OLS and cannot be uninstalled')
+                return public.return_msg_gettext(False, public.lang("This extension is the default extension of OLS and cannot be uninstalled"))
         execstr = "cd " + public.GetConfigValue('setup_path') + "/panel/install && /bin/bash install_soft.sh " + \
             get.type+" uninstall " + get.name.lower() + " " + get.version.replace('.', '')
         if public.get_webserver() == "openlitespeed":
@@ -2276,7 +2277,7 @@ done
         public.ExecShell(execstr)
         public.write_log_gettext('Installer', 'Uninstallaton succeeded',
                         (get.name, get.version))
-        return public.return_msg_gettext(True, 'Uninstallaton succeeded')
+        return public.return_msg_gettext(True, public.lang("Uninstallaton succeeded"))
 
     # 取任务队列进度
     def GetTaskSpeed(self, get):
@@ -2319,7 +2320,7 @@ done
     def GetLastLine(self, inputfile, lineNum):
         result = public.GetNumLines(inputfile, lineNum)
         if len(result) < 1:
-            return public.get_msg_gettext('Loading...')
+            return public.lang("Loading...")
         return result
 
     # 执行SHELL命令
@@ -2338,7 +2339,7 @@ cd %s
         public.writeFile('/tmp/panelShell.sh', shellStr)
         public.ExecShell(
             'nohup bash /tmp/panelShell.sh > /tmp/panelShell.pl 2>&1 &')
-        return public.return_msg_gettext(True, 'Command sent')
+        return public.return_msg_gettext(True, public.lang("Command sent"))
 
     # 取SHELL执行结果
     def GetExecShellMsg(self, get):
@@ -2351,7 +2352,7 @@ cd %s
     # 文件搜索
     def GetSearch(self, get):
         if not os.path.exists(get.path):
-            return public.return_msg_gettext(False, 'Requested directory does not exist')
+            return public.return_msg_gettext(False, public.lang("Requested directory does not exist"))
         return public.ExecShell("find "+get.path+" -name '*"+get.search+"*'")
 
     # 保存草稿
@@ -2361,7 +2362,7 @@ cd %s
             os.makedirs(save_path)
         get.path = os.path.join(save_path,public.Md5(get.path) + '.tmp')
         public.writeFile(get.path,get.body)
-        return public.return_msg_gettext(True,'Saved')
+        return public.return_msg_gettext(True, public.lang("Saved"))
 
     # 获取草稿
     def GetTmpFile(self, get):
@@ -2372,7 +2373,7 @@ cd %s
         src_path = get.path
         get.path = os.path.join(save_path,public.Md5(get.path) + '.tmp')
         if not os.path.exists(get.path):
-            return public.return_msg_gettext(False,'No drafts available!')
+            return public.return_msg_gettext(False, public.lang("No drafts available!"))
         data = self.GetFileInfo(get.path)
         data['file'] = src_path
         if 'rebody' in get:
@@ -2484,13 +2485,13 @@ cd %s
     def add_files_store(self, get):
         path = get.path
         if not os.path.exists(path):
-            return public.return_msg_gettext(False,'File or directory does not exist!')
+            return public.return_msg_gettext(False, public.lang("File or directory does not exist!"))
         data = self.get_store_data()
         if path in data:
-            return public.return_msg_gettext(False,'Do not add it repeatedly!')
+            return public.return_msg_gettext(False, public.lang("Do not add it repeatedly!"))
         data.append(path)
         self.set_store_data(data)
-        return public.return_msg_gettext(True,'Successfully added')
+        return public.return_msg_gettext(True, public.lang("Successfully added"))
 
     #删除收藏夹
     def del_files_store(self,get):
@@ -2505,25 +2506,25 @@ cd %s
                         is_go = True
                         break
             if not is_go:
-                return public.return_msg_gettext(False,'This favorite object could not be found!')
+                return public.return_msg_gettext(False, public.lang("This favorite object could not be found!"))
         data.remove(path)
         if len(data) <= 0:
             data = []
         self.set_store_data(data)
-        return public.return_msg_gettext(True,'Successfully deleted')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted"))
 
     # #单文件木马扫描
     # def file_webshell_check(self,get):
-    #     if not 'filename' in get: return public.returnMsg(True, 'file does not exist!')
+    #     if not 'filename' in get: return public.returnMsg(True, public.lang("file does not exist!"))
     #     import webshell_check
     #     if webshell_check.webshell_check().upload_file_url(get.filename.strip()):
-    #         return public.returnMsg(False,'This file is webshell [ %s ]'%get.filename.strip().split('/')[-1])
+    #         return public.returnMsg(False, public.lang("This file is webshell [ %s ]'%get.filename.strip().split('/"))[-1])
     #     else:
-    #         return public.returnMsg(True, 'no risk')
+    #         return public.returnMsg(True, public.lang("no risk"))
     #
     # #目录扫描木马
     # def dir_webshell_check(self,get):
-    #     if not 'path' in get: return public.returnMsg(False, 'Please enter a valid directory!')
+    #     if not 'path' in get: return public.returnMsg(False, public.lang("Please enter a valid directory!"))
     #     path=get.path.strip()
     #     if os.path.exists(path):
     #         #启动消息队列
@@ -2532,7 +2533,7 @@ cd %s
     #         import panelTask
     #         task_obj = panelTask.bt_task()
     #         task_obj.create_task(task_name, 0, exec_shell)
-    #         return public.returnMsg(True, 'Starting Trojan killing process. Details will be in the panel security log')
+    #         return public.returnMsg(True, public.lang("Starting Trojan killing process. Details will be in the panel security log"))
 
     # 获取下载地址列表
     def get_download_url_list(self, get):
@@ -2575,45 +2576,45 @@ cd %s
 
     # 获取指定下载地址
     def get_download_url_find(self, get):
-        if not 'id' in get: return public.return_msg_gettext(False, 'Wrong parameter')
+        if not 'id' in get: return public.return_msg_gettext(False, public.lang("Wrong parameter"))
         id = int(get.id)
         my_table = 'download_token'
         data = public.M(my_table).where('id=?', (id,)).find()
-        if not data: return public.return_msg_gettext(False, 'The specified address does not exist!')
+        if not data: return public.return_msg_gettext(False, public.lang("The specified address does not exist!"))
         return data
 
     # 删除下载地址
     def remove_download_url(self, get):
-        if not 'id' in get: return public.return_msg_gettext(False, 'Wrong parameter')
+        if not 'id' in get: return public.return_msg_gettext(False, public.lang("Wrong parameter"))
         id = int(get.id)
         my_table = 'download_token'
         public.M(my_table).where('id=?', (id,)).delete()
-        return public.return_msg_gettext(True, 'Successfully deleted!')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted!"))
 
     # 修改下载地址
     def modify_download_url(self, get):
-        if not 'id' in get: return public.return_msg_gettext(False, 'Wrong parameter')
+        if not 'id' in get: return public.return_msg_gettext(False, public.lang("Wrong parameter"))
         id = int(get.id)
         my_table = 'download_token'
         if not public.M(my_table).where('id=?', (id,)).count():
-            return public.return_msg_gettext(False, 'The specified address does not exist!')
+            return public.return_msg_gettext(False, public.lang("The specified address does not exist!"))
         pdata = {}
         if 'expire' in get: pdata['expire'] = get.expire
         if 'password' in get:
             pdata['password'] = get.password
             if len(pdata['password']) < 4 and len(pdata['password']) > 0:
-                return public.return_msg_gettext(False,'The length of the extracted password cannot be less than 4 digits')
+                return public.return_msg_gettext(False, public.lang("The length of the extracted password cannot be less than 4 digits"))
             if not re.match(r'^\w+$',pdata['password']):
-                return public.return_msg_gettext(False,'The password only supports a combination of uppercase and lowercase letters and numbers')
+                return public.return_msg_gettext(False, public.lang("The password only supports a combination of uppercase and lowercase letters and numbers"))
 
         if 'ps' in get: pdata['ps'] = get.ps
         public.M(my_table).where('id=?', (id,)).update(pdata)
-        return public.return_msg_gettext(True, 'Successfully modified')
+        return public.return_msg_gettext(True, public.lang("Successfully modified"))
 
     # 生成下载地址
     def create_download_url(self, get):
         if not os.path.exists(get.filename):
-            return public.return_msg_gettext(False,'File or directory does not exist!')
+            return public.return_msg_gettext(False, public.lang("File or directory does not exist!"))
         my_table = 'download_token'
         mtime = int(time.time())
         pdata = {
@@ -2629,13 +2630,13 @@ cd %s
         if len(exts) > 1:
             pdata['token'] += "." + exts[-1]
         if len(pdata['password']) < 4 and len(pdata['password']) > 0:
-            return public.return_msg_gettext(False,' Please do not enter the following special characters [ ~ ` / =  ]')
+            return public.return_msg_gettext(False, public.lang(" Please do not enter the following special characters [ ~ ` / =  ]"))
         if not re.match(r'^\w+$',pdata['password']) and pdata['password']:
-            return public.return_msg_gettext(False,'The password only supports a combination of uppercase and lowercase letters and numbers')
+            return public.return_msg_gettext(False, public.lang("The password only supports a combination of uppercase and lowercase letters and numbers"))
         #更新 or 插入
         token = public.M(my_table).where('filename=?',(get.filename,)).getField('token')
         if token:
-            return public.return_msg_gettext(False, 'Already shared!')
+            return public.return_msg_gettext(False, public.lang("Already shared!"))
             # pdata['token'] = token
             # del(pdata['total'])
             # public.M(my_table).where('token=?',(token,)).update(pdata)
@@ -2686,7 +2687,7 @@ cd %s
             public.ExecShell("nohup {} &> /tmp/panelExec.pl &".format(get.giturl))
         else:
             public.ExecShell("nohup git clone {} &> /tmp/panelExec.pl &".format(get.giturl))
-        return public.return_msg_gettext(True,'Command has been sent!')
+        return public.return_msg_gettext(True, public.lang("Command has been sent!"))
 
     # 安装composer
     def get_composer_bin(self):
@@ -2707,7 +2708,7 @@ cd %s
         #准备执行环境
         composer_bin = self.get_composer_bin()
         if not composer_bin:
-            return public.return_msg_gettext(False,'No composer available!')
+            return public.return_msg_gettext(False, public.lang("No composer available!"))
 
         #取执行PHP版本
         php_version = None
@@ -2715,11 +2716,11 @@ cd %s
             php_version = get.php_version
         php_bin = self.__get_php_bin(php_version)
         if not php_bin:
-            return public.return_msg_gettext(False,'No available PHP version was found, or the specified PHP version was not installed!')
+            return public.return_msg_gettext(False, public.lang("No available PHP version was found, or the specified PHP version was not installed!"))
         get.composer_cmd = get.composer_cmd.strip()
         if get.composer_cmd == '':
             if not os.path.exists(get.path + '/composer.json'):
-                return public.return_msg_gettext(False,'The composer.json configuration file was not found in the specified directory!')
+                return public.return_msg_gettext(False, public.lang("The composer.json configuration file was not found in the specified directory!"))
         log_file = '/tmp/composer.log'
         user = ''
         # del_cache = self._composer_user_home()
@@ -2753,13 +2754,13 @@ cd %s
         public.ExecShell("cd {} && export COMPOSER_HOME=/tmp && {} nohup {} &> {} && echo 'BT-Exec-Completed' >> {}  && rm -rf /home/www &".format(get.path,user,composer_exec_str,log_file,log_file))
         public.write_log_gettext('Composer',"Execute composer [{}] in the directory: [{}]",(get.path,get.composer_args))
         # del_cache()
-        return public.return_msg_gettext(True,'Command has been sent!')
+        return public.return_msg_gettext(True, public.lang("Command has been sent!"))
 
     # 取composer版本
     def get_composer_version(self,get):
         composer_bin = self.get_composer_bin()
         if not composer_bin:
-            return public.return_msg_gettext(False,'No composer available!')
+            return public.return_msg_gettext(False, public.lang("No composer available!"))
 
         try:
             bs = str(public.readFile(composer_bin,'rb'))
@@ -2767,7 +2768,7 @@ cd %s
             if not result: raise Exception('empty!')
         except:
             php_bin = self.__get_php_bin()
-            if not php_bin:  return public.return_msg_gettext(False,'No available PHP version found!')
+            if not php_bin:  return public.return_msg_gettext(False, public.lang("No available PHP version found!"))
             composer_exec_str = 'export COMPOSER_HOME=/tmp && ' + php_bin + ' ' + composer_bin +' --version 2>/dev/null|grep \'Composer version\'|awk \'{print $3}\''
             result = public.ExecShell(composer_exec_str)[0].strip()
         data = public.return_msg_gettext(True,result)
@@ -2777,18 +2778,18 @@ cd %s
             data['comp_json'] = True
             data['comp_lock'] = False
             if not os.path.exists(get.path + '/composer.json'):
-                data['comp_json'] = public.get_msg_gettext('[Composer.json] configuration file is not found in the specified directory!')
+                data['comp_json'] = public.lang("[Composer.json] configuration file is not found in the specified directory!")
             if os.path.exists(get.path + '/composer.lock'):
-                data['comp_lock'] = public.get_msg_gettext('[Composer.lock] file exists in the specified directory, please delete it before executing')
+                data['comp_lock'] = public.lang("[Composer.lock] file exists in the specified directory, please delete it before executing")
         return data
 
     # 升级composer版本
     def update_composer(self,get):
         composer_bin = self.get_composer_bin()
         if not composer_bin:
-            return public.return_msg_gettext(False,'No composer available!')
+            return public.return_msg_gettext(False, public.lang("No composer available!"))
         php_bin = self.__get_php_bin()
-        if not php_bin:  return public.return_msg_gettext(False,'No available PHP version found!')
+        if not php_bin:  return public.return_msg_gettext(False, public.lang("No available PHP version found!"))
         #设置指定源
         # if 'repo' in get:
         #     if get.repo:
@@ -2799,7 +2800,7 @@ cd %s
         public.ExecShell(composer_exec_str)
         version2 = self.get_composer_version(get)['msg']
         if version1 == version2:
-            msg = public.get_msg_gettext('Currently the latest version, no upgrade required!')
+            msg = public.lang("Currently the latest version, no upgrade required!")
         else:
             msg = public.get_msg_gettext('Upgrade composer from {} to {}',(version1,version2))
             public.write_log_gettext('Composer',msg)
@@ -2890,7 +2891,7 @@ cd %s
     def get_file_attribute(self,args):
         filename = args.filename.strip()
         if not os.path.exists(filename):
-            return public.return_msg_gettext(False,'File does not exist!')
+            return public.return_msg_gettext(False, public.lang("File does not exist!"))
         attribute = {}
         attribute['name'] = os.path.basename(filename)
         attribute['path'] = os.path.dirname(filename)
@@ -2908,8 +2909,8 @@ cd %s
         attribute['user'] = self.get_mode_user(f_stat.st_uid)   # 所属用户
         attribute['group'] = self.get_mode_user(f_stat.st_gid)  # 所属组
         attribute['mode'] = str(oct(f_stat.st_mode)[-3:])         # 文件权限号
-        attribute['md5'] = public.get_msg_gettext('Do not count files or directories larger than 100MB')                        # 文件MD5
-        attribute['sha1'] = public.get_msg_gettext('Do not count files or directories larger than 100MB')                       # 文件sha1
+        attribute['md5'] = public.get_msg_gettext('Do not count files or directories larger than 100MB')  # 文件MD5
+        attribute['sha1'] = public.get_msg_gettext('Do not count files or directories larger than 100MB')  # 文件sha1
         attribute['lsattr'] = self.get_lsattr(filename)
         attribute['is_dir'] = os.path.isdir(filename)   # 是否为目录
         attribute['is_link'] = os.path.islink(filename)  # 是否为链接文件
@@ -3095,7 +3096,7 @@ cd %s
         data[path][s_type] = 1
 
         self.set_rsync_data(data)
-        return public.return_msg_gettext(True,'Added successfully!')
+        return public.return_msg_gettext(True, public.lang("Added successfully!"))
     # 数据库对象
     def _get_sqlite_connect(self):
         try:
@@ -3244,9 +3245,9 @@ CREATE TABLE index_tb(
     def back_path_permissions(self,get):
         back_limit = 100
         if self._get_total_back() >= back_limit:
-            return public.return_msg_gettext(False,"The number of backup versions has exceeded {} ,Please go to the upper right corner [Backup Permissions] to clean up the old backup before operating".format(back_limit))
+            return public.return_msg_gettext(False, public.lang("The number of backup versions has exceeded {} ,Please go to the upper right corner [Backup Permissions] to clean up the old backup before operating", back_limit))
         if not os.path.exists(get.path):
-            return public.return_msg_gettext(False,"Path is incorrect {}".format(get.path))
+            return public.return_msg_gettext(False, public.lang("Path is incorrect {}", get.path))
         path = get.path
         back_sub_dir = get.back_sub_dir
         remark = get.remark
@@ -3261,12 +3262,12 @@ CREATE TABLE index_tb(
             else:
                 self.back_single_file_perm(path,date,remark,tb_name)
         except Exception as e:
-            return public.return_msg_gettext(False,"Backup error {} ".format(e))
+            return public.return_msg_gettext(False, public.lang("Backup error {} ", e))
         finally:
             self.sqlite_connection.commit()
         self.sqlite_connection.close()
         self.sqlite_connection=None
-        return public.return_msg_gettext(True,"Backup succeeded!")
+        return public.return_msg_gettext(True, public.lang("Backup succeeded!"))
 
     # 获取所有需要还原文件和文件夹
     def _get_restore_file(self,path):
@@ -3327,7 +3328,7 @@ CREATE TABLE index_tb(
                 if d[0] in self.file_permission_list:
                     public.set_mode(d[0], d[2])
                     public.set_own(d[0], d[1])
-        return public.return_msg_gettext(True, "Permission restored successfully")
+        return public.return_msg_gettext(True, public.lang("Permission restored successfully"))
 
     # 还原单个文件权限
     def restore_single_file_perm(self,path_full,date):
@@ -3336,8 +3337,8 @@ CREATE TABLE index_tb(
         if main_dir_data:
             public.set_mode(main_dir_data[0][0], main_dir_data[0][2])
             public.set_own(main_dir_data[0][0], main_dir_data[0][1])
-            return public.return_msg_gettext(True, "Permission restored successfully")
-        return public.return_msg_gettext(False, "The file does not have backup permissions")
+            return public.return_msg_gettext(True, public.lang("Permission restored successfully"))
+        return public.return_msg_gettext(False, public.lang("The file does not have backup permissions"))
 
 
     # 还原权限
@@ -3388,7 +3389,7 @@ CREATE TABLE index_tb(
             self._operate_db("drop table '{}'".format(p_tb[0][0]))
         self.sqlite_connection.commit()
         self.sqlite_connection.close()
-        return public.return_msg_gettext(True, "Successfully deleted!")
+        return public.return_msg_gettext(True, public.lang("Successfully deleted!"))
 
     # 获取所有备份
     def get_all_back(self,get):
@@ -3409,7 +3410,7 @@ CREATE TABLE index_tb(
         if os.path.isfile(path):
             os.chown(path, get.uid, get.gid)
             os.chmod(path, 0o644)
-            return public.return_msg_gettext(True, "Permission repair succeeded")
+            return public.return_msg_gettext(True, public.lang("Permission repair succeeded"))
         os.chown(path, get.uid, get.gid)
         os.chmod(path, 0o755)
         for file in os.listdir(path):
@@ -3424,7 +3425,7 @@ CREATE TABLE index_tb(
                 os.chmod(filename,0o644)
             except:
                 print(public.get_error_info())
-        return public.return_msg_gettext(True,"Permission repair succeeded")
+        return public.return_msg_gettext(True, public.lang("Permission repair succeeded"))
 
     def restore_website(self,args):
         """

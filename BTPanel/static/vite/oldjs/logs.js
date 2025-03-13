@@ -415,7 +415,7 @@ var logs = {
 					<li>Analyzed log data contains intercepted requests</li>\
 					<li>By default, the last scan data is displayed (if not, please click log scan)</li>\
 					<li>If the log file is too large, the scan may take a long time, please be patient</li>\
-					<li> <a href="https://forum.aapanel.com/d/3351-nginx-waf-instructions" style="color: #20a53a;" target="_blank">aaPanel WAF </a> can effectively block such attacks</li>\
+					<li> <a href="https://www.aapanel.com/forum/d/3351-nginx-waf-instructions" style="color: #20a53a;" target="_blank">aaPanel WAF </a> can effectively block such attacks</li>\
 					</ul>'
 
 				robj.append(analyes_log_btn+'<div class="analyse_log_table"></div>'+analyse_help)

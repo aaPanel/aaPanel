@@ -1,8 +1,8 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aapanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2020 宝塔软件(http://www.bt.cn) All rights reserved.
+# | Copyright (c) 2015-2020 aapanel(http://www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: baozi <baozi@bt.cn>
 # | 消息通道HOOK模块
@@ -15,7 +15,7 @@ from urllib3.util import parse_url
 
 from .util import write_push_log, get_test_msg
 import json
-
+import public
 # config = {
 #     "name": "default",
 #     "url": "https://www.bt.cn",
@@ -65,15 +65,21 @@ class WebHookMsg(object):
         ssl_verify = self.config.get("ssl_verify", None)
         if ssl_verify is None:
             ssl_verify = the_url.scheme == "https"
+        else:
+            ssl_verify = bool(int(ssl_verify))  # 转换为布尔值
+
 
         real_data = {
             "title": title,
             "msg": msg,
             "type": push_type,
         }
+        custom_parameter = self.config.get("custom_parameter", {})
+        if not isinstance(custom_parameter, dict):
+            custom_parameter = {}  # 如果 custom_parameter 不是字典，则设置为空字典
         # 处理custom_parameter，将$1替换为real_data内容并递归解析
         custom_data = {}
-        for k, v in self.config.get("custom_parameter", {}).items():
+        for k, v in custom_parameter.items():
             custom_data[k] = self._replace_and_parse(v, real_data)
 
         if custom_data:
@@ -153,28 +159,28 @@ class WebHookMsg(object):
             method = args.get("method", "POST")
             ssl_verify = args.get("ssl_verify", None)  # null Ture
         except (ValueError, KeyError):
-            return "参数错误"
+            return public.lang('The parameter is incorrect')
 
         the_url = parse_url(url)
         if the_url.scheme is None or the_url.host is None:
-            return"url解析错误，这可能不是一个合法的url"
+            return"URL parsing error, which may not be a legitimate URL"
 
         for i in (query, headers, custom_parameter):
             if not isinstance(i, dict):
-                return "参数格式错误"
+                return public.lang('Parameter format error')
 
         if body_type not in ('json', 'form_data', 'null'):
-            return "body_type必须为json,form_data或者null"
+            return public.lang('The body type must be json,form data, or null')
 
         if method not in ('GET', 'POST', 'PUT', 'PATCH'):
-            return "发送方式选择错误"
+            return public.lang('The sending method is incorrect')
 
         if ssl_verify not in (True, False, None):
-            return "是否验证ssl选项错误"
+            return public.lang('Verify if the SSL option is wrong')
 
         title = title.strip()
         if title == "":
-            return"名称不能为空"
+            return"The name cannot be empty"
 
         data = {
             "title": title,
@@ -190,15 +196,15 @@ class WebHookMsg(object):
 
         test_obj = cls({"data": data, "id": None})
         test_msg = {
-            "msg_list": ['>配置状态：成功\n\n']
+            "msg_list": ['>configuration state: Success\n\n']
         }
 
-        test_task = get_test_msg("消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
 
         res = test_obj.send_msg(
             test_task.to_web_hook_msg(test_msg, test_task.the_push_public_data()),
-            "消息通道配置提醒",
-            "消息通道配置提醒"
+            "Message channel configuration reminders",
+            "Message channel configuration reminders"
         )
         if res is None:
             return data
@@ -207,13 +213,13 @@ class WebHookMsg(object):
 
     def test_send_msg(self) -> Optional[str]:
         test_msg = {
-            "msg_list": ['>配置状态：<font color=#20a53a>成功</font>\n\n']
+            "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n\n']
         }
-        test_task = get_test_msg("消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
         res = self.send_msg(
             test_task.to_web_hook_msg(test_msg, test_task.the_push_public_data()),
-            "消息通道配置提醒",
-            "消息通道配置提醒"
+            "Message channel configuration reminders",
+            "Message channel configuration reminders"
         )
         if res is None:
             return None

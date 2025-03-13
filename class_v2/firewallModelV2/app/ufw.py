@@ -1,9 +1,9 @@
 #!/www/server/panel/pyenv/bin/python3.7
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2014-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2014-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -75,10 +75,10 @@ class Ufw(Base):
         try:
             stdout, stderr = public.ExecShell("echo y | {} enable".format(self.cmd_str))
             if stderr:
-                return self._result(False, "Failed to start firewall:{}".format(stderr))
-            return self._result(True, "The firewall was started successfully")
+                return self._result(False, public.lang("Failed to start firewall:{}",stderr))
+            return self._result(True, public.lang("The firewall was started successfully"))
         except Exception as e:
-            return self._result(False, "Failed to start firewall:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to start firewall:{}",str(e)))
 
     # 2024/3/19 下午 5:00 停止防火墙
     def stop(self):
@@ -91,10 +91,10 @@ class Ufw(Base):
         try:
             stdout, stderr = public.ExecShell("{} disable".format(self.cmd_str))
             if stderr:
-                return self._result(False, "Failed to stop the firewall:{}".format(stderr))
-            return self._result(True, "The firewall was stopped")
+                return self._result(False, public.lang("Failed to stop the firewall:{}",stderr))
+            return self._result(True, public.lang("The firewall was stopped"))
         except Exception as e:
-            return self._result(False, "Failed to stop the firewall:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to stop the firewall:{}",str(e)))
 
     # 2024/3/19 下午 4:59 重启防火墙
     def restart(self):
@@ -108,7 +108,7 @@ class Ufw(Base):
             self.stop()
             self.start()
         except Exception as e:
-            return self._result(False, "Failed to restart the firewall:{}".format(str(e)))
+            return self._result(False, public.lang("Failed to restart the firewall:{}",str(e)))
 
     # 2024/3/19 下午 4:59 重载防火墙
     def reload(self):
@@ -121,7 +121,7 @@ class Ufw(Base):
         try:
             subprocess.run([self.cmd_str, "reload"], check=True, stdout=subprocess.PIPE)
         except Exception as e:
-            return self._result(False, "Overloaded firewall failed:{}".format(str(e)))
+            return self._result(False, public.lang("Overloaded firewall failed:{}",str(e)))
 
     # 2024/3/19 上午 10:39 列出防火墙中所有端口规则
     def list_port(self):
@@ -343,15 +343,15 @@ class Ufw(Base):
 
             if stderr:
                 if "setlocale" in stderr:
-                    return self._result(True, "The port rule was successfully configured")
-                return self._result(False, "Failed to set a port rule:{}".format(stderr))
+                    return self._result(True, public.lang("The port rule was successfully configured"))
+                return self._result(False, public.lang("Failed to set a port rule:{}",stderr))
 
-            return self._result(True, "The port rule was successfully configured")
+            return self._result(True, public.lang("The port rule was successfully configured"))
 
         except Exception as e:
             if "setlocale" in str(e):
-                return self._result(True, "The port rule was successfully configured")
-            return self._result(False, "Failed to set a port rule:{}".format(str(e)))
+                return self._result(True, public.lang("The port rule was successfully configured"))
+            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
 
     # 2024/3/24 下午 11:28 设置output端口策略
     def output_port(self, info, operation):
@@ -380,13 +380,13 @@ class Ufw(Base):
             stdout, stderr = public.ExecShell(cmd)
             if stderr:
                 if "setlocale" in stderr:
-                    return self._result(True, "The port rule was successfully configured")
-                return self._result(False, "Failed to set the output port rule:{}".format(stderr))
-            return self._result(True, "The output port rule is set successfully")
+                    return self._result(True, public.lang("The port rule was successfully configured"))
+                return self._result(False, public.lang("Failed to set the output port rule:{}",stderr))
+            return self._result(True, public.lang("The output port rule is set successfully"))
         except Exception as e:
             if "setlocale" in str(e):
-                return self._result(True, "The output port rule is set successfully")
-            return self._result(False, "Failed to set the output port rule:{}".format(str(e)))
+                return self._result(True, public.lang("The output port rule is set successfully"))
+            return self._result(False, public.lang("Failed to set the output port rule:{}",str(e)))
 
     # 2024/3/19 下午 4:58 复杂一些的规则管理
     def rich_rules(self, info, operation):
@@ -402,10 +402,11 @@ class Ufw(Base):
             elif info["Strategy"] == "drop":
                 info["Strategy"] = "deny"
             else:
-                return self._result(False, "Unknown policy parameters:{}".format(info["Strategy"]))
+                return self._result(False, public.lang("Unknown policy parameters:{}",info["Strategy"]))
 
-            if info["Port"].find('-') != -1:
-                info["Port"] = info["Port"].replace('-', ':')
+            if info.get('Port', "") != "":
+                if info["Port"].find('-') != -1:
+                    info["Port"] = info["Port"].replace('-', ':')
 
             rule_str = "{} insert 1 {} ".format(self.cmd_str, info["Strategy"])
             if "Address" in info and public.is_ipv6(info['Address']):
@@ -422,16 +423,16 @@ class Ufw(Base):
             stdout, stderr = public.ExecShell(rule_str)
             if stderr:
                 if "Rule added" in stdout or "Rule deleted" in stdout or "Rule updated" in stdout or "Rule inserted" in stdout or "Skipping adding existing rule" in stdout:
-                    return self._result(True, "The rule is set successfully")
+                    return self._result(True, public.lang("The rule is set successfully"))
                 if "setlocale" in stderr:
-                    return self._result(True, "The rule is set successfully")
-                return self._result(False, "The rule setup failed:{}".format(stderr))
-            return self._result(True, "The rule is set successfully")
+                    return self._result(True, public.lang("The rule is set successfully"))
+                return self._result(False, public.lang("The rule setup failed:{}",stderr))
+            return self._result(True, public.lang("The rule is set successfully"))
         except Exception as e:
             public.print_log(public.get_error_info())
             if "setlocale" in str(e):
-                return self._result(True, "The rule is set successfully")
-            return self._result(False, "The rule setup failed:{}".format(e))
+                return self._result(True, public.lang("The rule is set successfully"))
+            return self._result(False, public.lang("The rule setup failed:{}",e))
 
     # 2024/3/24 下午 11:29 设置output rich_rules
     def output_rich_rules(self, info, operation):
@@ -447,7 +448,7 @@ class Ufw(Base):
             elif info["Strategy"] == "drop":
                 info["Strategy"] = "deny"
             else:
-                return self._result(False, "未知的策略: {}".format(info["Strategy"]))
+                return self._result(False, public.lang("Unknown strategy: {}",info["Strategy"]))
 
             rule_str = "{} insert 1 {} ".format(self.cmd_str, info["Strategy"])
             if "Address" in info and public.is_ipv6(info['Address']):
@@ -464,15 +465,15 @@ class Ufw(Base):
             stdout, stderr = public.ExecShell(rule_str)
             if stderr:
                 if "Rule added" in stdout or "Rule deleted" in stdout or "Rule updated" in stdout or "Rule inserted" in stdout or "Skipping adding existing rule" in stdout:
-                    return self._result(True, "The output rule is set successfully")
+                    return self._result(True, public.lang("The output rule is set successfully"))
                 if "setlocale" in stderr:
-                    return self._result(True, "The rule is set successfully")
-                return self._result(False, "outpuThe rule setup failed:{}".format(stderr))
-            return self._result(True, "The output rule is set successfully")
+                    return self._result(True, public.lang("The rule is set successfully"))
+                return self._result(False, public.lang("outpuThe rule setup failed:{}",stderr))
+            return self._result(True, public.lang("The output rule is set successfully"))
         except Exception as e:
             if "setlocale" in str(e):
-                return self._result(True, "The output rule is set successfully")
-            return self._result(False, "outpuThe rule setup failed:{}".format(e))
+                return self._result(True, public.lang("The output rule is set successfully"))
+            return self._result(False, public.lang("outpuThe rule setup failed:{}",e))
 
     # 2024/3/19 下午 5:01 解析防火墙规则信息，返回字典格式数据，用于添加或删除防火墙规则
     def _load_info(self, line, fire_type):

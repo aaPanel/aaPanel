@@ -140,23 +140,21 @@ class BaseTask:
     #   timestamp  当前的时间戳
     #   server_name  服务器别名
     def to_dingding_msg(self, push_data: dict, push_public_data: dict) -> str:
-        print("dddddddddddddddddddddddddddddddddddddddddd")
         msg_list = push_data.get('msg_list', None)
         if msg_list is None:
-            raise ValueError("任务：{}的告警推送数据参数错误, 没有msg_list字段".format(self.title))
-        print("dddddddddddddddddddddddddddddddddddddddddd")
+            raise ValueError("Task: {} alert push data parameter error, there is no msg_list field".format(self.title))
         return self.public_headers_msg(push_public_data,dingding=True) + "\n\n" + "\n\n".join(msg_list)
 
     def to_feishu_msg(self, push_data: dict, push_public_data: dict) -> str:
         msg_list = push_data.get('msg_list', None)
         if msg_list is None:
-            raise ValueError("任务：{}的告警推送数据参数错误, 没有msg_list字段".format(self.title))
+            raise ValueError("Task: {} alert push data parameter error, there is no msg_list field".format(self.title))
         return self.public_headers_msg(push_public_data) + "\n\n" + "\n\n".join(msg_list)
 
     def to_mail_msg(self, push_data: dict, push_public_data: dict) -> str:
         msg_list = push_data.get('msg_list', None)
         if msg_list is None:
-            raise ValueError("任务：{}的告警推送数据参数错误, 没有msg_list字段".format(self.title))
+            raise ValueError("Task: {} alert push data parameter error, there is no msg_list field".format(self.title))
         public_headers = self.public_headers_msg(push_public_data, "<br>")
         return public_headers + "<br>" + "<br>".join(msg_list)
 
@@ -168,11 +166,16 @@ class BaseTask:
         @return: 第一项是类型， 第二项是数据
         """
         raise NotImplementedError()
-
+    def to_tg_msg(self, push_data: dict, push_public_data: dict) -> str:
+        msg_list = push_data.get('msg_list', None)
+        if msg_list is None:
+            raise ValueError("Task: {} alert push data parameter error, there is no msg_list field".format(self.title))
+        public_headers = self.public_headers_msg(push_public_data, "<br>")
+        return public_headers + "<br>" + "<br>".join(msg_list)
     def to_weixin_msg(self, push_data: dict, push_public_data: dict) -> str:
         msg_list = push_data.get('msg_list', None)
         if msg_list is None:
-            raise ValueError("任务：{}的告警推送数据参数错误, 没有msg_list字段".format(self.title))
+            raise ValueError("Task: {} alert push data parameter error, there is no msg_list field".format(self.title))
         spc = "\n                "
         public_headers = self.public_headers_msg(push_public_data, "\n                ")
         return public_headers + spc + spc.join(msg_list)
@@ -183,7 +186,7 @@ class BaseTask:
     def to_web_hook_msg(self, push_data: dict, push_public_data: dict) -> str:
         msg_list = push_data.get('msg_list', None)
         if msg_list is None:
-            raise ValueError("任务：{}的告警推送数据参数错误, 没有msg_list字段".format(self.title))
+            raise ValueError("Task: {} alert push data parameter error, there is no msg_list field".format(self.title))
         public_headers = self.public_headers_msg(push_public_data, "\n")
         return public_headers + "\n" + "\n".join(msg_list)
 
@@ -194,14 +197,14 @@ class BaseTask:
         print(title)
         if dingding:
             print("dingdingtitle",title)
-            if "面板" not in title:
-                title += "面板"
+            if "aapanel" not in title:
+                title += "aapanel"
                 print("dingdingtitle",title)
         
         print(title)     
         return spc.join([
             "#### {}".format(title),
-            ">服务器：" + push_public_data['server_name'],
-            ">IP地址：{}(外) {}(内)".format(push_public_data['ip'], push_public_data['local_ip']),
-            ">发送时间：" + push_public_data['time']
+            ">Server:" + push_public_data['server_name'],
+            ">IPAddress: {}(Internet) {}(Internal)".format(push_public_data['ip'], push_public_data['local_ip']),
+            ">SendingTime: " + push_public_data['time']
         ])

@@ -69,7 +69,7 @@ class ProjectUpdate:
     def restart_update(self) -> dict:
         project_data = self.j_project.get_project_find(self.project_name)
         if not project_data:
-            return json_response(False, msg="项目不存在")
+            return json_response(False, msg="The project does not exist")
 
         project_config = project_data['project_config']
         old_jar = project_config['project_jar']
@@ -383,7 +383,7 @@ upstream {}_backend {{
 
         project_data = self.j_project.get_project_find(self.project_name)
         if not project_data:
-            return json_response(False, msg="项目不存在")
+            return json_response(False, msg="The project does not exist")
 
         project_config = project_data['project_config']
         self.old_project_data = project_data

@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2017 aapanel(http:#bt.cn) All rights reserved.
 # -------------------------------------------------------------------
 # Author: sww <sww@bt.cn>
 # -------------------------------------------------------------------
@@ -272,7 +272,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
             self.modify_project_run_state(public.to_dict_obj({'sitename': self.siteName, 'project_action': 'start'}))
             # 写日志
             public.WriteLog(self._log_name, '添加PHP动态项目{}'.format(webname))
-            return public.returnResult(True, '添加成功' + ("" if dependence == 0 else "，正在安装依赖!"))
+            return public.returnResult(True, 'Successfully added' + ("" if dependence == 0 else "，正在安装依赖!"))
         except:
             return public.returnResult(False, str(traceback.format_exc()))
     
@@ -884,7 +884,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
         try:
             project_find = self.get_project_find(get.sitename)
             if not project_find:
-                return public.returnResult(False, '指定项目不存在')
+                return public.returnResult(False, 'The specified item does not exist')
             result = []
             domain_list = json.loads(get.domain)
             project_id = public.M('sites').where('name=?', (get.sitename,)).getField('id')
@@ -919,7 +919,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
         try:
             project_find = self.get_project_find(get.sitename)
             if not project_find:
-                return public.returnResult(False, '指定项目不存在')
+                return public.returnResult(False, 'The specified item does not exist')
             project_id = project_find['id']
             domains = get.domains
             if not isinstance(domains, list):
@@ -1166,7 +1166,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
     def modify_project(self, get):
         try:
             if not hasattr(get, 'sitename'):
-                return public.returnResult(False, '项目名称不能为空')
+                return public.returnResult(False, 'The project name cannot be empty')
             if not hasattr(get, 'project_cmd'):
                 return public.returnResult(False, 'project_cmd不能为空')
             if not hasattr(get, 'project_path'):
@@ -1263,7 +1263,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
         上传压缩包并存储为版本
         """
         if not hasattr(get, 'sitename'):
-            return public.returnResult(False, '项目名称不能为空')
+            return public.returnResult(False, 'The project name cannot be empty')
         if not hasattr(get, 'version'):
             return public.returnResult(False, '版本号不能为空')
         if not hasattr(get, 'ps'):
@@ -1322,14 +1322,14 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
     # 获取列表
     def get_version_list(self, get):
         if not hasattr(get, 'sitename'):
-            return public.returnResult(False, '项目名称不能为空')
+            return public.returnResult(False, 'The project name cannot be empty')
         versiontool = VersionTool()
         return public.returnResult(True, data=versiontool.version_list(get.sitename))
     
     # 删除版本
     def remove_version(self, get):
         if not hasattr(get, 'sitename'):
-            return public.returnResult(False, '项目名称不能为空')
+            return public.returnResult(False, 'The project name cannot be empty')
         if not hasattr(get, 'version'):
             return public.returnResult(False, '版本号不能为空')
         versiontool = VersionTool()
@@ -1341,7 +1341,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
     def recover_version(self, get):
         try:
             if not hasattr(get, 'sitename'):
-                return public.returnResult(False, '项目名称不能为空')
+                return public.returnResult(False, 'The project name cannot be empty')
             if not hasattr(get, 'version'):
                 return publihuoc.returnResult(False, '版本号不能为空')
             conf = self.get_project_find(get.sitename)
@@ -1356,7 +1356,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
     def now_file_backup(self, get):
         try:
             if not hasattr(get, 'sitename'):
-                return public.returnResult(False, '项目名称不能为空')
+                return public.returnResult(False, 'The project name cannot be empty')
             if not hasattr(get, 'version'):
                 return public.returnResult(False, '版本号不能为空')
             if not hasattr(get, 'ps'):
@@ -1373,7 +1373,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
     
     def set_version_ps(self, get):
         if not hasattr(get, 'sitename'):
-            return public.returnResult(False, '项目名称不能为空')
+            return public.returnResult(False, 'The project name cannot be empty')
         if not hasattr(get, 'version'):
             return public.returnResult(False, '版本号不能为空')
         if not hasattr(get, 'ps'):
@@ -1391,9 +1391,9 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
     def add_crontab(self, get):
         try:
             if not hasattr(get, 'sitename'):
-                return public.returnResult(False, '项目名称不能为空')
+                return public.returnResult(False, 'The project name cannot be empty')
             if not hasattr(get, 'cron_name'):
-                return public.returnResult(False, '定时任务名称不能为空')
+                return public.returnResult(False, 'The timed task name cannot be empty')
             if not hasattr(get, 'sBody'):
                 return public.returnResult(False, '定时任务内容不能为空')
             args = {
@@ -1422,7 +1422,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
     def get_crontab_list(self, get):
         try:
             if not hasattr(get, 'sitename'):
-                return public.returnResult(False, '项目名称不能为空')
+                return public.returnResult(False, 'The project name cannot be empty')
             cront = public.M('crontab').where('save=?', (get.sitename,)).select()
             
             data = []
@@ -1602,7 +1602,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
     def clearn_logs(self, get):
         try:
             if not hasattr(get, 'id'):
-                return public.returnResult(False, '项目名称不能为空')
+                return public.returnResult(False, 'The project name cannot be empty')
             import crontab
             crontab.crontab().DelLogs(get)
             return public.returnResult(True, '清空成功')
@@ -1709,7 +1709,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
             if get.group_name not in config:
                 return public.returnResult(False, '组名不存在')
             if get.sitename not in config[get.group_name]['project_list']:
-                return public.returnResult(False, '项目不存在')
+                return public.returnResult(False, 'The project does not exist')
             config[get.group_name]['project_list'].remove(get.sitename)
             flag = 1
             for i in config[get.group_name]['project_list']:
@@ -1823,7 +1823,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
             return public.returnResult(False, msg='请输入id')
         sitename = public.M('sites').where('id=?', (get.id,)).getField('name')
         if not sitename:
-            return public.returnResult(False, msg='项目不存在')
+            return public.returnResult(False, msg='The project does not exist')
         res = DirTool().get_index_conf(sitename)
         if str(res) == str:
             return public.returnResult(False, msg='获取失败' + res)
@@ -1850,7 +1850,7 @@ class main(IpRestrict, RealProcess, Proxy, Redirect):  # 继承并使用同ip黑
             return public.returnResult(False, msg='请输入id')
         sitename = public.M('sites').where('id=?', (get.id,)).getField('name')
         if not sitename:
-            return public.returnResult(False, msg='项目不存在')
+            return public.returnResult(False, msg='The project does not exist')
         get.site_name = sitename
         return Referer('').get_referer_security(get)
     

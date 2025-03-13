@@ -148,7 +148,7 @@ rewrite ^%s(.*) %s%s %s;
             if "errorpage" in get:
                 error_page = int(get.errorpage)
         except (AttributeError, ValueError):
-            return '参数错误'
+            return 'The parameter is incorrect'
 
         if not is_modify:
             if not redirect_name:

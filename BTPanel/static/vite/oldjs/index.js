@@ -332,10 +332,10 @@ var index = {
 			$('#loadChart').hover(
 				function () {
 					var arry = [
-							[lan.index.avg_load_atlast_onemin, rdata.load.one],
-							[lan.index.avg_load_atlast_fivemin, rdata.load.five],
-							[lan.index.avg_load_atlast_fifteenmin, rdata.load.fifteen],
-						],
+						[lan.index.avg_load_atlast_onemin, rdata.load.one],
+						[lan.index.avg_load_atlast_fivemin, rdata.load.five],
+						[lan.index.avg_load_atlast_fifteenmin, rdata.load.fifteen],
+					],
 						tips = '';
 					$.each(arry || [], function (index, item) {
 						tips += item[0] + '：' + item[1] + '</br>';
@@ -972,12 +972,12 @@ var index = {
 													var element = omission_li[i];
 													ul.append(
 														'<li><a class="filescan-nav-item cut-path" data-path="' +
-															element.currentPath +
-															'" title="' +
-															element.currentPath +
-															'"><i class="file_folder_icon"></i><span>' +
-															element.menuPath +
-															'</span></a></li>'
+														element.currentPath +
+														'" title="' +
+														element.currentPath +
+														'"><i class="file_folder_icon"></i><span>' +
+														element.menuPath +
+														'</span></a></li>'
 													);
 												}
 												$(layero)
@@ -1242,16 +1242,16 @@ var index = {
 						.addClass(size3 >= 80 ? (size3 >= 90 ? 'bg-red' : 'bg-org') : 'bg-green');
 					$('.disk_scanning_tips' + i + ' .disk-body-list.use_disk').html(
 						parseFloat(disk.size[2]) +
-							' ' +
-							disk.size[2].replace(parseFloat(disk.size[2]), '') +
-							'可用，' +
-							parseFloat(disk.size[1]) +
-							' ' +
-							disk.size[1].replace(parseFloat(disk.size[1]), '') +
-							'已用，共' +
-							parseFloat(disk.size[0]) +
-							' ' +
-							disk.size[0].replace(parseFloat(disk.size[0]), '')
+						' ' +
+						disk.size[2].replace(parseFloat(disk.size[2]), '') +
+						'可用，' +
+						parseFloat(disk.size[1]) +
+						' ' +
+						disk.size[1].replace(parseFloat(disk.size[1]), '') +
+						'已用，共' +
+						parseFloat(disk.size[0]) +
+						' ' +
+						disk.size[0].replace(parseFloat(disk.size[0]), '')
 					);
 					$('.disk_scanning_tips' + i + ' .disk-body-list.inodes0').html('Inode总数：' + disk.inodes[0]);
 					$('.disk_scanning_tips' + i + ' .disk-body-list.inodes1').html('Inode已用：' + disk.inodes[1]);
@@ -1261,7 +1261,7 @@ var index = {
 			}
 
 			_this.get_server_info(rdata);
-			
+
 			// 未安装环境时弹出
 			if (rdata.installed === false) bt.index.rec_install();
 
@@ -1318,14 +1318,14 @@ var index = {
 			$('#messageError').show();
 			$('#messageError').append(
 				'<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;"></span>' +
-					lan.index.user_warning +
-					'<span class="c7 mr5" title="' +
-					lan.index.safe_problem_cant_ignore +
-					'" style="cursor:no-drop"> [' +
-					lan.index.cant_ignore +
-					']</span><a class="btlink" href="javascript:setUserName();"> [' +
-					lan.index.edit_now +
-					']</a></p>'
+				lan.index.user_warning +
+				'<span class="c7 mr5" title="' +
+				lan.index.safe_problem_cant_ignore +
+				'" style="cursor:no-drop"> [' +
+				lan.index.cant_ignore +
+				']</span><a class="btlink" href="javascript:setUserName();"> [' +
+				lan.index.edit_now +
+				']</a></p>'
 			);
 		}
 
@@ -1333,14 +1333,14 @@ var index = {
 			$('#messageError').show();
 			$('#messageError').append(
 				'<p><span class="glyphicon glyphicon-alert" style="color: #ff4040; margin-right: 10px;"></span>' +
-					lan.index.panel_port_tips +
-					'<span class="c7 mr5" title="' +
-					lan.index.panel_port_tip1 +
-					'" style="cursor:no-drop"> [' +
-					lan.index.panel_port_tip2 +
-					']</span><a class="btlink" href="/config"> [' +
-					lan.index.panel_port_tip3 +
-					']</a></p>'
+				lan.index.panel_port_tips +
+				'<span class="c7 mr5" title="' +
+				lan.index.panel_port_tip1 +
+				'" style="cursor:no-drop"> [' +
+				lan.index.panel_port_tip2 +
+				']</span><a class="btlink" href="/config"> [' +
+				lan.index.panel_port_tip3 +
+				']</a></p>'
 			);
 		}
 		var _system = info.system;
@@ -1803,12 +1803,12 @@ var index = {
 							(item['isBuy'] && !item['install']
 								? '<button class="btn btn-sm btn-success home_recommend_btn" style="margin-left:0;" onclick="bt.soft.install(\'' + item['name'] + '\')">Install</button>'
 								: '<a class="btn btn-sm btn-default mr5 ' +
-								  (!item.preview ? 'hide' : '') +
-								  '" href="' +
-								  item.preview +
-								  '" target="_blank">Preview</a><button type="submit" class="btn btn-sm btn-success home_recommend_btn" onclick="product_recommend.pay_product_sign(\'pro\',' +
-								  item.pay +
-								  ')">Buy now</button>') +
+								(!item.preview ? 'hide' : '') +
+								'" href="' +
+								item.preview +
+								'" target="_blank">Preview</a><button type="submit" class="btn btn-sm btn-success home_recommend_btn" onclick="product_recommend.pay_product_sign(\'pro\',' +
+								item.pay +
+								')">Buy now</button>') +
 							'\
                         </div>\
                       </div>\
@@ -1847,7 +1847,7 @@ var index = {
 			if (rdata.status === false && typeof rdata.msg === 'string') {
 				try {
 					messagebox();
-				} catch (err) {}
+				} catch (err) { }
 				layer.msg(rdata.msg, { icon: 2 });
 				return;
 			}
@@ -1873,7 +1873,7 @@ var index = {
 					'</div>\
 								<div class="sub_title">' +
 					lan.index.last_version +
-					'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' +
+					'<a href="https://www.aapanel.com/forum/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' +
 					lan.index.check_version_log +
 					'">' +
 					lan.index.bt_linux +
@@ -1927,7 +1927,7 @@ var index = {
 							<div class="update_version">\
 								<span>' +
 					lan.index.this_version +
-					'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' +
+					'<a href="https://www.aapanel.com/forum/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' +
 					lan.index.check_this_version_log +
 					'">' +
 					lan.index.bt_linux +
@@ -1953,10 +1953,10 @@ var index = {
 									' +
 					(!is_beta
 						? '<span style="margin-top:8px;">' +
-						  lan.index.update_verison_click +
-						  '<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">' +
-						  lan.index.check_detail +
-						  '</a></span>'
+						lan.index.update_verison_click +
+						'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">' +
+						lan.index.check_detail +
+						'</a></span>'
 						: '<span><a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">' + lan.index.change_final + '</a></span>') +
 					'\
 									</span>\
@@ -1992,9 +1992,9 @@ var index = {
 				title: isOld
 					? false
 					: [
-							'[Linux' + (rdata.msg.is_beta == 1 ? lan.index.test_version : lan.index.final_version) + '] - ' + lan.index.update_log,
-							'background-color:#37BC51;color:white;height:36px;padding:0 80px 0 13.5px;',
-					  ],
+						'[Linux' + (rdata.msg.is_beta == 1 ? lan.index.test_version : lan.index.final_version) + '] - ' + lan.index.update_log,
+						'background-color:#37BC51;color:white;height:36px;padding:0 80px 0 13.5px;',
+					],
 				area: isOld ? '480px' : '530px',
 				shadeClose: false,
 				skin: 'layui-layer-dialog' + (!isOld ? '' : ' new-layer-update active'),
@@ -2476,20 +2476,20 @@ var index = {
 									'<span class="operate_tools">' +
 									(item[0] != 'security'
 										? '<a href="javascript:;" class="btlink cut_details">Detail</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" data-model="' +
-										  items.m_name +
-										  '" data-title="' +
-										  items.title +
-										  '" ' +
-										  (item[0] == 'ignore' ? 'class="btlink"' : '') +
-										  ' data-type="' +
-										  item[0] +
-										  '">' +
-										  (item[0] != 'ignore' ? 'Ignore' : 'Remove') +
-										  '</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" data-model="' +
-										  items.m_name +
-										  '" data-title="' +
-										  items.title +
-										  '">Check</a>'
+										items.m_name +
+										'" data-title="' +
+										items.title +
+										'" ' +
+										(item[0] == 'ignore' ? 'class="btlink"' : '') +
+										' data-type="' +
+										item[0] +
+										'">' +
+										(item[0] != 'ignore' ? 'Ignore' : 'Remove') +
+										'</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" data-model="' +
+										items.m_name +
+										'" data-title="' +
+										items.title +
+										'">Check</a>'
 										: '<a href="javascript:;" class="btlink cut_details">Detail</a>') +
 									'</span>' +
 									'</div>' +
@@ -2523,10 +2523,10 @@ var index = {
 									'</span></div>' +
 									(items.help != ''
 										? '<div class="module_details_line"><span class="line_title">Help: </span><span class="line_content"><a href="' +
-										  items.help +
-										  '" target="_blank" class="btlink">' +
-										  items.help +
-										  '</span></div>'
+										items.help +
+										'" target="_blank" class="btlink">' +
+										items.help +
+										'</span></div>'
 										: '') +
 									'</div>' +
 									'</li>';
@@ -2561,20 +2561,20 @@ var index = {
 									'<span class="operate_tools">' +
 									(item[0] != 'security'
 										? '<a href="javascript:;" class="btlink cut_details">Detail</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" data-title="' +
-										  items.vuln_name +
-										  '" data-id="' +
-										  items.cve_id +
-										  '" ' +
-										  (item[0] == 'ignore' ? 'class="btlink"' : '') +
-										  ' data-type="' +
-										  'vuln' +
-										  '">' +
-										  (item[0] != 'ignore' ? 'Ignore' : 'Remove') +
-										  '</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" data-type="' +
-										  'vuln' +
-										  '" data-id="' +
-										  items.cve_id +
-										  '">Check</a>'
+										items.vuln_name +
+										'" data-id="' +
+										items.cve_id +
+										'" ' +
+										(item[0] == 'ignore' ? 'class="btlink"' : '') +
+										' data-type="' +
+										'vuln' +
+										'">' +
+										(item[0] != 'ignore' ? 'Ignore' : 'Remove') +
+										'</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" data-type="' +
+										'vuln' +
+										'" data-id="' +
+										items.cve_id +
+										'">Check</a>'
 										: '<a href="javascript:;" class="btlink cut_details">Detail</a>') +
 									'</span>' +
 									'</div>' +
@@ -2656,7 +2656,7 @@ var index = {
 						}
 					});
 				});
-				bt_tools.send({ url: '/v2/warning?action=get_list' }, function (warInfo) {
+				bt_tools.send({ url: '/v2/warning?action=get_list', data: { open: 1 } }, function (warInfo) {
 					that.warning_list = warInfo.message;
 					// 显示数据
 					if (that.warning_list.risk.length == 0) {
@@ -2801,7 +2801,7 @@ var index = {
 								});
 								// 查看详情列表
 								var _details =
-										'<div class="divtable daliy_details_table" style="width: 420px; border: 1px solid #ddd;"><table class="table table-hover" id="daliy_details_table" style="border: none;">',
+									'<div class="divtable daliy_details_table" style="width: 420px; border: 1px solid #ddd;"><table class="table table-hover" id="daliy_details_table" style="border: none;">',
 									thead = '',
 									_tr = '';
 								$.each(dialog_forbid_data, function (index, item) {
@@ -3325,11 +3325,11 @@ var index = {
 						(end_time === 0
 							? 'Lifetime'
 							: (end_time === -2 ? 'Expired' : bt.format_data(end_time, 'yyyy-MM-dd')) +
-							  '&nbsp;&nbsp;<a class="btlink" href="javascript:;" onclick="product_recommend.pay_product_sign(\'' +
-							  advanced +
-							  "'," +
-							  item.pay +
-							  ')">Renew</a>') +
+							'&nbsp;&nbsp;<a class="btlink" href="javascript:;" onclick="product_recommend.pay_product_sign(\'' +
+							advanced +
+							"'," +
+							item.pay +
+							')">Renew</a>') +
 						'</span></div>';
 				} else {
 					pay_html =

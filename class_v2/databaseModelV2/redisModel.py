@@ -132,12 +132,12 @@ class main(databaseBase):
         try:
             args.validate([
 
-                Param('db_host').Require().Ip(),
+                Param('db_host').Require(),
                 Param('db_port').Require().Number(">=", 1).Number("<=", 65535),
-                Param('db_user').Require().String().Xss(),
-                Param('db_password').Require().String().Xss(),
+                Param('db_user').Require().String(),
+                Param('db_password').Require().String(),
                 Param('db_ps').Require().String(),
-                Param('type').Require().String().Xss(),
+                Param('type').Require().String(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -240,8 +240,8 @@ class main(databaseBase):
 
                 Param('db_idx').Require().Integer(),
                 Param('sid').Require().Integer(),
-                Param('name').Require().String().Xss(),  # 键
-                Param('val').Require().String().Xss(),  # 值
+                Param('name').Require().String(),  # 键
+                Param('val').Require().String(),  # 值
                 Param('endtime').Integer(),    # 过期时间
             ], [
                 public.validate.trim_filter(),
@@ -252,8 +252,8 @@ class main(databaseBase):
 
         self.sid = args.get('sid/d',0)
         if not 'name' in args or not 'val' in args:
-            # return public.returnMsg(False,'Parameter passing error.')
-            return public.return_message(-1, 0, 'Parameter passing error')
+            # return public.returnMsg(False, public.lang("Parameter passing error."))
+            return public.return_message(-1, 0, public.lang("Parameter passing error"))
 
         endtime = 0
         if 'endtime' in args : endtime = int(args.endtime)
@@ -264,8 +264,8 @@ class main(databaseBase):
         else:
             redis_obj.set(args.name, args.val)
         public.set_module_logs('linux_redis','set_redis_val',1)
-        # return public.returnMsg(True,'Operation is successful.')
-        return public.return_message(0, 0, 'Operation is successful')
+        # return public.returnMsg(True, public.lang("Operation is successful."))
+        return public.return_message(0, 0, public.lang("Operation is successful"))
 
     def del_redis_val(self,args):
         """
@@ -278,7 +278,7 @@ class main(databaseBase):
 
                 Param('db_idx').Require().Integer(),
                 Param('sid').Require().Integer(),
-                Param('key').Require().String().Xss(),  # 键
+                Param('key').Require().String(),  # 键
             ], [
                 public.validate.trim_filter(),
             ])
@@ -288,14 +288,14 @@ class main(databaseBase):
 
         self.sid = args.get('sid/d',0)
         if  not 'key' in args:
-            # return public.returnMsg(False,'Parameter passing error.')
-            return public.return_message(-1, 0, 'Parameter passing error')
+            # return public.returnMsg(False, public.lang("Parameter passing error."))
+            return public.return_message(-1, 0, public.lang("Parameter passing error"))
 
         redis_obj = self.get_obj_by_sid(self.sid).redis_conn(args.db_idx)
         redis_obj.delete(args.key)
 
-        # return public.returnMsg(True,'Operation is successful.')
-        return public.return_message(0, 0, 'Operation is successful')
+        # return public.returnMsg(True, public.lang("Operation is successful."))
+        return public.return_message(0, 0, public.lang("Operation is successful"))
 
 
     def clear_flushdb(self,args):
@@ -327,8 +327,8 @@ class main(databaseBase):
             redis_obj = self.get_obj_by_sid(self.sid).redis_conn(x)
             redis_obj.flushdb()
 
-        # return public.returnMsg(True,'Operation is successful.')
-        return public.return_message(0, 0, 'Operation is successful')
+        # return public.returnMsg(True, public.lang("Operation is successful."))
+        return public.return_message(0, 0, public.lang("Operation is successful"))
 
     def get_db_keylist(self,args):
         """
@@ -446,8 +446,8 @@ class main(databaseBase):
 
             src_path = '{}/dump.rdb'.format(redis_obj.config_get()['dir'])
             if not os.path.exists(src_path):
-                # return public.returnMsg(False,'BACKUP_ERROR')
-                return public.return_message(-1, 0, 'BACKUP_ERROR')
+                # return public.returnMsg(False, public.lang("Backup error"))
+                return public.return_message(-1, 0, public.lang("Backup error"))
 
             backup_path = session['config']['backup_path'] + '/database/redis/'
             if not os.path.exists(backup_path): os.makedirs(backup_path)
@@ -456,11 +456,11 @@ class main(databaseBase):
 
             shutil.copyfile(src_path,fileName)
             if not os.path.exists(fileName):
-                # return public.returnMsg(False,'BACKUP_ERROR')
-                return public.return_message(-1, 0, 'BACKUP_ERROR')
+                # return public.returnMsg(False, public.lang("Backup error"))
+                return public.return_message(-1, 0, public.lang("Backup error"))
 
-            # return public.returnMsg(True, 'BACKUP_SUCCESS')
-            return public.return_message(0, 0, 'BACKUP_SUCCESS')
+            # return public.returnMsg(True, public.lang("Backup Succeeded!"))
+            return public.return_message(0, 0, public.lang("Backup Succeeded!"))
 
         except Exception as ex:
             public.print_log("error info22: {}".format(ex))
@@ -486,8 +486,8 @@ class main(databaseBase):
         if os.path.exists(file):
             os.remove(file)
 
-        # return public.returnMsg(True, 'DEL_SUCCESS')
-        return public.return_message(0, 0, 'DEL_SUCCESS')
+        # return public.returnMsg(True, public.lang("Delete successfully!"))
+        return public.return_message(0, 0, public.lang("Delete successfully!"))
 
     def InputSql(self,get):
         """
@@ -520,10 +520,39 @@ class main(databaseBase):
         # self.restart_services()
         public.ExecShell("/etc/init.d/redis start")
         if os.path.exists(dst_path):
-            # return public.returnMsg(True, 'Restore Successful.')
-            return public.return_message(0, 0, 'Restore Successful.')
-        # return public.returnMsg(False, 'Restore failure.')
-        return public.return_message(-1, 0, 'Restore failure.')
+            # return public.returnMsg(True, public.lang("Restore Successful."))
+            return public.return_message(0, 0, public.lang("Restore Successful."))
+        # return public.returnMsg(False, public.lang("Restore failure."))
+        return public.return_message(-1, 0, public.lang("Restore failure."))
+
+    @staticmethod
+    def _get_backup(search: str, files_path_list: list, cloud_list: dict, current_path: str) -> list:
+        """
+        获取指定目录下redis备份文件列表
+        """
+        res = []
+        for file_name in files_path_list:
+            try:
+                if search:
+                    if file_name.lower().find(search) == -1:
+                        continue
+                arrs = file_name.split('_')
+                filepath = '{}/{}'.format(current_path, file_name).replace('//', '/')
+                stat = os.stat(filepath)
+                item = {
+                    'name': file_name,
+                    'filepath': filepath,
+                    'size': stat.st_size,
+                    'mtime': int(stat.st_mtime),
+                    'sid': arrs[0],
+                    'conn_config': cloud_list.get(f"id-{str(arrs[0])}", {}),
+                }
+                res.append(item)
+            except Exception as ex:
+                public.print_log("error info: {}".format(ex))
+                continue
+        return res
+
 
 
     def get_backup_list(self,get):
@@ -547,8 +576,6 @@ class main(databaseBase):
 
         nlist = []
         cloud_list = {}
-        # try:
-        # 修改返回后接口适配
         listm = self.GetCloudServer({'type': 'redis'})
 
         for x in listm['message']:
@@ -557,30 +584,28 @@ class main(databaseBase):
         path = session['config']['backup_path'] + '/database/redis/'
         if not os.path.exists(path):
             os.makedirs(path)
-        # except Exception as ex:
-        #     public.print_log("error 扥就: {}".format(ex))
 
-        for name in os.listdir(path):
-            if search:
-                if name.lower().find(search) == -1: continue;
+        all_path = os.listdir(path)
+        if 'crontab_backup' in all_path:
+            cron_path_list = os.listdir(os.path.join(path, 'crontab_backup'))
+            nlist.extend(self._get_backup(
+                search=search,
+                files_path_list=cron_path_list,
+                cloud_list=cloud_list,
+                current_path=os.path.join(path, 'crontab_backup'),
+            ))
+            all_path.remove('crontab_backup')
 
-            arrs = name.split('_')
+        nlist.extend(self._get_backup(
+            search=search,
+            files_path_list=all_path,
+            cloud_list=cloud_list,
+            current_path=path,
+        ))
 
-            filepath = '{}/{}'.format(path,name).replace('//','/')
-            stat = os.stat(filepath)
-
-            item = {}
-            item['name'] = name
-            item['filepath'] = filepath
-            item['size'] = stat.st_size
-            item['mtime'] = int(stat.st_mtime)
-            item['sid'] = arrs[0]
-            item['conn_config'] = cloud_list['id-' + str(arrs[0])]
-
-            nlist.append(item)
         if hasattr(get, 'sort'):
             nlist = sorted(nlist, key=lambda data: data['mtime'], reverse=get["sort"] == "desc")
-        # return nlist
+
         return public.return_message(0, 0,  nlist)
 
 

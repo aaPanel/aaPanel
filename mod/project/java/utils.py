@@ -692,7 +692,7 @@ class JDKManager:
 
     def install_jdk(self, version: str) -> Optional[str]:
         if version not in self.versions_list:
-            return "版本不存在, 无法安装"
+            return "Version does not exist and cannot be installed"
 
         if os.path.exists(self._jdk_path + "/" + version):
             return "已存在的版本, 无法再次安装，如需再次安装请先卸载"

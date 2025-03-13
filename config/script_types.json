@@ -1,0 +1,37 @@
+[
+  {
+    "type_id": 1,
+    "name": "Service Management",
+    "title": "Scripts used to manage service status, such as detecting service status, stopping, reloading, starting, etc"
+  },
+  {
+    "type_id": 2,
+    "name": "Process Monitor",
+    "title": "Script used to monitor process status, such as process survival, overhead, etc"
+  },
+  {
+    "type_id": 3,
+    "name": "Alarm Notification",
+    "title": "Script for sending various alarm notifications"
+  },
+  {
+    "type_id": 4,
+    "name": "Load Monitoring",
+    "title": "Scripts used to monitor system load, such as CPU, memory, network, etc"
+  },
+  {
+    "type_id": 5,
+    "name": "Website Monitoring",
+    "title": "Script used to monitor website status, such as specifying URL address access status, content, etc"
+  },
+  {
+    "type_id": 6,
+    "name": "Other",
+    "title": "Comprehensive scripts for various purposes, such as system upgrades, panel upgrades, software upgrades, etc"
+  },
+  {
+    "type_id": 7,
+    "name": "Custom",
+    "title": "User defined script"
+  }
+]

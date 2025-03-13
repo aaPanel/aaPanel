@@ -1,0 +1,99 @@
+{
+	"Plugin": {
+		"Mysql": {
+			"index_1": "Il s'agit du fichier de configuration principal de {0}, si vous ne comprenez pas les règles de configuration, veuillez ne pas le modifier.",
+			"index_2": "Alerte-moi quand l'état s'arrête",
+			"index_3": "Réglage de l'état d'alarme d'arrêt",
+			"index_4": "Rediffusion automatique",
+			"index_5": "Êtes-vous sûr de le service {0} {1}?",
+			"index_6": "Journal binaire",
+			"index_7": "Conseils chauds: le journal binaire MySQL est d'enregistrer le journal de fonctionnement actuel, peut être utilisé pour la récupération des données, la sauvegarde des données.",
+			"index_8": "Dernière heure modifiée",
+			"index_9": "Supprimer le journal",
+			"index_10": "Voulez-vous vraiment supprimer le journal [{0}]?",
+			"index_11": "L'activation de l'exploitation binaire peut protéger la sécurité des données MySQL, mais en même temps consommera une certaine quantité de stockage de disque, de continuer?",
+			"index_12": "La désactivation du journal binaire n'enregistrera plus toutes les opérations de modification au journal binaire de la base de données?",
+			"index_13": "Se déplacer",
+			"index_14": "Avertissement de risque: MySQL cessera de fonctionner pendant le processus de migration, soyez prudent",
+			"index_15": "Avertissement de risque: veuillez attendre que la migration soit terminée avant d'effectuer d'autres opérations pendant le processus de migration",
+			"index_16": "Migration de base de données",
+			"index_17": "Sûr que vous souhaitez migrer la base de données vers [{0}]?",
+			"index_18": "Protection contre la mémoire",
+			"index_19": "Remarque: Une fois qu'il est activé, la priorité de la mémoire MySQL sera ajustée et MySQL ne sera jamais tué par le système, ce qui peut garantir le fonctionnement stable de MySQL. Cependant, cela peut entraîner la mort d'anormalement d'autres processus, ce qui peut sérieusement affecter le fonctionnement du système. Il est recommandé de l'activer lorsque MySQL doit s'exécuter de manière stable.",
+			"index_20": "Plan d'optimisation",
+			"index_21": "Utilisation de RAM max",
+			"index_22": "Redémarrer le service {0}",
+			"index_23": "Redémarrez la base de données pour que la configuration prenne effet",
+			"index_24": "Avez-vous redémarré le service {0}?",
+			"index_25": "Si vous devez modifier la version MySQL, veuillez sauvegarder vos données, désinstaller MySQL et les réinstaller.",
+			"index_26": "Emplacement de stockage",
+			"index_27": "Optimisation",
+			"index_28": "Bûche lente",
+			"index_29": "Temps d'intervalle",
+			"index_30": "Soutien"
+		},
+		"Ftp": {
+			"index_1": "Cette fonctionnalité est exclusive à la version professionnelle, {a}",
+			"index_2": "Commutateur de gestion des journaux",
+			"index_3": "Une fois allumé, tous les enregistrements de connexion et de fonctionnement des utilisateurs FTP seront enregistrés.",
+			"index_4": "Gestion des journaux",
+			"index_5": "Après avoir activé la gestion du journal Pure-FTPD, il enregistrera les enregistrements de connexion et d'opération de tous les utilisateurs FTP, s'il faut poursuivre l'opération?",
+			"index_6": "Après avoir désactivé la gestion du journal Pure-FTPD, il ne sera pas en mesure d'enregistrer les enregistrements de connexion et d'opération de tous les utilisateurs FTP, de poursuivre l'opération?",
+			"index_7": "L'adresse FTP actuelle est",
+			"index_8": "Télécharger l'outil de connexion FTP (Filezilla, Open Source gratuit)",
+			"index_9": "Version de commutation",
+			"index_10": "Gestion des utilisateurs",
+			"index_11": "La version actuelle est la même que la version sélectionnée!",
+			"index_12": "Êtes-vous sûr d'installer {0} - {1}"
+		},
+		"Redis": {
+			"index_1": "Après avoir modifié la configuration, vous devez redémarrer Redis pour prendre effet, si vos données doivent être persistantes, veuillez d'abord exécuter l'opération de sauvegarde.",
+			"index_2": "AVERTISSEMENT: N'allumez pas l'accès Redis Extranet, car l'accès sans restriction à l'IP est très susceptible de conduire à l'intrusion du serveur.",
+			"index_3": "Après le réglage, le nouveau répertoire redis_cache sera créé dans le répertoire sélectionné et donné des autorisations Redis",
+			"index_4": "Chemin de stockage de fichiers persistants",
+			"index_5": "Aof Persistance",
+			"index_6": "Persistance RDB",
+			"index_7": "Mettre de la persistance"
+		},
+		"Apache": {
+			"index_1": "Redémarrer le temps",
+			"index_2": "Heure de démarrage",
+			"index_3": "Connexions totales",
+			"index_4": "Total des octets transférés",
+			"index_5": "Demandes par seconde",
+			"index_6": "Processus occupé",
+			"index_7": "Processus de ralenti",
+			"index_8": "Apache utilise le processeur",
+			"index_9": "Apache utilise la mémoire",
+			"index_10": "Démon",
+			"index_11": "Le démon peut être démarré automatiquement après l'arrêt du service {0} pour s'assurer que le service {0} est toujours en cours d'exécution.",
+			"index_12": "Champs",
+			"index_13": "Valeur actuelle",
+			"index_14": "Vérification par défaut toutes les 1 minutes, peut être modifiée dans Cron"
+		},
+		"Mencached": {
+			"index_1": "Écoute IP, veuillez ne pas le modifier librement",
+			"index_2": "Port d'écoute, généralement pas besoin de modifier",
+			"index_3": "MB, taille du cache, il est recommandé de ne pas dépasser 512 m",
+			"index_4": "Nombre maximum de connexions, recommandée à ne pas dépasser 40960"
+		},
+		"MongoDB": {
+			"index_1": "Après le réglage, créez un nouveau répertoire BT_MONGODB dans le répertoire sélectionné et donnez l'autorisation à Mongo",
+			"index_2": "Ne modifiez pas la surveillance de la surveillance à volonté",
+			"index_3": "Emplacement de stockage de données",
+			"index_4": "Emplacement du fichier journal",
+			"index_5": "Chemin de sauvegarde PID",
+			"index_6": "Port d'écoute, généralement pas besoin de modifier",
+			"index_7": "Veuillez d'abord démarrer le service MongoDB!",
+			"index_8": "Voulez-vous vraiment supprimer la base de données [{0}]?"
+		},
+		"Openlitespeed": {
+			"index_1": "Spécifie le temps d'inactivité de connexion maximale (secondes) autorisée pendant le traitement d'une demande",
+			"index_2": "Permet la compression GZIP / Brotli pour les réponses statiques et dynamiques",
+			"index_3": "Spécifie le niveau de compression GZIP appliquée au contenu dynamique. Varie de 1 (le plus bas) à 9 (le plus élevé)",
+			"index_4": "Spécifie le nombre maximum de connexions simultanées que le serveur peut accepter. Cela comprend à la fois des connexions TCP simples et des connexions SSL",
+			"index_5": "Spécifie le nombre maximum de demandes qui peuvent être servies par le biais d'une session de main-d'œuvre (persistante)",
+			"index_6": "Spécifie le nombre maximum de connexions SSL simultanées que le serveur acceptera, car les connexions SSL et non SSL simultanées totales ne peuvent pas dépasser la limite spécifiée par les «connexions maximales», le nombre réel de connexions SSL simultanées autorisées doit être inférieure à cette limite"
+		}
+	}
+}

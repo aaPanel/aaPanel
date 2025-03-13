@@ -1,0 +1,168 @@
+{
+	"Component": {
+		"Batch": {
+			"index_1": "Por favor, escolha",
+			"index_2": "(Selecionado {0})",
+			"index_3": "Batching {0}, Progresso atual:"
+		},
+		"Auth": {
+			"index_1": "LIVRE",
+			"index_2": "Renovação",
+			"index_3": "Comprar agora",
+			"index_4": "Expire em: ",
+			"index_5": "Atualize agora",
+			"index_6": "Vida"
+		},
+		"Feedback": {
+			"index_7": "Opinião",
+			"index_1": "Coleção de feedback da demanda de AapAnel",
+			"index_2": "Se você encontrar algum problema ou funções imperfeitas durante o uso, descreva",
+			"index_3": "Seus problemas ou necessidades para nós em detalhes, tentaremos o nosso melhor para resolver ou melhorar",
+			"index_4": "Prestamos atenção especial ao feedback dos seus requisitos e realizamos análises regulares de requisitos semanais. Espero poder ajudá -lo melhor",
+			"index_5": "Por favor, preencha o feedback",
+			"index_6": "Obrigado por sua participação!"
+		},
+		"Coupon": {
+			"index_1": "Obtenha cupons por um tempo limitado",
+			"index_2": "DESLIGADO",
+			"index_3": "Válido para ",
+			"index_4": "Cupom",
+			"index_5": "Pegue agora",
+			"index_6": "Não há mais lembretes para hoje",
+			"index_7": "Sem lembretes nos últimos 7 dias",
+			"index_8": "Nunca te lembre para sempre",
+			"index_9": "{0}, tem certeza?",
+			"index_10": "Fim em ",
+			"index_11": "Obtenha $ {0} cupom",
+			"index_12": "{0} cupons",
+			"index_13": "Escolha o tempo sem aviso prévio"
+		},
+		"Pay": {
+			"index_1": "PRÓ",
+			"index_2": "Recomendado",
+			"index_3": "Recurso pro",
+			"index_4": "Descrição do plug-in",
+			"index_5": "Contraste com características",
+			"index_6": "Salve mais",
+			"index_7": "Linux Pro Edition está disponível para uso gratuito deste plug -in e todos os outros recursos do Pro",
+			"index_8": "Questões? Envie -nos a qualquer hora: {0}",
+			"index_9": "Escolha o seu plano",
+			"index_10": "Mais popular",
+			"index_11": "Número de licença",
+			"index_12": "Carregando, por favor, espere ...",
+			"index_13": "{0} off",
+			"index_14": "{0} {1}",
+			"index_15": "{0} {1}",
+			"index_16": "OP: {0}",
+			"index_17": "Somente plug-in",
+			"index_18": "Cupom ({0})",
+			"index_19": "$ {0} fora de {1} pagamento",
+			"index_20": "Sem cupom preferencial",
+			"index_21": "VIOCHER",
+			"index_22": "Licença",
+			"index_23": "Conta: ",
+			"index_24": "Mudar",
+			"index_25": "Total: ",
+			"index_26": "Pagamento de faixas",
+			"index_27": "Se {0} não pagar, você pode tentar usar",
+			"index_28": "O pedido de pagamento falhou, entre em contato com o Administrador!",
+			"index_29": "Subscrição: ",
+			"index_30": "* Quando a licença expirar, ela renovará automaticamente",
+			"index_31": "* Verificando a assinatura, você não pode pagar em moeda local",
+			"index_32": "Moeda local:",
+			"index_33": "* Pague com o seu método de pagamento local e moeda",
+			"index_34": "Informações de licença",
+			"index_35": "Sem licença",
+			"index_36": "Licença",
+			"index_37": "VIOS",
+			"index_38": "Sem vouchers",
+			"index_39": "Usar",
+			"index_40": "Expira depois",
+			"index_41": "Inscreva -se para o SSL antes de comprar!",
+			"index_42": "Ligue o SSL",
+			"index_43": "Oferta de tempo limitado: ",
+			"index_44": "Economize até $ {0}",
+			"index_45": "Outro pagamento",
+			"index_46": "Converta automaticamente a moeda de pagamento com base em sua localização",
+			"index_47": "Pagar agora"
+		},
+		"BindAccount": {
+			"index_1": "Vincular a conta do AAPALE",
+			"index_2": "Sem conta, vá para se registrar",
+			"index_3": "Conecte-se",
+			"index_4": "Por favor, insira seu endereço de e -mail",
+			"index_5": "Por favor, insira sua senha",
+			"index_6": "Vincular a conta do AAPALE",
+			"index_7": "Seu endereço de email",
+			"index_8": "Sua senha"
+		},
+		"Logs": {
+			"index_1": "Nenhum logs"
+		},
+		"SelectPath": {
+			"index_1": "Retornar",
+			"index_2": "Caminho atual",
+			"index_3": "Nome do arquivo",
+			"index_4": "Tempo de modificação",
+			"index_5": "Permissão",
+			"index_6": "Proprietário",
+			"index_7": "Selecione diretório"
+		},
+		"Editor": {
+			"index_1": "Dicas: Ctrl+F Pesquisa Palavras -chave ， Ctrl+S Salvar ， Ctrl+H Pesquisa e Substituir"
+		},
+		"Quota": {
+			"index_1": "Contingente",
+			"index_2": "Não definido",
+			"index_3": "Capacidade usada atual: {0}",
+			"index_4": "Clique em Modificar a cota de capacidade",
+			"index_5": "{1} defina nova cota [{0}]",
+			"index_6": "Capacidade usada atual",
+			"index_7": "Cota de capacidade atual",
+			"index_8": "Lembrete: esse recurso é exclusivo da edição profissional",
+			"index_9": "Requer um sistema de arquivos XFS e inclui o parâmetro [prjquota] para usar",
+			"index_10": "Exemplo de fstab: /dev /vdc1 /data xfs padrões, prjquota 0 0",
+			"index_11": "Cita: Cancelar a cota, definido como \"0\"",
+			"index_12": "Capacidade atual cota: {0}"
+		},
+		"Terminal": {
+			"index_1": "A conexão foi desconectada, pressionar Enter tentará se reconectar!",
+			"index_2": "Tentando se reconectar!"
+		},
+		"Upload": {
+			"index_1": "Selecione Arquivo",
+			"index_2": "Não selecionado"
+		},
+		"UploadFile": {
+			"index_1": "Clique ou arraste o arquivo para a área",
+			"index_2": "Suporte apenas {0} Formato de arquivo Importar",
+			"index_3": "Nome do arquivo",
+			"index_4": "Tamanho",
+			"index_5": "Status",
+			"index_6": "Selecione Arquivo",
+			"index_7": "O tamanho do arquivo [{0}] não pode exceder {1} m",
+			"index_8": "Esperando pelo upload",
+			"index_9": "Upload de sucesso",
+			"index_10": "Selecione o arquivo para fazer upload"
+		},
+		"FormMore": {
+			"index_1": "Mais configuração, clique para ver"
+		},
+		"Confirm": {
+			"index_1": "Se você confirmar a operação, digite -a manualmente \"{text_}\"",
+			"index_2": "Erro de entrada, tente novamente",
+			"index_3": "{0} foi concluído, Total {1} ​​tarefas, {2} sucessos, {3} falhas",
+			"index_4": "Resultado: ",
+			"index_5": "O resultado está incorreto, tente novamente"
+		},
+		"SoftState": {
+			"index_1": "Tem certeza de que precisa {0} o serviço {1} e continuar?"
+		},
+		"Api": {
+			"index_1": "Carregando, por favor, espere ...",
+			"index_2": "Vinculativo, por favor, espere ...",
+			"index_3": "Envie feedback, por favor aguarde ..",
+			"index_4": "Faça o upload do arquivo, aguarde ..."
+		}
+	}
+}

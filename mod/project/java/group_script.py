@@ -23,7 +23,7 @@ if __name__ == '__main__':
         action = sys.argv[1]
         group_id = sys.argv[2]
     else:
-        print("参数错误")
+        print("Parameter error")
         exit(1)
 
     if action == "start":

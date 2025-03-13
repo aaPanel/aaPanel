@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2014-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2014-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -95,7 +95,7 @@ class Base(object):
 
         if public.writeFile(filename, conf):
             public.ExecShell('sysctl -p')
-            return public.returnMsg(True, 'SUCCESS')
+            return public.returnMsg(True, public.lang("SUCCESS"))
         else:
             return public.returnMsg(
                 False,

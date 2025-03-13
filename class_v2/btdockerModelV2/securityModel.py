@@ -69,11 +69,11 @@ class main(dockerBase):
         @author lwh<2024-1-23>
         @return
         """
-        public.print_log("Get the image id list")
+        # public.print_log("Get the image id list")
         if not hasattr(get, "_ws"):
             return True
         from btdockerModelV2 import imageModel
-        image_list = imageModel.main().image_list(get=public.dict_obj())
+        image_list = imageModel.main().image_list(get=public.dict_obj())['message']
         # public.print_log(image_list)
         get._ws.send(public.GetJson({"end": True, "image_list": image_list}))
 
@@ -157,17 +157,17 @@ class main(dockerBase):
         except Exception as e:
             public.print_log("Importing veinmind failed:{}".format(e))
             # requirements_list = ["veinmind"]
-            self.send_image_ws(get, msg="The detection engine is being initialized. The first load may take a long time....", status=1)
+            self.send_image_ws(get, msg=public.lang("The detection engine is being initialized. The first load may take a long time...."), status=1)
             shell_command = "btpip install --no-dependencies {}".format("veinmind")
             public.ExecShell(shell_command)
             sys_ver = public.get_os_version()
             if "Ubuntu" in sys_ver or "Debian" in sys_ver:
                 public.WriteFile("/etc/apt/sources.list.d/libveinmind.list",
                                  "deb [trusted=yes] https://download.veinmind.tech/libveinmind/apt/ ./")
-                self.send_image_ws(get, msg="Apt-get is being updated. The first load may take a long time....", status=1)
+                self.send_image_ws(get, msg=public.lang("Apt-get is being updated. The first load may take a long time...."), status=1)
                 public.ExecShell("apt-get update")
                 time.sleep(1)
-                self.send_image_ws(get, msg="Detection engine being installed, first execution may take thousands of years...", status=1)
+                self.send_image_ws(get, msg=public.lang("Detection engine being installed, first execution may take thousands of years..."), status=1)
                 public.ExecShell("apt-get install -y libveinmind-dev")
                 time.sleep(1)
             elif "CentOS" in sys_ver:
@@ -176,14 +176,14 @@ name=libVeinMind SDK yum repository
 baseurl=https://download.veinmind.tech/libveinmind/yum/
 enabled=1
 gpgcheck=0""")
-                self.send_image_ws(get, msg="The yum cache is being updated. The first load may take a long time....", status=1)
+                self.send_image_ws(get, msg=public.lang("The yum cache is being updated. The first load may take a long time...."), status=1)
                 public.ExecShell("yum makecache")
-                self.send_image_ws(get, msg="Detection engine being installed, first execution may take thousands of years...", status=1)
+                self.send_image_ws(get, msg=public.lang("Detection engine being installed, first execution may take thousands of years..."), status=1)
                 public.ExecShell("yum install -y libveinmind-devel")
             else:
-                self.send_image_ws(get, msg="Unsupported system version {}".format(sys_ver), status=1)
-                return public.returnMsg(False, "Unsupported system version {}\nCurrently only supports Debian, Ubuntu, Centos".format(sys_ver))
-            self.send_image_ws(get, msg="Checking libdl.so dependent libraries...", status=1)
+                self.send_image_ws(get, msg=public.lang("Unsupported system version {}",sys_ver), status=1)
+                return public.returnMsg(False, public.lang("Unsupported system version {}\nCurrently only supports Debian, Ubuntu, Centos", sys_ver))
+            self.send_image_ws(get, msg=public.lang("Checking libdl.so dependent libraries..."), status=1)
             result, err = public.ExecShell("whereis libdl.so")
             result = result.strip().split(" ")
            # public.print_log("The situation of libdl.so library:{}".format(result))
@@ -222,15 +222,15 @@ gpgcheck=0""")
         else:
             self.image_name = image.id()
         public.print_log("Detecting:{}".format(self.image_name))
-        self.send_image_ws(get, msg="Scanning {} exception history command".format(self.image_name))
+        self.send_image_ws(get, msg=public.lang("Scanning {} exception history command",self.image_name))
         self.scan_history(get, image)
-        self.send_image_ws(get, msg="Scanning {} sensitive information".format(self.image_name))
+        self.send_image_ws(get, msg=public.lang("Scanning {} sensitive information",self.image_name))
         self.scan_sensitive(get, image)
-        self.send_image_ws(get, msg="Scanning {} backdoor".format(self.image_name))
+        self.send_image_ws(get, msg=public.lang("Scanning {} backdoor",self.image_name))
         self.scan_backdoor(get, image)
-        self.send_image_ws(get, msg="Scanning {} container escapes")
+        self.send_image_ws(get, msg=public.lang("Scanning {} container escapes"))
         self.scan_escape(get, image)
-        self.send_image_ws(get, msg="{}Scan completed".format(self.image_name), end=True)
+        self.send_image_ws(get, msg=public.lang("{}Scan completed",self.image_name), end=True)
 
     def scan_history(self, get, image):
         """
@@ -261,7 +261,7 @@ gpgcheck=0""")
                             for r in rules["rules"]:
                                 if r["instruct"] == instruct:
                                     if re.match(r["match"], command_content):
-                                        self.send_image_ws(get, msg="Suspicious abnormal history command found", detail="It was found that the image has an abnormal historical command [{}], which may implant malware or code into the host system when the container is running, causing security risks.".format(self.short_string(command_content)), repair="1.It is recommended to check whether the command is required for normal business<br/>2.It is recommended to choose official and reliable infrastructure to avoid unnecessary losses.")
+                                        self.send_image_ws(get, msg=public.lang("Suspicious abnormal history command found"), detail=public.lang("It was found that the image has an abnormal historical command [{}], which may implant malware or code into the host system when the container is running, causing security risks.",self.short_string(command_content)), repair=public.lang("1.It is recommended to check whether the command is required for normal business<br/>2.It is recommended to choose official and reliable infrastructure to avoid unnecessary losses."))
                                         break
                         else:
                             instruct = command_split[0]
@@ -269,7 +269,7 @@ gpgcheck=0""")
                             for r in rules["rules"]:
                                 if r["instruct"] == instruct:
                                     if re.match(r["match"], command_content):
-                                        self.send_image_ws(get, msg="Suspicious abnormal history command found", detail="It was found that the image has an abnormal historical command [{}], which may implant malware or code into the host system when the container is running, causing security risks.".format(self.short_string(command_content)), repair="1.It is recommended to check whether the command is required for normal business<br/>2.It is recommended to choose official and reliable infrastructure to avoid unnecessary losses.")
+                                        self.send_image_ws(get, msg=public.lang("Suspicious abnormal history command found"), detail=public.lang("It was found that the image has an abnormal historical command [{}], which may implant malware or code into the host system when the container is running, causing security risks.",self.short_string(command_content)), repair=public.lang("1.It is recommended to check whether the command is required for normal business<br/>2.It is recommended to choose official and reliable infrastructure to avoid unnecessary losses."))
                                         break
                     else:
                         command_split = created_by.split()
@@ -277,13 +277,13 @@ gpgcheck=0""")
                             for r in rules["rules"]:
                                 if r["instruct"] == command_split[0]:
                                     if re.match(r["match"], " ".join(command_split[1:])):
-                                        self.send_image_ws(get, msg="Suspicious abnormal history command found", detail="It was found that the image has an abnormal historical command [{}], which may implant malware or code into the host system when the container is running, causing security risks.".format(self.short_string(" ".join(command_split[1:]))), repair="1.It is recommended to check whether the command is required for normal business<br/>2.It is recommended to choose official and reliable infrastructure to avoid unnecessary losses.")
+                                        self.send_image_ws(get, msg=public.lang("Suspicious abnormal history command found"), detail=public.lang("It was found that the image has an abnormal historical command [{}], which may implant malware or code into the host system when the container is running, causing security risks.",self.short_string(" ".join(command_split[1:]))), repair=public.lang("1.It is recommended to check whether the command is required for normal business<br/>2.It is recommended to choose official and reliable infrastructure to avoid unnecessary losses."))
                                         break
                         else:
                             for r in rules["rules"]:
                                 if r["instruct"] == "RUN":
                                     if re.match(r["match"], created_by):
-                                        self.send_image_ws(get, msg="Suspicious abnormal history command found", detail="It was found that the image has an abnormal historical command [{}], which may implant malware or code into the host system when the container is running, causing security risks.".format(self.short_string(created_by)), repair="1.It is recommended to check whether the command is required for normal business<br/>2.It is recommended to choose official and reliable infrastructure to avoid unnecessary losses.")
+                                        self.send_image_ws(get, msg=public.lang("Suspicious abnormal history command found"), detail=public.lang("It was found that the image has an abnormal historical command [{}], which may implant malware or code into the host system when the container is running, causing security risks.",self.short_string(created_by)), repair=public.lang("1.It is recommended to check whether the command is required for normal business<br/>2.It is recommended to choose official and reliable infrastructure to avoid unnecessary losses."))
                                         break
 
     def scan_sensitive(self, get, image):
@@ -636,27 +636,28 @@ gpgcheck=0""")
                 time.sleep(0.004)
                 # 遍历深度不超过3
                 if len(root.split("/")) > 3:
-                    self.send_image_ws(get, msg=self.short_string1("Scanning:{}".format(root)))
+                    self.send_image_ws(get, msg=self.short_string1(public.lang("Scanning:{}",root)))
                     # public.print_log("跳过{}".format(root))
                     continue
                 for dir in dirs:
                     try:
                         dirpath = os.path.join(root, dir)
-                        self.send_image_ws(get, msg="Scanning:{}...".format(dirpath))
+                        self.send_image_ws(get, msg=public.lang("Scanning:{}...",dirpath))
                         # public.print_log("扫描目录{}".format(dirpath))
                         # detect filepath or filename
                         for r in rules["rules"]:
                             if "filepath" in r.keys():
                                 filepath_match_regex = r["filepath"]
                                 if re.match(filepath_match_regex, dirpath):
-                                    self.send_image_ws(get, msg="Sensitive directories found{}".format(dirpath), detail="The image exists in a sensitive directory:{}, may be used by attackers to steal sensitive data or source code, leading to further security issues.".format(dirpath), repair="1. Enter the container deployed using the image and delete the directory without affecting the business<br/> 2. If it cannot be deleted, restrict access to the directory".format(dirpath), status=2)
+                                    self.send_image_ws(get, msg=public.lang("Sensitive directories found{}", dirpath), detail=public.lang("The image exists in a sensitive directory:{}, may be used by attackers to steal sensitive data or source code, leading to further security issues.",dirpath), repair=public.lang("1. Enter the container deployed using the image and delete the directory without affecting the business<br/> 2. If it cannot be deleted, restrict access to the directory",dirpath), status=2)
                                     break
                     except Exception as e:
-                        public.print_log("Match sensitive information to catch exceptions{}".format(e))
+                        pass
+                        # public.print_log("Match sensitive information to catch exceptions{}".format(e))
                 for filename in files:
                     try:
                         filepath = os.path.join(root, filename)
-                        self.send_image_ws(get, msg="Scanning:{}...".format(filename))
+                        self.send_image_ws(get, msg=public.lang("Scanning:{}...",filename))
                         # public.print_log("扫描文件{}".format(filepath))
                         # 跳过白名单
                         whitelist = rules["whitelist"]
@@ -680,11 +681,11 @@ gpgcheck=0""")
                             f = image.open(filepath, mode="rb")
                             f_content_byte = f.read()
                         except FileNotFoundError as e:
-                            public.print_log("Error while traversing sensitive files：{}".format(e))
+                            # public.print_log("Error while traversing sensitive files：{}".format(e))
                             continue
-                        except BaseException as e:
-                            public.print_log("Error while traversing sensitive files：{}".format(e))
-                            continue
+                        # except BaseException as e:
+                        #     public.print_log("Error while traversing sensitive files：{}".format(e))
+                        #     continue
                         # 检测文件路径及文件名
                         match = False
                         for r in rules["rules"]:
@@ -692,7 +693,7 @@ gpgcheck=0""")
                                 filepath_match_regex = r["filepath"]
                                 if re.match(filepath_match_regex, filepath):
                                     match = True
-                                    self.send_image_ws(get, msg="Sensitive files found{}".format(filepath), detail=r["description"] + "：<br/>It was found that the image contains sensitive files {}, which may cause leakage.".format(filepath), repair="1. Enter the container deployed using the image, and it is recommended to delete the file if it does not affect the business<br/> 2. If it cannot be deleted, restrict the access rights of the file<br/> 3. Use a password to protect sensitive files from being easily accessed read", status=2)
+                                    self.send_image_ws(get, msg=public.lang("Sensitive files found{}",filepath), detail=r["description"] + "：<br/>It was found that the image contains sensitive files {}, which may cause leakage.".format(filepath), repair="1. Enter the container deployed using the image, and it is recommended to delete the file if it does not affect the business<br/> 2. If it cannot be deleted, restrict the access rights of the file<br/> 3. Use a password to protect sensitive files from being easily accessed read", status=2)
                                     break
                         if match:
                             continue
@@ -732,7 +733,8 @@ gpgcheck=0""")
                         #                                        repair="建议使用该镜像部署容器后，检查该文件是否有用，无用则清理",
                         #                                        status=2)
                     except Exception as e:
-                        public.print_log("Error while traversing sensitive files：{}".format(e))
+                        pass
+                        # public.print_log("Error while traversing sensitive files：{}".format(e))
 
     def scan_backdoor(self, get, image):
         """
@@ -768,14 +770,15 @@ gpgcheck=0""")
                             f_content = f.read()
                             for backdoor_regex in backdoor_regex_list:
                                 if re.search(backdoor_regex, f_content):
-                                    self.send_image_ws(get, msg="Found bashrc backdoor{}".format(filepath), detail="It was found that the image has bashrc backdoor: [{}], malicious code content: <br/>{}".format(filepath, self.short_string(f_content)), repair="1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers", status=3)
+                                    self.send_image_ws(get, msg=public.lang("Found bashrc backdoor{}",filepath), detail=public.lang("It was found that the image has bashrc backdoor: [{}], malicious code content: <br/>{}",filepath, self.short_string(f_content)), repair=public.lang("1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers"), status=3)
                             for backdoor_regex in backdoor_regex_list1:
                                 if re.search(backdoor_regex, f_content):
-                                    self.send_image_ws(get, msg="Backdoor file found{}".format(filepath), detail="It was found that the bashrc backdoor file [{}] exists in the image, and the malicious code content is:<br/>{}".format(filepath, self.short_string(f_content)), repair="1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers", status=3)
+                                    self.send_image_ws(get, msg=public.lang("Backdoor file found{}",filepath), detail=public.lang("It was found that the bashrc backdoor file [{}] exists in the image, and the malicious code content is:<br/>{}",filepath, self.short_string(f_content)), repair=public.lang("1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers"), status=3)
                         except FileNotFoundError:
                             continue
-                        except BaseException as e:
-                            public.print_log(e)
+                        except BaseException:
+                            pass
+                            # public.print_log(e)
 
         def crontab():
             """
@@ -812,10 +815,9 @@ gpgcheck=0""")
                             #         result_dict[backdoor_regex] = cmdline1
                             for backdoor_regex in backdoor_regex_list1:
                                 if re.search(backdoor_regex, cmdline1):
-                                    self.send_image_ws(get, msg="cron backdoor discovered{}".format(filepath),
-                                                       detail="It was found that the cron backdoor [{}] exists in the image, and the malicious code content is:<br/>{}".format(
-                                                           filepath, self.short_string(cmdline1)),
-                                                       repair="1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers",
+                                    self.send_image_ws(get, msg=public.lang("cron backdoor discovered{}",filepath),
+                                                       detail=public.lang("It was found that the cron backdoor [{}] exists in the image, and the malicious code content is:<br/>{}",filepath, self.short_string(cmdline1)),
+                                                       repair=public.lang("1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers"),
                                                        status=3)
                                     result_dict[backdoor_regex] = cmdline1
                         else: continue
@@ -859,15 +861,15 @@ gpgcheck=0""")
                             f_content = f.read()
                             for backdoor_regex in backdoor_regex_list1:
                                 if re.search(backdoor_regex, f_content):
-                                    self.send_image_ws(get, msg="Found system backdoor:{}".format(filepath),
-                                                       detail="It was found that the systemd backdoor file [{}] exists in the image, and the malicious code content is:<br/>{}".format(
-                                                           filepath, self.short_string(f_content)),
-                                                       repair="1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers",
+                                    self.send_image_ws(get, msg=public.lang("Found system backdoor:{}",filepath),
+                                                       detail=public.lang("It was found that the systemd backdoor file [{}] exists in the image, and the malicious code content is:<br/>{}",filepath, self.short_string(f_content)),
+                                                       repair=public.lang("1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers"),
                                                        status=3)
                         except FileNotFoundError:
                             continue
-                        except BaseException as e:
-                            public.print_log(e)
+                        except BaseException:
+                            pass
+                            # public.print_log(e)
 
         def sshd():
             """
@@ -886,12 +888,13 @@ gpgcheck=0""")
                                 f_exename = filepath.split("/")[-1]
                                 f_link_exename = f_link.split("/")[-1]
                                 if f_exename in rootok_list and f_link_exename == "sshd":
-                                    self.send_image_ws(get, msg="Found sshd backdoor{}".format(filepath), detail="Found the sshd soft link backdoor: {}, the file hits the malicious feature [exe={};link_file={}]".format(filepath, f_exename, f_link),
-                                    repair="1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers", status=3)
+                                    self.send_image_ws(get, msg=public.lang("Found sshd backdoor{}",filepath), detail=public.lang("Found the sshd soft link backdoor: {}, the file hits the malicious feature [exe={};link_file={}]",filepath, f_exename, f_link),
+                                    repair=public.lang("1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers"), status=3)
                         except FileNotFoundError:
                             continue
                         except BaseException as e:
-                            public.print_log(e)
+                            pass
+                            # public.print_log(e)
 
         def tcpwrapper():
             """
@@ -904,12 +907,13 @@ gpgcheck=0""")
                         f_content = f.read()
                         for backdoor_regex in backdoor_regex_list1:
                             if re.search(backdoor_regex, f_content):
-                                self.send_image_ws(get, msg="Found the tcpwrapper backdoor{}".format(config_filepath), detail="It was found that the tcpwrapper backdoor file [{}] exists in the image, and the malicious code content is:<br/>{}".format(config_filepath, self.short_string(f_content)),
-                                                   repair="1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers", status=3)
+                                self.send_image_ws(get, msg=public.lang("Found the tcpwrapper backdoor{}",config_filepath), detail=public.lang("It was found that the tcpwrapper backdoor file [{}] exists in the image, and the malicious code content is:<br/>{}",config_filepath, self.short_string(f_content)),
+                                                   repair=public.lang("1. Enter the container deployed using the image and delete the malicious code under the file<br/>2. Check whether the container has been invaded, and update the access token or account password of the business in the container<br/>3. It is recommended to replace the official image or Other trusted image deployment containers"), status=3)
                 except FileNotFoundError:
                     continue
                 except BaseException as e:
-                    public.print_log(e)
+                    pass
+                    # public.print_log(e)
 
         # 执行后门检测函数
         bashrc()
@@ -949,7 +953,7 @@ gpgcheck=0""")
                             continue
                         for unsafe_sudo_file in unsafe_sudo_files:
                             if unsafe_sudo_file in sudo_command.lower():
-                                self.send_image_ws(get, msg="Users found to be at risk of escape{}".format(user), detail="The username {} may complete container escape through the command [{}], allowing the attacker to obtain access rights to the host or other containers. Malicious content:<br/>{}".format(user, sudo_command, line), status=3, repair="1.建议删除镜像或不再使用<br/>2.若已有业务使用该镜像，则进入容器环境，删除/etc/sudoers文件内包含用户{}的内容".format(user))
+                                self.send_image_ws(get, msg=public.lang("Users found to be at risk of escape{}",user), detail=public.lang("The username {} may complete container escape through the command [{}], allowing the attacker to obtain access rights to the host or other containers. Malicious content:<br/>{}",user, sudo_command, line), status=3, repair=public.lang("1. It is recommended to delete the image or no longer use it<br/>2. If there is already a business using the image, enter the container environment and delete the content of the user {} in the /etc/sudoers file.",user))
                                 break
             except Exception as e:
                 # public.print_log(e)
@@ -963,19 +967,19 @@ gpgcheck=0""")
         @author lwh<2024-01-26>
         """
 
-def veinmind():
-    from veinmind import docker
-    client = docker.Docker()
-    ids = client.list_image_ids()
-    # public.print_log(ids)
-    for id in ids:
-        image = client.open_image_by_id(id)
-        # public.print_log("image id: " + image.id())
-        for ref in image.reporefs():
-            public.print_log("image ref: " + ref)
-        for repo in image.repos():
-            public.print_log("image repo: " + repo)
-        # public.print_log("image ocispec: " + str(image.ocispec_v1()))
+# def veinmind():
+#     from veinmind import docker
+#     client = docker.Docker()
+#     ids = client.list_image_ids()
+#     # public.print_log(ids)
+#     for id in ids:
+#         image = client.open_image_by_id(id)
+#         # public.print_log("image id: " + image.id())
+#         for ref in image.reporefs():
+#             public.print_log("image ref: " + ref)
+#         for repo in image.repos():
+#             public.print_log("image repo: " + repo)
+#         # public.print_log("image ocispec: " + str(image.ocispec_v1()))
 
 
 if __name__ == '__main__':
@@ -1033,7 +1037,7 @@ gpgcheck=0""")
         else:
             pass
             # public.print_log("不支持的系统版本")
-            # return public.returnMsg(False, "不支持的系统版本")
+            # return public.returnMsg(False, public.lang("不支持的系统版本"))
         # self.send_image_ws(get, msg="正在检查依赖库是否存在...", status=1)
         result, err = public.ExecShell("whereis libdl.so")
         result = result.strip().split(" ")

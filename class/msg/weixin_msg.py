@@ -8,7 +8,7 @@
 # | Author: lx
 # | 消息通道邮箱模块
 # | 常用功能
-#   字体加粗  **bold**  ，[这是一个链接](http://bt.cn)，代码段：`code`
+#   字体加粗  **bold**  ，[这是一个链接](http://www.aapanel.com)，代码段：`code`
 #   支持3种字体颜色 <font color="info">绿色</font> <font color="comment">灰色</font> <font color="warning">橙红色</font>
 # +-------------------------------------------------------------------
 
@@ -95,13 +95,13 @@ class weixin_msg:
         """
 
         if not hasattr(get, 'url'):
-            return public.returnMsg(False, 'Please fill in the complete information')
+            return public.returnMsg(False, public.lang("Please fill in the complete information"))
 
         title = 'Default'
         if hasattr(get, 'title'):
             title = get.title
             if len(title) > 7:
-                return public.returnMsg(False, 'Note name cannot exceed 7 characters')
+                return public.returnMsg(False, public.lang("Note name cannot exceed 7 characters"))
 
         key,status,state ='default', 1, 1
         if 'key' in get:  key = get.key
@@ -141,12 +141,12 @@ class weixin_msg:
                 public.writeFile(self.__default_pl, self.__module_name)
 
             if ret['success'] <= 0:
-                return public.returnMsg(False, 'Failed to add, please check whether the URL is correct')
+                return public.returnMsg(False, public.lang("Failed to add, please check whether the URL is correct"))
 
             public.writeFile(self.conf_path, json.dumps(self.__weixin_info))
-            return public.returnMsg(True, 'successfully set')
+            return public.returnMsg(True, public.lang("successfully set"))
         else:
-            return public.returnMsg(False, 'Failed to add, please check whether the URL is correct')
+            return public.returnMsg(False, public.lang("Failed to add, please check whether the URL is correct"))
 
     def get_send_msg(self,msg):
         """
@@ -175,10 +175,10 @@ class weixin_msg:
         @to_user string 指定发送人
         """
         if not self.__weixin_info :
-            return public.returnMsg(False,'Information is not configured correctly.')
+            return public.returnMsg(False, public.lang("Information is not configured correctly."))
 
         if 'state' in self.__weixin_info and self.__weixin_info['state'] == 0:
-            return public.returnMsg(False,'Notifications have been turned off, please turn them on and try again.')
+            return public.returnMsg(False, public.lang("Notifications have been turned off, please turn them on and try again."))
 
         if msg.find('####') == -1:
             try:

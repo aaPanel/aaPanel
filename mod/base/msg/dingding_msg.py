@@ -1,8 +1,8 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aapanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2020 宝塔软件(http://www.bt.cn) All rights reserved.
+# | Copyright (c) 2015-2020 aapanel(https://www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: baozi <
 # | 消息通道邮箱模块(新)
@@ -19,6 +19,7 @@ from requests.packages import urllib3
 from typing import Optional, Union
 
 from .util import write_push_log, get_test_msg
+import public
 
 # 关闭警告
 urllib3.disable_warnings()
@@ -35,7 +36,7 @@ class DingDingMsg:
         @msg 消息正文
         """
         if not self.config:
-            return '未正确配置钉钉信息'
+            return public.lang('DingTalk information is not correctly configured')
 
         # user没有时默认为空
         if "user" not in self.config:
@@ -45,7 +46,7 @@ class DingDingMsg:
             self.config['isAtAll'] = []
 
         if not isinstance(self.config['url'], str):
-            return '钉钉配置错误，请重新配置钉钉机器人'
+            return public.lang('The DingTalk configuration is incorrect, please reconfigure the DingTalk robot')
 
         at_info = ''
         for user in self.config['user']:
@@ -61,7 +62,7 @@ class DingDingMsg:
         data = {
             "msgtype": "markdown",
             "markdown": {
-                "title": "服务器通知",
+                "title": "Server notifications",
                 "text": msg
             },
             "at": {
@@ -95,17 +96,17 @@ class DingDingMsg:
             error = traceback.format_exc()
             status = False
 
-        write_push_log("钉钉", status, title)
+        write_push_log("dingding", status, title)
         return error
 
     @classmethod
     def check_args(cls, args: dict) -> Union[dict, str]:
         if "url" not in args or "title" not in args:
-            return "信息不完整"
+            return public.lang('Incomplete information')
 
         title = args["title"]
         if len(title) > 15:
-            return '备注名称不能超过15个字符'
+            return public.lang('Note names cannot be longer than 15 characters')
 
         if "user" in args and isinstance(args["user"], list):
             user = args["user"]
@@ -126,14 +127,14 @@ class DingDingMsg:
 
         test_obj = cls({"data": data, "id": None})
         test_msg = {
-            "msg_list": ['>配置状态：<font color=#20a53a>成功</font>\n\n']
+            "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n\n']
         }
 
-        test_task = get_test_msg("面板消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
 
         res = test_obj.send_msg(
             test_task.to_dingding_msg(test_msg, test_task.the_push_public_data()),
-            "面板消息通道配置提醒"
+            "Message channel configuration reminders"
         )
         if res is None:
             return data
@@ -143,12 +144,12 @@ class DingDingMsg:
     def test_send_msg(self) -> Optional[str]:
         
         test_msg = {
-            "msg_list": ['>配置状态：<font color=#20a53a>成功</font>\n\n']
+            "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n\n']
         }
-        test_task = get_test_msg("面板消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
         res = self.send_msg(
             test_task.to_dingding_msg(test_msg, test_task.the_push_public_data()),
-            "面板消息通道配置提醒"
+            "Message channel configuration reminders"
         )
         if res is None:
             return None

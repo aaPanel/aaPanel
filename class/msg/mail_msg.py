@@ -96,7 +96,7 @@ class mail_msg:
             self.__mail_config = {'send':{},'receive':[]}
 
         if hasattr(get, 'send'):
-            if not hasattr(get, 'qq_mail') or not hasattr(get, 'qq_stmp_pwd') or not hasattr(get, 'hosts') or not hasattr(get, 'port'):  return public.returnMsg(False, 'Please fill in the complete information')
+            if not hasattr(get, 'qq_mail') or not hasattr(get, 'qq_stmp_pwd') or not hasattr(get, 'hosts') or not hasattr(get, 'port'):  return public.returnMsg(False, public.lang("Please fill in the complete information"))
             mail_config = {
                 "qq_mail": get.qq_mail.strip(),
                 "qq_stmp_pwd": get.qq_stmp_pwd.strip(),
@@ -129,12 +129,12 @@ class mail_msg:
         if ret['status']:
 
             if ret['success'] <= 0:
-                return public.returnMsg(False, 'Sending failed, please check whether the sender configuration or receiver information is correct.')
+                return public.returnMsg(False, public.lang("Sending failed, please check whether the sender configuration or receiver information is correct."))
 
             public.writeFile(self.__mail_send_conf, json.dumps(self.__mail_config['send']))
             public.writeFile(self.__mail_receive_conf,json.dumps(self.__mail_config['receive']))
 
-            return public.returnMsg(True, 'successfully set')
+            return public.returnMsg(True, public.lang("successfully set"))
         else:
             return ret
 
@@ -162,7 +162,7 @@ class mail_msg:
         @to_email 发送给谁，默认发送所有人
         """
         if not self.__mail_config :
-            return public.returnMsg(False,'Email information is not configured correctly.')
+            return public.returnMsg(False, public.lang("Email information is not configured correctly."))
 
         if not 'port' in self.__mail_config['send']: self.__mail_config['send']['port'] = 465
 

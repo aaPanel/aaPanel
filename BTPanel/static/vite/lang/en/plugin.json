@@ -1,0 +1,99 @@
+{
+	"Plugin": {
+		"Mysql": {
+			"index_1": "This is the main configuration file of {0}, if you don't understand the configuration rules, please don't modify it.",
+			"index_2": "Alert me when status stops",
+			"index_3": "State Stop Alarm Setting",
+			"index_4": "Auto-restart",
+			"index_5": "Are you sure to {0} {1} service?",
+			"index_6": "Binary log",
+			"index_7": "Warm tips: Mysql binary log is to record the current operation log, can be used for data recovery, data backup.",
+			"index_8": "Last modified time",
+			"index_9": "Delete log",
+			"index_10": "Do you really want to delete the [{0}] log?",
+			"index_11": "Turning on binary logging can protect Mysql data security, but at the same time will consume a certain amount of disk storage, whether to continue?",
+			"index_12": "Turning off the binary log will no longer record all modification operations to the database binary log?",
+			"index_13": "Move",
+			"index_14": "Risk Warning: Mysql will stop running during the migration process, please be careful",
+			"index_15": "Risk Warning: Please wait until the migration is complete before performing any other operations during the migration process",
+			"index_16": "Database migration",
+			"index_17": "Sure you want to migrate the database to [{0}]?",
+			"index_18": "Memory protection",
+			"index_19": "Note: After it is enabled, the MySQL memory priority will be adjusted, and MySQL will never be killed by the system, which can ensure the stable operation of MySQL. However, it may cause other processes to be killed abnormally, which may seriously affect the operation of the system. It is recommended to enable it when MySQL needs to run stably.",
+			"index_20": "Optimization plan",
+			"index_21": "Max RAM usage",
+			"index_22": "Restart {0} Service",
+			"index_23": "Restart database for the configuration to take effect",
+			"index_24": "Did you restart the {0} service?",
+			"index_25": "If you need to change the MySQL version, please back up your data, uninstall MySQL and reinstall it.",
+			"index_26": "Storage location",
+			"index_27": "Optimization",
+			"index_28": "Slow log",
+			"index_29": "Interval time",
+			"index_30": "Support"
+		},
+		"Ftp": {
+			"index_1": "This feature is exclusive to the Professional version, {a}",
+			"index_2": "Log management switch",
+			"index_3": "After it is turned on, all FTP users' login and operation records will be recorded.",
+			"index_4": "Log management",
+			"index_5": "After turning on pure-ftpd log management, it will record the login and operation records of all FTP users, whether to continue the operation?",
+			"index_6": "After turning off the pure-ftpd log management, it will not be able to record the login and operation records of all FTP users, whether to continue the operation?",
+			"index_7": "Current FTP address is",
+			"index_8": "Download FTP connection tool (FileZilla, free open source)",
+			"index_9": "Switch version",
+			"index_10": "User management",
+			"index_11": "Current version is the same as the selected version!",
+			"index_12": "Are you sure to install {0}-{1}"
+		},
+		"Redis": {
+			"index_1": "After modifying the configuration, you need to restart redis to take effect, if your data needs to be persisted, please execute the save operation first.",
+			"index_2": "Warning: Do not turn on Redis extranet access, as unrestricted access to the IP is highly likely to lead to server intrusion.",
+			"index_3": "After setting, the new redis_cache directory will be created in the selected directory and given redis permissions",
+			"index_4": "Persistent file storage path",
+			"index_5": "AOF Persistence",
+			"index_6": "RDB Persistence",
+			"index_7": "Set Persistence"
+		},
+		"Apache": {
+			"index_1": "Restart time",
+			"index_2": "Startup time",
+			"index_3": "Total connections",
+			"index_4": "Total bytes transferred",
+			"index_5": "Requests per second",
+			"index_6": "Busy process",
+			"index_7": "Idle process",
+			"index_8": "Apache uses CPU",
+			"index_9": "Apache uses memory",
+			"index_10": "Daemon",
+			"index_11": "The daemon can be started automatically after the {0} service is stopped to ensure that the {0} service is always running.",
+			"index_12": "Fields",
+			"index_13": "Current value",
+			"index_14": "Default check every 1 minute, can be changed in Cron"
+		},
+		"Mencached": {
+			"index_1": "Listening IP, please do not modify it freely",
+			"index_2": "Listening port, generally no need to modify",
+			"index_3": "MB, cache size, it is recommended not to exceed 512M",
+			"index_4": "Maximum number of connections, recommended not to exceed 40960"
+		},
+		"MongoDB": {
+			"index_1": "After setting, create a new bt_mongodb directory in the selected directory and give mongo permission",
+			"index_2": "Do not modify the monitoring IP at will",
+			"index_3": "Data storage location",
+			"index_4": "Log file location",
+			"index_5": "PID save path",
+			"index_6": "Listening port, generally no need to modify",
+			"index_7": "Please start the mongodb service first!",
+			"index_8": "Do you really want to delete the database [{0}]?"
+		},
+		"Openlitespeed": {
+			"index_1": "Specifies the maximum connection idle time (seconds) allowed during processing one request",
+			"index_2": "Enables GZIP/Brotli compression for both static and dynamic responses",
+			"index_3": "Specifies the level of GZIP compression applied to dynamic content. Ranges from 1 (lowest) to 9 (highest)",
+			"index_4": "Specifies the maximum number of concurrent connections that the server can accept. This includes both plain TCP connections and SSL connections",
+			"index_5": "Specifies the maximum number of requests that can be served through a keep-alive (persistent) session",
+			"index_6": "Specifies the maximum number of concurrent SSL connections the server will accept Since total concurrent SSL and non-SSL connections cannot exceed the limit specified by “Max Connections”, the actual number of concurrent SSL connections allowed must be lower than this limit"
+		}
+	}
+}

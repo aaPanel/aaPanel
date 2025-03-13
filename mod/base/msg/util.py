@@ -26,17 +26,17 @@ def write_push_log(
     @return:
     """
     if status:
-        status_str = '<span style="color:#20a53a;">成功</span>'
+        status_str = '<span style="color:#20a53a;"> Success </span>'
     else:
-        status_str = '<span style="color:red;">失败</span>'
+        status_str = '<span style="color:red;">Fail</span>'
 
     if not user:
-        user_str = '[ 默认 ]'
+        user_str = '[ default ]'
     else:
         user_str = '[ {} ]'.format(",".join(user))
 
-    log = '标题：【{}】，通知方式：【{}】，结果：【{}】，收件人：{}'.format(title, module_name, status_str, user_str)
-    public.WriteLog('告警通知', log)
+    log = 'Title: [{}], Notification: [{}], Result: [{}], Addressee: {}'.format(title, module_name, status_str, user_str)
+    public.WriteLog('Alarm notification', log)
     return True
 
 
@@ -56,10 +56,10 @@ def write_mail_push_log(
     s_fmt = '<span style="color:red;">{}</span>'
     error_user_msg = ",".join([e_fmt.format(i) for i in error_user])
     success_user = ",".join([s_fmt.format(i) for i in success_user])
-    log = '标题：【{}】，通知方式：【邮箱】，发送失败的收件人：{}，发送成功的收件人：{}'.format(
+    log = 'Title: [{}], notification method: [Email], send failed recipients: {}, send successful recipients: {}'.format(
         title, error_user_msg, success_user
     )
-    public.WriteLog('告警通知', log)
+    public.WriteLog('Alarm notification', log)
     return True
 
 
@@ -124,11 +124,11 @@ class _TestMsgTask(BaseTask):
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
         msg.thing_type = self.title
-        msg.msg = "消息通道配置成功"
+        msg.msg = "The message channel was configured successfully"
         return msg
 
 
-def get_test_msg(title: str, task_name="消息通道配置提醒") -> _TestMsgTask:
+def get_test_msg(title: str, task_name="Message channel configuration reminders") -> _TestMsgTask:
     """
     用来测试的短息
     """

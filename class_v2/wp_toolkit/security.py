@@ -22,7 +22,7 @@ class wp_security:
 
         tamper_core_status = public.run_plugin('tamper_core', 'get_service_status', public.to_dict_obj({}))
         if not (tamper_core_status["kernel_module_status"] and tamper_core_status["controller_status"]):
-            return public.return_message(-1,0,'Sorry, opening failed, please go to the App Store --Tamper-proof for Enterprise to view details')
+            return public.return_message(-1, 0, public.lang("Sorry, opening failed, please go to the App Store --Tamper-proof for Enterprise to view details"))
 
         result= public.run_plugin('tamper_core', 'multi_create', public.to_dict_obj({
             'paths': get.paths,
@@ -36,7 +36,7 @@ class wp_security:
             'rule_group_name': 'WordPress Normal',
             'path_id': result[0]['pid'],
         })) 
-            return public.return_message(0,0,'Successfully added file protection')
+            return public.return_message(0, 0, public.lang("Successfully added file protection"))
     
     #取安全防护配置
     def get_security_info(self, get):
@@ -111,7 +111,7 @@ class wp_security:
             return public.return_message(-1, 0, str(ex))
         tamper_core_status = public.run_plugin('tamper_core', 'get_service_status', public.to_dict_obj({}))
         if not (tamper_core_status["kernel_module_status"] and tamper_core_status["controller_status"]):
-            return public.return_message(-1,0,'Sorry, opening failed, please go to the App Store --Tamper-proof for Enterprise to view details')
+            return public.return_message(-1, 0, public.lang("Sorry, opening failed, please go to the App Store --Tamper-proof for Enterprise to view details"))
 
         result= public.run_plugin('tamper_core', 'remove_path_config', public.to_dict_obj({
             'path_id': get.path_id,
@@ -143,7 +143,7 @@ class wp_security:
             result= public.run_plugin('btwaf', 'set_open', public.to_dict_obj({
             }))
             if not result['status']:
-                return public.return_message(-1,0,'Failed to open firewall')
+                return public.return_message(-1, 0, public.lang("Failed to open firewall"))
         
         result= public.run_plugin('btwaf', 'get_site_config_byname', public.to_dict_obj({
             'siteName': get.site_name,
@@ -154,8 +154,8 @@ class wp_security:
                     'obj': get.obj,
                 }))
             if not result['status']:
-                return public.return_message(-1,0,'Failed to open firewall')
-        return public.return_message(0,0,'Successfully opened firewall')
+                return public.return_message(-1, 0, public.lang("Failed to open firewall"))
+        return public.return_message(0, 0, public.lang("Successfully opened firewall"))
         
         
     # 关闭防火墙防护
@@ -176,8 +176,8 @@ class wp_security:
             'obj': 'open',
         }))
         if not result['status']:
-            return public.return_message(-1,0,'Failed to close firewall')
-        return public.return_message(0,0,'Successfully closeed firewall')
+            return public.return_message(-1, 0, public.lang("Failed to close firewall"))
+        return public.return_message(0, 0, public.lang("Successfully closeed firewall"))
         
     # 获取防火墙防护配置
     def get_firewall_info(self, get):

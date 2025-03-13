@@ -138,7 +138,7 @@ class HttpProxy:
         args = public.dict_obj()
         args.phpversion = php_version
         ajax.ajax().setPHPMyAdmin(args)
-        public.WriteLog('数据库','检测到phpMyAdmin使用的PHP版本不兼容，已自动修改为最佳兼容版本: PHP-' + php_version)
+        public.WriteLog('Database','The PHP version used by phpMyAdmin has been detected to be incompatible and has been automatically changed to the best compatible version: PHP-' + php_version)
         time.sleep(0.5)
 
 

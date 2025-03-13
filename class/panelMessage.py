@@ -34,7 +34,7 @@ class panelMessage:
         '''
 
         public.M('messages').where('id=?',id).update(data)
-        return public.returnMsg(True,'设置成功!')
+        return public.returnMsg(True, public.lang("Setup successful!"))
 
 
     """
@@ -43,11 +43,11 @@ class panelMessage:
     def get_cloud_messages(self,args):
 
         # aapanel 暂时不用
-        return public.returnMsg(True, '同步成功!')
+        return public.returnMsg(True, public.lang("Synchronization success!"))
 
         try:
             ret = cache.get('get_cloud_messages')
-            if ret: return public.returnMsg(True,'同步成功1!')
+            if ret: return public.returnMsg(True, public.lang("同步成功1!"))
             data = {}
             data['version'] = public.version()
             data['os'] = self.os
@@ -69,9 +69,9 @@ class panelMessage:
                 }
                 public.M('messages').insert(pdata)
             cache.set('get_cloud_messages',86400)
-            return public.returnMsg(True,'同步成功!')
+            return public.returnMsg(True, public.lang("同步成功!"))
         except:
-            return public.returnMsg(False,'同步失败!')
+            return public.returnMsg(False, public.lang("同步失败!"))
 
     def get_messages(self,args = None):
         '''
@@ -137,7 +137,7 @@ class panelMessage:
         }
 
         public.M('messages').insert(pdata)
-        return public.returnMsg(True,'Created successfully!')
+        return public.returnMsg(True, public.lang("Created successfully!"))
 
     def status_message(self,args = None,id = None,state = None):
         '''
@@ -153,7 +153,7 @@ class panelMessage:
             id = int(args.id)
             state = int(args.state)
         public.M('messages').where('id=?',id).setField('state',state)
-        return public.returnMsg(True,'Set up successfully!')
+        return public.returnMsg(True, public.lang("Set up successfully!"))
 
 
     def remove_message(self,args = None,id = None):
@@ -168,7 +168,7 @@ class panelMessage:
         if args:
             id = int(args.id)
         public.M('messages').where('id=?',id).delete()
-        return public.returnMsg(True,'Successfully deleted!')
+        return public.returnMsg(True, public.lang("Successfully deleted!"))
 
     def remove_message_level(self,level):
         '''
@@ -229,7 +229,7 @@ class panelMessage:
         default_channel = public.readFile(default_channel_pl)
         if default_channel:
             return public.returnMsg(True, default_channel)
-        return public.returnMsg(False, "")
+        return public.returnMsg(False, public.lang(""))
 
     # def get_default_channel(self):
     #     """获取面板默认消息通道，默认是邮箱，其次默认选择已安装的第一个消息通道

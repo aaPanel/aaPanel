@@ -106,16 +106,16 @@ class PhpExecuteDeny:
         exist_deny_name = [i.split('_')[-1] for i in data]
         if args.act == 'edit':
             if deny_name not in exist_deny_name:
-                return public.returnMsg(False, 'The specify rule name is not exists! [ {} ]'.format(deny_name))
+                return public.returnMsg(False, public.lang("The specify rule name is not exists! [ {} ]", deny_name))
             self.del_php_deny(args)
         else:
             if deny_name in exist_deny_name:
-                return public.returnMsg(False,'The specify rule name is already exists! [ {} ]'.format(deny_name))
+                return public.returnMsg(False, public.lang("The specify rule name is already exists! [ {} ]", deny_name))
         self._set_nginx_php_deny(deny_name,dir,suffix)
         self._set_apache_php_deny(deny_name,dir,suffix)
         self._set_ols_php_deny(deny_name,dir,suffix)
         public.serviceReload()
-        return public.returnMsg(True,'Add Successfully')
+        return public.returnMsg(True, public.lang("Add Successfully"))
 
     def _set_nginx_php_deny(self,name,dir=None,suffix=None):
         conf = public.readFile(self.ng_website_conf)
@@ -194,16 +194,16 @@ class PhpExecuteDeny:
         self._set_apache_php_deny(deny_name)
         self._set_ols_php_deny(deny_name)
         public.serviceReload()
-        return public.returnMsg(True,'Delete Successfully')
+        return public.returnMsg(True, public.lang("Delete Successfully"))
 
     # 检查传入参数
     def _check_args(self,args):
         if hasattr(args,'deny_name'):
             if len(args.deny_name) < 3:
-                return public.returnMsg(False, 'Rule name needs to be greater than 3 bytes')
+                return public.returnMsg(False, public.lang("Rule name needs to be greater than 3 bytes"))
         if hasattr(args,'suffix'):
             if not args.suffix:
-                return public.returnMsg(False, 'File suffix cannot be empty')
+                return public.returnMsg(False, public.lang("File suffix cannot be empty"))
         if hasattr(args,'dir'):
             if not args.dir:
-                return public.returnMsg(False, 'Directory cannot be empty')
+                return public.returnMsg(False, public.lang("Directory cannot be empty"))

@@ -87,13 +87,13 @@ class panelPush:
 
         sfile = '{}/{}.py'.format(local_path,module_name)
         public.downloadFile('{}/linux/panel/push/{}.py'.format(down_url,module_name),sfile)
-        if not os.path.exists(sfile): return public.returnMsg(False, '[{}] Module installation failed'.format(module_name))
-        if os.path.getsize(sfile) < 1024: return public.returnMsg(False, '[{}] Module installation failed'.format(module_name))
+        if not os.path.exists(sfile): return public.returnMsg(False, public.lang("[{}] Module installation failed", module_name))
+        if os.path.getsize(sfile) < 1024: return public.returnMsg(False, public.lang("[{}] Module installation failed", module_name))
 
         sfile = '{}/class/push/{}.html'.format(panelPath,module_name)
         public.downloadFile('{}/linux/panel/push/{}.html'.format(down_url,module_name),sfile)
 
-        return public.returnMsg(True, '[{}] Module installed successfully.'.format(module_name))
+        return public.returnMsg(True, public.lang("[{}] Module installed successfully.", module_name))
 
     """
     卸载消息通道模块
@@ -104,7 +104,12 @@ class panelPush:
         sfile = '{}/class/push/{}.py'.format(panelPath,module_name)
         if os.path.exists(sfile): os.remove(sfile)
 
-        return public.returnMsg(True, '[{}] Module uninstalled successfully'.format(module_name))
+        return public.returnMsg(True, public.lang("[{}] Module uninstalled successfully", module_name))
+        # 格式化传参  修改
+        # public.lang("[{}] xxx", a))   public.lang("[{}] xxx",aa)
+        # 写日志 修改
+        # public.WriteLog("Nginx firewall alarm", msg)
+
 
 
     """
@@ -122,7 +127,7 @@ class panelPush:
         sfile = '{}/class/push/{}.html'.format(panelPath,get.module_name)
 
         if not os.path.exists(sfile):
-            return public.returnMsg(False, 'template file does not exist!')
+            return public.returnMsg(False, public.lang("template file does not exist!"))
 
         shtml = public.readFile(sfile)
         return public.returnMsg(True, shtml)
@@ -137,10 +142,10 @@ class panelPush:
         push_module = getattr(p_list[module], module)()
 
         if not module in p_list:
-            return public.returnMsg(False, 'The specified module [{}] is not installed!'.format(module))
+            return public.returnMsg(False, public.lang("The specified module [{}] is not installed!", module))
 
         if not hasattr(push_module,'get_module_config'):
-            return public.returnMsg(False, 'No get_module_config method exists for the specified module [{}].'.format(module))
+            return public.returnMsg(False, public.lang("No get_module_config method exists for the specified module [{}].", module))
         return push_module.get_module_config(get)
 
 
@@ -154,7 +159,7 @@ class panelPush:
         id = get.id
         p_list = public.get_modules('class/push')
         if not module in p_list:
-            return public.returnMsg(False, 'The specified module [{}] is not installed.'.format(module))
+            return public.returnMsg(False, public.lang("The specified module [{}] is not installed.", module))
 
         result = None
         push_module = getattr(p_list[module], module)()
@@ -205,32 +210,100 @@ class panelPush:
     @优先调用模块内的set_push_config
     """
     def set_push_config(self,get):
+        if not hasattr(get, "id"):
+            return public.returnMsg(False, public.lang('Parameter id is missing'))
+        if not hasattr(get, "name"):
+            return public.returnMsg(False, public.lang('There is no module information'))
+        if not hasattr(get, "data"):
+            return public.returnMsg(False, public.lang('There is no alarm setting information'))
+
         module = get.name
         id = get.id
-        p_list = public.get_modules('class/push')
-
+        # p_list = public.get_modules('class/push')
+        p_list = self.all_push_mode
+        get_data_dict = json.loads(get['data'])
+        if 'title' in get_data_dict.keys():
+            title = get_data_dict["title"]
+        elif "type" in get_data_dict.keys():
+            title = get_data_dict["type"]
+        else:
+            title = module
+        res = public.WriteLog('Alarm settings', 'Add an alarm task [{}]'.format(title))
         if not module in p_list:
-            return public.returnMsg(False, 'The specified module [{}] is not installed.'.format(module))
+            return public.returnMsg(False, public.lang("The specified module [{}] is not installed.", module))
 
         pdata = json.loads(get.data)
         if not 'module' in pdata or not pdata['module']:
-            return public.returnMsg(False, 'The specified alarm method is not set, please select again.')
+            return public.returnMsg(False, public.lang("The specified alarm method is not set, please select again."))
         if module == "load_balance_push":
-            pdata = self.__get_args(pdata,'cycle', "500|502|503|504")
+            pdata = self.__get_args(pdata, 'cycle', "200|301|302|403|404", type_list=(str,))
         else:
-            pdata = self.__get_args(pdata, 'cycle', 1)
-        pdata = self.__get_args(pdata,'count',1)
-        pdata = self.__get_args(pdata,'interval',600)
-        pdata = self.__get_args(pdata,'key','')
-        pdata = self.__get_args(pdata,'push_count',0)
+            pdata = self.__get_args(pdata, 'cycle', 1, type_list=(int,))
+        pdata = self.__get_args(pdata, 'count', 1, type_list=(int, float))
+        pdata = self.__get_args(pdata, 'interval', 600, type_list=(int, float))
+        pdata = self.__get_args(pdata, 'key', '', type_list=(str,))
+        if "next_data" in pdata and not isinstance(pdata["next_data"], (str, dict, list, tuple)):
+            pdata["next_data"] = []
+
+        if "day_limit" in pdata and not isinstance(pdata["day_limit"], (str, int, float)):
+            pdata["day_limit"] = 0
 
         nData = {}
-        for skey in ['key','type','cycle','count','interval','module','title','project','status','index','push_count']:
+        for skey in ['key', 'type', 'cycle', 'count', 'interval', 'module', 'title', 'project', 'status', 'index',
+                     'push_count', "next_data", "day_limit"]:
             if skey in pdata:
                 nData[skey] = pdata[skey]
 
-        public.set_module_logs('set_push_config',nData['type'])
-        class_obj = getattr(p_list[module], module)()
+        # 兼容 负载均衡中的接口
+        if module == "load_balance_push":
+            try:
+                from mod.base.push_mod import PushManager, get_default_module_dict
+                pmgr = PushManager()
+                df_mdl = get_default_module_dict()
+                push_data = {
+                    "template_id": "50",
+                    "task_data": {
+                        "sender": [df_mdl[i.strip()] for i in nData.get("module", "").split(",") if i.strip() in df_mdl],
+                        "task_data": {
+                            "project": nData.get("project", ""),
+                            "cycle": nData.get("cycle", "200|301|302|403|404")
+                        },
+                        "number_rule": {
+                            "day_num": nData.get("push_count", 2)
+                        }
+                    }
+                }
+                pmgr.set_task_conf_data(push_data)
+            except:
+                pass
+
+        # 兼容 文件同步中的接口
+        if module == "rsync_push":
+            try:
+                from mod.base.push_mod import PushManager, get_default_module_dict
+                pmgr = PushManager()
+                df_mdl = get_default_module_dict()
+                sender_list = [df_mdl[i.strip()] for i in nData.get("module", "").split(",") if i.strip() in df_mdl]
+                push_data = {
+                    "template_id": "40",
+                    "task_data": {
+                        "status": bool(nData.get("status", True)),
+                        "sender": sender_list,
+                        "task_data": {
+                            "interval": nData.get("interval", 600)
+                        },
+                        "number_rule": {
+                            "day_num": nData.get("push_count", 3)
+                        }
+                    }
+                }
+                pmgr.set_task_conf_data(push_data)
+            except:
+                pass
+        try:
+            public.set_module_logs('set_push_config',nData['type'])
+        except:pass
+        class_obj = p_list[module]
         if hasattr(class_obj,'set_push_config'):
             get['data'] = json.dumps(nData)
             result = class_obj.set_push_config(get)
@@ -244,7 +317,7 @@ class panelPush:
 
 
         public.writeFile(self.__conf_path,json.dumps(data))
-        return public.returnMsg(True, 'Saved successfully')
+        return public.returnMsg(True, public.lang("Saved successfully"))
 
     """
     @设置推送状态
@@ -254,8 +327,8 @@ class panelPush:
         module = get.name
 
         data = self._get_conf()
-        if not module in data: return public.returnMsg(True, 'module name does not exist!')
-        if not id in data[module]: return public.returnMsg(True, 'The specified push task does not exist!')
+        if not module in data: return public.returnMsg(True, public.lang("module name does not exist!"))
+        if not id in data[module]: return public.returnMsg(True, public.lang("The specified push task does not exist!"))
 
         status = int(get.status)
         if status:
@@ -263,7 +336,7 @@ class panelPush:
         else:
             data[module][id]['status'] =  False
         public.writeFile(self.__conf_path,json.dumps(data))
-        return public.returnMsg(True, 'Successful operation.')
+        return public.returnMsg(True, public.lang("Successful operation."))
     """
     @删除指定配置
     """
@@ -273,13 +346,13 @@ class panelPush:
 
         p_list = public.get_modules('class/push')
         if not module in p_list:
-            return public.returnMsg(False, 'The specified module {} is not installed.'.format(module))
+            return public.returnMsg(False, public.lang("The specified module {} is not installed.", module))
         push_module = getattr(p_list[module], module)()
         if not hasattr(push_module,'del_push_config'):
             data = self._get_conf()
             del data[module][id]
             public.writeFile(self.__conf_path,json.dumps(data))
-            return public.returnMsg(True, 'successfully deleted.')
+            return public.returnMsg(True, public.lang("successfully deleted."))
 
         return push_module.del_push_config(get)
 
@@ -367,7 +440,7 @@ class panelPush:
             }
         """
         if type(channel_data) != dict:
-            return public.returnMsg(False, "The parameter is wrong")
+            return public.returnMsg(False, public.lang("The parameter is wrong"))
 
         from panelMessage import panelMessage
         pm = panelMessage()
@@ -378,6 +451,7 @@ class panelPush:
         }
 
         for module, msg in channel_data.items():
+
             modules = []
             if module.find(",") != -1:
                 modules = module.split(",")
@@ -531,15 +605,22 @@ class panelPush:
                     data = public.readFile(path)
                     data = json.loads(data)
 
-                p = public.get_modules('class/push')
+                # p = public.get_modules('class/push')
+                p = self.all_push_mode
                 for skey in data:
+                    if skey in ("site_push", "system_push", "database_push", "rsync_push",
+                                "load_balance_push", "task_manager_push"):
+                        continue
                     if len(data[skey]) <= 0: continue
                     if skey in ['panelLogin_push','panel_login']: continue #面板登录主动触发
 
                     total = None
-                    obj = getattr(p[skey], skey)()
+                    if skey not in p:
+                        continue
+                    obj = p[skey]
 
                     for x in data[skey]:
+                        if x in ['panelLogin_push', 'panel_login']: continue  # 面板登录主动触发
                         try:
 
                             item = data[skey][x]
@@ -572,6 +653,8 @@ class panelPush:
                                 continue
                             push_status = False
                             for m_module in item['module'].split(','):
+                                if m_module == "":
+                                    continue
                                 if not m_module in rdata:
                                     continue
 
@@ -590,18 +673,21 @@ class panelPush:
                             if push_status:
                                 if 'push_keys' in rdata:
                                     for k in rdata['push_keys']:
-                                        if not k in push_record: push_record[k] = 0
+                                        if k not in push_record:
+                                            push_record[k] = 0
                                         push_record[k] += 1
                                     public.writeFile(tips_path,json.dumps(push_record))
                         except :
-                            print(public.get_error_info())
+                            # print(public.get_error_info())
+                            pass
 
                 if is_write:
                     public.writeFile(path,json.dumps(data))
                 #time.sleep(interval)
         except :
+            # print(public.get_error_info())
+            pass
 
-            print(public.get_error_info())
 
 
     def __get_login_panel_info(self):
@@ -649,14 +735,14 @@ class panelPush:
         if not 'site_push' in conf: conf['site_push'] = {}
 
         data = conf['site_push']
-        for skey in ['panel_login','ssh_login']:
+        for skey in ['panel_login']:
             info = None
             if skey in data:
                 del data[skey]
             if skey in ['panel_login']:
                 info = self.__get_login_panel_info()
-            elif skey in ['ssh_login']:
-                info = self.__get_ssh_login_info()
+            # elif skey in ['ssh_login']:
+            #     info = self.__get_ssh_login_info()
 
             if info:
                 data[skey] = info

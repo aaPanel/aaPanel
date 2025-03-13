@@ -29,9 +29,9 @@ class setPanelLets:
             public.writeFile(keyPath,key)
         if cert:
             public.writeFile(certPath,cert)
-        if not public.CheckCert(checkCert): return public.returnMsg(False,'Certificate error, please check!')
+        if not public.CheckCert(checkCert): return public.returnMsg(False, public.lang("Certificate error, please check!"))
         public.writeFile('ssl/input.pl','True')
-        return public.returnMsg(True,'The certificate has been saved!')
+        return public.returnMsg(True, public.lang("The certificate has been saved!"))
 
     # 检查是否存在站点aapanel主机名站点
     def __check_host_name(self, domain):
@@ -44,7 +44,7 @@ class setPanelLets:
         import panelSite
         ps = panelSite.panelSite()
         get.webname = json.dumps({"domain":get.domain,"domainlist":[],"count":0})
-        get.ps = "For panel Let's Encrypt certificate request and renewal, please do not delete"
+        get.ps = "For panel Lets Encrypt certificate request and renewal, please do not delete"
         get.path = "/www/wwwroot/panel_ssl_site"
         get.ftp = "false"
         get.sql = "false"
@@ -70,7 +70,7 @@ class setPanelLets:
         p = acme_v2()
         cert_info = p.apply_cert_api(get)
         if 'private_key' not in cert_info:
-            return public.returnMsg(False, "Failed to apply for a certificate, please try to manually apply for a certificate for the panel domain name on the site management page")
+            return public.returnMsg(False, public.lang("Failed to apply for a certificate, please try to manually apply for a certificate for the panel domain name on the site management page"))
         get.key = cert_info['private_key']
         get.csr = cert_info['cert'] + cert_info['root']
         return public.returnMsg(True, self._deploy_cert(get))
@@ -124,7 +124,7 @@ class setPanelLets:
             key_file = key_file.replace('*.','')
             cert_file = cert_file.replace('*.','')
         if not os.path.exists(key_file):
-            return public.returnMsg(False,'Can not found the ssl file! {}'.format(key_file))
+            return public.returnMsg(False, public.lang("Can not found the ssl file! {}", key_file))
         self.__tmp_key = public.readFile(key_file)
         self.__tmp_cert = public.readFile(cert_file)
 
@@ -194,11 +194,11 @@ class setPanelLets:
         panel_cert_data = self.__check_panel_cert()
         if not panel_cert_data:
             self.__write_panel_cert()
-            return public.returnMsg(True,'1')
+            return public.returnMsg(True, public.lang("1"))
         if panel_cert_data["key"] != self.__tmp_key and panel_cert_data["cert"] != self.__tmp_cert:
             self.__write_panel_cert()
-            return public.returnMsg(True,'1')
-        return public.returnMsg(True, '')
+            return public.returnMsg(True, public.lang("1"))
+        return public.returnMsg(True, public.lang(""))
 
     # 设置lets证书
     def set_lets(self,get):
@@ -211,7 +211,7 @@ class setPanelLets:
         domain = self.__check_panel_domain()
         get.domain = domain
         if not domain:
-            return public.returnMsg(False, "You need to bind the domain name to the panel before you can apply for the Lets Encrypt certificate.")
+            return public.returnMsg(False, public.lang("You need to bind the domain name to the panel before you can apply for the Lets Encrypt certificate."))
         if not self.__check_host_name(domain):
             create_site = self.__create_site_of_panel_lets(get)
         domain_cert = self.__check_cert_dir(get)
@@ -222,7 +222,7 @@ class setPanelLets:
             public.writeFile("/www/server/panel/data/ssl.pl", "True")
             # public.writeFile("/www/server/panel/data/reload.pl","1")
             self.__save_cert_source(domain,get.email)
-            return public.returnMsg(True, 'Setup successfully!')
+            return public.returnMsg(True, public.lang("Setup successfully!"))
         if not create_site:
             create_lets = self.__create_lets(get)
             if not create_lets['status']:

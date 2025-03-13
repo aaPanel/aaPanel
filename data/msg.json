@@ -30,7 +30,7 @@
         "title":"Feishu",
         "version":"1.2",
         "date":"2022-08-10",
-        "help":"https://forum.aapanel.com/d/16942-aapanel-how-does-set-lark-or-feishu-notification",
+        "help":"https://www.aapanel.com/forum/d/16942-aapanel-how-does-set-lark-or-feishu-notification",
         "ps":"Use Feishu to send and receive panel notifications"
     },
 	{
@@ -38,7 +38,7 @@
         "title":"Telegram",
         "version":"1.1",
         "date":"2022-08-02",
-        "help":"https://forum.aapanel.com/d/5115-how-to-add-telegram-to-panel-notifications",
+        "help":"https://www.aapanel.com/forum/d/5115-how-to-add-telegram-to-panel-notifications",
         "ps":"Use Telegram to send and receive panel notifications"
     }
 ]

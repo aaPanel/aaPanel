@@ -98,7 +98,7 @@ server
 
 
         return pdata
-        #if pdata['siteName'].find('*') != -1: return public.returnMsg(False,'SITE_ADD_ERR_DOMAIN_TOW');
+        #if pdata['siteName'].find('*') != -1: return public.returnMsg(False, public.lang("SITE_ADD_ERR_DOMAIN_TOW"));
 
         
 
@@ -149,7 +149,7 @@ server
 
     #检查指定目录是否不合法
     def check_root_path(self,rootPath):
-        if not files.files().CheckDir(rootPath): return public.returnMsg(False,'PATH_ERROR');
+        if not files.files().CheckDir(rootPath): return public.returnMsg(False, public.lang("System critical directory cannot be used as site directory"));
         return False
 
     #重新生成配置文件

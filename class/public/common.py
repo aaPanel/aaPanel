@@ -1,21 +1,92 @@
 # 公共模块
 # @author Zhj<2024/06/15>
 import contextlib
-import json, os, sys, time, re, socket, importlib, binascii, base64, io, string, psutil
+import json, os, sys, time, re, socket, importlib, binascii, base64, io, string, psutil, requests
+import shutil
 import gettext
 import typing
 import werkzeug.datastructures
+
+import public
 from .exceptions import PanelError
 from .validate import Param, trim_filter
 from .regexplib import match_ipv4, match_ipv6, match_class_private_property, match_safe_path, match_based_host, \
     find_url_root, search_sql_special_chars
 from .tools import is_number
-from .structures import aap_t_simple_result, aap_t_mysql_dump_info
+from .structures import aap_t_simple_result, aap_t_mysql_dump_info, aap_t_http_multipart
+import gzip
+import fcntl
 
 
-es = gettext.translation('en', localedir='/www/server/panel/BTPanel/static/language', languages=['en'])
+
+path = "/www/server/panel/BTPanel/languages/language.pl"
+if os.path.exists(path):
+    with open(path, 'r', encoding='utf-8') as data:
+        lang = data.read()
+    # 读取到的内容再写入设置
+    settings_file = "/www/server/panel/BTPanel/languages/settings.json"
+    settings = {}
+    try:
+        if os.path.exists(settings_file):
+            with open(settings_file, 'r', encoding='utf-8') as file:
+                settings = json.loads(file.read())
+                # 修复空文件
+                if not settings.get('languages', None):
+                    settings = {
+    "default": "en",
+    "languages": [
+        {
+            "name": "cht",
+            "google": "zh-tw",
+            "title": "繁體中文",
+            "cn": "繁體中文"
+        },
+        {
+            "name": "en",
+            "google": "en",
+            "title": "English",
+            "cn": "英语"
+        },
+        {
+            "name": "de",
+            "google": "de",
+            "title": "Deutsch",
+            "cn": "德语"
+        },
+        {
+            "name": "fra",
+            "google": "fr",
+            "title": "Français",
+            "cn": "法语"
+        },
+        {
+            "name": "spa",
+            "google": "es",
+            "title": "Español",
+            "cn": "西班牙语"
+        },
+        {
+            "name": "pt",
+            "google": "pt",
+            "title": "Português",
+            "cn": "葡萄牙语"
+        }
+    ]
+}
+
+            settings['default'] = lang
+            with open(settings_file, 'w', encoding='utf-8') as file:
+                file.write(json.dumps(settings, indent=4))
+    except:
+        pass
+
+
+
+es = gettext.translation('en', localedir='/www/server/panel/BTPanel/static/language/gettext', languages=['en'])
 es.install()
 _ = es.gettext
+
+
 
 _LAN_PUBLIC = None
 _LAN_LOG = None
@@ -75,7 +146,7 @@ def HttpGet(url, timeout=6, headers={}):
         @timeout 超时时间默认60秒
         @return string
     """
-    if url.find('GetAuthToken') == -1:
+    if url.find('api/user/login') == -1:
         if is_local(): return False
     # rep_home_host()
     import http_requests
@@ -143,13 +214,15 @@ def HttpPost(url, data, timeout=6, headers={}):
         @timeout 超时时间默认60秒
         return string
     """
-    if url.find('GetAuthToken') == -1:
-        if is_local(): return False
+    if url.find('api/user/login') == -1:
+        if is_local():
+            return False
     # rep_home_host()
     import http_requests
     res = http_requests.post(url, data=data, timeout=timeout, headers=headers)
     if res.status_code == 0:
-        if headers: return False
+        if headers:
+            return False
         s_body = res.text
         return s_body
     s_body = res.text
@@ -270,6 +343,11 @@ def ReturnMsg(status, msg, args=()):
             for i in range(len(args)):
                 rep = '{' + str(i + 1) + '}'
                 msg = msg.replace(rep, args[i])
+
+    # msg = gettext_msg(msg)
+    # # 从语言包查询字符串
+    # if msg != "":
+    #     msg = gettext_msg2(msg)
     return {'status': status, 'msg': msg}
 
 
@@ -318,6 +396,9 @@ def return_message(status, types, message, args=(), play="", requests=()):
                 for i in range(len(args)):
                     rep = '{' + str(i + 1) + '}'
                     message = message.replace(rep, args[i])
+            # # 从语言包查询字符串
+            # if message != "":
+            #     message = gettext_msg2(message)
             return_message["message"]["result"] = message
         elif type(message) == int:
             return_message["message"]["result"] = message
@@ -546,6 +627,11 @@ def GetConfigValue(key):
     取配置值
     '''
     config = GetConfig()
+    if not config:
+        config = {"product": "Linux panel", "setup_path": "/www/server", "openlitespeed_path": "/usr/local",
+         "language": "English", "title": "aaPanel Linux panel", "brand": "aaPanel", "root_path": "/www",
+         "template": "default", "logs_path": "/www/wwwlogs", "home": "https://www.aapanel.com", "recycle_bin": True}
+        writeFile('/www/server/panel/config/config.json',json.dumps(config))
     if not key in config.keys():
         if key == 'download': return 'http://node.aapanel.com'
         return None
@@ -619,12 +705,20 @@ def getMsg(key, args=()):
 
 # 获取Web服务器
 def GetWebServer():
-    if os.path.exists('{}/apache/bin/apachectl'.format(get_setup_path())):
+    nginxSbin = '{}/nginx/sbin/nginx'.format(get_setup_path())
+    apacheBin = '{}/apache/bin/apachectl'.format(get_setup_path())
+    olsBin = '/usr/local/lsws/bin/lswsctrl'
+
+    if os.path.exists(nginxSbin) and (os.path.exists(apacheBin) or os.path.exists(olsBin)):
+        return 'nginx'
+
+    if os.path.exists(apacheBin):
         webserver = 'apache'
-    elif os.path.exists('/usr/local/lsws/bin/lswsctrl'):
+    elif os.path.exists(olsBin):
         webserver = 'openlitespeed'
     else:
         webserver = 'nginx'
+
     return webserver
 
 
@@ -747,7 +841,7 @@ def GetLocalIp():
         return ipaddress
     except Exception as e:
         try:
-            url = 'https://www.aapanel.com/api/common/getClientIP'
+            url = '{}/api/common/getClientIP'.format(OfficialApiBase())
             ipaddress = HttpGet(url)
             WriteFile(filename, ipaddress)
             return ipaddress
@@ -1014,6 +1108,95 @@ def GetNumLines(path, num: int, p=1):
         return result.strip()
     except:
         return ""
+
+# read each lines (Implement by generator)
+def read_file_each(filename: str, using_gzip: bool = False):
+    if not os.path.exists(filename):
+        raise ValueError(lang('file not found: {}', filename))
+
+    # point a file open function
+    open_fn = open
+
+    # if using gzip read file
+    if using_gzip:
+        open_fn = gzip.open
+
+    with open_fn(filename, 'rb') as fp:
+        for line in fp:
+            yield line.decode('utf-8', 'ignore')
+
+
+# read each lines reverse (Implement by generator)
+def read_file_each_reverse(filename: str, using_gzip: bool = False):
+    if not os.path.exists(filename):
+        raise ValueError(lang('file not found: {}', filename))
+
+    import shutil
+
+    using_tmp_file = False
+
+    # if using gzip read file
+    # decompress to tmp file
+    if using_gzip:
+        tmp_path = make_panel_tmp_path()
+        tmp_file = '{}/{}'.format(tmp_path, GetRandomString(16))
+        using_tmp_file = True
+
+        with open(tmp_file, 'wb') as fp:
+            with gzip.open(filename, 'rb') as gz_fp:
+                shutil.copyfileobj(gz_fp, fp)
+
+        filename = tmp_file
+
+    try:
+        with open(filename, 'rb') as fp:
+            chunk_size = 4096
+            end_pos = fp.seek(0, 2)
+            loops = int(end_pos / chunk_size)
+            last = b''
+            i = 0
+
+            while i < loops:
+                fp.seek((chunk_size + chunk_size * i) * -1, 2)
+
+                bs = fp.read(chunk_size)
+
+                lines = (bs + last).decode('utf-8', 'ignore').split('\n')
+                last = lines[0].encode('utf-8', 'ignore')
+                k = len(lines)
+
+                while k > 1:
+                    yield lines.pop()
+                    k -= 1
+
+                i += 1
+
+            # once flow
+            # handle remain rows
+            for j in range(1):
+                if i < loops:
+                    break
+
+                remainder = end_pos % chunk_size
+
+                if remainder == 0:
+                    break
+
+                # move cursor to top
+                fp.seek(0, 0)
+
+                bs = fp.read(remainder)
+
+                lines = (bs + last).decode('utf-8', 'ignore').split('\n')
+                last = b''
+                k = len(lines)
+
+                while k > 0:
+                    yield lines.pop()
+                    k -= 1
+    finally:
+        if using_tmp_file:
+            shutil.rmtree(os.path.dirname(filename))
 
 
 # 验证证书
@@ -1380,7 +1563,7 @@ def change_nginx_server_http2(nginx_file: str):
 
     conf_list.append(data[start_idx:])
     if last_listen_idx > 0:
-        conf_list.insert(last_listen_idx, "    http2 on;\n")
+        # conf_list.insert(last_listen_idx, "    http2 on;\n")
 
         new_conf = "".join(conf_list)
         writeFile(nginx_file, new_conf)
@@ -1444,7 +1627,7 @@ def change_nginx_server_old_http2(nginx_file: str):
     for tmp in rep_listen.finditer(data):
         listen_str = tmp.group()
         conf_list.append(data[start_idx:tmp.start()])
-        conf_list.append(listen_str.replace(";", " http2;"))
+        # conf_list.append(listen_str.replace(";", " http2;"))
         start_idx = tmp.end()
 
     conf_list.append(data[start_idx:])
@@ -2524,6 +2707,20 @@ def set_own(filename, user, group=None):
     os.chown(filename, user, group)
     return True
 
+# 递归设置用户组
+def recursive_set_own(path, user, group):
+    """递归应用public.set_own到目录及其内容"""
+    import public
+    
+    # 应用到当前路径
+    public.set_own(path, user, group)
+    
+    # 递归应用到子目录和文件
+    for root, dirs, files in os.walk(path):
+        for dir_name in dirs:
+            public.set_own(os.path.join(root, dir_name), user, group)
+        for file_name in files:
+            public.set_own(os.path.join(root, file_name), user, group)
 
 # 校验路径安全
 def path_safe_check(path, force=True):
@@ -2543,10 +2740,14 @@ def get_database_character(db_name):
         tmp = db_obj.query("show create database `%s`" % db_name.strip())
         c_type = str(re.findall(r"SET\s+([\w\d-]+)\s", tmp[0][1])[0])
         c_types = ['utf8', 'utf-8', 'gbk', 'big5', 'utf8mb4']
-        if not c_type.lower() in c_types: return 'utf8'
-        return c_type
+        if not c_type.lower() in c_types:
+            return 'utf8mb4'
+        return ({
+            'utf8': 'utf8mb4',
+            'utf-8': 'utf8mb4',
+        }).get(c_type.lower(), c_type)
     except:
-        return 'utf8'
+        return 'utf8mb4'
 
 
 # 取mysql数据库对象
@@ -2880,6 +3081,16 @@ def auto_backup_panel():
         backup_path = b_path + '/' + day_date
         backup_file = backup_path + '.zip'
         if os.path.exists(backup_path) or os.path.exists(backup_file): return True
+        backup_number=30
+        backup_conf=panel_paeh + '/data/backup_number.pl'
+        if os.path.exists(backup_conf):
+            try:
+                backup_number = int(open(backup_conf, 'r').read())
+            except:
+                pass
+        if backup_number < 1:
+            return False
+        
 
         # 导出面板数据库结构+数据
         dump_panel_databases()
@@ -2894,25 +3105,45 @@ def auto_backup_panel():
         os.makedirs(backup_path, 384)
         import shutil
         shutil.copytree(panel_paeh + '/data', backup_path + '/data',
-                        ignore=shutil.ignore_patterns(ignore_system, ignore_default))
+                        ignore=shutil.ignore_patterns(ignore_system, ignore_default, 'wp_package_checksums', 'wp_packages','maillog', 'mail'))
         shutil.copytree(panel_paeh + '/config', backup_path + '/config')
         shutil.copytree(panel_paeh + '/vhost', backup_path + '/vhost')
         ExecShell("cd {} && zip {} -r {}/".format(b_path, backup_file, day_date))
         ExecShell("chmod -R 600 {path};chown -R root.root {path}".format(path=backup_file))
         if os.path.exists(backup_path): shutil.rmtree(backup_path)
 
-        time_now = time.time() - (86400 * 30)
-        for f in os.listdir(b_path):
-            if f.endswith(".zip") and time.mktime(time.strptime(f, "%Y-%m-%d.zip")) < time_now:
-                path = b_path + '/' + f
-                b_file = path  # + '.zip'
-                # if os.path.exists(path):
-                # shutil.rmtree(path)
-                if os.path.exists(b_file):
-                    os.remove(b_file)
+        clear_panel_backup(b_path,backup_number)
         set_php_cli_env()
     except:
         pass
+
+#清理面板备份
+def clear_panel_backup(backup_path,backup_number):
+    backup_time_list = []
+    for f in os.listdir(backup_path):
+        f_path=backup_path + '/' +f
+        try:
+            zip_string=""
+            if f.endswith('.zip'):zip_string=".zip"
+            mktime=time.mktime(time.strptime(f,"%Y-%m-%d"+zip_string))
+            day_date=public.format_date("%Y-%m-%d",times=mktime)
+            day_date_file = backup_path + '/' + day_date
+            backup_file = day_date_file+ '.zip'
+            if f_path==backup_file or (f_path==day_date_file and os.path.isdir(f_path)):
+                backup_time_list.append(mktime)
+        except:
+            pass
+    #将backup_time_list按降序排序
+    backup_time_list.sort(reverse=True)
+    #删除多余的备份
+    for i in range(backup_number,len(backup_time_list)):
+        day_date_file=backup_path + '/' + public.format_date("%Y-%m-%d",times=backup_time_list[i])
+        f_path=day_date_file+ '.zip'
+        if os.path.exists(f_path):
+            os.remove(f_path)
+        elif os.path.exists(day_date_file) and os.path.isdir(day_date_file):
+            shutil.rmtree(day_date_file)
+
 
 
 def set_php_cli_env():
@@ -3399,6 +3630,11 @@ def get_linux_distribution():
             distribution = 'centos{}'.format(tmp)
         except:
             distribution = 'centos7'
+
+    # # 检查是否为 Amazon Linux
+    # if os.path.exists('/etc/system-release') and 'Amazon Linux' in readFile('/etc/system-release'):
+    #     distribution = 'amazon-linux'
+
     return distribution
 
 
@@ -3635,6 +3871,7 @@ def get_error_num(key, limit=False):
     return False
 
 
+# ========================= user authority ==========================
 def get_menus():
     '''
         @name 获取菜单列表
@@ -3649,7 +3886,8 @@ def get_menus():
         hide_menu = json.loads(hide_menu)
         show_menu = []
         for i in range(len(data)):
-            if data[i]['id'] in hide_menu: continue
+            if data[i]['id'] in hide_menu:
+                continue
             if data[i]['id'] == "memuAxterm":
                 if debug: continue
             show_menu.append(data[i])
@@ -3659,6 +3897,134 @@ def get_menus():
     menus = sorted(data, key=lambda x: x['sort'])
     return menus
 
+
+def get_menus_for_session_router() -> list:
+    """
+        @name 获取用户路由菜单列表
+        @author hwliang<2020-08-31>
+        @return list
+    """
+    import config_v2
+    menu_list = config_v2.config().get_menu_list()
+    if menu_list.get('status') == 0:
+        result = [
+            {
+                'title': x.get('title'),
+                'href': x.get('href'),
+                'class': x.get('class'),
+                'id': x.get('id'),
+                'sort': x.get('sort'),
+            } for x in menu_list.get('message', []) if x.get('show', False) is True
+        ]
+        return result
+    else:
+        return get_menus()
+
+
+def _decrypt(data: str) -> str:
+    """
+        @name 数据解密
+        @param  data <str>
+        @return str
+    """
+    import PluginLoader
+    if not data:
+        return data
+    if not isinstance(data, str):
+        return data
+    if data.startswith('BT-0x:'):
+        res = PluginLoader.db_decrypt(data[6:])['msg']
+        return res
+    return data
+
+
+def get_user_authority_info(session_uid: int) -> dict:
+    """
+        @name   获取user解密后权限信息
+        @param  session_uid <int>
+        @return {"id": 2,
+                "username": "test_user",
+                "role": "ordinary",
+                "state": 1,
+                "menu": ["/", "/site"...]}
+    """
+    data = {'id': 0, 'username': '', 'role': 'unknow', 'state': 0, 'menu': []}
+    enable_list = ['/', '/login']
+
+    if not M('users').where('id=?', (session_uid,)).select():
+        return data
+    plugin_path = '/www/server/panel/plugin/users/'
+    authority_path = os.path.join(plugin_path, 'authority')
+    if not os.path.exists(plugin_path):
+        return data
+    if not os.path.exists(authority_path):
+        return data
+    uid_authority_path = os.path.join(authority_path, str(session_uid))
+    if not os.path.exists(uid_authority_path):
+        return data
+
+    try:
+        data = readFile(uid_authority_path)
+        data = json.loads(_decrypt(data)) if data else data
+        data['state'] = int(data.get('state'))
+    except Exception:
+        return {"id": 0, "username": "", "role": "unknow", "state": "0", "menu": []}
+
+    data['menu'] = enable_list + data.get('menu', [])
+    return data
+
+
+def user_router_authority() -> bool:
+    """
+        @name   校验路由权限
+        @return bool
+    """
+    from flask import session, request
+    if 'login' not in session:
+        return True
+    if session['login'] is False:
+        return True
+    uid = session.get('uid')
+    if not uid:
+        return False
+    if uid == 1:  # admin
+        return True
+    # other user
+    user_data = get_user_authority_info(uid)
+    if user_data.get('state') != 1:
+        return False
+    if user_data.get('role') == 'administrator':
+        return True
+    # todo 校验data权限, plugin权限...
+    if not user_data.get('menu'):
+        return False
+    if request.path == '/':
+        path = request.path
+    else:
+        path = request.path.split('/')
+        index = 2 if path[1] == 'v2' else 1
+        path = '/' + path[index]
+    if path in ['/']:
+        return True
+    ifame_exculde = ['/', '/home', '/login', '/login?dologin=True']
+    ifame_router = [
+        f'{i}_ifame' for i in user_data.get('menu', []) if i and i not in ifame_exculde
+    ]
+    user_data['menu'] += ifame_router
+
+    from BTPanel import menu_map
+    aa_menus = [
+        x for x in menu_map.values() if '/login' not in x
+    ]
+    ifame_menus = [
+        f'{x}_ifame' for x in aa_menus if x not in ifame_exculde
+    ]
+    full_menus = aa_menus + ifame_menus
+    if path in full_menus and path not in user_data['menu']:
+        return False
+    return True
+
+# ========================= user authority end ======================
 
 # 取CURL路径
 def get_curl_bin():
@@ -3786,17 +4152,12 @@ def cloud_check_domain(domain):
             os.makedirs(check_domain_path, 384)
         pdata = get_user_info()
         pdata['domain'] = domain
-        result = httpPost('https://www.aapanel.com/api/panel/checkDomain', {"domain": domain})
+        result = httpPost('{}/api/panel/checkDomain'.format(OfficialApiBase()), {"domain": domain})
         cd_file = check_domain_path + domain + '.pl'
         writeFile(cd_file, result)
     except:
         pass
 
-
-def get_mac_address():
-    import uuid
-    mac = uuid.UUID(int=uuid.getnode()).hex[-12:]
-    return ":".join([mac[e:e + 2] for e in range(0, 11, 2)])
 
 
 def get_user_info():
@@ -3805,12 +4166,21 @@ def get_user_info():
     userInfo = {}
     try:
         userTmp = json.loads(readFile(user_file))
-        userInfo['uid'] = userTmp['id']
-        userInfo['username'] = userTmp['username']
-        userInfo['serverid'] = userTmp['serverid']
+        if not 'server_id' in userTmp or len(userTmp['server_id']) != 64:
+            import panelAuth
+            userTmp = panelAuth.panelAuth().create_serverid(None)
+
+        userInfo['uid'] = userTmp['id'] if userTmp.get('id', None) else userTmp.get('uid', None)
+        userInfo['address'] = userTmp.get('last_login_ip', None)
+        userInfo['access_key'] = 'B' * 32,
+        userInfo['username'] = userTmp.get('username', None)
+        userInfo['server_id'] = userTmp.get('server_id', None)
+        userInfo['serverid'] = userTmp.get('server_id', None)
         userInfo['oem'] = get_oem_name()
         userInfo['o'] = userInfo['oem']
+        userInfo['mac'] = get_mac_address()
     except:
+        print_log(get_error_info())
         pass
     return userInfo
 
@@ -3914,14 +4284,16 @@ def refresh_pd():
         p_token = cache.get('p_token')
 
         if p_token is None:
-            p_token = 'bmac_' + public.Md5(public.get_mac_address())
+            p_token = 'bmac_' + Md5(get_mac_address())
             cache.set('p_token', p_token)
 
         softList = load_soft_list(False)
 
-        public.writeFile("/tmp/" + p_token, str(softList['pro']))
-        public.writeFile('/tmp/{}.time'.format(p_token), str(int(time.time())))
+        writeFile("/tmp/" + p_token, str(softList['pro']))
+        writeFile('/tmp/{}.time'.format(p_token), str(int(time.time())))
     except:
+        from traceback import format_exc
+        print_log(format_exc())
         pass
 
 
@@ -3941,60 +4313,65 @@ def get_pd(args=None):
     ltd = -1
 
     # HTML文本
-    htm = ''
+    htm = '<span class="btpro-free" onclick="bt.soft.renew_pro()" title="Click to get PRO">FREE</span>'
 
-    # 获取当前时间
-    cur_time = int(time.time())
+    try:
+        # 获取当前时间
+        cur_time = int(time.time())
 
-    p_token = cache.get('p_token')
+        p_token = cache.get('p_token')
 
-    if p_token is None:
-        p_token = 'bmac_' + Md5(get_mac_address())
-        cache.set('p_token', p_token)
+        if p_token is None:
+            p_token = 'bmac_' + Md5(get_mac_address())
+            cache.set('p_token', p_token)
 
-    tmp_f = '/tmp/' + p_token
-    p_token_time_f = '/tmp/{}.time'.format(p_token)
+        tmp_f = '/tmp/' + p_token
+        p_token_time_f = '/tmp/{}.time'.format(p_token)
 
-    # 检查缓存是否失效
-    if not os.path.exists(tmp_f) or not os.path.exists(p_token_time_f) or int(readFile(p_token_time_f).strip()) + 86400 <= cur_time:
-        # 检查用户是否登录，登录后才获取授权信息
-        userinfo_f = '{}/data/userInfo.json'.format(get_panel_path())
-        if os.path.exists(userinfo_f) and os.path.getsize(userinfo_f) > 10:
-            # 缓存失效时重新获取授权信息
-            plugin_list = load_soft_list()
+        # 检查缓存是否失效
+        if not os.path.exists(tmp_f) or not os.path.exists(p_token_time_f) or int(readFile(p_token_time_f).strip()) + 86400 <= cur_time:
+            # 检查用户是否登录，登录后才获取授权信息
+            userinfo_f = '{}/data/userInfo.json'.format(get_panel_path())
+            if os.path.exists(userinfo_f) and os.path.getsize(userinfo_f) > 10:
+                # 缓存失效时重新获取授权信息
+                plugin_list = load_soft_list()
 
-            if isinstance(plugin_list, dict):
-                pro = plugin_list.get('pro', -1)
-                # ltd = plugin_list.get('ltd', -1)
+                if isinstance(plugin_list, dict):
+                    pro = plugin_list.get('pro', -1)
+                    # ltd = plugin_list.get('ltd', -1)
 
-                writeFile(tmp_f, str(pro), 'w')
-                writeFile(p_token_time_f, str(cur_time), 'w')
+                    writeFile(tmp_f, str(pro), 'w')
+                    writeFile(p_token_time_f, str(cur_time), 'w')
 
-    tmp = readFile(tmp_f)
-    if tmp:
-        pro = int(tmp)
+        tmp = readFile(tmp_f)
+        if tmp:
+            pro = int(tmp)
 
-    if ltd < 1:
-        if ltd == -2:
-            htm = '<span class="btltd-gray"><span style="color: #fc6d26;font-weight: bold;margin-right:5px">EXPIRED</span><a class="btlink" onclick="bt.soft.updata_ltd()">RENEW</a></span>'
-        elif pro == -1:
-            htm = '<span class="btpro-free" onclick="bt.soft.renew_pro()" title="Click to get PRO">FREE</span>'
-        elif pro == -2:
-            htm = '<span class="btpro-gray"><span style="color: #fc6d26;font-weight: bold;margin-right:5px">EXPIRED</span><a class="btlink" onclick="bt.soft.renew_pro()">RENEW</a></span>'
-        if pro >= 0 and ltd in [-1, -2]:
-            if pro == 0:
-                tmp2 = 'Lifetime'
-                htm = '<span class="btpro">Expire:<span style="color: #fc6d26;font-weight: bold;">{0}</span></span>'.format(
-                    tmp2)
+        if ltd < 1:
+            if ltd == -2:
+                htm = '<span class="btltd-gray"><span style="color: #fc6d26;font-weight: bold;margin-right:5px">EXPIRED</span><a class="btlink" onclick="bt.soft.updata_ltd()">RENEW</a></span>'
+            elif pro == -1:
+                htm = '<span class="btpro-free" onclick="bt.soft.renew_pro()" title="Click to get PRO">FREE</span>'
+            elif pro == -2:
+                htm = '<span class="btpro-gray"><span style="color: #fc6d26;font-weight: bold;margin-right:5px">EXPIRED</span><a class="btlink" onclick="bt.soft.renew_pro()">RENEW</a></span>'
+            if pro >= 0 and ltd in [-1, -2]:
+                if pro == 0:
+                    tmp2 = 'Lifetime'
+                    htm = '<span class="btpro">Expire:<span style="color: #fc6d26;font-weight: bold;">{0}</span></span>'.format(
+                        tmp2)
+                else:
+                    tmp2 = time.strftime('%Y-%m-%d', time.localtime(pro))
+                    htm = '<span class="btpro">Expire: <span style="color: #fc6d26;font-weight: bold;margin-right:5px">{0}</span><a class="btlink" onclick="bt.soft.renew_pro()">RENEW</a></span>'.format(
+                        tmp2)
             else:
-                tmp2 = time.strftime('%Y-%m-%d', time.localtime(pro))
-                htm = '<span class="btpro">Expire: <span style="color: #fc6d26;font-weight: bold;margin-right:5px">{0}</span><a class="btlink" onclick="bt.soft.renew_pro()">RENEW</a></span>'.format(
-                    tmp2)
+                htm = '<span class="btpro-gray" onclick="bt.soft.updata_pro()" title="Click to get PRO">FREE</span>'
         else:
-            htm = '<span class="btpro-gray" onclick="bt.soft.updata_pro()" title="Click to get PRO">FREE</span>'
-    else:
-        htm = '<span class="btltd">Expire: <span style="color: #fc6d26;font-weight: bold;margin-right:5px">{}</span><a class="btlink" onclick="bt.soft.renew_pro()">RENEW</a></span>'.format(
-            time.strftime('%Y-%m-%d', time.localtime(ltd)))
+            htm = '<span class="btltd">Expire: <span style="color: #fc6d26;font-weight: bold;margin-right:5px">{}</span><a class="btlink" onclick="bt.soft.renew_pro()">RENEW</a></span>'.format(
+                time.strftime('%Y-%m-%d', time.localtime(ltd)))
+
+    except:
+        from traceback import format_exc
+        print_log(format_exc())
 
     return htm, pro, ltd
 
@@ -4015,6 +4392,10 @@ def xssdecode(text):
         return text2
     except:
         return text
+
+
+def get_cpuname():
+    return ExecShell("cat /proc/cpuinfo|grep 'model name'|cut -d : -f2")[0].strip()
 
 
 def fetch_disk_SN():
@@ -4038,21 +4419,67 @@ def get_memory():
     import psutil
     return psutil.virtual_memory().total
 
+# generate server_id
+def gen_server_id():
+    s1 = get_mac_address() + get_hostname()
+    s2 = get_cpuname()
+    return md5(s1) + md5(s2)
+
+
+# get server_id
+def get_server_id():
+    return get_userinfo().get('server_id')
+
+
+# get userinfo
+def get_userinfo(force = False):
+    try:
+        userPath = 'data/userInfo.json'
+
+        if not force and not os.path.exists(userPath):
+            raise ValueError('')
+
+        tmp = readFile(userPath)
+        if not tmp or len(tmp) < 2:
+            tmp = '{}'
+
+        userinfo = json.loads(tmp)
+
+        if not force:
+            if not userinfo:
+                raise ValueError('')
+
+            if 'token' not in userinfo:
+                raise ValueError('')
+
+            if str(userinfo['token']).count('.') != 2:
+                raise ValueError('')
+
+        if 'id' in userinfo:
+            userinfo['uid'] = userinfo['id']
+
+        if 'server_id' not in userinfo:
+            userinfo['server_id'] = gen_server_id()
+            writeFile(userPath, json.dumps(userinfo))
+
+        return userinfo
+    except:
+        raise PanelError(lang("Please login with account first"))
+
 
 def fetch_env_info():
-    import panelAuth
-    userInfo = panelAuth.panelAuth().create_serverid(None)
     try:
-        return {'ip': GetLocalIp(),
-                'is_ipv6': 0,
-                'os': get_platform(),
-                'mac': get_mac_address(),
-                'hdid': fetch_disk_SN(),
-                'ramid': get_memory(),
-                'cpuid': fetch_cpu_ID(),
-                'server_name': get_hostname(),
-                'install_code': userInfo['server_id']
-                }
+        return {
+            'ip': GetLocalIp(),
+            'is_ipv6': 0,
+            'os': get_platform(),
+            'mac': get_mac_address(),
+            'hdid': fetch_disk_SN(),
+            'ramid': get_memory(),
+            'cpuid': fetch_cpu_ID(),
+            'server_name': get_hostname(),
+            'install_code': get_server_id()
+        }
     except:
         return {}
 
@@ -4624,21 +5051,22 @@ def get_free_ip_info(address):
 
     if ip in ip_info:
         return ip_info[ip]
-    try:
-        param = get_user_info()
-        param['ip'] = address
-        res = json.loads(httpPost('https://www.bt.cn/api/ip/info', param))
 
-        if address in res:
-            info = res[address]
-            ip_info[ip] = info
-            ip_info[ip]['info'] = '{} {} {} {}'.format(info['carrier'], info['country'], info['province'],
-                                                       info['city']).strip()
-            ip_info[ip]['ip'] = ip
-            writeFile(sfile, json.dumps(ip_info))
-            return res[address]
-    except:
-        pass
+    # try:
+    #     param = get_user_info()
+    #     param['ip'] = address
+    #     res = json.loads(httpPost('https://wafapi2.aapanel.com/api/ip/info', param))
+    #
+    #     if address in res:
+    #         info = res[address]
+    #         ip_info[ip] = info
+    #         ip_info[ip]['info'] = '{} {} {} {}'.format(info['carrier'], info['country'], info['province'],
+    #                                                    info['city']).strip()
+    #         ip_info[ip]['ip'] = ip
+    #         writeFile(sfile, json.dumps(ip_info))
+    #         return res[address]
+    # except:
+    #     pass
 
     return {'info': 'Unknown'}
 
@@ -4725,6 +5153,40 @@ def login_send_body(is_type, username, login_ip, port):
     if check_ip_white(send_login_white, login_ip):
         return False
 
+    if login_ip_area:
+        plist = [
+            ">Login method:" + is_type,
+            ">Login account:" + username,
+            ">Login IP:" + login_ip + ":" + port,
+            login_ip_area,
+            ">Login status:<font color=#20a53a>Success</font>"
+        ]
+    else:
+        plist = [
+            ">Login method:" + is_type,
+            ">Login account:" + username,
+            ">Login IP:" + login_ip + ":" + port,
+            ">Login status:<font color=#20a53a>Success</font>"
+        ]
+
+    push_data = {
+        "ip": get_server_ip(),
+        "is_type": is_type,
+        "username": username,
+        "login_ip": login_ip,
+        "login_ip_area": login_ip_area,
+        "msg_list": plist
+    }
+    try:
+        from mod.base.push_mod import push_by_task_keyword
+        res = push_by_task_keyword("panel_login", "panel_login", push_data=push_data)
+        print_log(res)
+        if res:
+            return
+    except:
+        print_log(get_error_info())
+        pass
+
     if send_type == 'sms':
         data = {}
         data['ip'] = get_server_ip()
@@ -4736,22 +5198,22 @@ def login_send_body(is_type, username, login_ip, port):
                    'user': username}
         rdata = object.send_msg('login_panel', check_sms_argv(sm_args))
     else:
-        if login_ip_area:
-            plist = [
-                ">Login type：" + is_type,
-                ">Account：" + username,
-                ">IP address：" + login_ip + ":" + port,
-                login_ip_area,
-                ">Login status：<font color=#20a53a>Success</font>"
-            ]
+        from panel_msg.collector import SitePushMsgCollect
+
+        msg = SitePushMsgCollect.panel_login(plist)
+
+        if send_type.strip() == "wx_account":
+            from push.site_push import ToWechatAccountMsg
+            object.send_msg(ToWechatAccountMsg.panel_login(
+                name=username,
+                ip=login_ip,
+                login_type=is_type,
+                address=login_ip_area,
+                login_time=time.strftime('%Y-%m-%d %X', time.localtime())
+            ))
         else:
-            plist = [
-                ">Login type：" + is_type,
-                ">Account：" + username,
-                ">IP address：" + login_ip + ":" + port,
-                ">Login status：<font color=#20a53a>Success</font>"
-            ]
-        info = get_push_info("Panel Login Alert", plist)
+            info = get_push_info("aaPanel login alarm", plist)
+            info["push_type"] = "aaPanel login alarm"
         object.push_data(info)
 
         # if send_type == "dingding":
@@ -6156,7 +6618,6 @@ def get_ips_area(ips):
     res = PluginLoader.module_run("ips", "get_ip_area", args)
     return res
 
-
 def return_area(result, key):
     """
     @name 格式化返回带IP归属地的数组
@@ -6171,13 +6632,76 @@ def return_area(result, key):
 
     res = get_ips_area(tmps)
     if 'status' in res:
-
         return result
 
     for data in result:
         if data[key] in res:
+            if 'en_short_code' in res[data[key]]:
+                res[data[key]]['info_raw'] = res[data[key]]['info']
+                res[data[key]]['info'] = res[data[key]]['en_short_code']
+
             data['area'] = res[data[key]]
     return result
+
+# 使用本地ip库
+def return_area11(result, key):
+    """
+    @name 格式化返回带IP归属地的数组
+    @param result<list> 数据数组
+    @param key<str> ip所在字段
+    @return list
+    """
+    tmps = []
+    for data in result:
+        data['area'] = ''
+        tmps.append(data[key])
+
+    # res = get_ips_area(tmps)
+    # 改本地英文ip库
+    res = get_cloud_ip_info2(tmps)
+    # print_log("获取ip库信息--{}".format(res))
+
+    if 'status' in res:
+        return result
+
+    for data in result:
+        key_value = data[key].strip()
+        if key_value in res:
+            if not res[data[key]]['city'].strip() and not res[data[key]]['continent'].strip() and not res[data[key]]['country'].strip():
+                info = 'Intranet'
+            else:
+                info = '{} {} {} {}'.format(res[data[key]]['carrier'], res[data[key]]['country'], res[data[key]]['province'],
+                                                    res[data[key]]['city']).strip()
+            res[data[key]]['info'] = info
+            data['area'] = res[data[key]]
+
+    return result
+
+
+def get_cloud_ip_info2(ips):
+    """
+    @获取IP地址所在地
+    @param ips:
+    """
+    import geoip2
+    res = {}
+    try:
+        for ip in ips:
+            ip_area_dict = get_ip_location(ip)
+            if isinstance(ip_area_dict, geoip2.models.City):
+                country = ip_area_dict.raw["country"]
+                country['carrier'] = ''   # 缺少信息
+                country['continent'] = ''   # 缺少信息
+                res[ip] = country
+
+                print_log("222country--{}".format(country))
+
+        # print_log("获取ip地址信息--{}".format(res))
+
+    except:
+        # print_log(get_error_info())
+        pass
+    return res
 
 
 def get_network_ip():
@@ -6691,7 +7215,9 @@ def is_httpd_process_exists():
         @author hwliang
         @return bool
     '''
+    import time
     _exe = ['server/apache/bin/httpd']
+    time.sleep(1)
     return is_process_exists_by_exe(_exe)
 
 
@@ -6701,7 +7227,9 @@ def is_memcached_process_exists():
         @author hwliang
         @return bool
     '''
+    import time
     _exe = ['/usr/local/memcached/bin/memcached']
+    time.sleep(1)
     return is_process_exists_by_exe(_exe)
 
 
@@ -6723,11 +7251,11 @@ def check_auth_ip():
     """
     import http_requests
     result = {'www': '', 'api': ''}
-    res = http_requests.post('https://www.bt.cn/api/getIpAddress', data={}, timeout=5, headers={})
+    res = http_requests.post('https://wafapi2.aapanel.com/api/getIpAddress', data={}, timeout=5, headers={})
     if res.status_code == 200:
         result['www'] = res.text
 
-    res1 = http_requests.post('https://api.bt.cn/api/getIpAddress', data={}, timeout=5, headers={})
+    res1 = http_requests.post('https://wafapi.aapanel.com/api/getIpAddress', data={}, timeout=5, headers={})
     if res1.status_code == 200:
         result['api'] = res1.text
 
@@ -7692,7 +8220,7 @@ def get_limit_area():
 
         return areas_dict
     except:
-        public.get_error_info()
+        get_error_info()
     return empty_content
 
 
@@ -8155,6 +8683,7 @@ def run_plugin(plugin_name: str, def_name: str, args: dict_obj):
                     raise PanelError(res['msg'])
     return res
 
+
 def run_plugin_v2(plugin_name: str, def_name: str, args: dict_obj):
     import PluginLoader
     res = PluginLoader.plugin_run(plugin_name, def_name, args)
@@ -8179,7 +8708,7 @@ def run_plugin_v2(plugin_name: str, def_name: str, args: dict_obj):
 
 
 # 加载插件列表与授权列表
-def load_soft_list(force: bool = True):
+def load_soft_list(force: bool = True, retry_count: int = 0):
     local_cache_file = '{}/data/plugin_bin.pl'.format(get_panel_path())
 
     if force or not os.path.exists(local_cache_file) or os.path.getsize(local_cache_file) < 10:
@@ -8201,19 +8730,21 @@ def load_soft_list(force: bool = True):
                 resp = requests.post(cloudUrl, params=pdata, headers=url_headers, verify=False, timeout=10)
 
                 # 请求成功后将授权密文信息写入本地文件
-                if resp.status_code == 200:
+                if resp.ok:
                     with open(local_cache_file, 'w') as fp:
                         fp.write(resp.text)
                     update_ok = True
                     break
-            except Exception as ex:
+
+            except Exception as e:
+                ex = e
                 pass
 
         # 本地缓存存在则让其读取本地缓存
         if not update_ok:
             update_ok = os.path.exists(local_cache_file) and os.path.getsize(local_cache_file) >= 10
 
-        # 本地缓存都不存在，如果捕获到异常则抛出异常，否则抛出获取软件列表与授权信息失败的提示
+        # 本地缓存都不存在，如果捕获到异常则将异常记录到错误日志，返回默认的软件列表数据
         if not update_ok:
             if ex is not None:
                 raise ex
@@ -8222,19 +8753,32 @@ def load_soft_list(force: bool = True):
 
     import PluginLoader
 
-    if force:
-        if hasattr(PluginLoader, 'parse_plugin_list'):
-            PluginLoader.parse_plugin_list(1)
-        else:
-            import importlib
-            importlib.reload(PluginLoader)
+    try:
+        if force:
+            if hasattr(PluginLoader, 'parse_plugin_list'):
+                if not PluginLoader.parse_plugin_list(1):
+                    raise PanelError('Sorry. failed to parse soft list. please try again later.')
+            else:
+                import importlib
+                importlib.reload(PluginLoader)
 
-    plugin_list_data = PluginLoader.get_plugin_list(0)
+        plugin_list_data = PluginLoader.get_plugin_list(0)
+    except:
+        if retry_count < 6:
+            # 获取软件列表失败，重试
+            return load_soft_list(force, retry_count + 1)
+        raise
 
     if not isinstance(plugin_list_data, dict):
+        if retry_count < 6:
+            # 获取软件列表失败，重试
+            return load_soft_list(force, retry_count + 1)
         raise PanelError('Sorry. failed to load soft list. please check the network and try again later.')
 
     if 'status' in plugin_list_data and 'msg' in plugin_list_data and plugin_list_data['status'] == False:
+        if retry_count < 6:
+            # 获取软件列表失败，重试
+            return load_soft_list(force, retry_count + 1)
         raise PanelError(str(plugin_list_data['msg']))
 
     return plugin_list_data
@@ -8243,6 +8787,12 @@ def load_soft_list(force: bool = True):
 # 官网API根地址
 def OfficialApiBase():
     return 'https://www.aapanel.com'
+    # return 'http://dev.aapanel.com'
+
+
+# 官网下载根地址
+def OfficialDownloadBase():
+    return 'https://node.aapanel.com'
 
 
 # 获取安装路径
@@ -8284,8 +8834,11 @@ def ReadFile(filename, mode='r'):
                 fp = open(filename, mode, encoding="utf-8", errors='ignore')
                 f_body = fp.read()
             except:
-                fp = open(filename, mode, encoding="GBK", errors='ignore')
-                f_body = fp.read()
+                try:
+                    fp = open(filename, mode, encoding="GBK", errors='ignore')
+                    f_body = fp.read()
+                except:
+                    return False
         else:
             return False
     finally:
@@ -8328,6 +8881,19 @@ def WriteFile(filename, s_body, mode='w+'):
         except:
             return False
 
+def AppendFile(filename, s_body, mode='a'):
+    """
+    写入文件内容
+    @filename 文件名
+    @s_body 欲写入的内容
+    return bool 若文件不存在则尝试自动创建
+    """
+    try:
+        with open(filename, mode, encoding="utf-8") as fp:
+            fp.write(s_body)
+        return True
+    except:
+        return False
 
 # 写入文件
 def writeFile(filename, s_body, mode='w+'):
@@ -8367,3 +8933,207 @@ def make_panel_tmp_path_with_context():
 # 处理SQL语句中的特殊字符
 def escape_sql_str(s: str) -> str:
     return search_sql_special_chars.sub(r'\\\g<0>', s)
+
+
+# 组装multipart/form-data数据
+def build_multipart(data: typing.Dict) -> aap_t_http_multipart:
+    boundary = b'----AapanelFormBoundary' + GetRandomString(16).encode('utf-8')
+    body = b''
+
+    # 标准的HTTP请求报文是使用\r\n换行
+    # \n换行也能被解析，可能存在兼容性问题
+    eol = b'\r\n'
+
+    for k in data.keys():
+        v = data[k]
+
+        # 二进制数据（文件上传）(bytes, filename)
+        if isinstance(v, tuple) and len(v) == 2:
+            bs, filename = v
+
+            if isinstance(bs, bytes) and isinstance(filename, str):
+                body += b'--' + boundary + eol + b'Content-Disposition: form-data; name="' + k.encode('utf-8') + b'"; filename="' + filename.encode('utf-8') + b'"' + eol + b'Content-Type: application/octet-stream' + eol + eol + bs + eol
+        # 普通参数
+        else:
+            # str/number 转 bytes
+            if isinstance(v, str) or is_number(v):
+                v = str(v).encode('utf-8')
+
+            # 仅处理bytes
+            if isinstance(v, bytes):
+                body += b'--' + boundary + eol + b'Content-Disposition: form-data; name="' + k.encode('utf-8') + b'"' + eol + eol + v + eol
+
+    body += b'--' + boundary + b'--' + eol
+
+    return aap_t_http_multipart(headers={
+        'Content-Type': 'multipart/form-data; boundary=' + boundary.decode('utf-8'),
+        'Content-Length': str(len(body)),
+    }, body=body)
+
+
+from lang import Lang
+
+def setLang(lang = 'en'):
+    '''
+        @name 设置语言
+        @param {string} lang - 语言
+    '''
+    lang_obj = Lang()
+    lang_obj.setLanguage(lang)
+
+def lang(content,*args):
+    '''
+        @name 多语言渲染
+        @param {string} content - 内容
+        @param {any[]} args - 参数
+        @returns {string}
+        @example lang('Hello {}', 'World')
+        @example lang('Hello {} {}', 'World', '!')
+        @example lang('Hello')
+    '''
+    lang_obj = Lang()
+    # if content in ["#Clear cache","# Forbidden files or directories", "#Persistent connection related configuration"]:
+    #     return content
+
+    return lang_obj.getLang(content, *args)
+
+
+def get_disk_usage(path):
+    """
+        @name 获取目录可用空间
+    """
+
+    if not os.path.exists(path):
+        return returnMsg(False, lang('The specified directory does not exist'))
+
+    res = psutil.disk_usage(path)
+    return res
+
+"""
+@name 检查表是否存在
+@param table 被检查的表名  sites
+@param table_sql 表结构sql语句
+"""
+
+
+def check_table(table, table_sql):
+    db_obj = M(table)
+    res = db_obj.query("SELECT * FROM sqlite_master WHERE type='table' AND name='{}';".format(table))
+    is_create = True
+    if not isinstance(res, list): is_create = False
+    if len(res) <= 0: is_create = False
+
+    if not is_create:
+        db_obj.execute(table_sql, ())
+    return True
+
+
+def get_set_language():
+    '''
+        @name 获取当前设置的语言
+        @return list
+    '''
+    default = 'en'
+    filename = '/www/server/panel/BTPanel/languages/settings.json'
+    if not os.path.exists(filename):
+        return default
+    body = ReadFile(filename)
+    try:
+        return json.loads(body)['default']
+    except:
+        return default
+
+
+# 复制文件夹（同名覆盖）
+def copy_dir(src, dst):
+    # 目标目录不存在，直接复制目录
+    if not os.path.exists(dst):
+        shutil.copytree(src, dst)
+        return
+
+    ds = os.listdir(src)
+    for d in ds:
+        src_path = os.path.join(src, d)
+        dst_path = os.path.join(dst, d)
+
+        if os.path.isfile(src_path):
+            # 复制文件
+            shutil.copyfile(src_path, dst_path)
+            continue
+
+        # 复制目录
+        copy_dir(src_path, dst_path)
+
+
+# 确保数据库名称不重复
+def ensure_unique_db_name(db_name: str) -> str:
+    # 生成不重复的数据库用户名
+    while 1:
+        if S('databases').where('name', db_name).exists():
+            db_name = '{}_{}'.format(db_name[:9], GetRandomString(6))
+            continue
+        break
+
+    return db_name
+
+
+def pkcs7_padding(data: bytes, block_size: int = 16) -> bytes:
+    length = len(data)
+    amount_to_pad = block_size - (length % block_size)
+
+    if amount_to_pad == 0:
+        amount_to_pad = block_size
+
+    return data + bytes([amount_to_pad] * amount_to_pad)
+
+
+def pkcs7_unpadding(data: bytes, block_size: int = 16) -> bytes:
+    pad = data[-1]
+
+    if pad < 1 or pad > block_size:
+        pad = 0
+
+    return data[:-pad]
+
+
+# 使用雪花算法生成ID
+def snow_flake(machine_id: int = 0) -> int:
+    last_snow_flake_time_file = '/dev/shm/__snow_flake_last_time__'
+    snow_flake_sequence_file = '/dev/shm/__snow_flake_sequence__'
+
+    cur_snow_flake_time = int(time.time() * 1000)
+
+    with open(last_snow_flake_time_file, 'a+') as fp, open(snow_flake_sequence_file, 'a+') as fp2:
+        fcntl.flock(fp.fileno(), fcntl.LOCK_SH)
+        fcntl.flock(fp2.fileno(), fcntl.LOCK_EX)
+
+        fp.seek(0)
+        fp2.seek(0)
+
+        s1 = fp.read().strip()
+        s2 = fp2.read().strip()
+
+        if s1 == '':
+            s1 = '0'
+
+        if s2 == '':
+            s2 = '0'
+
+        last_snow_flake_time = int(s1)
+        snow_flake_sequence = int(s2)
+
+        fp2.seek(0)
+        fp2.truncate()
+
+        if cur_snow_flake_time == last_snow_flake_time:
+            snow_flake_sequence += 1
+            fp2.write(str(snow_flake_sequence))
+        else:
+            snow_flake_sequence = 0
+            fp2.write(str(snow_flake_sequence))
+            fcntl.flock(fp.fileno(), fcntl.LOCK_EX)
+            fp.seek(0)
+            fp.truncate()
+            fp.write(str(cur_snow_flake_time))
+
+        return (int(cur_snow_flake_time - 1739376000000) << 22) | ((int(machine_id) & ((1 << 10) - 1)) << 12) | (int(snow_flake_sequence) & ((1 << 12) - 1))

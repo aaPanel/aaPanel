@@ -32,7 +32,7 @@ class main(panelBase):
         id = get.id
         find = public.M('sites').where("id=?",(id,)).find()
         if not find:
-            return public.returnMsg(False,'找不到指定网站.')
+            return public.return_message(-1, 0,public.lang("The specified website could not be found."))
 
         result = {}
         result['all'] = 0
@@ -46,7 +46,7 @@ class main(panelBase):
         if len(data) > 0:
             result['info'] = data[0]
             result['all'] = 1
-        return result
+        return public.return_message(0, 0, result)
 
 
     def get_database_backup_info(self,get):
@@ -61,7 +61,7 @@ class main(panelBase):
         id = get.id
         find = public.M('databases').where("id=?",(id,)).find()
         if not find:
-            return public.returnMsg(False,'找不到指定数据库.')
+            return public.return_message(-1, 0,public.lang("The specified database could not be found."))
 
         result = {}
         result['all'] = 0
@@ -75,7 +75,7 @@ class main(panelBase):
         if len(data) > 0:
             result['info'] = data[0]
             result['all'] = 1
-        return result
+        return public.return_message(0, 0, result)
 
 
 

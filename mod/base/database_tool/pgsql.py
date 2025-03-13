@@ -34,7 +34,7 @@ class PgsqlTool(BaseDatabaseTool):
             'db_port': port,
             'db_user': 'root',
             'db_password': '',
-            'ps': '本地服务器',
+            'ps': 'local server',
             'addtime': 0
         }
 
@@ -49,6 +49,6 @@ class PgsqlTool(BaseDatabaseTool):
         get_obj.listen_ip = kwargs.get("listen_ip", "")
         res = pgsql().AddDatabase(get_obj)
         if res["status"] is True:
-            return True, "添加成功"
+            return True, "Successfully added"
         else:
             return False, res['msg']

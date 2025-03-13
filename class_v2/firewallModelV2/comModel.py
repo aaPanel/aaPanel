@@ -73,7 +73,7 @@ class main(Base):
         '''
         get.status = get.get('status/s', '1')
         if get.status not in ['0', '1']:
-             return public.return_message(-1, 0,  'The parameter is incorrect')
+             return public.return_message(-1, 0, public.lang("The parameter is incorrect"))
 
         if get.status == '1':
             # return self.firewall.start()
@@ -147,6 +147,7 @@ class main(Base):
 
             domain_sql = public.M('firewall_domain')
             domain_data = domain_sql.where(where, ()).select()
+
             for i in range(len(data)):
                 if not "ports" in data[i]:
                     data[i]['status'] = -1
@@ -167,7 +168,7 @@ class main(Base):
 
             return data
         except Exception as e:
-            public.print_log(public.get_error_info())
+            # public.print_log(public.get_error_info())
             return []
 
     # 2024/3/26 下午 11:53 从数据库中获取ip规则列表
@@ -183,6 +184,7 @@ class main(Base):
             sql = public.M('firewall_ip')
 
             ip_data = sql.where(where, ()).select()
+            # public.print_log('数据库 -- ip{}'.format(ip_data))
 
             for i_data in ip_data:
                 if "brief" in i_data:
@@ -194,7 +196,7 @@ class main(Base):
 
             return ip_data
         except Exception as e:
-            public.print_log(public.get_error_info())
+            # public.print_log(public.get_error_info())
             return []
 
     # 2024/3/26 下午 11:58 从数据库中获取端口转发规则列表
@@ -252,15 +254,20 @@ class main(Base):
             list_port[j]['addtime'] = "--"
 
             list_port[j]['Port'] = list_port[j]['Port'].replace(":", "-")
+
             for i in range(len(rule_db)):
+                # 备注不受条件影响
+                if rule_db[i]['ports'] == list_port[j]['Port']:
+                    list_port[j]['brief'] = rule_db[i]['brief']
+
                 if (rule_db[i]['ports'] == list_port[j]['Port'] and
                         rule_db[i]['protocol'] == list_port[j]['Protocol'] and
                         rule_db[i]['address'].lower() == list_port[j]['Address'].lower() and
                         rule_db[i]['types'] == list_port[j]['Strategy'] and
                         rule_db[i]['chain'] == list_port[j]['Chain']):
+
                     list_port[j]['id'] = rule_db[i]['id']
                     list_port[j]['sid'] = rule_db[i]['sid']
-                    list_port[j]['brief'] = rule_db[i]['brief']
                     list_port[j]['addtime'] = rule_db[i]['addtime']
 
                     if "domain" in rule_db[i]:
@@ -270,6 +277,7 @@ class main(Base):
 
             if query != "":
                 if query in list_port[j]['Port'] or query in list_port[j]['brief'] or query in list_port[j]['Address']:
+
                     new_list.append(list_port[j])
 
         if len(new_list) > 0 or query != "":
@@ -418,7 +426,7 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置导入规则
         if not self.get_firewall_status():
-             return public.return_message(-1, 0,  'Start the firewall before importing the rules!')
+             return public.return_message(-1, 0, public.lang("Start the firewall before importing the rules!"))
 
         get.rule = get.get('rule/s', 'port')
         if get.rule == "port":
@@ -447,7 +455,7 @@ class main(Base):
 
         data = self._port_rules_list(get)
         if not data:
-             return public.return_message(-1, 0,  'No rules can be exported')
+             return public.return_message(-1, 0, public.lang("No rules can be exported"))
         if not os.path.exists(self.config_path):
             os.makedirs(self.config_path, exist_ok=True)
         file_path = "{}/{}.json".format(self.config_path, file_name)
@@ -467,10 +475,10 @@ class main(Base):
         get.file = get.get('file/s', '')
 
         if not get.file:
-             return public.return_message(-1, 0,  'The file cannot be empty')
+             return public.return_message(-1, 0, public.lang("The file cannot be empty"))
 
         if not os.path.exists(get.file):
-             return public.return_message(-1, 0,  'The file does not exist')
+             return public.return_message(-1, 0, public.lang("The file does not exist"))
 
         try:
             data = public.readFile(get.file)
@@ -482,7 +490,7 @@ class main(Base):
             # 2024/4/10 下午2:51 反转数据
             data.reverse()
         except:
-             return public.return_message(-1, 0,  'The file content is abnormal or malformed')
+             return public.return_message(-1, 0, public.lang("The file content is abnormal or malformed"))
 
         args = public.dict_obj()
         for item in data:
@@ -500,7 +508,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The import was successful')
+        return public.return_message(0, 0, public.lang("The import was successful"))
 
     # 2024/5/14 上午10:27 调用旧的导入规则方法
     def import_rules_old(self, get):
@@ -515,7 +523,7 @@ class main(Base):
             get.file_name = get.file.split("/")[-1]
             firewall_obj.import_rules(get)
 
-            return public.return_message(0, 0,  'The import was successful')
+            return public.return_message(0, 0, public.lang("The import was successful"))
         except Exception as e:
              return public.return_message(-1, 0,  str(e))
 
@@ -627,7 +635,7 @@ class main(Base):
 
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置端口规则
         if not self.get_firewall_status():
-             return public.return_message(-1, 0,  'Please activate the firewall before setting up the rules!')
+             return public.return_message(-1, 0, public.lang("Please activate the firewall before setting up the rules!"))
         get.operation = get.get('operation/s', 'add')
         get.protocol = get.get('protocol/s', 'tcp')
         get.address = get.get('address/s', 'all')
@@ -644,7 +652,7 @@ class main(Base):
             get.protocol = "tcp/udp"
 
         if get.port == "":
-             return public.return_message(-1, 0,  'The destination port cannot be empty')
+             return public.return_message(-1, 0, public.lang("The destination port cannot be empty"))
 
         from copy import deepcopy
         if get.address != "all" and "," in get.address:
@@ -674,7 +682,7 @@ class main(Base):
         if self._isFirewalld and get.reload == "1":
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The setup was successful')
+        return public.return_message(0, 0, public.lang("The setup was successful"))
 
 
     # 2024/3/29 下午 4:04 处理多个ip的端口规则情况
@@ -740,7 +748,7 @@ class main(Base):
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        public.print_log("进入检查ip--{}".format(get.address))
+        # public.print_log("进入检查ip--{}".format(get.address))
 
         if get.address != "all" and "\n" in get.address:
             address = get.address.split("\n")
@@ -749,19 +757,19 @@ class main(Base):
 
                 if addr != "all" and not public.checkIp(addr) and not public.is_ipv6(addr):
                     public.print_log("ip--{}".format(addr))
-                    return public.returnMsg(False, 'The specified IP address is in the wrong format 1')
+                    return public.returnMsg(False, public.lang("The specified IP address is in the wrong format 1"))
         elif get.address != "all" and "," in get.address:
             address = get.address.split(",")
             for addr in address:
                 if addr != "all" and not public.checkIp(addr) and not public.is_ipv6(addr):
                     public.print_log("ip--{}".format(addr))
-                    return public.returnMsg(False, 'The specified IP address is in the wrong format2')
+                    return public.returnMsg(False, public.lang("The specified IP address is in the wrong format2"))
         else:
             if get.address != "all" and not public.checkIp(get.address) and not public.is_ipv6(get.address):
                 public.print_log("ip--{}".format(get.address))
-                return public.returnMsg(False, 'The specified IP address is in the wrong format 3')
+                return public.returnMsg(False, public.lang("The specified IP address is in the wrong format 3"))
 
-        return public.returnMsg(True, 'ok')
+        return public.returnMsg(True, public.lang("ok"))
 
     def check_ips(self, get):
         '''
@@ -774,17 +782,17 @@ class main(Base):
             address = get.address.split("\n")
             for addr in address:
                 if addr != "all" and not public.checkIp(addr) and not public.is_ipv6(addr):
-                     return public.return_message(-1, 0,  'The specified IP address is in the wrong format')
+                     return public.return_message(-1, 0, public.lang("The specified IP address is in the wrong format"))
         elif get.address != "all" and "," in get.address:
             address = get.address.split(",")
             for addr in address:
                 if addr != "all" and not public.checkIp(addr) and not public.is_ipv6(addr):
-                     return public.return_message(-1, 0,  'The specified IP address is in the wrong format')
+                     return public.return_message(-1, 0, public.lang("The specified IP address is in the wrong format"))
         else:
             if get.address != "all" and not public.checkIp(get.address) and not public.is_ipv6(get.address):
-                 return public.return_message(-1, 0,  'The specified IP address is in the wrong format')
+                 return public.return_message(-1, 0, public.lang("The specified IP address is in the wrong format"))
 
-        return public.return_message(0, 0,  'ok')
+        return public.return_message(0, 0, public.lang("ok"))
     # 2024/3/27 上午 9:37 修改端口规则
     def modify_port_rule(self, get):
         '''
@@ -795,15 +803,15 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置规则
         if not self.get_firewall_status():
-             return public.return_message(-1, 0,  'Please activate the firewall before setting up the rules!')
+             return public.return_message(-1, 0, public.lang("Please activate the firewall before setting up the rules!"))
         get.old_data = get.get('old_data/s', '')
         get.new_data = get.get('new_data/s', '')
 
         if get.old_data == "":
-             return public.return_message(-1, 0,  'Please pass in old_data')
+             return public.return_message(-1, 0, public.lang("Please pass in old_data"))
 
         if get.new_data == "":
-             return public.return_message(-1, 0,  'Please pass in new_data')
+             return public.return_message(-1, 0, public.lang("Please pass in new_data"))
 
         get.old_data = json.loads(get.old_data)
         get.new_data = json.loads(get.new_data)
@@ -813,7 +821,7 @@ class main(Base):
             if get.new_data['address'] != '' or get.new_data['address'] != 'Anywhere':
                 get.address = get.new_data['address']
                 if not self._check_ips(get)["status"]:
-                     return public.return_message(-1, 0,  'The modified IP address is incorrectly formatted')
+                     return public.return_message(-1, 0, public.lang("The modified IP address is incorrectly formatted"))
 
         args1 = public.dict_obj()
         args1.operation = 'remove'
@@ -838,7 +846,7 @@ class main(Base):
         args2.reload = "1"
         self.set_port_rule(args2)
 
-        return public.return_message(0, 0,  'The modification was successful')
+        return public.return_message(0, 0, public.lang("The modification was successful"))
 
     # 2024/3/27 下午 4:03 修改域名端口规则
     def modify_domain_port_rule(self, get):
@@ -849,15 +857,15 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置设置规则
         if not self.get_firewall_status():
-             return public.return_message(-1, 0,  'Please activate the firewall before setting up the rules!')
+             return public.return_message(-1, 0, public.lang("Please activate the firewall before setting up the rules!"))
         get.old_data = get.get('old_data/s', '')
         get.new_data = get.get('new_data/s', '')
 
         if get.old_data == "":
-             return public.return_message(-1, 0,  'Please pass in old_data')
+             return public.return_message(-1, 0, public.lang("Please pass in old_data"))
 
         if get.new_data == "":
-             return public.return_message(-1, 0,  'Please pass in new_data')
+             return public.return_message(-1, 0, public.lang("Please pass in new_data"))
 
         get.old_data = json.loads(get.old_data)
         get.new_data = json.loads(get.new_data)
@@ -865,7 +873,7 @@ class main(Base):
         address = self.get_a_ip(get.new_data['domain'])
 
         if address == "":
-             return public.return_message(-1, 0,  'Domain name: 【{}】Resolution failed'.format(get.domain))
+             return public.return_message(-1, 0, public.lang("Domain name: 【{}】Resolution failed", get.domain))
 
         args1 = public.dict_obj()
         args1.operation = 'remove'
@@ -892,7 +900,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The modification was successful')
+        return public.return_message(0, 0, public.lang("The modification was successful"))
 
     # 2024/3/26 下午 5:10 设置域名端口规则
     def set_domain_port_rule(self, get):
@@ -904,7 +912,7 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置规则
         if not self.get_firewall_status():
-             return public.return_message(-1, 0,  'Please activate the firewall before setting up the rules!')
+             return public.return_message(-1, 0, public.lang("Please activate the firewall before setting up the rules!"))
 
         get.operation = get.get('operation/s', 'add')
         get.protocol = get.get('protocol/s', 'tcp')
@@ -914,13 +922,13 @@ class main(Base):
         get.chain = get.get('chain/s', 'INPUT')
 
         if get.domain == "":
-             return public.return_message(-1, 0,  'The destination domain name cannot be empty')
+             return public.return_message(-1, 0, public.lang("The destination domain name cannot be empty"))
 
         if get.port == "":
-             return public.return_message(-1, 0,  'The destination port cannot be empty')
+             return public.return_message(-1, 0, public.lang("The destination port cannot be empty"))
 
         if not public.is_domain(get.domain):
-             return public.return_message(-1, 0,  'The destination domain name is in the wrong format')
+             return public.return_message(-1, 0, public.lang("The destination domain name is in the wrong format"))
 
         if "|" in get.domain:
             get.domain = get.domain.split("|")[0]
@@ -928,7 +936,7 @@ class main(Base):
         address = self.get_a_ip(get.domain)
 
         if address == "":
-             return public.return_message(-1, 0,  'Domain name: 【{}】Resolution failed'.format(get.domain))
+             return public.return_message(-1, 0, public.lang("Domain name: 【{}】Resolution failed", get.domain))
 
         get.address = address
         self.set_port_db(get)
@@ -1061,7 +1069,7 @@ class main(Base):
             get.address = get.get("address/s", '')
             get.strategy = get.get("strategy/s", '')
             if get.address == "":
-                 return public.return_message(-1, 0,  'Please pass in id')
+                 return public.return_message(-1, 0, public.lang("Please pass in id"))
             public.M('firewall_ip').where("address=? and types=? and chain=?", (get.address, get.strategy, get.chain)).delete()
             get.domain = get.get('domain/s', '')
             if get.domain != "":
@@ -1163,12 +1171,13 @@ class main(Base):
         '''
         address = get.address.split("\n")
         failed_list = []
-        import copy
+        from copy import deepcopy
         for addr in address:
             if not public.is_ipv4(addr) and not public.is_ipv6(addr):
                 continue
 
-            args = copy.deepcopy(get)
+            # args = copy.deepcopy(get)
+            args = public.to_dict_obj(deepcopy(get.get_items()))
             args.address = addr
             args.family = "ipv4" if ":" not in addr else "ipv6"
 
@@ -1198,12 +1207,12 @@ class main(Base):
                     "msg": result['msg']
                 })
         if len(failed_list) > 0:
-            return public.return_message(0, 0,  'The setting succeeds, but the following rule settings fail::{}'.format(failed_list))
+            return public.return_message(0, 0, public.lang("The setting succeeds, but the following rule settings fail::{}", failed_list))
 
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The setup was successful')
+        return public.return_message(0, 0, public.lang("The setup was successful"))
 
     # 2024/3/26 上午 9:40 处理多个ip的情况,例如出现逗号隔开ip
     def set_tline_ip_rule(self, get):
@@ -1215,12 +1224,13 @@ class main(Base):
         '''
         address = get.address.split(",")
         failed_list = []
-        import copy
+        from copy import deepcopy
         for addr in address:
             if not public.checkIp(addr):
-                 return public.return_message(-1, 0,  'The destination address is in the wrong format')
+                 return public.return_message(-1, 0, public.lang("The destination address is in the wrong format"))
 
-            args = copy.deepcopy(get)
+            # args = copy.deepcopy(get)
+            args = public.to_dict_obj(deepcopy(get.get_items()))
             args.address = addr
 
             if self.check_is_user_ip(args):
@@ -1249,12 +1259,12 @@ class main(Base):
                     "msg": result['msg']
                 })
         if len(failed_list) > 0:
-            return public.return_message(0, 0,  'The setting succeeds, but the following rule settings fail::{}'.format(failed_list))
+            return public.return_message(0, 0, public.lang("The setting succeeds, but the following rule settings fail::{}", failed_list))
 
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The setup was successful')
+        return public.return_message(0, 0, public.lang("The setup was successful"))
 
     # 2024/3/26 上午 9:43 处理192.168.1.10-192.168.1.20这种范围ip的添加/删除
     def set_range_ip_rule(self, get):
@@ -1266,9 +1276,10 @@ class main(Base):
         '''
         address = self.firewall.handle_ip_range(get.address)
         failed_list = []
-        import copy
+        from copy import deepcopy
         for addr in address:
-            args = copy.deepcopy(get)
+            # args = copy.deepcopy(get)
+            args = public.to_dict_obj(deepcopy(get.get_items()))
             args.address = addr
 
             if self.check_is_user_ip(args):
@@ -1297,12 +1308,12 @@ class main(Base):
                     "msg": result['msg']
                 })
         if len(failed_list) > 0:
-            return public.return_message(0, 0,  'The setting succeeds, but the following rule settings fail::{}'.format(failed_list))
+            return public.return_message(0, 0, public.lang("The setting succeeds, but the following rule settings fail::{}", failed_list))
 
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The setup was successful')
+        return public.return_message(0, 0, public.lang("The setup was successful"))
 
     # 2024/3/26 上午 9:46 设置带掩码的ip段
     def set_mask_ip_rule(self, get):
@@ -1313,7 +1324,7 @@ class main(Base):
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
         if get.operation == "add" and not self.check_ip_exist(get):
-             return public.return_message(-1, 0,  'The destination address {} already exists, please do not add it repeatedly'.format(get.address))
+             return public.return_message(-1, 0, public.lang("The destination address {} already exists, please do not add it repeatedly", get.address))
 
         self.set_ip_db(get)
         info = {
@@ -1362,7 +1373,7 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置规则
         if not self.get_firewall_status():
-             return public.return_message(-1, 0,  'Please activate the firewall before setting up the rules!')
+             return public.return_message(-1, 0, public.lang("Please activate the firewall before setting up the rules!"))
 
         get.operation = get.get('operation/s', 'add')
         get.address = get.get('address/s', '')
@@ -1373,7 +1384,7 @@ class main(Base):
         get.reload = get.get('reload/s', "1")
 
         if get.address == "":
-             return public.return_message(-1, 0,  'The destination IP cannot be empty')
+             return public.return_message(-1, 0, public.lang("The destination IP cannot be empty"))
 
         # 2024/3/25 下午 8:23 处理多个ip的情况,例如出现每行一个ip
         if get.address != "all" and "\n" in get.address:
@@ -1385,14 +1396,14 @@ class main(Base):
         elif get.address != "all" and "," in get.address:
             return self.set_tline_ip_rule(get)
         elif get.address != "all" and not public.checkIp(get.address) and not public.is_ipv6(get.address):
-             return public.return_message(-1, 0,  'The destination address is in the wrong format')
+             return public.return_message(-1, 0, public.lang("The destination address is in the wrong format"))
         else:
             if get.operation == "add" and get.strategy == "drop":
                 if self.check_is_user_ip(get):
-                     return public.return_message(-1, 0,  "You can't add your own IP")
+                     return public.return_message(-1, 0, public.lang("You can't add your own IP"))
 
             if get.operation == "add" and not self.check_ip_exist(get):
-                 return public.return_message(-1, 0,  'The destination address {} already exists, please do not add it repeatedly'.format(get.address))
+                 return public.return_message(-1, 0, public.lang("The destination address {} already exists, please do not add it repeatedly", get.address))
 
             self.set_ip_db(get)
 
@@ -1423,15 +1434,15 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置设置规则
         if not self.get_firewall_status():
-             return public.return_message(-1, 0,  'Please activate the firewall before setting up the rules!')
+             return public.return_message(-1, 0, public.lang("Please activate the firewall before setting up the rules!"))
         get.old_data = get.get('old_data/s', '')
         get.new_data = get.get('new_data/s', '')
 
         if get.old_data == "":
-             return public.return_message(-1, 0,  'Please pass in old_data')
+             return public.return_message(-1, 0, public.lang("Please pass in old_data"))
 
         if get.new_data == "":
-             return public.return_message(-1, 0,  'Please pass in new_data')
+             return public.return_message(-1, 0, public.lang("Please pass in new_data"))
 
         get.old_data = json.loads(get.old_data)
         get.new_data = json.loads(get.new_data)
@@ -1460,7 +1471,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The modification was successful')
+        return public.return_message(0, 0, public.lang("The modification was successful"))
 
     # 2024/3/26 下午 5:18 设置域名ip规则
     def set_domain_ip_rule(self, get):
@@ -1478,21 +1489,21 @@ class main(Base):
         get.chain = get.get('chain/s', 'INPUT')
 
         if get.domain == "":
-             return public.return_message(-1, 0,  'The destination domain name cannot be empty')
+             return public.return_message(-1, 0, public.lang("The destination domain name cannot be empty"))
 
         if get.port == "":
-             return public.return_message(-1, 0,  'The destination port cannot be empty')
+             return public.return_message(-1, 0, public.lang("The destination port cannot be empty"))
 
         if not public.is_domain(get.domain):
-             return public.return_message(-1, 0,  'The destination domain name is in the wrong format')
+             return public.return_message(-1, 0, public.lang("The destination domain name is in the wrong format"))
 
         address = self.get_a_ip(get.domain)
 
         if address == "":
-             return public.return_message(-1, 0,  'Domain name: 【{}】Resolution failed'.format(get.domain))
+             return public.return_message(-1, 0, public.lang("Domain name: 【{}】Resolution failed", get.domain))
 
         if not public.checkIp(get.address):
-             return public.return_message(-1, 0,  'The destination address is in the wrong format')
+             return public.return_message(-1, 0, public.lang("The destination address is in the wrong format"))
 
         info = {
             "Address": address,
@@ -1567,7 +1578,7 @@ class main(Base):
 
         data = self._ip_rules_list(get)
         if not data:
-             return public.return_message(-1, 0,  'No rules can be exported')
+             return public.return_message(-1, 0, public.lang("No rules can be exported"))
         if not os.path.exists(self.config_path):
             os.makedirs(self.config_path, exist_ok=True)
         file_path = "{}/{}.json".format(self.config_path, file_name)
@@ -1586,10 +1597,10 @@ class main(Base):
         get.file = get.get('file/s', '')
 
         if not get.file:
-             return public.return_message(-1, 0,  'The file cannot be empty')
+             return public.return_message(-1, 0, public.lang("The file cannot be empty"))
 
         if not os.path.exists(get.file):
-             return public.return_message(-1, 0,  'The file does not exist')
+             return public.return_message(-1, 0, public.lang("The file does not exist"))
 
         try:
             data = public.readFile(get.file)
@@ -1601,7 +1612,7 @@ class main(Base):
             # 2024/4/10 下午2:51 反转数据
             data.reverse()
         except:
-             return public.return_message(-1, 0,  'The file content is abnormal or malformed')
+             return public.return_message(-1, 0, public.lang("The file content is abnormal or malformed"))
 
         args = public.dict_obj()
         for item in data:
@@ -1618,7 +1629,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The import was successful')
+        return public.return_message(0, 0, public.lang("The import was successful"))
 
     # 2024/3/25 下午 2:34 获取端口转发列表
     def port_forward_list(self, get):
@@ -1655,7 +1666,7 @@ class main(Base):
         '''
         data = self.firewall.list_port_forward()
         if not data:
-             return public.return_message(-1, 0,  'No rules can be exported')
+             return public.return_message(-1, 0, public.lang("No rules can be exported"))
         file_name = "port_forward_{}".format(int(time.time()))
         if not os.path.exists(self.config_path):
             os.makedirs(self.config_path, exist_ok=True)
@@ -1675,10 +1686,10 @@ class main(Base):
         get.file = get.get('file/s', '')
 
         if not get.file:
-             return public.return_message(-1, 0,  'The file cannot be empty')
+             return public.return_message(-1, 0, public.lang("The file cannot be empty"))
 
         if not os.path.exists(get.file):
-             return public.return_message(-1, 0,  'The file does not exist')
+             return public.return_message(-1, 0, public.lang("The file does not exist"))
 
         try:
             data = public.readFile(get.file)
@@ -1690,7 +1701,7 @@ class main(Base):
             # 2024/4/10 下午2:51 反转数据
             data.reverse()
         except:
-             return public.return_message(-1, 0,  'The file content is abnormal or malformed')
+             return public.return_message(-1, 0, public.lang("The file content is abnormal or malformed"))
 
         args = public.dict_obj()
         for item in data:
@@ -1707,7 +1718,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The import was successful')
+        return public.return_message(0, 0, public.lang("The import was successful"))
 
     # 2024/3/25 下午 3:43 设置端口转发
     def set_port_forward(self, get):
@@ -1718,7 +1729,7 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置设置规则
         if not self.get_firewall_status():
-             return public.return_message(-1, 0,  'Please activate the firewall before setting up the rules!')
+             return public.return_message(-1, 0, public.lang("Please activate the firewall before setting up the rules!"))
 
         get.operation = get.get('operation/s', 'add')
         get.protocol = get.get('protocol/s', 'tcp')
@@ -1729,11 +1740,11 @@ class main(Base):
         get.reload = get.get('reload/s', "1")
 
         if get.S_Port == "":
-             return public.return_message(-1, 0,  'The source port cannot be empty')
+             return public.return_message(-1, 0, public.lang("The source port cannot be empty"))
         # if get.T_Address == "":
-        #      return public.return_message(-1, 0,  '目标地址不能为空')
+        #      return public.return_message(-1, 0, public.lang("目标地址不能为空"))
         if get.T_Port == "":
-             return public.return_message(-1, 0,  'The destination port cannot be empty')
+             return public.return_message(-1, 0, public.lang("The destination port cannot be empty"))
 
         # 2024/3/25 下午 5:49 前置检测
         if get.operation == "add":
@@ -1741,7 +1752,7 @@ class main(Base):
             if not check_ip_forward["status"]:
                 return public.return_message(-1, 0,  check_ip_forward['msg'])
             if not self.check_forward_exist(get):
-                 return public.return_message(-1, 0,  'If the rule already exists, do not add it repeatedly')
+                 return public.return_message(-1, 0, public.lang("If the rule already exists, do not add it repeatedly"))
 
         self.set_forward_db(get)
 
@@ -1799,16 +1810,16 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置规则
         if not self.get_firewall_status():
-             return public.return_message(-1, 0,  'Please activate the firewall before setting up the rules!')
+             return public.return_message(-1, 0, public.lang("Please activate the firewall before setting up the rules!"))
 
         get.old_data = get.get('old_data/s', '')
         get.new_data = get.get('new_data/s', '')
 
         if get.old_data == "":
-             return public.return_message(-1, 0,  'Please pass in old_data')
+             return public.return_message(-1, 0, public.lang("Please pass in old_data"))
 
         if get.new_data == "":
-             return public.return_message(-1, 0,  'Please pass in new_data')
+             return public.return_message(-1, 0, public.lang("Please pass in new_data"))
 
         get.old_data = json.loads(get.old_data)
         get.new_data = json.loads(get.new_data)
@@ -1838,18 +1849,8 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.return_message(0, 0,  'The modification was successful')
+        return public.return_message(0, 0, public.lang("The modification was successful"))
 
-    # # 测试切换语言
-    # def test(self, agrs):
-    #     # lang = 'Successfully set!'
-    #     lang = '2Succ essfully set1!'
-    #     aa = public.gettextmsg2(lang)
-    #     return aa
-    # def change(self, agrs):
-    #     lang = agrs.lang
-    #     aa = public.set_language(lang)
-    #     return aa
 
     def check_table_firewall_forward(self):
         '''

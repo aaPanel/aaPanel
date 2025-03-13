@@ -1,0 +1,168 @@
+{
+	"Component": {
+		"Batch": {
+			"index_1": "Veuillez choisir",
+			"index_2": "(Sélectionné {0})",
+			"index_3": "Lots {0}, progression actuelle:"
+		},
+		"Auth": {
+			"index_1": "GRATUIT",
+			"index_2": "Renouvellement",
+			"index_3": "Acheter maintenant",
+			"index_4": "Expirer sur: ",
+			"index_5": "Mettre à niveau maintenant",
+			"index_6": "Durée de vie"
+		},
+		"Feedback": {
+			"index_7": "Retour",
+			"index_1": "Collection de rétroaction de la demande AAPANEL",
+			"index_2": "Si vous rencontrez des problèmes ou des fonctions imparfaites pendant l'utilisation, veuillez décrire",
+			"index_3": "Vos problèmes ou vos besoins en détail, nous ferons de notre mieux pour résoudre ou améliorer",
+			"index_4": "Nous accordons une attention particulière à vos commentaires sur les exigences et nous effectuons des examens hebdomadaires réguliers. J'espère que je pourrai mieux vous aider",
+			"index_5": "Veuillez remplir les commentaires",
+			"index_6": "Merci pour votre participation!"
+		},
+		"Coupon": {
+			"index_1": "Obtenez des coupons pour une durée limitée",
+			"index_2": "DÉSACTIVÉ",
+			"index_3": "Valide pour ",
+			"index_4": "Coupon",
+			"index_5": "Obtenez-le maintenant",
+			"index_6": "Plus de rappels pour aujourd'hui",
+			"index_7": "Aucun rappel au cours des 7 derniers jours",
+			"index_8": "Ne te rappelle jamais pour toujours",
+			"index_9": "{0}, êtes-vous sûr?",
+			"index_10": "Se terminer ",
+			"index_11": "Obtenez un coupon $ {0}",
+			"index_12": "{0} coupons",
+			"index_13": "Choisissez le temps sans préavis"
+		},
+		"Pay": {
+			"index_1": "PRO",
+			"index_2": "Recommandé",
+			"index_3": "Fonction pro",
+			"index_4": "Description du plug-in",
+			"index_5": "Contraste de caractéristiques",
+			"index_6": "Sauver plus",
+			"index_7": "Linux Pro Edition est disponible gratuitement ce plugin et toutes les autres fonctionnalités professionnelles",
+			"index_8": "Questions? Envoyez-nous un e-mail à tout moment: {0}",
+			"index_9": "Choisissez votre plan",
+			"index_10": "Le plus populaire",
+			"index_11": "Nombre de licences",
+			"index_12": "Chargement, veuillez attendre ...",
+			"index_13": "{0} off",
+			"index_14": "{0} {1}",
+			"index_15": "{0} {1}",
+			"index_16": "OP: {0}",
+			"index_17": "Plug-in uniquement",
+			"index_18": "Coupon ({0})",
+			"index_19": "$ {0} sur le paiement {1}",
+			"index_20": "Aucun coupon préférentiel",
+			"index_21": "Bon",
+			"index_22": "Licence",
+			"index_23": "Compte: ",
+			"index_24": "Changement",
+			"index_25": "Total: ",
+			"index_26": "Verrouillage",
+			"index_27": "Si {0} ne paie pas, vous pouvez essayer d'utiliser",
+			"index_28": "Échec de la commande de paiement, veuillez contacter l'administrateur!",
+			"index_29": "Abonnement: ",
+			"index_30": "* Lorsque la licence expire, elle renouvellera automatiquement",
+			"index_31": "* Vérification de l'abonnement, vous ne pouvez pas payer en monnaie locale",
+			"index_32": "Devise locale:",
+			"index_33": "* Payez avec votre mode de paiement local et votre devise",
+			"index_34": "Informations sur la licence",
+			"index_35": "Pas de licence",
+			"index_36": "Licence",
+			"index_37": "Portes",
+			"index_38": "Pas de bons",
+			"index_39": "Utiliser",
+			"index_40": "Expire après",
+			"index_41": "Veuillez demander SSL avant d'acheter!",
+			"index_42": "Activer SSL",
+			"index_43": "Offre à durée limitée: ",
+			"index_44": "Économisez jusqu'à $ {0}",
+			"index_45": "Autre paiement",
+			"index_46": "Convertir automatiquement la monnaie de paiement en fonction de votre emplacement",
+			"index_47": "Payer maintenant"
+		},
+		"BindAccount": {
+			"index_1": "Lier le compte Aapanel",
+			"index_2": "Pas de compte, allez vous inscrire",
+			"index_3": "Se connecter",
+			"index_4": "Veuillez saisir votre adresse e-mail",
+			"index_5": "Veuillez saisir votre mot de passe",
+			"index_6": "Lier le compte Aapanel",
+			"index_7": "Votre adresse e-mail",
+			"index_8": "Votre mot de passe"
+		},
+		"Logs": {
+			"index_1": "Aucun journal"
+		},
+		"SelectPath": {
+			"index_1": "Retour",
+			"index_2": "Chemin actuel",
+			"index_3": "Nom de fichier",
+			"index_4": "Temps de modification",
+			"index_5": "Autorisation",
+			"index_6": "Propriétaire",
+			"index_7": "Sélectionner le répertoire"
+		},
+		"Editor": {
+			"index_1": "Conseils: Ctrl + F Recherche Mots-clés ， Ctrl + S Enregistrer ， Ctrl + H Recherche et remplacer"
+		},
+		"Quota": {
+			"index_1": "Quota",
+			"index_2": "Pas réglé",
+			"index_3": "Capacité utilisée actuelle: {0}",
+			"index_4": "Cliquez sur Modifier le quota de capacité",
+			"index_5": "{1} Définir le nouveau quota [{0}]",
+			"index_6": "Capacité utilisée actuelle",
+			"index_7": "Quota de capacité actuel",
+			"index_8": "Rappel: cette fonctionnalité est exclusive à l'édition professionnelle",
+			"index_9": "Nécessite un système de fichiers XFS et comprend le paramètre [Prjquota] à utiliser",
+			"index_10": "Exemple de fstab: / dev / vdc1 / data xfs par défaut, prjquota 0 0",
+			"index_11": "Quota: Pour annuler le quota, réglé sur \"0\"",
+			"index_12": "Quota de capacité actuel: {0}"
+		},
+		"Terminal": {
+			"index_1": "La connexion a été déconnectée, en appuyant sur ENTER tentera de se reconnecter!",
+			"index_2": "Essayer de se reconnecter!"
+		},
+		"Upload": {
+			"index_1": "Sélectionner le fichier",
+			"index_2": "Non sélectionné"
+		},
+		"UploadFile": {
+			"index_1": "Cliquez ou faites glisser le fichier vers la zone",
+			"index_2": "Prise en charge de l'importation du format de fichiers {0}",
+			"index_3": "Nom de fichier",
+			"index_4": "Taille",
+			"index_5": "Statut",
+			"index_6": "Sélectionner le fichier",
+			"index_7": "La taille du fichier [{0}] ne peut pas dépasser {1} m",
+			"index_8": "En attente de téléchargement",
+			"index_9": "Télécharger le succès",
+			"index_10": "Veuillez sélectionner le fichier à télécharger"
+		},
+		"FormMore": {
+			"index_1": "Plus de configuration, cliquez pour afficher"
+		},
+		"Confirm": {
+			"index_1": "Si vous confirmez l'opération, entrez-la manuellement \"{text_}\"",
+			"index_2": "Erreur d'entrée, veuillez réessayer",
+			"index_3": "{0} a été effectué, des tâches totales {1}, {2} Succès, {3} défaillances",
+			"index_4": "Résultat: ",
+			"index_5": "Le résultat est incorrect, veuillez réessayer"
+		},
+		"SoftState": {
+			"index_1": "Êtes-vous sûr de devoir {0} le service {1} et de continuer?"
+		},
+		"Api": {
+			"index_1": "Chargement, veuillez attendre ...",
+			"index_2": "Reliure, veuillez attendre ...",
+			"index_3": "Soumettre les commentaires, veuillez patienter.",
+			"index_4": "Fichier de téléchargement, veuillez patienter ..."
+		}
+	}
+}

@@ -1,0 +1,31 @@
+{
+	"Term": {
+		"idnex_1": "Please enter command name",
+		"index_2": "Please enter command content",
+		"index_3": "Add command",
+		"index_4": "Command name",
+		"index_5": "Edit command",
+		"index_6": "Delete information",
+		"index_7": "Delete service information [{0}], continue?",
+		"index_8": "Server IP",
+		"index_9": "Please enter server IP",
+		"index_10": "SSH account",
+		"index_11": "Please enter SSH account",
+		"index_12": "Verification",
+		"index_13": "Private key",
+		"index_14": "Please enter SSH password",
+		"index_15": "Please enter SSH Private key",
+		"index_16": "Key password",
+		"index_17": "Please enter Key password, can be blank",
+		"index_18": "Please enter remarks, can be blank",
+		"index_19": "Add server",
+		"index_20": "Delete command",
+		"index_21": "Delete command [{0}], continue?",
+		"index_22": "Edit server",
+		"index_23": "Server List",
+		"index_24": "Commands",
+		"index_25": "A terminal server is required",
+		"index_26": "Please enter correct ip address",
+		"index_27": "Are you sure to log out?"
+	}
+}

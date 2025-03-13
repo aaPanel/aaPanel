@@ -98,11 +98,11 @@ class panelAdmin(panelSetup):
     # 设置基础Session
     def setSession(self):
         if request.method == 'GET':
-            g.menus = public.get_menus()
+            g.menus = public.get_menus_for_session_router()
             g.yaer = datetime.now().year
-        session["top_tips"] = public.get_msg_gettext("The current IE browser version is too low to display some features, please use another browser. Or if you use a browser developed by a Chinese company, please switch to Extreme Mode!")
-        session["bt_help"] = public.get_msg_gettext("For Support|Suggestions, please visit the aaPanel Forum")
-        session["download"] = public.get_msg_gettext("Downloading:")
+        session["top_tips"] = public.lang("The current IE browser version is too low to display some features, please use another browser. Or if you use a browser developed by a Chinese company, please switch to Extreme Mode!")
+        session["bt_help"] = public.lang("For Support|Suggestions, please visit the aaPanel Forum")
+        session["download"] = public.lang("Downloading:")
         if not 'brand' in session:
             session['brand'] = public.GetConfigValue('brand')
             session['product'] = public.GetConfigValue('product')
@@ -116,7 +116,7 @@ class panelAdmin(panelSetup):
         if not 'lan' in session:
             session['lan'] = public.GetLanguage()
         if not 'home' in session:
-            session['home'] = 'https://www.aapanel.com'
+            session['home'] = public.OfficialApiBase()
         return False
 
     # 检查Web服务器类型
@@ -241,7 +241,7 @@ class panelAdmin(panelSetup):
 
             if not public.is_api_limit_ip(api_config['limit_addr'], client_ip):  # client_ip in api_config['limit_addr']:
                 public.set_error_num(num_key)
-                return public.returnJson(False,'%s[' % public.get_msg_gettext("20 consecutive verification failures, prohibited for 1 hour")+client_ip+']')
+                return public.returnJson(False,'%s[' % public.lang("20 consecutive verification failures, prohibited for 1 hour")+client_ip+']')
         else:
             num_key = client_ip + '_app'
             if not public.get_error_num(num_key,20):

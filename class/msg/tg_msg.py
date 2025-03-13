@@ -75,13 +75,13 @@ class tg_msg:
         """
 
         if not hasattr(get, 'my_id') or not hasattr(get, 'bot_token'):
-            return public.returnMsg(False, 'Please fill in the complete information')
+            return public.returnMsg(False, public.lang("Please fill in the complete information"))
 
         title = 'Default'
         if hasattr(get, 'title'):
             title = get.title
             if len(title) > 7:
-                return public.returnMsg(False, 'Note name cannot exceed 7 characters')
+                return public.returnMsg(False, public.lang("Note name cannot exceed 7 characters"))
 
         self.__tg_info = {"my_id": get.my_id.strip(), "bot_token": get.bot_token, "title": title, "status": True}
 
@@ -97,7 +97,7 @@ class tg_msg:
                 public.writeFile(self.__default_pl, self.__module_name)
 
             public.writeFile(self.conf_path, json.dumps(self.__tg_info))
-            return public.returnMsg(True, 'successfully set')
+            return public.returnMsg(True, public.lang("successfully set"))
         else:
             return ret
 
@@ -175,9 +175,9 @@ class tg_msg:
         @msg 消息正文
         """
         if not self.__tg_info:
-            return public.returnMsg(False, 'The telegram information is incorrectly configured.')
+            return public.returnMsg(False, public.lang("The telegram information is incorrectly configured."))
         if isinstance(self.__tg_info['my_id'], int):
-            return public.returnMsg(False, 'Telegram configuration error, please reconfigure the robot.')
+            return public.returnMsg(False, public.lang("Telegram configuration error, please reconfigure the robot."))
         msg, title = self.get_send_msg(msg)
         # public.WriteFile("/tmp/title.tg", title)
         # public.WriteFile("/tmp/msg.tg", msg)
@@ -207,7 +207,7 @@ class tg_msg:
             public.print_log('message sent successfully！')
             loop.close()
 
-            return public.returnMsg(True, 'send complete, send result: True.')
+            return public.returnMsg(True, public.lang("send complete, send result: True."))
 
         except:
             public.print_log('Error:{}'.format(str(public.get_error_info())))
@@ -216,7 +216,7 @@ class tg_msg:
 
             public.write_push_log(self.__module_name, title, ret)
 
-            return public.returnMsg(False, 'send complete, send result: False.')
+            return public.returnMsg(False, public.lang("send complete, send result: False."))
 
     def push_data(self, data):
         """

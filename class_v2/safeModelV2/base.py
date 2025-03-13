@@ -90,3 +90,32 @@ class safeBase:
         res = sorted(res,reverse=True)
         res.insert(0,spath + s_key)
         return res
+
+    def get_ssh_log_files_list(self,get):
+        """
+        获取ssh日志文件
+        """
+        s_key = 'secure'
+        if not os.path.exists('/var/log/secure'):
+            s_key = 'auth.log'
+        if os.path.exists('/var/log/secure') and os.path.getsize('/var/log/secure') == 0:
+            s_key = 'auth.log'
+
+        res = []
+        spath = '/var/log/'
+        for fname in os.listdir(spath):
+            fpath = '{}{}'.format(spath,fname)
+            if fname.find(s_key) == -1 or fname == s_key:
+                continue
+            #debian解压日志
+            if fname[-3:] in ['.gz','.xz']:
+                continue
+            if os.path.getsize(fpath) > 1024 * 1024 * 100:
+                continue
+            #判断文件数量为15个
+            if len(res) > 15:
+                break
+            res.append(fpath)
+        res = sorted(res,reverse=True)
+        res.insert(0,spath + s_key)
+        return res

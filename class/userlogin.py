@@ -13,126 +13,12 @@ from flask import request,redirect,g
 
 class userlogin:
     limit_expire_time = 0
-    # def request_post(self,post):
-    #     if not hasattr(post, 'username') or not hasattr(post, 'password'):
-    #         public.print_log('登录拦截 11')
-    #         return public.returnJson(False,'User name or password cannot be empty!'),json_header
-    #     self.error_num(False)
-    #     if self.limit_address('?') < 1: return public.returnJson(False,'You have failed to log in many times, please try again in {} seconds!'.format(int(self.limit_expire_time - time.time()))),json_header
-    #     post.username = post.username.strip()
-    #     format_error = 'Parameter format error'
-    #
-    #     # 核验用户名密码格式
-    #     post.username = public.rsa_decrypt(post.username)
-    #
-    #     if len(post.username) != 32:
-    #         return public.returnMsg(False,format_error+"1"),json_header
-    #     post.password = public.rsa_decrypt(post.password)
-    #     if len(post.password) != 32:
-    #         return public.returnMsg(False,format_error+"2"),json_header
-    #
-    #     if not re.match(r"^\w+$",post.username): return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
-    #     if not re.match(r"^\w+$",post.password): return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
-    #     last_login_token = session.get('last_login_token',None)
-    #     if not last_login_token:
-    #         public.WriteLog('TYPE_LOGIN','LOGIN_ERR_CODE',('****','****',public.GetClientIp()))
-    #         return public.returnJson(False,"Verification failed, please refresh the page and log in again!"),json_header
-    #
-    #     public.chdck_salt()
-    #     sql = db.Sql()
-    #     userInfo = None
-    #     user_plugin_file = '{}/users_main.py'.format(public.get_plugin_path('users'))
-    #     if os.path.exists(user_plugin_file):
-    #         user_list = sql.table('users').field('id,username,password,salt').select()
-    #         for u_info in user_list:
-    #             if public.md5(public.md5(u_info['username'] + last_login_token)) == post.username:
-    #                 userInfo = u_info
-    #     else:
-    #         userInfo = sql.table('users').where('id=?',1).field('id,username,password,salt').find()
-    #
-    #
-    #     if 'code' in session:
-    #         if session['code'] and not 'is_verify_password' in session:
-    #             if not hasattr(post, 'code'): return public.returnJson(False,'Verification code can not be empty!'),json_header
-    #             if not re.match(r"^\w+$",post.code): return public.returnJson(False,'Verification code is incorrect, please try again!'),json_header
-    #             if not public.checkCode(post.code):
-    #                 public.write_log_gettext('Login','Verification code is incorrect, Username:{}, Verification Code:{}, Login IP:{}',('****','****',public.GetClientIp()))
-    #                 return public.returnJson(False,'Verification code is incorrect, please try again!'),json_header
-    #     try:
-    #         if not userInfo:
-    #             public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()))
-    #             num = self.limit_address('+')
-    #             if not num: return public.returnJson(False,'You have failed to log in many times, please try again in {} seconds!'.format(int(self.limit_expire_time - time.time()))),json_header
-    #             return public.returnJson(False,'wrong user name or password，<span style="color:red;">please refresh the page and try again</span>，You can retry {} more times'.format(num)),json_header
-    #
-    #         if userInfo and not userInfo['salt']:
-    #             public.chdck_salt()
-    #             userInfo = sql.table('users').where('id=?',(userInfo['id'],)).field('id,username,password,salt').find()
-    #
-    #         password = public.md5(post.password.strip() + userInfo['salt'])
-    #         s_username = public.md5(public.md5(userInfo['username'] + last_login_token))
-    #         if s_username != post.username or userInfo['password'] != password:
-    #             public.write_log_gettext('Login','Password is incorrect, Username:{}, Password:{}, Login IP:{}',('****','******',public.GetClientIp()))
-    #             num = self.limit_address('+')
-    #             if not num: return public.returnJson(False,'You failed to log in many times, please try again in {} seconds!'.format(int(self.limit_expire_time - time.time()))),json_header
-    #             return public.returnJson(False,'Invalid username or password. You have [{}] times left to try!',(str(num),)),json_header
-    #         _key_file = "/www/server/panel/data/two_step_auth.txt"
-    #
-    #         # 密码过期检测
-    #         if sys.path[0] != 'class/': sys.path.insert(0,'class/')
-    #         if not public.password_expire_check():
-    #             session['password_expire'] = True
-    #
-    #         #登陆告警
-    #         #public.run_thread(public.login_send_body,("账号密码",userInfo['username'],public.GetClientIp(),str(int(request.environ.get('REMOTE_PORT')))))
-    #         # public.login_send_body("账号密码",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT')))
-    #         if hasattr(post,'vcode'):
-    #             if not re.match(r"^\d+$",post.vcode): return public.returnJson(False,'Incorrect format of verification code'),json_header
-    #             if self.limit_address('?',v="vcode") < 1: return public.returnJson(False,'You have failed verification many times, forbidden for 10 minutes'),json_header
-    #             import pyotp
-    #             secret_key = public.readFile(_key_file)
-    #             if not secret_key:
-    #                 return public.returnJson(False, "Did not find the key, please close Google verification on the command line and trun on again"),json_header
-    #             t = pyotp.TOTP(secret_key)
-    #             result = t.verify(post.vcode)
-    #             if not result:
-    #                 if public.sync_date(): result = t.verify(post.vcode)
-    #                 if not result:
-    #                     num = self.limit_address('++',v="vcode")
-    #                     return public.returnJson(False, 'Invalid Verification code. You have [{}] times left to try!'.format(num)), json_header
-    #             now = int(time.time())
-    #             # public.run_thread(public.login_send_body,("account",userInfo['username'],public.GetClientIp(),str(int(request.environ.get('REMOTE_PORT')))))
-    #             public.writeFile("/www/server/panel/data/dont_vcode_ip.txt",json.dumps({"client_ip":public.GetClientIp(),"add_time":now}))
-    #             self.limit_address('--',v="vcode")
-    #             self.set_cdn_host(post)
-    #             return self._set_login_session(userInfo)
-    #
-    #         acc_client_ip = self.check_two_step_auth()
-    #
-    #         if not os.path.exists(_key_file) or acc_client_ip:
-    #             public.run_thread(public.login_send_body,("account",userInfo['username'],public.GetClientIp(),str(int(request.environ.get('REMOTE_PORT')))))
-    #             self.set_cdn_host(post)
-    #             return self._set_login_session(userInfo)
-    #         self.limit_address('-')
-    #         session['is_verify_password'] = True
-    #         return "1"
-    #     except Exception as ex:
-    #         stringEx = str(ex)
-    #         if stringEx.find('unsupported') != -1 or stringEx.find('-1') != -1:
-    #             public.ExecShell("rm -f /tmp/sess_*")
-    #             public.ExecShell("rm -f /www/wwwlogs/*log")
-    #             public.ServiceReload()
-    #             return public.returnJson(False,'USER_INODE_ERR'),json_header
-    #         public.write_log_gettext('Login','Password is incorrect, Username:{}, Password:{}, Login IP:{}',('****','******',public.GetClientIp()))
-    #         num = self.limit_address('+')
-    #         if not num: return public.returnJson(False,'You have failed to log in many times, please wait {} seconds and try again!'.format(int(self.limit_expire_time - time.time()))),json_header
-    #         return public.returnJson(False,'Invalid username or password. You have [{}] times left to try!',(str(num),)),json_header
-    # 错误收集 适配
+
     def request_post(self,post):
         if not hasattr(post, 'username') or not hasattr(post, 'password'):
-            return public.returnJson(False,'User name or password cannot be empty!'),json_header
+            return  public.returnJson(False,public.lang('User name or password cannot be empty!')),json_header
         self.error_num(False)
-        if self.limit_address('?') < 1: return public.returnJson(False,'You have failed to log in many times, please try again in {} seconds!'.format(int(self.limit_expire_time - time.time()))),json_header
+        if self.limit_address('?') < 1: return public.returnJson(False,public.lang('You have failed to log in many times, please try again in {} seconds!',int(self.limit_expire_time - time.time()))),json_header
         post.username = post.username.strip()
         format_error = 'Parameter format error'
 
@@ -145,12 +31,12 @@ class userlogin:
         if len(post.password) != 32:
             return public.returnMsg(False,format_error+"2"),json_header
 
-        if not re.match(r"^\w+$",post.username): return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
-        if not re.match(r"^\w+$",post.password): return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
+        if not re.match(r"^\w+$",post.username): return public.return_msg_gettext(False, public.lang("Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...")),json_header
+        if not re.match(r"^\w+$",post.password): return public.return_msg_gettext(False, public.lang("Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...")),json_header
         last_login_token = session.get('last_login_token',None)
         if not last_login_token:
             public.WriteLog('TYPE_LOGIN','LOGIN_ERR_CODE',('****','****',public.GetClientIp()))
-            return public.returnJson(False,"Verification failed, please refresh the page and log in again!"),json_header
+            return  public.returnJson(False,public.lang("Verification failed, please refresh the page and log in again!")),json_header
 
         public.chdck_salt()
         sql = db.Sql()
@@ -166,18 +52,18 @@ class userlogin:
 
         if 'code' in session:
             if session['code'] and not 'is_verify_password' in session:
-                if not hasattr(post, 'code'): return public.returnJson(False,'Verification code can not be empty!'),json_header
-                if not re.match(r"^\w+$",post.code): return public.returnJson(False,'Verification code is incorrect, please try again!'),json_header
+                if not hasattr(post, 'code'): return  public.returnJson(False,public.lang('Verification code can not be empty!')),json_header
+                if not re.match(r"^\w+$",post.code): return  public.returnJson(False,public.lang('Verification code is incorrect, please try again!')),json_header
                 if not public.checkCode(post.code):
                     public.write_log_gettext('Login','Verification code is incorrect, Username:{}, Verification Code:{}, Login IP:{}',('****','****',public.GetClientIp()))
-                    return public.returnJson(False,'Verification code is incorrect, please try again!'),json_header
+                    return  public.returnJson(False,public.lang('Verification code is incorrect, please try again!')),json_header
 
         try:
             if not userInfo:
                 public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()))
                 num = self.limit_address('+')
-                if not num: return public.returnJson(False,'You have failed to log in many times, please try again in {} seconds!'.format(int(self.limit_expire_time - time.time()))),json_header
-                return public.returnJson(False,'wrong user name or password，<span style="color:red;">please refresh the page and try again</span>，You can retry {} more times'.format(num)),json_header
+                if not num: return  public.returnJson(False,public.lang('You have failed to log in many times, please try again in {} seconds!',int(self.limit_expire_time - time.time()))),json_header
+                return  public.returnJson(False,public.lang('wrong user name or password，<span style="color:red;">please refresh the page and try again</span>，You can retry {} more times',num)),json_header
 
             if userInfo and not userInfo['salt']:
                 public.chdck_salt()
@@ -188,8 +74,8 @@ class userlogin:
             if s_username != post.username or userInfo['password'] != password:
                 public.write_log_gettext('Login','Password is incorrect, Username:{}, Password:{}, Login IP:{}',('****','******',public.GetClientIp()))
                 num = self.limit_address('+')
-                if not num: return public.returnJson(False,'You failed to log in many times, please try again in {} seconds!'.format(int(self.limit_expire_time - time.time()))),json_header
-                return public.returnJson(False,'Invalid username or password. You have [{}] times left to try!',(str(num),)),json_header
+                if not num: return  public.returnJson(False,public.lang('You failed to log in many times, please try again in {} seconds!',int(self.limit_expire_time - time.time()))),json_header
+                return  public.returnJson(False,public.lang('Invalid username or password. You have [{}] times left to try!',str(num))),json_header
             _key_file = "/www/server/panel/data/two_step_auth.txt"
 
             area_check = public.check_area_panel()
@@ -204,19 +90,19 @@ class userlogin:
             #public.run_thread(public.login_send_body,("账号密码",userInfo['username'],public.GetClientIp(),str(int(request.environ.get('REMOTE_PORT')))))
             # public.login_send_body("账号密码",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT')))
             if hasattr(post,'vcode'):
-                if not re.match(r"^\d+$",post.vcode): return public.returnJson(False,'Incorrect format of verification code'),json_header
-                if self.limit_address('?',v="vcode") < 1: return public.returnJson(False,'You have failed verification many times, forbidden for 10 minutes'),json_header
+                if not re.match(r"^\d+$",post.vcode): return  public.returnJson(False,public.lang('Incorrect format of verification code')),json_header
+                if self.limit_address('?',v="vcode") < 1: return  public.returnJson(False,public.lang('You have failed verification many times, forbidden for 10 minutes')),json_header
                 import pyotp
                 secret_key = public.readFile(_key_file)
                 if not secret_key:
-                    return public.returnJson(False, "Did not find the key, please close Google verification on the command line and trun on again"),json_header
+                    return  public.returnJson(False,public.lang( "Did not find the key, please close Google verification on the command line and trun on again")),json_header
                 t = pyotp.TOTP(secret_key)
                 result = t.verify(post.vcode)
                 if not result:
                     if public.sync_date(): result = t.verify(post.vcode)
                     if not result:
                         num = self.limit_address('++',v="vcode")
-                        return public.returnJson(False, 'Invalid Verification code. You have [{}] times left to try!'.format(num)), json_header
+                        return  public.returnJson(False,public.lang( 'Invalid Verification code. You have [{}] times left to try!',num)), json_header
                 now = int(time.time())
                 # public.run_thread(public.login_send_body,("account",userInfo['username'],public.GetClientIp(),str(int(request.environ.get('REMOTE_PORT')))))
                 public.writeFile("/www/server/panel/data/dont_vcode_ip.txt",json.dumps({"client_ip":public.GetClientIp(),"add_time":now}))
@@ -240,11 +126,11 @@ class userlogin:
                 public.ExecShell("rm -f /tmp/sess_*")
                 public.ExecShell("rm -f /www/wwwlogs/*log")
                 public.ServiceReload()
-                return public.returnJson(False,'USER_INODE_ERR'),json_header
+                return  public.returnJson(False,public.lang('USER_INODE_ERR')),json_header
             public.write_log_gettext('Login','Password is incorrect, Username:{}, Password:{}, Login IP:{}',('****','******',public.GetClientIp()))
             num = self.limit_address('+')
             if not num:
-                return public.returnJson(False,'You have failed to log in many times, please wait {} seconds and try again!'.format(int(self.limit_expire_time - time.time()))),json_header
+                return  public.returnJson(False,public.lang('You have failed to log in many times, please wait {} seconds and try again!',int(self.limit_expire_time - time.time()))),json_header
             # return public.returnJson(False,'Invalid username or password. You have [{}] times left to try!',(str(num),)),json_header
 
             # 2024/1/3 下午 2:31 记录登录时捕捉不到合适的错误，记录到文件中易于排查
@@ -291,16 +177,16 @@ class userlogin:
 
     def request_tmp(self,get):
         try:
-            if not hasattr(get,'tmp_token'): return public.returnJson(False,'Parameter ERROR!'),json_header
+            if not hasattr(get,'tmp_token'): return  public.returnJson(False,public.lang('Parameter ERROR!')),json_header
             if len(get.tmp_token) == 48:
                 return self.request_temp(get)
-            if len(get.tmp_token) != 64: return public.returnJson(False,'Parameter ERROR!'),json_header
-            if not re.match(r"^\w+$",get.tmp_token):return public.returnJson(False,'Parameter ERROR!'),json_header
+            if len(get.tmp_token) != 64: return  public.returnJson(False,public.lang('Parameter ERROR!')),json_header
+            if not re.match(r"^\w+$",get.tmp_token):return  public.returnJson(False,public.lang('Parameter ERROR!')),json_header
             save_path = '/www/server/panel/config/api.json'
             data = json.loads(public.ReadFile(save_path))
-            if not 'tmp_token' in data or not 'tmp_time' in data: return public.returnJson(False,'Verification failed'),json_header
-            if (time.time() - data['tmp_time']) > 120: return public.returnJson(False,'Expired Token'),json_header
-            if get.tmp_token != data['tmp_token']: return public.returnJson(False,'Invalid Token!'),json_header
+            if not 'tmp_token' in data or not 'tmp_time' in data: return  public.returnJson(False,public.lang('Verification failed')),json_header
+            if (time.time() - data['tmp_time']) > 120: return  public.returnJson(False,public.lang('Expired Token')),json_header
+            if get.tmp_token != data['tmp_token']: return  public.returnJson(False,public.lang('Invalid Token!')),json_header
             userInfo = public.M('users').where("id=?",(1,)).field('id,username').find()
             session['login'] = True
             session['username'] = userInfo['username']
@@ -320,40 +206,44 @@ class userlogin:
             self.set_cdn_host(get)
             return redirect('/')
         except:
-            return public.returnJson(False,'Login failed,' + public.get_error_info()),json_header
+            return public.returnJson(False, public.lang('Login failed,') + public.get_error_info()),json_header
 
 
-    def request_temp(self,get):
+    def request_temp(self, get):
         try:
-            if len(get.get_items().keys()) > 2: return public.get_msg_gettext('Parameter ERROR!')
-            if not hasattr(get,'tmp_token'): return public.get_msg_gettext('Parameter ERROR!')
-            if len(get.tmp_token) != 48: return public.get_msg_gettext('Parameter ERROR!')
-            if not re.match(r"^\w+$",get.tmp_token):return public.get_msg_gettext('Parameter ERROR!')
+            if len(get.get_items().keys()) > 2:
+                return public.lang("Parameter ERROR!")
+            if not hasattr(get, 'tmp_token'):
+                return public.lang("Parameter ERROR!")
+            if len(get.tmp_token) != 48:
+                return public.lang("Parameter ERROR!")
+            if not re.match(r"^\w+$", get.tmp_token):
+                return public.lang("Parameter ERROR!")
+
             skey = public.GetClientIp() + '_temp_login'
-            if not public.get_error_num(skey,10): return public.get_msg_gettext('10 consecutive authentication failures are prohibited for 1 hour')
+            if not public.get_error_num(skey, 10):
+                return public.lang("10 consecutive authentication failures are prohibited for 1 hour")
             s_time = int(time.time())
-            if public.M('temp_login').where('state=? and expire>?',(0,s_time)).field('id,token,salt,expire').count()==0:
+            if public.M('temp_login').where('state=? and expire>?',(0, s_time)).field('id,token,salt,expire').count()==0:
                 public.set_error_num(skey)
-                return public.get_msg_gettext('Verification failed')
+                return public.lang("Verification failed")
 
             data = public.M('temp_login').where('state=? and expire>?',(0,s_time)).field('id,token,salt,expire').find()
-            if not data:
+            if data is None or not isinstance(data,dict):
                 public.set_error_num(skey)
-                return public.get_msg_gettext('Verification failed')
-            if not isinstance(data,dict):
-                public.set_error_num(skey)
-                return public.get_msg_gettext('Verification failed')
+                return public.lang("Verification failed")
             r_token = public.md5(get.tmp_token + data['salt'])
             if r_token != data['token']:
                 public.set_error_num(skey)
-                return public.get_msg_gettext('Verification failed')
-            public.set_error_num(skey,True)
+                return public.lang("Verification failed")
+
+            public.set_error_num(skey, True)
             userInfo = public.M('users').where("id=?",(1,)).field('id,username').find()
             session['login'] = True
-            session['username'] = public.get_msg_gettext('TEMPORARY_ID({})',(data['id'],))
+            session['username'] = public.lang('TEMPORARY_ID({})',data['id'])
             session['tmp_login'] = True
             session['tmp_login_id'] = str(data['id'])
-            session['tmp_login_expire'] = time.time() + 3600
+            session['tmp_login_expire'] = data['expire']
             session['uid'] = data['id']
             sess_path = 'data/session'
             if not os.path.exists(sess_path):
@@ -370,11 +260,15 @@ class userlogin:
             self.set_request_token()
             self.login_token()
             self.set_cdn_host(get)
-            public.run_thread(public.login_send_body("Temporary authorization",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT'))))
+            public.run_thread(
+                public.login_send_body(
+                    "Temporary authorization",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT'))
+                )
+            )
             return redirect('/')
         except:
             public.print_log(public.get_error_info(),'ERROR')
-            return public.get_msg_gettext('Login failed')
+            return public.lang("Login failed")
 
 
     def login_token(self):
@@ -402,7 +296,7 @@ class userlogin:
         if 'login' in session:
             if session['login'] == True:
                 return redirect('/')
-        
+
         # 复位验证码
         if not 'code' in session:
             session['code'] = False
@@ -437,7 +331,7 @@ class userlogin:
             num = 1
         if s: cache.inc(nKey,1)
         if num > 6: session['code'] = True
-    
+
     #IP限制
     def limit_address(self,type,v=""):
         import time
@@ -550,10 +444,10 @@ class userlogin:
                 public.ExecShell("rm -f /tmp/sess_*")
                 public.ExecShell("rm -f /www/wwwlogs/*log")
                 public.ServiceReload()
-                return public.returnJson(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
+                return  public.returnJson(False,public.lang('Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...')),json_header
             public.write_log_gettext('Login','Password is incorrect, Username:{}, Password:{}, Login IP:{}',('****','******',public.GetClientIp()))
             num = self.limit_address('+')
-            return public.returnJson(False,'Invalid username or password. You have [{}] times left to try!',(str(num),)),json_header
+            return public.returnJson(False,public.lang('Invalid username or password. You have [{}] times left to try!',str(num))),json_header
 
 
     # 检查是否需要进行二次验证

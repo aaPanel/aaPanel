@@ -65,7 +65,7 @@
 				position: relative;
 				width: 360px;
 				height: 270px;
-				padding: 70px 40px 50px;
+				padding: 80px 40px 90px;
 				background-color: #fff;
 				border-radius: 4px;
 			}
@@ -97,16 +97,16 @@
 			}
 			.entrance .tips {
 				position: absolute;
+				display: flex;
+				align-items: center;
 				top: 15px;
 				right: 55px;
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				width: 220px;
-				height: 28px;
+				max-width: 380px;
+				padding: 8px 10px;
 				background-color: #dff0d8;
 				border-radius: 4px;
 				text-align: center;
+				white-space: nowrap;
 			}
 			.entrance .tips::before {
 				content: '';
@@ -118,6 +118,13 @@
 				margin-left: -6px;
 				border: 6px solid #dff0d8;
 				border-color: transparent transparent transparent #dff0d8;
+			}
+			.entrance .tips .icon {
+				display: inline-flex;
+			}
+			.entrance .tips .text {
+				display: inline-flex;
+				white-space: nowrap;
 			}
 			.icon {
 				width: 16px;
@@ -255,7 +262,7 @@
 				color: #777;
 				font-size: 12px;
 			}
-			.static_cdn select {
+			.account select {
 				height: 24px;
 				line-height: 22px;
 				margin-left: -1px;
@@ -276,6 +283,7 @@
 				margin-bottom: 20px;
 				font-size: 23px;
 				color: #444;
+				text-align: center;
 			}
 			.scan_code .qrcode {
 				width: 150px;
@@ -445,6 +453,17 @@
 				margin-bottom: 25px;
 				justify-content: center;
 			}
+			.login_lang {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				position: absolute;
+				left: 40px;
+				bottom: 20px;
+			}
+			.login_lang .lang_label {
+				margin-right: 8px;
+			}
 		</style>
 		<script>
 			var ie_version = (function () {
@@ -496,44 +515,51 @@
 					<form class="login_form" onsubmit="return false;">
 						<div class="form_title">{{g.title}}</div>
 						<div class="form_item">
-							<input type="text" class="form_input" id="username" placeholder="{{data['lan']['N3']}}" />
+							<input type="text" class="form_input" id="username" data-i18n="Login.index_1" placeholder="" />
 							<div class="validform_checktip"></div>
 						</div>
 						<div class="form_item">
-							<input type="password" class="form_input" id="password" placeholder="{{data['lan']['N6']}}" />
+							<input type="password" class="form_input" id="password" data-i18n="Login.index_2" placeholder="" />
 							<div class="validform_checktip"></div>
 						</div>
 						<div class="error_tips"></div>
 						<div class="form_item check_code{% if not session['code'] %} hide{% endif %}">
-							<input type="text" class="form_input" id="code" placeholder="{{data['lan']['N9']}}" />
+							<input type="text" class="form_input" id="code" data-i18n="Login.index_8" placeholder="" />
 							<div class="validform_checktip"></div>
-							<img class="check_img" title="{{data['lan']['N10']}}" src="/code" onClick="this.src = this.src.split('?')[0] + '?' + new Date().getTime()" />
+							<img class="check_img" data-i18n="Login.index_9" title="" src="/code" onClick="this.src = this.src.split('?')[0] + '?' + new Date().getTime()" />
 						</div>
-						<button class="login_btn">{{data['lan']['N11']}}</button>
-						<a class="forget_pwd" href="https://forum.aapanel.com/d/16-how-to-reset-password-for-aapanel-linux-6-x" target="_blank">{{data['lan']['N13']}}</a>
+						<!-- 登录按钮 -->
+						<button class="login_btn" data-i18n="Login.index_3"></button>
+						<!-- 语言切换 -->
+						<div class="login_lang">
+							<div class="lang_label" data-i18n="Login.index_5"></div>
+							<select id="lang_select"></select>
+						</div>
+						<!-- 忘记密码 -->
+						<a class="forget_pwd" href="https://www.aapanel.com/forum/d/16-how-to-reset-password-for-aapanel-linux-6-x" target="_blank" data-i18n="Login.index_4"></a>
 						{% if data['hosts'] != '[]' %}
-						<!-- <div class="static_cdn">
+						<div class="static_cdn">
 							<div class="cont">
-								<div class="name">Acceleration node</div>
+								<div class="name" data-i18n="Login.index_20"></div>
 								<select id="static_cdn">
-									<option value="localhost">Counting...</option>
+									<option value="localhost" data-i18n="Login.index_21"></option>
 								</select>
 							</div>
-						</div> -->
+						</div>
 						{% endif %}
 					</form>
 				</div>
 				<div class="scan_code hide">
-					<div class="scan_title">{{data['lan']['QR_CORE_LOGIN']}}</div>
+					<div class="scan_title" data-i18n="Login.index_12"></div>
 					<div class="qrcode" id="qrcode"></div>
 					<div class="scan_tip">
 						<div class="link">
-							<span>{{data['lan']['SCAN_LOGIN']}}</span>
-							<a href="https://www.bt.cn/bbs/thread-47408-1-1.html" target="_blank" class="bt_link">{{data['lan']['BT_SMALL_P']}}</a>
+							<span data-i18n="Login.index_13"></span>
+							<a href="https://www.aapanel.com/forum/d/3527-aapanel-mobile" target="_blank" class="bt_link" data-i18n="Login.index_14"></a>
 						</div>
 						<div class="desc">
 							<div class="icon scan"></div>
-							<div class="text">Scan</div>
+							<div class="text" data-i18n="Login.index_15"></div>
 						</div>
 					</div>
 				</div>
@@ -541,7 +567,7 @@
 					<div class="bg_img"></div>
 					<div class="tips">
 						<div class="icon scan"></div>
-						<div class="text">{{data['lan']['SCAN_MORE_SAFETY']}}</div>
+						<div class="text" data-i18n="Login.index_10"></div>
 					</div>
 				</div>
 			</div>
@@ -549,13 +575,61 @@
 		<script type="text/javascript" src="/static/js/md5.js"></script>
 		<script type="text/javascript" src="/static/js/qrcode.min.js"></script>
 		<script type="text/javascript" src="/static/js/jsencrypt.min.js"></script>
+		<script src="/static/js/i18next.min.js"></script>
 		<script>
+			var lang = '{{data.login_lang}}';
+			var langData = JSON.parse(atob('{{data.login_translations}}'));
+
+			console.log(langData);
+
+			for (var key in langData) {
+				langData[key] = {
+					translation: langData[key],
+				};
+			}
+
+			i18next.init(
+				{
+					lng: lang,
+					resources: langData,
+				},
+				function () {
+					updateContent();
+				}
+			);
+
+			// 切换语言
+			function changeLanguage(lang) {
+				i18next.changeLanguage(lang, function (err, t) {
+					updateContent();
+				});
+			}
+
+			// 更新带有 data-i18n 属性的元素内容
+			function updateContent() {
+				document.querySelectorAll('[data-i18n]').forEach(function (element) {
+					const key = element.getAttribute('data-i18n');
+					switch (element.tagName.toLocaleLowerCase()) {
+						case 'input':
+							element.setAttribute('placeholder', i18next.t(key));
+							break;
+						case 'img':
+							element.setAttribute('title', i18next.t(key));
+							break;
+						default:
+							element.innerHTML = i18next.t(key);
+							break;
+					}
+				});
+			}
+
 			// 左右清空空格
 			if (typeof String.prototype.trim === 'undefined') {
 				String.prototype.trim = function () {
 					return String(this).replace(/^\s+|\s+$/g, '');
 				};
 			}
+
 			window.onload = function () {
 				run();
 			};
@@ -600,6 +674,7 @@
 				var checkImg = document.querySelector('.check_img');
 				// 切换二维码
 				var entrance = document.querySelector('.entrance').querySelector('.bg_img');
+
 				/**
 				 * 显示验证码
 				 */
@@ -616,7 +691,7 @@
 				/**
 				 * 单独验证
 				 */
-				function dom_validation(dom, tips) {
+				function dom_validation(dom, tips, key) {
 					var val = dom.value;
 					var checktip = dom.parentNode.querySelector('.validform_checktip');
 					if (!checktip) return;
@@ -625,11 +700,13 @@
 						checktip.classList.add('validform_wrong');
 						checktip.classList.remove('validform_right');
 						checktip.innerText = tips;
+						checktip.setAttribute('data-i18n', key);
 					} else {
 						dom.classList.remove('validform_error');
 						checktip.classList.remove('validform_wrong');
 						checktip.classList.add('validform_right');
 						checktip.innerText = '';
+						checktip.removeAttribute('data-i18n');
 					}
 				}
 				/**
@@ -639,23 +716,23 @@
 					var username = usernameInput.value.trim();
 					var password = passwordInput.value.trim();
 					if (is_empty(username) || is_empty(password)) {
-						popup.msg('{{data.lan.JS1}}');
+						popup.msg(i18next.t('Login.index_7'));
 					}
 					if (is_empty(username)) {
-						dom_validation(usernameInput, '{{data.lan.N1}}');
+						dom_validation(usernameInput, i18next.t('Login.index_6'), 'Login.index_6');
 						usernameInput.focus();
 						return;
 					}
 					if (is_empty(password)) {
-						dom_validation(passwordInput, '{{data.lan.N4}}');
+						dom_validation(passwordInput, i18next.t('Login.index_2'), 'Login.index_2');
 						passwordInput.focus();
 						return;
 					}
 					var code = codeInput.value.trim();
 					var isHide = checkCodeBox.classList.contains('hide');
 					if (!isHide && is_empty(code)) {
-						popup.msg('Verification code is empty, please try again!');
-						dom_validation(codeInput, '{{data.lan.N7}}');
+						popup.msg(i18next.t('Login.index_23'));
+						dom_validation(codeInput, i18next.t('Login.index_8'), 'Login.index_8');
 						codeInput.focus();
 						return;
 					}
@@ -678,7 +755,7 @@
 					timer = setInterval(function () {
 						request.post('/public?name=app&fun=is_scan_ok', {}, function (res) {
 							if (res.status) {
-								popup.msg('Scanning code succeeded, waiting...', { time: 0, icon: 1 });
+								popup.msg(i18next.t('Login.index_24'), { time: 0, icon: 1 });
 								clear_control_time();
 								login_admin(res.msg);
 							}
@@ -703,7 +780,7 @@
 						function (res) {
 							if (res.status) {
 								popup.msg(
-									'Secure login in progress,waiting...',
+									i18next.t('Login.index_25'),
 									{
 										icon: 16,
 										time: 800,
@@ -725,7 +802,7 @@
 				function generate_qrcode() {
 					if (qrcode) qrcode.clear();
 					request.post('/public?name=app&fun=login_qrcode', {}, function (res) {
-						var text = res.status ? res.msg : 'https://www.bt.cn/download/app.html';
+						var text = res.status ? res.msg : 'https://www.aapanel.com/app.html';
 						if (qrcode) {
 							qrcode.makeCode(text);
 						} else {
@@ -741,38 +818,48 @@
 				}
 				// 用户名校验
 				usernameInput.onblur = function () {
-					dom_validation(this, '{{data.lan.N1}}');
+					dom_validation(this, i18next.t('Login.index_6'), 'Login.index_6');
 				};
 				// 密码校验
 				passwordInput.onblur = function () {
-					dom_validation(this, '{{data.lan.N4}}');
+					dom_validation(this, i18next.t('Login.index_2'), 'Login.index_2');
 				};
 				// 验证码校验
 				codeInput.onblur = function () {
-					dom_validation(this, '{{data.lan.N7}}');
+					dom_validation(this, i18next.t('Login.index_8'), 'Login.index_8');
 				};
 				// 登录
 				loginBtn.onclick = function () {
 					form_validation(function (data) {
-						popup.msg("{{data['lan']['JS2']}}", { time: 0, icon: 16, shade: [0.3, '#333'] });
+						popup.msg(i18next.t('Login.index_22'), { time: 0, icon: 16, shade: [0.3, '#333'] });
 						request.post('/login', data, function (res) {
 							popup.remove_msg();
 							if (res == '1') {
 								popup.open({
 									content:
 										'\
-                                    <div class="verification_view">\
-                                        <div class="v_title">Google authentication</div>\
-                                            <div class="v_input">\
-                                                <input type="text" class="v_code" placeholder="Verification code" />\
-                                            </div>\
-                                            <div class="v_btn">\
-                                                <button id="auth_verif_btn">Log in</button>\
-                                            </div>\
-                                            <div class="v_tips">* Please use the Google Authenticator app to get the verification code<br><a class="bt_link" href="https://forum.aapanel.com/d/357-how-to-use-google-authenticator-in-the-aapanel" target="_blank">Unable to verify, Click Help</a>\
-                                        </div>\
-                                    </div>\
-                                ',
+										<div class="verification_view">\
+												<div class="v_title">' +
+										i18next.t('Login.index_16') +
+										'</div>\
+														<div class="v_input">\
+																<input type="text" class="v_code" placeholder="' +
+										i18next.t('Login.index_8') +
+										'" />\
+														</div>\
+														<div class="v_btn">\
+																<button id="auth_verif_btn">' +
+										i18next.t('Login.index_3') +
+										'</button>\
+														</div>\
+														<div class="v_tips">' +
+										i18next.t('Login.index_17') +
+										'<br><a class="bt_link" href="https://www.aapanel.com/forum/d/357-how-to-use-google-authenticator-in-the-aapanel" target="_blank">' +
+										i18next.t('Login.index_18') +
+										'</a>\
+												</div>\
+										</div>\
+									',
 									callback: function () {
 										var btn = document.querySelector('#auth_verif_btn');
 										var codeInput = document.querySelector('.v_code');
@@ -782,11 +869,11 @@
 										btn.onclick = function () {
 											var code = codeInput.value.trim();
 											if (is_empty(code)) {
-												popup.msg('Please enter Verification code!');
+												popup.msg(i18next.t('Login.index_19'));
 												return;
 											}
 											data['vcode'] = code;
-											popup.msg('{{data.lan.JS2}}', { icon: 16, shade: [0.3, '#333'] });
+											popup.msg(i18next.t('Login.index_22'), { icon: 16, shade: [0.3, '#333'] });
 											request.post('/login', data, function (rdata) {
 												popup.remove_msg();
 												if (!rdata.status) {
@@ -821,10 +908,13 @@
 								return;
 							}
 							popup.msg(res.msg, { time: 0, icon: 16, shade: [0.3, '#333'] });
-							window.location.href = '/';
+							setTimeout(function () {
+								window.location.href = '/';
+							}, 1000);
 						});
 					});
 				};
+
 				// 切换登录方式
 				entrance.onclick = function () {
 					var tips = this.nextSibling.nextSibling;
@@ -836,7 +926,7 @@
 						this.classList.remove('pc');
 						icon.classList.add('scan');
 						icon.classList.remove('safe');
-						text.innerText = '{{data.lan.SCAN_MORE_SAFETY}}';
+						text.innerText = i18next.t('Login.index_10');
 						account.classList.remove('hide');
 						scanCode.classList.add('hide');
 						clear_control_time();
@@ -844,20 +934,57 @@
 						this.classList.add('pc');
 						icon.classList.add('safe');
 						icon.classList.remove('scan');
-						text.innerText = 'Switch account login';
+						text.innerText = i18next.t('Login.index_11');
 						account.classList.add('hide');
 						scanCode.classList.remove('hide');
 						generate_qrcode();
 						set_control_time();
 					}
 				};
+
 				window.onresize = function () {
 					popup.set_msg_center();
 					popup.set_open_center();
 				};
+
 				if ("{{data['app_login']}}" == 'True') {
 					entrance.click();
 				}
+
+				// 获取语言列表
+				function getLangList() {
+					request.post('/userLang?action=get_language', {}, function (res) {
+						var langSelect = document.querySelector('#lang_select');
+						var langList = res.message.languages;
+						var lang = res.message.default;
+
+						for (var i = 0; i < langList.length; i++) {
+							var option = document.createElement('option');
+							option.value = langList[i].name;
+							option.innerText = langList[i].title;
+							if (lang == langList[i].name) {
+								option.selected = true;
+							}
+							langSelect.appendChild(option);
+						}
+					});
+				}
+
+				getLangList();
+
+				var langSelect = document.querySelector('#lang_select');
+
+				langSelect.onchange = function () {
+					var lang = this.value;
+					popup.msg(i18next.t('Login.index_22'), { icon: 16, shade: [0.3, '#333'] });
+					request.post('/userLang?action=set_language', { name: lang }, function (res) {
+						popup.remove_msg();
+						if (res.status === 0) {
+							// popup.msg(res.message.result, { icon: 1 });
+							changeLanguage(lang);
+						}
+					});
+				};
 			}
 			/**
 			 * 请求

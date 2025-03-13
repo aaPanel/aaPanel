@@ -32,13 +32,13 @@ class panel_telegram_bot:
         """
         data = {"setup":True,"bot_token":get.bot_token,"my_id":get.my_id}
         public.writeFile(self.__tg_conf_file,json.dumps(data))
-        return public.returnMsg(True,"Setup successfully")
+        return public.returnMsg(True, public.lang("Setup successfully"))
 
     # 删除tg机器人
     def del_tg_bot(self,get):
         if os.path.exists(self.__tg_conf_file):
             os.remove(self.__tg_conf_file)
-        return public.returnMsg(True, "Remove successfully")
+        return public.returnMsg(True, public.lang("Remove successfully"))
 
     # 获取tg机器人信息
     def get_tg_conf(self,get=None):

@@ -27,7 +27,7 @@ class panelSetup:
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return abort(403)
 
-        g.version = '7.10.0'
+        g.version = '7.25.0'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
@@ -94,15 +94,24 @@ class panelAdmin(panelSetup):
         result = self.checkConfig()
         self.GetOS()
 
+    @staticmethod
+    def __set_session_munes():
+        g.menus = public.get_menus_for_session_router()
+        g.yaer = datetime.now().year
+        session['menus'] = g.menus
+
+
     # 设置基础Session
     def setSession(self):
+        session["top_tips"] = public.lang(
+            "The current IE browser version is too low to display some features, please use another browser."
+            " Or if you use a browser developed by a Chinese company, please switch to Extreme Mode!"
+        )
+        session["bt_help"] = public.lang("For Support|Suggestions, please visit the aaPanel Forum")
+        session["download"] = public.lang("Downloading:")
         if request.method == 'GET':
-            g.menus = public.get_menus()
-            g.yaer = datetime.now().year
-        session["top_tips"] = public.get_msg_gettext(
-            "The current IE browser version is too low to display some features, please use another browser. Or if you use a browser developed by a Chinese company, please switch to Extreme Mode!")
-        session["bt_help"] = public.get_msg_gettext("For Support|Suggestions, please visit the aaPanel Forum")
-        session["download"] = public.get_msg_gettext("Downloading:")
+            self.__set_session_munes()
+
         if not 'brand' in session:
             session['brand'] = public.GetConfigValue('brand')
             session['product'] = public.GetConfigValue('product')
@@ -111,12 +120,16 @@ class panelAdmin(panelSetup):
             session['setupPath'] = session['rootPath'] + '/server'
             session['logsPath'] = '/www/wwwlogs'
             session['yaer'] = datetime.now().year
-        if not 'menu' in session:
-            session['menu'] = public.GetLan('menu')
+
+        # if not 'menu' in session:
+        #     session['menu'] = public.GetLan('menu')
+
+        if session.get('uid', None) == 1:
+            self.__set_session_munes()
         if not 'lan' in session:
             session['lan'] = public.GetLanguage()
         if not 'home' in session:
-            session['home'] = 'https://www.aapanel.com'
+            session['home'] = public.OfficialApiBase()
         return False
 
     # 检查Web服务器类型
@@ -147,6 +160,7 @@ class panelAdmin(panelSetup):
 
     # 跳转到登录页面
     def to_login(self, url, msg=" Login has expired, please log in again"):
+        session.clear()
         x_http_token = request.headers.get('X-Http-Token', '')
         if x_http_token:
             # 如果是ajax请求
@@ -245,37 +259,29 @@ class panelAdmin(panelSetup):
                     return api_check
                 g.api_request = True
             else:
-                if session['login'] == False:
-                    session.clear()
+                if session['login'] is False:
                     return self.to_login(public.get_admin_path())
-
                 if 'tmp_login_expire' in session:
                     s_file = 'data/session/{}'.format(session['tmp_login_id'])
                     if session['tmp_login_expire'] < time.time():
-                        session.clear()
                         if os.path.exists(s_file): os.remove(s_file)
                         return self.to_login(public.get_admin_path(), 'The temporary login has expired, please log in again')
                     if not os.path.exists(s_file):
-                        session.clear()
                         return self.to_login(public.get_admin_path(),'The temporary login has expired, please log in again')
 
                 # 检查客户端hash -- 不要删除
                 if not public.check_client_hash():
-                    session.clear()
                     return self.to_login(public.get_admin_path(),'Client verification failed, please log in again')
 
             if api_check:
                 now_time = time.time()
                 session_timeout = session.get('session_timeout', 0)
                 if session_timeout < now_time and session_timeout != 0:
-                    session.clear()
                     return self.to_login(public.get_admin_path(),"Login session has expired, please log in again")
 
             login_token = session.get('login_token', '')
-            if login_token:
-                if login_token != public.get_login_token_auth():
-                    session.clear()
-                    return self.to_login(public.get_admin_path(),'Login verification failed, please log in again')
+            if login_token and login_token != public.get_login_token_auth():
+                return self.to_login(public.get_admin_path(),'Login verification failed, please log in again')
 
             # if api_check:
             #     filename = 'data/sess_files/' + public.get_sess_key()
@@ -288,7 +294,6 @@ class panelAdmin(panelSetup):
 
         except:
             public.print_log(public.get_error_info())
-            session.clear()
             public.print_error()
             public.print_log("except  Login has expired, please log in again")
             return self.to_login('/login',' Login has expired, please log in again')
@@ -333,7 +338,7 @@ class panelAdmin(panelSetup):
             if not public.is_api_limit_ip(api_config['limit_addr'],
                                           client_ip):  # client_ip in api_config['limit_addr']:
                 public.set_error_num(num_key)
-                return public.returnJson(False, '%s[' % public.get_msg_gettext(
+                return public.returnJson(False, '%s[' % public.lang(
                     "IP validation failed, your access IP is") + client_ip + ']')
         else:
             num_key = client_ip + '_app'

@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2017 aapanel(http:#bt.cn) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -76,7 +76,7 @@ class Controller:
             return hook_result  # 响应具体错误信息
         elif isinstance(hook_result, bool):
             if not hook_result:  # 直接中断操作
-                return public.return_data(False, {}, error_msg='前置HOOK中断操作')
+                return public.return_data(False, {}, error_msg='The pre-HOOK interrupts the operation')
 
         # 调用处理方法
         # result = run_object(pdata)

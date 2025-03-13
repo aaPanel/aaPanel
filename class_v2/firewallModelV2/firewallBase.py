@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2014-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2014-2099 aapanel(http://bt.cn) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -31,14 +31,17 @@ class Base(object):
                 not os.path.exists('/etc/redhat-release') or os.path.exists('/usr/bin/apt-get')):
             self._isUfw = True
             from firewallModelV2.app.ufw import Ufw
+            # public.print_log("6666666 Ufw")
             self.firewall = Ufw()
         elif os.path.exists('/usr/sbin/firewalld') or os.path.exists('/etc/redhat-release'):
             self._isFirewalld = True
             from firewallModelV2.app.firewalld import Firewalld
+            # public.print_log("6666666 Firewalld")
             self.firewall = Firewalld()
         elif not self._isUfw and not self._isFirewalld:
             self._isIptables = True
             from firewallModelV2.app.iptables import Iptables
+            # public.print_log("6666666 Iptables")
             self.firewall = Iptables()
         _months = {'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07',
                    'Aug': '08', 'Sep': '09', 'Sept': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'}
@@ -97,7 +100,7 @@ class Base(object):
 
         if public.writeFile(filename, conf):
             public.ExecShell('sysctl -p')
-            return public.return_message(0, 0, 'SUCCESS')
+            return public.return_message(0, 0, public.lang("SUCCESS"))
         else:
             return public.return_message(-1, 0,
                 '<a style="color:red;">Error: Setting failed, sysctl.conf is not writable! </a><br>'

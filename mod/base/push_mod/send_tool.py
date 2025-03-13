@@ -71,10 +71,10 @@ class WxAccountLoginMsg(WxAccountMsgBase):
 
     def to_send_data(self):
         self._get_server_name()
-        if self.address.startswith(">归属地："):
+        if self.address.startswith(">Place of Ownership:"):
             self.address = self.address[5:]
         if self.address == "":
-            self.address = "未知的归属地"
+            self.address = "Unknown place of ownership"
 
         if not _is_ipv4(self.login_ip):
             self.login_ip = "ipv6-can not show"

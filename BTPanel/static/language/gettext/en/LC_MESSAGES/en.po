@@ -1,0 +1,5728 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2022-01-05 10:15+0800\n"
+"PO-Revision-Date: 2022-01-05 10:16+0800\n"
+"Language: en\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: pygettext.py 1.5\n"
+"X-Generator: Poedit 3.0.1\n"
+
+msgid "Failed to delete file!"
+msgstr "Failed to delete file!"
+
+msgid "The softlink file was created successfully"
+msgstr "The softlink file was created successfully"
+
+msgid "Whether to turn on pathinfo"
+msgstr "Whether to turn on pathinfo"
+
+msgid "Successfully added mapping [{}]"
+msgstr "Successfully added mapping [{}]"
+
+msgid "This is not a directory"
+msgstr "This is not a directory"
+
+msgid "Verification error!"
+msgstr "Verification error!"
+
+msgid "Successfully changed"
+msgstr "Successfully changed"
+
+msgid "Check ERROR"
+msgstr "Check ERROR"
+
+msgid "System critical directory cannot be used as FTP directory!"
+msgstr "System critical directory cannot be used as FTP directory!"
+
+msgid "|-Get CA verification results [{}]..."
+msgstr "|-Get CA verification results [{}]..."
+
+msgid "Path format is incorrect, the format is /xxx"
+msgstr "Path format is incorrect, the format is /xxx"
+
+msgid "Successfully deleted directory!"
+msgstr "Successfully deleted directory!"
+
+msgid "Successfully created directory!"
+msgstr "Successfully created directory!"
+
+msgid "Site [{}] subdirectory [{}] bound to [{}]"
+msgstr "Site [{}] subdirectory [{}] bound to [{}]"
+
+msgid "Already installed"
+msgstr "Already installed"
+
+msgid "Set URL rewrite"
+msgstr "Set URL rewrite"
+
+msgid "Specific parameters are invalid!"
+msgstr "Specific parameters are invalid!"
+
+msgid "Please enter your vaild email"
+msgstr "Please enter your vaild email"
+
+msgid "|-All domain names are verified and CSR is being sent..."
+msgstr "|-All domain names are verified and CSR is being sent..."
+
+msgid "Batch setting permission successful!"
+msgstr "Batch setting permission successful!"
+
+msgid "|-Check CA verification results [{}]..."
+msgstr "|-Check CA verification results [{}]..."
+
+msgid "Migration successful"
+msgstr "Migration successful"
+
+msgid "Specified category name already exists!"
+msgstr "Specified category name already exists!"
+
+msgid "|-Getting verification information.."
+msgstr "|-Getting verification information.."
+
+msgid "The composer.json configuration file was not found in the specified directory!"
+msgstr "The composer.json configuration file was not found in the specified directory!"
+
+msgid "Your input is illegal and the modification failed"
+msgstr "Your input is illegal and the modification failed"
+
+msgid "Failed to set database permission [{}] => {}"
+msgstr "Failed to set database permission [{}] => {}"
+
+msgid "ASP tag support"
+msgstr "ASP tag support"
+
+msgid "Return type ERROR"
+msgstr "Return type ERROR"
+
+msgid "Unbound user"
+msgstr "Unbound user"
+
+msgid "Password is incorrect, Username:{}, Password:{}, Login IP:{}"
+msgstr "Password is incorrect, Username:{}, Password:{}, Login IP:{}"
+
+msgid "Successfully set, the site will stop automatically when expires!"
+msgstr "Successfully set, the site will stop automatically when expires!"
+
+msgid "The specified order does not exist!"
+msgstr "The specified order does not exist!"
+
+msgid "Software list updated!"
+msgstr "Software list updated!"
+
+msgid "The target URL format is incorrect {}"
+msgstr "The target URL format is incorrect {}"
+
+msgid "Get Site run path false"
+msgstr "Get Site run path false"
+
+msgid "File has parmanently deleted from recycle bin {}!"
+msgstr "File has parmanently deleted from recycle bin {}!"
+
+msgid "Change panel password"
+msgstr "Change panel password"
+
+msgid "Failed to get, please try again later!"
+msgstr "Failed to get, please try again later!"
+
+msgid "File upload failed, skip this backup!"
+msgstr "File upload failed, skip this backup!"
+
+msgid "User [{}] exists!"
+msgstr "User [{}] exists!"
+
+msgid "Backup to {}, a total of {} {}, and failures {}."
+msgstr "Backup to {}, a total of {} {}, and failures {}."
+
+msgid "Please enter the host domain name"
+msgstr "Please enter the host domain name"
+
+msgid "Install"
+msgstr "Install"
+
+msgid "The specified website profile does not exist"
+msgstr "The specified website profile does not exist"
+
+msgid "Modified access port to {} for phpMyAdmin!"
+msgstr "Modified access port to {} for phpMyAdmin!"
+
+msgid "The domain already exists"
+msgstr "The domain already exists"
+
+msgid "Failed to get php version!"
+msgstr "Failed to get php version!"
+
+msgid "Successfully unmounted, some directories may need to restart the server to take effect!"
+msgstr "Successfully unmounted, some directories may need to restart the server to take effect!"
+
+msgid "Operation succeeded"
+msgstr "Operation succeeded"
+
+msgid "The specified username not exists!"
+msgstr "The specified username not exists!"
+
+msgid "Tomcat mapping closed!"
+msgstr "Tomcat mapping closed!"
+
+msgid "Current txt record expired, please re-acquire"
+msgstr "Current txt record expired, please re-acquire"
+
+msgid "Successfully changed pgsql user access authority"
+msgstr "Successfully changed pgsql user access authority"
+
+msgid "Wrong parameter length!"
+msgstr "Wrong parameter length!"
+
+msgid "Failed to obtain authorization: {}"
+msgstr "Failed to obtain authorization: {}"
+
+msgid "The same as the current storage directory, file cannot be moved!"
+msgstr "The same as the current storage directory, file cannot be moved!"
+
+msgid "Response resources should use URI path or HTTP status code, such as: /test.png or 404"
+msgstr "Response resources should use URI path or HTTP status code, such as: /test.png or 404"
+
+msgid "The specified command name already exists"
+msgstr "The specified command name already exists"
+
+msgid "|-Error: {}, exit the application process."
+msgstr "|-Error: {}, exit the application process."
+
+msgid "Successfully saved"
+msgstr "Successfully saved"
+
+msgid "PHP load status acquisition failed!"
+msgstr "PHP load status acquisition failed!"
+
+msgid "Batch operating succeeded [{}], failed [{}]"
+msgstr "Batch operating succeeded [{}], failed [{}]"
+
+msgid "There was an error setting, please try again."
+msgstr "There was an error setting, please try again."
+
+msgid "Stop"
+msgstr "Stop"
+
+msgid "Set site [{}] to password authentication required!"
+msgstr "Set site [{}] to password authentication required!"
+
+msgid "ERROR: API service is NOT enabled!"
+msgstr "ERROR: API service is NOT enabled!"
+
+msgid "Cannot upload files to the system document root!"
+msgstr "Cannot upload files to the system document root!"
+
+msgid "Uncompression failed!"
+msgstr "Uncompression failed!"
+
+msgid "Unable to complete the automatic authentication, please add 127.0.0.1 to the server list and set the authentication method to [password authentication]"
+msgstr "Unable to complete the automatic authentication, please add 127.0.0.1 to the server list and set the authentication method to [password authentication]"
+
+msgid "There are currently no certificates to renew!"
+msgstr "There are currently no certificates to renew!"
+
+msgid "Sort saved"
+msgstr "Sort saved"
+
+msgid "|-{} Query verification results.."
+msgstr "|-{} Query verification results.."
+
+msgid "When applying using dnsapi, specify the dnsapi key in the --dns_key parameter!"
+msgstr "When applying using dnsapi, specify the dnsapi key in the --dns_key parameter!"
+
+msgid "Successfully mounted"
+msgstr "Successfully mounted"
+
+msgid "Edit notes"
+msgstr "Edit notes"
+
+msgid "Expired backup files have been cleaned from disk: {}"
+msgstr "Expired backup files have been cleaned from disk: {}"
+
+msgid "|-ERROR, password cannot be less than 8 characters"
+msgstr "|-ERROR, password cannot be less than 8 characters"
+
+msgid "Have not installed the mail server before, please feel free to install"
+msgstr "Have not installed the mail server before, please feel free to install"
+
+msgid "The authentication is successful and the session channel is being constructed"
+msgstr "The authentication is successful and the session channel is being constructed"
+
+msgid "Please enter the content to be replaced"
+msgstr "Please enter the content to be replaced"
+
+msgid "Test Database"
+msgstr "Test Database"
+
+msgid "System database, cannot be deleted"
+msgstr "System database, cannot be deleted"
+
+msgid "Please bind your account first!"
+msgstr "Please bind your account first!"
+
+msgid "Successful to update to {}"
+msgstr "Successful to update to {}"
+
+msgid "File moved to recycle bin!"
+msgstr "File moved to recycle bin!"
+
+msgid "Number of databases"
+msgstr "Number of databases"
+
+msgid "This domain name does not exist under this dnspod account, adding resolution failed!"
+msgstr "This domain name does not exist under this dnspod account, adding resolution failed!"
+
+msgid "Successfully repaired!"
+msgstr "Successfully repaired!"
+
+msgid "Failed to uninstall Python, please try again"
+msgstr "Failed to uninstall Python, please try again"
+
+msgid "Specify max security depth of the server's execution stack. Default value is 2MB"
+msgstr "Specify max security depth of the server's execution stack. Default value is 2MB"
+
+msgid "Size of used page table"
+msgstr "Size of used page table"
+
+msgid "Failed to change"
+msgstr "Failed to change"
+
+msgid "Request timeout"
+msgstr "Request timeout"
+
+msgid "Temporary user has been forcibly logged out:{}"
+msgstr "Temporary user has been forcibly logged out:{}"
+
+msgid "Incorrect email address! [{}]"
+msgstr "Incorrect email address! [{}]"
+
+msgid "The email does not exist, please add it to the mailbox"
+msgstr "The email does not exist, please add it to the mailbox"
+
+msgid "Get worker IdleWorkers False"
+msgstr "Get worker IdleWorkers False"
+
+msgid "You cannot login now because login failed too many times!"
+msgstr "You cannot login now because login failed too many times!"
+
+msgid "FTP manager"
+msgstr "FTP manager"
+
+msgid "Per Day"
+msgstr "Per Day"
+
+msgid "The site you tried to add already exists!"
+msgstr "The site you tried to add already exists!"
+
+msgid "The panel version is too low, please update to the latest version"
+msgstr "The panel version is too low, please update to the latest version"
+
+msgid "Directory moved to recycle bin!"
+msgstr "Directory moved to recycle bin!"
+
+msgid "Configuration file mismatch caused by reinstalling Nginx fixed"
+msgstr "Configuration file mismatch caused by reinstalling Nginx fixed"
+
+msgid "Next"
+msgstr "Next"
+
+msgid "[Force HTTPS] is enabled on the current website, please turn off this function before applying for an SSL certificate!"
+msgstr "[Force HTTPS] is enabled on the current website, please turn off this function before applying for an SSL certificate!"
+
+msgid "File does not exist!"
+msgstr "File does not exist!"
+
+msgid "Please enter the domain name"
+msgstr "Please enter the domain name"
+
+msgid "Clearing IP info"
+msgstr "Clearing IP info"
+
+msgid "The file name contains more than 128 bytes"
+msgstr ""
+
+msgid "This entrance has been used by the panel, please set another entrances!"
+msgstr "This entrance has been used by the panel, please set another entrances!"
+
+msgid "URL suffix cannot be empty"
+msgstr "URL suffix cannot be empty"
+
+msgid "Please enter the correct IP address"
+msgstr "Please enter the correct IP address"
+
+msgid "The format of the parameter passed to the script is incorrect"
+msgstr "The format of the parameter passed to the script is incorrect"
+
+msgid "Username cannot be empty"
+msgstr "Username cannot be empty"
+
+msgid "Failed to send notification"
+msgstr "Failed to send notification"
+
+msgid "Depends on the following software, please install [{}] first"
+msgstr "Depends on the following software, please install [{}] first"
+
+msgid "Specified redirect name already exists"
+msgstr "Specified redirect name already exists"
+
+msgid "Failed to optimize or already optimized"
+msgstr "Failed to optimize or already optimized"
+
+msgid "Limit on the number of connections that an individual child server will handle during its life"
+msgstr "Limit on the number of connections that an individual child server will handle during its life"
+
+msgid "Limit of upload size cannot be less than 2 MB"
+msgstr "Limit of upload size cannot be less than 2 MB"
+
+msgid "Failed to get, there is no default document in the configuration file"
+msgstr "Failed to get, there is no default document in the configuration file"
+
+msgid "Missing requests component, please try to repair the panel!"
+msgstr "Missing requests component, please try to repair the panel!"
+
+msgid "Max connections"
+msgstr "Max connections"
+
+msgid "Verification failed"
+msgstr "Verification failed"
+
+msgid "The DNS of the server is faulty and the domain name cannot be resolved. Please use the Linux toolbox to check the DNS configuration"
+msgstr "The DNS of the server is faulty and the domain name cannot be resolved. Please use the Linux toolbox to check the DNS configuration"
+
+msgid "It is not allowed to mount to a mounted subdirectory"
+msgstr "It is not allowed to mount to a mounted subdirectory"
+
+msgid "ERROR, the specified configuration value does NOT exist!"
+msgstr "ERROR, the specified configuration value does NOT exist!"
+
+msgid "Cancelled!"
+msgstr "Cancelled!"
+
+msgid "Waiting for renewal"
+msgstr "Waiting for renewal"
+
+msgid "Failed to import database!"
+msgstr "Failed to import database!"
+
+msgid "|-Cleared [{}], deleted [{}] files, freed disk space [{}]"
+msgstr "|-Cleared [{}], deleted [{}] files, freed disk space [{}]"
+
+msgid "Every {}, run at {} Hour {} Min"
+msgstr "Every {}, run at {} Hour {} Min"
+
+msgid "Panel settings"
+msgstr "Panel settings"
+
+msgid "No certificate found for the specified order!"
+msgstr "No certificate found for the specified order!"
+
+msgid "There is a problem with Tomcat {} environment, please check if it is normal"
+msgstr "There is a problem with Tomcat {} environment, please check if it is normal"
+
+msgid "Tomcat external port"
+msgstr "Tomcat external port"
+
+msgid "'Successfully modified cron job [{}]'"
+msgstr "'Successfully modified cron job [{}]'"
+
+msgid "Email sending failed, please check if the STMP password or host is correct!"
+msgstr "Email sending failed, please check if the STMP password or host is correct!"
+
+msgid "FTP port"
+msgstr "FTP port"
+
+msgid "Successfully uncompressed file from [{}] to [{}]!"
+msgstr "Successfully uncompressed file from [{}] to [{}]!"
+
+msgid "Your current IP is[{}],please use correct IP to access!"
+msgstr "Your current IP is[{}],please use correct IP to access!"
+
+msgid "Please uninstall [{}] first"
+msgstr "Please uninstall [{}] first"
+
+msgid "|-Certificate obtained successfully!"
+msgstr "|-Certificate obtained successfully!"
+
+msgid "Connection failure: {}"
+msgstr "Connection failure: {}"
+
+msgid "Successfully synced server time!"
+msgstr "Successfully synced server time!"
+
+msgid "You cannot have extra parameters"
+msgstr "You cannot have extra parameters"
+
+msgid "Keep the latest number of backups: {} copies"
+msgstr "Keep the latest number of backups: {} copies"
+
+msgid "Open successfully, please manually release phpmyadmin ssl port"
+msgstr "Open successfully, please manually release phpmyadmin ssl port"
+
+msgid "Restart panel"
+msgstr "Restart panel"
+
+msgid "Unable to initialize ACME client"
+msgstr "Unable to initialize ACME client"
+
+msgid "Name must contain more than 3 and less than 15 characters"
+msgstr "Name must contain more than 3 and less than 15 characters"
+
+msgid "Database has been backed up to: {}"
+msgstr "Database has been backed up to: {}"
+
+msgid "Software manager"
+msgstr "Software manager"
+
+msgid "User Management"
+msgstr "User Management"
+
+msgid "Directory size: {}"
+msgstr "Directory size: {}"
+
+msgid "Get help"
+msgstr "Get help"
+
+msgid "Failed to add"
+msgstr "Failed to add"
+
+msgid "Hotlink Protection for site [{}] enabled!"
+msgstr "Hotlink Protection for site [{}] enabled!"
+
+msgid "Format of primary domain is incorrect"
+msgstr "Format of primary domain is incorrect"
+
+msgid "Turn off access limit: rm -f /www/server/panel/data/limitip.conf"
+msgstr "Turn off access limit: rm -f /www/server/panel/data/limitip.conf"
+
+msgid "Data recovery failed!"
+msgstr "Data recovery failed!"
+
+msgid "Backup error!"
+msgstr ""
+
+msgid "Old proxy"
+msgstr "Old proxy"
+
+msgid "Username or Password incorrect: {}"
+msgstr "Username or Password incorrect: {}"
+
+msgid "DNS server connection failed, please check if the key is correct."
+msgstr "DNS server connection failed, please check if the key is correct."
+
+msgid "Can NOT get target URL"
+msgstr "Can NOT get target URL"
+
+msgid "WebShell behavior"
+msgstr "WebShell behavior"
+
+msgid "Delete [ {} ] dir auth successfully"
+msgstr "Delete [ {} ] dir auth successfully"
+
+msgid "Short tag support"
+msgstr "Short tag support"
+
+msgid "Site [{}], document root [{}] does NOT exist, recreated!"
+msgstr "Site [{}], document root [{}] does NOT exist, recreated!"
+
+msgid "Added trojan scan task for directory [{}]!"
+msgstr "Added trojan scan task for directory [{}]!"
+
+msgid "Binding success"
+msgstr "Binding success"
+
+msgid "Project already stopped"
+msgstr "Project already stopped"
+
+msgid "No recipient, set the basic information of the mail first please."
+msgstr "No recipient, set the basic information of the mail first please."
+
+msgid "This favorite object could not be found!"
+msgstr "This favorite object could not be found!"
+
+msgid "Unable to write to file, please check if system hardening is enabled!"
+msgstr "Unable to write to file, please check if system hardening is enabled!"
+
+msgid "No drafts available!"
+msgstr "No drafts available!"
+
+msgid "Size of physical memory that the table process has locked"
+msgstr "Size of physical memory that the table process has locked"
+
+msgid "Recovery failed!"
+msgstr "Recovery failed!"
+
+msgid "Execution failed: {}"
+msgstr "Execution failed: {}"
+
+msgid "Password must be at least [{}] characters"
+msgstr "Password must be at least [{}] characters"
+
+msgid "Successfully cancelled"
+msgstr "Successfully cancelled"
+
+msgid "Size of library used by process"
+msgstr "Size of library used by process"
+
+msgid "|-Verified, content [{}]..."
+msgstr "|-Verified, content [{}]..."
+
+msgid "#referenced redirect rule, if commented, the configured redirect rule will be invalid"
+msgstr "#referenced redirect rule, if commented, the configured redirect rule will be invalid"
+
+msgid "Registration for ACME account failed: {}"
+msgstr "Registration for ACME account failed: {}"
+
+msgid "Hazardous file operation vulnerabilities"
+msgstr "Hazardous file operation vulnerabilities"
+
+msgid "Successfully deleted file [{}]!"
+msgstr "Successfully deleted file [{}]!"
+
+msgid "System critical directory cannot be used as site directory"
+msgstr "System critical directory cannot be used as site directory"
+
+msgid "GET/POST exploitable vulnerabilities"
+msgstr "GET/POST exploitable vulnerabilities"
+
+msgid "aaPanel Alert Test Email"
+msgstr "aaPanel Alert Test Email"
+
+msgid "How many dirty pages are written in one cycle"
+msgstr "How many dirty pages are written in one cycle"
+
+msgid "Key verification failed"
+msgstr "Key verification failed"
+
+msgid "|-New username: {}"
+msgstr "|-New username: {}"
+
+msgid "Empty successfully"
+msgstr "Empty successfully"
+
+msgid "The send type is not supported"
+msgstr ""
+
+msgid "Successfully created file [{}]!"
+msgstr ""
+
+msgid "Editing this directory may cause service exceptions!"
+msgstr ""
+
+msgid "The configuration content cannot be converted to json format!\n{}"
+msgstr ""
+
+msgid "Setup successfully!"
+msgstr "Setup successfully!"
+
+msgid "<a style='color:red;'>ERROR: System critical directory is not writable!</a><br>1. If [BT System Hardening] is installed, please turn it off<br><br>2. If Yunsuo is installed, please turn off [System Hardening] feature<br>3. If Safedog is installed, please turn off [System Protection] feature<br>4. If other security software is used, please uninstall it<br>"
+msgstr "<a style='color:red;'>ERROR: System critical directory is not writable!</a><br>1. If [BT System Hardening] is installed, please turn it off<br><br>2. If Yunsuo is installed, please turn off [System Hardening] feature<br>3. If Safedog is installed, please turn off [System Protection] feature<br>4. If other security software is used, please uninstall it<br>"
+
+msgid "Unsafe path"
+msgstr "Unsafe path"
+
+msgid "Run Every {} Minutes"
+msgstr "Run Every {} Minutes"
+
+msgid "Issuing failed, the current server IP has reached the limit of creating up to 10 accounts every 3 hours."
+msgstr "Issuing failed, the current server IP has reached the limit of creating up to 10 accounts every 3 hours."
+
+msgid "SSL is NOT currently enabled"
+msgstr "SSL is NOT currently enabled"
+
+msgid "Parmanently deleted {} from recycle bin!"
+msgstr "Parmanently deleted {} from recycle bin!"
+
+msgid "Certificate revoked!"
+msgstr "Certificate revoked!"
+
+msgid "Renewed successfully!"
+msgstr "Renewed successfully!"
+
+msgid "Failed to delete database [{}]!, {}"
+msgstr "Failed to delete database [{}]!, {}"
+
+msgid "Database export failed!"
+msgstr "Database export failed!"
+
+msgid "Add the SSH information of HOST: {}"
+msgstr "Add the SSH information of HOST: {}"
+
+msgid "Verification code length error!"
+msgstr "Verification code length error!"
+
+msgid "Please enter the correct domain"
+msgstr "Please enter the correct domain"
+
+msgid "Set the BasicAuth status to: {}"
+msgstr "Set the BasicAuth status to: {}"
+
+msgid "Backup completed"
+msgstr "Backup completed"
+
+msgid "Download file {}"
+msgstr "Download file {}"
+
+msgid "|-Turning off redirection {}"
+msgstr "|-Turning off redirection {}"
+
+msgid "Successfully accepted port [{}]!"
+msgstr "Successfully accepted port [{}]!"
+
+msgid "User Manual"
+msgstr "User Manual"
+
+msgid "Username or password cannot be less than 3 digits!"
+msgstr "Username or password cannot be less than 3 digits!"
+
+msgid "Max size of POST data"
+msgstr "Max size of POST data"
+
+msgid "Ready to apply for SSL, domain name {}"
+msgstr "Ready to apply for SSL, domain name {}"
+
+msgid "|-Error: {}, exited the application process."
+msgstr "|-Error: {}, exited the application process."
+
+msgid "The page you requested was interrupted by an exception!"
+msgstr "The page you requested was interrupted by an exception!"
+
+msgid "Currently only supports restoring local, Google storage and AWS S3 backups"
+msgstr ""
+
+msgid "Restore Successful"
+msgstr ""
+
+msgid "Panel does not find the backup file: {}"
+msgstr ""
+
+msgid "Invalid login key"
+msgstr ""
+
+msgid "The specified key does not exist or has expired"
+msgstr ""
+
+msgid "Scan code successfully, log in!"
+msgstr ""
+
+msgid "The current QR code has expired, please refresh the page and rescan the code!"
+msgstr ""
+
+msgid "This server is bound to a maximum of {} devices, which has reached the limit!"
+msgstr ""
+msgid "Failed verification!"
+msgstr ""
+msgid "A server allows up to {} device bindings!"
+msgstr ""
+msgid "Bind successfully!"
+msgstr ""
+msgid "Cannot configure API through API interface"
+msgstr ""
+msgid "{} API interface"
+msgstr ""
+msgid "Change IP limit to [{}]"
+msgstr ""
+msgid "Temporary keys can only be obtained through the API interface"
+msgstr ""
+msgid "Syncing information, please try again!\n {}"
+msgstr ""
+msgid "Activate successfully"
+msgstr ""
+msgid "Activate failed"
+msgstr ""
+msgid "Renew Failed"
+msgstr ""
+msgid "Renew successfully"
+msgstr ""
+msgid "Apply Failed"
+msgstr ""
+msgid "Apply successfully"
+msgstr ""
+msgid "CA can't verify your domain name, please check if the domain name resolution is correct, or wait 5-10 minutes and try again."
+msgstr ""
+msgid "The CA server connection timed out, please try again later."
+msgstr ""
+msgid "The domain name does not belong to this DNS service provider. Please ensure that the domain name is filled in correctly."
+msgstr ""
+msgid "'The DNS server connection failed. Please check if the key is correct.'"
+msgstr ""
+msgid "The signing failed, the domain name exact set of domains: (.+): {} exceeded the weekly number of repeated issuances!"
+msgstr ""
+msgid "The signing failed, the current server IP has reached the limit of creating up to 10 accounts every 3 hours.."
+msgstr ""
+msgid "The verification failed, the domain name was not resolved, or the resolution did not take effect.!"
+msgstr ""
+msgid "Authentication failed, domain name resolution error or verification URL could not be accessed!"
+msgstr ""
+msgid "Failed to connect to CA server, please try again later."
+msgstr ""
+msgid "Unsupported domain name {}, please check if the domain name is correct!"
+msgstr ""
+msgid "The domain name {} did not find a resolution record. Please check if the domain name is resolved.!"
+msgstr ""
+msgid "If a valid TXT resolution record is not found in the domain name {}, please check if the TXT record is correctly parsed. If it is applied by DNSAPI, please try again in 10 minutes.!"
+msgstr ""
+msgid "Found the wrong TXT record on {}: {}, please check if the TXT resolution is correct. If it is applied by DNSAPI, please try again in 10 minutes.!"
+msgstr ""
+msgid "This domain name does not exist under this dnspod account. Adding parsing failed.!"
+msgstr ""
+msgid "Connection timed out, CA server could not access your website!"
+msgstr ""
+msgid "The domain name {} is currently required to verify the CAA record. Please manually resolve the CAA record, or try again after 1 hour.!"
+msgstr ""
+msgid "Verification timeout, please check whether the domain name is correctly resolved. If dns is resolved, the connection between the server and Let'sEncrypt may be abnormal. Please try again later!"
+msgstr ""
+msgid "Order creation failed, please try again later!"
+msgstr ""
+msgid "More than 5 verification failures in 1 hour, application is temporarily banned, please try again later!"
+msgstr ""
+msgid "CA server denied access, please try again later!"
+msgstr ""
+msgid "Depend on the following software, please install first [{}]"
+msgstr ""
+msgid "<a style=color:red;>ERROR: System critical directory is not writable!</a><br>1. If [BT System Hardening] is installed, please turn it off<br><br>2. If Yunsuo is installed, please turn off [System Hardening] feature<br>3. If Safedog is installed, please turn off [System Protection] feature<br>4. If other security software is used, please uninstall it<br>"
+msgstr ""
+msgid "Please specify the software name!"
+msgstr ""
+msgid "Sorry, currently OLS official does not support php8.1"
+msgstr ""
+msgid "You did not purchase [ {} ] or the authorization has expired"
+msgstr ""
+msgid "The specified run directory {} does not exist!"
+msgstr ""
+msgid "The startup item name format is incorrect, support: [a-zA-Z0-9_]!"
+msgstr ""
+msgid "Launch configuration already exists!"
+msgstr ""
+msgid "Create startup item [{}] successful!"
+msgstr ""
+msgid "Modify startup item [{}] successful!"
+msgstr ""
+msgid "Delete startup item [{}] successful!"
+msgstr ""
+msgid "Setting startup item [{}] status succeeded!"
+msgstr ""
+msgid "launch configuration does not exist!"
+msgstr ""
+msgid "Close startup item [{}] successful!"
+msgstr ""
+msgid "Not run"
+msgstr ""
+msgid "Unable to get process information"
+msgstr ""
+msgid "Startup {} successful, PID:{}"
+msgstr ""
+msgid "Search content cannot be empty"
+msgstr ""
+msgid "The content to be replaced cannot be empty"
+msgstr ""
+msgid "The suffix cannot be empty; please enter [ *.* ] to search all files"
+msgstr ""
+msgid "The directory cannot be empty or /"
+msgstr ""
+msgid "Directory does not exist"
+msgstr ""
+msgid "Site [{}] turned off SSL successfully!"
+msgstr ""
+msgid "Site [{}] started!"
+msgstr ""
+msgid "The PHP connection configuration cannot be empty when customizing the version!"
+msgstr ""
+msgid "The PHP connection configuration format is incorrect, please refer to the example!"
+msgstr ""
+msgid "The specified unix socket [{}] does not exist!"
+msgstr ""
+msgid "Unable to connect to [{}], please check whether the machine can connect to the target server"
+msgstr ""
+msgid "Invalid username or email or password! please check and try again!"
+msgstr ""
+msgid "Failed to connect server!"
+msgstr ""
+msgid "The request failed, please try again later!"
+msgstr ""
+msgid "Apply for [{}] certificate to verify [{}] Please bind [{}] and resolve to the site!"
+msgstr ""
+msgid "Cannot create [{}]"
+msgstr ""
+msgid "Failed to set \n{}"
+msgstr ""
+msgid "You need to bind the domain name to the panel before you can apply for the Lets Encrypt certificate."
+msgstr ""
+msgid "Failed to apply for a certificate, please try to manually apply for a certificate for the panel domain name on the site management page"
+msgstr ""
+msgid "Certificate error, please check!"
+msgstr ""
+msgid "The certificate has been saved!"
+msgstr ""
+msgid "Please enter an account or password"
+msgstr ""
+msgid "Please enter the directory to be protected"
+msgstr ""
+msgid "Please enter the Name"
+msgstr ""
+msgid "Site password protection has been set, please cancel and then set. Site directory --> Password access"
+msgstr ""
+msgid "Directory has been protected"
+msgstr ""
+msgid "The website does not exist in the configuration：{}"
+msgstr ""
+msgid "|-Upgrading [{}]..."
+msgstr ""
+msgid "Scan QRCORE successfully"
+msgstr ""
+msgid "Login failed 1"
+msgstr ""
+msgid "API is not turned on"
+msgstr ""
+msgid "Unbound phone"
+msgstr ""
+msgid "Waiting for APP scan code login 1"
+msgstr ""
+msgid "Waiting for APP scan code login 2"
+msgstr ""
+msgid "Waiting for APP scan code login"
+msgstr ""
+msgid "APP scan code login, account: {}, login IP: {}"
+msgstr ""
+msgid "login successful!"
+msgstr ""
+msgid "Login failed 2"
+msgstr ""
+
+msgid "Install the necessary PHP extensions"
+msgstr "Install the necessary PHP extensions"
+
+msgid "Please specify verification type"
+msgstr "Please specify verification type"
+
+msgid "The key does not exist. Please turn on and try again."
+msgstr "The key does not exist. Please turn on and try again."
+
+msgid "Nginx is not install"
+msgstr "Nginx is not install"
+
+msgid "Wrong connection address"
+msgstr "Wrong connection address"
+
+msgid "Directory names cannot contain special characters!"
+msgstr "Directory names cannot contain special characters!"
+
+msgid "<h2>Issue failed, current txt record expired, please re-acquire!</h2>"
+msgstr "<h2>Issue failed, current txt record expired, please re-acquire!</h2>"
+
+msgid "This domain does NOT exist in the currently bound BT Cloud DNS account, failed to add resolution!"
+msgstr "This domain does NOT exist in the currently bound BT Cloud DNS account, failed to add resolution!"
+
+msgid "The renewal task added to the queue!"
+msgstr "The renewal task added to the queue!"
+
+msgid "No valid DNSAPI key information found"
+msgstr "No valid DNSAPI key information found"
+
+msgid "Error reading PHP configuration file, please try to reinstall this PHP!"
+msgstr ""
+
+msgid "Compression succeeded!"
+msgstr "Compression succeeded!"
+
+msgid "Sorry, Program Error"
+msgstr "Sorry, Program Error"
+
+msgid "Configuration is successfully modified, please restart the project manually"
+msgstr "Configuration is successfully modified, please restart the project manually"
+
+msgid "Max time of input"
+msgstr "Max time of input"
+
+msgid "Beta tester profile"
+msgstr "Beta tester profile"
+
+msgid "Site [{}] added domain [{}] successfully!"
+msgstr "Site [{}] added domain [{}] successfully!"
+
+msgid "Uninstallation succeeded"
+msgstr "Uninstallation succeeded"
+
+msgid "Expired"
+msgstr "Expired"
+
+msgid "Loading..."
+msgstr "Loading..."
+
+msgid "Email does not exist!"
+msgstr "Email does not exist!"
+
+msgid "Start exporting database: {}"
+msgstr "Start exporting database: {}"
+
+msgid "Failed to move file [{}] to recycle bin!"
+msgstr "Failed to move file [{}] to recycle bin!"
+
+msgid "It is not recommended to use [ . ] at the end of the directory, because there may be safety risks"
+msgstr "It is not recommended to use [ . ] at the end of the directory, because there may be safety risks"
+
+msgid "#referenced redirect rule"
+msgstr "#referenced redirect rule"
+
+msgid "Worker processes"
+msgstr "Worker processes"
+
+msgid "Cacel"
+msgstr "Cacel"
+
+msgid "Not installed"
+msgstr "Not installed"
+
+msgid "Root password cannot be empty"
+msgstr "Root password cannot be empty"
+
+msgid "Max value of simultaneously upload file"
+msgstr "Max value of simultaneously upload file"
+
+msgid "Downloading:"
+msgstr "Downloading:"
+
+msgid "NOT exist"
+msgstr "NOT exist"
+
+msgid "Successfully imported database [{}]"
+msgstr "Successfully imported database [{}]"
+
+msgid "Failed to set"
+msgstr "Failed to set"
+
+msgid "Name of task cannot be empty!"
+msgstr "Name of task cannot be empty!"
+
+msgid "Clear panel cache"
+msgstr "Clear panel cache"
+
+msgid "Your plugin list is already the latest version {}!"
+msgstr "Your plugin list is already the latest version {}!"
+
+msgid "Failed to stop"
+msgstr "Failed to stop"
+
+msgid "Open successfully, take effect after manually restarting the database"
+msgstr "Open successfully, take effect after manually restarting the database"
+
+msgid "This domain does NOT exist in this Aliyun account, failed to add resolution"
+msgstr "This domain does NOT exist in this Aliyun account, failed to add resolution"
+
+msgid "Cloud verification failed!"
+msgstr "Cloud verification failed!"
+
+msgid "Delete users [{}]"
+msgstr "Delete users [{}]"
+
+msgid "Recycle bin feature turned on!"
+msgstr "Recycle bin feature turned on!"
+
+msgid "Domain name {} is the same as the target domain name, please deselect it"
+msgstr "Domain name {} is the same as the target domain name, please deselect it"
+
+msgid "The port exists, no need to repeat the release!"
+msgstr "The port exists, no need to repeat the release!"
+
+msgid "Data validation failed and the CA was unable to get the correct captcha from the authenticated connection."
+msgstr "Data validation failed and the CA was unable to get the correct captcha from the authenticated connection."
+
+msgid "Renewal failed. The number of failed attempts to apply for a certificate has reached the limit!"
+msgstr "Renewal failed. The number of failed attempts to apply for a certificate has reached the limit!"
+
+msgid "|-ERROR, username cannot be less than 5 characters"
+msgstr "|-ERROR, username cannot be less than 5 characters"
+
+msgid "Certificate expiration time: {}"
+msgstr "Certificate expiration time: {}"
+
+msgid "{} Developer mode (DeBug)"
+msgstr "{} Developer mode (DeBug)"
+
+msgid "Failed, disk space is not enough, currently available space:"
+msgstr "Failed, disk space is not enough, currently available space:"
+
+msgid "Failed to move file!"
+msgstr "Failed to move file!"
+
+msgid "|-Renewal success:{}"
+msgstr "|-Renewal success:{}"
+
+msgid "Current"
+msgstr "Current"
+
+msgid "Execution failed, attempted auto repair, please try again later!"
+msgstr "Execution failed, attempted auto repair, please try again later!"
+
+msgid "|-ERROR, specified port is already in use"
+msgstr "|-ERROR, specified port is already in use"
+
+msgid "Get Key {} False"
+msgstr "Get Key {} False"
+
+msgid "Successfully restored database {}!"
+msgstr "Successfully restored database {}!"
+
+msgid "Cannot get the correct device name"
+msgstr "Cannot get the correct device name"
+
+msgid "Successfully added site!"
+msgstr "Successfully added site!"
+
+msgid "Clearing log info"
+msgstr "Clearing log info"
+
+msgid "The data directory length cannot exceed 32 bits"
+msgstr "The data directory length cannot exceed 32 bits"
+
+msgid "Please go to the software store to install [Cloud Resolution] and complete the domain name NS binding."
+msgstr "Please go to the software store to install [Cloud Resolution] and complete the domain name NS binding."
+
+msgid "Successfully {} FTP user [{}]!"
+msgstr "Successfully {} FTP user [{}]!"
+
+msgid "Backup failed"
+msgstr "Backup failed"
+
+msgid "Channel is built"
+msgstr "Channel is built"
+
+msgid "Database [{}] does NOT exist!"
+msgstr "Database [{}] does NOT exist!"
+
+msgid "Panel configuration"
+msgstr "Panel configuration"
+
+msgid "Set the unauthorized response status to:{}"
+msgstr ""
+
+msgid "Successfully restored database"
+msgstr "Successfully restored database"
+
+msgid "|-ERROR, cannot use too simple username"
+msgstr "|-ERROR, cannot use too simple username"
+
+msgid "The specified order number does not exist and cannot be renewed!"
+msgstr "The specified order number does not exist and cannot be renewed!"
+
+msgid "Project failed to start, please check the project log"
+msgstr "Project failed to start, please check the project log"
+
+msgid "Certificate ERROR"
+msgstr "Certificate ERROR"
+
+msgid "Failed to uninstall"
+msgstr "Failed to uninstall"
+
+msgid "Please enter a note"
+msgstr "Please enter a note"
+
+msgid "Temporary login URL has been generated"
+msgstr "Temporary login URL has been generated"
+
+msgid "Backup succeeded"
+msgstr "Backup succeeded"
+
+msgid "Clearing system history"
+msgstr "Clearing system history"
+
+msgid "Saved!"
+msgstr "Saved!"
+
+msgid "Clear login limit"
+msgstr "Clear login limit"
+
+msgid "Socket over time"
+msgstr "Socket over time"
+
+msgid "Requested file does NOT exist!"
+msgstr "Requested file does NOT exist!"
+
+msgid "Domain cannot be empty!"
+msgstr "Domain cannot be empty!"
+
+msgid "Retry connection failed, {}"
+msgstr "Retry connection failed, {}"
+
+msgid "Softlink file creation failed"
+msgstr "Softlink file creation failed"
+
+msgid "|-Verifying domain name.."
+msgstr "|-Verifying domain name.."
+
+msgid "Successfully deleted directory [{}]!"
+msgstr "Successfully deleted directory [{}]!"
+
+msgid "Delete user failed!"
+msgstr "Delete user failed!"
+
+msgid "|-Getting verification information..."
+msgstr "|-Getting verification information..."
+
+msgid "All"
+msgstr "All"
+
+msgid "The panel is packaged successfully. Please do NOT log in to the panel to do any other operations!"
+msgstr "The panel is packaged successfully. Please do NOT log in to the panel to do any other operations!"
+
+msgid "Trying to automatically install ACME failed, please try to install manually by the following command<p>Installation command"
+msgstr "Trying to automatically install ACME failed, please try to install manually by the following command<p>Installation command"
+
+msgid "Enable website [{}] successfully"
+msgstr "Enable website [{}] successfully"
+
+msgid "Mysql root or user password is incorrect, please try to reset!"
+msgstr "Mysql root or user password is incorrect, please try to reset!"
+
+msgid "Requested method [{}] does not exist!"
+msgstr "Requested method [{}] does not exist!"
+
+msgid "The SSH protocol handshake timed out, and the network quality with the target server is too bad"
+msgstr "The SSH protocol handshake timed out, and the network quality with the target server is too bad"
+
+msgid "The username already exists!"
+msgstr "The username already exists!"
+
+msgid "Function does NOT exist"
+msgstr "Function does NOT exist"
+
+msgid "#SECURITY-START Hotlink protection configuration"
+msgstr "#SECURITY-START Hotlink protection configuration"
+
+msgid "Security Entrance cannot be less than 6 characters!"
+msgstr "Security Entrance cannot be less than 6 characters!"
+
+msgid "The specified username already exists!"
+msgstr "The specified username already exists!"
+
+msgid "Please enter the operation mode"
+msgstr "Please enter the operation mode"
+
+msgid "Forcibly change MySQL root password"
+msgstr "Forcibly change MySQL root password"
+
+msgid "Delete users[{}]"
+msgstr "Delete users[{}]"
+
+msgid "Panel turned off successful!"
+msgstr "Panel turned off successful!"
+
+msgid "Authorization Error: Your server submitted too many invalid requests!"
+msgstr "Authorization Error: Your server submitted too many invalid requests!"
+
+msgid "At least [{}MB] memory is required to install"
+msgstr "At least [{}MB] memory is required to install"
+
+msgid "<h2>TXT record verification failed, no TXT record added, or added incorrectly!</h2>"
+msgstr "<h2>TXT record verification failed, no TXT record added, or added incorrectly!</h2>"
+
+msgid "Parameter ERROR!"
+msgstr "Parameter ERROR!"
+
+msgid "Overstepping one authority!"
+msgstr "Overstepping one authority!"
+
+msgid "Timeout cannot be less than [{}] seconds"
+msgstr "Timeout cannot be less than [{}] seconds"
+
+msgid "Failed to get the list, please check if the [AK/SK/Storage] setting is correct!"
+msgstr "Failed to get the list, please check if the [AK/SK/Storage] setting is correct!"
+
+msgid "Database moved to recycle bin!"
+msgstr "Database moved to recycle bin!"
+
+msgid "Order deleted successfully!"
+msgstr "Order deleted successfully!"
+
+msgid "No valid TXT resolution record was found in the domain name {}, please check whether the TXT record is parsed correctly. If it is applied by DNSAPI, please try again in 10 minutes!"
+msgstr "No valid TXT resolution record was found in the domain name {}, please check whether the TXT record is parsed correctly. If it is applied by DNSAPI, please try again in 10 minutes!"
+
+msgid "Scan Task has in the queue!"
+msgstr "Scan Task has in the queue!"
+
+msgid "fail to get!"
+msgstr "fail to get!"
+
+msgid "No need to update"
+msgstr "No need to update"
+
+msgid "Pls enter new MySQL root password:"
+msgstr "Pls enter new MySQL root password:"
+
+msgid "Please enter an integer for the port"
+msgstr "Please enter an integer for the port"
+
+msgid "API configuration"
+msgstr "API configuration"
+
+msgid "Clear system rubbish"
+msgstr "Clear system rubbish"
+
+msgid "Binding IP (modification of bound IP may be a security risk)"
+msgstr "Binding IP (modification of bound IP may be a security risk)"
+
+msgid "All plugins successfully updated to 6.0 compatible!"
+msgstr "All plugins successfully updated to 6.0 compatible!"
+
+msgid "Failed to save"
+msgstr "Failed to save"
+
+msgid "Remove custom compilation parameters: {}:{}"
+msgstr "Remove custom compilation parameters: {}:{}"
+
+msgid "Wednesday"
+msgstr "Wednesday"
+
+msgid "Successfully uploaded file [{}] to [{}]!"
+msgstr "Successfully uploaded file [{}] to [{}]!"
+
+msgid "Site Traffic Control only supports Nginx Web Server!"
+msgstr "Site Traffic Control only supports Nginx Web Server!"
+
+msgid "The usernames entered twice are inconsistent, plesea try again!"
+msgstr "The usernames entered twice are inconsistent, plesea try again!"
+
+msgid "Email already exists"
+msgstr "Email already exists"
+
+msgid "Certificate ERROR, please paste the correct certificate in pem format!"
+msgstr "Certificate ERROR, please paste the correct certificate in pem format!"
+
+msgid "#Persistent connection related configuration"
+msgstr "#Persistent connection related configuration"
+
+msgid "Failed to modify FTP port! => {}"
+msgstr "Failed to modify FTP port! => {}"
+
+msgid "Account or Password incorrect: {}"
+msgstr "Account or Password incorrect: {}"
+
+msgid "Never Expires"
+msgstr "Never Expires"
+
+msgid "Get worker RAM False"
+msgstr "Get worker RAM False"
+
+msgid "Specified IP address already exists"
+msgstr "Specified IP address already exists"
+
+msgid "|-A total of \\033[36m{}\\033[0m domain name records need to be resolved."
+msgstr "|-A total of \\033[36m{}\\033[0m domain name records need to be resolved."
+
+msgid "Successfully logged in to the SSH server [{}:{}]"
+msgstr "Successfully logged in to the SSH server [{}:{}]"
+
+msgid "Panel operation logs emptied!"
+msgstr "Panel operation logs emptied!"
+
+msgid "Get worker Uptime False"
+msgstr "Get worker Uptime False"
+
+msgid "Did not find the {} configuration file, please try to close the ssl port settings before opening"
+msgstr "Did not find the {} configuration file, please try to close the ssl port settings before opening"
+
+msgid "Successfully initialize the API!"
+msgstr "Successfully initialize the API!"
+
+msgid "Validation failed, domain name was not resolved, or resolution did not take effect!"
+msgstr "Validation failed, domain name was not resolved, or resolution did not take effect!"
+
+msgid "|-Panel port changed to:{}"
+msgstr "|-Panel port changed to:{}"
+
+msgid "The verification timed out. Please check if the domain name is resolved correctly. If it is resolved correctly, the connection between the server and Let'sEncrypt may be abnormal. Please try again later!"
+msgstr "The verification timed out. Please check if the domain name is resolved correctly. If it is resolved correctly, the connection between the server and Let'sEncrypt may be abnormal. Please try again later!"
+
+msgid "ERROR requesting a certificate"
+msgstr "ERROR requesting a certificate"
+
+msgid "Database [{}] backup failed!"
+msgstr "Database [{}] backup failed!"
+
+msgid "phpMyAdmin already {}!"
+msgstr "phpMyAdmin already {}!"
+
+msgid "Max time of running script"
+msgstr "Max time of running script"
+
+msgid "File download failed, please try again or update manually!"
+msgstr "File download failed, please try again or update manually!"
+
+msgid "SSH Server"
+msgstr "SSH Server"
+
+msgid "Get worker date False"
+msgstr "Get worker date False"
+
+msgid "Concurrency restrictions, IP restrictions, traffic restrictions must be greater than 0"
+msgstr "Concurrency restrictions, IP restrictions, traffic restrictions must be greater than 0"
+
+msgid "Backup database [{}] succeed!"
+msgstr "Backup database [{}] succeed!"
+
+msgid "Database name cannot contain special characters!"
+msgstr "Database name cannot contain special characters!"
+
+msgid "Database password cannot contain special characters!"
+msgstr ""
+
+msgid "Database already exists"
+msgstr "Database already exists"
+
+msgid "Database recovered!"
+msgstr "Database recovered!"
+
+msgid "Shortcut Bar only display up to 5 software!"
+msgstr "Shortcut Bar only display up to 5 software!"
+
+msgid "Successfully uploaded!"
+msgstr "Successfully uploaded!"
+
+msgid "The dependency file requirements.txt was NOT found in the working directory, please add it before creating"
+msgstr "The dependency file requirements.txt was NOT found in the working directory, please add it before creating"
+
+msgid "The specified plugin does NOT support public access!"
+msgstr "The specified plugin does NOT support public access!"
+
+msgid "Disable successfully"
+msgstr "Disable successfully"
+
+msgid "Danger"
+msgstr "Danger"
+
+msgid "Backup site: {}"
+msgstr "Backup site: {}"
+
+msgid "Friday"
+msgstr "Friday"
+
+msgid "Database space"
+msgstr "Database space"
+
+msgid "# Forbidden files or directories"
+msgstr "# Forbidden files or directories"
+
+msgid "Verification code does NOT exist!"
+msgstr "Verification code does NOT exist!"
+
+msgid "Create new user {}"
+msgstr "Create new user {}"
+
+msgid "Weekly"
+msgstr "Weekly"
+
+msgid "The length of the extracted password cannot be less than 4 digits"
+msgstr "The length of the extracted password cannot be less than 4 digits"
+
+msgid "PHP version cannot be empty"
+msgstr "PHP version cannot be empty"
+
+msgid "Bind port"
+msgstr "Bind port"
+
+msgid "SSH service turned off"
+msgstr "SSH service turned off"
+
+msgid "Last domain cannot be deleted!"
+msgstr "Last domain cannot be deleted!"
+
+msgid "Verifying package..."
+msgstr "Verifying package..."
+
+msgid "Pls install WebHook plugin first!"
+msgstr "Pls install WebHook plugin first!"
+
+msgid "'Issue failed, we can not verify your domain: <p>1. check if the domain name is bound to the corresponding site</p><p>2. check if the domain name is correctly resolved to the server, or the resolution has NOT fully taken effect</p><p>3. If your site has a reverse proxy set up, or if you are using a CDN, please turn it off first</p><p>4. If your site has a 301 redirect, please turn it off first</p><p>5. If the above checks confirm that there is no problem, please try to change the DNS service provider</p>'"
+msgstr "'Issue failed, we can not verify your domain: <p>1. check if the domain name is bound to the corresponding site</p><p>2. check if the domain name is correctly resolved to the server, or the resolution has NOT fully taken effect</p><p>3. If your site has a reverse proxy set up, or if you are using a CDN, please turn it off first</p><p>4. If your site has a 301 redirect, please turn it off first</p><p>5. If the above checks confirm that there is no problem, please try to change the DNS service provider</p>'"
+
+msgid "Successfully unintalled [{}-{}]"
+msgstr "Successfully unintalled [{}-{}]"
+
+msgid "Max keep-alive requests per connection"
+msgstr "Max keep-alive requests per connection"
+
+msgid "Please stop the project before deleting"
+msgstr "Please stop the project before deleting"
+
+msgid "Apache rule configuration error: <br><a style='color:red;'>{}</a>"
+msgstr "Apache rule configuration error: <br><a style='color:red;'>{}</a>"
+
+msgid "Subnet mask is invalid"
+msgstr "Subnet mask is invalid"
+
+msgid "Set maximum time of script to [{} second] for PHP-{}!"
+msgstr "Set maximum time of script to [{} second] for PHP-{}!"
+
+msgid "Start compressing files: {}"
+msgstr "Start compressing files: {}"
+
+msgid "Cannot modify history copy directly!"
+msgstr "Cannot modify history copy directly!"
+
+msgid "Successfully deleted backup [{}] of site [{}]!"
+msgstr "Successfully deleted backup [{}] of site [{}]!"
+
+msgid "Installation task added to queue"
+msgstr "Installation task added to queue"
+
+msgid "Command has been sent!"
+msgstr "Command has been sent!"
+
+msgid "Delete domain ({}) cached record in session successfully"
+msgstr "Delete domain ({}) cached record in session successfully"
+
+msgid "Notification has been sent"
+msgstr "Notification has been sent"
+
+msgid "Please set this API first"
+msgstr "Please set this API first"
+
+msgid "Cancel domain binding limit"
+msgstr "Cancel domain binding limit"
+
+msgid "Successfully deleted database"
+msgstr "Successfully deleted database"
+
+msgid "Set the PHP-CLI version to: {}"
+msgstr "Set the PHP-CLI version to: {}"
+
+msgid "Nginx rule configuration error: <br><a style='color:red;'>{}</a>"
+msgstr "Nginx rule configuration error: <br><a style='color:red;'>{}</a>"
+
+msgid "Successfully uninstalled pgsql"
+msgstr "Successfully uninstalled pgsql"
+
+msgid "Site [{}] backup failed!"
+msgstr "Site [{}] backup failed!"
+
+msgid "Port [{}] is in use!"
+msgstr "Port [{}] is in use!"
+
+msgid "Renewing"
+msgstr "Renewing"
+
+msgid "Successfully deleted file!"
+msgstr "Successfully deleted file!"
+
+msgid "Pls enter new username(>5 characters): "
+msgstr "Pls enter new username(>5 characters): "
+
+msgid "Failed to detect A record"
+msgstr "Failed to detect A record"
+
+msgid "Connection failure!"
+msgstr "Connection failure!"
+
+msgid "Failed to get PHP version!"
+msgstr "Failed to get PHP version!"
+
+msgid "|-ERROR, new port is the same as current panel port, no need to change"
+msgstr "|-ERROR, new port is the same as current panel port, no need to change"
+
+msgid "|-Verify the dir:{}"
+msgstr "|-Verify the dir:{}"
+
+msgid "Start panel"
+msgstr "Start panel"
+
+msgid "{}-{} The task was executed successfully"
+msgstr "{}-{} The task was executed successfully"
+
+msgid "<h2>Issue failed, 请安装openssl!</h2>"
+msgstr "<h2>Issue failed, 请安装openssl!</h2>"
+
+msgid "Specified plugin has no file download function!"
+msgstr "Specified plugin has no file download function!"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Current version is stable version and already latest. Update cycle of stable version is generally 2 months,while developer version will update every Wednesday!"
+msgstr "Current version is stable version and already latest. Update cycle of stable version is generally 2 months,while developer version will update every Wednesday!"
+
+msgid "404 Not Found"
+msgstr "404 Not Found"
+
+msgid "Delete hostname {} cached record in session successfully"
+msgstr "Delete hostname {} cached record in session successfully"
+
+msgid "|-Writing verification file [{}]..."
+msgstr "|-Writing verification file [{}]..."
+
+msgid "Failed to add mapping [{}]"
+msgstr "Failed to add mapping [{}]"
+
+msgid "The user name cannot be empty!"
+msgstr "The user name cannot be empty!"
+
+msgid "SSH service turned on"
+msgstr "SSH service turned on"
+
+msgid "The database directory does not exist!"
+msgstr "The database directory does not exist!"
+
+msgid "Current version is up-to-date!"
+msgstr "Current version is up-to-date!"
+
+msgid "Cacel IP access limit"
+msgstr "Cacel IP access limit"
+
+msgid "|-Renewing certificate number of {},domain: {}.."
+msgstr "|-Renewing certificate number of {},domain: {}.."
+
+msgid "The specified account does not exist"
+msgstr "The specified account does not exist"
+
+msgid "Meaningless operation"
+msgstr "Meaningless operation"
+
+msgid "Path is incorrect {}"
+msgstr "Path is incorrect {}"
+
+msgid "Open"
+msgstr "Open"
+
+msgid "Create new user {} success!"
+msgstr "Create new user {} success!"
+
+msgid "ERROR, the specified configuration value already exists!"
+msgstr "ERROR, the specified configuration value already exists!"
+
+msgid "Clearing task history"
+msgstr "Clearing task history"
+
+msgid "IP address is invalid"
+msgstr "IP address is invalid"
+
+msgid "Log file does NOT exist!"
+msgstr "Log file does NOT exist!"
+
+msgid "The file cannot be read correctly due to incompatible file encoding!'{}"
+msgstr "The file cannot be read correctly due to incompatible file encoding!'{}"
+
+msgid "Keep alive"
+msgstr "Keep alive"
+
+msgid "renew certificate"
+msgstr "renew certificate"
+
+msgid "Minimum file to compress"
+msgstr "Minimum file to compress"
+
+msgid "Error: Sending CSR: Response status {} Response value: {}"
+msgstr "Error: Sending CSR: Response status {} Response value: {}"
+
+msgid "|-Turn on http to https"
+msgstr "|-Turn on http to https"
+
+msgid "Revoke certificate"
+msgstr "Revoke certificate"
+
+msgid "Entrance address format is incorrect, e.g. /my_panel"
+msgstr "Entrance address format is incorrect, e.g. /my_panel"
+
+msgid "Get worker Restart Time False"
+msgstr "Get worker Restart Time False"
+
+msgid "Derectory [{}] backup succeed, in [{}] seconds"
+msgstr "Derectory [{}] backup succeed, in [{}] seconds"
+
+msgid "Unblocked IP [{}]!"
+msgstr "Unblocked IP [{}]!"
+
+msgid "Successfully turned on API!"
+msgstr "Successfully turned on API!"
+
+msgid "|-PHP session cleared, deleted [{}] files, freed disk space [{}]"
+msgstr "|-PHP session cleared, deleted [{}] files, freed disk space [{}]"
+
+msgid "Panel"
+msgstr "Panel"
+
+msgid "{} execution succeeded"
+msgstr "{} execution succeeded"
+
+msgid "QR code expired"
+msgstr "QR code expired"
+
+msgid "Modify common commands [{}]"
+msgstr "Modify common commands [{}]"
+
+msgid "Configuration file ERROR"
+msgstr "Configuration file ERROR"
+
+msgid "Did not open Google authentication"
+msgstr "Did not open Google authentication"
+
+msgid "Specified category does NOT exist!"
+msgstr "Specified category does NOT exist!"
+
+msgid "Sunday"
+msgstr "Sunday"
+
+msgid "Get worker TotalAccesses False"
+msgstr "Get worker TotalAccesses False"
+
+msgid "For Support|Suggestions, please visit the aaPanel Forum"
+msgstr "For Support|Suggestions, please visit the aaPanel Forum"
+
+msgid "Task has been executed!"
+msgstr "Task has been executed!"
+
+msgid "Worker connections"
+msgstr "Worker connections"
+
+msgid "Partition {} available disk space is: {}, available Inode is: {}"
+msgstr "Partition {} available disk space is: {}, available Inode is: {}"
+
+msgid "The delivery type is not supported"
+msgstr "The delivery type is not supported"
+
+msgid "Number of threads created by each child process"
+msgstr "Number of threads created by each child process"
+
+msgid "SSL turned on!"
+msgstr "SSL turned on!"
+
+msgid "Upgrade composer from {} to {}"
+msgstr "Upgrade composer from {} to {}"
+
+msgid "Renewal failed. Please try to turn off SSL and re-apply for this domain certificate using File Authentication or DNS Authentication!"
+msgstr "Renewal failed. Please try to turn off SSL and re-apply for this domain certificate using File Authentication or DNS Authentication!"
+
+msgid "File encoding is not compatible and cannot be read correctly!"
+msgstr "File encoding is not compatible and cannot be read correctly!"
+
+msgid "Installation failed!"
+msgstr "Installation failed!"
+
+msgid "The IP address cannot be empty!"
+msgstr "The IP address cannot be empty!"
+
+msgid "Delete user {} success!"
+msgstr "Delete user {} success!"
+
+msgid "Please fill in the value between 30 and 86400!"
+msgstr "Please fill in the value between 30 and 86400!"
+
+msgid "From"
+msgstr "From"
+
+msgid "Expired Token"
+msgstr "Expired Token"
+
+msgid "The project has no logs"
+msgstr "The project has no logs"
+
+msgid "|-There are currently no certificates to renew."
+msgstr "|-There are currently no certificates to renew."
+
+msgid "Per Hour"
+msgstr "Per Hour"
+
+msgid "Delete [{}] subdirectory binding successfully"
+msgstr "Delete [{}] subdirectory binding successfully"
+
+msgid "Please pass in the [sort_list] field"
+msgstr "Please pass in the [sort_list] field"
+
+msgid "Please uninstall the MySQL master-slave plugin before closing the binary log!"
+msgstr "Please uninstall the MySQL master-slave plugin before closing the binary log!"
+
+msgid "Google authentication has been turned on"
+msgstr "Google authentication has been turned on"
+
+msgid "Failed to modify"
+msgstr "Failed to modify"
+
+msgid "Old configuration"
+msgstr "Old configuration"
+
+msgid "The specified database already exists in MySQL, please change the name!"
+msgstr "The specified database already exists in MySQL, please change the name!"
+
+msgid "The user name already exists. For security reasons, we do not allow one database user to manage multiple databases"
+msgstr "The user name already exists. For security reasons, we do not allow one database user to manage multiple databases"
+
+msgid "Backup database:{}"
+msgstr "Backup database:{}"
+
+msgid "Successfully deleted!"
+msgstr "Successfully deleted!"
+
+msgid "Current version of Nginx does NOT support WAF, please reinstall Nginx!"
+msgstr "Current version of Nginx does NOT support WAF, please reinstall Nginx!"
+
+msgid "Error sending CSR"
+msgstr "Error sending CSR"
+
+msgid "Successfully copied directory [{}] to [{}]!"
+msgstr "Successfully copied directory [{}] to [{}]!"
+
+msgid "Successfully stopped"
+msgstr "Successfully stopped"
+
+msgid "Task queue"
+msgstr "Task queue"
+
+msgid "0 means not limited"
+msgstr "0 means not limited"
+
+msgid "Nginx configuration file does not exist!"
+msgstr "Nginx configuration file does not exist!"
+
+msgid "Compression failed!"
+msgstr "Compression failed!"
+
+msgid "Login failed, error reason [{}]"
+msgstr "Login failed, error reason [{}]"
+
+msgid "Notification"
+msgstr "Notification"
+
+msgid "Sent successfully"
+msgstr "Sent successfully"
+
+msgid "Pan domain names cannot apply for a certificate using [File Verification]!"
+msgstr "Pan domain names cannot apply for a certificate using [File Verification]!"
+
+msgid "Database PID"
+msgstr "Database PID"
+
+msgid "Domain [{}] already exists!"
+msgstr "Domain [{}] already exists!"
+
+msgid "Site [{}] deleted domain [{}] successfully!"
+msgstr "Site [{}] deleted domain [{}] successfully!"
+
+msgid "Exclusion setting: {}"
+msgstr "Exclusion setting: {}"
+
+msgid "Login succeed, Username: {}, Login IP: {}"
+msgstr "Login succeed, Username: {}, Login IP: {}"
+
+msgid "No script need to execute!"
+msgstr "No script need to execute!"
+
+msgid "A wrong TXT record was found on {}: {}, please check whether the TXT resolution is correct, if it is applied by DNSAPI, please try again in 10 minutes!"
+msgstr "A wrong TXT record was found on {}: {}, please check whether the TXT resolution is correct, if it is applied by DNSAPI, please try again in 10 minutes!"
+
+msgid "Recycle bin emptied!"
+msgstr "Recycle bin emptied!"
+
+msgid "Edit user{}"
+msgstr "Edit user{}"
+
+msgid "Recipients cannot be parsed into a list"
+msgstr "Recipients cannot be parsed into a list"
+
+msgid "SSL is turned on, plesea use https protocol to access the panel!"
+msgstr "SSL is turned on, plesea use https protocol to access the panel!"
+
+msgid "Failed to delete!"
+msgstr "Failed to delete!"
+
+msgid "The specified user is not currently logged in!"
+msgstr "The specified user is not currently logged in!"
+
+msgid "Updated successfully!"
+msgstr "Updated successfully!"
+
+msgid "mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty"
+msgstr "mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty"
+
+msgid "Plugin manager"
+msgstr "Plugin manager"
+
+msgid "Database name is illegal!"
+msgstr "Database name is illegal!"
+
+msgid "Failed to get software list ({})"
+msgstr "Failed to get software list ({})"
+
+msgid "Please specify DNSAPI"
+msgstr "Please specify DNSAPI"
+
+msgid "Get Info"
+msgstr "Get Info"
+
+msgid "Record_ID of the domain NOT found: "
+msgstr "Record_ID of the domain NOT found: "
+
+msgid "Clear file notes [{}]"
+msgstr "Clear file notes [{}]"
+
+msgid "Session is lost, please login panel again!\n"
+msgstr "Session is lost, please login panel again!\n"
+
+msgid "Turn off"
+msgstr "Turn off"
+
+msgid "<h2>Issue failed, and the number of failed attempts to apply for a certificate has reached the limit!</h2>"
+msgstr "<h2>Issue failed, and the number of failed attempts to apply for a certificate has reached the limit!</h2>"
+
+msgid "Certified Domain Name: {}"
+msgstr "Certified Domain Name: {}"
+
+msgid "User name must be at least 2 characters"
+msgstr "User name must be at least 2 characters"
+
+msgid "Set expired date to [{}] for site[{}]!"
+msgstr "Set expired date to [{}] for site[{}]!"
+
+msgid "Set the file name [{}], notes: {}"
+msgstr "Set the file name [{}], notes: {}"
+
+msgid "Successfully modified API configuration!"
+msgstr "Successfully modified API configuration!"
+
+msgid "Invalid username or password. You have [{}] times left to try!"
+msgstr "Invalid username or password. You have [{}] times left to try!"
+
+msgid "<h2>Issue failed, ::wildcard domain and subdomain cannot apply for a certificate together!</h2>"
+msgstr "<h2>Issue failed, ::wildcard domain and subdomain cannot apply for a certificate together!</h2>"
+
+msgid "PostgreSQL interacts with the kernel and disk through shared_buffers, usually set to 10% of real memory."
+msgstr "PostgreSQL interacts with the kernel and disk through shared_buffers, usually set to 10% of real memory."
+
+msgid "Site started"
+msgstr "Site started"
+
+msgid "Flush status success"
+msgstr "Flush status success"
+
+msgid "Successfully copied file [{}] to [{}]!"
+msgstr "Successfully copied file [{}] to [{}]!"
+
+msgid "Check completed = {}. Max check allowed = {}. Interval between checks = {} seconds."
+msgstr "Check completed = {}. Max check allowed = {}. Interval between checks = {} seconds."
+
+msgid "Please do NOT use the usual port as the phpMyAdmin port!"
+msgstr "Please do NOT use the usual port as the phpMyAdmin port!"
+
+msgid "The format of the webname parameter is incorrect, it should be a parseable JSON string"
+msgstr "The format of the webname parameter is incorrect, it should be a parseable JSON string"
+
+msgid "Certificate updated!"
+msgstr "Certificate updated!"
+
+msgid "Successfully saved file [{}]!"
+msgstr "Successfully saved file [{}]!"
+
+msgid "|---File name:"
+msgstr "|---File name:"
+
+msgid "Failed to move database data to the recycle bin!"
+msgstr "Failed to move database data to the recycle bin!"
+
+msgid "Site [{}] stopped!"
+msgstr "Site [{}] stopped!"
+
+msgid "Category name cannot be empty"
+msgstr "Category name cannot be empty"
+
+msgid "|-Entrance limit cancelled"
+msgstr "|-Entrance limit cancelled"
+
+msgid "Successfully deleted backup [{}] for database [{}]!"
+msgstr "Successfully deleted backup [{}] for database [{}]!"
+
+msgid "Successfully modified password for database [{}]!"
+msgstr "Successfully modified password for database [{}]!"
+
+msgid "Total connections"
+msgstr "Total connections"
+
+msgid "Specific domain already bound!"
+msgstr "Specific domain already bound!"
+
+msgid "Requested port is common port, pls use another one!"
+msgstr "Requested port is common port, pls use another one!"
+
+msgid "Database name cannot be more than 16 characters!"
+msgstr "Database name cannot be more than 16 characters!"
+
+msgid "Successfully run"
+msgstr "Successfully run"
+
+msgid "Closed successfully"
+msgstr "Closed successfully"
+
+msgid "Please do NOT repeat adding"
+msgstr "Please do NOT repeat adding"
+
+msgid "Please choose a domain name"
+msgstr "Please choose a domain name"
+
+msgid "Compression task added to the message queue!"
+msgstr "Compression task added to the message queue!"
+
+msgid "Password or private key cannot both be empty: {}:{}"
+msgstr "Password or private key cannot both be empty: {}:{}"
+
+msgid "Enable IPv6 compatibility of the panel!"
+msgstr "Enable IPv6 compatibility of the panel!"
+
+msgid "|-Adding resolution record, domain name [{}], record value [{}]..."
+msgstr "|-Adding resolution record, domain name [{}], record value [{}]..."
+
+msgid "Uploading to {}, please wait ..."
+msgstr "Uploading to {}, please wait ..."
+
+msgid "File manager"
+msgstr "File manager"
+
+msgid "500 Internal Server Error"
+msgstr "500 Internal Server Error"
+
+msgid "Get worker time detail False"
+msgstr "Get worker time detail False"
+
+msgid "Successfully deleted FTP user[{}]!"
+msgstr "Successfully deleted FTP user[{}]!"
+
+msgid "Please enter an absolute path"
+msgstr "Please enter an absolute path"
+
+msgid "Login succeeded, loading..."
+msgstr "Login succeeded, loading..."
+
+msgid "The above debugging information is displayed only in developer mode"
+msgstr "The above debugging information is displayed only in developer mode"
+
+msgid "Username is modified from [{}] to [{}]"
+msgstr "Username is modified from [{}] to [{}]"
+
+msgid "Configuration file ERROR: {}"
+msgstr "Configuration file ERROR: {}"
+
+msgid "SSL is not enabled in the database, please open it in the Mysql manager first"
+msgstr "SSL is not enabled in the database, please open it in the Mysql manager first"
+
+msgid "Turn on"
+msgstr "Turn on"
+
+msgid "File hash verification failed, stop installation!"
+msgstr "File hash verification failed, stop installation!"
+
+msgid "Did not detect the port that apache phpmyadmin listens, please confirm whether the file has been manually modified."
+msgstr "Did not detect the port that apache phpmyadmin listens, please confirm whether the file has been manually modified."
+
+msgid "If the access permission is [Specified IP], you need to enter the IP address!"
+msgstr "If the access permission is [Specified IP], you need to enter the IP address!"
+
+msgid "Request error!"
+msgstr "Request error!"
+
+msgid "Download task added to queue!"
+msgstr "Download task added to queue!"
+
+msgid "Get Value {} False"
+msgstr "Get Value {} False"
+
+msgid "Certificate does NOT exist!"
+msgstr "Certificate does NOT exist!"
+
+msgid "There was an error deleting, please try again."
+msgstr "There was an error deleting, please try again."
+
+msgid "PIP cannot be uninstalled"
+msgstr "PIP cannot be uninstalled"
+
+msgid "{} d {} hrs {} min"
+msgstr "{} d {} hrs {} min"
+
+msgid "Failed to copy file!"
+msgstr "Failed to copy file!"
+
+msgid "Specified site does NOT exist"
+msgstr "Specified site does NOT exist"
+
+msgid "Failed to delete directory!"
+msgstr "Failed to delete directory!"
+
+msgid "View IP authorized: cat /www/server/panel/data/limitip.conf"
+msgstr "View IP authorized: cat /www/server/panel/data/limitip.conf"
+
+msgid "The IP format is incorrect, and the subnet segment writing is not supported"
+msgstr "The IP format is incorrect, and the subnet segment writing is not supported"
+
+msgid "|-User submits verification request..."
+msgstr "|-User submits verification request..."
+
+msgid "Invalid site directory, please check if the specified site exists!"
+msgstr "Invalid site directory, please check if the specified site exists!"
+
+msgid "Only the [{}] system is supported"
+msgstr "Only the [{}] system is supported"
+
+msgid "The signing failed, we were unable to verify your domain name:<p>1. Check if the domain name is bound to the corresponding site.</p><p>2. Check if the domain name is correctly resolved to the server, or the resolution is not fully effective.</p><p>3. If your site has a reverse proxy set up, or if you are using a CDN, please turn it off first.</p><p>4. If your site has a 301 redirect, please turn it off first</p><p>5. If the above checks confirm that there is no problem, please try to change the DNS service provider.</p>'"
+msgstr "The signing failed, we were unable to verify your domain name:<p>1. Check if the domain name is bound to the corresponding site.</p><p>2. Check if the domain name is correctly resolved to the server, or the resolution is not fully effective.</p><p>3. If your site has a reverse proxy set up, or if you are using a CDN, please turn it off first.</p><p>4. If your site has a 301 redirect, please turn it off first</p><p>5. If the above checks confirm that there is no problem, please try to change the DNS service provider.</p>'"
+
+msgid "Successfully initialized NIC"
+msgstr "Successfully initialized NIC"
+
+msgid "This version of Python already installed {}"
+msgstr "This version of Python already installed {}"
+
+msgid "The specified historical copy does not exist!"
+msgstr "The specified historical copy does not exist!"
+
+msgid "Format of domain is invalid!"
+msgstr "Format of domain is invalid!"
+
+msgid "Unsupported domain name {}, please check the domain name is correct!"
+msgstr "Unsupported domain name {}, please check the domain name is correct!"
+
+msgid "Decompression task added to the message queue!"
+msgstr "Decompression task added to the message queue!"
+
+msgid "Specified PHP version not installed"
+msgstr "Specified PHP version not installed"
+
+msgid "Sent mail successfully"
+msgstr "Sent mail successfully"
+
+msgid "Task deleted"
+msgstr "Task deleted"
+
+msgid "Do NOT use common default port!"
+msgstr "Do NOT use common default port!"
+
+msgid "Certificate ERROR, please check!"
+msgstr "Certificate ERROR, please check!"
+
+msgid "Operation failed"
+msgstr "Operation failed"
+
+msgid "Nonsupport mysql5.1!"
+msgstr "Nonsupport mysql5.1!"
+
+msgid "It is not recommended to use [.] at the end of the file because there may be security risks"
+msgstr "It is not recommended to use [.] at the end of the file because there may be security risks"
+
+msgid "Max processes"
+msgstr "Max processes"
+
+msgid "Save ERROR! {}"
+msgstr "Save ERROR! {}"
+
+msgid "Dangerous upload vulnerabilities"
+msgstr "Dangerous upload vulnerabilities"
+
+msgid "{} installing, please wait..."
+msgstr "{} installing, please wait..."
+
+msgid "Please go to the software store to install [cloud analysis], and complete the domain name NS binding."
+msgstr "Please go to the software store to install [cloud analysis], and complete the domain name NS binding."
+
+msgid "The specified directory {} does not exist!"
+msgstr "The specified directory {} does not exist!"
+
+msgid "ERROR, the value set is illegal!"
+msgstr "ERROR, the value set is illegal!"
+
+msgid "Port range must be between 22 and 65535!"
+msgstr "Port range must be between 22 and 65535!"
+
+msgid "Failed to obtain file content, format is not supported!"
+msgstr "Failed to obtain file content, format is not supported!"
+
+msgid "Connection failure: {}:{}"
+msgstr "Connection failure: {}:{}"
+
+msgid "Demons"
+msgstr "Demons"
+
+msgid "Pls enter new password: "
+msgstr "Pls enter new password: "
+
+msgid "Requested file exists!"
+msgstr "Requested file exists!"
+
+msgid "The protocol header response timed out"
+msgstr "The protocol header response timed out"
+
+msgid "Successfully uninstalled plugin [{}]"
+msgstr "Successfully uninstalled plugin [{}]"
+
+msgid "Site [{}] traffic control turned off!"
+msgstr "Site [{}] traffic control turned off!"
+
+msgid "# Copyright (C) YEAR ORGANIZATION"
+msgstr "# Copyright (C) YEAR ORGANIZATION"
+
+msgid "Regenerate API-Token"
+msgstr "Regenerate API-Token"
+
+msgid "Dangerous reference"
+msgstr "Dangerous reference"
+
+msgid "Please enter the index of the order to be revoked in the --index parameter"
+msgstr "Please enter the index of the order to be revoked in the --index parameter"
+
+msgid "Monthly, run on {}Day {} Hour {}Min"
+msgstr "Monthly, run on {}Day {} Hour {}Min"
+
+msgid "You do NOT have permission to access the current plugin!"
+msgstr "You do NOT have permission to access the current plugin!"
+
+msgid "ERROR registering"
+msgstr "ERROR registering"
+
+msgid "connection succeeded"
+msgstr "connection succeeded"
+
+msgid "MySQLdb component is missing! <br>Please enter SSH and run the command: pip install mysql-python"
+msgstr "MySQLdb component is missing! <br>Please enter SSH and run the command: pip install mysql-python"
+
+msgid "There is no certificate that can be renewed on the current website.."
+msgstr "There is no certificate that can be renewed on the current website.."
+
+msgid "Has been open"
+msgstr "Has been open"
+
+msgid "Failed to get mail, error reason [{}]"
+msgstr "Failed to get mail, error reason [{}]"
+
+msgid "System rubbish cleared, totally deleted [{}] files, freed disk space [{}]"
+msgstr "System rubbish cleared, totally deleted [{}] files, freed disk space [{}]"
+
+msgid "Per Day, run at {} Hour {} Min"
+msgstr "Per Day, run at {} Hour {} Min"
+
+msgid "Proxy directory cannot have the following special characters {}"
+msgstr "Proxy directory cannot have the following special characters {}"
+
+msgid "A generic domain name cannot be used to apply for a certificate using [File Validation]!"
+msgstr "A generic domain name cannot be used to apply for a certificate using [File Validation]!"
+
+msgid "The change failed, directory does NOT exist"
+msgstr "The change failed, directory does NOT exist"
+
+msgid "Task manager"
+msgstr "Task manager"
+
+msgid "File names can NOT contain special characters!"
+msgstr "File names can NOT contain special characters!"
+
+msgid "Already {} API service!"
+msgstr "Already {} API service!"
+
+msgid "Site [{}] backup to FTP succeed, in [{}] seconds"
+msgstr "Site [{}] backup to FTP succeed, in [{}] seconds"
+
+msgid "Closed"
+msgstr "Closed"
+
+msgid "Successfully moved file [{}] to recycle bin!"
+msgstr "Successfully moved file [{}] to recycle bin!"
+
+msgid "|-ERROR, pls do NOT use the common port as panel port"
+msgstr "|-ERROR, pls do NOT use the common port as panel port"
+
+msgid "Command sent successfully!"
+msgstr "Command sent successfully!"
+
+msgid "This plugin does NOT have template!"
+msgstr "This plugin does NOT have template!"
+
+msgid "Export failed, please check permissions!"
+msgstr "Export failed, please check permissions!"
+
+msgid " Successfully deleted database [{}]!"
+msgstr " Successfully deleted database [{}]!"
+
+msgid "Unable to initialize client"
+msgstr "Unable to initialize client"
+
+msgid "Defualt document of site [{}] is [{}]"
+msgstr "Defualt document of site [{}] is [{}]"
+
+msgid "Failed to delete backup [{}] for database [{}]! => {}"
+msgstr "Failed to delete backup [{}] for database [{}]! => {}"
+
+msgid "Warning, turning off the security entrance will directly expose your back-end to the public network, which is very dangerous. At least one of the following security measures must be turned on to turn off the security entrance:<a style='color:red;'><br>1. Binding access domain<br>2. Binding authorized IP</a>"
+msgstr "Warning, turning off the security entrance will directly expose your back-end to the public network, which is very dangerous. At least one of the following security measures must be turned on to turn off the security entrance:<a style='color:red;'><br>1. Binding access domain<br>2. Binding authorized IP</a>"
+
+msgid "Redirected domain already exists {}"
+msgstr "Redirected domain already exists {}"
+
+msgid "Number of current pending signals"
+msgstr "Number of current pending signals"
+
+msgid "Compression completed, took {} seconds, compressed package size: {}"
+msgstr "Compression completed, took {} seconds, compressed package size: {}"
+
+msgid "[{}] renamed to [{}]"
+msgstr "[{}] renamed to [{}]"
+
+msgid "Select sql/gz/zip file!"
+msgstr "Select sql/gz/zip file!"
+
+msgid "API key ERROR, failed to add resolution"
+msgstr "API key ERROR, failed to add resolution"
+
+msgid "WeChat scan QR code login"
+msgstr "WeChat scan QR code login"
+
+msgid "Python startup mode has no configuration file to modify"
+msgstr "Python startup mode has no configuration file to modify"
+
+msgid "Please complete the information!"
+msgstr "Please complete the information!"
+
+msgid "The IP exists in block list, no need to repeat processing!"
+msgstr "The IP exists in block list, no need to repeat processing!"
+
+msgid "Hotlink Protection for site [{}] disabled!"
+msgstr "Hotlink Protection for site [{}] disabled!"
+
+msgid "PHP reference configuration, allowed to be commented, deleted or modified"
+msgstr "PHP reference configuration, allowed to be commented, deleted or modified"
+
+msgid "Turned off monitory service!"
+msgstr "Turned off monitory service!"
+
+msgid "{} API"
+msgstr "{} API"
+
+msgid "This JDK is NOT installed"
+msgstr "This JDK is NOT installed"
+
+msgid "Certificate error, please paste the correct PEM format certificate!"
+msgstr "Certificate error, please paste the correct PEM format certificate!"
+
+msgid "Set PATH_INFO module to [{}] for PHP-{}!"
+msgstr "Set PATH_INFO module to [{}] for PHP-{}!"
+
+msgid "Clearing CPU monitoring records"
+msgstr "Clearing CPU monitoring records"
+
+msgid "|-The \\033[36m{}\\033[0m domain names are: {}, please resolve the following information: "
+msgstr "|-The \\033[36m{}\\033[0m domain names are: {}, please resolve the following information: "
+
+msgid "Domain format ERROR {}"
+msgstr "Domain format ERROR {}"
+
+msgid "SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules"
+msgstr "SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules"
+
+msgid "Directory already has files, please change another directory"
+msgstr "Directory already has files, please change another directory"
+
+msgid "No resolution record was found for domain name {}, please check if the domain name resolution takes effect!"
+msgstr "No resolution record was found for domain name {}, please check if the domain name resolution takes effect!"
+
+msgid "The specified address does not exist!"
+msgstr "The specified address does not exist!"
+
+msgid "Cannot delete non-empty directory!"
+msgstr "Cannot delete non-empty directory!"
+
+msgid "Failed to get from the cloud"
+msgstr "Failed to get from the cloud"
+
+msgid "This domain does NOT exist in this CloudXNS account, failed to add resolution"
+msgstr "This domain does NOT exist in this CloudXNS account, failed to add resolution"
+
+msgid "Verification code length is wrong!"
+msgstr "Verification code length is wrong!"
+
+msgid "CA server connection timed out, please try again later."
+msgstr "CA server connection timed out, please try again later."
+
+msgid "Delete domain [{}] successfully"
+msgstr "Delete domain [{}] successfully"
+
+msgid "Error, cannot end task processes!"
+msgstr "Error, cannot end task processes!"
+
+msgid "Create the website [ {} ] successfully"
+msgstr "Create the website [ {} ] successfully"
+
+msgid "No available PHP version found!"
+msgstr "No available PHP version found!"
+
+msgid "TXT record has expired, please re-acquire"
+msgstr "TXT record has expired, please re-acquire"
+
+msgid "NIC NOT initialized"
+msgstr "NIC NOT initialized"
+
+msgid "The specified SSH information does not exist!"
+msgstr "The specified SSH information does not exist!"
+
+msgid "Executed successfully!"
+msgstr "Executed successfully!"
+
+msgid "Get worker BusyWorkers False"
+msgstr "Get worker BusyWorkers False"
+
+msgid "Sorry, something went wrong"
+msgstr "Sorry, something went wrong"
+
+msgid "Error: Attempted verification {} times. The maximum number of verifications is {}. The verification interval is {} seconds."
+msgstr "Error: Attempted verification {} times. The maximum number of verifications is {}. The verification interval is {} seconds."
+
+msgid "|-Record type: CAA Record name: \\033[41m{}\\033[0m Record value: \\033[41m{}\\033[0m [Optional]"
+msgstr "|-Record type: CAA Record name: \\033[41m{}\\033[0m Record value: \\033[41m{}\\033[0m [Optional]"
+
+msgid "Service shutdown or internal error due to maintenance, check [ https://letsencrypt.status.io ]see for more details. "
+msgstr "Service shutdown or internal error due to maintenance, check [ https://letsencrypt.status.io ]see for more details. "
+
+msgid "This IP cannot be deleted"
+msgstr "This IP cannot be deleted"
+
+msgid "Please select redirected domain"
+msgstr "Please select redirected domain"
+
+msgid "Update Succeeded!"
+msgstr "Update Succeeded!"
+
+msgid "Same as original path, no need to change!"
+msgstr ""
+
+msgid "The file cannot be read correctly due to incompatible file encoding!{}"
+msgstr "The file cannot be read correctly due to incompatible file encoding!{}"
+
+msgid "At least [{}] CPU cores are required to install"
+msgstr "At least [{}] CPU cores are required to install"
+
+msgid "Project already started"
+msgstr "Project already started"
+
+msgid "API"
+msgstr "API"
+
+msgid "Every {} Hours"
+msgstr "Every {} Hours"
+
+msgid "No composer available!"
+msgstr "No composer available!"
+
+msgid "Clearing network monitoring records"
+msgstr "Clearing network monitoring records"
+
+msgid "Failed to modify password for database [{}]! => {}"
+msgstr "Failed to modify password for database [{}]! => {}"
+
+msgid "Sorry, You do NOT Have Permission to Access."
+msgstr "Sorry, You do NOT Have Permission to Access."
+
+msgid "Successfully compressed file [{}] to [{}]!"
+msgstr "Successfully compressed file [{}] to [{}]!"
+
+msgid "No virtual environment created, please recreate the project"
+msgstr "No virtual environment created, please recreate the project"
+
+msgid "|-Request CA to verify domain name [{}]..."
+msgstr "|-Request CA to verify domain name [{}]..."
+
+msgid "Please specify the correct authentication type in the --type parameter, supporting dns and http"
+msgstr "Please specify the correct authentication type in the --type parameter, supporting dns and http"
+
+msgid "Auto means automatic"
+msgstr "Auto means automatic"
+
+msgid "|-{} Waiting for renewal [{}]."
+msgstr "|-{} Waiting for renewal [{}]."
+
+msgid "Expired backup files have been cleaned from {}: {}"
+msgstr "Expired backup files have been cleaned from {}: {}"
+
+msgid "Successfully deleted cron job [{}]!"
+msgstr "Successfully deleted cron job [{}]!"
+
+msgid "Cancel entrance limit"
+msgstr "Cancel entrance limit"
+
+msgid "Succeeded, please test JSP program!"
+msgstr "Succeeded, please test JSP program!"
+
+msgid "aaPanel alarm test"
+msgstr "aaPanel alarm test"
+
+msgid "Mapping site for Python project [{}]"
+msgstr "Mapping site for Python project [{}]"
+
+msgid "Size of swap used by process"
+msgstr "Size of swap used by process"
+
+msgid "An error occurred while writing data to the buffer: {}"
+msgstr "An error occurred while writing data to the buffer: {}"
+
+msgid "Ended processes[{}][{}] Successfully!"
+msgstr "Ended processes[{}][{}] Successfully!"
+
+msgid "Successfully saved certificate!"
+msgstr "Successfully saved certificate!"
+
+msgid "Failed to copy directory!"
+msgstr "Failed to copy directory!"
+
+msgid "Modified PHP runtime version to PHP-{} for phpMyAdmin!"
+msgstr "Modified PHP runtime version to PHP-{} for phpMyAdmin!"
+
+msgid "Connection to CA server failed, please try again later."
+msgstr "Connection to CA server failed, please try again later."
+
+msgid "|-Clearing resolve history [{}]"
+msgstr "|-Clearing resolve history [{}]"
+
+msgid "Create new user failed!"
+msgstr "Create new user failed!"
+
+msgid "Database memory"
+msgstr "Database memory"
+
+msgid "Database [{}] backup succeed, in [{}] seconds"
+msgstr "Database [{}] backup succeed, in [{}] seconds"
+
+msgid "Command sent"
+msgstr "Command sent"
+
+msgid "Authenticating private key"
+msgstr "Authenticating private key"
+
+msgid "Execute composer [{}] in the directory: [{}]"
+msgstr "Execute composer [{}] in the directory: [{}]"
+
+msgid "Mapping site for Tomcat [{}]"
+msgstr "Mapping site for Tomcat [{}]"
+
+msgid "|-Manual order submission is successful, please resolve DNS records according to the following tips: "
+msgstr "|-Manual order submission is successful, please resolve DNS records according to the following tips: "
+
+msgid "{} Offline mode"
+msgstr "{} Offline mode"
+
+msgid "Nginx 1.8.1 is too old, no longer available, please choose another version!"
+msgstr "Nginx 1.8.1 is too old, no longer available, please choose another version!"
+
+msgid "The protocol header response timed out, and the network quality with the target server was too bad: {}"
+msgstr "The protocol header response timed out, and the network quality with the target server was too bad: {}"
+
+msgid "Set [{}]'s permission to [{}] and authorized user to [{}]"
+msgstr "Set [{}]'s permission to [{}] and authorized user to [{}]"
+
+msgid "ERROR to connect database, pls check database status!"
+msgstr "ERROR to connect database, pls check database status!"
+
+msgid "Unpacking the package..."
+msgstr "Unpacking the package..."
+
+msgid "No Data"
+msgstr "No Data"
+
+msgid "Please enter number"
+msgstr "Please enter number"
+
+msgid "Failed to change password FTP user[{}]! => {}"
+msgstr "Failed to change password FTP user[{}]! => {}"
+
+msgid "The specified package does not exist."
+msgstr "The specified package does not exist."
+
+msgid "Turned on Tomcat supporting for site [{}]!"
+msgstr "Turned on Tomcat supporting for site [{}]!"
+
+msgid "Please enter the correct port range 1 < port < 65535"
+msgstr "Please enter the correct port range 1 < port < 65535"
+
+msgid "|-Clearing up temporary files and site logs..."
+msgstr "|-Clearing up temporary files and site logs..."
+
+msgid "#Clear cache"
+msgstr "#Clear cache"
+
+msgid "Did not detect the port that nginx phpmyadmin listens, please confirm whether the file has been manually modified."
+msgstr "Did not detect the port that nginx phpmyadmin listens, please confirm whether the file has been manually modified."
+
+msgid "Tuesday"
+msgstr "Tuesday"
+
+msgid "Failed to generate temporary login URL"
+msgstr "Failed to generate temporary login URL"
+
+msgid "The SSH protocol handshake timed out"
+msgstr "The SSH protocol handshake timed out"
+
+msgid "Successfully moved file or directory [{}] to [{}]!"
+msgstr "Successfully moved file or directory [{}] to [{}]!"
+
+msgid "The E-Mail format is illegal"
+msgstr "The E-Mail format is illegal"
+
+msgid "New domain success! {}"
+msgstr "New domain success! {}"
+
+msgid "Wrong parameter format!"
+msgstr "Wrong parameter format!"
+
+msgid "Monday"
+msgstr "Monday"
+
+msgid "Verification code is incorrect, Username:{}, Verification Code:{}, Login IP:{}"
+msgstr "Verification code is incorrect, Username:{}, Verification Code:{}, Login IP:{}"
+
+msgid "Successfully created site!"
+msgstr "Successfully created site!"
+
+msgid "Failed to repair!"
+msgstr "Failed to repair!"
+
+msgid "Your site has 301 Redirect on,Please turn it off first!"
+msgstr "Your site has 301 Redirect on,Please turn it off first!"
+
+msgid "10 consecutive authentication failures are prohibited for 1 hour"
+msgstr "10 consecutive authentication failures are prohibited for 1 hour"
+
+msgid "Backup error {} "
+msgstr "Backup error {} "
+
+msgid "Set the max number of temporary buffers used by each database session. Default value is 8MB"
+msgstr "Set the max number of temporary buffers used by each database session. Default value is 8MB"
+
+msgid "The connection timed out and the CA server was unable to access your website!"
+msgstr "The connection timed out and the CA server was unable to access your website!"
+
+msgid "Client header buffer size"
+msgstr "Client header buffer size"
+
+msgid "Special symbols cannot be included in the database path"
+msgstr "Special symbols cannot be included in the database path"
+
+msgid "Site [{}] traffic control turned on!"
+msgstr "Site [{}] traffic control turned on!"
+
+msgid "ERROR, primary domain cannot be IP address!"
+msgstr "ERROR, primary domain cannot be IP address!"
+
+msgid "Open File"
+msgstr "Open File"
+
+msgid "{} FTP user failed!"
+msgstr "{} FTP user failed!"
+
+msgid "Configuration has been saved"
+msgstr "Configuration has been saved"
+
+msgid "|-ERROR, no valid port entered"
+msgstr "|-ERROR, no valid port entered"
+
+msgid "No QR code data, please re-open"
+msgstr "No QR code data, please re-open"
+
+msgid "Recovery succeeded!"
+msgstr "Recovery succeeded!"
+
+msgid "Import database"
+msgstr "Import database"
+
+msgid "The specified template does NOT exist"
+msgstr "The specified template does NOT exist"
+
+msgid "|-Saving certificate.."
+msgstr "|-Saving certificate.."
+
+msgid "|-{} Total [{}] renewal of visa tasks"
+msgstr "|-{} Total [{}] renewal of visa tasks"
+
+msgid "Requested panel info does NOT exist!"
+msgstr "Requested panel info does NOT exist!"
+
+msgid "First"
+msgstr "First"
+
+msgid "PHP-{} processing exception detected and automatically fixed!"
+msgstr "PHP-{} processing exception detected and automatically fixed!"
+
+msgid "Max size of upload file"
+msgstr "Max size of upload file"
+
+msgid "|---Expired backup file cleaned up:"
+msgstr "|---Expired backup file cleaned up:"
+
+msgid "Certificate saved!"
+msgstr "Certificate saved!"
+
+msgid "Saturday"
+msgstr "Saturday"
+
+msgid "Project already exists"
+msgstr "Project already exists"
+
+msgid "Please choose a port"
+msgstr "Please choose a port"
+
+msgid "DNS error,or NOT yet in effect!<li style='color:red;'>{}</li>"
+msgstr "DNS error,or NOT yet in effect!<li style='color:red;'>{}</li>"
+
+msgid "Successfully deleted database [{}]!"
+msgstr "Successfully deleted database [{}]!"
+
+msgid "The database name cannot be empty"
+msgstr "The database name cannot be empty"
+
+msgid "The database user name cannot be empty"
+msgstr "The database user name cannot be empty"
+
+msgid "Username cannot be less than 3 characters"
+msgstr "Username cannot be less than 3 characters"
+
+msgid "Username or password cannot be less than 3 characters"
+msgstr ""
+
+msgid "Category name cannot exceed 6 Chinese characters or 18 letters"
+msgstr "Category name cannot exceed 6 Chinese characters or 18 letters"
+
+msgid "Site stopped"
+msgstr "Site stopped"
+
+msgid "Reload panel"
+msgstr "Reload panel"
+
+msgid "# Directory verification related settings for one-click application for SSL certificate"
+msgstr "# Directory verification related settings for one-click application for SSL certificate"
+
+msgid "The operation failed, please re-operate the copy or cut process"
+msgstr "The operation failed, please re-operate the copy or cut process"
+
+msgid "Configuration ERROR or service NOT installed"
+msgstr "Configuration ERROR or service NOT installed"
+
+msgid "Limit of script memory"
+msgstr "Limit of script memory"
+
+msgid "Failed to modify password for database [{}]!"
+msgstr "Failed to modify password for database [{}]!"
+
+msgid "Failed to unmount"
+msgstr "Failed to unmount"
+
+msgid "|-Creating order.."
+msgstr "|-Creating order.."
+
+msgid "Cannot configure API through API"
+msgstr "Cannot configure API through API"
+
+msgid "# SOME DESCRIPTIVE TITLE."
+msgstr "# SOME DESCRIPTIVE TITLE."
+
+msgid "The extract password length cannot be less than 4 bits"
+msgstr "The extract password length cannot be less than 4 bits"
+
+msgid "Please wait 2-3 minutes after completing the resolution and enter Y and press Enter to continue verifying the domain name: "
+msgstr "Please wait 2-3 minutes after completing the resolution and enter Y and press Enter to continue verifying the domain name: "
+
+msgid "Linux Panel"
+msgstr "Linux Panel"
+
+msgid "|-[{}] Not expired or the site does not use the Let\\'s Encrypt certificate."
+msgstr "|-[{}] Not expired or the site does not use the Let\\'s Encrypt certificate."
+
+msgid "Type ERROR"
+msgstr "Type ERROR"
+
+msgid "Saved"
+msgstr "Saved"
+
+msgid "Failed to save certificate!"
+msgstr "Failed to save certificate!"
+
+msgid "Cron job"
+msgstr "Cron job"
+
+msgid "Successfully deleted site!"
+msgstr "Successfully deleted site!"
+
+msgid "Failed to obtain Let's Encrypt Certificate. Authentication Server cannot access your site!"
+msgstr "Failed to obtain Let's Encrypt Certificate. Authentication Server cannot access your site!"
+
+msgid "Successfully added database [{}]!"
+msgstr "Successfully added database [{}]!"
+
+msgid "Network restarted"
+msgstr "Network restarted"
+
+msgid "New phpMyAdmin Port"
+msgstr "New phpMyAdmin Port"
+
+msgid "Specified protocol does NOT exist!"
+msgstr "Specified protocol does NOT exist!"
+
+msgid "Cannot access verification file correctly"
+msgstr "Cannot access verification file correctly"
+
+msgid "Sites with reverse proxy turned on cannot apply for SSL!"
+msgstr "Sites with reverse proxy turned on cannot apply for SSL!"
+
+msgid "Channel disconnected"
+msgstr "Channel disconnected"
+
+msgid "Writing verification file failed: {}"
+msgstr "Writing verification file failed: {}"
+
+msgid "Please enter the email content"
+msgstr "Please enter the email content"
+
+msgid "The specified method does NOT exist"
+msgstr "The specified method does NOT exist"
+
+msgid "Title and hook scripts cannot be empty"
+msgstr "Title and hook scripts cannot be empty"
+
+msgid "Successfully changed SSH port to [{}]!"
+msgstr "Successfully changed SSH port to [{}]!"
+
+msgid "Set up website [{}] PHP version successfully"
+msgstr "Set up website [{}] PHP version successfully"
+
+msgid "Please pass in the plug-in name!"
+msgstr "Please pass in the plug-in name!"
+
+msgid "The operation failed, please re-copy the copy or cut process"
+msgstr "The operation failed, please re-copy the copy or cut process"
+
+msgid "Please fill in the email title"
+msgstr "Please fill in the email title"
+
+msgid "The target file name already exists!"
+msgstr "The target file name already exists!"
+
+msgid "|-ERROR, password cannot be empty"
+msgstr "|-ERROR, password cannot be empty"
+
+msgid "There are currently no tasks executing in the queue{}!"
+msgstr "There are currently no tasks executing in the queue{}!"
+
+msgid "Disable website [{}] successfully"
+msgstr "Disable website [{}] successfully"
+
+msgid "This version of Python is NOT installed"
+msgstr "This version of Python is NOT installed"
+
+msgid "Delete the SSH information of HOST: {}"
+msgstr "Delete the SSH information of HOST: {}"
+
+msgid "The panel certificate does not exist. Please apply for the panel certificate and try again."
+msgstr "The panel certificate does not exist. Please apply for the panel certificate and try again."
+
+msgid "Every {} Hours, run at {} Min"
+msgstr "Every {} Hours, run at {} Min"
+
+msgid "Not enough disk space"
+msgstr ""
+
+msgid "No special characters can be included in the file name!"
+msgstr "No special characters can be included in the file name!"
+
+msgid "Dashboard only display up to 12 software!"
+msgstr "Dashboard only display up to 12 software!"
+
+msgid "Failed to recover [{}] from recycle bin!"
+msgstr "Failed to recover [{}] from recycle bin!"
+
+msgid "The specified module does not exist!"
+msgstr "The specified module does not exist!"
+
+msgid "Successfully changed directory of site [{}]!"
+msgstr "Successfully changed directory of site [{}]!"
+
+msgid "Size of process code"
+msgstr "Size of process code"
+
+msgid "The list of applied domain names cannot be empty."
+msgstr "The list of applied domain names cannot be empty."
+
+msgid "This feature cannot be used in offline mode!"
+msgstr "This feature cannot be used in offline mode!"
+
+msgid "Successfully modify the panel menu display list"
+msgstr "Successfully modify the panel menu display list"
+
+msgid "Error getting ACME endpoint"
+msgstr "Error getting ACME endpoint"
+
+msgid "Currently renewal tasks in progress!"
+msgstr "Currently renewal tasks in progress!"
+
+msgid "The domain name does not belong to this DNS service provider, please make sure the domain name is filled in correctly."
+msgstr "The domain name does not belong to this DNS service provider, please make sure the domain name is filled in correctly."
+
+msgid "Max num of connections"
+msgstr "Max num of connections"
+
+msgid "Successfully renamed!"
+msgstr "Successfully renamed!"
+
+msgid "Login success"
+msgstr "Login success"
+
+msgid "PHP configuration"
+msgstr "PHP configuration"
+
+msgid "Backup site [{}] succeed!"
+msgstr "Backup site [{}] succeed!"
+
+msgid "Hash table size of server name"
+msgstr "Hash table size of server name"
+
+msgid "Unknown"
+msgstr "Unknown"
+
+msgid "Wildcard domain and subdomain cannot apply for a certificate together"
+msgstr "Wildcard domain and subdomain cannot apply for a certificate together"
+
+msgid "In MySQL configuration file detected and auto fixed an error, which may cause mysqld service unable to start!"
+msgstr "In MySQL configuration file detected and auto fixed an error, which may cause mysqld service unable to start!"
+
+msgid "Failed to connect to SSH service!\n"
+msgstr "Failed to connect to SSH service!\n"
+
+msgid "Site [{}] does NOT exist!"
+msgstr "Site [{}] does NOT exist!"
+
+msgid "User deletion failed!"
+msgstr "User deletion failed!"
+
+msgid "Successfully cleared {} tasks!"
+msgstr "Successfully cleared {} tasks!"
+
+msgid "Failed to clean expired backup, error: {}"
+msgstr "Failed to clean expired backup, error: {}"
+
+msgid "Updating plugin..."
+msgstr "Updating plugin..."
+
+msgid "Task queue activated"
+msgstr "Task queue activated"
+
+msgid "Required parameters: --domain list of domain names, multiple separated by commas!"
+msgstr "Required parameters: --domain list of domain names, multiple separated by commas!"
+
+msgid "Successfully created file!"
+msgstr "Successfully created file!"
+
+msgid "Current DNS is NOT available"
+msgstr "Current DNS is NOT available"
+
+msgid "Primary domain cannot be wildcard DNS record"
+msgstr "Primary domain cannot be wildcard DNS record"
+
+msgid "Batch copied from [{}] to [{}]"
+msgstr "Batch copied from [{}] to [{}]"
+
+msgid "The number of panel threads should be between 1-1024"
+msgstr "The number of panel threads should be between 1-1024"
+
+msgid "Successfully imported database!"
+msgstr "Successfully imported database!"
+
+msgid "ENABLE successfully"
+msgstr "ENABLE successfully"
+
+msgid "The specified custom compilation parameters do not exist!"
+msgstr "The specified custom compilation parameters do not exist!"
+
+msgid "Modify the SSH information of HOST: {}"
+msgstr "Modify the SSH information of HOST: {}"
+
+msgid "Login success\n"
+msgstr "Login success\n"
+
+msgid "The mail server already exists, please uninstall before reinstalling"
+msgstr "The mail server already exists, please uninstall before reinstalling"
+
+msgid "Please fill in the email content!"
+msgstr "Please fill in the email content!"
+
+msgid "The database list is not empty. For your data security, please backup and delete the existing database.<br>Forced uninstall command: rm -rf /www/server/mysql"
+msgstr "The database list is not empty. For your data security, please backup and delete the existing database.<br>Forced uninstall command: rm -rf /www/server/mysql"
+
+msgid "|-ERROR, password cannot contain special characters"
+msgstr "|-ERROR, password cannot contain special characters"
+
+msgid "Failed to send"
+msgstr "Failed to send"
+
+msgid "Currently not bound WeChat account"
+msgstr "Currently not bound WeChat account"
+
+msgid "|-The DNS verification failed. Please check if the key is correct."
+msgstr "|-The DNS verification failed. Please check if the key is correct."
+
+msgid "No plugin info found in the archive, please check the plugin package!"
+msgstr "No plugin info found in the archive, please check the plugin package!"
+
+msgid "Configuration"
+msgstr "Configuration"
+
+msgid "After configuring Force HTTPS, you cannot use [File Verification] to apply for a certificate!"
+msgstr "After configuring Force HTTPS, you cannot use [File Verification] to apply for a certificate!"
+
+msgid "Temporary file does NOT exist, please re-upload!"
+msgstr "Temporary file does NOT exist, please re-upload!"
+
+msgid "Every {} Minutes"
+msgstr "Every {} Minutes"
+
+msgid "Invalid order, this order is currently in a verification failure state!"
+msgstr "Invalid order, this order is currently in a verification failure state!"
+
+msgid "1. The resolution is not correct, or the resolution is not effective [Please resolve the domain name correctly, or wait for the resolution to take effect and try again]"
+msgstr "1. The resolution is not correct, or the resolution is not effective [Please resolve the domain name correctly, or wait for the resolution to take effect and try again]"
+
+msgid "Successfully modified root password!"
+msgstr "Successfully modified root password!"
+
+msgid "The specified plugin does not exist!"
+msgstr "The specified plugin does not exist!"
+
+msgid "Force logout of temporary users:{}"
+msgstr "Force logout of temporary users:{}"
+
+msgid "|-Renewed successfully!"
+msgstr "|-Renewed successfully!"
+
+msgid "|-Renewal failed:"
+msgstr "|-Renewal failed:"
+
+msgid "Error, unable to auto install pyOpenSSL!<p>Plesea try to manually install: pip install pyOpenSSL</p>"
+msgstr "Error, unable to auto install pyOpenSSL!<p>Plesea try to manually install: pip install pyOpenSSL</p>"
+
+msgid "Turn off access limit: rm -f /www/server/panel/data/domain.conf"
+msgstr "Turn off access limit: rm -f /www/server/panel/data/domain.conf"
+
+msgid "Delete temporary login URL"
+msgstr "Delete temporary login URL"
+
+msgid "Installed third-party plugin [{}]"
+msgstr "Installed third-party plugin [{}]"
+
+msgid "Get successful, please manually resolve the domain name"
+msgstr "Get successful, please manually resolve the domain name"
+
+msgid "Failed to get!"
+msgstr "Failed to get!"
+
+msgid "Secret key verification failed"
+msgstr "Secret key verification failed"
+
+msgid "Logs emptied"
+msgstr "Logs emptied"
+
+msgid "log is empty"
+msgstr ""
+
+msgid "No log file"
+msgstr ""
+
+msgid "Start scan successful"
+msgstr ""
+
+msgid "The directory was not scanned"
+msgstr ""
+
+msgid "Type mismatch"
+msgstr ""
+
+msgid "Record does not exist"
+msgstr ""
+
+msgid "The password has expired, please change it!"
+msgstr ""
+
+msgid "The log file is too large!"
+msgstr ""
+
+msgid "Safe mode"
+msgstr "Safe mode"
+
+msgid "Email does not exist"
+msgstr "Email does not exist"
+
+msgid "Secret Key is incorrect"
+msgstr "Secret Key is incorrect"
+
+msgid "|-If your server provider is [Alibaba Cloud] [Tencent Cloud] [Huawei Cloud] or other servers with [Security Group] enabled, please go to the security group release [{}] port to access the panel"
+msgstr "|-If your server provider is [Alibaba Cloud] [Tencent Cloud] [Huawei Cloud] or other servers with [Security Group] enabled, please go to the security group release [{}] port to access the panel"
+
+msgid "The username does not exist. Please turn on and try again."
+msgstr "The username does not exist. Please turn on and try again."
+
+msgid "Add up to 10 categories!"
+msgstr "Add up to 10 categories!"
+
+msgid "Execution failed, check if Apache installed"
+msgstr "Execution failed, check if Apache installed"
+
+msgid "The current IE browser version is too low to display some features, please use another browser. Or if you use a browser developed by a Chinese company, please switch to Extreme Mode!"
+msgstr "The current IE browser version is too low to display some features, please use another browser. Or if you use a browser developed by a Chinese company, please switch to Extreme Mode!"
+
+msgid "Successfully reloaded"
+msgstr "Successfully reloaded"
+
+msgid "There was an error creating, please try again."
+msgstr "There was an error creating, please try again."
+
+msgid "Please don't refresh verification code too frequently!"
+msgstr "Please don't refresh verification code too frequently!"
+
+msgid "Create softlink: {} -> {}"
+msgstr "Create softlink: {} -> {}"
+
+msgid "Size of process data segment"
+msgstr "Size of process data segment"
+
+msgid "The file format does not support online editing!"
+msgstr "The file format does not support online editing!"
+
+msgid "The domain you tried to add already exists!"
+msgstr "The domain you tried to add already exists!"
+
+msgid "Port already exists!"
+msgstr "Port already exists!"
+
+msgid "Database [{}] already at the recycle bin, please recover from the recycle bin!"
+msgstr "Database [{}] already at the recycle bin, please recover from the recycle bin!"
+
+msgid "Please login with account first"
+msgstr "Please login with account first"
+
+msgid "Change panel username"
+msgstr "Change panel username"
+
+msgid "Failed to read file!"
+msgstr "Failed to read file!"
+
+msgid "IP verification failed, your access IP is"
+msgstr "IP verification failed, your access IP is"
+
+msgid "unknown error: {}"
+msgstr "unknown error: {}"
+
+msgid "Website document root: {}"
+msgstr "Website document root: {}"
+
+msgid "Cannot issue a certificate for {}, cannot apply for a wildcard certificate with a domain name suffix directly!"
+msgstr "Cannot issue a certificate for {}, cannot apply for a wildcard certificate with a domain name suffix directly!"
+
+msgid "ERROR: Unable to connect to the {} server, please check if the [AK/SK/Storage] setting is correct!"
+msgstr "ERROR: Unable to connect to the {} server, please check if the [AK/SK/Storage] setting is correct!"
+
+msgid "Database configuration file failed to get checked, please check if MySQL configuration file exists [/etc/my.cnf]"
+msgstr "Database configuration file failed to get checked, please check if MySQL configuration file exists [/etc/my.cnf]"
+
+msgid "Static"
+msgstr "Static"
+
+msgid "[Composer.json] configuration file is not found in the specified directory!"
+msgstr "[Composer.json] configuration file is not found in the specified directory!"
+
+msgid " Successfully deleted directory!"
+msgstr " Successfully deleted directory!"
+
+msgid "Successfully changed password for FTP user[{}]!"
+msgstr "Successfully changed password for FTP user[{}]!"
+
+msgid "STMP information was not found, please re-add custom mail STMP in the settings"
+msgstr "STMP information was not found, please re-add custom mail STMP in the settings"
+
+msgid "Set plugin ['{}'] AS!"
+msgstr "Set plugin ['{}'] AS!"
+
+msgid "Successfully uploaded to {}"
+msgstr "Successfully uploaded to {}"
+
+msgid "Delete user {} successfully!"
+msgstr "Delete user {} successfully!"
+
+msgid "No changes submitted"
+msgstr "No changes submitted"
+
+msgid "Cleared!"
+msgstr "Cleared!"
+
+msgid "Uncompression succeeded!"
+msgstr "Uncompression succeeded!"
+
+msgid "MySQL password ERROR!"
+msgstr "MySQL password ERROR!"
+
+msgid "|-Verification succeeded!"
+msgstr "|-Verification succeeded!"
+
+msgid "|-Sending CSR.."
+msgstr "|-Sending CSR.."
+
+msgid "Root password changed for database!"
+msgstr "Root password changed for database!"
+
+msgid "Did not find the apache phpmyadmin ssl configuration file, please try to close the ssl port settings before opening"
+msgstr "Did not find the apache phpmyadmin ssl configuration file, please try to close the ssl port settings before opening"
+
+msgid "Password cannot be less than 5 characters!"
+msgstr "Password cannot be less than 5 characters!"
+
+msgid "Directory has been backed up to: {}"
+msgstr "Directory has been backed up to: {}"
+
+msgid "Checking..."
+msgstr "Checking..."
+
+msgid "Certificate deleted!"
+msgstr "Certificate deleted!"
+
+msgid "<h2>Current TXT record expired, please re-acquire!</h2>"
+msgstr "<h2>Current TXT record expired, please re-acquire!</h2>"
+
+msgid "Currently no certificates to renew"
+msgstr "Currently no certificates to renew"
+
+msgid "Please install the {} extension first."
+msgstr "Please install the {} extension first."
+
+msgid "Panel initialization address"
+msgstr "Panel initialization address"
+
+msgid "Failed to send mail, error reason [{}]"
+msgstr "Failed to send mail, error reason [{}]"
+
+msgid "Add custom compilation parameters: {}:{}"
+msgstr "Add custom compilation parameters: {}:{}"
+
+msgid "|-IP access limit cancelled"
+msgstr "|-IP access limit cancelled"
+
+msgid "|-The user abandons the application and exits the program!"
+msgstr "|-The user abandons the application and exits the program!"
+
+msgid "aaPanel CLI"
+msgstr "aaPanel CLI"
+
+msgid "Start backup"
+msgstr "Start backup"
+
+msgid "The operation failed, please re-operate"
+msgstr "The operation failed, please re-operate"
+
+msgid "Certificate read failed, directory does not exist!"
+msgstr "Certificate read failed, directory does not exist!"
+
+msgid "Redirection suspended"
+msgstr "Redirection suspended"
+
+msgid "Please specify the website document root"
+msgstr "Please specify the website document root"
+
+msgid "Authenticating password"
+msgstr "Authenticating password"
+
+msgid "Batch deleting successful!"
+msgstr "Batch deleting successful!"
+
+msgid "Specify the order index"
+msgstr "Specify the order index"
+
+msgid "File download failed!"
+msgstr "File download failed!"
+
+msgid "Site Logs emptied!"
+msgstr "Site Logs emptied!"
+
+msgid "Delete common commands [{}]"
+msgstr "Delete common commands [{}]"
+
+msgid "Certificate read failed!"
+msgstr "Certificate read failed!"
+
+msgid "Please enter an integer for the RDB parameter"
+msgstr "Please enter an integer for the RDB parameter"
+
+msgid "Close"
+msgstr "Close"
+
+msgid "Apache2.2 does NOT support MultiPHP!"
+msgstr "Apache2.2 does NOT support MultiPHP!"
+
+msgid "A global reverse proxy already exists in the rewrite/nginx master configuration/vhost file"
+msgstr "A global reverse proxy already exists in the rewrite/nginx master configuration/vhost file"
+
+msgid "Old redirection cleaned"
+msgstr "Old redirection cleaned"
+
+msgid "|-Return the verification information to the front end, wait for the user to manually resolve the domain name and complete the verification..."
+msgstr "|-Return the verification information to the front end, wait for the user to manually resolve the domain name and complete the verification..."
+
+msgid "Pgsql listening address"
+msgstr "Pgsql listening address"
+
+msgid "The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!"
+msgstr "The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!"
+
+msgid "[ {} ] The certificate renewal was successful."
+msgstr "[ {} ] The certificate renewal was successful."
+
+msgid "Successfully copied directory!"
+msgstr "Successfully copied directory!"
+
+msgid "Successfully deleted backup files"
+msgstr "Successfully deleted backup files"
+
+msgid "Access Denied"
+msgstr "Access Denied"
+
+msgid "Failed to move file or directory!"
+msgstr "Failed to move file or directory!"
+
+msgid "Possible reason:"
+msgstr "Possible reason:"
+
+msgid "Error getting certificate"
+msgstr "Error getting certificate"
+
+msgid "Please enter the data you need to send"
+msgstr "Please enter the data you need to send"
+
+msgid "|-Number of verifications: {}, value: {}"
+msgstr "|-Number of verifications: {}, value: {}"
+
+msgid "Test data returned by the backend"
+msgstr "Test data returned by the backend"
+
+msgid "The specified site root does not exist, please check: {}"
+msgstr "The specified site root does not exist, please check: {}"
+
+msgid "URL rewrite rule reference, any modification will invalidate the rewrite rules set by the panel"
+msgstr "URL rewrite rule reference, any modification will invalidate the rewrite rules set by the panel"
+
+msgid "Local backup has been kept"
+msgstr "Local backup has been kept"
+
+msgid "Failed to get databases"
+msgstr "Failed to get databases"
+
+msgid "Error reading tty buffer data, {}"
+msgstr "Error reading tty buffer data, {}"
+
+msgid "Certificate of current domains is not expired,and a duplicate request is not allowed,Pls try to combine with other domains!"
+msgstr "Certificate of current domains is not expired,and a duplicate request is not allowed,Pls try to combine with other domains!"
+
+msgid "GET/POST/COOKIE exploitable vulnerabilities"
+msgstr "GET/POST/COOKIE exploitable vulnerabilities"
+
+msgid "Domain [{}] format ERROR!"
+msgstr "Domain [{}] format ERROR!"
+
+msgid "Set {} Please enter an integer"
+msgstr "Set {} Please enter an integer"
+
+msgid "Failed to empty task logs!"
+msgstr "Failed to empty task logs!"
+
+msgid "Username is illegal, cannot be less than 3 characters!"
+msgstr "Username is illegal, cannot be less than 3 characters!"
+
+msgid "Compression level"
+msgstr "Compression level"
+
+msgid "Account binding has expired, please re-bind on the [Settings] page!"
+msgstr "Account binding has expired, please re-bind on the [Settings] page!"
+
+msgid "There is a db with the same name in the db list. To ensure data security, stop recovery!"
+msgstr "There is a db with the same name in the db list. To ensure data security, stop recovery!"
+
+msgid "Directory cannot be empty"
+msgstr "Directory cannot be empty"
+
+msgid "Please Select Domain (NOT including IP address or Wildcard domain)"
+msgstr "Please Select Domain (NOT including IP address or Wildcard domain)"
+
+msgid "Execute extra SHELL"
+msgstr "Execute extra SHELL"
+
+msgid "Download task added into the queue!"
+msgstr "Download task added into the queue!"
+
+msgid "DNSPod API key ERROR, failed to add resolution"
+msgstr "DNSPod API key ERROR, failed to add resolution"
+
+msgid "Every {} Days"
+msgstr "Every {} Days"
+
+msgid "Data acquisition failed!"
+msgstr "Data acquisition failed!"
+
+msgid "|-Temporary files and site logs cleared, deleted [{}] files, freed disk space [{}]"
+msgstr "|-Temporary files and site logs cleared, deleted [{}] files, freed disk space [{}]"
+
+msgid "MB, max RAM usage, 0 means no limit"
+msgstr "MB, max RAM usage, 0 means no limit"
+
+msgid "Username cannot be less than 3 characters!"
+msgstr "Username cannot be less than 3 characters!"
+
+msgid "|-The application is successful and it is being automatically deployed to the website!"
+msgstr "|-The application is successful and it is being automatically deployed to the website!"
+
+msgid "Pls enter command number:"
+msgstr "Pls enter command number:"
+
+msgid "ERROR, cannot find file openssl.cnf, please install openssl"
+msgstr "ERROR, cannot find file openssl.cnf, please install openssl"
+
+msgid "Log is empty"
+msgstr "Log is empty"
+
+msgid "The permissions you entered are invalid and the addition failed!"
+msgstr "The permissions you entered are invalid and the addition failed!"
+
+msgid "Database username is illegal!"
+msgstr "Database username is illegal!"
+
+msgid "Do not add it repeatedly!"
+msgstr "Do not add it repeatedly!"
+
+msgid "|-After the task is completed, a total of renewals are required.[{}], renewal success [%s], renewal failed [{}]. "
+msgstr "|-After the task is completed, a total of renewals are required.[{}], renewal success [%s], renewal failed [{}]. "
+
+msgid "Failed to write in file!"
+msgstr "Failed to write in file!"
+
+msgid "An error occurred while reading data from websocket. Retrying"
+msgstr "An error occurred while reading data from websocket. Retrying"
+
+msgid "|-Requesting CA to verify domain name [{}]..."
+msgstr "|-Requesting CA to verify domain name [{}]..."
+
+msgid "Target URL cannot have the following special characters {}"
+msgstr "Target URL cannot have the following special characters {}"
+
+msgid "Delete redirects [{}] successfully"
+msgstr "Delete redirects [{}] successfully"
+
+msgid "Failed to delete"
+msgstr "Failed to delete"
+
+msgid "Email address already exists!"
+msgstr "Email address already exists!"
+
+msgid "Please install the [CloudDNS] plugin first."
+msgstr "Please install the [CloudDNS] plugin first."
+
+msgid "Start"
+msgstr "Start"
+
+msgid "Maximum number of connections that will be processed simultaneously"
+msgstr "Maximum number of connections that will be processed simultaneously"
+
+msgid "No deployment tasks now"
+msgstr "No deployment tasks now"
+
+msgid "Password must be at least 8 characters"
+msgstr "Password must be at least 8 characters"
+
+msgid "Disable IPv6 compatibility of the panel!"
+msgstr "Disable IPv6 compatibility of the panel!"
+
+msgid "Please bind your account!"
+msgstr "Please bind your account!"
+
+msgid "The specified host address has been added to other SSH information!"
+msgstr "The specified host address has been added to other SSH information!"
+
+msgid "Failed to add, write configuraton ERROR!"
+msgstr "Failed to add, write configuraton ERROR!"
+
+msgid "Failed to create file!"
+msgstr "Failed to create file!"
+
+msgid "Not Edit"
+msgstr "Not Edit"
+
+msgid "Failed to import database [{}], => {}"
+msgstr "Failed to import database [{}], => {}"
+
+msgid "Failed to add database [{}]!, {}"
+msgstr "Failed to add database [{}]!, {}"
+
+msgid "Data cleared successfully!"
+msgstr "Data cleared successfully!"
+
+msgid "Get worker TotalKBytes False"
+msgstr "Get worker TotalKBytes False"
+
+msgid "Max allocated physical memory to database"
+msgstr "Max allocated physical memory to database"
+
+msgid "Batch delete succeeded!"
+msgstr "Batch delete succeeded!"
+
+msgid "Level of error"
+msgstr "Level of error"
+
+msgid "Successfully uninstalled software [{}]"
+msgstr "Successfully uninstalled software [{}]"
+
+msgid "aaPanel terminal"
+msgstr "aaPanel terminal"
+
+msgid "Number of saving days is illegal!"
+msgstr "Number of saving days is illegal!"
+
+msgid "Reload failed!"
+msgstr "Reload failed!"
+
+msgid "Minimum number of idle threads available to handle request spikes"
+msgstr "Minimum number of idle threads available to handle request spikes"
+
+msgid "Set max upload size to [{} MB] for PHP-{}!"
+msgstr "Set max upload size to [{} MB] for PHP-{}!"
+
+msgid "|-Turn on redirect"
+msgstr "|-Turn on redirect"
+
+msgid "[Composer.lock] file exists in the specified directory, please delete it before executing"
+msgstr "[Composer.lock] file exists in the specified directory, please delete it before executing"
+
+msgid "Error page configuration, allowed to be commented, deleted or modified"
+msgstr "Error page configuration, allowed to be commented, deleted or modified"
+
+msgid "Whether to enable compressed transmission"
+msgstr "Whether to enable compressed transmission"
+
+msgid "Sanic framework project please use Gunicorn or Python to start"
+msgstr "Sanic framework project please use Gunicorn or Python to start"
+
+msgid "Modify the mailbox user success {}"
+msgstr "Modify the mailbox user success {}"
+
+msgid "|-Local authentication failed!"
+msgstr "|-Local authentication failed!"
+
+msgid "Please turn on anti-theft first!"
+msgstr "Please turn on anti-theft first!"
+
+msgid "The passwords entered twice are inconsistent, please try again!"
+msgstr "The passwords entered twice are inconsistent, please try again!"
+
+msgid "Max capacity of the memory disk cannot exceed 50% of physical memory!"
+msgstr "Max capacity of the memory disk cannot exceed 50% of physical memory!"
+
+msgid "PHP is not installed"
+msgstr "PHP is not installed"
+
+msgid "Cannot delete initial default user!"
+msgstr "Cannot delete initial default user!"
+
+msgid "Delete domain successfully {}"
+msgstr "Delete domain successfully {}"
+
+msgid "|-Turn on proxy"
+msgstr "|-Turn on proxy"
+
+msgid "Issuing failed, the domain {} has exceeded the limit of weekly reissues!"
+msgstr "Issuing failed, the domain {} has exceeded the limit of weekly reissues!"
+
+msgid "Email sending failed, please check if the STMP password is correct or the hosts are correct"
+msgstr "Email sending failed, please check if the STMP password is correct or the hosts are correct"
+
+msgid "Failed to create site document root, {}"
+msgstr "Failed to create site document root, {}"
+
+msgid "Successfully uninstall Python"
+msgstr "Successfully uninstall Python"
+
+msgid "TXT record verification ERROR, the current TXT record invalid or expired"
+msgstr "TXT record verification ERROR, the current TXT record invalid or expired"
+
+msgid "Set the run directory"
+msgstr "Set the run directory"
+
+msgid "Delete mailbox user successfully {}"
+msgstr "Delete mailbox user successfully {}"
+
+msgid "Last"
+msgstr "Last"
+
+msgid "Backup Succeeded!"
+msgstr "Backup Succeeded!"
+
+msgid "Change panel port"
+msgstr "Change panel port"
+
+msgid "Nginx load status acquisition failed:{}"
+msgstr "Nginx load status acquisition failed:{}"
+
+msgid "|-Successful verification, domain name [{}], record type [{}], record value [{}]!"
+msgstr "|-Successful verification, domain name [{}], record type [{}], record value [{}]!"
+
+msgid "When applying using dnsapi, specify the secret of dnsapi in the --dns_secret parameter!"
+msgstr "When applying using dnsapi, specify the secret of dnsapi in the --dns_secret parameter!"
+
+msgid "Add common commands [{}]"
+msgstr "Add common commands [{}]"
+
+msgid "Successfully created database"
+msgstr "Successfully created database"
+
+msgid "Timeout cannot be less than 300 seconds"
+msgstr "Timeout cannot be less than 300 seconds"
+
+msgid "<h2>Issue failed, domain resolution ERROR, or NOT valid, or the domain name is NOT filed by MIIT!</h2>"
+msgstr "<h2>Issue failed, domain resolution ERROR, or NOT valid, or the domain name is NOT filed by MIIT!</h2>"
+
+msgid "Please complete the information"
+msgstr "Please complete the information"
+
+msgid "Modified disabled function to [{}] for PHP-{}"
+msgstr "Modified disabled function to [{}] for PHP-{}"
+
+msgid "Cannot set both directory and global proxies"
+msgstr "Cannot set both directory and global proxies"
+
+msgid "Failed to {} FTP user [{}]! => {}"
+msgstr "Failed to {} FTP user [{}]! => {}"
+
+msgid "Failed to add FTP user[{}]! => {}"
+msgstr "Failed to add FTP user[{}]! => {}"
+
+msgid "The softlink file name must be an absolute path (full path)"
+msgstr "The softlink file name must be an absolute path (full path)"
+
+msgid "Successfully got, please manually resolve the domain name"
+msgstr "Successfully got, please manually resolve the domain name"
+
+msgid "innodb_log_buffer_size cannot be less than 8MB"
+msgstr "innodb_log_buffer_size cannot be less than 8MB"
+
+msgid "Sites that have reverse proxy turned on cannot request SSL!"
+msgstr "Sites that have reverse proxy turned on cannot request SSL!"
+
+msgid "Database manager"
+msgstr "Database manager"
+
+msgid "Prev"
+msgstr "Prev"
+
+msgid "it is not allowed to uncompress file in critical directory, which will cause the permission to be replaced."
+msgstr "it is not allowed to uncompress file in critical directory, which will cause the permission to be replaced."
+
+msgid "The renewal failed and the certificate directory does not exist."
+msgstr "The renewal failed and the certificate directory does not exist."
+
+msgid "Please enter an integer for the max memory number"
+msgstr "Please enter an integer for the max memory number"
+
+msgid "aaPanel"
+msgstr "aaPanel"
+
+msgid "Failed to modify, database user does not exist!"
+msgstr "Failed to modify, database user does not exist!"
+
+msgid "Certificate information acquisition failed!"
+msgstr "Certificate information acquisition failed!"
+
+msgid "Successfully added FTP user [{}]!"
+msgstr "Successfully added FTP user [{}]!"
+
+msgid "Setup software: Custom compilation parameters for {} are configured as: {}"
+msgstr "Setup software: Custom compilation parameters for {} are configured as: {}"
+
+msgid "Per Hour, run at {} Min"
+msgstr "Per Hour, run at {} Min"
+
+msgid "Please specify DNSAPI key"
+msgstr "Please specify DNSAPI key"
+
+msgid "Specified hook does NOT exist"
+msgstr "Specified hook does NOT exist"
+
+msgid "Get worker reqpersec False"
+msgstr "Get worker reqpersec False"
+
+msgid "DNS ERROR or NOT effective:{}"
+msgstr "DNS ERROR or NOT effective:{}"
+
+msgid "Already shared!"
+msgstr "Already shared!"
+
+msgid "This version is used by a project, please delete the project before uninstalling"
+msgstr "This version is used by a project, please delete the project before uninstalling"
+
+msgid "Setup failed, no enable-php-xx related configuration items were found in the website configuration file!"
+msgstr "Setup failed, no enable-php-xx related configuration items were found in the website configuration file!"
+
+msgid "The client has actively disconnected"
+msgstr "The client has actively disconnected"
+
+msgid "Set the max number of transactions that can be in the prepared state at the same time"
+msgstr "Set the max number of transactions that can be in the prepared state at the same time"
+
+msgid "Successfully added site [{}]!"
+msgstr "Successfully added site [{}]!"
+
+msgid "<h2>Issue failed, TXT record verification failed, domain resolution ERROR, or NOT valid!</h2>"
+msgstr "<h2>Issue failed, TXT record verification failed, domain resolution ERROR, or NOT valid!</h2>"
+
+msgid "Set panel port [{}], domain [{}], default backup directory [{}], default site directory [{}], server IP [{}], authorized IP [{}]!"
+msgstr "Set panel port [{}], domain [{}], default backup directory [{}], default site directory [{}], server IP [{}], authorized IP [{}]!"
+
+msgid "Soft link already exists"
+msgstr "Soft link already exists"
+
+msgid "Login"
+msgstr "Login"
+
+msgid "The specified command does not exist"
+msgstr "The specified command does not exist"
+
+msgid "It is not recommended to use [.] at the end of the directory, because there may be safety risks"
+msgstr "It is not recommended to use [.] at the end of the directory, because there may be safety risks"
+
+msgid "Failed to download certificate: {}"
+msgstr "Failed to download certificate: {}"
+
+msgid "Automatically saved successfully!"
+msgstr "Automatically saved successfully!"
+
+msgid "Modified cron job [{}] status to [{}]"
+msgstr "Modified cron job [{}] status to [{}]"
+
+msgid "Network request timeout with Let's Encrypt"
+msgstr "Network request timeout with Let's Encrypt"
+
+msgid "File format is incorrect"
+msgstr "File format is incorrect"
+
+msgid "Successfully modifyied password for database [{}]!"
+msgstr "Successfully modifyied password for database [{}]!"
+
+msgid "The specify rule name is not exists! [ {} ]"
+msgstr "The specify rule name is not exists! [ {} ]"
+
+msgid "|-Detected that the certificate under {} overlaps with the certificate of this application and has an earlier expiration time, and has been replaced with a new certificate!"
+msgstr "|-Detected that the certificate under {} overlaps with the certificate of this application and has an earlier expiration time, and has been replaced with a new certificate!"
+
+msgid "Failed to generate key or username. Please check if the hard disk space is insufficient or the directory cannot be written.[ {} ]"
+msgstr "Failed to generate key or username. Please check if the hard disk space is insufficient or the directory cannot be written.[ {} ]"
+
+msgid "Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ..."
+msgstr "Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ..."
+
+msgid "The specified database [ {} ] has no data!"
+msgstr "The specified database [ {} ] has no data!"
+
+msgid "Installation succeeded!"
+msgstr "Installation succeeded!"
+
+msgid "SSL turned off,Please use http protocol to access the panel!"
+msgstr "SSL turned off,Please use http protocol to access the panel!"
+
+msgid "Directory cannot be empty!"
+msgstr "Directory cannot be empty!"
+
+msgid "Obtain {} database(s) from server!"
+msgstr "Obtain {} database(s) from server!"
+
+msgid "Add failed, please check if the URL is correct"
+msgstr "Add failed, please check if the URL is correct"
+
+msgid "Timezone"
+msgstr "Timezone"
+
+msgid "Invalid Token!"
+msgstr "Invalid Token!"
+
+msgid "Size of process stack segment"
+msgstr "Size of process stack segment"
+
+msgid "Application successful."
+msgstr "Application successful."
+
+msgid "Project has no ports and cannot be mapped. The uwsgi mode does NOT support sock file mode mapping at this stage."
+msgstr "Project has no ports and cannot be mapped. The uwsgi mode does NOT support sock file mode mapping at this stage."
+
+msgid "This extension is the default extension of OLS and cannot be uninstalled"
+msgstr "This extension is the default extension of OLS and cannot be uninstalled"
+
+msgid "Wrong file content, please save again!"
+msgstr "Wrong file content, please save again!"
+
+msgid "Failed to create directory!"
+msgstr "Failed to create directory!"
+
+msgid "Successfully created directory [{}]!"
+msgstr "Successfully created directory [{}]!"
+
+msgid "Sorry, Your IP is NOT Authorized"
+msgstr "Sorry, Your IP is NOT Authorized"
+
+msgid "API has been disabled"
+msgstr "API has been disabled"
+
+msgid "Successfully modified cron job [{}]"
+msgstr "Successfully modified cron job [{}]"
+
+msgid "Successfully added intallation task [{}-{}]"
+msgstr "Successfully added intallation task [{}-{}]"
+
+msgid "Successfully saved!"
+msgstr "Successfully saved!"
+
+msgid "Maximum number of idle threads"
+msgstr "Maximum number of idle threads"
+
+msgid "Failed to create"
+msgstr "Failed to create"
+
+msgid "Start time"
+msgstr "Start time"
+
+msgid "|-Initializing ACME protocol..."
+msgstr "|-Initializing ACME protocol..."
+
+msgid "The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct."
+msgstr "The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct."
+
+msgid "Successfully modified password for user [{}]!"
+msgstr "Successfully modified password for user [{}]!"
+
+msgid "The password only supports a combination of uppercase and lowercase letters and numbers"
+msgstr "The password only supports a combination of uppercase and lowercase letters and numbers"
+
+msgid "Default processes"
+msgstr "Default processes"
+
+msgid "Batch setting permissions succeeded!"
+msgstr "Batch setting permissions succeeded!"
+
+msgid "Backup directory: {}"
+msgstr "Backup directory: {}"
+
+msgid "Please check the domain!"
+msgstr "Please check the domain!"
+
+msgid "Current PostgreSQL related processes"
+msgstr "Current PostgreSQL related processes"
+
+msgid "CA cannot verify your domain name, please check if the domain name resolution is correct, or wait 5-10 minutes and try again."
+msgstr "CA cannot verify your domain name, please check if the domain name resolution is correct, or wait 5-10 minutes and try again."
+
+msgid "|-The website has been suspended, skip certificate renewal!"
+msgstr "|-The website has been suspended, skip certificate renewal!"
+
+msgid "Specified reverse proxy name or proxy folder already exists"
+msgstr "Specified reverse proxy name or proxy folder already exists"
+
+msgid "Application successful!"
+msgstr "Application successful!"
+
+msgid "Database [{}] password cannot be empty"
+msgstr "Database [{}] password cannot be empty"
+
+msgid "Never trouble troubles till troubles trouble you!"
+msgstr "Never trouble troubles till troubles trouble you!"
+
+msgid "Specified compression format is not supported!"
+msgstr "Specified compression format is not supported!"
+
+msgid "Cleared password authentication for site [{}]!"
+msgstr "Cleared password authentication for site [{}]!"
+
+msgid "Requested PHP version does NOT exist!"
+msgstr "Requested PHP version does NOT exist!"
+
+msgid "Firewall manager"
+msgstr "Firewall manager"
+
+msgid "Failed to receive mail, error reason [{}]"
+msgstr "Failed to receive mail, error reason [{}]"
+
+msgid "[File verification] method cannot apply for a wildcard domain name"
+msgstr "[File verification] method cannot apply for a wildcard domain name"
+
+msgid "Turned on monitory service, save for [{}] day!"
+msgstr "Turned on monitory service, save for [{}] day!"
+
+msgid "Please set the API interface parameters of [{}] first."
+msgstr "Please set the API interface parameters of [{}] first."
+
+msgid "Edit user {}"
+msgstr "Edit user {}"
+
+msgid "File suffix cannot be empty"
+msgstr "File suffix cannot be empty"
+
+msgid "User name must be at least [{}] characters"
+msgstr "User name must be at least [{}] characters"
+
+msgid "Configuration file not exist"
+msgstr "Configuration file not exist"
+
+msgid "The directory you submitted is invalid and the migration failed"
+msgstr "The directory you submitted is invalid and the migration failed"
+
+msgid "Downloaded file [{}] to [{}]"
+msgstr "Downloaded file [{}] to [{}]"
+
+msgid "View panel default info"
+msgstr "View panel default info"
+
+msgid "Idle connection timeout, 0 means not disconnected"
+msgstr "Idle connection timeout, 0 means not disconnected"
+
+msgid "Wildcard domain cannot use the method of [file verification] to apply for a certificate!"
+msgstr "Wildcard domain cannot use the method of [file verification] to apply for a certificate!"
+
+msgid "Client body buffer"
+msgstr "Client body buffer"
+
+msgid "Connection timeout"
+msgstr "Connection timeout"
+
+msgid "Set concurrency of PHP-{}, max_children={}, start_servers={}, min_spare_servers={}, max_spare_servers={}"
+msgstr "Set concurrency of PHP-{}, max_children={}, start_servers={}, min_spare_servers={}, max_spare_servers={}"
+
+msgid "|-Skip the domain name this time: {}, this certificate will not be renewed due to failure to renew 3 times in a row, (The number of errors will be reset after manual renewal and success)"
+msgstr "|-Skip the domain name this time: {}, this certificate will not be renewed due to failure to renew 3 times in a row, (The number of errors will be reset after manual renewal and success)"
+
+msgid "Whether to output detailed error info"
+msgstr "Whether to output detailed error info"
+
+msgid "Turned off Tomcat supporting for site [{}]!"
+msgstr "Turned off Tomcat supporting for site [{}]!"
+
+msgid "Already exist"
+msgstr "Already exist"
+
+msgid "Thursday"
+msgstr "Thursday"
+
+msgid "Successfully deleted accepted port [{}] on firewall!"
+msgstr "Successfully deleted accepted port [{}] on firewall!"
+
+msgid "Successful installation"
+msgstr "Successful installation"
+
+msgid "There is a problem with the current Java project configuration file, please rebuild"
+msgstr "There is a problem with the current Java project configuration file, please rebuild"
+
+msgid "No available PHP version was found, or the specified PHP version was not installed!"
+msgstr "No available PHP version was found, or the specified PHP version was not installed!"
+
+msgid "Sent successfully!"
+msgstr "Sent successfully!"
+
+msgid "No compatible PHP version found, please install first"
+msgstr "No compatible PHP version found, please install first"
+
+msgid "|-Record Type: TXT Record Name: \\033[41m{}\\033[0m Record Value: \\033[41m{}\\033 [0m [Required]"
+msgstr "|-Record Type: TXT Record Name: \\033[41m{}\\033[0m Record Value: \\033[41m{}\\033 [0m [Required]"
+
+msgid "Delete website [{}] successfully"
+msgstr "Delete website [{}] successfully"
+
+msgid "Domain mapped or already exists. Please delete it before replacing it."
+msgstr "Domain mapped or already exists. Please delete it before replacing it."
+
+msgid "Database moved!"
+msgstr "Database moved!"
+
+msgid "Certificate parsing failed"
+msgstr "Certificate parsing failed"
+
+msgid "Successfully moved file or directory!"
+msgstr "Successfully moved file or directory!"
+
+msgid "|-An error occurred, try again [{}]"
+msgstr "|-An error occurred, try again [{}]"
+
+msgid "The configuration information of the nails you configured was not found, please add in the settings"
+msgstr "The configuration information of the nails you configured was not found, please add in the settings"
+
+msgid "Add a mailbox user successfully {}"
+msgstr "Add a mailbox user successfully {}"
+
+msgid "This domain name does NOT exist in Tomcat"
+msgstr "This domain name does NOT exist in Tomcat"
+
+msgid "Successfully killed task [{}] [{}]!"
+msgstr "Successfully killed task [{}] [{}]!"
+
+msgid "NOT opened"
+msgstr "NOT opened"
+
+msgid "Requested directory does not exist"
+msgstr "Requested directory does not exist"
+
+msgid "Non-compliant names can only be numbers, letters, underscores"
+msgstr "Non-compliant names can only be numbers, letters, underscores"
+
+msgid "Input name of plugin!"
+msgstr "Input name of plugin!"
+
+msgid "Please specify DNSAPI secret"
+msgstr "Please specify DNSAPI secret"
+
+msgid "Configuration ERROR"
+msgstr "Configuration ERROR"
+
+msgid "Please input your email"
+msgstr "Please input your email"
+
+msgid "The target server actively refused the connection"
+msgstr "The target server actively refused the connection"
+
+msgid "|-Exited the application process!"
+msgstr "|-Exited the application process!"
+
+msgid "Port range is incorrect! should be between 100-65535"
+msgstr "Port range is incorrect! should be between 100-65535"
+
+msgid "There is a database with the same name in the current database. To ensure data security, stop recovery!"
+msgstr ""
+
+msgid "An error was detected in the configuration file. Please solve it before proceeding"
+msgstr "An error was detected in the configuration file. Please solve it before proceeding"
+
+msgid "The database data does not exist!"
+msgstr "The database data does not exist!"
+
+msgid "Session interrupted"
+msgstr "Session interrupted"
+
+msgid "Deleted site [{}] subdirectory [{}] binding"
+msgstr "Deleted site [{}] subdirectory [{}] binding"
+
+msgid "User already exists"
+msgstr "User already exists"
+
+msgid "URL address is invalid!"
+msgstr "URL address is invalid!"
+
+msgid "Notes or panel address duplicate!"
+msgstr "Notes or panel address duplicate!"
+
+msgid "Successfully created"
+msgstr "Successfully created"
+
+msgid "More than 5 verification failures in 1 hour, the application is temporarily banned, please try again later!"
+msgstr "More than 5 verification failures in 1 hour, the application is temporarily banned, please try again later!"
+
+msgid "Task logs emptied!"
+msgstr "Task logs emptied!"
+
+msgid "Max cache that pgsql can use, for example, if there is 4GB of memory, it can be set to 3GB."
+msgstr "Max cache that pgsql can use, for example, if there is 4GB of memory, it can be set to 3GB."
+
+msgid "# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR."
+msgstr "# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR."
+
+msgid "No form_data data found"
+msgstr "No form_data data found"
+
+msgid "Create Account Key"
+msgstr "Create Account Key"
+
+msgid "Proxy suspended"
+msgstr "Proxy suspended"
+
+msgid "STMP information was not found, please re-add custom mail STMP information in the settings"
+msgstr "STMP information was not found, please re-add custom mail STMP information in the settings"
+
+msgid "|-Failed to parse configuration file"
+msgstr "|-Failed to parse configuration file"
+
+msgid "Unsupported authentication type: {}"
+msgstr "Unsupported authentication type: {}"
+
+msgid "This is not a file!"
+msgstr "This is not a file!"
+
+msgid "IP address is illegal!"
+msgstr ""
+
+msgid "Disabling this IP will cause your server to fail"
+msgstr ""
+
+msgid "The number of domain names exceeds the upper limit"
+msgstr "The number of domain names exceeds the upper limit"
+
+msgid "|-Domain limit cancelled"
+msgstr "|-Domain limit cancelled"
+
+msgid "Failde to delete FTP user[{}]! => {}"
+msgstr "Failde to delete FTP user[{}]! => {}"
+
+msgid "Whether to allow upload file"
+msgstr "Whether to allow upload file"
+
+msgid "Site manager"
+msgstr "Site manager"
+
+msgid "Failed to get domain list!"
+msgstr "Failed to get domain list!"
+
+msgid "Monthly"
+msgstr "Monthly"
+
+msgid "The specified certificate file does not exist!"
+msgstr "The specified certificate file does not exist!"
+
+msgid "New password"
+msgstr "New password"
+
+msgid "Sync {} database(s) from server!"
+msgstr "Sync {} database(s) from server!"
+
+msgid "The recipient cannot be empty"
+msgstr "The recipient cannot be empty"
+
+msgid "Successfully blocked IP [{}]!"
+msgstr "Successfully blocked IP [{}]!"
+
+msgid "Please run the program when all install tasks finished!"
+msgstr "Please run the program when all install tasks finished!"
+
+msgid "Successfully recovered [{}] from recycle bin!"
+msgstr "Successfully recovered [{}] from recycle bin!"
+
+msgid "3. Check whether the website is set to force HTTPS [please turn off the force HTTPS function temporarily]"
+msgstr "3. Check whether the website is set to force HTTPS [please turn off the force HTTPS function temporarily]"
+
+msgid "Generate temporary connection, expiration time: {}"
+msgstr "Generate temporary connection, expiration time: {}"
+
+msgid "Please specify the website document root in the --path parameter!"
+msgstr "Please specify the website document root in the --path parameter!"
+
+msgid "redis password, leaving blank means no password is set"
+msgstr "redis password, leaving blank means no password is set"
+
+msgid "Successfully optimized!"
+msgstr "Successfully optimized!"
+
+msgid "Monitory log is emptied!"
+msgstr "Monitory log is emptied!"
+
+msgid "The program ID you want to add already exists"
+msgstr "The program ID you want to add already exists"
+
+msgid "PHP Daemon"
+msgstr "PHP Daemon"
+
+msgid "Uninstall"
+msgstr "Uninstall"
+
+msgid "Failed to delete DNS record"
+msgstr "Failed to delete DNS record"
+
+msgid "Binding is valid!"
+msgstr "Binding is valid!"
+
+msgid "Got successfully!"
+msgstr "Got successfully!"
+
+msgid "User settings do not retain local backups, deleted {}"
+msgstr "User settings do not retain local backups, deleted {}"
+
+msgid "View domain bound: cat /www/server/panel/data/domain.conf"
+msgstr "View domain bound: cat /www/server/panel/data/domain.conf"
+
+msgid "This version of Python is the system default and cannot be uninstalled."
+msgstr "This version of Python is the system default and cannot be uninstalled."
+
+msgid "Executing ({})..."
+msgstr "Executing ({})..."
+
+msgid "Scan QR code successful, logging in"
+msgstr "Scan QR code successful, logging in"
+
+msgid "The account name is invalid."
+msgstr "The account name is invalid."
+
+msgid "Service shutdown or internal error due to maintenance, check [ https://letsencrypt.status.io ] see for more details."
+msgstr "Service shutdown or internal error due to maintenance, check [ https://letsencrypt.status.io ] see for more details."
+
+msgid "Unbound!"
+msgstr "Unbound!"
+
+msgid "Currently only support Nginx"
+msgstr "Currently only support Nginx"
+
+msgid "Anti-theft chain domain name cannot be empty!"
+msgstr "Anti-theft chain domain name cannot be empty!"
+
+msgid "This is the recycle bin directory, please press the [Recycle Bin] button in the upper right corner to open"
+msgstr "This is the recycle bin directory, please press the [Recycle Bin] button in the upper right corner to open"
+
+msgid "|-Order index: {}"
+msgstr "|-Order index: {}"
+
+msgid "Backup failed {}/total {} sites"
+msgstr "Backup failed {}/total {} sites"
+
+msgid "Successfully installed plugin [{}]"
+msgstr "Successfully installed plugin [{}]"
+
+msgid "Please do NOT enter the following special characters {}"
+msgstr "Please do NOT enter the following special characters {}"
+
+msgid "Add failed, please check if the URL is correct."
+msgstr "Add failed, please check if the URL is correct."
+
+msgid "Unauthorized"
+msgstr "Unauthorized"
+
+msgid "Please enter the correct port number"
+msgstr "Please enter the correct port number"
+
+msgid "The page you requested does not exist, please check the URL!"
+msgstr "The page you requested does not exist, please check the URL!"
+
+msgid "|-Fetching certificate content..."
+msgstr "|-Fetching certificate content..."
+
+msgid "|-A total of {} certificates need to be renewed"
+msgstr "|-A total of {} certificates need to be renewed"
+
+msgid "Sorry, Page does NOT Exist"
+msgstr "Sorry, Page does NOT Exist"
+
+msgid "Please fill in your email address!"
+msgstr "Please fill in your email address!"
+
+msgid "Verification code is incorrect, please try again!"
+msgstr "Verification code is incorrect, please try again!"
+
+msgid "Setting permissions"
+msgstr "Setting permissions"
+
+msgid "Cannot edit files larger than 2MB online!"
+msgstr "Cannot edit files larger than 2MB online!"
+
+msgid "|---Keep the latest [{}] backups"
+msgstr "|---Keep the latest [{}] backups"
+
+msgid "Fail to connect to the server!"
+msgstr "Fail to connect to the server!"
+
+msgid "Successfully modified FTP port to [{}]!"
+msgstr "Successfully modified FTP port to [{}]!"
+
+msgid "Wrong parameter"
+msgstr "Wrong parameter"
+
+msgid "Ready to deploy"
+msgstr "Ready to deploy"
+
+msgid "Please uninstall the Mysql master-slave replication plugin before closing the binary log! !"
+msgstr "Please uninstall the Mysql master-slave replication plugin before closing the binary log! !"
+
+msgid "Username is illegal, special characters are NOT allowed!"
+msgstr "Username is illegal, special characters are NOT allowed!"
+
+msgid "Maximum file to upload"
+msgstr "Maximum file to upload"
+
+msgid "Wrong password!"
+msgstr "Wrong password!"
+
+msgid "Default Document cannot be empty!"
+msgstr "Default Document cannot be empty!"
+
+msgid "This plugin does NOT have template"
+msgstr "This plugin does NOT have template"
+
+msgid "One word Trojan"
+msgstr "One word Trojan"
+
+msgid "Permission denied!"
+msgstr "Permission denied!"
+
+msgid "Validation information construction failed!"
+msgstr "Validation information construction failed!"
+
+msgid "To be paid"
+msgstr "To be paid"
+
+msgid "Authentication failed {}"
+msgstr "Authentication failed {}"
+
+msgid "Derectory [{}] backup failed"
+msgstr "Derectory [{}] backup failed"
+
+msgid "Category deleted!"
+msgstr "Category deleted!"
+
+msgid "Please enter redirected path"
+msgstr "Please enter redirected path"
+
+msgid "Unbound device"
+msgstr "Unbound device"
+
+msgid "Domain format is invalid!"
+msgstr "Domain format is invalid!"
+
+msgid "Domain and name of subdirectory cannot be empty!"
+msgstr "Domain and name of subdirectory cannot be empty!"
+
+msgid "Successfully marked, please click Paste All button in the target directory!"
+msgstr "Successfully marked, please click Paste All button in the target directory!"
+
+msgid "Please specify the domain name for which you want to apply for a certificate in the --domain parameter, multiple separated by commas (,)"
+msgstr "Please specify the domain name for which you want to apply for a certificate in the --domain parameter, multiple separated by commas (,)"
+
+msgid "PHP version of site [{}] changed to [{}]!"
+msgstr "PHP version of site [{}] changed to [{}]!"
+
+msgid "Login failed"
+msgstr "Login failed"
+
+msgid "Decompress the file"
+msgstr "Decompress the file"
+
+msgid "|-Spool cleared, deleted [{}] files, freed disk space [{}]"
+msgstr "|-Spool cleared, deleted [{}] files, freed disk space [{}]"
+
+msgid "Client: {}, has manually exited the panel"
+msgstr "Client: {}, has manually exited the panel"
+
+msgid "New URL rewrite rule has been saved!"
+msgstr "New URL rewrite rule has been saved!"
+
+msgid "2. Check if there is 301/302 redirection set up [please temporarily turn off the redirection related configuration]"
+msgstr "2. Check if there is 301/302 redirection set up [please temporarily turn off the redirection related configuration]"
+
+msgid "Permission restored successfully"
+msgstr "Permission restored successfully"
+
+msgid "The website has been redirected, please close it before applying!"
+msgstr "The website has been redirected, please close it before applying!"
+
+msgid "|-Verification type: {}"
+msgstr "|-Verification type: {}"
+
+msgid "New panel port"
+msgstr "New panel port"
+
+msgid "Logout"
+msgstr "Logout"
+
+msgid "Configuration ERROR, please check the configuration file"
+msgstr "Configuration ERROR, please check the configuration file"
+
+msgid "Wrong response: {}"
+msgstr "Wrong response: {}"
+
+msgid "The connection is disconnected, press enter to try to reconnect!"
+msgstr "The connection is disconnected, press enter to try to reconnect!"
+
+msgid "Every {} Days, run at {} Hour {} Min"
+msgstr "Every {} Days, run at {} Hour {} Min"
+
+msgid "Batch moved from [{}] to [{}]"
+msgstr "Batch moved from [{}] to [{}]"
+
+msgid "The current web server is openlitespeed. This function is not supported yet."
+msgstr "The current web server is openlitespeed. This function is not supported yet."
+
+msgid "Database character set: {}"
+msgstr "Database character set: {}"
+
+msgid "Private Key ERROR, please check!"
+msgstr "Private Key ERROR, please check!"
+
+msgid " 'Please do not enter the following special characters [ ~ ` / = ' ]"
+msgstr " 'Please do not enter the following special characters [ ~ ` / = ' ]"
+
+msgid "Wrong operating mode"
+msgstr "Wrong operating mode"
+
+msgid "Certificate saved at: {}/"
+msgstr "Certificate saved at: {}/"
+
+msgid "Domain name format error! [{}]"
+msgstr "Domain name format error! [{}]"
+
+msgid "You plugin list is up-to-date"
+msgstr "You plugin list is up-to-date"
+
+msgid "Please specify the domain name to apply for a certificate"
+msgstr "Please specify the domain name to apply for a certificate"
+
+msgid "Rule name needs to be greater than 3 bytes"
+msgstr "Rule name needs to be greater than 3 bytes"
+
+msgid "There can be no extra parameters in the login parameters"
+msgstr "There can be no extra parameters in the login parameters"
+
+msgid "{} Developer mode(DeBug)"
+msgstr "{} Developer mode(DeBug)"
+
+msgid "Pgsql already installed"
+msgstr "Pgsql already installed"
+
+msgid "Download file"
+msgstr "Download file"
+
+msgid "Panel restarted"
+msgstr "Panel restarted"
+
+msgid "This domain does NOT exist in this DNSPod account, failed to add resolution"
+msgstr "This domain does NOT exist in this DNSPod account, failed to add resolution"
+
+msgid "File or directory does not exist!"
+msgstr "File or directory does not exist!"
+
+msgid "[path] parameter cannot be empty!"
+msgstr "[path] parameter cannot be empty!"
+
+msgid "Obtain [{}] plugin, [{}] plugin update from cloud!"
+msgstr "Obtain [{}] plugin, [{}] plugin update from cloud!"
+
+msgid "Renewal success"
+msgstr "Renewal success"
+
+msgid "Database size: {}"
+msgstr "Database size: {}"
+
+msgid "Verification failed, domain name resolution error or verification URL cannot be accessed!"
+msgstr "Verification failed, domain name resolution error or verification URL cannot be accessed!"
+
+msgid "|-Retry the command"
+msgstr "|-Retry the command"
+
+msgid "Recycle bin feature turned off!"
+msgstr "Recycle bin feature turned off!"
+
+msgid "Set the website [{}] expiration time successfully"
+msgstr "Set the website [{}] expiration time successfully"
+
+msgid "Reconnection attempts:{}"
+msgstr "Reconnection attempts:{}"
+
+msgid "Database user does NOT exist!"
+msgstr "Database user does NOT exist!"
+
+msgid "The softlink file name already exists, please use another file name or delete it!"
+msgstr "The softlink file name already exists, please use another file name or delete it!"
+
+msgid "The account has more than 5 failed orders within 1 hour, please wait 1 hour and try again!"
+msgstr "The account has more than 5 failed orders within 1 hour, please wait 1 hour and try again!"
+
+msgid "|-Getting certificate content..."
+msgstr "|-Getting certificate content..."
+
+msgid "Renewal failed. Domain resolution ERROR, or NOT valid!"
+msgstr "Renewal failed. Domain resolution ERROR, or NOT valid!"
+
+msgid "|-Attempt to verify the resolution result, domain name [{}], record value [{}]..."
+msgstr "|-Attempt to verify the resolution result, domain name [{}], record value [{}]..."
+
+msgid "Please enter correct parameters"
+msgstr "Please enter correct parameters"
+
+msgid "Panel session lost, please login panel again!"
+msgstr "Panel session lost, please login panel again!"
+
+msgid "Permission repair succeeded"
+msgstr "Permission repair succeeded"
+
+msgid "Clearing disk monitoring records"
+msgstr "Clearing disk monitoring records"
+
+msgid "Base directory turned off!"
+msgstr "Base directory turned off!"
+
+msgid "Panel setting"
+msgstr "Panel setting"
+
+msgid "#Referenced reverse proxy rule, if commented, the configured reverse proxy will be invalid"
+msgstr "#Referenced reverse proxy rule, if commented, the configured reverse proxy will be invalid"
+
+msgid "Requested directory exists!"
+msgstr "Requested directory exists!"
+
+msgid "Currently the latest version, no upgrade required!"
+msgstr "Currently the latest version, no upgrade required!"
+
+msgid "The number of backup versions has exceeded {} ,Please go to the upper right corner [Backup Permissions] to clean up the old backup before operating"
+msgstr "The number of backup versions has exceeded {} ,Please go to the upper right corner [Backup Permissions] to clean up the old backup before operating"
+
+msgid "ERROR getting identifier authorization"
+msgstr "ERROR getting identifier authorization"
+
+msgid "Renewal failed, missing account_key."
+msgstr "Renewal failed, missing account_key."
+
+msgid "CSRF calibration failed, please login again"
+msgstr "CSRF calibration failed, please login again"
+
+msgid "Please enter an account name"
+msgstr "Please enter an account name"
+
+msgid "Certificate acquisition failed, please try again later."
+msgstr "Certificate acquisition failed, please try again later."
+
+msgid "If you want to use the worker process, how many worker processes allowed to fork at most"
+msgstr "If you want to use the worker process, how many worker processes allowed to fork at most"
+
+msgid "Customized edition with aaPanel"
+msgstr "Customized edition with aaPanel"
+
+msgid "The mailbox does not exist, please add it to the mailbox list"
+msgstr "The mailbox does not exist, please add it to the mailbox list"
+
+msgid "|-Renew the visa certificate and start checking the environment"
+msgstr "|-Renew the visa certificate and start checking the environment"
+
+msgid "Pls enter new panel port: "
+msgstr "Pls enter new panel port: "
+
+msgid "|-Successful application, deploying to site.."
+msgstr "|-Successful application, deploying to site.."
+
+msgid "|-Attempt to verify DNS records locally, domain name: {}, type: {} record value: {}"
+msgstr "|-Attempt to verify DNS records locally, domain name: {}, type: {} record value: {}"
+
+msgid "Installation failed"
+msgstr "Installation failed"
+
+msgid "Sent domain format ERROR {}"
+msgstr "Sent domain format ERROR {}"
+
+msgid "Database does NOT exist!"
+msgstr "Database does NOT exist!"
+
+msgid "Successfully started"
+msgstr "Successfully started"
+
+msgid "Stop panel"
+msgstr "Stop panel"
+
+msgid "|-Registering account..."
+msgstr "|-Registering account..."
+
+msgid "The DNS verification failed. Please check if the key is correct."
+msgstr "The DNS verification failed. Please check if the key is correct."
+
+msgid "Delete [ {} ] proxy successfully"
+msgstr "Delete [ {} ] proxy successfully"
+
+msgid "This plugin does NOT have extend function!"
+msgstr "This plugin does NOT have extend function!"
+
+msgid "Domain name {} is currently required to verify the CAA record, please parse the CAA record manually, or retry the application after 1 hour!"
+msgstr "Domain name {} is currently required to verify the CAA record, please parse the CAA record manually, or retry the application after 1 hour!"
+
+msgid "Successfully deleted site [{}]!"
+msgstr "Successfully deleted site [{}]!"
+
+msgid "Too many requests for this domain name. Please try again 3 hours later"
+msgstr "Too many requests for this domain name. Please try again 3 hours later"
+
+msgid "Verification code is expired, click to refresh!"
+msgstr "Verification code is expired, click to refresh!"
+
+msgid "Exploitable vulnerabilities"
+msgstr "Exploitable vulnerabilities"
+
+msgid "Current version is developer version and already latest. Update cycle of stable version is generally 2 months,while developer version will update every Wednesday!"
+msgstr "Current version is developer version and already latest. Update cycle of stable version is generally 2 months,while developer version will update every Wednesday!"
+
+msgid "20 consecutive verification failures, prohibited for 1 hour"
+msgstr "20 consecutive verification failures, prohibited for 1 hour"
+
+msgid "|-Clearing PHP Session ..."
+msgstr "|-Clearing PHP Session ..."
+
+msgid "Get failed, there is currently no result!"
+msgstr "Get failed, there is currently no result!"
+
+msgid "|-Local authentication succeeded!"
+msgstr "|-Local authentication succeeded!"
+
+msgid "The specified soft link file name must contain the full path (full path)"
+msgstr "The specified soft link file name must contain the full path (full path)"
+
+msgid "The specified soft link file name already exists"
+msgstr ""
+
+msgid "RAR component does not support aarch 64 platform"
+msgstr "RAR component does not support aarch 64 platform"
+
+msgid "|-Attempt to verify file contents via HTTP [{}]..."
+msgstr "|-Attempt to verify file contents via HTTP [{}]..."
+
+msgid "Need at least a domain name!"
+msgstr "Need at least a domain name!"
+
+msgid "The file does not have backup permissions"
+msgstr "The file does not have backup permissions"
+
+msgid "Current DNS is available"
+msgstr "Current DNS is available"
+
+msgid "Site backed up to: {}"
+msgstr "Site backed up to: {}"
+
+msgid "{}, the target URL is the same as the redirected path"
+msgstr "{}, the target URL is the same as the redirected path"
+
+msgid "Running"
+msgstr "Running"
+
+msgid "Successfully copied file!"
+msgstr "Successfully copied file!"
+
+msgid "Failed,cannot delete current port of the panel!"
+msgstr "Failed,cannot delete current port of the panel!"
+
+msgid "Installer"
+msgstr "Installer"
+
+msgid "Increasing work_mem helps increase the speed of sorting, usually set to 2% -4% of real RAM."
+msgstr "Increasing work_mem helps increase the speed of sorting, usually set to 2% -4% of real RAM."
+
+msgid "Please fill in the email title!"
+msgstr "Please fill in the email title!"
+
+msgid "Secret Key ERROR, failed to add resolution"
+msgstr "Secret Key ERROR, failed to add resolution"
+
+msgid "Default category"
+msgstr "Default category"
+
+msgid "Site Traffic Control has been turned off!"
+msgstr "Site Traffic Control has been turned off!"
+
+msgid "|-Downloading certificate.."
+msgstr "|-Downloading certificate.."
+
+msgid "Compress the file"
+msgstr "Compress the file"
+
+msgid "Username"
+msgstr "Username"
+
+msgid "Warning list does NOT exist!"
+msgstr "Warning list does NOT exist!"
+
+msgid "Successfully changed PHP Version of site [{}] to PHP-{}"
+msgstr "Successfully changed PHP Version of site [{}] to PHP-{}"
+
+msgid "Default Document Format is invalid, e.g., index.html"
+msgstr "Default Document Format is invalid, e.g., index.html"
+
+msgid "It is not recommended to use \".\" at the end of the file because there may be security risks"
+msgstr "It is not recommended to use \".\" at the end of the file because there may be security risks"
+
+msgid "The available Inode of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!"
+msgstr "The available Inode of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!"
+
+msgid "Version : "
+msgstr "Version : "
+
+msgid "Task cancelled!"
+msgstr "Task cancelled!"
+
+msgid "|-The domain name skipped this time: {}, because the last renewal failed, you still need to wait {} hours and try again"
+msgstr "|-The domain name skipped this time: {}, because the last renewal failed, you still need to wait {} hours and try again"
+
+msgid "Sorry, [{}] command is NOT supported!"
+msgstr "Sorry, [{}] command is NOT supported!"
+
+msgid "|-Setting up auto-renewal configuration.."
+msgstr "|-Setting up auto-renewal configuration.."
+
+msgid "Base directory turned on!"
+msgstr "Base directory turned on!"
+
+msgid "TXT record verification failed"
+msgstr "TXT record verification failed"
+
+msgid "Gateway address is invalid"
+msgstr "Gateway address is invalid"
+
+msgid "|-No SSL certificate found within 30 days!"
+msgstr "|-No SSL certificate found within 30 days!"
+
+msgid "High risk"
+msgstr "High risk"
+
+msgid "The content to replace cannot be the same as the content to be replaced"
+msgstr "The content to replace cannot be the same as the content to be replaced"
+
+msgid "Scan directory"
+msgstr "Scan directory"
+
+msgid "Site [{}] turned on SSL successfully!"
+msgstr "Site [{}] turned on SSL successfully!"
+
+msgid "Database exists!"
+msgstr "Database exists!"
+
+msgid "PHP load status acquisition failed: {}"
+msgstr "PHP load status acquisition failed: {}"
+
+msgid "Successfully changed password"
+msgstr "Successfully changed password"
+
+msgid "Cannot use same port as Panel!"
+msgstr "Cannot use same port as Panel!"
+
+msgid "Failed to open file, file may be occupied by other processes!"
+msgstr "Failed to open file, file may be occupied by other processes!"
+
+msgid "The specify rule name is already exists! [ {} ]"
+msgstr "The specify rule name is already exists! [ {} ]"
+
+msgid "The email address already exists"
+msgstr "The email address already exists"
+
+msgid "Second"
+msgstr "Second"
+
+msgid "This port number cannot be used and the modification failed"
+msgstr "This port number cannot be used and the modification failed"
+
+msgid "Query error, {}"
+msgstr "Query error, {}"
+
+msgid "Wrong copy logic, from {} copy to {} has an inclusive relationship, there is an infinite loop copy risk!"
+msgstr ""
+
+msgid "Do not count files or directories larger than 100MB"
+msgstr ""
+
+msgid "Failed,cannot delete current port of the panel"
+msgstr ""
+
+msgid "Please install the Pure-FTPd service in the software store first."
+msgstr ""
+
+msgid "An error occurred while requesting a certificate using dns"
+msgstr ""
+
+msgid "Only supports [{}] system"
+msgstr ""
+
+msgid "Authentication timed out, please press enter to try again!{}"
+msgstr ""
+
+msgid "{} system firewall!"
+msgstr ""
+
+msgid "The system firewall is not open"
+msgstr ""
+
+msgid "The target URL cannot be [http:// or https://], please fill in the full URL, such as: https://aapanel.com"
+msgstr ""
+
+msgid "Please turn on the hotlink first!"
+msgstr ""
+
+msgid "The specified server already exists: [{}:{}]"
+msgstr ""
+
+msgid "Add remote MySQL server [{}:{}]"
+msgstr ""
+
+msgid "Add failed: {}"
+msgstr ""
+
+msgid "Failed to delete: {}"
+msgstr ""
+
+msgid "Delete the remote MySQL server [{}:{}]"
+msgstr ""
+
+msgid "The specified server dose not exists!"
+msgstr ""
+
+msgid "Edit remote MySQL server [{}:{}]"
+msgstr ""
+
+msgid "Fail to edit: {}"
+msgstr ""
+
+msgid "A database with the same name already exists: [{}]"
+msgstr ""
+
+msgid "Add remote MySQL database [{}] successfully"
+msgstr ""
+
+msgid "The specified database does not exist!"
+msgstr ""
+
+msgid "Wrong user name or password!"
+msgstr ""
+
+msgid "No access rights, or the database does not exist!"
+msgstr ""
+
+msgid "Database table does not exist!"
+msgstr ""
+
+msgid "Change the password of the remote MySQL server"
+msgstr ""
+
+msgid "Cannot change the root password of the remote database"
+msgstr ""
+
+msgid "Unsupported database type"
+msgstr ""
+
+msgid "Has {} HTTPS strict mode"
+msgstr ""
+
+msgid "WebSite manager"
+msgstr ""
+
+msgid "This function only supports Nginx/Apache"
+msgstr ""
+
+msgid "Incorrect format of verification code"
+msgstr ""
+
+msgid "Plugin does not exist"
+msgstr ""
+
+msgid "The specified template does not exist!"
+msgstr ""
+
+msgid "Bad return type [{}]"
+msgstr ""
+
+msgid "Password can not be blank!"
+msgstr ""
+
+msgid "The passwords entered twice do not match, please re-enter!"
+msgstr ""
+
+msgid "Delete failed, failed to connect to database!"
+msgstr ""
+
+msgid "|-Renewing additional certificate {}, domain name: "
+msgstr ""
+
+msgid "This feature currently only supports Nginx"
+msgstr ""
+
+msgid "Download successfully"
+msgstr ""
+
+msgid "MD5 consistent!"
+msgstr ""
+
+msgid "Generated password detection failed!"
+msgstr ""
+
+msgid "Get failed wordpress user failed!"
+msgstr ""
+
+msgid "Password reset successful"
+msgstr ""
+
+msgid "Cleaned up successfully!"
+msgstr ""
+
+msgid "Please check if the [{}] format is correct For example: {}"
+msgstr ""
+
+msgid "Deployment was successful!"
+msgstr ""
+
+msgid "Deployment failed!"
+msgstr ""
+
+msgid "PHP FPM Optimization failed: {}"
+msgstr ""
+
+msgid "PHP FPM optimization succeeded"
+msgstr ""
+
+msgid "Mysql optimization failed {}"
+msgstr ""
+
+msgid "Mysql optimization succeeded"
+msgstr ""
+
+msgid "Nginx FastCgi cache configuration already exists"
+msgstr ""
+
+msgid "Nginx FastCgi configuration error!"
+msgstr ""
+
+msgid "Nginx FastCgi cache configuration complete"
+msgstr ""
+
+msgid "FastCgi configuration does not exist in website configuration"
+msgstr ""
+
+msgid "The FastCgi configuration already exists in the website configuration"
+msgstr ""
+
+msgid "Website FastCgi configuration error！"
+msgstr ""
+
+msgid "Website FastCgi configuration complete"
+msgstr ""
+
+msgid "Wordpress configuration file does not exist: {}"
+msgstr ""
+
+msgid "Anti-cross-site configuration file does not exist: {}"
+msgstr ""
+
+msgid "The timeout time needs to be between 300-86400"
+msgstr ""
+
+msgid "Cannot use system critical directory as default backup directory"
+msgstr ""
+
+msgid "Cannot use system critical directory as default site directory"
+msgstr ""
+
+msgid "Username cannot contain spaces"
+msgstr ""
+
+msgid "Please install Mysql and PHP first!"
+msgstr ""
+
+msgid "[{}] domain names added successfully, [{}] failed!"
+msgstr ""
+
+msgid "All tasks have been processed!"
+msgstr ""
+
+msgid "Ignore success, this version will no longer be reminded to update."
+msgstr ""
+
+msgid "Timeout must be an integer!"
+msgstr ""
+
+msgid "BasicAuth authentication username and password cannot be empty!"
+msgstr ""
+
+msgid "Link file name is illegal!"
+msgstr ""
+
+msgid "Incompatible PHP version, an attempt has been made to automatically switch to a compatible PHP version, please refresh the page and try again!"
+msgstr ""
+
+msgid "The specified domain name has been bound by the website [{}]"
+msgstr ""
+
+msgid "The specified domain name has been bound by a subdirectory of the website [{}]!"
+msgstr ""
+
+msgid "Default index file cannot be empty"
+msgstr ""
+
+msgid "The password fomart is wrong, please do not use special symbols for the first two digits!"
+msgstr ""
+
+msgid "Please enter password!"
+msgstr ""
+
+msgid "Password cannot be less than 3 characters"
+msgstr ""
+
+msgid "Password cannot contain spaces"
+msgstr ""
+
+msgid "Please enter username!"
+msgstr ""
+
+msgid "Please enter a name!"
+msgstr ""
+
+msgid "Name cannot be less than 3 characters"
+msgstr ""
+
+msgid "Name cannot contain spaces"
+msgstr ""
+
+msgid "Name format must be [ aaa_bbb ]"
+msgstr ""
+
+msgid "The database of this wordpress was not found, this may be caused by the fact that you have manually deleted the database"
+msgstr ""
+
+msgid "Site ID must be numeric"
+msgstr ""
+
+msgid "This database was not found!"
+msgstr ""
+
+msgid "Reverse proxies are not currently available for Wordpress sites that use one-click deployment"
+msgstr ""
+
+msgid "wrong field name"
+msgstr ""
+
+msgid "Database password cannot be empty or have special characters!"
+msgstr ""
+
+msgid "Database type sid needs int type!"
+msgstr ""
+
+msgid "Mongodb service has not been started yet!"
+msgstr ""
+
+msgid "Database name cannot be empty!"
+msgstr ""
+
+msgid "The specified database does not exist."
+msgstr ""
+
+msgid "Lack of backup tools, please install MongoDB through [APP Store] first!"
+msgstr ""
+
+msgid "Password authentication has been enabled. The password cannot be empty when the database is backed up. Please set a password and try again!"
+msgstr ""
+
+msgid "Database backup failed, file does not exist"
+msgstr ""
+
+msgid "The backup is executed successfully, the backup file is less than 1b, please check the backup integrity."
+msgstr ""
+
+msgid "The database type SID requires an INT!"
+msgstr ""
+
+msgid "The Mongodb service is not enabled!"
+msgstr ""
+
+msgid "The database password cannot be empty or contain special characters"
+msgstr ""
+
+msgid "Database password cannot be Chinese, please change the name!"
+msgstr ""
+
+msgid "The modification failed because the specified database does not exist."
+msgstr ""
+
+msgid "Password access is not enabled for the database."
+msgstr ""
+
+msgid "The database name cannot contain special characters"
+msgstr ""
+
+msgid "The database password is empty. Set the password first."
+msgstr ""
+
+msgid "Lack of backup tools, please first through the software store PGSQL manager!"
+msgstr ""
+
+msgid "The backup file size is smaller than 2Kb. Check the backup integrity."
+msgstr ""
+
+msgid "Lack of recovery tool, please use software management to install PGSQL!"
+msgstr ""
+
+msgid "Description Succeeded in importing database [{}]"
+msgstr ""
+
+msgid "The database password cannot be empty."
+msgstr ""
+
+msgid "If PgSQL is not installed or started, install or start it first"
+msgstr ""
+
+msgid "The password must not be less than 8 digits."
+msgstr ""
+
+msgid "{}File does not exist, please check the installation is complete!"
+msgstr ""
+
+msgid "The administrator password is successfully changed. Procedure"
+msgstr ""
+
+msgid "Connecting to remote PGSQL fails. Perform the following operations to rectify the fault：<br/>1、The database port is correct and the firewall allows access<br/>2、Check whether the database account password is correct<br/>3、pg_hba.confWhether to add a client release record<br/>4、postgresql.conf Add listen_addresses to the correct server IP address."
+msgstr ""
+
+msgid "Parameter passing error."
+msgstr ""
+
+msgid "Operation is successful"
+msgstr ""
+
+msgid "Restore failure"
+msgstr ""
+
+msgid "SQLServer databases cannot start with numbers!"
+msgstr ""
+
+msgid "SQLServer password complexity policy does not match, should be 8-128 characters, and contain any 3 of them in upper case, lower case, digits, special symbols!"
+msgstr ""
+
+msgid "Operation failed. Remote database cannot be backed up."
+msgstr ""
+
+msgid "The import failed because the file is not a valid ZIP file"
+msgstr ""
+
+msgid "The password of database [' + username + '] cannot be empty"
+msgstr ""
+
+msgid "The SQL Server is not installed or started. Install or start it first"
+msgstr ""
+
+msgid "The password of database [' + password + '] cannot be empty."
+msgstr ""
+
+msgid "The password cannot be empty or have special symbols"
+msgstr ""
+
+msgid "The password of sa is changed successfully."
+msgstr ""
+
+msgid "There is no volume to back up"
+msgstr ""
+
+msgid "The backup task was created successfully."
+msgstr ""
+
+msgid "Failed to create a backup task {}"
+msgstr ""
+
+msgid "successfully delete"
+msgstr ""
+
+msgid "{} Failed to delete the file, reason: {}"
+msgstr ""
+
+msgid "This template name already exists!"
+msgstr ""
+
+msgid "Template added successfully!"
+msgstr ""
+
+msgid "Did not change the template!"
+msgstr ""
+
+msgid "Modified template successfully!"
+msgstr ""
+
+msgid "This template was not found!"
+msgstr ""
+
+msgid "successfully delete!"
+msgstr ""
+
+msgid "This template was not found, or file is corrupt!"
+msgstr ""
+
+msgid "Template file does not exist"
+msgstr ""
+
+msgid "The project name already exists!"
+msgstr ""
+
+msgid "Successful deployment!"
+msgstr ""
+
+msgid "The project name was not found!"
+msgstr ""
+
+msgid "Clean up successfully!"
+msgstr ""
+
+msgid "The template was not found!"
+msgstr ""
+
+msgid "Pull successfully!"
+msgstr ""
+
+msgid "Unable to scan the root directory"
+msgstr ""
+
+msgid "Modify successfully!"
+msgstr ""
+
+msgid "Only the docker run command can be executed"
+msgstr ""
+
+msgid "Dangerous command exists: [{}],Execution is not allowed!"
+msgstr ""
+
+msgid "There are danger symbols: [{}],Execution is not allowed!"
+msgstr ""
+
+msgid "The command has been executed!"
+msgstr ""
+
+msgid "The port format is wrong, this method is not supported!"
+msgstr ""
+
+msgid "Server port [{}] is occupied, please change to another port!"
+msgstr ""
+
+msgid "Please pull the image you need"
+msgstr ""
+
+msgid "The image does not exist!"
+msgstr ""
+
+msgid "The memory quota has exceeded the available amount!"
+msgstr ""
+
+msgid "The memory quota cannot be less than 6MB!"
+msgstr ""
+
+msgid "Image [{}] does not exist, You can try [Forced Pull]!"
+msgstr ""
+
+msgid "Image [{}] does not exist!"
+msgstr ""
+
+msgid "cpu quota has exceeded available cores!"
+msgstr ""
+
+msgid "Memory reservation cannot be less than 6MB!"
+msgstr ""
+
+msgid "The image name format is incorrect.such as:nginx:latest"
+msgstr ""
+
+msgid "Container creation failed, details: {}!"
+msgstr ""
+
+msgid "The memory quota cannot be less than the memory reserve!"
+msgstr ""
+
+msgid "The container name or network bridge already exists. Please change the container name and try again!"
+msgstr ""
+
+msgid "There is no startup command in this image, please specify the container startup command!"
+msgstr ""
+
+msgid "Permission exception! Details:{}"
+msgstr ""
+
+msgid "Container creation failed! Please restart the docker service at the appropriate time!"
+msgstr ""
+
+msgid "Container name already exists!"
+msgstr ""
+
+msgid "The container name is invalid"
+msgstr ""
+
+msgid "Server port {} in use! Change the other port"
+msgstr ""
+
+msgid "Creation failure! {}"
+msgstr ""
+
+msgid "The container creation failed and the connection to docker timed out!"
+msgstr ""
+
+msgid "Container failed to run! {}"
+msgstr ""
+
+msgid "Created successfully, but the IP [{}] is illegal and the IP has been automatically assigned."
+msgstr ""
+
+msgid "Creation failure!"
+msgstr ""
+
+msgid "Container ID is abnormal"
+msgstr ""
+
+msgid "The new image name cannot be empty!"
+msgstr ""
+
+msgid "The mirror does not exist!"
+msgstr ""
+
+msgid "Container editing failed and the connection to docker timed out."
+msgstr ""
+
+msgid "Update failed!{}"
+msgstr ""
+
+msgid "Editing successful, [{}] has not specified a subnet, and the IP has been automatically assigned!"
+msgstr ""
+
+msgid "Editing successful, network [{}] setting failed, IP has been automatically assigned to you, error details: {}!"
+msgstr ""
+
+msgid "Update successfully!"
+msgstr ""
+
+msgid "Container does not exist!"
+msgstr ""
+
+msgid "The image has been generated, and{}"
+msgstr ""
+
+msgid "submit successfully!"
+msgstr ""
+
+msgid "Submission Failed!{}"
+msgstr ""
+
+msgid "Failed to get container"
+msgstr ""
+
+msgid "Successfully exported to:{}"
+msgstr ""
+
+msgid "operation failure:"
+msgstr ""
+
+msgid "Delete failed! {}"
+msgstr ""
+
+msgid "The container has been deleted!"
+msgstr ""
+
+msgid "ipv6 server port [{}] is occupied!"
+msgstr ""
+
+msgid "ipv4 server port [{}] is occupied!"
+msgstr ""
+
+msgid "Setup failed! {}"
+msgstr ""
+
+msgid "Stop failing!"
+msgstr ""
+
+msgid "Stop succeeding!"
+msgstr ""
+
+msgid "The container has paused."
+msgstr ""
+
+msgid "Container stopped and deleted"
+msgstr ""
+
+msgid "Stop failing!{}"
+msgstr ""
+
+msgid "boot failed!"
+msgstr ""
+
+msgid "starting success!"
+msgstr ""
+
+msgid "Container pause failed!"
+msgstr ""
+
+msgid "Container pause successfully!"
+msgstr ""
+
+msgid "The container has been suspended!"
+msgstr ""
+
+msgid "The container is not started and cannot be paused!"
+msgstr ""
+
+msgid "The container is not paused or has been deleted. Check if the container has the option to delete immediately after stopping!"
+msgstr ""
+
+msgid "The container unpaused successfully"
+msgstr ""
+
+msgid "The container was reloaded successfully!"
+msgstr ""
+
+msgid "Container restarts successfully!"
+msgstr ""
+
+msgid "The container has been stopped and deleted because containers have the option to automatically delete when stopped"
+msgstr ""
+
+msgid "The container has paused"
+msgstr ""
+
+msgid "The container ID is empty"
+msgstr ""
+
+msgid "Failed to get container information!{}"
+msgstr ""
+
+msgid "docker connection failed"
+msgstr ""
+
+msgid "parameter error,Pass: type"
+msgstr ""
+
+msgid "Container log directory does not exist, log cut cannot be set!"
+msgstr ""
+
+msgid "parameter error"
+msgstr ""
+
+msgid "Opened successfully!"
+msgstr ""
+
+msgid "The log file does not exist"
+msgstr ""
+
+msgid "Log cleaning was successful!"
+msgstr ""
+
+msgid "No useless containers!"
+msgstr ""
+
+msgid "Please turn off enterprise tamper protection before trying again!"
+msgstr ""
+
+msgid "failed to delete! {}"
+msgstr ""
+
+msgid "Update failed! {}"
+msgstr ""
+
+msgid "The container is not started and cannot be renamed!"
+msgstr ""
+
+msgid "Rename successfully!"
+msgstr ""
+
+msgid "Renaming failed! {}"
+msgstr ""
+
+msgid "The type only supports add/del"
+msgstr ""
+
+msgid "Please select a container"
+msgstr ""
+
+msgid "Set top successfully!"
+msgstr ""
+
+msgid "Unpinned successfully!"
+msgstr ""
+
+msgid "Setup successful!"
+msgstr "Setup successful!"
+
+msgid "Parameter error, Please pass in: ws_callback!"
+msgstr ""
+
+msgid "Parameter error, Please pass in: _ws!"
+msgstr ""
+
+msgid "Please pass in cmd"
+msgstr ""
+
+msgid "Only docker run or docker pull commands can be executed"
+msgstr ""
+
+msgid "Dangerous command exists: [{}], execution is not allowed!"
+msgstr ""
+
+msgid "Dangerous symbol exists: [{}], execution is not allowed!"
+msgstr ""
+
+msgid "The image name cannot contain /"
+msgstr ""
+
+msgid "The docker service is running abnormally, please restart and try again!"
+msgstr ""
+
+msgid "The gateway setting is wrong, Please enter a gateway that matches the subnet: {}"
+msgstr ""
+
+msgid "Subnet address format error, please enter for example: 172.16.0.0/16"
+msgstr ""
+
+msgid "IP range format error, please enter the appropriate IP range for this subnet:"
+msgstr ""
+
+msgid "IP range [{}] already exists!"
+msgstr ""
+
+msgid "Failed to add network! {}"
+msgstr ""
+
+msgid "Added network successfully!"
+msgstr ""
+
+msgid "The system default network cannot be deleted!"
+msgstr ""
+
+msgid "The network cannot be deleted while it is in use!"
+msgstr ""
+
+msgid "There are no useless networks!"
+msgstr ""
+
+msgid "Network ID cannot be empty"
+msgstr ""
+
+msgid "Container ID cannot be empty"
+msgstr ""
+
+msgid "Network disconnection was successful!"
+msgstr ""
+
+msgid "Container ID: {}, does not exist!"
+msgstr ""
+
+msgid "Network ID: {}, does not exist!"
+msgstr ""
+
+msgid "Network disconnection failed! {}"
+msgstr ""
+
+msgid "Network connection successful!"
+msgstr ""
+
+msgid "Failed to connect to network! {}"
+msgstr ""
+
+msgid "{} cannot contain Spaces"
+msgstr ""
+
+msgid "{} cannot be null!"
+msgstr ""
+
+msgid "Project Type [{}] Existing Domain: {}"
+msgstr ""
+
+msgid "Server port [{}] is not used, please enter the port in use to reverse!"
+msgstr ""
+
+msgid "Add failure, database cannot be written!"
+msgstr ""
+
+msgid "successfully added!"
+msgstr ""
+
+msgid "Add failed, error {}!"
+msgstr ""
+
+msgid "No reverse proxy information was detected!"
+msgstr ""
+
+msgid "parameter error!"
+msgstr ""
+
+msgid "Certificate does not exist!"
+msgstr ""
+
+msgid "The name already exists! <br><br>name: {}"
+msgstr ""
+
+msgid "Repository information already exists!"
+msgstr ""
+
+msgid "Editing failed! Reason: Account password decryption failed! Please delete the repository and add it again"
+msgstr ""
+
+msgid "Editing failed! Reason:{}"
+msgstr ""
+
+msgid "This repository could not be found"
+msgstr ""
+
+msgid "Edit success!"
+msgstr ""
+
+msgid "Delete failed,The repository id may not exist!"
+msgstr ""
+
+msgid "The monitoring save time needs to be a positive integer!"
+msgstr ""
+
+msgid "Monitoring data cannot be retained for more than 999 days!"
+msgstr ""
+
+msgid "Successfully set!"
+msgstr ""
+
+msgid "There's no way to do that"
+msgstr ""
+
+msgid "Docker service setup failed, please turn off aapanel anti-intrusion and try again!"
+msgstr ""
+
+msgid "Setup failed! Reason for failure:{}"
+msgstr ""
+
+msgid "{} success"
+msgstr ""
+
+msgid "Global configuration file error, please check {}!"
+msgstr ""
+
+msgid "Speedup address [{}] Format error <br> Reference: https://mirror.ccs.tencentyun.com"
+msgstr ""
+
+msgid "successfully set"
+msgstr ""
+
+msgid "Setup failed! Failure reason :{}"
+msgstr ""
+
+msgid "Start monitoring successfully!"
+msgstr ""
+
+msgid "Failed to start monitoring!"
+msgstr ""
+
+msgid "Docker monitoring stopped successfully!"
+msgstr ""
+
+msgid "docker-compose file path cannot be empty!"
+msgstr ""
+
+msgid "docker-compose file does not exist!"
+msgstr ""
+
+msgid "docker-compose file is not executable or is not a docker-compose file!"
+msgstr ""
+
+msgid "The installation task already exists, please do not add it again!"
+msgstr ""
+
+msgid "The installation task has been added to the queue!"
+msgstr ""
+
+msgid "The repair task has been added to the queue!"
+msgstr ""
+
+msgid "Saved successfully!"
+msgstr ""
+
+msgid "Saving failed, reason: daemon.json configuration file format error!"
+msgstr ""
+
+msgid "Save failed, reason: {}"
+msgstr ""
+
+msgid "Please manually delete all containers and images before uninstalling!"
+msgstr ""
+
+msgid "The container does not exist, please refresh the browser and try again!"
+msgstr ""
+
+msgid "Failed to get container status: "
+msgstr ""
+
+msgid "Volume names can be no less than 2 characters long!"
+msgstr ""
+
+msgid "Volume name already exists!"
+msgstr ""
+
+msgid "addition failed {}"
+msgstr ""
+
+msgid "Driver option tags must be dictionary/key-value pairs!"
+msgstr ""
+
+msgid "Add failed! {}"
+msgstr ""
+
+msgid "The storage volume is in use and cannot be deleted!"
+msgstr ""
+
+msgid "The storage volume does not exist!"
+msgstr ""
+
+msgid "No useless storage volumes!"
+msgstr ""
+
+msgid "IP filter program compilation failed"
+msgstr "IP filter program compilation failed"
+
+msgid "IP address cannot be empty!"
+msgstr "IP address cannot be empty!"
+
+msgid "The specified blocking time cannot exceed 24 days!"
+msgstr "The specified blocking time cannot exceed 24 days!"
+
+msgid "IP address format is wrong!"
+msgstr "IP address format is wrong!"
+
+msgid "Website name cannot be empty!"
+msgstr "Website name cannot be empty!"
+
+msgid "Set successfully!"
+msgstr "Set successfully!"
+
+msgid "Website configuration does not exist!"
+msgstr "Website configuration does not exist!"
+
+msgid "URI cannot be empty!"
+msgstr "URI cannot be empty!"
+
+msgid "The URI already exists, please do not add it again!"
+msgstr "The URI already exists, please do not add it again!"
+
+msgid "Added successfully!"
+msgstr "Added successfully!"
+
+msgid "URI does not exist"
+msgstr "URI does not exist"
+
+msgid "The listening address format is wrong!"
+msgstr "The listening address format is wrong!"
+
+msgid "Wrong listening port range!, requirement: 1024-65535"
+msgstr "Wrong listening port range!, requirement: 1024-65535"
+
+msgid "IP statistics mode error, requirement: 0 or 1"
+msgstr "IP statistics mode error, requirement: 0 or 1"
+
+msgid "Start time format error!"
+msgstr "Start time format error!"
+
+msgid "End time format error!"
+msgstr "End time format error!"
+
+msgid "The start time cannot be greater than the end time!"
+msgstr "The start time cannot be greater than the end time!"
+
+msgid "Date format error!"
+msgstr "Date format error!"
+
+msgid "Time granularity error, support: minute, hour, date"
+msgstr "Time granularity error, support: minute, hour, date"
+
+msgid "Access ID cannot be empty!"
+msgstr "Access ID cannot be empty!"
+
+msgid "Access ID does not exist!"
+msgstr "Access ID does not exist!"
+
+msgid "file does not exist"
+msgstr "file does not exist"
+
+msgid "Clear successfully"
+msgstr "Clear successfully"
+
+msgid "Parameter cannot be empty!"
+msgstr "Parameter cannot be empty!"
+
+msgid "session_id cannot be empty!"
+msgstr "session_id cannot be empty!"
+
+msgid "Configuration check completed!"
+msgstr "Configuration check completed!"
+
+msgid "Configuration cleanup completed"
+msgstr "Configuration cleanup completed"
+
+msgid "Parameter error"
+msgstr "Parameter error"
+
+msgid "Submitted successfully"
+msgstr "Submitted successfully"

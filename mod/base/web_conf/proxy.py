@@ -2,13 +2,16 @@ import os
 import re
 import json
 import shutil
+import warnings
 import sys
 import traceback
 from hashlib import md5
 from typing import Tuple, Optional, Union, List, Dict, Any
+
 from .util import webserver, check_server_config, write_file, read_file, DB, service_reload, get_log_path, pre_re_key
 from mod.base import json_response
 
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 class RealProxy:
     panel_path = "/www/server/panel"
@@ -98,7 +101,7 @@ class RealProxy:
             data["advanced"] = int(get.advanced.strip())
             data["cachetime"] = int(get.cachetime.strip())
         except:
-            return "参数错误"
+            return "Parameter error"
 
         if is_modify is False:
             if len(data["proxyname"]) < 3 or len(data["proxyname"]) > 40:
@@ -117,7 +120,7 @@ class RealProxy:
         rep_re_key = re.compile(r'''[?=\[\])(*&^%$#@!~`{}><,'"\\]+''')
         # 检测代理目录格式
         if rep_re_key.search(data["proxydir"]):
-            return "代理目录不能有以下特殊符号 ?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\\,',\"]"
+            return "The agency directory cannot contain the following special symbols ?,=,[,],),(,*,&,^,%,$,#,@,!,~,`,{,},>,<,\,',\"]"
         # 检测发送域名格式
         if get.todomain:
             if re.search("[}{#;\"\']+", data["todomain"]):
@@ -566,7 +569,7 @@ location ^~ %s
         try:
             site_name = get.sitename.strip()
         except (AttributeError, ValueError, TypeError):
-            return "参数错误"
+            return "Parameter error"
         proxy_list = []
         web_server = webserver()
         for conf in self.config:
@@ -609,7 +612,7 @@ class Proxy(object):
         msg = self._p.create_proxy(get)
         if msg:
             return json_response(status=False, msg=msg)
-        return json_response(status=True, msg="添加成功")
+        return json_response(status=True, msg="Successfully added")
 
     def modify_proxy(self, get):
         msg = self._p.modify_proxy(get)
@@ -622,11 +625,11 @@ class Proxy(object):
             site_name = get.sitename.strip()
             proxy_name = get.proxyname.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         msg = self._p.remove_proxy(site_name, proxy_name)
         if msg:
             return json_response(status=False, msg=msg)
-        return json_response(status=True, msg="删除成功")
+        return json_response(status=True, msg="Successfully delete")
 
     def get_proxy_list(self, get):
         data = self._p.get_proxy_list(get)

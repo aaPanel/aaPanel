@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -311,7 +311,7 @@ class main():
             site_path_stat = os.stat(get.path)
             info = pwd.getpwuid(site_path_stat.st_uid)
             if info.pw_name == get.permission["pw_name"] and site_path_stat.st_mode == get.permission["st_mode"]:
-                return public.returnResult(status=True, msg="设置成功")
+                return public.returnResult(status=True, msg="Successfully set")
             else:
                 return public.returnResult(status=False, msg="设置失败")
         except Exception as e:
@@ -1020,7 +1020,7 @@ class main():
         public.ExecShell("rm -rf {}".format(find_version["package_path"]))
 
         public.M('app_package').where('id=?', (find_version["id"],)).delete()
-        return public.returnResult(status=True, msg="删除成功")
+        return public.returnResult(status=True, msg="Successfully delete")
 
     # 2024/5/9 上午10:41 返回指定网站的app_package表所有数据
     def get_db_all_result(self, get):
@@ -1533,7 +1533,7 @@ class main():
         public.ExecShell("rm -rf {}".format(find_version["package_path"]))
 
         public.M('app_package_upload').where('id=?', (find_version["id"],)).delete()
-        return public.returnResult(status=True, msg="删除成功")
+        return public.returnResult(status=True, msg="Successfully delete")
 
     # 2024/5/9 下午6:33 获取上传列表中某一个包的数据
     def get_upload_result(self, get):

@@ -30,8 +30,7 @@ class panelPlugin:
     __index = 'config/index.json'
     __link = 'config/link.json'
 
-    __official_url = 'https://www.aapanel.com'
-    # __official_url = 'http://dev.aapanel.com'
+    __official_url = public.OfficialApiBase()
 
     def __init__(self):
         self.__isTable = None
@@ -179,13 +178,11 @@ class panelPlugin:
         p_node = '/www/server/panel/install/public.sh'
         if os.path.exists(p_node):
             if len(public.readFile(p_node)) < 100: os.remove(p_node)
-        if not pluginInfo: return public.return_msg_gettext(False, 'The specified plugin does not exist!')
+        if not pluginInfo: return public.return_msg_gettext(False, public.lang("The specified plugin does not exist!"))
         self.mutex_title = pluginInfo['mutex']
-        if not self.check_mutex(pluginInfo['mutex']): return public.return_msg_gettext(False, 'Please uninstall [{}] first',
-                                                                              (self.mutex_title,))
+        if not self.check_mutex(pluginInfo['mutex']): return public.return_msg_gettext(False, public.lang('Please uninstall [{}] first',self.mutex_title))
         if not hasattr(get, 'id'):
-            if not self.check_dependent(pluginInfo['dependent']): return public.return_msg_gettext(False, 'Depends on the following software, please install [{}] first',
-                                                                                          (pluginInfo['dependent'],))
+            if not self.check_dependent(pluginInfo['dependent']): return public.return_msg_gettext(False, public.lang('Depends on the following software, please install [{}] first',pluginInfo['dependent']))
         if 'version' in get:
             for versionInfo in pluginInfo['versions']:
                 if versionInfo['m_version'] != get.version: continue
@@ -193,14 +190,15 @@ class panelPlugin:
                 if int(get.type) > 4: get.type = '0'
                 if get.type == '0':
                     if not self.check_cpu_limit(versionInfo['cpu_limit']):
-                        return public.return_msg_gettext(False,'At least [{0}] CPU cores are required to install'.format(versionInfo['cpu_limit']))
+                        return public.return_msg_gettext(False, public.lang("At least [{0}] CPU cores are required to install", versionInfo['cpu_limit']))
                     if not self.check_mem_limit(versionInfo['mem_limit']):
-                        return public.return_msg_gettext(False,'At least [{0} MB] memory is required to install'.format(versionInfo['mem_limit']))
+                        return public.return_msg_gettext(False, public.lang("At least [{0} MB] memory is required to install", versionInfo['mem_limit']))
                 if not self.check_os_limit(versionInfo['os_limit']):
                     m_ps = {0: "All", 1: "Centos", 2: "Ubuntu/Debian"}
-                    return public.return_msg_gettext(False, 'Only supports [{}] system',(m_ps[int(versionInfo['os_limit'])],))
+                    return public.return_msg_gettext(False, public.lang('Only supports [{}] system',m_ps[int(versionInfo['os_limit'])]))
                 if not hasattr(get, 'id'):
-                    if not self.check_dependent(versionInfo['dependent']): return public.return_msg_gettext(False,'Depend on the following software, please install first [{}]',(versionInfo['dependent'],))
+                    if not self.check_dependent(versionInfo['dependent']):
+                        return public.return_msg_gettext(False,public.lang('Depend on the following software, please install first [{}]',versionInfo['dependent']))
 
     # 获取插件安装包下载进度
     def get_download_speed(self, get):
@@ -224,20 +222,23 @@ class panelPlugin:
         plugin_name = get.plugin_name.strip()
         tmp_path = '{}/{}'.format(self.__tmp_path, plugin_name)
         if os.path.exists(tmp_path): shutil.rmtree(tmp_path)
-        return public.returnMsg(False, '安装过程已取消!')
+        return public.returnMsg(False, public.lang("Installation process canceled!"))
 
     #安装插件
     def install_plugin(self,get):
-        str1 = public.get_msg_gettext("System critical directory is not writable!")
-        str2 = public.get_msg_gettext("1. If [System Hardening] is installed, please turn it off")
-        str3 = public.get_msg_gettext("2. If Yunsuo is installed, please turn off [System Hardening] feature")
-        str4 = public.get_msg_gettext("3. If Safedog is installed, please turn off [System Protection] feature")
-        str5 = public.get_msg_gettext("4. If other security software is used, please uninstall it")
-        if not self.check_sys_write(): return public.return_msg_gettext(False,'<a style=color:red;>ERROR:{}</a><br>{}<br><br>{}<br>{}<br><br>'.format(str1,str2,str3,str4))
-        if not 'sName' in get: return public.return_msg_gettext(False,'Please specify the software name!')
+        str1 = public.lang("System critical directory is not writable!")
+        str2 = public.lang("1. If [System Hardening] is installed, please turn it off")
+        str3 = public.lang("2. If Yunsuo is installed, please turn off [System Hardening] feature")
+        str4 = public.lang("3. If Safedog is installed, please turn off [System Protection] feature")
+        str5 = public.lang("4. If other security software is used, please uninstall it")
+        if not self.check_sys_write():
+            return public.return_msg_gettext(False,
+                                             '<a style=color:red;>ERROR:{}</a><br>{}<br><br>{}<br>{}<br><br>'.format(
+                                                 str1, str2, str3, str4))
+        if not 'sName' in get: return public.return_msg_gettext(False, public.lang("Please specify the software name!"))
         #处理ols还不支持php81的情况
         # if get.sName == "php-8.1" and public.get_webserver() == 'openlitespeed':
-        #     return public.return_msg_gettext(False, 'Sorry, currently OLS official does not support php8.1')
+        #     return public.return_msg_gettext(False, public.lang("Sorry, currently OLS official does not support php8.1"))
         pluginInfo = self.get_soft_find(get.sName)
         get.pluginInfo = pluginInfo
         check_result = self.check_install_limit(get)
@@ -265,7 +266,7 @@ class panelPlugin:
         try:
             token = panelAuth.panelAuth().create_serverid(None)['token']
         except:
-            # return public.returnMsg(False,'Please log in as aaPanel account first')
+            # return public.returnMsg(False, public.lang("Please log in as aaPanel account first"))
             token = None
         if 'download' in pluginInfo['versions'][0]:
             tmp_path = '/www/server/panel/temp'
@@ -277,7 +278,7 @@ class panelPlugin:
                 pluginInfo['versions'][0]['download'],
                 token
                 ),toFile)
-            if public.FileMd5(toFile) != pluginInfo['versions'][0]['md5']: return public.return_msg_gettext(False,'File hash verification failed, stop installation!')
+            if public.FileMd5(toFile) != pluginInfo['versions'][0]['md5']: return public.return_msg_gettext(False, public.lang("File hash verification failed, stop installation!"))
             update = False
             if os.path.exists(pluginInfo['install_checks']): update =pluginInfo['versions'][0]['version_msg']
             return self.update_zip(None,toFile,update)
@@ -290,8 +291,8 @@ class panelPlugin:
             # if os.path.exists(pluginInfo['install_checks']):
             #     public.write_log_gettext('Installer','Successfully installed plugin [{}]',(pluginInfo['title'],))
             #     if os.path.exists(toFile): os.remove(toFile)
-            #     return public.return_msg_gettext(True,'Installation succeeded!')
-            # return public.return_msg_gettext(False,'Installation failed')
+            #     return public.return_msg_gettext(True, public.lang("Installation succeeded!"))
+            # return public.return_msg_gettext(False, public.lang("Installation failed"))
 
             if hasattr(get, 'min_version'):
                 get.version += '.' + get.min_version
@@ -318,14 +319,14 @@ class panelPlugin:
         #     get.version = '.'.join(str(get.version).split('.')[:2])
 
         mtype = 'install'
-        mmsg = public.get_msg_gettext('Install')
+        mmsg = public.lang("Install")
         if hasattr(get, 'upgrade'):
             mtype = 'update'
             mmsg = 'upgrade'
         if not 'type' in get: get.type = '0'
         if int(get.type) > 4: get.type = '0'
         if get.sName == 'nginx':
-            if get.version == '1.8': return public.return_msg_gettext(False,'Nginx 1.8.1 is too old, no longer available, please choose another version!')
+            if get.version == '1.8': return public.return_msg_gettext(False, public.lang("Nginx 1.8.1 is too old, no longer available, please choose another version!"))
         if get.sName.find('php-') != -1:get.sName = get.sName.split('-')[0]
         ols_execstr = ""
         if "php" == get.sName and os.path.exists('/usr/local/lsws/bin/lswsctrl'):
@@ -364,12 +365,12 @@ class panelPlugin:
         cache.delete('install_task')
         public.writeFile('/tmp/panelTask.pl','True')
         public.write_log_gettext('Installer','Successfully added intallation task [{}-{}]',(get.sName,get.version))
-        return public.return_msg_gettext(True,'Installation task added to queue')
+        return public.return_msg_gettext(True, public.lang("Installation task added to queue"))
 
     #卸载插件
     def uninstall_plugin(self,get):
         pluginInfo = self.get_soft_find(get.sName)
-        if not pluginInfo: return public.return_msg_gettext(False,'The specified plugin does not exist!')
+        if not pluginInfo: return public.return_msg_gettext(False, public.lang("The specified plugin does not exist!"))
         if pluginInfo['type'] != 5:
             pluginPath = self.__install_path + '/' + pluginInfo['name']
             if pluginInfo['type'] != 6:
@@ -387,11 +388,11 @@ class panelPlugin:
 
             if os.path.exists(pluginPath): public.ExecShell('rm -rf ' + pluginPath)
             public.write_log_gettext('Installer','Successfully uninstalled software [{}]',(pluginInfo['title'],))
-            return public.return_msg_gettext(True,'Uninstallaton succeeded')
+            return public.return_msg_gettext(True, public.lang("Uninstallaton succeeded"))
         else:
 
             if pluginInfo['name'] == 'mysql':
-                if public.M('databases').where('db_type=?',0).count() > 0: return public.return_msg_gettext(False,'The database list is not empty. For your data security, please backup and delete the existing database.<br>Forced uninstall command: rm -rf /www/server/mysql')
+                if public.M('databases').where('db_type=?',0).count() > 0: return public.return_msg_gettext(False, public.lang("The database list is not empty. For your data security, please backup and delete the existing database.<br>Forced uninstall command: rm -rf /www/server/mysql"))
             if pluginInfo['name'] == 'nginx':
                 import nginx
                 nginx.nginx().del_all_log_format(get)
@@ -406,7 +407,7 @@ class panelPlugin:
             execstr = "cd /www/server/panel/install && /bin/bash install_soft.sh "+get.type+" uninstall " + get.sName.lower() + " "+ get.version.replace('.','')
             public.ExecShell(execstr)
             public.write_log_gettext('Installer','Successfully unintalled [{}-{}]',(get.sName,get.version))
-            return public.return_msg_gettext(True,"Uninstallation succeeded")
+            return public.return_msg_gettext(True, public.lang("Uninstallation succeeded"))
 
     #从云端取列表
     def get_cloud_list(self, get=None):
@@ -574,14 +575,14 @@ class panelPlugin:
             pdata['ps'] = args.ps
             pdata['num'] = int(args.num)
             pdata['pid'] = int(args.pid)
-            if 1< pdata['num'] >5: return public.return_msg_gettext(False,'Scoring range [1-5]')
-            if not pdata['pid']: return public.return_msg_gettext(False,'The specified plugin does not exist!')
+            if 1< pdata['num'] >5: return public.return_msg_gettext(False, public.lang("Scoring range [1-5]"))
+            if not pdata['pid']: return public.return_msg_gettext(False, public.lang("The specified plugin does not exist!"))
 
             result = public.httpPost(public.GetConfigValue('home') + '/api/panel/plugin_score',pdata,10)
             result = json.loads(result)
             return result
         except:
-            return public.return_msg_gettext(False,'Connection failure!')
+            return public.return_msg_gettext(False, public.lang("Connection failure!"))
 
     #获取指定插件评分
     def get_score(self,args):
@@ -604,7 +605,7 @@ class panelPlugin:
             result = json.loads(result)
             return result
         except:
-            return public.return_msg_gettext(False,'Connection failure!')
+            return public.return_msg_gettext(False, public.lang("Connection failure!"))
 
     #清除多余面板日志
     def clean_panel_log(self):
@@ -784,7 +785,7 @@ class panelPlugin:
         if not softList:
             get.force = 1
             softList = self.get_cloud_list(get)
-            if not softList: return public.return_msg_gettext(False,'Failed to get software list ({})',"401")
+            if not softList: return public.return_msg_gettext(False,public.lang('Failed to get software list ({})',"401"))
         softList['list'] = self.set_coexist(softList['list'])
         if not 'type' in get: get.type = '0'
         if get.type == '-1':
@@ -806,11 +807,6 @@ class panelPlugin:
             if public.readFile(check_version_path).find('2.2') == 0:
                 softList['apache22'] = True
                 softList['apache24'] = False
-        if os.path.exists('/www/server/nginx/conf/nginx.conf'):
-            import one_key_wp
-            one_key_wp.fast_cgi().set_nginx_conf()
-            one_key_wp.fast_cgi().set_nginx_init()
-            public.ExecShell("/etc/init.d/nginx reload")
         return softList
 
     #取首页软件列表
@@ -819,7 +815,7 @@ class panelPlugin:
         if not softList:
             get.force = 1
             softList = self.get_cloud_list(get)['list']
-            if not softList: return public.return_msg_gettext(False,'Failed to get software list ({})',"401")
+            if not softList: return public.return_msg_gettext(False,public.lang('Failed to get software list ({})',"401"))
         softList = self.set_coexist(softList)
         if not os.path.exists(self.__index): public.writeFile(self.__index,'[]')
         try:
@@ -841,7 +837,7 @@ class panelPlugin:
         sName = get.sName
         if not os.path.exists(self.__index): public.writeFile(self.__index,'[]')
         indexList = json.loads(public.ReadFile(self.__index))
-        if sName in indexList: return public.return_msg_gettext(False,'Please do NOT repeat adding')
+        if sName in indexList: return public.return_msg_gettext(False, public.lang("Please do NOT repeat adding"))
         if len(indexList) >= 12:
             softList = self.get_cloud_list(get)['list']
             softList = self.set_coexist(softList)
@@ -857,10 +853,10 @@ class panelPlugin:
                     new_softInfo = self.check_status(softInfo)
                     if not new_softInfo['setup']: indexList.remove(softInfo['name'])
             public.writeFile(self.__index,json.dumps(indexList))
-            if len(indexList) >= 12: return public.return_msg_gettext(False,'Dashboard only display up to 12 software!')
+            if len(indexList) >= 12: return public.return_msg_gettext(False, public.lang("Dashboard only display up to 12 software!"))
         indexList.append(sName)
         public.writeFile(self.__index,json.dumps(indexList))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     #删除首页
     def remove_index(self,get):
@@ -868,16 +864,16 @@ class panelPlugin:
         indexList = []
         if not os.path.exists(self.__index): public.writeFile(self.__index,'[]')
         indexList = json.loads(public.ReadFile(self.__index))
-        if not sName in indexList: return public.return_msg_gettext(True,'Successfully deleted!')
+        if not sName in indexList: return public.return_msg_gettext(True, public.lang("Successfully deleted!"))
         indexList.remove(sName)
         public.writeFile(self.__index,json.dumps(indexList))
-        return public.return_msg_gettext(True,'Successfully deleted!')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted!"))
 
     #设置排序
     def sort_index(self,get):
         indexList = get.ssort.split('|')
         public.writeFile(self.__index,json.dumps(indexList))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     #取快捷软件列表
     def get_link_list(self,get=None):
@@ -895,27 +891,27 @@ class panelPlugin:
     def add_link(self,get):
         sName = get.sName
         indexList = json.loads(public.ReadFile(self.__link))
-        if sName in indexList: return public.return_msg_gettext(False,'Please do NOT repeat adding')
-        if len(indexList) >= 5: return public.return_msg_gettext(False,'Shortcut Bar only display up to 5 software!')
+        if sName in indexList: return public.return_msg_gettext(False, public.lang("Please do NOT repeat adding"))
+        if len(indexList) >= 5: return public.return_msg_gettext(False, public.lang("Shortcut Bar only display up to 5 software!"))
         indexList.append(sName)
         public.writeFile(self.__link,json.dumps(indexList))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     #删除快捷栏
     def remove_link(self,get):
         sName = get.sName
         indexList = []
         indexList = json.loads(public.ReadFile(self.__link))
-        if sName in indexList: return public.return_msg_gettext(True,'Successfully deleted!')
+        if sName in indexList: return public.return_msg_gettext(True, public.lang("Successfully deleted!"))
         indexList.remove(sName)
         public.writeFile(self.__link,json.dumps(indexList))
-        return public.return_msg_gettext(True,'Successfully deleted!')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted!"))
 
     #设置快捷栏排序
     def sort_link(self,get):
         indexList = get.ssort.split('|')
         public.writeFile(self.__link,json.dumps(indexList))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
 
 
@@ -1456,8 +1452,8 @@ class panelPlugin:
             if self.checksSetup(pluginInfo['name'],pluginInfo['checks'],pluginInfo['versions'])[0]['status'] or os.path.exists(self.__install_path + '/' + get.name):
                 public.write_log_gettext('Installer','Successfully installed plugin [{}]',(pluginInfo['title'],))
                 #public.ExecShell('rm -f ' + toFile);
-                return public.return_msg_gettext(True,'Installation succeeded!')
-            return public.return_msg_gettext(False,'Installation failed!')
+                return public.return_msg_gettext(True, public.lang("Installation succeeded!"))
+            return public.return_msg_gettext(False, public.lang("Installation failed!"))
         else:
             import db,time
             path = '/www/server/php'
@@ -1487,7 +1483,7 @@ class panelPlugin:
             sql.table('tasks').add('id,name,type,status,addtime,execstr',(None, mmsg + '['+get.name+'-'+get.version+']','execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
             public.writeFile(isTask,'True')
             public.write_log_gettext('Installer','Successfully added intallation task [{}-{}]',(get.name,get.version))
-            return public.return_msg_gettext(True,'Installation task added to queue')
+            return public.return_msg_gettext(True, public.lang("Installation task added to queue"))
 
 
     #卸载插件
@@ -1516,7 +1512,7 @@ class panelPlugin:
                 public.ExecShell('rm -rf ' + pluginPath)
 
             public.write_log_gettext('Installer','Successfully uninstalled software [{}]',(pluginInfo['title'],))
-            return public.return_msg_gettext(True,"Uninstallation succeeded")
+            return public.return_msg_gettext(True, public.lang("Uninstallation succeeded"))
         else:
             get.type = '0'
             issue = public.readFile('/etc/issue')
@@ -1525,7 +1521,7 @@ class panelPlugin:
             execstr = "cd /www/server/panel/install && /bin/bash install_soft.sh "+get.type+" uninstall " + get.name.lower() + " "+ get.version.replace('.','')
             public.ExecShell(execstr)
             public.WriteLog('TYPE_SETUP','Successfully uninstalled [{}-{}]',(get.name,get.version))
-            return public.returnMsg(True,"Uninstallation succeeded")
+            return public.returnMsg(True, public.lang("Uninstallation succeeded"))
 
     #取产品信息
     def getProductInfo(self,productName):
@@ -1543,15 +1539,15 @@ class panelPlugin:
             import panelAuth
             Auth = panelAuth.panelAuth()
             tmp = Auth.get_plugin_list(None)
-            if not tmp: return public.get_msg_gettext('NOT opened')
-            if not 'data' in tmp: return public.get_msg_gettext('NOT opened')
+            if not tmp: return public.lang("NOT opened")
+            if not 'data' in tmp: return public.lang("NOT opened")
             self.__plugin_list = tmp['data']
         for pluinfo in self.__plugin_list:
             if pluinfo['product'] == pluginName:
-                if not pluinfo['endtime'] or not pluinfo['state']: return public.get_msg_gettext('To be paid')
-                if pluinfo['endtime'] < time.time(): return public.get_msg_gettext('Expired')
+                if not pluinfo['endtime'] or not pluinfo['state']: return public.lang("To be paid")
+                if pluinfo['endtime'] < time.time(): return public.lang("Expired")
                 return time.strftime("%Y-%m-%d",time.localtime(pluinfo['endtime']));
-        return public.get_msg_gettext('NOT opened')
+        return public.lang("NOT opened")
 
     #取插件列表
     def getPluginList(self,get):
@@ -1631,7 +1627,7 @@ class panelPlugin:
             for n in range(l):
                 if data[n]['pid'] == int(ssort[i]): data[n]['sort'] = i
         public.writeFile(self.__list,json.dumps(data))
-        return public.return_msg_gettext(True,'Sort saved')
+        return public.return_msg_gettext(True, public.lang("Sort saved"))
 
     #检查是否安装
     def checksSetup(self,name,checks,vers = ''):
@@ -1982,7 +1978,7 @@ class panelPlugin:
     #获取配置模板
     def getConfigHtml(self,get):
         filename = self.__install_path + '/' + get.name + '/index.html'
-        if not os.path.exists(filename): return public.return_msg_gettext(False,'This plugin does NOT have template!')
+        if not os.path.exists(filename): return public.return_msg_gettext(False, public.lang("This plugin does NOT have template!"))
         mimetype = 'text/html'
         cache_time = 0 if public.is_debug() else 86400
         self.plugin_open_total(get.name)
@@ -2137,7 +2133,7 @@ class panelPlugin:
                 self.SetField(get.name, 'display', int(get.status))
         else:
             self.SetField(get.name, 'display', int(get.status))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     #从云端获取插件列表
     def getCloudPlugin(self,get):
@@ -2183,12 +2179,12 @@ class panelPlugin:
         self.getCloudPHPExt(get)
         self.GetCloudWarning(get)
         session['getCloudPlugin'] = True
-        return public.return_msg_gettext(True,'Software list updated!')
+        return public.return_msg_gettext(True, public.lang("Software list updated!"))
 
     #刷新缓存
     def flush_cache(self,get):
         self.getCloudPlugin(None)
-        return public.return_msg_gettext(True,'Software list updated!')
+        return public.return_msg_gettext(True, public.lang("Software list updated!"))
 
     #获取PHP扩展
     def getCloudPHPExt(self,get=None):
@@ -2268,7 +2264,7 @@ class panelPlugin:
             os.makedirs(tmp_path,mode=384)
 
         if tmp_file:
-            if not os.path.exists(tmp_file): return public.return_msg_gettext(False,'File download failed!')
+            if not os.path.exists(tmp_file): return public.return_msg_gettext(False, public.lang("File download failed!"))
 
 
         if get:
@@ -2303,7 +2299,7 @@ class panelPlugin:
             except:
                 data = json.loads(public.ReadFile(p_info).decode('utf-8-sig'))
             data['size'] = public.get_path_size(tmp_path)
-            if not 'author' in data: data['author'] = public.get_msg_gettext('Unknown')
+            if not 'author' in data: data['author'] = public.lang("Unknown")
             if not 'home' in data: data['home'] = 'https://www.bt.cn/bbs/forum-40-1.html'
 
             plugin_path = '/www/server/panel/plugin/' + data['name'] + '/info.json'
@@ -2316,14 +2312,14 @@ class panelPlugin:
                 except:pass
         except:
             public.ExecShell("rm -rf " + tmp_path + '/*')
-            return public.return_msg_gettext(False,'No plugin info found in the archive, please check the plugin package!')
+            return public.return_msg_gettext(False, public.lang("No plugin info found in the archive, please check the plugin package!"))
 
         data['update'] = update
         return data
 
     #导入插件包
     def input_zip(self,get):
-        if not os.path.exists(get.tmp_path): return public.return_msg_gettext(False,'TEM_FILE_NOT_EXIST!')
+        if not os.path.exists(get.tmp_path): return public.return_msg_gettext(False, public.lang("Temporary file does NOT exist, please re-upload!"))
         plugin_path = '/www/server/panel/plugin/' + get.plugin_name
         if not os.path.exists(plugin_path): os.makedirs(plugin_path)
         public.ExecShell(r"\cp -a -r " + get.tmp_path + '/* ' + plugin_path + '/')
@@ -2341,22 +2337,22 @@ class panelPlugin:
                 shutil.copyfile(icon_sfile,icon_dfile)
             #----- 增加图标复制 END -----#
             public.write_log_gettext('Software manager','Installed third-party plugin [{}]' ,(json.loads(p_info)['title'],))
-            return public.return_msg_gettext(True,'Installation succeeded!')
+            return public.return_msg_gettext(True, public.lang("Installation succeeded!"))
         public.ExecShell("rm -rf " + plugin_path)
-        return public.return_msg_gettext(False,'Installation failed')
+        return public.return_msg_gettext(False, public.lang("Installation failed"))
 
 
     #导出插件包
     def export_zip(self,get):
         plugin_path = '/www/server/panel/plugin/' + get.plugin_name
-        if not os.path.exists(plugin_path): return public.return_msg_gettext(False,'The specified plugin does not exist!')
+        if not os.path.exists(plugin_path): return public.return_msg_gettext(False, public.lang("The specified plugin does not exist!"))
 
         get.sfile = plugin_path + '/'
         get.dfile = '/www/server/panel/temp/bt_plugin_' + get.plugin_name + '.zip'
         get.type = 'zip'
         import files
         files.files().Zip(get)
-        if not os.path.exists(get.dfile): return public.return_msg_gettext(False,'Export failed, please check permissions!')
+        if not os.path.exists(get.dfile): return public.return_msg_gettext(False, public.lang("Export failed, please check permissions!"))
         return public.return_msg_gettext(True,get.dfile)
 
 
@@ -2395,7 +2391,7 @@ class panelPlugin:
         get.name = get.name.strip()
         get.ps = get.ps.strip()
         if not re.match(r'^\w+$',get.args_name):
-            return public.return_msg_gettext(False,'Non-compliant names can only be numbers, letters, underscores')
+            return public.return_msg_gettext(False, public.lang("Non-compliant names can only be numbers, letters, underscores"))
 
         config_path = os.path.join('install' , get.name , get.args_name)
         if not os.path.exists(config_path):
@@ -2409,17 +2405,17 @@ class panelPlugin:
         public.writeFile(ps_file,get.ps)
 
         public.write_log_gettext('Software manager','Add custom compilation parameters: {}:{}',(get.name,get.args_name))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     #删除编译参数
     def del_make_args(self,get):
         get.args_name = get.args_name.strip()
         get.name = get.name.strip()
         if not re.match(r'^\w+$',get.args_name):
-            return public.return_msg_gettext(False,'Non-compliant names can only be numbers, letters, underscores')
+            return public.return_msg_gettext(False, public.lang("Non-compliant names can only be numbers, letters, underscores"))
         config_path = os.path.join('install' , get.name , get.args_name)
         if not os.path.exists(config_path):
-            return public.return_msg_gettext(False,'The specified custom compilation parameters do not exist!')
+            return public.return_msg_gettext(False, public.lang("The specified custom compilation parameters do not exist!"))
         public.ExecShell("rm -rf {}".format(config_path))
         config_file = 'install/' + get.name + '/config.pl'
         if os.path.exists(config_file):
@@ -2428,7 +2424,7 @@ class panelPlugin:
                 config_data.remove(get.args_name)
                 public.writeFile(config_file,"\n".join(config_data))
         public.write_log_gettext('Software manager','Remove custom compilation parameters: {}:{}',(get.name,get.args_name))
-        return public.return_msg_gettext(True,'Successfully deleted')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted"))
 
 
     #设置当前编译参数
@@ -2444,7 +2440,7 @@ class panelPlugin:
             config_data.append(args_name)
         public.writeFile(config_file,"\n".join(config_data))
         public.write_log_gettext('Software manager','Setup software: Custom compilation parameters for {} are configured as: {}'.format(get.name,config_data))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     # 安装插件
     def __install_plugin(self, upgrade_plugin_name, upgrade_version=None):
@@ -2458,9 +2454,9 @@ class panelPlugin:
         self.__plugin_name = upgrade_plugin_name
         plugin_info = self.__get_plugin_find(upgrade_plugin_name)
         if not plugin_info:
-            raise public.PanelError('指定插件不存在,无法安装!')
+            raise public.PanelError('Plugin not found')
         if not plugin_info['versions']:
-            raise public.PanelError('指定插件当前未发布版本信息,请稍候再安装!')
+            raise public.PanelError('Not available versions for this plugin')
         if not upgrade_version:
             upgrade_version = '{}.{}'.format(
                 plugin_info['versions'][0]['m_version'],
@@ -2621,7 +2617,7 @@ class panelPlugin:
 
         if tmp_file:
             if not os.path.exists(tmp_file):
-                return public.returnMsg(False, '文件下载失败!')
+                return public.returnMsg(False, public.lang("File download failed!"))
             import panelTask as plu_panelTask
             plu_panelTask.bt_task()._unzip(tmp_file, s_tmp_path, '',
                                            '/dev/null')
@@ -2652,7 +2648,7 @@ class panelPlugin:
             if not 'author' in plugin_data_info:
                 plugin_data_info['author'] = 'aapanel'
             if not 'home' in plugin_data_info:
-                plugin_data_info['home'] = 'https://www.aapanel.com'
+                plugin_data_info['home'] = '{}'.format(public.OfficialApiBase())
 
             p_info_file = self.__plugin_path + plugin_data_info[
                 'name'] + '/info.json'
@@ -2690,14 +2686,14 @@ class panelPlugin:
             if public.get_sysbit() == int(plugin_data_info['not_os_bit']):
                 return public.returnMsg(
                     False,
-                    '该应用不支持{}位系统'.format(plugin_data_info['not_os_bit']))
+                    'Not supported for {}bit systems.'.format(plugin_data_info['not_os_bit']))
         if 'not_cpu_type' in plugin_data_info:
             if not plugin_data_info['not_cpu_type']: return None
             machine = os.uname().machine
             for c_type in plugin_data_info['not_cpu_type']:
                 c_type = c_type.lower()
                 result = public.returnMsg(
-                    False, '该应用不支持{}平台,{}'.format(c_type, machine))
+                    False, 'Not supported for {},{}'.format(c_type, machine))
                 if c_type in ['arm', 'aarch64', 'aarch']:
                     if machine in ['aarch64', 'aarch']:
                         return result
@@ -2749,21 +2745,21 @@ class panelPlugin:
                 str_ex = str(ex)
                 if 'Name or service not known' in str_ex:
                     return public.returnMsg(False,
-                                            '下载软件包时DNS解析失败，请检查服务器网络配置是否正常: <p>Error: Name or service not known</p>')
+                                            public.lang('Error: Name or service not known'))
                 elif 'Failed to establish a new connection' in str_ex:
                     return public.returnMsg(False,
-                                            '连接下载节点失败，请尝试到【面板设置】页面切换通讯节点，或检查服务器网络是否正常: <p>Error: Failed to establish a new connection</p>')
+                                            public.lang('Error: Failed to establish a new connection'))
                 elif 'Read timed out' in str_ex:
                     return public.returnMsg(False,
-                                            '连接下载节点失败，请尝试到【面板设置】页面切换通讯节点，或检查服务器网络是否正常: <p>Error: Read timed out</p>')
+                                            public.lang('Error: Read timed out'))
                 elif 'Connection refused' in str_ex:
                     return public.returnMsg(False,
-                                            '连接下载节点失败，请尝试到【面板设置】页面切换通讯节点，或检查服务器网络是否正常: <p>Error: Connection refused</p>')
+                                            public.lang('Error: Connection refused'))
                 elif 'Remote end closed connection without response' in str_ex:
                     return public.returnMsg(False,
-                                            '连接下载节点失败，请尝试到【面板设置】页面切换通讯节点，或检查服务器网络是否正常: <p>Error: Remote end closed connection without response</p>')
+                                            public.lang('Error: Remote end closed connection without response'))
                 else:
-                    return public.returnMsg(False, '连接下载节点失败，请尝试到【面板设置】页面切换通讯节点，或检查服务器网络是否正常: <p>Error: {}</p>'.format(str_ex))
+                    return public.returnMsg(False, public.lang('Error: {}',str_ex))
             finally:
                 urllib3_conn.allowed_gai_family = old_family
 
@@ -2800,15 +2796,15 @@ class panelPlugin:
                 except Exception as ex:
                     ex_str = str(ex)
                     if "Read timed out" in ex_str:
-                        return public.returnMsg(False, '软件包下载超时，请重试: {}'.format(ex_str))
+                        return public.returnMsg(False, public.lang('Download timeout: {}',ex_str))
                     if "No space left on device" in ex_str:
-                        return public.returnMsg(False, "磁盘空间不足，请先清理后再试！")
+                        return public.returnMsg(False, public.lang('No available disk space.'))
                 finally:
                     with_res_f.close()
             if cache.get(pkey): cache.delete(pkey)
 
             if public.FileMd5(filename) != download_res.headers['Content-md5']:
-                return public.returnMsg(False, '软件包校验失败，请更新软件列表，并重试')
+                return public.returnMsg(False,  public.lang('Verify package checksum failed.'))
         else:
             while True:
                 time.sleep(1)
@@ -2827,7 +2823,7 @@ class panelPlugin:
         pkey = '{}_pre'.format(upgrade_plugin_name)
         pre_text = cache.get(pkey)
         if not pre_text:
-            return public.returnMsg(False, '指定进度信息不存在!')
+            return public.returnMsg(False, public.lang('Cannot get progress bar for this plugin.'))
         result = {"status": True}
         pre_tmp = pre_text.split('/')
         result['down_size'], result['total_size'] = (int(pre_tmp[0]),

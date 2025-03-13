@@ -149,7 +149,7 @@ class main :#line:1
         O00O000OOOOOOO000 ="/bin/bash /www/server/panel/install/install_soft.sh 0 install docker_install_en"#line:183
         public .M ('tasks').add ('id,name,type,status,addtime,execstr',(None ,O000O000O0OO00O00 ,'execshell','0',time .strftime ('%Y-%m-%d %H:%M:%S'),O00O000OOOOOOO000 ))#line:184
         public .httpPost (public .GetConfigValue ('home')+'/api/panel/plugin_total',{"pid":"1111111",'p_name':"Docker商用模块"},3 )#line:185
-        public.arequests('post', 'https://www.aapanel.com/api/setupCount/setupPlugin',
+        public.arequests('post', '{}/api/setupCount/setupPlugin'.format(public.OfficialApiBase()),
                          data={"pid": "1111111", 'p_name': "Dockerpaymodel"}, timeout=3)
 
         return public .returnMsg (True ,"Install task added to queue!")#line:186

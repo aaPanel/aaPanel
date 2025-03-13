@@ -505,7 +505,7 @@ define(['require', 'exports', './snabbdom', './public/public', './panelConfig', 
 									'span',
 									null,
 									'I already understand, ',
-									this.$link({ title: 'How to release the port?', href: 'https://forum.aapanel.com/d/599-how-to-release-the-aapanel-port' })
+									this.$link({ title: 'How to release the port?', href: 'https://www.aapanel.com/forum/d/599-how-to-release-the-aapanel-port' })
 								),
 								model: 'agreement',
 								id: 'checkPanelPort',

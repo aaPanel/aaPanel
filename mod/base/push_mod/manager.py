@@ -7,7 +7,9 @@ from .mods import TaskTemplateConfig, TaskConfig, SenderConfig, TaskRecordConfig
 from .system import PushSystem
 from mod.base import json_response
 
-
+import sys
+sys.path.insert(0, "/www/server/panel/class/")
+import public
 class PushManager:
 
     def __init__(self):
@@ -27,9 +29,9 @@ class PushManager:
         result = {}
         sender = task.get("sender", None)
         if sender is None:
-            return "未设置告警通道"
+            return "No alarm channel is configured"
         if not isinstance(sender, list):
-            return "告警通道设置错误"
+            return "The alarm channel is incorrect"
 
         new_sender = []
         for i in sender:
@@ -40,12 +42,12 @@ class PushManager:
                 new_sender.append(i)
             if sender_conf["sender_type"] not in template["send_type_list"]:
                 if sender_conf["sender_type"] == "sms":
-                    return "不支持短信告警"
-                return "不支持的告警方式:{}".format(sender_conf['data']["title"])
+                    return "SMS alerts are not supported"
+                return "Unsupported alerting methods:{}".format(sender_conf['data']["title"])
             if not sender_conf["used"]:
                 if sender_conf["sender_type"] == "sms":
-                    return "短信告警通道已关闭"
-                return "已关闭的告警方式:{}".format(sender_conf['data']["title"])
+                    return "The SMS alert channel has been closed"
+                return "Closed alert mode:{}".format(sender_conf['data']["title"])
 
         result["sender"] = new_sender
 
@@ -64,31 +66,31 @@ class PushManager:
 
         if "send_interval" in time_rule:
             if not isinstance(time_rule["send_interval"], int):
-                return "最小间隔时间设置错误"
+                return "The minimum interval is set incorrectly"
             if time_rule["send_interval"] < 0:
-                return "最小间隔时间设置错误"
+                return "The minimum interval is set incorrectly"
 
         if "time_range" in time_rule:
             if not isinstance(time_rule["time_range"], list):
-                return "时间范围设置错误"
+                return "The time range is set incorrectly"
             if not len(time_rule["time_range"]) == 2:
                 del time_rule["time_range"]
             else:
                 time_range = time_rule["time_range"]
                 if not (isinstance(time_range[0], int) and isinstance(time_range[1], int) and
                         0 <= time_range[0] < time_range[1] <= 60 * 60 * 24):
-                    return "时间范围设置错误"
+                    return "The time range is set incorrectly"
 
         result["time_rule"] = time_rule
 
         number_rule = task.get("number_rule", {})
         if "day_num" in number_rule:
             if not (isinstance(number_rule["day_num"], int) and number_rule["day_num"] >= 0):
-                return "每日最小次数设置错误"
+                return "The minimum number of times per day is set incorrectly"
 
         if "total" in number_rule:
             if not (isinstance(number_rule["total"], int) and number_rule["total"] >= 0):
-                return "最大告警次数设置错误"
+                return "The maximum number of alarms is set incorrectly"
 
         result["number_rule"] = number_rule
 
@@ -112,8 +114,9 @@ class PushManager:
                 target_task_conf = tmp
 
         template = self.template_conf.get_by_id(template_id)
+
         if not template:
-            return "未查询到告警模板"
+            return "No alarm template was found"
 
         if template["unique"] and not target_task_conf:
             for i in self.task_conf.config:
@@ -123,7 +126,20 @@ class PushManager:
 
         task_obj = PushSystem().get_task_object(template_id, template["load_cls"])
         if not task_obj:
-            return "加载任务类型错误，您可以尝试修复面板"
+            return "Loading task type error, you can try to fix the panel"
+
+        # {'id': '4', 'ver': '1', 'used': True, 'source': 'ssh_login_error', 'title': 'SSH login failure alarm',
+        #  'load_cls': {'load_type': 'path', 'cls_path': 'mod.base.push_mod.site_push', 'name': 'SSHLoginErrorTask'},
+        #  'template': {'field': [{'attr': 'cycle', 'name': 'Trigger conditions', 'type': 'number', 'unit': 'minute(s)',
+        #                          'suffix': 'less than  ', 'default': 30},
+        #                         {'attr': 'count', 'name': 'Login failed', 'type': 'number', 'unit': 'time(s)',
+        #                          'suffix': '', 'default': 3},
+        #                         {'attr': 'interval', 'name': 'Interval', 'type': 'number', 'unit': 'second(s)',
+        #                          'suffix': 'more than  ', 'default': 600}],
+        #               'sorted': [['cycle', 'count'], ['interval']]},
+        #  'default': {'cycle': 30, 'count': 3, 'interval': 600},
+        #  'advanced_default': {'number_rule': {'day_num': 3}, 'time_rule': {'send_interval': 600}},
+        #  'send_type_list': ['wx_account', 'dingding', 'feishu', 'mail', 'weixin', 'webhook'], 'unique': True}
 
         res = self.normalize_task_config(task, template)
         if isinstance(res, str):
@@ -177,6 +193,37 @@ class PushManager:
 
         return None
 
+    def update_task_status(self, get):
+        # 先调用 set_task_conf 修改任务配置
+        set_conf_response = self.set_task_conf(get)
+
+        if set_conf_response['status'] != 0:
+            return set_conf_response  # 返回错误信息
+
+
+        # 读取任务数据
+        file_path = '{}/data/mod_push_data/task.json'.format(public.get_panel_path())
+        try:
+            with open(file_path, 'r') as file:
+                tasks = json.load(file)
+        except (IOError, json.JSONDecodeError):
+            return json_response(status=False, msg=public.lang("Unable to read task data."))
+        # 查找对应的 task_id
+        task_title = get.title.strip()  # 假设 get 中有 title 参数
+        task_id = None
+
+        for task in tasks:
+            if task.get('title') == task_title:
+                task_id = task.get('id')
+                break
+
+        if not task_id:
+            return json_response(status=False, msg=public.lang("The task has not been found."))
+
+        # 调用 change_task_conf 修改任务状态
+        get.task_id = task_id
+        return self.change_task_conf(get)
+
     def set_task_conf(self, get):
         task_id = None
         try:
@@ -189,7 +236,7 @@ class PushManager:
             template_id = get.template_id.strip()
             task = json.loads(get.task_data.strip())
         except (AttributeError, json.JSONDecodeError, TypeError, ValueError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="The parameter is incorrect")
         push_data = {
             "task_id": task_id,
             "template_id": template_id,
@@ -267,32 +314,139 @@ class PushManager:
         #     task_obj.task_config_update_hook(target_task_conf)
         #
         # self.task_conf.save_config()
-        return json_response(status=True, msg="告警任务保存成功")
+        return json_response(status=True, msg="The alarm task is saved successfully")
 
     def change_task_conf(self, get):
         try:
             task_id = get.task_id.strip()
-        except AttributeError:
-            return json_response(status=False, msg="参数错误")
+            status = int(get.status)  # 获取status字段并转换为整数
+        except (AttributeError, ValueError):
+            return json_response(status=False, msg="Parameter error")
+
+        if status not in [0, 1]:
+            return json_response(status=False, msg="Invalid status value")
 
         tmp = self.task_conf.get_by_id(task_id)
         if tmp is None:
-            return json_response(status=True, msg="为查询到告警任务")
+            return json_response(status=True, msg="No alarm task was queried")
 
-        tmp["status"] = not tmp["status"]
+        tmp["status"] = bool(status)  # 将status转换为布尔值并设置
 
         self.task_conf.save_config()
-        return json_response(status=True, msg="操作成功")
+        return json_response(status=True, msg="operate successfully")
+
+    def update_ssl_task(self, get):
+        import sys
+        sys.path.insert(0, "/www/server/panel/class/")
+        import public
+
+        """
+        根据前端发送的参数，修改对应任务的配置
+        :param file_path: JSON文件的路径
+        :param task_id: 需要修改的任务ID
+        :param update_data: 前端发送的更新数据
+        :return: 修改结果
+        """
+
+        def load_task_data():
+            try:
+                file_path = f'{public.get_panel_path()}/data/mod_push_data/task.json'
+                return json.loads(public.readFile(file_path))
+            except:
+                return []
+
+        def save_task_data(data):
+            file_path = f'{public.get_panel_path()}/data/mod_push_data/task.json'
+            with open(file_path, 'w') as file:
+                json.dump(data, file, indent=4)
+
+        def find_task(data, project):
+            for task in data:
+                if task.get('source') == 'site_ssl' and task.get('task_data', {}).get('project') == project:
+                    return task
+            return None
+
+        try:
+            task_id = get.task_id
+            update_data = json.loads(get.task_data)
+
+            if not update_data.get('sender'):
+                return {'status': False, 'msg': 'Set the alert notification method！'}
+
+            status = int(get.status)
+            project = update_data['task_data']['project']
+
+            data = load_task_data()
+
+            if not task_id:
+                return self.set_task_conf(get)
+
+            task = find_task(data, project)
+            if task:
+                get.task_id = task['id']
+            else:
+                get.task_id = ""
+
+            self.set_task_conf(get)
+
+            if status == 0:
+                task_found = False
+                for task in data:
+                    if task.get('source') == 'site_ssl' and task.get('task_data', {}).get('project') == project:
+                        task['status'] = False
+                        task_found = True
+
+                if not task_found:
+                    get.task_id = ""
+                    self.set_task_conf(get)
+                    data = load_task_data()
+                    for task in data:
+                        if task.get('source') == 'site_ssl' and task.get('keyword') == project:
+                            task['status'] = False
+                            break
+
+                save_task_data(data)
+
+            return {'status': True, 'msg': 'operate successfully'}
+
+        except Exception as e:
+            return {'status': False, 'msg': str(e)}
+
+
+    def change_task(self,task_id,status):
+        tmp = self.task_conf.get_by_id(task_id)
+        tmp["status"] = bool(status)  # 将status转换为布尔值并设置
+        self.task_conf.save_config()
+
+
+    def change_ssl_task(self, get):
+        # result = public.M('sites').select()
+        try:
+            task_id = get.task_id.strip()
+            status = int(get.status)  # 获取status字段并转换为整数
+
+        except (AttributeError, ValueError):
+            return json_response(status=False, msg="Parameter error")
+
+        if status not in [0, 1]:
+            return json_response(status=False, msg="Invalid status value")
+        project=get.project
+        try:
+            data = json.loads(public.readFile('{}/data/mod_push_data/task.json'.format(public.get_panel_path())))
+        except:
+            return {'status': False, 'msg': 'file does not exist'}
+        self.process_tasks(data, status, project, task_id, get)
+        return json_response(status=True, msg="operate successfully")
 
     def remove_task_conf(self, get):
         try:
             task_id = get.task_id.strip()
         except AttributeError:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="The parameter is incorrect")
 
         tmp = self.task_conf.get_by_id(task_id)
         if tmp is None:
-            return json_response(status=True, msg="为查询到告警任务")
+            return json_response(status=True, msg="No alarm task was queried")
 
         self.task_conf.config.remove(tmp)
 
@@ -303,7 +457,7 @@ class PushManager:
             if task_obj:
                 task_obj.task_config_remove_hook(tmp)
 
-        return json_response(status=True, msg="操作成功")
+        return json_response(status=True, msg="operate successfully")
 
     @staticmethod
     def clear_task_record_by_task_id(task_id):

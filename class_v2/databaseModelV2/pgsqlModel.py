@@ -233,7 +233,7 @@ class main(databaseBase, panelPgsql):
         '''
 
         check_result = os.system('/www/server/pgsql/bin/psql --version')
-        if check_result != 0 and not public.M('database_servers').where('db_type=?', 'pgsql').count():
+        if check_result != 0 and not public.M('database_servers').where("LOWER(db_type)=LOWER('pgsql')", ()).count():
             # return []
             return public.return_message(0, 0, [])
         # return self.GetBaseCloudServer(args)
@@ -266,13 +266,13 @@ class main(databaseBase, panelPgsql):
         """
         # try:
         if not args.get('name/str', 0):
-            # rreturn public.returnMsg(False, 'Database name cannot be empty!')
-            return public.return_message(-1, 0, 'Database name cannot be empty!')
+            # rreturn public.returnMsg(False, public.lang("Database name cannot be empty!"))
+            return public.return_message(-1, 0, public.lang("Database name cannot be empty!"))
         import re
         test_str = re.search(r"\W", args.name)
         if test_str != None:
-            # rreturn public.returnMsg(False, 'The database name cannot contain special characters')
-            return public.return_message(-1, 0, 'The database name cannot contain special characters')
+            # rreturn public.returnMsg(False, public.lang("The database name cannot contain special characters"))
+            return public.return_message(-1, 0, public.lang("The database name cannot contain special characters"))
         res = self.add_base_database(args)
         if not res['status']:
             # return res
@@ -320,8 +320,8 @@ class main(databaseBase, panelPgsql):
         public.M('databases').add('pid,sid,db_type,name,username,password,accept,ps,addtime,type', (
         pid, self.sid, db_type, data_name, username, password, '127.0.0.1', args['ps'], addTime, dtype))
         public.WriteLog("TYPE_DATABASE", 'DATABASE_ADD_SUCCESS', (data_name,))
-        # return public.returnMsg(True,'ADD_SUCCESS')
-        return public.return_message(0, 0, 'ADD_SUCCESS')
+        # return public.returnMsg(True, public.lang("Added successfully!"))
+        return public.return_message(0, 0, public.lang("Added successfully!"))
         # except Exception as ex:
         #     public.print_log("error info55: {}".format(ex))
         #     return public.return_message(-1, 0, str(ex))
@@ -333,8 +333,8 @@ class main(databaseBase, panelPgsql):
         find = public.M('databases').where("id=?", (id,)).field(
             'id,pid,name,username,password,accept,ps,addtime,db_type,conn_config,sid,type').find();
         if not find:
-            # return public.returnMsg(False,'The specified database does not exist.')
-            return public.return_message(-1, 0, 'The specified database does not exist.')
+            # return public.returnMsg(False, public.lang("The specified database does not exist."))
+            return public.return_message(-1, 0, public.lang("The specified database does not exist."))
 
         name = get['name']
         username = find['username']
@@ -345,8 +345,8 @@ class main(databaseBase, panelPgsql):
         # 删除SQLITE
         public.M('databases').where("id=?", (id,)).delete()
         public.WriteLog("TYPE_DATABASE", 'DATABASE_DEL_SUCCESS', (name,))
-        # return public.returnMsg(True, 'DEL_SUCCESS')
-        return public.return_message(0, 0, 'DEL_SUCCESS')
+        # return public.returnMsg(True, public.lang("Delete successfully!"))
+        return public.return_message(0, 0, public.lang("Delete successfully!"))
 
     def ToBackup(self, args):
         """
@@ -356,19 +356,18 @@ class main(databaseBase, panelPgsql):
 
         find = public.M('databases').where("id=?", (id,)).find()
         if not find:
-            # return public.returnMsg(False,'Database does not exist!')
-            return public.return_message(-1, 0, 'Database does not exist!')
+            # return public.returnMsg(False, public.lang("Database does not exist!"))
+            return public.return_message(-1, 0, public.lang("Database does not exist!"))
 
         if not find['password'].strip():
-            # return public.returnMsg(False,'The database password is empty. Set the password first.')
-            return public.return_message(-1, 0, 'The database password is empty. Set the password first.')
+            # return public.returnMsg(False, public.lang("The database password is empty. Set the password first."))
+            return public.return_message(-1, 0, public.lang("The database password is empty. Set the password first."))
 
         sql_dump = '{}/bin/pg_dump'.format(self.__soft_path)
         # return sql_dump
         if not os.path.isfile(sql_dump):
-            # return public.returnMsg(False,'Lack of backup tools, please first through the software store PGSQL manager!')
-            return public.return_message(-1, 0,
-                                         'Lack of backup tools, please first through the software store PGSQL manager!')
+            # return public.returnMsg(False, public.lang("Lack of backup tools, please first through the software store PGSQL manager!"))
+            return public.return_message(-1, 0, public.lang("Lack of backup tools, please first through the software store PGSQL manager!"))
 
         back_path = session['config']['backup_path'] + '/database/pgsql/'
         # return back_path
@@ -395,19 +394,19 @@ class main(databaseBase, panelPgsql):
 
         ret = public.ExecShell(shell)
         if not os.path.exists(backupName):
-            # return public.returnMsg(False,'BACKUP_ERROR');
-            return public.return_message(-1, 0, 'BACKUP_ERROR')
+            # return public.returnMsg(False, public.lang("Backup error"));
+            return public.return_message(-1, 0, public.lang("Backup error"))
 
         public.M('backup').add('type,name,pid,filename,size,addtime',
                                (1, fileName, id, backupName, 0, time.strftime('%Y-%m-%d %X', time.localtime())))
         public.WriteLog("TYPE_DATABASE", "DATABASE_BACKUP_SUCCESS", (find['name'],))
 
         if os.path.getsize(backupName) < 2048:
-            # return public.returnMsg(True, 'The backup file size is smaller than 2Kb. Check the backup integrity.')
-            return public.return_message(0, 0, 'The backup file size is smaller than 2Kb. Check the backup integrity.')
+            # return public.returnMsg(True, public.lang("The backup file size is smaller than 2Kb. Check the backup integrity."))
+            return public.return_message(0, 0, public.lang("The backup file size is smaller than 2Kb. Check the backup integrity."))
         else:
-            # return public.returnMsg(True, 'BACKUP_SUCCESS')
-            return public.return_message(0, 0, 'BACKUP_SUCCESS')
+            # return public.returnMsg(True, public.lang("Backup Succeeded!"))
+            return public.return_message(0, 0, public.lang("Backup Succeeded!"))
 
     def DelBackup(self, args):
         """
@@ -436,25 +435,24 @@ class main(databaseBase, panelPgsql):
 
         find = public.M('databases').where("name=?", (name,)).find()
         if not find:
-            # return public.returnMsg(False,'Database does not exist!')
-            return public.return_message(-1, 0, 'Database does not exist!')
+            # return public.returnMsg(False, public.lang("Database does not exist!"))
+            return public.return_message(-1, 0, public.lang("Database does not exist!"))
         # return find
         if not find['password'].strip():
-            # return public.returnMsg(False,'The database password is empty. Set the password first.')
-            return public.return_message(-1, 0, 'The database password is empty. Set the password first.')
+            # return public.returnMsg(False, public.lang("The database password is empty. Set the password first."))
+            return public.return_message(-1, 0, public.lang("The database password is empty. Set the password first."))
 
         tmp = file.split('.')
         exts = ['sql']
         ext = tmp[len(tmp) - 1]
         if ext not in exts:
-            # return public.returnMsg(False, 'DATABASE_INPUT_ERR_FORMAT')
-            return public.return_message(-1, 0, 'DATABASE_INPUT_ERR_FORMAT')
+            # return public.returnMsg(False, public.lang("DATABASE_INPUT_ERR_FORMAT"))
+            return public.return_message(-1, 0, public.lang("Select sql、gz、zip file!"))
 
         sql_dump = '{}/bin/psql'.format(self.__soft_path)
         if not os.path.exists(sql_dump):
-            # return public.returnMsg(False,'Lack of recovery tool, please use software management to install PGSQL!')
-            return public.return_message(-1, 0,
-                                         'Lack of recovery tool, please use software management to install PGSQL!')
+            # return public.returnMsg(False, public.lang("Lack of recovery tool, please use software management to install PGSQL!"))
+            return public.return_message(-1, 0, public.lang("Lack of recovery tool, please use software management to install PGSQL!"))
 
         if int(find['sid']):
             info = self.get_info_by_db_id(find['id'])
@@ -473,8 +471,8 @@ class main(databaseBase, panelPgsql):
         ret = public.ExecShell(shell)
 
         public.WriteLog("TYPE_DATABASE", 'Description Succeeded in importing database [{}]'.format(name))
-        # return public.returnMsg(True, 'DATABASE_INPUT_SUCCESS');
-        return public.return_message(0, 0, 'DATABASE_INPUT_SUCCESS')
+        # return public.returnMsg(True, public.lang("DATABASE_INPUT_SUCCESS"));
+        return public.return_message(0, 0, public.lang("Successfully imported database!"))
 
     def SyncToDatabases(self, get):
         """
@@ -501,13 +499,13 @@ class main(databaseBase, panelPgsql):
                 result = self.ToDataBase(find)
                 if result == 1: n += 1
         if n == 1:
-            # return public.returnMsg(True, 'Synchronization succeeded')
-            return public.return_message(0, 0, 'Synchronization succeeded')
+            # return public.returnMsg(True, public.lang("Synchronization succeeded"))
+            return public.return_message(0, 0, public.lang("Synchronization succeeded"))
         elif n == 0:
-            # return public.returnMsg(False, 'Sync failed')
-            return public.return_message(-1, 0,  'Sync failed')
+            # return public.returnMsg(False, public.lang("Sync failed"))
+            return public.return_message(-1, 0, public.lang("Sync failed"))
         # return public.returnMsg(True, 'DATABASE_SYNC_SUCCESS', (str(n),))
-        return public.return_message(0, 0,  'DATABASE_SYNC_SUCCESS {}'.format(n))
+        return public.return_message(0, 0, public.lang("DATABASE_SYNC_SUCCESS {}", n))
 
     def ToDataBase(self, find):
         """
@@ -566,7 +564,7 @@ class main(databaseBase, panelPgsql):
                 'pgsql', self.sid, db_type)): n += 1
 
         # return public.returnMsg(True, 'DATABASE_GET_SUCCESS', (str(n),))
-        return public.return_message(0, 0, 'DATABASE_GET_SUCCESS {}'.format(n))
+        return public.return_message(0, 0, public.lang("DATABASE_GET_SUCCESS {}", n))
 
     def ResDatabasePassword(self, args):
         """
@@ -576,14 +574,14 @@ class main(databaseBase, panelPgsql):
         username = args['name'].strip()
         newpassword = public.trim(args['password'])
         if not newpassword:
-            # return public.returnMsg(False, 'The database password cannot be empty.');
-            return public.return_message(-1, 0, 'The database password cannot be empty')
+            # return public.returnMsg(False, public.lang("The database password cannot be empty."));
+            return public.return_message(-1, 0, public.lang("The database password cannot be empty"))
 
         find = public.M('databases').where("id=?", (id,)).field(
             'id,pid,name,username,password,type,accept,ps,addtime,sid').find()
         if not find:
-            # return public.returnMsg(False, 'Modify the failure，The specified database does not exist.');
-            return public.return_message(-1, 0, 'Modify the failure，The specified database does not exist')
+            # return public.returnMsg(False, public.lang("Modify the failure，The specified database does not exist."));
+            return public.return_message(-1, 0, public.lang("Modify the failure，The specified database does not exist"))
 
         sql_obj = self.get_sql_obj_by_sid(find['sid'])
         result = sql_obj.execute("alter user {} with password '{}';".format(username, newpassword))
@@ -597,7 +595,7 @@ class main(databaseBase, panelPgsql):
 
         public.WriteLog("TYPE_DATABASE", 'DATABASE_PASS_SUCCESS', (find['name'],))
         # return public.returnMsg(True, 'DATABASE_PASS_SUCCESS', (find['name'],))
-        return public.return_message(0, 0, 'DATABASE_PASS_SUCCESS {}'.format(find['name'],))
+        return public.return_message(0, 0, public.lang("DATABASE_PASS_SUCCESS {}", find['name'],))
 
     def get_root_pwd(self, args):
         """
@@ -605,8 +603,8 @@ class main(databaseBase, panelPgsql):
         """
         check_result = os.system('/www/server/pgsql/bin/psql --version')
         if check_result != 0:
-            # return public.returnMsg(False,'If PgSQL is not installed or started, install or start it first')
-            return public.return_message(-1, 0,'If PgSQL is not installed or started, install or start it first')
+            # return public.returnMsg(False, public.lang("If PgSQL is not installed or started, install or start it first"))
+            return public.return_message(-1, 0, public.lang("If PgSQL is not installed or started, install or start it first"))
         password = ''
         path = '{}/data/postgresAS.json'.format(public.get_panel_path())
         if os.path.isfile(path):
@@ -628,12 +626,12 @@ class main(databaseBase, panelPgsql):
         """
         password = public.trim(args['password'])
         if len(password) < 8:
-            # return public.returnMsg(False, 'The password must not be less than 8 digits.')
-            return public.return_message(-1, 0, 'The password must not be less than 8 digits.')
+            # return public.returnMsg(False, public.lang("The password must not be less than 8 digits."))
+            return public.return_message(-1, 0, public.lang("The password must not be less than 8 digits."))
         check_result = os.system('/www/server/pgsql/bin/psql --version')
         if check_result != 0:
-            # return public.returnMsg(False,'If PgSQL is not installed or started, install or start it first')
-            return public.return_message(-1, 0, 'If PgSQL is not installed or started, install or start it first')
+            # return public.returnMsg(False, public.lang("If PgSQL is not installed or started, install or start it first"))
+            return public.return_message(-1, 0, public.lang("If PgSQL is not installed or started, install or start it first"))
         sql_obj = self.get_sql_obj_by_sid('0')
         data = sql_obj.query('SELECT datname FROM pg_database;')
         isError = self.IsSqlError(data)
@@ -644,8 +642,8 @@ class main(databaseBase, panelPgsql):
         path = '{}/data/pg_hba.conf'.format(self.__soft_path)
         p_path = '{}/data/postgresAS.json'.format(public.get_panel_path())
         if not os.path.isfile(path):
-            # return public.returnMsg(False,'{}File does not exist, please check the installation is complete!'.format(path))
-            return public.return_message(-1, 0, '{}File does not exist, please check the installation is complete!'.format(path))
+            # return public.returnMsg(False, public.lang("{}File does not exist, please check the installation is complete!", path))
+            return public.return_message(-1, 0, public.lang("{}File does not exist, please check the installation is complete!", path))
         src_conf = public.readFile(path)
         add_conf = src_conf.replace('md5', 'trust')
         # public.writeFile(path,public.readFile(path).replace('md5','trust'))
@@ -661,8 +659,8 @@ class main(databaseBase, panelPgsql):
         data['password'] = password
         public.writeFile(p_path, json.dumps(data))
         public.writeFile(path, src_conf)
-        # return public.returnMsg(True, 'The administrator password is successfully changed. Procedure.')
-        return public.return_message(0, 0, 'The administrator password is successfully changed. Procedure.')
+        # return public.returnMsg(True, public.lang("The administrator password is successfully changed. Procedure."))
+        return public.return_message(0, 0, public.lang("The administrator password is successfully changed. Procedure."))
 
     def get_info_by_db_id(self, db_id):
         """
@@ -751,8 +749,8 @@ class main(databaseBase, panelPgsql):
 
             data = sql_obj.query("SELECT datname FROM pg_database;")
             if type(data) == str:
-                # return public.returnMsg(False,'Connecting to remote PGSQL fails. Perform the following operations to rectify the fault：<br/>1、The database port is correct and the firewall allows access<br/>2、Check whether the database account password is correct<br/>3、pg_hba.confWhether to add a client release record<br/>4、postgresql.conf Add listen_addresses to the correct server IP address.')
-                return public.return_message(-1, 0, 'Connecting to remote PGSQL fails. Perform the following operations to rectify the fault：<br/>1、The database port is correct and the firewall allows access<br/>2、Check whether the database account password is correct<br/>3、pg_hba.confWhether to add a client release record<br/>4、postgresql.conf Add listen_addresses to the correct server IP address.')
+                # return public.returnMsg(False, public.lang("Connecting to remote PGSQL fails. Perform the following operations to rectify the fault：<br/>1、The database port is correct and the firewall allows access<br/>2、Check whether the database account password is correct<br/>3、pg_hba.confWhether to add a client release record<br/>4、postgresql.conf Add listen_addresses to the correct server IP address."))
+                return public.return_message(-1, 0, public.lang("Connecting to remote PGSQL fails. Perform the following operations to rectify the fault：<br/>1、The database port is correct and the firewall allows access<br/>2、Check whether the database account password is correct<br/>3、pg_hba.confWhether to add a client release record<br/>4、postgresql.conf Add listen_addresses to the correct server IP address."))
 
             if not conn_config['db_name']:
                 # return True
@@ -761,8 +759,8 @@ class main(databaseBase, panelPgsql):
                 if i[0] == conn_config['db_name']:
                     # return True
                     return public.return_message(0, 0, True)
-            # return public.returnMsg(False, 'The specified database does not exist!')
-            return public.return_message(-1, 0, 'The specified database does not exist!')
+            # return public.returnMsg(False, public.lang("The specified database does not exist!"))
+            return public.return_message(-1, 0, public.lang("The specified database does not exist!"))
         except Exception as ex:
 
             # return public.returnMsg(False, ex)

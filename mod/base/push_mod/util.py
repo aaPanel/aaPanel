@@ -8,7 +8,8 @@ if "/www/server/panel/class" not in sys.path:
 
 import public
 from db import Sql
-
+import os
+from sslModel import certModel
 
 def write_file(filename: str, s_body: str, mode='w+') -> bool:
     """
@@ -81,7 +82,16 @@ public_http_post = public.httpPost
 
 panel_version = public.version
 
+# 获取证书列表
+# get_cert_list = certModel.main().get_cert_list
+# to_dict_obj = public.to_dict_obj
 
+try:
+    get_cert_list = certModel.main().get_cert_list
+    to_dict_obj = public.to_dict_obj
+
+except:
+    public.print_log(public.get_error_info())
 def get_client_ip() -> str:
     return public.GetClientIp()
 
@@ -96,3 +106,31 @@ class _DB:
 
 
 DB = _DB()
+
+
+def check_site_status(web):
+    panelPath = '/www/server/panel/'
+    os.chdir(panelPath)
+    sys.path.insert(0, panelPath)
+
+    if web['project_type'] == "Java":
+        from mod.project.java.projectMod import main as java
+        if not java().get_project_stat(web)['pid']:
+            return None
+    if web['project_type'] == "Node":
+        from projectModel.nodejsModel import main as nodejs
+        if not nodejs().get_project_run_state(project_name=web['name']):
+            return None
+    if web['project_type'] == "Go":
+        from projectModel.goModel import main as go
+        if not go().get_project_run_state(project_name=web['name']):
+            return None
+    if web['project_type'] == "Python":
+        from projectModel.pythonModel import main as python
+        if not python().get_project_run_state(project_name=web['name']):
+            return None
+    if web['project_type'] == "Other":
+        from projectModel.otherModel import main as other
+        if not other().get_project_run_state(project_name=web['name']):
+            return None
+    return True

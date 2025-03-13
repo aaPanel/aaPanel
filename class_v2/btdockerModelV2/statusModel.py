@@ -195,8 +195,8 @@ class main(dockerBase):
             return public.return_message(0, 0, self.__stats_tmp)
         except Exception as ex:
             if "No such container" in str(ex):
-                return public.return_message(-1, 0, _('The container does not exist, please refresh the browser and try again!'))
-            return public.return_message(-1, 0, _('Failed to get container status: ' + str(ex)))
+                return public.return_message(-1, 0, public.lang("The container does not exist, please refresh the browser and try again!"))
+            return public.return_message(-1, 0, public.lang('Failed to get container status: ' + str(ex)))
 
     def top(self, get):
         """

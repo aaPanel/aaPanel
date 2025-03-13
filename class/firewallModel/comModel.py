@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2014-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2014-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -66,7 +66,7 @@ class main(Base):
         '''
         get.status = get.get('status/s', '1')
         if get.status not in ['0', '1']:
-            return public.returnMsg(False, '参数错误')
+            return public.returnMsg(False, public.lang("参数错误"))
 
         if get.status == '1':
             return self.firewall.start()
@@ -379,7 +379,7 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置导入规则
         if not self.get_firewall_status():
-            return public.returnMsg(False, '请先启动防火墙后再导入规则！')
+            return public.returnMsg(False, public.lang("Please start the firewall before importing rules!"))
 
         get.rule = get.get('rule/s', 'port')
         if get.rule == "port":
@@ -408,7 +408,7 @@ class main(Base):
 
         data = self.port_rules_list(get)
         if not data:
-            return public.returnMsg(False, '没有规则无法导出')
+            return public.returnMsg(False, public.lang("No rules can be exported"))
         if not os.path.exists(self.config_path):
             os.makedirs(self.config_path, exist_ok=True)
         file_path = "{}/{}.json".format(self.config_path, file_name)
@@ -428,10 +428,10 @@ class main(Base):
         get.file = get.get('file/s', '')
 
         if not get.file:
-            return public.returnMsg(False, '文件不能为空')
+            return public.returnMsg(False, public.lang("The file cannot be empty"))
 
         if not os.path.exists(get.file):
-            return public.returnMsg(False, '文件不存在')
+            return public.returnMsg(False, public.lang("文件不存在"))
 
         try:
             data = public.readFile(get.file)
@@ -443,7 +443,7 @@ class main(Base):
             # 2024/4/10 下午2:51 反转数据
             data.reverse()
         except:
-            return public.returnMsg(False, '文件内容异常或格式错误')
+            return public.returnMsg(False, public.lang("文件内容异常或格式错误"))
 
         args = public.dict_obj()
         for item in data:
@@ -461,7 +461,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.returnMsg(True, '导入成功')
+        return public.returnMsg(True, public.lang("导入成功"))
 
     # 2024/5/14 上午10:27 调用旧的导入规则方法
     def import_rules_old(self, get):
@@ -476,7 +476,7 @@ class main(Base):
             get.file_name = get.file.split("/")[-1]
             firewall_obj.import_rules(get)
 
-            return public.returnMsg(True, '导入成功')
+            return public.returnMsg(True, public.lang("导入成功"))
         except Exception as e:
             return public.returnMsg(False, str(e))
 
@@ -492,7 +492,7 @@ class main(Base):
         failed_list = []
         for addr in address:
             if not public.checkIp(addr):
-                return public.returnMsg(False, '目标地址格式错误')
+                return public.returnMsg(False, public.lang("目标地址格式错误"))
 
             get.address = addr
             if get.chain == "INPUT":
@@ -506,12 +506,12 @@ class main(Base):
                     "msg": result['msg']
                 })
         if len(failed_list) > 0:
-            return public.returnMsg(True, '设置成功,以下规则设置失败:{}'.format(failed_list))
+            return public.returnMsg(True, public.lang("The setup succeeded , the following rule failed :{}",failed_list))
 
         # if self._isFirewalld:
         #     self.firewall.reload()
 
-        return public.returnMsg(True, '设置成功')
+        return public.returnMsg(True, public.lang("Successfully set"))
 
     # 2024/3/26 上午 9:30 处理多个ip以逗号的方式添加/删除
     def set_tline_port_ip(self, get):
@@ -525,7 +525,7 @@ class main(Base):
         failed_list = []
         for addr in address:
             if not public.checkIp(addr):
-                return public.returnMsg(False, '目标地址格式错误')
+                return public.returnMsg(False, public.lang("目标地址格式错误"))
 
             get.address = addr
             if get.chain == "INPUT":
@@ -539,12 +539,12 @@ class main(Base):
                     "msg": result['msg']
                 })
         if len(failed_list) > 0:
-            return public.returnMsg(True, '设置成功,以下规则设置失败:{}'.format(failed_list))
+            return public.returnMsg(True, public.lang("The setup succeeded , the following rule failed :{}",failed_list))
 
         # if self._isFirewalld:
         #     self.firewall.reload()
 
-        return public.returnMsg(True, '设置成功')
+        return public.returnMsg(True, public.lang("Successfully set"))
 
     # 2024/3/26 上午 9:34 处理192.168.1.10-192.168.1.20这种范围ip的添加/删除
     def set_range_port_ip(self, get):
@@ -569,12 +569,12 @@ class main(Base):
                     "msg": result['msg']
                 })
         if len(failed_list) > 0:
-            return public.returnMsg(True, '设置成功,以下规则设置失败:{}'.format(failed_list))
+            return public.returnMsg(True, public.lang("The setup succeeded , the following rule failed :{}",failed_list))
 
         # if self._isFirewalld:
         #     self.firewall.reload()
 
-        return public.returnMsg(True, '设置成功')
+        return public.returnMsg(True, public.lang("Successfully set"))
 
     # 2024/3/25 下午 6:27 设置端口规则
     def set_port_rule(self, get):
@@ -586,7 +586,7 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置端口规则
         if not self.get_firewall_status():
-            return public.returnMsg(False, '请先启动防火墙后再设置规则！')
+            return public.returnMsg(False, public.lang("请先启动防火墙后再设置规则！"))
 
         get.operation = get.get('operation/s', 'add')
         get.protocol = get.get('protocol/s', 'tcp')
@@ -604,7 +604,7 @@ class main(Base):
             get.protocol = "tcp/udp"
 
         if get.port == "":
-            return public.returnMsg(False, '目标端口不能为空')
+            return public.returnMsg(False, public.lang("目标端口不能为空"))
 
         if get.address != "all" and "," in get.address:
             import copy
@@ -632,7 +632,7 @@ class main(Base):
         if self._isFirewalld and get.reload == "1":
             self.firewall.reload()
 
-        return public.returnMsg(True, '设置成功')
+        return public.returnMsg(True, public.lang("Successfully set"))
 
     # 2024/3/29 下午 4:04 处理多个ip的端口规则情况
     def more_prot_rule(self, get):
@@ -651,7 +651,7 @@ class main(Base):
                 result = self.exec_port_rule(args)
                 if not result['status']:
                     return result
-            return public.returnMsg(True, '设置成功')
+            return public.returnMsg(True, public.lang("Successfully set"))
         else:
             return self.exec_port_rule(get)
 
@@ -664,7 +664,7 @@ class main(Base):
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
         if get.operation == "add" and not self.check_port_exist(get):
-            return public.returnMsg(False, '端口{}已存在，请勿重复添加'.format(get.port))
+            return public.returnMsg(False, public.lang("端口{}已存在，请勿重复添加", get.port))
 
         self.set_port_db(get)
 
@@ -681,7 +681,7 @@ class main(Base):
             else:
                 result = self.output_port(get)
         elif get.address != "all" and not public.checkIp(get.address) and not public.is_ipv6(get.address):
-            return public.returnMsg(False, '指定IP地址格式错误')
+            return public.returnMsg(False, public.lang("指定IP地址格式错误"))
         else:
             if get.chain == "INPUT":
                 result = self.input_port(get)
@@ -702,17 +702,17 @@ class main(Base):
             address = get.address.split("\n")
             for addr in address:
                 if addr != "all" and not public.checkIp(addr) and not public.is_ipv6(addr):
-                    return public.returnMsg(False, '指定IP地址格式错误')
+                    return public.returnMsg(False, public.lang("指定IP地址格式错误"))
         elif get.address != "all" and "," in get.address:
             address = get.address.split(",")
             for addr in address:
                 if addr != "all" and not public.checkIp(addr) and not public.is_ipv6(addr):
-                    return public.returnMsg(False, '指定IP地址格式错误')
+                    return public.returnMsg(False, public.lang("指定IP地址格式错误"))
         else:
             if get.address != "all" and not public.checkIp(get.address) and not public.is_ipv6(get.address):
-                return public.returnMsg(False, '指定IP地址格式错误')
+                return public.returnMsg(False, public.lang("指定IP地址格式错误"))
 
-        return public.returnMsg(True, 'ok')
+        return public.returnMsg(True, public.lang("ok"))
 
     # 2024/3/27 上午 9:37 修改端口规则
     def modify_port_rule(self, get):
@@ -724,15 +724,15 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置规则
         if not self.get_firewall_status():
-            return public.returnMsg(False, '请先启动防火墙后再设置规则！')
+            return public.returnMsg(False, public.lang("请先启动防火墙后再设置规则！"))
         get.old_data = get.get('old_data/s', '')
         get.new_data = get.get('new_data/s', '')
 
         if get.old_data == "":
-            return public.returnMsg(False, '请传入old_data')
+            return public.returnMsg(False, public.lang("请传入old_data"))
 
         if get.new_data == "":
-            return public.returnMsg(False, '请传入new_data')
+            return public.returnMsg(False, public.lang("请传入new_data"))
 
         get.old_data = json.loads(get.old_data)
         get.new_data = json.loads(get.new_data)
@@ -740,7 +740,7 @@ class main(Base):
         if "address" in get.new_data:
             get.address = get.new_data['address']
             if not self.check_ips(get)["status"]:
-                return public.returnMsg(False, '修改后的指定IP地址格式错误')
+                return public.returnMsg(False, public.lang("修改后的指定IP地址格式错误"))
 
         args1 = public.dict_obj()
         args1.operation = 'remove'
@@ -765,7 +765,7 @@ class main(Base):
         args2.reload = "1"
         self.set_port_rule(args2)
 
-        return public.returnMsg(True, '修改成功')
+        return public.returnMsg(True, public.lang("修改成功"))
 
     # 2024/3/27 下午 4:03 修改域名端口规则
     def modify_domain_port_rule(self, get):
@@ -776,15 +776,15 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置设置规则
         if not self.get_firewall_status():
-            return public.returnMsg(False, '请先启动防火墙后再设置规则！')
+            return public.returnMsg(False, public.lang("请先启动防火墙后再设置规则！"))
         get.old_data = get.get('old_data/s', '')
         get.new_data = get.get('new_data/s', '')
 
         if get.old_data == "":
-            return public.returnMsg(False, '请传入old_data')
+            return public.returnMsg(False, public.lang("请传入old_data"))
 
         if get.new_data == "":
-            return public.returnMsg(False, '请传入new_data')
+            return public.returnMsg(False, public.lang("请传入new_data"))
 
         get.old_data = json.loads(get.old_data)
         get.new_data = json.loads(get.new_data)
@@ -792,7 +792,7 @@ class main(Base):
         address = self.get_a_ip(get.new_data['domain'])
 
         if address == "":
-            return public.returnMsg(False, '域名: 【{}】解析失败'.format(get.domain))
+            return public.returnMsg(False, public.lang("域名: 【{}】解析失败", get.domain))
 
         args1 = public.dict_obj()
         args1.operation = 'remove'
@@ -819,7 +819,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.returnMsg(True, '修改成功')
+        return public.returnMsg(True, public.lang("修改成功"))
 
     # 2024/3/26 下午 5:10 设置域名端口规则
     def set_domain_port_rule(self, get):
@@ -831,7 +831,7 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置规则
         if not self.get_firewall_status():
-            return public.returnMsg(False, '请先启动防火墙后再设置规则！')
+            return public.returnMsg(False, public.lang("请先启动防火墙后再设置规则！"))
 
         get.operation = get.get('operation/s', 'add')
         get.protocol = get.get('protocol/s', 'tcp')
@@ -841,13 +841,13 @@ class main(Base):
         get.chain = get.get('chain/s', 'INPUT')
 
         if get.domain == "":
-            return public.returnMsg(False, '目标域名不能为空')
+            return public.returnMsg(False, public.lang("目标域名不能为空"))
 
         if get.port == "":
-            return public.returnMsg(False, '目标端口不能为空')
+            return public.returnMsg(False, public.lang("目标端口不能为空"))
 
         if not public.is_domain(get.domain):
-            return public.returnMsg(False, '目标域名格式错误')
+            return public.returnMsg(False, public.lang("目标域名格式错误"))
 
         if "|" in get.domain:
             get.domain = get.domain.split("|")[0]
@@ -855,7 +855,7 @@ class main(Base):
         address = self.get_a_ip(get.domain)
 
         if address == "":
-            return public.returnMsg(False, '域名: 【{}】解析失败'.format(get.domain))
+            return public.returnMsg(False, public.lang("域名: 【{}】解析失败", get.domain))
 
         get.address = address
         self.set_port_db(get)
@@ -979,7 +979,7 @@ class main(Base):
             get.address = get.get("address/s", '')
             get.strategy = get.get("strategy/s", '')
             if get.address == "":
-                return public.returnMsg(False, '请传入id')
+                return public.returnMsg(False, public.lang("请传入id"))
             public.M('firewall_ip').where("address=? and types=? and chain=?", (get.address, get.strategy, get.chain)).delete()
             get.domain = get.get('domain/s', '')
             if get.domain != "":
@@ -1112,12 +1112,12 @@ class main(Base):
                     "msg": result['msg']
                 })
         if len(failed_list) > 0:
-            return public.returnMsg(True, '设置成功,以下规则设置失败:{}'.format(failed_list))
+            return public.returnMsg(True, public.lang("The setup succeeded , the following rule failed :{}",failed_list))
 
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.returnMsg(True, '设置成功')
+        return public.returnMsg(True, public.lang("Successfully set"))
 
     # 2024/3/26 上午 9:40 处理多个ip的情况,例如出现逗号隔开ip
     def set_tline_ip_rule(self, get):
@@ -1132,7 +1132,7 @@ class main(Base):
         import copy
         for addr in address:
             if not public.checkIp(addr):
-                return public.returnMsg(False, '目标地址格式错误')
+                return public.returnMsg(False, public.lang("目标地址格式错误"))
 
             args = copy.deepcopy(get)
             args.address = addr
@@ -1163,12 +1163,12 @@ class main(Base):
                     "msg": result['msg']
                 })
         if len(failed_list) > 0:
-            return public.returnMsg(True, '设置成功,以下规则设置失败:{}'.format(failed_list))
+            return public.returnMsg(True, public.lang("The setup succeeded , the following rule failed :{}",failed_list))
 
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.returnMsg(True, '设置成功')
+        return public.returnMsg(True, public.lang("Successfully set"))
 
     # 2024/3/26 上午 9:43 处理192.168.1.10-192.168.1.20这种范围ip的添加/删除
     def set_range_ip_rule(self, get):
@@ -1211,12 +1211,12 @@ class main(Base):
                     "msg": result['msg']
                 })
         if len(failed_list) > 0:
-            return public.returnMsg(True, '设置成功,以下规则设置失败:{}'.format(failed_list))
+            return public.returnMsg(True, public.lang("The setup succeeded , the following rule failed :{}",failed_list))
 
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.returnMsg(True, '设置成功')
+        return public.returnMsg(True, public.lang("Successfully set"))
 
     # 2024/3/26 上午 9:46 设置带掩码的ip段
     def set_mask_ip_rule(self, get):
@@ -1227,7 +1227,7 @@ class main(Base):
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
         if get.operation == "add" and not self.check_ip_exist(get):
-            return public.returnMsg(False, '目标地址{}已存在，请勿重复添加'.format(get.address))
+            return public.returnMsg(False, public.lang("目标地址{}已存在，请勿重复添加", get.address))
 
         self.set_ip_db(get)
         info = {
@@ -1275,7 +1275,7 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置规则
         if not self.get_firewall_status():
-            return public.returnMsg(False, '请先启动防火墙后再设置规则！')
+            return public.returnMsg(False, public.lang("请先启动防火墙后再设置规则！"))
 
         get.operation = get.get('operation/s', 'add')
         get.address = get.get('address/s', '')
@@ -1286,7 +1286,7 @@ class main(Base):
         get.reload = get.get('reload/s', "1")
 
         if get.address == "":
-            return public.returnMsg(False, '目标ip不能为空')
+            return public.returnMsg(False, public.lang("目标ip不能为空"))
 
         # 2024/3/25 下午 8:23 处理多个ip的情况,例如出现每行一个ip
         if get.address != "all" and "\n" in get.address:
@@ -1298,14 +1298,14 @@ class main(Base):
         elif get.address != "all" and "," in get.address:
             return self.set_tline_ip_rule(get)
         elif get.address != "all" and not public.checkIp(get.address) and not public.is_ipv6(get.address):
-            return public.returnMsg(False, '目标地址格式错误')
+            return public.returnMsg(False, public.lang("目标地址格式错误"))
         else:
             if get.operation == "add" and get.strategy == "drop":
                 if self.check_is_user_ip(get):
-                    return public.returnMsg(False, '不能添加自己的ip')
+                    return public.returnMsg(False, public.lang("不能添加自己的ip"))
 
             if get.operation == "add" and not self.check_ip_exist(get):
-                return public.returnMsg(False, '目标地址{}已存在，请勿重复添加'.format(get.address))
+                return public.returnMsg(False, public.lang("目标地址{}已存在，请勿重复添加", get.address))
 
             self.set_ip_db(get)
 
@@ -1335,15 +1335,15 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置设置规则
         if not self.get_firewall_status():
-            return public.returnMsg(False, '请先启动防火墙后再设置规则！')
+            return public.returnMsg(False, public.lang("请先启动防火墙后再设置规则！"))
         get.old_data = get.get('old_data/s', '')
         get.new_data = get.get('new_data/s', '')
 
         if get.old_data == "":
-            return public.returnMsg(False, '请传入old_data')
+            return public.returnMsg(False, public.lang("请传入old_data"))
 
         if get.new_data == "":
-            return public.returnMsg(False, '请传入new_data')
+            return public.returnMsg(False, public.lang("请传入new_data"))
 
         get.old_data = json.loads(get.old_data)
         get.new_data = json.loads(get.new_data)
@@ -1372,7 +1372,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.returnMsg(True, '修改成功')
+        return public.returnMsg(True, public.lang("修改成功"))
 
     # 2024/3/26 下午 5:18 设置域名ip规则
     def set_domain_ip_rule(self, get):
@@ -1390,21 +1390,21 @@ class main(Base):
         get.chain = get.get('chain/s', 'INPUT')
 
         if get.domain == "":
-            return public.returnMsg(False, '目标域名不能为空')
+            return public.returnMsg(False, public.lang("目标域名不能为空"))
 
         if get.port == "":
-            return public.returnMsg(False, '目标端口不能为空')
+            return public.returnMsg(False, public.lang("目标端口不能为空"))
 
         if not public.is_domain(get.domain):
-            return public.returnMsg(False, '目标域名格式错误')
+            return public.returnMsg(False, public.lang("目标域名格式错误"))
 
         address = self.get_a_ip(get.domain)
 
         if address == "":
-            return public.returnMsg(False, '域名: 【{}】解析失败'.format(get.domain))
+            return public.returnMsg(False, public.lang("域名: 【{}】解析失败", get.domain))
 
         if not public.checkIp(get.address):
-            return public.returnMsg(False, '目标地址格式错误')
+            return public.returnMsg(False, public.lang("目标地址格式错误"))
 
         info = {
             "Address": address,
@@ -1460,7 +1460,7 @@ class main(Base):
 
         data = self.ip_rules_list(get)
         if not data:
-            return public.returnMsg(False, '没有规则无法导出')
+            return public.returnMsg(False, public.lang("No rules can be exported"))
 
         file_path = "{}/{}.json".format(self.config_path, file_name)
 
@@ -1478,10 +1478,10 @@ class main(Base):
         get.file = get.get('file/s', '')
 
         if not get.file:
-            return public.returnMsg(False, '文件不能为空')
+            return public.returnMsg(False, public.lang("The file cannot be empty"))
 
         if not os.path.exists(get.file):
-            return public.returnMsg(False, '文件不存在')
+            return public.returnMsg(False, public.lang("文件不存在"))
 
         try:
             data = public.readFile(get.file)
@@ -1493,7 +1493,7 @@ class main(Base):
             # 2024/4/10 下午2:51 反转数据
             data.reverse()
         except:
-            return public.returnMsg(False, '文件内容异常或格式错误')
+            return public.returnMsg(False, public.lang("文件内容异常或格式错误"))
 
         args = public.dict_obj()
         for item in data:
@@ -1510,7 +1510,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.returnMsg(True, '导入成功')
+        return public.returnMsg(True, public.lang("导入成功"))
 
     # 2024/3/25 下午 2:34 获取端口转发列表
     def port_forward_list(self, get):
@@ -1535,7 +1535,7 @@ class main(Base):
         '''
         data = self.firewall.list_port_forward()
         if not data:
-            return public.returnMsg(False, '没有规则无法导出')
+            return public.returnMsg(False, public.lang("No rules can be exported"))
         file_name = "port_forward_{}".format(int(time.time()))
         file_path = "{}/{}.json".format(self.config_path, file_name)
 
@@ -1553,10 +1553,10 @@ class main(Base):
         get.file = get.get('file/s', '')
 
         if not get.file:
-            return public.returnMsg(False, '文件不能为空')
+            return public.returnMsg(False, public.lang("The file cannot be empty"))
 
         if not os.path.exists(get.file):
-            return public.returnMsg(False, '文件不存在')
+            return public.returnMsg(False, public.lang("文件不存在"))
 
         try:
             data = public.readFile(get.file)
@@ -1568,7 +1568,7 @@ class main(Base):
             # 2024/4/10 下午2:51 反转数据
             data.reverse()
         except:
-            return public.returnMsg(False, '文件内容异常或格式错误')
+            return public.returnMsg(False, public.lang("文件内容异常或格式错误"))
 
         args = public.dict_obj()
         for item in data:
@@ -1585,7 +1585,7 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.returnMsg(True, '导入成功')
+        return public.returnMsg(True, public.lang("导入成功"))
 
     # 2024/3/25 下午 3:43 设置端口转发
     def set_port_forward(self, get):
@@ -1596,7 +1596,7 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置设置规则
         if not self.get_firewall_status():
-            return public.returnMsg(False, '请先启动防火墙后再设置规则！')
+            return public.returnMsg(False, public.lang("请先启动防火墙后再设置规则！"))
 
         get.operation = get.get('operation/s', 'add')
         get.protocol = get.get('protocol/s', 'tcp')
@@ -1607,11 +1607,11 @@ class main(Base):
         get.reload = get.get('reload/s', "1")
 
         if get.S_Port == "":
-            return public.returnMsg(False, '源端口不能为空')
+            return public.returnMsg(False, public.lang("源端口不能为空"))
         # if get.T_Address == "":
-        #     return public.returnMsg(False, '目标地址不能为空')
+        #     return public.returnMsg(False, public.lang("目标地址不能为空"))
         if get.T_Port == "":
-            return public.returnMsg(False, '目标端口不能为空')
+            return public.returnMsg(False, public.lang("目标端口不能为空"))
 
         # 2024/3/25 下午 5:49 前置检测
         if get.operation == "add":
@@ -1620,7 +1620,7 @@ class main(Base):
                 return check_ip_forward
 
             if not self.check_forward_exist(get):
-                return public.returnMsg(False, '端口转发规则已存在，请勿重复添加')
+                return public.returnMsg(False, public.lang("端口转发规则已存在，请勿重复添加"))
 
         self.set_forward_db(get)
 
@@ -1676,16 +1676,16 @@ class main(Base):
         '''
         # 2024/4/17 下午4:47 检查防火墙状态，如果未启动则不允许设置规则
         if not self.get_firewall_status():
-            return public.returnMsg(False, '请先启动防火墙后再设置规则！')
+            return public.returnMsg(False, public.lang("请先启动防火墙后再设置规则！"))
 
         get.old_data = get.get('old_data/s', '')
         get.new_data = get.get('new_data/s', '')
 
         if get.old_data == "":
-            return public.returnMsg(False, '请传入old_data')
+            return public.returnMsg(False, public.lang("请传入old_data"))
 
         if get.new_data == "":
-            return public.returnMsg(False, '请传入new_data')
+            return public.returnMsg(False, public.lang("请传入new_data"))
 
         get.old_data = json.loads(get.old_data)
         get.new_data = json.loads(get.new_data)
@@ -1715,4 +1715,4 @@ class main(Base):
         if self._isFirewalld:
             self.firewall.reload()
 
-        return public.returnMsg(True, '修改成功')
+        return public.returnMsg(True, public.lang("修改成功"))

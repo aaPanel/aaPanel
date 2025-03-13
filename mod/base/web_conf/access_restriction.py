@@ -5,11 +5,12 @@ import os
 import re
 import json
 import shutil
+import warnings
 from typing import Optional, Union, List, Dict
 from itertools import chain
 from .util import webserver, check_server_config, write_file, read_file, DB, service_reload, get_log_path, pre_re_key
 from mod.base import json_response
-
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 class _ConfigObject:
     _config_file_path = ""
@@ -133,8 +134,8 @@ class _NginxAccessConf(ServerConfig):
 %s
 }
 """
-        suffix_template = '{tmp_pre}if ( $uri ~ "\\.({suffix})$" ) {{\n{tmp_pre}    return 404;\n{tmp_pre}}}'
-        suffix_template2 = 'if ( $uri ~ "^{path}.*\\.({suffix})$" ) {{\n    return 404;\n}}\n'
+        suffix_template = r'{tmp_pre}if ( $uri ~ "\.({suffix})$" ) {{\n{tmp_pre}    return 404;\n{tmp_pre}}}'
+        suffix_template2 = r'if ( $uri ~ "^{path}.*\.({suffix})$" ) {{\n    return 404;\n}}\n'
         tmp_conf_list = []
         for i in path_list:
             if "auth_file" in i and "suffix" in i:
@@ -321,7 +322,7 @@ class RealAccessRestriction(_ConfigObject, _ApacheAccessConf, _NginxAccessConf):
             values["site_name"] = get.site_name.strip()
             values["dir_path"] = get.dir_path.strip()
         except AttributeError:
-            return "参数错误"
+            return "parameter error"
 
         if hasattr(get, "password"):
             password = get.password.strip()
@@ -442,7 +443,7 @@ class RealAccessRestriction(_ConfigObject, _ApacheAccessConf, _NginxAccessConf):
             values["dir_path"] = get.dir_path.strip()
             values["suffix"] = list(filter(lambda x: bool(x.strip()), json.loads(get.suffix.strip())))
         except (AttributeError, json.JSONDecodeError, TypeError, ValueError):
-            return "参数错误"
+            return "Parameter error"
 
         if len(values["name"]) < 3:
             return '规则名最少需要输入3个字符串！'
@@ -556,7 +557,7 @@ class AccessRestriction:
         res = self._ar.create_auth_dir(get)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
-        return json_response(status=True, msg="添加成功")
+        return json_response(status=True, msg="Successfully added")
 
     def modify_auth_dir(self, get):
         res = self._ar.modify_auth_dir(get)
@@ -573,13 +574,13 @@ class AccessRestriction:
         res = self._ar.remove_auth_dir(site_name, name)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
-        return json_response(status=True, msg="删除成功")
+        return json_response(status=True, msg="Successfully delete")
 
     def create_file_deny(self, get):
         res = self._ar.create_file_deny(get)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
-        return json_response(status=True, msg="添加成功")
+        return json_response(status=True, msg="Successfully added")
 
     def modify_file_deny(self, get):
         res = self._ar.modify_file_deny(get)
@@ -596,7 +597,7 @@ class AccessRestriction:
         res = self._ar.remove_file_deny(site_name, name)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
-        return json_response(status=True, msg="删除成功")
+        return json_response(status=True, msg="Successfully delete")
 
     def site_access_restriction_info(self, get):
         try:

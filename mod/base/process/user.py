@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: sww <sww@bt.cn>
 # -------------------------------------------------------------------
@@ -64,7 +64,7 @@ class RealUser:
         :param ps: 备注
         :return: str
         """
-        userPs = {'www': '宝塔面板', 'root': '超级管理员', 'mysql': '用于运行MySQL的用户',
+        userPs = {'www': 'aaPanel', 'root': '超级管理员', 'mysql': '用于运行MySQL的用户',
                   'mongo': '用于运行MongoDB的用户',
                   'git': 'git用户', 'mail': 'mail', 'nginx': '第三方nginx用户', 'postfix': 'postfix邮局用户',
                   'lp': '打印服务帐号',
@@ -151,7 +151,7 @@ class RealUser:
             r = public.ExecShell("useradd -g " + group + " -m " + user + ' -p' + pwd)
             if r[1].find('useradd:') != -1 and r[1].find('already exists') == 1: return public.returnResult(code=0, msg=r[1], status=False)
             # public.ExecShell("echo \"" + user + ":" + pwd + "\" | chpasswd")
-            return public.returnResult(code=1, msg='添加成功!', status=True)
+            return public.returnResult(code=1, msg='Successfully added!', status=True)
         except:
             print(traceback.format_exc())
             return public.returnResult(code=0, msg='添加失败!', status=False)
@@ -302,7 +302,7 @@ class RealUser:
             if self._check_group(group): return public.returnResult(code=0, msg='用户组已存在!', status=False)
             r = public.ExecShell("groupadd " + group)
             if r[1].find('groupadd:') != -1: return public.returnResult(code=0, msg=r[1], status=False)
-            return public.returnResult(code=1, msg='添加成功!', status=True)
+            return public.returnResult(code=1, msg='Successfully added!', status=True)
         except:
             return public.returnResult(code=0, msg='添加失败!', status=False)
 

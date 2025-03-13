@@ -36,9 +36,9 @@ class main(databaseBase):
         # 校验参数
         try:
             args.validate([
-                Param('table').Require().String().Xss(),
+                Param('table').Require().String(),
                 Param('search').String(),
-                Param('order').String().Xss(),
+                Param('order').String(),
                 Param('limit').Integer(),
                 Param('p').Integer(),
             ], [
@@ -153,11 +153,11 @@ class main(databaseBase):
             args.validate([
                 Param('name').Require().String(),
                 Param('db_user').Require().String(),
-                Param('password').Require().String().Xss(),
+                Param('password').Require().String(),
                 Param('sid').Require().Integer(),
                 Param('active').Require().Bool(),
                 Param('ps').String(),
-                Param('ssl').String().Xss(),
+                Param('ssl').String(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -177,8 +177,8 @@ class main(databaseBase):
             password = res['data_pwd']
 
             if re.match(r"^\d+",data_name):
-                # return public.returnMsg(False,'SQLServer databases cannot start with numbers!')
-                return public.return_message(-1, 0, 'SQLServer databases cannot start with numbers!')
+                # return public.returnMsg(False, public.lang("SQLServer databases cannot start with numbers!"))
+                return public.return_message(-1, 0, public.lang("SQLServer databases cannot start with numbers!"))
 
             reg_count = 0
             regs = ['[a-z]','[A-Z]',r'\W','[0-9]']
@@ -186,7 +186,7 @@ class main(databaseBase):
                 if re.search(x,password): reg_count += 1
 
             if len(password) < 8 or len(password) >128 or reg_count < 3 :
-                # return public.returnMsg(False,'SQLServer password complexity policy does not match, should be 8-128 characters, and contain any 3 of them in upper case, lower case, digits, special symbols!')
+                # return public.returnMsg(False, public.lang("SQLServer password complexity policy does not match, should be 8-128 characters, and contain any 3 of them in upper case, lower case, digits, special symbols!"))
                 return public.return_message(-1, 0, 'SQLServer password complexity policy does not match, should be 8-128 '
                                                     'characters, and contain any 3 of them in upper case, lower case, '
                                                     'digits, special symbols!')
@@ -229,8 +229,8 @@ class main(databaseBase):
             #添加入SQLITE
             public.M('databases').add('pid,sid,db_type,name,username,password,accept,ps,addtime,type',(pid,self.sid,db_type,data_name,username,password,'127.0.0.1',args['ps'],addTime,dtype))
             public.WriteLog("TYPE_DATABASE", 'DATABASE_ADD_SUCCESS',(data_name,))
-            # return public.returnMsg(True,'ADD_SUCCESS')
-            return public.return_message(0, 0, 'ADD_SUCCESS')
+            # return public.returnMsg(True, public.lang("Added successfully!"))
+            return public.return_message(0, 0, public.lang("Added successfully!"))
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
@@ -255,8 +255,8 @@ class main(databaseBase):
         id = args['id']
         find = public.M('databases').where("id=?",(id,)).field('id,pid,name,username,password,type,accept,ps,addtime,sid,db_type').find();
         if not find:
-            # return public.returnMsg(False,'The specified database does not exist.')
-            return public.return_message(-1, 0, 'The specified database does not exist.')
+            # return public.returnMsg(False, public.lang("The specified database does not exist."))
+            return public.return_message(-1, 0, public.lang("The specified database does not exist."))
 
         name = args['name']
         username = find['username']
@@ -276,8 +276,8 @@ class main(databaseBase):
         #删除SQLITE
         public.M('databases').where("id=?",(id,)).delete()
         public.WriteLog("TYPE_DATABASE", 'DATABASE_DEL_SUCCESS',(name,))
-        # return public.returnMsg(True, 'DEL_SUCCESS')
-        return public.return_message(0, 0, 'DEL_SUCCESS')
+        # return public.returnMsg(True, public.lang("Delete successfully!"))
+        return public.return_message(0, 0, public.lang("Delete successfully!"))
 
 
 
@@ -290,8 +290,8 @@ class main(databaseBase):
         id = args['id']
         find = public.M('databases').where("id=?",(id,)).find()
         if not find:
-            # return public.returnMsg(False,'Database does not exist!')
-            return public.return_message(-1, 0, 'Database does not exist!')
+            # return public.returnMsg(False, public.lang("Database does not exist!"))
+            return public.return_message(-1, 0, public.lang("Database does not exist!"))
 
         self.CheckBackupPath(args)
 
@@ -308,22 +308,22 @@ class main(databaseBase):
                 # return public.return_message(-1, 0, isError)
         else:
             #远程数据库
-            # return public.returnMsg(False,'Operation failed. Remote database cannot be backed up.')
-            return public.return_message(-1, 0, 'Operation failed. Remote database cannot be backed up.')
+            # return public.returnMsg(False, public.lang("Operation failed. Remote database cannot be backed up."))
+            return public.return_message(-1, 0, public.lang("Operation failed. Remote database cannot be backed up."))
 
         if not os.path.exists(backupName):
-            # return public.returnMsg(False,'BACKUP_ERROR')
-            return public.return_message(-1, 0, 'BACKUP_ERROR')
+            # return public.returnMsg(False, public.lang("Backup error"))
+            return public.return_message(-1, 0, public.lang("Backup error"))
 
         public.M('backup').add('type,name,pid,filename,size,addtime',(1,fileName,id,backupName,0,time.strftime('%Y-%m-%d %X',time.localtime())))
         public.WriteLog("TYPE_DATABASE", "DATABASE_BACKUP_SUCCESS",(find['name'],))
 
         if os.path.getsize(backupName) < 2048:
-            # return public.returnMsg(True, 'The backup file size is smaller than 2Kb. Check the backup integrity.')
-            return public.return_message(0, 0, 'The backup file size is smaller than 2Kb. Check the backup integrity.')
+            # return public.returnMsg(True, public.lang("The backup file size is smaller than 2Kb. Check the backup integrity."))
+            return public.return_message(0, 0, public.lang("The backup file size is smaller than 2Kb. Check the backup integrity."))
         else:
-            # return public.returnMsg(True, 'BACKUP_SUCCESS')
-            return public.return_message(0, 0, 'BACKUP_SUCCESS')
+            # return public.returnMsg(True, public.lang("Backup Succeeded!"))
+            return public.return_message(0, 0, public.lang("Backup Succeeded!"))
 
     def DelBackup(self,args):
         """
@@ -352,15 +352,15 @@ class main(databaseBase):
 
         find = public.M('databases').where("name=?",(name,)).find()
         if not find:
-            # return public.returnMsg(False,'Database does not exist!')
-            return public.return_message(-1, 0, 'Database does not exist!')
+            # return public.returnMsg(False, public.lang("Database does not exist!"))
+            return public.return_message(-1, 0, public.lang("Database does not exist!"))
 
         tmp = file.split('.')
         exts = ['sql','zip','bak']
         ext = tmp[len(tmp) -1]
         if ext not in exts:
-            # return public.returnMsg(False, 'DATABASE_INPUT_ERR_FORMAT')
-            return public.return_message(-1, 0, 'DATABASE_INPUT_ERR_FORMAT')
+            # return public.returnMsg(False, public.lang("DATABASE_INPUT_ERR_FORMAT"))
+            return public.return_message(-1, 0, public.lang("Select sql、gz、zip file!"))
 
         backupPath = session['config']['backup_path'] + '/database'
 
@@ -376,8 +376,8 @@ class main(databaseBase):
                         file = dst_path + '/' + x
                         break
             except :
-                # return public.returnMsg(False,'The import failed because the file is not a valid ZIP file.')
-                return public.return_message(-1, 0, 'The import failed because the file is not a valid ZIP file.')
+                # return public.returnMsg(False, public.lang("The import failed because the file is not a valid ZIP file."))
+                return public.return_message(-1, 0, public.lang("The import failed because the file is not a valid ZIP file."))
 
         mssql_obj = self.get_mssql_obj_by_sid(find['sid'])
         data = mssql_obj.query("use %s ;select filename from sysfiles" % find['name'])
@@ -395,8 +395,8 @@ class main(databaseBase):
         mssql_obj.execute("ALTER DATABASE %s SET ONLINE" % (find['name']))
 
         public.WriteLog("TYPE_DATABASE", 'Description Succeeded in importing database [{}]'.format(name))
-        # return public.returnMsg(True, 'DATABASE_INPUT_SUCCESS')
-        return public.return_message(0, 0, 'DATABASE_INPUT_SUCCESS')
+        # return public.returnMsg(True, public.lang("DATABASE_INPUT_SUCCESS"))
+        return public.return_message(0, 0, public.lang("Successfully imported database!"))
 
 
     #同步数据库到服务器
@@ -424,15 +424,15 @@ class main(databaseBase):
                 if result == 1: n +=1
 
         if n == 1:
-            # return public.returnMsg(True, 'Synchronization succeeded')
-            return public.return_message(0, 0, 'Synchronization succeeded')
+            # return public.returnMsg(True, public.lang("Synchronization succeeded"))
+            return public.return_message(0, 0, public.lang("Synchronization succeeded"))
 
         elif n == 0:
-            # return public.returnMsg(False,'Sync failed')
-            return public.return_message(-1, 0, 'Sync failed')
+            # return public.returnMsg(False, public.lang("Sync failed"))
+            return public.return_message(-1, 0, public.lang("Sync failed"))
 
         # return public.returnMsg(True,'DATABASE_SYNC_SUCCESS',(str(n),))
-        return public.return_message(0, 0, 'DATABASE_SYNC_SUCCESS'.format(str(n)))
+        return public.return_message(0, 0, public.lang("DATABASE_SYNC_SUCCESS", str(n)))
 
     #添加到服务器
     def ToDataBase(self,find):
@@ -488,7 +488,7 @@ class main(databaseBase):
                 if sql.table('databases').add('name,username,password,accept,ps,addtime,type,sid,db_type',(dbname,dbname,'','',public.getMsg('INPUT_PS'),time.strftime('%Y-%m-%d %X',time.localtime()),'SQLServer',self.sid,db_type)): n +=1
 
         # return public.returnMsg(True,'DATABASE_GET_SUCCESS',(str(n),))
-        return public.return_message(0, 0, 'DATABASE_GET_SUCCESS'.format(n))
+        return public.return_message(0, 0, public.lang("DATABASE_GET_SUCCESS", n))
 
     def ResDatabasePassword(self,args):
         """
@@ -497,7 +497,7 @@ class main(databaseBase):
         # 校验参数
         try:
             args.validate([
-                Param('password').Require().String().Xss(),
+                Param('password').Require().String(),
                 Param('name').Require().String(),
                 Param('id').Require().Integer(),
             ], [
@@ -514,18 +514,18 @@ class main(databaseBase):
 
         try:
             # if not newpassword:
-            #     return public.returnMsg(False, 'The password of database [' + username + '] cannot be empty.')
+            #     return public.returnMsg(False, public.lang("The password of database [' + username + '] cannot be empty."))
             if len(re.search(r"^[\w@\.]+$", newpassword).groups()) > 0:
-                # return public.returnMsg(False, 'The database password cannot be empty or contain special characters')
-                return public.return_message(-1, 0, 'The database password cannot be empty or contain special characters')
+                # return public.returnMsg(False, public.lang("The database password cannot be empty or contain special characters"))
+                return public.return_message(-1, 0, public.lang("The database password cannot be empty or contain special characters"))
         except :
-            # return public.returnMsg(False, 'The database password cannot be empty or contain special characters')
-            return public.return_message(-1, 0, 'The database password cannot be empty or contain special characters')
+            # return public.returnMsg(False, public.lang("The database password cannot be empty or contain special characters"))
+            return public.return_message(-1, 0, public.lang("The database password cannot be empty or contain special characters"))
 
         find = public.M('databases').where("id=?",(id,)).field('id,pid,name,username,password,type,accept,ps,addtime,sid').find()
         if not find:
-            # return public.returnMsg(False, 'Modify the failure，The specified database does not exist.');
-            return public.return_message(-1, 0, 'Modify the failure，The specified database does not exist.')
+            # return public.returnMsg(False, public.lang("Modify the failure，The specified database does not exist."));
+            return public.return_message(-1, 0, public.lang("Modify the failure，The specified database does not exist."))
 
         mssql_obj = self.get_mssql_obj_by_sid(find['sid'])
         mssql_obj.execute("EXEC sp_password NULL, '%s', '%s'" % (newpassword,username))
@@ -535,7 +535,7 @@ class main(databaseBase):
 
         public.WriteLog("TYPE_DATABASE",'DATABASE_PASS_SUCCESS',(find['name'],))
         # return public.returnMsg(True, 'DATABASE_PASS_SUCCESS',(find['name'],))
-        return public.return_message(0, 0, 'DATABASE_PASS_SUCCESS'.format(find['name']))
+        return public.return_message(0, 0, public.lang("DATABASE_PASS_SUCCESS", find['name']))
 
 
     def get_root_pwd(self,args):
@@ -544,13 +544,13 @@ class main(databaseBase):
         """
         mssql_obj = panelMssql.panelMssql()
         ret = mssql_obj.get_sql_name()
-        if not ret : return public.returnMsg(False, 'The SQL Server is not installed or started. Install or start it first')
+        if not ret : return public.returnMsg(False, public.lang("The SQL Server is not installed or started. Install or start it first"))
 
         sa_path = '{}/data/sa.pl'.format(public.get_panel_path())
         if os.path.exists(sa_path):
             password = public.readFile(sa_path)
             return public.returnMsg(True,password)
-        return public.returnMsg(True,'')
+        return public.returnMsg(True, public.lang(""))
 
 
     def set_root_pwd(self,args):
@@ -560,11 +560,11 @@ class main(databaseBase):
         password = public.trim(args['password'])
         try:
             if not password:
-                return public.returnMsg(False, 'The password of database [' + username + '] cannot be empty.')
+                return public.returnMsg(False, public.lang("The password of database [' + username + '] cannot be empty."))
             if len(re.search(r"^[\w@\.]+$", password).groups()) > 0:
-                return public.returnMsg(False, 'saThe password cannot be empty or have special symbols')
+                return public.returnMsg(False, public.lang("saThe password cannot be empty or have special symbols"))
         except :
-            return public.returnMsg(False, 'saThe password cannot be empty or have special symbols')
+            return public.returnMsg(False, public.lang("saThe password cannot be empty or have special symbols"))
 
         mssql_obj = panelMssql.panelMssql()
         result = mssql_obj.execute("EXEC sp_password NULL, '%s', 'sa'" % password)
@@ -576,7 +576,7 @@ class main(databaseBase):
 
         public.writeFile('data/sa.pl',password)
         session['config']['mssql_sa'] = password
-        return public.returnMsg(True,'The password of sa is changed successfully.')
+        return public.returnMsg(True, public.lang("The password of sa is changed successfully."))
 
 
 
@@ -659,8 +659,8 @@ class main(databaseBase):
                 if i[0] == conn_config['db_name']:
                     # return True
                     return public.return_message(0, 0, True)
-            # return public.returnMsg(False,'The specified database does not exist!')
-            return public.return_message(-1, 0, 'The specified database does not exist!')
+            # return public.returnMsg(False, public.lang("The specified database does not exist!"))
+            return public.return_message(-1, 0, public.lang("The specified database does not exist!"))
         except Exception as ex:
 
             # return public.returnMsg(False,ex)

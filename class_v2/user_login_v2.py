@@ -30,8 +30,8 @@ class userlogin:
         if len(post.password) != 32:
             return public.returnMsg(False,format_error+"2"),json_header
 
-        if not re.match(r"^\w+$",post.username): return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
-        if not re.match(r"^\w+$",post.password): return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
+        if not re.match(r"^\w+$",post.username): return public.return_msg_gettext(False, public.lang("Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...")),json_header
+        if not re.match(r"^\w+$",post.password): return public.return_msg_gettext(False, public.lang("Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...")),json_header
         last_login_token = session.get('last_login_token',None)
         if not last_login_token:
             public.WriteLog('TYPE_LOGIN','LOGIN_ERR_CODE',('****','****',public.GetClientIp()))
@@ -117,7 +117,7 @@ class userlogin:
             return "1"
         except Exception as ex:
             stringEx = str(ex)
-            if stringEx.find('unsupported') != -1 or stringEx.find('-1') != -1: 
+            if stringEx.find('unsupported') != -1 or stringEx.find('-1') != -1:
                 public.ExecShell("rm -f /tmp/sess_*")
                 public.ExecShell("rm -f /www/wwwlogs/*log")
                 public.ServiceReload()
@@ -161,37 +161,41 @@ class userlogin:
             return public.returnJson(False,'Login failed,' + public.get_error_info()),json_header
 
 
-    def request_temp(self,get):
+    def request_temp(self, get):
         try:
-            if len(get.get_items().keys()) > 2: return public.get_msg_gettext('Parameter ERROR!')
-            if not hasattr(get,'tmp_token'): return public.get_msg_gettext('Parameter ERROR!')
-            if len(get.tmp_token) != 48: return public.get_msg_gettext('Parameter ERROR!')
-            if not re.match(r"^\w+$",get.tmp_token):return public.get_msg_gettext('Parameter ERROR!')
+            if len(get.get_items().keys()) > 2:
+                return public.lang("Parameter ERROR!")
+            if not hasattr(get, 'tmp_token'):
+                return public.lang("Parameter ERROR!")
+            if len(get.tmp_token) != 48:
+                return public.lang("Parameter ERROR!")
+            if not re.match(r"^\w+$", get.tmp_token):
+                return public.lang("Parameter ERROR!")
+
             skey = public.GetClientIp() + '_temp_login'
-            if not public.get_error_num(skey,10): return public.get_msg_gettext('10 consecutive authentication failures are prohibited for 1 hour')
+            if not public.get_error_num(skey, 10):
+                return public.lang("10 consecutive authentication failures are prohibited for 1 hour")
             s_time = int(time.time())
-            if public.M('temp_login').where('state=? and expire>?',(0,s_time)).field('id,token,salt,expire').count()==0:
+            if public.M('temp_login').where('state=? and expire>?',(0, s_time)).field('id,token,salt,expire').count()==0:
                 public.set_error_num(skey)
-                return public.get_msg_gettext('Verification failed')
+                return public.lang("Verification failed")
 
             data = public.M('temp_login').where('state=? and expire>?',(0,s_time)).field('id,token,salt,expire').find()
-            if not data:
+            if data is None or not isinstance(data,dict):
                 public.set_error_num(skey)
-                return public.get_msg_gettext('Verification failed')
-            if not isinstance(data,dict):
-                public.set_error_num(skey)
-                return public.get_msg_gettext('Verification failed')
+                return public.lang("Verification failed")
             r_token = public.md5(get.tmp_token + data['salt'])
             if r_token != data['token']:
                 public.set_error_num(skey)
-                return public.get_msg_gettext('Verification failed')
-            public.set_error_num(skey,True)
+                return public.lang("Verification failed")
+
+            public.set_error_num(skey, True)
             userInfo = public.M('users').where("id=?",(1,)).field('id,username').find()
             session['login'] = True
             session['username'] = public.get_msg_gettext('TEMPORARY_ID({})',(data['id'],))
             session['tmp_login'] = True
             session['tmp_login_id'] = str(data['id'])
-            session['tmp_login_expire'] = time.time() + 3600
+            session['tmp_login_expire'] = data['expire']
             session['uid'] = data['id']
             sess_path = 'data/session'
             if not os.path.exists(sess_path):
@@ -208,11 +212,15 @@ class userlogin:
             self.set_request_token()
             self.login_token()
             self.set_cdn_host(get)
-            public.run_thread(public.login_send_body("Temporary authorization",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT'))))
+            public.run_thread(
+                public.login_send_body(
+                    "Temporary authorization",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT'))
+                )
+            )
             return redirect('/')
         except:
             public.print_log(public.get_error_info(),'ERROR')
-            return public.get_msg_gettext('Login failed')
+            return public.lang("Login failed")
 
 
     def login_token(self):
@@ -240,7 +248,7 @@ class userlogin:
         if 'login' in session:
             if session['login'] == True:
                 return redirect('/')
-        
+
         # 复位验证码
         if not 'code' in session:
             session['code'] = False
@@ -275,7 +283,7 @@ class userlogin:
             num = 1
         if s: cache.inc(nKey,1)
         if num > 6: session['code'] = True
-    
+
     #IP限制
     def limit_address(self,type,v=""):
         import time

@@ -321,7 +321,7 @@ class firewalld:
     # 服务控制
     def FirewalldService(self, type):
         public.ExecShell('systemctl ' + type + ' firewalld.service')
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang('Setup successfully!'))
 
     # 保存配置
     def Save(self):

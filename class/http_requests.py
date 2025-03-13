@@ -449,7 +449,7 @@ exit($header."\r\n\r\n".json_encode($body));
         c_bin = ['/usr/local/curl2/bin/curl','/usr/local/curl/bin/curl','/usr/local/bin/curl','/usr/bin/curl']
         curl_bin = 'curl'
         for cb in c_bin:
-            if os.path.exists(cb): curl_bin = cb
+            if os.path.exists(cb) and public.ExecShell(cb+' -V')[0]!='': curl_bin = cb
         if self._ip_type != 'auto':
             v4_file = '{}/data/v4.pl'.format(public.get_panel_path())
             v4_body = public.readFile(v4_file).strip()

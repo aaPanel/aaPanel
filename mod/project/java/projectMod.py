@@ -247,7 +247,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         try:
             pid = int(get.pid.strip())
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         try:
             p = psutil.Process(pid)
@@ -348,10 +348,10 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
                 if by_process < 0:
                     by_process = 0
         except (AttributeError, ValueError):
-            return "参数格式错误"
+            return "Parameter format error"
 
         if not project_name:
-            return "项目名称不能为空"
+            return "The project name cannot be empty"
         if not 1 <= len(project_name) <= 20:
             return "项目名称不超过20字符"
         if public.M('sites').where('name=?', (project_name,)).count():
@@ -492,7 +492,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
 
         else:
             public.writeFile(project_config['pids'], str(by_process))
-            start_status = "添加成功"
+            start_status = "Successfully added"
 
         if project_config["watch_file"]:
             add_project_watch(
@@ -574,7 +574,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
                 else:
                     return json_response(status=True, msg="操作已执行")
 
-            if msg == "操作失败!":
+            if msg == "operation failure":
                 return res
             # 还有一种服务文件丢失的情况走下面的写文件并启动
 
@@ -773,7 +773,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
                 jdk_path = get.jdk_path.strip()
             ps = get.project_ps.strip()
         except:
-            return "参数错误"
+            return "Parameter error"
 
         if not is_domain(domain):
             return "请输入正确的域名"
@@ -908,7 +908,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             run_user = get.run_user.strip()
             ps = get.project_ps.strip()
         except:
-            return "参数错误"
+            return "Parameter error"
 
         if not utils.check_port(port):
             return "端口已被使用"
@@ -1121,7 +1121,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             except:
                 return json_response(status=False, msg="项目名称错误")
             if not project_data:
-                return json_response(status=False, msg="项目不存在")
+                return json_response(status=False, msg="The project does not exist")
         else:
             project_name = project_data['name']
 
@@ -1216,7 +1216,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             except:
                 return json_response(status=False, msg="项目名称错误")
             if not project_data:
-                return json_response(status=False, msg="项目不存在")
+                return json_response(status=False, msg="The project does not exist")
         else:
             project_name = project_data['name']
 
@@ -1268,7 +1268,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             except:
                 return json_response(status=False, msg="项目名称错误")
             if not project_data:
-                return json_response(status=False, msg="项目不存在")
+                return json_response(status=False, msg="The project does not exist")
         else:
             project_name = project_data['name']
 
@@ -1348,9 +1348,9 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         try:
             project_data = self.get_project_find(get.project_name.strip())
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         if not project_data:
-            return json_response(status=False, msg="项目不存在")
+            return json_response(status=False, msg="The project does not exist")
         project_config = project_data["project_config"]
         if project_config["java_type"] == "springboot":
             return self.modify_spring_boot_project(get, project_data)
@@ -1473,7 +1473,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             return json_response(False, '项目名称参数错误')
 
         if not project_data:
-            return json_response(False, '项目不存在')
+            return json_response(False, 'The project does not exist')
 
         p = self.project_process(project_data)
         if p and p.is_running():
@@ -1506,7 +1506,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             return json_response(False, '项目名称参数错误')
 
         if not project_data:
-            return json_response(False, '项目不存在')
+            return json_response(False, 'The project does not exist')
 
         project_config = project_data['project_config']
         if project_config["java_type"] == "springboot":
@@ -1552,7 +1552,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             return json_response(False, '项目名称参数错误')
 
         if not project_data:
-            return json_response(False, '项目不存在')
+            return json_response(False, 'The project does not exist')
 
         project_config = project_data['project_config']
         if project_config["java_type"] == "springboot":
@@ -1711,7 +1711,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             return json_response(False, '参数错误')
 
         if not project_data:
-            return json_response(False, '指定项目不存在')
+            return json_response(False, 'The specified item does not exist')
 
         data = self._project_domain_list(project_data['id'])
         return json_response(True, data=data)
@@ -1731,7 +1731,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             return json_response(False, '域名参数错误')
 
         if not project_data:
-            return json_response(False, '指定项目不存在')
+            return json_response(False, 'The specified item does not exist')
 
         project_id = project_data['id']
         project_name = project_data["name"]
@@ -1770,7 +1770,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             return json_response(False, '参数错误')
 
         if not project_data:
-            return json_response(False, '指定项目不存在')
+            return json_response(False, 'The specified item does not exist')
 
         if not isinstance(remove_list, list):
             return json_response(False, '域名参数错误')
@@ -1828,7 +1828,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             res = self._set_domain(project_data, [(i["name"], str(i["port"])) for i in now_domain])
             if res:
                 return json_response(False, msg="域名记录删除成功，但配置文件写入时失败:" + res, data=res_data)
-        return json_response(True, msg="删除成功", data=res_data)
+        return json_response(True, msg="Successfully delete", data=res_data)
 
     def bind_extranet(self, get):
         """开放外网映射"""
@@ -1837,7 +1837,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         except:
             return json_response(False, '参数错误')
         if not project_data:
-            return json_response(False, '指定项目不存在: {}'.format(get.project_name))
+            return json_response(False, 'The specified item does not exist: {}'.format(get.project_name))
 
         if not public.is_apache_nginx():
             return json_response(False, "未安装Nginx")
@@ -1856,7 +1856,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         public.M('sites').where('id=?', (project_data["id"],)).update(
             {"project_config": json.dumps(project_config)}
         )
-        return json_response(True, msg="设置成功")
+        return json_response(True, msg="Successfully set")
 
     def unbind_extranet(self, get):
         """关闭外网映射"""
@@ -1865,7 +1865,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         except:
             return json_response(False, '参数错误')
         if not project_data:
-            return json_response(False, '指定项目不存在: {}'.format(get.project_name))
+            return json_response(False, 'The specified item does not exist: {}'.format(get.project_name))
 
         project_config = project_data["project_config"]
         self._close_apache_config_file(project_data)
@@ -1873,7 +1873,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         public.M('sites').where('id=?', (project_data["id"],)).update(
             {"project_config": json.dumps(project_config)}
         )
-        return json_response(True, msg="设置成功")
+        return json_response(True, msg="Successfully set")
 
     def remove_project(self, get):
         """删除指定项目"""
@@ -1883,7 +1883,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             return json_response(False, '参数错误')
 
         if not project_data:
-            return json_response(False, '指定项目不存在: {}'.format(get.project_name))
+            return json_response(False, 'The specified item does not exist: {}'.format(get.project_name))
 
         project_config = project_data["project_config"]
         project_name = project_data["name"]
@@ -1939,7 +1939,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             return json_response(False, '参数错误')
 
         if not project_data:
-            return json_response(False, '指定项目不存在: {}'.format(get.project_name))
+            return json_response(False, 'The specified item does not exist: {}'.format(get.project_name))
         project_name = project_data["name"]
         res_list = []
         bind_extranet = int(project_data["project_config"]["bind_extranet"]) != 0
@@ -2057,7 +2057,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             return json_response(False, '参数错误')
 
         if not project_data:
-            return json_response(False, '指定项目不存在: {}'.format(get.project_name))
+            return json_response(False, 'The specified item does not exist: {}'.format(get.project_name))
         project_name = project_data["name"]
         res = RealLogMgr(conf_prefix="java_").get_site_log_path(public.to_dict_obj({"sitename": project_name}))
         res_list = []
@@ -2127,7 +2127,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         except:
             return json_response(False, '参数错误')
         if not project_data:
-            return json_response(False, '指定项目不存在: {}'.format(get.project_name))
+            return json_response(False, 'The specified item does not exist: {}'.format(get.project_name))
 
         if project_data["project_config"]["java_type"] == "springboot":
             project_config = project_data["project_config"]
@@ -2149,7 +2149,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         except:
             return json_response(False, '参数错误')
         if not project_data:
-            return json_response(False, '指定项目不存在: {}'.format(get.project_name))
+            return json_response(False, 'The specified item does not exist: {}'.format(get.project_name))
 
         project_config = project_data["project_config"]
         if not project_config["java_type"] == "springboot":
@@ -2289,7 +2289,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         except:
             return json_response(False, '参数错误')
         if not project_data:
-            return json_response(False, '指定项目不存在: {}'.format(get.project_name))
+            return json_response(False, 'The specified item does not exist: {}'.format(get.project_name))
 
         project_data = self.get_project_stat(project_data)
         return json_response(True, data=project_data)
@@ -2300,7 +2300,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         上传压缩包并存储为版本
         """
         if not hasattr(get, 'sitename'):
-            return json_response(False, '项目名称不能为空')
+            return json_response(False, 'The project name cannot be empty')
         if not hasattr(get, 'version'):
             return json_response(False, '版本号不能为空')
         if not hasattr(get, 'ps'):
@@ -2380,7 +2380,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
     @staticmethod
     def get_version_list(get):
         if not hasattr(get, 'sitename'):
-            return public.returnResult(False, '项目名称不能为空')
+            return public.returnResult(False, 'The project name cannot be empty')
         version_tool = VersionTool()
         return json_response(True, data=version_tool.version_list(get.sitename))
 
@@ -2388,7 +2388,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
     @staticmethod
     def remove_version(get):
         if not hasattr(get, 'sitename'):
-            return json_response(False, '项目名称不能为空')
+            return json_response(False, 'The project name cannot be empty')
         if not hasattr(get, 'version'):
             return json_response(False, '版本号不能为空')
         version_tool = VersionTool()
@@ -2400,13 +2400,13 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
     def recover_version(self, get):
         try:
             if not hasattr(get, 'sitename'):
-                return json_response(False, '项目名称不能为空')
+                return json_response(False, 'The project name cannot be empty')
             if not hasattr(get, 'version'):
                 return json_response(False, '版本号不能为空')
 
             project_data = self.get_project_find(get.sitename)
             if not project_data:
-                return json_response(False, '指定项目不存在: {}'.format(get.sitename))
+                return json_response(False, 'The specified item does not exist: {}'.format(get.sitename))
 
             version_tool = VersionTool()
             project_config = project_data['project_config']
@@ -2414,11 +2414,11 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             if project_config["java_type"] == "springboot":
                 v_info = version_tool.get_version_info(get.sitename, get.version)
                 if not v_info:
-                    return json_response(False, '指定版本不存在: {}'.format(get.version))
+                    return json_response(False, 'The specified version does not exist: {}'.format(get.version))
 
                 path = os.path.join(version_tool.pack_path, v_info['zip_name'])
                 if not os.path.isfile:
-                    return json_response(False, '指定版本文件丢失')
+                    return json_response(False, 'The specified version file is missing')
                 if os.path.exists(project_config["project_jar"] + "_back"):
                     os.remove(project_config["project_jar"] + "_back")
                 if not path.endswith(".jar"):  # 如果不是jar包，则解压并寻找jar包
@@ -2441,7 +2441,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             # war 包
             v_info = version_tool.get_version_info(get.sitename, get.version)
             if not v_info:
-                return json_response(False, '指定版本不存在: {}'.format(get.version))
+                return json_response(False, 'The specified version does not exist: {}'.format(get.version))
             path = os.path.join(version_tool.pack_path, v_info['zip_name'])
             if path.endswith(".war") and os.path.isfile(project_data["path"]):  # 如果是war包
                 if os.path.exists(project_data["path"] + "_back"):
@@ -2460,7 +2460,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
     def now_file_backup(self, get):
         try:
             if not hasattr(get, 'sitename'):
-                return json_response(False, '项目名称不能为空')
+                return json_response(False, 'The project name cannot be empty')
             if not hasattr(get, 'version') or not get.version.strip():
                 return json_response(False, '版本号不能为空')
             else:
@@ -2469,7 +2469,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
                 get.ps = ''
             project_data = self.get_project_find(get.sitename)
             if not project_data:
-                return json_response(False, '指定项目不存在: {}'.format(get.sitename))
+                return json_response(False, 'The specified item does not exist: {}'.format(get.sitename))
             path = project_data['path']
             version_tool = VersionTool()
             project_config = project_data['project_config']
@@ -2491,7 +2491,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
     @staticmethod
     def set_version_ps(get):
         if not hasattr(get, 'sitename'):
-            return json_response(False, '项目名称不能为空')
+            return json_response(False, 'The project name cannot be empty')
         if not hasattr(get, 'version'):
             return json_response(False, '版本号不能为空')
         if not hasattr(get, 'ps'):
@@ -2515,7 +2515,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         except:
             return json_response(False, '参数错误')
         if not project_data:
-            return json_response(False, '项目不存在')
+            return json_response(False, 'The project does not exist')
         if not new_log_path.startswith('/'):
             return json_response(False, '路径格式错误')
         if not os.path.exists(new_log_path):
@@ -2575,7 +2575,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             else:
                 project_names = []
         except:
-            return json_response(False, "参数错误")
+            return json_response(False, "Parameter error")
         if not project_names:
             return json_response(False, "未选中要删除的站点")
 
@@ -2683,7 +2683,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             project_names = get.project_names
             set_type = get.operation.strip()
         except:
-            return json_response(False, "参数错误")
+            return json_response(False, "Parameter error")
         if set_type not in ["start", "stop"]:
             return public.returnMsg(False, "操作信息错误")
         if isinstance(project_names, list):
@@ -2815,8 +2815,8 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             "nginx_proxy": None,
         } for i in ports}
 
-        from firewallModel.comModel import main
-        port_list = main().port_rules_list(get)
+        from firewallModelV2.comModel import main
+        port_list = main().port_rules_list(get)['message']
         for i in port_list:
             if str(i["Port"]) in res:
                 res[str(i["Port"])]['fire_wall'] = i
@@ -2831,7 +2831,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
 
     def add_server_proxy(self, get):
         if not hasattr(get, "site_name") or not get.site_name.strip():
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         project_data = self.get_project_find(get.site_name)
         if not project_data:
@@ -2868,7 +2868,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
 
     def modify_server_proxy(self, get):
         if not hasattr(get, "site_name") or not get.site_name.strip():
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         project_data = self.get_project_find(get.site_name)
         if not project_data:
@@ -2916,7 +2916,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             site_name = get.site_name.strip()
             proxy_id = get.proxy_id.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         project_data = self.get_project_find(site_name)
         if not project_data:
             return json_response(False, "未找到项目")
@@ -2925,13 +2925,13 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         msg = rp.remove_proxy(site_name, proxy_id)
         if msg:
             return json_response(status=False, msg=msg)
-        return json_response(status=True, msg="删除成功")
+        return json_response(status=True, msg="Successfully delete")
 
     def server_proxy_list(self, get):
         try:
             site_name = get.site_name.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         project_data = self.get_project_find(site_name)
         if not project_data:
@@ -2958,7 +2958,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             if hasattr(get, "env_file") and get.env_file:
                 env_file = get.env_file
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         if not os.path.exists(project_jar):
             return json_response(status=False, msg="jar文件不存在")
         if env_file and not os.path.exists(env_file):
@@ -2985,7 +2985,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             index = get.index.strip()
             path = get.path.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         if not project_data:
             return json_response(False, "未找到项目")
@@ -3013,14 +3013,14 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             "project_config": json.dumps(project_data["project_config"])
         })
 
-        return json_response(status=True, msg="设置成功")
+        return json_response(status=True, msg="Successfully set")
 
     def get_keep_status(self, get):
         try:
             project_name = get.project_name.strip()
             project_data = self.get_project_find(project_name)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         from mod.project.java.project_update import ProjectUpdate
 
         if not project_data:
@@ -3039,7 +3039,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             project_jar = get.project_jar.strip()
             project_data = self.get_project_find(project_name)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         if not project_data:
             return json_response(False, "未找到项目")
@@ -3065,7 +3065,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
                 run_time = int(get.run_time)
             project_data = self.get_project_find(project_name)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         if not project_data:
             return json_response(False, "未找到项目")
@@ -3097,7 +3097,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             project_name = get.project_name.strip()
             project_data = self.get_project_find(project_name)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         if not project_data:
             return json_response(False, "未找到项目")
@@ -3156,13 +3156,13 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             option = get.option.strip()
             project_data = self.get_project_find(project_name)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         if not project_data:
             return json_response(False, "未找到项目")
 
         if option not in ("use_new", "use_old", "stop_new"):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         if not project_data["project_config"]["java_type"] == "springboot":
             return json_response(status=False, msg="非springboot项目不支持该功能")
@@ -3178,7 +3178,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
             project_name = get.project_name.strip()
             project_data = self.get_project_find(project_name)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         if not project_data:
             return json_response(False, "未找到项目")
@@ -3214,7 +3214,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
         try:
             log_file = get.log_file.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         if not os.path.isfile(log_file):
             return json_response(status=False, msg="日志文件不存在")

@@ -115,16 +115,16 @@ class firewalls:
 
     # 添加屏蔽IP
     def AddDropAddress(self, get):
-        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, 'The system firewall is not open')
+        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, public.lang("The system firewall is not open"))
         import time
         import re
         ip_format = get.port.split('/')[0]
-        if not public.check_ip(ip_format): return public.return_msg_gettext(False, 'IP address you entered is illegal!')
-        if ip_format in ['0.0.0.0', '127.0.0.0', "::1"]: return public.return_msg_gettext(False,
-                                                                                          'Disabling this IP will cause your server to fail')
+        if not public.check_ip(ip_format): return public.return_msg_gettext(False, public.lang("IP address you entered is illegal!"))
+        if ip_format in ['0.0.0.0', '127.0.0.0', "::1"]:
+            return public.return_msg_gettext(False, public.lang("Disabling this IP will cause your server to fail"))
         address = get.port
-        if public.M('firewall').where("port=?", (address,)).count() > 0: return public.return_msg_gettext(False,
-                                                                                                          'The IP exists in block list, no need to repeat processing!')
+        if public.M('firewall').where("port=?", (address,)).count() > 0:
+            return public.return_msg_gettext(False, public.lang("The IP exists in block list, no need to repeat processing!"))
         if self.__isUfw:
             if public.is_ipv6(ip_format):
                 public.ExecShell('{} deny from {} to any'.format(self.__ufw, address))
@@ -140,18 +140,18 @@ class firewalls:
                     public.ExecShell(
                         'firewall-cmd --permanent --add-rich-rule=\'rule family=ipv4 source address="' + address + '" drop\'')
             else:
-                if public.is_ipv6(ip_format): return public.return_msg_gettext(False, 'IP address is illegal!')
+                if public.is_ipv6(ip_format): return public.return_msg_gettext(False, public.lang("IP address is illegal!"))
                 public.ExecShell('iptables -I INPUT -s ' + address + ' -j DROP')
 
         public.WriteLog("TYPE_FIREWALL", 'FIREWALL_DROP_IP', (address,))
         addtime = time.strftime('%Y-%m-%d %X', time.localtime())
         public.M('firewall').add('port,ps,addtime', (address, get.ps, addtime))
         self.FirewallReload()
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     # 删除IP屏蔽
     def DelDropAddress(self, get):
-        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, 'The system firewall is not open')
+        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, public.lang("The system firewall is not open"))
         address = get.port
         id = get.id
         ip_format = get.port.split('/')[0]
@@ -172,23 +172,23 @@ class firewalls:
         public.M('firewall').where("id=?", (id,)).delete()
 
         self.FirewallReload()
-        return public.return_msg_gettext(True, 'Successfully deleted')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted"))
 
     # 添加放行端口
     def AddAcceptPort(self, get):
-        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, 'The system firewall is not open')
+        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, public.lang("The system firewall is not open"))
         import re
         src_port = get.port
         get.port = get.port.replace('-', ':')
         rep = r"^\d{1,5}(:\d{1,5})?$"
         if not re.search(rep, get.port):
-            return public.return_msg_gettext(False, 'Port range must be between 22 and 65535!')
+            return public.return_msg_gettext(False, public.lang("Port range must be between 22 and 65535!"))
 
         import time
         port = get.port
         ps = public.xssencode2(get.ps)
         is_exists = public.M('firewall').where("port=? or port=?", (port, src_port)).count()
-        if is_exists: return public.return_msg_gettext(False, 'The port exists, no need to repeat the release!')
+        if is_exists: return public.return_msg_gettext(False, public.lang("The port exists, no need to repeat the release!"))
         notudps = ['80', '443', '8888', '888', '39000:40000', '21', '22']
         if self.__isUfw:
             a = public.ExecShell('{} allow {}/tcp'.format(self.__ufw, port))
@@ -209,11 +209,11 @@ class firewalls:
         addtime = time.strftime('%Y-%m-%d %X', time.localtime())
         if not is_exists: public.M('firewall').add('port,ps,addtime', (port, ps, addtime))
         self.FirewallReload()
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     # 添加放行端口
     def AddAcceptPortAll(self, port, ps):
-        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, 'The system firewall is not open')
+        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, public.lang("The system firewall is not open"))
         import re
         port = port.replace('-', ':')
         rep = r"^\d{1,5}(:\d{1,5})?$"
@@ -234,7 +234,7 @@ class firewalls:
 
     # 删除放行端口
     def DelAcceptPort(self, get):
-        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, 'The system firewall is not open')
+        if not self.CheckFirewallStatus(): return public.return_msg_gettext(False, public.lang("The system firewall is not open"))
         port = get.port
         id = get.id
 
@@ -242,7 +242,7 @@ class firewalls:
 
         try:
             if (port == public.GetHost(True) or port == public.readFile('data/port.pl').strip()):
-                return public.return_msg_gettext(False, 'Failed,cannot delete current port of the panel')
+                return public.return_msg_gettext(False, public.lang("Failed,cannot delete current port of the panel"))
             if self.__isUfw:
                 public.ExecShell('{} delete allow {}/tcp'.format(self.__ufw, port))
                 public.ExecShell('{} delete allow {}/udp'.format(self.__ufw, port))
@@ -260,9 +260,9 @@ class firewalls:
             public.M('firewall').where("id=?", (id,)).delete()
 
             self.FirewallReload()
-            return public.return_msg_gettext(True, 'Successfully deleted')
+            return public.return_msg_gettext(True, public.lang("Successfully deleted"))
         except:
-            return public.return_msg_gettext(False, 'Failed to delete')
+            return public.return_msg_gettext(False, public.lang("Failed to delete"))
 
     # 设置远程端口状态
     def SetSshStatus(self, get):
@@ -287,9 +287,9 @@ class firewalls:
         if act in ['start'] and not public.get_sshd_status():
             msg = 'SSHD service failed to start'
             public.WriteLog("TYPE_FIREWALL", msg)
-            return public.returnMsg(False, msg)
+            return public.return_message(-1, 0, msg)
         public.WriteLog("TYPE_FIREWALL", msg)
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_message(0, 0, public.lang("Setup successfully!"))
 
     # 设置ping
     def SetPing(self, get):
@@ -307,10 +307,9 @@ class firewalls:
 
         if public.writeFile(filename, conf):
             public.ExecShell('sysctl -p')
-            return public.returnMsg(True, 'SUCCESS')
+            return public.return_message(0, 0, public.lang("SUCCESS"))
         else:
-            return public.returnMsg(False,
-                                    '<a style="color:red;">ERROR: setup failed, [sysctl.conf] not writable!</a><br>1. If [System hardening] is installed, please close it first<br>')
+            return public.return_message(-1, 0, '<a style="color:red;">ERROR: setup failed, [sysctl.conf] not writable!</a><br>1. If [System hardening] is installed, please close it first<br>')
 
     # 改远程端口
     def SetSshPort(self, get):
@@ -330,8 +329,8 @@ class firewalls:
 
         ports = ['21', '25', '80', '443', '8080', '888', '8888', '7800']
         if port in ports:
-            # return public.return_msg_gettext(False,'Do NOT use common default port!')
-            return public.return_message(-1, 0, 'Do NOT use common default port!')
+            # return public.return_msg_gettext(False, public.lang("Do NOT use common default port!"))
+            return public.return_message(-1, 0, public.lang("Do NOT use common default port!"))
         file = '/etc/ssh/sshd_config'
         conf = public.readFile(file)
 
@@ -357,8 +356,8 @@ class firewalls:
         public.M('firewall').add('port,ps,addtime',
                                  (port, 'SSH remote service', time.strftime('%Y-%m-%d %X', time.localtime())))
         public.WriteLog("TYPE_FIREWALL", "FIREWALL_SSH_PORT", (port,))
-        # return public.return_msg_gettext(True,'Setup successfully!')
-        return public.return_message(0, 0, 'Setup successfully!')
+        # return public.return_msg_gettext(True, public.lang("Setup successfully!"))
+        return public.return_message(0, 0, public.lang("Setup successfully!"))
 
     # 取SSH信息
     def GetSshInfo(self, get):

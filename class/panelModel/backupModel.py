@@ -32,7 +32,7 @@ class main(panelBase):
         id = get.id
         find = public.M('sites').where("id=?",(id,)).find()
         if not find:
-            return public.returnMsg(False,'找不到指定网站.')
+            return public.returnMsg(False, public.lang('The specified website could not be found.'))
 
         result = {}
         result['all'] = 0
@@ -61,7 +61,7 @@ class main(panelBase):
         id = get.id
         find = public.M('databases').where("id=?",(id,)).find()
         if not find:
-            return public.returnMsg(False,'找不到指定数据库.')
+            return public.returnMsg(False, public.lang('The specified database could not be found.'))
 
         result = {}
         result['all'] = 0

@@ -82,7 +82,7 @@ class RealReferer:
                 res["domains"] = get.domains.strip()
                 res["return_rule"] = get.return_rule.strip()
             except AttributeError:
-                return "参数错误"
+                return "Parameter error"
         else:
             try:
                 res["status"] = "true" if "status" not in get else get["status"].strip()
@@ -92,7 +92,7 @@ class RealReferer:
                 res["domains"] = get["domains"].strip()
                 res["return_rule"] = get["return_rule"].strip()
             except KeyError:
-                return "参数错误"
+                return "Parameter error"
 
         rconf = _RefererConf(**res)
         if rconf.status not in ("true", "false") and rconf.return_rule not in ("true", "false"):
@@ -330,7 +330,7 @@ class Referer:
         try:
             site_name = get.site_name.strip()
         except AttributeError:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         data = self._r.get_referer_security(site_name)
         if data is None:
@@ -344,10 +344,10 @@ class Referer:
             }
             site_info = DB("sites").where("name=?", (site_name,)).field('id').find()
             if not isinstance(site_info, dict):
-                return json_response(status=False, msg="站点查询错误")
+                return json_response(status=False, msg="Site query error")
             domains_info = DB("domain").where("pid=?", (site_info["id"],)).field('name').select()
             if not isinstance(domains_info, list):
-                return json_response(status=False, msg="站点查询错误")
+                return json_response(status=False, msg="Site query error")
 
             default_conf["domains"] = ",".join(map(lambda x: x["name"], domains_info))
             return json_response(status=True, data=default_conf)

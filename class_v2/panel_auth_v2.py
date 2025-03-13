@@ -21,21 +21,20 @@ class panelAuth:
     __product_list_path = 'data/product_list.pl'
     __product_bay_path = 'data/product_bay.pl'
     __product_id = '100000011'
-    __official_url = 'https://www.aapanel.com'
-    # __official_url = 'http://dev.aapanel.com'
+    __official_url = public.OfficialApiBase()
     __failed_connect_server='Failed to connect to the server!'
 
     def create_serverid(self, get):
         try:
             userPath = 'data/userInfo.json'
             if not os.path.exists(userPath):
-                return public.return_message(-1, 0, 'Please login with account first')
+                return public.return_message(-1, 0, public.lang("Please login with account first"))
             tmp = public.readFile(userPath)
             if len(tmp) < 2: tmp = '{}'
             data = json.loads(tmp)
             data['uid'] = data['id']
             if not data:
-                return public.return_message(-1, 0, 'Please login with account first')
+                return public.return_message(-1, 0, public.lang("Please login with account first"))
             if not 'server_id' in data:
                 s1 = public.get_mac_address() + public.get_hostname()
                 s2 = self.get_cpuname()
@@ -44,7 +43,7 @@ class panelAuth:
                 public.writeFile(userPath, json.dumps(data))
             return data
         except:
-            return public.return_message(-1, 0,'Please login with account first')
+            return public.return_message(-1, 0, public.lang("Please login with account first"))
 
 
     def create_plugin_other_order(self, get):
@@ -83,25 +82,26 @@ class panelAuth:
 
         try:
             userPath = 'data/userInfo.json'
-            if not 'pluginName' in get and not 'product_id' in get: return public.return_message(-1, 0,'Parameter ERROR!')
-            if not os.path.exists(userPath): return public.return_message(-1, 0,'Please login with account first')
+            if not 'pluginName' in get and not 'product_id' in get: return public.return_message(-1, 0, public.lang("Parameter ERROR!"))
+            if not os.path.exists(userPath): return public.return_message(-1, 0, public.lang("Please login with account first"))
             params = {}
             if not hasattr(get, 'product_id'):
                 params['product_id'] = self.get_plugin_info(get.pluginName)['id']
             else:
                 params['product_id'] = get.product_id
             data = self.send_cloud('{}/api/product/pricesV3'.format(self.__official_url), params)
-            if data['status']==-1:
+            if data['status'] ==-1:
                 return data
             data=data['message']
             if not data:
-                return public.return_message(-1, 0, 'Please log in to your aaPanel account on the panel first!')
+                return public.return_message(-1, 0, public.lang("Please log in to your aaPanel account on the panel first!"))
             if not data['success']:
                 return public.return_message(-1, 0,data['msg'])
             # if len(data['res']) == 6:
             #     return data['res'][3:]
             return public.return_message(0, 0,data['res'])
         except:
+            public.print_log(public.get_error_info())
             del(session['get_product_list'])
             return public.return_message(-1, 0,'Syncing information, please try again!\n {}',(public.get_error_info(),))
 
@@ -159,32 +159,40 @@ class panelAuth:
         # 0.管理后台生成 1.Ping++ 2.Stripe 3.Paypal 10.抵扣券
         if hasattr(get, 'coupon_id'):
             params['coupon_id'] = get.coupon_id
+
         if hasattr(get, 'pay_channel'):
             params['pay_channel'] = get.pay_channel
             #优惠券检测
             if get.pay_channel==10 and  not hasattr(get, 'coupon_id'):
-                return public.return_message(-1, 0, 'parameter error: coupon_id')
+                return public.return_message(-1, 0, public.lang("parameter error: coupon_id"))
+
         if hasattr(get, 'charge_type'):
             params['charge_type'] = get.charge_type
             if int(get.charge_type) == 1:
-                if not hasattr(get, 'cycle_unit'):return public.return_message(-1, 0, 'parameter error: cycle_unit')
+                if not hasattr(get, 'cycle_unit'):return public.return_message(-1, 0, public.lang("parameter error: cycle_unit"))
             params['cycle_unit'] = get.cycle_unit
-
         
         env_info = public.fetch_env_info()
         params['environment_info'] = json.dumps(env_info)
         params['server_id'] = env_info['install_code']
         # 多机购买 数量
         if not hasattr(get, 'num'):
-            return public.return_message(-1, 0, 'parameter error: num')
+            return public.return_message(-1, 0, public.lang("parameter error: num"))
         params['num'] = get.num
 
         # 添加购买来源
         # params['source'] = get.source
 
         data = self.send_cloud('{}/api/order/product/create'.format(self.__official_url), params)
-        if data['status']==-1:
+
+        if data['status'] == -1:
             return data
+
+        if int(params.get('pay_channel', 0)) == 10:
+            # 刷新授权状态
+            public.load_soft_list()
+            public.refresh_pd()
+
         return public.return_message(0, 0, data['message']['res'])
 
     def get_stripe_session_id(self, get):
@@ -198,8 +206,12 @@ class panelAuth:
         if hasattr(get, 'subscribe'):
             params['subscribe'] = get.subscribe
 
+        # 开启本地支付
+        if hasattr(get, 'adaptive_pricing'):
+            params['adaptive_pricing'] = get.adaptive_pricing
+
         if not params.get('order_no', None) and not params.get('order_id', None):
-            return public.return_message(-1, 0,'parameter error')
+            return public.return_message(-1, 0, public.lang("parameter error"))
 
         data = self.send_cloud('{}/api/order/product/pay'.format(self.__official_url), params)
         session['focre_cloud'] = True
@@ -213,7 +225,7 @@ class panelAuth:
             params['oid'] = get.oid
 
         if not params.get('oid', None):
-            return public.return_message(-1, 0, 'parameter error')
+            return public.return_message(-1, 0, public.lang("parameter error"))
 
         data = self.send_cloud('{}/api/paypal/create_order'.format(self.__official_url), params)
         if data['status']==-1:
@@ -236,7 +248,7 @@ class panelAuth:
             params['paypal_order_id'] = get.paypal_order_id
 
         if not params.get('paypal_order_id', None):
-             return public.return_message(-1, 0,'parameter error')
+             return public.return_message(-1, 0, public.lang("parameter error"))
 
         data = self.send_cloud('{}/api/paypal/capture_order'.format(self.__official_url), params)
         data=data['message']
@@ -260,7 +272,7 @@ class panelAuth:
         data = self.send_cloud('check_product_pays', params)
         if data['status']==-1:return data
         data=data['message']
-        if not data:  return public.return_message(-1, 0,'Fail to connect to the server!')
+        if not data:  return public.return_message(-1, 0, public.lang("Fail to connect to the server!"))
         if data['status'] == True:
             self.flush_pay_status(get)
             if 'get_product_bay' in session: del (session['get_product_bay'])
@@ -269,8 +281,8 @@ class panelAuth:
     def flush_pay_status(self, get):
         if 'get_product_bay' in session: del (session['get_product_bay'])
         data = self.get_plugin_list(get)
-        if data['status']==-1: return public.return_message(-1, 0,'Fail to connect to the server!')
-        return public.return_message(0, 0, 'Flush status success')
+        if data['status']==-1: return public.return_message(-1, 0, public.lang("Fail to connect to the server!"))
+        return public.return_message(0, 0, public.lang("Flush status success"))
 
     def get_renew_code(self):
         pass
@@ -301,7 +313,7 @@ class panelAuth:
         data = self.send_cloud('get_re_order_status', params)
         if data['status']==-1:return data
         data=data['message']
-        if not data:  return public.return_message(-1, 0,'Fail to connect to the server!')
+        if not data:  return public.return_message(-1, 0, public.lang("Fail to connect to the server!"))
         if data['status'] == True:
             self.flush_pay_status(get)
             if 'get_product_bay' in session: del (session['get_product_bay'])
@@ -362,9 +374,9 @@ class panelAuth:
             # 刷新授权状态
             public.load_soft_list()
             public.refresh_pd()
-            return public.return_message(0, 0,'Activate successfully')
+            return public.return_message(0, 0, public.lang("Activate successfully"))
 
-        return public.return_message(-1, 0, 'Activate failed')
+        return public.return_message(-1, 0, public.lang("Activate failed"))
 
     def send_cloud(self, cloudURL, params):
         try:
@@ -563,12 +575,12 @@ class panelAuth:
         params['environment_info'] = json.dumps(public.fetch_env_info())
         data = self.send_cloud('{}/api/authorize/product/activate'.format(self.__official_url), params)
         if 'success' not in data['message'] or not data['message']['success']:
-            return public.return_message(-1, 0,'Activate Failed')
+            return public.return_message(-1, 0, public.lang("Activate Failed"))
         session['focre_cloud'] = True
         # 刷新授权状态
         public.load_soft_list()
         public.refresh_pd()
-        return public.return_message(0, 0,'Activate successfully')
+        return public.return_message(0, 0, public.lang("Activate successfully"))
 
     def renew_product_auth(self, get):
         params = {}
@@ -590,11 +602,11 @@ class panelAuth:
         # 使用抵扣券续费直接返回续费结果
         if get.pay_channel == '10':
             if not data['message']['success']:
-                 return public.return_message(-1, 0, 'Renew Failed')
+                 return public.return_message(-1, 0, public.lang("Renew Failed"))
             # 刷新授权状态
             public.load_soft_list()
             public.refresh_pd()
-            return public.return_message(0, 0, 'Renew successfully')
+            return public.return_message(0, 0, public.lang("Renew successfully"))
         # 使用支付续费返回stripe的请求数据
         return public.return_message(0, 0,data['message']['res'])
 
@@ -609,8 +621,8 @@ class panelAuth:
         session['focre_cloud'] = True
         # 使用抵扣券续费直接返回续费结果
         if not data['message']['success']:
-             return public.return_message(-1, 0, 'Apply Failed')
-        return public.return_message(0, 0, 'Apply successfully')
+             return public.return_message(-1, 0, public.lang("Apply Failed"))
+        return public.return_message(0, 0, public.lang("Apply successfully"))
 
     # 获取专业版特权信息  或插件信息?
     def get_plugin_remarks(self, get):
@@ -627,7 +639,7 @@ class panelAuth:
 
 
         if not hasattr(get, 'product_id'):
-            return public.return_message(-1, 0, 'product_id Parameter ERROR!')
+            return public.return_message(-1, 0, public.lang("product_id Parameter ERROR!"))
         product_id = get.product_id
 
         # ikey = 'plugin_remarks' + product_id
@@ -637,13 +649,13 @@ class panelAuth:
             url = '{}/api/panel/get_advantages/{}'.format(self.__official_url, product_id)
             data = requests.get(url).json()
         except:
-            return public.return_message(-1, 0, 'Failed to connect to the server!')
-        if not data: return public.return_message(-1, 0, 'Failed to connect to the server!')
+            return public.return_message(-1, 0, public.lang("Failed to connect to the server!"))
+        if not data: return public.return_message(-1, 0, public.lang("Failed to connect to the server!"))
         # session[ikey] = data
         return public.return_message(0,0,data)
     
     def res_request_error(self):
-        return public.return_message(-1,0, 'Interface request failed ({})!'.format(self.__request_url))
+        return public.return_message(-1, 0, public.lang("Interface request failed ({})!", self.__request_url))
     
 
     def get_apply_copon(self, get):
@@ -704,10 +716,10 @@ class panelAuth:
         @get.coupon 优惠券
         @get.limit_time 限制时间  永久 -100
         """
-        if not hasattr(get, 'limit_time')or not get.limit_time: return public.return_message(-1,0, 'Missing parameter limit_time or parameter cannot be empty!')
+        if not hasattr(get, 'limit_time')or not get.limit_time: return public.return_message(-1, 0, public.lang("Missing parameter limit_time or parameter cannot be empty!"))
         limit_time = int(get.limit_time)
         if limit_time < time.time() and limit_time > 0:
-            return public.return_message(-1,0, 'Time cannot be less than the current time!')
+            return public.return_message(-1, 0, public.lang("Time cannot be less than the current time!"))
 
         public.writeFile('data/ignore_coupon_time.pl', str(limit_time))
 
@@ -779,3 +791,57 @@ class panelAuth:
         params = {}
         data = self.send_cloud_pro_2('obtainable_coupons', params)
         return data
+
+    # 检测订单支付状态
+    def detect_order_status(self, args: public.dict_obj):
+        args.validate([
+            public.Param('order_id').Require().Integer('>', 0).Filter(int),
+        ])
+
+        resp = self.send_cloud('{}/api/order/{}/status'.format(public.OfficialApiBase(), args.order_id), {})
+
+        # 订单支付成功时，刷新授权信息
+        if int(resp.get('message', {}).get('res', 0)) == 1:
+            # 刷新授权状态
+            public.load_soft_list()
+            public.refresh_pd()
+
+        return resp
+
+    # get expansion pricing
+    def get_expand_pack_prices(self, args: public.dict_obj):
+        expand_pack_type = str(args.get('expand_pack_type', 'mail')).strip()
+
+        # 取缓存
+        cache_key = '{}:get_expand_pack_prices'.format(expand_pack_type)
+        cache = public.cache_get(cache_key)
+
+        if cache:
+            # return cache
+            return public.return_message(0, 0, cache)
+
+        try:
+            userPath = 'data/userInfo.json'
+            if not os.path.exists(userPath): return public.return_message(-1, 0, public.lang("Please login with account first"))
+            params = {'expand_pack_type': expand_pack_type}
+            data = self.send_cloud('{}/api/product/expandPackPrices'.format(self.__official_url), params)
+
+            if data['status'] == -1:
+                # public.print_log('0')
+                return data
+
+            data = data['message']
+            if not data:
+                return public.return_message(-1, 0, public.lang("Please log in to your aaPanel account on the panel first!"))
+            if not data['success']:
+                # public.print_log('1')
+                return public.return_message(-1, 0,data['msg'])
+
+            dat = {"prices": data['res'],}
+            public.cache_set(cache_key, dat, 600)
+            return public.return_message(0, 0, dat)
+        except:
+            public.print_log(public.get_error_info())
+            del(session['get_product_list'])
+            return public.return_message(-1, 0,'Syncing information, please try again!\n {}',(public.get_error_info(),))
+

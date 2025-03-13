@@ -49,15 +49,15 @@ class database(datatool.datatools):
             @return dict
         '''
         if not hasattr(get, 'db_host'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_port'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_user'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_password'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_ps'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         get.db_name = None
         res = self.CheckCloudDatabase(get)
         if isinstance(res, dict): return res
@@ -78,7 +78,7 @@ class database(datatool.datatools):
 
         if isinstance(result, int):
             public.write_log_gettext('Database manager', 'Add remote MySQL server [{}:{}]', (get.db_host, get.db_port))
-            return public.return_msg_gettext(True, 'Setup successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         return public.return_msg_gettext(False, 'Add failed: {}', (result,))
 
     def GetCloudServer(self, get):
@@ -105,15 +105,15 @@ class database(datatool.datatools):
         '''
 
         id = int(get.id)
-        if not id: return public.return_msg_gettext(False, 'Parameter ERROR!')
+        if not id: return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         db_find = public.M('database_servers').where('id=?', (id,)).find()
-        if not db_find: return public.returnMsg(False, 'The specified server dose not exists!')
+        if not db_find: return public.returnMsg(False, public.lang("The specified server dose not exists!"))
         public.M('databases').where('sid=?', id).delete()
         result = public.M('database_servers').where('id=?', id).delete()
         if isinstance(result, int):
             public.WriteLog('Database manager', 'Delete the remote MySQL server [{}:{}]',
                             (db_find['db_host'], int(db_find['db_port'])))
-            return public.return_msg_gettext(True, 'Successfully deleted!')
+            return public.return_msg_gettext(True, public.lang("Successfully deleted!"))
         return public.return_msg_gettext(False, 'Failed to delete: {}', (result,))
 
     def ModifyCloudServer(self, get):
@@ -129,22 +129,22 @@ class database(datatool.datatools):
             @return dict
         '''
         if not hasattr(get, 'id'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_host'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_port'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_user'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_password'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_ps'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
 
         id = int(get.id)
         get.db_port = int(get.db_port)
         db_find = public.M('database_servers').where('id=?', (id,)).find()
-        if not db_find: return public.return_msg_gettext(False, 'The specified server dose not exists!')
+        if not db_find: return public.return_msg_gettext(False, public.lang("The specified server dose not exists!"))
         _modify = False
         if db_find['db_host'] != get.db_host or db_find['db_port'] != get.db_port:
             _modify = True
@@ -170,7 +170,7 @@ class database(datatool.datatools):
         result = public.M("database_servers").where('id=?', (id,)).update(pdata)
         if isinstance(result, int):
             public.WriteLog('Database manager', 'Edit remote MySQL server [{}:{}]', (get.db_host, get.db_port))
-            return public.return_msg_gettext(True, 'Setup successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         return public.return_msg_gettext(False, 'Fail to edit: {}', (result))
 
     def AddCloudDatabase(self, get):
@@ -186,17 +186,17 @@ class database(datatool.datatools):
             @return dict
         '''
         if not hasattr(get, 'db_host'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_port'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_user'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_name'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_password'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         if not hasattr(get, 'db_ps'):
-            return public.return_msg_gettext(False, 'Parameter ERROR!')
+            return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
 
         # 检查数据库是否能连接
         res = self.CheckCloudDatabase(get)
@@ -229,7 +229,7 @@ class database(datatool.datatools):
         result = public.M('databases').insert(pdata)
         if isinstance(result, int):
             public.write_log_gettext('Database manager', 'Add remote MySQL database [{}] successfully', (get.db_name,))
-            return public.return_msg_gettext(True, 'Setup successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         return public.return_msg_gettext(False, 'Add failed: {}', (result,))
 
     def CheckCloudDatabase(self, conn_config):
@@ -259,7 +259,7 @@ class database(datatool.datatools):
             for i in result:
                 if i[0] == conn_config['db_name']:
                     return True
-            return public.returnMsg(False, 'The specified database does not exist!')
+            return public.returnMsg(False, public.lang("The specified database does not exist!"))
         except Exception as ex:
             res = self.GetMySQLError(ex)
             if not res: res = str(ex)
@@ -294,47 +294,38 @@ class database(datatool.datatools):
 
     # 添加数据库
     def AddDatabase(self, get):
-        # try:
         self._check_empty_user_passwd()
         ssl = ""
         if hasattr(get, "ssl"):
             ssl = get.ssl
         if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get):
-            return public.return_msg_gettext(False,
-                                             'SSL is not enabled in the database, please open it in the Mysql manager first')
+            return public.return_msg_gettext(False, public.lang("SSL is not enabled in the database, please open it in the Mysql manager first"))
         data_name = get['name'].strip().lower()
-        if not data_name: return public.return_msg_gettext(False, 'The database name cannot be empty')
+        if not data_name: return public.return_msg_gettext(False, public.lang("The database name cannot be empty"))
         if self.CheckRecycleBin(data_name): return public.return_msg_gettext(False,
                                                                              'Database [{}] already at the recycle bin, please recover from the recycle bin!',
                                                                              (data_name,))
-        if len(data_name) > 64: return public.return_msg_gettext(False,
-                                                                 'Database name cannot be more than 16 characters!')
+        if len(data_name) > 64: return public.return_msg_gettext(False, public.lang("Database name cannot be more than 16 characters!"))
         reg = r"^[\w\.-]+$"
         username = get.db_user.strip()
-        if not username: return public.return_msg_gettext(False, 'The database user name cannot be empty')
-        if not re.match(reg, data_name): return public.return_msg_gettext(False,
-                                                                          'Database name cannot contain special characters!')
-        if not re.match(reg, username): return public.return_msg_gettext(False, 'Database name is illegal!')
+        if not username: return public.return_msg_gettext(False, public.lang("The database user name cannot be empty"))
+        if not re.match(reg, data_name): return public.return_msg_gettext(False, public.lang("Database name cannot contain special characters!"))
+        if not re.match(reg, username): return public.return_msg_gettext(False, public.lang("Database name is illegal!"))
         if not hasattr(get, 'db_user'): get.db_user = data_name
 
         checks = ['root', 'mysql', 'test', 'sys', 'panel_logs']
-        if username in checks or len(username) < 1: return public.return_msg_gettext(False,
-                                                                                     'Database username is illegal!')
-        if data_name in checks or len(data_name) < 1: return public.return_msg_gettext(False,
-                                                                                       'Database name is illegal!')
+        if username in checks or len(username) < 1: return public.return_msg_gettext(False, public.lang("Database username is illegal!"))
+        if data_name in checks or len(data_name) < 1: return public.return_msg_gettext(False, public.lang("Database name is illegal!"))
         data_pwd = get['password']
         if len(data_pwd) < 1:
             data_pwd = public.md5(str(time.time()))[0:16]
 
         sql = public.M('databases')
-        if sql.where("name=?", (data_name)).count(): return public.return_msg_gettext(False, 'Database exists!')
-        if sql.where("username=?", (username)).count(): return public.return_msg_gettext(False,
-                                                                                         'The user name already exists. For security reasons, we do not allow one database user to manage multiple databases')
+        if sql.where("name=?", (data_name)).count(): return public.return_msg_gettext(False, public.lang("Database exists!"))
+        if sql.where("username=?", (username)).count(): return public.return_msg_gettext(False, public.lang("The user name already exists. For security reasons, we do not allow one database user to manage multiple databases"))
         address = get['address'].strip()
-        if address in ['', 'ip']: return public.return_msg_gettext(False,
-                                                                   'If the access permission is [Specified IP], you need to enter the IP address!')
+        if address in ['', 'ip']: return public.return_msg_gettext(False, public.lang("If the access permission is [Specified IP], you need to enter the IP address!"))
 
-        user = '是'
         password = data_pwd
 
         codeing = get['codeing']
@@ -349,37 +340,32 @@ class database(datatool.datatools):
         # 添加MYSQL
         self.sid = get.get('sid/d', 0)
         mysql_obj = public.get_mysql_obj_by_sid(self.sid)
-        if not mysql_obj: return public.returnMsg(False, 'Failed to connect to the specified database')
+        if not mysql_obj: return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
 
         # 从MySQL验证是否存在
-        if self.database_exists_for_mysql(mysql_obj, data_name):  return public.return_msg_gettext(False,
-                                                                                                   'The specified database already exists in MySQL, please change the name!')
+        if self.database_exists_for_mysql(mysql_obj, data_name):  return public.return_msg_gettext(False, public.lang("The specified database already exists in MySQL, please change the name!"))
 
         result = mysql_obj.execute(
             "create database `" + data_name + "` DEFAULT CHARACTER SET " + codeing + " COLLATE " + codeStr)
         isError = self.IsSqlError(result)
-        if isError != None: return isError
+        if isError is not None: return isError
         mysql_obj.execute("drop user '" + username + "'@'localhost'")
         for a in address.split(','):
             mysql_obj.execute("drop user '" + username + "'@'" + a + "'")
         self.__CreateUsers(data_name, username, password, address, ssl)
 
-        if get['ps'] == '': get['ps'] = public.get_msg_gettext('Edit notes')
+        if get['ps'] == '': get['ps'] = public.lang("Edit notes")
         get['ps'] = public.xssencode2(get['ps'])
         addTime = time.strftime('%Y-%m-%d %X', time.localtime())
-
         pid = 0
         if hasattr(get, 'pid'): pid = get.pid
         # 添加入SQLITE
         db_type = 0
         if self.sid: db_type = 2
-        sql.add('pid,sid,db_type,name,username,password,accept,ps,addtime',
+        db_id = sql.add('pid,sid,db_type,name,username,password,accept,ps,addtime',
                 (pid, self.sid, db_type, data_name, username, password, address, get['ps'], addTime))
         public.write_log_gettext("Database manager", 'Successfully added database [{}]!', (data_name,))
-        return public.return_msg_gettext(True, 'Setup successfully!')
-        # except Exception as ex:
-        #     public.write_log_gettext("Database manager",'Failed to add database [{}]!, {}', (data_name,str(ex)))
-        #     return public.return_msg_gettext(False,'Failed to add')
+        return {**public.return_message(True, 0, public.lang("Setup successfully!")), "id": db_id}
 
     # 生成mysql证书
     def _create_mysql_ssl(self):
@@ -413,14 +399,14 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
         conf_file = "/etc/my.cnf"
         conf = public.readFile(conf_file)
         if not conf:
-            return public.return_msg_gettext(False, 'Configuration file not exist')
+            return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
         if self.check_mysql_ssl_status(get):
             reg = "ssl-ca=/www.*\n.*\n.*server-key.pem\n"
             conf = re.sub(reg, "", conf)
             if os.path.exists('/www/server/mysql/mysql-test/std_data/server-cert.pem'):
                 conf = re.sub(r'\[mysqld\]', '[mysqld]\nskip_ssl', conf)
             public.writeFile(conf_file, conf)
-            return public.return_msg_gettext(True, 'Setup successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         # create_ssl = None
         # for i in ['5.5','5.6','10.1','10.2','10.3']:
         #     if i not in public.readFile('/www/server/mysql/version_check.pl'):
@@ -433,7 +419,7 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
         conf = re.sub('skip_ssl\n', '', conf)
         public.writeFile(conf_file, conf)
         # public.ExecShell('chown mysql.mysql /www/server/data/*.pem')
-        return public.return_msg_gettext(True, 'Open successfully, take effect after manually restarting the database')
+        return public.return_msg_gettext(True, public.lang("Open successfully, take effect after manually restarting the database"))
 
     # 检查mysqlssl状态
     def check_mysql_ssl_status(self, get):
@@ -464,7 +450,7 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
     # 创建用户
     def __CreateUsers(self, dbname, username, password, address, ssl=None):
         mysql_obj = public.get_mysql_obj_by_sid(self.sid)
-        if not mysql_obj: return public.returnMsg(False, 'Failed to connect to the specified database')
+        if not mysql_obj: return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
         mysql_obj.execute("CREATE USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username, password))
         result = mysql_obj.execute("grant all privileges on `%s`.* to `%s`@`localhost`" % (dbname, username))
         if str(result).find('1044') != -1:
@@ -496,23 +482,18 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
     # 检测数据库执行错误
     def IsSqlError(self, mysqlMsg):
         mysqlMsg = str(mysqlMsg)
-        if "MySQLdb" in mysqlMsg: return public.return_msg_gettext(False,
-                                                                   'MySQLdb component is missing! <br>Please enter SSH and run the command: pip install mysql-python')
-        if "2002," in mysqlMsg or '2003,' in mysqlMsg: return public.return_msg_gettext(False,
-                                                                                        'ERROR to connect database, pls check database status!')
-        if "using password:" in mysqlMsg: return public.return_msg_gettext(False,
-                                                                           'Mysql root or user password is incorrect, please try to reset!')
-        if "Connection refused" in mysqlMsg: return public.return_msg_gettext(False,
-                                                                              'ERROR to connect database, pls check database status!')
-        if "1133" in mysqlMsg: return public.return_msg_gettext(False, 'Database user does NOT exist!')
-        if "3679" in mysqlMsg: return public.returnMsg(False,
-                                                       'Slave database deletion failed, data directory does not exist!')
+        if "MySQLdb" in mysqlMsg: return public.return_msg_gettext(False, public.lang("MySQLdb component is missing! <br>Please enter SSH and run the command: pip install mysql-python"))
+        if "2002," in mysqlMsg or '2003,' in mysqlMsg: return public.return_msg_gettext(False, public.lang("ERROR to connect database, pls check database status!"))
+        if "using password:" in mysqlMsg: return public.return_msg_gettext(False, public.lang("Mysql root or user password is incorrect, please try to reset!"))
+        if "Connection refused" in mysqlMsg: return public.return_msg_gettext(False, public.lang("ERROR to connect database, pls check database status!"))
+        if "1133" in mysqlMsg: return public.return_msg_gettext(False, public.lang("Database user does NOT exist!"))
+        if "3679" in mysqlMsg: return public.returnMsg(False, public.lang("Slave database deletion failed, data directory does not exist!"))
         if "libmysqlclient" in mysqlMsg:
             self.rep_lnk()
             public.ExecShell("pip uninstall mysql-python -y")
             public.ExecShell("pip install pymysql")
             public.writeFile('data/restart.pl', 'True')
-            return public.return_msg_gettext(False, 'Execution failed, attempted auto repair, please try again later!')
+            return public.return_msg_gettext(False, public.lang("Execution failed, attempted auto repair, please try again later!"))
         return None
 
     def rep_lnk(self):
@@ -629,7 +610,7 @@ SetLink
         name = get['name']
         find = public.M('databases').where("id=?", (id,)).field(
             'id,sid,pid,name,username,password,accept,ps,addtime,db_type').find()
-        if not find: return public.return_msg_gettext(False, 'Database [{}] does not exist!'.format(name))
+        if not find: return public.return_msg_gettext(False, public.lang("Database [{}] does not exist!", name))
         self.sid = find['sid']
         if find['db_type'] in ['0', 0] or self.sid:  # 删除本地数据库
             if os.path.exists('data/recycle_bin_db.pl') and not self.sid: return self.DeleteToRecycleBin(name)
@@ -637,7 +618,7 @@ SetLink
             username = find['username']
             # 删除MYSQL
             mysql_obj = public.get_mysql_obj_by_sid(self.sid)
-            if not mysql_obj: return public.return_msg_gettext(False, 'Database [{}] connection failed'.format(name))
+            if not mysql_obj: return public.return_msg_gettext(False, public.lang("Database [{}] connection failed", name))
             result = mysql_obj.execute("drop database `" + name + "`")
             isError = self.IsSqlError(result)
             if isError != None: return isError
@@ -649,10 +630,10 @@ SetLink
         # 删除SQLITE
         public.M('databases').where("id=?", (id,)).delete()
         public.write_log_gettext("Database manager", 'Successfully deleted database [{}]!', (name,))
-        return public.return_msg_gettext(True, 'Successfully deleted')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted"))
         # except Exception as ex:
         #     public.write_log_gettext("Database manager",'Failed to delete database [{}]!, {}',(get.name , str(ex)))
-        #     return public.return_msg_gettext(False,'Failed to delete')
+        #     return public.return_msg_gettext(False, public.lang("Failed to delete"))
 
     def db_name_to_unicode(self, name):
         '''
@@ -675,7 +656,7 @@ SetLink
         users = panelMysql.panelMysql().query(
             "select Host from mysql.user where User='" + username + "' AND Host!='localhost'")
         if isinstance(users, str):
-            return public.return_msg_gettext(False, 'Delete failed, failed to connect to database!')
+            return public.return_msg_gettext(False, public.lang("Delete failed, failed to connect to database!"))
         try:
             for us in users:
                 panelMysql.panelMysql().execute("drop user '" + username + "'@'" + us[0] + "'")
@@ -692,16 +673,16 @@ SetLink
 
         db_path = '{}/{}'.format(datadir, u_name)
         if not os.path.exists(db_path):
-            return public.return_msg_gettext(False, 'The database data does not exist!')
+            return public.return_msg_gettext(False, public.lang("The database data does not exist!"))
 
         public.ExecShell("mv -f {} {}".format(db_path, rm_path))
         if not os.path.exists(rm_path):
-            return public.return_msg_gettext(False, 'Failed to move database data to the recycle bin!')
+            return public.return_msg_gettext(False, public.lang("Failed to move database data to the recycle bin!"))
         public.writeFile(rm_config_file, json.dumps(data))
         # public.writeFile(rPath + 'BTDB_' + name +'_t_' + str(time.time()),json.dumps(data))
         public.M('databases').where("name=?", (name,)).delete()
         public.write_log_gettext("Database manager", 'Successfully deleted database [{}]!', (name,))
-        return public.return_msg_gettext(True, 'Database moved to recycle bin!')
+        return public.return_msg_gettext(True, public.lang("Database moved to recycle bin!"))
 
     # 永久删除数据库
     def DeleteTo(self, filename):
@@ -710,12 +691,12 @@ SetLink
             data = json.loads(public.readFile(filename))
             if public.M('databases').where("name=?", (data['name'],)).count():
                 os.remove(filename)
-                return public.return_msg_gettext(True, 'Successfully deleted')
+                return public.return_msg_gettext(True, public.lang("Successfully deleted"))
         else:
             if os.path.exists(filename):
                 data = json.loads(public.readFile(filename + '/config.json'))
             else:
-                return public.returnMsg(False, 'Recycle Bin does not exist for this database!')
+                return public.returnMsg(False, public.lang("Recycle Bin does not exist for this database!"))
 
         db_obj = panelMysql.panelMysql()
         if self.database_exists_for_mysql(db_obj, data['name']):
@@ -745,7 +726,7 @@ SetLink
             public.write_log_gettext("Database manager", 'Successfully deleted database [{}]!', (data['name'],))
         except:
             pass
-        return public.return_msg_gettext(True, 'Successfully deleted')
+        return public.return_msg_gettext(True, public.lang("Successfully deleted"))
 
     # 恢复数据库
     def RecycleDB(self, filename):
@@ -759,20 +740,19 @@ SetLink
             u_name = self.db_name_to_unicode(data['name'])
             db_path = "{}/{}".format(public.get_datadir(), u_name)
             if os.path.exists(db_path):
-                return public.return_msg_gettext(False,
-                                                 'There is a database with the same name in the current database. To ensure data security, stop recovery!')
+                return public.return_msg_gettext(False, public.lang("There is a database with the same name in the current database. To ensure data security, stop recovery!"))
             _isdir = True
 
         if public.M('databases').where("name=?", (data['name'],)).count():
             if not _isdir: os.remove(filename)
-            return public.return_msg_gettext(True, 'Database recovered!')
+            return public.return_msg_gettext(True, public.lang("Database recovered!"))
 
         if not _isdir:
             os.remove(filename)
         else:
             public.ExecShell('mv -f {} {}'.format(filename, db_path))
             if not os.path.exists(db_path):
-                return public.return_msg_gettext(False, 'Data recovery failed!')
+                return public.return_msg_gettext(False, public.lang("Data recovery failed!"))
             db_config_file = "{}/config.json".format(db_path)
             if os.path.exists(db_config_file): os.remove(db_config_file)
 
@@ -785,20 +765,19 @@ SetLink
         public.M('databases').add('id,pid,name,username,password,accept,ps,addtime', (
         data['id'], data['pid'], data['name'], data['username'], data['password'], data['accept'], data['ps'],
         data['addtime']))
-        return public.return_msg_gettext(True, 'Database recovered!')
+        return public.return_msg_gettext(True, public.lang("Database recovered!"))
 
     # 设置ROOT密码
     def SetupPassword(self, get):
         password = get['password'].strip()
         try:
-            if not password: return public.return_msg_gettext(False, 'Root password cannot be empty')
+            if not password: return public.return_msg_gettext(False, public.lang("Root password cannot be empty"))
             rep = r"^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
-            if not re.match(rep, password): return public.return_msg_gettext(False,
-                                                                             'Database password cannot contain special characters!')
+            if not re.match(rep, password): return public.return_msg_gettext(False, public.lang("Database password cannot contain special characters!"))
             self.sid = get.get('sid/d', 0)
             # 修改MYSQL
             mysql_obj = public.get_mysql_obj_by_sid(self.sid)
-            if not mysql_obj: return public.returnMsg(False, 'Failed to connect to the specified database')
+            if not mysql_obj: return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
             result = mysql_obj.query("show databases")
             isError = self.IsSqlError(result)
             is_modify = True
@@ -842,7 +821,7 @@ SetLink
                             admin_user))
                 mysql_obj.execute("flush privileges")
 
-            msg = public.get_msg_gettext('Successfully modified root password!')
+            msg = public.lang("Successfully modified root password!")
             # 修改SQLITE
             if self.sid:
                 public.M('database_servers').where('id=?', self.sid).setField('db_password', password)
@@ -867,14 +846,12 @@ SetLink
         name = db_find['name']
 
         rep = r"^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
-        if not re.match(rep, newpassword): return public.return_msg_gettext(False,
-                                                                            'Database password cannot contain special characters!')
+        if not re.match(rep, newpassword): return public.return_msg_gettext(False, public.lang("Database password cannot contain special characters!"))
         # 修改MYSQL
         self.sid = db_find['sid']
-        if self.sid and username == 'root': return public.returnMsg(False,
-                                                                    'Cannot change the root password of the remote database')
+        if self.sid and username == 'root': return public.returnMsg(False, public.lang("Cannot change the root password of the remote database"))
         mysql_obj = public.get_mysql_obj_by_sid(self.sid)
-        if not mysql_obj: return public.returnMsg(False, 'Failed to connect to the specified database')
+        if not mysql_obj: return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
         m_version = public.readFile(public.GetConfigValue('setup_path') + '/mysql/version.pl')
         if self.sid:
             m_version = mysql_obj.query('select version();')[0][0]
@@ -900,7 +877,7 @@ SetLink
         if isError != None: return isError
 
         mysql_obj.execute("flush privileges")
-        # if result==False: return public.return_msg_gettext(False,'Failed to modify, database user does not exist!')
+        # if result==False: return public.return_msg_gettext(False, public.lang("Failed to modify, database user does not exist!"))
         # 修改SQLITE
         if int(id) > 0:
             public.M('databases').where("id=?", (id,)).setField('password', newpassword)
@@ -934,11 +911,10 @@ SetLink
             root = public.M('config').where('id=?', (1,)).getField('mysql_root')
             if not os.path.exists(session['config']['backup_path'] + '/database'): public.ExecShell(
                 'mkdir -p ' + session['config']['backup_path'] + '/database')
-            if not self.mypass(True, root): return public.return_msg_gettext(False,
-                                                                             'Database configuration file failed to get checked, please check if MySQL configuration file exists [/etc/my.cnf]')
+            if not self.mypass(True, root): return public.return_msg_gettext(False, public.lang("Database configuration file failed to get checked, please check if MySQL configuration file exists [/etc/my.cnf]"))
             try:
                 password = public.M('config').where('id=?', (1,)).getField('mysql_root')
-                if not password: return public.returnMsg(False, 'Database password cannot be empty')
+                if not password: return public.returnMsg(False, public.lang("Database password cannot be empty"))
                 password = shlex.quote(str(password))
                 os.environ["MYSQL_PWD"] = password
                 public.ExecShell(
@@ -981,17 +957,17 @@ SetLink
             finally:
                 os.environ["MYSQL_PWD"] = ""
         else:
-            return public.return_msg_gettext(False, 'Unsupported database type')
+            return public.return_msg_gettext(False, public.lang("Unsupported database type"))
 
-        if not os.path.exists(backupName): return public.return_msg_gettext(False, 'Backup error!')
+        if not os.path.exists(backupName): return public.return_msg_gettext(False, public.lang("Backup error!"))
         sql = public.M('backup')
         addTime = time.strftime('%Y-%m-%d %X', time.localtime())
         sql.add('type,name,pid,filename,size,addtime', (1, fileName, id, backupName, 0, addTime))
         public.write_log_gettext("Database manager", "Backup database [{}] succeed!", (name,))
-        return public.return_msg_gettext(True, 'Backup Succeeded!')
+        return public.return_msg_gettext(True, public.lang("Backup Succeeded!"))
         # except Exception as ex:
         # public.write_log_gettext("数据库管理", "备份数据库[" + name + "]失败 => "  +  str(ex))
-        # return public.return_msg_gettext(False,'备份失败!')
+        # return public.return_msg_gettext(False, public.lang("备份失败!"))
 
     # 删除备份文件
     def DelBackup(self, get):
@@ -1012,11 +988,11 @@ SetLink
             db_name = public.M('databases').where('id=?', (pid,)).getField('name')
             public.write_log_gettext("Database manager", 'Successfully deleted backup [{}] for database [{}]!',
                                      (db_name, filename))
-            return public.return_msg_gettext(True, 'Successfully deleted')
+            return public.return_msg_gettext(True, public.lang("Successfully deleted"))
         except Exception as ex:
             public.write_log_gettext("Database manager", 'Failed to delete backup [{}] for database [{}]! => {}',
                                      (db_name, filename, str(ex)))
-            return public.return_msg_gettext(False, 'Failed to delete')
+            return public.return_msg_gettext(False, public.lang("Failed to delete"))
 
     # 导入
     def InputSql(self, get):
@@ -1031,10 +1007,10 @@ SetLink
         exts = ['sql', 'gz', 'zip']
         ext = tmp[len(tmp) - 1]
         if ext not in exts:
-            return public.return_msg_gettext(False, 'Select sql/gz/zip file!')
+            return public.return_msg_gettext(False, public.lang("Select sql/gz/zip file!"))
         db_find = public.M('databases').where('name=?', name).find()
         mysql_obj = public.get_mysql_obj_by_sid(db_find['sid'])
-        if not mysql_obj: return public.returnMsg(False, 'Failed to connect to the specified database')
+        if not mysql_obj: return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
         result = mysql_obj.execute("show databases")
         isError = self.IsSqlError(result)
         if isError: return isError
@@ -1132,10 +1108,10 @@ SetLink
                 os.environ["MYSQL_PWD"] = ""
 
         public.write_log_gettext("Database manager", 'Successfully imported database [{}]', (name,))
-        return public.return_msg_gettext(True, 'Successfully imported database!')
+        return public.return_msg_gettext(True, public.lang("Successfully imported database!"))
         # except Exception as ex:
         # public.WriteLog("TYPE_DATABASE", 'DATABASE_INPUT_ERR',(name,str(ex)))
-        # return public.returnMsg(False,'DATABASE_INPUT_ERR')
+        # return public.returnMsg(False, public.lang("DATABASE_INPUT_ERR"))
 
     # 同步数据库到服务器
     def SyncToDatabases(self, get):
@@ -1161,10 +1137,10 @@ SetLink
                 if result == 1: n += 1
         # 当只同步1个数据库时，不返回成功数量
         if n == 1:
-            return public.returnMsg(True, 'Synchronization succeeded')
+            return public.returnMsg(True, public.lang("Synchronization succeeded"))
         elif n == 0:
             # 失败
-            return public.returnMsg(False, 'Sync failed')
+            return public.returnMsg(False, public.lang("Sync failed"))
         else:
             return public.return_msg_gettext(True, 'Sync {} database(s) from server!', (str(n),))
 
@@ -1204,7 +1180,7 @@ SetLink
                                                                     (find['password'], find['username']))
         self.sid = find['sid']
         mysql_obj = public.get_mysql_obj_by_sid(find['sid'])
-        if not mysql_obj: return public.returnMsg(False, 'Failed to connect to the specified database')
+        if not mysql_obj: return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
         result = mysql_obj.execute("create database `" + find['name'] + "`")
         if "using password:" in str(result): return -1
         if "Connection refused" in str(result): return -1
@@ -1222,7 +1198,7 @@ SetLink
         db_type = 0
         if self.sid: db_type = 2
         mysql_obj = public.get_mysql_obj_by_sid(self.sid)
-        if not mysql_obj: return public.returnMsg(False, 'Failed to connect to the specified database')
+        if not mysql_obj: return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
         data = mysql_obj.query("show databases")
         isError = self.IsSqlError(data)
         if isError != None: return isError
@@ -1249,9 +1225,9 @@ SetLink
                     host = user[1]
                     break
 
-            ps = public.get_msg_gettext('Edit notes')
+            ps = public.lang("Edit notes")
             if value[0] == 'test':
-                ps = public.get_msg_gettext('Test Database')
+                ps = public.lang("Test Database")
 
             # XSS filter
             if not re.match(r"^[\w+\.-]+$", value[0]): continue
@@ -1293,15 +1269,14 @@ SetLink
         if hasattr(get, 'ssl'):
             ssl = get.ssl
         if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get):
-            return public.return_msg_gettext(False,
-                                             'SSL is not enabled in the database, please open it in the Mysql manager first')
+            return public.return_msg_gettext(False, public.lang("SSL is not enabled in the database, please open it in the Mysql manager first"))
         name = get['name']
         db_find = public.M('databases').where('username=?', (name,)).find()
         db_name = db_find['name']
         self.sid = db_find['sid']
         mysql_obj = public.get_mysql_obj(db_name)
         access = get['access'].strip()
-        if access in ['']: return public.return_msg_gettext(False, 'The IP address cannot be empty!')
+        if access in ['']: return public.return_msg_gettext(False, public.lang("The IP address cannot be empty!"))
         password = public.M('databases').where("username=?", (name,)).getField('password')
         result = mysql_obj.query("show databases")
         isError = self.IsSqlError(result)
@@ -1310,7 +1285,7 @@ SetLink
         for us in users:
             mysql_obj.execute("drop user '" + name + "'@'" + us[0] + "'")
         self.__CreateUsers(db_name, name, password, access, ssl)
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     # 获取数据库配置信息
     def GetMySQLInfo(self, get):
@@ -1331,13 +1306,11 @@ SetLink
     # 修改数据库目录
     def SetDataDir(self, get):
         if get.datadir[-1] == '/': get.datadir = get.datadir[0:-1]
-        if len(get.datadir) > 32: return public.return_msg_gettext(False,
-                                                                   'The data directory length cannot exceed 32 bits')
-        # if not re.search(r"^[0-9A-Za-z_/\\]$+",get.datadir): return public.return_msg_gettext(False,'Special symbols cannot be included in the database path')
+        if len(get.datadir) > 32: return public.return_msg_gettext(False, public.lang("The data directory length cannot exceed 32 bits"))
+        # if not re.search(r"^[0-9A-Za-z_/\\]$+",get.datadir): return public.return_msg_gettext(False, public.lang("Special symbols cannot be included in the database path"))
         if not os.path.exists(get.datadir): public.ExecShell('mkdir -p ' + get.datadir)
         mysqlInfo = self.GetMySQLInfo(get)
-        if mysqlInfo['datadir'] == get.datadir: return public.return_msg_gettext(False,
-                                                                                 'The same as the current storage directory, file cannot be moved!')
+        if mysqlInfo['datadir'] == get.datadir: return public.return_msg_gettext(False, public.lang("The same as the current storage directory, file cannot be moved!"))
 
         public.ExecShell('/etc/init.d/mysqld stop')
         public.ExecShell(r'\cp -arf ' + mysqlInfo['datadir'] + '/* ' + get.datadir + '/')
@@ -1356,12 +1329,12 @@ SetLink
         result = public.ExecShell('ps aux|grep mysqld|grep -v grep')
         if len(result[0]) > 10:
             public.writeFile('data/datadir.pl', get.datadir)
-            return public.return_msg_gettext(True, 'Database moved!')
+            return public.return_msg_gettext(True, public.lang("Database moved!"))
         else:
             public.ExecShell('pkill -9 mysqld')
             public.writeFile(myfile, public.readFile('/etc/my_backup.cnf'))
             public.ExecShell('/etc/init.d/mysqld start')
-            return public.return_msg_gettext(False, 'Failed to move file!')
+            return public.return_msg_gettext(False, public.lang("Failed to move file!"))
 
     # 修改数据库端口
     def SetMySQLPort(self, get):
@@ -1371,7 +1344,7 @@ SetLink
         mycnf = re.sub(rep, 'port = ' + get.port + '\n', mycnf)
         public.writeFile(myfile, mycnf)
         public.ExecShell('/etc/init.d/mysqld restart')
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     # 获取错误日志
     def GetErrorLog(self, get):
@@ -1382,10 +1355,10 @@ SetLink
             if n[-3:] == 'err':
                 filename = path + '/' + n
                 break
-        if not os.path.exists(filename): return public.return_msg_gettext(False, 'Configuration file not exist')
+        if not os.path.exists(filename): return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
         if hasattr(get, 'close'):
             public.writeFile(filename, '')
-            return public.return_msg_gettext(True, 'log is empty')
+            return public.return_msg_gettext(True, public.lang("log is empty"))
         return public.GetNumLines(filename, 1000)
 
     # 二进制日志开关
@@ -1394,7 +1367,7 @@ SetLink
         mysql_cnf = public.readFile(self._MYSQL_CNF)
 
         if mysql_cnf.find('#log-bin=mysql-bin') != -1:
-            if hasattr(get, 'status'): return public.return_msg_gettext(False, '0')
+            if hasattr(get, 'status'): return public.return_msg_gettext(False, public.lang("0"))
 
         log_bin_status = re.search("\nlog-bin", mysql_cnf)
 
@@ -1421,12 +1394,10 @@ SetLink
             master_slave_conf_2 = "/www/server/panel/plugin/mysql_replicate/config.json"
             if os.path.exists(master_slave_conf_1):
                 # return {"status": False, "msg": "请先卸载【Mysql主从复制】插件后再关闭二进制日志！！", "data": {"binlog_status": bin_log_status}}
-                return public.return_msg_gettext(False,
-                                                 'Please uninstall the Mysql master-slave replication plugin before closing the binary log! !')
+                return public.return_msg_gettext(False, public.lang("Please uninstall the Mysql master-slave replication plugin before closing the binary log! !"))
             if os.path.exists(master_slave_conf_2):
                 # return {"status": False, "msg": "请先卸载【Mysql主从复制（重构版）】插件后再关闭二进制日志！！", "data": {"binlog_status": bin_log_status}}
-                return public.return_msg_gettext(False,
-                                                 'Please uninstall the Mysql master-slave replication plugin before closing the binary log! !')
+                return public.return_msg_gettext(False, public.lang("Please uninstall the Mysql master-slave replication plugin before closing the binary log! !"))
             if log_bin_status:
                 mysql_cnf = re.sub(r"\nlog-bin", "\n#log-bin", mysql_cnf)
             mysql_cnf = re.sub(r"\nbinlog_format", "\n#binlog_format", mysql_cnf)
@@ -1487,6 +1458,9 @@ SetLink
         m_version = public.readFile('/www/server/mysql/version.pl')
         if not m_version: m_version = ''
         for g in gets:
+            if g not in get:
+                continue
+
             if m_version.find('8.') == 0 and g in ['query_cache_type', 'query_cache_size']:
                 n += 1
                 continue
@@ -1497,7 +1471,7 @@ SetLink
             if g in ['innodb_log_buffer_size']:
                 s = 'M'
                 if int(get[g]) < 8:
-                    return public.return_msg_gettext(False, 'innodb_log_buffer_size cannot be less than 8MB')
+                    return public.return_msg_gettext(False, public.lang("innodb_log_buffer_size cannot be less than 8MB"))
 
             rep = r'\s*' + g + r'\s*=\s*\d+(M|K|k|m|G)?\n'
 
@@ -1508,7 +1482,7 @@ SetLink
                 mycnf = mycnf.replace('[mysqld]\n', '[mysqld]\n' + c)
             n += 1
         public.writeFile('/etc/my.cnf', mycnf)
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     # 获取MySQL运行状态
     def GetRunStatus(self, get):
@@ -1524,7 +1498,7 @@ SetLink
                 'Threads_created', 'Threads_running', 'Connections', 'Uptime']
         try:
             if data[0] == 1045:
-                return public.return_msg_gettext(False, 'MySQL password ERROR!')
+                return public.return_msg_gettext(False, public.lang("MySQL password ERROR!"))
             for d in data:
                 for g in gets:
                     try:
@@ -1553,14 +1527,14 @@ SetLink
     # 取慢日志
     def GetSlowLogs(self, get):
         path = self.GetMySQLInfo(get)['datadir'] + '/mysql-slow.log'
-        if not os.path.exists(path): return public.return_msg_gettext(False, 'Log file does NOT exist!')
+        if not os.path.exists(path): return public.return_msg_gettext(False, public.lang("Log file does NOT exist!"))
         return public.return_msg_gettext(True, public.GetNumLines(path, 100))
 
     # 获取binlog文件列表
     def GetMySQLBinlogs(self, get):
         data_dir = self.GetMySQLInfo(get)["datadir"]
         index_file = os.path.join(data_dir, "mysql-bin.index")
-        if not os.path.exists(index_file): return public.return_msg_gettext(False, 'Binlog is not enabled or binlog file does not exist!')
+        if not os.path.exists(index_file): return public.return_msg_gettext(False, public.lang("Binlog is not enabled or binlog file does not exist!"))
 
         text = public.readFile(index_file)
 
@@ -1572,7 +1546,7 @@ SetLink
 
         current_log = ""
         if not isinstance(rows, list):
-            return public.return_msg_gettext(False, "Mysql status is abnormal!")
+            return public.return_msg_gettext(False, public.lang("Mysql status is abnormal!"))
         if len(rows) != 0:
             current_log = rows[0][0]
 
@@ -1596,17 +1570,17 @@ SetLink
 
     def ClearMySQLBinlog(self, get):
         if not hasattr(get, "days"):
-            return public.returnMsg(False, "Parameters are missing! days")
+            return public.returnMsg(False, public.lang("Parameters are missing! days"))
         if not str(get.days).isdigit():
-            return public.returnMsg(False, "Parameters are missing! days")
+            return public.returnMsg(False, public.lang("Parameters are missing! days"))
         days = int(get.days)
-        if days < 7: return public.return_msg_gettext(False, 'To ensure data security, recent binlogs cannot be deleted!')
+        if days < 7: return public.return_msg_gettext(False, public.lang("To ensure data security, recent binlogs cannot be deleted!"))
 
         rows = panelMysql.panelMysql().query("PURGE BINARY LOGS BEFORE DATE_SUB(NOW(), INTERVAL {days} DAY)".format(days=days))
         # public.print_log(rows)
         # if rows: public.print_log(rows[0])
 
-        return public.return_msg_gettext(True, "Cleanup complete!")
+        return public.return_msg_gettext(True, public.lang("Cleanup complete!"))
 
     # 获取当前数据库信息
     def GetInfo(self, get):
@@ -1615,31 +1589,31 @@ SetLink
         if info:
             return info
         else:
-            return public.return_msg_gettext(False, 'Failed to get databases')
+            return public.return_msg_gettext(False, public.lang("Failed to get databases"))
 
     # 修复表信息
     def ReTable(self, get):
         info = self.RepairTable(get)
         if info:
-            return public.return_msg_gettext(True, 'Successfully repaired!')
+            return public.return_msg_gettext(True, public.lang("Successfully repaired!"))
         else:
-            return public.return_msg_gettext(False, 'Failed to repair!')
+            return public.return_msg_gettext(False, public.lang("Failed to repair!"))
 
     # 优化表
     def OpTable(self, get):
         info = self.OptimizeTable(get)
         if info:
-            return public.return_msg_gettext(True, 'Successfully optimized!')
+            return public.return_msg_gettext(True, public.lang("Successfully optimized!"))
         else:
-            return public.return_msg_gettext(False, 'Failed to optimize or already optimized')
+            return public.return_msg_gettext(False, public.lang("Failed to optimize or already optimized"))
 
     # 更改表引擎
     def AlTable(self, get):
         info = self.AlterTable(get)
         if info:
-            return public.return_msg_gettext(True, 'Successfully changed')
+            return public.return_msg_gettext(True, public.lang("Successfully changed"))
         else:
-            return public.return_msg_gettext(False, 'Failed to change')
+            return public.return_msg_gettext(False, public.lang("Failed to change"))
 
     def get_average_num(self, slist):
         """

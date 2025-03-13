@@ -56,8 +56,8 @@
     "sort": 7
   },
   {
-    "title": "WAF",
-    "href": "/btwaf/index",
+    "title": "Waf",
+    "href": "/waf",
     "class": "menu_btwaf",
     "id": "memu_btwaf",
     "sort": 8
@@ -89,6 +89,13 @@
     "class": "menu_xterm",
     "id": "memuAxterm",
     "sort": 12
+  },
+  {
+    "title": "Account",
+    "href": "/whm",
+    "class": "menu_account",
+    "id": "memuAccount",
+    "sort": 13
   },
   {
     "title": "Cron",

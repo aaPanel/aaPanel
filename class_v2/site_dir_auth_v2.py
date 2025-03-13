@@ -78,7 +78,7 @@ class SiteDirAuth:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
         # if len(get.username) < 3 or len(get.password) < 3:
-        #     return public.return_msg_gettext(False, 'Username or password cannot be less than 3 characters')
+        #     return public.return_msg_gettext(False, public.lang("Username or password cannot be less than 3 characters"))
         # name = get.name
         param = self.__check_param(get)
         if param['status']==-1:
@@ -89,20 +89,20 @@ class SiteDirAuth:
         name = param['name']
         site_dir = get.site_dir
         if public.get_webserver() == "openlitespeed":
-            return public.return_message(-1,0,"OpenLiteSpeed is currently not supported")
+            return public.return_message(-1, 0, public.lang("OpenLiteSpeed is currently not supported"))
         # if not hasattr(get,"password") or not get.password or not hasattr(get,"username") or not get.username:
-        #     return public.return_msg_gettext(False, 'Please enter an account or password')
+        #     return public.return_msg_gettext(False, public.lang("Please enter an account or password"))
         if not get.site_dir:
-            return public.return_message(-1,0, 'Please enter the directory to be protected')
+            return public.return_message(-1, 0, public.lang("Please enter the directory to be protected"))
         if not get.name:
-            return public.return_message(-1,0, 'Please enter the Name')
+            return public.return_message(-1, 0, public.lang("Please enter the Name"))
         passwd = public.hasPwd(password)
         site_info = self.get_site_info(get.id)
         site_name = site_info["site_name"]
         if self._check_site_authorization(site_name):
-            return public.return_message(-1,0, 'Site password protection has been set, please cancel and then set. Site directory --> Password access')
+            return public.return_message(-1, 0, public.lang("Site password protection has been set, please cancel and then set. Site directory --> Password access"))
         if self._check_dir_auth(site_name, name,site_dir):
-            return public.return_message(-1,0, 'Directory has been protected')
+            return public.return_message(-1, 0, public.lang("Directory has been protected"))
         auth = "{user}:{passwd}".format(user=username,passwd=passwd)
         auth_file = '{setup_path}/pass/{site_name}'.format(setup_path=self.setup_path,site_name=site_name)
         if not os.path.exists(auth_file):
@@ -124,7 +124,7 @@ class SiteDirAuth:
         conf = {"name":name,"site_dir":get.site_dir,"auth_file":auth_file}
         self._write_conf(conf,site_name)
         public.serviceReload()
-        return public.return_message(0,0,"Successfully created")
+        return public.return_message(0, 0, public.lang("Successfully created"))
 
     # 检查配置是否存在
     def _check_dir_auth(self, site_name, name,site_dir):
@@ -154,7 +154,7 @@ class SiteDirAuth:
             else:
                 return ""
         except:
-            return public.return_msg_gettext(False, 'Apache2.2 does NOT support MultiPHP!')
+            return public.return_msg_gettext(False, public.lang("Apache2.2 does NOT support MultiPHP!"))
 
     # 获取站点名
     def get_site_info(self,id):
@@ -262,8 +262,7 @@ class SiteDirAuth:
             # for i in range(len(a_conf)-1,-1,-1):
             #     if site_name == a_conf[i]["sitename"] and a_conf[i]["proxyname"]:
             #         del a_conf[i]
-            return public.return_msg_gettext(False, 'ERROR: %s<br><a style="color:red;">' % public.get_msg_gettext('Configuration ERROR') + isError.replace("\n",
-                                                                                                          '<br>') + '</a>')
+            return public.return_msg_gettext(False, public.lang('ERROR: %s<br><a style="color:red;">' % public.lang("Configuration ERROR") + isError.replace("\n", '<br>') + '</a>'))
 
     # 删除密码保护
     def delete_dir_auth(self,get):
@@ -308,7 +307,7 @@ class SiteDirAuth:
             self.set_conf(site_name,"delete")
         if not hasattr(get,'multiple'):
             public.serviceReload()
-        return public.return_message(0,0,'Successfully deleted!')
+        return public.return_message(0, 0, public.lang("Successfully deleted!"))
 
     # 修改目录保护密码
     def modify_dir_auth_pass(self,get):
@@ -336,7 +335,7 @@ class SiteDirAuth:
             return public.return_message(-1, 0, str(ex))
 
         # if not hasattr(get,"password") or not get.password or not hasattr(get,"username") or not get.username:
-        #     return public.return_msg_gettext(False, 'Username or password cannot be less than 3 characters')
+        #     return public.return_msg_gettext(False, public.lang("Username or password cannot be less than 3 characters"))
         param = self.__check_param(get)
         if param['status']==-1:
             return param
@@ -351,7 +350,7 @@ class SiteDirAuth:
         auth_file = '{setup_path}/pass/{site_name}/{name}.pass'.format(setup_path=self.setup_path,site_name=site_name,name=name)
         public.writeFile(auth_file,auth)
         public.serviceReload()
-        return public.return_message(0,0,'Setup successfully!')
+        return public.return_message(0, 0, public.lang("Setup successfully!"))
 
     # 获取目录保护列表
     def get_dir_auth(self,get):
@@ -387,34 +386,34 @@ class SiteDirAuth:
         values = {}
         if hasattr(get, "password"):
             if not get.password:
-                return public.return_message(-1,0, 'Please enter password!')
+                return public.return_message(-1, 0, public.lang("Please enter password!"))
             password = get.password.strip()
             if len(password) < 3:
-                return public.return_message(-1,0, 'Password cannot be less than 3 characters')
+                return public.return_message(-1, 0, public.lang("Password cannot be less than 3 characters"))
             if re.search(r'\s', password):
-                return public.return_message(-1,0, 'Password cannot contain spaces')
+                return public.return_message(-1, 0, public.lang("Password cannot contain spaces"))
             values['password'] = password
 
         if hasattr(get, "username"):
             if not get.username:
-                return public.return_message(-1,0, 'Please enter username!')
+                return public.return_message(-1, 0, public.lang("Please enter username!"))
             username = get.username.strip()
             if len(username) < 3:
-                return public.return_message(-1,0, 'Username cannot be less than 3 characters')
+                return public.return_message(-1, 0, public.lang("Username cannot be less than 3 characters"))
             if re.search(r'\s', username):
-                return public.return_message(-1,0, 'Username cannot contain spaces')
+                return public.return_message(-1, 0, public.lang("Username cannot contain spaces"))
             values['username'] = username
 
         if hasattr(get, "name"):
             if not get.name:
-                return public.return_message(-1,0, 'Please enter a name!')
+                return public.return_message(-1, 0, public.lang("Please enter a name!"))
             name = get.name.strip()
             if len(name) < 3:
-                return public.return_message(-1,0, 'Name cannot be less than 3 characters')
+                return public.return_message(-1, 0, public.lang("Name cannot be less than 3 characters"))
             if re.search(r'\s', name):
-                return public.return_message(-1,0, 'Name cannot contain spaces')
+                return public.return_message(-1, 0, public.lang("Name cannot contain spaces"))
             if re.search('[\\/\"\'\\!@#$%^&*()+={}\\[\\]\\:\\;\\?><,./\\\\]+', name):
-                return public.return_message(-1,0, 'Name format must be [ aaa_bbb ]')
+                return public.return_message(-1, 0, public.lang("Name format must be [ aaa_bbb ]"))
             values['name'] = name
 
         return public.return_message(0,0, values)

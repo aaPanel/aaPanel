@@ -328,7 +328,7 @@ class panelPush:
         data['version'] = '1.0'
         data['date'] = '2020-07-14'
         data['author'] = '宝塔'
-        data['help'] = 'http://www.bt.cn'
+        data['help'] = 'http://www.aapanel.com'
         return data
 
     """
@@ -681,9 +681,13 @@ class panelPush:
 
         count = sql.where(where,()).count()
         data = public.get_page(count,int(p),int(limit))
+        pattern = r"href='(?:/v2)?/push.*?\?p=(\d+)'"
+        # 使用re.sub进行替换
+        data['page'] = re.sub(pattern, r"href='\1'", data['page'])
+
         data['data'] = public.M('logs').where(where,()).limit('{},{}'.format(data['shift'], data['row'])).order('id desc').select()
 
-        return data
+        return public.return_message(0, 0,  data)
 
     # 兼容旧版本的告警
     def update_config(self, config):

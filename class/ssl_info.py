@@ -1,4 +1,3 @@
-
 import os,sys,re,time,subprocess
 
 panelPath = '/www/server/panel/'
@@ -13,8 +12,6 @@ try:
     import OpenSSL
 except:
     is_openssl = False
-
-
 
 class ssl_info:
 
@@ -51,25 +48,26 @@ class ssl_info:
 
         if is_openssl:
             return self.__get_cert_info(pem_data)
-
-        # 使用命令行解析
-        pem_file = "/tmp/fullchain_{}.pem".format(int(time.time()))
-        public.writeFile(pem_file, pem_data)
-        res = public.ExecShell("openssl x509 -in {} -noout -text".format(pem_file))[0]
-        try:
+        else:
             result = {}
+            pem_file = "/tmp/fullchain_{}.pem".format(int(time.time()))
+            public.writeFile(pem_file, pem_data)
+            res = public.ExecShell("openssl x509 -in {} -noout -text".format(pem_file))[0]
             issuer_match = re.search(r"Issuer: (.*)", res)
             if issuer_match:
                 data = {}
                 issuer = issuer_match.group(1)
-                for key, val in re.findall(r"(\w+\s*)=([^,]+)", issuer):
-                    data[key.strip()] = val
+                for key,val in re.findall(r"(\w+)\s*=([^,]+)", issuer):
+                    data[key] = val.strip()
 
+                result["issuer"] = data['CN']
                 if "CN" in data:
-                    result["issuer"] = data['CN']
-                    if "O" in data:
-                        s = data['O'].encode().decode('unicode_escape')
-                        result["issuer"] = bytes(s, 'latin1').decode('utf-8')
+                    s = data['CN'].encode().decode('unicode_escape')
+                    result["issuer"] = bytes(s, 'latin1').decode('utf-8')
+                result["issuer_O"] = data['O']
+                if "O" in data:
+                    s = data['O'].encode().decode('unicode_escape')
+                    result["issuer_O"] = bytes(s, 'latin1').decode('utf-8')
 
             validity_match = re.search(r"Not After\s*:\s*(.*)", res)
             if validity_match:
@@ -89,21 +87,18 @@ class ssl_info:
             subject_match = re.search(r"Subject: (.*)", res)
             if subject_match:
                 subject = subject_match.group(1)
-                for key, val in re.findall(r"(\w+\s*)=([^,]+)", subject):
-                    if key.strip() == 'CN':
+                for key,val in re.findall(r"(\w+)\s*=([^,]+)", subject):
+                    if key == 'CN':
                         s = val.encode().decode('unicode_escape')
-                        result["subject"] = bytes(s, 'latin1').decode('utf-8')
+                        result["subject"] = bytes(s, 'latin1').decode('utf-8').strip()
             # 取可选名称
             result['dns'] = []
             dns_match = re.findall(r"DNS:([^\s,]+)", res)
             for dns in dns_match:
                 result['dns'].append(dns)
-        except:
-            result = None
-
-        if os.path.exists(pem_file):
-            os.remove(pem_file)
-        return result
+            if os.path.exists(pem_file):
+                os.remove(pem_file)
+            return result
 
     def load_ssl_info(self,pem_file):
         """
@@ -141,9 +136,8 @@ class ssl_info:
                 if iss[0] in is_key:
                     result['issuer'] = iss[1].decode()
                     break
-        if not result['issuer']:
-            if hasattr(issuer, 'O'):
-                result['issuer'] = issuer.O
+        if hasattr(issuer, 'O'):
+            result['issuer_O'] = issuer.O
         # 取到期时间
         result['notAfter'] = self.strf_date(
             bytes.decode(x509.get_notAfter())[:-1])
@@ -186,35 +180,147 @@ class ssl_info:
 
 
     def dump_pkcs12_new(self, key_pem=None, cert_pem=None, ca_pem=None, friendly_name=""):
-        from cryptography.hazmat.backends import default_backend
-        from cryptography.hazmat.primitives import serialization
-        from cryptography.hazmat.primitives.serialization.pkcs12 import serialize_key_and_certificates
-        from cryptography.x509 import load_pem_x509_certificate
+        try:
+            from cryptography.hazmat.backends import default_backend
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.x509 import load_pem_x509_certificate
+            private_key = self.analysis_private_key(key_pem)
+            cert = self.analysis_certificate(cert_pem)
+            if not private_key or not cert:
+                return None
+            # 加载CA证书
+            cas = None
+            if ca_pem:
+                cas = [load_pem_x509_certificate(ca_pem.encode(), default_backend())]
+            # 将证书和私钥组合成PKCS12格式的文件
+            from cryptography.hazmat.primitives.serialization.pkcs12 import serialize_key_and_certificates
+            p12 = serialize_key_and_certificates(
+                name=friendly_name.encode() if friendly_name else None,
+                key=private_key,
+                cert=cert,
+                encryption_algorithm=serialization.NoEncryption(),
+                cas=cas
+            )
+            return p12
+        except:
+            return None
 
-        private_key = serialization.load_pem_private_key(
-            key_pem.encode(),
-            password=None,  # 如果私钥有密码，请在此处提供密码
-            backend=default_backend()
-        )
+    def analysis_private_key(self, key_pem, password=None):
+        """
+        解析私钥
+        :param key_pem: 私钥内容
+        :param password: 私钥密码
+        :return: 私钥对象
+        """
+        try:
+            from cryptography.hazmat.backends import default_backend
+            from cryptography.hazmat.primitives import serialization
+            private_key = serialization.load_pem_private_key(
+                key_pem.encode(),
+                password=password,
+                backend=default_backend()
+            )
+            return private_key
+        except:
+            return None
 
-        cert = load_pem_x509_certificate((cert_pem + ca_pem).encode(), default_backend())
+    def analysis_certificate(self, cert_pem):
+        """
+        解析证书
+        :param cert_pem: 证书内容
+        :return: 有效返回True，无效返回False
+        """
+        try:
+            from cryptography.hazmat.backends import default_backend
+            from cryptography.x509 import load_pem_x509_certificate
+            cert = load_pem_x509_certificate(cert_pem.encode(), default_backend())
+            return cert
+        except Exception as e:
+            public.print_log(public.get_error_info())
+            return None
 
-        # 将证书和私钥组合成PKCS12格式的文件
-        p12 = serialize_key_and_certificates(
-            name=friendly_name.encode() if friendly_name else None,
-            key=private_key,
-            cert=cert,
-            encryption_algorithm=serialization.NoEncryption(),
-            cas=[load_pem_x509_certificate(ca_pem.encode(), default_backend())]
-        )
-        return p12
+    def verify_certificate_and_key_match(self, key_pem, cert_pem, password=None):
+        """
+        验证证书和私钥是否匹配(通过签名验证)
+        :param key_pem: 私钥内容
+        :param cert_pem: 证书内容
+        :param password: 私钥密码
+        :return: 验证成功返回True，失败返回False
+        """
+        try:
+            from cryptography.hazmat.primitives import hashes
+            from cryptography.hazmat.primitives.asymmetric import padding, ec
+            message = b"test message"
+            private_key = self.analysis_private_key(key_pem, password)
+            cert = self.analysis_certificate(cert_pem)
+            if not private_key:
+                return False, "Key error, please check if it is the correct PEM format private key"
+            if not cert:
+                return False, "Certificate error, please check if it is the correct PEM format certificate"
+            # 使用私钥对消息进行签名
+            signature = private_key.sign(
+                message,
+                padding.PKCS1v15(),
+                hashes.SHA256()
+            )
+            # 使用证书中的公钥验证签名
+            public_key = cert.public_key()
+            try:
+                if isinstance(public_key, ec.EllipticCurvePublicKey):
+                    public_key.verify(
+                        signature,
+                        message,
+                        ec.ECDSA(hashes.SHA256())
+                    )
+                else:
+                    public_key.verify(
+                        signature,
+                        message,
+                        padding.PKCS1v15(),
+                        hashes.SHA256()
+                    )
+                return True, "Verification successful"
+            except Exception as e:
+                return False, "The key and certificate do not match."
+        except Exception as e:
+            public.print_log(public.get_error_info())
+            return True, str(e)
 
-#class ssl:
-
-
-
-
-
-
-
-
+    def verify_certificate_chain(self, cert_pem):
+        """
+        验证证书链是否完整
+        :param cert_pem: 证书链内容
+        :return: 验证成功返回True，失败返回False
+        """
+        try:
+            from cryptography.hazmat.primitives.asymmetric import padding, ec
+            cert_chain = [(i + "-----END CERTIFICATE-----").strip() for i in
+                          cert_pem.strip().split("-----END CERTIFICATE-----") if i]
+            for i in range(len(cert_chain) - 1):
+                cert = self.analysis_certificate(cert_chain[i])
+                issuer_cert = self.analysis_certificate(cert_chain[i + 1])
+                # 验证当前证书的签名是否由上一级签发
+                try:
+                    issuer_public_key = issuer_cert.public_key()
+                    # 检查 issuer_public_key 是否为 ECC 公钥或 RSA 公钥
+                    if isinstance(issuer_public_key, ec.EllipticCurvePublicKey):
+                        # 使用 ECDSA 验证 ECC 证书签名
+                        issuer_public_key.verify(
+                            cert.signature,
+                            cert.tbs_certificate_bytes,
+                            ec.ECDSA(cert.signature_hash_algorithm),
+                        )
+                    else:
+                        # 使用 PKCS1v15 验证 RSA 证书签名
+                        issuer_public_key.verify(
+                            cert.signature,
+                            cert.tbs_certificate_bytes,
+                            padding.PKCS1v15(),
+                            cert.signature_hash_algorithm,
+                        )
+                except Exception as e:
+                    return False, "Certificate chain verification failed, please check if the certificate chain is complete."
+            return True, "Certificate chain verification successful."
+        except Exception as e:
+            public.print_log(public.get_error_info())
+            return True, str(e)

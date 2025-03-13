@@ -215,13 +215,13 @@ class one_key_wp:
 
         if not self.check_package():
             print("|-MD5 consistent, no need to download...")
-            return public.return_msg_gettext(True, 'MD5 consistent!')
+            return public.return_msg_gettext(True, public.lang("MD5 consistent!"))
         self.download_file()
         if not os.path.exists(self.package_zip):
             self.write_logs("|-Download failed...")
             print("Download failed...")
-            return public.return_msg_gettext(False, 'File download failed!')
-        return public.return_msg_gettext(True, "Download successfully")
+            return public.return_msg_gettext(False, public.lang("File download failed!"))
+        return public.return_msg_gettext(True, public.lang("Download successfully"))
 
     def unzip_package(self, site_path):
         print("Start unzipping the installation package...")
@@ -277,8 +277,7 @@ class one_key_wp:
         self.request_setup_0(values)
         time.sleep(1)
         if not self.request_setup_2(values):
-            return public.return_msg_gettext(False,
-                                             "The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct.")
+            return public.return_msg_gettext(False, public.lang("The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct."))
         time.sleep(1)
         self.request_setup_3(values)
         time.sleep(1)
@@ -487,7 +486,7 @@ class one_key_wp:
         res = a.split('|')
         if res[0] == "True":
             return public.return_msg_gettext(True, res[1])
-        return public.return_msg_gettext(False, 'Generated password detection failed!')
+        return public.return_msg_gettext(False, public.lang("Generated password detection failed!"))
 
     def get_cache_status(self, s_id):
         """
@@ -510,8 +509,7 @@ class one_key_wp:
         db_info = public.M('wordpress_onekey').where('s_id=?', (values['s_id'],)).find()
         db_name = public.M('databases').where('id=?', (db_info['d_id'],)).field('name').find()
         if "name" not in db_name:
-            return public.return_msg_gettext(False,
-                                             "The database of this wordpress was not found, this may be caused by the fact that you have manually deleted the database")
+            return public.return_msg_gettext(False, public.lang("The database of this wordpress was not found, this may be caused by the fact that you have manually deleted the database"))
         db_name = db_name['name']
         mysql_obj = panelMysql.panelMysql()
         res = mysql_obj.query('select * from {}.{}users'.format(
@@ -547,7 +545,7 @@ class one_key_wp:
         sql = 'update {}.{}users set user_pass = "{}" where user_login = "{}"'.format(
             db_name, db_info['prefix'], passwd, values['user'])
         mysql_obj.execute(sql)
-        return public.return_msg_gettext(True, "Password reset successful")
+        return public.return_msg_gettext(True, public.lang("Password reset successful"))
 
     def get_wp_version(self, s_id):
         """获取wordpress本地版本
@@ -599,10 +597,10 @@ class one_key_wp:
         清理所有缓存
         """
         if public.get_webserver() != "nginx":
-            return public.return_msg_gettext(False, "This feature currently only supports Nginx")
+            return public.return_msg_gettext(False, public.lang("This feature currently only supports Nginx"))
         cache_dir = "/dev/shm/nginx-cache/wp"
         public.ExecShell("rm -rf {}/*".format(cache_dir))
-        return public.return_msg_gettext(True, "Cleaned up successfully!")
+        return public.return_msg_gettext(True, public.lang("Cleaned up successfully!"))
 
     def set_fastcgi_cache(self, get):
         """
@@ -612,7 +610,7 @@ class one_key_wp:
         act disable/enable 开启关闭缓存
         """
         if public.get_webserver() != "nginx":
-            return public.return_msg_gettext(False, "This feature currently only supports Nginx")
+            return public.return_msg_gettext(False, public.lang("This feature currently only supports Nginx"))
         values = self.check_param(get)
         if not values['status']:
             return values
@@ -646,7 +644,7 @@ class one_key_wp:
             }
         }
         self.action_plugin_post(param)
-        return public.return_msg_gettext(True, 'Updated successfully!')
+        return public.return_msg_gettext(True, public.lang("Updated successfully!"))
 
     def get_language(self, get=None):
         language = {
@@ -950,10 +948,10 @@ class one_key_wp:
                 self.set_nginx_helper(get)
             public.ServiceReload()
             self.write_logs("\n\n\n|-Deployment was successful!")
-            return public.return_msg_gettext(True, "Deployment was successful!")
+            return public.return_msg_gettext(True, public.lang("Deployment was successful!"))
         except:
             self.del_site(get)
-            return public.return_msg_gettext(False, "Deployment failed!")
+            return public.return_msg_gettext(False, public.lang("Deployment failed!"))
 
     def reset_wp_db(self, args):
         """
@@ -964,15 +962,15 @@ class one_key_wp:
         try:
             site_id = int(args.site_id)
         except:
-            return public.returnMsg(False, "Site ID must be numeric")
+            return public.returnMsg(False, public.lang("Site ID must be numeric"))
         db_info = public.M("databases").where("name=?", (db_name,)).field('id').find()
         if 'id' not in db_info:
-            return public.returnMsg(False, "This database was not found!")
+            return public.returnMsg(False, public.lang("This database was not found!"))
         pdata = {
             "d_id": db_info['id']
         }
         public.M('wordpress_onekey').where("s_id=?", (site_id,)).update(pdata)
-        return public.returnMsg(True, "Setup successfully!")
+        return public.returnMsg(True, public.lang("Setup successfully!"))
 
 
 ##############################对外接口-END##############################
@@ -1069,7 +1067,7 @@ class optimize_php:
             one_key_wp().write_logs("|-PHP FPM Optimization failed: {}".format(result))
             return public.return_msg_gettext(False, "PHP FPM Optimization failed: {}", (result,))
         one_key_wp().write_logs("|-PHP FPM optimization succeeded")
-        return public.return_msg_gettext(True, "PHP FPM optimization succeeded")
+        return public.return_msg_gettext(True, public.lang("PHP FPM optimization succeeded"))
 
 
 class optimize_db:
@@ -1212,7 +1210,7 @@ class optimize_db:
             return public.return_msg_gettext(False, "Mysql optimization failed {}", (result,))
         public.ExecShell("/etc/init.d/mysqld restart")
         one_key_wp().write_logs("|-Mysql optimization succeeded")
-        return public.return_msg_gettext(True, "Mysql optimization succeeded")
+        return public.return_msg_gettext(True, public.lang("Mysql optimization succeeded"))
 
 
 class fast_cgi:
@@ -1266,6 +1264,8 @@ class fast_cgi:
         if public.get_webserver() != "nginx":
             return False
         conf_path = "/www/server/panel/vhost/nginx/{}.conf".format(sitename)
+        if not os.path.exists(conf_path):
+            return False
         content = public.readFile(conf_path)
         fastcgi_conf = "include enable-php-{}-wpfastcgi.conf;".format(php_v)
         # return conf_path,fastcgi_conf
@@ -1293,7 +1293,7 @@ class fast_cgi:
         if "#AAPANEL_FASTCGI_CONF_BEGIN" in content:
             one_key_wp().write_logs("|-Nginx FastCgi cache configuration already exists")
             print("Nginx FastCgi cache configuration already exists")
-            return public.return_msg_gettext(True, "Nginx FastCgi cache configuration already exists")
+            return public.return_msg_gettext(True, public.lang("Nginx FastCgi cache configuration already exists"))
         rep = "http\\s*\n\\s*{"
         content = re.sub(rep, "http\n\t{" + conf, content)
         public.writeFile(conf_path, content)
@@ -1304,10 +1304,10 @@ class fast_cgi:
             public.restore_file(conf_path)
             one_key_wp().write_logs("|-Nginx FastCgi configuration error! {}".format(conf_pass))
             print("Nginx FastCgi configuration error! {}".format(conf_pass))
-            return public.return_msg_gettext(False, "Nginx FastCgi configuration error!")
+            return public.return_msg_gettext(False, public.lang("Nginx FastCgi configuration error!"))
         one_key_wp().write_logs("|-Nginx FastCgi cache configuration complete...")
         print("Nginx FastCgi cache configuration complete")
-        return public.return_msg_gettext(True, "Nginx FastCgi cache configuration complete")
+        return public.return_msg_gettext(True, public.lang("Nginx FastCgi cache configuration complete"))
 
     def set_nginx_init(self):
         # if not os.path.exists("/dev/shm/nginx-cache/wp"):
@@ -1326,7 +1326,7 @@ class fast_cgi:
         if "#AAPANEL_FASTCGI_CONF_BEGIN" in content_init:
             one_key_wp().write_logs("|-Nginx init FastCgi cache configuration already exists")
             print("Nginx init FastCgi cache configuration already exists")
-            return public.return_msg_gettext(True, "Nginx init FastCgi cache configuration already exists")
+            return public.return_msg_gettext(True, public.lang("Nginx init FastCgi cache configuration already exists"))
         # content_init = re.sub(r"\$NGINX_BIN -c \$CONFIGFILE", + conf2, content_init)
         rep2 = r"\$NGINX_BIN -c \$CONFIGFILE"
         content_init = re.sub(rep2, conf2 + "        $NGINX_BIN -c $CONFIGFILE", content_init)
@@ -1339,10 +1339,10 @@ class fast_cgi:
             public.restore_file(init_path)
             one_key_wp().write_logs("|-Nginx init FastCgi configuration error! {}".format(conf_pass))
             print("Nginx init FastCgi configuration error! {}".format(conf_pass))
-            return public.return_msg_gettext(False, "Nginx init FastCgi configuration error!")
+            return public.return_msg_gettext(False, public.lang("Nginx init FastCgi configuration error!"))
         one_key_wp().write_logs("|-Nginx init FastCgi cache configuration complete...")
         print("Nginx init FastCgi cache configuration complete")
-        return public.return_msg_gettext(True, "Nginx init FastCgi cache configuration complete")
+        return public.return_msg_gettext(True, public.lang("Nginx init FastCgi cache configuration complete"))
 
     def set_fastcgi_php_conf(self, version):
         conf_path = "/www/server/nginx/conf/enable-php-{}-wpfastcgi.conf".format(version)
@@ -1365,7 +1365,7 @@ class fast_cgi:
             if fastcgi_conf not in conf:
                 print("FastCgi configuration does not exist in website configuration")
                 one_key_wp().write_logs("|-FastCgi configuration does not exist in website configuration, skip")
-                return public.return_msg_gettext(False, "FastCgi configuration does not exist in website configuration")
+                return public.return_msg_gettext(False, public.lang("FastCgi configuration does not exist in website configuration"))
             rep = r"include\s+enable-php-{}-wpfastcgi.conf;".format(version)
             conf = re.sub(rep, "include enable-php-{}.conf;".format(version), conf)
         else:
@@ -1373,8 +1373,7 @@ class fast_cgi:
             if fastcgi_conf in conf:
                 one_key_wp().write_logs(
                     "|-The FastCgi configuration already exists in the website configuration, skip it")
-                return public.return_msg_gettext(True,
-                                                 "The FastCgi configuration already exists in the website configuration")
+                return public.return_msg_gettext(True, public.lang("The FastCgi configuration already exists in the website configuration"))
             rep = r"include\s+enable-php-{}.conf;".format(version)
             conf = re.sub(rep, fastcgi_conf, conf)
         public.writeFile(conf_path, conf)
@@ -1383,10 +1382,10 @@ class fast_cgi:
             public.restore_file(conf_path)
             print("Website FastCgi configuration error {}".format(conf_pass))
             one_key_wp().write_logs("|-Website FastCgi configuration error: {}", (conf_pass,))
-            return public.return_msg_gettext(False, "Website FastCgi configuration error！")
+            return public.return_msg_gettext(False, public.lang("Website FastCgi configuration error！"))
         print("Website FastCgi configuration complete")
         one_key_wp().write_logs("|-Website FastCgi configuration complete...")
-        return public.return_msg_gettext(True, "Website FastCgi configuration complete")
+        return public.return_msg_gettext(True, public.lang("Website FastCgi configuration complete"))
 
     def set_fastcgi(self, values):
         """

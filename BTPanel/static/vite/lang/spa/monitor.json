@@ -1,0 +1,43 @@
+{
+	"Monitor": {
+		"System": {
+			"index_1": "Estado de monitoreo",
+			"index_2": "Número de días para ahorrar: ",
+			"index_3": "Modificar",
+			"index_4": "LIMITOS LIMPIETOS",
+			"index_5": "Ingrese la cantidad de días para ahorrar",
+			"index_6": "¡El número de día de ahorro es ilegal!",
+			"index_7": "¿Seguro que limpiará todos los registros de Monitory?",
+			"index_8": "Promedio de carga",
+			"index_9": "1 min",
+			"index_10": "5 min",
+			"index_11": "15 min",
+			"index_12": "Uso de recursos del sistema",
+			"index_13": "Detalles de carga",
+			"index_14": "Uso de recursos del sistema: ",
+			"index_15": "Fecha: ",
+			"index_16": "Memoria",
+			"index_17": "E/S de disco",
+			"index_18": "Leer",
+			"index_19": "Escribir",
+			"index_20": "R/W veces",
+			"index_21": "R/W espera",
+			"index_22": "Unidad: {0}/s",
+			"index_23": "E/S de red: ",
+			"index_24": "Río arriba",
+			"index_25": "Río abajo",
+			"index_26": "Pantalla completa",
+			"index_27": "Salir pantalla completa",
+			"index_28": "Nombre de proceso",
+			"index_29": "Uso de la CPU",
+			"index_30": "Usuario de inicio",
+			"index_31": "Uso de memoria",
+			"index_32": "Uso de disco",
+			"index_33": "Tamaño del registro de monitor: "
+		},
+		"API": {
+			"system_1": "Configuración del estado de monitoreo, espere ...",
+			"system_2": "Boreo de registros de monitoreo, espere ..."
+		}
+	}
+}

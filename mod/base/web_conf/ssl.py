@@ -5,6 +5,7 @@ import shutil
 import time
 # import OpenSSL
 import re
+import warnings
 from hashlib import md5
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, List, Dict, Union, Callable
@@ -17,7 +18,7 @@ if "/www/server/panel/class" not in sys.path:
 import public
 import db
 from panelAes import AesCryptPy3
-
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 SSL_SAVE_PATH = "{}/vhost/ssl_saved".format(public.get_panel_path())
 
@@ -138,7 +139,7 @@ class RealSSLManger:
             'fullchain': public.readFile(ssl_data["path"] + '/fullchain.pem')
         }
         if not isinstance(data["privkey"], str) or not isinstance(data["fullchain"], str):
-            return '证书读取错误!'
+            return 'Certificate read error!'
         return data
 
     # 是否刷新
@@ -389,12 +390,12 @@ class RealSSLManger:
         AES = AesCryptPy3(key, "CBC", iv, char_set="utf8")
 
         # 对接云端
-        url = "https://www.bt.cn/api/Cert_cloud_deploy/get_cert_list"
+        url = "https://wafapi2.aapanel.com/api/Cert_cloud_deploy/get_cert_list"
         try:
             res_text = public.httpPost(url, {
                 "uid": user_info["uid"],
-                "access_key": user_info["access_key"],
-                "serverid": user_info["serverid"],
+                "access_key": 'B' * 32,
+                "serverid": user_info["server_id"],
             })
             res_data = json.loads(res_text)
             if res_data["status"] is False:
@@ -587,14 +588,14 @@ class RealSSLManger:
             ssl_db.connection().delete(id=target["id"])
 
         if target["cloud_id"] != -1:
-            url = "https://www.bt.cn/api/Cert_cloud_deploy/del_cert"
+            url = "https://wafapi2.aapanel.com/api/Cert_cloud_deploy/del_cert"
             try:
                 res_text = public.httpPost(url, {
                     "cert_id": target["cloud_id"],
                     "hashVal": target["hash"],
                     "uid": user_info["uid"],
-                    "access_key": user_info["access_key"],
-                    "serverid": user_info["serverid"],
+                    "access_key": 'B' * 32,
+                    "serverid": user_info["server_id"],
                 })
                 res_data = json.loads(res_text)
                 if res_data["status"] is False:
@@ -637,8 +638,8 @@ class RealSSLManger:
             "encryptWay": "AES-128-CBC",
             "hashVal": target['hash'],
             "uid": user_info["uid"],
-            "access_key": user_info["access_key"],
-            "serverid": user_info["serverid"],
+            "access_key": 'B' * 32,
+            "serverid": user_info["server_id"],
         }
         if data["privateKey"] is False or data["certificate"] is False:
             raise ValueError('证书文件读取错误')
@@ -647,7 +648,7 @@ class RealSSLManger:
         data["privateKey"] = AES.aes_encrypt(data["privateKey"])
         data["certificate"] = AES.aes_encrypt(data["certificate"])
         # 对接云端
-        url = "https://www.bt.cn/api/Cert_cloud_deploy/cloud_deploy"
+        url = "https://wafapi2.aapanel.com/api/Cert_cloud_deploy/cloud_deploy"
 
         try:
             res_text = public.httpPost(url, data)
@@ -837,7 +838,7 @@ class RealSSLManger:
         if not ng_conf:
             return "配置文件丢失，配置失败"
         rep_list = (
-            re.compile("\n\\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"),  # 关闭 强制https
+            re.compile(r"\n\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"),  # 关闭 强制https
             re.compile(r"\s*ssl_(certificate|certificate_key|protocols|"
                        r"ciphers|prefer_server_ciphers|session_cache|session_timeout)[^;]*;"),  # 关闭 强制https
             re.compile(r"\s*add_header\s+(Strict-Transport-Security|Alt-Svc)[^;]*;"),  # 关闭 https 请求头配置
@@ -856,7 +857,7 @@ class RealSSLManger:
         if not ap_conf:
             return "配置文件丢失，配置失败"
         rep_list = (
-            re.compile("\n\\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"),
+            re.compile(r"\n\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"),
             re.compile(r"\n<VirtualHost\s+\*:443\s*>(.|\n)*</VirtualHost>"),
         )
         new_conf = ap_conf
@@ -967,7 +968,7 @@ class RealSSLManger:
         file = '{}/apache/{}{}.conf'.format(self._vhost_path, self.conf_prefix, site_name)
         conf = public.readFile(file)
         if conf:
-            rep_https = re.compile("\n\\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END")
+            rep_https = re.compile(r"\n\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END")
             new_conf = rep_https.sub('', conf)
             write_file(file, new_conf)
 
@@ -1036,7 +1037,7 @@ class SSLManager:
                 ssl_hash = get.ssl_hash.strip()
             site_name = get.site_name.strip()
         except (ValueError, AttributeError, KeyError):
-            return public.ReturnMsg(False, "参数错误")
+            return public.ReturnMsg(False, "Parameter error")
         ssl_mgr = RealSSLManger(self.conf_prefix)
         try:
             info = ssl_mgr.find_ssl_info(ssl_id=ssl_id, ssl_hash=ssl_hash)
@@ -1063,7 +1064,7 @@ class SSLManager:
                 ssl_hash = get.ssl_hash.strip()
             site_names = json.loads(get.site_names.strip())
         except (ValueError, AttributeError, KeyError, json.JSONDecodeError):
-            return public.ReturnMsg(False, "参数错误")
+            return public.ReturnMsg(False, "Parameter error")
         ssl_mgr = RealSSLManger(self.conf_prefix)
         try:
             info = ssl_mgr.find_ssl_info(ssl_id=ssl_id, ssl_hash=ssl_hash)
@@ -1099,7 +1100,7 @@ class SSLManager:
         try:
             site_name = get.site_name.strip()
         except (ValueError, AttributeError, KeyError):
-            return public.ReturnMsg(False, "参数错误")
+            return public.ReturnMsg(False, "Parameter error")
 
         ssl_mgr = RealSSLManger(self.conf_prefix)
         try:
@@ -1119,7 +1120,7 @@ class SSLManager:
             if "ssl_hash" in get:
                 ssl_hash = get.ssl_hash.strip()
         except (ValueError, AttributeError, KeyError):
-            return public.ReturnMsg(False, "参数错误")
+            return public.ReturnMsg(False, "Parameter error")
         try:
             data = RealSSLManger(self.conf_prefix).upload_cert(ssl_id, ssl_hash)
             return json_response(status=True, data=data)
@@ -1142,7 +1143,7 @@ class SSLManager:
                 local = True
 
         except (ValueError, AttributeError, KeyError):
-            return public.ReturnMsg(False, "参数错误")
+            return public.ReturnMsg(False, "Parameter error")
         try:
             data = RealSSLManger(self.conf_prefix).remove_cert(ssl_id, ssl_hash, local=local)
             return json_response(status=data.get("status", True), msg=data.get("msg", ""), data=data)
@@ -1159,7 +1160,7 @@ class SSLManager:
                 local = True
 
         except (ValueError, AttributeError, KeyError):
-            return public.ReturnMsg(False, "参数错误")
+            return public.ReturnMsg(False, "Parameter error")
         try:
             data = RealSSLManger(self.conf_prefix).mutil_remove_cert(ssl_id_list, local=local)
             return json_response(status=True, data=data)
@@ -1187,7 +1188,7 @@ class SSLManager:
             if "ssl_hash" in get:
                 ssl_hash = get.ssl_hash.strip()
         except (ValueError, AttributeError, KeyError):
-            return public.ReturnMsg(False, "参数错误")
+            return public.ReturnMsg(False, "Parameter error")
         try:
             ssl_mager = RealSSLManger(self.conf_prefix)
             target = ssl_mager.find_ssl_info(ssl_id, ssl_hash)
@@ -1208,7 +1209,7 @@ class SSLManager:
         try:
             site_name = get.site_name.strip()
         except (ValueError, AttributeError, KeyError):
-            return json_response(False, "参数错误")
+            return json_response(False, "Parameter error")
         ssl_info = RealSSLManger(self.conf_prefix).get_site_ssl_info(site_name)
         if ssl_info is None:
             return json_response(status=False, msg="未获取到证书信息")
@@ -1236,7 +1237,7 @@ class SSLManager:
                 force_refresh = True
 
         except (ValueError, AttributeError, KeyError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         param = None
         if search_name is not None:
@@ -1302,7 +1303,7 @@ class SSLManager:
 
         public.print_log(protocols)
         public.WriteFile(public.get_panel_path() + "/data/ssl_protocol.json", json.dumps(protocols))
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.returnMsg(True, 'Successfully set')
 
     @staticmethod
     def get_ssl_protocol(get=None):

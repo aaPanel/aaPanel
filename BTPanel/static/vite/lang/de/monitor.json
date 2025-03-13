@@ -1,0 +1,43 @@
+{
+	"Monitor": {
+		"System": {
+			"index_1": "Überwachungsstatus",
+			"index_2": "Anzahl der Tage, um zu sparen: ",
+			"index_3": "Ändern",
+			"index_4": "Saubere Protokolle",
+			"index_5": "Bitte geben Sie die Anzahl der Tage ein, um zu sparen",
+			"index_6": "Die Anzahl des Sparentages ist illegal!",
+			"index_7": "Sind Sie sicher, alle Stämme von Monitorik zu reinigen?",
+			"index_8": "Lastdurchschnitt",
+			"index_9": "1 min",
+			"index_10": "5 min",
+			"index_11": "15 min",
+			"index_12": "Systemressourcenverbrauch",
+			"index_13": "Details laden",
+			"index_14": "Systemressourcenverbrauch: ",
+			"index_15": "Datum: ",
+			"index_16": "Erinnerung",
+			"index_17": "Festplatte I/O",
+			"index_18": "Lesen",
+			"index_19": "Schreiben",
+			"index_20": "r/w mal",
+			"index_21": "r/w warte",
+			"index_22": "Einheit: {0}/s",
+			"index_23": "Netzwerk I/O: ",
+			"index_24": "Stromaufwärts",
+			"index_25": "Stromabwärts",
+			"index_26": "Vollbild",
+			"index_27": "Vollbild beenden",
+			"index_28": "Prozessname",
+			"index_29": "CPU -Verwendung",
+			"index_30": "Start -up -Benutzer",
+			"index_31": "Speicherverbrauch",
+			"index_32": "Speicherverbrauch",
+			"index_33": "Überwachung der Protokollgröße: "
+		},
+		"API": {
+			"system_1": "Einstellen des Überwachungsstatus, bitte warten Sie ...",
+			"system_2": "Überwachungsunterlagen löschen, bitte warten ..."
+		}
+	}
+}

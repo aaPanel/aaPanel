@@ -1,0 +1,51 @@
+{
+	"Logs": {
+		"Panel": {
+			"index_1": "Journaux d'opération",
+			"index_2": "Exécuter des journaux",
+			"index_3": "Cron Journaux",
+			"index_4": "Veuillez saisir le nom du journal",
+			"index_5": "Effacer les journaux",
+			"index_6": "Type d'opération",
+			"index_7": "Temps de fonctionnement",
+			"index_13": "Temps de balayage",
+			"index_14": "Attaque PHP",
+			"index_15": "Sur le point d'effacer les journaux, continuer?"
+		},
+		"Website": {
+			"index_1": "URL (TOP100)",
+			"index_2": "Journaux d'accès",
+			"index_3": "Il est recommandé d'effectuer une analyse de sécurité lorsque la charge du serveur est faible. Cette fois, le fichier journal [{0}]. Sera analysé et le temps d'attente peut être plus long. Voulez-vous continuer?",
+			"index_4": "Journaux d'erreur",
+			"index_5": "IP (TOP100)"
+		},
+		"Audit": {
+			"index_1": "Veuillez saisir la source / le port / rôle / l'événement"
+		},
+		"SSH": {
+			"index_1": "IP: Port"
+		},
+		"Soft": {
+			"index_1": "Nom d'utilisateur FTP",
+			"index_2": "Opération ip",
+			"index_3": "Déposer",
+			"index_4": "Temps d'atterrissage",
+			"index_5": "Journaux FTP",
+			"index_6": "Journaux lents mysql",
+			"index_7": "Journaux d'erreur MySQL",
+			"index_8": "Journal opérationnel",
+			"index_9": "Veuillez saisir les mots clés de recherche"
+		},
+		"Conversion": {
+			"index_1": "Audit des journaux - Introduction",
+			"index_2": "Analyser et analyser les journaux communs",
+			"index_3": "Collecter, analyser et audit des informations telles que diverses opérations, événements et situations anormales enregistrées par le système, le réseau et les programmes d'application.",
+			"index_4": "Journaux FTP - Introduction",
+			"index_5": "Enregistrer et afficher le journal de connexion FTP actuel et le journal de fonctionnement",
+			"index_6": "Enregistrer les informations de journal du journal de connexion et du fichier du client de l'utilisateur FTP FTP",
+			"index_7": "Journaux de connexion SSH - Introduction",
+			"index_8": "Enregistrer et afficher les journaux de connexion SSH actuels",
+			"index_9": "Enregistrer les informations de journaux de connexion SSH actuels"
+		}
+	}
+}

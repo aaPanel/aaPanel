@@ -12394,10 +12394,16 @@ html .menu .menu_logs:hover {
   color: #a94442;
   background-color: #f2dede;
   border-color: #ebccd1;
-  height: 40px;
+  min-height: 40px;
   line-height: 20px;
   padding: 10px 15px;
   border-radius: 4px;
+}
+
+.warning_info>p {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
 }
 
 .module-check.check_disabled label, .module-check.check_disabled i{

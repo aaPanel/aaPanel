@@ -160,8 +160,8 @@ echo "[*] shut down"
             # path = path.strip("_ols.access_log") + '_ols.access_log'
             return public.ReturnMsg(False, 'openlitespeed is not supported yet')
 
-        public.print_log("path1:{}".format(path))
-        public.print_log("serverType:{}".format(serverType))
+        # public.print_log("path1:{}".format(path))
+        # public.print_log("serverType:{}".format(serverType))
 
         if not os.path.exists(path): return public.ReturnMsg(False, 'No log file')
         if os.path.getsize(path) > 9433107294: return public.ReturnMsg(False, 'The log file is too large!')

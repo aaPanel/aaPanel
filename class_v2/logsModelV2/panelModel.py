@@ -40,7 +40,7 @@ class main(logsBase):
             item['type'] = arrs[0]
             result.append(item)
         public.set_module_logs('get_logs_info','get_logs_info')
-        return result
+        return public.return_message(0, 0, result)
 
     def get_logs_bytype(self,args):
         """
@@ -60,7 +60,7 @@ class main(logsBase):
         data = public.get_page(count,p,limit)
         data['data'] = public.M('logs').where(where,(stype,'%'+search+'%')).limit('{},{}'.format(data['shift'], data['row'])).order('id desc').select()
 
-        return data
+        return public.return_message(0, 0, data)
 
 
     def __get_panel_dirs(self):
@@ -127,7 +127,8 @@ class main(logsBase):
                                 log_list.append(info)
                     except:pass
 
-        return public.return_area(log_list,'address')
+        # return public.return_area(log_list,'address')
+        return public.return_message(0, 0, log_list)
 
     def get_panel_error_logs(self,get):
         '''
@@ -138,12 +139,12 @@ class main(logsBase):
             search = get.search
         filename = '{}/logs/error.log'.format(public.get_panel_path())
         if not os.path.exists(filename):
-            return public.returnMsg(False,'No error log')
+            return public.return_message(-1, 0, public.lang("No error log"))
 
         res = {}
         res['data'] = public.xssdecode(self.GetNumLines(filename,2000,1,search))
         res['data'].reverse()
-        return res
+        return public.return_message(0, 0, res)
 
 
     def __get_ftp_log_files(self,path):
@@ -211,7 +212,8 @@ class main(logsBase):
                                 log_list.append(info)
                     except:pass
 
-        return self.return_line_area(log_list,ip_list)
+        # return self.return_line_area(log_list,ip_list)
+        return public.return_message(0, 0, log_list)
 
 
     #取慢日志
@@ -226,13 +228,13 @@ class main(logsBase):
 
         my_info = public.get_mysql_info()
         if not my_info['datadir']:
-            return public.returnMsg(False,'MySQL is not installed!')
+            return public.return_message(-1, 0, public.lang("MySQL is not installed!"))
 
         path = my_info['datadir'] + '/mysql-slow.log'
         if not os.path.exists(path):
-            return public.returnMsg(False,'Log file does not exist!')
+            return public.return_message(-1, 0, public.lang("Log file does not exist!"))
         # mysql慢日志有顺序问题,倒序显示不利于排查问题
-        return public.returnMsg(True, public.xsssec(public.GetNumLines(path, limit)))
+        return public.return_message(0, 0, public.xsssec(public.GetNumLines(path, limit)))
 
         # find_idx = 0
         # p_num = 0 #分页计数器
@@ -297,7 +299,7 @@ class main(logsBase):
             result[k]["info"] = info["info"]
             return_list.append(result[k])
 
-        return return_list
+        return public.return_message(0, 0, return_list)
 
     def get_error_logs_by_search(self, args):
          '''
@@ -309,7 +311,7 @@ class main(logsBase):
          #return log_file_path
          data = public.readFile(log_file_path)
          if not data:
-             return None
+             return public.return_message(0, 0, None)
          data = data.split('\n')
          result = []
          for line in data:
@@ -318,4 +320,4 @@ class main(logsBase):
             elif args.search in line:
                 result.append(line)
 
-         return result
+         return public.return_message(0, 0, result)

@@ -19,12 +19,20 @@ aap_t_simple_site_info = collections.namedtuple('aap_t_simple_site_info', ['site
 
 # 获取当前部署的Web服务器
 def get_webserver():
-    if os.path.exists('{}/apache/bin/apachectl'.format(get_setup_path())):
+    nginxSbin = '{}/nginx/sbin/nginx'.format(get_setup_path())
+    apacheBin = '{}/apache/bin/apachectl'.format(get_setup_path())
+    olsBin = '/usr/local/lsws/bin/lswsctrl'
+
+    if os.path.exists(nginxSbin) and (os.path.exists(apacheBin) or os.path.exists(olsBin)):
+        return 'nginx'
+
+    if os.path.exists(apacheBin):
         webserver = 'apache'
-    elif os.path.exists('/usr/local/lsws/bin/lswsctrl'):
+    elif os.path.exists(olsBin):
         webserver = 'openlitespeed'
     else:
         webserver = 'nginx'
+
     return webserver
 
 
@@ -146,7 +154,7 @@ def create_php_site_with_mysql(domain: str, site_path: str, php_ver_short: str, 
     data = data.get('message', {})
 
     if int(data.get('databaseStatus', 0)) != 1:
-        raise HintException(public.get_msg_gettext('Database creation failed. Please check mysql running status and try again.'))
+        raise HintException(public.lang('Database creation failed. Please check mysql running status and try again.'))
 
     return aap_t_simple_site_info(data['siteId'], data['d_id'])
 
@@ -156,7 +164,7 @@ def remove_site(site_id: int) -> public.aap_t_simple_result:
     site_info = M('sites').where('`id` = ?', (site_id,)).field('name').find()
 
     if not isinstance(site_info, dict):
-        return public.aap_t_simple_result(False, public.get_msg_gettext('No found site-info with id {}'.format(site_id)))
+        return public.aap_t_simple_result(False, public.lang('No found site-info with id {}',site_id))
 
     from panel_site_v2 import panelSite
     data = panelSite().DeleteSite(to_dict_obj({

@@ -1873,7 +1873,7 @@ var index = {
 					'</div>\
 								<div class="sub_title">' +
 					lan.index.last_version +
-					'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' +
+					'<a href="https://www.aapanel.com/forum/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' +
 					lan.index.check_version_log +
 					'">' +
 					lan.index.bt_linux +
@@ -1927,7 +1927,7 @@ var index = {
 							<div class="update_version">\
 								<span>' +
 					lan.index.this_version +
-					'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' +
+					'<a href="https://www.aapanel.com/forum/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' +
 					lan.index.check_this_version_log +
 					'">' +
 					lan.index.bt_linux +
@@ -2287,7 +2287,7 @@ var index = {
 			content: '<div class="DrawRecordCon"></div>',
 		});
 		$.get(
-			'https://www.bt.cn/api/panel/updateLinuxEn',
+			'https://wafapi2.aapanel.com/api/panel/updateLinuxEn',
 			function (rdata) {
 				var body = '';
 				for (var i = 0; i < rdata.length; i++) {

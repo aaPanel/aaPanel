@@ -16,6 +16,8 @@ class VersionTool:
         self._config: Optional[Dict[str, List[Dict[str, Any]]]] = None
         self._pack_class = BasePack
         self.pack_path = "/www/backup/versions"
+        if not os.path.isdir(self.pack_path):
+            os.makedirs(self.pack_path)
 
     @property
     def config(self) -> Dict[str, List[Dict[str, Any]]]:
@@ -72,9 +74,9 @@ class VersionTool:
         if project_name in self.config:
             for i in self.config[project_name]:
                 if i["version"] == version:
-                    return "当前版本已存在"
+                    return "The current version already exists"
         if not os.path.isdir(src_path):
-            return "源路径不存在"
+            return "The source path does not exist"
 
         if ps is None:
             ps = ''
@@ -105,7 +107,7 @@ class VersionTool:
         if not run_path:
             run_path = target_path
         if project_name not in self.config:
-            return '项目不存在'
+            return 'The project does not exist'
 
         target = None
         for i in self.config[project_name]:
@@ -114,11 +116,11 @@ class VersionTool:
                 break
 
         if target is None:
-            return '版本不存在'
+            return 'Version does not exist'
 
         file = os.path.join(self.pack_path, target["zip_name"])
         if not os.path.exists(file):
-            return '版本文件丢失'
+            return 'Version file missing'
 
         tmp_path = '/tmp/version_{}'.format(int(time.time()))
         tar = tarfile.open(file, mode='r')
@@ -149,10 +151,10 @@ class VersionTool:
         if project_name in self.config:
             for i in self.config[project_name]:
                 if i["version"] == version:
-                    return "当前版本已存在"
+                    return "The current version already exists"
 
         if not os.path.isfile(src_file):
-            return "源路径不存在"
+            return "The source path does not exist"
 
         if ps is None:
             ps = ''
@@ -173,7 +175,7 @@ class VersionTool:
         try:
             shutil.copy(src_file, self.pack_path + "/" + zip_name)
         except:
-            return "文件保存失败"
+            return "File save failed"
         self.add_to_config(data)
         return None
 
@@ -183,7 +185,7 @@ class VersionTool:
                ) -> Optional[str]:
 
         if project_name not in self.config:
-            return '项目不存在'
+            return 'The project does not exist'
 
         target = None
         for i in self.config[project_name]:
@@ -192,7 +194,7 @@ class VersionTool:
                 break
 
         if target is None:
-            return '版本不存在'
+            return 'Version does not exist'
 
         file = os.path.join(self.pack_path, target["zip_name"])
         if os.path.isfile(file):
@@ -225,7 +227,7 @@ class BasePack:
 
     def __call__(self, *args, **kwargs) -> Optional[str]:
         if not os.path.exists(self.src_path):
-            return "源路径不存在"
+            return "The source path does not exist"
         target_path = "/www/backup/versions"
 
         if not os.path.isdir(target_path):
@@ -240,12 +242,12 @@ class BasePack:
             write_file(self.exec_log_file, "")
             execStr = ("cd {} && "
                        "tar -zcvf '{}' --exclude=.user.ini ./ 2>&1 > {} \n"
-                       "echo '---打包执行完成---' >> {}"
+                       "echo '---The packaging execution is complete---' >> {}"
                        ).format(src, os.path.join(target_path, zip_name), self.exec_log_file, self.exec_log_file)
             ExecShell(execStr)
             self.save_config()
         except:
-            return "打包执行失败"
+            return "The packaging execution failed"
 
     def _async_backup(self, src: str, target_path: str, zip_name: str):
         import threading
@@ -260,7 +262,7 @@ class BasePack:
             if time.time() - mtime > 60 * 20:  # 20 分钟未执行，认为出现在不可抗力，导致备份失败，允许再次备份
                 os.remove(tip_file)
             else:
-                return "打包进行中，请勿继续操作"
+                return "Packing is in progress, please do not proceed"
 
         write_file(tip_file, "")
 
@@ -269,7 +271,7 @@ class BasePack:
                 write_file(self.exec_log_file, "")
                 execStr = ("cd {} && "
                            "tar -zcvf '{}' --exclude=.user.ini ./ 2>&1 > {} \n"
-                           "echo '---备份执行完成---' >> {}"
+                           "echo '---Backup execution completed---' >> {}"
                            ).format(src, os.path.join(target_path, zip_name), self.exec_log_file, self.exec_log_file)
                 ExecShell(execStr)
                 self.save_config()

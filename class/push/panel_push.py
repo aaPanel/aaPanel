@@ -217,16 +217,16 @@ class panel_push:
 
             status = self.get_server_status(ser_name)
             if status > 0:
-                return public.returnMsg(False,"状态正常，跳过.")
+                return public.returnMsg(False, public.lang("状态正常，跳过."))
             else:
                 if status == 0:
                     return self.__get_service_result(data)
-                return public.returnMsg(False,"服务未安装，跳过.")
+                return public.returnMsg(False, public.lang("服务未安装，跳过."))
 
         elif data['type'] in ['ssl']:
 
             if time.time() < data['index'] + 86400:
-                return public.returnMsg(False,"一天推送一次，跳过.")
+                return public.returnMsg(False, public.lang("一天推送一次，跳过."))
 
             import panelSSL
             ssl = panelSSL.panelSSL()
@@ -242,11 +242,11 @@ class panel_push:
 
         elif data['type'] in ['endtime']:
             if time.time() < data['index'] + 86400:
-                return public.returnMsg(False,"一天推送一次，跳过.")
+                return public.returnMsg(False, public.lang("一天推送一次，跳过."))
 
             from pluginAuth import Plugin
             softs = Plugin(False).get_plugin_list(True)
-            if softs['pro'] == 0: return public.returnMsg(False,"永久专业版，跳过.")
+            if softs['pro'] == 0: return public.returnMsg(False, public.lang("永久专业版，跳过."))
 
             if softs['ltd'] == -2 and softs['pro'] == -2:
                 pass
@@ -266,7 +266,7 @@ class panel_push:
                 if pro_data['day'] <= data['cycle']:
                     return self.__get_ltd_result(data,pro_data)
 
-        return public.returnMsg(False,"未达到阈值，跳过.")
+        return public.returnMsg(False, public.lang("未达到阈值，跳过."))
 
     """
     @企业版到期提醒
@@ -298,7 +298,7 @@ class panel_push:
     """
     def __get_ssl_result(self,data,clist):
         if len(clist) == 0:
-            return public.returnMsg(False,"未找到到期证书，跳过.")
+            return public.returnMsg(False, public.lang("未找到到期证书，跳过."))
 
         result = {'index':time.time() }
         for m_module in data['module'].split(','):
@@ -319,7 +319,7 @@ class panel_push:
                     "#### 宝塔面板SSL到期提醒" + newline,
                     ">服务器 ："+ public.GetLocalIp() +newline,
                     ">检测时间：" + public.format_date() +newline,
-                    ">即将到期："+ str(len(clist)) +" 张"+newline,
+                    ">About to expire:  "+ str(len(clist)) +" "+newline,
                     p_msg))
         return result
 
@@ -330,7 +330,7 @@ class panel_push:
 
         s_idx = int(time.time())
         if s_idx < data['index'] + data['interval']:
-            return public.returnMsg(False,"未达到间隔时间，跳过.")
+            return public.returnMsg(False, public.lang("The interval is not reached, skip."))
 
         result = {'index':s_idx}
 
@@ -346,8 +346,8 @@ class panel_push:
                 result[m_module]['msg'] = "".join((
                     "#### 堡塔服务停止告警" + newline,
                     ">服务器 ："+ public.GetLocalIp() +newline + " ",
-                    ">服务类型："+ data["project"] +newline + " ",
-                    ">服务状态：已停止"+newline+" ",
+                    ">Type of service: "+ data["project"] +newline + " ",
+                    ">Service state: 已停止"+newline+" ",
                     ">检测时间："+ public.format_date()))
             elif m_module in ['sms']:
                 result[m_module]['sm_type'] = 'servcies'

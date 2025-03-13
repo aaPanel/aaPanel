@@ -14,17 +14,17 @@ class LimitNet(BaseProjectCommon):
         try:
             site_id = int(get.site_id)
         except (AttributeError, TypeError, ValueError):
-            return public.returnMsg(False, "参数错误")
+            return public.returnMsg(False, "The parameter is incorrect")
 
         if self.config_prefix is None:
-            return public.returnMsg(False, "不支持的网站类型")
+            return public.returnMsg(False, "Unsupported website types")
 
         # 取配置文件
         site_name = public.M('sites').where("id=?", (site_id,)).getField('name')
         filename = "{}/vhost/nginx/{}{}.conf".format(self.setup_path, self.config_prefix, site_name)
         conf = public.readFile(filename)
         if not isinstance(conf, str):
-            return public.returnMsg(False, "配置文件读取错误")
+            return public.returnMsg(False, "Configuration file read error")
 
         # 站点总并发
         data = {
@@ -109,7 +109,7 @@ class LimitNet(BaseProjectCommon):
                 rep_include = re.compile(r"http\s*\{(.*\n)*\s*include +/www/server/panel/vhost/nginx/\*\.conf;")
                 tmp_res = rep_include.search(nginx_conf)
                 if not tmp_res:
-                    return False, "全局配置缓存配置失败"
+                    return False, "The global configuration cache configuration failed"
                 old_http_conf = tmp_res.group()
 
                 include_idx = old_http_conf.rfind("include ")
@@ -122,7 +122,7 @@ class LimitNet(BaseProjectCommon):
         public.writeFile(nginx_conf_file, new_conf)
         if public.checkWebConfig() is not True:  # 检测失败，无法添加
             public.writeFile(nginx_conf_file, nginx_conf)
-            return False, "全局配置缓存配置失败"
+            return False, "The global configuration cache configuration failed"
         return True, ""
 
     # 设置流量限制
@@ -135,10 +135,10 @@ class LimitNet(BaseProjectCommon):
             perip = int(get.perip)
             limit_rate = int(get.limit_rate)
         except (AttributeError, TypeError, ValueError):
-            return public.returnMsg(False, "参数错误")
+            return public.returnMsg(False, "The parameter is incorrect")
 
         if per_server < 1 or perip < 1 or limit_rate < 1:
-            return public.returnMsg(False, '并发限制，IP限制，流量限制必需大于0')
+            return public.returnMsg(False, 'The concurrency limit, IP limit, and traffic limit must be greater than 0')
 
         # 取配置文件
         site_info = public.M('sites').where("id=?", (site_id,)).find()
@@ -195,7 +195,7 @@ class LimitNet(BaseProjectCommon):
 
         public.serviceReload()
         public.WriteLog('TYPE_SITE', 'SITE_NETLIMIT_OPEN_SUCCESS', (site_name,))
-        return public.returnMsg(True, 'SET_SUCCESS')
+        return public.returnMsg(True, 'Successfully set')
 
     # 关闭流量限制
     def close_limit_net(self, get):

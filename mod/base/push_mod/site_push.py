@@ -5,18 +5,20 @@ import os
 import re
 import sys
 import time
-
-import psutil
 from datetime import datetime
 from importlib import import_module
 from typing import Tuple, Union, Optional, List
 
-from .send_tool import WxAccountMsg, WxAccountLoginMsg
+import psutil
+
+from mod.base.web_conf import RealSSLManger
+from script.restart_services import manual_flag
 from .base_task import BaseTask
 from .mods import PUSH_DATA_PATH, TaskConfig, SenderConfig
-from .util import read_file, DB, write_file, GET_CLASS, ExecShell, get_config_value, public_get_cache_func, \
+from .send_tool import WxAccountMsg, WxAccountLoginMsg
+from .util import read_file, DB, write_file, check_site_status, GET_CLASS, ExecShell, get_config_value, \
+    public_get_cache_func, \
     public_set_cache_func, get_network_ip, public_get_user_info, public_http_post, panel_version
-from mod.base.web_conf import RealSSLManger
 
 
 class _WebInfo:
@@ -33,8 +35,11 @@ class _WebInfo:
         items = []
         items_by_type = [[], [], [], [], []]
 
-        res_list = DB('sites').field('id,name,project_type').select()
+        res_list = DB('sites').field('id,name,project_type,project_config').select()
+
         for i in res_list:
+            if not check_site_status(i):
+                continue
             items.append({
                 "title": i["name"] + "[" + i["project_type"] + "]",
                 "value": i["name"]
@@ -63,7 +68,8 @@ class SSLTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "site_ssl"
-        self.template_name = "网站证书(SSL)到期"
+        self.template_name = "Site Certificate (SSL) expiration"
+        # self.title = "Site Certificate (SSL) expiration"
         self._tip_file = "{}/site_ssl.tip".format(PUSH_DATA_PATH)
         self._tip_data: Optional[dict] = None
         self._task_config = TaskConfig()
@@ -90,6 +96,9 @@ class SSLTask(BaseTask):
         return task_data["project"]
 
     def get_push_data(self, task_id: str, task_data: dict) -> Optional[dict]:
+        panelPath = '/www/server/panel/'
+        os.chdir(panelPath)
+        sys.path.insert(0, panelPath)
         # 过滤单独设置提醒的网站
         not_push_web = [i["task_data"]["project"] for i in self._task_config.config if i["source"] == self.source_name]
         sql = DB("sites")
@@ -104,6 +113,10 @@ class SSLTask(BaseTask):
             for web in web_list:
                 if web['name'] in not_push_web:
                     continue
+                if web['project_type'] != "PHP":
+                    if not check_site_status(web):
+                        continue
+
                 if self.tips.get(task_id, {}).get(web['name'], 0) > total:
                     continue
 
@@ -118,6 +131,10 @@ class SSLTask(BaseTask):
             find = sql.where('name=? and status=1', (task_data['project'],)).find()
             if not find:
                 return None
+
+            if find['project_type'] != "PHP":
+                if not check_site_status(find):
+                    return None
 
             if not find['project_type'].lower() in ['php', 'proxy']:
                 project_type = find['project_type'].lower() + '_'
@@ -136,11 +153,12 @@ class SSLTask(BaseTask):
         if len(self.ssl_list) == 0:
             return None
 
-        s_list = ['>即将到期：<font color=#ff0000>{} 张</font>'.format(len(self.ssl_list))]
+        s_list = ['>About to expire: <font color=#ff0000>{} </font>'.format(len(self.ssl_list))]
         for x in self.ssl_list:
-            s_list.append(">网站：{}  到期：{}".format(x['site_name'], x['notAfter']))
+            s_list.append(">Website: {} Expiration: {}".format(x['site_name'], x['notAfter']))
 
         self.task_id = task_id
+        self.title = self.get_title(task_data)
         return {"msg_list": s_list}
 
     @staticmethod
@@ -154,11 +172,11 @@ class SSLTask(BaseTask):
 
     def get_title(self, task_data: dict) -> str:
         if task_data["project"] == "all":
-            return "所有网站证书(SSL)到期提醒"
-        return "网站[{}]证书(SSL)到期提醒".format(task_data["project"])
+            return "Site Certificate (SSL) expiration -- All"
+        return "Site Certificate (SSL) expiration -- Website [{}]".format(task_data["project"])
 
     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
-        return 'ssl_end|宝塔面板SSL到期提醒', {
+        return 'ssl_end|aaPanel SSL Expiration Reminder', {
             "name": push_public_data["ip"],
             "website": self.ssl_list[0]['site_name'],
             'time': self.ssl_list[0]["notAfter"],
@@ -167,15 +185,15 @@ class SSLTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "网站SSL到期提醒"
-        msg.msg = "有{}个网站的证书将到期,会影响访问".format(len(self.ssl_list))
-        msg.next_msg = "请登录面板，在[网站]中进行续签操作"
+        msg.thing_type = "Website SSL expiration reminder"
+        msg.msg = "There are {} sites whose certificates will expire, affecting access".format(len(self.ssl_list))
+        msg.next_msg = "Please login to the aaPanel and renew in the [Website]"
         return msg
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         task_data["interval"] = 60 * 60 * 24  # 默认检测间隔时间 1 天
-        if not (isinstance(task_data['cycle'], int) and task_data['cycle'] > 1):
-            return "剩余时间参数错误，至少为1天"
+        if not (isinstance(task_data['cycle'], int) and task_data['cycle'] >= 1):
+            return "The remaining time parameter is incorrect, at least 1 day"
         return task_data
 
     def filter_template(self, template) -> dict:
@@ -222,8 +240,8 @@ class SiteEndTimeTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "site_end_time"
-        self.template_name = "站点到期提醒"
-        self.title = "站点到期提醒"
+        self.template_name = "Site expiration reminders"
+        self.title = "Site expiration reminders"
         self._tip_file = "{}/site_end_time.tip".format(PUSH_DATA_PATH)
         self._tip_data: Optional[dict] = None
         self._task_config = TaskConfig()
@@ -246,8 +264,8 @@ class SiteEndTimeTask(BaseTask):
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         task_data["interval"] = 60 * 60 * 24  # 默认检测间隔时间 1 天
-        if not (isinstance(task_data['cycle'], int) and task_data['cycle'] > 1):
-            return "剩余时间参数错误，至少为1天"
+        if not (isinstance(task_data['cycle'], int) and task_data['cycle'] >= 1):
+            return "The remaining time parameter is incorrect, at least 1 day"
         return task_data
 
     def get_keyword(self, task_data: dict) -> str:
@@ -259,24 +277,22 @@ class SiteEndTimeTask(BaseTask):
             'edate>? AND edate<? AND (status=? OR status=?)',
             ('0000-00-00', m_end_date, 1, u'正在运行')
         ).field('id,name, edate').select()
-        print(web_list)
-        print(m_end_date)
         if not (isinstance(web_list, list) and len(web_list) >= 1):
             return None
 
         total = self._task_config.get_by_id(task_id).get("number_rule", {}).get("total", 1)
-        s_list = ['>即将到期：<font color=#ff0000>{} 个站点</font>'.format(len(web_list))]
+        s_list = ['>Number of expiring sites: <font color=#ff0000>{} </font>'.format(len(web_list))]
         for x in web_list:
             if self.tips.get(x['name'], 0) >= total:
                 continue
             self.push_keys.append(x['name'])
-            s_list.append(">网站：{}  到期：{}".format(x['name'], x[' edate']))
+            s_list.append(">Website: {} Expiration: {}".format(x['name'], x['edate']))
 
         if not self.push_keys:
             return None
 
         self.task_id = task_id
-
+        self.title = self.get_title(task_data)
         return {
             "msg_list": s_list
         }
@@ -297,9 +313,9 @@ class SiteEndTimeTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "网站到期提醒"
-        msg.msg = "有{}个站点即将到期,可能影响网站访问".format(len(self.push_keys))
-        msg.next_msg = "请登录面板，在[网站]中查看详情"
+        msg.thing_type = "Website expiration reminders"
+        msg.msg = "There are {} sites that are about to expire and may affect site visits".format(len(self.push_keys))
+        msg.next_msg = "Please log in to the aaPanel and check the details on the website"
         return msg
 
     def task_run_end_hook(self, res) -> None:
@@ -327,15 +343,15 @@ class PanelPwdEndTimeTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "panel_pwd_end_time"
-        self.template_name = "面板密码有效期"
-        self.title = "面板密码有效期"
+        self.template_name = "aaPanel password expiration date"
+        self.title = "aaPanel password expiration date"
 
         self.limit_days = 0
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         task_data["interval"] = 60 * 60 * 24  # 默认检测间隔时间 1 天
-        if not (isinstance(task_data['cycle'], int) and task_data['cycle'] > 1):
-            return "剩余时间参数错误，至少为1天"
+        if not (isinstance(task_data['cycle'], int) and task_data['cycle'] >= 1):
+            return "The remaining time parameter is incorrect, at least 1 day"
         return task_data
 
     def get_keyword(self, task_data: dict) -> str:
@@ -350,13 +366,13 @@ class PanelPwdEndTimeTask(BaseTask):
         if res['expire'] > 0 and res['expire_day'] < task_data['cycle']:
             self.limit_days = res['expire_day']
 
-            s_list = [">告警类型：登录密码即将过期",
-                      ">剩余天数：<font color=#ff0000>{}  天</font>".format(res['expire_day'])]
+            s_list = [">Alarm Type: The login password is about to expire",
+                      ">Days Remaining: <font color=#ff0000>{} </font>".format(res['expire_day'])]
 
             return {
                 'msg_list': s_list
             }
-
+        self.title = self.get_title(task_data)
         return None
 
     def filter_template(self, template) -> dict:
@@ -367,9 +383,9 @@ class PanelPwdEndTimeTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "面板密码到期提醒"
-        msg.msg = "登录密码将于{}天后过期".format(self.limit_days)
-        msg.next_msg = "请登录面板，在[设置]中修改密码"
+        msg.thing_type = "aaPanel password expiration reminder"
+        msg.msg = "The login password will expire after {} days".format(self.limit_days)
+        msg.next_msg = "Log in to the panel and change your password in Settings"
         return msg
 
 
@@ -377,12 +393,12 @@ class PanelLoginTask(BaseTask):
     push_tip_file = "/www/server/panel/data/panel_login_send.pl"
 
     def __init__(self):
-        import public
-        public.print_log("panel_login")
+        # import public
+        # public.print_log("panel_login")
         super().__init__()
         self.source_name = "panel_login"
-        self.template_name = "面板登录告警"
-        self.title = "面板登录告警"
+        self.template_name = "aaPanel login alarm"
+        self.title = "aaPanel login alarm"
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         return {}
@@ -397,7 +413,7 @@ class PanelLoginTask(BaseTask):
         return template
 
     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
-        return "login_panel|面板登录提醒", {
+        return "login_panel|aaPanel login reminders", {
             'name': '[' + push_data.get("ip") + ']',
             'time': time.strftime('%Y-%m-%d %X', time.localtime()),
             'type': '[' + push_data.get("is_type") + ']',
@@ -406,7 +422,7 @@ class PanelLoginTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountLoginMsg.new_msg()
-        msg.thing_type = "面板登录提醒"
+        msg.thing_type = "aaPanel login reminders"
         msg.login_name = push_data.get("username")
         msg.login_ip = push_data.get("login_ip")
         msg.login_type = push_data.get("is_type")
@@ -414,8 +430,8 @@ class PanelLoginTask(BaseTask):
         return msg
 
     def task_config_update_hook(self, task: dict) -> None:
-        import public
-        public.print_log(4444444444444)
+        # import public
+        # public.print_log(4444444444444)
         sender = task["sender"]
         if len(sender) > 0:
             send_id = sender[0]
@@ -427,8 +443,8 @@ class PanelLoginTask(BaseTask):
             write_file(self.push_tip_file, sender_data["sender_type"])
 
     def task_config_create_hook(self, task: dict) -> None:
-        import public
-        public.print_log(444444433333)
+        # import public
+        # public.print_log(444444433333)
         sender = task["sender"]
         if len(sender) > 0:
             send_id = sender[0]
@@ -440,8 +456,8 @@ class PanelLoginTask(BaseTask):
             write_file(self.push_tip_file, sender_data["sender_type"])
 
     def task_config_remove_hook(self, task: dict) -> None:
-        import public
-        public.print_log(33333333333333333333333)
+        # import public
+        # public.print_log(33333333333333333333333)
         if os.path.exists(self.push_tip_file):
             os.remove(self.push_tip_file)
 
@@ -453,16 +469,16 @@ class SSHLoginErrorTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "ssh_login_error"
-        self.template_name = "SSH登录失败告警"
-        self.title = "SSH登录失败告警"
+        self.template_name = "SSH login failure alarm"
+        self.title = "SSH login failure alarm"
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if not (isinstance(task_data['cycle'], int) and task_data['cycle'] >= 1):
-            return "时间长度参数错误，至少为1分钟"
+            return "The duration parameter is incorrect, at least 1 minute"
         if not (isinstance(task_data['count'], int) and task_data['count'] >= 1):
-            return "数量参数错误，至少为1次"
+            return "The quantity parameter is incorrect, at least 1 time"
         if not (isinstance(task_data['interval'], int) and task_data['interval'] >= 60):
-            return "间隔时间参数错误，至少为60秒"
+            return "The interval time parameter is incorrect, at least 60 seconds"
         return task_data
 
     def get_keyword(self, task_data: dict) -> str:
@@ -480,8 +496,8 @@ class SSHLoginErrorTask(BaseTask):
 
         last_info = res[task_data['count'] - 1]
         if self.to_date(times=last_info['time']) >= time.time() - task_data['cycle'] * 60:
-            s_list = [">通知类型：SSH登录失败告警",
-                      ">告警内容：<font color=#ff0000>{} 分钟内登录失败超过 {} 次</font> ".format(
+            s_list = [">Notification type: SSH login failure alarm",
+                      ">Content of alarm: <font color=#ff0000> Login failed more than {} times in {} minutes</font> ".format(
                           task_data['cycle'], task_data['count'])]
 
             return {
@@ -513,83 +529,89 @@ class SSHLoginErrorTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "SSH登录失败告警"
-        msg.msg = "登录失败超过{}次".format(push_data['count'])
-        msg.next_msg = "请登录面板，查看SSH登录日志"
+        msg.thing_type = "SSH login failure alarm"
+        msg.msg = "More than {} login failures".format(push_data['count'])
+        msg.next_msg = "Log in to the panel to view the SSH login logs"
         return msg
 
 
 class ServicesTask(BaseTask):
-
     def __init__(self):
         super().__init__()
         self.source_name = "services"
-        self.template_name = "服务停止告警"
-
+        self.template_name = "Service Stop Alert"
         self.pids = None
-
-        self.service_name = ''
+        self.service_name = ""
         self.restart = None
 
     @staticmethod
-    def services_list() -> Tuple[str, List]:
+    def services_list() -> list:
+        """
+        获取已安装的服务
+        """
         res_list = []
-        default = None
         php_path = "/www/server/php"
         if os.path.exists(php_path) and glob.glob(php_path + "/*"):
             res_list.append({
-                "title": "php-fpm服务停止",
+                "title": "php-fpm service discontinued",
                 "value": "php-fpm"
             })
         if os.path.exists('/etc/init.d/httpd'):
-            default = "apache"
             res_list.append({
-                "title": "apache服务停止",
+                "title": "apache service discontinued",
                 "value": "apache"
             })
         if os.path.exists('/etc/init.d/nginx'):
-            default = "nginx"
             res_list.append({
-                "title": "nginx服务停止",
+                "title": "nginx service discontinued",
                 "value": "nginx"
             })
         if os.path.exists('/etc/init.d/mysqld'):
             res_list.append({
-                "title": "mysql服务停止",
+                "title": "mysql service discontinued",
                 "value": "mysql"
+            })
+        if os.path.exists('/etc/init.d/mongodb'):
+            res_list.append({
+                "title": "mysql service discontinued",
+                "value": "mongodb"
             })
         if os.path.exists('/www/server/tomcat/bin'):
             res_list.append({
-                "title": "tomcat服务停止",
+                "title": "tomcat service discontinued",
                 "value": "tomcat"
             })
         if os.path.exists('/etc/init.d/pure-ftpd'):
             res_list.append({
-                "title": "pure-ftpd服务停止",
+                "title": "pure-ftpd service discontinued",
                 "value": "pure-ftpd"
             })
         if os.path.exists('/www/server/redis'):
             res_list.append({
-                "title": "redis服务停止",
+                "title": "redis service discontinued",
                 "value": "redis"
             })
         if os.path.exists('/etc/init.d/memcached'):
             res_list.append({
-                "title": "memcached服务停止",
+                "title": "memcached service discontinued",
                 "value": "memcached"
             })
-        if not default:
-            default = res_list[0]["value"]
-        return default, res_list
+        if os.path.exists('/usr/local/lsws/bin/lswsctrl'):
+            res_list.append({
+                "title": "openlitespeed service discontinued",
+                "value": "openlitespeed"
+            })
+        return res_list
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
-        default, s_list = self.services_list()
-        if task_data["project"] not in {i["value"] for i in s_list}:
-            return "所选择的服务不存在"
+        if task_data["project"] not in {
+            i["value"] for i in self.services_list()
+        }:
+            return "The selected service does not exist"
         if task_data["count"] not in (1, 2):
-            return "自动重启选择错误"
+            return "Auto-restart selection error"
         if not (isinstance(task_data['interval'], int) and task_data['interval'] >= 60):
-            return "间隔时间参数错误，至少为60秒"
+            return "The interval time parameter is incorrect, at least 60 seconds"
         return task_data
 
     def get_keyword(self, task_data: dict) -> str:
@@ -597,37 +619,40 @@ class ServicesTask(BaseTask):
 
     def get_push_data(self, task_id: str, task_data: dict) -> Optional[dict]:
         self.title = self.get_title(task_data)
-        ser_name = task_data['project']
-        default, server_list = self.services_list()
-        if ser_name not in [v["value"] for v in server_list]:
+        self.service_name = task_data.get("project")
+        if self.service_name not in [v["value"] for v in self.services_list()]:
             return None
-        if self.get_server_status(ser_name):
+        if self.get_server_status():
             return None
 
         s_list = [
-            ">服务类型：" + task_data["project"],
-            ">服务状态：【" + task_data["project"] + "】服务已停止"]
+            "> Service Type: " + self.service_name,
+            "> Service State: 【" + self.service_name + "】Service Has Been Discontinued"
+        ]
+        if manual_flag().get(self.service_name) == 1:
+            # is manually closed
+            return None
+        else:
+            if task_data.get("count") == 1:
+                count = 0
+                while count <= 1:  # retry
+                    self._services_start(self.service_name)
+                    count += 1
+                    if not self.get_server_status():
+                        self.restart = False
+                        s_list[1] = "> Service State: 【" + self.service_name + "】Service Restart Failed"
+                    else:
+                        self.restart = True
+                        s_list[1] = "> Service State: 【" + self.service_name + "】Service Restart Successfully"
 
-        self.service_name = task_data["project"]
-
-        if task_data["count"] == 1:
-            self._services_start(task_data["project"])
-            if not self.get_server_status(task_data["project"]):
-                self.restart = False
-                s_list[1] = ">服务状态：【" + task_data["project"] + "】服务重启失败"
-            else:
-                self.restart = True
-                s_list[1] = ">服务状态：【" + task_data["project"] + "】服务重启成功"
-
-        return {
-            "msg_list": s_list
-        }
+                    if self.restart is True:
+                        break
+            return {"msg_list": s_list}
 
     def get_title(self, task_data: dict) -> str:
-        return task_data["project"] + "服务停止告警"
+        return "Service Stop Alert --" + task_data["project"]
 
-    @staticmethod
-    def _services_start(service_name: str):
+    def _services_start(self, service_name: str):
         if service_name == "php-fpm":
             base_path = "/www/server/php"
             if not os.path.exists(base_path):
@@ -637,17 +662,28 @@ class ServicesTask(BaseTask):
                 if not os.path.isfile(init_file):
                     return None
                 ExecShell("{} start".format(init_file))
+
         elif service_name == 'mysql':
             init_file = os.path.join("/etc/init.d", "mysqld")
             ExecShell("{} start".format(init_file))
+            if not self.get_server_status():
+                ExecShell("{} restart".format(init_file))
 
         elif service_name == 'apache':
             init_file = os.path.join("/etc/init.d", "httpd")
             ExecShell("{} start".format(init_file))
 
+        elif service_name == 'openlitespeed':
+            init_file = "/usr/local/lsws/bin/lswsctrl"
+            ExecShell("{} start".format(init_file))
+            if not self.get_server_status():
+                ExecShell("{} restart".format(init_file))
+
         else:
             init_file = os.path.join("/etc/init.d", service_name)
             ExecShell("{} start".format(init_file))
+
+        self.pids = psutil.pids()  # renew pids
 
     def get_pid_name(self, pname):
         try:
@@ -659,46 +695,66 @@ class ServicesTask(BaseTask):
         except:
             return True
 
-    def get_server_status(self, name: str) -> bool:
+    def _sock_file_check(self, sock_path: str, process_name: str):
+        if os.path.exists(sock_path):
+            status = False
+            for proc in psutil.process_iter(['pid', 'name', 'connections']):
+                try:
+                    if process_name in proc.info['name']:
+                        # noinspection PyDeprecation
+                        for conn in proc.connections(kind='unix'):
+                            if conn.laddr == sock_path:
+                                status = True
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+            if status is True:
+                manual_flag(self.service_name, "start")
+                return True
+            else:
+                return False
+        return False
+
+    def get_server_status(self) -> bool:
         time.sleep(5)
-        if name == "php-fpm":
+        if self.service_name == "php-fpm":
             base_path = "/www/server/php"
             if not os.path.exists(base_path):
                 return False
             for p in os.listdir(base_path):
                 pid_file = os.path.join(base_path, p, "var/run/php-fpm.pid")
                 if os.path.exists(pid_file):
-                    php_pid = int(read_file(pid_file))
-                    status = self.check_process(php_pid)
+                    status = self.check_process(pid_file)
                     if status:
                         return True
             return False
 
-        elif name == 'nginx':
+        elif self.service_name == 'nginx':
             if os.path.exists('/etc/init.d/nginx'):
                 pid_f = '/www/server/nginx/logs/nginx.pid'
                 if os.path.exists(pid_f):
                     try:
-                        pid = read_file(pid_f)
-                        return self.check_process(pid)
+                        return self.check_process(pid_f)
                     except:
                         pass
             return False
 
-        elif name == 'apache':
+        elif self.service_name == 'apache':
             if os.path.exists('/etc/init.d/httpd'):
                 pid_f = '/www/server/apache/logs/httpd.pid'
                 if os.path.exists(pid_f):
-                    pid = read_file(pid_f)
-                    return self.check_process(pid)
+                    return self.check_process(pid_f)
             return False
 
-        elif name == 'mysql':
-            if os.path.exists('/tmp/mysql.sock'):
-                return True
+        elif self.service_name == 'mysql':
+            return self._sock_file_check('/tmp/mysql.sock', 'mysqld')
+
+        elif self.service_name == 'mongodb':
+            pid_f = '/www/server/mongodb/log/configsvr.pid'
+            if os.path.exists(pid_f):
+                return self.check_process(pid_f)
             return False
 
-        elif name == 'tomcat':
+        elif self.service_name == 'tomcat':
             status = False
             if os.path.exists('/www/server/tomcat/logs/catalina-daemon.pid'):
                 if self.get_pid_name('jsvc'):
@@ -706,45 +762,63 @@ class ServicesTask(BaseTask):
             if not status:
                 if self.get_pid_name('java'):
                     status = True
+
+            if status is True:
+                manual_flag(self.service_name, "start")
             return status
 
-        elif name == 'pure-ftpd':
+        elif self.service_name == 'pure-ftpd':
             pid_f = '/var/run/pure-ftpd.pid'
             if os.path.exists(pid_f):
-                pid = read_file(pid_f)
-                return self.check_process(pid)
+                return self.check_process(pid_f)
             return False
 
-        elif name == 'redis':
+        elif self.service_name == 'redis':
             pid_f = '/www/server/redis/redis.pid'
             if os.path.exists(pid_f):
-                pid = read_file(pid_f)
-                return self.check_process(pid)
+                return self.check_process(pid_f)
             return False
 
-        elif name == 'memcached':
+        elif self.service_name == 'memcached':
             pid_f = '/var/run/memcached.pid'
             if os.path.exists(pid_f):
-                pid = read_file(pid_f)
-                return self.check_process(pid)
+                return self.check_process(pid_f)
             return False
+
+        elif self.service_name == 'openlitespeed':
+            return self._sock_file_check('/tmp/lshttpd/lsphp.sock', 'litespeed')
 
         return True
 
-    def check_process(self, pid):
+    def check_process(self, pid_f):
+        """
+        检查进程是否存在
+        :param pid_f: pid文件路径
+        :param name 服务名
+        """
         try:
-            if not self.pids:
-                self.pids = psutil.pids()
-            if int(pid) in self.pids:
+            pid = read_file(pid_f)
+            if pid and int(pid) in psutil.pids():
+                manual_flag(self.service_name, "start")
                 return True
             return False
         except Exception as e:
+            print("check_process error %s", e)
             return False
 
     def filter_template(self, template: dict) -> Optional[dict]:
-        default, server_list = self.services_list()
+        server_list = self.services_list()
         if not server_list:
             return None
+        default = None
+        for i in server_list:
+            if i.get("value") == "nginx":
+                default = "nginx"
+                break
+            elif i.get("value") == "apache":
+                default = "nginx"
+                break
+        default = server_list[0].get("value") if not default and len(server_list) != 0 else ""
         template["field"][0]["items"] = server_list
         template["field"][0]["default"] = default
         return template
@@ -762,13 +836,13 @@ class ServicesTask(BaseTask):
             service_name = self.service_name[:11] + "..."
         else:
             service_name = self.service_name
-        msg.thing_type = "{}服务停止提醒".format(service_name)
+        msg.thing_type = "{} service discontinued remind".format(service_name)
         if self.restart is None:
-            msg.msg = "{}服务已停止".format(service_name)
+            msg.msg = "{}service has been discontinued".format(service_name)
         elif self.restart is True:
-            msg.msg = "{}服务重启成功".format(service_name)
+            msg.msg = "{}ervice restarted successfully".format(service_name)
         else:
-            msg.msg = "{}服务重启失败".format(service_name)
+            msg.msg = "{}service restart failed".format(service_name)
         return msg
 
 
@@ -776,8 +850,8 @@ class PanelSafePushTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "panel_safe_push"
-        self.template_name = "面板安全告警"
-        self.title = "面板安全告警"
+        self.template_name = "aaPanel safety alarm"
+        self.title = "aaPanel safety alarm"
 
         self.msg_list = []
 
@@ -794,19 +868,23 @@ class PanelSafePushTask(BaseTask):
         t_add, t_del, total = self.get_records_calc('login_user_safe', DB('users'))
         if t_add > 0 or t_del > 0:
             s_list.append(
-                ">登录用户变更：<font color=#ff0000>总 {} 个，新增 {} 个 ，删除 {} 个</font>.".format(total, t_add, t_del))
+                ">Change of logged-in user: <font color=#ff0000> Total:{}, Add:{}, Delete:{}</font>.".format(total,
+                                                                                                             t_add,
+                                                                                                             t_del))
 
         # 面板日志发生删除
         t_add, t_del, total = self.get_records_calc('panel_logs_safe', DB('logs'), 1)
         if t_del > 0:
-            s_list.append(">面板日志发生删除，删除条数：<font color=#ff0000>{} 条</font>".format(t_del))
+            s_list.append(
+                ">If the panel log is deleted, the number of deleted logs is as follows:<font color=#ff0000>{} </font>".format(
+                    t_del))
 
-        debug_str = '关闭'
+        debug_str = 'Off'
         debug_status = 'False'
         # 面板开启开发者模式告警
         if os.path.exists('/www/server/panel/data/debug.pl'):
             debug_status = 'True'
-            debug_str = '开启'
+            debug_str = 'On'
 
         skey = 'panel_debug_safe'
         tmp = public_get_cache_func(skey)['data']
@@ -814,7 +892,7 @@ class PanelSafePushTask(BaseTask):
             public_set_cache_func(skey, debug_status)
         else:
             if str(debug_status) != tmp:
-                s_list.append(">面板开发者模式发生变更，当前状态：{}".format(debug_str))
+                s_list.append(">Panel developer mode has changed, current state:{}".format(debug_str))
                 public_set_cache_func(skey, debug_status)
 
         # 面板用户名和密码发生变更
@@ -827,7 +905,7 @@ class PanelSafePushTask(BaseTask):
                 public_set_cache_func(skey, user_str)
             else:
                 if user_str != tmp:
-                    s_list.append(">面板登录帐号或密码发生变更")
+                    s_list.append(">The login account or password of the panel has been changed")
                     public_set_cache_func(skey, user_str)
 
         if len(s_list) == 0:
@@ -906,22 +984,22 @@ class PanelSafePushTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "面板安全告警"
+        msg.thing_type = "aaPanel security alarms"
         the_msg = []
         for d in self.msg_list:
-            if d.find("用户变更"):
-                the_msg.append("用户变更")
-            if d.find("日志发生删除"):
-                the_msg.append("面板日志删除")
-            if d.find("开发者模式"):
-                the_msg.append("开发者模式变更")
-            if d.find("登录帐号或密码"):
-                the_msg.append("帐号密码变更")
+            if d.find("Change of logged-in user"):
+                the_msg.append("User Changes")
+            if d.find("the panel log is deleted"):
+                the_msg.append("the panel log is deleted")
+            if d.find("Panel developer mode has changed"):
+                the_msg.append("Panel developer mode has changed")
+            if d.find("The login account or password"):
+                the_msg.append("Account and Password change")
 
         msg.msg = "、".join(the_msg)
         if len(the_msg) > 20:
             msg.msg = msg.msg[:17] + "..."
-        msg.next_msg = "请登录面板，查看对应事项"
+        msg.next_msg = "Please log in to the panel to view the corresponding information"
         return msg
 
 
@@ -931,8 +1009,8 @@ class SSHLoginTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "ssh_login"
-        self.template_name = "SSH登录告警"
-        self.title = "SSH登录告警"
+        self.template_name = "SSH login alert"
+        self.title = "SSH login alert"
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         return {}
@@ -952,17 +1030,17 @@ class SSHLoginTask(BaseTask):
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         login_ip = push_data.get("login_ip")
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "SSH登录安全告警"
+        msg.thing_type = "SSH login security alert"
         if len(login_ip) == 0:  # 检查后门用户时使同
-            msg.msg = "服务器存在后门用户"
-            msg.next_msg = "请检查/ect/passwd文件"
+            msg.msg = "The server has a backdoor user"
+            msg.next_msg = "Check the '/ect/passwd' file"
             return msg
 
         elif len(login_ip) > 15:
             login_ip = login_ip[:12] + "..."
 
-        msg.msg = "登录ip:{}".format(login_ip)
-        msg.next_msg = "请登录面板，检查是否为安全登录"
+        msg.msg = "login ip:{}".format(login_ip)
+        msg.next_msg = "Please log in to the panel and check whether the login is secure"
         return msg
 
     def task_config_update_hook(self, task: dict) -> None:
@@ -995,8 +1073,8 @@ class PanelUpdateTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "panel_update"
-        self.template_name = "面板更新提醒"
-        self.title = "面板更新提醒"
+        self.template_name = "aaPanel update reminders"
+        self.title = "aaPanel update reminders"
         self.new_ver = ''
 
     def _get_no_user_tip(self) -> str:
@@ -1004,7 +1082,7 @@ class PanelUpdateTask(BaseTask):
         tip_file = "/www/server/panel/data/no_user_tip.pl"
         if not os.path.exists(tip_file):
             data: str = get_network_ip()
-            data = "没有用户信息时的标记文件\n" + hashlib.sha256(data.encode("utf-8")).hexdigest()
+            data = "Tag files when there is no user information\n" + hashlib.sha256(data.encode("utf-8")).hexdigest()
             write_file(tip_file, data)
         else:
             data = read_file(tip_file)
@@ -1044,8 +1122,8 @@ class PanelUpdateTask(BaseTask):
         # 不在固定时间段内，跳过
         if self.user_can_request_hour() != datetime.now().hour:
             return
-
-        s_url = 'https://www.bt.cn/api/panel/updateLinux'
+        # 面板更新日志  todo 暂时隐藏  后期可改成 ajax?action=UpdatePanel 获取更新日志
+        s_url = 'https://wafapi2.aapanel.com/api/panel/updateLinux'
         try:
             res = json.loads(public_http_post(s_url, {}))
             if not res:
@@ -1062,7 +1140,7 @@ class PanelUpdateTask(BaseTask):
         cache_key = "panel_update_cache"
         old_ver = public_get_cache_func(cache_key)['data']
         if old_ver and old_ver != n_ver:
-            s_list = [">通知类型：面板版本更新",
+            s_list = [">Notification type: 面板版本更新",
                       ">当前版本：{} ".format(panel_version()),
                       ">最新版本：{}".format(n_ver)]
             return {
@@ -1080,7 +1158,7 @@ class PanelUpdateTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "面板更新提醒"
+        msg.thing_type = "aaPanel update reminders"
         msg.msg = "最新版:{}已发布".format(self.new_ver)
         msg.next_msg = "您可以登录面板，执行更新"
         return msg
@@ -1095,7 +1173,8 @@ class ProjectStatusTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "project_status"
-        self.template_name = "项目停止告警"
+        self.template_name = "Project stop alarm"
+        # self.title = "Project stop alarm"
 
         self.project_name = ''
         self.restart = None
@@ -1140,11 +1219,11 @@ class ProjectStatusTask(BaseTask):
             return "otherModel"
 
     def get_title(self, task_data: dict) -> str:
-        return "项目{}停止告警".format(self._get_project_name(task_data["project"]))
+        return "Project stop alarm -- {}".format(self._get_project_name(task_data["project"]))
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if not (isinstance(task_data["cycle"], int) and 1 <= task_data["cycle"] <= 5):
-            return '不支持的项目类型.'
+            return 'Unsupported project types.'
         sql = DB("sites")
         web_info = sql.where(
             "project_type = ? and id = ?",
@@ -1152,12 +1231,12 @@ class ProjectStatusTask(BaseTask):
         ).field("id,name").find()
 
         if not web_info:
-            return '没有该项目，不可设置告警'
+            return 'If you do not have this item, you cannot set an alarm'
 
         if task_data["count"] not in (1, 2):
-            return "自动重启选择错误"
+            return "Auto-restart selection error"
         if not (isinstance(task_data['interval'], int) and task_data['interval'] >= 60):
-            return "间隔时间参数错误，至少为60秒"
+            return "The interval time parameter is incorrect, at least 60 seconds"
         return task_data
 
     def get_web_list(self) -> List:
@@ -1196,9 +1275,9 @@ class ProjectStatusTask(BaseTask):
             return None
 
         s_list = [
-            ">项目类型：" + self._to_project_type(task_data["cycle"]) + "项目",
-            ">项目名称：" + project_name,
-            ">项目状态：检查到项目状态为停止"]
+            ">Project type: " + self._to_project_type(task_data["cycle"]),
+            ">Project name: " + project_name,
+            ">Project state: The project status is stopped"]
         self.project_name = project_name
 
         if int(task_data["count"]) == 1:
@@ -1207,10 +1286,11 @@ class ProjectStatusTask(BaseTask):
             result = getattr(model_main_obj, "start_project")(get_obj)
             if result["status"] is True:
                 self.restart = True
-                s_list[2] = ">项目状态：检查到项目状态为停止，现已重启成功"
+                s_list[
+                    2] = ">Project state: Check that the project status is stopped, and it has been restarted successfully"
             else:
                 self.restart = False
-                s_list[2] = ">项目状态：检查到项目状态为停止，尝试重启但失败"
+                s_list[2] = ">Project state: Check that the project status is stopped, try to restart but fail"
 
         self.title = self.get_title(task_data)
 
@@ -1235,50 +1315,60 @@ class ProjectStatusTask(BaseTask):
             project_name = self.project_name[:11] + "..."
         else:
             project_name = self.project_name
-        msg.thing_type = "项目停止告警"
+        msg.thing_type = "Project stop alarm"
         if self.restart is None:
-            msg.msg = "项目{}已停止".format(project_name)
+            msg.msg = "Project {} has been stopped".format(project_name)
         elif self.restart is True:
-            msg.msg = "项目{}重启成功".format(project_name)
+            msg.msg = "Project {} was successfully restarted".format(project_name)
         else:
-            msg.msg = "项目{}重启失败".format(project_name)
+            msg.msg = "Project {} failed to restart".format(project_name)
         return msg
 
 
 class ViewMsgFormat(object):
     _FORMAT = {
         "1": (
-            lambda x: "<span>剩余时间小于{}天{}</span>".format(
+            lambda x: "<span>Time remaining less than {} days {}</span>".format(
                 x["task_data"].get("cycle"),
-                ("(如未处理，次日会重新发送1次，持续%d天)" % x.get("number_rule", {}).get("total", 0)) if x.get("number_rule", {}).get("total", 0) else ""
+                ("(If it is not processed, it will be resent 1 time the next day for %d days)" % x.get("number_rule",
+                                                                                                       {}).get("total",
+                                                                                                               0)) if x.get(
+                    "number_rule", {}).get("total", 0) else ""
             )
         ),
         "2": (),
         "3": (),
         "8": (
-            lambda x: "<span>面板登录时，发出告警</span>"
+            lambda x: "<span>Alert when the panel is logged in</span>"
         ),
         "7": (
-            lambda x: "<span>检测到SSH登录本机时，发出告警</span>"
+            lambda x: "<span>When an SSH login is detected, an alarm is generated</span>"
         ),
         "4": (
-            lambda x: "<span>{}分钟内连续{}次失败登录触发,每{}秒后再次检测</span>".format(
-                x["task_data"].get("cycle"), x["task_data"].get("count"), x["task_data"].get("interval"),
+            lambda
+                x: "<span>Triggered by {} consecutive failed logins within {} minutes, and tested again every {} seconds</span>".format(
+                x["task_data"].get("count"),
+                x["task_data"].get("cycle"),
+                x["task_data"].get("interval"),
             )
         ),
         "5": (
-            lambda x: "<span>服务停止时发送一次通知,{}秒后再次检测</span>".format(x["task_data"].get("interval"))
+            lambda
+                x: "<span>A notification is sent once when the service is stopped, and it is detected again after {} seconds</span>".format(
+                x["task_data"].get("interval"))
         ),
         "9": (
-            lambda x: "<span>项目停止时发送通知，{}秒后再次检测，每日发送{}次</span>".format(
+            lambda
+                x: "<span>A notification is sent when the item is stopped, and the test is repeated after {} seconds, {} times per day</span>".format(
                 x["task_data"].get("interval"),
                 x.get("number_rule", {}).get("day_num", 0))
         ),
         "6": (
-            lambda x: "<span>面板出现如:用户变更、面板日志删除、开启开发者等危险操作时发送告警</span>"
+            lambda
+                x: "<span>Alerts are sent when dangerous operations such as user changes, panel logs are deleted, and developers are enabled</span>"
         ),
         "10": (
-            lambda x: "<span>检测到新的版本时发送一次通知</span>"
+            lambda x: "<span>A notification is sent once when a new version is detected</span>"
         )
     }
 

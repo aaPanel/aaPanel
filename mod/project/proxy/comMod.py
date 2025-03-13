@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -421,7 +421,6 @@ server {{
                 Param('proxy_pass').String(),
                 Param('domains').String(),
                 Param('proxy_host').String(),
-                Param('proxy_type').Bool(),
 
             ], [
                 public.validate.trim_filter(),
@@ -435,18 +434,20 @@ server {{
         from mod.base.web_conf import util
         webserver = util.webserver()
         if webserver != "nginx" or webserver is None:
-            return public.return_message(0,0,public.returnResult(status=False, msg="Only Nginx is supported, please install Nginx before use!"))
+            return public.return_message(-1, 0,  public.lang("Only Nginx is supported, please install Nginx before use!"))
         from panelSite import panelSite
         site_obj = panelSite()
         site_obj.check_default()
 
         wc_err = public.checkWebConfig()
         if not wc_err:
-            return public.returnResult(
-                status=False,
-                msg='ERROR: Detected an error in the configuration file, please troubleshoot before proceeding<br><br><a style="color:red;">' +
-                    wc_err.replace("\n", '<br>') + '</a>'
-            )
+            # return public.returnResult(
+            #     status=False,
+            #     msg='ERROR: Detected an error in the configuration file, please troubleshoot before proceeding<br><br><a style="color:red;">' +
+            #         wc_err.replace("\n", '<br>') + '</a>'
+            # )
+            return public.return_message(-1, 0, 'ERROR: Detected an error in the configuration file, please troubleshoot before proceeding<br><br><a style="color:red;">' +
+                    wc_err.replace("\n", '<br>') + '</a>')
 
         # 2024/4/18 上午9:45 参数处理
         get.domains = get.get("domains", "")
@@ -458,22 +459,22 @@ server {{
 
         # 2024/4/18 上午9:45 参数校验
         if not get.domains:
-            return public.return_message(-1, 0,"The domain name cannot be empty, please enter at least one domain name!")
+            return public.return_message(-1, 0, public.lang("The domain name cannot be empty, please enter at least one domain name!"))
         if not get.proxy_pass:
-            return public.return_message(-1, 0,"The proxy target cannot be empty!")
+            return public.return_message(-1, 0, public.lang("The proxy target cannot be empty!"))
         if get.remark != "":
             get.remark = public.xssencode2(get.remark)
         if get.proxy_type == "unix":
             if not get.proxy_pass.startswith("/"):
-                return public.return_message(-1, 0,"The Unix file path must start with/, such as/tmp/flash.app.sock!")
+                return public.return_message(-1, 0, public.lang("The Unix file path must start with/, such as/tmp/flash.app.sock!"))
             if not get.proxy_pass.endswith(".sock"):
-                return public.return_message(-1, 0,"Unix files must end with. lock, such as/tmp/flash.app. lock!")
+                return public.return_message(-1, 0, public.lang("Unix files must end with. lock, such as/tmp/flash.app. lock!"))
             if not os.path.exists(get.proxy_pass):
-                return public.return_message(-1, 0,"The proxy target does not exist!")
+                return public.return_message(-1, 0, public.lang("The proxy target does not exist!"))
             get.proxy_pass = "http://unix:{}".format(get.proxy_pass)
         elif get.proxy_type == "http":
             if not get.proxy_pass.startswith("http://") and not get.proxy_pass.startswith("https://"):
-                return public.return_message(-1, 0,"The proxy target must start with http://or https://!")
+                return public.return_message(-1, 0, public.lang("The proxy target must start with http://or https://!"))
 
         # 2024/4/18 上午9:45 创建反向代理
         get.domain_list = get.domains.split("\n")
@@ -482,7 +483,7 @@ server {{
         get.site_port = get.domain_list[0].strip().split(":")[1] if ":" in get.domain_list[0] else "80"
         get.port_list = [get.site_port]
         if not public.checkPort(get.site_port):
-            return public.return_message(-1, 0,'Port [{}] is illegal!'.format(get.site_port))
+            return public.return_message(-1, 0, public.lang("Port [{}] is illegal!", get.site_port))
 
         if len(get.domain_list) > 1:
             for domain in get.domain_list[1:]:
@@ -491,7 +492,7 @@ server {{
 
                 d_port = domain.strip().split(":")[1]
                 if not public.checkPort(d_port):
-                    return public.return_message(-1, 0,'Port [{}] is illegal!'.format(d_port))
+                    return public.return_message(-1, 0, public.lang("Port [{}] is illegal!", d_port))
 
                 if not d_port in get.port_list:
                     get.port_list.append(d_port)
@@ -501,11 +502,11 @@ server {{
         opid = public.M('domain').where("name=? and port=?", (main_domain, int(get.site_port))).getField('pid')
         if opid:
             if public.M('sites').where('id=?', (opid,)).count():
-                return public.return_message(-1, 0,'The website [{}] already exists, please do not add it again!'.format(main_domain))
+                return public.return_message(-1, 0, public.lang("The website [{}] already exists, please do not add it again!", main_domain))
             public.M('domain').where('pid=?', (opid,)).delete()
 
         if public.M('binding').where('domain=?', (main_domain,)).count():
-            return public.return_message(-1, 0,'The website [{}] already exists, please do not add it again!'.format(main_domain))
+            return public.return_message(-1, 0, public.lang("The website [{}] already exists, please do not add it again!", main_domain))
 
         # 2024/4/18 上午10:06 检查网站是否存在
         sql = public.M('sites')
@@ -513,10 +514,10 @@ server {{
             if public.is_ipv4(get.site_name):
                 get.site_name = get.site_name + "_" + str(get.site_port)
             else:
-                return public.return_message(-1, 0,'The website [{}] already exists, please do not add it again!'.format(main_domain))
+                return public.return_message(-1, 0, public.lang("The website [{}] already exists, please do not add it again!", main_domain))
 
         # 2024/4/18 上午10:21 添加端口到系统防火墙
-        from firewallModel.comModel import main as comModel
+        from firewallModelV2.comModel import main as comModel
         firewall_com = comModel()
         get.port = get.site_port
         firewall_com.set_port_rule(get)
@@ -591,7 +592,7 @@ server {{
         public.WriteLog('TYPE_SITE', 'SITE_ADD_SUCCESS', (get.site_name,))
         public.set_module_logs('site_proxy', 'create', 1)
         public.serviceReload()
-        return public.return_message(0, 0,"Reverse proxy project added successfully!")
+        return public.return_message(0, 0, public.lang("Reverse proxy project added successfully!"))
 
     def read_json_conf(self, get):
         '''
@@ -641,24 +642,24 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.log_type = get.get("log_type", "default")
         if not get.log_type in ["default", "file", "rsyslog", "off"]:
-            return public.return_message(-1, 0,"The log type is incorrect. Please pass in default/file/rsyslog/off!")
+            return public.return_message(-1, 0, public.lang("The log type is incorrect. Please pass in default/file/rsyslog/off!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.proxy_json_conf["proxy_log"]["log_type"] = get.log_type
 
         if get.log_type == "file":
             get.log_path = get.get("log_path", "")
             if get.log_path == "":
-                return public.return_message(-1, 0,"The log path cannot be empty!")
+                return public.return_message(-1, 0, public.lang("The log path cannot be empty!"))
             if not get.log_path.startswith("/"):
-                return public.return_message(-1, 0,"The log path must start with/")
+                return public.return_message(-1, 0, public.lang("The log path must start with/"))
 
             get.proxy_json_conf["proxy_log"]["log_path"] = get.log_path
             get.proxy_json_conf["proxy_log"]["log_conf"] = self._init_proxy_conf["proxy_log"]["log_conf"].format(
@@ -668,7 +669,7 @@ server {{
         elif get.log_type == "rsyslog":
             get.log_path = get.get("log_path", "")
             if get.log_path == "":
-                return public.return_message(-1, 0,"The log path cannot be empty!")
+                return public.return_message(-1, 0, public.lang("The log path cannot be empty!"))
             site_name = get.site_name.replace(".", "_")
             get.proxy_json_conf["proxy_log"]["log_conf"] = (
             "\n    access_log syslog:server={server_host},nohostname,tag=nginx_{site_name}_access;"
@@ -692,7 +693,7 @@ server {{
             return update_result
         public.serviceReload()
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/18 下午10:21 设置basic_auth
     def set_dir_auth(self, get):
@@ -721,31 +722,31 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.name = get.get("name", "")
         if get.name == "":
-            return public.return_message(-1, 0,"Name cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Name cannot be empty!"))
 
         get.auth_path = get.get("auth_path", "")
         if get.auth_path == "":
-            return public.return_message(-1, 0,"Auth_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Auth_path cannot be empty!"))
         if not get.auth_path.startswith("/"):
-            return public.return_message(-1, 0,"Auth_path must start with/!")
+            return public.return_message(-1, 0, public.lang("Auth_path must start with/!"))
 
         get.username = get.get("username", "")
         get.password = get.get("password", "")
         if get.username == "" or get.password == "":
-            return public.return_message(-1, 0,"The username and password cannot be empty!")
+            return public.return_message(-1, 0, public.lang("The username and password cannot be empty!"))
 
         get.password = public.hasPwd(get.password)
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         if len(get.proxy_json_conf["basic_auth"]) == 0:
-            return public.return_message(-1, 0,"[{}] does not exist in HTTP authentication, please add it first!".format(get.auth_path))
+            return public.return_message(-1, 0, public.lang("[{}] does not exist in HTTP authentication, please add it first!", get.auth_path))
 
         for i in range(len(get.proxy_json_conf["basic_auth"])):
             if get.proxy_json_conf["basic_auth"][i]["auth_path"] == get.auth_path:
@@ -765,7 +766,7 @@ server {{
 
         public.serviceReload()
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/22 下午4:17 添加指定网站的basic_auth
     def add_dir_auth(self, get):
@@ -793,29 +794,29 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.auth_path = get.get("auth_path", "")
         if get.auth_path == "":
-            return public.return_message(-1, 0,"Auth_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Auth_path cannot be empty!"))
         if not get.auth_path.startswith("/"):
-            return public.return_message(-1, 0,"Auth_path must start with/!")
+            return public.return_message(-1, 0, public.lang("Auth_path must start with/!"))
 
         get.name = get.get("name", "")
         if get.name == "":
-            return public.return_message(-1, 0,"Name cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Name cannot be empty!"))
 
         get.username = get.get("username", "")
         if get.username == "":
-            return public.return_message(-1, 0,"Username cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Username cannot be empty!"))
 
         get.password = get.get("password", "")
         if get.password == "":
-            return public.return_message(-1, 0,"Password cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Password cannot be empty!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         auth_file = "/www/server/pass/{site_name}/{name}.htpasswd".format(site_name=get.site_name, name=get.name)
 
@@ -831,7 +832,7 @@ server {{
         if len(get.proxy_json_conf["basic_auth"]) != 0:
             for i in range(len(get.proxy_json_conf["basic_auth"])):
                 if get.proxy_json_conf["basic_auth"][i]["auth_path"] == get.auth_path:
-                    return public.return_message(-1, 0,"[{}] already exists in HTTP authentication and cannot be added again!".format(get.auth_path))
+                    return public.return_message(-1, 0, public.lang("[{}] already exists in HTTP authentication and cannot be added again!", get.auth_path))
 
         if not os.path.exists("/www/server/pass"):
             public.ExecShell("mkdir -p /www/server/pass")
@@ -845,7 +846,7 @@ server {{
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Added successfully!")
+        return public.return_message(0, 0, public.lang("Added successfully!"))
 
     # 2024/4/23 上午9:34 删除指定网站的basic_auth
     def del_dir_auth(self, get):
@@ -871,18 +872,18 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.auth_path = get.get("auth_path", "")
         if get.auth_path == "":
-            return public.return_message(-1, 0,"Auth_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Auth_path cannot be empty!"))
 
         get.name = get.get("name", "")
         if get.name == "":
-            return public.return_message(-1, 0,"Name cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Name cannot be empty!"))
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
         auth_file = "/www/server/pass/{site_name}/{name}.htpasswd".format(site_name=get.site_name, name=get.name)
 
         panel_port = public.readFile('/www/server/panel/data/port.pl')
@@ -890,7 +891,7 @@ server {{
         if proxy_result['status']==-1:return proxy_result
         proxy_list=proxy_result['message']
         if proxy_list[0]["proxy_pass"] == "https://127.0.0.1:{}".format(panel_port.strip()) and get.auth_path.strip() == "/":
-            return public.return_message(-1, 0,"[{}] is a reverse representation of the panel, and the HTTP authentication of [/] cannot be deleted!".format(get.site_name))
+            return public.return_message(-1, 0, public.lang("[{}] is a reverse representation of the panel, and the HTTP authentication of [/] cannot be deleted!", get.site_name))
         if len(get.proxy_json_conf["basic_auth"]) != 0:
             for i in range(len(get.proxy_json_conf["basic_auth"])):
                 if get.proxy_json_conf["basic_auth"][i]["auth_path"] == get.auth_path:
@@ -902,7 +903,7 @@ server {{
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
-        return public.return_message(0, 0,"Delete successful!")
+        return public.return_message(0, 0, public.lang("Delete successful!"))
 
     # 2024/4/18 下午10:26 设置全局gzip
     def set_global_gzip(self, get):
@@ -929,17 +930,17 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.gzip_status = get.get("gzip_status/d", 999)
         if get.gzip_status == 999:
-            return public.return_message(-1, 0,"Gzip_status cannot be empty, please pass number 1 or 0!")
+            return public.return_message(-1, 0, public.lang("Gzip_status cannot be empty, please pass number 1 or 0!"))
         get.gzip_min_length = get.get("gzip_min_length", "10k")
         get.gzip_comp_level = get.get("gzip_comp_level", "6")
         if get.gzip_min_length[0] == "0" or get.gzip_min_length.startswith("-"):
-            return public.return_message(-1, 0,"The gzip_min_length parameter is invalid. Please enter a number greater than 0!")
+            return public.return_message(-1, 0, public.lang("The gzip_min_length parameter is invalid. Please enter a number greater than 0!"))
         if get.gzip_comp_level == "0" or get.gzip_comp_level.startswith("-"):
-            return public.return_message(-1, 0,"The gzip_comp_level parameter is invalid. Please enter a number greater than 0!")
+            return public.return_message(-1, 0, public.lang("The gzip_comp_level parameter is invalid. Please enter a number greater than 0!"))
         get.gzip_types = get.get(
             "gzip_types",
             "text/plain application/javascript application/x-javascript text/javascript text/css application/xml application/json image/jpeg image/gif image/png font/ttf font/otf image/svg+xml application/xml+rss text/x-js"
@@ -947,7 +948,7 @@ server {{
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.proxy_json_conf["gzip"]["gzip_status"] = True if get.gzip_status == 1 else False
         if get.proxy_json_conf["gzip"]["gzip_status"]:
@@ -976,7 +977,7 @@ server {{
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/18 下午10:27 设置全局缓存
     def set_global_cache(self, get):
@@ -1001,20 +1002,20 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.cache_status = get.get("cache_status/d", 999)
         if get.cache_status == 999:
-            return public.return_message(-1, 0,"Cache_status cannot be empty, please pass number 1 or 0!")
+            return public.return_message(-1, 0, public.lang("Cache_status cannot be empty, please pass number 1 or 0!"))
 
         get.expires = get.get("expires", "1d")
         if get.expires[0] == "0" or get.expires.startswith("-"):
-            return public.return_message(-1, 0,"The expires parameter is illegal. Please enter a number greater than 0!")
+            return public.return_message(-1, 0, public.lang("The expires parameter is illegal. Please enter a number greater than 0!"))
         expires = "expires {}".format(get.expires)
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         static_cache = ("\n    location ~ .*\\.(css|js|jpe?g|gif|png|webp|woff|eot|ttf|svg|ico|css\\.map|js\\.map)$"
                         "\n    {{"
@@ -1050,7 +1051,7 @@ server {{
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/18 下午10:43 设置全局websocket支持
     def set_global_websocket(self, get):
@@ -1075,15 +1076,15 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.websocket_status = get.get("websocket_status/d", 999)
         if get.websocket_status == 999:
-            return public.return_message(-1, 0,"Websocket_status cannot be empty, please pass number 1 or 0!")
+            return public.return_message(-1, 0, public.lang("Websocket_status cannot be empty, please pass number 1 or 0!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         if get.websocket_status == 1:
             get.proxy_json_conf["websocket"]["websocket_status"] = True
@@ -1093,7 +1094,7 @@ server {{
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/19 下午2:54 设置备注
     def set_remak(self, get):
@@ -1104,11 +1105,11 @@ server {{
         '''
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.id = get.get("id", "")
         if get.id == "":
-            return public.returnResult(status=False, msg="id不能为空！")
+            return public.return_message(-1, 0,  public.lang("id cannot be empty!"))
 
         get.remark = get.get("remark", "")
         get.table = "sites"
@@ -1116,7 +1117,7 @@ server {{
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         from data import data
         data_obj = data()
@@ -1161,15 +1162,15 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1, 0,"Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.proxy_pass = get.get("proxy_pass", "")
         if get.proxy_pass == "":
-            return public.return_message(-1, 0,"Proxy_pass cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_pass cannot be empty!"))
 
         get.proxy_host = get.get("proxy_host", "$http_host")
         get.proxy_type = get.get("proxy_type", "http")
@@ -1180,25 +1181,25 @@ server {{
             get.remark = public.xssencode2(get.remark)
         if get.proxy_type == "unix":
             if not get.proxy_pass.startswith("/"):
-                return public.return_message(-1, 0,"The Unix file path must start with/, such as/tmp/flash.app.sock!")
+                return public.return_message(-1, 0, public.lang("The Unix file path must start with/, such as/tmp/flash.app.sock!"))
             if not get.proxy_pass.endswith(".sock"):
-                return public.return_message(-1, 0,"Unix files must end with. lock, such as/tmp/flash.app. lock!")
+                return public.return_message(-1, 0, public.lang("Unix files must end with. lock, such as/tmp/flash.app. lock!"))
             if not os.path.exists(get.proxy_pass):
-                return public.return_message(-1, 0,"The proxy target does not exist!")
+                return public.return_message(-1, 0, public.lang("The proxy target does not exist!"))
 
             get.proxy_pass = "http://unix:{}".format(get.proxy_pass)
         elif get.proxy_type == "http":
             if not get.proxy_pass.startswith("http://") and not get.proxy_pass.startswith("https://"):
-                return public.return_message(-1, 0,"The proxy target must start with http://or https://")
+                return public.return_message(-1, 0, public.lang("The proxy target must start with http://or https://"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         # 2024/4/19 下午3:45 检测是否已经存在proxy_path,有的话就返回错误
         for proxy_info in get.proxy_json_conf["proxy_info"]:
             if proxy_info["proxy_path"] == get.proxy_path:
-                return public.return_message(-1, 0,"【 {} 】 already exists in the reverse proxy and cannot be added again!".format(get.proxy_path))
+                return public.return_message(-1, 0, public.lang("【 {} 】 already exists in the reverse proxy and cannot be added again!", get.proxy_path))
 
         if len(get.proxy_json_conf["basic_auth"]) != 0:
             for i in range(len(get.proxy_json_conf["basic_auth"])):
@@ -1273,7 +1274,7 @@ server {{
             return update_result
 
         public.set_module_logs('site_proxy', 'add_proxy', 1)
-        return public.return_message(0, 0,"Added successfully!")
+        return public.return_message(0, 0, public.lang("Added successfully!"))
 
     # 2024/4/19 下午9:45 删除指定站点
     def delete(self, get):
@@ -1301,12 +1302,12 @@ server {{
         get.id = get.get("id", "")
         get.remove_path = get.get("remove_path/d", 0)
         if get.id == "":
-            return public.return_message(-1, 0,"ID cannot be empty!")
+            return public.return_message(-1, 0, public.lang("ID cannot be empty!"))
 
         get.reload = get.get("reload/d", 1)
 
         if public.M('sites').where('id=?', (get.id,)).count() < 1:
-            return public.return_message(-1, 0,'The specified site does not exist!')
+            return public.return_message(-1, 0, public.lang("The specified site does not exist!"))
 
         site_file = public.get_setup_path() + '/panel/vhost/nginx/' + get.site_name + '.conf'
         if os.path.exists(site_file):
@@ -1335,7 +1336,7 @@ server {{
         public.M('domain').where("pid=?", (get.id,)).delete()
         public.WriteLog('TYPE_SITE', "SITE_DEL_SUCCESS", (get.site_name,))
 
-        return public.return_message(0, 0,"Reverse proxy project deleted successfully!")
+        return public.return_message(0, 0, public.lang("Reverse proxy project deleted successfully!"))
 
     # 2024/5/28 上午9:50 批量删除站点
     def batch_delete(self, get):
@@ -1533,15 +1534,15 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1,0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
         get.id = get.get("id", "")
         if get.id == "":
-            return public.return_message(-1,0,"ID cannot be empty!")
+            return public.return_message(-1, 0, public.lang("ID cannot be empty!"))
         get.domains = get.get("domains", "")
         if get.domains == "":
-            return public.return_message(-1,0,"Domains cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Domains cannot be empty!"))
         if "," in get.domains:
-            return public.return_message(-1,0,"The domain name cannot contain commas!")
+            return public.return_message(-1, 0, public.lang("The domain name cannot contain commas!"))
 
         get.domain_list = get.domains.strip().replace(' ', '').split("\n")
         get.domain = ",".join(get.domain_list)
@@ -1553,14 +1554,14 @@ server {{
 
             d_port = domain.strip().split(":")[1]
             if not public.checkPort(d_port):
-                return public.return_message(-1,0,'The port number of domain name [{}] is illegal!'.format(domain))
+                return public.return_message(-1, 0, public.lang("The port number of domain name [{}] is illegal!", domain))
 
             port_list.append(d_port)
 
         # 2024/4/20 上午12:02 更新json文件
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.proxy_json_conf["domain_list"].extend(get.domain_list)
         get.proxy_json_conf["site_port"].extend(port_list)
@@ -1604,26 +1605,26 @@ server {{
 
         get.id = get.get("id", "")
         if get.id == "":
-            return public.return_message(-1, 0,"ID cannot be empty!")
+            return public.return_message(-1, 0, public.lang("ID cannot be empty!"))
         get.port = get.get("port", "")
         if get.port == "":
-            return public.return_message(-1, 0,"Port cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Port cannot be empty!"))
         get.domain = get.get("domain", "")
         if get.domain == "":
-            return public.return_message(-1, 0,"Domain cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Domain cannot be empty!"))
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.webname = get.site_name
 
         # 2024/4/20 上午12:02 更新json文件
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1, 0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         if len(get.proxy_json_conf["domain_list"]) == 1:
-            return public.return_message(-1, 0,"Keep at least one domain name!")
+            return public.return_message(-1, 0, public.lang("Keep at least one domain name!"))
 
         while get.domain in get.proxy_json_conf["domain_list"]:
             get.proxy_json_conf["domain_list"].remove(get.domain)
@@ -1653,28 +1654,23 @@ server {{
         '''
         get.id = get.get("id", "")
         if get.id == "":
-            return public.returnResult(status=False, msg="id不能为空！")
+            return public.return_message(-1, 0,  public.lang("id cannot be empty!"))
         get.domains = get.get("domains", "")
         if get.domains == "":
-            return public.returnResult(status=False, msg="domains不能为空！")
+            return public.return_message(-1, 0,  public.lang("domains cannot be empty!"))
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.webname = get.site_name
 
         # 2024/4/20 上午12:02 更新json文件
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
-        # if len(get.proxy_json_conf["domain_list"]) == 1:
-        #     return public.returnResult(status=False, msg="至少保留一个域名！")
 
         get.domain_list = get.domains.strip().replace(' ', '').split("\n")
-
-        # if len(get.domain_list) == len(get.proxy_json_conf["domain_list"]):
-        #     return public.returnResult(status=False, msg="至少保留一个域名！")
 
         for domain in get.domain_list:
             while domain in get.proxy_json_conf["domain_list"]:
@@ -1705,7 +1701,7 @@ server {{
             res_domains.append({"name": domain, "status": result["status"], "msg": result["msg"]})
 
         public.serviceReload()
-        return public.returnResult(status=True, data=res_domains)
+        return public.return_message(0, 0, res_domains)
 
     # 2024/4/20 上午9:17 获取域名列表和https端口
     def get_domain_list(self, get):
@@ -1731,10 +1727,10 @@ server {{
 
         get.id = get.get("id", "")
         if get.id == "":
-            return public.return_message(-1,0,"ID cannot be empty!")
+            return public.return_message(-1, 0, public.lang("ID cannot be empty!"))
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1,0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.siteName = get.webname = get.site_name
         get.table = "domain"
@@ -1744,7 +1740,7 @@ server {{
         # 2024/4/20 上午12:02 更新json文件
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         result_data = {}
         import data
@@ -1788,11 +1784,11 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         site_conf = public.readFile(public.get_setup_path() + '/panel/vhost/nginx/' + get.site_name + '.conf')
         ssl_conf = get.proxy_json_conf["ssl_info"]["ssl_conf"].format(
@@ -1868,16 +1864,16 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.conf_type = get.get("conf_type", "")
         if get.conf_type == "":
-            return public.return_message(-1, 0,"Conf_type cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Conf_type cannot be empty!"))
 
         get.body = get.get("body", "")
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         if get.conf_type == "http_block":
             get.proxy_json_conf["http_block"] = get.body
@@ -1889,7 +1885,7 @@ server {{
             return update_result
         public.serviceReload()
 
-        return public.return_message(0, 0,"Save successful!")
+        return public.return_message(0, 0, public.lang("Save successful!"))
 
     # 2024/4/20 下午3:11 根据proxy_json_conf，填入self._template_conf，然后生成nginx配置，保存到指定网站的conf文件中
     def generate_config(self, get):
@@ -2157,17 +2153,17 @@ server {{
         '''
         get.oid = get.get("oid", "")
         if get.oid == "":
-            return public.returnResult(status=False, msg="oid不能为空！")
+            return public.return_message(-1, 0,  public.lang("oid cannot be empty!"))
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.siteName = get.site_name
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         from panelSSL import panelSSL
         ssl_obj = panelSSL()
@@ -2196,13 +2192,13 @@ server {{
         '''
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.siteName = get.site_name
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         from panelSite import panelSite
         result = panelSite().CloseSSLConf(get)
@@ -2230,26 +2226,27 @@ server {{
         '''
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.key = get.get("key", "")
         if get.key == "":
-            return public.returnResult(status=False, msg="key不能为空！")
+            return public.return_message(-1, 0,  public.lang("key cannot be empty!"))
 
         get.csr = get.get("csr", "")
         if get.csr == "":
-            return public.returnResult(status=False, msg="csr不能为空！")
+            return public.return_message(-1, 0,  public.lang("csr cannot be empty!"))
 
         get.siteName = get.site_name
         get.type = -1
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
-        from panelSite import panelSite
+        from panel_site_v2 import panelSite
         result = panelSite().SetSSL(get)
-        if not result["status"]:
+        if result["status"] == -1:
             # return public.returnResult(status=False, msg=result["msg"])
             return result
 
@@ -2274,17 +2271,18 @@ server {{
         '''
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.partnerOrderId = get.get("partnerOrderId", "")
         if get.partnerOrderId == "":
-            return public.returnResult(status=False, msg="partnerOrderId不能为空！")
+
+            return public.return_message(-1, 0, public.lang("partnerOrderId cannot be empty!"))
 
         get.siteName = get.site_name
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         from panelSSL import panelSSL
         ssl_obj = panelSSL()
@@ -2313,33 +2311,32 @@ server {{
         '''
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.domains = get.get("domains", "")
         if get.domains == "":
-            return public.returnResult(status=False, msg="domains不能为空！")
+            return public.return_message(-1, 0,  public.lang("domains cannot be empty!"))
 
         get.auth_type = get.get("auth_type", "")
         if get.auth_type == "":
-            return public.returnResult(status=False, msg="auth_type不能为空！")
+            return public.return_message(-1, 0, public.lang("auth_type cannot be empty!"))
 
         get.auth_to = get.get("auth_to", "")
         if get.auth_to == "":
-            return public.returnResult(status=False, msg="auth_to不能为空！")
+            return public.return_message(-1, 0, public.lang("auth_to cannot be empty!"))
 
         get.auto_wildcard = get.get("auto_wildcard", "")
         if get.auto_wildcard == "":
-            return public.returnResult(status=False, msg="auto_wildcard不能为空！")
-
+            return public.return_message(-1, 0, public.lang("auto_wildcard cannot be empty!"))
         get.id = get.get("id", "")
         if get.id == "":
-            return public.returnResult(status=False, msg="id不能为空！")
+            return public.return_message(-1, 0,  public.lang("id cannot be empty!"))
 
         get.siteName = get.site_name
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         from acme_v2 import acme_v2
         acme = acme_v2()
@@ -2368,7 +2365,7 @@ server {{
         '''
         get.index = get.get("index", "")
         if get.index == "":
-            return public.returnResult(status=False, msg="index不能为空！")
+            return public.return_message(-1, 0,  public.lang("index cannot be empty!"))
 
         from acme_v2 import acme_v2
         acme = acme_v2()
@@ -2384,15 +2381,15 @@ server {{
         '''
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.BatchInfo = get.get("BatchInfo", "")
         if get.BatchInfo == "":
-            return public.returnResult(status=False, msg="BatchInfo不能为空！")
+            return public.return_message(-1, 0,  public.lang("BatchInfo cannot be empty!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         from panelSSL import panelSSL
         ssl_obj = panelSSL()
@@ -2424,17 +2421,17 @@ server {{
         '''
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.force_https = get.get("force_https/d", 999)
         if get.force_https == 999:
-            return public.returnResult(status=False, msg="force_https不能为空！")
+            return public.return_message(-1, 0,  public.lang("force_https cannot be empty!"))
 
         get.siteName = get.site_name
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.proxy_json_conf["ssl_info"]["force_https"] = True if get.force_https == 1 else False
 
@@ -2484,38 +2481,38 @@ server {{
             return public.return_message(-1, 0, str(ex))
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.domainorpath = get.get("domainorpath", "")
         if get.domainorpath == "":
-            return public.return_message(-1, 0,"Domainorpath cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Domainorpath cannot be empty!"))
 
         get.redirecttype = get.get("redirecttype", "")
         if get.redirecttype == "":
-            return public.return_message(-1, 0,"Redirecttype cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Redirecttype cannot be empty!"))
 
         get.redirectpath = get.get("redirectpath", "")
         if get.domainorpath == "path" and get.redirectpath == "":
-            return public.return_message(-1, 0,"Redirectpath cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Redirectpath cannot be empty!"))
 
         get.tourl = get.get("tourl", "")
         if get.tourl == "":
-            return public.return_message(-1, 0,"Tour cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Tour cannot be empty!"))
 
         get.redirectdomain = get.get("redirectdomain", "")
         if get.domainorpath == "domain" and get.redirectdomain == "":
-            return public.return_message(-1, 0,"Redirectdomain cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Redirectdomain cannot be empty!"))
 
         get.redirectname = get.get("redirectname", "")
         if get.redirectname == "":
-            return public.return_message(-1, 0,"Redirectname cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Redirectname cannot be empty!"))
 
         get.sitename = get.site_name
         get.type = 1
         get.holdpath = 1
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.proxy_json_conf["redirect"]["redirect_status"] = True
 
@@ -2553,17 +2550,17 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.redirectname = get.get("redirectname", "")
         if get.redirectname == "":
-            return public.return_message(-1, 0,"Redirectname cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Redirectname cannot be empty!"))
 
         get.sitename = get.site_name
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         from panelRedirect import panelRedirect
         redirect_list = panelRedirect().GetRedirectList(get)
@@ -2608,31 +2605,31 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.domainorpath = get.get("domainorpath", "")
         if get.domainorpath == "":
-            return public.return_message(-1, 0,"Domainorpath cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Domainorpath cannot be empty!"))
 
         get.redirecttype = get.get("redirecttype", "")
         if get.redirecttype == "":
-            return public.return_message(-1, 0,"Redirecttype cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Redirecttype cannot be empty!"))
 
         get.redirectpath = get.get("redirectpath", "")
         if get.domainorpath == "path" and get.redirectpath == "":
-            return public.return_message(-1, 0,"Redirectpath cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Redirectpath cannot be empty!"))
 
         get.tourl = get.get("tourl", "")
         if get.tourl == "":
-            return public.return_message(-1, 0,"Tour cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Tour cannot be empty!"))
 
         get.redirectdomain = get.get("redirectdomain", "")
         if get.domainorpath == "domain" and get.redirectdomain == "":
-            return public.return_message(-1, 0,"Redirectdomain cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Redirectdomain cannot be empty!"))
 
         get.redirectname = get.get("redirectname", "")
         if get.redirectname == "":
-            return public.return_message(-1, 0,"Redirectname cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Redirectname cannot be empty!"))
 
         get.sitename = get.site_name
         get.type = get.get("type/d", 1)
@@ -2664,10 +2661,10 @@ server {{
 
         get.path = get.get("path", "")
         if get.path == "":
-            return public.return_message(-1, 0,"Path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Path cannot be empty!"))
 
         if not os.path.exists(get.path):
-            return public.return_message(-1, 0,"Redirection has stopped or the configuration file directory does not exist!")
+            return public.return_message(-1, 0, public.lang("Redirection has stopped or the configuration file directory does not exist!"))
         import files
         f = files.files()
         result = f.GetFileBody(get)
@@ -2705,37 +2702,37 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.fix = get.get("fix", "")
         if get.fix == "":
-            return public.return_message(-1, 0,"Fix cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Fix cannot be empty!"))
 
         get.domains = get.get("domains", "")
         if get.domains == "":
-            return public.return_message(-1, 0,"Domains cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Domains cannot be empty!"))
 
         get.return_rule = get.get("return_rule", "")
         if get.return_rule == "":
-            return public.return_message(-1, 0,"Return_rule cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Return_rule cannot be empty!"))
 
         get.http_status = get.get("http_status", "")
         if get.http_status == "":
-            return public.return_message(-1, 0,"Https status cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Https status cannot be empty!"))
 
         get.status = get.get("status", "")
         if get.status == "":
-            return public.return_message(-1, 0,"Status cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Status cannot be empty!"))
 
         get.id = get.get("id", "")
         if get.id == "":
-            return public.return_message(-1, 0,"ID cannot be empty!")
+            return public.return_message(-1, 0, public.lang("ID cannot be empty!"))
 
         get.name = get.site_name
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.proxy_json_conf["security"]["security_status"] = True if get.status == "true" else False
         get.proxy_json_conf["security"]["static_resource"] = get.fix
@@ -2780,19 +2777,19 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.ip_type = get.get("ip_type", "black")
         if get.ip_type not in ["black", "white"]:
-            return public.return_message(-1, 0,"The ip_type parameter is incorrect, black or white must be passed!")
+            return public.return_message(-1, 0, public.lang("The ip_type parameter is incorrect, black or white must be passed!"))
 
         get.ips = get.get("ips", "")
         if get.ips == "":
-            return public.return_message(-1, 0,"IPS cannot be empty, please enter IP, one per line!")
+            return public.return_message(-1, 0, public.lang("IPS cannot be empty, please enter IP, one per line!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.ips = get.ips.split("\n")
         for ip in get.ips:
@@ -2803,7 +2800,7 @@ server {{
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/23 下午3:12 删除全局IP黑白名单
     def del_ip_limit(self, get):
@@ -2829,19 +2826,19 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.ip_type = get.get("ip_type", "black")
         if get.ip_type not in ["black", "white"]:
-            return public.return_message(-1, 0,"The ip_type parameter is incorrect, black or white must be passed!")
+            return public.return_message(-1, 0, public.lang("The ip_type parameter is incorrect, black or white must be passed!"))
 
         get.ip = get.get("ip", "")
         if get.ip == "":
-            return public.return_message(-1, 0,"IP cannot be empty, please enter IP!")
+            return public.return_message(-1, 0, public.lang("IP cannot be empty, please enter IP!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         if get.ip in get.proxy_json_conf["ip_limit"]["ip_{}".format(get.ip_type)]:
             get.proxy_json_conf["ip_limit"]["ip_{}".format(get.ip_type)].remove(get.ip)
@@ -2850,7 +2847,7 @@ server {{
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Delete successful!")
+        return public.return_message(0, 0, public.lang("Delete successful!"))
 
     # 2024/4/23 下午3:13 批量删除全局IP黑白名单
     def batch_del_ip_limit(self, get):
@@ -2876,19 +2873,19 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.ip_type = get.get("ip_type", "black")
         if get.ip_type not in ["black", "white", "all"]:
-            return public.return_message(-1, 0,"The ip_type parameter is incorrect, black or white must be passed!")
+            return public.return_message(-1, 0, public.lang("The ip_type parameter is incorrect, black or white must be passed!"))
 
         get.ips = get.get("ips", "")
         if get.ips == "":
-            return public.return_message(-1, 0,"IPS cannot be empty, please enter IP, one per line!")
+            return public.return_message(-1, 0, public.lang("IPS cannot be empty, please enter IP, one per line!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.ips = get.ips.split("\n")
         for ip in get.ips:
@@ -2905,7 +2902,7 @@ server {{
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Delete successful!")
+        return public.return_message(0, 0, public.lang("Delete successful!"))
 
     # 2024/4/22 下午9:01 获取指定网站的方向代理列表
     def get_proxy_list(self, get):
@@ -2929,16 +2926,16 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         if len(get.proxy_json_conf["proxy_info"]) == 0:
-            return public.return_message(-1, 0,"No proxy information!")
+            return public.return_message(-1, 0, public.lang("No proxy information!"))
 
         subs_filter = get.proxy_json_conf["subs_filter"] if "subs_filter" in get.proxy_json_conf else public.ExecShell("nginx -V 2>&1|grep 'ngx_http_substitutions_filter' -o")[0] != ""
 
@@ -2951,7 +2948,7 @@ server {{
                         info["proxy_pass"] = info["proxy_pass"].replace("http://unix:", "")
                     return public.return_message(0, 0,info)
             else:
-                return public.return_message(-1, 0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+                return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         public.set_module_logs('site_proxy', 'get_proxy_list', 1)
         return public.return_message(0, 0,get.proxy_json_conf["proxy_info"])
@@ -2978,11 +2975,11 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0, "Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         return public.return_message(0, 0, get.proxy_json_conf)
 
@@ -3019,23 +3016,23 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1, 0,"Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.proxy_host = get.get("proxy_host", "")
         if get.proxy_host == "":
-            return public.return_message(-1, 0,"Proxy_host cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_host cannot be empty!"))
 
         get.proxy_pass = get.get("proxy_pass", "")
         if get.proxy_pass == "":
-            return public.return_message(-1, 0,"Proxy_pass cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_pass cannot be empty!"))
 
         get.proxy_type = get.get("proxy_type", "")
         if get.proxy_type == "":
-            return public.return_message(-1, 0,"Proxy_type cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_type cannot be empty!"))
 
         get.proxy_connect_timeout = get.get("proxy_connect_timeout", "60s")
         get.proxy_send_timeout = get.get("proxy_send_timeout", "600s")
@@ -3048,24 +3045,24 @@ server {{
         if get.proxy_type == "unix":
             if not get.proxy_pass.startswith("http://unix:"):
                 if not get.proxy_pass.startswith("/"):
-                    return public.return_message(-1, 0,"Unix file path must be in/or http://unix: At the beginning, such as/tmp/flash.app. lock!")
+                    return public.return_message(-1, 0, public.lang("Unix file path must be in/or http://unix: At the beginning, such as/tmp/flash.app. lock!"))
                 if not get.proxy_pass.endswith(".sock"):
-                    return public.return_message(-1, 0,"Unix files must end with. lock, such as/tmp/flash.app. lock!")
+                    return public.return_message(-1, 0, public.lang("Unix files must end with. lock, such as/tmp/flash.app. lock!"))
                 if not os.path.exists(get.proxy_pass):
-                    return public.return_message(-1, 0,"The proxy target does not exist!")
+                    return public.return_message(-1, 0, public.lang("The proxy target does not exist!"))
                 get.proxy_pass = "http://unix:" + get.proxy_pass
         elif get.proxy_type == "http":
             if not get.proxy_pass.startswith("http://") and not get.proxy_pass.startswith("https://"):
-                return public.return_message(-1, 0,"The proxy target must start with http://or https://!")
+                return public.return_message(-1, 0, public.lang("The proxy target must start with http://or https://!"))
 
         get.websocket = get.get("websocket/d", 1)
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         if get.proxy_json_conf["websocket"]["websocket_status"] and get.websocket != 1:
-            return public.return_message(-1, 0,"The global websocket is in an open state, and it is not allowed to individually disable websocket support for this URL!")
+            return public.return_message(-1, 0, public.lang("The global websocket is in an open state, and it is not allowed to individually disable websocket support for this URL!"))
 
         for info in get.proxy_json_conf["proxy_info"]:
             if info["proxy_path"] == get.proxy_path:
@@ -3079,13 +3076,13 @@ server {{
                 info["remark"] = get.remark
                 break
         else:
-            return public.return_message(-1, 0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/22 下午9:34 删除指定网站指定URL的反向代理
     def del_url_proxy(self, get):
@@ -3111,28 +3108,28 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1, 0,"Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         for info in get.proxy_json_conf["proxy_info"]:
             if info["proxy_path"] == get.proxy_path:
                 get.proxy_json_conf["proxy_info"].remove(info)
                 break
         else:
-            return public.return_message(-1, 0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Delete successful!")
+        return public.return_message(0, 0, public.lang("Delete successful!"))
 
     # 2024/4/22 下午9:36 设置指定网站指定URL反向代理的备注
     def set_url_remark(self, get):
@@ -3158,11 +3155,11 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1,0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1,0,"Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.remark = get.get("remark", "")
         if get.remark != "":
@@ -3170,20 +3167,20 @@ server {{
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         for info in get.proxy_json_conf["proxy_info"]:
             if info["proxy_path"] == get.proxy_path:
                 info["remark"] = get.remark
                 break
         else:
-            return public.return_message(-1,0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0,0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/22 下午9:40 添加指定网站指定URL的内容替换
     def add_sub_filter(self, get):
@@ -3210,35 +3207,35 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1, 0,"Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.oldstr = get.get("oldstr", "")
         get.newstr = get.get("newstr", "")
 
         if get.oldstr == "" and get.newstr == "":
-            return public.return_message(-1, 0,"Oldstr and Newstr cannot be empty at the same time!")
+            return public.return_message(-1, 0, public.lang("Oldstr and Newstr cannot be empty at the same time!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.sub_type = get.get("sub_type", "g")
         if get.sub_type == "":
             get.sub_type = "g"
         import re
         if not re.match(r'^[ior]+$|^g(?!.*o)|^o(?!.*g)$', get.sub_type):
-            return public.return_message(-1, 0,"Get.sub_type can only contain letter combinations from 'g', 'i', 'o', or 'r', and 'g' and 'o' cannot coexist!")
+            return public.return_message(-1, 0, public.lang("Get.sub_type can only contain letter combinations from 'g', 'i', 'o', or 'r', and 'g' and 'o' cannot coexist!"))
 
         is_subs = public.ExecShell("nginx -V 2>&1|grep 'ngx_http_substitutions_filter' -o")[0]
         if not is_subs and re.search(u'[\u4e00-\u9fa5]', get.oldstr + get.newstr):
-            return public.return_message(-1, 0,"The content you entered contains Chinese. We have detected that the current version of nginx does not support it. Please try reinstalling a version of nginx 1.20 or higher and try again!")
+            return public.return_message(-1, 0, public.lang("The content you entered contains Chinese. We have detected that the current version of nginx does not support it. Please try reinstalling a version of nginx 1.20 or higher and try again!"))
 
         if get.sub_type != "g" and not is_subs:
-            return public.return_message(-1, 0,"Detected that the current nginx version only supports default replacement types. Please try reinstalling nginx version 1.20 or higher and try again!")
+            return public.return_message(-1, 0, public.lang("Detected that the current nginx version only supports default replacement types. Please try reinstalling nginx version 1.20 or higher and try again!"))
 
         if not "g" in get.sub_type and not "o" in get.sub_type:
             get.sub_type = "g" + get.sub_type
@@ -3258,13 +3255,13 @@ server {{
                 )
                 break
         else:
-            return public.return_message(-1, 0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/22 下午10:00 删除指定网站指定URL的内容替换
     def del_sub_filter(self, get):
@@ -3290,21 +3287,21 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1, 0,"Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.oldstr = get.get("oldstr", "")
         get.newstr = get.get("newstr", "")
 
         if get.oldstr == "" and get.newstr == "":
-            return public.return_message(-1, 0,"Oldstr and Newstr cannot be empty at the same time!")
+            return public.return_message(-1, 0, public.lang("Oldstr and Newstr cannot be empty at the same time!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         for info in get.proxy_json_conf["proxy_info"]:
             if info["proxy_path"] == get.proxy_path:
@@ -3313,16 +3310,16 @@ server {{
                         info["sub_filter"]["sub_filter_str"].remove(sub)
                         break
                 else:
-                    return public.return_message(-1, 0,"No configuration information found for content before replacement: [{}]!".format(get.oldstr))
+                    return public.return_message(-1, 0, public.lang("No configuration information found for content before replacement: [{}]!", get.oldstr))
                 break
         else:
-            return public.return_message(-1, 0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Delete successful!")
+        return public.return_message(0, 0, public.lang("Delete successful!"))
 
     # 2024/4/22 下午10:03 设置指定网站指定URL的内容压缩
     def set_url_gzip(self, get):
@@ -3350,21 +3347,21 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1, 0,"Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.gzip_status = get.get("gzip_status/d", 999)
         if get.gzip_status == 999:
-            return public.return_message(-1, 0,"Gzip_status cannot be empty, please pass number 1 or 0!")
+            return public.return_message(-1, 0, public.lang("Gzip_status cannot be empty, please pass number 1 or 0!"))
         get.gzip_min_length = get.get("gzip_min_length", "10k")
         get.gzip_comp_level = get.get("gzip_comp_level", "6")
         if get.gzip_min_length[0] == "0" or get.gzip_min_length.startswith("-"):
-            return public.return_message(-1, 0,"The gzip_min_length parameter is invalid. Please enter a number greater than 0!")
+            return public.return_message(-1, 0, public.lang("The gzip_min_length parameter is invalid. Please enter a number greater than 0!"))
         if get.gzip_comp_level == "0" or get.gzip_comp_level.startswith("-"):
-            return public.return_message(-1, 0,"The gzip_comp_level parameter is invalid. Please enter a number greater than 0!")
+            return public.return_message(-1, 0, public.lang("The gzip_comp_level parameter is invalid. Please enter a number greater than 0!"))
         get.gzip_types = get.get(
             "gzip_types",
             "text/plain application/javascript application/x-javascript text/javascript text/css application/xml application/json image/jpeg image/gif image/png font/ttf font/otf image/svg+xml application/xml+rss text/x-js"
@@ -3372,7 +3369,7 @@ server {{
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         for info in get.proxy_json_conf["proxy_info"]:
             if info["proxy_path"] == get.proxy_path:
@@ -3398,13 +3395,13 @@ server {{
                     info["gzip"]["gzip_conf"] = ""
                 break
         else:
-            return public.return_message(-1, 0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/22 下午10:15 添加指定网站指定URL的IP黑白名单
     def add_url_ip_limit(self, get):
@@ -3431,23 +3428,23 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1, 0,"Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.ip_type = get.get("ip_type", "black")
         if get.ip_type not in ["black", "white"]:
-            return public.return_message(-1, 0,"The ip_type parameter is incorrect, black or white must be passed!")
+            return public.return_message(-1, 0, public.lang("The ip_type parameter is incorrect, black or white must be passed!"))
 
         get.ips = get.get("ips", "")
         if get.ips == "":
-            return public.return_message(-1, 0,"IPS cannot be empty, please enter IP, one per line!")
+            return public.return_message(-1, 0, public.lang("IPS cannot be empty, please enter IP, one per line!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.ips = get.ips.split("\n")
         for info in get.proxy_json_conf["proxy_info"]:
@@ -3462,13 +3459,13 @@ server {{
 
                 break
         else:
-            return public.return_message(-1, 0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/22 下午10:21 删除指定网站指定URL的IP黑白名单
     def del_url_ip_limit(self, get):
@@ -3494,23 +3491,23 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1, 0,"Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.ip_type = get.get("ip_type", "black")
         if get.ip_type not in ["black", "white"]:
-            return public.return_message(-1, 0,"The ip_type parameter is incorrect, black or white must be passed!")
+            return public.return_message(-1, 0, public.lang("The ip_type parameter is incorrect, black or white must be passed!"))
 
         get.ip = get.get("ip", "")
         if get.ip == "":
-            return public.return_message(-1, 0,"IP cannot be empty, please enter IP!")
+            return public.return_message(-1, 0, public.lang("IP cannot be empty, please enter IP!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         for info in get.proxy_json_conf["proxy_info"]:
             if info["proxy_path"] == get.proxy_path:
@@ -3518,13 +3515,13 @@ server {{
                     info["ip_limit"]["ip_{ip_type}".format(ip_type=get.ip_type)].remove(get.ip)
                 break
         else:
-            return public.return_message(-1, 0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/24 上午11:21 批量删除指定网站指定URL的IP黑白名单
     def batch_del_url_ip_limit(self, get):
@@ -3551,19 +3548,19 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0, "Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.ip_type = get.get("ip_type", "black")
         if get.ip_type not in ["black", "white", "all"]:
-            return public.return_message(-1, 0, "The ip_type parameter is incorrect, black or white must be passed!")
+            return public.return_message(-1, 0, public.lang("The ip_type parameter is incorrect, black or white must be passed!"))
 
         get.ips = get.get("ips", "")
         if get.ips == "":
-            return public.return_message(-1, 0, "IPS cannot be empty, please enter IP, one per line!")
+            return public.return_message(-1, 0, public.lang("IPS cannot be empty, please enter IP, one per line!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         for info in get.proxy_json_conf["proxy_info"]:
             if info["proxy_path"] == get.proxy_path:
@@ -3580,13 +3577,13 @@ server {{
                             info["ip_limit"]["ip_{ip_type}".format(ip_type=get.ip_type)].remove(ip)
                 break
         else:
-            return public.return_message(-1, 0, "No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0, "Delete successful!")
+        return public.return_message(0, 0, public.lang("Delete successful!"))
 
     # 2024/4/22 下午8:14 设置指定网站指定URL的缓存
     def set_url_cache(self, get):
@@ -3612,21 +3609,21 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.cache_status = get.get("cache_status/d", 999)
         if get.cache_status == 999:
-            return public.return_message(-1, 0,"Cache_status cannot be empty, please pass number 1 or 0!")
+            return public.return_message(-1, 0, public.lang("Cache_status cannot be empty, please pass number 1 or 0!"))
 
         get.expires = get.get("expires", "1d")
         if get.expires[0] == "0" or get.expires.startswith("-"):
-            return public.return_message(-1, 0,"The expires parameter is illegal. Please enter a number greater than 0!")
+            return public.return_message(-1, 0, public.lang("The expires parameter is illegal. Please enter a number greater than 0!"))
 
         expires = "expires {}".format(get.expires)
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         static_cache = ("\n    location ~ .*\\.(css|js|jpe?g|gif|png|webp|woff|eot|ttf|svg|ico|css\\.map|js\\.map)$"
                         "\n    {{"
@@ -3656,13 +3653,13 @@ server {{
                     info["proxy_cache"]["cache_conf"] = ""
                 break
         else:
-            return public.return_message(-1, 0,"No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0,"Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     # 2024/4/24 上午9:57 设置指定网站指定URL的自定义配置
     def set_url_custom_conf(self, get):
@@ -3689,30 +3686,30 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0, "Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
-            return public.return_message(-1, 0, "Proxy_path cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
 
         get.custom_conf = get.get("custom_conf", "")
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         for info in get.proxy_json_conf["proxy_info"]:
             if info["proxy_path"] == get.proxy_path:
                 info["custom_conf"] = get.custom_conf
                 break
         else:
-            return public.return_message(-1, 0, "No proxy information found for this URL [{}]!".format(get.proxy_path))
+            return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))
 
         update_result = self.update_conf(get)
         if update_result["status"]==-1:
             return update_result
 
-        return public.return_message(0, 0, "Set successfully!")
+        return public.return_message(0, 0, public.lang("Set successfully!"))
 
     @staticmethod
     def nginx_get_log_file(nginx_config: str, is_error_log: bool = False):
@@ -3763,7 +3760,7 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"site_name不能为空！")
+            return public.return_message(-1, 0, public.lang("site_name不能为空！"))
 
         get.type = get.get("type", "access")
         log_name = get.site_name
@@ -3772,7 +3769,7 @@ server {{
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         if get.proxy_json_conf["proxy_log"]["log_type"] == "default":
             log_file = public.get_logs_path() + "/" + log_name + '.log'
@@ -3812,20 +3809,20 @@ server {{
 
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.return_message(-1, 0,"Sitename cannot be empty!")
+            return public.return_message(-1, 0, public.lang("Sitename cannot be empty!"))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         cache_dir = "/www/wwwroot/{site_name}/proxy_cache_dir".format(site_name=get.site_name)
         if os.path.exists(cache_dir):
             public.ExecShell("rm -rf {cache_dir}/*".format(cache_dir=cache_dir))
 
             public.serviceReload()
-            return public.return_message(0, 0,"Cleanup successful!")
+            return public.return_message(0, 0, public.lang("Cleanup successful!"))
 
-        return public.return_message(-1, 0,"Cleanup failed, cache directory does not exist!")
+        return public.return_message(-1, 0, public.lang("Cleanup failed, cache directory does not exist!"))
 
     # 2024/4/25 下午9:24 设置指定网站的https端口
     def set_https_port(self, get):
@@ -3837,15 +3834,15 @@ server {{
         '''
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.return_message(-1, 0,  public.lang("site_name cannot be empty!"))
 
         get.https_port = get.get("https_port", "443")
         if not public.checkPort(get.https_port) and get.https_port != "443":
-            return public.returnResult(status=False, msg="https端口【{}】不合法！".format(get.https_port))
+            return public.return_message(-1, 0, public.lang("https port [{}] is illegal!", get.https_port))
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
-            return public.return_message(-1,0,"Reading configuration file failed, please delete the website and add it again!")
+            return public.return_message(-1, 0, public.lang("Reading configuration file failed, please delete the website and add it again!"))
 
         get.proxy_json_conf["https_port"] = get.https_port
 
@@ -3881,4 +3878,4 @@ server {{
         )
         public.writeFile(self._site_proxy_conf_path, json.dumps(get.proxy_json_conf))
 
-        return public.return_message(0,0,"Save successful!")
+        return public.return_message(0, 0, public.lang("Save successful!"))

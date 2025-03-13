@@ -1,0 +1,43 @@
+{
+  "Monitor": {
+    "System": {
+      "index_1": "Monitoring Status",
+      "index_2": "Number of days to save: ",
+      "index_3": "Modify",
+      "index_4": "Clean Logs",
+      "index_5": "Please enter the number of days to save",
+      "index_6": "Number of saving day is illegal!",
+      "index_7": "Are you sure to clean all of logs of Monitory?",
+      "index_8": "Load Average",
+      "index_9": "1 min",
+      "index_10": "5 min",
+      "index_11": "15 min",
+      "index_12": "System resource usage",
+      "index_13": "Load details",
+      "index_14": "System resource usage: ",
+      "index_15": "Date: ",
+      "index_16": "Memory",
+      "index_17": "Disk I/O",
+      "index_18": "Read",
+      "index_19": "Write",
+      "index_20": "r/w times",
+      "index_21": "r/w wait",
+      "index_22": "Unit: {0}/s",
+      "index_23": "Network I/O: ",
+      "index_24": "Upstream",
+      "index_25": "Downstream",
+      "index_26": "Full screen",
+      "index_27": "Exit full screen",
+      "index_28": "Process name",
+      "index_29": "CPU usage",
+      "index_30": "Startup user",
+      "index_31": "Memory usage",
+      "index_32": "Disk usage",
+      "index_33": "Monitor Log Size: "
+    },
+    "API": {
+      "system_1": "Setting monitoring status, please wait...",
+      "system_2": "Clearing monitoring records, please wait..."
+    }
+  }
+}

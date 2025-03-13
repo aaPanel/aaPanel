@@ -30,7 +30,7 @@ except ImportError:
 def _get_panel_name() -> str:
     data = get_config_value("title")  # 若获得别名，则使用别名
     if data == "":
-        data = "宝塔面板"
+        data = "aaPanel"
     return data
 
 
@@ -39,22 +39,23 @@ class PanelSysDiskTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "system_disk"
-        self.template_name = "首页磁盘告警"
+        self.template_name = "Home disk alerts"
+        self.title = "Home disk alerts"
 
         self.wx_msg = ""
 
     def get_title(self, task_data: dict) -> str:
-        return "挂载目录【{}】的磁盘余量告警".format(task_data["project"])
+        return "Home disk alerts -- Mount directory[{}]".format(task_data["project"])
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if task_data["project"] not in [i[0] for i in self._get_disk_name()]:
-            return "指定的磁盘不存在"
+            return "The specified disk does not exist"
         if not (isinstance(task_data['cycle'], int) and task_data['cycle'] in (1, 2)):
-            return "类型参数错误"
+            return "The type parameter is incorrect"
         if not (isinstance(task_data['count'], int) and task_data['count'] >= 1):
-            return "阈值参数错误"
+            return "The threshold parameter is incorrect"
         if task_data['cycle'] == 2 and task_data['count'] >= 100:
-            return "阈值参数错误, 设置的检查范围不正确"
+            return "The threshold parameter is incorrect, and the set check range is incorrect"
         task_data['interval'] = 600
         return task_data
 
@@ -85,7 +86,6 @@ class PanelSysDiskTask(BaseTask):
         return disk_info
 
     def get_keyword(self, task_data: dict) -> str:
-        print(task_data)
         return task_data["project"]
 
     def get_push_data(self, task_id: str, task_data: dict) -> Optional[dict]:
@@ -100,46 +100,46 @@ class PanelSysDiskTask(BaseTask):
 
             if task_data["cycle"] == 1 and free < task_data["count"]:
                 unsafe_disk_list.append(
-                    "挂载在【{}】上的磁盘剩余容量为{}G，小于告警值{}G.".format(
+                    "The remaining capacity of the disk mounted on {} is {}G, which is less than the alarm value {}G.".format(
                         d["path"], round(free, 2), task_data["count"])
                 )
-                self.wx_msg = "剩余容量小于{}G".format(task_data["count"])
+                self.wx_msg = "The remaining capacity is less than {}G".format(task_data["count"])
 
             elif task_data["cycle"] == 2 and proportion > task_data["count"]:
                 unsafe_disk_list.append(
-                    "挂载在【{}】上的磁盘已使用容量为{}%，大于告警值{}%.".format(
+                    "The used capacity of the disk mounted on {} is {}%, which is greater than the alarm value {}%.".format(
                         d["path"], round(proportion, 2), task_data["count"])
                 )
-                self.wx_msg = "占用量大于{}%".format(task_data["count"])
+                self.wx_msg = "Occupancy greater than {}%".format(task_data["count"])
 
         if len(unsafe_disk_list) == 0:
             return None
 
         return {
             "msg_list": [
-                ">通知类型：磁盘余量告警",
-                ">告警内容:\n" + "\n".join(unsafe_disk_list)
+                ">Notification type: Disk Balance Alert",
+                ">Alarm content:\n" + "\n".join(unsafe_disk_list)
             ]
         }
 
     def filter_template(self, template: dict) -> Optional[dict]:
         for (path, total_size) in self._get_disk_name():
             template["field"][0]["items"].append({
-                "title": "【{}】的磁盘".format(path),
+                "title": "[{}] disk".format(path),
                 "value": path,
                 "count_default": round((int(total_size) * 0.2) / 1024 / 1024, 1)
             })
         return template
 
     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
-        return 'machine_exception|磁盘余量告警', {
+        return 'machine_exception|Disk Balance Alert', {
             'name': _get_panel_name(),
-            'type': "磁盘空间不足",
+            'type': "Insufficient disk space",
         }
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "宝塔首页磁盘告警"
+        msg.thing_type = "Home disk alerts"
         if len(self.wx_msg) > 20:
             self.wx_msg = self.wx_msg[:17] + "..."
         msg.msg = self.wx_msg
@@ -151,8 +151,8 @@ class PanelSysCPUTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "system_cpu"
-        self.template_name = "首页CPU告警"
-        self.title = "首页CPU告警"
+        self.template_name = "Home CPU alarms"
+        self.title = "Home CPU alarms"
 
         self.cpu_count = 0
 
@@ -174,9 +174,9 @@ class PanelSysCPUTask(BaseTask):
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if not (isinstance(task_data['cycle'], int) and task_data['cycle'] >= 1):
-            return "时间参数错误"
+            return "The time parameter is incorrect"
         if not (isinstance(task_data['count'], int) and task_data['count'] >= 1):
-            return "阈值参数错误，至少为1%"
+            return "Threshold parameter error, at least 1%"
         task_data['interval'] = 60
         return task_data
 
@@ -213,8 +213,8 @@ class PanelSysCPUTask(BaseTask):
             self.cache_list.clear()
         self.cpu_count = round(avg_data, 2)
         s_list = [
-            ">通知类型：CPU高占用告警",
-            ">告警内容：最近{}分钟内机器CPU平均占用率为{}%，高于告警值{}%".format(
+            ">Notification type: High CPU usage alarm",
+            ">Content of alarm: The average CPU usage of the machine in the last {} minutes is {}%, which is higher than the alarm value {}%.".format(
                 task_data["cycle"], round(avg_data, 2), task_data["count"]),
         ]
 
@@ -226,16 +226,16 @@ class PanelSysCPUTask(BaseTask):
         return template
 
     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
-        return 'machine_exception|CPU高占用告警', {
+        return 'machine_exception|High CPU usage alarm', {
             'name': _get_panel_name(),
-            'type': "CPU高占用",
+            'type': "High CPU usage",
         }
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "宝塔首页cpu告警"
-        msg.msg = "主机CPU占用超过：{}%".format(self.cpu_count)
-        msg.next_msg = "请登录面板，查看主机情况"
+        msg.thing_type = "Home CPU alarms"
+        msg.msg = "The CPU usage of the host is exceeded:{}%".format(self.cpu_count)
+        msg.next_msg = "Please log in to the panel to view the host status"
         return msg
 
 
@@ -244,16 +244,16 @@ class PanelSysLoadTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "system_load"
-        self.template_name = "首页负载告警"
-        self.title = "首页负载告警"
+        self.template_name = "Home load alerts"
+        self.title = "Home load alerts"
 
         self.avg_data = 0
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if not (isinstance(task_data['cycle'], int) and task_data['cycle'] >= 1):
-            return "时间参数错误"
+            return "The time parameter is incorrect"
         if not (isinstance(task_data['count'], int) and task_data['count'] >= 1):
-            return "阈值参数错误，至少为1%"
+            return "Threshold parameter error, at least 1%"
         task_data['interval'] = 60 * task_data['cycle']
         return task_data
 
@@ -283,8 +283,8 @@ class PanelSysLoadTask(BaseTask):
 
         return {
             "msg_list": [
-                ">通知类型：负载超标告警",
-                ">告警内容：最近{}分钟内机器平均负载率为{}%，高于{}%告警值".format(
+                ">Notification type: Alarm when the load exceeds the standard",
+                ">Content of alarm: The average load factor of the machine in the last {} minutes is {}%, which is higher than the alarm value of {}%.".format(
                     task_data["cycle"], round(avg_data, 2), task_data["count"]),
             ]
         }
@@ -293,16 +293,16 @@ class PanelSysLoadTask(BaseTask):
         return template
 
     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
-        return 'machine_exception|负载超标告警', {
+        return 'machine_exception|Alarm when the load exceeds the standard', {
             'name': _get_panel_name(),
-            'type': "平均负载过高",
+            'type': "The average load is too high",
         }
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "宝塔首页负载告警"
-        msg.msg = "主机负载超过：{}%".format(round(self.avg_data, 2))
-        msg.next_msg = "请登录面板，查看主机情况"
+        msg.thing_type = "Home load alerts"
+        msg.msg = "The host load exceeds:{}%".format(round(self.avg_data, 2))
+        msg.next_msg = "Please log in to the panel to view the host status"
         return msg
 
 
@@ -311,8 +311,8 @@ class PanelSysMEMTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "system_mem"
-        self.template_name = "首页内存告警"
-        self.title = "首页内存告警"
+        self.template_name = "Home memory alarms"
+        self.title = "Home memory alarms"
 
         self.wx_data = 0
 
@@ -334,9 +334,9 @@ class PanelSysMEMTask(BaseTask):
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if not (isinstance(task_data['cycle'], int) and task_data['cycle'] >= 1):
-            return "次数参数错误"
+            return "The number parameter is incorrect"
         if not (isinstance(task_data['count'], int) and task_data['count'] >= 1):
-            return "阈值参数错误，至少为1%"
+            return "Threshold parameter error, at least 1%"
         task_data['interval'] = task_data['cycle'] * 60
         return task_data
 
@@ -367,8 +367,8 @@ class PanelSysMEMTask(BaseTask):
         self.wx_data = round(avg_data * 100, 2)
         return {
             'msg_list': [
-                ">通知类型：内存高占用告警",
-                ">告警内容：最近{}分钟内机器内存平均占用率为{}%，高于告警值{}%".format(
+                ">Notification type: High memory usage alarm",
+                ">Content of alarm: The average memory usage of the machine in the last {} minutes is {}%, which is higher than the alarm value {}%.".format(
                     task_data["cycle"], round(avg_data * 100, 2), task_data["count"]),
             ]
         }
@@ -377,40 +377,40 @@ class PanelSysMEMTask(BaseTask):
         return template
 
     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
-        return 'machine_exception|内存高占用告警', {
+        return 'machine_exception|High memory usage alarm', {
             'name': _get_panel_name(),
-            'type': "内存高占用",
+            'type': "High memory usage",
         }
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "宝塔首页内存告警"
-        msg.msg = "主机内存占用超过：{}%".format(self.wx_data)
-        msg.next_msg = "请登录面板，查看主机情况"
+        msg.thing_type = "Home memory alarms"
+        msg.msg = "Host memory usage exceeded: {}%".format(self.wx_data)
+        msg.next_msg = "Please log in to the panel to view the host status"
         return msg
 
 
 class ViewMsgFormat(object):
     _FORMAT = {
         "20": (
-            lambda x: "<span>挂载在{}上的磁盘{}触发</span>".format(
+            lambda x: "<span>Triggered by {} disk mounted on {}</span>".format(
                 x.get("project"),
-                "余量不足%.1fG" % round(x.get("count"), 1) if x.get("cycle") == 1 else "占用超过%d%%" % x.get("count"),
+                "The margin is less than %.1f G" % round(x.get("count"), 1) if x.get("cycle") == 1 else "ake up more than %d%%" % x.get("count"),
             )
         ),
         "21": (
-            lambda x: "<span>{}分钟内平均CUP占用超过{}%触发</span>".format(
-                x.get("cycle"), x.get("count")
+            lambda x: "<span>Triggers when the average CPU usage exceeds {}% in {} minutes</span>".format(
+                x.get("count"), x.get("cycle")
             )
         ),
         "22": (
-            lambda x: "<span>{}分钟内平均负载超过{}%触发</span>".format(
-                x.get("cycle"), x.get("count")
+            lambda x: "<span>Triggered by an average load exceeding {}% in {} minutes</span>".format(
+                x.get("count"), x.get("cycle")
             )
         ),
         "23": (
-            lambda x: "<span>{}分钟内内存使用率超过{}%触发</span>".format(
-                x.get("cycle"), x.get("count")
+            lambda x: "<span>Triggered if the memory usage exceeds {}% within {} minutes</span>".format(
+                x.get("count"), x.get("cycle")
             )
         )
     }

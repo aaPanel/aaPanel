@@ -815,7 +815,7 @@ class system:
             import ajax
             get.status = 'True'
             ajax.ajax().setPHPMyAdmin(get)
-            return public.return_msg_gettext(True,'Executed successfully!')
+            return public.return_msg_gettext(True, public.lang("Executed successfully!"))
 
         if get.name == 'openlitespeed':
             if get.type == 'stop':
@@ -824,12 +824,12 @@ class system:
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl start')
             else:
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart')
-            return public.return_msg_gettext(True,'Executed successfully!')
+            return public.return_msg_gettext(True, public.lang("Executed successfully!"))
 
         #检查httpd配置文件
         if get.name == 'apache' or get.name == 'httpd':
             get.name = 'httpd'
-            if not os.path.exists(self.setupPath+'/apache/bin/apachectl'): return public.return_msg_gettext(True,'Execution failed, check if Apache installed')
+            if not os.path.exists(self.setupPath+'/apache/bin/apachectl'): return public.return_msg_gettext(True, public.lang("Execution failed, check if Apache installed"))
             vhostPath = self.setupPath + '/panel/vhost/apache'
             if not os.path.exists(vhostPath):
                 public.ExecShell('mkdir ' + vhostPath)
@@ -842,7 +842,7 @@ class system:
             result = public.ExecShell('ulimit -n 8192 ; ' + self.setupPath+'/apache/bin/apachectl -t')
             if result[1].find('Syntax OK') == -1:
                 public.write_log_gettext("Software manager",'Execution failed: {}', (str(result),))
-                return public.return_msg_gettext(False,"Apache rule configuration error: <br><a style='color:red;'>{}</a>",(result[1].replace("\n",'<br>'),))
+                return public.return_msg_gettext(False,public.lang("Apache rule configuration error: <br><a style='color:red;'>{}</a>",result[1].replace("\n",'<br>')))
             
             if get.type == 'restart':
                 public.ExecShell('pkill -9 httpd')
@@ -868,18 +868,18 @@ class system:
                 nginxConf = nginxConf.replace("#limit_conn_zone $binary_remote_addr zone=perip:10m;",limitConf)
                 public.writeFile(limit,nginxConf)
                 public.ExecShell('/etc/init.d/nginx start')
-                return public.return_msg_gettext(True,'Configuration file mismatch caused by reinstalling Nginx fixed')
+                return public.return_msg_gettext(True, public.lang("Configuration file mismatch caused by reinstalling Nginx fixed"))
             
             if result[1].find('proxy') != -1:
                 import panelSite
                 panelSite.panelSite().CheckProxy(get)
                 public.ExecShell('/etc/init.d/nginx start')
-                return public.return_msg_gettext(True,'Configuration file mismatch caused by reinstalling Nginx fixed')
+                return public.return_msg_gettext(True, public.lang("Configuration file mismatch caused by reinstalling Nginx fixed"))
             
             #return result
             if result[1].find('successful') == -1:
                 public.write_log_gettext("Software manager",'Execution failed: {}', (str(result),))
-                return public.return_msg_gettext(False,"Nginx rule configuration error: <br><a style='color:red;'>{}</a>",(result[1].replace("\n",'<br>'),))
+                return public.return_msg_gettext(False,public.lang("Nginx rule configuration error: <br><a style='color:red;'>{}</a>",result[1].replace("\n",'<br>')))
 
             if get.type == 'start': 
                 self.kill_port()
@@ -923,12 +923,12 @@ class system:
 
             if not self.check_service_status(get.name):
                 if len(result[1]) > 1 and get.name != 'pure-ftpd' and get.name != 'redis':
-                    return public.returnMsg(False, '<p>failed to activate: <p>' + result[1].replace('\n','<br>'))
+                    return public.returnMsg(False, public.lang('<p>failed to activate: <p>' + result[1].replace('\n','<br>')))
                 else:
-                    return public.returnMsg(False,'{} service failed to start'.format(get.name))
+                    return public.returnMsg(False, public.lang("{} service failed to start", get.name))
         else:
-            if self.check_service_status(get.name): return public.returnMsg(False, 'Service stop failed!')
-        return public.return_msg_gettext(True,'Executed successfully!')
+            if self.check_service_status(get.name): return public.returnMsg(False, public.lang("Service stop failed!"))
+        return public.return_msg_gettext(True, public.lang("Executed successfully!"))
 
     def check_service_status(self,name):
         '''
@@ -960,9 +960,9 @@ class system:
 
 
     def RestartServer(self,get):
-        if not public.IsRestart(): return public.return_msg_gettext(False,'Please run the program when all install tasks finished!')
+        if not public.IsRestart(): return public.return_msg_gettext(False, public.lang("Please run the program when all install tasks finished!"))
         public.ExecShell("sync && init 6 &")
-        return public.return_msg_gettext(True,'Command sent successfully!')
+        return public.return_msg_gettext(True, public.lang("Command sent successfully!"))
 
     def kill_port(self):
         public.ExecShell('pkill -9 httpd')
@@ -984,8 +984,8 @@ class system:
         public.ExecShell("/etc/init.d/bt start")
         public.writeFile('data/restart.pl','True')
         # 重启面板 默认开启系统监控
-        public.writeFile('data/control.conf', '30')
-        return public.return_msg_gettext(True,'Panel restarted')
+        # public.writeFile('data/control.conf', '30')
+        return public.return_msg_gettext(True, public.lang("Panel restarted"))
 
     
     #修复面板

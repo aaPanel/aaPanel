@@ -6,8 +6,6 @@
 # -------------------------------------------------------------------
 # Author: wzz <wzz@aapanel.com>
 # -------------------------------------------------------------------
-import gettext
-_ = gettext.gettext
 
 # ------------------------------
 # Docker模型
@@ -63,6 +61,7 @@ class main(dockerBase):
 
             if "Volumes" in volume_list and type(volume_list["Volumes"]) == list:
                 for v in volume_list["Volumes"]:
+                    v["CreatedAt"] = dp.convert_timezone_str_to_timestamp(v["CreatedAt"])
                     data.append(self.get_volume_container_name(v, container_list))
 
                 return public.return_message(0, 0, sorted(data, key=lambda x: x['CreatedAt'], reverse=True))
@@ -89,7 +88,7 @@ class main(dockerBase):
                 args.labels = dp.set_kv(args.labels)
 
             if len(args.name) < 2:
-                return public.return_message(-1, 0, _( "Volume names can be no less than 2 characters long!"))
+                return public.return_message(-1, 0, public.lang("Volume names can be no less than 2 characters long!"))
 
             self.docker_client(self._url).volumes.create(
                 name=args.name,
@@ -98,18 +97,18 @@ class main(dockerBase):
                 labels=args.labels if args.labels != "" else None
             )
             dp.write_log("Add storage volume [{}] success!".format(args.name))
-            return public.return_message(0, 0, _( "successfully added!"))
+            return public.return_message(0, 0, public.lang("successfully added!"))
         except docker.errors.APIError as e:
             if "volume name is too short, names should be at least two alphanumeric characters" in str(e):
-                return public.return_message(-1, 0, _( "Volume names can be no less than 2 characters long!"))
+                return public.return_message(-1, 0, public.lang("Volume names can be no less than 2 characters long!"))
             if "volume name" in str(e):
-                return public.return_message(-1, 0, _( "Volume name already exists!"))
-            return public.return_message(-1, 0, _( "addition failed {}".format(e)))
+                return public.return_message(-1, 0, public.lang("Volume name already exists!"))
+            return public.return_message(-1, 0, public.lang("addition failed {}", e))
 
         except Exception as e:
             if "driver_opts must be a dictionary" in str(e):
-                return public.return_message(-1, 0, _( "Driver option tags must be dictionary/key-value pairs!"))
-            return public.return_message(-1, 0, _( "Add failed! {}".format(e)))
+                return public.return_message(-1, 0, public.lang("Driver option tags must be dictionary/key-value pairs!"))
+            return public.return_message(-1, 0, public.lang("Add failed! {}", e))
 
     def remove(self, args):
         """
@@ -133,14 +132,14 @@ class main(dockerBase):
             obj = self.docker_client(self._url).volumes.get(args.name)
             obj.remove()
             dp.write_log("Delete volume [{}] successful!".format(args.name))
-            return public.return_message(0, 0, _( "successfully delete"))
+            return public.return_message(0, 0, public.lang("successfully delete"))
 
         except docker.errors.APIError as e:
             if "volume is in use" in str(e):
-                return public.return_message(-1, 0, _( "The storage volume is in use and cannot be deleted!"))
+                return public.return_message(-1, 0, public.lang("The storage volume is in use and cannot be deleted!"))
             if "no such volume" in str(e):
-                return public.return_message(-1, 0, _( "The storage volume does not exist!"))
-            return public.return_message(-1, 0, _( "Delete failed! {}".format(e)))
+                return public.return_message(-1, 0, public.lang("The storage volume does not exist!"))
+            return public.return_message(-1, 0, public.lang("Delete failed! {}", e))
 
     def prune(self, args):
         """
@@ -151,9 +150,9 @@ class main(dockerBase):
         try:
             res = self.docker_client(self._url).volumes.prune()
             if not res['VolumesDeleted']:
-                return public.return_message(-1, 0, _( "No useless storage volumes!"))
+                return public.return_message(-1, 0, public.lang("No useless storage volumes!"))
 
             dp.write_log("Delete useless storage volume successfully!")
-            return public.return_message(0, 0, _( "successfully delete!"))
+            return public.return_message(0, 0, public.lang("successfully delete!"))
         except docker.errors.APIError as e:
-            return public.return_message(-1, 0, _( "Delete failed! {}".format(e)))
+            return public.return_message(-1, 0, public.lang("Delete failed! {}", e))

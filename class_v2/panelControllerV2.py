@@ -71,7 +71,7 @@ class Controller:
             pdata = public.to_dict_obj(pdata)
 
         if not isinstance(pdata,public.dict_obj):
-            return public.return_message(-1,0, "The passed parameter is not a universal internal object")
+            return public.return_message(-1, 0, public.lang("The passed parameter is not a universal internal object"))
 
         # 告诉加载器，要加载什么模块
         if model_index: pdata.model_index = model_index

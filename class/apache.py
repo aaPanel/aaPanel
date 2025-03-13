@@ -31,99 +31,102 @@ class apache:
             pass
 
     def GetApacheStatus(self):
-        process_cpu = {}
-        apacheconf = "%s/apache/conf/httpd.conf" % (self.setupPath)
-        confcontent = public.readFile(apacheconf)
-        rep = "#Include conf/extra/httpd-info.conf"
-        if re.search(rep,confcontent):
-            confcontent = re.sub(rep,"Include conf/extra/httpd-info.conf",confcontent)
-            public.writeFile(apacheconf,confcontent)
-            public.serviceReload()
-        result = public.HttpGet('http://127.0.0.1/server-status?auto')
-        try:
-            workermen = int(public.ExecShell("ps aux|grep httpd|grep 'start'|awk '{memsum+=$6};END {print memsum}'")[0]) / 1024
-        except:
-            return public.return_msg_gettext(False,"Get worker RAM False")
-        for proc in psutil.process_iter():
-            if proc.name() == "httpd":
-                self.GetProcessCpuPercent(proc.pid,process_cpu)
-        time.sleep(0.5)
-
         data = {}
+        try:
+            process_cpu = {}
+            apacheconf = "%s/apache/conf/httpd.conf" % (self.setupPath)
+            confcontent = public.readFile(apacheconf)
+            rep = "#Include conf/extra/httpd-info.conf"
+            if re.search(rep,confcontent):
+                confcontent = re.sub(rep,"Include conf/extra/httpd-info.conf",confcontent)
+                public.writeFile(apacheconf,confcontent)
+                public.serviceReload()
+            result = public.HttpGet('http://127.0.0.1/server-status?auto')
+            try:
+                workermen = int(public.ExecShell("ps aux|grep httpd|grep 'start'|awk '{memsum+=$6};END {print memsum}'")[0]) / 1024
+            except:
+                return public.return_msg_gettext(False, public.lang("Get RAM False"))
+            for proc in psutil.process_iter():
+                if proc.name() == "httpd":
+                    self.GetProcessCpuPercent(proc.pid,process_cpu)
+            time.sleep(0.5)
 
-        # 计算启动时间
-        Uptime = re.search(r"ServerUptimeSeconds:\s+(.*)",result)
-        if not Uptime:
-            return public.return_msg_gettext(False, "Get worker Uptime False")
-        Uptime = int(Uptime.group(1))
-        min = Uptime / 60
-        hours = min / 60
-        days = math.floor(hours / 24)
-        hours = math.floor(hours - (days * 24))
-        min = math.floor(min - (days * 60 * 24) - (hours * 60))
 
-        #格式化重启时间
-        restarttime = re.search(r"RestartTime:\s+(.*)",result)
-        if not restarttime:
-            return public.return_msg_gettext(False, "Get worker Restart Time False")
-        restarttime = restarttime.group(1)
-        rep = r"\w+,\s([\w-]+)\s([\d\:]+)\s\w+"
-        date = re.search(rep,restarttime)
-        if not date:
-            return public.return_msg_gettext(False, "Get worker date False")
-        date = date.group(1)
-        timedetail = re.search(rep,restarttime)
-        if not timedetail:
-            return public.return_msg_gettext(False, "Get worker time detail False")
-        timedetail=timedetail.group(2)
-        monthen = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-        n = 0
-        for m in monthen:
-            if m in date:
-                date = re.sub(m,str(n+1),date)
-            n+=1
-        date = date.split("-")
-        date = "%s-%s-%s" % (date[2],date[1],date[0])
+            # 计算启动时间
+            Uptime = re.search(r"ServerUptimeSeconds:\s+(.*)",result)
+            if not Uptime:
+                return public.return_msg_gettext(False, public.lang("Get Uptime False"))
+            Uptime = int(Uptime.group(1))
+            min = Uptime / 60
+            hours = min / 60
+            days = math.floor(hours / 24)
+            hours = math.floor(hours - (days * 24))
+            min = math.floor(min - (days * 60 * 24) - (hours * 60))
 
-        reqpersec = re.search(r"ReqPerSec:\s+(.*)", result)
-        if not reqpersec:
-            return public.return_msg_gettext(False, "Get worker reqpersec False")
-        reqpersec = reqpersec.group(1)
-        if re.match(r"^\.", reqpersec):
-            reqpersec = "%s%s" % (0,reqpersec)
-        data["RestartTime"] = "%s %s" % (date,timedetail)
-        data["UpTime"] = "%s day %s hour %s minute" % (str(int(days)),str(int(hours)),str(int(min)))
-        total_acc = re.search(r"Total Accesses:\s+(\d+)",result)
-        if not total_acc:
-            return public.return_msg_gettext(False, "Get worker TotalAccesses False")
-        data["TotalAccesses"] = total_acc.group(1)
-        total_kb = re.search(r"Total kBytes:\s+(\d+)",result)
-        if not total_kb:
-            return public.return_msg_gettext(False, "Get worker TotalKBytes False")
-        data["TotalKBytes"] = total_kb.group(1)
-        data["ReqPerSec"] = round(float(reqpersec), 2)
-        busywork = re.search(r"BusyWorkers:\s+(\d+)",result)
-        if not busywork:
-            return public.return_msg_gettext(False, "Get worker BusyWorkers False")
-        data["BusyWorkers"] = busywork.group(1)
-        idlework = re.search(r"IdleWorkers:\s+(\d+)",result)
-        if not idlework:
-            return public.return_msg_gettext(False, "Get worker IdleWorkers False")
-        data["IdleWorkers"] = idlework.group(1)
-        data["workercpu"] = round(float(process_cpu["httpd"]),2)
-        data["workermem"] = "%s%s" % (int(workermen),"MB")
+            #格式化重启时间
+            restarttime = re.search(r"RestartTime:\s+(.*)",result)
+            if not restarttime:
+                return public.return_msg_gettext(False, public.lang("Get Restart Time False"))
+            restarttime = restarttime.group(1)
+            rep = r"\w+,\s([\w-]+)\s([\d\:]+)\s\w+"
+            date = re.search(rep,restarttime)
+            if not date:
+                return public.return_msg_gettext(False, public.lang("Get date False"))
+            date = date.group(1)
+            timedetail = re.search(rep,restarttime)
+            if not timedetail:
+                return public.return_msg_gettext(False, public.lang("Get time detail False"))
+            timedetail=timedetail.group(2)
+            monthen = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+            n = 0
+            for m in monthen:
+                if m in date:
+                    date = re.sub(m,str(n+1),date)
+                n+=1
+            date = date.split("-")
+            date = "%s-%s-%s" % (date[2],date[1],date[0])
+
+            reqpersec = re.search(r"ReqPerSec:\s+(.*)", result)
+            if not reqpersec:
+                return public.return_msg_gettext(False, public.lang("Get reqpersec False"))
+            reqpersec = reqpersec.group(1)
+            if re.match(r"^\.", reqpersec):
+                reqpersec = "%s%s" % (0,reqpersec)
+            data["RestartTime"] = "%s %s" % (date,timedetail)
+            data["UpTime"] = "%s day %s hour %s minute" % (str(int(days)),str(int(hours)),str(int(min)))
+            total_acc = re.search(r"Total Accesses:\s+(\d+)",result)
+            if not total_acc:
+                return public.return_msg_gettext(False, public.lang("Get TotalAccesses False"))
+            data["TotalAccesses"] = total_acc.group(1)
+            total_kb = re.search(r"Total kBytes:\s+(\d+)",result)
+            if not total_kb:
+                return public.return_msg_gettext(False, public.lang("Get TotalKBytes False"))
+            data["TotalKBytes"] = total_kb.group(1)
+            data["ReqPerSec"] = round(float(reqpersec), 2)
+            busywork = re.search(r"BusyWorkers:\s+(\d+)",result)
+            if not busywork:
+                return public.return_msg_gettext(False, public.lang("Get BusyWorkers False"))
+            data["BusyWorkers"] = busywork.group(1)
+            idlework = re.search(r"IdleWorkers:\s+(\d+)",result)
+            if not idlework:
+                return public.return_msg_gettext(False, public.lang("Get IdleWorkers False"))
+            data["IdleWorkers"] = idlework.group(1)
+            data["workercpu"] = round(float(process_cpu["httpd"]),2)
+            data["workermem"] = "%s%s" % (int(workermen),"MB")
+        except Exception as e:
+            public.print_log("error, %s" % e)
         return data
 
     def GetApacheValue(self):
         apachedefaultcontent = public.readFile(self.apachedefaultfile)
         apachempmcontent = public.readFile(self.apachempmfile)
         if not "mpm_event_module" in apachempmcontent:
-            return public.returnMsg(False,"mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty")
+            return public.returnMsg(False, public.lang("mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty"))
         apachempmcontent = re.search(r"\<IfModule mpm_event_module\>(\n|.)+?\</IfModule\>",apachempmcontent).group()
-        ps = ["%s，%s" % (public.get_msg_gettext('Second'),public.get_msg_gettext('Request timeout')),
-              public.get_msg_gettext('Keep alive'),
-              "%s，%s" % (public.get_msg_gettext('Second'),public.get_msg_gettext('Connection timeout')),
-              public.get_msg_gettext('Max keep-alive requests per connection')]
+        ps = ["%s，%s" % (public.lang("Second"),public.lang("Request timeout")),
+            public.lang("Keep alive"),
+            "%s，%s" % (public.lang("Second"), public.lang("Connection timeout")),
+              public.lang("Max keep-alive requests per connection")]
         gets = ["Timeout","KeepAlive","KeepAliveTimeout","MaxKeepAliveRequests"]
         if public.get_webserver() == 'apache':
             shutil.copyfile(self.apachedefaultfile, '/tmp/apdefault_file_bk.conf')
@@ -140,17 +143,22 @@ class apache:
             if not v:
                 return public.return_msg_gettext(False, "Get Value {} False",(v,))
             v = v.group(2)
-            psstr = ps[n]
-            kv = {"name":k,"value":v,"ps":psstr}
+            if k not in ["KeepAlive"]:
+                try:
+                    v = int(v)
+                except Exception as e:
+                    public.print_log(f"Value {v} False %s", e)
+            ps_str = ps[n]
+            kv = {"name":k,"value":v,"ps":ps_str}
             conflist.append(kv)
             n += 1
 
-        ps = [public.get_msg_gettext('Default processes'),
-              public.get_msg_gettext('Maximum number of idle threads'),
-              public.get_msg_gettext('Minimum number of idle threads available to handle request spikes'),
-              public.get_msg_gettext('Number of threads created by each child process'),
-              public.get_msg_gettext('Maximum number of connections that will be processed simultaneously'),
-              public.get_msg_gettext('Limit on the number of connections that an individual child server will handle during its life')]
+        ps = [public.lang("Default processes"),
+              public.lang("Maximum number of idle threads"),
+              public.lang("Minimum number of idle threads available to handle request spikes"),
+              public.lang("Number of threads created by each child process"),
+              public.lang("Maximum number of connections that will be processed simultaneously"),
+              public.lang("Limit on the number of connections that an individual child server will handle during its life")]
         gets = ["StartServers","MaxSpareThreads","MinSpareThreads","ThreadsPerChild","MaxRequestWorkers","MaxConnectionsPerChild"]
         n = 0
         for i in gets:
@@ -163,17 +171,22 @@ class apache:
             if not v:
                 return public.return_msg_gettext(False, "Get Value {} False",(v,))
             v = v.group(2)
-            psstr = ps[n]
-            kv = {"name": k, "value": v, "ps": psstr}
+            if k not in ["KeepAlive"]:
+                try:
+                    v = int(v)
+                except Exception as e:
+                    public.print_log(f"Value {v} False %s", e)
+            ps_str = ps[n]
+            kv = {"name": k, "value": v, "ps": ps_str}
             conflist.append(kv)
             n += 1
-        return(conflist)
+        return conflist
 
-    def SetApacheValue(self,get):
+    def SetApacheValue(self, get):
         apachedefaultcontent = public.readFile(self.apachedefaultfile)
         apachempmcontent = public.readFile(self.apachempmfile)
         if not "mpm_event_module" in apachempmcontent:
-            return public.return_msg_gettext(False,"mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty")
+            return public.return_msg_gettext(False, public.lang("mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty"))
         conflist = []
         getdict = get.get_items()
         for i in getdict.keys():
@@ -185,13 +198,13 @@ class apache:
                 conflist.append(getpost)
         for c in conflist:
             if c["name"] == "KeepAlive":
-                if not re.search("on|off", c["value"]):
-                    return public.return_msg_gettext(False, 'Parameter ERROR!')
+                if not re.search("On|Off", c["value"]):
+                    return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
             else:
                 print(c["value"])
                 if not re.search(r"\d+", c["value"]):
                     print(c["name"],c["value"])
-                    return public.return_msg_gettext(False, 'Parameter ERROR!')
+                    return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
 
             rep = r"%s\s+\w+" % c["name"]
             if re.search(rep,apachedefaultcontent):
@@ -206,10 +219,10 @@ class apache:
         if (isError != True):
             shutil.copyfile('/tmp/_file_bk.conf', self.apachedefaultfile)
             shutil.copyfile('/tmp/proxyfile_bk.conf', self.apachempmfile)
-            return public.returnMsg(False, 'ERROR: %s<br><a style="color:red;">' % public.get_msg_gettext('Configuration ERROR') + isError.replace("\n",
-                                                                                            '<br>') + '</a>')
+            return public.returnMsg(False, 'ERROR: %s<br><a style="color:red;">' % public.lang("Configuration ERROR") + isError.replace("\n",
+                                                                                                                                        '<br>') + '</a>')
         public.serviceReload()
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     def add_httpd_access_log_format(self,args):
         '''
@@ -232,12 +245,12 @@ class apache:
                 self.del_httpd_access_log_format(args)
             conf = public.readFile(self.httpdconf)
             if not conf:
-                return public.return_msg_gettext(False,'Configuration file not exist')
+                return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
             reg = '<IfModule log_config_module>'
             conf = re.sub(reg,'<IfModule log_config_module>'+data,conf)
             public.writeFile(self.httpdconf,conf)
             public.serviceReload()
-            return public.return_msg_gettext(True, 'Setup successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         except:
             return public.returnMsg(False, str(public.get_error_info()))
 
@@ -249,13 +262,13 @@ class apache:
         '''
         conf = public.readFile(self.httpdconf)
         if not conf:
-            return public.return_msg_gettext(False, 'Configuration file not exist')
+            return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
         reg = r'\s*#LOG_FORMAT_BEGIN_{n}(\n|.)+#LOG_FORMAT_END_{n}\n?'.format(n=args.log_format_name)
         conf = re.sub(reg,'',conf)
         self._del_format_log_of_website(args.log_format_name)
         public.writeFile(self.httpdconf,conf)
         public.serviceReload()
-        return public.return_msg_gettext(True, 'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     def del_all_log_format(self,args):
         all_format = self.get_httpd_access_log_format(args)
@@ -318,7 +331,7 @@ class apache:
             reg = "#LOG_FORMAT_BEGIN.*"
             conf = public.readFile(self.httpdconf)
             if not conf:
-                return public.return_msg_gettext(False, 'Configuration file not exist')
+                return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
             data = re.findall(reg,conf)
             format_name = [i.split('LOG_FORMAT_BEGIN_')[-1] for i in data]
             format_log = {}
@@ -349,7 +362,7 @@ class apache:
                 website_conf_file = '/www/server/panel/vhost/apache/{}.conf'.format(site['name'])
                 conf = public.readFile(website_conf_file)
                 if not conf:
-                    return public.return_msg_gettext(False, 'Configuration file not exist')
+                    return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
                 format_exist_reg = r'(CustomLog\s+"/www.*\_log).*'
                 access_log = re.search(format_exist_reg, conf).groups()[0] + '" ' + args.log_format_name
                 if site['name'] not in sites and re.search(format_exist_reg,conf):
@@ -360,7 +373,7 @@ class apache:
                 conf = re.sub(format_exist_reg,access_log,conf)
                 public.writeFile(website_conf_file,conf)
             public.serviceReload()
-            return public.return_msg_gettext(True, 'Setup successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         except:
             return public.returnMsg(False, str(public.get_error_info()))
 

@@ -98,7 +98,7 @@ class RealServerProxy:
                     data["add_headers"] = json.loads(get.add_headers)
         except:
             public.print_log(public.get_error_info())
-            return "参数错误"
+            return "Parameter error"
 
         if not 1 < data["proxy_port"] < 65536:
             return '代理端口范围错误'

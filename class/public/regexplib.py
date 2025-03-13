@@ -20,7 +20,7 @@ find_url_root = re.compile(r'(https|http)://([\w:.\-]+)', re.IGNORECASE)
 search_php_first_fatal_error = re.compile(r'PHP Fatal error: \s*([^\r\n]+)')
 
 # 匹配HTTP响应报文中的状态行 (Status Line)
-search_http_response_status_line = re.compile(r'HTTP/\d+(?:\.\d+)? (\d{1,3}) \S*')
+search_http_response_status_line = re.compile(r'HTTP/\d+(?:\.\d+)? (\d{1,3}) .*')
 
 # 通用版本号格式验证 major.minor[.patch]/主版本.子版本[.修订号]
 match_general_version_format = re.compile(r'^\d+(?:\.\d+){1,2}$')
@@ -30,3 +30,6 @@ match_md5_format = re.compile(r'^[a-fA-F0-9]{32}$')
 
 # SQL字符串中的常用特殊字符
 search_sql_special_chars = re.compile(r'''(?<!\\)(?:[%_]|\\(?![^\\abfnrtvxuUN'"0-7]))''')
+
+# 匹配Email
+match_email = re.compile(r'^.+@(\[?)[a-zA-Z0-9\-_.]+\.(?:[a-zA-Z]{2,}|\d{1,3})\1$')

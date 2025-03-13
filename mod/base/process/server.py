@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: sww <sww@bt.cn>
 # -------------------------------------------------------------------
@@ -94,7 +94,7 @@ class RealServer:
             res = servers[server_name](option)
             return public.returnResult(code=1, msg=res['msg'], status=res['status'])
         else:
-            return public.returnResult(code=0, msg='操作失败!参数不存在', status=False)
+            return public.returnResult(code=0, msg='operation failure Parameter does not exist', status=False)
 
     def __mongod_admin(self, option: str) -> dict:
         try:
@@ -102,12 +102,12 @@ class RealServer:
                        "stop": "/etc/init.d/mongodb stop", }
             if option != 'restart':
                 public.ExecShell(Command.get(option))
-                return public.returnMsg(True, '操作成功!')
+                return public.returnMsg(True, 'operate successfully!')
             public.ExecShell(Command.get('stop'))
             public.ExecShell(Command.get('start'))
-            return public.returnMsg(True, '操作成功!')
+            return public.returnMsg(True, 'operate successfully!')
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def __redis_admin(self, option: str) -> dict:
         try:
@@ -117,7 +117,7 @@ class RealServer:
 
             return self.syst.serverAdmin(get)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def __memcached_admin(self, option: str) -> dict:
         try:
@@ -126,15 +126,15 @@ class RealServer:
             get.type = option
             return self.syst.serverAdmin(get)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def __docker_admin(self, option: str) -> dict:
         try:
             exec_str = 'systemctl {} docker.socket'.format(option)
             public.ExecShell(exec_str)
-            return public.returnMsg(True, "操作成功")
+            return public.returnMsg(True, "operate successfully")
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def __tomcat_admin(self, option: str) -> dict:
         try:
@@ -142,9 +142,9 @@ class RealServer:
             get.name = 'tomcat'
             get.type = option
             self.syst.serverAdmin(get)
-            return public.returnMsg(True, '操作成功!')
+            return public.returnMsg(True, 'operate successfully!')
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def __ftp_admin(self, option: str) -> dict:
         try:
@@ -153,7 +153,7 @@ class RealServer:
             get.type = option
             return self.syst.serverAdmin(get)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def __apache_admin(self, option: str) -> dict:
         try:
@@ -165,7 +165,7 @@ class RealServer:
             time.sleep(1)
             return res
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def __mysqld_admin(self, option: str) -> dict:
         try:
@@ -174,7 +174,7 @@ class RealServer:
             get.type = option
             return self.syst.serverAdmin(get)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def __nginx_admin(self, option: str) -> dict:
         try:
@@ -183,7 +183,7 @@ class RealServer:
             get.type = option
             return self.syst.serverAdmin(get)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def __pgsql_admin(self, option: str) -> dict:
         try:
@@ -192,7 +192,7 @@ class RealServer:
             get.type = option
             return self.syst.serverAdmin(get)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     # ----------------------常用服务管理 end----------------------
 
@@ -208,9 +208,9 @@ class RealServer:
                 res = self.__get_status(server_name)
                 return public.returnResult(code=1, msg=res['msg'], data=res['data'], status=res['status'])
             else:
-                return public.returnResult(code=0, msg='操作失败!参数不存在', status=False)
+                return public.returnResult(code=0, msg='operation failure Parameter does not exist', status=False)
         except Exception as e:
-            return public.returnResult(code=0, msg='操作失败!', status=False)
+            return public.returnResult(code=0, msg='operation failure', status=False)
 
     def __is_installation(self, name: str) -> bool:
         map = {
@@ -294,13 +294,13 @@ class RealServer:
             if server_name in files:
                 res = public.ExecShell('/etc/init.d/{} {}'.format(server_name, option))
                 if 'is running' in res[0].lower() or 'is active' in res[0].lower() or 'already running' in res[0].lower():
-                    return public.returnResult(code=1, msg='操作成功!', status=True)
+                    return public.returnResult(code=1, msg='operate successfully!', status=True)
                 if 'is stopped' in res[0].lower() or 'is not running' in res[0].lower():
-                    return public.returnResult(code=1, msg='操作成功!', status=True)
+                    return public.returnResult(code=1, msg='operate successfully!', status=True)
             else:
-                return public.returnResult(code=0, msg='操作失败!未在/etc/init.d/目录下找到该服务', status=False)
+                return public.returnResult(code=0, msg='operation failure The service was not found in /etc/init.d/', status=False)
         except:
-            return public.returnResult(code=0, msg='操作失败!', status=False)
+            return public.returnResult(code=0, msg='operation failure', status=False)
 
     # ---------------------- 通用服务管理 end----------------------
 
@@ -358,7 +358,7 @@ class RealServer:
 ### END INIT INFO
 
 # Author:   licess
-# website:  http://www.bt.cn
+# website:  http://www.aapanel.com
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
@@ -430,7 +430,7 @@ esac
 
 
         if os.path.exists(os.path.join('/etc/init.d/', server_name)):
-            return public.returnResult(code=1, msg='操作失败!服务已存在', status=False)
+            return public.returnResult(code=1, msg='operation failure Service already exists', status=False)
         try:
             public.writeFile(os.path.join('/etc/init.d/', server_name), content)
             os.chmod(os.path.join('/etc/init.d/', server_name), 0o777)
@@ -438,9 +438,9 @@ esac
                 public.ExecShell('update-rc.d -f {} defaults'.format(server_name))
             else:
                 public.ExecShell('systemctl enable {}'.format(server_name))
-            return public.returnResult(code=1, msg='操作成功!', status=True)
+            return public.returnResult(code=1, msg='operate successfully!', status=True)
         except:
-            return public.returnResult(code=0, msg='操作失败!', status=False)
+            return public.returnResult(code=0, msg='operation failure', status=False)
 
     # ---------------------- 添加开机自启 启动脚本 end----------------------
 
@@ -458,18 +458,28 @@ esac
                 else:
                     public.ExecShell('systemctl disable {}'.format(server_name))
                 os.remove(os.path.join('/etc/init.d/', server_name))
-                return public.returnResult(code=1, msg='操作成功!', status=True)
-            return public.returnResult(code=0, msg='操作失败!服务不存在', status=False)
+                return public.returnResult(code=1, msg='operate successfully!', status=True)
+            return public.returnResult(code=0, msg='operation failure Service does not exist', status=False)
         except:
-            return public.returnResult(code=0, msg='操作失败!', status=False)
+            return public.returnResult(code=0, msg='operation failure', status=False)
 
     # ---------------------- 删除开机自启 启动脚本 end----------------------
 
     # ---------------------- 创建服务守护进程 start----------------------
 
     @syssafe_admin
-    def create_daemon(self, server_name: str, pid_file: str, start_exec: str, workingdirectory: str, user: str = 'root', is_power_on: int = 1, logs_file: str = '', environments: str = '',
-                      is_fork=0, restart_type='always') -> dict:
+    def create_daemon(self, server_name: str,
+                      pid_file: str,
+                      start_exec: str,
+                      workingdirectory: str,
+                      stop_exec: str = None,
+                      user: str = 'root',
+                      is_power_on: int = 1,
+                      logs_file: str = '',
+                      environments: str = '',
+                      is_fork=None,
+                      restart_type='always',
+                      fork_time_out=20) -> dict:
         """
         创建服务守护进程
         :param server_name: 服务名称
@@ -481,6 +491,8 @@ esac
 
         # 检查系统加固插件是否存在
         try:
+            if not stop_exec:
+                stop_exec = '/usr/bin/pkill -9 "{}"'.format(start_exec)
             content = '''
 [Unit]
 Description={server_name}
@@ -489,7 +501,7 @@ After=network.target
 [Service]
 {environments}
 ExecStart={start_exec}
-ExecStop=/usr/bin/pkill -9 "{start_exec}"
+ExecStop={stop_exec}
 WorkingDirectory={workingdirectory}
 Restart={restart_type}
 SyslogIdentifier={server_name}
@@ -503,20 +515,22 @@ WantedBy=multi-user.target
 '''.format(
                 start_exec=start_exec,
                 workingdirectory=workingdirectory,
-                user=user, pid_file=pid_file,
+                user=user,
+                pid_file=pid_file,
                 server_name=server_name,
                 environments=environments,
                 restart_type=restart_type,
+                stop_exec=stop_exec
             )
-
-            if is_fork:
+            exe_shell = ''
+            if is_fork or is_fork is None:
                 content = content.replace('Type=simple', 'Type=forking')
             if not os.path.exists('/usr/lib/systemd/system/'):
-                public.ExecShell('mkdir -p /usr/lib/systemd/system/')
+                os.makedirs('/usr/lib/systemd/system/')
             public.writeFile('/usr/lib/systemd/system/{}.service'.format(server_name), content)
             if is_power_on:
-                public.ExecShell('systemctl enable {}'.format(server_name))
-            public.ExecShell('systemctl daemon-reload')
+                exe_shell += 'systemctl enable {}\n'.format(server_name) + " && "
+            exe_shell += 'systemctl daemon-reload' + " && "
 
             if not logs_file:
                 logs_file = '/www/wwwlogs/project_{}.log'.format(server_name)
@@ -532,14 +546,40 @@ WantedBy=multi-user.target
                     rsyslog_conf = rsyslog_conf[:idx] + add_conf + rsyslog_conf[line_idx:]
                 public.writeFile('/etc/rsyslog.conf', rsyslog_conf)
 
-            public.ExecShell('systemctl restart rsyslog')
+            exe_shell += 'systemctl restart rsyslog' + " && "
             if not os.path.exists(logs_file):
-                public.ExecShell('touch {}'.format(logs_file))
-            public.ExecShell('chown -R {user}:{user} {logs_file}'.format(user=user, logs_file=logs_file))
-            self.daemon_admin(server_name, 'restart')
-            return public.returnResult(code=1, msg='操作成功!', status=True)
+                exe_shell += 'touch {}'.format(logs_file) + ' && '
+            exe_shell += 'chown -R {user}:{user} {logs_file}'.format(user=user, logs_file=logs_file) + ' && '
+            if is_fork is not None:
+                exe_shell += 'systemctl restart {}'.format(server_name)
+                public.ExecShell(exe_shell)
+                return public.returnResult(code=1, msg='operate successfully!', status=True)
+            public.ExecShell(exe_shell)
+            import subprocess,psutil
+            try:
+                start_time = time.time()
+                process = subprocess.Popen(["systemctl", "restart", server_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                while True:
+                    try:
+                        p = psutil.Process(process.pid)
+                        print(p.status())
+                        # 检查进程的状态
+                        if p.status() == psutil.STATUS_ZOMBIE:
+                            break
+                    except:
+                        pass
+                    if process.poll() is not None:
+                        break
+                    if time.time() - start_time > fork_time_out:
+                        raise
+                    time.sleep(0.1)
+            except:
+                content = content.replace('Type=forking','Type=simple')
+                public.writeFile('/usr/lib/systemd/system/{}.service'.format(server_name), content)
+                public.ExecShell('systemctl daemon-reload && systemctl restart {}'.format(server_name))
+            return public.returnResult(code=1, msg='operate successfully!', status=True)
         except:
-            return public.returnResult(code=0, msg='操作失败!', status=False)
+            return public.returnResult(code=0, msg='operation failure', status=False)
 
     # ---------------------- 创建服务守护进程 end----------------------
 
@@ -559,10 +599,10 @@ WantedBy=multi-user.target
                 public.ExecShell('systemctl daemon-reload')
                 public.ExecShell(r'sed -i "/if \$programname == {}/d" /etc/rsyslog.conf'.format(server_name))
                 public.ExecShell('systemctl restart rsyslog')
-                return public.returnResult(code=1, msg='操作成功!', status=True)
-            return public.returnResult(code=0, msg='操作失败!', status=False)
+                return public.returnResult(code=1, msg='operate successfully!', status=True)
+            return public.returnResult(code=0, msg='operation failure', status=False)
         except:
-            return public.returnResult(code=0, msg='操作失败!', status=False)
+            return public.returnResult(code=0, msg='operation failure', status=False)
 
     # ---------------------- 删除服务守护进程 end----------------------
 
@@ -582,7 +622,7 @@ WantedBy=multi-user.target
                 return public.returnResult(code=1, msg='运行中', status=True)
             return public.returnResult(code=1, msg='未运行', status=False)
         except:
-            return public.returnResult(code=0, msg='操作失败!', status=False)
+            return public.returnResult(code=0, msg='operation failure', status=False)
 
     # ---------------------- 服务守护进程状态 end----------------------
 
@@ -641,8 +681,8 @@ WantedBy=multi-user.target
 
         res = public.set_tasks_run(data)
         if res['status']:
-            return public.returnResult(code=1, msg='操作成功!', status=True)
-        return public.returnResult(code=0, msg='操作失败!', status=False)
+            return public.returnResult(code=1, msg='operate successfully!', status=True)
+        return public.returnResult(code=0, msg='operation failure', status=False)
 
     # ---------------------- 服务定时启动 end----------------------
 
@@ -654,62 +694,62 @@ class Server:
         try:
             if hasattr(self.server, get.name):
                 return getattr(self.server, get.name)(get.type)
-            return public.returnMsg(False, '操作失败!参数不存在')
+            return public.returnMsg(False, 'operation failure Parameter does not exist')
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def server_status(self, get):
         try:
             if hasattr(self.server, get.name):
                 return getattr(self.server, get.name)()
-            return public.returnMsg(False, '操作失败!参数不存在')
+            return public.returnMsg(False, 'operation failure Parameter does not exist')
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def universal_server_admin(self, get):
         try:
             return self.server.universal_server_admin(get.name, get.type)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def universal_server_status(self, get):
         try:
             return self.server.universal_server_status(get.name)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def add_boot(self, get):
         try:
             return self.server.add_boot(get.name, get.pid_file, get.start_exec, get.stop_exec)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def del_boot(self, get):
         try:
             return self.server.del_boot(get.name)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def create_daemon(self, get):
         try:
             return self.server.create_daemon(get.name, get.pid_file, get.start_exec, get.user)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def del_daemon(self, get):
         try:
             return self.server.del_daemon(get.name)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def daemon_status(self, get):
         try:
             return self.server.daemon_status(get.name)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')
 
     def add_task(self, get):
         try:
             return self.server.add_task(get.shell, get.time)
         except:
-            return public.returnMsg(False, '操作失败!')
+            return public.returnMsg(False, 'operation failure')

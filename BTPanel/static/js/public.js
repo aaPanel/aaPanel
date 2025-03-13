@@ -6281,7 +6281,7 @@ function MessageChannelSettings() {
                                 <ul class="help-info-text c7" style="margin-top: 315px;">\
                                     <li>ID: Your telegram user ID</li>\
                                     <li>Token: Your telegram bot token </li>\
-                                    <li>e.g: [ 12345677:AAAAAAAAA_a0VUo2jjr__CCCCDDD ] <a class="btlink" href="https://forum.aapanel.com/d/5115-how-to-add-telegram-to-panel-notifications" target="_blank" rel="noopener"> Help</a></li>\
+                                    <li>e.g: [ 12345677:AAAAAAAAA_a0VUo2jjr__CCCCDDD ] <a class="btlink" href="https://www.aapanel.com/forum/d/5115-how-to-add-telegram-to-panel-notifications" target="_blank" rel="noopener"> Help</a></li>\
                                 </ul>\
 							</div>\
 						</div>\
@@ -6976,7 +6976,7 @@ function renderTelegramConfigView(data) {
 					<ul class="help-info-text c7" style="position: absolute; left: 40px; bottom: 20px;">\
 						<li>ID: Your telegram user ID</li>\
 						<li>Token: Your telegram bot token</li>\
-						<li>e.g: [ 12345677:AAAAAAAAA_a0VUo2jjr__CCCCDDD ] <a class="btlink" href="https://forum.aapanel.com/d/5115-how-to-add-telegram-to-panel-notifications" target="_blank" rel="noopener">Help</a></li>\
+						<li>e.g: [ 12345677:AAAAAAAAA_a0VUo2jjr__CCCCDDD ] <a class="btlink" href="https://www.aapanel.com/forum/d/5115-how-to-add-telegram-to-panel-notifications" target="_blank" rel="noopener">Help</a></li>\
 					</ul>\
 				</div>\
 			</div>',

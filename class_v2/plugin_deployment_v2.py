@@ -28,7 +28,7 @@ class plugin_deployment:
     def GetList(self,get):
         self.GetCloudList(get)
         jsonFile = self.__panelPath + '/data/deployment_list.json'
-        if not os.path.exists(jsonFile): return public.returnMsg(False,'Profile does not exist!')
+        if not os.path.exists(jsonFile): return public.returnMsg(False, public.lang("Profile does not exist!"))
         data = {}
         data = self.get_input_list(json.loads(public.readFile(jsonFile)))
 
@@ -84,7 +84,7 @@ class plugin_deployment:
     #获取插件列表
     def GetDepList(self,get):
         jsonFile = self.__setupPath + '/deployment_list.json'
-        if not os.path.exists(jsonFile): return public.returnMsg(False,'Profile does not exist!')
+        if not os.path.exists(jsonFile): return public.returnMsg(False, public.lang("Profile does not exist!"))
         data = {}
         data = json.loads(public.readFile(jsonFile))
         return self.get_input_list(data)
@@ -108,13 +108,13 @@ class plugin_deployment:
                 downloadUrl = 'http://www.bt.cn/api/panel/get_deplist'
                 pdata = public.get_pdata()
                 tmp = json.loads(public.httpPost(downloadUrl,pdata,30))
-                if not tmp: return public.returnMsg(False,'Failed to get from the cloud!')
+                if not tmp: return public.returnMsg(False, public.lang("Failed to get from the cloud!"))
                 public.writeFile(jsonFile,json.dumps(tmp))
                 session['package'] = True
-                return public.returnMsg(True,'Update completed!')
-            return public.returnMsg(True,'No need to update!')
+                return public.returnMsg(True, public.lang("Update completed!"))
+            return public.returnMsg(True, public.lang("No need to update!"))
         except:
-            return public.returnMsg(False,'Failed to get from the cloud!')
+            return public.returnMsg(False, public.lang("Failed to get from the cloud!"))
 
 
 
@@ -167,7 +167,7 @@ class plugin_deployment:
         if not is_exists: data.append(pinfo)
 
         public.writeFile(jsonFile,json.dumps(data))
-        return public.returnMsg(True,'Import Success!')
+        return public.returnMsg(True, public.lang("Import Success!"))
 
     #取本地包信息
     def GetPackageOther(self,get):
@@ -184,7 +184,7 @@ class plugin_deployment:
     #删除程序包
     def DelPackage(self,get):
         jsonFile = self.__setupPath + '/deployment_list_other.json'
-        if not os.path.exists(jsonFile): return public.returnMsg(False,'Profile does not exist!')
+        if not os.path.exists(jsonFile): return public.returnMsg(False, public.lang("Profile does not exist!"))
 
         data = {}
         data = json.loads(public.readFile(jsonFile))
@@ -199,7 +199,7 @@ class plugin_deployment:
 
         data = tmp
         public.writeFile(jsonFile,json.dumps(data))
-        return public.returnMsg(True,'Successfully deleted!')
+        return public.returnMsg(True, public.lang("Successfully deleted!"))
 
     #下载文件
     def DownloadFile(self,url,filename):
@@ -248,13 +248,13 @@ class plugin_deployment:
         #取基础信息
         find = public.M('sites').where('name=?',(site_name,)).field('id,path,name').find()
         if not  'path' in find:
-            return public.returnMsg(False, 'Site not exist!')
+            return public.returnMsg(False, public.lang("Site not exist!"))
         path = find['path']
-        if path.replace('//','/') == '/': return public.returnMsg(False,'Dangerous website root directory!')
+        if path.replace('//','/') == '/': return public.returnMsg(False, public.lang("Dangerous website root directory!"))
         #获取包信息
         pinfo = self.GetPackageInfo(name)
         id = pinfo['id']
-        if not pinfo: return public.returnMsg(False,'The specified package does not exist.!')
+        if not pinfo: return public.returnMsg(False, public.lang("The specified package does not exist.!"))
 
         #检查本地包
         self.WriteLogs(json.dumps({'name':'Verifying package...','total':0,'used':0,'pre':0,'speed':0}))
@@ -276,7 +276,7 @@ class plugin_deployment:
         if not os.path.exists(packageZip): return public.returnMsg(False,'File download failed!' + packageZip)
 
         pinfo = self.set_temp_file(packageZip,path)
-        if not pinfo: return public.returnMsg(False,'Cannot find [aaPanel Auto Deployment Configuration File] in the installation package')
+        if not pinfo: return public.returnMsg(False, public.lang("Cannot find [aaPanel Auto Deployment Configuration File] in the installation package"))
 
         #设置权限
         self.WriteLogs(json.dumps({'name':'Setting permissions','total':0,'used':0,'pre':0,'speed':0}))
@@ -478,7 +478,7 @@ class plugin_deployment:
     #获取进度
     def GetSpeed(self,get):
         try:
-            if not os.path.exists(self.logPath):return public.returnMsg(False,'There are currently no deployment tasks!')
+            if not os.path.exists(self.logPath):return public.returnMsg(False, public.lang("There are currently no deployment tasks!"))
             return json.loads(public.readFile(self.logPath))
         except:
             return {'name':'Ready to deploy','total':0,'used':0,'pre':0,'speed':0}
@@ -540,9 +540,7 @@ class plugin_deployment:
             "ext": "pathinfo,exif",
             "version": "1.5.0",
             "install": "",
-            # "download": "{Download}/roundcubemail.zip",
             "download": "https://node.aapanel.com/install/package/roundcubemail.zip",
-            # "download": "http://127.0.0.1/roundcube.zip",
             "password": "",
             "config": "/config/config.inc.php",
             "md5": "785660db6540692b5c0eb240b41816e9"
@@ -572,7 +570,7 @@ class plugin_deployment:
             self.DownloadFile(pinfo['download'], packageZip)
 
         if not os.path.exists(packageZip):
-            return public.returnMsg(False, 'DOWNLOAD_FILE_FAIL')
+            return public.returnMsg(False, public.lang("File download failed!"))
 
         self.WriteLogs(json.dumps({'name': public.GetMsg("UNPACKING"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
         public.ExecShell('unzip -o ' + packageZip + ' -d ' + path + '/')
@@ -590,25 +588,25 @@ class plugin_deployment:
                 if len(tmp) != 2: continue;
                 public.ExecShell('chmod -R ' + tmp[0] + ' ' + path + '/' + tmp[1])
 
-        # 安装PHP扩展
-        self.WriteLogs(json.dumps(
-            {'name': public.GetMsg("INSTALL_NECESSARY_PHP_EXT"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
-        if pinfo['ext'] != '':
-            exts = pinfo['ext'].split(',')
-            import files
-            mfile = files.files()
-            for ext in exts:
-                if ext == 'pathinfo':
-                    import config
-                    con = config.config()
-                    get.version = php_version
-                    get.type = 'on'
-                    con.setPathInfo(get)
-                else:
-                    get.name = ext
-                    get.version = php_version
-                    get.type = '1'
-                    mfile.InstallSoft(get)
+        # # 安装PHP扩展
+        # self.WriteLogs(json.dumps(
+        #     {'name': public.GetMsg("INSTALL_NECESSARY_PHP_EXT"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+        # if pinfo['ext'] != '':
+        #     exts = pinfo['ext'].split(',')
+        #     import files
+        #     mfile = files.files()
+        #     for ext in exts:
+        #         if ext == 'pathinfo':
+        #             import config
+        #             con = config.config()
+        #             get.version = php_version
+        #             get.type = 'on'
+        #             con.setPathInfo(get)
+        #         else:
+        #             get.name = ext
+        #             get.version = php_version
+        #             get.type = '1'
+        #             mfile.InstallSoft(get)
 
         # 执行额外shell进行依赖安装
         self.WriteLogs(
@@ -667,8 +665,8 @@ class plugin_deployment:
                     'password'] + ' ' + databaseInfo['username'] + ' < ' + path + '/import.sql')
 
                 public.ExecShell('rm -f ' + path + '/import.sql')
-                # /www/wwwroot/moyumao.top + '/' + /config/config.inc.php
 
+                # /www/wwwroot/moyumao.top + '/' + /config/config.inc.php
                 siteConfigFile = path + '/' + pinfo['config']
                 if os.path.exists(siteConfigFile):
 
@@ -681,7 +679,15 @@ class plugin_deployment:
 
 
         public.serviceReload()
-        self.depTotal(name)
+        # 提交安装统计
+        import threading
+        import requests
+        threading.Thread(target=requests.post, kwargs={
+            'url': '{}/api/panel/panel_count_daily'.format(public.OfficialApiBase()),
+            'data': {
+                'name': 'webmail_Roundcube',
+            }}).start()
+
         self.WriteLogs(
             json.dumps({'name': public.GetMsg("READY_DEPLOY"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
 

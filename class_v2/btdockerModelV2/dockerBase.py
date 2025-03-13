@@ -41,7 +41,7 @@ class dockerBase(object):
 
         with open(get._log_path, "r") as file:
             position = file.tell()
-            get._ws.send("{}\r\n".format(get.wsLogTitle))
+            get._ws.send(public.lang("{}\r\n",get.wsLogTitle))
 
             while True:
                 current_position = file.tell()
@@ -57,11 +57,11 @@ class dockerBase(object):
                     position = current_position
 
                     if "bt_successful" in line:
-                        get._ws.send("bt_successful\r\n")
+                        get._ws.send(public.lang("successful\r\n"))
                         del get._ws
                         break
                     elif "bt_failed" in line:
-                        get._ws.send("bt_failed\r\n")
+                        get._ws.send(public.lang("failed\r\n"))
                         del get._ws
                         break
 
@@ -71,7 +71,7 @@ class dockerBase(object):
                     sum += 1
 
                     if sum >= 6000:
-                        get._ws.send("\r\nNo response for more than 10 minutes！\r\n")
+                        get._ws.send(public.lang("\r\nNo response for more than 10 minutes!\r\n"))
                         break
 
                 time.sleep(0.1)
@@ -87,10 +87,10 @@ class dockerBase(object):
         """
         import re
         if not hasattr(get, 'cmd'):
-            return public.return_message(-1, 0, _("Please pass in cmd"))
+            return public.return_message(-1, 0, public.lang("Please pass in cmd"))
 
         if "docker run" not in get.cmd and "docker pull" not in get.cmd:
-            return public.return_message(-1, 0, _('Only docker run or docker pull commands can be executed'))
+            return public.return_message(-1, 0, public.lang("Only docker run or docker pull commands can be executed"))
 
         danger_cmd = ['rm', 'rmi', 'kill', 'stop', 'pause', 'unpause', 'restart', 'update', 'exec', 'init',
                       'shutdown', 'reboot', 'chmod', 'chown', 'dd', 'fdisk', 'killall', 'mkfs', 'mkswap', 'mount',
@@ -101,11 +101,11 @@ class dockerBase(object):
 
         for d in danger_cmd:
             if get.cmd.startswith(d) or re.search(r'\s{}\s'.format(d), get.cmd):
-                return public.return_message(-1, 0, _( 'Dangerous command exists: [{}], execution is not allowed!'.format(d)))
+                return public.return_message(-1, 0, public.lang("Dangerous command exists: [ {}], execution is not allowed!", d))
 
         for d in danger_symbol:
             if d in get.cmd:
-                return public.return_message(-1, 0, _( 'Dangerous symbol exists: [{}], execution is not allowed!'.format(d)))
+                return public.return_message(-1, 0, public.lang("Dangerous symbol exists: [ {}], execution is not allowed!", d))
 
         os.system("echo -n > {}".format(self._rCmd_log))
         os.system("nohup {} >> {} 2>&1 && echo 'bt_successful' >> {} || echo 'bt_failed' >> {} &".format(
@@ -114,4 +114,4 @@ class dockerBase(object):
             self._rCmd_log,
             self._rCmd_log,
         ))
-        return public.return_message(0, 0, _("The command has been executed!"))
+        return public.return_message(0, 0, public.lang("The command has been executed!"))

@@ -1,0 +1,51 @@
+{
+	"Logs": {
+		"Panel": {
+			"index_1": "Betriebsprotokolle",
+			"index_2": "Protokolle ausführen",
+			"index_3": "Cron -Protokolle",
+			"index_4": "Bitte geben Sie den Protokollnamen ein",
+			"index_5": "Löschen Protokolle",
+			"index_6": "Betriebstyp",
+			"index_7": "Betriebszeit",
+			"index_13": "Scan -Zeit",
+			"index_14": "PHP -Angriff",
+			"index_15": "Im Begriff, Protokolle zu löschen, fahren Sie fort?"
+		},
+		"Website": {
+			"index_1": "URL (Top100)",
+			"index_2": "Zugriff auf Protokolle",
+			"index_3": "Es wird empfohlen, eine Sicherheitsanalyse durchzuführen, wenn die Serverlast niedrig ist. Diesmal wird die [{0}] -Protokolldatei gescannt und die Wartezeit kann länger dauern. Willst du weitermachen?",
+			"index_4": "Fehlerprotokolle",
+			"index_5": "IP (Top100)"
+		},
+		"Audit": {
+			"index_1": "Bitte geben Sie Quelle/Port/Rolle/Ereignis ein"
+		},
+		"SSH": {
+			"index_1": "IP: Port"
+		},
+		"Soft": {
+			"index_1": "FTP Benutzername",
+			"index_2": "Operation IP",
+			"index_3": "Datei",
+			"index_4": "Landung",
+			"index_5": "FTP -Protokolle",
+			"index_6": "MySQL Langsame Protokolle",
+			"index_7": "MySQL -Fehlerprotokolle",
+			"index_8": "Betriebsprotokoll",
+			"index_9": "Bitte geben Sie Suchschlüsselwörter ein"
+		},
+		"Conversion": {
+			"index_1": "Protokollprüfung - Einführung",
+			"index_2": "Analysieren und analysieren Sie gemeinsame Protokolle",
+			"index_3": "Sammeln, analysieren und prüfen Sie Informationen wie verschiedene Operationen, Ereignisse und abnormale Situationen, die vom System-, Netzwerk- und Anwendungsprogramme aufgezeichnet wurden.",
+			"index_4": "FTP -Protokolle - Einführung",
+			"index_5": "Zeichnen und anzeigen Sie das aktuelle FTP -Login -Protokoll und das Betriebsprotokoll anzeigen",
+			"index_6": "Aufnehmen",
+			"index_7": "SSH -Login -Protokolle - Einführung",
+			"index_8": "Zeichnen und anzeigen Sie die aktuellen SSH -Anmeldungsprotokolle an",
+			"index_9": "Aktuelle Informationen zur aktuellen SSH -Login -Protokolle aufnehmen"
+		}
+	}
+}

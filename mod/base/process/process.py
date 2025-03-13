@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: sww <sww@bt.cn>
 # -------------------------------------------------------------------
@@ -746,7 +746,7 @@ class RealProcess:
                  'php-fpm-71': 'PHP-7.1',
                  'php-fpm-72': 'PHP-7.2', 'rsync_inotify': 'rsync实时同步', 'pure-ftpd': 'FTP服务',
                  'mongodb': 'MongoDB', 'nginx': 'Web服务器(Nginx)',
-                 'httpd': 'Web服务器(Apache)', 'bt': '宝塔面板', 'mysqld': 'MySQL数据库', 'rsynd': 'rsync主服务',
+                 'httpd': 'Web服务器(Apache)', 'bt': 'aaPanel', 'mysqld': 'MySQL数据库', 'rsynd': 'rsync主服务',
                  'php-fpm': 'PHP服务', 'systemd': '系统核心服务',
                  '/etc/rc.local': '用户自定义启动脚本', '/etc/profile': '全局用户环境变量',
                  '/etc/inittab': '用于自定义系统运行级别', '/etc/rc.sysinit': '系统初始化时调用的脚本',

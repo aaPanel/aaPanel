@@ -1,22 +1,20 @@
-import os
-import time
-from typing import Optional, List, Tuple, Dict, Type, Any, Union
 import datetime
+import time
 from threading import Thread
+from typing import Optional, List, Tuple, Dict, Type, Union
 
+import public
 from .base_task import BaseTask
+from .compatible import rsync_compatible
 from .mods import TaskTemplateConfig, TaskConfig, TaskRecordConfig, SenderConfig
 from .send_tool import sms_msg_normalize
 from .tool import load_task_cls_by_path, load_task_cls_by_function, T_CLS
 from .util import get_server_ip, get_network_ip, format_date, get_config_value
-from .compatible import rsync_compatible
-
 
 WAIT_TASK_LIST: List[Thread] = []
 
 
 class PushSystem:
-
     def __init__(self):
         self.task_cls_cache: Dict[str, Type[T_CLS]] = {}
         self._today_zero: Optional[datetime.datetime] = None
@@ -25,7 +23,7 @@ class PushSystem:
 
     def sender_cls(self, sender_type: str):
         if not self._sender_type_class:
-            from mod.base.msg import WeiXinMsg, MailMsg, WebHookMsg, FeiShuMsg, DingDingMsg, SMSMsg, WeChatAccountMsg
+            from mod.base.msg import WeiXinMsg, MailMsg, WebHookMsg, FeiShuMsg, DingDingMsg, SMSMsg, TgMsg
             self._sender_type_class = {
                 "weixin": WeiXinMsg,
                 "mail": MailMsg,
@@ -33,30 +31,27 @@ class PushSystem:
                 "feishu": FeiShuMsg,
                 "dingding": DingDingMsg,
                 "sms": SMSMsg,
-                "wx_account": WeChatAccountMsg,
+                # "wx_account": WeChatAccountMsg,
+                "tg": TgMsg,
             }
         return self._sender_type_class[sender_type]
 
     @staticmethod
-    def can_run_task_list() -> Tuple[List[dict], Dict[int, dict]]:
+    def can_run_task_list():
         result = []
         result_template = {}
-        task_template_ids = set()
-        for task in TaskConfig().config:
+        for task in TaskConfig().config:  # all task
             if not task["status"]:
                 continue
-            task_template_ids.add(task['template_id'])
             # 间隔检测时间未到跳过
             if "interval" in task["task_data"] and isinstance(task["task_data"]["interval"], int):
                 if time.time() < task["last_check"] + task["task_data"]["interval"]:
                     continue
             result.append(task)
-
-        for template in TaskTemplateConfig().config:
-            if template["id"] not in task_template_ids:
-                continue
-            result_template[template['id']] = template
-
+            for template in TaskTemplateConfig().config:  # task's template
+                if template.get("id") == task["template_id"] and template.get("used"):
+                    result_template.update({task["id"]: template})
+                    break
         return result, result_template
 
     def get_task_object(self, template_id, load_cls_data: dict) -> Optional[BaseTask]:
@@ -85,15 +80,14 @@ class PushSystem:
     def run(self):
         rsync_compatible()
         task_list, task_template = self.can_run_task_list()
-        for t in task_list:
-            if t["template_id"] not in task_template:
-                continue
-            template = task_template[t["template_id"]]
-            if not template["used"]:
-                continue
-            print(t)
-            print(_PushRunner(t, template, self)())
-            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        try:
+            for t in task_list:
+                template = task_template[t["id"]]
+                print(PushRunner(t, template, self)())
+        except Exception as e:
+            import traceback
+            public.print_log(f"run task error %s", e)
+            public.print_log(traceback.format_exc())
 
         global WAIT_TASK_LIST
         if WAIT_TASK_LIST:  # 有任务启用子线程的，要等到这个线程结束，再结束主线程
@@ -108,8 +102,7 @@ class PushSystem:
         return self._today_zero
 
 
-class _PushRunner:
-
+class PushRunner:
     def __init__(self, task: dict, template: dict, push_system: PushSystem, custom_push_data: Optional[dict] = None):
         self._public_push_data: Optional[dict] = None
         self.result: dict = {
@@ -132,7 +125,6 @@ class _PushRunner:
         self.is_number_rule_by_func = False  # 记录这个任务是否使用自定义的次数检测， 如果是，就不需要做次数更新
 
     def save_result(self):
-
         t = TaskConfig()
         tmp = t.get_by_id(self.task["id"])
         if tmp:
@@ -187,9 +179,8 @@ class _PushRunner:
         self.task_obj = self.push_system.get_task_object(self.template["id"], self.template["load_cls"])
 
         if not self.task_obj:
-            self.result["stop_msg"] = "任务类加载失败"
+            self.result["stop_msg"] = "The task class failed to load"
             return
-
         if self.custom_push_data is None:
             push_data = self.task_obj.get_push_data(self.task["id"], self.task["task_data"])
             if not push_data:
@@ -241,7 +232,7 @@ class _PushRunner:
     def run_time_rule(self, time_rule: dict) -> bool:
         if "send_interval" in time_rule and time_rule["send_interval"] > 0:
             if self.task["last_send"] + time_rule["send_interval"] > time.time():
-                self.result['stop_msg'] = '小于最小发送时间，不进行发送'
+                self.result['stop_msg'] = 'If the minimum send time is less, no sending will be made'
                 self.result['check_stop_on'] = "time_rule_send_interval"
                 return False
 
@@ -251,7 +242,7 @@ class _PushRunner:
             start_time = t_zero + datetime.timedelta(seconds=time_range[0])
             end_time = t_zero + datetime.timedelta(seconds=time_range[1])
             if not start_time < datetime.datetime.now() < end_time:
-                self.result['stop_msg'] = '不在可发送告警的时间范围之内'
+                self.result['stop_msg'] = 'It is not within the time frame within which the alarm can be sent'
                 self.result['check_stop_on'] = "time_rule_time_range"
                 return False
         return True
@@ -280,14 +271,15 @@ class _PushRunner:
             else:
                 record_num = self.task["number_data"].get("day_num")
             if record_num >= number_rule["day_num"]:
-                self.result['stop_msg'] = "超过每日限制次数:{}".format(number_rule["day_num"])
+                self.result['stop_msg'] = "Exceeding the daily limit:{}".format(number_rule["day_num"])
                 self.result['check_stop_on'] = "number_rule_day_num"
                 return False
 
         if "total" in number_rule and isinstance(number_rule["total"], int) and number_rule["total"] > 0:
             record_total = number_data.get("total", 0)
             if record_total >= number_rule["total"]:
-                self.result['stop_msg'] = "超过最大限制次数:{}".format(number_rule["total"])
+                self.result['stop_msg'] = "The maximum number of times the limit is exceeded:{}".format(
+                    number_rule["total"])
                 self.result['check_stop_on'] = "number_rule_total"
                 return False
 
@@ -296,13 +288,14 @@ class _PushRunner:
     def send_message(self, push_data: dict):
         self.result["do_send"] = True
         self.result["push_data"] = push_data
-        wx_account = []
+        # wx_account = []
         for sender_id in self.task["sender"]:
             conf = self.push_system.sd_cfg.get_by_id(sender_id)
             if conf is None:
                 continue
             if not conf["used"]:
-                self.result["send_data"][sender_id] = "告警通道{}已关闭，跳过发送".format(conf["data"].get("title"))
+                self.result["send_data"][sender_id] = "The alarm channel {} is closed, skip sending".format(
+                    conf["data"].get("title"))
                 continue
             sd_cls = self.push_system.sender_cls(conf["sender_type"])
             if conf["sender_type"] == "weixin":
@@ -321,7 +314,6 @@ class _PushRunner:
                 res = sd_cls(conf).send_msg(
                     self.task_obj.to_web_hook_msg(push_data, self.public_push_data),
                     self.task_obj.title,
-                    self.task_obj.title
                 )
 
             elif conf["sender_type"] == "feishu":
@@ -341,26 +333,46 @@ class _PushRunner:
                 sm_args = sms_msg_normalize(sm_args)
                 res = sd_cls(conf).send_msg(sm_type, sm_args)
 
-            elif conf["sender_type"] == "wx_account":
-                wx_account.append(conf)
-                continue
+            # elif conf["sender_type"] == "wx_account":
+            #     wx_account.append(conf)
+            #     continue
+
+            elif conf["sender_type"] == "tg":
+                # public.print_log("tg -- 发送数据 {}".format(self.task_obj.to_tg_msg(push_data, self.public_push_data)))
+                from mod.base.msg import TgMsg
+                # Home CPU alarms<br>
+                # >Server:xxx<br>
+                # >IPAddress: xxx.xxx.xxx.xxx(Internet) xxx.xxx.xxx.xxx(Internal)<br>
+                # >SendingTime: 2024-00-00 00:00:00<br>
+                # >Notification type: High CPU usage alarm<br>
+                # >Content of alarm: The average CPU usage of the machine in the last 5 minutes is 3.24%, which is higher than the alarm value 1%.
+
+                try:
+                    res = sd_cls(conf).send_msg(
+                        # res = TgMsg().send_msg(
+                        self.task_obj.to_tg_msg(push_data, self.public_push_data),
+                        self.task_obj.title
+                    )
+                except:
+                    public.print_log(public.get_error_info())
             else:
                 continue
             if isinstance(res, str) and res.find("Traceback") != -1:
-                self.result["send_data"][sender_id] = "执行信息发送过程中报错了, 未发送成功"
+                self.result["send_data"][
+                    sender_id] = "An error occurred during the execution of the message transmission, and the transmission was not successful"
             if isinstance(res, str):
                 self.result["send_data"][sender_id] = res
             else:
                 self.result["send_data"][sender_id] = 1
-
-        if len(wx_account) > 0:
-            sd_cls = self.push_system.sender_cls("wx_account")
-            res = sd_cls(*wx_account).send_msg(self.task_obj.to_wx_account_msg(push_data, self.public_push_data))
-            for i in wx_account:
-                if isinstance(res, str):
-                    self.result["send_data"][i["id"]] = res
-                else:
-                    self.result["send_data"][i["id"]] = 1
+        #
+        # if len(wx_account) > 0:
+        #     sd_cls = self.push_system.sender_cls("wx_account")
+        #     res = sd_cls(*wx_account).send_msg(self.task_obj.to_wx_account_msg(push_data, self.public_push_data))
+        #     for i in wx_account:
+        #         if isinstance(res, str):
+        #             self.result["send_data"][i["id"]] = res
+        #         else:
+        #             self.result["send_data"][i["id"]] = 1
 
 
 def push_by_task_keyword(source: str, keyword: str, push_data: Optional[dict] = None) -> Union[str, dict]:
@@ -378,15 +390,15 @@ def push_by_task_keyword(source: str, keyword: str, push_data: Optional[dict] = 
             target_task = i
             break
     if not target_task:
-        return "未查找到该任务"
+        return "The task was not found"
 
     target_template = TaskTemplateConfig().get_by_id(target_task["template_id"])
     if not target_template["used"]:
-        return "该任务类型已被禁止使用"
+        return "This task type has been banned"
     if not target_task['status']:
-        return "该任务已停止"
+        return "The task has been stopped"
 
-    return _PushRunner(target_task, target_template, push_system, push_data)()
+    return PushRunner(target_task, target_template, push_system, push_data)()
 
 
 def push_by_task_id(task_id: str, push_data: Optional[dict] = None):
@@ -399,15 +411,15 @@ def push_by_task_id(task_id: str, push_data: Optional[dict] = None):
     push_system = PushSystem()
     target_task = TaskConfig().get_by_id(task_id)
     if not target_task:
-        return "未查找到该任务"
+        return "The task was not found"
 
     target_template = TaskTemplateConfig().get_by_id(target_task["template_id"])
     if not target_template["used"]:
-        return "该任务类型已被禁止使用"
+        return "This task type has been banned"
     if not target_task['status']:
-        return "该任务已停止"
+        return "The task has been stopped"
 
-    return _PushRunner(target_task, target_template, push_system, push_data)()
+    return PushRunner(target_task, target_template, push_system, push_data)()
 
 
 def get_push_public_data():
@@ -419,4 +431,3 @@ def get_push_public_data():
         'timestamp': int(time.time())}
 
     return data
-

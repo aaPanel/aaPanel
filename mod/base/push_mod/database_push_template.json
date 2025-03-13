@@ -1,79 +1,5 @@
 [
   {
-    "id": "30",
-    "ver": "1",
-    "used": true,
-    "source": "mysql_pwd_end",
-    "title": "MySQL数据库密码到期",
-    "load_cls": {
-      "load_type": "path",
-      "cls_path": "mod.base.push_mod.database_push",
-      "name": "MysqlPwdEndTimeTask"
-    },
-    "template": {
-      "field": [
-        {
-          "attr": "project",
-          "name": "选择用户",
-          "type": "cascader",
-          "default": 0,
-          "items": [
-            {
-              "url": "database?action=GetPushUser"
-            },
-            {
-              "url": "database?action=GetPushUser",
-              "data": [
-                "sid"
-              ]
-            },
-            {
-              "url": "database?action=GetPushUser",
-              "data": [
-                "sid",
-                "username"
-              ]
-            }
-          ]
-        },
-        {
-          "attr": "cycle",
-          "name": "剩余天数",
-          "type": "number",
-          "unit": "天",
-          "suffix": "",
-          "default": 15
-        }
-      ],
-      "sorted": [
-        [
-          "project"
-        ],
-        [
-          "cycle"
-        ]
-      ]
-    },
-    "default": {
-      "project": [],
-      "cycle": 15
-    },
-    "advanced_default": {
-      "number_rule": {
-        "total": 2
-      }
-    },
-    "send_type_list": [
-      "wx_account",
-      "dingding",
-      "feishu",
-      "mail",
-      "weixin",
-      "webhook"
-    ],
-    "unique": false
-  },
-  {
     "id": "31",
     "ver": "1",
     "used": true,
@@ -147,7 +73,8 @@
       "feishu",
       "mail",
       "weixin",
-      "webhook"
+      "webhook",
+      "tg"
     ],
     "unique": false
   }

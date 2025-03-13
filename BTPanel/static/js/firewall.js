@@ -276,7 +276,7 @@ var safety = {
 				{ title: lan.security.firewall.ports, fid: 'ports', width: 200 },
 				{
 					field: 'status',
-					title: lan.security.firewall.status + '<a href="https://forum.aapanel.com/d/1088-description-of-firewall-status" class="bt-ico-ask" target="_blank" title="' + lan.security.firewall.port.th3_click + '">?</a>',
+					title: lan.security.firewall.status + '<a href="https://www.aapanel.com/forum/d/1088-description-of-firewall-status" class="bt-ico-ask" target="_blank" title="' + lan.security.firewall.port.th3_click + '">?</a>',
 					width: 150,
 					type: 'text',
 					template: function (item) {

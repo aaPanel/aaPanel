@@ -40,12 +40,12 @@ get_pid() {
 
 validate_server_files() {
     if [ ! -f "$webserver_conf" ]; then
-        echo "BaoTa Web server configuration not found: $webserver_conf"
+        echo "aaPanel web server configuration not found: $webserver_conf"
         exit 1
     fi
 
     if [ ! -f "$webserver_bin" ]; then
-        echo "BaoTa Web server binary not found: $webserver_bin"
+        echo "aaPanel web server binary not found: $webserver_bin"
         exit 1
     fi
 }
@@ -55,18 +55,18 @@ start() {
     get_pid
     
     if [ $PID -gt 0 ]; then
-        echo "BaoTa Web server is already running with PID ($PID)"
+        echo "aaPanel web server is already running with PID ($PID)"
         exit 1
     fi
 
-    echo -n "Starting BaoTa web server..."
+    echo -n "Starting aaPanel web server..."
     if [ -f "$webserver_pid" ]; then
         rm -f $webserver_pid
     fi
     chmod 700 $webserver_bin
     $webserver_bin -c $webserver_conf
     if [ $? -ne 0 ]; then
-        echo "Failed to start BaoTa web server"
+        echo "Failed to start aaPanel web server"
         exit 1
     fi
 
@@ -77,11 +77,11 @@ stop() {
     validate_server_files
     get_pid
     if [ $PID -eq 0 ]; then
-        echo "BaoTa Web server is not running"
+        echo "aaPanel web server is not running"
         exit 1
     fi
 
-    echo -n "Stopping BaoTa web server..."
+    echo -n "Stopping aaPanel web server..."
     $webserver_bin -c $webserver_conf -s stop
     
     pids=$(lsof -c webserver|grep LISTEN|awk '{print $2}'|sort -u)
@@ -89,13 +89,24 @@ stop() {
         kill -9 $pid
     done
 
+    pids=$(ps aux | grep "$webserver_bin" | grep -v grep | awk '{print $2}')
+    for pid in $pids; do
+        kill -9 $pid
+        child_process=1
+    done
+    if [ "$child_process" = 1 ]; then
+        if [ -f /www/server/panel/data/port.pl ]; then
+            kill -9 $(lsof -t -i:$(cat /www/server/panel/data/port.pl) -sTCP:LISTEN)
+        fi
+    fi
+
     echo " Stopped"
 }
 
 restart() {
     validate_server_files
     get_pid
-    echo -n "Restarting BaoTa web server..."
+    echo -n "Restarting aaPanel web server..."
     if [ $PID -eq 0 ]; then
         $webserver_bin -c $webserver_conf
     else
@@ -103,7 +114,7 @@ restart() {
     fi
 
     if [ $? -ne 0 ]; then
-        echo "Failed to restart BaoTa web server"
+        echo "Failed to restart aaPanel web server"
         exit 1
     fi
 
@@ -114,15 +125,15 @@ status() {
     validate_server_files
     get_pid
     if [ $PID -eq 0 ]; then
-        echo "BaoTa Web server is not running"
+        echo "aaPanel web server is not running"
     else
         cmdline=/proc/$PID/cmdline
         if [ ! -f $cmdline ]; then
-            echo "BaoTa Web server is not running"
+            echo "aaPanel web server is not running"
             rm -f $webserver_pid
             exit 1
         fi
-        echo "BaoTa Web server is running with PID ($PID)"
+        echo "aaPanel web server is running with PID ($PID)"
     fi
 }
 
@@ -130,14 +141,14 @@ reload() {
     validate_server_files
     get_pid
     if [ $PID -eq 0 ]; then
-        echo "BaoTa Web server is not running"
+        echo "aaPanel web server is not running"
         exit 1
     fi
 
-    echo -n "Reloading BaoTa web server..."
+    echo -n "Reloading aaPanel web server..."
     $webserver_bin -c $webserver_conf -s reload
     if [ $? -ne 0 ]; then
-        echo "Failed to reload BaoTa web server"
+        echo "Failed to reload aaPanel web server"
         exit 1
     fi
     echo " Reloaded"
@@ -153,7 +164,7 @@ configtest() {
 download() {
     tip_file=$panel_path/data/download.pl
     if [ -f $tip_file ]; then
-        echo "BaoTa web server binary has been downloaded"
+        echo "aaPanel web server binary has been downloaded"
         exit 1
     fi
 
@@ -165,7 +176,7 @@ download() {
     zip_file=$panel_path/data/webserver-$machine.zip
     wget -O $zip_file https://node.aapanel.com/webserver/webserver-$machine.zip
     if [ $? -ne 0 ]; then
-        echo "Failed to download BaoTa web server binary"
+        echo "Failed to download aaPanel web server binary"
         rm -f $zip_file
         exit 1
     fi
@@ -174,7 +185,7 @@ download() {
     hash256=$(sha256sum $zip_file | awk '{print $1}')
     cloud_hash256=$(wget -q -O - https://node.aapanel.com/webserver/webserver-$machine.txt)
     if [ "$hash256" != "$cloud_hash256" ]; then
-        echo "Failed to verify BaoTa web server binary"
+        echo "Failed to verify aaPanel web server binary"
         rm -f $zip_file
         exit 1
     fi
@@ -182,7 +193,7 @@ download() {
     # 解压文件
     unzip -o $zip_file -d $panel_path/
     if [ ! -f $webserver_bin ]; then
-        echo "Failed to extract BaoTa web server binary"
+        echo "Failed to extract aaPanel web server binary"
         rm -f $zip_file
         exit 1
     fi
@@ -191,7 +202,7 @@ download() {
     rm -f $zip_file
     # 设置权限
     chmod 700 $webserver_bin
-    echo "BaoTa web server binary has been downloaded"
+    echo "aaPanel web server binary has been downloaded"
     bash /www/server/panel/init.sh reload
 }
 

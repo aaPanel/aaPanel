@@ -1,0 +1,168 @@
+{
+	"Component": {
+		"Batch": {
+			"index_1": "Por favor elija",
+			"index_2": "(Seleccionado {0})",
+			"index_3": "Lotes {0}, progreso actual:"
+		},
+		"Auth": {
+			"index_1": "GRATIS",
+			"index_2": "Renovación",
+			"index_3": "Comprar ahora",
+			"index_4": "Expirar en: ",
+			"index_5": "Actualización ahora",
+			"index_6": "Vida"
+		},
+		"Feedback": {
+			"index_7": "Comentario",
+			"index_1": "recopilación de retroalimentación de la demanda de aapanel",
+			"index_2": "Si encuentra algún problema o funciones imperfectas durante el uso, describa",
+			"index_3": "sus problemas o necesitas en detalle, haremos todo lo posible para resolver o mejorar para",
+			"index_4": "Prestamos especial atención a sus comentarios de requisitos y realizamos revisiones regulares de requisitos semanales. Espero poder ayudarte mejor",
+			"index_5": "Por favor complete los comentarios",
+			"index_6": "¡Gracias por su participación!"
+		},
+		"Coupon": {
+			"index_1": "Obtenga cupones por tiempo limitado",
+			"index_2": "APAGADO",
+			"index_3": "Válido ",
+			"index_4": "Cupón",
+			"index_5": "Consíguelo ahora",
+			"index_6": "No más recordatorios para hoy",
+			"index_7": "No hay recordatorios en los últimos 7 días",
+			"index_8": "Nunca te recuerdas para siempre",
+			"index_9": "{0}, ¿estás seguro?",
+			"index_10": "Terminar con ",
+			"index_11": "Obtener $ {0} cupón",
+			"index_12": "{0} cupones",
+			"index_13": "Elija el tiempo sin previo aviso"
+		},
+		"Pay": {
+			"index_1": "PRO",
+			"index_2": "Recomendado",
+			"index_3": "Característica pro",
+			"index_4": "Descripción del complemento",
+			"index_5": "Contrasto de características",
+			"index_6": "Guardar más",
+			"index_7": "Linux Pro Edition está disponible para usar gratuitamente este complemento y todas las demás características de Pro",
+			"index_8": "¿Preguntas? Envíenos un correo electrónico en cualquier momento: {0}",
+			"index_9": "Elige tu plan",
+			"index_10": "El más popular",
+			"index_11": "Número de licencia",
+			"index_12": "Cargando, espere ...",
+			"index_13": "{0} OFF",
+			"index_14": "{0} {1}",
+			"index_15": "{0} {1}",
+			"index_16": "OP: {0}",
+			"index_17": "Solo complemento",
+			"index_18": "Cupón ({0})",
+			"index_19": "$ {0} OFF de {1} Pago",
+			"index_20": "Sin cupón preferencial",
+			"index_21": "Vale",
+			"index_22": "Licencia",
+			"index_23": "Cuenta: ",
+			"index_24": "Cambiar",
+			"index_25": "Total: ",
+			"index_26": "Pago de rayas",
+			"index_27": "Si {0} no puede pagar, puede intentar usar",
+			"index_28": "Falló la orden de pago, comuníquese con el administrador!",
+			"index_29": "Suscripción: ",
+			"index_30": "* Cuando la licencia expira, se renovará automáticamente",
+			"index_31": "* Verificar la suscripción, no puede pagar en moneda local",
+			"index_32": "Moneda local:",
+			"index_33": "* Pague con su método de pago local y moneda",
+			"index_34": "Información de licencia",
+			"index_35": "Sin licencia",
+			"index_36": "Licencia",
+			"index_37": "Cupones",
+			"index_38": "Sin cupones",
+			"index_39": "Usar",
+			"index_40": "Expira después",
+			"index_41": "¡Solicite SSL antes de comprar!",
+			"index_42": "Encienda SSL",
+			"index_43": "Oferta por tiempo limitado: ",
+			"index_44": "Ahorre hasta $ {0}",
+			"index_45": "Otro pago",
+			"index_46": "Convierta automáticamente la moneda de pago según su ubicación",
+			"index_47": "Pagar ahora"
+		},
+		"BindAccount": {
+			"index_1": "BINCE AAPANEL CUENTA",
+			"index_2": "Sin cuenta, ir a registrarse",
+			"index_3": "Acceso",
+			"index_4": "Ingrese su dirección de correo electrónico",
+			"index_5": "Ingrese su contraseña",
+			"index_6": "BINCE AAPANEL CUENTA",
+			"index_7": "Su dirección de correo electrónico",
+			"index_8": "Tu contraseña"
+		},
+		"Logs": {
+			"index_1": "Ninguno registra"
+		},
+		"SelectPath": {
+			"index_1": "Devolver",
+			"index_2": "Ruta actual",
+			"index_3": "Nombre del archivo",
+			"index_4": "Tiempo de modificación",
+			"index_5": "Permiso",
+			"index_6": "Dueño",
+			"index_7": "Seleccionar directorio"
+		},
+		"Editor": {
+			"index_1": "Consejos: CTRL+F Palabras clave de búsqueda ， Ctrl+S Guardar ， Ctrl+H Búsqueda y reemplazar"
+		},
+		"Quota": {
+			"index_1": "Cuota",
+			"index_2": "No establecido",
+			"index_3": "Capacidad utilizada de corriente: {0}",
+			"index_4": "Haga clic en Modificar la cuota de capacidad",
+			"index_5": "{1} Establecer nueva cuota [{0}]",
+			"index_6": "Capacidad utilizada de corriente",
+			"index_7": "Cuota de capacidad actual",
+			"index_8": "Recordatorio: esta característica es exclusiva de Pro Edition",
+			"index_9": "Requiere un sistema de archivos XFS e incluye el parámetro [prjquota] para usar",
+			"index_10": "Ejemplo de fstab: /dev /vdc1 /data XFS predeterminados, prjquota 0 0",
+			"index_11": "Cuota: Para cancelar la cuota, establece en \"0\"",
+			"index_12": "Cuota de capacidad actual: {0}"
+		},
+		"Terminal": {
+			"index_1": "¡La conexión se ha desconectado, presionando Enter intentará reconectarse!",
+			"index_2": "¡Tratando de volver a conectar!"
+		},
+		"Upload": {
+			"index_1": "Seleccionar archivo",
+			"index_2": "No seleccionado"
+		},
+		"UploadFile": {
+			"index_1": "Haga clic o arrastre el archivo al área",
+			"index_2": "Solo soporte {0} Formato de archivo Importar",
+			"index_3": "Nombre del archivo",
+			"index_4": "Tamaño",
+			"index_5": "Estado",
+			"index_6": "Seleccionar archivo",
+			"index_7": "El tamaño del archivo [{0}] no puede exceder {1} m",
+			"index_8": "Esperando cargar",
+			"index_9": "Subir el éxito",
+			"index_10": "Seleccione el archivo para cargar"
+		},
+		"FormMore": {
+			"index_1": "Más configuración, haga clic para ver"
+		},
+		"Confirm": {
+			"index_1": "Si confirma la operación, ingrese manualmente \"{text_}\"",
+			"index_2": "Error de entrada, intente nuevamente",
+			"index_3": "{0} se ha completado, Tareas Total {1}, {2} Éxitos, {3} fallas",
+			"index_4": "Resultado: ",
+			"index_5": "El resultado es incorrecto, intente nuevamente"
+		},
+		"SoftState": {
+			"index_1": "¿Estás seguro de que tienes que {0} el servicio {1} y continuar?"
+		},
+		"Api": {
+			"index_1": "Cargando, espere ...",
+			"index_2": "Atinte, por favor espere ...",
+			"index_3": "Envíe comentarios, espere ..",
+			"index_4": "Subiendo el archivo, espere ..."
+		}
+	}
+}

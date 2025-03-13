@@ -27,7 +27,7 @@ class data:
     # 删除排序记录
     def del_sorted(self, get):
         public.ExecShell("rm -rf {}".format(self.siteorder_path))
-        return public.returnMsg(True, '清除排序成功！')
+        return public.returnMsg(True, public.lang("Clear sorting successfully"))
 
 
     '''
@@ -40,9 +40,9 @@ class data:
         # 校验参数
         try:
             get.validate([
-                Param('table').Require().String().Xss(),
+                Param('table').Require().String(),
                 Param('ps').Require().String(),
-                Param('id').Require().Integer().Xss(),
+                Param('id').Require().Integer(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -53,10 +53,10 @@ class data:
         id = get.id
         get.ps = public.xssencode2(get.ps)
         if public.M(get.table).where("id=?",(id,)).setField('ps',get.ps):
-            # return public.return_msg_gettext(True,'Setup successfully!')
-            return public.return_message(0, 0, "Setup successfully")
-        # return public.return_msg_gettext(False,'Failed to modify')
-        return public.return_message(-1, 0, 'Failed to modify')
+            # public.get_msg_gettext(True, public.lang("Setup successfully!"))
+            return public.return_message(0, 0, public.lang("Setup successfully"))
+        # public.get_msg_gettext(False, public.lang("Failed to modify"))
+        return public.return_message(-1, 0, public.lang("Failed to modify"))
 
     #端口扫描
     def CheckPort(self,port):
@@ -221,9 +221,9 @@ class data:
             }
         }
         try:
-            from public.PluginLoader import get_module
-            quota_info = getattr(get_module('{}/class_v2/projectModelV2/quotaModel.py'.format(public.get_panel_path())),
-                                 'main')().get_quota_path(path)
+            from projectModelV2.quotaModel import main
+            quota_info = main().get_quota_path(path)
+
             if isinstance(quota_info, dict):
                 res.update(quota_info)
                 res['size'] = int(quota_info['quota_push']['size']) + int(quota_info['quota_storage']['size'])
@@ -262,9 +262,9 @@ class data:
             }
         }
         try:
-            from public.PluginLoader import get_module
-            quota_info = getattr(get_module('{}/class_v2/projectModelV2/quotaModel.py'.format(public.get_panel_path())),
-                                 'main')().get_quota_mysql(db_name)
+            from projectModelV2.quotaModel import main
+            quota_info = main().get_quota_mysql(db_name)
+
             if isinstance(quota_info, dict):
                 res.update(quota_info)
                 res['size'] = int(quota_info['quota_push']['size']) + int(quota_info['quota_storage']['size'])
@@ -294,12 +294,12 @@ class data:
         # 校验参数
         try:
             get.validate([
-                Param('table').Require().String().Xss(),
+                Param('table').Require().String(),
                 Param('search').String(),
                 Param('limit').Integer(),
                 Param('p').Integer(),
-                Param('type').String().Xss(),
-                Param('project_type').Xss(),
+                Param('type').String(),
+                Param('project_type'),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -411,16 +411,33 @@ class data:
                         data['data'][i]['php_version'] = self.get_php_version(data['data'][i]['name'])
                         data['data'][i]['attack'] = self.get_analysis(get,data['data'][i])
                         data['data'][i]['project_type'] = SQL.table('sites').where('id=?',(data['data'][i]['id'])).field('project_type').find()['project_type']
+                        data['data'][i]['ps']=data['data'][i]['ps'].replace("For panel Lets Encrypt certificate","For panel Let's Encrypt certificate",1)
                         if data['data'][i]['project_type'] in ['WP', 'WP2']:
                             import one_key_wp
                             one_key_wp_obj = one_key_wp.one_key_wp()
-                            data['data'][i]['cache_status'] = one_key_wp_obj.get_cache_status(data['data'][i]['id'])
+                            data['data'][i]['cache_status'] = False
+                            data['data'][i]['wp_version'] = '0.0.0'
+                            try:
+                                data['data'][i]['cache_status'] = one_key_wp_obj.get_cache_status(data['data'][i]['id'])
+                                data['data'][i]['wp_version'] = one_key_wp_obj.get_wp_version(data['data'][i]['id'])
+                            except:
+                                pass
                             data['data'][i]['login_url'] = '/v2/wp/login/{}'.format(data['data'][i]['id'])
-                            data['data'][i]['wp_version'] = one_key_wp_obj.get_wp_version(data['data'][i]['id'])
+
 
                             if data['data'][i]['project_type'] == 'WP2':
                                 from wp_toolkit import wpbackup
                                 data['data'][i]['backup_count'] = wpbackup(data['data'][i]['id']).backup_count()
+                                wordpress_scan_path = "/www/server/panel/data/wordpress_wp_scan.json"
+                                data['data'][i]['scan']={"last_time": 0,"vulnerabilities": 0,"status": True}
+                                import os
+                                if os.path.exists(wordpress_scan_path):
+                                    try:
+                                        wordpress_scan_info = json.loads(public.readFile(wordpress_scan_path))
+                                        if data['data'][i]['path'] in wordpress_scan_info:
+                                            data['data'][i]['scan'] = wordpress_scan_info[data['data'][i]['path']]
+                                    except:
+                                        pass
 
                         if not data['data'][i]['status'] in ['0','1',0,1]:
                             data['data'][i]['status'] = '1'
@@ -639,8 +656,8 @@ class data:
         # 校验参数
         try:
             get.validate([
-                Param('table').Require().String().Xss(),
-                Param('key').Require().String().Xss(),
+                Param('table').Require().String(),
+                Param('key').Require().String(),
                 Param('id').Require().Integer(),
             ], [
                 public.validate.trim_filter(),

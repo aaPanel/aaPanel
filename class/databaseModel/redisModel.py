@@ -188,7 +188,7 @@ class main(databaseBase):
 
         self.sid = args.get('sid/d',0)
         if not 'name' in args or not 'val' in args:
-            return public.returnMsg(False,'Parameter passing error.');
+            return public.returnMsg(False, public.lang("Parameter passing error."));
 
         endtime = 0
         if 'endtime' in args : endtime = int(args.endtime)
@@ -199,7 +199,7 @@ class main(databaseBase):
         else:
             redis_obj.set(args.name, args.val)
         public.set_module_logs('linux_redis','set_redis_val',1)
-        return public.returnMsg(True,'Operation is successful.');
+        return public.returnMsg(True, public.lang("Operation is successful."));
 
     def del_redis_val(self,args):
         """
@@ -207,12 +207,12 @@ class main(databaseBase):
         """
         self.sid = args.get('sid/d',0)
         if  not 'key' in args:
-            return public.returnMsg(False,'Parameter passing error.');
+            return public.returnMsg(False, public.lang("Parameter passing error."));
 
         redis_obj = self.get_obj_by_sid(self.sid).redis_conn(args.db_idx)
         redis_obj.delete(args.key)
 
-        return public.returnMsg(True,'Operation is successful.');
+        return public.returnMsg(True, public.lang("Operation is successful."));
 
 
     def clear_flushdb(self,args):
@@ -231,7 +231,7 @@ class main(databaseBase):
             redis_obj = self.get_obj_by_sid(self.sid).redis_conn(x)
             redis_obj.flushdb()
 
-        return public.returnMsg(True,'Operation is successful.');
+        return public.returnMsg(True, public.lang("Operation is successful."));
 
     def get_db_keylist(self,args):
         """
@@ -321,7 +321,7 @@ class main(databaseBase):
 
         src_path = '{}/dump.rdb'.format(redis_obj.config_get()['dir'])
         if not os.path.exists(src_path):
-            return public.returnMsg(False,'BACKUP_ERROR');
+            return public.returnMsg(False, public.lang("Backup error"));
 
         backup_path = session['config']['backup_path'] + '/database/redis/'
         if not os.path.exists(backup_path): os.makedirs(backup_path)
@@ -330,9 +330,9 @@ class main(databaseBase):
 
         shutil.copyfile(src_path,fileName)
         if not os.path.exists(fileName):
-            return public.returnMsg(False,'BACKUP_ERROR');
+            return public.returnMsg(False, public.lang("Backup error"));
 
-        return public.returnMsg(True, 'BACKUP_SUCCESS')
+        return public.returnMsg(True, public.lang("Backup Succeeded!"))
 
     def DelBackup(self,args):
         """
@@ -341,7 +341,7 @@ class main(databaseBase):
         file = args.file
         if os.path.exists(file): os.remove(file)
 
-        return public.returnMsg(True, 'DEL_SUCCESS');
+        return public.returnMsg(True, public.lang("Delete successfully!"));
 
     def InputSql(self,get):
         """
@@ -361,8 +361,8 @@ class main(databaseBase):
         # self.restart_services()
         public.ExecShell("/etc/init.d/redis start")
         if os.path.exists(dst_path):
-            return public.returnMsg(True, 'Restore Successful.')
-        return public.returnMsg(False, 'Restore failure.')
+            return public.returnMsg(True, public.lang("Restore Successful."))
+        return public.returnMsg(False, public.lang("Restore failure."))
 
 
     def get_backup_list(self,get):

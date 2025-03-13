@@ -26,3 +26,4 @@ Vhost file      : /www/server/panel/vhost
 
 **Note: after the deployment is complete, please immediately modify the user name and password in the panel settings and add the installation entry**
 
+test

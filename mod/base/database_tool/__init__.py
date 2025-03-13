@@ -27,7 +27,7 @@ def add_database(db_type: str, data: dict) -> Optional[str]:
     listen_ip: pgsql 有效，可设置访问地址
     """
     if db_type not in DB_TYPE:
-        return "错误的数据库类型"
+        return "Wrong database type"
 
     if db_type == "pgsql":
         tool = PgsqlTool()

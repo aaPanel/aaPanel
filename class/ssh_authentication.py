@@ -159,7 +159,7 @@ class ssh_authentication:
                 file_result = re.sub(ssh_password, '\nChallengeResponseAuthentication yes', file)
             self.wirte(self.__SSH_CONFIG, file_result)
             self.restart_ssh()
-        return public.returnMsg(True, 'Successfully opened')
+        return public.returnMsg(True, public.lang("Successfully opened"))
 
     #关闭SSH应答模式
     def close_ssh_login_user(self):
@@ -169,7 +169,7 @@ class ssh_authentication:
             file_result = re.sub(ssh_password, '\nChallengeResponseAuthentication no', file)
             self.wirte(self.__SSH_CONFIG, file_result)
             self.restart_ssh()
-        return public.returnMsg(True, 'Closed successfully')
+        return public.returnMsg(True, public.lang("Closed successfully"))
 
     #查看SSH应答模式
     def check_ssh_login_user(self):
@@ -198,10 +198,10 @@ class ssh_authentication:
                 file_result = file.replace('\nPasswordAuthentication yes', '\nPasswordAuthentication no')
                 self.wirte(self.__SSH_CONFIG, file_result)
                 self.restart_ssh()
-                return public.returnMsg(True, 'Closed successfully')
+                return public.returnMsg(True, public.lang("Closed successfully"))
             else:   
-                return public.returnMsg(False, 'No password authentication')
-        return public.returnMsg(False, 'No password authentication')
+                return public.returnMsg(False, public.lang("No password authentication"))
+        return public.returnMsg(False, public.lang("No password authentication"))
 
     #开启密码登录
     def start_password(self):
@@ -215,13 +215,13 @@ class ssh_authentication:
                 file_result = file.replace('\nPasswordAuthentication no', '\nPasswordAuthentication yes')
                 self.wirte(self.__SSH_CONFIG, file_result)
                 self.restart_ssh()
-                return public.returnMsg(True, 'Turn on password authentication successfully')
+                return public.returnMsg(True, public.lang("Turn on password authentication successfully"))
             else:
                 file_result = file + '\nPasswordAuthentication yes'
                 self.wirte(self.__SSH_CONFIG, file_result)
                 self.restart_ssh()
-                return public.returnMsg(True, 'Turn on password authentication successfully')
-        return public.returnMsg(False, 'No password authentication')
+                return public.returnMsg(True, public.lang("Turn on password authentication successfully"))
+        return public.returnMsg(False, public.lang("No password authentication"))
 
     #查看密码登录状态
     def check_password(self):
@@ -245,7 +245,7 @@ class ssh_authentication:
 
     #开启SSH 双因子认证
     def start_ssh_authentication_two_factors(self):
-        if not self.get_pam_dir():return public.returnMsg(False,'The system is not supported')
+        if not self.get_pam_dir():return public.returnMsg(False, public.lang("The system is not supported"))
         check=self.isPamSoExists()
         if not check:return 'False'
         if not self.check_ssh_login_user():
@@ -257,13 +257,13 @@ class ssh_authentication:
         #     self.stop_password()
         #检查是否开启双因子认证
         if  self.check_ssh_authentication() and self.check_ssh_login_user():
-            return public.returnMsg(True,'Successfully opened')
-        return public.returnMsg(True,'Failed to open')
+            return public.returnMsg(True, public.lang("Successfully opened"))
+        return public.returnMsg(True, public.lang("Failed to open"))
 
     
     #关闭SSH 双因子认证
     def close_ssh_authentication_two_factors(self):
-        if not self.get_pam_dir():return public.returnMsg(False,'The system is not supported')
+        if not self.get_pam_dir():return public.returnMsg(False, public.lang("The system is not supported"))
         check=self.isPamSoExists()
         if not check:return False
         if self.check_ssh_authentication():
@@ -273,25 +273,25 @@ class ssh_authentication:
         # if not self.check_password():
         #     self.start_password()
         if not self.check_ssh_authentication():
-            return public.returnMsg(True,'Closed')
+            return public.returnMsg(True, public.lang("Closed"))
         if self.stop_ssh_authentication():
-            return public.returnMsg(True,'Closed')
+            return public.returnMsg(True, public.lang("Closed"))
         
 
     #检查是否开启双因子认证
     def check_ssh_authentication_two_factors(self):
-        if not self.get_pam_dir():return public.returnMsg(False,'The system is not supported')
+        if not self.get_pam_dir():return public.returnMsg(False, public.lang("The system is not supported"))
         check=self.isPamSoExists()
         if not check:return False
         if not self.check_ssh_login_user():
-            return public.returnMsg(False,'Inactive')
+            return public.returnMsg(False, public.lang("Inactive"))
         if not self.check_ssh_authentication():
-            return public.returnMsg(False,'Inactive')
-        return public.returnMsg(True,'Activated')
+            return public.returnMsg(False, public.lang("Inactive"))
+        return public.returnMsg(True, public.lang("Activated"))
     
     def is_check_so(self):
         '''判断SO文件是否存在'''
-        if not self.get_pam_dir():return public.returnMsg(False,'The system is not supported')
+        if not self.get_pam_dir():return public.returnMsg(False, public.lang("The system is not supported"))
         config_data=self.get_pam_dir()
         if not config_data:return False
         config_data2=config_data.split()
@@ -305,7 +305,7 @@ class ssh_authentication:
 
     def download_so(self):
         '''下载so文件'''
-        if not self.get_pam_dir():return public.returnMsg(False,'The system is not supported')
+        if not self.get_pam_dir():return public.returnMsg(False, public.lang("The system is not supported"))
         config_data=self.get_pam_dir()
         if not config_data:return False
         config_data=config_data.split()
@@ -313,8 +313,8 @@ class ssh_authentication:
         #判断下载的文件大小
         if os.path.exists(config_data[2]) :
             if os.path.getsize(config_data[2])>10240:
-                return public.returnMsg(True,"Download the file successfully")
-        return public.returnMsg(False,"download failed")
+                return public.returnMsg(True, public.lang("Download the file successfully"))
+        return public.returnMsg(False, public.lang("download failed"))
 
         #获取Linux系统的主机名
     def get_pin(self):

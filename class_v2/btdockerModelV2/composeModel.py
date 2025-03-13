@@ -17,6 +17,7 @@ import gettext
 _ = gettext.gettext
 
 import public
+import traceback
 from btdockerModelV2 import containerModel as dc
 from btdockerModelV2 import dk_public as dp
 from btdockerModelV2.dockerBase import dockerBase
@@ -40,7 +41,7 @@ class main(dockerBase):
     def check_conf(self, path):
         # 2024/3/21 下午 5:58 检测path是否存在中文，如果有就false return
         if public.check_chinese(path):
-            return public.returnMsg(False, "The file path cannot contain Chinese characters!")
+            return public.return_message(-1, 0, public.lang("The file path cannot contain Chinese characters!"))
 
         # 2024/3/20 下午 4:33 获取docker-compose的版本，如果大于v2.24.7则不需要检测，比如是v2.25，解决高版本的docker-compose
         version = self.get_docker_compose_version()
@@ -53,8 +54,8 @@ class main(dockerBase):
         shell = "/usr/bin/docker-compose -f {} config".format(path)
         a, e = public.ExecShell(shell)
         if e and "setlocale: LC_ALL: cannot change locale (en_US.UTF-8)" not in e:
-            return public.returnMsg(False, "Detection failed: {}".format(e))
-        return public.returnMsg(True, "Detection passes!")
+            return public.return_message(-1, 0, public.lang("Detection failed: {}", e))
+        return public.return_message(0, 0, public.lang("Detection passes!"))
 
     # 用引导方式创建模板
     def add_template_gui(self, get):
@@ -171,13 +172,12 @@ class main(dockerBase):
         import re
         name = get.name
         if not re.search(r"^[\w\.\-]+$", name):
-            return public.return_message(-1, 0,
-                                         "Template names cannot contain special characters; only letters, numbers, underscores, dots, and underscores are supported")
+            return public.return_message(-1, 0, public.lang("Template names cannot contain special characters; only letters, numbers, underscores, dots, and underscores are supported"))
 
         template_list = self._template_list(get)
         for template in template_list:
             if name == template['name']:
-                return public.return_message(-1, 0,  _("This template name already exists!"))
+                return public.return_message(-1, 0, public.lang("This template name already exists!"))
 
         path = "{}/{}/template".format(self.compose_path, name)
         file = "{}/{}.yaml".format(path, name)
@@ -186,10 +186,10 @@ class main(dockerBase):
         public.writeFile(file, get.data)
 
         check_res = self.check_conf(file)
-        if not check_res['status']:
+        if check_res['status'] == -1:
             if os.path.exists(file):
                 os.remove(file)
-            return public.return_message(-1, 0, check_res['msg'])
+            return public.return_message(-1, 0, check_res['message'])
 
         pdata = {
             "name": name,
@@ -199,7 +199,7 @@ class main(dockerBase):
         dp.sql("templates").insert(pdata)
         dp.write_log("Added template [{}] successfully!".format(name))
         public.set_module_logs('docker', 'add_template', 1)
-        return public.return_message(0, 0,_("Template added successfully!"))
+        return public.return_message(0, 0, public.lang("Template added successfully!"))
 
     def edit_template(self, get):
         """
@@ -211,20 +211,18 @@ class main(dockerBase):
         """
         template_info = dp.sql("templates").where("id=?", (get.id,)).find()
         if not template_info:
-            return public.return_message(-1, 0,  _("Did not change the template!"))
+            return public.return_message(-1, 0, public.lang("Did not change the template!"))
 
-        if "data" not in get:
-            return public.return_message(-1, 0,
-                                         "Template content format error, please enter a valid docker-compose template!")
-
-        if "version" not in get.data:
-            return public.return_message(-1, 0,
-                                         "Template content format error, please enter a valid docker-compose template!")
+        # if "data" not in get:
+        #     return public.return_message(-1, 0, public.lang("Template content format error, please enter a valid docker-compose template!"))
+        #
+        # if "version" not in get.data:
+        #     return public.return_message(-1, 0, public.lang("Template content format error, please enter a valid docker-compose template!"))
 
         public.writeFile(template_info['path'], get.data)
         check_res = self.check_conf(template_info['path'])
-        if not check_res['status']:
-            return public.return_message(-1, 0,check_res['msg'])
+        if check_res['status'] == -1:
+            return public.return_message(-1, 0, check_res['message'])
         pdata = {
             "name": get.name,
             "remark": public.xsssec(get.remark),
@@ -232,7 +230,7 @@ class main(dockerBase):
         }
         dp.sql("templates").where("id=?", (get.id,)).update(pdata)
         dp.write_log("Edit template [{}] successful!".format(template_info['name']))
-        return public.return_message(0, 0, _("Modified template successfully!"))
+        return public.return_message(0, 0, public.lang("Modified template successfully!"))
 
     def get_template(self, get):
         """
@@ -254,7 +252,7 @@ class main(dockerBase):
 
         template_info = dp.sql("templates").where("id=?", (get.template_id,)).find()
         if not template_info:
-            return public.return_message(-1, 0,  _("This template was not found!"))
+            return public.return_message(-1, 0, public.lang("This template was not found!"))
 
         return public.return_message(0, 0, public.readFile(template_info['path']))
 
@@ -282,6 +280,17 @@ class main(dockerBase):
             template = []
 
         return template
+    #  检查模板是否被使用
+    def check_use_template(self, get):
+        """
+        检查模板是否被使用
+        :param get:
+        :return:
+        """
+        template_info = dp.sql("stacks").where("template_id=?", (get.id,)).find()
+        if not template_info:
+            return public.return_message(-1, 0,  "")
+        return public.return_message(0, 0, template_info["name"])
 
     def remove_template(self, get):
         """
@@ -303,12 +312,33 @@ class main(dockerBase):
 
         data = dp.sql("templates").where("id=?", (get.template_id,)).find()
         if not data:
-            return public.return_message(-1, 0,  _("This template was not found!"))
+            return public.return_message(-1, 0, public.lang("This template was not found!"))
         if os.path.exists(data['path']):
             os.remove(data['path'])
+
+        get.id = get.template_id
+
+        if self.check_use_template(get)['status']==0:
+            # 模板已被使用
+            if hasattr(get, "status"):
+                template_info = dp.sql("stacks").where("template_id=?", (get.template_id,)).find()
+                if os.path.exists(template_info["path"]):
+                    public.ExecShell("/usr/bin/docker-compose -f {} down".format(template_info["path"]))
+                else:
+                    stdout, stderr = public.ExecShell("docker-compose ls --format json")
+                    try:
+                        info = json.loads(stdout)
+                    except:
+                        info = []
+                    for i in info:
+                        if i['Name'] == public.md5(template_info['name']):
+                            public.ExecShell("/usr/bin/docker-compose -p {} down".format(i['Name']))
+                            break
+                dp.sql("stacks").delete(id=template_info["id"])
+
         dp.sql("templates").delete(id=get.template_id)
         dp.write_log("Delete template [{}] successfully!".format(data['name']))
-        return public.return_message(0, 0, _("successfully delete!"))
+        return public.return_message(0, 0, public.lang("successfully delete!"))
 
     def edit_project_remark(self, get):
         """
@@ -320,7 +350,7 @@ class main(dockerBase):
         """
         stacks_info = dp.sql("stacks").where("id=?", (get.project_id,)).find()
         if not stacks_info:
-            return public.returnMsg(False, "The item was not found!")
+            return public.return_message(-1, 0, public.lang("The item was not found!"))
         pdata = {
             "remark": public.xsssec(get.remark)
         }
@@ -339,7 +369,7 @@ class main(dockerBase):
         """
         stacks_info = dp.sql("templates").where("id=?", (get.templates_id,)).find()
         if not stacks_info:
-            return public.returnMsg(False, "The template was not found!")
+            return public.return_message(-1, 0, public.lang("The template was not found!"))
         pdata = {
             "remark": public.xsssec(get.remark)
         }
@@ -370,7 +400,7 @@ class main(dockerBase):
         """
         import re
         data = []
-        template_container_name = re.findall("container_name\\s*:\\s*[\"\']+(.*)[\'\"]", template_data)
+        template_container_name = re.findall("container_name\s*:\s*[\"\']+(.*)[\'\"]", template_data)
         # 调用容器列表接口 选择不改统一返回的
         container_list = dc.main()._get_list(get)
 
@@ -379,13 +409,14 @@ class main(dockerBase):
             if container['name'] in template_container_name:
                 data.append(container['name'])
         if data:
-            return public.returnMsg(False, "The container name already exists!: <br>[{}]".format(", ".join(data)))
+            return public.return_message(-1, 0, public.lang("The container name already exists!: <br>[{}]", ", ".join(data)))
         # 获取模板所使用的端口
         rep = r"(\d+):\d+"
         port_list = re.findall(rep, template_data)
         for port in port_list:
             if dp.check_socket(port):
-                return public.returnMsg(False, "This port [{}] is already used by other templates".format(port))
+
+                return public.return_message(-1, 0, public.lang("This port [{}] is already used by other templates", port))
 
     # 创建项目
     def create(self, get):
@@ -411,28 +442,28 @@ class main(dockerBase):
             return public.return_message(-1, 0, str(ex))
 
         try:
-            project_name = public.md5(get.project_name)
-            # if "template_id" not in get:
-            #     return public.returnMsg(False, "Parameter error, please pass in template_id!")
+            project_name = public.md5(public.xsssec(get.project_name))
+            if "template_id" not in get:
+                return public.return_message(-1, 0, public.lang("Parameter error, please pass in template_id!"))
             template_id = get.template_id
             template_info = dp.sql("templates").where("id=?", template_id).find()
             if len(template_info) < 1:
-                return public.return_message(-1, 0,  _("This template was not found, or file is corrupt!"))
+                return public.return_message(-1, 0, public.lang("This template was not found, or file is corrupt!"))
 
             if not os.path.exists(template_info['path']):
-                return public.return_message(-1, 0,  _("Template file does not exist"))
+                return public.return_message(-1, 0,  public.lang("Template file does not exist"))
 
             template_exist = dp.sql("stacks").where("template_id=?", (template_id,)).find()
             if template_exist:
                 return public.return_message(-1, 0,
-                                             "Template [{}] has been deployed by project: [{}], please change a template and try again!".format(
+                                             public.lang("Template [{}] has been deployed by project: [{}], please change a template and try again!",
                                                  template_info['name'], template_exist['name']))
 
             name_exist = self.check_project_container_name(public.readFile(template_info['path']), get)
             if name_exist:
-                return public.return_message(-1, 0, name_exist['msg'])
+                return public.return_message(-1, 0, name_exist['message'])
 
-            stacks_info = dp.sql("stacks").where("name=?", (project_name)).find()
+            stacks_info = dp.sql("stacks").where("name=?", (public.xsssec(get.project_name))).find()
             if not stacks_info:
                 pdata = {
                     "name": public.xsssec(get.project_name),
@@ -444,7 +475,7 @@ class main(dockerBase):
                 }
                 dp.sql("stacks").insert(pdata)
             else:
-                return public.return_message(-1, 0,  _("The project name already exists!"))
+                return public.return_message(-1, 0, public.lang("The project name already exists!"))
 
             if template_info['add_in_path'] == 1:
                 self.create_project_in_path(
@@ -456,9 +487,9 @@ class main(dockerBase):
                     project_name,
                     template_info['path']
                 )
-            dp.write_log("Project [{}] deployed successfully!".format(project_name))
+            dp.write_log("Project [{}] deployed successfully!".format(public.xsssec(get.project_name)))
             public.set_module_logs('docker', 'add_project', 1)
-            return public.return_message(0, 0, _("Successful deployment!"))
+            return public.return_message(0, 0, public.lang("Successful deployment!"))
         except Exception as ex:
             public.print_log(traceback.format_exc())
             return public.return_message(-1, 0, str(ex))
@@ -473,7 +504,7 @@ class main(dockerBase):
         try:
             cmd_result = public.ExecShell("/usr/bin/docker-compose ls -a --format json")[0]
             if "Segmentation fault" in cmd_result:
-                return public.returnMsg(False, "docker-compose is too low, please upgrade to the latest version!")
+                return public.return_message(-1, 0, public.lang("docker-compose is too low, please upgrade to the latest version!"))
             result = json.loads(cmd_result)
         except:
             result = []
@@ -509,13 +540,14 @@ class main(dockerBase):
                     continue
 
                 if 'com.docker.compose.project' in c.keys():
-                    if public.md5(i['name']) in c['com.docker.compose.project.config_files']:
-                        count += 1
-                        continue
+                    if "com.docker.compose.project.config_files" in c:
+                        if public.md5(i['name']) in c['com.docker.compose.project.config_files']:
+                            count += 1
+                            continue
 
-                    if public.md5(i['name']) in public.md5(c['com.docker.compose.project.config_files']):
-                        count += 1
-                        continue
+                        if public.md5(i['name']) in public.md5(c['com.docker.compose.project.config_files']):
+                            count += 1
+                            continue
 
                 if 'com.docker.compose.project' in c['Labels'].keys():
                     if public.md5(i['name']) in c['Labels']['com.docker.compose.project.config_files']:
@@ -556,18 +588,20 @@ class main(dockerBase):
                 continue
 
             if 'com.docker.compose.project' in c.keys():
-                if public.md5(get.name) in c['com.docker.compose.project.config_files']:
-                    project_container_list.append(dc.main().struct_container_list(c))
+                if "com.docker.compose.project.config_files" in c:
+                    if public.md5(get.name) in c['com.docker.compose.project.config_files']:
+                        project_container_list.append(dc.main().struct_container_list(c))
 
-                if public.md5(get.name) in public.md5(c['com.docker.compose.project.config_files']):
-                    project_container_list.append(dc.main().struct_container_list(c))
+                    if public.md5(get.name) in public.md5(c['com.docker.compose.project.config_files']):
+                        project_container_list.append(dc.main().struct_container_list(c))
 
             if 'com.docker.compose.project' in c['Labels'].keys():
-                if public.md5(get.name) in c['Labels']['com.docker.compose.project.config_files']:
-                    project_container_list.append(dc.main().struct_container_list(c))
+                if "com.docker.compose.project.config_files" in c['Labels']:
+                    if public.md5(get.name) in c['Labels']['com.docker.compose.project.config_files']:
+                        project_container_list.append(dc.main().struct_container_list(c))
 
-                if public.md5(get.name) in public.md5(c['Labels']['com.docker.compose.project.config_files']):
-                    project_container_list.append(dc.main().struct_container_list(c))
+                    if public.md5(get.name) in public.md5(c['Labels']['com.docker.compose.project.config_files']):
+                        project_container_list.append(dc.main().struct_container_list(c))
 
         return public.return_message(0, 0, project_container_list)
 
@@ -591,7 +625,7 @@ class main(dockerBase):
 
         statcks_info = dp.sql("stacks").where("id=?", (get.project_id,)).find()
         if not statcks_info:
-            return public.return_message(-1, 0,  _("The project name was not found!"))
+            return public.return_message(-1, 0, public.lang("The project name was not found!"))
         container_name = public.ExecShell("docker ps --format \"{{.Names}}\"")
         if statcks_info['name'] in container_name[0]:
             shell = f"/usr/bin/docker-compose -p {statcks_info['name']} -f {statcks_info['path']} down &> {self._log_path}"
@@ -600,8 +634,9 @@ class main(dockerBase):
                     f" {statcks_info['path']} down &> {self._log_path}"
         public.ExecShell(shell)
         dp.sql("stacks").delete(id=get.project_id)
+
         dp.write_log("Delete project [{}] success!".format(statcks_info['name']))
-        return public.return_message(0, 0, _("successfully delete!"))
+        return public.return_message(0, 0, public.lang("successfully delete!"))
 
     def prune(self, get):
         """
@@ -611,12 +646,19 @@ class main(dockerBase):
         """
         stacks_info = dp.sql("stacks").select()
         container_name = public.ExecShell("docker ps --format \"{{.Names}}\"")[0]
+        # 正在运行的容器为空 直接返回结果
+        if container_name == "":
+            return public.return_message(0, 0, public.lang("The cleanup was successful!"))
+
         container_name = container_name.split("\n")
+
+        # 数据库列表信息
         for i in stacks_info:
             # 2024/3/21 下午 6:26 如果i['name']在container_name[0]中，说明容器还在运行，不删除
             is_run = False
             docker_name = public.ExecShell("grep 'container_name' {}".format(i["path"]))[0]
 
+            #  实际运行列表
             for j in container_name:
                 if j == "": continue
                 if public.md5(i['name']) in j or j in docker_name:
@@ -628,7 +670,7 @@ class main(dockerBase):
             public.ExecShell(shell)
             dp.sql("stacks").delete(id=i['id'])
             dp.write_log("Cleanup project [{}] successful!".format(i['name']))
-        return public.return_message(0, 0, _("Clean up successfully!"))
+        return public.return_message(0, 0, public.lang("Clean up successfully!"))
 
 
     def set_compose_status(self, get):
@@ -662,10 +704,50 @@ class main(dockerBase):
         else:
             data = self.kill(get)
 
-        if data["status"]:
-            return public.return_message(0, 0, data['msg'])
+        if data["status"]== -1:
+            return public.return_message(0, 0, data['message'])
         else:
-            return public.return_message(-1, 0, data['msg'])
+            return public.return_message(-1, 0, data['message'])
+    # 项目状态执行命令调用
+    def __host_temp(self, statcks_info, status):
+        file_path = "{}/data/compose/{}/docker-compose.yaml".format(public.get_panel_path(), public.md5(statcks_info['name']))
+
+        status_info = {
+            "start": "start",
+            "stop": "stop",
+            "restart": "restart",
+            "pause": "pause",
+            "unpause": "Unpause",
+            "kill": "kill",
+        }
+
+        # 本地添加模版
+        if not os.path.exists(file_path):
+            if os.path.exists(statcks_info["path"]):
+                public.ExecShell("/usr/bin/docker-compose -f {} {} &> {}".format(statcks_info["path"], status, self._log_path))
+            else:
+                stdout, stderr = public.ExecShell("docker-compose ls --format json")
+                try:
+                    info = json.loads(stdout)
+                except:
+                    info = []
+                if stdout:
+                    for i in info:
+                        if i['Name'] == statcks_info['name']:
+                            public.ExecShell("docker-compose -p {} {} &> {}".format(i['Name'], status, self._log_path))
+                            break
+        else:
+            shell = "/usr/bin/docker-compose -f {compose_path} {status} &> {_log_path}".format(
+                compose_path="{}/data/compose/{}/docker-compose.yaml".format(
+                    public.get_panel_path(),
+                    public.md5(statcks_info['name'])),
+                status=status,
+                _log_path=self._log_path
+            )
+
+            a, e = public.ExecShell(shell)
+            if e:
+                return public.return_message(-1, 0,  public.lang("{}The project failed: {}",status_info[status], e))
 
     def kill(self, get):
         """
@@ -673,18 +755,19 @@ class main(dockerBase):
         @param get:
         @return:
         """
+        if not hasattr(get, "project_id"):
+            return public.return_message(-1, 0, public.lang("Missing parameter project_id!"))
+
         statcks_info = dp.sql("stacks").where("id=?", (get.project_id,)).find()
         if not statcks_info:
-            return public.returnMsg(False, "Project configuration not found!")
-        shell = "/usr/bin/docker-compose -f {} kill &> {}".format(
-            "{}/data/compose/{}/docker-compose.yaml".format(public.get_panel_path(), public.md5(statcks_info['name'])),
-            self._log_path
-        )
-        a, e = public.ExecShell(shell)
-        if e:
-            return public.returnMsg(False, "Stopping project failed: {}".format(e))
+            return public.return_message(-1, 0, public.lang("Project configuration not found!"))
+
+        if not hasattr(get, "status"):
+            return public.return_message(-1, 0, public.lang("The status parameter is missing!"))
+
+        self.__host_temp(statcks_info, get.status)
         dp.write_log("Stopping project [{}] succeeded".format(statcks_info['name']))
-        return public.returnMsg(True, "Setup successful!")
+        return public.return_message(0, 0, public.lang("Setup successful!"))
 
     def stop(self, get):
         """
@@ -694,19 +777,19 @@ class main(dockerBase):
         :param get:
         :return:
         """
+        if not hasattr(get, "project_id"):
+            return public.return_message(-1, 0, public.lang("Missing parameter project_id!"))
+
         statcks_info = dp.sql("stacks").where("id=?", (get.project_id,)).find()
         if not statcks_info:
-            return public.returnMsg(False, "Project configuration not found!")
+            return public.return_message(-1, 0, public.lang("Project configuration not found!"))
 
-        shell = "/usr/bin/docker-compose -f {} stop &> {}".format(
-            "{}/data/compose/{}/docker-compose.yaml".format(public.get_panel_path(), public.md5(statcks_info['name'])),
-            self._log_path
-        )
-        a, e = public.ExecShell(shell)
-        if e:
-            return public.returnMsg(False, "Stopping project failed: {}".format(e))
+        if not hasattr(get, "status"):
+            return public.return_message(-1, 0, public.lang("The status parameter is missing!"))
+
+        self.__host_temp(statcks_info, get.status)
         dp.write_log("Stopping project [{}] succeeded!".format(statcks_info['name']))
-        return public.returnMsg(True, "Setup successful!")
+        return public.return_message(0, 0, public.lang("Setup successful!"))
 
     def start(self, get):
         """
@@ -715,19 +798,19 @@ class main(dockerBase):
         :param get:
         :return:
         """
+        if not hasattr(get, "project_id"):
+            return public.return_message(-1, 0, public.lang("Missing parameter project_id!"))
+
         statcks_info = dp.sql("stacks").where("id=?", (get.project_id,)).find()
         if not statcks_info:
-            return public.returnMsg(False, "Project configuration not found!")
+            return public.return_message(-1, 0, public.lang("Project configuration not found!"))
 
-        shell = "/usr/bin/docker-compose -f {} start &> {}".format(
-            "{}/data/compose/{}/docker-compose.yaml".format(public.get_panel_path(), public.md5(statcks_info['name'])),
-            self._log_path
-        )
-        a, e = public.ExecShell(shell)
-        if e:
-            return public.returnMsg(False, "Failed to start project: {}".format(e))
+        if not hasattr(get, "status"):
+            return public.return_message(-1, 0, public.lang("The status parameter is missing!"))
+
+        self.__host_temp(statcks_info, get.status)
         dp.write_log("Start project [{}] successful!".format(statcks_info['name']))
-        return public.returnMsg(True, "Setup successful!")
+        return public.return_message(0, 0, public.lang("Setup successful!"))
 
     def restart(self, get):
         """
@@ -736,19 +819,19 @@ class main(dockerBase):
         :param get:
         :return:
         """
+        if not hasattr(get, "project_id"):
+            return public.return_message(-1, 0, public.lang("Missing parameter project_id!"))
+
         statcks_info = dp.sql("stacks").where("id=?", (get.project_id,)).find()
         if not statcks_info:
-            return public.returnMsg(False, "Project configuration not found!")
+            return public.return_message(-1, 0, public.lang("Project configuration not found!"))
 
-        shell = "/usr/bin/docker-compose -f {} restart &> {}".format(
-            "{}/data/compose/{}/docker-compose.yaml".format(public.get_panel_path(), public.md5(statcks_info['name'])),
-            self._log_path
-        )
-        a, e = public.ExecShell(shell)
-        if e:
-            return public.returnMsg(False, "Failed to restart project: {}".format(e))
+        if not hasattr(get, "status"):
+            return public.return_message(-1, 0, public.lang("The status parameter is missing!"))
+
+        self.__host_temp(statcks_info, get.status)
         dp.write_log("Restart project [{}] successfully!".format(statcks_info['name']))
-        return public.returnMsg(True, "Successfully set!")
+        return public.return_message(0, 0, public.lang("Successfully set!"))
 
     def pull(self, get):
         """
@@ -757,32 +840,43 @@ class main(dockerBase):
         :param get:
         :return:
         """
-        # 校验参数
-        try:
-            get.validate([
-                Param('template_id').Require().Integer(),
-            ], [
-                public.validate.trim_filter(),
-            ])
-        except Exception as ex:
-            public.print_log("error info: {}".format(ex))
-            return public.return_message(-1, 0, str(ex))
+        get.name = get.get("name", "")
+        get.url = get.get("url", "docker.io")
+        get.template_id = get.get("template_id", "")
+        if get.template_id == "":
+            return public.return_message(-1, 0, public.lang("Missing parameter template_id!"))
 
         statcks_info = dp.sql("templates").where("id=?", (get.template_id,)).find()
         if not statcks_info:
-            return public.return_message(0, 0, _("The template was not found!"))
+            return public.return_message(0, 0, public.lang("Didn't find the template!"))
+
+        cmd = "/usr/bin/docker-compose -f {} pull >> {} 2>&1".format(statcks_info['path'], self._log_path)
+        if get.name != "" and get.url != "docker.io":
+            from btdockerModelV2 import registryModel as dr
+            r_info = dr.main().registry_info(get)
+            r_info['username'] = public.aes_decrypt(r_info['username'], self.aes_key)
+            r_info['password'] = public.aes_decrypt(r_info['password'], self.aes_key)
+            login_result = dr.main().login(self._url, r_info['url'], r_info['username'], r_info['password'])
+            if not login_result["status"]:
+                return login_result
+
+            cmd = "docker login --username {} --password {} {} >> {} 2>&1 &&".format(
+                r_info['username'],
+                r_info['password'],
+                r_info['url'],
+                self._log_path
+            ) + cmd
 
         os.system(
-            "nohup /usr/bin/docker-compose -f {} pull >> {} 2>&1 "
-            "&& echo 'bt_successful' >> {} "
+            "echo > {};nohup {} && echo 'bt_successful' >> {} "
             "|| echo 'bt_failed' >> {} &".format(
-                statcks_info['path'],
+                self._log_path,
+                cmd,
                 self._log_path,
                 self._log_path,
-                self._log_path,
-            ))
+        ))
         dp.write_log("The image inside the template [{}] was pulled successfully  !".format(statcks_info['name']))
-        return public.return_message(0, 0, _("Pull successfully!"))
+        return public.return_message(0, 0, public.lang("Pull successfully!"))
 
     def pause(self, get):
         """
@@ -791,18 +885,18 @@ class main(dockerBase):
         :param get:
         :return:
         """
+        if not hasattr(get, "project_id"):
+            return public.return_message(-1, 0, public.lang("Missing parameter project_id!"))
+
         statcks_info = dp.sql("stacks").where("id=?", (get.project_id,)).find()
         if not statcks_info:
-            return public.returnMsg(False, "Project configuration not found!")
-        shell = "/usr/bin/docker-compose -f {} pause &> {}".format(
-            "{}/data/compose/{}/docker-compose.yaml".format(public.get_panel_path(), public.md5(statcks_info['name'])),
-            self._log_path
-        )
-        a, e = public.ExecShell(shell)
-        if e:
-            return public.returnMsg(False, "Failed to suspend project: {}".format(e))
+            return public.return_message(-1, 0, public.lang("Project configuration not found!"))
+        if not hasattr(get, "status"):
+            return public.return_message(-1, 0, public.lang("The status parameter is missing!"))
+
+        self.__host_temp(statcks_info, get.status)
         dp.write_log("Pause [{}] success!".format(statcks_info['name']))
-        return public.returnMsg(True, "Successfully set!")
+        return public.return_message(0, 0, public.lang("Successfully set!"))
 
     def unpause(self, get):
         """
@@ -811,18 +905,19 @@ class main(dockerBase):
         :param get:
         :return:
         """
+        if not hasattr(get, "project_id"):
+            return public.return_message(-1, 0, public.lang("Missing parameter project_id!"))
+
         statcks_info = dp.sql("stacks").where("id=?", (get.project_id,)).find()
         if not statcks_info:
-            return public.returnMsg(False, "Project configuration not found!")
-        shell = "/usr/bin/docker-compose -f {} unpause &> {}".format(
-            "{}/data/compose/{}/docker-compose.yaml".format(public.get_panel_path(), public.md5(statcks_info['name'])),
-            self._log_path
-        )
-        a, e = public.ExecShell(shell)
-        if e:
-            return public.returnMsg(False, "Failed to unpause project: {}".format(e))
+            return public.return_message(-1, 0, public.lang("Project configuration not found!"))
+
+        if not hasattr(get, "status"):
+            return public.return_message(-1, 0, public.lang("The status parameter is missing!"))
+
+        self.__host_temp(statcks_info, get.status)
         dp.write_log("Unpause [{}] success!".format(statcks_info['name']))
-        return public.returnMsg(True, "Successfully set!")
+        return public.return_message(0, 0, public.lang("Successfully set!"))
 
     def scan_compose_file(self, path, data):
         """
@@ -832,21 +927,28 @@ class main(dockerBase):
         :param get:
         :return:
         """
-        file_list = os.listdir(path)
-        for file in file_list:
-            current_path = os.path.join(path, file)
-            # 判断是否是文件夹
-            if os.path.isdir(current_path):
-                self.scan_compose_file(current_path, data)
-            else:
-                if file == "docker-compose.yaml" or file == "docker-compose.yam" or file == "docker-compose.yml":
-                    if "/www/server/panel/data/compose" in current_path:
-                        continue
-                    data.append(current_path)
-                if ".yaml" in file or ".yam" in file or ".yml" in file:
-                    if "/www/server/panel/data/compose" in current_path:
-                        continue
-                    data.append(current_path)
+        try:
+            if not os.path.isdir(path):
+                return data
+
+            file_list = os.listdir(path)
+            for file in file_list:
+                current_path = os.path.join(path, file)
+                # 判断是否是文件夹
+                if os.path.isdir(current_path):
+                    self.scan_compose_file(current_path, data)
+                else:
+                    if file == "docker-compose.yaml" or file == "docker-compose.yam" or file == "docker-compose.yml":
+                        if "/www/server/panel/data/compose" in current_path:
+                            continue
+                        data.append(current_path)
+                    if ".yaml" in file or ".yam" in file or ".yml" in file:
+                        if "/www/server/panel/data/compose" in current_path:
+                            continue
+                        data.append(current_path)
+        except:
+            pass
+
         return data
 
     def get_compose_project(self, get):
@@ -856,25 +958,18 @@ class main(dockerBase):
         :param get:
         :return:
         """
-        # 校验参数
-        try:
-            get.validate([
-                Param('path').Require().SafePath(),
-                Param('sub_dir').Require().Integer(),
-            ], [
-                public.validate.trim_filter(),
-            ])
-        except Exception as ex:
-            public.print_log("error info: {}".format(ex))
-            return public.return_message(-1, 0, str(ex))
-
+        get.exists(["path", "sub_dir"])
         data = list()
         suffix = ["yaml", "yam", "yml"]
         if get.path == "/":
-            return public.return_message(-1, 0,  _("Unable to scan the root directory"))
+            return public.return_message(-1, 0, public.lang("Unable to scan the root directory"))
 
         if get.path[-1] == "/":
             get.path = get.path[:-1]
+
+        if not os.path.exists(get.path):
+            return public.return_message(-1, 0, public.lang("The path does not exist!"))
+
         if str(get.sub_dir) == "1":
             res = self.scan_compose_file(get.path, data)
             if not res:
@@ -955,15 +1050,21 @@ class main(dockerBase):
             name = template['project_name']
             remark = template['remark']
             exists = self._template_list(get)
+
+            is_continue = False
             for i in exists:
-                if name == i['name']:
+                if name.strip() == i['name'].strip():
                     create_failed[name] = "Template already exists!"
-                    continue
+                    is_continue = True
+                    break
+
+            if is_continue: continue
+
             if not os.path.exists(path):
                 create_failed[name] = "This template was not found!"
                 continue
             check_res = self.check_conf(path)
-            if not check_res['status']:
+            if check_res['status'] == -1:
                 create_failed[name] = "Template validation failed, possibly malformed!"
                 continue
             pdata = {
@@ -981,24 +1082,14 @@ class main(dockerBase):
             else:
                 dp.write_log("Template added successfully from path [{}]!".format(i))
         if not create_failed and create_successfully:
-            # return {'status': True, 'msg': 'Template added successfully: [{}]'.format(','.join(create_successfully))}
             return public.return_message(0, 0,
-                                         'Template added successfully: [{}]'.format(','.join(create_successfully)))
+                                         public.lang("Template added successfully: [{}]", ','.join(create_successfully)))
         elif not create_successfully and create_failed:
-
-            # return {'status': False,
-            #         'msg': 'Failed to add template: template name already exists or is incorrectly formatted [{}],Use docker-compose -f [specify compose.yml file] config to check'
-            #         .format(','.join(create_failed))}
-
             return public.return_message(-1, 0,
-                                         'Failed to add template: template name already exists or is incorrectly formatted [{}],Use docker-compose -f [specify compose.yml file] config to check'
-                                         .format(','.join(create_failed)))
+                                         public.lang("Failed to add template: template name already exists or is incorrectly formatted [{}],Use docker-compose -f [specify compose.yml file] config to check", ','.join(create_failed)))
 
-        # return {'status': False, 'msg': 'These templates succeed: [{}]<br> These templates fail: the template name already exists or is incorrectly formatted [{}]'.format(
-        #     ','.join(create_successfully), ','.join(create_failed))}
         return public.return_message(-1, 0,
-                                     'These templates succeed: [{}]<br> These templates fail: the template name already exists or is incorrectly formatted [{}]'.format(
-                                         ','.join(create_successfully), ','.join(create_failed)))
+                                     public.lang('These templates succeed: [{}]<br> These templates fail: the template name already exists or is incorrectly formatted [{}]',','.join(create_successfully), ','.join(create_failed)))
 
     def get_pull_log(self, get):
         """
@@ -1037,8 +1128,8 @@ class main(dockerBase):
         # 删除旧的项目
         remove_result = self.remove(get)
         # if not remove_result['status']:
-        #     return public.return_message(-1, 0,  _("Fail to modify!"))
+        #     return public.return_message(-1, 0, public.lang("Fail to modify!"))
 
         # 创建新的项目
         self.create(get)
-        return public.return_message(0, 0, _("Modify successfully!"))
+        return public.return_message(0, 0, public.lang("Modify successfully!"))

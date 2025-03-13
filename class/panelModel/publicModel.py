@@ -36,7 +36,7 @@ class main(panelBase):
             res = cache.get(skey)
             if res: return res
 
-            res = public.httpPost('https://www.bt.cn/Api/getUpdateLogs?type=Linux',{})
+            res = public.httpPost('https://wafapi2.aapanel.com/Api/getUpdateLogs?type=Linux',{})
 
             start_index = res.find('(') + 1
             end_index = res.rfind(')')
@@ -80,8 +80,20 @@ class main(panelBase):
                 data['api'] = ''
         else:
             data['api'] = ''
-        return data
 
+
+        data['total'] = os.path.exists('/www/server/panel/plugin/total') or os.path.exists('/www/server/panel/plugin/monitor')
+        data['disk_usage'] = public.get_disk_usage(public.get_panel_path())
+        data['uid'] = ''
+        if os.path.exists('/www/server/panel/data/userInfo.json'):
+            res = public.readFile('/www/server/panel/data/userInfo.json')
+            if res:
+                try:
+                    res = json.loads(res)
+                    data['uid'] = res['uid']
+                except:
+                    pass
+        return data
     def get_pd(self, get):
         from BTPanel import cache
         tmp = -1
@@ -221,10 +233,10 @@ class main(panelBase):
         try:
             backup_path = get.backup_path.strip().rstrip("/")
         except AttributeError:
-            return public.returnMsg(False, "参数错误")
+            return public.returnMsg(False,  public.lang("The parameter is incorrect"))
 
         if not os.path.exists(backup_path):
-            return public.returnMsg(False, "指定目录不存在")
+            return public.returnMsg(False,  public.lang("The specified directory does not exist"))
 
         if backup_path[-1] == "/":
             backup_path = backup_path[:-1]
@@ -237,7 +249,7 @@ class main(panelBase):
         fs = files.files()
 
         if not fs.CheckDir(get.backup_path):
-            return public.returnMsg(False, '不能使用系统关键目录作为默认备份目录')
+            return public.returnMsg(False,  public.lang('You cannot use the system critical directory as the default backup directory'))
         if session is not None:
             session['config']['backup_path'] = os.path.join('/', backup_path)
         db_backup = backup_path + '/database'
@@ -259,16 +271,16 @@ class main(panelBase):
         public.WriteLog('TYPE_PANEL', 'PANEL_SET_SUCCESS', (get.backup_path,))
 
         public.restart_panel()
-        return public.returnMsg(True, "设置成功")
+        return public.returnMsg(True,  public.lang("The setup was successful"))
 
     def get_soft_status(self,get):
-        if not hasattr(get,'name'): return public.returnMsg(False,'参数错误')
+        if not hasattr(get,'name'): return public.returnMsg(False, public.lang('The parameter is incorrect'))
         name = get.name.strip()
         if name == 'sqlite':
-            return public.returnMsg(True,'符合！')
+            return public.returnMsg(True,'accordWith')
         if os.path.exists('/www/server/{}'.format(name)) and len(os.listdir('/www/server/{}'.format(name))) > 2:
-            return public.returnMsg(True,'符合！')
+            return public.returnMsg(True,'accordWith')
         if name == ['mysql','pgsql','sqlserver','mongodb','redis']:
             count = public.M('database_servers').where("LOWER(db_type)=LOWER(?)", (name,)).count()
-            if count > 0: return public.returnMsg(True,'符合！')
-        return public.returnMsg(False,'不符合！')
+            if count > 0: return public.returnMsg(True,'accordWith')
+        return public.returnMsg(False,'Not true')

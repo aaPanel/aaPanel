@@ -4,7 +4,7 @@
     "ver": "1",
     "used": true,
     "source": "system_disk",
-    "title": "首页磁盘告警",
+    "title": "Home disk alerts",
     "load_cls": {
       "load_type": "path",
       "cls_path": "mod.base.push_mod.system_push",
@@ -14,36 +14,36 @@
       "field": [
         {
           "attr": "project",
-          "name": "磁盘信息",
+          "name": "disk information",
           "type": "select",
           "items": [
           ]
         },
         {
           "attr": "cycle",
-          "name": "检测类型",
+          "name": "detection type",
           "type": "radio",
           "suffix": "",
           "default": 2,
           "items": [
             {
-              "title": "剩余容量",
+              "title": "Remaining capacity",
               "value": 1
             },
             {
-              "title": "占用百分比",
+              "title": "percentage occupied",
               "value": 2
             }
           ]
         },
         {
           "attr": "count",
-          "name": "占用率超过",
+          "name": "occupancy rate exceeds",
           "type": "number",
           "unit": "%",
-          "suffix": "后触发告警",
+          "suffix": "will trigger an alarm",
           "default": 80,
-          "err_msg_prefix": "磁盘阈值"
+          "err_msg_prefix": "disk threshold"
         }
       ],
       "sorted": [
@@ -64,13 +64,14 @@
       "count": 80
     },
     "send_type_list": [
-      "wx_account",
+
       "dingding",
       "feishu",
       "mail",
       "weixin",
       "webhook",
-      "sms"
+      "sms",
+      "tg"
     ],
     "unique": false
   },
@@ -79,7 +80,7 @@
     "ver": "1",
     "used": true,
     "source": "system_cpu",
-    "title": "首页CPU告警",
+    "title": "Home CPU alarms",
     "load_cls": {
       "load_type": "path",
       "cls_path": "mod.base.push_mod.system_push",
@@ -89,10 +90,10 @@
       "field": [
         {
           "attr": "cycle",
-          "name": "每",
+          "name": "every time",
           "type": "select",
-          "unit": "分钟",
-          "suffix": "内平均",
+          "unit": "minute(s)",
+          "suffix": "average  ",
           "width": "70px",
           "disabled": true,
           "default": 5,
@@ -113,10 +114,10 @@
         },
         {
           "attr": "count",
-          "name": "CPU占用超过",
+          "name": "CPU usage exceeded",
           "type": "number",
           "unit": "%",
-          "suffix": "后触发告警",
+          "suffix": "will trigger an alarm",
           "default": 80,
           "err_msg_prefix": "CPU"
         }
@@ -133,13 +134,14 @@
       "count": 80
     },
     "send_type_list": [
-      "wx_account",
+
       "dingding",
       "feishu",
       "mail",
       "weixin",
       "webhook",
-      "sms"
+      "sms",
+      "tg"
     ],
     "unique": true
   },
@@ -148,7 +150,7 @@
     "ver": "1",
     "used": true,
     "source": "system_load",
-    "title": "首页负载告警",
+    "title": "Home load alerts",
     "load_cls": {
       "load_type": "path",
       "cls_path": "mod.base.push_mod.system_push",
@@ -158,10 +160,10 @@
       "field": [
         {
           "attr": "cycle",
-          "name": "每",
+          "name": "every time",
           "type": "select",
-          "unit": "分钟",
-          "suffix": "内平均",
+          "unit": "minute(s)",
+          "suffix": "average  ",
           "default": 5,
           "width": "70px",
           "disabled": true,
@@ -182,12 +184,12 @@
         },
         {
           "attr": "count",
-          "name": "负载超过",
+          "name": " load over",
           "type": "number",
           "unit": "%",
-          "suffix": "后触发告警",
+          "suffix": "will trigger an alarm",
           "default": 80,
-          "err_msg_prefix": "负载"
+          "err_msg_prefix": "Load"
         }
       ],
       "sorted": [
@@ -202,12 +204,13 @@
       "count": 80
     },
     "send_type_list": [
-      "wx_account",
+
       "dingding",
       "feishu",
       "mail",
       "weixin",
       "webhook",
+      "tg",
       "sms"
     ],
     "unique": true
@@ -217,7 +220,7 @@
     "ver": "1",
     "used": true,
     "source": "system_mem",
-    "title": "首页内存告警",
+    "title": "Home memory alarms",
     "load_cls": {
       "load_type": "path",
       "cls_path": "mod.base.push_mod.system_push",
@@ -227,10 +230,10 @@
       "field": [
         {
           "attr": "cycle",
-          "name": "每",
+          "name": "every time",
           "type": "select",
-          "unit": "分钟",
-          "suffix": "内平均",
+          "unit": "minute(s)",
+          "suffix": "average  ",
           "width": "70px",
           "disabled": true,
           "default": 5,
@@ -251,12 +254,12 @@
         },
         {
           "attr": "count",
-          "name": "内存使用率超过",
+          "name": "Memory usage is more than",
           "type": "number",
           "unit": "%",
-          "suffix": "后触发告警",
+          "suffix": "will trigger an alarm",
           "default": 80,
-          "err_msg_prefix": "内存"
+          "err_msg_prefix": "Memory"
         }
       ],
       "sorted": [
@@ -271,12 +274,13 @@
       "count": 80
     },
     "send_type_list": [
-      "wx_account",
+
       "dingding",
       "feishu",
       "mail",
       "weixin",
       "webhook",
+      "tg",
       "sms"
     ],
     "unique": true

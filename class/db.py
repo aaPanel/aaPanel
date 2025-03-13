@@ -27,6 +27,7 @@ class Sql():
     __OPT_FIELD  = "*"             # field条件
     __OPT_PARAM  = ()              # where值
     __LOCK = '/dev/shm/sqlite_lock.pl'
+    ERR_INFO = None
 
     def __init__(self):
         self.__DB_FILE = 'data/default.db'
@@ -40,9 +41,11 @@ class Sql():
     def __GetConn(self):
         #取数据库对象
         try:
-            if self.__DB_CONN == None:
+            if self.__DB_CONN is None:
                 self.__DB_CONN = sqlite3.connect(self.__DB_FILE)
                 self.__DB_CONN.text_factory = str
+                # # 启用 WAL 模式
+                # self.__DB_CONN.execute('PRAGMA journal_mode=WAL;')
         except Exception as ex:
             return "error: " + str(ex)
 
@@ -107,6 +110,8 @@ class Sql():
 
 
     def select(self):
+        self.ERR_INFO = None
+
         #查询数据集
         self.__GetConn()
         try:
@@ -136,6 +141,8 @@ class Sql():
             self._close()
             return data
         except Exception as ex:
+            ex_str = str(ex)
+            self.ERR_INFO = ex_str
             return "error: " + str(ex)
 
     def get(self):
@@ -179,11 +186,15 @@ class Sql():
     def find(self):
         #取一行数据
         try:
+            self.ERR_INFO = None
             result = self.limit("1").select()
             if len(result) == 1:
                 return result[0]
             return result
-        except:return None
+        except Exception as ex:
+            self.ERR_INFO = str(ex)
+
+            return None
 
 
     def count(self):
@@ -212,7 +223,6 @@ class Sql():
             self._close()
             self.__DB_CONN.commit()
             self.rm_lock()
-
             return id
         except Exception as ex:
             return "error: " + str(ex)
@@ -338,6 +348,7 @@ class Sql():
         #     os.remove(self.__LOCK)
 
     def query(self,sql,param = ()):
+        self.ERR_INFO = None
         #执行SQL语句返回数据集
         self.__GetConn()
         try:
@@ -346,6 +357,7 @@ class Sql():
             data = list(map(list,result))
             return data
         except Exception as ex:
+            self.ERR_INFO = str(ex)
             return "error: " + str(ex)
 
     def create(self,name):

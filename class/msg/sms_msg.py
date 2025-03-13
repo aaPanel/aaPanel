@@ -55,7 +55,7 @@ class sms_msg:
         data['date'] = '2022-08-02'
         data['author'] = '宝塔'
         data['title'] = '短信'
-        data['help'] = 'http://www.bt.cn'
+        data['help'] = 'http://www.aapanel.com'
         return data
 
     def get_config(self,get):
@@ -123,11 +123,11 @@ class sms_msg:
 
         if 'login' in get:
             is_login = int(get['login'])
-            if is_login and not self.__check_auth_path(): return public.returnMsg(False,'安全入口过于简单，存在安全隐患. <br>1、长度不得少于9位<br>2、英文+数字组合.')
+            if is_login and not self.__check_auth_path(): return public.returnMsg(False, public.lang("Security entry complexity is not enough <br>1, length must not be less than 9 <br>2, English + digital combination."))
             data['login'] = is_login
 
         public.writeFile(self.conf_path,json.dumps(data));
-        return public.returnMsg(True, '操作成功!')
+        return public.returnMsg(True, public.lang("operate successfully!"))
 
     """
     @发送短信

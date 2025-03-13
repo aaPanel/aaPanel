@@ -46,11 +46,12 @@ class wx_account_msg:
         data['date'] = '2022-08-15'
         data['author'] = '宝塔'
         data['title'] = '微信公众号'
-        data['help'] = 'http://www.bt.cn'
+        data['help'] = 'http://www.aapanel.com'
         return data
 
     def get_local_ip(self):
         '''获取内网IP'''
+
         import socket
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -113,15 +114,15 @@ class wx_account_msg:
         if 'default' in get and get['default']:
             public.writeFile(self.__default_pl, self.__module_name)
 
-        return public.returnMsg(True, '设置成功')
+        return public.returnMsg(True, public.lang("The setup was successful"))
 
     def get_web_info(self,get):
-        if self.user_info is None: return public.returnMsg(False, '未获取到用户绑定的信息')
-        url = "https://www.bt.cn/api/v2/user/wx_web/info"
+        if self.user_info is None: return public.returnMsg(False, public.lang("The user binding information was not obtained"))
+        url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/info"
         data = {
             "uid": self.user_info["uid"],
-            "access_key": self.user_info["access_key"],
-            "serverid":self.user_info["serverid"]
+            "access_key": 'B' * 32,
+            "serverid":self.user_info["server_id"]
         }
         try:
 
@@ -134,16 +135,16 @@ class wx_account_msg:
                 public.WriteFile(self.conf_path, json.dumps(datas))
                 return public.returnMsg(False, datas)
         except:
-            public.WriteFile(self.conf_path, json.dumps({"success":False,"res":"链接云端失败,请检查网络"}))
-            return public.returnMsg(False,"链接云端失败,请检查网络")
+            public.WriteFile(self.conf_path, json.dumps({"success":False,"res":"The link to the cloud failed, please check the network,请检查网络"}))
+            return public.returnMsg(False, public.lang("The link to the cloud failed, please check the network"))
 
     def get_web_info2(self):
-        if self.user_info is None: return public.returnMsg(False, '未获取到用户绑定的信息')
-        url = "https://www.bt.cn/api/v2/user/wx_web/info"
+        if self.user_info is None: return public.returnMsg(False, public.lang("The user binding information was not obtained"))
+        url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/info"
         data = {
             "uid": self.user_info["uid"],
-            "access_key": self.user_info["access_key"],
-            "serverid":self.user_info["serverid"]
+            "access_key": 'B' * 32,
+            "serverid":self.user_info["server_id"]
         }
         try:
             datas = json.loads(public.httpPost(url,data))
@@ -154,16 +155,16 @@ class wx_account_msg:
                 public.WriteFile(self.conf_path, json.dumps(datas))
                 return public.returnMsg(False, datas)
         except:
-            public.WriteFile(self.conf_path, json.dumps({"success":False,"res":"链接云端失败"}))
-            return public.returnMsg(False,"链接云端失败")
+            public.WriteFile(self.conf_path, json.dumps({"success":False,"res":"The link to the cloud failed, please check the network"}))
+            return public.returnMsg(False, public.lang("The link to the cloud failed, please check the network"))
 
     def get_auth_url(self,get):
-        if self.user_info is None: return public.returnMsg(False, '未获取到用户绑定的信息')
-        url = "https://www.bt.cn/api/v2/user/wx_web/get_auth_url"
+        if self.user_info is None: return public.returnMsg(False, public.lang("The user binding information was not obtained"))
+        url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/get_auth_url"
         data = {
             "uid": self.user_info["uid"],
-            "access_key": self.user_info["access_key"],
-            "serverid":self.user_info["serverid"]
+            "access_key": 'B' * 32,
+            "serverid":self.user_info["server_id"]
         }
         try:
             datas = json.loads(public.httpPost(url,data))
@@ -172,7 +173,7 @@ class wx_account_msg:
             else:
                 return public.returnMsg(False, datas)
         except:
-            return public.returnMsg(False,"链接云端失败")
+            return public.returnMsg(False, public.lang("The link to the cloud failed, please check the network"))
 
 
     def get_send_msg(self,msg):
@@ -216,10 +217,10 @@ class wx_account_msg:
         """
 
         if self.user_info is None:
-            return public.returnMsg(False,'未获取到用户信息')
+            return public.returnMsg(False, public.lang("No user information was obtained"))
 
         msg,title = self.get_send_msg(msg)
-        url="https://www.bt.cn/api/v2/user/wx_web/send_template_msg_v2"
+        url="https://wafapi2.aapanel.com/api/v2/user/wx_web/send_template_msg_v2"
         datassss = {
             "first": {
                 "value": "堡塔主机告警",
@@ -265,13 +266,13 @@ class wx_account_msg:
                 public.write_push_log(self.__module_name,title,res)
             except:pass
 
-            result = public.returnMsg(True,'发送完成,发送成功{},发送失败{}.'.format(success,error))
+            result = public.returnMsg(True,'Send complete.Send success :{}, send failure :{}',success,error)
             result['success'] = success
             result['error'] = error
             return result
         except:
             print(public.get_error_info())
-            return public.returnMsg(False,'微信消息发送失败。 --> {}'.format(public.get_error_info()))
+            return public.returnMsg(False, public.lang("WeChat message delivery failed. --> {}", public.get_error_info()))
 
     def push_data(self,data):
         return self.send_msg(data['msg'])

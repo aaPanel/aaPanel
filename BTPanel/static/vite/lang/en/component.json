@@ -1,0 +1,168 @@
+{
+	"Component": {
+		"Batch": {
+			"index_1": "Please choose",
+			"index_2": "(Selected {0})",
+			"index_3": "Batching {0}, current progress:"
+		},
+		"Auth": {
+			"index_1": "FREE",
+			"index_2": "Renewal",
+			"index_3": "Buy now",
+			"index_4": "Expire on: ",
+			"index_5": "Upgrade now",
+			"index_6": "Lifetime"
+		},
+		"Feedback": {
+			"index_7": "Feedback",
+			"index_1": "aaPanel demand feedback collection",
+			"index_2": "If you encounter any problems or imperfect functions during use, please describe",
+			"index_3": "your problems or needs to us in detail, we will try our best to solve or improve for",
+			"index_4": "We pay special attention to your requirements feedback, and we conduct regular weekly requirements reviews. I hope I can help you better",
+			"index_5": "Please fill in the feedback",
+			"index_6": "Thank you for your participation!"
+		},
+		"Coupon": {
+			"index_1": "Get coupons for a limited time",
+			"index_2": "OFF",
+			"index_3": "Valid for ",
+			"index_4": "Coupon",
+			"index_5": "Get it now",
+			"index_6": "No more reminders for today",
+			"index_7": "No reminders in the past 7 days",
+			"index_8": "Never remind you forever",
+			"index_9": "{0}, Are you sure?",
+			"index_10": "End at ",
+			"index_11": "Get ${0} coupon",
+			"index_12": "{0} coupons",
+			"index_13": "Choose time without notice"
+		},
+		"Pay": {
+			"index_1": "PRO",
+			"index_2": "Recommended",
+			"index_3": "Pro Feature",
+			"index_4": "Plug-in description",
+			"index_5": "Feature contrast",
+			"index_6": "Save more",
+			"index_7": "Linux Pro Edition is available for free use this plugin and all other pro features",
+			"index_8": "Questions? Email us anytime: {0}",
+			"index_9": "Choose your plan",
+			"index_10": "Most popular",
+			"index_11": "Number of license",
+			"index_12": "Loading, please wait...",
+			"index_13": "{0} off",
+			"index_14": "{0} {1}",
+			"index_15": "{0} {1}",
+			"index_16": "OP: {0}",
+			"index_17": "Plug-in only",
+			"index_18": "Coupon({0})",
+			"index_19": "${0} OFF of {1} payment",
+			"index_20": "No preferential coupon",
+			"index_21": "Voucher",
+			"index_22": "License",
+			"index_23": "Account: ",
+			"index_24": "Change",
+			"index_25": "Total: ",
+			"index_26": "Stripe Pay",
+			"index_27": "If {0} fails to pay, you can try using ",
+			"index_28": "Payment order failed, please contact administrator!",
+			"index_29": "Subscription: ",
+			"index_30": "* When the license expires, it will automatically renew",
+			"index_31": "* Checking the subscription, you cannot pay in local currency",
+			"index_32": "Local Currency: ",
+			"index_33": "* Pay with your local payment method and currency",
+			"index_34": "License information",
+			"index_35": "No license",
+			"index_36": "License",
+			"index_37": "Vouchers",
+			"index_38": "No vouchers",
+			"index_39": "Use",
+			"index_40": "Expires after",
+			"index_41": "Please apply for SSL before purchasing!",
+			"index_42": "Turn on SSL",
+			"index_43": "Limited Time Offer: ",
+			"index_44": "Save up to ${0}",
+			"index_45": "Other Payment",
+			"index_46": "Automatically convert payment currency based on your location",
+			"index_47": "Pay Now"
+		},
+		"BindAccount": {
+			"index_1": "Bind aaPanel account",
+			"index_2": "No account, go to register",
+			"index_3": "Log in",
+			"index_4": "Please enter your email address",
+			"index_5": "Please enter your password",
+			"index_6": "Bind aaPanel account",
+			"index_7": "Your Email address",
+			"index_8": "Your Password"
+		},
+		"Logs": {
+			"index_1": "None logs"
+		},
+		"SelectPath": {
+			"index_1": "Return",
+			"index_2": "Current path",
+			"index_3": "File name",
+			"index_4": "Modification time",
+			"index_5": "Permission",
+			"index_6": "Owner",
+			"index_7": "Select directory"
+		},
+		"Editor": {
+			"index_1": "Tips：Ctrl+F Search keywords，Ctrl+S Save，Ctrl+H Search and replace"
+		},
+		"Quota": {
+			"index_1": "Quota",
+			"index_2": "Not set",
+			"index_3": "Current used capacity: {0}",
+			"index_4": "Click Modify Capacity Quota",
+			"index_5": "{1} Set new quota [{0}]",
+			"index_6": "Current used capacity",
+			"index_7": "Current capacity quota",
+			"index_8": "Reminder: This feature is exclusive to the pro edition",
+			"index_9": "Requires an XFS filesystem and includes the [prjquota] parameter to use",
+			"index_10": "Example of fstab: /dev/vdc1 /data xfs defaults, prjquota 0 0",
+			"index_11": "Quota: To cancel quota, set to \"0\"",
+			"index_12": "Current capacity quota: {0}"
+		},
+		"Terminal": {
+			"index_1": "The connection has been disconnected, pressing enter will attempt to reconnect!",
+			"index_2": "Trying to reconnect!"
+		},
+		"Upload": {
+			"index_1": "Select file",
+			"index_2": "Not selected"
+		},
+		"UploadFile": {
+			"index_1": "Click or drag the file to the area",
+			"index_2": "Only support {0} file format import",
+			"index_3": "File name",
+			"index_4": "Size",
+			"index_5": "Status",
+			"index_6": "Select file",
+			"index_7": "The file [{0}] size cannot exceed {1}M",
+			"index_8": "Waiting for upload",
+			"index_9": "Upload success",
+			"index_10": "Please select the file to upload"
+		},
+		"FormMore": {
+			"index_1": "More config, click to view"
+		},
+		"Confirm": {
+			"index_1": "If you confirm the operation, enter it manually \"{text_}\"",
+			"index_2": "Input error, please try again",
+			"index_3": "{0} has been completed, total {1} tasks, {2} successes, {3} failures",
+			"index_4": "Result: ",
+			"index_5": "Result is incorrect, please try again"
+		},
+		"SoftState": {
+			"index_1": "Are you sure you have to {0} the {1} service and continue?"
+		},
+		"Api": {
+			"index_1": "Loading, please wait...",
+			"index_2": "Binding, please wait...",
+			"index_3": "Submit feedback, please wait..",
+			"index_4": "Uploading file, please wait..."
+		}
+	}
+}

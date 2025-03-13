@@ -23,9 +23,12 @@ class panelMysql:
         if self.__DB_NET: return True
         try:
             myconf = public.readFile('/etc/my.cnf')
-            socket_re = re.search(r"socket\s*=\s*(.+)",myconf)
-            if socket_re:
-                socket = socket_re.groups()[0]
+            if myconf:
+                socket_re = re.search(r"socket\s*=\s*(.+)",myconf)
+                if socket_re:
+                    socket = socket_re.groups()[0]
+                else:
+                    socket = '/tmp/mysql.sock'
             else:
                 socket = '/tmp/mysql.sock'
 

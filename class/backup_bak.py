@@ -239,33 +239,33 @@ class backup_bak:
 
     #backup_database
     def backup_database(self,get):
-        if not public.M('databases').where("name=?",(get.name,)).count():return public.returnMsg(False,'The database does not exist')
+        if not public.M('databases').where("name=?",(get.name,)).count():return public.returnMsg(False, public.lang("The database does not exist"))
         id=public.M('databases').where("name=?", (get.name,)).getField('id')
-        if not id:return public.returnMsg(False,'The database does not exist')
+        if not id:return public.returnMsg(False, public.lang("The database does not exist"))
         if os.path.exists(self._chek_site_file):
-            return public.returnMsg(False, 'A backup task already exists in this time period. It is recommended that you choose another time period')
+            return public.returnMsg(False, public.lang("A backup task already exists in this time period. It is recommended that you choose another time period"))
         public.ExecShell( python_bin + ' /www/server/panel/class/backup_bak.py database %s &'%id)
-        return public.returnMsg(True,'OK')
+        return public.returnMsg(True, public.lang("OK"))
 
     # backup_database
     def backup_site(self, get):
-        if not public.M('sites').where("name=?", (get.name,)).count(): return public.returnMsg(False, "Website does not exist")
+        if not public.M('sites').where("name=?", (get.name,)).count(): return public.returnMsg(False, public.lang("Website does not exist"))
         id = public.M('sites').where('name=?',(get.name,)).getField('id')
-        if not id:return public.returnMsg(False, "Website does not exist")
+        if not id:return public.returnMsg(False, public.lang("Website does not exist"))
 
         #监测是否存在任务
         if os.path.exists(self._chek_site_file):
-            return public.returnMsg(False, 'A backup task already exists in this time period. It is recommended that you choose another time period')
+            return public.returnMsg(False, public.lang("A backup task already exists in this time period. It is recommended that you choose another time period"))
 
 
         public.ExecShell(python_bin+ ' /www/server/panel/class/backup_bak.py sites %s &' % id)
-        return public.returnMsg(True, 'OK')
+        return public.returnMsg(True, public.lang("OK"))
 
     # backup_path
     def backup_path_data(self, get):
-        if not os.path.exists(get.path):return public.returnMsg(False, "Directory does not exist")
+        if not os.path.exists(get.path):return public.returnMsg(False, public.lang("Directory does not exist"))
         public.ExecShell(python_bin+ ' /www/server/panel/class/backup_bak.py path %s &' % get.path)
-        return public.returnMsg(True, 'OK')
+        return public.returnMsg(True, public.lang("OK"))
 
     #检测数据库执行错误
     def IsSqlError(self,mysqlMsg):
@@ -298,7 +298,7 @@ class backup_bak:
             ret['path'] = False
             ret['chekc']=False
             self.set_site_data(ret)
-            return public.returnMsg(False, 'The database does not exist')
+            return public.returnMsg(False, public.lang("The database does not exist"))
         id=int(id)
         # 添加到chekc_database 中
         ret={}
@@ -326,7 +326,7 @@ class backup_bak:
             ret['path'] = False
             ret['chekc']=False
             self.set_path_data(ret)
-            return public.returnMsg(False, "Directory does not exist")
+            return public.returnMsg(False, public.lang("Directory does not exist"))
         # 添加到chekc_database 中
         ret={}
         ret['id']=id
@@ -350,7 +350,7 @@ class backup_bak:
             ret['path'] = False
             ret['chekc']=False
             self.set_site_data(ret)
-            return public.returnMsg(False, "Site does not exist")
+            return public.returnMsg(False, public.lang("Site does not exist"))
         id=int(id)
         # 添加到chekc_database 中
         ret={}
@@ -383,7 +383,7 @@ class backup_bak:
         backupName = '/www/server/panel/BTPanel/static'+ '/database/' + fileName
         public.ExecShell("/www/server/mysql/bin/mysqldump --default-character-set=" + public.get_database_character(
             name) + " --force --opt \"" + name + "\" | gzip > " + backupName)
-        if not os.path.exists(backupName): return public.returnMsg(False, 'BACKUP_ERROR')
+        if not os.path.exists(backupName): return public.returnMsg(False, public.lang("Backup error"))
         self.mypass(False, root)
         sql = public.M('backup')
         addTime = time.strftime('%Y-%m-%d %X', time.localtime())
@@ -429,7 +429,7 @@ class backup_bak:
             if int(i['id'])==int(id):
                 return public.returnMsg(True, i)
         else:
-            return public.returnMsg(False,'False')
+            return public.returnMsg(False, public.lang("False"))
 
     #查看网站备份进度
     def get_site_progress(self,get):
@@ -438,7 +438,7 @@ class backup_bak:
             if int(i['id']) == int(id):
                 return public.returnMsg(True, i)
         else:
-            return public.returnMsg(False, 'False')
+            return public.returnMsg(False, public.lang("False"))
 
     #查看网站备份进度
     def get_path_progress(self,get):
@@ -447,7 +447,7 @@ class backup_bak:
             if i['id'] == id:
                 return public.returnMsg(True, i)
         else:
-            return public.returnMsg(False, 'False')
+            return public.returnMsg(False, public.lang("False"))
 
     ###########文件下载
     # 判断是否在_check_database_data 中
@@ -518,16 +518,16 @@ class backup_bak:
             if i['id'] == id and i['type']==type:
                 return public.returnMsg(True, i)
         else:
-            return public.returnMsg(False, 'False')
+            return public.returnMsg(False, public.lang("False"))
 
     # backup_database
     def backup_site_all(self, get):
         #监测是否存在任务
         if os.path.exists(self._chek_site_file):
-            return public.returnMsg(False, 'A backup task already exists in this time period. It is recommended that you choose another time period')
+            return public.returnMsg(False, public.lang("A backup task already exists in this time period. It is recommended that you choose another time period"))
 
         public.ExecShell(python_bin+ ' /www/server/panel/class/backup_bak.py sites_ALL 11 &')
-        return public.returnMsg(True, 'OK')
+        return public.returnMsg(True, public.lang("OK"))
 
     def set_backup_all(self):
         data = public.M('sites').field('id,name,path,status,ps,addtime,edate').select()
@@ -561,9 +561,9 @@ class backup_bak:
     # backup_database
     def backup_date_all(self, get):
         if os.path.exists(self._chek_site_file):
-            return public.returnMsg(False, 'A backup task already exists in this time period. It is recommended that you choose another time period')
+            return public.returnMsg(False, public.lang("A backup task already exists in this time period. It is recommended that you choose another time period"))
         public.ExecShell(python_bin+ ' /www/server/panel/class/backup_bak.py database_ALL 11 &')
-        return public.returnMsg(True, 'OK')
+        return public.returnMsg(True, public.lang("OK"))
 
     def backup_all_database(self):
         data = public.M('databases').field('id,name,username,password,accept,ps,addtime').select()

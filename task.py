@@ -12,21 +12,34 @@
 # 计划任务
 # ------------------------------
 
+# import tracemalloc
+# import objgraph
 import sys
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta,timezone
 from json import dumps, loads
-from psutil import Process, pids, cpu_count, cpu_percent, net_io_counters, disk_io_counters, virtual_memory
+from psutil import Process, pids, cpu_count, cpu_percent, net_io_counters, disk_io_counters, virtual_memory, pids, pid_exists, NoSuchProcess, AccessDenied, ZombieProcess
 os.environ['BT_TASK'] = '1'
 base_path = "/www/server/panel"
 sys.path.insert(0, "/www/server/panel/class/")
+if os.path.exists("/www/server/panel/plugin/mail_sys"):
+    sys.path.insert(1, "/www/server/panel/plugin/mail_sys")
 import time
 import public
 import db
+import json
 import threading
 import panelTask
 import process_task
+
+from public.hook_import import hook_import
+hook_import()
+
+from power_mta.maillog_stat import maillog_event
+from power_mta.automations import schedule_automations_forever
+
+
 task_obj = panelTask.bt_task()
 task_obj.not_web = True
 global pre, timeoutCount, logPath, isTask, oldEdate, isCheck
@@ -38,6 +51,40 @@ logPath = '/tmp/panelExec.log'
 isTask = '/tmp/panelTask.pl'
 python_bin = None
 thread_dict = {}
+
+
+
+# def log_malloc():
+#     snapshot = tracemalloc.take_snapshot()
+#     top_stats = snapshot.statistics('lineno')
+#
+#     s = 'TOP 50 difference (traced_memory: {} tracemalloc_memory: {})\n'.format(tracemalloc.get_traced_memory(), tracemalloc.get_tracemalloc_memory())
+#     for stat in top_stats[:50]:
+#         s += '{}\n'.format(stat)
+#
+#     with open('{}/logs/malloc.log'.format(public.get_panel_path()), 'a') as fp:
+#         fp.write('[{}]\n'.format(time.strftime('%Y-%m-%d %X')))
+#         fp.write('{}\n'.format(s))
+#
+#
+# def objgraph_log():
+#     with open('{}/logs/objgraph.log'.format(public.get_panel_path()), 'a') as fp:
+#         fp.write('[{}]\n'.format(time.strftime('%Y-%m-%d %X')))
+#         fp.write('-------------------- SHOW GROWTH --------------------\n')
+#         objgraph.show_growth(limit=50, file=fp)
+#         fp.write('\n\n')
+#
+#         fp.write('-------------------- SHOW MOST COMMON TYPES --------------------\n')
+#         objgraph.show_most_common_types(limit=50, file=fp)
+#         fp.write('\n\n')
+#
+#
+# def print_malloc_thread():
+#     time.sleep(60)
+#     log_malloc()
+#     objgraph_log()
+#     print_malloc_thread()
+
 
 def get_python_bin():
     global python_bin
@@ -140,6 +187,7 @@ def startTask():
     global isTask,logPath,thread_dict
     tip_file = '/dev/shm/.panelTask.pl'
     n = 0
+    tick = 60
     while 1:
         try:
             if os.path.exists(isTask):
@@ -169,7 +217,7 @@ def startTask():
 
             # 线程检查
             n+=1
-            if n > 60:
+            if n > tick:
                 run_thread()
                 n = 0
         except:
@@ -594,7 +642,7 @@ def check_panel_ssl():
         public.writeFile("/tmp/panelSSL.pl", str(e), "a+")
 
 # 面板进程守护
-def daemon_panel():
+def daemon_panel11():
     cycle = 10
     panel_pid_file = "{}/logs/panel.pid".format(public.get_panel_path())
     while 1:
@@ -607,21 +655,106 @@ def daemon_panel():
         # 读取pid文件
         panel_pid = public.readFile(panel_pid_file)
         if not panel_pid:
+            logging.info("not pid -- {}".format(panel_pid_file))
             service_panel('start')
             continue
 
         # 检查进程是否存在
         comm_file = "/proc/{}/comm".format(panel_pid)
         if not os.path.exists(comm_file):
+            logging.info("not comm_file-- {}".format(comm_file))
             service_panel('start')
             continue
 
         # 是否为面板进程
         comm = public.readFile(comm_file)
         if comm.find('BT-Panel') == -1:
+            logging.info("not BT-Panel-- {}".format(comm))
             service_panel('start')
             continue
 
+        # # 是否为面板进程
+        # with open(comm_file, 'r') as f:
+        #     comm = f.read()
+        #     if comm.find('BT-Panel') == -1:
+        #         logging.info("3 not BT-Panel-- {}".format(comm))
+        #         service_panel('start')
+        #         continue
+
+
+# 查找面板进程并返回PID
+def find_panel_pid():
+    for pid in pids():
+        try:
+            p = Process(pid)
+            if 'BT-Panel' in p.name():  # 假设进程名包含 'BT-Panel'
+                return pid
+        except (NoSuchProcess, AccessDenied, ZombieProcess):
+            continue
+    return None
+
+# 更新PID文件
+def update_pid_file(pid):
+    pid_file = "{}/logs/panel.pid".format(public.get_panel_path())
+    try:
+        with open(pid_file, 'w') as f:
+            f.write(str(pid))
+        logging.info(f'Updated panel PID file with PID {pid}')
+    except Exception as e:
+        logging.error(f'Error writing to PID file: {e}')
+
+
+def daemon_panel():
+    cycle = 10
+    panel_pid_file = "{}/logs/panel.pid".format(public.get_panel_path())
+
+    while True:
+        time.sleep(cycle)
+
+        # 检查PID文件是否存在
+        if not os.path.exists(panel_pid_file):
+            logging.info(f'{panel_pid_file} not found, starting panel service...')
+            continue
+        
+        panel_pid=""
+        try:
+        # 读取PID文件
+            with open(panel_pid_file, 'r') as file:
+                panel_pid = file.read()
+        except Exception as e:
+            service_panel('start')
+            continue
+        if not panel_pid:
+            logging.info(f'PID is empty in {panel_pid_file}, starting panel service...')
+            service_panel('start')
+            continue
+        panel_pid = panel_pid.strip()
+        # 检查PID对应的进程是否存在
+        if not pid_exists(int(panel_pid)):
+            logging.info(f'PID {panel_pid} not found, attempting to find running panel process...')
+            panel_pid = find_panel_pid()
+
+            if panel_pid:
+                # 更新PID文件
+                update_pid_file(panel_pid)
+            else:
+                logging.info('No panel process found, starting service...')
+                service_panel('start')
+
+        else:
+            # 检查进程是否是面板进程
+            comm_file = f"/proc/{panel_pid}/comm"
+            if os.path.exists(comm_file):
+                with open(comm_file, 'r') as file:
+                    comm = file.read()
+                if not comm or comm.find("BT-Panel") == -1:
+                    logging.info(f'Process {panel_pid} is not a BT-Panel process,comm-{comm} commtype-{type(comm)}')
+                    service_panel('start')
+                    continue
+
+            else:
+                logging.info(f'comm file not found for PID {panel_pid}, restarting service...')
+                service_panel('start')
 
 
 
@@ -803,13 +936,34 @@ def process_task_thread():
     net_task_obj = process_task.process_network_total()
     net_task_obj.start()
 
+# 检测面板授权
+def check_panel_auth():
+    while True:
+        pro_file='/www/server/panel/data/panel_pro.pl'
+        update_file='/www/server/panel/data/now_update_pro.pl'
+        if os.path.exists(pro_file):
+            python_bin = get_python_bin()
+            from BTPanel import cache
+            if cache: 
+                key='pro_check_sdfjslk'
+                res = cache.get(key)
+            if os.path.exists(update_file) or res is None:
+                os.system('nohup {} /www/server/panel/script/check_auth.py > /dev/null 2>&1 &'.format(python_bin))
+                if cache: 
+                    cache.set(key, 'sddsf', 3600)
+        if os.path.exists(update_file):os.remove(update_file)
+        time.sleep(2)
+
 def count_ssh_logs():
     '''
         @name 统计SSH登录日志
         @return None
     '''
     if os.path.exists("/etc/debian_version"):
-        version = public.readFile('/etc/debian_version').strip()
+        version = public.readFile('/etc/debian_version')
+        if not version:
+            return
+        version = version.strip()
         if 'bookworm' in version or 'jammy' in version or 'impish' in version:
             version = 12
         else:
@@ -907,6 +1061,8 @@ def count_ssh_logs():
                         'today_success': 0
                     }]))
                 time.sleep(86400)
+        else:
+            time.sleep(86400)
 
 
 def parse_journal_disk_usage(output):
@@ -938,6 +1094,544 @@ def parse_journal_disk_usage(output):
         total_bytes = value * unit_value
     return total_bytes
 
+def update_vulnerabilities():
+    if "/www/server/panel/class_v2/wp_toolkit/" not in sys.path:
+        sys.path.insert(1, "/www/server/panel/class_v2/wp_toolkit/")
+    import totle_db
+    import requests, json
+    requests.packages.urllib3.disable_warnings()
+
+    def auto_scan():
+        '''
+            @name 自动扫描
+            @msg 一天一次
+        :return:
+        '''
+        path_time = "/www/server/panel/data/auto_scan.pl"
+        if not os.path.exists(path_time):
+            public.writeFile(path_time, json.dumps({"time": int(time.time())}))
+            share_ip_info = {"time": 0}
+        else:
+            share_ip_info = json.loads(public.readFile(path_time))
+        if (int(time.time()) - share_ip_info["time"]) < 86400:
+            return public.returnMsg(False, "未达到时间")
+        share_ip_info["time"] = int(time.time())
+        public.writeFile(path_time, json.dumps(share_ip_info))
+        import wordpress_scan
+        wordpress_scan.wordpress_scan().auto_scan()
+
+    def M(table, db="wordpress_vulnerabilities"):
+        '''
+            @name 获取数据库对象
+            @param table 表名
+            @param db 数据库名
+        '''
+        with totle_db.Sql(db) as sql:
+            return sql.table(table)
+
+    def check_vlun():
+        path_time = "/www/server/panel/data/wordpress_check_vlun.pl"
+        if not os.path.exists(path_time):
+            public.writeFile(path_time, json.dumps({"time": int(time.time())}))
+            share_ip_info = {"time": 0}
+        else:
+            share_ip_info = json.loads(public.readFile(path_time))
+        if (int(time.time()) - share_ip_info["time"]) < 86400:
+            return public.returnMsg(False, "未达到时间")
+        share_ip_info["time"] = int(time.time())
+        public.writeFile(path_time, json.dumps(share_ip_info))
+        load_time = M("wordpress_vulnerabilities", "wordpress_vulnerabilities").order("data_time desc").limit(
+            "1").field(
+            "data_time").find()
+        if type(load_time) != dict: return
+
+        def get_yun_infos(page):
+            url = "https://wafapi2.aapanel.com/api/bt_waf/get_wordpress_scan?size=100&p=" + str(page)
+            yun_infos = requests.get(url, verify=False, timeout=60).json()
+            for i in yun_infos['res']:
+                if i['data_time'] > load_time['data_time']:
+                    del i['id']
+                    M("wordpress_vulnerabilities", "wordpress_vulnerabilities").insert(i)
+                else:
+                    return True
+
+        for i in range(1, 20):
+            time.sleep(26)
+            if get_yun_infos(i):
+                return
+
+    def check_plugin_close():
+        '''
+        @name 检查插件是否关闭
+        @return True 关闭
+        @return False 开启
+    '''
+        path_time = "/www/server/panel/data/wordpress_check_plugin_close.pl"
+        if not os.path.exists(path_time):
+            public.writeFile(path_time, json.dumps({"time": int(time.time())}))
+            share_ip_info = {"time": 0}
+        else:
+            share_ip_info = json.loads(public.readFile(path_time))
+        if (int(time.time()) - share_ip_info["time"]) < 86400:
+            return public.returnMsg(False, "未达到时间")
+        share_ip_info["time"] = int(time.time())
+        public.writeFile(path_time, json.dumps(share_ip_info))
+        check_sql=M("plugin_error", "plugin_error").order("id desc").limit("1").field("id").find()
+        if type(check_sql) != dict: return
+        time.sleep(30)
+        url = "https://wafapi2.aapanel.com/api/bt_waf/plugin_error_list"
+        try:
+            res = requests.get(url, verify=False, timeout=60).json()
+        except:
+            return False
+        res_list = res['res']
+        for i in res_list:
+            if M("plugin_error", "plugin_error").where("slug=? and status=0", i['slug']).count() > 0:
+                M("plugin_error", "plugin_error").where("slug=?", i['slug']).update({"status": 1})
+
+    def get_plugin_update_time():
+        '''
+            @name 获取插件更新时间
+            @ps   一周更新一次
+        '''
+        path_time = "/www/server/panel/data/wordpress_get_plugin_update_time.pl"
+        if not os.path.exists(path_time):
+            public.writeFile(path_time, json.dumps({"time": int(time.time())}))
+            #如果第一次运行则三天后再运行
+            share_ip_info = {"time": int(time.time())-86400*2}
+        else:
+            share_ip_info = json.loads(public.readFile(path_time))
+        if (int(time.time()) - share_ip_info["time"]) < 259200:
+            return public.returnMsg(False, "未达到时间")
+        share_ip_info["time"] = int(time.time())
+        public.writeFile(path_time, json.dumps(share_ip_info))
+
+        check_sql=M("wordpress_not_update", "wordpress_not_update").order("id desc").limit("1").field("id").find()
+        if type(check_sql) != dict: return
+        import random
+        def get_plugin_time(id):
+            time.sleep(30)
+            url = "https://wafapi2.aapanel.com/api/bt_waf/get_wordpress_not_update?p=" + str(id)
+            try:
+                res = requests.get(url, verify=False, timeout=60).json()
+                if len(res['res']) == 0:
+                    return True
+                for i in res['res']:
+                    if M("wordpress_not_update", "wordpress_not_update").where("slug=?", i['slug']).count() > 0:
+                        if M("wordpress_not_update", "wordpress_not_update").where("slug=? and last_time=?", (
+                        i['slug'], i['last_time'])).count() == 0:
+                            M("wordpress_not_update", "wordpress_not_update").where("slug=?", i['slug']).update(
+                                {"last_time": i['last_time']})
+                # 随机时间
+            except:
+                pass
+
+        for i in range(1, 50):
+            time.sleep(random.randint(10, 30))
+            if get_plugin_time(i):
+                return
+
+    while True:
+        try:
+            auto_scan()
+            check_vlun()
+            check_plugin_close()
+            get_plugin_update_time()
+            time.sleep(7200)
+        except:
+            time.sleep(3600)
+
+# 每天提交一次昨天的邮局发送总数
+def submit_email_statistics():
+    # 添加提交标记   每次提交昨天的  标记存在跳过  不存在添加 删除前天标记
+    yesterday = datetime.now() - timedelta(days=1)
+    yesterday = yesterday.strftime('%Y-%m-%d')
+    cloud_yesterday_submit = f'/www/server/panel/data/{yesterday}_submit_email_statistics.pl'
+    if os.path.exists(cloud_yesterday_submit):
+        return
+    # 判断是否有邮局
+    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py') or not os.path.exists('/www/vmail'):
+        return
+
+    # 处理昨天数据
+    all = _get_yesterday_count()
+    if not all:
+        return
+
+    # 记录昨日发件总数
+    public.set_module_logs('sys_mail', 'sent', all)
+
+    # 添加标记
+    public.writeFile(cloud_yesterday_submit, '1')
+    # 删除前天标记
+    before_yesterday = datetime.now() - timedelta(days=2)
+    before_yesterday = before_yesterday.strftime('%Y-%m-%d')
+    cloud_before_yesterday_submit = f'/www/server/panel/data/{before_yesterday}_submit_email_statistics.pl'
+    if os.path.exists(cloud_before_yesterday_submit):
+        os.remove(cloud_before_yesterday_submit)
+
+
+
+def submit_module_call_statistics():
+    # 添加提交标记   每次提交昨天的  标记存在跳过  不存在添加 删除前天标记  提交过的数据在统计文件里删除
+    yesterday = datetime.now() - timedelta(days=1)
+    yesterday = yesterday.strftime('%Y-%m-%d')
+    cloud_yesterday_submit = '{}/data/{}_submit_module_call_statistics.pl'.format(public.get_panel_path(), yesterday)
+    if os.path.exists(cloud_yesterday_submit):
+        return
+
+    # 取文件中yesterday和yesterday以前的数据
+    datainfo = {}
+    path = '{}/data/mod_log.json'.format(public.get_panel_path())
+    if os.path.exists(path):
+        try:
+            datainfo = json.loads(public.readFile(path))
+        except:
+            pass
+    else:
+        return
+
+    if type(datainfo) != dict:
+        datainfo = {}
+    # 需要提交的
+    data_submit = {}
+    # 当天数据
+    data_reserve = {}
+
+    try:
+        for date, modules in datainfo.items():
+            # 如果日期小于昨天，则提交数据
+            if date.strip() <= yesterday.strip():
+                data_submit[date] = modules
+            else:
+                data_reserve[date] = modules
+    except:
+        public.print_log(public.get_error_info())
+
+    if not data_submit:
+        return
+    _submit_to_cloud(data_submit)
+
+    # 将data_reserve 重新写入
+    public.writeFile(path, json.dumps(data_reserve))
+
+    # 添加标记
+    public.writeFile(cloud_yesterday_submit, '1')
+    # 删除前天标记
+    before_yesterday = datetime.now() - timedelta(days=2)
+    before_yesterday = before_yesterday.strftime('%Y-%m-%d')
+    cloud_before_yesterday_submit = '{}/data/{}_submit_module_call_statistics.pl'.format(public.get_panel_path(), before_yesterday)
+    if os.path.exists(cloud_before_yesterday_submit):
+        os.remove(cloud_before_yesterday_submit)
+    # print("提交完")
+    return
+
+def mailsys_domain_restrictions():
+    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py'):
+        # public.print_log('000 /mail_send_bulk')
+        # print('000 /mail_send_bulk')
+        return
+
+    if not os.path.exists('/www/vmail'):
+        # public.print_log('000 /www/vmail')
+        # print('000 /www/vmail')
+        return
+
+    yesterday = datetime.now() - timedelta(days=1)
+    yesterday = yesterday.strftime('%Y-%m-%d')
+    cloud_yesterday_submit = '{}/data/{}_update_mailsys_domain_restrictions.pl'.format(public.get_panel_path(), yesterday)
+    if os.path.exists(cloud_yesterday_submit):
+        return
+
+    # 检查版本 检查是否能查询额度  剩余额度
+    import public.PluginLoader as plugin_loader
+    bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(public.get_panel_path()))
+    SendMailBulk = bulk.SendMailBulk
+    try:
+        SendMailBulk()._get_user_quota()
+        # public.print_log('111 调用插件方法检查额度')
+        # print('111 调用插件方法检查额度')
+    except:
+        public.print_log(public.get_error_info())
+        return
+
+
+    # 添加标记
+    public.writeFile(cloud_yesterday_submit, '1')
+    # 删除前天标记
+    before_yesterday = datetime.now() - timedelta(days=2)
+    before_yesterday = before_yesterday.strftime('%Y-%m-%d')
+    cloud_before_yesterday_submit = '{}/data/{}_update_mailsys_domain_restrictions.pl'.format(public.get_panel_path(), before_yesterday)
+    if os.path.exists(cloud_before_yesterday_submit):
+        os.remove(cloud_before_yesterday_submit)
+    return
+
+
+def _submit_to_cloud(data_submit):
+    """提交用户统计数据  接口调用  安装量等 """
+    import panelAuth
+    import requests
+    from BTPanel import session
+    cloudUrl = '{}/api/panel/submit_feature_invoked_bulk'.format(public.OfficialApiBase())
+    pdata = panelAuth.panelAuth().create_serverid(None)
+    url_headers = {}
+    if 'token' in pdata:
+        url_headers = {"authorization": "bt {}".format(pdata['token'])}
+
+    pdata['environment_info'] = json.dumps(public.fetch_env_info())
+
+
+    pdata['data'] = data_submit
+    pdata['utc_offset'] = _get_utc_offset_modele()
+    listTmp = requests.post(cloudUrl, json=pdata, headers=url_headers)
+    ret = listTmp.json()
+    # public.print_log(f"提交上传['data']999 ---{pdata['data']}")
+    # public.print_log(f"提交返回999 ---{ret}")
+    # if not ret['success']:
+    #     print(f"|-{ret['res']}")
+    #     public.print_log(f"|-submit_module_call_statistics: {ret['res']}")
+    # public.print_log(f"|-{ret}")
+    return
+
+
+# 获取系统时间与utc时间的差值
+def _get_utc_offset_modele():
+    # 系统时间戳
+    current_local_time = datetime.now()
+    current_local_timestamp = int(current_local_time.timestamp())
+
+    # 获取当前 UTC 时间的时间戳
+    current_utc_time = datetime.utcnow()
+    current_utc_timestamp = int(current_utc_time.timestamp())
+
+    # 计算时区差值（秒）
+    timezone_offset = current_local_timestamp - current_utc_timestamp
+    offset = timezone_offset/3600
+
+    return offset
+
+
+# 获取系统时间与utc时间的差值
+def _get_utc_offset():
+    # 系统时间戳
+    current_local_time = datetime.now()
+    current_local_timestamp = int(current_local_time.timestamp())
+
+    # UTC时间戳
+    current_utc_time = datetime.utcnow()
+    current_utc_timestamp = int(current_utc_time.timestamp())
+
+    # 计算时区差值（秒）
+    timezone_offset = current_local_timestamp - current_utc_timestamp
+
+    if timezone_offset > 0:     # 东时区   需要减
+        return timezone_offset, True
+    else:                       # 西时区
+        return abs(timezone_offset), False
+
+
+# 获取昨日邮局收发件统计数据
+def _get_yesterday_count():
+    maillog_path = '/var/log/maillog'
+    if "ubuntu" in public.get_linux_distribution().lower():
+        maillog_path = '/var/log/mail.log'
+
+    if not os.path.exists(maillog_path):
+        return 0
+    output, err = public.ExecShell(
+    f'pflogsumm -d yesterday --verbose-msg-detail --zero-fill --iso-date-time --rej-add-from {maillog_path}')
+    if err:
+        # public.print_log(f"err 4444 {err}")
+        return 0
+
+    data = _pflogsumm_data_treating(output)
+    all = 0
+    # public.print_log(f"yesterday sent: {data['stats_dict']}")
+    if data.get('stats_dict', None):
+        all = data['stats_dict'].get('delivered', 0)
+    return all
+# 分析命令执行后的数据
+def _pflogsumm_data_treating(output):
+    import re
+    stats_dict = {}
+
+    # 使用正则表达式来匹配和提取关键信息
+    patterns = [
+        r'(\d+)\s+received',
+        r'(\d+)\s+delivered',
+        r'(\d+)\s+forwarded',
+        r'(\d+)\s+deferred\s+\((\d+)\s+deferrals\)',
+        r'(\d+)\s+bounced',
+        r'(\d+)\s+rejected\s+\((\d+)%\)',
+        r'(\d+)\s+reject\s+warnings',
+        r'(\d+)\s+held',
+        r'(\d+)\s+discarded\s+\((\d+)%\)',
+        r'(\d+)\s+bytes\s+received',
+        r'(\d+)k\s+bytes\s+delivered',
+        r'(\d+)\s+senders',
+        r'(\d+)\s+sending\s+hosts/domains',
+        r'(\d+)\s+recipients',
+        r'(\d+)\s+recipient\s+hosts/domains'
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, output)
+        if match:
+            # 将找到的数字转换为整数并存入字典
+            stats_dict[pattern] = int(match.group(1))
+
+    friendly_names = {
+        r'(\d+)\s+received': 'received',
+        r'(\d+)\s+delivered': 'delivered',
+        r'(\d+)\s+forwarded': 'forwarded',
+        r'(\d+)\s+deferred\s+\((\d+)\s+deferrals\)': 'deferred',
+        r'(\d+)\s+bounced': 'bounced',
+        r'(\d+)\s+rejected\s+\((\d+)%\)': 'rejected',
+        r'(\d+)\s+reject\s+warnings': 'reject_warnings',
+        r'(\d+)\s+held': 'held',
+        r'(\d+)\s+discarded\s+\((\d+)%\)': 'discarded',
+        r'(\d+)\s+bytes\s+received': 'bytes_received',
+        r'(\d+)k\s+bytes\s+delivered': 'bytes_delivered_kilo',
+        r'(\d+)\s+senders': 'senders',
+        r'(\d+)\s+sending\s+hosts/domains': 'sending_hosts_domains',
+        r'(\d+)\s+recipients': 'recipients',
+        r'(\d+)\s+recipient\s+hosts/domains': 'recipient_hosts_domains'
+    }
+
+    stats_dict = {friendly_names[key]: value for key, value in stats_dict.items() if key in friendly_names}
+    keys_to_remove = [
+        "reject_warnings",
+        "held",
+        "discarded",
+        "bytes_received",
+        "senders",
+        "sending_hosts_domains",
+        "recipients",
+        "recipient_hosts_domains"
+    ]
+
+    for key in keys_to_remove:
+        stats_dict.pop(key, None)
+
+    data = {
+        "stats_dict": stats_dict,
+    }
+    return data
+
+
+
+def mailsys_domain_blecklisted_alarm():
+    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py') or not os.path.exists('/www/vmail'):
+        return
+
+    yesterday = datetime.now() - timedelta(days=1)
+    yesterday = yesterday.strftime('%Y-%m-%d')
+    cloud_yesterday_submit = '{}/data/{}_mailsys_domain_blecklisted_alarm.pl'.format(public.get_panel_path(), yesterday)
+    if os.path.exists(cloud_yesterday_submit):
+        return
+
+    # 检查版本 检查是否能查询额度  剩余额度
+    import public.PluginLoader as plugin_loader
+    bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(public.get_panel_path()))
+    SendMailBulk = bulk.SendMailBulk
+    try:
+        SendMailBulk().check_domain_blacklist_corn()
+
+    except:
+        public.print_log(public.get_error_info())
+        return
+
+
+    # 添加标记
+    public.writeFile(cloud_yesterday_submit, '1')
+    # 删除前天标记
+    before_yesterday = datetime.now() - timedelta(days=2)
+    before_yesterday = before_yesterday.strftime('%Y-%m-%d')
+    cloud_before_yesterday_submit = '{}/data/{}_mailsys_domain_blecklisted_alarm.pl'.format(public.get_panel_path(), before_yesterday)
+    if os.path.exists(cloud_before_yesterday_submit):
+        os.remove(cloud_before_yesterday_submit)
+    return
+
+# 邮件证书过期告警
+def mailsys_cert_expiry_alarm():
+    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py') or not os.path.exists('/www/vmail'):
+        return
+
+    yesterday = datetime.now() - timedelta(days=1)
+    yesterday = yesterday.strftime('%Y-%m-%d')
+    cloud_yesterday_submit = '{}/data/{}_mailsys_cert_expiry_alarm.pl'.format(public.get_panel_path(), yesterday)
+    if os.path.exists(cloud_yesterday_submit):
+        return
+
+    script = '/www/server/panel/plugin/mail_sys/script/certificate_expired.py'
+    if not os.path.exists(script):
+        return
+
+    cmd = f"btpython {script}"
+    aa = public.ExecShell(cmd)
+
+
+    # 添加标记
+    public.writeFile(cloud_yesterday_submit, '1')
+    # 删除前天标记
+    before_yesterday = datetime.now() - timedelta(days=2)
+    before_yesterday = before_yesterday.strftime('%Y-%m-%d')
+    cloud_before_yesterday_submit = '{}/data/{}_mailsys_cert_expiry_alarm.pl'.format(public.get_panel_path(), before_yesterday)
+    if os.path.exists(cloud_before_yesterday_submit):
+        os.remove(cloud_before_yesterday_submit)
+    return
+
+# 邮局自动回复
+def auto_reply_tasks():
+
+    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists(
+            '/www/vmail'):
+        return
+
+    # 检查是否有回复功能  不存在跳过
+    import public.PluginLoader as plugin_loader
+    main = plugin_loader.get_module('{}/plugin/mail_sys/mail_sys_main.py'.format(public.get_panel_path()))
+    mail_sys_main = main.mail_sys_main
+    try:
+        mail_sys_main().auto_reply_tasks()
+    except:
+        public.print_log(public.get_error_info())
+        pass
+
+    # 每小时执行一次
+    time.sleep(3600)
+
+# 邮局自动扫描异常邮箱
+def auto_scan_abnormal_mail():
+
+    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py') or not os.path.exists(
+            '/www/vmail'):
+        return
+
+    endtime = public.get_pd()[1]
+    curtime = int(time.time())
+    if endtime != 0 and endtime < curtime:
+        return False
+    else:
+        path = '/www/server/panel/plugin/mail_sys/data/abnormal_mail_check_switch'
+        if os.path.exists(path):
+            return False
+
+    # 检查是否有回复功能  不存在跳过
+    import public.PluginLoader as plugin_loader
+    bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(public.get_panel_path()))
+    SendMailBulk = bulk.SendMailBulk
+    try:
+        SendMailBulk().check_abnormal_emails()
+
+    except:
+        public.print_log(public.get_error_info())
+        pass
+    
+
+    # 每两小时执行一次
+    time.sleep(7200)
+
 
 
 def run_thread():
@@ -954,20 +1648,31 @@ def run_thread():
         "update_software_list": update_software_list,
         "send_mail_time": send_mail_time,
         "check_panel_msg": check_panel_msg,
-        # "check_panel_auth": check_panel_auth,
+        "check_breaking_through_cron": check_breaking_through_cron,
         "push_msg": push_msg,
         "ProDadmons":ProDadmons,
-        "process_task_thread":process_task_thread,
-        "count_ssh_logs": count_ssh_logs
+        "check_panel_auth": check_panel_auth,
+        # "process_task_thread":process_task_thread,  # 监控工具不支持
+        "count_ssh_logs": count_ssh_logs,
+        "submit_email_statistics": submit_email_statistics,  # 每天一次 昨日邮件发送统计
+        "update_vulnerabilities": update_vulnerabilities,
+        "submit_module_call_statistics": submit_module_call_statistics,  # 每天一次 提交今天之前的统计数据
+         # "mailsys_domain_restrictions": mailsys_domain_restrictions,  # 更新邮局发件状态 暂停
+        "mailsys_domain_blecklisted_alarm": mailsys_domain_blecklisted_alarm,  # 每天一次 邮局黑名单检测
+        "mailsys_cert_expiry_alarm": mailsys_cert_expiry_alarm,  # 每天一次 邮局证书告警
+        "auto_reply_tasks": auto_reply_tasks,  # 每小时执行一次 自动回复邮件
+        "auto_scan_abnormal_mail": auto_scan_abnormal_mail,  # 每两小时执行一次 自动扫描异常邮箱
+        "maillog_event": maillog_event,
+        # "print_malloc": print_malloc_thread,
+        "mail_automations": schedule_automations_forever,
     }
 
     for skey in thread_list.keys():
         if not skey in tkeys or not thread_dict[skey].is_alive():
+            # logging.info('restart thread - {}'.format(skey))
             thread_dict[skey] = threading.Thread(target=thread_list[skey])
-            thread_dict[skey].setDaemon(True)
+            # thread_dict[skey].setDaemon(True)
             thread_dict[skey].start()
-
-
 
 def func():
     os.system(get_python_bin() + " {}/script/scan_log.py > /dev/null".format(base_path))
@@ -994,20 +1699,22 @@ def scan_log_site():
 #         os.system('{} {}/script/check_msg.py &'.format(python_bin,base_path))
 #         time.sleep(600)
 
-# # 检测面板授权
-# def check_panel_auth():
-#     python_bin = get_python_bin()
-#     from BTPanel import cache
-#     if cache: 
-#         key='pro_check_sdfjslk'
-#         res = cache.get(key)
-#     while True:
-#         update_file='/www/server/panel/data/now_update_pro.pl'
-#         # pro_file='/www/server/panel/data/panel_pro.pl'
-#         if os.path.exists(update_file) or res is None:
-#             os.system('nohup {} /www/server/panel/script/check_auth.py > /dev/null 2>&1 &'.format(python_bin))
-#         if cache: 
-#             cache.set(key, 'sddsf', 3600)
+# 检测防爆破计划任务
+def check_breaking_through_cron():
+    try:
+        key='breaking_through_cron'
+        import class_v2.breaking_through as breaking_through
+        _breaking_through_obj = breaking_through.main()
+        _breaking_through_obj.del_cron()
+        while True:
+            time.sleep(60)
+            _breaking_through_obj.cron_method()
+    except Exception as e:
+        time.sleep(60)
+        # public.writeFile('/www/server/panel/logs/breaking_through.log', "[{}]{}\n".format(public.format_date(), public.get_error_info()), 'a')
+        public.writeFile('/www/server/panel/logs/breaking_through.log',"{}".format(e))
+        check_breaking_through_cron()
+
 
 
 
@@ -1029,8 +1736,17 @@ def main():
     sys.stdout.flush()
     sys.stderr.flush()
     task_log_file = 'logs/task.log'
+
+    # trace malloc
+    # tracemalloc.start()
+
+    is_debug = False
+
+    if os.path.exists('{}/data/debug.pl'.format(base_path)):
+        is_debug = True
+
     try:
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s]: %(message)s',
+        logging.basicConfig(level=logging.NOTSET if is_debug else logging.INFO, format='%(asctime)s [%(levelname)s]: %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S', filename=task_log_file, filemode='a+')
     except Exception as ex:
         print(ex)

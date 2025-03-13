@@ -1,8 +1,8 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aapanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2020 宝塔软件(http://www.bt.cn) All rights reserved.
+# | Copyright (c) 2015-2020 aapanel(http://www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: 沐落 <cjx@bt.cn>
 # | Author: lx
@@ -14,6 +14,7 @@ import traceback
 from email.mime.text import MIMEText
 from email.utils import formataddr
 from typing import Tuple, Union, Optional
+import public
 
 from mod.base.msg.util import write_push_log, write_mail_push_log, get_test_msg
 
@@ -27,20 +28,20 @@ class MailMsg:
     @classmethod
     def check_args(cls, args: dict) -> Tuple[bool, Union[dict, str]]:
         if "send" not in args or "receive" not in args or len(args["receive"]) < 1:
-            return False, "信息不完整，必须有发送方和至少一个接收方"
+            return False, "Incomplete information, there must be a sender and at least one receiver"
 
         if "title" not in args:
-            return False, "没有必要的备注信息"
+            return False, "There is no necessary remark information"
 
         title = args["title"]
         if len(title) > 15:
-            return False, '备注名称不能超过15个字符'
+            return False, 'Note names cannot be longer than 15 characters'
 
         send_data = args["send"]
         send = {}
         for i in ("qq_mail", "qq_stmp_pwd", "hosts", "port"):
             if i not in send_data:
-                return False, "发送方配置信息不完整"
+                return False, "The sender configuration information is incomplete"
             send[i] = send_data[i].strip()
 
         receive_data = args["receive"]
@@ -57,16 +58,16 @@ class MailMsg:
 
         test_obj = cls({"data": data, "id": None})
         test_msg = {
-            "msg_list": ['>配置状态：成功<br>']
+            "msg_list": ['>configuration state: Success<br>']
         }
 
-        test_task = get_test_msg("消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
 
         res = test_obj.send_msg(
             test_task.to_mail_msg(test_msg, test_task.the_push_public_data()),
-            "消息通道配置提醒"
+            "Message channel configuration reminders"
         )
-        if res is None or res.find("部分接收者时失败") != -1:
+        if res is None or res.find("Failed to send mail to some recipients") != -1:
             return True, data
 
         return False, res
@@ -78,7 +79,7 @@ class MailMsg:
         @title 消息标题
         """
         if not self.config:
-            return '未正确配置邮箱信息。'
+            return public.lang('Mailbox information is not configured correctly')
 
         if 'port' not in self.config['send']: 
             self.config['send']['port'] = 465
@@ -109,25 +110,25 @@ class MailMsg:
                 error_msg_dict[email] = traceback.format_exc()
 
         if not error_list and not success_list:  # 没有接收者
-            return "未配置接收邮箱"
+            return public.lang('The receiving mailbox is not configured')
         if not error_list:
-            write_push_log("邮箱", True, title, success_list)  # 没有失败
+            write_push_log("mail", True, title, success_list)  # 没有失败
             return None
         if not success_list:
-            write_push_log("邮箱", False, title, error_list)  # 全都失败
-            return "发送信息失败, 发送失败的接收人：{}".format(error_list)
+            write_push_log("mail", False, title, error_list)  # 全都失败
+            return public.lang('Failed to send message, Recipient of failed to send:{}',error_list)
         write_mail_push_log(title, error_list, success_list)
 
-        return "发送邮件到部分接收者时失败，包含：{}".format(error_list)
+        return public.lang('Failed to send mail to some recipients, including:{}',error_list)
 
     def test_send_msg(self) -> Optional[str]:
         test_msg = {
-            "msg_list": ['>配置状态：<font color=#20a53a>成功</font>\n\n']
+            "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n\n']
         }
-        test_task = get_test_msg("消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
         res = self.send_msg(
             test_task.to_mail_msg(test_msg, test_task.the_push_public_data()),
-            "消息通道配置提醒"
+            "Message channel configuration reminders"
         )
         if res is None:
             return None

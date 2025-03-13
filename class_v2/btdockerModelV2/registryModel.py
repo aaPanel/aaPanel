@@ -12,9 +12,6 @@
 # ------------------------------
 import json
 
-import gettext
-_ = gettext.gettext
-
 import public
 from btdockerModelV2 import dk_public as dp
 from btdockerModelV2.dockerBase import dockerBase
@@ -60,16 +57,18 @@ class main(dockerBase):
             args.registry = "docker.io"
         res = self.login(self._url, args.registry, args.username, args.password)
         if not res['status']:
-            return public.return_message(-1, 0, res)
+            return public.return_message(-1, 0, res['msg'])
         r_list = self.registry_list(args)
         if len(r_list) > 0:
             for r in r_list:
-                if r['name'] == args.name:
-                    return public.return_message(-1, 0, _( "The name already exists! <br><br>name: {}".format(args.name)))
-                if r['username'] == args.username and args.registry == r['url']:
-                    return public.return_message(-1, 0, _( "Repository information already exists!"))
+                if "reg_name" in r:
+                    if r['reg_name'] == args.name and r["reg_url"] == args.registry and r['username'] == args.username:
+                        return public.return_message(-1, 0, public.lang("Repository information already exists!"))
+
+                if r['name'] == args.name and r["reg_url"] == args.registry and r['username'] == args.username:
+                    return public.return_message(-1, 0, public.lang("Repository information already exists!"))
         pdata = {
-            "name": args.name,
+            "reg_name": args.name,
             "url": args.registry,
             "namespace": args.namespace,
             "username": public.aes_encrypt(args.username, self.aes_key),
@@ -78,7 +77,7 @@ class main(dockerBase):
         }
         dp.sql("registry").insert(pdata)
         dp.write_log("Added repository [{}] [{}] success!".format(args.name, args.registry))
-        return public.return_message(0, 0, _( "successfully added!"))
+        return public.return_message(0, 0, public.lang("successfully added!"))
 
     def edit(self, args):
         """
@@ -111,7 +110,7 @@ class main(dockerBase):
 
         # 验证登录
         # if str(args.id) == "1":
-        #     return public.return_message(-1, 0, "[Official Docker repository] Not editable!")
+        #     return public.return_message(-1, 0, public.lang("[Official Docker repository] Not editable!"))
         if not args.registry:
             args.registry = "docker.io"
 
@@ -131,15 +130,14 @@ class main(dockerBase):
                 is_encrypt = True
         except Exception as e:
             if "binascii.Error: Incorrect padding" in str(e):
-                return public.return_message(-1, 0, _(
-                                             "Editing failed! Reason: Account password decryption failed! Please delete the repository and add it again"))
-            return public.return_message(-1, 0, _( "Editing failed! Reason:{}".format(e)))
+                return public.return_message(-1, 0, public.lang("Editing failed! Reason: Account password decryption failed! Please delete the repository and add it again"))
+            return public.return_message(-1, 0, public.lang("Editing failed! Reason:{}", e))
 
         res = dp.sql("registry").where("id=?", (args.id,)).find()
         if not res:
-            return public.return_message(-1, 0, _( "This repository could not be found"))
+            return public.return_message(-1, 0, public.lang("This repository could not be found"))
         pdata = {
-            "name": args.name,
+            "reg_name": args.name,
             "url": args.registry,
             "username": public.aes_encrypt(args.username, self.aes_key) if is_encrypt is False else args.username,
             "password": public.aes_encrypt(args.password, self.aes_key) if is_encrypt is False else args.password,
@@ -148,7 +146,7 @@ class main(dockerBase):
         }
         dp.sql("registry").where("id=?", (args.id,)).update(pdata)
         dp.write_log("Edit repository [{}][{}] Success!".format(args.name, args.registry))
-        return public.return_message(0, 0, _( "Edit success!"))
+        return public.return_message(0, 0, public.lang("Edit success!"))
 
     def remove(self, args):
         """
@@ -169,23 +167,23 @@ class main(dockerBase):
             return public.return_message(-1, 0, str(ex))
 
         # if str(args.id) == "1":
-        #     return public.return_message(-1, 0, "[Official Docker repository] can not be removed!")
+        #     return public.return_message(-1, 0, public.lang("[Official Docker repository] can not be removed!"))
 
         data = dp.sql("registry").where("id=?", (args.id)).find()
 
         if len(data) < 1:
-            return public.return_message(0, 0, _( "Delete failed,The repository id may not exist!"))
+            return public.return_message(0, 0, public.lang("Delete failed,The repository id may not exist!"))
 
         dp.sql("registry").where("id=?", (args.id,)).delete()
 
         dp.write_log("Delete repository [{}][{}] Success!".format(data['name'], data['url']))
-        return public.return_message(0, 0, _( "Successfully deleted!"))
+        return public.return_message(0, 0, public.lang("Successfully deleted!"))
     def registry_list(self, get):
         """
         获取仓库列表
         :return:
         """
-
+        self.check_table_dk_registry()
         db_obj = dp.sql("registry")
         # 2024/1/3 下午 6:00 检测数据库是否存在并且表健康
         search_result = db_obj.where('id=? or name=?', (1, "Docker public repository")).select()
@@ -211,6 +209,11 @@ class main(dockerBase):
         res = dp.sql("registry").select()
         if not isinstance(res, list):
             res = []
+
+        for r in res:
+            if r["name"] == "" or not r["name"] or r["name"] is None:
+                r["name"] = r["reg_name"]
+
         return res
     # 改返回
     def registry_listV2(self, get):
@@ -244,7 +247,26 @@ class main(dockerBase):
         if not isinstance(res, list):
             res = []
 
+        for r in res:
+            if r["name"] == "" or not r["name"] or r["name"] is None:
+                r["name"] = r["reg_name"]
         return public.return_message(0, 0,  res)
+    # 2024/5/24 下午6:09 设置备注
+    def set_remark(self, get):
+        '''
+            @name 设置备注
+            @param "data":{"id":"仓库ID","remark":"备注"}
+            @return dict{"status":True/False,"msg":"提示信息"}
+        '''
+        try:
+            get.remark = get.get("remark/s", "")
+            if get.remark != "":
+                get.remark = public.xssencode2(get.remark)
+
+            dp.sql("registry").where("id=?", (get.id,)).setField("remark", get.remark)
+            return public.return_message(0, 0,  public.lang("Setup Successful!"))
+        except Exception as e:
+            return public.return_message(-1, 0, public.lang("Setup failed!{}",str(e)))
 
     def get_com_registry(self, get):
         """
@@ -263,10 +285,29 @@ class main(dockerBase):
                 "registry.cn-hangzhou.aliyuncs.com": "Alibaba Cloud Mirror Station (Hangzhou)"
             }
 
+            # # https://node.aapanel.com/src/com_registry.json
+            # public.ExecShell("rm -f {}".format(com_registry_file))
+            # public.downloadFile("{}/src/com_registry.json".format(public.get_url()), com_registry_file)
+            # try:
+            #     com_registry = json.loads(public.readFile(com_registry_file))
+            # except:
+            #     com_registry = {
+            #         "https://mirror.ccs.tencentyun.com": "腾讯云镜像加速站",
+            #     }
         return public.return_message(0, 0, com_registry)
+    # todo  检查字段新增reg_name
+    def registry_info(self, get):
+        '''
+            @name 获取指定仓库的信息
+            @author wzz <2024/5/24 下午3:16>
+            @param "data":{"参数名":""} <数据类型> 参数描述
+            @return dict{"status":True/False,"msg":"提示信息"}
+        '''
+        registry_info = dp.sql("registry").where("reg_name=? and url=?", (get.name, get.url)).find()
+        if not registry_info:
+            registry_info = dp.sql("registry").where("name=? and url=?", (get.name, get.url)).find()
 
-    def registry_info(self, name):
-        return dp.sql("registry").where("name=?", (name,)).find()
+        return registry_info
 
     def login(self, url, registry, username, password):
         """
@@ -282,12 +323,31 @@ class main(dockerBase):
                 password=password,
                 reauth=False
             )
+            # public.print_log(" 仓库登录测试 -- {}".format(res))
             return public.returnMsg(True, str(res))
-        except docker.errors.APIError as e:
-            if "authentication required" in str(e):
-                return public.returnMsg(False,
-                                        "Login test failed! Reason: May be account password error, please check!")
-            if "unauthorized: incorrect username or password" in str(e):
-                return public.returnMsg(False,
-                                        "Login test failed! Reason: May be account password error, please check!")
-            return public.returnMsg(False, "Login test failed! Reason: {}".format(e))
+        except:
+            public.print_log(public.get_error_info())
+        # except docker.errors.APIError as e:
+        #     if "authentication required" in str(e):
+        #         return public.returnMsg(False, public.lang("Login test failed! Reason: May be account password error, please check!"))
+        #     if "unauthorized: incorrect username or password" in str(e):
+        #         return public.returnMsg(False, public.lang("Login test failed! Reason: May be account password error, please check!"))
+        #     return public.returnMsg(False, public.lang("Login test failed! Reason: {}", e))
+
+
+    def check_table_dk_registry(self):
+        '''
+            @name 检查表registry 字段 reg_name  remark是否存在
+            @return dict{"status":True/False,"msg":"提示信息"}
+        '''
+        # if not dp.sql('sqlite_master').where('type=? AND name=?', ('table', 'dk_backup')).count():
+        #     dp.sql('dk_backup').execute(
+        #         "CREATE TABLE `dk_backup` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `type` INTEGER, `name` TEXT, `container_id` TEXT, `container_name` TEXT, `filename` TEXT, `size` INTEGER, `addtime` TEXT, `ps` STRING DEFAULT 'none', `cron_id` INTEGER DEFAULT 0 )",
+        #         ())
+
+        create_table_str = public.M('sqlite_master').where('type=? AND name=?', ('table', 'registry')).getField('sql')
+        if create_table_str and 'reg_name' not in create_table_str:
+            public.M('registry').execute('ALTER TABLE `registry` ADD COLUMN `reg_name` VARCHAR default "";')
+
+        if create_table_str and 'remark' not in create_table_str:
+            public.M('registry').execute('ALTER TABLE `registry` ADD COLUMN `remark` VARCHAR default "";')

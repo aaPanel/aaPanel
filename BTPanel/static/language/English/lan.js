@@ -1799,7 +1799,7 @@ var lan = {
 			"bus_tip1":"If your site uses CDN, high-defence IP, reverse proxy, 301 redirect, etc., it may lead to validation failure",
 			"bus_tip2":"Certificates can be purchased for many years, and can only be issued once a year (valid for one year), and need to be renewed within 30 days before expiration (domain verification is not required for renewal)",
 			"bus_tip3":"Apply for www.aapanel.com certificate with www as the secondary domain name, binding and resolving the top-level domain (aapanel.com) is required, otherwise the verification will fail",
-			"bus_tip4":"Compared with ordinary certificates, commercial certificates have higher security, compensation protection and support for wildcard and multi-domain names <a class=\"btlink\" href=\"https://forum.aapanel.com/d/19277-business-ssl-certificate-tutorial\" target=\"_blank\">how to validate the commercial certificate?</a>",
+			"bus_tip4":"Compared with ordinary certificates, commercial certificates have higher security, compensation protection and support for wildcard and multi-domain names <a class=\"btlink\" href=\"https://www.aapanel.com/forum/d/19277-business-ssl-certificate-tutorial\" target=\"_blank\">how to validate the commercial certificate?</a>",
 			"no_cert":"No certificate",
 			"expire_date_text":function (day) {
 				return day + ' days remaining'

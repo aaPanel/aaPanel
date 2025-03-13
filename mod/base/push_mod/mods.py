@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aapanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2017 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2017 aapanel(http:#bt.cn) All rights reserved.
 # -------------------------------------------------------------------
 # Author: baozi <baozi@bt.cn>
 # -------------------------------------------------------------------
@@ -86,6 +86,8 @@ UPDATE_MOD_PUSH_FILE = "{}/update_mod.pl".format(PUSH_DATA_PATH)
 
 class BaseConfig:
     config_file_path = ""
+    # config_file_path = "/www/server/panel/data/mod_push_data/task.json"
+    # /www/server/panel/data/mod_push_data/sender.json
 
     def __init__(self):
         if not os.path.exists(PUSH_DATA_PATH):
@@ -95,6 +97,7 @@ class BaseConfig:
     @property
     def config(self) -> List[Dict[str, Any]]:
         if self._config is None:
+
             try:
                 self._config = json.loads(read_file(self.config_file_path))
             except:
@@ -253,31 +256,31 @@ def init_db():
 
         res = db.execute(create_task_template_sql)
         if isinstance(res, str) and res.startswith("error"):
-            write_log("告警系统", "task_template数据表创建错误：" + res)
+            write_log("warning system", "task_template Data table creation error:" + res)
             DB_INIT_ERROR = True
             return
 
         res = db.execute(create_task_sql)
         if isinstance(res, str) and res.startswith("error"):
-            write_log("告警系统", "task数据表创建错误：" + res)
+            write_log("warning system", "task Data table creation error:" + res)
             DB_INIT_ERROR = True
             return
 
         res = db.execute(create_task_record_sql)
         if isinstance(res, str) and res.startswith("error"):
-            write_log("告警系统", "task_recorde数据表创建错误：" + res)
+            write_log("warning system", "task_recorde Data table creation error:" + res)
             DB_INIT_ERROR = True
             return
 
         res = db.execute(create_send_record_sql)
         if isinstance(res, str) and res.startswith("error"):
-            write_log("告警系统", "send_record数据表创建错误：" + res)
+            write_log("warning system", "send_record Data table creation error:" + res)
             DB_INIT_ERROR = True
             return
 
         res = db.execute(create_sender_sql)
         if isinstance(res, str) and res.startswith("error"):
-            write_log("告警系统", "sender数据表创建错误：" + res)
+            write_log("warning system", "sender Data table creation error:" + res)
             DB_INIT_ERROR = True
             return
 
@@ -291,7 +294,7 @@ def init_db():
         init_template_file = "/www/server/panel/config/mod_push_init.json"
         err = load_task_template_by_file(init_template_file)
         if err:
-            write_log("告警系统", "task_template数据表初始数据加载失败：" + res)
+            write_log("warning system", "task template data table initial data load failed:" + res)
 
 
 def _check_fields(template: dict) -> bool:
@@ -348,21 +351,21 @@ def load_task_template_by_file(template_file: str) -> Optional[str]:
     @return: 报错信息，如果返回None则表示执行成功
     """
     if not os.path.isfile(template_file):
-        return "模板文件不存在，更新失败"
+        return "The template file does not exist and the update fails"
 
     if DB_INIT_ERROR:
-        return "数据库初始化时报错，无法更新"
+        return "An error is reported during database initialization and cannot be updated"
 
     res = read_file(template_file)
     if not isinstance(res, str):
-        return "数据读取失败"
+        return "Data read failed"
 
     try:
         templates = json.loads(res)
     except (json.JSONDecoder, TypeError, ValueError):
-        return "仅支持JSON格式数据"
+        return "Only JSON data is supported"
 
     if not isinstance(templates, list):
-        return "数据格式错误，应当为一个列表"
+        return "The data is in the wrong format and should be a list"
 
     return load_task_template_by_config(templates)

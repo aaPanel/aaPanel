@@ -125,7 +125,14 @@ class main(projectBase):
         '''
         return_message=os.path.exists(self._nodejs_plugin_path)
         return public.return_message(0,0,return_message)
-
+    def _is_install_nodejs(self,get):
+        '''
+            @name 是否安装nodejs版本管理器
+            @author hwliang<2021-08-09>
+            @param get<dict_obj> 请求数据
+            @return bool
+        '''
+        return os.path.exists(self._nodejs_plugin_path)
 
     def get_nodejs_version(self,get):
         '''
@@ -169,14 +176,14 @@ class main(projectBase):
 
         project_cwd = get.project_cwd.strip()
         if not os.path.exists(project_cwd): 
-            return_message=public.return_error('The project directory does not exist!')
+            return_message=public.return_error(public.lang('The project directory does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         package_file = '{}/package.json'.format(project_cwd)
-        if not os.path.exists(package_file): return public.return_message(0,0,{}) #public.return_error('没有在项目目录中找到package.json配置文件!')
+        if not os.path.exists(package_file): return public.return_message(0,0,{})
         package_info = json.loads(public.readFile(package_file))
-        if not 'scripts' in package_info: return public.return_message(0,0,{})# public.return_error('没有在项目配置文件package.json中找到scripts配置项!')
-        if not package_info['scripts']: return public.return_message(0,0,{})# public.return_error('没有找到可用的启动选项!')
+        if not 'scripts' in package_info: return public.return_message(0,0,{})
+        if not package_info['scripts']: return public.return_message(0,0,{})
         return public.return_message(0,0,package_info['scripts'])
 
 
@@ -256,16 +263,16 @@ export PATH
 
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('The specified item does not exist!')
+            return_message=public.return_error(public.lang('The specified item does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         if not os.path.exists(project_find['path']): 
-            return_message=public.return_error('The project directory does not exist!')
+            return_message=public.return_error(public.lang('The project directory does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         package_file = '{}/package.json'.format(project_find['path'])
         if not os.path.exists(package_file): 
-            return_message=public.return_error('The package.json configuration file was not found in the project directory!')
+            return_message=public.return_error(public.lang('The package.json configuration file was not found in the project directory!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         nodejs_version = project_find['project_config']['nodejs_version']
@@ -281,7 +288,7 @@ export PATH
         npm_bin = self.get_npm_bin(nodejs_version)
         yarn_bin = self.get_yarn_bin(nodejs_version)
         if not npm_bin and not yarn_bin: 
-            return_message=public.return_error('The specified nodejs version does not exist!')
+            return_message=public.return_error(public.lang('The specified nodejs version does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         public.writeFile(self._npm_exec_log,"Installing dependencies...\n")
@@ -313,27 +320,27 @@ export PATH
         '''
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('The specified item does not exist!')
+            return_message=public.return_error(public.lang('The specified item does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         if not os.path.exists(project_find['path']): 
-            return_message=public.return_error('The project directory does not exist!')
+            return_message=public.return_error(public.lang('The project directory does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         package_file = '{}/package.json'.format(project_find['path'])
         if not os.path.exists(package_file): 
-            return_message=public.return_error('The package.json configuration file was not found in the project directory!')
+            return_message=public.return_error(public.lang('The package.json configuration file was not found in the project directory!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         package_lock_file = '{}/package-lock.json'.format(project_find['path'])
         if not os.path.exists(package_lock_file): 
-            return_message=public.return_error('Please install the dependency package first!')
+            return_message=public.return_error(public.lang('Please install the dependency package first!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         nodejs_version = project_find['project_config']['nodejs_version']
         npm_bin = self.get_npm_bin(nodejs_version)
         if not npm_bin: 
-            return_message=public.return_error('The specified nodejs version does not exist!')
+            return_message=public.return_error(public.lang('The specified nodejs version does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         
@@ -356,16 +363,16 @@ export PATH
 
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('The specified item does not exist!')
+            return_message=public.return_error(public.lang('The specified item does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         if not os.path.exists(project_find['path']): 
-            return_message=public.return_error('The project directory does not exist!')
+            return_message=public.return_error(public.lang('The project directory does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         package_file = '{}/package.json'.format(project_find['path'])
         if not os.path.exists(package_file): 
-            return_message=public.return_error('The package.json configuration file was not found in the project directory!')
+            return_message=public.return_error(public.lang('The package.json configuration file was not found in the project directory!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
 
@@ -376,7 +383,7 @@ export PATH
         nodejs_version = project_find['project_config']['nodejs_version']
         npm_bin = self.get_npm_bin(nodejs_version)
         if not npm_bin: 
-            return_message=public.return_error('The specified nodejs version does not exist!')
+            return_message=public.return_error(public.lang('The specified nodejs version does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         public.WriteLog(self._log_name,'Node project: {}, all dependent packages have been reinstalled')
@@ -411,7 +418,7 @@ export PATH
         if not 'project_cwd' in get:
             project_find = self.get_project_find(get.project_name)
             if not project_find: 
-                return_message=public.return_error('The specified item does not exist!')
+                return_message=public.return_error(public.lang('The specified item does not exist!'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
             project_cwd = project_find['path']
@@ -450,7 +457,7 @@ export PATH
 
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('The specified item does not exist!')
+            return_message=public.return_error(public.lang('The specified item does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_cwd = project_find['path']
@@ -459,7 +466,7 @@ export PATH
         mod_name = get.mod_name
         filename = '{}/node_modules/{}/package.json'.format(project_cwd,mod_name)
         if os.path.exists(filename): 
-            return_message=public.return_error('The specified module has been installed!')
+            return_message=public.return_error(public.lang('The specified module has been installed!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
 
@@ -468,7 +475,7 @@ export PATH
         yarn_bin = self.get_yarn_bin(nodejs_version)
 
         if not npm_bin and not yarn_bin:
-            return_message=public.return_error('The specified nodejs version does not exist!')
+            return_message=public.return_error(public.lang('The specified nodejs version does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         if yarn_bin:
@@ -476,7 +483,7 @@ export PATH
         else:
             public.ExecShell(self.get_last_env(nodejs_version) + "cd {} && {} install {} &> {}".format(project_find['path'],npm_bin,mod_name,self._npm_exec_log))
         if not os.path.exists(filename): 
-            return_message=public.return_error('Failed to install the specified module!')
+            return_message=public.return_error(public.lang('Failed to install the specified module!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         public.WriteLog(self._log_name,'Node project {}, {} module installation is complete!'.format(get.project_name,mod_name))
@@ -508,7 +515,7 @@ export PATH
 
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('The specified item does not exist!')
+            return_message=public.return_error(public.lang('The specified item does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_cwd = project_find['path']
@@ -516,7 +523,7 @@ export PATH
         mod_name = get.mod_name
         filename = '{}/node_modules/{}/package.json'.format(project_cwd,mod_name)
         if not os.path.exists(filename): 
-            return_message=public.return_error('The specified module is not installed!')
+            return_message=public.return_error(public.lang('The specified module is not installed!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
 
@@ -524,7 +531,7 @@ export PATH
         npm_bin = self.get_npm_bin(nodejs_version)
         yarn_bin = self.get_yarn_bin(nodejs_version)
         if not npm_bin and not yarn_bin: 
-            return_message=public.return_error('The specified nodejs version does not exist!')
+            return_message=public.return_error(public.lang('The specified nodejs version does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         if yarn_bin:
@@ -534,10 +541,10 @@ export PATH
         if os.path.exists(filename): 
             result = "\n".join(result)
             if result.find('looking for funding') != -1:
-                return_message=public.return_error("This module is dependent on other installed modules and cannot be uninstalled!")
+                return_message=public.return_error(public.lang("This module is dependent on other installed modules and cannot be uninstalled!"))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
-            return_message=public.return_error("Unable to uninstall this module!")
+            return_message=public.return_error(public.lang("Unable to uninstall this module!"))
             del return_message['status']
             return public.return_message(-1,0, return_message)
 
@@ -571,7 +578,7 @@ export PATH
 
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('The specified item does not exist!')
+            return_message=public.return_error(public.lang('The specified item does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_cwd = project_find['path']
@@ -579,14 +586,14 @@ export PATH
         mod_name = get.mod_name
         filename = '{}/node_modules/{}/package.json'.format(project_cwd,mod_name)
         if not os.path.exists(filename): 
-            return_message=public.return_error('The specified module is not installed!')
+            return_message=public.return_error(public.lang('The specified module is not installed!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         nodejs_version = project_find['project_config']['nodejs_version']
         npm_bin = self.get_npm_bin(nodejs_version)
 
         if not npm_bin: 
-            return_message=public.return_error('The specified nodejs version does not exist!')
+            return_message=public.return_error(public.lang('The specified nodejs version does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         public.ExecShell(self.get_last_env(nodejs_version) + "cd {} && {} update {} &> {}".format(project_find['path'],npm_bin,mod_name,self._npm_exec_log))
@@ -624,7 +631,7 @@ export PATH
                 Param('run_user').String(),
                 Param('nodejs_version').String(),
                 Param('project_ps').String(),
-                Param('domains').List(),
+                # Param('domains').List(),
                 Param('project_env').String(),
                 Param('bind_extranet').Integer(),
                 Param('is_power_on').Integer(),
@@ -638,17 +645,17 @@ export PATH
             return public.return_message(-1, 0, str(ex))
 
         if not isinstance(get,public.dict_obj): 
-            return_message=public.return_error('The parameter type is wrong, need dict obj object')
+            return_message=public.return_error(public.lang('The parameter type is wrong, need dict obj object'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
-        if not self.is_install_nodejs(get):
-            return_message=public.return_error('Please install nodejs version manager first')
+        if not self._is_install_nodejs(get):
+            return_message=public.return_error(public.lang('Please install nodejs version manager first'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
 
         project_name = get.project_name.strip()
         if not re.match(r"^\w+$",project_name): 
-            return_message=public.return_error('The project name format is incorrect and supports letters, numbers, underscores, and expressions: ^[0-9A-Za-z_]$')
+            return_message=public.return_error(public.lang('The project name format is incorrect and supports letters, numbers, underscores, and expressions: ^[0-9A-Za-z_]$'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
 
@@ -669,10 +676,10 @@ export PATH
             return public.return_message(-1,0, return_message)
         
         domains = []
-        if get.bind_extranet == 1:
+        if int(get.bind_extranet) == 1:
             domains = get.domains
             if not public.is_apache_nginx(): 
-                return_message=public.return_error('Please install Nginx or Apache first')
+                return_message=public.return_error(public.lang('Please install Nginx or Apache first'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
         for domain in domains:
@@ -693,7 +700,7 @@ export PATH
                     'project_name': get.project_name,
                     'project_cwd': get.project_cwd,
                     'project_script': get.project_script,
-                    'bind_extranet': get.bind_extranet,
+                    'bind_extranet': int(get.bind_extranet),
                     'domains': [],
                     'is_power_on': get.is_power_on,
                     'run_user': get.run_user,
@@ -706,7 +713,7 @@ export PATH
         }
 
         project_id = public.M('sites').insert(pdata)
-        if get.bind_extranet == 1:
+        if int(get.bind_extranet) == 1:
             format_domains = []
             for domain in domains:
                 if domain.find(':') == -1: domain += ':80'
@@ -759,11 +766,11 @@ export PATH
             return public.return_message(-1, 0, str(ex))
 
         if not isinstance(get,public.dict_obj): 
-            return_message=public.return_error('The parameter type is wrong, need dict obj')
+            return_message=public.return_error(public.lang('The parameter type is wrong, need dict obj'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
-        if not self.is_install_nodejs(get):
-            return_message=public.return_error('Please install nodejs version manager before installing at least one nodejs')
+        if not self._is_install_nodejs(get):
+            return_message=public.return_error(public.lang('Please install nodejs version manager before installing at least one nodejs'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_find = self.get_project_find(get.project_name)
@@ -787,7 +794,7 @@ export PATH
         if hasattr(get,'project_cwd'): project_find['project_config']['project_cwd'] = get.project_cwd
         if hasattr(get,'project_script'): 
             if not get.project_script.strip():
-                return_message=public.return_error('Start command cannot be empty')
+                return_message=public.return_error(public.lang('Start command cannot be empty'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
             project_find['project_config']['project_script'] = get.project_script.strip()
@@ -916,7 +923,7 @@ export PATH
         try:
             get.validate([
                 Param('project_name').String(),
-                Param('domains').List(),
+                # Param('domains').List(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -926,7 +933,7 @@ export PATH
 
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('The specified item does not exist',data='')
+            return_message=public.return_error(public.lang('The specified item does not exist'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_id = project_find['id']
@@ -937,7 +944,7 @@ export PATH
         for domain in domains:
             domain = domain.strip()
             if not domain: 
-                return_message=public.return_error('Domain name cannot be empty',data='')
+                return_message=public.return_error(public.lang('Domain name cannot be empty'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
             domain_arr = domain.split(':')
@@ -989,7 +996,7 @@ export PATH
 
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('The specified item does not exist')
+            return_message=public.return_error(public.lang('The specified item does not exist'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         last_domain = get.domain
@@ -1000,12 +1007,12 @@ export PATH
         project_id = public.M('sites').where('name=?',(get.project_name,)).getField('id')
         if project_find['project_config']['bind_extranet']:
             if len(project_find['project_config']['domains']) == 1: 
-                return_message=public.return_error('At least one domain name is required for the mapped project')
+                return_message=public.return_error(public.lang('At least one domain name is required for the mapped project'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
         domain_id = public.M('domain').where('name=? AND pid=?',(domain_arr[0],project_id)).getField('id')
         if not domain_id: 
-            return_message=public.return_error('The specified domain name does not exist')
+            return_message=public.return_error(public.lang('The specified domain name does not exist'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         public.M('domain').where('id=?',(domain_id,)).delete()
@@ -1036,7 +1043,7 @@ export PATH
         try:
             get.validate([
                 Param('project_name').String(),
-                Param('domains').List(),
+                # Param('domains').List(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -1045,17 +1052,17 @@ export PATH
             return public.return_message(-1, 0, str(ex))
 
         if not public.is_apache_nginx(): 
-            return_message=public.return_error('Please install Nginx or Apache first')
+            return_message=public.return_error(public.lang('Please install Nginx or Apache first'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_name = get.project_name.strip()
         project_find = self.get_project_find(project_name)
         if not project_find: 
-            return_message=public.return_error('Item does not exist')
+            return_message=public.return_error(public.lang('Item does not exist'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         if not project_find['project_config']['domains']: 
-            return_message=public.return_error('Please add at least one domain name in the [Domain Management] option')
+            return_message=public.return_error(public.lang('Please add at least one domain name in the [Domain Management] option'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_find['project_config']['bind_extranet'] = 1
@@ -1158,8 +1165,8 @@ export PATH
         is_ssl,is_force_ssl = self.exists_nginx_ssl(project_name)
         ssl_config = ''
         if is_ssl:
-            listen_ports += "\n    listen 443 ssl http2;"
-            if listen_ipv6: listen_ports += "\n    listen [::]:443 ssl http2;"
+            listen_ports += "\n    listen 443 ssl;"
+            if listen_ipv6: listen_ports += "\n    listen [::]:443 ssl;"
         
             ssl_config = '''ssl_certificate    {vhost_path}/cert/{priject_name}/fullchain.pem;
     ssl_certificate_key    {vhost_path}/cert/{priject_name}/privkey.pem;
@@ -1412,14 +1419,23 @@ export PATH
 
         other_pids = []
         for i in project_pids:
-            other_pids += self.get_project_pids(pid=i)
+            other_pids += self.get_project_pids(pid=i)['message']
         if os.path.exists('/proc/{}'.format(pid)):
             project_pids.append(pid)
 
         all_pids = list(set(project_pids + other_pids))
         if not all_pids:
-            all_pids = self.get_other_pids(pid)
-        return public.return_message(0,0,sorted(all_pids))
+            all_pids = self.get_other_pids(pid)['message']
+        # public.print_log("all_pids -- {}".format(all_pids))
+        def convert_to_int(item):
+            try:
+                return int(item)
+            except ValueError:
+                return item
+
+        # 将所有元素转换为整数后进行排序
+        sorted_pids = sorted(all_pids, key=convert_to_int)
+        return public.return_message(0,0,sorted_pids)
 
     def get_other_pids(self,pid):
         '''
@@ -1545,7 +1561,7 @@ export PATH
 
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('Item does not exist')
+            return_message=public.return_error(public.lang('Item does not exist'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
 
@@ -1562,7 +1578,7 @@ export PATH
         if os.path.exists(package_file):
             node_modules_path = "{}/node_modules".format(project_find['path'])
             if not os.path.exists(node_modules_path):
-                return_message=public.return_error('Please go to the [Module] and click [One-key install] to install the module dependencies!')
+                return_message=public.return_error(public.lang('Please go to the [Module] and click [One-key install] to install the module dependencies!'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
             package_info = json.loads(public.readFile(package_file))
@@ -1584,7 +1600,7 @@ export PATH
             project_find['project_config']['run_user'] = 'root'
         log_file = "{}/{}.log".format(self._node_logs_path,get.project_name)
         if not project_script: 
-            return_message=public.return_error('No startup script configured')
+            return_message=public.return_error(public.lang('No startup script configured'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
 
@@ -1663,7 +1679,7 @@ echo $! > {pid_file}
                     return_message=public.return_error('The start command was intercepted by [Fort Tower Defense Privilege], please turn off {} user protection'.format(project_find['project_config']['run_user']))
                     del return_message['status']
                     return public.return_message(-1,0, return_message)
-                return_message=public.return_error('The startup command was intercepted by unknown security software, please check the installation software log')
+                return_message=public.return_error(public.lang('The startup command was intercepted by unknown security software, please check the installation software log'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
             return_message=public.return_error('failed to activate<pre>{}</pre>'.format(p))
@@ -1697,7 +1713,7 @@ echo $! > {pid_file}
         '''
         project_find = self.get_project_find(get.project_name)
         if not project_find: 
-            return_message=public.return_error('Project does not exist')
+            return_message=public.return_error(public.lang('Project does not exist'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_script = project_find['project_config']['project_script'].strip().replace('  ',' ')
@@ -1712,7 +1728,7 @@ cd {}
         else:
             pid_file = "{}/{}.pid".format(self._node_pid_path,get.project_name)
             if not os.path.exists(pid_file): 
-                return_message=public.return_error('Project did not start')
+                return_message=public.return_error(public.lang('Project did not start'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
             data = public.readFile(pid_file)
@@ -1720,11 +1736,11 @@ cd {}
                 pid = int(data)
                 pids = self.get_project_pids(pid=pid)
             else:
-                return_message=public.return_error('Project did not start')
+                return_message=public.return_error(public.lang('Project did not start'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
             if not pids: 
-                return_message=public.return_error('Project did not start')
+                return_message=public.return_error(public.lang('Project did not start'))
                 del return_message['status']
                 return public.return_message(-1,0, return_message)
             self.kill_pids(pids=pids)
@@ -1791,7 +1807,7 @@ cd {}
 
         log_file = "{}/{}.log".format(self._node_logs_path,get.project_name)
         if not os.path.exists(log_file): 
-            return_message=public.return_error('Log file does not exist')
+            return_message=public.return_error(public.lang('Log file does not exist'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         return public.return_message(0,0,self.xsssec(public.GetNumLines(log_file,200)))
@@ -1809,14 +1825,16 @@ cd {}
         if get: project_name = get.project_name.strip()
         load_info = {}
         pid_file = "{}/{}.pid".format(self._node_pid_path,project_name)
-        if not os.path.exists(pid_file): return public.return_message(0,0,load_info)
+        if not os.path.exists(pid_file):
+            return public.return_message(0,0,load_info)
         data = public.readFile(pid_file)
         if isinstance(data,str) and data:
             pid = int(data)
-            pids = self.get_project_pids(pid=pid)
+            pids = self.get_project_pids(pid=pid)['message']
         else:
             return public.return_message(0,0,load_info)
-        if not pids: return public.return_message(0,0,load_info)
+        if not pids:
+            return public.return_message(0,0,load_info)
         for i in pids:
             process_info = self.get_process_info_by_pid(i)
             if process_info: load_info[i] = process_info
@@ -2015,15 +2033,43 @@ cd {}
         '''
         if get: project_name = get.project_name.strip()
         pid_file = "{}/{}.pid".format(self._node_pid_path,project_name)
-        if not os.path.exists(pid_file): return public.return_message(0,0,False)
+        if not os.path.exists(pid_file):
+            return public.return_message(0,0,False)
         data=public.readFile(pid_file)
         if isinstance(data,str) and data:
             pid = int(data)
             pids = self.get_project_pids(pid=pid)
         else:
             return public.return_message(0,0,self.get_project_state_by_cwd(project_name))
-        if not pids: return self.get_project_state_by_cwd(project_name)
+        if not pids:
+            return self.get_project_state_by_cwd(project_name)
         return public.return_message(0,0,True)
+
+    def _get_project_run_state(self,get = None,project_name = None):
+        '''
+            @name 获取项目运行状态
+            @author hwliang<2021-08-12>
+            @param get<dict_obj>{
+                project_name: string<项目名称>
+            }
+            @param project_name<string> 项目名称
+            @return bool
+        '''
+        if get: project_name = get.project_name.strip()
+        pid_file = "{}/{}.pid".format(self._node_pid_path,project_name)
+        if not os.path.exists(pid_file):
+            return False
+        data=public.readFile(pid_file)
+        if isinstance(data,str) and data:
+            pid = int(data)
+            pids = self.get_project_pids(pid=pid)['message']
+        else:
+            return self.get_project_state_by_cwd(project_name)
+
+        if not pids:
+            return self.get_project_state_by_cwd(project_name)
+
+        return True
 
     def get_project_find(self,project_name):
         '''
@@ -2059,7 +2105,7 @@ cd {}
             return public.return_message(-1, 0, str(ex))
         project_info = public.M('sites').where('project_type=? AND name=?',('Node',get.project_name)).find()
         if not project_info: 
-            return_message=public.return_error('The specified item does not exist!')
+            return_message=public.return_error(public.lang('The specified item does not exist!'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_info = self.get_project_stat(project_info)
@@ -2074,7 +2120,8 @@ cd {}
             @return list
         '''
         project_info['project_config'] = json.loads(project_info['project_config'])
-        project_info['run'] = self.get_project_run_state(project_name = project_info['name'])
+        project_info['run'] = self._get_project_run_state(project_name = project_info['name'])
+        # project_info['run'] = True
         project_info['load_info'] = {}
         if project_info['run']:
             project_info['load_info'] = self.get_project_load_info(project_name = project_info['name'])['message']
@@ -2115,7 +2162,8 @@ cd {}
             @return dict
         '''
         project_config = json.loads(public.M('sites').where('name=?',project_name).getField('project_config'))
-        if 'listen_port' in project_config: return project_config['listen_port']
+        if 'listen_port' in project_config:
+            return project_config['listen_port']
         return False
 
 
@@ -2216,7 +2264,7 @@ cd {}
                 project_config = json.loads(project_find['project_config'])
                 if project_config['is_power_on'] in [0,False,'0',None]: continue
                 project_name = project_find['name']
-                project_state = self.get_project_run_state(project_name=project_name)
+                project_state = self._get_project_run_state(project_name=project_name)
                 if not project_state:
                     get.project_name = project_name
                     result = self.start_project(get)['message']

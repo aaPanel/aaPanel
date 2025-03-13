@@ -40,7 +40,7 @@ class BackupTool:
         elif isinstance(sub_dir, list):
             self._sub_dir_name = "/".join(filter(None, [i.strip("./") for i in sub_dir]))
         else:
-            return "不支持的类型设置"
+            return "Unsupported type settings"
 
     def backup(self,
                src: str,  # 源文件位置
@@ -51,12 +51,12 @@ class BackupTool:
                ) -> Optional[str]:  # 返回执行错误的信息
 
         if not os.path.exists(src):
-            return "源路径不存在"
+            return "The source path does not exist"
         if backup_path is None:
             backup_path = self.backup_path
 
         if not os.path.exists(backup_path):
-            return "备份目录不存在"
+            return "The backup directory does not exist"
         if sub_dir is not None:
             set_res = self.set_sub_dir(sub_dir)
             if set_res is not None:
@@ -76,7 +76,7 @@ class BackupTool:
             write_file(self.exec_log_file, "")
             execStr = ("cd {} && "
                        "tar -zcvf '{}' --exclude=.user.ini ./ 2>&1 > {} \n"
-                       "echo '---备份执行完成---' >> {}"
+                       "echo '---Backup execution completed---' >> {}"
                        ).format(src, os.path.join(target_path, zip_name), self.exec_log_file, self.exec_log_file)
             ExecShell(execStr)
             if site_info is not None and "id" in site_info and "name" in site_info:
@@ -86,7 +86,7 @@ class BackupTool:
                 )
                 write_log('TYPE_SITE', 'SITE_BACKUP_SUCCESS', (site_info["name"],))
         except:
-            return "备份执行失败"
+            return "The backup execution failed"
 
     def _async_backup(self, src: str, target_path: str, zip_name: str, site_info: dict):
         import threading
@@ -102,7 +102,7 @@ class BackupTool:
             if time.time() - mtime > 60 * 20:  # 20 分钟未执行，认为出现在不可抗力，导致备份失败，允许再次备份
                 os.remove(tip_file)
             else:
-                return "备份进行中，请勿继续操作"
+                return "The backup is in progress, do not proceed"
 
         write_file(tip_file, "")
 
@@ -111,7 +111,7 @@ class BackupTool:
                 write_file(self.exec_log_file, "")
                 execStr = ("cd {} && "
                            "tar -zcvf '{}' --exclude=.user.ini ./ 2>&1 > {} \n"
-                           "echo '---备份执行完成---' >> {}"
+                           "echo '---Backup execution completed---' >> {}"
                            ).format(src, os.path.join(target_path, zip_name), self.exec_log_file, self.exec_log_file)
                 ExecShell(execStr)
                 if site_info is not None and "id" in site_info and "name" in site_info:

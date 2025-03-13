@@ -124,6 +124,10 @@ UploadFile.prototype = {
 	 * @description 视图初始化
 	 */
 	initialize_view: function () {
+	    if ($('#uploadView').length > 0) {
+	        $('#uploadView').remove();
+	    }
+	    
 		var title = this.createEl('span');
 		this.uploadElement = this.createEl('div');
 		this.uploadElement.setAttribute(
@@ -146,7 +150,6 @@ UploadFile.prototype = {
 
 		// 进入目标
 		this.bind(document, 'dragenter', function (ev) {
-			console.log(ev);
 			_this.file_drag_hover(ev);
 		});
 
@@ -157,13 +160,12 @@ UploadFile.prototype = {
 
 		// 离开放置目录
 		this.bind(this.uploadElement, 'dragleave', function (ev) {
-			if (ev.path[0].id == 'uploadView') {
+			if (ev.target.id == 'uploadView') {
 				if (ev.screenX == 0 || ev.screenY == 0) {
-					ev.path[0].style.display = 'none';
+					ev.target.style.display = 'none';
 				}
 				return false;
 			}
-			// _this.file_drag_hover(ev);
 		});
 
 		// 放置目标
@@ -890,23 +892,23 @@ UploadFile.prototype = {
 	 */
 	traverse_file_tree: function (item) {
 		var _this6 = this;
-
+        
 		var path = item.fullPath || '';
 		if (item.isFile) {
 			item.file(function (e) {
 				_this6.file_upload_limit(e, path);
+				clearTimeout(_this6.timeNumber);
+    			_this6.timeNumber = setTimeout(function () {
+    				_this6.load.close();
+    				if (_this6.isUpload && _this6.isGetFiles) {
+    					_this6.render_file_list(_this6.fileList);
+    				} else {
+    					var layers = _this6.layer;
+    					_this6.init_data();
+    					_this6.layers = layers;
+    				}
+    			}, 10);
 			});
-			clearTimeout(this.timeNumber);
-			this.timeNumber = setTimeout(function () {
-				_this6.load.close();
-				if (_this6.isUpload && _this6.isGetFiles) {
-					_this6.render_file_list(_this6.fileList);
-				} else {
-					var layers = _this6.layer;
-					_this6.init_data();
-					_this6.layers = layers;
-				}
-			}, 10);
 		} else if (item.isDirectory) {
 			var dirReader = item.createReader();
 			var fnReadEntries = function (entries) {
@@ -947,7 +949,9 @@ UploadFile.prototype = {
 				var getAsEntry = ev.webkitGetAsEntry || ev.getAsEntry;
 				var item = getAsEntry.call(ev);
 				if (item) {
-					if (!_this7.isUpload) return false;
+				    if (!_this7.isUpload){
+                        return false
+                    }
 					_this7.traverse_file_tree(item);
 				}
 			});

@@ -283,11 +283,22 @@ def convert_timezone_str_to_timestamp(timestamp_str: str):
     import re
     # 解析时间字符串为  2024-05-16T06:18:23.915547557-04:00    时间戳
     timestamp_str = re.sub(r'\.\d+', '', timestamp_str)
-    dt = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
-    # 转换时区为 UTC
-    dt_utc = dt.astimezone(timezone.utc)
 
-    # 转换为时间戳
+    date_formats = ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d %H:%M:%S %z %Z")
+    dt = None
+
+    for format_str in date_formats:
+        try:
+            dt = datetime.strptime(timestamp_str, format_str)
+            break
+        except ValueError:
+            continue
+
+    if dt is None:
+        return None
+
+    # 转换时区为 UTC，然后转换为时间戳
+    dt_utc = dt.astimezone(timezone.utc)
     timestamp = dt_utc.timestamp()
 
     return timestamp

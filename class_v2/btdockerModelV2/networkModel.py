@@ -48,6 +48,7 @@ class main(dockerBase):
 
             networks = client.networks
             network_attr = self.get_network_attr(networks)
+
             data = list()
 
             for attr in network_attr:
@@ -55,11 +56,20 @@ class main(dockerBase):
                 c_result = self.get_network_id(get)
                 subnet = ""
                 gateway = ""
+                subnetv6 = ""
+                gatewayv6 = ""
+
                 if attr["IPAM"]["Config"]:
                     if "Subnet" in attr["IPAM"]["Config"][0]:
                         subnet = attr["IPAM"]["Config"][0]["Subnet"]
                     if "Gateway" in attr["IPAM"]["Config"][0]:
                         gateway = attr["IPAM"]["Config"][0]["Gateway"]
+
+                    if len(attr["IPAM"]["Config"]) > 1:
+                        if "Subnet" in attr["IPAM"]["Config"][1]:
+                            subnetv6 = attr["IPAM"]["Config"][1]["Subnet"]
+                        if "Gateway" in attr["IPAM"]["Config"][1]:
+                            gatewayv6 = attr["IPAM"]["Config"][1]["Gateway"]
 
                 tmp = {
                     "id": attr["Id"],
@@ -68,6 +78,8 @@ class main(dockerBase):
                     "driver": attr["Driver"],
                     "subnet": subnet,
                     "gateway": gateway,
+                    "subnetv6": subnetv6,
+                    "gatewayv6": gatewayv6,
                     "labels": attr["Labels"],
                     "used": 1 if c_result["Containers"] else 0,
                     "containers": c_result["Containers"],
@@ -78,8 +90,7 @@ class main(dockerBase):
         except Exception as e:
             err = str(e)
             if "Connection reset by peer" in err:
-                return public.return_message(-1, 0, _(
-                                             "The docker service is running abnormally, please restart and try again!"))
+                return public.return_message(-1, 0, public.lang("The docker service is running abnormally, please restart and try again!"))
             return public.return_message(-1, 0, [])
 
     def get_network_attr(self, networks):
@@ -117,43 +128,61 @@ class main(dockerBase):
 
         import docker
 
-        ipam_pool = docker.types.IPAMPool(
-            subnet=get.subnet,
-            gateway=get.gateway,
-            iprange=get.iprange
+        # 传参 给默认值
+        subnet = get.get("subnet", "")
+        gateway = get.get("gateway", "")
+        iprange = get.get("iprange", "")
+        subnet_v6 = get.get("subnet_v6", "")
+        gateway_v6 = get.get("gateway_v6", "")
+        v6_status = get.get("status/d", 0)
+
+        ipam_pool4 = docker.types.IPAMPool(
+            subnet=subnet,
+            gateway=gateway,
+            iprange=iprange
         )
 
-        ipam_config = docker.types.IPAMConfig(
-            pool_configs=[ipam_pool]
-        )
+        if v6_status != 0:
+            ipam_pool6 = docker.types.IPAMPool(
+                subnet=subnet_v6,
+                gateway=gateway_v6,
+            )
+            ipam_config = docker.types.IPAMConfig(
+                pool_configs=[ipam_pool4, ipam_pool6]
+            )
+        else:
+            ipam_config = docker.types.IPAMConfig(
+                pool_configs=[ipam_pool4]
+            )
 
         try:
             self.docker_client(self._url).networks.create(
                 name=get.name,
                 options=dp.set_kv(get.options),
-                driver="bridge",
+                driver=get.driver,  # 使用用户指定的网络驱动类型
                 ipam=ipam_config,
-                labels=dp.set_kv(get.labels)
+                enable_ipv6=v6_status,
             )
         except docker.errors.APIError as e:
             print(str(e))
             if "failed to allocate gateway" in str(e):
-                return public.return_message(-1, 0, _(
-                                             "The gateway setting is wrong, Please enter a gateway that matches the subnet: {}".format(
-                                                 get.subnet)))
+                return public.return_message(-1, 0,
+                                             public.lang("The gateway setting is wrong, Please enter a gateway that matches the subnet: {}", get.subnet))
             if "invalid CIDR address" in str(e):
-                return public.return_message(-1, 0, _(
-                                             "Subnet address format error, please enter for example: 172.16.0.0/16"))
+                return public.return_message(-1, 0, public.lang("Subnet address format error, please enter for example: 172.16.0.0/16"))
             if "invalid Address SubPool" in str(e):
-                return public.return_message(-1, 0, _(
-                                             "IP range format error, please enter the appropriate IP range for this subnet:".format(
-                                                 get.subnet)))
+                return public.return_message(-1, 0,
+                                             public.lang("IP range format error, please enter the appropriate IP range for this subnet:", get.subnet))
             if "Pool overlaps with other one on this address space" in str(e):
-                return public.return_message(-1, 0, _( "IP range [{}] already exists!".format(get.subnet)))
-            return public.return_message(-1, 0, _( "Failed to add network! {}".format(str(e))))
+                return public.return_message(-1, 0, public.lang("IP range [ {}] already exists!", get.subnet))
+            if "kernel version failed to meet the minimum ipvlan kernel requirement" in str(e):
+                return public.return_message(-1, 0, public.lang("The system kernel version is too low, please update the kernel or choose another network mode"))
+            if "not a swarm manager" in str(e):
+                return public.return_message(-1, 0, public.lang("The current node is not a Swarm and needs to be configured before it can be used"))
+            return public.return_message(-1, 0, public.lang("Failed to add network! {}", str(e)))
 
         dp.write_log("Added network [{}] [{}] successful!".format(get.name, get.iprange))
-        return public.return_message(0, 0, _( "Added network successfully!"))
+        return public.return_message(0, 0, public.lang("Added network successfully!"))
 
     def del_network(self, get):
         """
@@ -176,16 +205,16 @@ class main(dockerBase):
             networks = self.docker_client(self._url).networks.get(get.id)
             attrs = networks.attrs
             if attrs['Name'] in ["bridge", "none"]:
-                return public.return_message(-1, 0, _( "The system default network cannot be deleted!"))
+                return public.return_message(-1, 0, public.lang("The system default network cannot be deleted!"))
 
             networks.remove()
             dp.write_log("Delete network [{}] successfully!".format(attrs['Name']))
-            return public.return_message(0, 0, _( "successfully delete!"))
+            return public.return_message(0, 0, public.lang("successfully delete!"))
 
         except docker.errors.APIError as e:
             if " has active endpoints" in str(e):
-                return public.return_message(-1, 0, _( "The network cannot be deleted while it is in use!"))
-            return public.return_message(-1, 0, _( "Delete failed! {}".format(str(e))))
+                return public.return_message(-1, 0, public.lang("The network cannot be deleted while it is in use!"))
+            return public.return_message(-1, 0, public.lang("Delete failed! {}", str(e)))
 
     def prune(self, get):
         """
@@ -196,13 +225,13 @@ class main(dockerBase):
         try:
             res = self.docker_client(self._url).networks.prune()
             if not res['NetworksDeleted']:
-                return public.return_message(-1, 0, _( "There are no useless networks!"))
+                return public.return_message(-1, 0, public.lang("There are no useless networks!"))
 
             dp.write_log("Delete useless network successfully!")
-            return public.return_message(0, 0, _( "successfully delete!"))
+            return public.return_message(0, 0, public.lang("successfully delete!"))
 
         except docker.errors.APIError as e:
-            return public.return_message(-1, 0, _( "Delete failed! {}".format(str(e))))
+            return public.return_message(-1, 0, public.lang("Delete failed! {}", str(e)))
 
     def disconnect(self, get):
         """
@@ -228,20 +257,20 @@ class main(dockerBase):
             get.id = get.get("id/s", "")
             get.container_id = get.get("container_id/s", "")
             if get.id == "":
-                return public.return_message(-1, 0, _( "Network ID cannot be empty"))
+                return public.return_message(-1, 0, public.lang("Network ID cannot be empty"))
             if get.container_id == "":
-                return public.return_message(-1, 0, _( "Container ID cannot be empty"))
+                return public.return_message(-1, 0, public.lang("Container ID cannot be empty"))
 
             networks = self.docker_client(self._url).networks.get(get.id)
             networks.disconnect(get.container_id)
             dp.write_log("Network disconnection [{}] successful!".format(get.id))
-            return public.return_message(0, 0, _( "Network disconnection was successful!"))
+            return public.return_message(0, 0, public.lang("Network disconnection was successful!"))
         except docker.errors.APIError as e:
             if "No such container" in str(e):
-                return public.return_message(-1, 0, _( "Container ID: {}, does not exist!".format(get.container_id)))
+                return public.return_message(-1, 0, public.lang("Container ID: {}, does not exist!", get.container_id))
             if "network" in str(e) and "Not Found" in str(e):
-                return public.return_message(-1, 0, _( "Network ID: {}, does not exist!".format(get.id)))
-            return public.return_message(-1, 0, _( "Network disconnection failed! {}".format(str(e))))
+                return public.return_message(-1, 0, public.lang("Network ID: {}, does not exist!", get.id))
+            return public.return_message(-1, 0, public.lang("Network disconnection failed! {}", str(e)))
 
     def connect(self, get):
         """
@@ -267,10 +296,10 @@ class main(dockerBase):
             networks = self.docker_client(self._url).networks.get(get.id)
             networks.connect(get.container_id)
             dp.write_log("Network connection [{}] successful!".format(get.id))
-            return public.return_message(0, 0, _( "Network connection successful!"))
+            return public.return_message(0, 0, public.lang("Network connection successful!"))
         except docker.errors.APIError as e:
             if "No such container" in str(e):
-                return public.return_message(-1, 0, _( "Container ID: {}, does not exist!".format(get.container_id)))
+                return public.return_message(-1, 0, public.lang("Container ID: {}, does not exist!", get.container_id))
             if "network" in str(e) and "Not Found" in str(e):
-                return public.return_message(-1, 0, _( "Network ID: {}, does not exist!".format(get.id)))
-            return public.return_message(-1, 0, _( "Failed to connect to network! {}".format(str(e))))
+                return public.return_message(-1, 0, public.lang("Network ID: {}, does not exist!", get.id))
+            return public.return_message(-1, 0, public.lang("Failed to connect to network! {}", str(e)))

@@ -8,10 +8,14 @@
 # +-------------------------------------------------------------------
 import base64
 import public,re,os,nginx,apache,json,time,ols
+import shutil
+import zipfile
 try:
     import pyotp
 except:
     public.ExecShell("pip install pyotp &")
+
+
 try:
     from BTPanel import session,admin_path_checks,g,request,cache
     import send_mail
@@ -82,7 +86,7 @@ class config:
         # 自定义邮件
         self.mail.qq_stmp_insert(get.email.strip(), get.stmp_pwd.strip(), get.hosts.strip(),get.port.strip())
         # 测试发送
-        if self.mail.qq_smtp_send(get.email.strip(), public.get_msg_gettext('aaPanel Alert Test Email'), public.get_msg_gettext('aaPanel Alert Test Email')):
+        if self.mail.qq_smtp_send(get.email.strip(), public.lang("aaPanel Alert Test Email"), public.lang("aaPanel Alert Test Email")):
             if not get.email.strip() in self.__mail_list:
                 self.__mail_list.append(get.email.strip())
                 public.writeFile(self.__mail_list_data, json.dumps(self.__mail_list))
@@ -343,7 +347,7 @@ class config:
         self.get_password_config(None)
         if session.get('password_expire', False):
             session['password_expire'] = False
-        return public.returnMsg(True, 'USER_PASSWORD_SUCCESS')
+        return public.returnMsg(True, 'Password changed!')
 
     def get_password_config(self,get=None):
         '''
@@ -476,100 +480,103 @@ class config:
             return public.return_msg_gettext(True,'Setup successfully!')
         return public.return_msg_gettext(False,'No changes submitted')
 
-    def setPanel(self,get):
-        if not public.IsRestart(): return public.return_msg_gettext(False,'Please run the program when all install tasks finished!')
-        if 'limitip' in get:
-            if get.limitip.find('/') != -1:
-                return public.return_msg_gettext(False,'The authorized IP format is incorrect, and the subnet segment writing is not supported')
-        isReWeb = False
-        sess_out_path = 'data/session_timeout.pl'
-        if 'session_timeout' in get:
-            try:
-                session_timeout = int(get.session_timeout)
-            except:
-                return public.returnMsg(False,"Timeout must be an integer!")
-            s_time_tmp = public.readFile(sess_out_path)
-            if not s_time_tmp: s_time_tmp = '0'
-            if int(s_time_tmp) != session_timeout:
-                if session_timeout < 300 or session_timeout > 86400: return public.return_msg_gettext(False,'The timeout time needs to be between 300-86400')
-                public.writeFile(sess_out_path,str(session_timeout))
+    def setPanel(self, get):
+        try:
+            if not public.IsRestart(): return public.return_msg_gettext(False,'Please run the program when all install tasks finished!')
+            if 'limitip' in get:
+                if get.limitip.find('/') != -1:
+                    return public.return_msg_gettext(False,'The authorized IP format is incorrect, and the subnet segment writing is not supported')
+            isReWeb = False
+            sess_out_path = 'data/session_timeout.pl'
+            if 'session_timeout' in get:
+                try:
+                    session_timeout = int(get.session_timeout)
+                except:
+                    return public.returnMsg(False,"Timeout must be an integer!")
+                s_time_tmp = public.readFile(sess_out_path)
+                if not s_time_tmp: s_time_tmp = '0'
+                if int(s_time_tmp) != session_timeout:
+                    if session_timeout < 300 or session_timeout > 86400: return public.return_msg_gettext(False,'The timeout time needs to be between 300-86400')
+                    public.writeFile(sess_out_path,str(session_timeout))
+                    isReWeb = True
+            # else:
+            #     return public.returnMsg(False,'Timeout must be an integer!')
+
+            workers_p = 'data/workers.pl'
+            if 'workers' in get:
+                workers = int(get.workers)
+                if int(public.readFile(workers_p)) != workers:
+                    if workers < 1 or workers > 1024: return public.return_msg_gettext(False,public.lang("The number of panel threads should be between 1-1024"))
+                    public.writeFile(workers_p,str(workers))
+                    isReWeb = True
+
+            if get.domain:
+                if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", get.domain): return public.return_msg_gettext(False, 'Domain cannot bind ip address')
+                reg = r"^([\w\-\*]{1,100}\.){1,4}(\w{1,10}|\w{1,10}\.\w{1,10})$"
+                if not re.match(reg, get.domain): return public.return_msg_gettext(False,'Format of primary domain is incorrect')
+            if get.address:
+                from public.regexplib import match_ipv4, match_ipv6
+                if not match_ipv4.match(get.address) and not match_ipv6.match(get.address):
+                    return public.return_msg_gettext(False, 'Please set the correct Server IP')
+            oldPort = public.GetHost(True)
+            if not 'port' in get:
+                get.port = oldPort
+            newPort = get.port
+            if oldPort != get.port:
+                get.port = str(int(get.port))
+                if self.IsOpen(get.port):
+                    return public.return_msg_gettext(False,'Port [{}] is in use!',(get.port,))
+                if int(get.port) >= 65535 or  int(get.port) < 100: return public.return_msg_gettext(False,'Port range is incorrect! should be between 100-65535')
+                public.writeFile('data/port.pl',get.port)
+                import firewalls
+                get.ps = public.lang("New panel port")
+                fw = firewalls.firewalls()
+                fw.AddAcceptPort(get)
+                get.port = oldPort
+                get.id = public.M('firewall').where("port=?",(oldPort,)).getField('id')
+                fw.DelAcceptPort(get)
                 isReWeb = True
-        else:
-            return public.returnMsg(False,'Timeout must be an integer!')
 
-        workers_p = 'data/workers.pl'
-        if 'workers' in get:
-            workers = int(get.workers)
-            if int(public.readFile(workers_p)) != workers:
-                if workers < 1 or workers > 1024: return public.return_msg_gettext(False,public.get_msg_gettext('The number of panel threads should be between 1-1024'))
-                public.writeFile(workers_p,str(workers))
-                isReWeb = True
+            if get.webname != session['title']:
+                session['title'] = public.xssencode2(get.webname)
+                public.SetConfigValue('title',public.xssencode2(get.webname))
 
-        if get.domain:
-            if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", get.domain): return public.return_msg_gettext(False, 'Domain cannot bind ip address')
-            reg = r"^([\w\-\*]{1,100}\.){1,4}(\w{1,10}|\w{1,10}\.\w{1,10})$"
-            if not re.match(reg, get.domain): return public.return_msg_gettext(False,'Format of primary domain is incorrect')
-        if get.address:
-            from public.regexplib import match_ipv4, match_ipv6
-            if not match_ipv4.match(get.address) and not match_ipv6.match(get.address) :
-                return public.return_msg_gettext(False, 'Please set the correct Server IP')
-        oldPort = public.GetHost(True)
-        if not 'port' in get:
-            get.port = oldPort
-        newPort = get.port
-        if oldPort != get.port:
-            get.port = str(int(get.port))
-            if self.IsOpen(get.port):
-                return public.return_msg_gettext(False,'Port [{}] is in use!',(get.port,))
-            if int(get.port) >= 65535 or  int(get.port) < 100: return public.return_msg_gettext(False,'Port range is incorrect! should be between 100-65535')
-            public.writeFile('data/port.pl',get.port)
-            import firewalls
-            get.ps = public.get_msg_gettext('New panel port')
-            fw = firewalls.firewalls()
-            fw.AddAcceptPort(get)
-            get.port = oldPort
-            get.id = public.M('firewall').where("port=?",(oldPort,)).getField('id')
-            fw.DelAcceptPort(get)
-            isReWeb = True
+            limitip = public.readFile('data/limitip.conf')
+            if get.limitip != limitip:
+                public.writeFile('data/limitip.conf',get.limitip)
+                cache.set('limit_ip',[])
 
-        if get.webname != session['title']:
-            session['title'] = public.xssencode2(get.webname)
-            public.SetConfigValue('title',public.xssencode2(get.webname))
+            public.writeFile('data/domain.conf',public.xssencode2(get.domain).strip())
+            public.writeFile('data/iplist.txt',get.address)
 
-        limitip = public.readFile('data/limitip.conf')
-        if get.limitip != limitip:
-            public.writeFile('data/limitip.conf',get.limitip)
-            cache.set('limit_ip',[])
+            import files
+            fs = files.files()
+            if not fs.CheckDir(get.backup_path): return public.returnMsg(False,'Cannot use system critical directory as default backup directory')
+            if not fs.CheckDir(get.sites_path): return public.returnMsg(False,'Cannot use system critical directory as default site directory')
+            public.M('config').where("id=?",('1',)).save('backup_path,sites_path',(get.backup_path,get.sites_path))
+            session['config']['backup_path'] = os.path.join('/',get.backup_path)
+            session['config']['sites_path'] = os.path.join('/',get.sites_path)
+            db_backup  = get.backup_path + '/database'
+            if not os.path.exists(db_backup):
+                try:
+                    os.makedirs(db_backup,384)
+                except:
+                    public.ExecShell('mkdir -p ' + db_backup)
+            site_backup  = get.backup_path + '/site'
+            if not os.path.exists(site_backup):
+                try:
+                    os.makedirs(site_backup,384)
+                except:
+                    public.ExecShell('mkdir -p ' + site_backup)
 
-        public.writeFile('data/domain.conf',public.xssencode2(get.domain).strip())
-        public.writeFile('data/iplist.txt',get.address)
-
-        import files
-        fs = files.files()
-        if not fs.CheckDir(get.backup_path): return public.returnMsg(False,'Cannot use system critical directory as default backup directory')
-        if not fs.CheckDir(get.sites_path): return public.returnMsg(False,'Cannot use system critical directory as default site directory')
-        public.M('config').where("id=?",('1',)).save('backup_path,sites_path',(get.backup_path,get.sites_path))
-        session['config']['backup_path'] = os.path.join('/',get.backup_path)
-        session['config']['sites_path'] = os.path.join('/',get.sites_path)
-        db_backup  = get.backup_path + '/database'
-        if not os.path.exists(db_backup):
-            try:
-                os.makedirs(db_backup,384)
-            except:
-                public.ExecShell('mkdir -p ' + db_backup)
-        site_backup  = get.backup_path + '/site'
-        if not os.path.exists(site_backup):
-            try:
-                os.makedirs(site_backup,384)
-            except:
-                public.ExecShell('mkdir -p ' + site_backup)
-
-        mhost = public.GetHost()
-        if get.domain.strip(): mhost = get.domain
-        data = {'uri':request.path,'host':mhost+':'+newPort,'status':True,'isReWeb':isReWeb,'msg':public.get_msg_gettext('Saved')}
-        public.write_log_gettext('Panel configuration','Set panel port [{}], domain [{}], default backup directory [{}], default site directory [{}], server IP [{}], authorized IP [{}]!',(newPort,get.domain,get.backup_path,get.sites_path,get.address,get.limitip))
-        if isReWeb: public.restart_panel()
-        return data
+            mhost = public.GetHost()
+            if get.domain.strip(): mhost = get.domain
+            data = {'uri':request.path,'host':mhost+':'+newPort,'status':True,'isReWeb':isReWeb,'msg':public.lang("Saved")}
+            public.write_log_gettext('Panel configuration','Set panel port [{}], domain [{}], default backup directory [{}], default site directory [{}], server IP [{}], authorized IP [{}]!',(newPort,get.domain,get.backup_path,get.sites_path,get.address,get.limitip))
+            if isReWeb: public.restart_panel()
+            return data
+        except:
+            public.print_log(public.get_error_info())
 
 
     def set_admin_path(self,get):
@@ -1093,7 +1100,7 @@ class config:
             if ip in local_ip: continue
             if ip in ip_list: continue
             ip_list.append(ip)
-        net_ip = public.httpGet("https://www.aapanel.com/api/common/getClientIP")
+        net_ip = public.httpGet('{}/api/common/getClientIP'.format(public.OfficialApiBase()))
 
         if net_ip:
             net_ip = net_ip.strip()
@@ -1164,20 +1171,22 @@ class config:
     #获取PHP配置参数
     def GetPHPConf(self,get):
         gets = [
-                {'name':'short_open_tag','type':1,'ps':public.get_msg_gettext('Short tag support')},
-                {'name':'asp_tags','type':1,'ps':public.get_msg_gettext('ASP tag support')},
-                {'name':'max_execution_time','type':2,'ps':public.get_msg_gettext('Max time of running script')},
-                {'name':'max_input_time','type':2,'ps':public.get_msg_gettext('Max time of input')},
-                {'name':'memory_limit','type':2,'ps':public.get_msg_gettext('Limit of script memory')},
-                {'name':'post_max_size','type':2,'ps':public.get_msg_gettext('Max size of POST data')},
-                {'name':'file_uploads','type':1,'ps':public.get_msg_gettext('Whether to allow upload file')},
-                {'name':'upload_max_filesize','type':2,'ps':public.get_msg_gettext('Max size of upload file')},
-                {'name':'max_file_uploads','type':2,'ps':public.get_msg_gettext('Max value of simultaneously upload file')},
-                {'name':'default_socket_timeout','type':2,'ps':public.get_msg_gettext('Socket over time')},
-                {'name':'error_reporting','type':3,'ps':public.get_msg_gettext('Level of error')},
-                {'name':'display_errors','type':1,'ps':public.get_msg_gettext('Whether to output detailed error info')},
-                {'name':'cgi.fix_pathinfo','type':0,'ps':public.get_msg_gettext('Whether to turn on pathinfo')},
-                {'name':'date.timezone','type':3,'ps':public.get_msg_gettext('Timezone')}
+            {'name': 'short_open_tag', 'type': 1, 'ps': public.get_msg_gettext('Short tag support')},
+            {'name': 'asp_tags', 'type': 1, 'ps': public.get_msg_gettext('ASP tag support')},
+            {'name': 'max_execution_time', 'type': 2, 'ps': public.get_msg_gettext('Max time of running script')},
+            {'name': 'max_input_time', 'type': 2, 'ps': public.get_msg_gettext('Max time of input')},
+            {'name': 'memory_limit', 'type': 2, 'ps': public.get_msg_gettext('Limit of script memory')},
+            {'name': 'post_max_size', 'type': 2, 'ps': public.get_msg_gettext('Max size of POST data')},
+            {'name': 'file_uploads', 'type': 1, 'ps': public.get_msg_gettext('Whether to allow upload file')},
+            {'name': 'upload_max_filesize', 'type': 2, 'ps': public.get_msg_gettext('Max size of upload file')},
+            {'name': 'max_file_uploads', 'type': 2,
+             'ps': public.get_msg_gettext('Max value of simultaneously upload file')},
+            {'name': 'default_socket_timeout', 'type': 2, 'ps': public.get_msg_gettext('Socket over time')},
+            {'name': 'error_reporting', 'type': 3, 'ps': public.get_msg_gettext('Level of error')},
+            {'name': 'display_errors', 'type': 1,
+             'ps': public.get_msg_gettext('Whether to output detailed error info')},
+            {'name': 'cgi.fix_pathinfo', 'type': 0, 'ps': public.get_msg_gettext('Whether to turn on pathinfo')},
+            {'name': 'date.timezone', 'type': 3, 'ps': public.get_msg_gettext('Timezone')}
                 ]
         phpini_file = '/www/server/php/' + get.version + '/etc/php.ini'
         if public.get_webserver() == 'openlitespeed':
@@ -1490,7 +1499,7 @@ class config:
                 self.CreateSSL()
                 cert['info'] = public.get_cert_data(cert_file)
             if cert['info']:
-                if cert['info']['issuer'] == '宝塔面板':
+                if cert['info']['issuer'] == 'aapanel.com':
                     if os.path.exists('ssl/baota_root.pfx'):
                         cert['download_root'] = True
                         cert['root_password'] = public.readFile('ssl/root_password.pl')
@@ -1500,23 +1509,43 @@ class config:
         cert['rep'] = os.path.exists('ssl/input.pl')
         return cert
 
-    #保存面板证书
-    def SavePanelSSL(self,get):
+    # 保存面板证书
+    def SavePanelSSL(self, get):
         keyPath = 'ssl/privateKey.pem'
         certPath = 'ssl/certificate.pem'
         checkCert = '/tmp/cert.pl'
         ssl_pl = 'data/ssl.pl'
-        if not 'certPem' in get: return public.returnMsg(False,'The certPem parameter is missing!')
-        if not 'privateKey' in get: return public.returnMsg(False,'The privateKey parameter is missing!')
-        public.writeFile(checkCert,get.certPem)
+        if not 'certPem' in get: return public.returnMsg(False,public.lang("The certPem parameter is missing!"))
+        if not 'privateKey' in get: return public.returnMsg(False, public.lang("The privateKey parameter is missing!"))
+        get.privateKey = get.privateKey.strip()
+        get.certPem = get.certPem.strip()
+        import ssl_info
+        ssl_info = ssl_info.ssl_info()
+        # #验证格式
+        # format_status, format_message = ssl_info.verify_format('key',get.privateKey)
+        # if not format_status:
+        #     return public.returnMsg(False, format_message)
+        # format_status, format_message = ssl_info.verify_format('cert',get.certPem)
+        # if not format_status:
+        #     return public.returnMsg(False, format_message)
+        # 验证证书和密钥是否匹配格式是否为pem
+        # check_flag, check_msg = ssl_info.verify_certificate_and_key_match(get.privateKey, get.certPem)
+        # if not check_flag: return public.returnMsg(False, check_msg)
+        # 验证证书链是否完整
+        check_chain_flag, check_chain_msg = ssl_info.verify_certificate_chain(get.certPem)
+        if not check_chain_flag: return public.returnMsg(False, check_chain_msg)
+
+        public.writeFile(checkCert, get.certPem)
+        if not public.CheckCert(checkCert):
+            os.remove(checkCert)
+            return public.returnMsg(False, 'Certificate ERROR, please check!')
         if get.privateKey:
-            public.writeFile(keyPath,get.privateKey)
+            public.writeFile(keyPath, get.privateKey)
         if get.certPem:
             public.writeFile(certPath, get.certPem)
-        if not public.CheckCert(checkCert): return public.return_msg_gettext(False, 'Certificate ERROR, please check!')
-        public.writeFile('ssl/input.pl','True')
-        if os.path.exists(ssl_pl): public.writeFile('data/reload.pl','True')
-        return public.return_msg_gettext(True, 'Certificate saved!')
+        public.writeFile('ssl/input.pl', 'True')
+        if os.path.exists(ssl_pl): public.writeFile('data/reload.pl', 'True')
+        return public.returnMsg(True, public.lang("Certificate saved!"))
 
     # 获取ftp端口
     def get_ftp_port(self):
@@ -1535,6 +1564,8 @@ class config:
 
     #获取配置
     def get_config(self,get):
+        from panelModelV2.publicModel import main
+        main().get_public_config(public.to_dict_obj({}))
         data = {}
         if 'config' in session:
             session['config']['distribution'] = public.get_linux_distribution()
@@ -1543,10 +1574,15 @@ class config:
             data = session['config']
         if not data:
             data = public.M('config').where("id=?",('1',)).field('webserver,sites_path,backup_path,status,mysql_root').find()
+
+        # public.print_log(data)
         data['webserver'] = public.get_webserver()
         data['distribution'] = public.get_linux_distribution()
         data['request_iptype'] = self.get_request_iptype()
         data['request_type'] = self.get_request_type()
+        lang = self.get_language()
+        data['language'] = lang['default']
+        data['language_list'] = lang['languages']
         return data
 
 
@@ -1675,7 +1711,7 @@ class config:
         php_pear_src = "/www/server/php/%s/bin/pear" % get.php_version
         php_cli_ini = '/etc/php-cli.ini'
         php_cli_ini_src = "/www/server/php/%s/etc/php-cli.ini" % get.php_version
-        if not os.path.exists(php_bin_src): return public.return_msg_gettext(False,'Specified PHP version not installed')
+        if not os.path.exists(php_bin_src): return public.return_message(False,'Specified PHP version not installed')
         is_chattr = public.ExecShell('lsattr /usr|grep /usr/bin')[0].find('-i-')
         if is_chattr != -1: public.ExecShell('chattr -i /usr/bin')
         public.ExecShell("rm -f " + php_bin + ' '+ php_ize + ' ' + php_fpm + ' ' + php_pecl + ' ' + php_pear + ' ' + php_cli_ini)
@@ -2045,7 +2081,7 @@ class config:
 
         if public.M('temp_login').insert(pdata):
             public.write_log_gettext('Panel setting', 'Generate temporary connection, expiration time: {}',(public.format_date(times=pdata['expire']),))
-            return {'status': True, 'msg': public.get_msg_gettext('Temporary login URL has been generated'), 'token': token, 'expire': pdata['expire']}
+            return {'status': True, 'msg': public.lang("Temporary login URL has been generated"), 'token': token, 'expire': pdata['expire']}
         return public.return_msg_gettext(False, 'Failed to generate temporary login URL')
 
     # 删除临时登录
@@ -2290,20 +2326,7 @@ class config:
         public.writeFile(login_send_type_conf, set_type)
         return public.returnMsg(True, 'successfully set')
 
-        # if type=='mail':
-        #     if not os.path.exists("/www/server/panel/data/login_send_mail.pl"):
-        #         os.mknod("/www/server/panel/data/login_send_mail.pl")
-        #     if os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
-        #         os.remove("/www/server/panel/data/login_send_dingding.pl")
-        #     return public.returnMsg(True, '设置成功')
-        # elif type=='dingding':
-        #     if not os.path.exists("/www/server/panel/data/login_send_dingding.pl"):
-        #         os.mknod("/www/server/panel/data/login_send_dingding.pl")
-        #     if os.path.exists("/www/server/panel/data/login_send_mail.pl"):
-        #         os.remove("/www/server/panel/data/login_send_mail.pl")
-        #     return public.returnMsg(True, '设置成功')
-        # else:
-        #     return public.returnMsg(False,'不支持该发送类型')
+
 
 
 
@@ -2521,7 +2544,7 @@ class config:
                 x['info'] = False
                 key = x['name']
                 try:
-                    obj =  public.init_msg(x['name'])
+                    obj = public.init_msg(x['name'])
                     if obj:
                         x['setup'] = True
                         x['data'] = obj.get_config(None)
@@ -2808,7 +2831,7 @@ class config:
         if result:
             return result
 
-        url = "https://www.aapanel.com/api/panel/nps/check"
+        url = '{}/api/panel/nps/check'.format(public.OfficialApiBase())
 
         data = {
             'product_type': get.get('product_type', 1),
@@ -2871,7 +2894,7 @@ class config:
         """
         try:
             # 官网接口 需替换
-            url = "https://www.aapanel.com/api/panel/nps/questions"
+            url = '{}/api/panel/nps/questions'.format(public.OfficialApiBase())
             data = {
                 'product_type': get.get('product_type', 1),
                 # 'action': "list",
@@ -2938,7 +2961,7 @@ class config:
         except:
             pass
 
-        url = 'https://www.aapanel.com/api/panel/nps/submit'
+        url = '{}/api/panel/nps/submit'.format(public.OfficialApiBase())
         if not hasattr(get, 'questions'):
             return public.returnMsg(False, "questions Parameter error")
         else:
@@ -2982,6 +3005,541 @@ class config:
 
         return public.returnMsg(False, res['res'] if 'res' in res else "The submission failed, please check to connect to the node")
 
+# -------------------------------------------------------- 语言包相关接口--------------------------------------------------------------------------------------------------
+    # 获取语言选项
+    def get_language(self):
+
+        settings = '{}/BTPanel/languages/settings.json'.format(public.get_panel_path())
+        custom = '{}/BTPanel/static/vite/lang/my-MY'.format(public.get_panel_path())
+        if not os.path.exists(settings):
+            data = {
+                "default": "en",
+                "languages": [
+                    {
+                        "name": "cht",
+                        "google": "zh-tw",
+                        "title": "繁體中文",
+                        "cn": "繁體中文"
+                    },
+                    {
+                        "name": "en",
+                        "google": "en",
+                        "title": "English",
+                        "cn": "英语"
+                    },
+                    {
+                        "name": "de",
+                        "google": "de",
+                        "title": "Deutsch",
+                        "cn": "德语"
+                    },
+                    {
+                        "name": "fra",
+                        "google": "fr",
+                        "title": "Français",
+                        "cn": "法语"
+                    },
+                    {
+                        "name": "spa",
+                        "google": "es",
+                        "title": "Español",
+                        "cn": "西班牙语"
+                    },
+                    {
+                        "name": "pt",
+                        "google": "pt",
+                        "title": "Português",
+                        "cn": "葡萄牙语"
+                    }
+                ]
+            }
+            public.writeFile(settings, json.dumps(data))
+
+        data = json.loads(public.readFile(settings))
+        if os.path.exists(custom):
+            data['languages'].append({
+                "name": "my",
+                "google": "my",
+                "title": "Custom",
+                "cn": "自定义"
+            })
+
+        # public.print_log(data)
+
+        return data
+
+    # 设置语言偏好
+    def set_language(self, args):
+
+        # lang_country = args.lang_country
+        # if lang_country.find('-') == -1:
+        #     return public.returnMsg(False,  'The parameter format is incorrect')
+
+        name = args.name
+        public.setLang(name)
+        path = "/www/server/panel/BTPanel/languages/language.pl"
+        public.WriteFile(path, name)
+        public.set_module_logs('language', 'set_language', 1)
+        # 前端目录更改(重启面板)
+        public.restart_panel()
+        return public.returnMsg(True, 'The setup was successful')
+
+    # 设置语言偏好
+    # def get_languageinfo(self):
+    #
+    #     path = "/www/server/panel/BTPanel/static/language/language_info.json"
+    #     if not os.path.exists(path):
+    #         return 'en-US'
+    #     info = json.loads(public.readFile(path))['lang_country']
+    #     return info
+
+    def flatten_unzip(self,target_dir):
+        # 查找新解压的顶层目录
+        subdirs = [d for d in os.listdir(target_dir) if os.path.isdir(os.path.join(target_dir, d))]
+
+        # 确保只有一个顶层目录
+        if len(subdirs) == 1:
+            top_level_dir = os.path.join(target_dir, subdirs[0])
+
+            # 移动顶层目录下的所有文件和子目录到目标目录
+            for item in os.listdir(top_level_dir):
+                item_path = os.path.join(top_level_dir, item)
+                if os.path.isdir(item_path):
+                    shutil.move(item_path, target_dir)
+                else:
+                    shutil.move(item_path, target_dir)
+
+            # 删除空的顶层目录
+            os.rmdir(top_level_dir)
+
+    def del_upload_language(self):
+        # 删除
+        target_dir = '/www/server/panel/BTPanel/static/upload_language'
+        try:
+            # 删除目标目录及其所有内容
+            shutil.rmtree(target_dir)
+
+        except:
+            public.print_log(public.get_error_info())
+
+
+
+    # 上传语言包
+    def upload_language(self, args):
+        # 上传个人翻译语言包 language.zip    de-DE   de.po
+        filename = args.filename
+        # filename = 'language.zip'
+
+        # 压缩包上传目录
+        upload_dir = '{}/BTPanel/static/upload_language/{}'.format(public.get_panel_path(), filename)
+        if not os.path.exists(upload_dir):
+            return public.returnMsg(False, 'The uploaded language pack was not found')
+
+        #   /language.zip     /templates   /temp.po
+        # 解压到
+        upload_path = '{}/BTPanel/static/upload_language'.format(public.get_panel_path())
+        a, b = public.ExecShell('unzip -o "' + upload_dir + '" -d ' + upload_path + '/')
+        # public.print_log(b)
+        self.flatten_unzip(upload_path)
+
+
+        path_q = upload_path + '/templates'  # 前端
+        # path_h = upload_path + '/temp.po'  # 后端
+        # if not os.path.exists(path_q) or not os.path.exists(path_h):
+        if not os.path.exists(path_q):
+            self.del_upload_language()
+            return public.returnMsg(False, 'The uploaded language pack is incomplete')
+
+        # 判断文件
+        # 前端 判断  更改
+        try:
+            err_file = []
+            for p_name in os.listdir(path_q):
+                file_path = path_q + '/' + p_name
+                file_data = json.loads(public.readFile(file_path))
+                is_ok = self._all_keys_have_suffix(file_data)
+                # 有文件无后缀
+                if not is_ok:
+                    err_file.append(file_path)
+            if len(err_file) > 0:
+                # 删除已经上传的 todo
+                self.del_upload_language()
+                return public.returnMsg(False, 'The language pack is not standardized, the key lacks the necessary suffix[_], error file:{}'.format(err_file))
+            else:
+                # 去掉后缀 更改目录名 放入指定位置
+                for p_name in os.listdir(path_q):
+                    file_path = path_q + '/' + p_name
+                    file_data = json.loads(public.readFile(file_path))
+                    del_file_data = self._remove_suffix_from_keys(file_data)
+                    del_file_path = path_q + '/' + p_name
+                    # 更新本来的文件
+                    public.writeFile(del_file_path, json.dumps(del_file_data))
+
+        except Exception as ex:
+            self.del_upload_language()
+            public.print_log(public.get_error_info())
+            return public.returnMsg(False, ex)
+
+        # 后端判断(配置)  更改  语言包内
+        # 读取 path_h   更改 占位符的值
+        # cmd_h = 'msgcat --no-location --sort-output {} > /dev/null'.format(path_h)
+        # cmd_result, err = public.ExecShell(cmd_h)
+        #
+        # if err:
+        #     self.del_upload_language()
+        #     return public.returnMsg(False, 'The temp.po file is in the wrong format: {}'.format(err))
+        # # 读取文件 查看语言标识是否更改
+        # content = public.readFile(path_h)
+        # content_new = re.sub(r'\n"Language: en\\n"\n', r'\n"Language: my\\n"\n', content)
+        # # public.print_log('----------替换后 ---{}'.format(repr(content_new[:500])))
+        #
+        # path_h_new = upload_path + '/temp_new.po'
+        # public.writeFile(path_h_new, content_new)
+
+        # 移动文件
+        mv_dir_q = '{}/BTPanel/static/vite/lang/my-MY'.format(public.get_panel_path())
+        # mv_dir_h = '{}/BTPanel/static/language/gettext/my/LC_MESSAGES'.format(public.get_panel_path())
+        # if not os.path.exists(mv_dir_h):
+        #     os.makedirs(mv_dir_h)
+        # else:
+        #     for filename in os.listdir(mv_dir_h):
+        #         file_path = os.path.join(mv_dir_h, filename)
+        #         try:
+        #             os.remove(file_path)
+        #         except Exception as e:
+        #             public.print_log(f"Failed to delete {file_path}. Reason: {e}")
+
+        if not os.path.exists(mv_dir_q):
+            os.makedirs(mv_dir_q)
+        else:
+            for filename in os.listdir(mv_dir_q):
+                file_path = os.path.join(mv_dir_q, filename)
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    public.print_log(f"Failed to delete {file_path}. Reason: {e}")
+
+        # 判断存在 看文件 有文件删除  不存在 创建目录
+        import shutil
+        for p_name in os.listdir(path_q):
+            file_path = path_q + '/' + p_name
+            shutil.move(file_path, mv_dir_q)
+
+        # # 移后端 生成后端 mo文件
+        # my_po = os.path.join(mv_dir_h, 'my.po')
+        # my_mo = os.path.join(mv_dir_h, 'my.mo')
+        #
+        # shutil.move(path_h_new, my_po)
+        # # mv_dir_h 目录下生成后端 mo文件
+        # cmd_mo = 'msgfmt -o {} {}'.format(my_mo,my_po)
+        # cmd_result, err = public.ExecShell(cmd_mo)
+        # if err:
+        #     self.del_upload_language()
+        #     return public.returnMsg(False, 'temp.po file compilation error: {}'.format(err))
+
+        # 使用上传的语言包
+        args1 = public.dict_obj()
+        args1.name = 'my'
+        self.set_language(args1)
+        self.del_upload_language()
+        return public.returnMsg(True, 'The upload was successful, and the new language is already in use')
+
+    # 下载语言包
+    def download_language(self, args):
+        # 前端模版
+        templates_dir = '{}/BTPanel/static/vite/templates'.format(public.get_panel_path())
+        self._generate_language_templates()
+
+        # 后端模版
+        # temppo = '{}/BTPanel/static/language/temp.po'.format(public.get_panel_path())
+        # self._generate_language_temppo()
+
+        # 将文件夹templates_dir和文件temppo复制到新的文件夹 language
+        filename = 'language_' + public.GetRandomString(3)
+        #
+        download_dir = '{}/BTPanel/static/download_language/{}'.format(public.get_panel_path(), filename)
+        os.makedirs(download_dir)
+
+        download_tmpdir = '{}/templates'.format(download_dir)
+        os.makedirs(download_tmpdir)
+        for file in os.listdir(templates_dir):
+            src_file = os.path.join(templates_dir, file)
+            dst_file = os.path.join(download_tmpdir, file)
+            if os.path.isfile(src_file):
+                shutil.copy2(src_file, dst_file)
+
+        # 复制单个文件
+        # dstpo_file = os.path.join(download_dir, 'temp.po')
+        # shutil.copy2(temppo,dstpo_file)
+
+        # 压缩包
+        zip_path = '{}/BTPanel/static/download_language/{}'.format(public.get_panel_path(), 'language.zip')
+        # 创建ZIP文件
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # 添加整个文件夹及其内容
+            for root, dirs, files in os.walk(download_dir):
+                for file in files:
+                    full_file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(full_file_path, download_dir)
+                    zipf.write(full_file_path, os.path.join('language', arcname))
+
+        # 清理临时文件夹
+        shutil.rmtree(download_dir)
+        return {'path': zip_path}
+
+
+
+    def _generate_language_templates(self):
+        """
+        生成前端模版文件
+        :return: (bool, err_info)
+        """
+        templates_dir = '{}/BTPanel/static/vite/templates'.format(public.get_panel_path())
+        en_dir = '{}/BTPanel/static/vite/lang/en-US'.format(public.get_panel_path())
+        if not os.path.exists(templates_dir):
+            os.makedirs(templates_dir)
+        else:
+            # 删除旧模版
+            for filename in os.listdir(templates_dir):
+                file_path = os.path.join(templates_dir, filename)
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    public.print_log(f"Failed to delete {file_path}. Reason: {e}")
+
+        # 遍历英文  生成模版文件
+        try:
+            for p_name in os.listdir(en_dir):
+                file_path = en_dir + '/' + p_name
+                file_data = json.loads(public.readFile(file_path))
+                temp_file_data = self._add_suffix_to_keys(file_data)
+                # temp_filename = ''
+                temp_file_path = templates_dir + '/' + p_name
+                public.writeFile(temp_file_path, json.dumps(temp_file_data))
+            return True, None
+        except Exception as ex:
+            public.print_log(public.get_error_info())
+            return False, ex
+
+            # 生成文件名() 写入目录
+
+        # 判断 当前模版是否是最新的  拿文件名
+
+    # 生成后端模版文件
+    def _generate_language_temppo(self):
+        """
+        生成后端模版文件
+        :return: (bool, err_info)
+        """
+        dir_h = '{}/BTPanel/static/language/gettext/en/LC_MESSAGES/'.format(public.get_panel_path())
+
+        file_name = os.path.join(dir_h, 'en.po')
+        # 模版地址
+        new_file = '{}/BTPanel/static/language/temp.po'.format(public.get_panel_path())
+        # 删掉就模版
+        if os.path.exists(new_file):
+            os.remove(new_file)
+
+        content = public.readFile(file_name)
+        # public.print_log(repr(content[:1000]))
+        # 替换翻译为空
+        content = re.sub(r'msgstr ".*"', 'msgstr ""', content)
+
+        # 更改语言标识符 "Language: en\\n"
+        # content = content.replace('Language: en\\n', 'Language: my\\n')
+        # content = re.sub('Language: en\\n', 'Language: my\\n', content)
+        public.writeFile(new_file, content)
+
+    # 给任意深度嵌套的字典添加指定后缀
+    def _add_suffix_to_keys(self, d, suffix='_'):
+        """
+        给任意深度嵌套的字典添加指定后缀
+        :param d: 处理前 json
+        :return: 处理后 json
+        """
+        result = {}
+        for key, value in d.items():
+            new_key = key + suffix
+            if isinstance(value, dict):
+                result[new_key] = self._add_suffix_to_keys(value, suffix)
+            else:
+                result[new_key] = value
+        return result
+
+    # 检测任意深度嵌套的字典是否有指定后缀
+    def _all_keys_have_suffix(self, d, suffix='_'):
+        """
+        检测任意深度嵌套的字典是否有指定后缀
+        :param d: json
+        :return: bool
+        """
+        for key, value in d.items():
+            if not key.endswith(suffix):
+                public.print_log(key)
+                return False
+            if isinstance(value, dict):
+                if not self._all_keys_have_suffix(value, suffix):
+                    return False
+        return True
+
+    # 删除任意深度嵌套的字典指定后缀
+    def _remove_suffix_from_keys(self, d, suffix='_'):
+        """
+        删除任意深度嵌套的字典指定后缀
+        :param d: 处理前 json
+        :return: 处理后 json
+        """
+        result = {}
+        for key, value in d.items():
+            # 如果键名以suffix结尾，去除它
+            new_key = key[:-len(suffix)] if key.endswith(suffix) else key
+            if isinstance(value, dict):
+                # 如果值也是一个字典，递归处理
+                result[new_key] = self._remove_suffix_from_keys(value, suffix)
+            else:
+                result[new_key] = value
+        return result
+
+    def replace_data(self, args):
+        import re
+
+        file_path = "/www/server/panel/class_v2/projectModelV2/nodejsModel.py"
+        with open(file_path, 'r') as file:
+            file_content = file.read()
+
+        # 使用正则表达式进行替换
+        new_content = re.sub(r"public.return_error\((['\"])(.*?)\1\)", r"public.return_error(public.lang(\1\2\1))",
+                             file_content)
+
+        # 写入替换后的内容回文件
+        with open(file_path, 'w') as file:
+            file.write(new_content)
+
+        return
+
+
+        # # 指定目录下所有py文件
+        # dir_path = '/www/server/panel/mod'
+        # dir_path = '/www/server/panel/mod/base/msg'
+        # dir_path = '/www/server/panel/mod/project/proxy'
+        # dir_path = '/www/server/panel/mod/project/docker'
+        # dir_path = '/www/server/panel/mod/project/push'
+
+        dir_path = '/www/server/panel/mod/project/push'
+        py_files = [f for f in os.listdir(dir_path) if f.endswith('.py')]
+
+        # return public.returnResult(False, "")
+        # 替换public.returnResult
+        patterna = re.compile(r'return public.returnResult\((False|True),\s*["\'](.*?)["\']\)')
+        pattern2a = re.compile(r'return public.returnResult\((False|True),\s*["\']([^\n"]*)["\']\s*\.\s*format\((.*?)\)\)')
+
+        # for file_name in py_files:
+        #     file_path = os.path.join(dir_path, file_name)
+        #
+        #     with open(file_path, 'r') as file:
+        #         file_content = file.read()
+        #     new_content = re.sub(r" msg\s*=\s*['\"](.*?)['\"]", r" msg=public.lang('\1')", file_content)
+        #     # new_content = re.sub(r"return\s+['\"](.*?)['\"]", r"return public.lang('\1')", file_content)
+        #     # 将替换后的内容写回文件
+        #     with open(file_path, 'w') as file:
+        #         file.write(new_content)
+        # 替换public.return_message
+        # pattern3 = re.compile(r'return public.return_message\((-?\d+),\s*0,\s*["\'](.+?)["\']\)')
+        # pattern3a = re.compile(
+        #     r'return public.return_message\((-?\d+),\s*0,\s*["\'](.+?)["\']\s*\.\s*format\((.*?)\)\)')
+
+        for file_name in py_files:
+            file_path = os.path.join(dir_path, file_name)
+
+            with open(file_path, 'r') as file:
+                new_content = file.read()
+
+            new_content = re.sub(pattern2a, r'return public.returnResult(\1, public.lang("\2".format(\3)))', new_content)
+            new_content = re.sub(patterna, r'return public.returnResult(\1, public.lang("\2"))', new_content)
+
+            # 进行替换
+            # new_content = re.sub(pattern, r'return public.return_msg_gettext(\1, public.lang("\2"))', file_content)
+            # new_content = re.sub(pattern2, r'return public.return_msg_gettext(\1, public.lang("\2".format(\3)))',
+            #                      new_content)
+            # new_content = re.sub(pattern2a, r'return public.returnMsg(\1, public.lang("\2".format(\3)))', file_content)
+            # new_content = re.sub(patterna, r'return public.returnMsg(\1, public.lang("\2"))', new_content)
+
+            # new_content = re.sub(pattern3, r'return public.return_message(\1, 0, public.lang("\2"))', new_content)
+            # new_content = re.sub(pattern3a, r'return public.return_message(\1, 0, public.lang("\2".format(\3)))',
+            #                      new_content)
+
+            # 将替换后的内容写回文件
+            with open(file_path, 'w') as file:
+                file.write(new_content)
+
+    def replace_data99(self, args):
+        import re
+
+        # # 指定目录下所有py文件
+        # dir_path = '/www/server/panel/class'
+        dir_path = '/www/server/panel/plugin/btwaf'
+        # dir_path = '/www/server/panel/class_v2/wp_toolkit'
+        # dir_path = '/www/server/panel/class_v2/btdockerModelV2'
+        py_files = [f for f in os.listdir(dir_path) if f.endswith('.py')]
+
+        # 替换public.return_msg_gettext
+        # pattern = re.compile(r'return public.return_msg_gettext\((False|True),\s*["\'](.*?)["\']\)')
+        # pattern2 = re.compile(
+        #     r'return public.return_msg_gettext\((False|True),\s*["\']([^\n"]*)["\']\s*\.\s*format\((.*?)\)\)')
+
+        # 替换public.returnMsg
+        # patterna = re.compile(r'return public.returnMsg\((False|True),\s*["\'](.*?)["\']\)')
+        # pattern2a = re.compile(r'return public.returnMsg\((False|True),\s*["\']([^\n"]*)["\']\s*\.\s*format\((.*?)\)\)')
+
+        # 替换public.return_message
+        pattern3 = re.compile(r'return public.return_message\((-?\d+),\s*0,\s*["\'](.+?)["\']\)')
+        pattern3a = re.compile(
+            r'return public.return_message\((-?\d+),\s*0,\s*["\'](.+?)["\']\s*\.\s*format\((.*?)\)\)')
+
+        for file_name in py_files:
+            file_path = os.path.join(dir_path, file_name)
+
+            with open(file_path, 'r') as file:
+                file_content = file.read()
+
+            # 进行替换
+            # new_content = re.sub(pattern, r'return public.return_msg_gettext(\1, public.lang("\2"))', file_content)
+            # new_content = re.sub(pattern2, r'return public.return_msg_gettext(\1, public.lang("\2".format(\3)))',
+            #                      new_content)
+            # new_content = re.sub(pattern2a, r'return public.returnMsg(\1, public.lang("\2".format(\3)))', file_content)
+            # new_content = re.sub(patterna, r'return public.returnMsg(\1, public.lang("\2"))', new_content)
+
+            new_content = re.sub(pattern3, r'return public.return_message(\1, 0, public.lang("\2"))', file_content)
+            new_content = re.sub(pattern3a, r'return public.return_message(\1, 0, public.lang("\2".format(\3)))',
+                                 new_content)
+
+            # 将替换后的内容写回文件
+            with open(file_path, 'w') as file:
+                file.write(new_content)
+
+    # format 改,
+
+    def replace_data223(self, args):
+        import re
+
+        # dir_path = '/www/server/panel/plugin/btwaf'
+        dir_path = '/www/server/panel/mod/project/proxy'
+        py_files = [f for f in os.listdir(dir_path) if f.endswith('.py')]
+
+        pattern = re.compile(r'public\.lang\(\s*["\'](.+?)["\']\s*\.\s*format\((.*?)\)\s*\)')
+
+        for file_name in py_files:
+            file_path = os.path.join(dir_path, file_name)
+
+            with open(file_path, 'r') as file:
+                file_content = file.read()
+
+            # 进行替换
+            new_content = pattern.sub(r'public.lang("\1", \2)', file_content)
+
+            # 将替换后的内容写回文件
+            with open(file_path, 'w') as file:
+                file.write(new_content)
 
     # # nps问卷
     # def stop_nps(self, get):
@@ -3030,7 +3588,7 @@ class config:
     #     software_name = get.software_name
     #     product_type = get.product_type
     #     import json, requests
-    #     api_url = 'https://www.bt.cn/api/v2/contact/nps/submit'
+    #     api_url = 'https://wafapi2.aapanel.com/api/v2/contact/nps/submit'
     #     user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
     #     if 'rate' not in get:
     #         return public.returnMsg(False, "参数错误")

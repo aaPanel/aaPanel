@@ -34,7 +34,7 @@ class MysqlTool(BaseDatabaseTool):
             'db_port': port,
             'db_user': 'root',
             'db_password': '',
-            'ps': '本地服务器',
+            'ps': 'local server',
             'addtime': 0
         }
 
@@ -93,6 +93,6 @@ class MysqlTool(BaseDatabaseTool):
         get_obj.pid = str(kwargs.get("pid", '0'))
         res = database().AddDatabase(get_obj)
         if res["status"] is True:
-            return True, "添加成功"
+            return True, "Successfully added"
         else:
             return False, res['msg']

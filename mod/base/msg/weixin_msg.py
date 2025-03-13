@@ -1,8 +1,8 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aapanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2020 宝塔软件(http://www.bt.cn) All rights reserved.
+# | Copyright (c) 2015-2020 aapanel(http://www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: baozi <baozi@bt.cn>
 # | 消息通道邮箱模块
@@ -13,6 +13,7 @@ import json
 import requests
 import traceback
 import socket
+import public
 
 import requests.packages.urllib3.util.connection as urllib3_cn
 from requests.packages import urllib3
@@ -33,11 +34,11 @@ class WeiXinMsg:
     @classmethod
     def check_args(cls, args: dict) -> Union[dict, str]:
         if "url" not in args or "title" not in args:
-            return "信息不完整"
+            return public.lang('Incomplete information')
 
         title = args["title"]
         if len(title) > 15:
-            return '备注名称不能超过15个字符'
+            return public.lang('Note names cannot be longer than 15 characters')
 
         data = {
             "url": args["url"],
@@ -46,14 +47,14 @@ class WeiXinMsg:
 
         test_obj = cls({"data": data, "id": None})
         test_msg = {
-            "msg_list": ['>配置状态：<font color=#20a53a>成功</font>\n']
+            "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n']
         }
 
-        test_task = get_test_msg("消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
 
         res = test_obj.send_msg(
             test_task.to_weixin_msg(test_msg, test_task.the_push_public_data()),
-            "消息通道配置提醒"
+            "Message channel configuration reminders"
         )
         if res is None:
             return data
@@ -71,7 +72,7 @@ class WeiXinMsg:
         @to_user string 指定发送人
         """
         if not self.config:
-            return '未正确配置微信信息。'
+            return public.lang('WeChat information is not configured correctly')
 
         reg = '<font.+>(.+)</font>'
         tmp = re.search(reg, msg)
@@ -109,17 +110,17 @@ class WeiXinMsg:
         except:
             error = traceback.format_exc()
 
-        write_push_log("企业微信", status, title)
+        write_push_log("weixin", status, title)
         return error
 
     def test_send_msg(self) -> Optional[str]:
         test_msg = {
-            "msg_list": ['>配置状态：<font color=#20a53a>成功</font>\n\n']
+            "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n\n']
         }
-        test_task = get_test_msg("消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
         res = self.send_msg(
             test_task.to_weixin_msg(test_msg, test_task.the_push_public_data()),
-            "消息通道配置提醒",
+            "Message channel configuration reminders",
         )
         if res is None:
             return None

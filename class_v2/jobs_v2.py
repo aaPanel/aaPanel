@@ -432,11 +432,6 @@ def check_default_curl_file():
         if default_curl_body:
             public.WriteFile(default_file,default_curl_body.strip())
 
-def set_wp_cache_dir():
-    import one_key_wp
-    one_key_wp.fast_cgi().set_nginx_conf()
-    public.ExecShell("/etc/init.d/nginx restart")
-
 def set_php_cli_env():
     '''
         @name 设置php-cli环境变量

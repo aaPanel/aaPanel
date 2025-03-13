@@ -20,8 +20,6 @@ from btdockerModelV2 import dk_public as dp
 from btdockerModelV2.dockerBase import dockerBase
 from public.validate import Param
 
-import gettext
-_ = gettext.gettext
 
 class main(dockerBase):
 
@@ -54,14 +52,14 @@ class main(dockerBase):
 
         try:
             # if "name" not in get or get.name == "":
-            #     return public.returnMsg(False, "Image name cannot be empty")
+            #     return public.return_message(-1, 0, public.lang("Image name cannot be empty"))
             # if "path" not in get or get.path == "":
-            #     return public.returnMsg(False, "Mirror path cannot be empty")
+            #     return public.return_message(-1, 0, public.lang("Mirror path cannot be empty"))
             # if "id" not in get or get.id == "":
-            #     return public.returnMsg(False, "Image ID cannot be empty")
+            #     return public.return_message(-1, 0, public.lang("Image ID cannot be empty"))
 
             if "/" in get.name:
-                return public.return_message(-1, 0, _("The image name cannot contain /"))
+                return public.return_message(-1, 0, public.lang("The image name cannot contain /"))
 
             if "tar" in get.name:
                 filename = '{}/{}'.format(get.path, get.name)
@@ -77,17 +75,16 @@ class main(dockerBase):
                 for chunk in image.save(named=True):
                     f.write(chunk)
             dp.write_log("Image [{}] exported to [{}] successfully".format(get.id, filename))
-            return public.return_message(0, 0, "Successfully saved to:{}".format(filename))
+            return public.return_message(0, 0, public.lang("Successfully saved to:{}", filename))
 
         except docker.errors.APIError as e:
             if "empty export - not implemented" in str(e):
-                return public.return_message(-1, 0, "Cannot export image!")
+                return public.return_message(-1, 0, public.lang("Cannot export image!"))
             return public.get_error_info()
         except Exception as e:
             if "Read timed out" in str(e):
-                return public.return_message(-1, 0,
-                                             "Exporting the image failed and the connection to docker timed out. Please try restarting docker and try again!")
-            return public.return_message(-1, 0, "Failed to export image!<br> {}".format(e))
+                return public.return_message(-1, 0, public.lang("Exporting the image failed and the connection to docker timed out. Please try restarting docker and try again!"))
+            return public.return_message(-1, 0, public.lang("Failed to export image!<br> {}", e))
 
     # 导入
     def load(self, get):
@@ -110,26 +107,24 @@ class main(dockerBase):
 
         try:
             if "path" not in get and get.path == "":
-                return public.return_message(-1, 0, "Please enter the image path!")
+                return public.return_message(-1, 0, public.lang("Please enter the image path!"))
 
             # 2023/12/20 下午 4:12 判断如果path后缀不为.tar则返回错误
             if not get.path.endswith(".tar"):
-                return public.return_message(-1, 0, "Failed to import the image. The file extension must be.tar!")
+                return public.return_message(-1, 0, public.lang("Failed to import the image. The file extension must be.tar!"))
 
             from btdockerModelV2.dockerSock import image
             sk_image = image.dockerImage()
             sk_image.load_image(get.path)
 
             dp.write_log("Image [{}] imported successfully!".format(get.path))
-            return public.return_message(0, 0, "Image import was successful!{}".format(get.path))
+            return public.return_message(0, 0, public.lang("Image import was successful!{}", get.path))
         except Exception as e:
             if "Read timed out" in str(e):
-                return public.return_message(-1, 0,
-                                             "Exporting the image failed and the connection to docker timed out. Please try restarting docker and try again!")
+                return public.return_message(-1, 0, public.lang("Exporting the image failed and the connection to docker timed out. Please try restarting docker and try again!"))
             if "no such file or directory" in str(e):
-                return public.return_message(-1, 0,
-                                             "The image import failed and the temporary directory of the container failed to be created. Please check whether the protection software has an interception record!")
-            return public.return_message(-1, 0, "Failed to import image!<br> {}".format(e))
+                return public.return_message(-1, 0, public.lang("The image import failed and the temporary directory of the container failed to be created. Please check whether the protection software has an interception record!"))
+            return public.return_message(-1, 0, public.lang("Failed to import image!<br> {}", e))
 
     # 列出所有镜像
     def image_list(self, get):
@@ -288,7 +283,7 @@ class main(dockerBase):
             public.writeFile(get.path, get.data)
 
         if not os.path.exists(get.path):
-            return public.return_message(-1, 0, "Please enter the correct DockerFile path!")
+            return public.return_message(-1, 0, public.lang("Please enter the correct DockerFile path!"))
 
         try:
             # 2024/1/18 下午 12:05 取get.path的目录
@@ -305,17 +300,17 @@ class main(dockerBase):
 
             dp.log_docker(generator, "Docker Build tasks!")
             dp.write_log("Build image [{}] successful!".format(get.tag))
-            return public.return_message(0, 0, "Build image successfully!")
+            return public.return_message(0, 0, public.lang("Build image successfully!"))
         except docker.errors.BuildError as e:
             if "TLS handshake timeout" in str(e):
-                return public.return_message(-1, 0, "Build failed, connection timed out")
-            return public.return_message(-1, 0, "Build failed! {}".format(e))
+                return public.return_message(-1, 0, public.lang("Build failed, connection timed out"))
+            return public.return_message(-1, 0, public.lang("Build failed! {}", e))
         except docker.errors.APIError as e:
             if "Cannot locate specified Dockerfile" in str(e):
-                return public.return_message(-1, 0, "Build failed!The specified Dockerfile was not found")
-            return public.return_message(-1, 0, "Build failed!{}".format(e))
+                return public.return_message(-1, 0, public.lang("Build failed!The specified Dockerfile was not found"))
+            return public.return_message(-1, 0, public.lang("Build failed!{}", e))
         except Exception as e:
-            return public.return_message(-1, 0, "Build failed!{}".format(e))
+            return public.return_message(-1, 0, public.lang("Build failed!{}", e))
 
     # 删除镜像
     def remove(self, get):
@@ -349,27 +344,24 @@ class main(dockerBase):
                 self.docker_client(self._url).images.remove(get.name)
 
             dp.write_log("Deletion of image【{}】successful!".format(get.name))
-            return public.return_message(0, 0, "Mirror deleted successfully!")
+            return public.return_message(0, 0, public.lang("Mirror deleted successfully!"))
 
         except docker.errors.ImageNotFound as e:
-            return public.return_message(-1, 0, "The delete failed and the image may not exist!")
+            return public.return_message(-1, 0, public.lang("The delete failed and the image may not exist!"))
 
         except docker.errors.APIError as e:
             if "image is referenced in multiple repositories" in str(e):
-                return public.return_message(-1, 0,
-                                             "The image ID is used in more than one image, force the image to be deleted!")
+                return public.return_message(-1, 0, public.lang("The image ID is used in more than one image, force the image to be deleted!"))
             if ("using its referenced image" in str(e) or
                     "image is being used by stopped container" in str(e) or
                     "image is being used by running container" in str(e)):
-                return public.return_message(-1, 0,
-                                             "The image is in use. Please delete the container before deleting the image!")
+                return public.return_message(-1, 0, public.lang("The image is in use. Please delete the container before deleting the image!"))
 
-            return public.return_message(-1, 0, "Failed to delete image!<br> {}".format(e))
+            return public.return_message(-1, 0, public.lang("Failed to delete image!<br> {}", e))
         except Exception as e:
             if "Read timed out" in str(e):
-                return public.return_message(-1, 0,
-                                             "Failed to delete image,The connection to docker timed out, please restart and try again!")
-            return public.return_message(-1, 0, "Failed to delete image!<br> {}".format(e))
+                return public.return_message(-1, 0, public.lang("Failed to delete image,The connection to docker timed out, please restart and try again!"))
+            return public.return_message(-1, 0, public.lang("Failed to delete image!<br> {}", e))
 
     # 拉取指定仓库镜像
     def pull_from_some_registry(self, get):
@@ -385,42 +377,41 @@ class main(dockerBase):
 
         from btdockerModelV2 import registryModel as dr
 
-        try:
-            if get.name == "Docker public repository":
-                login = dr.main().login(self._url, "docker.io", None, None)['status']
-                if not login:
-                    get._ws.send(
-                        "bt_failed, Login to the repository [docker.io] failed, please try to log in to this repository again!\r\n")
-                    return login
+        # try:
+            # if get.name == "Docker public repository":
+            #     login = dr.main().login(self._url, "docker.io", None, None)['status']
+            #     if not login:
+            #         get._ws.send(
+            #             "bt_failed, Login to the repository [docker.io] failed, please try to log in to this repository again!\r\n")
+            #         return login
 
-                r_info = {
-                    "url": "docker.io",
-                    "username": None,
-                    "password": None,
-                    "namespace": "library"
-                }
-            else:
-                r_info = dr.main().registry_info(get.name)
+        r_info = {
+            "name": "Docker public repository",
+            "reg_name": "Docker public repository",
+            "url": "docker.io",
+            "username": None,
+            "password": None,
+            "namespace": "library"
+        }
+        try:
+            if get.name != "Docker public repository":
+                r_info = dr.main().registry_info(get)
                 r_info['username'] = public.aes_decrypt(r_info['username'], self.aes_key)
                 r_info['password'] = public.aes_decrypt(r_info['password'], self.aes_key)
                 login = dr.main().login(self._url, r_info['url'], r_info['username'], r_info['password'])['status']
                 if not login:
-                    get._ws.send("bt_failed, {}\r\n".format(login['msg']))
+                    get._ws.send("failed," + public.lang("{}\r\n",login['msg']))
                     return login
         except Exception as e:
             get._ws.send(
-                "bt_failed, Login to repository [{}] failed, please try to log in to this repository again!\r\n".format(
-                    get.name))
-            return public.returnMsg(False,
-                                    "bt_failed, Login to repository [{}] failed, please try to log in to this repository again!".format(
-                                        get.name))
+                public.lang("failed, Login to repository [{}] failed, please try to log in to this repository again!\r\n",get.name))
+            return public.return_message(-1, 0, public.lang("bt_failed, Login to repository [{}] failed, please try to log in to this repository again! {}",get.name, e))
 
         get.username = r_info['username']
         get.password = r_info['password']
         get.registry = r_info['url']
         get.namespace = r_info['namespace']
-
-        # public.print_log('准备拉取镜像 123--')
+        get.name = r_info['reg_name'] if "reg_name" in r_info and r_info["reg_name"] != "" else r_info["name"]
 
         return self.pull(get)
 
@@ -448,8 +439,7 @@ class main(dockerBase):
             return public.return_message(-1, 0, str(ex))
 
         if "/" in get.tag:
-            return public.return_message(-1, 0, "The pushed image cannot contain [/], please use the following "
-                                                "format: image:v1 (image name: version)")
+            return public.return_message(-1, 0, public.lang("The pushed image cannot contain [/], please use the following  format: image:v1 (image name: version)"))
         if ":" not in get.tag:
             get.tag = "{}:latest".format(get.tag)
 
@@ -462,12 +452,12 @@ class main(dockerBase):
 
         if get.name == "docker official" and r_info['url'] == "docker.io":
             public.writeFile(self._log_path, "The image cannot be pushed to the Docker public repository!\n")
-            return public.return_message(-1, 0, "Unable to push to Docker public repository!")
+            return public.return_message(-1, 0, public.lang("Unable to push to Docker public repository!"))
 
         try:
             login = dr.main().login(self._url, r_info['url'], r_info['username'], r_info['password'])['status']
             if not login:
-                return public.return_message(-1, 0, "Repository [{}] Login failed!".format(r_info['url']))
+                return public.return_message(-1, 0, public.lang("Repository [{}] Login failed!", r_info['url']))
 
             auth_conf = {
                 "username": r_info['username'],
@@ -477,7 +467,8 @@ class main(dockerBase):
             # repository       namespace/image
 
             repository = r_info['url']
-            image = "{}/{}/{}".format(repository, r_info['namespace'], get.tag)
+            reg_name = r_info['reg_name'] if "reg_name" in r_info and r_info["reg_name"] != "" else r_info["name"]
+            image = "{}/{}/{}:{}".format(repository, r_info['namespace'], reg_name, get.tag)
 
             self.tag(self._url, get.id, image)
             ret = self.docker_client(self._url).images.push(
@@ -494,13 +485,13 @@ class main(dockerBase):
 
         except docker.errors.APIError as e:
             if "invalid reference format" in str(e):
-                return public.return_message(-1, 0, "Push failed, image label error, please enter such as: v1.0.1")
+                return public.return_message(-1, 0, public.lang("Push failed, image label error, please enter such as: v1.0.1"))
             if "denied: requested access to the resource is denied" in str(e):
-                return public.return_message(-1, 0, "Push failed, do not have permission to push to this repository!")
-            return public.return_message(-1, 0, "Push failure!{}".format(e))
+                return public.return_message(-1, 0, public.lang("Push failed, do not have permission to push to this repository!"))
+            return public.return_message(-1, 0, public.lang("Push failure!{}", e))
 
         dp.write_log("Image [{}] pushed successfully!".format(image))
-        return public.return_message(0, 0, "Push successfully, mirror:{}".format(image))
+        return public.return_message(0, 0, public.lang("Push successfully, mirror:{}", image))
 
     def tag(self, url, image_id, tag):
         """
@@ -516,7 +507,7 @@ class main(dockerBase):
             repository=image,
             tag=tag_ver
         )
-        return public.returnMsg(True, "Successfully set!")
+        return public.return_message(0, 0, public.lang("Successfully set!"))
 
     def pull(self, get):
         """
@@ -528,79 +519,137 @@ class main(dockerBase):
         :param get:
         :return:
         """
-        get._ws.send("Pulling the image, please wait...\r\n")
 
+        # try:
+        get._ws.send(public.lang("Pulling the image, please wait...\r\n"))
+        import docker.errors
+        import time
+        time.sleep(0.1)
+        # get._ws.send(public.lang("Pull or search for images...\r\n"))
         try:
-            get._ws.send("Pulling the image, please wait...\r\n")
-            import docker.errors
-            import time
-            time.sleep(0.1)
-            get._ws.send("Pull or search for images...\r\n")
-            try:
+            auth_data = {
+                "username": get.username,
+                "password": get.password,
+                "registry": get.registry if get.registry else None
+            }
+            auth_conf = auth_data if get.username else None
+
+            if get.registry == "docker.io":
                 get.image = '{}:latest'.format(get.image) if ':' not in get.image else get.image
-                auth_data = {
-                    "username": get.username,
-                    "password": get.password,
-                    "registry": get.registry if get.registry else None
-                }
-                auth_conf = auth_data if get.username else None
 
-                if not hasattr(get, "tag"): get.tag = get.image.split(":")[-1]
+            if not hasattr(get, "tag"): get.tag = get.image.split(":")[-1]
 
-                if get.registry != "docker.io":
-                    get.image = "{}/{}/{}".format(get.registry, get.namespace, get.image)
+            if get.registry != "docker.io":
+                get.image = "{}/{}/{}:{}".format(get.registry, get.namespace, get.name, get.image)
 
-                ret = dp.docker_client_low(self._url).pull(
-                    repository=get.image.split(":")[0],
-                    auth_config=auth_conf,
-                    tag=get.tag,
-                    stream=True
-                )
+            ret = dp.docker_client_low(self._url).pull(
+                repository=get.image.split(":")[0],
+                auth_config=auth_conf,
+                tag=get.tag,
+                stream=True
+            )
 
-                if not ret:
-                    get._ws.send("bt_failed, pull failed!\r\n")
-                    return
-
-                while True:
-                    try:
-                        output = next(ret)
-                        output = json.loads(output)
-                        if 'status' in output:
-                            output_str = output['status']
-                            get._ws.send(output_str + "\r\n")
-                        time.sleep(0.1)
-                    except StopIteration:
-                        get._ws.send("bt_successful, Image pull [{}] successful\r\n".format(get.image))
-                        return public.returnMsg(True, "Image pulled successfully!")
-                    except ValueError:
-                        get._ws.send("bt_failed, Failed to pull image!\r\n")
-                        return public.returnMsg(False, "Failed to pull image!")
-
-            except docker.errors.ImageNotFound as e:
-                if "pull access denied for" in str(e):
-                    get._ws.send(
-                        "bt_failed, pull failed,The image does not exist, or the image may be a private image. You need to enter your dockerhub account password!\r\n")
-                    return
-                get._ws.send("bt_failed, pull failed!{}\r\n".format(e))
+            if not ret:
+                get._ws.send("failed," + public.lang("pull failed!\r\n"))
                 return
+            last_result = None
+            last_progress_str = None
+            while True:
+                try:
+                    output = next(ret)
+                    output = json.loads(output)
+                    if "errorDetail" in output:
+                        if "message" in output['errorDetail']:
+                            if ("download failed after" in output['errorDetail']['message'] and
+                                    "i/o timeout" in output['errorDetail']['message']):
+                                try:
+                                    if not os.path.exists("/www/server/panel/config/docker_registry.json"):
+                                        public.DownloadFile(
+                                            "{}/src/docker_registry.json".format(public.get_url()),
+                                            "/www/server/panel/config/docker_registry.json"
+                                        )
 
-            except docker.errors.NotFound as e:
-                if "not found: manifest unknown" in str(e):
-                    get._ws.send("bt_failed, pull failed,There is no such image in the repository!\r\n")
-                    return
-                get._ws.send("bt_failed, pull failed!{}\r\n".format(e))
+                                    registry_list = json.loads(
+                                        public.readFile("/www/server/panel/config/docker_registry.json"))
+                                    if len(registry_list) > 0:
+                                        get._ws.send(
+                                            public.lang("Failed to use the default mirror station to pull the image! Trying to use another mirror station to pull for you, please wait...\r\n"))
+                                        if not "/" in get.image:
+                                            get.image = "{}/library/{}".format(registry_list[0].replace("https://", ""),
+                                                                               get.image)
+                                        else:
+                                            get.image = "{}/{}".format(registry_list[0].replace("https://", ""),
+                                                                       get.image)
+
+                                        stdout, stderr = public.ExecShell("docker pull {}".format(get.image))
+                                        if stderr:
+                                            get._ws.send("failed," + public.lang("Failed to pull image!\r\n"))
+                                            return public.return_message(-1, 0, public.lang("Failed to pull the image!"))
+
+                                        public.ExecShell("docker tag {} {}".format(get.image, get.image.split("/")[-1]))
+                                        public.ExecShell("docker rmi {}".format(get.image))
+                                        public.writeFile("/www/server/panel/config/bad_registry.pl", registry_list[0])
+                                        get._ws.send(
+                                            "successful," + public.lang( "Image pull [{}] successful, it is recommended to set: {} as the acceleration station\r\n",get.image, registry_list[0])
+                                        )
+                                except:
+                                    import traceback
+                                    print(traceback.format_exc())
+                                    pass
+                        else:
+                            get._ws.send("failed," + public.lang("Pull failed!{}\r\n",output['errorDetail']))
+
+                        return
+
+                    if 'status' in output:
+                        output_str = output['status']
+                        if output_str == "Downloading":
+                            progress = output['progressDetail']
+                            if not progress: continue
+                            current_mb = progress['current'] / (1024 * 1024)  # 将当前字节数转换为兆字节
+                            total_mb = progress['total'] / (1024 * 1024)  # 将总字节数转换为兆字节
+                            progress_str = "Downloading: {:.2f}MB/{:.2f}MB, {}%".format(current_mb, total_mb, int(
+                                progress['current'] * 100 / progress['total']))
+                            if progress_str != last_progress_str:
+                                get._ws.send(progress_str + "\r\n")
+                                last_progress_str = progress_str
+                        else:
+                            if output_str != last_result:
+                                get._ws.send(output_str + "\r\n")
+                                last_result = output_str
+                    time.sleep(0.1)
+                except StopIteration:
+                    get._ws.send("successful," +public.lang("Image pull [{}] successful\r\n",get.image))
+                    return public.return_message(0, 0, public.lang("Image pulled successfully!"))
+                except ValueError:
+                    get._ws.send("failed," + public.lang("Failed to pull image!\r\n"))
+                    return public.return_message(-1, 0, public.lang("Failed to pull image!"))
+
+        except docker.errors.ImageNotFound as e:
+            if "pull access denied for" in str(e):
+                get._ws.send(
+                    "failed," + public.lang("Pull failed,The image does not exist, or the image may be a private image. You need to enter your dockerhub account password!\r\n"))
                 return
+            get._ws.send("failed," + public.lang("pull failed!{}\r\n",e))
+            return
 
-            except docker.errors.APIError as e:
-                if "invalid tag format" in str(e):
-                    get._ws.send("bt_failed, pull failed, The image format is wrong, such as: nginx:v 1!\r\n")
-                    return
-                get._ws.send("bt_failed, pull failed!{}\r\n".format(e))
+        except docker.errors.NotFound as e:
+            if "not found: manifest unknown" in str(e):
+                get._ws.send("failed," + public.lang("pull failed,There is no such image in the repository!\r\n"))
                 return
+            get._ws.send("failed," + public.lang("pull failed!{}\r\n",e))
+            return
 
-        except Exception as e:
-           # public.print_log("拉取镜像  -- {}".format(e))
-           public.print_log(traceback.format_exc())
+        except docker.errors.APIError as e:
+            if "invalid tag format" in str(e):
+                get._ws.send("failed," + public.lang("pull failed, The image format is wrong, such as: nginx:v 1!\r\n"))
+                return
+            get._ws.send("failed," + public.lang("pull failed!{}\r\n",e))
+            return
+
+        # except Exception as e:
+        #    # public.print_log("拉取镜像  -- {}".format(e))
+        #    public.print_log(traceback.format_exc())
 
     # 拉取镜像
     def pull_high_api(self, get):
@@ -630,15 +679,14 @@ class main(dockerBase):
 
             ret = self.docker_client(get.url).images.pull(repository=get.image, auth_config=auth_conf)
             if ret:
-                return public.returnMsg(True, 'The image was pulled successfully.')
+                return public.return_message(0, 0, public.lang("The image was pulled successfully."))
             else:
-                return public.returnMsg(False, 'There may not be this mirror image.')
+                return public.return_message(-1, 0, public.lang("There may not be this mirror image."))
 
         except docker.errors.ImageNotFound as e:
             if "pull access denied for" in str(e):
-                return public.returnMsg(False,
-                                        "Failed to pull the image, this is a private image, please enter the account password!")
-            return public.returnMsg(False, "Pull image failure <br><br> Reason: {}".format(e))
+                return public.return_message(-1, 0, public.lang("Failed to pull the image, this is a private image, please enter the account password!"))
+            return public.return_message(-1, 0, public.lang("Pull image failure <br><br> Reason: {}", e))
 
     def image_for_host(self, get):
         """
@@ -647,14 +695,14 @@ class main(dockerBase):
         :return:
         """
         res = self.image_list(get)
-        if not res['status']: return res
+        if res['status'] == -1: return res
 
-        num = len(res['msg']['images_list'])
+        num = len(res['message']['images_list'])
         size = 0
 
-        for i in res['msg']['images_list']:
+        for i in res['message']['images_list']:
             size += i['size']
-        return public.returnMsg(True, {'num': num, 'size': size})
+        return public.return_message(0, 0, {'num': num, 'size': size})
 
     def prune(self, get):
         """
@@ -668,19 +716,41 @@ class main(dockerBase):
             res = self.docker_client(self._url).images.prune(filters={'dangling': dang_ling})
 
             if not res['ImagesDeleted']:
-                return public.return_message(0, 0, "No useless images!")
+                return public.return_message(0, 0, public.lang("No useless images!"))
 
             dp.write_log("Delete useless image successfully!")
-            return public.return_message(0, 0, "successfully delete!")
+            return public.return_message(0, 0, public.lang("successfully delete!"))
 
         except docker.errors.APIError as e:
-            return public.return_message(-1, 0, "failed to delete!{}".format(e))
+            return public.return_message(-1, 0, public.lang("failed to delete!{}", e))
         except Exception as e:
-            if error.find("Read timed out") != -1:
+            if str(e).find("Read timed out") != -1:
                 return public.return_message(-1, 0,
-                                             "Deletion of useless images failed and the connection to docker timed"
-                                             " out. Please try restarting the docker service and try again!")
-            return public.return_message(-1, 0, "failed to delete!{}".format(e))
+                                             public.lang("Deletion of useless images failed and the connection to docker timed out. Please try restarting the docker service and try again!"))
+            return public.return_message(-1, 0, public.lang("failed to delete!{}", e))
+    # 2024/5/17 下午6:30 构造返回结果
+    def structure_result(self, results, sk_images_list):
+        '''
+            @name
+            @author wzz <2024/5/17 下午6:30>
+            @param "data":{"参数名":""} <数据类型> 参数描述
+            @return dict{"status":True/False,"msg":"提示信息"}
+        '''
+
+        for r in results:
+            # public.print_log("is_pullvis_pull    {}".format(r))
+            r["is_pull"] = 0
+            r['id'] = ""
+            for image in sk_images_list:
+                if image is None: continue
+                i_RepoTags = image['RepoTags'][0] if not image['RepoTags'] is None and len(
+                    image['RepoTags']) != 0 else "<none>"
+                if i_RepoTags == "<none>": continue
+                if r['name'] in i_RepoTags and i_RepoTags == "{}:latest".format(r['name']):
+                    r["is_pull"] = 1
+                    r['id'] = image['Id']
+
+        return sorted(results, key=lambda x: x['star_count'], reverse=True)
 
     # 2023/12/13 上午 11:08 镜像搜索 todo 关键字查询调用ws接口 暂时没查到
     def search(self, get):
@@ -696,6 +766,10 @@ class main(dockerBase):
         '''
         try:
             get.name = get.get("name/s", "")
+            from btdockerModelV2.dockerSock import image
+            sk_image = image.dockerImage()
+            sk_images_list = sk_image.get_images()
+
             if get.name == "":
                 # 2024/3/20 上午 10:10 如果get.name是空,则返回docker_hub_repos.db中results表的所有镜像
                 import db, os
@@ -703,18 +777,17 @@ class main(dockerBase):
                 sql = db.Sql()
                 sql.dbfile('{}/class_v2/btdockerModelV2/config/docker_hub_repos.db'.format(public.get_panel_path()))
                 # 2024/3/20 上午 10:24 按照star_count排序
-                results = sql.table('results').field('name,description,star_count,is_official').order(
-                    'star_count desc').select()
-
-                if not results:
+                results = sql.table('results').field('name,description,star_count,is_official').order('star_count desc').select()
+                if not results or results == [] :
                     return public.return_message(0, 0, [])
 
-                return public.return_message(0, 0, results)
+                return public.return_message(0, 0, self.structure_result(results, sk_images_list))
 
-            from btdockerModelV2.dockerSock import image
-            sk_image = image.dockerImage()
+            search_result = sk_image.search(get.name)
+            if not search_result or search_result == []:
+                return public.return_message(0, 0, [])
 
-            return public.return_message(0, 0, sk_image.search(get.name))
+            return public.return_message(0, 0, self.structure_result(search_result, sk_images_list))
         except Exception as e:
             # if os.path.exists('data/debug.pl'):
             #     print(public.get_error_info())

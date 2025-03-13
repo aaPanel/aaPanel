@@ -12,13 +12,13 @@ class Page():
     #--------------------------
     # 分页类 - JS回调版
     #--------------------------
-    __PREV          =   public.get_msg_gettext('Prev')
-    __NEXT          =   public.get_msg_gettext('Next')
-    __START         =   public.get_msg_gettext('Start')
-    __END           =   public.get_msg_gettext('Last')
-    __COUNT_START   =   public.get_msg_gettext('Total')
+    __PREV          =   public.lang("Prev")
+    __NEXT          =   public.lang("Next")
+    __START         =   public.lang("Start")
+    __END           =   public.lang("Last")
+    __COUNT_START   =   "Total"
     __COUNT_END     =   ''
-    __FO            =   public.get_msg_gettext('From')
+    __FO            =   public.lang("From")
     __LINE          =   ''
     __LIST_NUM      =  4
     SHIFT         =  None           #偏移量
@@ -33,7 +33,7 @@ class Page():
 
     def __init__(self):
         pass
-        # tmp = public.get_msg_gettext('Depends on the following software, please install [{1}] first')
+        # tmp = public.lang("Depends on the following software, please install [{1}] first")
         # if tmp:
         #     self.__PREV         = tmp['Prev']
         #     self.__NEXT         = tmp['Next']

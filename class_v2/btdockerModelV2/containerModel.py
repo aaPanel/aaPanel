@@ -13,9 +13,6 @@ import time
 
 import crontab
 import docker.errors
-
-import gettext
-_ = gettext.gettext
 # ------------------------------
 # Docker模型
 # ------------------------------
@@ -34,6 +31,7 @@ class main(dockerBase):
         # if public.M('sqlite_master').where('type=? AND name=?',('table', 'docker_log_split')).count():
             p = crontab.crontab()
             llist = p.GetCrontab(None)
+
             add_crond = True
             if type(llist) == list:
                 for i in llist:
@@ -97,9 +95,9 @@ class main(dockerBase):
 
         import re
         # if not hasattr(get, 'cmd'):
-        #     return public.return_message(-1, 0, 'cmd parameter error')
+        #     return public.return_message(-1, 0, public.lang("cmd parameter error"))
         if "docker run" not in get.cmd:
-            return public.return_message(-1, 0,  _('Only the docker run command can be executed'))
+            return public.return_message(-1, 0, public.lang("Only the docker run command can be executed"))
 
         danger_cmd = ['rm', 'rmi', 'kill', 'stop', 'pause', 'unpause', 'restart', 'update', 'exec', 'init',
                       'shutdown', 'reboot', 'chmod', 'chown', 'dd', 'fdisk', 'killall', 'mkfs', 'mkswap', 'mount',
@@ -110,13 +108,12 @@ class main(dockerBase):
 
         for d in danger_cmd:
             if get.cmd.startswith(d) or re.search(r'\s{}\s'.format(d), get.cmd):
-                return public.return_message(-1, 0,  _(
-                                             'Dangerous command exists: [{}],Execution is not allowed!'.format(d)))
+                return public.return_message(-1, 0, public.lang(
+                    "Dangerous command exists: [ {}],Execution is not allowed!",d))
 
         for d in danger_symbol:
             if d in get.cmd:
-                return public.return_message(-1, 0,  _(
-                                             'There are danger symbols: [{}],Execution is not allowed!'.format(d)))
+                return public.return_message(-1, 0,  public.lang('There are danger symbols: [{}],Execution is not allowed!',d))
 
         os.system("echo -n > {}".format(self._rCmd_log))
         os.system("nohup {} >> {} 2>&1 && echo 'bt_successful' >> {} || echo 'bt_failed' >> {} &".format(
@@ -126,7 +123,7 @@ class main(dockerBase):
             self._rCmd_log,
         ))
 
-        return public.return_message(0, 0,  _("The command has been executed!"))
+        return public.return_message(0, 0, public.lang("The command has been executed!"))
 
     # 添加容器
     def run(self, get):
@@ -185,16 +182,21 @@ class main(dockerBase):
         nPorts = {}
         if not cPorts is False:
             if ":" in cPorts.keys():
-                return public.return_message(-1, 0,  _( "The port format is wrong, this method is not supported!"))
+                return public.return_message(-1, 0, public.lang("The port format is wrong, this method is not supported!"))
             if "-" in cPorts.keys():
-                return public.return_message(-1, 0,  _( "The port format is wrong, this method is not supported!"))
+                return public.return_message(-1, 0, public.lang("The port format is wrong, this method is not supported!"))
 
             for i in cPorts.keys():
                 if cPorts[i] == "": continue
-                if dp.check_socket(cPorts[i]):
-                    return public.return_message(-1, 0,  _(
-                                                 "Server port [{}] is occupied, please change to another port!".format(
-                                                     cPorts[i])))
+                if isinstance(cPorts[i], list):
+                    cPorts[i] = tuple(cPorts[i])
+
+                check_port = cPorts[i]
+                if isinstance(cPorts[i], tuple):
+                    check_port = cPorts[i][1]
+
+                if dp.check_socket(check_port):
+                    return public.return_message(-1, 0, public.lang("The server port [{}] is already occupied, please replace it with a different port!",cPorts[i]))
 
                 if "tcp/udp" in i:
                     cPort = i.split('/')[0]
@@ -205,40 +207,35 @@ class main(dockerBase):
             del cPorts
 
         if "image" not in get or not get.image:
-            return public.return_message(-1, 0,  _(
-                                         "Please pull the image you need"))
+            return public.return_message(-1, 0, public.lang("Please pull the image you need"))
 
         if get.image == "<none>" or "<none>" in get.image:
-            return public.return_message(-1, 0,  _(
-                                         "The image does not exist!"))
+            return public.return_message(-1, 0, public.lang("The image does not exist!"))
 
         mem_limit = get.mem_limit if "mem_limit" in get and get.mem_limit != "0" else None
         if not mem_limit is None:
             mem_limit_byte = dp.byte_conversion(get.mem_limit)
             if mem_limit_byte > dp.get_mem_info():
-                return public.return_message(-1, 0,  _( "The memory quota has exceeded the available amount!"))
+                return public.return_message(-1, 0, public.lang("The memory quota has exceeded the available amount!"))
             if mem_limit_byte < 6291456:
-                return public.return_message(-1, 0,  _( "The memory quota cannot be less than 6MB!"))
+                return public.return_message(-1, 0, public.lang("The memory quota cannot be less than 6MB!"))
 
         try:
             if "force_pull" in get and get.force_pull == "0":
                 self.docker_client(self._url).images.get(get.image)
         except docker.errors.ImageNotFound as e:
-            return public.return_message(-1, 0,  _(
-                                         "Image [{}] does not exist, You can try [Forced Pull]!".format(
-                                             get.image)))
+            return public.return_message(-1, 0,  public.lang("Image [{}] does not exist, You can try [Forced Pull]!",get.image))
         except docker.errors.APIError as e:
-            return public.return_message(-1, 0,  _(
-                                         "Image [{}] does not exist, You can try [Forced Pull]!".format(
-                                             get.image)))
+            return public.return_message(-1, 0,  public.lang("Image [{}] does not exist, You can try [Forced Pull]!",get.image))
 
         # 2024/4/16 上午11:40 检查镜像是否存在并且处理镜像如果是非应用容器的情况
         try:
             from btdockerModelV2.dockerSock import image
             sk_image = image.dockerImage()
-            image_inspect = sk_image.inspect(get.image)
-            if type(image_inspect) != dict:
-                return public.return_message(-1, 0,  _( "Image [{}] does not exist!".format(get.image)))
+            check_image = get.image if ":" in get.image else get.image + ":latest"
+            image_inspect = sk_image.inspect(check_image)
+            if type(image_inspect) != dict or "message" in image_inspect:
+                self.docker_client(self._url).images.pull(check_image)
 
             if "Config" in image_inspect and "Cmd" in image_inspect["Config"]:
                 sh_list = ("bash", "sh", "dash", "/bin/sh", "/bin/bash", "/bin/dash")
@@ -253,7 +250,7 @@ class main(dockerBase):
             cpu_quota = float(get.cpu_quota) * 100000
 
             if int(cpu_quota) / 100000 > dp.get_cpu_count():
-                return public.return_message(-1, 0,  _( "cpu quota has exceeded available cores!"))
+                return public.return_message(-1, 0, public.lang("cpu quota has exceeded available cores!"))
 
         df_restart_policy = {"Name": "unless-stopped", "MaximumRetryCount": 0}
         restart_policy = get.restart_policy if "restart_policy" in get and get.restart_policy else df_restart_policy
@@ -265,13 +262,12 @@ class main(dockerBase):
         if not mem_reservation is None and mem_reservation != "0":
             mem_reservation_byte = dp.byte_conversion(mem_reservation)
             if mem_reservation_byte < 6291456:
-                return public.return_message(-1, 0,  _( "Memory reservation cannot be less than 6MB!"))
+                return public.return_message(-1, 0, public.lang("Memory reservation cannot be less than 6MB!"))
 
-        network = get.network if "network" in get and get.network != "" else "bridge"
-        ip_address = get.ip_address if "ip_address" in get and get.ip_address != "" else None
+        network_info = get.network_info if hasattr(get, "network_info") and get.network_info != "" else []
 
         try:
-            res = self.docker_client(self._url).containers.run(
+            res = self.docker_client(self._url).containers.create(
                 name=get.name,
                 image=get.image,
                 detach=True,
@@ -291,38 +287,31 @@ class main(dockerBase):
                 privileged=True if "privileged" in get and get.privileged != "0" else False,
                 environment=dp.set_kv(get.environment),  # "HOME=/value\nHOME11=value1"
                 labels=dp.set_kv(get.labels),  # "key=value\nkey1=value1"
-                network=network,
             )
 
         except docker.errors.APIError as e:
             if "invalid reference format" in str(e):
-                return public.return_message(-1, 0,  _(
-                                             "The image name format is incorrect.such as:nginx:latest"))
+                return public.return_message(-1, 0, public.lang("The image name format is incorrect.such as:nginx:latest"))
             if "failed to create task for container" in str(e) or "failed to create shim task" in str(e):
-                return public.return_message(-1, 0,  _( "Container creation failed, details: {}!".format(str(e))))
+                return public.return_message(-1, 0, public.lang("Container creation failed, details: {}!", str(e)))
             if "Minimum memory limit can not be less than memory reservation limit, see usage" in str(e):
-                return public.return_message(-1, 0,  _( "The memory quota cannot be less than the memory reserve!"))
+                return public.return_message(-1, 0, public.lang("The memory quota cannot be less than the memory reserve!"))
             if "already exists in network bridge" in str(e):
-                return public.return_message(-1, 0,  _(
-                                             "The container name or network bridge already exists. Please change the container name and try again!"))
+                return public.return_message(-1, 0, public.lang("The container name or network bridge already exists. Please change the container name and try again!"))
             if "No command specified" in str(e):
-                return public.return_message(-1, 0,  _(
-                                             "There is no startup command in this image, please specify the container startup command!"))
+                return public.return_message(-1, 0, public.lang("There is no startup command in this image, please specify the container startup command!"))
             if "permission denied" in str(e):
-                return public.return_message(-1, 0,  _( "Permission exception! Details:{}".format(str(e))))
+                return public.return_message(-1, 0,  public.lang("Permission exception! Details:{}", str(e)))
             if "Internal Server Error" in str(e):
-                return public.return_message(-1, 0,  _(
-                                             "Container creation failed! Please restart the docker service at the appropriate time!"))
+                return public.return_message(-1, 0, public.lang("Container creation failed! Please restart the docker service at the appropriate time!"))
             if "repository does not exist or may require 'docker login'" in str(e):
-                return public.return_message(-1, 0,  _(
-                                             "Image [{}] does not exist!".format(
-                                                 get.image)))
+                return public.return_message(-1, 0, public.lang("Image [{}] does not exist!",get.image))
             if "Minimum memory reservation allowed is 6MB" in str(e):
-                return public.return_message(-1, 0,  _( "Memory reservation cannot be less than 6MB!"))
+                return public.return_message(-1, 0, public.lang("Memory reservation cannot be less than 6MB!"))
             if "container to be able to reuse that name." in str(e):
-                return public.return_message(-1, 0,  _( "Container name already exists!"))
+                return public.return_message(-1, 0, public.lang("Container name already exists!"))
             if "Invalid container name" in str(e):
-                return public.return_message(-1, 0,  _( "The container name is invalid"))
+                return public.return_message(-1, 0, public.lang("The container name is invalid"))
             if "bind: address already in use" in str(e):
                 port = ""
                 for i in get.ports:
@@ -330,15 +319,14 @@ class main(dockerBase):
                         port = get.ports[i]
                 get.id = get.name
                 self.del_container(get)
-                return public.return_message(-1, 0,  _( "Server port {} in use! Change the other port".format(port)))
-            return public.return_message(-1, 0,  _( 'Creation failure! {}'.format(public.get_error_info())))
+                return public.return_message(-1, 0, public.lang("Server port {}in use! Change the other port", port))
+            return public.return_message(-1, 0,  public.lang("Creation failure! {}", public.get_error_info()))
         except Exception as a:
             public.print_log(traceback.format_exc())
             self.del_container(get)
             if "Read timed out" in str(a):
-                return public.return_message(-1, 0,  _(
-                                             "The container creation failed and the connection to docker timed out!"))
-            return public.return_message(-1, 0,  _( 'Container failed to run! {}'.format(str(a))))
+                return public.return_message(-1, 0, public.lang("The container creation failed and the connection to docker timed out!"))
+            return public.return_message(-1, 0,  public.lang("Container failed to run! {}", str(a)))
 
         if res:
             # print(res.status)
@@ -363,19 +351,16 @@ class main(dockerBase):
                 "addtime": int(time.time())
             })
 
-            if not ip_address is None:
-                try:
-                    self.docker_client(self._url).networks.get(network).disconnect(res.id)
-                    self.docker_client(self._url).networks.get(network).connect(res.id, ipv4_address=ip_address)
-                    # dk_config = self.docker_client(self._url).containers.get(res.id)
-                    # print(dk_config.attrs['NetworkSettings']['Networks'][network]['IPAddress'])
-                    # logs = res.logs(stdout=True, stderr=True)
-                    # print(logs.decode())
-                except docker.errors.APIError as e:
-                    if "Invalid IPv4 address" in str(e):
-                        return public.return_message(0, 0,  _(
-                                                     "Created successfully, but the IP [{}] is illegal and the IP has been automatically assigned.".format(
-                                                         ip_address)))
+            if len(network_info) > 0:
+                self.docker_client(self._url).networks.get("bridge").disconnect(res.id)
+                for network in network_info:
+                    get.net_name = network["network"]
+                    get.new_container_id = res.id
+                    get.tmp_ip_address = network["ip_address"]
+                    get.tmp_ip_addressv6 = network["ip_addressv6"]
+                    net_result = self.connent_network(get)
+                    if not net_result["status"]:
+                        return net_result
 
             # 返回包含容器的id和name
             return public.return_message(0, 0, {
@@ -385,8 +370,8 @@ class main(dockerBase):
                 "name": dp.rename(res.name),
             })
 
-            # return public.returnMsg(True, "容器创建成功!")
-        return public.return_message(-1, 0,  _( 'Creation failure!'))
+            # return public.return_message(0, 0, public.lang("容器创建成功!"))
+        return public.return_message(-1, 0, public.lang("Creation failure!"))
 
     def upgrade_container(self, get):
         """
@@ -396,14 +381,14 @@ class main(dockerBase):
         """
         try:
             if "id" not in get:
-                return public.return_message(-1, 0,  _( "Container ID is abnormal"))
+                return public.return_message(-1, 0, public.lang("Container ID is abnormal"))
 
             container = self.docker_client(self._url).containers.get(get.id)
 
             old_container_config = self.save_container_config(container)
             new_image = get.new_image if "new_image" in get and get.new_image else "latest"
             if new_image is None:
-                return public.return_message(-1, 0,  _( "The new image name cannot be empty!"))
+                return public.return_message(-1, 0, public.lang("The new image name cannot be empty!"))
 
             if "upgrade" in get and get.upgrade == "1":
                 get.new_image = "{}:{}".format(old_container_config["image"].split(':')[0], new_image)
@@ -412,9 +397,9 @@ class main(dockerBase):
                 if "force_pull" in get and get.force_pull == "1":
                     public.ExecShell("docker pull {}".format(get.new_image))
             except docker.errors.ImageNotFound as e:
-                return public.return_message(-1, 0,  _( "The mirror does not exist!"))
+                return public.return_message(-1, 0, public.lang("The mirror does not exist!"))
             except docker.errors.APIError as e:
-                return public.return_message(-1, 0, "The mirror does not exist!")
+                return public.return_message(-1, 0, public.lang("The mirror does not exist!"))
             # except Exception as e:
             #     public.print_log(traceback.format_exc())
             #     return public.return_message(-1, 0, e)
@@ -422,12 +407,12 @@ class main(dockerBase):
 
             get.old_container_config = old_container_config
             new_container_config = self.structure_new_container_conf(get)
-            if type(new_container_config) != dict:
-                return public.return_message(-1, 0,  _( new_container_config['msg']))
+            if new_container_config['status']==-1:
+                return public.return_message(-1, 0,  public.lang( new_container_config['message']))
+            network_info = get.network_info if "network_info" in get and get.network_info != "" else []
 
             container.stop()
             container.remove()
-
             try:
                 new_container = self.docker_client(self._url).containers.create(
                     name=new_container_config["name"],
@@ -437,7 +422,7 @@ class main(dockerBase):
                     mem_limit=new_container_config["mem_limit"],
                     tty=new_container_config["tty"],
                     stdin_open=new_container_config["stdin_open"],
-                    publish_all_ports=new_container_config["publish_all_ports"],
+                    publish_all_ports=True if new_container_config["publish_all_ports"] == "1" else False,
                     ports=new_container_config["ports"],
                     command=new_container_config["command"],
                     entrypoint=new_container_config["entrypoint"],
@@ -449,75 +434,103 @@ class main(dockerBase):
                     volume_driver=new_container_config["volume_driver"],
                     mem_reservation=new_container_config["mem_reservation"],
                     restart_policy=new_container_config["restart_policy"],
-                    network=new_container_config["network"],
                 )
             except Exception as e:
                 public.print_log(traceback.format_exc())
                 public.print_log("修改 创建新容器报错--")
 
                 if "Read timed out" in str(e):
-                    return public.return_message(-1, 0,  _(
-                                                 "Container editing failed and the connection to docker timed out."))
+                    return public.return_message(-1, 0, public.lang("Container editing failed and the connection to docker timed out."))
                 # print(traceback.format_exc())
-                return public.return_message(-1, 0,  _( "Update failed!{}".format(str(e))))
+                return public.return_message(-1, 0,  public.lang("Update failed!{}", str(e)))
+            if not "upgrade" in get or get.upgrade != "1":
+                if len(network_info) > 0:
+                    self.docker_client(self._url).networks.get("bridge").disconnect(new_container.id)
+                    for temp in network_info:
+                        get.net_name = temp["network"]
+                        get.new_container_id = new_container.id
+                        get.tmp_ip_address = temp["ip_address"]
+                        get.tmp_ip_addressv6 = temp["ip_addressv6"]
+                        net_result = self.connent_network(get)
+                        if not net_result["status"]:
+                            return net_result
+            else:
+                self.docker_client(self._url).networks.get("bridge").disconnect(new_container.id)
+                for net_name, net_settings in get.old_container_config["networking_config"].items():
+                    get.net_name = net_name
+                    get.new_container_id = new_container.id
+                    get.tmp_ip_address = net_settings["IPAddress"]
+                    get.tmp_ip_addressv6 = net_settings["GlobalIPv6Address"]
+                    net_result = self.connent_network(get)
+                    if not net_result["status"]:
+                        return net_result
 
             new_container.start()
-            if not "upgrade" in get or get.upgrade != "1":
-                new_ip_address = get.new_ip_address if "new_ip_address" in get and get.new_ip_address else \
-                    old_container_config["ip_address"]
-                new_network = get.new_network if "new_network" in get and get.new_network else \
-                    old_container_config["network"]
-
-                if new_network != "bridge":
-                    try:
-                        self.docker_client(self._url).networks.get(new_network).disconnect(new_container.id)
-                        self.docker_client(self._url).networks.get(new_network).connect(
-                            new_container.id, ipv4_address=new_ip_address
-                        )
-
-                    except docker.errors.APIError as e:
-                        if ("user specified IP address is supported only when "
-                            "connecting to networks with user configured subnets") in str(e):
-                            self.docker_client(self._url).networks.get(new_network).connect(new_container.id)
-                            return public.return_message(0, 0,  _(
-                                                         "Editing successful, [{}] has not specified a subnet, and the IP has been automatically assigned!"
-                                                         .format(str(new_network))))
-
-                    except Exception as e:
-                        public.print_log(traceback.format_exc())
-                        self.docker_client(self._url).networks.get(new_network).connect(new_container.id)
-                        print(traceback.format_exc())
-                        return public.return_message(0, 0,  _(
-                                                     "Editing successful, network [{}] setting failed, IP has been automatically assigned to you, error details: {}!"
-                                                     .format(new_network, str(e))))
-
-            return public.return_message(0, 0, _("Update successfully!"))
+            return public.return_message(0, 0, public.lang("Update successfully!"))
         except docker.errors.NotFound as e:
             if "No such container" in str(e):
-                return public.return_message(-1, 0, _("Container does not exist!"))
-            return public.return_message(-1, 0, _("Update failed!{}".format(str(e))))
+                return public.return_message(-1, 0, public.lang("Container does not exist!"))
+            return public.return_message(-1, 0, public.lang("Update failed!{}", str(e)))
         except docker.errors.APIError as e:
             if "No such container" in str(e):
-                return public.return_message(-1, 0, _("Container does not exist!"))
-            return public.return_message(-1, 0, _("Update failed!{}".format(str(e))))
+                return public.return_message(-1, 0, public.lang("Container does not exist!"))
+            return public.return_message(-1, 0, public.lang("Update failed!{}", str(e)))
         except Exception as a:
             public.print_log(traceback.format_exc())
             if "Read timed out" in str(a):
-                return public.return_message(-1, 0,
-                                             _("Container editing failed and the connection to docker timed out."))
-            return public.return_message(-1, 0, _("Update failed!{}".format(str(a))))
+                return public.return_message(-1, 0, public.lang("Container editing failed and the connection to docker timed out."))
+            return public.return_message(-1, 0, public.lang("Update failed!{}", str(a)))
+    # 2024/5/28 下午3:30 编辑容器连接网络
+    def connent_network(self, get):
+        '''
+            @name 编辑容器连接网络
+            @author wzz <2024/5/28 下午3:30>
+            @param "data":{"参数名":""} <数据类型> 参数描述
+            @return dict{"status":True/False,"msg":"提示信息"}
+        '''
+        if get.net_name == "bridge":
+            self.docker_client(self._url).networks.get(get.net_name).connect(get.new_container_id)
+            return public.return_message(0, 0, "")
+
+        try:
+            self.docker_client(self._url).networks.get(get.net_name).connect(
+                get.new_container_id,
+                ipv4_address=get.tmp_ip_address,
+                ipv6_address=get.tmp_ip_addressv6,
+            )
+        except docker.errors.APIError as e:
+            if ("user specified IP address is supported only when "
+                "connecting to networks with user configured subnets") in str(e):
+                return public.return_message(-1, 0, public.lang("The container is successfully edited, and the subnet is not specified when the currently specified [{}] network is created, and the IP cannot be customized, and the IP has been automatically assigned to you!",str(get.net_name)))
+        except Exception as e:
+            return public.return_message(-1, 0, public.lang("The container is successfully edited, the network [{}] setting fails, and the IP address has been automatically assigned to you, error details:{}！",get.net_name, str(e)))
+
+        return public.return_message(0, 0, "")
 
     def save_container_config(self, container):
         """
         保存容器的配置信息
         """
-        ip_address, network = None, None
-        if len(container.attrs['NetworkSettings']['Networks']) != 0:
-            Networks = container.attrs['NetworkSettings']['Networks'][list(container.attrs['NetworkSettings']['Networks'].keys())[0]]
-            ip_address = Networks['IPAddress']
-            network = Networks['NetworkID']
+        network_config = {}
+        for net_name, net_settings in container.attrs["NetworkSettings"]["Networks"].items():
+            network_config[net_name] = {
+                "IPAMConfig": net_settings["IPAMConfig"],
+                "Links": net_settings["Links"],
+                "MacAddress": net_settings["MacAddress"],
+                "Aliases": net_settings["Aliases"],
+                "NetworkID": net_settings["NetworkID"],
+                "EndpointID": net_settings["EndpointID"],
+                "Gateway": net_settings["Gateway"],
+                "IPAddress": net_settings["IPAddress"],
+                "IPPrefixLen": net_settings["IPPrefixLen"],
+                "IPv6Gateway": net_settings["IPv6Gateway"],
+                "GlobalIPv6Address": net_settings["GlobalIPv6Address"],
+                "GlobalIPv6PrefixLen": net_settings["GlobalIPv6PrefixLen"],
+                "DriverOpts": net_settings["DriverOpts"],
+                "DNSNames": net_settings["DNSNames"],
+            }
 
-        container_config = {
+        return public.return_message(0, 0,{
             "image": container.attrs['Config']['Image'],
             "name": container.attrs['Name'],
             "detach": True,
@@ -537,10 +550,8 @@ class main(dockerBase):
             "volume_driver": container.attrs['HostConfig']['VolumeDriver'],
             "mem_reservation": container.attrs['HostConfig']['MemoryReservation'],
             "restart_policy": container.attrs['HostConfig']['RestartPolicy'],
-            "network": network,
-            "ip_address": ip_address,
-        }
-        return container_config
+            "networking_config": network_config,
+        })
 
     def structure_new_container_conf(self, get):
         """
@@ -555,13 +566,34 @@ class main(dockerBase):
             new_cpu_quota = float(new_cpu_quota) * 100000
 
             if int(new_cpu_quota) / 100000 > dp.get_cpu_count():
-                return public.returnMsg(False, _( "cpu quota has exceeded available cores!"))
+                return public.return_message(-1, 0, public.lang( "cpu quota has exceeded available cores!"))
 
         new_mem_limit = get.new_mem_limit if hasattr(get, "new_mem_limit") and get.new_mem_limit else get.old_container_config["mem_limit"]
         new_tty = get.new_tty if hasattr(get, "new_tty") and get.new_tty else get.old_container_config["tty"]
         new_stdin_open = get.new_stdin_open if hasattr(get, "new_stdin_open") and get.new_stdin_open else get.old_container_config["stdin_open"]
         new_publish_all_ports = get.new_publish_all_ports if hasattr(get, "new_publish_all_ports") and get.new_publish_all_ports != '0' else get.old_container_config["publish_all_ports"]
-        new_ports = get.new_ports if hasattr(get, "new_ports") and get.new_ports else get.old_container_config["ports"]
+        get_new_ports = get.new_ports if hasattr(get, "new_ports") and get.new_ports else False
+        new_ports = {}
+        if get_new_ports:
+            if ":" in get_new_ports.keys():
+                return public.return_message(-1, 0, public.lang( "The port format is incorrect"))
+            if "-" in get_new_ports.keys():
+                return public.return_message(-1, 0, public.lang( "The port format is incorrect"))
+
+            for i in get_new_ports.keys():
+                if get_new_ports[i] == "": continue
+                if isinstance(get_new_ports[i], list):
+                    get_new_ports[i] = tuple(get_new_ports[i])
+
+                if "tcp/udp" in i:
+                    cPort = i.split('/')[0]
+                    new_ports[str(cPort) + "/tcp"] = get_new_ports[i]
+                    new_ports[str(cPort) + "/udp"] = get_new_ports[i]
+                else:
+                    new_ports[i] = get_new_ports[i]
+            del get_new_ports
+
+        new_ports = new_ports if new_ports else get.old_container_config["ports"]
         new_command = get.new_command if hasattr(get, "new_command") else get.old_container_config["command"]
         new_entrypoint = get.new_entrypoint if hasattr(get, "new_entrypoint") else get.old_container_config["entrypoint"]
         new_environment = get.new_environment if hasattr(get, "new_environment") and get.new_environment != '' else get.old_container_config["environment"]
@@ -574,7 +606,7 @@ class main(dockerBase):
         new_restart_policy = get.new_restart_policy if hasattr(get, "new_restart_policy") and get.new_restart_policy else get.old_container_config["restart_policy"]
         new_network = get.new_network if hasattr(get, "new_network") and get.new_network else get.old_container_config["network"]
 
-        container_config = {
+        return public.return_message(0, 0, {
             "image": new_image,
             "name": new_name,
             "detach": True,
@@ -594,9 +626,7 @@ class main(dockerBase):
             "volume_driver": new_volume_driver,
             "mem_reservation": new_mem_reservation,
             "restart_policy": new_restart_policy,
-            "network": new_network,
-        }
-        return container_config
+        })
 
     def commit(self, get):
         """
@@ -633,13 +663,13 @@ class main(dockerBase):
                 get.id = "{}:{}".format(get.repository, get.tag)
                 from btdockerModelV2 import imageModel as di
                 result = di.main().save(get)
-                if result['status']:
-                    return public.return_message(0, 0,  _("The image has been generated, and{}".format(result['msg'])))
+                if result['status'] == -1:
+                    return public.return_message(0, 0,  public.lang("The image has been generated, and{}", result['message']))
                 return public.return_message(0, 0, result)
 
-            return public.return_message(0, 0,  _("submit successfully!"))
+            return public.return_message(0, 0, public.lang("submit successfully!"))
         except Exception as e:
-            return public.return_message(-1, 0,  _( "Submission Failed!{}".format(str(e))))
+            return public.return_message(-1, 0,  public.lang("Submission Failed!{}", str(e)))
 
 
     def docker_shell(self, get):
@@ -662,19 +692,21 @@ class main(dockerBase):
             return public.return_message(-1, 0, ex)
         try:
             # if "id" not in get:
-            #     return public.returnMsg(False, "The container ID is abnormal, please refresh the page and try again!")
+            #     return public.return_message(-1, 0, public.lang("The container ID is abnormal, please refresh the page and try again!"))
 
             # shell_list = ('bash', 'sh')
             # if "shell" not in get:
-            #     return public.returnMsg(False, "Select the shell type!")
+            #     return public.return_message(-1, 0, public.lang("Select the shell type!"))
 
             # if get.shell not in shell_list:
-            #     return public.returnMsg(False, "This shell is not supported-choose bash or sh!")
+            #     return public.return_message(-1, 0, public.lang("This shell is not supported-choose bash or sh!"))
 
-            cmd = 'docker container exec -it {} {}'.format(get.id, get.shell)
+            user_root = "-u root" if hasattr(get, "sudo_i") else ""
+
+            cmd = 'docker container exec -it {} {} {}'.format(user_root, get.id, get.shell)
             return public.return_message(0, 0, cmd)
         except docker.errors.APIError as ex:
-            return public.return_message(-1, 0, _( 'Failed to get container'))
+            return public.return_message(-1, 0, public.lang("Failed to get container"))
 
     def export(self, get):
         """
@@ -698,9 +730,9 @@ class main(dockerBase):
             for i in data:
                 f.write(i)
             f.close()
-            return public.returnMsg(True, _( "Successfully exported to:{}".format(file_name)))
+            return public.return_message(0, 0, public.lang("Successfully exported to:{}", file_name))
         except:
-            return public.returnMsg(False, _( 'operation failure:' + str(public.get_error_info())))
+            return public.return_message(-1, 0, public.lang( 'operation failure:' + str(public.get_error_info())))
 
     def del_container(self, get):
         """
@@ -758,7 +790,7 @@ class main(dockerBase):
             dp.write_log("Delete container [{}] successfully!".format(container.attrs['Name']))
             get.container_id = get.id
             # todo 此处导入注意适配  info返回已改
-            info = main().get_proxy_info(get)
+            info = main().get_proxy_info(get)['message']
             if info and 'name' in info and 'id' in info:
                 print(info['name'])
                 print(info['id'])
@@ -780,9 +812,38 @@ class main(dockerBase):
                 dp.sql('dk_domain').where('id=?', (info['id'],)).delete()
                 dp.sql('dk_sites').where('container_id=?', (get.id,)).delete()
 
-            return public.return_message(0, 0,  _("Successfully deleted!"))
+            if public.M('sqlite_master').where('type=? AND name=?', ('table', 'docker_log_split')).count():
+                id = public.M('docker_log_split').where('pid=?', (get.id,)).getField('id')
+                public.M('docker_log_split').where('id=?', (id,)).delete()
+
+                all_data = public.M('docker_log_split').field('pid').select()
+                if not all_data:
+                    public.M("docker_log_split").execute('drop table if exists docker_log_split')
+
+                containers_list = self.get_list(get)['message']
+                if not containers_list["container_list"]:
+                    public.M("docker_log_split").execute('drop table if exists docker_log_split')
+
+                for i in all_data:
+                    for cc in containers_list["container_list"]:
+                        if i['pid'] in cc['id']:
+                            break
+                    else:
+                        public.M('docker_log_split').where('pid=?', (i['pid'],)).delete()
+
+            if not public.M('sqlite_master').where('type=? AND name=?', ('table', 'docker_log_split')).count():
+                p = crontab.crontab()
+                llist = p.GetCrontab(None)
+                if type(llist) == list:
+                    for i in llist:
+                        if i['name'] == '[do not delete] Docker log cut':
+                            get.id = i['id']
+                            p.DelCrontab(get)
+                            break
+
+            return public.return_message(0, 0, public.lang("Successfully deleted!"))
         except Exception as e:
-            return public.return_message(-1, 0,  _( "Delete failed! {}".format(str(e))))
+            return public.return_message(-1, 0,  public.lang("Delete failed! {}", str(e)))
 
     # 设置容器状态
     def set_container_status(self, get):
@@ -804,7 +865,7 @@ class main(dockerBase):
 
         try:
             container = self.docker_client(self._url).containers.get(get.id)
-            result = {"status": True, "msg": "Successfully set!"}
+            result = {"status": 0, "message": {"result": "Successfully set!"}}
             if get.status == "start":
                 result = self.start(get)
             elif get.status == "stop":
@@ -821,26 +882,42 @@ class main(dockerBase):
                 container.restart()
 
             try:
+                # public.print_log(result)
+                #{"status": 0, "timestamp": 1729561303, "message": {"result": "\u505c\u6b62\u6210\u529f\uff01"}}
+                data = {
+                    "name": container.attrs['Name'].replace('/', ''),
+                    "result": result['message']['result'],
+                    # "msg": result['msg'],
+                }
 
-                if result['status']:
-                    return public.return_message(0, 0,result['msg'])
+                if result['status'] == 0:
+                    return public.return_message(0, 0,data)
                 else:
-                    return public.return_message(-1, 0, result['msg'])
-
+                    return public.return_message(-1, 0, data)
 
             except:
-                return public.return_message(-1, 0, str(result['msg']))
+                return public.return_message(-1, 0, {
+                        "name": container.attrs['Name'].replace('/', ''),
+                        # "status": False,
+                        "result": str(result['message']['result']),
+                    })
+                    # return public.return_message(-1, 0, str(result['msg']))
         except Exception as e:
-            if "No such container" in str(e):
-                return public.return_message(-1, 0,  _( "The container has been deleted!"))
-            if "port is already allocated" in str(e) or "address already in use" in str(e):
-                if "[::]" in str(e):
-                    str_port = str(e).split("[::]:")[1].split(":")[0]
-                    return public.return_message(-1, 0,  _( "ipv6 server port [{}] is occupied!".format(str_port)))
-                else:
-                    str_port = str(e).split("0.0.0.0")[1].split(":")[1].split(" ")[0]
-                    return public.return_message(-1, 0,  _( "ipv4 server port [{}] is occupied!".format(str_port)))
-            return public.return_message(-1, 0,  _( "Setup failed! {}".format(str(e))))
+
+            try:
+                if "No such container" in str(e):
+                    return public.return_message(-1, 0, public.lang("The container has been deleted!"))
+                if "port is already allocated" in str(e) or "address already in use" in str(e):
+                    if "[::]" in str(e):
+                        str_port = str(e).split("[::]:")[1].split(":")[0]
+                        return public.return_message(-1, 0, public.lang("ipv6 server port [ {}] is occupied!", str_port))
+                    else:
+                        str_port = str(e).split("0.0.0.0")[1].split(":")[1].split(" ")[0]
+                        return public.return_message(-1, 0, public.lang("ipv4 server port [ {}] is occupied!", str_port))
+                return public.return_message(-1, 0,  public.lang("Setup failed! {}", str(e)))
+
+            except Exception as e:
+                return public.return_message(-1, 0,  public.lang("Setup failed! {}", str(e)))
 
     # 停止容器
     def stop(self, get):
@@ -856,15 +933,15 @@ class main(dockerBase):
             time.sleep(1)
             data = self.docker_client(self._url).containers.get(get.id)
             if data.attrs['State']['Status'] != "exited":
-                return public.returnMsg(False, _( "Stop failing!"))
+                return public.return_message(-1, 0, public.lang( "Stop failing!"))
             dp.write_log("Stopping container [{}] success!".format(data.attrs['Name'].replace('/', '')))
-            return public.returnMsg(True, _("Stop succeeding!"))
+            return public.return_message(0, 0, public.lang("Stop succeeding!"))
         except docker.errors.APIError as e:
             if "is already paused" in str(e):
-                return public.returnMsg(False, _( "The container has paused."))
+                return public.return_message(-1, 0, public.lang("The container has paused."))
             if "No such container" in str(e):
-                return public.returnMsg(True, _( "Container stopped and deleted"))
-            return public.returnMsg(False,  _( "Stop failing!{}".format(e)))
+                return public.return_message(0, 0, public.lang( "Container stopped and deleted"))
+            return public.return_message(-1, 0,  public.lang("Stop failing!{}", e))
 
     def start(self, get):
         """
@@ -879,9 +956,9 @@ class main(dockerBase):
             time.sleep(1)
             data = self.docker_client(self._url).containers.get(get.id)
             if data.attrs['State']['Status'] != "running":
-                return public.returnMsg(False, _( "boot failed!"))
+                return public.return_message(-1, 0, public.lang( "boot failed!"))
             dp.write_log("Starting container [{}] was successful!".format(data.attrs['Name'].replace('/', '')))
-            return public.returnMsg(True, _( "starting success!"))
+            return public.return_message(0, 0, public.lang( "starting success!"))
         except docker.errors.APIError as e:
             if "cannot start a paused container, try unpause instead" in str(e):
                 return self.unpause(get)
@@ -902,16 +979,16 @@ class main(dockerBase):
             time.sleep(1)
             data = self.docker_client(self._url).containers.get(get.id)
             if data.attrs['State']['Status'] != "paused":
-                return public.returnMsg(False, _( "Container pause failed!"))
+                return public.return_message(-1, 0, public.lang( "Container pause failed!"))
             dp.write_log("Pause container [{}] success!".format(data.attrs['Name'].replace('/', '')))
-            return public.returnMsg(True, _( "Container pause successfully!"))
+            return public.return_message(0, 0, public.lang( "Container pause successfully!"))
         except docker.errors.APIError as e:
             if "is already paused" in str(e):
-                return public.returnMsg(False, _( "The container has been suspended!"))
+                return public.return_message(-1, 0, public.lang( "The container has been suspended!"))
             if "is not running" in str(e):
-                return public.returnMsg(False, _( "The container is not started and cannot be paused!"))
+                return public.return_message(-1, 0, public.lang( "The container is not started and cannot be paused!"))
             if "is not paused" in str(e):
-                return public.returnMsg(False, _(
+                return public.return_message(-1, 0, public.lang(
                                         "The container is not paused or has been deleted. Check if the container has the option to delete immediately after stopping!"))
             return str(e)
         except Exception as a:
@@ -931,16 +1008,16 @@ class main(dockerBase):
             time.sleep(1)
             data = self.docker_client(self._url).containers.get(get.id)
             if data.attrs['State']['Status'] != "running":
-                return public.returnMsg(False, _( "boot failed!"))
+                return public.return_message(-1, 0, public.lang( "boot failed!"))
             dp.write_log("Unpause container [{}] success!".format(data.attrs['Name'].replace('/', '')))
-            return public.returnMsg(True, _( "The container unpaused successfully"))
+            return public.return_message(0, 0, public.lang( "The container unpaused successfully"))
         except docker.errors.APIError as e:
             if "is already paused" in str(e):
-                return public.returnMsg(False, _( "The container has paused."))
+                return public.return_message(-1, 0, public.lang( "The container has paused."))
             if "is not running" in str(e):
-                return public.returnMsg(False, _( "The container is not started and cannot be paused!"))
+                return public.return_message(-1, 0, public.lang( "The container is not started and cannot be paused!"))
             if "is not paused" in str(e):
-                return public.returnMsg(False, _(
+                return public.return_message(-1, 0, public.lang(
                                         "The container is not paused or has been deleted. Check if the container has the option to delete immediately after stopping!"))
             return str(e)
         except Exception as a:
@@ -959,9 +1036,9 @@ class main(dockerBase):
         time.sleep(1)
         data = self.docker_client(self._url).containers.get(get.id)
         if data.attrs['State']['Status'] != "running":
-            return public.returnMsg(False, _( "boot failed!"))
+            return public.return_message(-1, 0, public.lang( "boot failed!"))
         dp.write_log("Reloading container [{}] succeeded!".format(data.attrs['Name'].replace('/', '')))
-        return public.returnMsg(True, _( "The container was reloaded successfully!"))
+        return public.return_message(0, 0, public.lang( "The container was reloaded successfully!"))
 
     def restart(self, get):
         """
@@ -976,15 +1053,15 @@ class main(dockerBase):
             time.sleep(1)
             data = self.docker_client(self._url).containers.get(get.id)
             if data.attrs['State']['Status'] != "running":
-                return public.returnMsg(False, _( "boot failed!"))
+                return public.return_message(-1, 0, public.lang( "boot failed!"))
             dp.write_log("Restart container [{}] successfully!".format(data.attrs['Name'].replace('/', '')))
-            return public.returnMsg(True, _( "Container restarts successfully!"))
+            return public.return_message(0, 0, public.lang( "Container restarts successfully!"))
         except docker.errors.APIError as e:
             if "container is marked for removal and cannot be started" in str(e):
-                return public.returnMsg(False, _(
+                return public.return_message(-1, 0, public.lang(
                                         "The container has been stopped and deleted because containers have the option to automatically delete when stopped"))
             if "is already paused" in str(e):
-                return public.returnMsg(False, _( "The container has paused"))
+                return public.return_message(-1, 0, public.lang( "The container has paused"))
             return str(e)
 
     def get_container_ip(self, container_networks):
@@ -993,10 +1070,15 @@ class main(dockerBase):
         @param container_networks:
         @return:
         """
-        data = list()
+        ipv4_list = []
+        ipv6_list = []
         for network in container_networks:
-            data.append(container_networks[network]['IPAddress'])
-        return data
+            if container_networks[network]['IPAddress'] != "":
+                ipv4_list.append(container_networks[network]['IPAddress'])
+
+            if container_networks[network]['GlobalIPv6Address'] != "":
+                ipv6_list.append(container_networks[network]['GlobalIPv6Address'])
+        return {"ipv4": ipv4_list, "ipv6": ipv6_list}
 
     def get_container_path(self, detail):
         """
@@ -1027,11 +1109,14 @@ class main(dockerBase):
         """
         try:
             if "id" not in get or get.id == "":
-                return public.return_message(-1, 0,  _( "The container ID is empty"))
+                return public.return_message(-1, 0, public.lang("The container ID is empty"))
 
             from btdockerModelV2.dockerSock import container
             sk_container = container.dockerContainer()
             sk_container_info = sk_container.get_container_inspect(get.id)
+
+            if "No such container" in str(sk_container_info):
+                return public.return_message(-1, 0, public.lang("The container doesn't exist!"))
 
             info_path = "/var/lib/docker/containers/{}/container_info.json".format(get.id)
             public.writeFile(info_path, json.dumps(sk_container_info, indent=3))
@@ -1039,8 +1124,8 @@ class main(dockerBase):
             return public.return_message(0, 0, sk_container_info)
         except Exception as e:
             if "No such container" in str(e):
-                return public.return_message(-1, 0,  _( "Container does not exist!"))
-            return public.return_message(-1, 0,  _( "Failed to get container information!{}".format(str(e))))
+                return public.return_message(-1, 0, public.lang("Container does not exist!"))
+            return public.return_message(-1, 0,  public.lang("Failed to get container information!{}", str(e)))
 
     def struct_container_ports(self, ports):
         """
@@ -1063,7 +1148,7 @@ class main(dockerBase):
                 })
         return data
 
-    def struct_container_list(self, container):
+    def struct_container_list(self, container, container_to_top=None):
         '''
             @name 构造容器列表
             @author wzz <2024/3/13 下午 5:32>
@@ -1076,8 +1161,10 @@ class main(dockerBase):
             "status": container["State"],
             "image": container["Image"],
             "created_time": container["Created"],
-            "ip": self.get_container_ip(container["NetworkSettings"]['Networks']),
+            "ip": self.get_container_ip(container["NetworkSettings"]['Networks'])["ipv4"],
+            "ipv6": self.get_container_ip(container["NetworkSettings"]['Networks'])["ipv6"],
             "ports": self.struct_container_ports(container["Ports"]),
+            "is_top": 0 if container_to_top is None else 1 if container['Names'][0].replace("/", "") in container_to_top else 0,
         }
 
         return tmp
@@ -1093,7 +1180,7 @@ class main(dockerBase):
         try:
             get.id = get.get("id", "")
             if get.id == "":
-                return public.return_message(-1, 0, _( "The container ID is empty"))
+                return public.return_message(-1, 0, public.lang("The container ID is empty"))
             return public.return_message(0, 0, {
                 "path": public.ExecShell("docker inspect -f \"{{json .GraphDriver.Data.MergedDir}}\" " + get.id)[
                     0].strip().strip('"')})
@@ -1157,6 +1244,8 @@ class main(dockerBase):
         sk_container = container.dockerContainer()
         sk_container_list = sk_container.get_container()
 
+        container_to_top = self._get_container_to_top()
+
         data = {
             "online_cpus": dp.get_cpu_count(),
             "mem_total": dp.get_mem_info(),
@@ -1166,13 +1255,22 @@ class main(dockerBase):
         container_detail = list()
         grouped_by_status = dict()
         for sk_c in sk_container_list:
-            struct_container = self.struct_container_list(sk_c)
+            struct_container = self.struct_container_list(sk_c, container_to_top)
             status = struct_container['status']
             grouped_by_status.setdefault(status, []).append(struct_container)
             container_detail.append(struct_container)
 
+        if container_to_top:
+            container_detail = sorted(container_detail, key=lambda x: (x['is_top'], x['created_time']), reverse=True)
+            for key in grouped_by_status:
+                grouped_by_status[key] = sorted(grouped_by_status[key], key=lambda x: (x['is_top'], x['created_time']), reverse=True)
+        else:
+            container_detail = sorted(container_detail, key=lambda x: x['created_time'], reverse=True)
+            for key in grouped_by_status:
+                grouped_by_status[key] = sorted(grouped_by_status[key], key=lambda x: x['created_time'], reverse=True)
+
         data['grouped_by_status'] = grouped_by_status
-        data['container_list'] = sorted(container_detail, key=lambda x: x['created_time'], reverse=True)
+        data['container_list'] = container_detail
         return public.return_message(0, 0, data)
 
     def _get_list(self, get):
@@ -1185,6 +1283,8 @@ class main(dockerBase):
         sk_container = container.dockerContainer()
         sk_container_list = sk_container.get_container()
 
+        container_to_top = self._get_container_to_top()
+
         data = {
             "online_cpus": dp.get_cpu_count(),
             "mem_total": dp.get_mem_info(),
@@ -1194,13 +1294,22 @@ class main(dockerBase):
         container_detail = list()
         grouped_by_status = dict()
         for sk_c in sk_container_list:
-            struct_container = self.struct_container_list(sk_c)
+            struct_container = self.struct_container_list(sk_c, container_to_top)
             status = struct_container['status']
             grouped_by_status.setdefault(status, []).append(struct_container)
             container_detail.append(struct_container)
 
+        if container_to_top:
+            container_detail = sorted(container_detail, key=lambda x: (x['is_top'], x['created_time']), reverse=True)
+            for key in grouped_by_status:
+                grouped_by_status[key] = sorted(grouped_by_status[key], key=lambda x: (x['is_top'], x['created_time']), reverse=True)
+        else:
+            container_detail = sorted(container_detail, key=lambda x: x['created_time'], reverse=True)
+            for key in grouped_by_status:
+                grouped_by_status[key] = sorted(grouped_by_status[key], key=lambda x: x['created_time'], reverse=True)
+
         data['grouped_by_status'] = grouped_by_status
-        data['container_list'] = sorted(container_detail, key=lambda x: x['created_time'], reverse=True)
+        data['container_list'] = container_detail
         return data
 
     # 获取容器的attr
@@ -1215,8 +1324,6 @@ class main(dockerBase):
         :param get:
         :return:
         """
-        # {"id": "4b270b6b6dd3cb50b4bc5c5c51ceade67de0754d39ad7a312d06e3fabf4d89b1","time_search": [1701273600, 1701829064]}
-
         res = {
             "logs": "",
             'split_status': False,
@@ -1231,7 +1338,7 @@ class main(dockerBase):
             container = self.docker_client(self._url).containers.get(get.id)
             if hasattr(get, 'time_search') and get.time_search != '':
                 if not os.path.exists(container.attrs['LogPath']):
-                    return public.return_message(-1, 0, "No container logging")
+                    return public.return_message(-1, 0, public.lang("No container logging"))
                     # return public.return_message(0, 0, None)
 
                 time_search = json.loads(str(get.time_search))
@@ -1241,7 +1348,7 @@ class main(dockerBase):
 
             else:
                 if not os.path.exists(container.attrs['LogPath']):
-                    return public.return_message(-1, 0, "No container logging")
+                    return public.return_message(-1, 0, public.lang("No container logging"))
                     # return public.return_message(0, 0, None)
 
                 size = os.stat(container.attrs['LogPath']).st_size
@@ -1294,7 +1401,7 @@ class main(dockerBase):
         try:
             client = self.docker_client(self._url)
             if not client:
-                return public.return_message(-1, 0,  _( 'docker connection failed'))
+                return public.return_message(-1, 0, public.lang("docker connection failed"))
             containers = client.containers
             clist = [i.attrs for i in containers.list(all=True)]
             clist = [{'id': i['Id'], 'name': dp.rename(i['Name'][1:]), 'log_path': i['LogPath']} for i in clist]
@@ -1327,7 +1434,7 @@ class main(dockerBase):
         try:
             client = self.docker_client(self._url)
             if not client:
-                return public.return_message(-1, 0,  _( 'docker connection failed'))
+                return public.return_message(-1, 0, public.lang("docker connection failed"))
             containers = client.containers
             clist = [i.attrs for i in containers.list(all=True)]
             name = [dp.rename(i['Name'][1:]) for i in clist if i['Id'] == get.pid]
@@ -1336,7 +1443,7 @@ class main(dockerBase):
             else:
                 name = ''
             if not hasattr(get, 'type'):
-                return public.return_message(-1, 0,  _( 'parameter error,Pass: type'))
+                return public.return_message(-1, 0, public.lang("parameter error,Pass: type"))
             if not public.M('sqlite_master').db('docker_log_split').where('type=? AND name=?',
                                                                           ('table', 'docker_log_split')).count():
                 public.M('docker_log_split').execute('''CREATE TABLE IF NOT EXISTS docker_log_split (
@@ -1351,14 +1458,13 @@ class main(dockerBase):
                 save INTEGER default 180)''', ())
             if get.type == 'add':
                 if "log_path" not in get or not get.log_path:
-                    return public.return_message(-1, 0,  _(
-                                                 'Container log directory does not exist, log cut cannot be set!'))
+                    return public.return_message(-1, 0, public.lang("Container log directory does not exist, log cut cannot be set!"))
 
                 if not (hasattr(get, 'pid') and hasattr(get, 'log_path') and
                         hasattr(get, 'split_type') and hasattr(get, 'split_size') and
                         hasattr(get, 'split_minute') and
                         hasattr(get, 'split_hour') and hasattr(get, 'save')):
-                    return public.return_message(-1, 0,  _( 'parameter error'))
+                    return public.return_message(-1, 0, public.lang("parameter error"))
                 data = {
                     'name': name,
                     'pid': get.pid,
@@ -1373,11 +1479,11 @@ class main(dockerBase):
                     id = public.M('docker_log_split').where('pid=?', (get.pid,)).select()
                     public.M('docker_log_split').delete(id[0]['id'])
                 public.M('docker_log_split').insert(data)
-                return public.return_message(0, 0,  _("Opened successfully!"))
+                return public.return_message(0, 0, public.lang("Opened successfully!"))
             elif get.type == 'del':
                 id = public.M('docker_log_split').where('pid=?', (get.pid,)).getField('id')
                 public.M('docker_log_split').where('id=?', (id,)).delete()
-                return public.return_message(0, 0,  _("Closed successfully!"))
+                return public.return_message(0, 0, public.lang("Closed successfully!"))
         except:
             return public.return_message(-1, 0, traceback.format_exc())
 
@@ -1388,11 +1494,11 @@ class main(dockerBase):
         @return:
         """
         if not hasattr(get, 'log_path'):
-            return public.return_message(-1, 0,  _( 'parameter error'))
+            return public.return_message(-1, 0, public.lang("parameter error"))
         if not os.path.exists(get.log_path):
-            return public.return_message(-1, 0,  _( 'The log file does not exist'))
+            return public.return_message(-1, 0, public.lang("The log file does not exist"))
         public.writeFile(get.log_path, '')
-        return public.return_message(0, 0,  _("Log cleaning was successful!"))
+        return public.return_message(0, 0, public.lang("Log cleaning was successful!"))
 
     # 清理无用已停止未使用的容器
     def prune(self, get):
@@ -1405,9 +1511,9 @@ class main(dockerBase):
             if type == 0:
                 res = self.docker_client(self._url).containers.prune()
                 if not res['ContainersDeleted']:
-                    return public.return_message(-1, 0, _( "No useless containers!"))
+                    return public.return_message(-1, 0, public.lang("No useless containers!"))
                 dp.write_log("Delete useless containers successfully!")
-                return public.return_message(0, 0, _( "successfully deleted!"))
+                return public.return_message(0, 0, public.lang("successfully deleted!"))
             else:
                 import docker
                 client = docker.from_env()
@@ -1415,11 +1521,11 @@ class main(dockerBase):
                 for container in containers:
                     container.remove(force=True)
                 dp.write_log("Delete useless containers successfully!")
-                return public.return_message(0, 0, _( "successfully deleted!"))
+                return public.return_message(0, 0, public.lang("successfully deleted!"))
         except Exception as e:
             if "operation not permitted" in str(e):
-                return public.return_message(-1, 0,  _( "Please turn off enterprise tamper protection before trying again!"))
-            return public.return_message(-1, 0, _( "failed to delete! {}".format(e)))
+                return public.return_message(-1, 0, public.lang("Please turn off enterprise tamper protection before trying again!"))
+            return public.return_message(-1, 0, public.lang("failed to delete! {}", e))
 
 
     def update_restart_policy(self, get):
@@ -1441,7 +1547,7 @@ class main(dockerBase):
 
         try:
             # if "restart_policy" not in get:
-            #     return public.returnMsg(False, "Parameter error, please pass in restart policy restart_policy!")
+            #     return public.return_message(-1, 0, public.lang("Parameter error, please pass in restart policy restart_policy!"))
 
             container = self.docker_client(self._url).containers.get(get.id)
             # 修复偶尔 go反序列化 报错
@@ -1456,11 +1562,11 @@ class main(dockerBase):
             # container.update(restart_policy=get.restart_policy)
             # container.update(restart_policy= json.dumps(get.restart_policy))
             dp.write_log("Update container [{}] Restart policy successful!".format(container.attrs['Name']))
-            return public.return_message(0, 0,  _("Update successfully!"))
+            return public.return_message(0, 0, public.lang("Update successfully!"))
         # except docker.errors.APIError as e:
         except Exception as e:
             public.print_log(traceback.format_exc())
-            return public.return_message(-1, 0,  _( "Update failed! {}".format(e)))
+            return public.return_message(-1, 0,  public.lang("Update failed! {}", e))
 
     '''
         @name 重命名指定容器
@@ -1490,7 +1596,7 @@ class main(dockerBase):
             # 2023/12/6 上午 10:54 容器未启动时,不允许重命名
             container = self.docker_client(self._url).containers.get(get.id)
             if container.attrs['State']['Status'] != "running":
-                return public.return_message(-1, 0,  _( "The container is not started and cannot be renamed!"))
+                return public.return_message(-1, 0, public.lang("The container is not started and cannot be renamed!"))
             config_path = "{}/config/name_map.json".format(public.get_panel_path())
             if not os.path.exists(config_path):
                 public.writeFile(config_path, json.dumps({}))
@@ -1506,9 +1612,9 @@ class main(dockerBase):
 
             container.rename(get.name)
             dp.write_log("Renaming container [{}] succeeded!".format(get.name))
-            return public.return_message(0, 0,  _("Rename successfully!"))
+            return public.return_message(0, 0, public.lang("Rename successfully!"))
         except docker.errors.APIError as e:
-            return public.return_message(-1, 0,  _( "Renaming failed! {}".format(e)))
+            return public.return_message(-1, 0,  public.lang("Renaming failed! {}", e))
 
     # 2024/2/23 上午 9:58 设置容器列表置顶
     def set_container_to_top(self, get):
@@ -1522,8 +1628,8 @@ class main(dockerBase):
         set_type = get.type if "type" in get else ""
         container_name = get.container_name if "container_name" in get else None
 
-        if set_type not in ['add', 'del']: return public.returnMsg(False, _( 'The type only supports add/del'))
-        if container_name is None: return public.returnMsg(False, _( 'Please select a container'))
+        if set_type not in ['add', 'del']: return public.return_message(-1, 0, public.lang( 'The type only supports add/del'))
+        if container_name is None: return public.return_message(-1, 0, public.lang( 'Please select a container'))
 
         _conf_path = "{}/class_v2/btdockerModelV2/config/container_top.json".format(public.get_panel_path())
         if os.path.exists(_conf_path):
@@ -1535,11 +1641,11 @@ class main(dockerBase):
             container_top_conf = [i for i in container_top_conf if i != container_name]
             container_top_conf.insert(0, container_name)
             public.writeFile(_conf_path, json.dumps(container_top_conf))
-            return public.return_message(0, 0,  _('Set top successfully!'))
+            return public.return_message(0, 0, public.lang("Set top successfully!"))
         elif set_type == "del":
             container_top_conf.remove(container_name)
             public.writeFile(_conf_path, json.dumps(container_top_conf))
-            return public.return_message(0, 0,  _('Unpinned successfully!'))
+            return public.return_message(0, 0, public.lang("Unpinned successfully!"))
 
     # 2024/2/23 上午 9:58 获取容器列表置顶
     def _get_container_to_top(self):
@@ -1562,15 +1668,11 @@ class main(dockerBase):
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        if not dp.sql('sqlite_master').where('type=? AND name=?',
-                                                                       ('table', 'dk_container_remark')).count():
+        if not dp.sql('sqlite_master').where('type=? AND name=?', ('table', 'dk_container_remark')).count():
             dp.sql('dk_container_remark').execute(
                 "CREATE TABLE `dk_container_remark` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `container_id` TEXT, `container_name` TEXT, `remark` TEXT, `addtime` TEXT)",
                 ()
             )
-
-
-
 
     # 2024/2/26 下午 6:11 修改备注
     def set_container_remark(self, get):
@@ -1592,9 +1694,9 @@ class main(dockerBase):
             return public.return_message(-1, 0, ex)
 
         # if not hasattr(get, 'remark'):
-        #     return public.returnMsg(False, 'Parameter error, Please pass in: remark!')
+        #     return public.return_message(-1, 0, public.lang("Parameter error, Please pass in: remark!"))
         # if not hasattr(get, 'id'):
-        #     return public.returnMsg(False, 'Parameter error, Please pass in: id!')
+        #     return public.return_message(-1, 0, public.lang("Parameter error, Please pass in: id!"))
 
         container_id = get.id
         container_remark = public.xssencode2(get.remark)
@@ -1607,7 +1709,7 @@ class main(dockerBase):
         else:
             dp.sql("dk_container_remark").where("container_id=?", (container_id,)).setField("remark", container_remark)
 
-        return public.return_message(0, 0,  _("Setup successful!"))
+        return public.return_message(0, 0, public.lang("Setup successful!"))
 
     # 2024/2/27 上午 11:03 通过cgroup获取所有容器的cpu和内存使用情况
     def get_all_stats(self, get):
@@ -1617,9 +1719,9 @@ class main(dockerBase):
         @return:
         """
         if not hasattr(get, 'ws_callback'):
-            return public.returnMsg(False, _( 'Parameter error, Please pass in: ws_callback!'))
+            return public.return_message(-1, 0, public.lang( 'Parameter error, Please pass in: ws_callback!'))
         if not hasattr(get, '_ws'):
-            return public.returnMsg(False, _( 'Parameter error, Please pass in: _ws!'))
+            return public.return_message(-1, 0, public.lang( 'Parameter error, Please pass in: _ws!'))
 
         from system import system
         syst = system()
@@ -1720,7 +1822,7 @@ class main(dockerBase):
                 time.sleep(0.1)
 
         except:
-            print(traceback.format_exc())
+            public.print_log(traceback.format_exc())
             get._ws.send(public.getJson(
                 {
                     "data": {},

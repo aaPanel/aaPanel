@@ -54,9 +54,10 @@ class main(safeBase):
             data = {}
             data['ip'] = ','.join(ips)
             data['uid'] = self.user_info['uid']
-            data["serverid"]=self.user_info["serverid"]
+            # data["serverid"]=self.user_info["serverid"]
+            data["serverid"] = self.user_info["server_id"]
             #如果不是我们的用户，那么不返回数据
-            res = public.httpPost('https://www.bt.cn/api/ip/info',data)
+            res = public.httpPost('https://wafapi2.aapanel.com/api/ip/info',data)
             res = json.loads(res)
             data = self.get_ip_area_cache()
             for key in res:

@@ -12,6 +12,8 @@ import copy
 import weakref
 from functools import reduce
 from contextlib import contextmanager
+
+import public
 from .gcmanager import gc_enable, gc_disable
 from .tools import is_number
 from .exceptions import HintException, PanelError
@@ -145,8 +147,8 @@ def _auto_repair_context(db_path):
         @return void
     '''
 
-    # os.chdir('/www/server/bt-monitor')
-    # sys.path.insert(0, "/www/server/bt-monitor")
+    # os.chdir(_BASE_DIR)
+    # sys.path.insert(0, _BASE_DIR)
     #
     # import core.include.public as public
     # path = os.getcwd()
@@ -190,6 +192,8 @@ class Where:
             @param  logic<string>           逻辑运算符 AND|OR
             @return self
         '''
+        self.__judge_the_logic(logic)
+
         # 当检测condition为字段名且存在参数绑定时，自动添加"=?"
         if match_field_reg.match(condition) and len(_to_tuple(bind_params)) > 0:
             condition = '{} = ?'.format(_add_backtick_for_field(condition))
@@ -208,6 +212,8 @@ class Where:
             @param  not_in<bool>        是否为NOT IN
             @return self
         '''
+        self.__judge_the_logic(logic)
+
         if isinstance(vals, str) or isinstance(vals, int) or isinstance(vals, float):
             vals = [vals]
 
@@ -253,6 +259,32 @@ class Where:
         self.__BIND_PARAMS += where_params
 
         return self
+
+    def add_nest(self, where_obj, logic='AND'):
+        self.__judge_the_logic(logic)
+
+        if not isinstance(where_obj, Where):
+            raise RuntimeError('parameter where_obj must a type of Where')
+
+        self.__WHERE_STR += ' {} ({})'.format(logic.upper(), where_obj.to_string())
+        self.__BIND_PARAMS += where_obj.get_bind_params()
+
+        return self
+
+    def __judge_the_logic(self, logic):
+        if logic.upper() not in ['AND', 'OR']:
+            raise RuntimeError('parameter logic must be AND or OR')
+
+    def to_string(self):
+        where_str = match_where_str_begin_reg.sub('', self.__WHERE_STR)
+
+        if len(where_str) == 0:
+            return '1'
+
+        return where_str
+
+    def get_bind_params(self):
+        return self.__BIND_PARAMS
 
     def build(self):
         '''
@@ -619,7 +651,7 @@ class Join:
 class Update:
     '''
         @name Update条件
-        @author Zhj<2022-07017>
+        @author Zhj<2022-07-17>
     '''
     __slots__ = ['__UPDATES', '__BIND_PARAMS']
 
@@ -712,6 +744,23 @@ class Update:
         self.__UPDATES = []
         self.__BIND_PARAMS = ()
         return self
+
+
+class Duplicate(Update):
+    '''
+        @name Duplicate条件
+        @author Zhj<2024-12-19>
+    '''
+    def __init__(self):
+        Update.__init__(self)
+
+    def build(self):
+        if self.is_empty():
+            return '', ()
+
+        raw_sql, binds = Update.build(self)
+
+        return ' ON CONFLICT DO UPDATE SET ' + raw_sql, binds
 
 
 class AlterTable:
@@ -1237,6 +1286,11 @@ class DbConnection:
         return True
 
 
+class Snapshot:
+    __slots__ = ['pk', 'from_sub_query', 'table', 'prefix', 'alias', 'where', 'limit', 'order',
+                 'field', 'group', 'having', 'join', 'update', 'duplicate']
+
+
 class Db:
     '''
         @name Sqlite数据库连接类
@@ -1523,7 +1577,7 @@ class Db:
         cur_datetime = time.strftime('%Y-%m-%d %X')
 
         # sql查询日志目录
-        log_dir = '/www/server/bt-monitor/logs/sql_log/{}'.format(time.strftime('%Y%m'))
+        log_dir = '{}/logs/sql_log/{}'.format(_BASE_DIR, time.strftime('%Y%m'))
 
         # 目录不存在时创建
         if not os.path.exists(log_dir):
@@ -1570,7 +1624,8 @@ class SqliteEasy:
     '''
     __slots__ = ['__weakref__', '__DB', '__DB_TABLE', '__FETCH_SQL', '__EXPLAIN', '__PK', '__OPT_PREFIX', '__OPT_ALIAS',
                  '__OPT_WHERE', '__OPT_LIMIT', '__OPT_ORDER', '__OPT_FIELD', '__OPT_GROUP', '__OPT_HAVING',
-                 '__OPT_JOIN', '__OPT_UPDATE', '__OPT_ALTER_TABLE', '__FROM_SUB_QUERY', '__CONFLICT_OPTIONS']
+                 '__OPT_JOIN', '__OPT_UPDATE', '__OPT_DUPLICATE', '__OPT_ALTER_TABLE', '__FROM_SUB_QUERY',
+                 '__CONFLICT_OPTIONS']
 
     def __init__(self, db: typing.Optional[Db] = None):
         self.__DB = None  # 数据库对象
@@ -1588,6 +1643,7 @@ class SqliteEasy:
         self.__OPT_HAVING = Having()  # having条件
         self.__OPT_JOIN = Join()  # 联表条件
         self.__OPT_UPDATE = Update()  # update条件
+        self.__OPT_DUPLICATE = Duplicate()  # Duplicate
         self.__OPT_ALTER_TABLE = AlterTable(self)  # 更新表结构条件
         self.__FROM_SUB_QUERY = False  # 是否通过子查询
         self.__CONFLICT_OPTIONS = (
@@ -1670,9 +1726,15 @@ class SqliteEasy:
         '''
         if not isinstance(where_obj, Where):
             raise PanelError('where_obj must a instance of core.include.sqlite_server.Where')
-
         self.__OPT_WHERE = where_obj
         return self
+
+    def get_where_obj(self):
+        '''
+            @name 获取Where对象
+            @return Where
+        '''
+        return self.__OPT_WHERE
 
     def set_limit_obj(self, limit_obj):
         '''
@@ -1683,7 +1745,6 @@ class SqliteEasy:
         '''
         if not isinstance(limit_obj, Limit):
             raise PanelError('limit_obj must a instance of core.include.sqlite_server.Limit')
-
         self.__OPT_LIMIT = limit_obj
         return self
 
@@ -1696,7 +1757,6 @@ class SqliteEasy:
         '''
         if not isinstance(order_obj, Order):
             raise PanelError('order_obj must a instance of core.include.sqlite_server.Order')
-
         self.__OPT_ORDER = order_obj
         return self
 
@@ -1709,20 +1769,18 @@ class SqliteEasy:
         '''
         if not isinstance(field_obj, Field):
             raise PanelError('field_obj must a instance of core.include.sqlite_server.Field')
-
         self.__OPT_FIELD = field_obj
         return self
 
     def set_group_obj(self, group_obj):
         '''
-            @name 设置Field对象
+            @name 设置Group对象
             @author Zhj<2022-07-19>
-            @param  field_obj<Field> Field对象
+            @param  group_obj<Group> Group对象
             @return self
         '''
         if not isinstance(group_obj, Group):
             raise PanelError('group_obj must a instance of core.include.sqlite_server.Group')
-
         self.__OPT_GROUP = group_obj
         return self
 
@@ -1735,34 +1793,55 @@ class SqliteEasy:
         '''
         if not isinstance(having_obj, Having):
             raise PanelError('having_obj must a instance of core.include.sqlite_server.Having')
-
         self.__OPT_HAVING = having_obj
         return self
 
     def set_join_obj(self, join_obj):
         '''
-            @name 设置Field对象
+            @name 设置Join对象
             @author Zhj<2022-07-19>
             @param  join_obj<Join> Join对象
             @return self
         '''
         if not isinstance(join_obj, Join):
             raise PanelError('join_obj must a instance of core.include.sqlite_server.Join')
-
         self.__OPT_JOIN = join_obj
         return self
 
     def set_update_obj(self, update_obj):
         '''
-            @name 设置Field对象
+            @name 设置Update对象
             @author Zhj<2022-07-19>
             @param  update_obj<Update> Update对象
             @return self
         '''
         if not isinstance(update_obj, Update):
             raise PanelError('update_obj must a instance of core.include.sqlite_server.Update')
-
         self.__OPT_UPDATE = update_obj
+        return self
+
+    def set_duplicate_obj(self, duplicate_obj):
+        '''
+            @name 设置Duplicated对象
+            @author Zhj<2022-07-19>
+            @param  duplicate_obj<Duplicate> Duplicate对象
+            @return self
+        '''
+        if not isinstance(duplicate_obj, Duplicate):
+            raise PanelError('duplicate_obj must a instance of core.include.sqlite_server.Duplicate')
+        self.__OPT_DUPLICATE = duplicate_obj
+        return self
+
+    def set_alter_table_obj(self, alter_table_obj):
+        '''
+            @name 设置AlterTable对象
+            @author Zhj<2022-07-19>
+            @param  alter_table_obj<AlterTable> AlterTable对象
+            @return self
+        '''
+        if not isinstance(alter_table_obj, AlterTable):
+            raise PanelError('alter_table_obj must a instance of core.include.sqlite_server.AlterTable')
+        self.__OPT_ALTER_TABLE = alter_table_obj
         return self
 
     def close(self):
@@ -2031,10 +2110,12 @@ class SqliteEasy:
         self.__OPT_WHERE.add_where_in(field, vals, logic, True)
         return self
 
-    # TODO 嵌套where
+    # 嵌套where
     @contextmanager
     def where_nest(self):
-        yield self
+        query = SqliteEasy(self.__DB)
+        yield query
+        self.__OPT_WHERE.add_nest(query.get_where_obj())
 
     def group(self, condition, params=()):
         '''
@@ -2223,11 +2304,17 @@ class SqliteEasy:
             placeholders.append('?')
             params += (data[k],)
 
-        raw_sql = 'INSERT{} INTO {} ({}) VALUES ({})'.format(
+        # build deplicate sql and bind params
+        duplicate_sql, duplicate_binds = self.__OPT_DUPLICATE.build()
+
+        params += duplicate_binds
+
+        raw_sql = 'INSERT{} INTO {} ({}) VALUES ({}){}'.format(
             ' OR {}'.format(str(option).upper()) if option is not None else '',
             _add_backtick_for_field(self.__DB_TABLE),
             ', '.join(list(map(lambda x: _add_backtick_for_field(x), ks))),
-            ','.join(placeholders)
+            ','.join(placeholders),
+            duplicate_sql
         )
 
         # 输出sql原生语句
@@ -2259,16 +2346,22 @@ class SqliteEasy:
 
         ks = data_list[0].keys()
 
+        # build deplicate sql and bind params
+        duplicate_sql, duplicate_binds = self.__OPT_DUPLICATE.build()
+
         # 生成sql语句
-        raw_sql = 'INSERT{} INTO {} ({}) VALUES ({})'.format(
+        raw_sql = 'INSERT{} INTO {} ({}) VALUES ({}){}'.format(
             ' OR {}'.format(str(option).upper()) if option is not None else '',
             _add_backtick_for_field(self.__DB_TABLE),
             ', '.join(list(map(lambda x: _add_backtick_for_field(x), ks))),
-            ','.join(list(map(lambda x: '?', ks)))
+            ','.join(list(map(lambda x: '?', ks))),
+            duplicate_sql
         )
 
         # 绑定参数
         params = list(map(lambda x: _to_tuple(list(map(lambda y: x[y], ks))), data_list))
+
+        params += duplicate_binds
 
         # 记录语句执行开始时间
         s_time = time.time()
@@ -2621,15 +2714,18 @@ class SqliteEasy:
 
         return True if int(ret.get(k, 0)) == 1 else False
 
-    # TODO 设置insert时唯一索引重复时的更新操作
+    # 设置insert时唯一索引重复时的更新操作
     def duplicate(self, update: typing.Dict[str, str]):
-        pass
+        self.__OPT_DUPLICATE.clear()
+        for k, v in update.items():
+            self.__OPT_DUPLICATE.exp(k, v)
+        return self
 
     # TODO 强制索引
     def force_index(self, index_name: str):
         pass
 
-    def build_sql(self, sub_query=False):
+    def build_sql(self, sub_query=False, alias=None):
         '''
             @name 构建sql查询语句(合并绑定参数)
             @author Zhj<2022-07-17>
@@ -2641,6 +2737,10 @@ class SqliteEasy:
         # 子查询
         if sub_query:
             raw_sql = '(%s)' % raw_sql
+
+            # 别名
+            if alias is not None:
+                raw_sql = '%s AS %s' % (raw_sql, _add_backtick_for_field(alias))
 
         return raw_sql
 
@@ -2779,8 +2879,59 @@ class SqliteEasy:
         query.set_having_obj(copy.deepcopy(self.__OPT_HAVING))
         query.set_join_obj(copy.deepcopy(self.__OPT_JOIN))
         query.set_update_obj(copy.deepcopy(self.__OPT_UPDATE))
+        query.set_duplicate_obj(copy.deepcopy(self.__OPT_DUPLICATE))
 
         return query
+
+    def snapshot(self):
+        '''
+            @name 创建查询构造器快照
+            @author Zhj<2025-01-07>
+            @return SqliteEasy|None
+        '''
+        snapshot = Snapshot()
+        snapshot.pk = self.__PK
+        snapshot.from_sub_query = self.__FROM_SUB_QUERY
+        snapshot.table = self.__DB_TABLE
+        snapshot.prefix = self.__OPT_PREFIX
+        snapshot.alias = self.__OPT_ALIAS
+        snapshot.where = copy.deepcopy(self.__OPT_WHERE)
+        snapshot.limit = copy.deepcopy(self.__OPT_LIMIT)
+        snapshot.order = copy.deepcopy(self.__OPT_ORDER)
+        snapshot.field = copy.deepcopy(self.__OPT_FIELD)
+        snapshot.group = copy.deepcopy(self.__OPT_GROUP)
+        snapshot.having = copy.deepcopy(self.__OPT_HAVING)
+        snapshot.join = copy.deepcopy(self.__OPT_JOIN)
+        snapshot.update = copy.deepcopy(self.__OPT_UPDATE)
+        snapshot.duplicate = copy.deepcopy(self.__OPT_DUPLICATE)
+        return snapshot
+
+    def restore_from_snapshot(self, snapshot):
+        '''
+            @name 通过快照还原查询构造器
+            @author Zhj<2025-01-07>
+            @return self
+        '''
+        if not isinstance(snapshot, Snapshot):
+            raise PanelError('snapshot must a instance of core.include.sqlite_server.Snapshot')
+        self.set_pk(snapshot.pk)
+        if snapshot.from_sub_query:
+            self.from_sub_query(snapshot.table)
+        else:
+            self.table(snapshot.table)
+        self.prefix(snapshot.prefix)
+        self.alias(snapshot.alias)
+        self.set_where_obj(copy.deepcopy(snapshot.where))
+        self.set_limit_obj(copy.deepcopy(snapshot.limit))
+        self.set_order_obj(copy.deepcopy(snapshot.order))
+        self.set_field_obj(copy.deepcopy(snapshot.field))
+        self.set_group_obj(copy.deepcopy(snapshot.group))
+        self.set_having_obj(copy.deepcopy(snapshot.having))
+        self.set_join_obj(copy.deepcopy(snapshot.join))
+        self.set_update_obj(copy.deepcopy(snapshot.update))
+        self.set_duplicate_obj(copy.deepcopy(snapshot.duplicate))
+        # self.set_alter_table_obj(copy.deepcopy(snapshot.alter_table))
+        return self
 
     def explain_raw_sql(self, raw_sql, bind_params=()):
         '''
@@ -2932,3 +3083,4 @@ class SqliteEasy:
         self.__OPT_ORDER.clear()
         self.__OPT_LIMIT.clear()
         self.__OPT_UPDATE.clear()
+        self.__OPT_DUPLICATE.clear()

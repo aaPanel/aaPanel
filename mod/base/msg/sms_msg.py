@@ -1,8 +1,8 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aapanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2020 宝塔软件(http://www.bt.cn) All rights reserved.
+# | Copyright (c) 2015-2020 aapanel(http://www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: baozi
 # | 消息通道 短信模块(新)
@@ -31,7 +31,7 @@ class SMSMsg:
             self.user_info = None
 
         self._PDATA = {
-            "access_key": "" if self.user_info is None else self.user_info["access_key"],
+            "access_key": "" if self.user_info is None else 'B' * 32,
             "data": {}
         }
 

@@ -67,7 +67,7 @@ class main(safeBase):
             else:
                 result = []
 
-            return public.returnMsg(True, {
+            return public.return_message(0, 0, {
                 "data": result,
                 "total": len(result)
             })
@@ -284,7 +284,7 @@ class main(safeBase):
         data['firewall_status'] = self.CheckFirewallStatus()
         # data['error'] = self.get_ssh_intrusion(get)
         data['fail2ban'] = self._get_ssh_fail2ban()
-        return data
+        return public.return_message(0, 0,  data)
 
     def get_ssh_login_info(self, get):
         """
@@ -326,7 +326,7 @@ class main(safeBase):
     #改远程端口
     def SetSshPort(self,get):
         port = get.port
-        if int(port) < 22 or int(port) > 65535: return public.returnMsg(False,'FIREWALL_SSH_PORT_ERR')
+        if int(port) < 22 or int(port) > 65535: return public.returnMsg(False,'Port range must be between 22 and 65535!')
         ports = ['21','25','80','443','8080','888','8888']
         if port in ports: return public.returnMsg(False,'Please dont use default ports for common programs!')
         file = '/etc/ssh/sshd_config'
@@ -352,7 +352,7 @@ class main(safeBase):
         public.M('firewall').where("ps=? or ps=? or port=?",('SSH remote management service','SSH remote service',port)).delete()
         public.M('firewall').add('port,ps,addtime',(port,'SSH remote service',time.strftime('%Y-%m-%d %X',time.localtime())))
         public.WriteLog("TYPE_FIREWALL", "FIREWALL_SSH_PORT",(port,))
-        return public.returnMsg(True,'EDIT_SUCCESS')
+        return public.return_message(0, 0,'Successfully modified')
 
 
 
@@ -374,6 +374,6 @@ class main(safeBase):
         public.ExecShell("systemctl "+act+" ssh")
 
         public.WriteLog("TYPE_FIREWALL", msg)
-        return public.returnMsg(True,'SUCCESS')
+        return public.return_message(0, 0,'SUCCESS')
 
 

@@ -194,7 +194,7 @@ class main(databaseBase):
         """
 
         if not public.process_exists("mongod") :
-            return public.returnMsg(False,"Mongodb service has not been started yet!")
+            return public.returnMsg(False, public.lang("Mongodb service has not been started yet!"))
 
         status = int(get.status)
         path = '{}/data/mongo.root'.format(public.get_panel_path())
@@ -202,10 +202,10 @@ class main(databaseBase):
             if hasattr(get,'password'):
                 password = get['password'].strip()
                 if not password or not re.search(r"^[\w@\.]+$", password):
-                    return public.return_msg_gettext(False, 'Database password cannot be empty or have special characters!')
+                    return public.return_msg_gettext(False, public.lang("Database password cannot be empty or have special characters!"))
 
                 # if re.search('[\u4e00-\u9fa5]',password):
-                #     return public.returnMsg(False,'Database password cannot be Chinese, please change the name!')
+                #     return public.returnMsg(False, public.lang("Database password cannot be Chinese, please change the name!"))
             else:
                 password = public.GetRandomString(16)
             self.__set_auth_open(0)
@@ -233,7 +233,7 @@ class main(databaseBase):
             if os.path.exists(path): os.remove(path)
             self.__set_auth_open(0)
 
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     def restart_services(self):
         """
@@ -285,15 +285,15 @@ class main(databaseBase):
         try:
             int(args.sid)
         except:
-            return public.returnMsg(False, 'Database type sid needs int type!')
+            return public.returnMsg(False, public.lang("Database type sid needs int type!"))
         if not int(args.sid) and not public.process_exists("mongod"):
-            return public.returnMsg(False,"Mongodb service has not been started yet!")
+            return public.returnMsg(False, public.lang("Mongodb service has not been started yet!"))
         username = ''
         password = ''
         auth_status = self.get_local_auth(args) #auth为true时如果__DB_USER为空则将它赋值为 root，用于开启本地认证后数据库用户为空的情况
         data_name = args.name.strip()
         if not data_name:
-            return public.returnMsg(False, "Database name cannot be empty!")
+            return public.returnMsg(False, public.lang("Database name cannot be empty!"))
         if auth_status:
             res = self.add_base_database(args)
             if not res['status']: return res
@@ -329,7 +329,7 @@ class main(databaseBase):
         #添加入SQLITE
         public.M('databases').add('pid,sid,db_type,name,username,password,accept,ps,addtime,type',(pid,self.sid,db_type,data_name,username,password,'127.0.0.1',args['ps'],addTime,dtype))
         public.WriteLog("TYPE_DATABASE", 'DATABASE_ADD_SUCCESS',(data_name,))
-        return public.returnMsg(True,'ADD_SUCCESS')
+        return public.returnMsg(True, public.lang("Added successfully!"))
 
 
     def DeleteDatabase(self,args):
@@ -338,13 +338,13 @@ class main(databaseBase):
         """
         id = args['id']
         find = public.M('databases').where("id=?",(id,)).field('id,pid,name,username,password,type,accept,ps,addtime,sid,db_type').find()
-        if not find: return public.returnMsg(False,'The specified database does not exist.')
+        if not find: return public.returnMsg(False, public.lang("The specified database does not exist."))
         try:
             int(find['sid'])
         except:
-            return public.returnMsg(False, 'Database type sid needs int type!')
+            return public.returnMsg(False, public.lang("Database type sid needs int type!"))
         if not public.process_exists("mongod") and not int(find['sid']):
-            return public.returnMsg(False,"Mongodb service has not been started yet!")
+            return public.returnMsg(False, public.lang("Mongodb service has not been started yet!"))
         name = args['name']
         username = find['username']
         auth_status = self.get_local_auth(args)
@@ -358,7 +358,7 @@ class main(databaseBase):
         #删除SQLITE
         public.M('databases').where("id=?",(id,)).delete()
         public.WriteLog("Database manager", 'Successfully deleted!',(name,))
-        return public.returnMsg(True, 'Successfully deleted!')
+        return public.returnMsg(True, public.lang("Successfully deleted!"))
 
 
     def get_info_by_db_id(self,db_id):
@@ -390,19 +390,19 @@ class main(databaseBase):
         name = args.name
         file = args.file
 
-        if not os.path.exists(file): return public.returnMsg(False,'导入路径不存在!')
-        if not os.path.isfile(file): return public.returnMsg(False,'仅支持导入压缩文件!')
+        if not os.path.exists(file): return public.returnMsg(False, public.lang("The import path doesn't exist!"))
+        if not os.path.isfile(file): return public.returnMsg(False, public.lang("Only compressed files can be imported!"))
         find = public.M('databases').where("name=? AND LOWER(type)=LOWER('MongoDB')",(name,)).find()
-        if not find: return public.returnMsg(False,'This database was not found!')
+        if not find: return public.returnMsg(False, public.lang("This database was not found!"))
 
         get = public.dict_obj()
         get.sid = find['sid']
         if not public.process_exists("mongod") and not int(find['sid']):
-            return public.returnMsg(False,"Mongodb service has not been started yet!")
+            return public.returnMsg(False, public.lang("Mongodb service has not been started yet!"))
         info = self.get_info_by_db_id(find['id'])
         mongorestore_obj = '{}/mongodb/bin/mongorestore'.format(public.get_setup_path())
         mongoimport_obj = '{}/mongodb/bin/mongoimport'.format(public.get_setup_path())
-        if not os.path.exists(mongorestore_obj): return public.returnMsg(False,'Lack of backup tools, please install MongoDB through [APP Store] first!')
+        if not os.path.exists(mongorestore_obj): return public.returnMsg(False, public.lang("Lack of backup tools, please install MongoDB through [APP Store] first!"))
 
         dir_tmp, file_tmp = os.path.split(file)
         split_tmp = file_tmp.split(".")
@@ -476,7 +476,7 @@ class main(databaseBase):
             ext = file_tmp.split(".")[-1]
 
             if ext not in ["json","csv"]:
-                return public.returnMsg(False, 'File format is incorrect!')
+                return public.returnMsg(False, public.lang("File format is incorrect!"))
 
             shell_txt = ""
             if ext == "csv":
@@ -511,7 +511,7 @@ class main(databaseBase):
             shell = f"{shell} {shell_txt}"
             public.ExecShell(shell)
         public.WriteLog("Database manager", 'Import database [{}] succeeded'.format(name))
-        return public.returnMsg(True, 'Successfully imported database!')
+        return public.returnMsg(True, public.lang("Successfully imported database!"))
 
 
     def ToBackup(self,args):
@@ -520,7 +520,7 @@ class main(databaseBase):
         """
         id = args['id']
         find = public.M('databases').where("id=? AND LOWER(type)=LOWER('MongoDB')",(id,)).find()
-        if not find: return public.returnMsg(False,'The specified database does not exist.')
+        if not find: return public.returnMsg(False, public.lang("The specified database does not exist."))
 
         fileName = f"{find['name']}_mongodb_data_{time.strftime('%Y%m%d_%H%M%S',time.localtime())}"
         backupName = session['config']['backup_path'] + '/database/mongodb/' + fileName
@@ -533,24 +533,24 @@ class main(databaseBase):
         try:
             sid = int(find['sid'])
         except:
-            return public.returnMsg(False, 'Database type sid needs int type!')
+            return public.returnMsg(False, public.lang("Database type sid needs int type!"))
         if not public.process_exists("mongod") and not int(find['sid']):
-            return public.returnMsg(False,"Mongodb service has not been started yet!")
+            return public.returnMsg(False, public.lang("Mongodb service has not been started yet!"))
         info = self.get_info_by_db_id(id)
 
         sql_dump = '{}/mongodb/bin/mongodump'.format(public.get_setup_path())
-        if not os.path.exists(sql_dump): return public.returnMsg(False,'Lack of backup tools, please install MongoDB through [APP Store] first!')
+        if not os.path.exists(sql_dump): return public.returnMsg(False, public.lang("Lack of backup tools, please install MongoDB through [APP Store] first!"))
 
         if self.get_local_auth(get):
             if not info['db_password']:
-                return public.returnMsg(False,'Password authentication has been enabled. The password cannot be empty when the database is backed up. Please set a password and try again!')
+                return public.returnMsg(False, public.lang("Password authentication has been enabled. The password cannot be empty when the database is backed up. Please set a password and try again!"))
             shell = "{}  -h {} --port {} -u {} -p {} -d {} -o {} ".format(sql_dump,info['db_host'],info['db_port'],info['db_user'],info['db_password'],find['name'] ,backupName)
         else:
             shell = "{}  -h {} --port {} -d {} -o {} ".format(sql_dump,info['db_host'],info['db_port'],find['name'] ,backupName)
 
         ret = public.ExecShell(shell)
         if not os.path.exists(backupName):
-            return public.returnMsg(False,'Database backup failed, file does not exist');
+            return public.returnMsg(False, public.lang("Database backup failed, file does not exist"));
 
 
         backupFile = f"{backupName}.zip"
@@ -561,11 +561,11 @@ class main(databaseBase):
 
         public.ExecShell(f"rm -rf {backupName}")
         if not os.path.exists(backupFile):
-            return public.returnMsg(True, 'Backup failed,{}.'.format(ret[0]))
+            return public.returnMsg(True, public.lang("Backup failed,{}.",ret[0]))
         if os.path.getsize(backupFile) < 1:
-            return public.returnMsg(True, 'The backup is executed successfully, the backup file is less than 1b, please check the backup integrity.')
+            return public.returnMsg(True, public.lang("The backup is executed successfully, the backup file is less than 1b, please check the backup integrity."))
         else:
-            return public.returnMsg(True, 'BACKUP_SUCCESS')
+            return public.returnMsg(True, public.lang("Backup Succeeded!"))
 
     def DelBackup(self,args):
         """
@@ -594,9 +594,9 @@ class main(databaseBase):
                 result = self.ToDataBase(find)
                 if result == 1: n +=1
         if n == 1:
-            return public.returnMsg(True, 'Synchronization succeeded')
+            return public.returnMsg(True, public.lang("Synchronization succeeded"))
         elif n == 0:
-            return public.returnMsg(False,'Sync failed')
+            return public.returnMsg(False, public.lang("Sync failed"))
         return public.returnMsg(True,'DATABASE_SYNC_SUCCESS',(str(n),))
 
     #添加到服务器
@@ -611,9 +611,9 @@ class main(databaseBase):
         try:
            int(find['sid'])
         except:
-            return public.returnMsg(False, 'Database type sid needs int type!！')
+            return public.returnMsg(False, public.lang("Database type sid needs int type!！"))
         if not public.process_exists("mongod") and not int(find['sid']):
-            return public.returnMsg(False,"Mongodb service has not been started yet!！")
+            return public.returnMsg(False, public.lang("Mongodb service has not been started yet!！"))
 
 
         get = public.dict_obj()
@@ -642,9 +642,9 @@ class main(databaseBase):
         try:
             int(get.sid)
         except:
-            return public.returnMsg(False, 'The database type SID requires an INT!')
+            return public.returnMsg(False, public.lang("The database type SID requires an INT!"))
         if not public.process_exists("mongod") and not int(get.sid):
-            return public.returnMsg(False,"The Mongodb service is not enabled!")
+            return public.returnMsg(False, public.lang("The Mongodb service is not enabled!"))
         auth_status = self.get_local_auth(get)
         data = self.get_obj_by_sid(self.sid).get_db_obj('admin',auth=auth_status).command({"listDatabases":1})
 
@@ -669,26 +669,26 @@ class main(databaseBase):
 
         try:
             if not newpassword:
-                return public.returnMsg(False, 'Modify the failure，The database[' + username + ']password cannot be empty.');
+                return public.returnMsg(False, public.lang("Modify the failure，The database[' + username + ']password cannot be empty."));
             if len(re.search(r"^[\w@\.]+$", newpassword).groups()) > 0:
-                return public.returnMsg(False, 'The database password cannot be empty or contain special characters')
+                return public.returnMsg(False, public.lang("The database password cannot be empty or contain special characters"))
 
             if re.search('[\u4e00-\u9fa5]',newpassword):
-                return public.returnMsg(False,'Database password cannot be Chinese, please change the name!')
+                return public.returnMsg(False, public.lang("Database password cannot be Chinese, please change the name!"))
         except :
-            return public.returnMsg(False, 'The database password cannot be empty or contain special characters')
+            return public.returnMsg(False, public.lang("The database password cannot be empty or contain special characters"))
 
         find = public.M('databases').where("id=?",(id,)).field('id,pid,name,username,password,type,accept,ps,addtime,sid').find();
-        if not find: return public.returnMsg(False, 'The modification failed because the specified database does not exist.');
+        if not find: return public.returnMsg(False, public.lang("The modification failed because the specified database does not exist."));
 
         get = public.dict_obj()
         get.sid = find['sid']
         try:
            int(find['sid'])
         except:
-            return public.returnMsg(False, 'The database type SID requires an INT!')
+            return public.returnMsg(False, public.lang("The database type SID requires an INT!"))
         if not public.process_exists("mongod") and not int(find['sid']):
-            return public.returnMsg(False,"The Mongodb service is not enabled!")
+            return public.returnMsg(False, public.lang("The Mongodb service is not enabled!"))
         auth_status = self.get_local_auth(args)
         if auth_status:
             db_obj = self.get_obj_by_sid(find['sid']).get_db_obj(username,auth=auth_status)
@@ -697,7 +697,7 @@ class main(databaseBase):
             except :
                 print(db_obj.command("createUser", username, pwd=newpassword, roles=[{'role':'dbOwner','db':find['name']},{'role':'userAdmin','db':find['name']}]))
         else:
-            return public.returnMsg(False, 'Password access is not enabled for the database.')
+            return public.returnMsg(False, public.lang("Password access is not enabled for the database."))
 
         #修改SQLITE
         public.M('databases').where("id=?",(id,)).setField('password',newpassword)
@@ -724,7 +724,7 @@ class main(databaseBase):
         @args json/int 数据库id
         """
         # if not public.process_exists("mongod"):
-        #     return public.returnMsg(False,"The Mongodb service is not enabled!")
+        #     return public.returnMsg(False, public.lang("The Mongodb service is not enabled!"))
         total = 0
         db_id = args
         if not isinstance(args, int): db_id = args['db_id']

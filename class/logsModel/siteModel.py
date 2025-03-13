@@ -51,7 +51,7 @@ class main(logsBase):
         site_obj = panelSite.panelSite()
         data = site_obj.get_site_info(get.siteName)
         if not data:
-            return public.returnMsg(False,'【{}】网站路径获取失败，请检查IIS是否存在此站点，如IIS不存在请通过面板删除此网站后重新创建.'.format(get.siteName))
+            return public.returnMsg(False, public.lang("[{}] Failed to get the website path, please check whether IIS exists this site, does not exist, please delete this site in the panel after the creation.",get.siteName))
 
         log_path = '{}/wwwlogs/W3SVC{}'.format(public.get_soft_path(), data['id'])
         file_list = self.__get_iis_log_files(log_path)

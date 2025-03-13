@@ -89,7 +89,7 @@ class feishu_msg:
         @user
         """
         if not hasattr(get, 'url'):
-            return public.returnMsg(False, 'Please fill in the complete information')
+            return public.returnMsg(False, public.lang("Please fill in the complete information"))
 
         isAtAll = True
         if hasattr(get, "atall"):
@@ -100,7 +100,7 @@ class feishu_msg:
         if hasattr(get, 'title'):
             title = get.title
             if len(title) > 7:
-                return public.returnMsg(False, 'Note name cannot exceed 7 characters')
+                return public.returnMsg(False, public.lang("Note name cannot exceed 7 characters"))
 
         self.__feishu_info  = {"feishu_url": get.url.strip(), "isAtAll": isAtAll, "user":1,"title":title}
         ret = self.send_msg('aaPanel alarm test')
@@ -109,12 +109,12 @@ class feishu_msg:
                 public.writeFile(self.__default_pl, self.__module_name)
 
             if ret['success'] <= 0:
-                return public.returnMsg(False, 'Failed to add, please check whether the URL is correct')
+                return public.returnMsg(False, public.lang("Failed to add, please check whether the URL is correct"))
 
             public.writeFile(self.conf_path, json.dumps(self.__feishu_info))
-            return public.returnMsg(True, 'successfully set')
+            return public.returnMsg(True, public.lang("successfully set"))
         else:
-            return public.returnMsg(False, 'Failed to add, please check whether the URL is correct')
+            return public.returnMsg(False, public.lang("Failed to add, please check whether the URL is correct"))
 
 
     def get_send_msg(self,msg):
@@ -152,7 +152,7 @@ class feishu_msg:
         @msg 消息正文
         """
         if not self.__feishu_info :
-            return public.returnMsg(False,'Feishu information is not configured correctly.')
+            return public.returnMsg(False, public.lang("Feishu information is not configured correctly."))
 
         msg,title = self.get_send_msg(msg)
         if self.__feishu_info["isAtAll"]:

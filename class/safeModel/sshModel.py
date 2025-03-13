@@ -137,9 +137,9 @@ class main(safeBase):
     #改远程端口
     def SetSshPort(self,get):
         port = get.port
-        if int(port) < 22 or int(port) > 65535: return public.returnMsg(False,'FIREWALL_SSH_PORT_ERR')
+        if int(port) < 22 or int(port) > 65535: return public.returnMsg(False, public.lang("Port range must be between 22 and 65535!"))
         ports = ['21','25','80','443','8080','888','8888']
-        if port in ports: return public.returnMsg(False,'Please dont use default ports for common programs!')
+        if port in ports: return public.returnMsg(False, public.lang("Please dont use default ports for common programs!"))
         file = '/etc/ssh/sshd_config'
         conf = public.readFile(file)
 
@@ -163,7 +163,7 @@ class main(safeBase):
         public.M('firewall').where("ps=? or ps=? or port=?",('SSH remote management service','SSH remote service',port)).delete()
         public.M('firewall').add('port,ps,addtime',(port,'SSH remote service',time.strftime('%Y-%m-%d %X',time.localtime())))
         public.WriteLog("TYPE_FIREWALL", "FIREWALL_SSH_PORT",(port,))
-        return public.returnMsg(True,'EDIT_SUCCESS')
+        return public.returnMsg(True, public.lang("Successfully modified"))
 
 
 
@@ -184,6 +184,6 @@ class main(safeBase):
         public.ExecShell("systemctl "+act+" ssh")
 
         public.WriteLog("TYPE_FIREWALL", msg)
-        return public.returnMsg(True,'SUCCESS')
+        return public.returnMsg(True, public.lang("SUCCESS"))
 
 

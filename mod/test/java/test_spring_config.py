@@ -37,7 +37,7 @@ class TestSpringConfigParser(unittest.TestCase):
         # file = "/www/java_mall/yami-shop-api-0.0.1-SNAPSHOT.jar"
 
         if not os.path.exists(file):
-            print("文件不存在")
+            print("file does not exist")
         scp = SpringLogConfigParser(file)
         print(scp.get_all_log_ptah())
 

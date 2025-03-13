@@ -23,7 +23,7 @@ from public.validate import Param
 
 class main(dockerBase):
 
-    # 2023/12/22 上午 9:56 备份指定容器的mount v11olume
+    # 2023/12/22 上午 9:56 备份指定容器的mount volume
     def backup_volume(self, get):
         '''
             @name 备份指定容器的mount volume
@@ -50,7 +50,8 @@ class main(dockerBase):
             volume_list = [v["Source"] for v in volume_list]
 
             if not volume_list:
-                return public.return_message(-1, 0, _("There is no volume to back up"))
+                return public.return_message(-1, 0,
+                                             public.lang("There is no volume to back up"))
 
             backup_path = "/www/backup/btdocker/volumes/{}".format(container.name)
             if not os.path.exists(backup_path):
@@ -93,10 +94,10 @@ class main(dockerBase):
                 )
                 public.WriteLog("Docker module", "The {} of the backup container {} succeeds！".format(container.name, tar_name))
 
-            return public.return_message(0, 0, _("The backup task was created successfully."))
+            return public.return_message(0, 0, public.lang("The backup task was created successfully."))
         except Exception as e:
             print(traceback.format_exc())
-            return public.return_message(-1, 0, _("Failed to create a backup task {}".format(str(e))))
+            return public.return_message(-1, 0, public.lang("Failed to create a backup task {}", str(e)))
 
     # 2023/12/22 上午 11:23 获取指定容器的备份列表
     def get_backup_list(self, get):
@@ -167,12 +168,12 @@ class main(dockerBase):
             backup_path = "/www/backup/btdocker/volumes/{}".format(get.container_name)
             file_path = os.path.join(backup_path, get.name)
             if not os.path.exists(file_path):
-                return public.return_message(0, 0, _("successfully delete"))
+                return public.return_message(0, 0, public.lang("successfully delete"))
             os.remove(file_path)
-            return public.return_message(0, 0, _("successfully delete"))
+            return public.return_message(0, 0, public.lang("successfully delete"))
         except Exception as e:
             print(traceback.format_exc())
-            return public.return_message(-1, 0, _("{} Failed to delete the file, reason: {}".format(get.name, str(e))))
+            return public.return_message(-1, 0, public.lang("Failed to delete the file, reason: {}", get.name, str(e)))
 
     def get_pull_log(self, get):
         """

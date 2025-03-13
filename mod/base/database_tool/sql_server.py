@@ -23,6 +23,6 @@ class SQLServerTool(BaseDatabaseTool):
         get_obj.password = kwargs.get("password", "")
         res = sqlserver().AddDatabase(get_obj)
         if res["status"] is True:
-            return True, "添加成功"
+            return True, "Successfully added"
         else:
             return False, res['msg']

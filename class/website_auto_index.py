@@ -77,7 +77,7 @@ class website_auto_index:
         :return:
         '''
         if self.webserver == 'openlitespeed':
-            return public.returnMsg(False, 'Sorry, OLS does not currently support this feature')
+            return public.returnMsg(False, public.lang("Sorry, OLS does not currently support this feature"))
 
         tmp = self._check_args(args)
         if tmp:
@@ -93,15 +93,15 @@ class website_auto_index:
         exist_index_name = [i.split('_')[-1] for i in data]
         if args.act == 'edit':
             if deny_name not in exist_index_name:
-                return public.returnMsg(False, 'The specify rule name is not exists! [ {} ]'.format(deny_name))
+                return public.returnMsg(False, public.lang("The specify rule name is not exists! [ {} ]", deny_name))
             self.del_auto_index(args)
         else:
             if deny_name in exist_index_name:
-                return public.returnMsg(False, 'The specify rule name is already exists! [ {} ]'.format(deny_name))
+                return public.returnMsg(False, public.lang("The specify rule name is already exists! [ {} ]", deny_name))
         self._set_nginx_auto_index(deny_name, dir)
         self._set_apache_auto_index(deny_name, dir)
         public.serviceReload()
-        return public.returnMsg(True, 'Add Successfully')
+        return public.returnMsg(True, public.lang("Add Successfully"))
 
     def _set_nginx_auto_index(self, name, dir=None):
         conf = public.readFile(self.ng_website_conf)
@@ -165,13 +165,13 @@ class website_auto_index:
         self._set_nginx_auto_index(deny_name)
         self._set_apache_auto_index(deny_name)
         public.serviceReload()
-        return public.returnMsg(True, 'Delete Successfully')
+        return public.returnMsg(True, public.lang("Delete Successfully"))
 
     # 检查传入参数
     def _check_args(self, args):
         if hasattr(args, 'deny_name'):
             if len(args.deny_name) < 3:
-                return public.returnMsg(False, 'Rule name needs to be greater than 3 bytes')
+                return public.returnMsg(False, public.lang("Rule name needs to be greater than 3 bytes"))
         if hasattr(args, 'dir'):
             if not args.dir:
-                return public.returnMsg(False, 'Directory cannot be empty')
+                return public.returnMsg(False, public.lang("Directory cannot be empty"))

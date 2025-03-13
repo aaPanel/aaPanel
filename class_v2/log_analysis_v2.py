@@ -177,9 +177,9 @@ echo "[*] shut down"
         # public.print_log("path1:{}".format(path))
         # public.print_log("serverType:{}".format(serverType))
 
-        if not os.path.exists(path): return public.return_message(-1,0, 'No log file')
-        if os.path.getsize(path) > 9433107294: return public.return_message(-1,0, 'The log file is too large!')
-        if os.path.getsize(path) < 10: return public.return_message(-1,0, 'log is empty')
+        if not os.path.exists(path): return public.return_message(-1, 0, public.lang("No log file"))
+        if os.path.getsize(path) > 9433107294: return public.return_message(-1, 0, public.lang("The log file is too large!"))
+        if os.path.getsize(path) < 10: return public.return_message(-1, 0, public.lang("log is empty"))
         # public.print_log("log_path{}".format(log_path))
         # public.print_log("self.log_analysis_path{}".format(self.log_analysis_path))
         # public.print_log("path{}".format(path))
@@ -190,7 +190,7 @@ echo "[*] shut down"
             public.ExecShell("cd %s && bash %s san %s %s &" % (self.path, self.log_analysis_path, path, log_path))
         speed = self.path + '/log/' + log_path+".time"
         public.WriteFile(speed,str(time.time())+"[]"+time.strftime('%Y-%m-%d %X',time.localtime())+"[]"+"0")
-        return public.return_message(0,0, 'Start scan successful')
+        return public.return_message(0, 0, public.lang("Start scan successful"))
 
     def speed_log(self, get):
         '''
@@ -213,8 +213,8 @@ echo "[*] shut down"
         path = get.path.strip()
         log_path = public.Md5(path)
         speed = self.path + '/log/' + log_path
-        if os.path.getsize(speed) < 1: return public.return_message(-1,0, 'log is empty')
-        if not os.path.exists(speed): return public.return_message(-1,0, 'The directory was not scanned')
+        if os.path.getsize(speed) < 1: return public.return_message(-1, 0, public.lang("log is empty"))
+        if not os.path.exists(speed): return public.return_message(-1, 0, public.lang("The directory was not scanned"))
         try:
             data = public.ReadFile(speed)
             data = int(data)
@@ -223,7 +223,7 @@ echo "[*] shut down"
                 public.WriteFile(speed+".time",str(time.time()-float(time_data)) + "[]" + start_time + "[]" + "1")
             return public.return_message(0,0, data)
         except:
-            return public.return_message(0,0, 0)
+            return public.return_message(0, 0, 0)
 
     def get_log_count(self, path, is_body=False):
         count = 0
@@ -295,6 +295,6 @@ echo "[*] shut down"
         log_path = public.Md5(path)
         speed = self.path + '/log/' + log_path
         type_list = ['xss', 'sql', 'san', 'php', 'ip', 'url']
-        if get.type not in type_list: return public.return_message(-1,0, 'Type mismatch')
-        if not os.path.exists(speed + get.type + '.log'): return public.return_message(-1,0, 'Record does not exist')
+        if get.type not in type_list: return public.return_message(-1, 0, public.lang("Type mismatch"))
+        if not os.path.exists(speed + get.type + '.log'): return public.return_message(-1, 0, public.lang("Record does not exist"))
         return public.return_message(0,0,self.get_log_count(speed + get.type + '.log', is_body=True))

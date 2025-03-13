@@ -77,10 +77,14 @@ check_email: function (email) {
             arr2.push(0);
         }
         for (var i = 0; i < leng; i++) {
-            if (i == leng - 1) {
-                if (arr1[i] != arr2[i]) return 2; //子版本匹配不上
-            } else {
-                if (arr1[i] != arr2[i]) return -1; //版本匹配不上
+            // if (i == leng - 1) {
+            //     if (arr1[i] != arr2[i]) return 2; //子版本匹配不上
+            // } else {
+            //     if (arr1[i] != arr2[i]) return -1; //版本匹配不上
+            // }
+
+            if (parseInt(arr1[i]) < parseInt(arr2[i])) {
+                return 2;
             }
         }
         return 1; //版本正常
@@ -8334,7 +8338,7 @@ function setPanelSSL(){
                     }
                 },
               {
-                  html: '<div class="details"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: -1px 5px 0px;" for="checkSSL">' + lan.config.ssl_open_ps_4 + '</label><a target="_blank" class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate">' + lan.config.ssl_open_ps_5 + '</a></p></div>'
+                  html: '<div class="details"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: -1px 5px 0px;" for="checkSSL">' + lan.config.ssl_open_ps_4 + '</label><a target="_blank" class="btlink" href="https://www.aapanel.com/forum/d/167-common-problems-after-opening-the-panel-certificate">' + lan.config.ssl_open_ps_5 + '</a></p></div>'
               }
 
             ],

@@ -45,8 +45,8 @@ class Rsync38Task(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "rsync_push"
-        self.template_name = "文件同步告警"
-        self.title = "文件同步告警"
+        self.template_name = "File synchronization alarm"
+        self.title = "File synchronization alarm"
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if "interval" not in task_data or not isinstance(task_data["interval"], int):
@@ -63,8 +63,8 @@ class Rsync38Task(BaseTask):
 
         return {
             "msg_list": [
-                ">通知类型：文件同步告警",
-                ">告警内容：<font color=#ff0000>文件同步执行中出错了，请及时关注文件同步情况并处理。</font> ",
+                ">Notification type: File synchronization alarm",
+                ">Content of alarm: <font color=#ff0000>If an error occurs during file synchronization, please pay attention to the file synchronization situation and handle it in a timely manner.</font> ",
             ]
         }
 
@@ -99,8 +99,8 @@ class Rsync38Task(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "文件同步告警"
-        msg.msg = "同步执行出错了，请及时关注同步情况"
+        msg.thing_type = "File synchronization alarm"
+        msg.msg = "There was an error in the synchronization. Please keep an eye on the synchronization"
         return msg
 
 
@@ -109,8 +109,8 @@ class Rsync39Task(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "rsync_push"
-        self.template_name = "文件同步告警"
-        self.title = "文件同步告警"
+        self.template_name = "File synchronization alarm"
+        self.title = "File synchronization alarm"
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if "interval" not in task_data or not isinstance(task_data["interval"], int):
@@ -148,11 +148,11 @@ class Rsync39Task(BaseTask):
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         task_name = push_data.get("task_name", None)
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "文件同步告警"
+        msg.thing_type = "File synchronization alarm"
         if task_name:
-            msg.msg = "文件同步任务{}出错了".format(task_name)
+            msg.msg = "An error occurred on file synchronization task {}".format(task_name)
         else:
-            msg.msg = "同步执行出错了，请及时关注同步情况"
+            msg.msg = "There was an error in the synchronization. Please keep an eye on the synchronization"
         return msg
 
 
@@ -240,7 +240,7 @@ def load_rsync_template():
             "ver": "1",
             "used": True,
             "source": "rsync_push",
-            "title": "文件同步告警",
+            "title": "File synchronization alarm",
             "load_cls": {
                 "load_type": "path",
                 "cls_path": "mod.base.push_mod.rsync_push",
@@ -265,7 +265,8 @@ def load_rsync_template():
                 "feishu",
                 "mail",
                 "weixin",
-                "webhook"
+                "webhook",
+                "tg",
             ],
             "unique": True
         }]
@@ -283,8 +284,8 @@ def push_rsync_by_task_name(task_name: str):
     push_data = {
         "task_name": task_name,
         "msg_list": [
-            ">通知类型：文件同步告警",
-            ">告警内容：<font color=#ff0000>文件同步任务{}在执行中出错了，请及时关注文件同步情况并处理。</font> ".format(
+            ">Notification type: File synchronization alarm",
+            ">Content of alarm: <font color=#ff0000>File synchronization task {} has failed during the execution, please pay attention to the file synchronization situation and deal with it.</font> ".format(
                 task_name),
         ]
     }
@@ -296,6 +297,6 @@ class ViewMsgFormat(object):
     @staticmethod
     def get_msg(task: dict) -> Optional[str]:
         if task["template_id"] == "40":
-            return "<span>文件同步出现异常时，推送告警信息(每日推送{}次后不在推送)<span>".format(
+            return "<span>Push alarm information when there is an exception in file synchronization (push {} times per day and then not push)<span>".format(
                 task.get("number_rule", {}).get("day_num"))
         return None

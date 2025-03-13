@@ -7602,7 +7602,7 @@ bt.soft = {
 			},
 		});
 	},
-	update_soft: function (name, title, version, min_version, update_msg, type) {
+	update_soft: function (name, title, version, min_version, update_msg, type,callback) {
 		var _this = this;
 		var msg = '<li>' + lan.public_backup.update_tips + '</li>';
 		if (name == 'mysql')
@@ -7659,7 +7659,10 @@ bt.soft = {
 							bt.pub.get_task_count(function (rdata) {
 								if (rdata > 0 && parseInt(item.type) === 5) messagebox();
 							});
-							if (typeof soft != 'undefined') soft.get_list();
+							if (typeof soft != 'undefined') {
+								callback && callback()
+								soft.get_list()
+							};
 							bt.msg(rdata);
 						});
 					});
@@ -9998,7 +10001,7 @@ function setPanelSSL() {
 					html:
 						'<div class="details"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: -1px 5px 0px;" for="checkSSL">' +
 						lan.config.ssl_open_ps_4 +
-						'</label><a target="_blank" class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate">' +
+						'</label><a target="_blank" class="btlink" href="https://www.aapanel.com/forum/d/167-common-problems-after-opening-the-panel-certificate">' +
 						lan.config.ssl_open_ps_5 +
 						'</a></p></div>',
 				},

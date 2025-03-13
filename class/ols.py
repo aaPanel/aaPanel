@@ -51,7 +51,7 @@ class ols:
                 conf = conf + '\n{} {}'.format(k,data[k])
         public.writeFile(self._main_conf_path,conf)
         public.serviceReload()
-        return public.return_msg_gettext(True,"Setup Successfully!")
+        return public.success_v2("Setup Successfully!")
 
     # 获取站点静态文件缓存配置
     def get_static_cache(self,get):
@@ -101,7 +101,7 @@ class ols:
                 conf = conf.replace(old_cache,new_cache)
             public.writeFile(self._detail_conf_path.format(sitename),conf)
             public.serviceReload()
-            return public.return_msg_gettext(True,'Setup Successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup Successfully!"))
         except Exception as e:
             return e
 
@@ -180,14 +180,14 @@ RewriteRule (.*\.php)?$ - [E=Cache-Control:private]
                 f.write(conf)
                 f.close()
             public.serviceReload()
-            return public.return_msg_gettext(True,'Setup successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         else:
             bt_conf_rep = '#.*BTLSCACHE_BEGIN(.|\n)+BTLSCACHE_END#*\n'
             conf = re.sub(bt_conf_rep,'',conf)
             print(conf)
             public.writeFile(file,conf)
             public.serviceReload()
-            return public.return_msg_gettext(True,'Setup successfully!')
+            return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     def set_private_cache(self,get):
         """
@@ -215,7 +215,7 @@ RewriteRule (.*\.php)?$ - [E=Cache-Control:private]
             conf = re.sub(bt_conf_rep,bt_conf,conf)
             public.writeFile(file_name,conf)
         public.serviceReload()
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     def _get_site_domain(self):
         site = []

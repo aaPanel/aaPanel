@@ -22,20 +22,18 @@ except:
     pass
 
 class userRegister:
-    # __official_url = 'https://dev.aapanel.com'
-    # # __official_url = 'https://www.aapanel.com'
 
     def toRegister(self, post):
         try:
             # 参数检测
             if not hasattr(post, 'email') or not hasattr(post, 'password'):
-                return public.return_msg_gettext(False, 'User email or password cannot be empty!')
+                return public.return_msg_gettext(False, public.lang("User email or password cannot be empty!"))
             post.email = post.email.strip()
             post.password = post.password.strip()
             # 检测 email
             emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
             if not emailformat.search(post.email):
-                return public.return_msg_gettext(False, 'Please enter your vaild email')
+                return public.return_msg_gettext(False, public.lang("Please enter your vaild email"))
 
             post.email = self.en_code_rsa(post.email)
             post.password = self.en_code_rsa(post.password)
@@ -49,7 +47,7 @@ class userRegister:
 
             params['install_code'] = env_info['install_code']
         except Exception as e:
-            return public.return_msg_gettext(False, "error info : {}".format(e))
+            return public.return_msg_gettext(False, public.lang("error info : {}", e))
 
 
         # 调用官网注册
@@ -57,7 +55,13 @@ class userRegister:
 
             # public.print_log("传参2   {}".format(params))
             # sUrl = 'http://dev.aapanel.com/api/user/register_on_panel'
-            sUrl = 'https://www.aapanel.com/api/user/register_on_panel'
+            # 判断 普通版 or Pro版
+            if hasattr(post, 'isPro') and post.isPro:
+                sUrl = '{}/pro/api/user/register_on_panel'.format(public.OfficialApiBase())
+            else:
+                sUrl = '{}/api/user/register_on_panel'.format(public.OfficialApiBase())
+
+
             aa = public.httpPost(sUrl, params, timeout=60)
             data = json.loads(aa)
 
@@ -68,14 +72,19 @@ class userRegister:
 
                 return public.return_msg_gettext(False, data['res'])
         except Exception as e:
-            return public.return_msg_gettext(False, "error info2 : {}".format(e))
+            import traceback
+            public.print_log(traceback.format_exc())
+            return public.return_msg_gettext(False, public.lang("error info2 : {}", e))
 
-        #  注册成功调用登录
-        try:
-            self.getToken(post)
-            return public.return_msg_gettext(True, "Register successfully")
-        except Exception as e:
-            return public.return_msg_gettext(False, "error info6 : {}".format(e))
+        return public.return_msg_gettext(True, public.lang("Register successfully"))
+
+        # #  注册成功调用登录
+        # try:
+        #     post.isPro = isPro
+        #     self.getToken(post)
+        #     return public.return_msg_gettext(True, public.lang("Register successfully"))
+        # except Exception as e:
+        #     return public.return_msg_gettext(False, public.lang("error info6 : {}", e))
 
 
 
@@ -90,9 +99,12 @@ class userRegister:
         data['from_panel'] = self.en_code_rsa('1')  # 1 代表从面板登录
         try:
             # APIURL1 = 'http://dev.aapanel.com/api/user/login'
-            APIURL1 = 'https://www.aapanel.com/api/user/login'
+            APIURL1 = '{}/api/user/login'.format(public.OfficialApiBase())
             rtmp = public.httpPost(APIURL1, data)
             result = json.loads(rtmp)
+            if get.isPro:
+                if result.get('err_no', None) == 2002:
+                    return public.return_message(-1, 0, public.lang("The email has not been validated"))
 
             if result['success']:
                 bind = 'data/bind.pl'
@@ -103,17 +115,16 @@ class userRegister:
                 public.writeFile('data/userInfo.json', json.dumps(userinfo))
 
                 session['focre_cloud'] = True
-                return public.return_msg_gettext(True, 'Bind successfully')
+                return public.return_msg_gettext(True, public.lang("Bind successfully"))
 
             else:
-                return public.return_msg_gettext(False,
-                                                 'Invalid username or email or password! please check and try again!')
+                return public.return_msg_gettext(False, public.lang("Invalid username or email or password! please check and try again!"))
         except Exception as ex:
             bind = 'data/bind.pl'
             if os.path.exists(bind):
                 os.remove(bind)
             return public.return_msg_gettext(False, '%s<br>%s' % (
-                public.get_msg_gettext('Failed to connect server!'), str(rtmp)))
+                public.lang("Failed to connect server!"), str(rtmp)))
 
 
     def get_cpuname(self):

@@ -165,29 +165,29 @@ class databaseBase:
         """
         data_name = get['name'].strip().lower()
         if self.check_recyclebin(data_name):
-            return public.returnMsg(False,'Database ['+data_name+'] is already in recycle bin, please restore from recycle bin!');
+            return public.returnMsg(False, public.lang("Database ['+data_name+'] is already in recycle bin, please restore from recycle bin!"));
 
         if len(data_name) > 16:
-            return public.returnMsg(False, 'DATABASE_NAME_LEN')
+            return public.returnMsg(False, public.lang("Database name cannot be more than 16 characters!"))
 
         if not hasattr(get,'db_user'): get.db_user = data_name;
         username = get.db_user.strip();
         checks = ['root','mysql','test','sys','panel_logs']
         if username in checks or len(username) < 1:
-            return public.returnMsg(False,'Database username is invalid!');
+            return public.returnMsg(False, public.lang("Database username is invalid!"));
         if data_name in checks or len(data_name) < 1:
-            return public.returnMsg(False,'Database name is invalid!');
+            return public.returnMsg(False, public.lang("Database name is invalid!"));
 
         reg = r"^\w+$"
         if not re.match(reg, data_name):
-            return public.returnMsg(False,'DATABASE_NAME_ERR_T')
+            return public.returnMsg(False, public.lang("Database name cannot contain special characters!"))
 
         data_pwd = get['password']
         if len(data_pwd) < 1:
             data_pwd = public.md5(str(time.time()))[0:8]
 
         if public.M('databases').where("name=? or username=?",(data_name,username)).count():
-            return public.returnMsg(False,'DATABASE_NAME_EXISTS')
+            return public.returnMsg(False, public.lang("Database exists!"))
 
         res = {
            'data_name':data_name,
@@ -215,7 +215,7 @@ class databaseBase:
             public.ExecShell(public.get_run_python("[PYTHON] "+public.GetConfigValue('setup_path') + '/panel/script/backup_qiniu.py delete_file ' + name))
         public.M('backup').where(where,(id,)).delete()
         public.WriteLog("TYPE_DATABASE", 'DATABASE_BACKUP_DEL_SUCCESS',(name,filename))
-        return public.returnMsg(True, 'DEL_SUCCESS');
+        return public.returnMsg(True, public.lang("Delete successfully!"));
 
     #检查是否在回收站
     def check_recyclebin(self,name):
@@ -242,8 +242,8 @@ class databaseBase:
         """
         for key in nlist:
             if not key in get:
-                return public.returnMsg(False,'Parameter passing error, missing parameter {}!'.format(key))
-        return public.returnMsg(True,'Pass!')
+                return public.returnMsg(False, public.lang("Parameter passing error, missing parameter {}!",key))
+        return public.returnMsg(True, public.lang("Pass!"))
 
     def check_cloud_database(self,args):
         '''
@@ -282,7 +282,7 @@ class databaseBase:
         if isinstance(res,dict): return str(res)
 
         if public.M('database_servers').where('db_host=? AND db_port=?',(get['db_host'],get['db_port'])).count():
-            return public.returnMsg(False,'The specified server already exists: [{}:{}]'.format(get['db_host'],get['db_port']))
+            return public.returnMsg(False, public.lang("The specified server already exists: [{}:{}]",get['db_host'],get['db_port']))
         get['db_port'] = int(get['db_port'])
         pdata = {
             'db_host':get['db_host'],
@@ -297,8 +297,8 @@ class databaseBase:
 
         if isinstance(result,int):
             public.WriteLog('Database manager','Add remote MySQL server[{}:{}]'.format(get['db_host'],get['db_port']))
-            return public.returnMsg(True,'Added successfully!')
-        return public.returnMsg(False,'Add failed： {}'.format(result))
+            return public.returnMsg(True, public.lang("Added successfully!"))
+        return public.returnMsg(False, public.lang("Add failed： {}",result))
 
 
     def GetBaseCloudServer(self,get):
@@ -340,15 +340,15 @@ class databaseBase:
         '''
 
         id = int(get.id)
-        if not id: return public.returnMsg(False,'Parameter passed error, please try again!')
+        if not id: return public.returnMsg(False, public.lang("Parameter passed error, please try again!"))
         db_find = public.M('database_servers').where('id=?',(id,)).find()
-        if not db_find: return public.returnMsg(False,'The specified remote server does not exist!')
+        if not db_find: return public.returnMsg(False, public.lang("The specified remote server does not exist!"))
         public.M('databases').where('sid=?',id).delete()
         result = public.M('database_servers').where('id=?',id).delete()
         if isinstance(result,int):
             public.WriteLog('Database manager','Delete remote MySQL server [{}:{}]'.format(db_find['db_host'],int(db_find['db_port'])))
-            return public.returnMsg(True,'Successfully deleted!')
-        return public.returnMsg(False,'Successfully deleted： {}'.format(result))
+            return public.returnMsg(True, public.lang("Successfully deleted!"))
+        return public.returnMsg(False, public.lang("Successfully deleted： {}",result))
 
 
     def ModifyBaseCloudServer(self,get):
@@ -373,12 +373,12 @@ class databaseBase:
         id = int(get.id)
         get['db_port'] = int(get['db_port'])
         db_find = public.M('database_servers').where('id=?',(id,)).find()
-        if not db_find: return public.returnMsg(False,'The specified remote server does not exist!')
+        if not db_find: return public.returnMsg(False, public.lang("The specified remote server does not exist!"))
         _modify = False
         if db_find['db_host'] != get['db_host'] or db_find['db_port'] != get['db_port']:
             _modify = True
             if public.M('database_servers').where('db_host=? AND db_port=?',(get['db_host'],get['db_port'])).count():
-                return public.returnMsg(False,'The specified server already exists: [{}:{}]'.format(get['db_host'],get['db_port']))
+                return public.returnMsg(False, public.lang("The specified server already exists: [{}:{}]",get['db_host'],get['db_port']))
 
         if db_find['db_user'] != get['db_user'] or db_find['db_password'] != get['db_password']:
             _modify = True
@@ -400,30 +400,30 @@ class databaseBase:
         result = public.M("database_servers").where('id=?',(id,)).update(pdata)
         if isinstance(result,int):
             public.WriteLog('Database manager','Modify the remote MySQL server[{}:{}]'.format(get['db_host'],get['db_port']))
-            return public.returnMsg(True,'Successfully modified!')
-        return public.returnMsg(False,'Fail to edit： {}'.format(result))
+            return public.returnMsg(True, public.lang("Successfully modified!"))
+        return public.returnMsg(False, public.lang("Fail to edit： {}",result))
 
 
     #检测数据库执行错误
     def IsSqlError(self,mysqlMsg):
         if mysqlMsg:
             mysqlMsg = str(mysqlMsg)
-            if "MySQLdb" in mysqlMsg: return public.returnMsg(False,'DATABASE_ERR_MYSQLDB')
-            if "2002," in mysqlMsg: return public.returnMsg(False,'DATABASE_ERR_CONNECT')
-            if "2003," in mysqlMsg: return public.returnMsg(False,'Database connection timed out, please check if the configuration is correct.')
-            if "1045," in mysqlMsg: return public.returnMsg(False,'MySQL password error.')
-            if "1040," in mysqlMsg: return public.returnMsg(False,'Exceeded maximum number of connections, please try again later.')
-            if "1130," in mysqlMsg: return public.returnMsg(False,'Database connection failed, please check whether the root user is authorized to access 127.0.0.1.')
-            if "using password:" in mysqlMsg: return public.returnMsg(False,'DATABASE_ERR_PASS')
-            if "Connection refused" in mysqlMsg: return public.returnMsg(False,'DATABASE_ERR_CONNECT')
-            if "1133" in mysqlMsg: return public.returnMsg(False,'DATABASE_ERR_NOT_EXISTS')
-            if "2005_login_error" == mysqlMsg: return public.returnMsg(False,'The connection times out, please manually enable the TCP/IP function (Start Menu->SQL 2005->Configuration Tools->2005 Network Configuration->TCP/IP->Enable)')
-            if 'already exists' in mysqlMsg: return public.returnMsg(False,'The specified database already exists, please do not add it repeatedly.')
-            if 'Cannot open backup device' in mysqlMsg:  return public.returnMsg(False,'The operation failed, the remote database does not support the operation.')
+            if "MySQLdb" in mysqlMsg: return public.returnMsg(False, public.lang("MySQLdb component is missing!"))
+            if "2002," in mysqlMsg: return public.returnMsg(False, public.lang("ERROR to connect database"))
+            if "2003," in mysqlMsg: return public.returnMsg(False, public.lang("Database connection timed out, please check if the configuration is correct."))
+            if "1045," in mysqlMsg: return public.returnMsg(False, public.lang("MySQL password error."))
+            if "1040," in mysqlMsg: return public.returnMsg(False, public.lang("Exceeded maximum number of connections, please try again later."))
+            if "1130," in mysqlMsg: return public.returnMsg(False, public.lang("Database connection failed, please check whether the root user is authorized to access 127.0.0.1."))
+            if "using password:" in mysqlMsg: return public.returnMsg(False, public.lang("Database password is incorrect!"))
+            if "Connection refused" in mysqlMsg: return public.returnMsg(False, public.lang("ERROR to connect database"))
+            if "1133" in mysqlMsg: return public.returnMsg(False, public.lang("Database user does NOT exist!"))
+            if "2005_login_error" == mysqlMsg: return public.returnMsg(False, public.lang("The connection times out, please manually enable the TCP/IP function (Start Menu->SQL 2005->Configuration Tools->2005 Network Configuration->TCP/IP->Enable)"))
+            if 'already exists' in mysqlMsg: return public.returnMsg(False, public.lang("The specified database already exists, please do not add it repeatedly."))
+            if 'Cannot open backup device' in mysqlMsg:  return public.returnMsg(False, public.lang("The operation failed, the remote database does not support the operation."))
 
-            if '1142' in mysqlMsg: return public.returnMsg(False,'Insufficient permissions, please use root user.')
+            if '1142' in mysqlMsg: return public.returnMsg(False, public.lang("Insufficient permissions, please use root user."))
 
-            if "DB-Lib error message 20018" in mysqlMsg: return public.returnMsg(False,'Create failed, SQL Server requires GUI support')
+            if "DB-Lib error message 20018" in mysqlMsg: return public.returnMsg(False, public.lang("Create failed, SQL Server requires GUI support"))
 
         return None
 

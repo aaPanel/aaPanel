@@ -19,7 +19,7 @@ function modify_port_val(port){
                 </div>\
                 <div class="details" style="margin-top:5px;padding-left: 3px;">\
 					<input type="checkbox" id="check_port">\
-					<label style="font-weight: 400;margin: 3px 5px 0px;" for="check_port">I already understand</label>,<a target="_blank" class="btlink" href="https://forum.aapanel.com/d/599-how-to-release-the-aapanel-port">How to release the port?</a>\
+					<label style="font-weight: 400;margin: 3px 5px 0px;" for="check_port">I already understand</label>,<a target="_blank" class="btlink" href="https://www.aapanel.com/forum/d/599-how-to-release-the-aapanel-port">How to release the port?</a>\
 				</div>\
 			</div>',
 		yes:function(index,layero){
@@ -118,7 +118,7 @@ $('#panel_verification').click(function(){
 				<div class="details" style="width: 90%;margin-bottom:10px;">\
 					<input type="checkbox" id="check_verification">\
 					<label style="font-weight: 400;margin: 3px 5px 0px;" for="check_verification">I already know the details and are willing to take risks</label>\
-					<a target="_blank" class="btlink" href="https://forum.aapanel.com/d/357-how-to-use-google-authenticator-in-the-aapanel">Learn more</a>\
+					<a target="_blank" class="btlink" href="https://www.aapanel.com/forum/d/357-how-to-use-google-authenticator-in-the-aapanel">Learn more</a>\
 				</div>\
 				<div class="bt-form-submit-btn">\
 					<button type="button" class="btn btn-sm btn-danger close_verify">Close</button>\
@@ -208,7 +208,7 @@ $('.open_two_verify_view').click(function(){
 						</div>\
 					</div>\
 					<div class="verify_tips">\
-						<p>Tips: Please use the "Google Authenticator APP" binding to support Android, IOS system.<a href="https://forum.aapanel.com/d/357-how-to-use-google-authenticator-in-the-aapanel" class="btlink" target="_blank">Use tutorial</a></p>\
+						<p>Tips: Please use the "Google Authenticator APP" binding to support Android, IOS system.<a href="https://www.aapanel.com/forum/d/357-how-to-use-google-authenticator-in-the-aapanel" class="btlink" target="_blank">Use tutorial</a></p>\
 						<p style="color:red;">Once you have turned on the service, use the Google Authenticator app binding now to avoid having to sign in.</p>\
 					</div>\
 				</div>',
@@ -492,7 +492,7 @@ function setPanelSSL(){
                                 <ul style="width: 100%;">\
                                     <li style="color:red;">' + lan.config.ssl_open_ps_1 + '</li>\
                                     <li>' + lan.config.ssl_open_ps_2 + '</li>\
-                                    <li>If panel is not accessible, you can click the <a class="btlink" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate" target="_blank">link</a> below to find solutions</li>\
+                                    <li>If panel is not accessible, you can click the <a class="btlink" href="https://www.aapanel.com/forum/d/167-common-problems-after-opening-the-panel-certificate" target="_blank">link</a> below to find solutions</li>\
                                 </ul>\
                             </div>\
                         '
@@ -568,7 +568,7 @@ function setPanelSSL(){
                             <div class="details" style="width: 90%; padding-top: 15px;">\
                                 <input type="checkbox" id="checkSSL" />\
                                 <label style="font-weight: 400; margin: -1px 5px 0px;" for="checkSSL">' + lan.config.ssl_open_ps_4 + '</label>\
-                                <a class="btlink" style="top: 0;" href="https://forum.aapanel.com/d/167-common-problems-after-opening-the-panel-certificate" target="_blank">' + lan.config.ssl_open_ps_5 + '</a>\
+                                <a class="btlink" style="top: 0;" href="https://www.aapanel.com/forum/d/167-common-problems-after-opening-the-panel-certificate" target="_blank">' + lan.config.ssl_open_ps_5 + '</a>\
                             </div>\
                         '
                     }
@@ -984,7 +984,7 @@ function GetPanelApi() {
                         <ul class="help-info-text c7">\
                             <li>'+lan.config.help1+'</li>\
                             <li>'+lan.config.help2+'</li>\
-                            <li>'+lan.config.help3+'：<a class="btlink" href="https://forum.aapanel.com/d/482-api-interface-tutorial" target="_blank">https://forum.aapanel.com/d/482-api-interface-tutorial</a></li>\
+                            <li>'+lan.config.help3+'：<a class="btlink" href="https://www.aapanel.com/forum/d/482-api-interface-tutorial" target="_blank">https://www.aapanel.com/forum/d/482-api-interface-tutorial</a></li>\
                         </ul>\
                     </div>'
         })

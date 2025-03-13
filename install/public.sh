@@ -151,7 +151,7 @@ fi
 if [ ! $NODE_URL ];then
 	EN_CHECK=$(cat /www/server/panel/config/config.json |grep English)
 	if [ -z "${EN_CHECK}" ];then
-		echo '正在选择下载节点...';
+		echo 'Selecting download node...';
 	else
 		echo "selecting download node...";
 	fi

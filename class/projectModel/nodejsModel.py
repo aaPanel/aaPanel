@@ -843,8 +843,8 @@ export PATH
         is_ssl,is_force_ssl = self.exists_nginx_ssl(project_name)
         ssl_config = ''
         if is_ssl:
-            listen_ports += "\n    listen 443 ssl http2;"
-            if listen_ipv6: listen_ports += "\n    listen [::]:443 ssl http2;"
+            listen_ports += "\n    listen 443 ssl;"
+            if listen_ipv6: listen_ports += "\n    listen [::]:443 ssl;"
         
             ssl_config = '''ssl_certificate    {vhost_path}/cert/{priject_name}/fullchain.pem;
     ssl_certificate_key    {vhost_path}/cert/{priject_name}/privkey.pem;
@@ -1407,14 +1407,17 @@ cd {}
         if get: project_name = get.project_name.strip()
         load_info = {}
         pid_file = "{}/{}.pid".format(self._node_pid_path,project_name)
-        if not os.path.exists(pid_file): return load_info
+        if not os.path.exists(pid_file):
+            return load_info
         data = public.readFile(pid_file)
         if isinstance(data,str) and data:
             pid = int(data)
             pids = self.get_project_pids(pid=pid)
         else:
             return load_info
-        if not pids: return load_info
+        if not pids:
+            return load_info
+
         for i in pids:
             process_info = self.get_process_info_by_pid(i)
             if process_info: load_info[i] = process_info
@@ -1660,8 +1663,10 @@ cd {}
         '''
         project_info['project_config'] = json.loads(project_info['project_config'])
         project_info['run'] = self.get_project_run_state(project_name = project_info['name'])
+        # project_info['run'] = True
         project_info['load_info'] = {}
         if project_info['run']:
+
             project_info['load_info'] = self.get_project_load_info(project_name = project_info['name'])
         project_info['ssl'] = self.get_ssl_end_date(project_name = project_info['name'])
         project_info['listen'] = []

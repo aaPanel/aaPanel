@@ -18,7 +18,7 @@ def clear_hosts():
         import requests
         requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
-        url = 'https://www.bt.cn/api/ip/info_json'
+        url = 'https://wafapi2.aapanel.com/api/ip/info_json'
         res = requests.post(url, verify=False)
 
         if res.status_code == 404:
@@ -28,7 +28,7 @@ def clear_hosts():
             if res != "[]":
                 remove = 1
     except:
-        result = public.ExecShell("curl -sS --connect-timeout 3 -m 60 -k https://www.bt.cn/api/ip/info_json")[0]
+        result = public.ExecShell("curl -sS --connect-timeout 3 -m 60 -k https://wafapi2.aapanel.com/api/ip/info_json")[0]
         if result != "[]":
             remove = 1
 

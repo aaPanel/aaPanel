@@ -69,7 +69,7 @@ def update_mod_push_system():
 
 def get_default_module_dict():
     res = {}
-    wx_account_list = []
+    # wx_account_list = []
     for data in SenderConfig().config:
         if not data["used"]:
             continue
@@ -79,12 +79,12 @@ def get_default_module_dict():
         if data["sender_type"] == "webhook":
             res[data["data"].get("title")] = data["id"]
 
-        if data["sender_type"] == "wx_account":
-            wx_account_list.append(data)
+        # if data["sender_type"] == "wx_account":
+        #     wx_account_list.append(data)
 
-    wx_account_list.sort(key=lambda x: x.get("data", {}).get("create_time", ""))
-    if wx_account_list:
-        res["wx_account"] = wx_account_list[0]["id"]
+    # wx_account_list.sort(key=lambda x: x.get("data", {}).get("create_time", ""))
+    # if wx_account_list:
+    #     res["wx_account"] = wx_account_list[0]["id"]
 
     return res
 
@@ -257,7 +257,7 @@ def _update_site_push(old_data: Dict[str, Dict[str, Union[str, int, float, list]
     if os.path.exists(login_send_type_conf):
         send_type = read_file(login_send_type_conf).strip()
     else:
-        # 兼容之前的
+        # user_info["server_id"]之前的
         if os.path.exists("/www/server/panel/data/login_send_type.pl"):
             send_type = read_file("/www/server/panel/data/login_send_type.pl")
         else:

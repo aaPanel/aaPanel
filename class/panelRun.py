@@ -69,7 +69,7 @@ class panelRun:
         if get: run_name = get['run_name']
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if not os.path.isfile(run_file):
-            return public.return_msg_gettext(False,'Configuration file not exist')
+            return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
 
         run_info = json.loads(public.readFile(run_file))
         return run_info
@@ -98,14 +98,14 @@ class panelRun:
         run_script_args = get['run_script_args']
         run_env = json.loads(get['run_env'])
         if not os.path.exists(run_path):
-            return public.return_msg_gettext(False,'The specified run directory {} does not exist!'.format(run_path))
+            return public.return_msg_gettext(False, public.lang("The specified run directory {} does not exist!", run_path))
             
         if not re.match(r'^\w+$',run_name):
-            return public.return_msg_gettext(False, 'The startup item name format is incorrect, support: [a-zA-Z0-9_]!')
+            return public.return_msg_gettext(False, public.lang("The startup item name format is incorrect, support: [a-zA-Z0-9_]!"))
 
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if os.path.exists(run_file):
-            return public.return_msg_gettext(False,'Launch configuration already exists!')
+            return public.return_msg_gettext(False, public.lang("Launch configuration already exists!"))
 
         run_info = {
             'run_title': run_title,
@@ -118,7 +118,7 @@ class panelRun:
         run_info = json.dumps(run_info)
         public.writeFile(run_file,run_info)
         public.write_log_gettext(self.__log_name,'Create startup item [] successful!'.format(run_title))
-        return public.return_msg_gettext(True,'Successfully created')
+        return public.return_msg_gettext(True, public.lang("Successfully created"))
 
 
     def modify_run(self,get):
@@ -148,12 +148,12 @@ class panelRun:
             return public.return_msg_gettext(False,'The specified run directory {} does not exist!',(run_path,))
         
         if not re.match(r'^\w+$',run_name):
-            return public.return_msg_gettext(False, 'The startup item name format is incorrect, support: [a-zA-Z0-9_]!')
+            return public.return_msg_gettext(False, public.lang("The startup item name format is incorrect, support: [a-zA-Z0-9_]!"))
 
         
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if not os.path.exists(run_file):
-            return public.return_msg_gettext(False,'The launch configuration does not exist!')
+            return public.return_msg_gettext(False, public.lang("The launch configuration does not exist!"))
 
         run_info = json.loads(public.readFile(run_file))
         run_info['run_title'] = run_title
@@ -163,7 +163,7 @@ class panelRun:
         run_info = json.dumps(run_info)
         public.writeFile(run_file,run_info)
         public.write_log_gettext(self.__log_name,'Modify startup item [{}] successful!',(run_title,))
-        return public.return_msg_gettext(True,'Successfully modified')
+        return public.return_msg_gettext(True, public.lang("Successfully modified"))
 
 
     def remove_run(self,get):
@@ -178,11 +178,11 @@ class panelRun:
         run_name = get['run_name']
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if not os.path.isfile(run_file):
-            return public.return_msg_gettext(False,'The launch configuration does not exist!')
+            return public.return_msg_gettext(False, public.lang("The launch configuration does not exist!"))
 
         os.remove(run_file)
         public.write_log_gettext(self.__log_name,'Delete startup item [{}] successful!',(run_name,))
-        return public.return_msg_gettext(True,'successfully deleted')
+        return public.return_msg_gettext(True, public.lang("successfully deleted"))
 
     def set_run_status(self,get):
         '''
@@ -199,14 +199,14 @@ class panelRun:
 
         run_file = '{}/{}'.format(self.__run_config_path,run_name)
         if not os.path.isfile(run_file):
-            return public.return_msg_gettext(False,'launch configuration does not exist!')
+            return public.return_msg_gettext(False, public.lang("launch configuration does not exist!"))
 
         run_info = json.loads(public.readFile(run_file))
         run_info['run_status'] = run_status
         run_info = json.dumps(run_info)
         public.writeFile(run_file,run_info)
         public.write_log_gettext(self.__log_name,'Setting startup item [{}] status succeeded!',(run_info['title'],))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
 
     def stop_run(self,run_name = None):
@@ -267,9 +267,9 @@ class panelRun:
             @return dict
         '''
         pid = self.get_run_pid(run_name)
-        if not pid: return public.return_msg_gettext(False,'Not run')
+        if not pid: return public.return_msg_gettext(False, public.lang("Not run"))
         process_info = self.get_process_info(pid)
-        if not process_info: return public.return_msg_gettext(False,'Unable to get process information')
+        if not process_info: return public.return_msg_gettext(False, public.lang("Unable to get process information"))
         return process_info
     
     def get_process_info(self,pid):

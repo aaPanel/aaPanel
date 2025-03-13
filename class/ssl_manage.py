@@ -10,14 +10,15 @@
 import json
 import os
 import shutil
+import sys
 import time
-import OpenSSL
-from hashlib import md5
+import traceback
 from datetime import datetime
+from hashlib import md5
 from typing import Optional, Tuple, List, Dict
 
-import public
 import db
+import public
 from panelAes import AesCryptPy3
 
 SSL_SAVE_PATH = "{}/vhost/ssl_saved".format(public.get_panel_path())
@@ -34,6 +35,7 @@ class _SSLDatabase:
             self.init_db()
         if not os.path.exists(SSL_SAVE_PATH):
             os.makedirs(SSL_SAVE_PATH, 0o600)
+        self.check_and_add_ps_column()
 
     def init_db(self):
         tmp_db = db.Sql()
@@ -52,19 +54,20 @@ class _SSLDatabase:
             "'use_for_panel' INTEGER NOT NULL DEFAULT 0, "
             "'use_for_site' TEXT NOT NULL DEFAULT '[]', "
             "'auth_info' TEXT NOT NULL DEFAULT '{}', "
+            "'ps' TEXT DEFAULT '', "  # 新增字段ps，用于存储备份说明
             "'create_time' INTEGER NOT NULL DEFAULT (strftime('%s'))"
             ");"
         )
         res = tmp_db.execute(create_sql_str)
         if isinstance(res, str) and res.startswith("error"):
-            public.WriteLog("SSL管理", "建表ssl_info失败")
+            public.WriteLog("SSL Manager", "init ssl_info table fail")
             return
 
         index_sql_str = "CREATE INDEX IF NOT EXISTS 'hash_index' ON 'ssl_info' ('hash');"
 
         res = tmp_db.execute(index_sql_str)
         if isinstance(res, str) and res.startswith("error"):
-            public.WriteLog("SSL管理", "为ssl_info建立索引hash_index失败")
+            public.WriteLog("SSL Manager", "init ssl_info table index fail")
             return
         tmp_db.close()
 
@@ -74,6 +77,15 @@ class _SSLDatabase:
         tmp_db.table("ssl_info")
         return tmp_db
 
+    def check_and_add_ps_column(self):
+        try:
+            public.M('ssl_info').field('ps').select()
+        except Exception as e:
+            if "no such column: ps" in str(e):
+                try:
+                    public.M('ssl_info').execute("ALTER TABLE 'ssl_info' ADD 'ps' TEXT DEFAULT ''", ())
+                except Exception as e:
+                    pass
 
 ssl_db = _SSLDatabase()
 
@@ -101,15 +113,17 @@ class _LocalSSLInfoTool:
         if self._letsencrypt is None:
             return None
 
+        last_one = {}
         for _, data in self._letsencrypt.items():
             if 'save_path' not in data:
                 continue
             for d in data['domains']:
                 if d in domains:
-                    return {
+                    last_one = {
                         "auth_type": data.get('auth_type'),
                         "auth_to": data.get('auth_to')
                     }
+        return last_one
 
 
 class SSLManger:
@@ -132,13 +146,13 @@ class SSLManger:
     def get_cert_for_deploy(cls, ssl_hash: str) -> Dict:
         res = cls.find_ssl_info(ssl_hash=ssl_hash)
         if res is None:
-            return public.returnMsg(False, '证书不存在!')
+            return public.returnMsg(False, public.lang("Certificate does not exist!"))
         data = {
             'privkey': public.readFile(res["path"] + '/privkey.pem'),
             'fullchain': public.readFile(res["path"] + '/fullchain.pem')
         }
         if not isinstance(data["privkey"], str) or not isinstance(data["fullchain"], str):
-            return public.returnMsg(False, '证书读取错误!')
+            return public.returnMsg(False, public.lang("Certificate read error!"))
         return data
 
     # 是否刷新
@@ -163,11 +177,23 @@ class SSLManger:
         if not isinstance(certificate, str) or not certificate.startswith("-----BEGIN"):
             if ignore_errors:
                 return None
-            raise ValueError("证书格式错误")
+            raise ValueError(public.lang("Certificate format error"))
 
         md5_obj = md5()
         md5_obj.update(certificate.encode("utf-8"))
         return md5_obj.hexdigest()
+
+    def get_cert_info_by_hash(self, cert_hash):
+        """通过证书哈希值获取证书ID和备注信息(ps)"""
+        record = public.M('ssl_info').where("hash=?", (cert_hash,)).field('id, ps').find()
+
+        if record and isinstance(record, dict):
+            # 使用strip()方法删除键名周围的空格
+            ps_key = next((key for key in record.keys() if key.strip() == 'ps'), None)
+            ps_value = record[ps_key] if ps_key else ""
+            return record['id'], ps_value
+        else:
+            return -1, ""  # 如果没有找到记录，返回空字符串
 
     @staticmethod
     def strf_date(sdate):
@@ -180,69 +206,21 @@ class SSLManger:
             certificate = public.readFile(cert_filename)
 
         if not isinstance(certificate, str) or not certificate.startswith("-----BEGIN"):
-            raise ValueError("证书格式错误")
-
-        try:
-            result = {
-                "issuer": '',
-                "dns": [],
-            }
-            x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, certificate.encode("utf-8"))
-            # 取产品名称
-            issuer = x509.get_issuer()
-            result['issuer'] = ''
-            if hasattr(issuer, 'CN'):
-                result['issuer'] = issuer.CN
-            if not result['issuer']:
-                is_key = [b'0', '0']
-                issue_comp = issuer.get_components()
-                if len(issue_comp) == 1:
-                    is_key = [b'CN', 'CN']
-                for iss in issue_comp:
-                    if iss[0] in is_key:
-                        result['issuer'] = iss[1].decode()
-                        break
-            if not result['issuer']:
-                if hasattr(issuer, 'O'):
-                    result['issuer'] = issuer.O
-            # 取到期时间
-            result['notAfter'] = cls.strf_date(x509.get_notAfter().decode("utf-8")[:-1])
-            # 取申请时间
-            result['notBefore'] = cls.strf_date(x509.get_notBefore().decode("utf-8")[:-1])
-            # 取可选名称
-            for i in range(x509.get_extension_count()):
-                s_name = x509.get_extension(i)
-                if s_name.get_short_name() in [b'subjectAltName', 'subjectAltName']:
-                    s_dns = str(s_name).split(',')
-                    for d in s_dns:
-                        result['dns'].append(d.split(':')[1])
-            subject = x509.get_subject().get_components()
-            # 取主要认证名称
-            if len(subject) == 1:
-                result['subject'] = subject[0][1].decode()
-            else:
-                if not result['dns']:
-                    for sub in subject:
-                        if sub[0] == b'CN':
-                            result['subject'] = sub[1].decode()
-                            break
-                    if 'subject' in result:
-                        result['dns'].append(result['subject'])
-                else:
-                    result['subject'] = result['dns'][0]
-            return result
-        except:
-            return None
+            raise ValueError(public.lang("Certificate format error"))
+        if "/www/server/panel/class" not in sys.path:
+            sys.path.insert(0, "/www/server/panel/class")
+        import ssl_info
+        return ssl_info.ssl_info().load_ssl_info_by_data(certificate)
 
     # 通过文件名称检查并保存
     def save_by_file(self, cert_filename, private_key_filename, cloud_id=None, other_data: Optional[Dict] = None):
         if not os.path.isfile(cert_filename) or not os.path.isfile(private_key_filename):
-            raise ValueError("不存在的证书")
+            raise ValueError(public.lang("Certificate not found"))
 
         certificate = public.readFile(cert_filename)
         private_key = public.readFile(private_key_filename)
         if not isinstance(certificate, str) or not isinstance(private_key, str):
-            raise ValueError("证书格式错误")
+            raise ValueError(public.lang("Certificate format error"))
         return self.save_by_data(certificate, private_key, cloud_id=cloud_id)
 
     # 通过证书内容检查并保存
@@ -252,7 +230,7 @@ class SSLManger:
                      other_data: Optional[Dict] = None) -> Dict:
 
         if not certificate.startswith("-----BEGIN") or not private_key.startswith("-----BEGIN"):
-            raise ValueError("证书格式检查错误")
+            raise ValueError(public.lang("Certificate format error"))
 
         if cloud_id is None:
             cloud_id = -1
@@ -271,7 +249,7 @@ class SSLManger:
             return db_data
         info = self.get_cert_info(certificate=certificate)
         if info is None:
-            raise ValueError("证书信息解析错误")
+            raise ValueError(public.lang("Certificate info format error"))
 
         auth_info = self.local_tool.get_auth(info['dns'])
         if auth_info is None:
@@ -294,8 +272,9 @@ class SSLManger:
                     pdata[key] = other_data
 
         res_id = ssl_db.connection().insert(pdata)
+        public.M('ssl_info').insert(pdata)  # add default.db ssl_info table
         if isinstance(res_id, str) and res_id.startswith("error"):
-            raise ValueError("数据库写入错误：" + res_id)
+            raise ValueError(public.lang("db write error"))
 
         pdata["id"] = res_id
         if not os.path.exists(pdata["path"]):
@@ -313,7 +292,7 @@ class SSLManger:
     def get_ssl_info_by_hash(hash_data: str) -> Optional[dict]:
         data = ssl_db.connection().where("hash = ?", (hash_data,)).find()
         if isinstance(data, str):
-            raise ValueError("数据库查询错误：" + data)
+            raise ValueError(public.lang("db query error:" + data))
         if len(data) == 0:
             return None
         return data
@@ -358,15 +337,27 @@ class SSLManger:
             db_conn.where(param[0], param[1])
         res = db_conn.select()
         if isinstance(res, str):
-            raise ValueError("数据库查询错误：" + res)
+            raise ValueError(public.lang("db query error:" + res))
 
+        format_time_strs = ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S")
+        today_time = datetime.today().timestamp()
         for value in res:
             value["dns"] = json.loads(value["dns"])
             value["info"] = json.loads(value["info"])
             value["auth_info"] = json.loads(value["auth_info"])
             value["use_for_site"] = json.loads(value["use_for_site"])
-            value['endtime'] = int((datetime.strptime(value['not_after'], "%Y-%m-%d").timestamp()
-                                    - datetime.today().timestamp()) / (60 * 60 * 24))
+            end_time = None
+            for f_str in format_time_strs:
+                try:
+                    end_time = int(
+                        (datetime.strptime(value["not_after"], f_str).timestamp() - today_time) / (60 * 60 * 24)
+                    )
+                except:
+                    continue
+            if not end_time:
+                end_time = 90
+
+            value['endtime'] = end_time
 
         res.sort(key=lambda x: x["not_after"], reverse=True)
 
@@ -376,25 +367,25 @@ class SSLManger:
     def _refresh_ssl_info_by_cloud(self):
         key, iv, user_info = self._get_cbc_key_and_iv(with_uer_info=True)
         if key is None or iv is None:
-            raise ValueError('面板未登录，无法链接云端!')
+            raise ValueError(public.lang("not logged in, so it's impossible to connect to the cloud!"))
 
         AES = AesCryptPy3(key, "CBC", iv, char_set="utf8")
 
         # 对接云端
-        url = "https://www.bt.cn/api/Cert_cloud_deploy/get_cert_list"
+        url = "https://wafapi2.aapanel.com/api/Cert_cloud_deploy/get_cert_list"
         try:
             res_text = public.httpPost(url, {
                 "uid": user_info["uid"],
-                "access_key": user_info["access_key"],
-                "serverid": user_info["serverid"],
+                "access_key": 'B' * 32,
+                "serverid": user_info["server_id"],
             })
             res_data = json.loads(res_text)
             if res_data["status"] is False:
-                raise ValueError("获取云端数据失败")
+                raise ValueError(public.lang("get cloud data fail!"))
 
             res_list = res_data['data']
         except:
-            raise ValueError("链接云端失败")
+            raise ValueError(public.lang("get cloud fail!"))
 
         change_set = set()
         for data in res_list:
@@ -463,7 +454,7 @@ class SSLManger:
     def find_ssl_info(ssl_id=None, ssl_hash=None) -> Optional[dict]:
         tmp_conn = ssl_db.connection()
         if ssl_id is None and ssl_hash is None:
-            raise ValueError("没有参数信息")
+            raise ValueError(public.lang("params wrong"))
         if ssl_id is not None:
             tmp_conn.where("id = ?", (ssl_id,))
         else:
@@ -471,7 +462,7 @@ class SSLManger:
 
         target = tmp_conn.find()
         if isinstance(target, str) and target.startswith("error"):
-            raise ValueError("数据库查询错误：" + target)
+            raise ValueError(public.lang("db query error:" + target))
 
         if not bool(target):
             return None
@@ -498,13 +489,13 @@ class SSLManger:
             site_ids.remove(site_id)
             up_res = ssl_db.connection().where("id = ?", (target["id"],)).update({"use_for_site": json.dumps(site_ids)})
             if isinstance(up_res, str) and up_res.startswith("error"):
-                raise ValueError("数据库查询错误：" + up_res)
+                raise ValueError(public.lang("db query error:" + up_res))
 
         if site_id not in site_ids and is_add is True:
             site_ids.append(site_id)
             up_res = ssl_db.connection().where("id = ?", (target["id"],)).update({"use_for_site": json.dumps(site_ids)})
             if isinstance(up_res, str) and up_res.startswith("error"):
-                raise ValueError("数据库查询错误：" + up_res)
+                raise ValueError(public.lang("db query error:" + up_res))
 
         return True
 
@@ -567,11 +558,11 @@ class SSLManger:
     def remove_cert(self, ssl_id=None, ssl_hash=None, local: bool = False):
         _, _, user_info = self._get_cbc_key_and_iv(with_uer_info=True)
         if user_info is None:
-            raise ValueError('面板未登录，无法上传云端!')
+            raise ValueError(public.lang('not logged in, thus unable to upload to the cloud!'))
 
         target = self.find_ssl_info(ssl_id=ssl_id, ssl_hash=ssl_hash)
         if not target:
-            raise ValueError('没有指定的证书')
+            raise ValueError(public.lang('No specified certificate.'))
 
         if local:
             shutil.rmtree(target["path"])
@@ -579,36 +570,36 @@ class SSLManger:
             ssl_db.connection().delete(id=target["id"])
 
         if target["cloud_id"] != -1:
-            url = "https://www.bt.cn/api/Cert_cloud_deploy/del_cert"
+            url = "https://wafapi2.aapanel.com/api/Cert_cloud_deploy/del_cert"
             try:
                 res_text = public.httpPost(url, {
                     "cert_id": target["cloud_id"],
                     "hashVal": target["hash"],
                     "uid": user_info["uid"],
-                    "access_key": user_info["access_key"],
-                    "serverid": user_info["serverid"],
+                    "access_key": 'B' * 32,
+                    "serverid": user_info["server_id"],
                 })
                 res_data = json.loads(res_text)
                 if res_data["status"] is False:
                     return res_data
             except:
                 if local:
-                    raise ValueError("本地以删除成功， 链接云端失败, 无法删除云端数据")
-                raise ValueError("链接云端失败, 无法删除云端数据")
+                    raise ValueError(public.lang("Local file del success. But cloud file del fail."))
+                raise ValueError(public.lang("Failed to connect to the cloud. Unable to delete data on the cloud."))
 
             ssl_db.connection().where("id = ?", (target["id"],)).update({"cloud_id": -1})
 
-        return public.returnMsg(True, "删除成功")
+        return public.returnMsg(True, public.lang("del success"))
 
     # 下载证书
     def upload_cert(self, ssl_id=None, ssl_hash=None):
         key, iv, user_info = self._get_cbc_key_and_iv()
         if key is None or iv is None:
-            raise ValueError(False, '面板未登录，无法上传云端!')
+            raise ValueError(False, public.lang('not logged in, thus unable to upload to the cloud!'))
 
         target = self.find_ssl_info(ssl_id=ssl_id, ssl_hash=ssl_hash)
         if not target:
-            raise ValueError("没有指定的证书信息")
+            raise ValueError(public.lang('No specified certificate.'))
 
         data = {
             'privateKey': public.readFile(target["path"] + '/privkey.pem'),
@@ -616,17 +607,17 @@ class SSLManger:
             "encryptWay": "AES-128-CBC",
             "hashVal": target['hash'],
             "uid": user_info["uid"],
-            "access_key": user_info["access_key"],
-            "serverid": user_info["serverid"],
+            "access_key": 'B' * 32,
+            "serverid": user_info["server_id"],
         }
         if data["privateKey"] is False or data["certificate"] is False:
-            raise ValueError('证书文件读取错误')
+            raise ValueError(public.lang('No specified certificate.'))
 
         AES = AesCryptPy3(key, "CBC", iv, char_set="utf8")
         data["privateKey"] = AES.aes_encrypt(data["privateKey"])
         data["certificate"] = AES.aes_encrypt(data["certificate"])
         # 对接云端
-        url = "https://www.bt.cn/api/Cert_cloud_deploy/cloud_deploy"
+        url = "https://wafapi2.aapanel.com/api/Cert_cloud_deploy/cloud_deploy"
 
         try:
             res_text = public.httpPost(url, data)
@@ -639,4 +630,25 @@ class SSLManger:
             else:
                 return res_data
         except:
-            raise ValueError('链接云端失败')
+            raise ValueError(public.lang('Failed to connect to the cloud.'))
+
+    def update_ssl_ps(self, ssl_id, ps):
+        """更新SSL证书的备份说明"""
+        try:
+            ssl_db.connection().where("id=?", (ssl_id,)).update({'ps': ps})
+            return True, "update success"
+        except Exception as e:
+            return False, "update fail: {}".format(str(e))
+
+    def get_ssl_ps(self, ssl_id):
+        try:
+
+            """获取SSL证书的备份说明"""
+            ssl_db.init_db()
+            data = ssl_db.connection().where("id=?", (ssl_id,)).field('ps').find()
+            if data:
+                return True, data['ps']
+            else:
+                return False, "ssl not found"
+        except:
+            print(traceback.format_exc())

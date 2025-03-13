@@ -36,10 +36,10 @@ class main:
         host_lists = self.get_list()
         for h in host_lists:
             if h['url'] == args.url:
-                return public.returnMsg(False,"The host already exists！")
+                return public.returnMsg(False, public.lang("The host already exists！"))
         # 测试连接
         if not dp.docker_client(args.url):
-            return public.returnMsg(False,"Failed to connect to the server, please check if docker is started！")
+            return public.returnMsg(False, public.lang("Failed to connect to the server, please check if docker is started！"))
         pdata = {
             "url": args.url,
             "remark": public.xsssec(args.remark),
@@ -47,7 +47,7 @@ class main:
         }
         dp.write_log("Add host [{}] successful！".format(args.url))
         dp.sql('hosts').insert(pdata)
-        return public.returnMsg(True,"Add docker host successfully！")
+        return public.returnMsg(True, public.lang("Add docker host successfully！"))
 
     def delete(self,args):
         """
@@ -57,4 +57,4 @@ class main:
         data = dp.sql('hosts').where('id=?',args(args.id,)).find()
         dp.sql('hosts').delete(id=args.id)
         dp.write_log("Delete host [{}] successful！".format(data['url']))
-        return public.returnMsg(True,"Delete host successfully！")
+        return public.returnMsg(True, public.lang("Delete host successfully！"))

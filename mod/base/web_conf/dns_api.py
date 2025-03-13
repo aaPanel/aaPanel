@@ -1,8 +1,8 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板 x3
+# | aapanel x3
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# | Copyright (c) 2015-2099 aapanel(http://www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: bazoi <bazoi@bt.cn>
 # +--------------------------------------------------------------------
@@ -1205,7 +1205,7 @@ class RealDnsMager(object):
             return False, data
 
         if not isinstance(domains, list):
-            return False, "域名参数格式错误"
+            return False, "The domain name parameter is incorrectly formatted"
 
         if dns_type not in self.config:
             self.config[dns_type] = []
@@ -1223,7 +1223,7 @@ class RealDnsMager(object):
                 return False, "域名{}已绑定其他api账户，不能添加".format(root)
 
         if force_domain is not None and not isinstance(force_domain, str):
-            return False, "域名参数格式错误"
+            return False, "The domain name parameter is incorrectly formatted"
         if force_domain is not None:
             force_root = self.paser_domains_list_to_root_list([force_domain])[0]
             if force_root not in root_list:
@@ -1233,23 +1233,23 @@ class RealDnsMager(object):
         data["domains"] = root_list
         self.config[dns_type].append(data)
         self.save_config()
-        return True, "保存成功"
+        return True, "Saved successfully"
 
     def _parse_data(self, conf_data: List[dict], dns_type: str) -> Tuple[bool, Union[dict, str]]:
         data = {}
         if not isinstance(conf_data, list):
-            return False, "参数格式错误"
+            return False, "Parameter format error"
         for conf in conf_data:
             if isinstance(conf, dict) and "name" in conf and "value" in conf:
                 data[conf.get("name")] = str(conf.get("value")).strip()
         if not data:
-            return False, "参数格式错误,没有指定参数"
+            return False, "Parameter format error,没有指定参数"
         if dns_type == "CloudFlareDns" and len(data) == 1 and "API Token" in data:
             return True, data
 
         for n in self.RULE_MAP[dns_type]:
             if n not in data:
-                return False, "参数格式错误,参数名称与平台不对应"
+                return False, "Parameter format error,参数名称与平台不对应"
 
         return True, data
 
@@ -1288,7 +1288,7 @@ class RealDnsMager(object):
                 self.config[dns_type][target_idx].update(ps=ps)
 
         if domains is not None and not isinstance(domains, list):
-            return False, "域名参数格式错误"
+            return False, "The domain name parameter is incorrectly formatted"
 
         if domains is not None:
             root_list = self.paser_domains_list_to_root_list(domains)
@@ -1299,7 +1299,7 @@ class RealDnsMager(object):
             self.config[dns_type][target_idx]["domains"] = root_list
 
         if force_domain is not None and not isinstance(force_domain, str):
-            return False, "域名参数格式错误"
+            return False, "The domain name parameter is incorrectly formatted"
         if force_domain is not None:
             root = self.paser_domains_list_to_root_list([force_domain])[0]
             self.remove_domains_by_root(root)
@@ -1489,7 +1489,7 @@ class DNSApiManager:
             if "force_domain" in get:
                 force_domain = get.force_domain.strip()
         except (json.JSONDecodeError, AttributeError, KeyError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         f, msg = RealDnsMager().add_conf(dns_type, conf_data, ps, domains, force_domain)
         return json_response(status=f, msg=msg)
@@ -1512,7 +1512,7 @@ class DNSApiManager:
             if "domains" in get:
                 domains = json.loads(get.domains.strip())
         except (json.JSONDecodeError, AttributeError, KeyError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         try:
             f, msg = RealDnsMager().modify_conf(api_id, dns_type, conf_data, ps, domains, force_domain)
             return json_response(status=f, msg=msg)
@@ -1525,7 +1525,7 @@ class DNSApiManager:
             dns_type = get.dns_type.strip()
             api_id = get.api_id.strip()
         except (json.JSONDecodeError, AttributeError, KeyError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         f, msg = RealDnsMager().remove_conf(api_id, dns_type)
         return json_response(status=f, msg=msg)
 
@@ -1534,19 +1534,19 @@ class DNSApiManager:
         try:
             domain = get.domain.strip()
         except (json.JSONDecodeError, AttributeError, KeyError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         root, _ = extract_zone(domain)
         m = RealDnsMager()
         m.remove_domains_by_root(root)
         m.save_config()
-        return json_response(status=True, msg="删除成功")
+        return json_response(status=True, msg="Successfully delete")
 
     def query_dns(self, get):
         domain = get.domain
         dns_type = get.dns_type
         res = public.query_dns(domain, dns_type)
         if not res:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         return json_response(status=True, data=res)
 
@@ -1558,7 +1558,7 @@ class DNSApiManager:
         try:
             domain = get.domain.strip()
         except (json.JSONDecodeError, AttributeError, KeyError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         m = RealDnsMager()
         try:
@@ -1579,7 +1579,7 @@ class DNSApiManager:
             value = get.value.strip()
             ttl = int(get.ttl.strip())
         except (json.JSONDecodeError, AttributeError, KeyError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         domain, _ = extract_zone(domain)
 
         try:
@@ -1604,14 +1604,14 @@ class DNSApiManager:
             host = get.host.strip()
             r_type = get.r_type.strip()
         except (json.JSONDecodeError, AttributeError, KeyError):
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         domain, _ = extract_zone(domain)
 
         try:
             m = RealDnsMager()
             dns_obj = m.get_dns_obj_by_domain(domain)
             dns_obj.remove_record(domain, host, r_type)
-            return json_response(status=True, msg="删除成功")
+            return json_response(status=True, msg="Successfully delete")
         except:
             # return public.returnMsg(False, public.get_error_info())
             return json_response(status=False, msg=cls._DEFAULT_ERROR)

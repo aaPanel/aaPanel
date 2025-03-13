@@ -114,13 +114,14 @@ class tamper_push(base_push):
     # 写入推送配置文件
     def set_push_config(self, get: public.dict_obj):
         if self.__config is None:
-            return public.returnMsg(False, 'Configuration error, cannot be set, please try use the command fix: "bash /www/server/panel/plugin/tamper_core/install.sh install"')
+            return public.returnMsg(False, public.lang('Configuration error, cannot be set, please try use the command fix: "bash /www/server/panel/plugin/tamper_core/install.sh install"')
+                                    )
         try:
             id = int(get.id)
             if id != 0 and id not in self.__config:
-                return public.returnMsg(False, 'No protection directory specified')
+                return public.returnMsg(False, public.lang("No protection directory specified"))
         except ValueError:
-            return public.returnMsg(False, 'No protection directory specified')
+            return public.returnMsg(False, public.lang("No protection directory specified"))
             
         pdata = json.loads(get.data)
         data = self.__push._get_conf()
@@ -150,7 +151,7 @@ class tamper_push(base_push):
         if str(id).strip() in data["tamper_push"]:
             del data["tamper_push"][id]
         public.writeFile(self.__push_conf,json.dumps(data))
-        return public.returnMsg(True, 'successfully deleted.')
+        return public.returnMsg(True, public.lang("successfully deleted."))
 
     # 无意义？？？
     def get_total(self):

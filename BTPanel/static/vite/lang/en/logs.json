@@ -1,0 +1,51 @@
+{
+	"Logs": {
+		"Panel": {
+			"index_1": "Operation logs",
+			"index_2": "Run logs",
+			"index_3": "Cron logs",
+			"index_4": "Please enter log name",
+			"index_5": "Clear logs",
+			"index_6": "Operation type",
+			"index_7": "Operating time",
+			"index_13": "Scan time",
+			"index_14": "PHP attack",
+			"index_15": "About to clear logs, continue?"
+		},
+		"Website": {
+			"index_1": "URL(top100)",
+			"index_2": "Access logs",
+			"index_3": "It is recommended to conduct security analysis when the server load is low. This time, the [{0}].log file will be scanned, and the waiting time may be longer. Do you want to continue?",
+			"index_4": "Error logs",
+			"index_5": "IP(top100)"
+		},
+		"Audit": {
+			"index_1": "Please enter Source/Port/Role/Event"
+		},
+		"SSH": {
+			"index_1": "IP: Port"
+		},
+		"Soft": {
+			"index_1": "FTP Username",
+			"index_2": "Operation IP",
+			"index_3": "File",
+			"index_4": "Landing time",
+			"index_5": "FTP logs",
+			"index_6": "MySql Slow logs",
+			"index_7": "MySql Error logs",
+			"index_8": "Operation Log",
+			"index_9": "Please enter search keywords"
+		},
+		"Conversion": {
+			"index_1": "Logs Audit - introduction",
+			"index_2": "Analyze and parse common logs",
+			"index_3": "Collect, analyze and audit information such as various operations, events, and abnormal situations recorded by the system, network, and application programs.",
+			"index_4": "FTP logs - introduction",
+			"index_5": "Record and view the current FTP login log and operation log",
+			"index_6": "Record FTP user client login log and file operation log information",
+			"index_7": "SSH login logs - introduction",
+			"index_8": "Record and view the current SSH login logs",
+			"index_9": "Record current SSH login logs information"
+		}
+	}
+}

@@ -1,8 +1,8 @@
 # coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aapanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2020 宝塔软件(http://www.bt.cn) All rights reserved.
+# | Copyright (c) 2015-2020 aapanel(http://www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: baozi <baozi@bt.cn>
 # | 消息通道微信公众号模块
@@ -16,6 +16,7 @@ import json
 import requests
 import traceback
 import socket
+import public
 
 import requests.packages.urllib3.util.connection as urllib3_cn
 from requests.packages import urllib3
@@ -86,15 +87,15 @@ class WeChatAccountMsg:
 
     def send_msg(self, msg: WxAccountMsg) -> Optional[str]:
         if self.user_info is None:
-            return '未获取到用户信息'
+            return public.lang('No user information was obtained')
 
         msg.set_ip_address(self.user_info["address"], self.get_local_ip())
         template_id, msg_data = msg.to_send_data()
-        url = "https://www.bt.cn/api/v2/user/wx_web/send_template_msg_v3"
+        url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/send_template_msg_v3"
         wx_account_ids = self.config["users"] if "users" in self.config else [self.config["id"], ]
         data = {
             "uid": self.user_info["uid"],
-            "access_key": self.user_info["access_key"],
+            "access_key": 'B' * 32,
             "data": base64.b64encode(json.dumps(msg_data).encode('utf-8')).decode('utf-8'),
             "wx_account_ids": base64.b64encode(json.dumps(wx_account_ids).encode('utf-8')).decode('utf-8'),
         }
@@ -116,7 +117,7 @@ class WeChatAccountMsg:
         except:
             error = traceback.format_exc()
 
-        write_push_log("微信公众号", status, msg.thing_type, user_name)
+        write_push_log("wx_account", status, msg.thing_type, user_name)
 
         return error
 
@@ -131,11 +132,13 @@ class WeChatAccountMsg:
     @classmethod
     def _get_by_web(cls) -> Optional[List]:
         user_info = cls.get_user_info()
-        url = "https://www.bt.cn/api/v2/user/wx_web/bound_wx_accounts"
+        if user_info is None:
+            return None
+        url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/bound_wx_accounts"
         data = {
             "uid": user_info["uid"],
-            "access_key": user_info["access_key"],
-            "serverid": user_info["serverid"]
+            "access_key": 'B' * 32,
+            "serverid": user_info["server_id"]
         }
         try:
             data = json.loads(public_http_post(url, data))
@@ -181,33 +184,33 @@ class WeChatAccountMsg:
     def unbind(cls, wx_account_uid: str):
         user_info = cls.get_user_info()
         if user_info is None:
-            return json_response(status=True, msg='未获取到用户绑定的信息')
-        url = "https://www.bt.cn/api/v2/user/wx_web/unbind_wx_accounts"
+            return json_response(status=True, msg=public.lang('The user binding information was not obtained'))
+        url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/unbind_wx_accounts"
         data = {
             "uid": user_info["uid"],
-            "access_key": user_info["access_key"],
-            "serverid": user_info["serverid"],
+            "access_key": 'B' * 32,
+            "serverid": user_info["server_id"],
             "ids":  str(wx_account_uid)
         }
         try:
             datas = json.loads(public_http_post(url, data))
             if datas["success"]:
-                return json_response(status=True, data=datas, msg="解绑成功")
+                return json_response(status=True, data=datas, msg=public.lang('The unbinding is successful'))
             else:
                 return json_response(status=False, data=datas, msg=datas["res"])
         except:
-            return json_response(status=True, msg="链接云端失败")
+            return json_response(status=True, msg=public.lang('Failed to link to the cloud'))
 
     @classmethod
     def get_auth_url(cls):
         user_info = cls.get_user_info()
         if user_info is None:
-            return json_response(status=True, msg='未获取到用户绑定的信息')
-        url = "https://www.bt.cn/api/v2/user/wx_web/get_auth_url"
+            return json_response(status=True, msg=public.lang('The user binding information was not obtained'))
+        url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/get_auth_url"
         data = {
             "uid": user_info["uid"],
-            "access_key": user_info["access_key"],
-            "serverid": user_info["serverid"],
+            "access_key": 'B' * 32,
+            "serverid": user_info["server_id"],
         }
         try:
             datas = json.loads(public_http_post(url, data))
@@ -216,13 +219,13 @@ class WeChatAccountMsg:
             else:
                 return json_response(status=False, data=datas, msg=datas["res"])
         except:
-            return json_response(status=True, msg="链接云端失败")
+            return json_response(status=True, msg=public.lang('Failed to link to the cloud'))
 
     def test_send_msg(self) -> Optional[str]:
         test_msg = {
-            "msg_list": ['>配置状态：<font color=#20a53a>成功</font>\n\n']
+            "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n\n']
         }
-        test_task = get_test_msg("消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
         res = self.send_msg(
             test_task.to_wx_account_msg(test_msg, test_task.the_push_public_data()),
         )
@@ -254,7 +257,7 @@ class WeChatAccountMsg:
 #         data['date'] = '2022-08-15'
 #         data['author'] = '宝塔'
 #         data['title'] = '微信公众号'
-#         data['help'] = 'http://www.bt.cn'
+#         data['help'] = 'http://www.aapanel.com'
 #         return data
 #
 #     def get_local_ip(self):
@@ -314,12 +317,12 @@ class WeChatAccountMsg:
 #         return public.returnMsg(True, '设置成功')
 #
 #     def get_web_info(self, get):
-#         if self.user_info is None: return public.returnMsg(False, '未获取到用户绑定的信息')
-#         url = "https://www.bt.cn/api/v2/user/wx_web/info"
+#         if self.user_info is None: return public.returnMsg(False, 'The user binding information was not obtained')
+#         url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/info"
 #         data = {
 #             "uid": self.user_info["uid"],
 #             "access_key": self.user_info["access_key"],
-#             "serverid": self.user_info["serverid"]
+#             "serverid": self.user_info["server_id"]
 #         }
 #         try:
 #
@@ -337,12 +340,12 @@ class WeChatAccountMsg:
 #
 #     def unbind(self):
 #         if self.user_info is None:
-#             return public.returnMsg(False, '未获取到用户绑定的信息')
-#         url = "https://www.bt.cn/api/v2/user/wx_web/unbind"
+#             return public.returnMsg(False, 'The user binding information was not obtained')
+#         url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/unbind"
 #         data = {
 #             "uid": self.user_info["uid"],
 #             "access_key": self.user_info["access_key"],
-#             "serverid": self.user_info["serverid"]
+#             "serverid": self.user_info["server_id"]
 #         }
 #         try:
 #
@@ -361,12 +364,12 @@ class WeChatAccountMsg:
 #
 #     def get_web_info2(self):
 #         if self.user_info is None:
-#             return public.returnMsg(False, '未获取到用户绑定的信息')
-#         url = "https://www.bt.cn/api/v2/user/wx_web/info"
+#             return public.returnMsg(False, 'The user binding information was not obtained')
+#         url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/info"
 #         data = {
 #             "uid": self.user_info["uid"],
 #             "access_key": self.user_info["access_key"],
-#             "serverid": self.user_info["serverid"]
+#             "serverid": self.user_info["server_id"]
 #         }
 #         try:
 #             datas = json.loads(public.httpPost(url, data))
@@ -400,7 +403,7 @@ class WeChatAccountMsg:
 #                     s_title = s_list[0].replace(" ", "")
 #                     s_list = s_list[3:]
 #                     s_list.insert(0, s_title)
-#                     msg = '\n'.join(s_list)
+#                     msg=public.lang('\n').join(s_list)
 #
 #             s_list = []
 #             for msg_info in msg.split('\n'):
@@ -410,7 +413,7 @@ class WeChatAccountMsg:
 #                     tmp = tmp.groups()[0]
 #                     msg_info = re.sub(reg, tmp, msg_info)
 #                 s_list.append(msg_info)
-#             msg = '\n'.join(s_list)
+#             msg=public.lang('\n').join(s_list)
 #         except:
 #             pass
 #         return msg, title
@@ -428,7 +431,7 @@ class WeChatAccountMsg:
 #             return self.send_msg_v2(msg)
 #
 #         msg, title = self.get_send_msg(msg)
-#         url = "https://www.bt.cn/api/v2/user/wx_web/send_template_msg_v2"
+#         url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/send_template_msg_v2"
 #         datassss = {
 #             "first": {
 #                 "value": "堡塔主机告警",
@@ -516,7 +519,7 @@ class WeChatAccountMsg:
 #         msg.set_ip_address(self.user_info["address"], self.get_local_ip())
 #
 #         template_id, msg_data = msg.to_send_data()
-#         url = "https://www.bt.cn/api/v2/user/wx_web/send_template_msg_v2"
+#         url = "https://wafapi2.aapanel.com/api/v2/user/wx_web/send_template_msg_v2"
 #         data = {
 #             "uid": self.user_info["uid"],
 #             "access_key": self.user_info["access_key"],

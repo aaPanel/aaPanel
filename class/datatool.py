@@ -51,7 +51,7 @@ class datatools:
 
             ret3 = []
             for i in tables:
-                if i == 1049: return public.return_msg_gettext(False,'Database does NOT exist!')
+                if i == 1049: return public.return_msg_gettext(False, public.lang("Database does NOT exist!"))
                 if type(i) == int: continue
                 table = self.map_to_list(self.DB_MySQL.query("show table status from `%s` where name = '%s'" % (db_name, i[0])))
                 if not table: continue
@@ -83,7 +83,7 @@ class datatools:
         if not db_name or not tables: return False
         if not self.DB_MySQL:self.DB_MySQL = public.get_mysql_obj(db_name)
         m_version = self.DB_MySQL.query('select version();')[0][0]
-        if m_version.find('5.1.')!=-1:return public.return_msg_gettext(False,"Nonsupport mysql5.1!")
+        if m_version.find('5.1.')!=-1:return public.return_msg_gettext(False, public.lang("Nonsupport mysql5.1!"))
         mysql_table = self.map_to_list(self.DB_MySQL.query('show tables from `%s`' % db_name))
         ret=[]
         if type(mysql_table)==list:

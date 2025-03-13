@@ -4,7 +4,9 @@ import json
 import socket
 import os
 import typing
-from .regexplib import match_ipv4, match_ipv6, match_safe_path, match_based_host
+
+import public
+from .regexplib import match_ipv4, match_ipv6, match_safe_path, match_based_host, match_email
 from .exceptions import HintException
 from .structures import aap_t_simple_result
 
@@ -22,6 +24,7 @@ class Param:
 
     def __init__(self, name: str):
         self.name: str = name
+        self.__nullable: bool = False
         self.__validate_rules: typing.List[_ValidateRule] = []
         self.__filters: typing.List[callable] = []
 
@@ -277,13 +280,16 @@ class Param:
         self.__validate_rules.append(_ExtValidation(self.name, opt, ext))
         return self
 
-    def SafePath(self):
+    def SafePath(self, force: bool = True):
         """
             文件路径
             @return: self
         """
-        self.__validate_rules.append(_SafePathValidation(self.name))
+        self.__validate_rules.append(_SafePathValidation(self.name, force))
         return self
+
+    def Nullable(self):
+        self.__nullable = True
 
     # <------- 验证器 End
 
@@ -322,6 +328,9 @@ class Param:
             @param args: dict 请求参数列表
             @return: self
         """
+        if self.__nullable:
+            args = {k: args[k] for k in filter(lambda k: args[k] is not None, args.keys())}
+
         for v in self.__validate_rules:
             v.validate(args)
 
@@ -335,7 +344,7 @@ class Param:
             @return: any
         """
         from functools import reduce
-        return reduce(lambda x, y: y(x), list(extra_filters) + self.__filters, val)
+        return reduce(lambda x, y: y(x) if x is not None else x, list(extra_filters) + self.__filters, val)
 
 
 class _ValidateRule:
@@ -416,7 +425,7 @@ class _UrlValidation(_ValidateRule):
 
         regex_obj = re.compile(
             r'^(?:http|ftp)s?://'
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
+            r'(?:(?:[A-Z0-9_](?:[A-Z0-9-_]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-_]{2,}\.?)|'
             r'localhost|'
             r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
             r'(?::\d+)?'
@@ -971,7 +980,7 @@ class _EmailValidation(_ValidateRule):
 
         s = str(args[self.name]).strip()
 
-        if re.match(r'^.+@(\[?)[a-zA-Z0-9\-.]+\.(?:[a-zA-Z]{2,}|\d{1,3})\1$', s):
+        if match_email.match(s):
             return
 
         raise HintException(self.errmsg.format(self.name))
@@ -1070,15 +1079,16 @@ class _SafePathValidation(_ValidateRule):
         文件路径名验证类
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, force: bool):
         self.name: str = name
         self.errmsg = '{} not safe path'
+        self.force = force
 
     def validate(self, args: dict):
         if self.name not in args:
             return
 
-        if _is_safe_path(str(args[self.name]).strip()):
+        if _is_safe_path(str(args[self.name]).strip(), self.force):
             return
 
         raise HintException(self.errmsg.format(self.name))
@@ -1089,7 +1099,7 @@ def trim_filter() -> callable:
         获取Trim参数过滤器
         @return: callable
     """
-    return lambda x: str(x).strip()
+    return lambda x: str(x).strip() if isinstance(x, str) else x
 
 
 def xss_filter() -> callable:
@@ -1164,7 +1174,7 @@ def _xssencode(text: str) -> str:
         return text.replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
 
 
-def _is_safe_path(path: str, force: bool = True) -> bool:
+def _is_safe_path(path: str, force: bool=True) -> bool:
     """
         文件路径过滤
         @param path: str

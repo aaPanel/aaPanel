@@ -157,7 +157,7 @@ class bt_task:
                     "kill -9 $(ps aux|grep '"+task_info['shell']+"'|grep -v grep|awk '{print $2}')")
 
             public.ExecShell("/etc/init.d/bt start")
-        return public.return_msg_gettext(True, 'Task cancelled!')
+        return public.return_msg_gettext(True, public.lang("Task cancelled!"))
 
     # 取一条任务
     def get_task_find(self, id):
@@ -253,7 +253,7 @@ class bt_task:
         if not os.path.exists(log_file):
             data = ''
             if(task_type == '1'):
-                data = {'name': public.get_msg_gettext('Download file'), 'total': 0, 'used': 0,
+                data = {'name': public.lang("Download file"), 'total': 0, 'used': 0,
                         'pre': 0, 'speed': 0, 'time': 0}
             return data
 
@@ -323,7 +323,7 @@ class bt_task:
             path = path.encode('utf-8')
         if sfile.find(',') == -1:
             if not os.path.exists(path+'/'+sfile):
-                return public.return_msg_gettext(False, 'Configuration file not exist')
+                return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
         # 处理多文件压缩
         sfiles = ''
         for sfile in sfile.split(','):
@@ -353,12 +353,12 @@ class bt_task:
                 return public.returnMsg(False, err_msg)
             public.ExecShell("cd {} && {} a -t7z {} {} -y &> {}".format(path, _7z_bin, dfile, sfiles, log_file))
         else:
-            return public.return_msg_gettext(False,'Specified compression format is not supported!')
+            return public.return_msg_gettext(False, public.lang("Specified compression format is not supported!"))
 
         self.set_file_accept(dfile)
         #public.WriteLog("TYPE_FILE", 'Compression succeeded!', (sfiles, dfile),not_web = self.not_web)
         public.write_log_gettext("File manager", 'Compressed file [ {} ] to [ {} ] success', (sfiles, dfile))
-        return public.return_msg_gettext(True, 'Compression succeeded!')
+        return public.return_msg_gettext(True, public.lang("Compression succeeded!"))
 
     # 文件解压
     def _unzip(self, sfile, dfile, password, log_file):
@@ -366,7 +366,7 @@ class bt_task:
             sfile = sfile.encode('utf-8')
             dfile = dfile.encode('utf-8')
         if not os.path.exists(sfile):
-            return public.return_msg_gettext(False, 'Configuration file not exist')
+            return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
 
         # 判断压缩包格式
         if sfile[-4:] == '.zip':
@@ -439,7 +439,7 @@ class bt_task:
 
         #public.WriteLog("TYPE_FILE", 'Uncompression succeeded!', (sfile, dfile),not_web = self.not_web)
         public.write_log_gettext("File manager", 'unzip file [ {} ] -> [ {} ] success', (sfile, dfile))
-        return public.return_msg_gettext(True, 'Uncompression succeeded!')
+        return public.return_msg_gettext(True, public.lang("Uncompression succeeded!"))
 
     def get_7z_bin(self):
         '''
@@ -498,7 +498,7 @@ class bt_task:
         sql = public.M('backup').add('type,name,pid,filename,size,addtime',
                                      (0, fileName, find['id'], zipName, 0, public.getDate()))
         public.WriteLog('TYPE_SITE', 'SITE_BACKUP_SUCCESS', (find['name'],),not_web = self.not_web)
-        return public.return_msg_gettext(True, 'Backup Succeeded!')
+        return public.return_msg_gettext(True, public.lang("Backup Succeeded!"))
 
     # 备份数据库
     def backup_database(self, id, log_file):
@@ -516,7 +516,7 @@ class bt_task:
         public.ExecShell("/www/server/mysql/bin/mysqldump --force --opt \"" +
                          name + "\" | gzip > " + backupName)
         if not os.path.exists(backupName):
-            return public.return_msg_gettext(False, 'Backup error!')
+            return public.return_msg_gettext(False, public.lang("Backup error!"))
 
         self.mypass(False, find['mysql_root'])
 
@@ -525,7 +525,7 @@ class bt_task:
         sql.add('type,name,pid,filename,size,addtime',
                 (1, fileName, id, backupName, 0, addTime))
         public.WriteLog("TYPE_DATABASE", "DATABASE_BACKUP_SUCCESS", (name,),not_web = self.not_web)
-        return public.return_msg_gettext(True, 'Backup Succeeded!')
+        return public.return_msg_gettext(True, public.lang("Backup Succeeded!"))
 
     # 导入数据库
     def input_database(self, id, file, log_file):
@@ -535,7 +535,7 @@ class bt_task:
         exts = ['sql', 'gz', 'zip']
         ext = tmp[len(tmp) - 1]
         if ext not in exts:
-            return public.return_msg_gettext(False, 'Select sql/gz/zip file!')
+            return public.return_msg_gettext(False, public.lang("Select sql/gz/zip file!"))
 
         isgzip = False
         if ext != 'sql':
@@ -574,7 +574,7 @@ class bt_task:
             self.mypass(False, root)
 
         public.WriteLog("TYPE_DATABASE", 'Successfully imported database [{}]', (name,),not_web = self.not_web)
-        return public.return_msg_gettext(True, 'Successfully imported database!')
+        return public.return_msg_gettext(True, public.lang("Successfully imported database!"))
 
     # 配置
     def mypass(self, act, root):

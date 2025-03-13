@@ -63,7 +63,7 @@ def load_task_manager_template():
             "ver": "1",
             "used": True,
             "source": "task_manager_cpu",
-            "title": "任务管理器CPU占用量告警",
+            "title": "Task Manager CPU usage alarm",
             "load_cls": {
                 "load_type": "path",
                 "cls_path": "mod.base.push_mod.task_manager_push",
@@ -73,7 +73,7 @@ def load_task_manager_template():
                 "field": [
                     {
                         "attr": "project",
-                        "name": "进程名称",
+                        "name": "project name",
                         "type": "select",
                         "items": {
                             "url": "plugin?action=a&name=task_manager&s=get_process_list_to_push"
@@ -81,19 +81,19 @@ def load_task_manager_template():
                     },
                     {
                         "attr": "count",
-                        "name": "占用率超过",
+                        "name": "Occupancy exceeded",
                         "type": "number",
                         "unit": "%",
-                        "suffix": "后触发告警",
+                        "suffix": "trigger an alarm",
                         "default": 80,
-                        "err_msg_prefix": "CUP占用率"
+                        "err_msg_prefix": "CPU occupancy"
                     },
                     {
                         "attr": "interval",
-                        "name": "间隔时间",
+                        "name": "Interval",
                         "type": "number",
-                        "unit": "秒",
-                        "suffix": "后再次监控检测条件",
+                        "unit": "second(s)",
+                        "suffix": "monitor the detection conditions again",
                         "default": 600
                     }
                 ],
@@ -120,12 +120,12 @@ def load_task_manager_template():
                 }
             },
             "send_type_list": [
-                "wx_account",
                 "dingding",
                 "feishu",
                 "mail",
                 "weixin",
-                "webhook"
+                "webhook",
+                "tg",
             ],
             "unique": False
         },
@@ -134,7 +134,7 @@ def load_task_manager_template():
             "ver": "1",
             "used": True,
             "source": "task_manager_mem",
-            "title": "任务管理器内存占用量告警",
+            "title": "Task Manager memory usage alarm",
             "load_cls": {
                 "load_type": "path",
                 "cls_path": "mod.base.push_mod.task_manager_push",
@@ -144,7 +144,7 @@ def load_task_manager_template():
                 "field": [
                     {
                         "attr": "project",
-                        "name": "进程名称",
+                        "name": "project name",
                         "type": "select",
                         "items": {
                             "url": "plugin?action=a&name=task_manager&s=get_process_list_to_push"
@@ -152,19 +152,19 @@ def load_task_manager_template():
                     },
                     {
                         "attr": "count",
-                        "name": "占用量超过",
+                        "name": "The occupancy is more than",
                         "type": "number",
                         "unit": "MB",
-                        "suffix": "后触发告警",
+                        "suffix": "trigger an alarm",
                         "default": None,
-                        "err_msg_prefix": "占用量"
+                        "err_msg_prefix": "Occupancy"
                     },
                     {
                         "attr": "interval",
-                        "name": "间隔时间",
+                        "name": "Interval",
                         "type": "number",
-                        "unit": "秒",
-                        "suffix": "后再次监控检测条件",
+                        "unit": "second(s)",
+                        "suffix": "monitor the detection conditions again",
                         "default": 600
                     }
                 ],
@@ -191,12 +191,12 @@ def load_task_manager_template():
                 }
             },
             "send_type_list": [
-                "wx_account",
                 "dingding",
                 "feishu",
                 "mail",
                 "weixin",
-                "webhook"
+                "webhook",
+                "tg",
             ],
             "unique": False
         },
@@ -205,7 +205,7 @@ def load_task_manager_template():
             "ver": "1",
             "used": True,
             "source": "task_manager_process",
-            "title": "任务管理器进程开销告警",
+            "title": "Task Manager Process Overhead Alert",
             "load_cls": {
                 "load_type": "path",
                 "cls_path": "mod.base.push_mod.task_manager_push",
@@ -215,7 +215,7 @@ def load_task_manager_template():
                 "field": [
                     {
                         "attr": "project",
-                        "name": "进程名称",
+                        "name": "project name",
                         "type": "select",
                         "items": {
                             "url": "plugin?action=a&name=task_manager&s=get_process_list_to_push"
@@ -223,19 +223,19 @@ def load_task_manager_template():
                     },
                     {
                         "attr": "count",
-                        "name": "进程数超过",
+                        "name": "Number of processes exceeds",
                         "type": "number",
-                        "unit": "个",
-                        "suffix": "后触发告警",
+                        "unit": "of them",
+                        "suffix": "trigger an alarm",
                         "default": 20,
-                        "err_msg_prefix": "进程数"
+                        "err_msg_prefix": "NumberOfProcesses"
                     },
                     {
                         "attr": "interval",
-                        "name": "间隔时间",
+                        "name": "Interval",
                         "type": "number",
-                        "unit": "秒",
-                        "suffix": "后再次监控检测条件",
+                        "unit": "second(s)",
+                        "suffix": "monitor the detection conditions again",
                         "default": 600
                     }
                 ],
@@ -262,12 +262,12 @@ def load_task_manager_template():
                 }
             },
             "send_type_list": [
-                "wx_account",
                 "dingding",
                 "feishu",
                 "mail",
                 "weixin",
-                "webhook"
+                "webhook",
+                "tg",
             ],
             "unique": False
         }
@@ -279,10 +279,11 @@ class TaskManagerCPUTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "task_manager_cpu"
-        self.template_name = "任务管理器CUP占用量告警"
+        self.template_name = "Task Manager CPU usage alarm"
+        # self.title = "Task Manager CPU usage alarm"
 
     def get_title(self, task_data: dict) -> str:
-        return "进程【{}】的CPU占用量告警".format(task_data["project"])
+        return "Task Manager CPU usage alarm -- [{}]".format(task_data["project"])
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if "interval" not in task_data or not isinstance(task_data["interval"], int):
@@ -290,11 +291,11 @@ class TaskManagerCPUTask(BaseTask):
         if task_data["interval"] < 60:
             task_data["interval"] = 60
         if "count" not in task_data or not isinstance(task_data["count"], int):
-            return "设置的检查范围不正确"
+            return "The check range is set incorrectly"
         if not 1 <= task_data["count"] < 100:
-            return "设置的检查范围不正确"
+            return "The check range is set incorrectly"
         if not task_data["project"]:
-            return "请选择进程"
+            return "Please select a process"
         return task_data
 
     def get_keyword(self, task_data: dict) -> str:
@@ -315,8 +316,8 @@ class TaskManagerCPUTask(BaseTask):
         return {
             'msg_list':
                 [
-                    ">通知类型：任务管理器CPU占用量告警",
-                    ">告警内容: 进程名称为【{}】的进程共有{}个，消耗的CPU资源占比为{}%，大于告警阈值{}%。".format(
+                    ">Notification type: Task Manager CPU usage alarm",
+                    ">Alarm content:  There are {} processes with the process name [{}], and the proportion of CPU resources consumed is {}%, which is greater than the alarm threshold {}%.".format(
                         task_data['project'], count, used, task_data['count']
                     )
                 ],
@@ -334,13 +335,13 @@ class TaskManagerCPUTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "任务管理器CPU占用量告警"
+        msg.thing_type = "Task Manager CPU usage alarm"
         if len(push_data["project"]) > 11:
             project = push_data["project"][:9] + ".."
         else:
             project = push_data["project"]
 
-        msg.msg = "{}的CUP超过{}%".format(project, push_data["count"])
+        msg.msg = "The CPU of {} exceeds {}%".format(project, push_data["count"])
         return msg
 
 
@@ -348,21 +349,22 @@ class TaskManagerMEMTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "task_manager_mem"
-        self.template_name = "任务管理器内存占用量告警"
+        self.template_name = "Task Manager memory usage alarm"
+        # self.title = "Task Manager memory usage alarm"
 
     def get_title(self, task_data: dict) -> str:
-        return "进程【{}】的内存占用量告警".format(task_data["project"])
+        return "Task Manager memory usage alarm -- [{}].".format(task_data["project"])
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if not task_data["project"]:
-            return "请选择进程"
+            return "Please select a process"
         if "interval" not in task_data or not isinstance(task_data["interval"], int):
             task_data["interval"] = 600
         task_data["interval"] = max(60, task_data["interval"])
         if "count" not in task_data or not isinstance(task_data["count"], int):
-            return "设置的检查范围不正确"
+            return "The check range is set incorrectly"
         if task_data["count"] < 1:
-            return "设置的检查范围不正确"
+            return "The check range is set incorrectly"
         return task_data
 
     def get_keyword(self, task_data: dict) -> str:
@@ -382,8 +384,8 @@ class TaskManagerMEMTask(BaseTask):
             return None
         return {
             'msg_list': [
-                ">通知类型：任务管理器内存占用量告警",
-                ">告警内容: 进程名称为【{}】的进程共有{}个，消耗的内存资源为{}MB，大于告警阈值{}MB。".format(
+                ">Notification type: Task Manager memory usage alarm",
+                ">Alarm content:  There are {} processes with process name [{}], and the memory resources consumed are {}MB, which is greater than the alarm threshold {}MB.".format(
                     task_data['project'], count, int(used / 1024 / 1024), task_data['count']
                 )
             ],
@@ -404,8 +406,8 @@ class TaskManagerMEMTask(BaseTask):
             project = push_data["project"][:9] + ".."
         else:
             project = push_data["project"]
-        msg.thing_type = "任务管理器内存占用量告警"
-        msg.msg = "{}的内存超过告警数值".format(project)
+        msg.thing_type = "Task Manager memory usage alarm"
+        msg.msg = "The memory of {} exceeds the alarm value".format(project)
         return msg
 
 
@@ -413,21 +415,22 @@ class TaskManagerProcessTask(BaseTask):
     def __init__(self):
         super().__init__()
         self.source_name = "task_manager_process"
-        self.title = "任务管理器进程开销告警"
+        self.template_name = "Task Manager Process Overhead Alert"
+        self.title = "Task Manager Process Overhead Alert"
 
     def get_title(self, task_data: dict) -> str:
-        return "进程【{}】的子进程开销告警".format(task_data["project"])
+        return "Task Manager Process Overhead Alert [{}]".format(task_data["project"])
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if not task_data["project"]:
-            return "请选择进程"
+            return "Please select a process"
         if "interval" not in task_data or not isinstance(task_data["interval"], int):
             task_data["interval"] = 600
         task_data["interval"] = max(60, task_data["interval"])
         if "count" not in task_data or not isinstance(task_data["count"], int):
-            return "设置的检查范围不正确"
+            return "The check range is set incorrectly"
         if task_data["count"] < 1:
-            return "设置的检查范围不正确"
+            return "The check range is set incorrectly"
         return task_data
 
     def get_keyword(self, task_data: dict) -> str:
@@ -446,8 +449,8 @@ class TaskManagerProcessTask(BaseTask):
         return {
             'msg_list':
                 [
-                    ">通知类型：任务管理器进程开销告警",
-                    ">告警内容: 进程名称为【{}】的进程共有{}个，大于告警阈值{}个。".format(
+                    ">Notification type: Task Manager Process Overhead Alert",
+                    ">Alarm content:  There are {} processes with process name {}, which is greater than the alarm threshold.".format(
                         task_data['project'], count, task_data['count']
                     )
                 ],
@@ -465,33 +468,33 @@ class TaskManagerProcessTask(BaseTask):
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         msg = WxAccountMsg.new_msg()
-        msg.thing_type = "任务管理器进程开销告警"
+        msg.thing_type = "Task Manager Process Overhead Alert"
         if len(push_data["project"]) > 11:
             project = push_data["project"][:9] + ".."
         else:
             project = push_data["project"]
 
         if push_data["count"] > 100:  # 节省字数
-            push_data["count"] = "限制"
+            push_data["count"] = "LIMIT"
 
-        msg.msg = "{}的子进程数超过{}".format(project, push_data["count"])
+        msg.msg = "{} has more children than {}".format(project, push_data["count"])
         return msg
 
 
 class ViewMsgFormat(object):
     _FORMAT = {
         "60": (
-            lambda x: "<span>进程：{}的CUP占用超过{}%触发</span>".format(
+            lambda x: "<span>Process: The CPU occupation of {} is more than {}% triggered</span>".format(
                 x.get("project"), x.get("count")
             )
         ),
         "61": (
-            lambda x: "<span>进程：{}的内存使用率超过{}MB后触发</span>".format(
+            lambda x: "<span>Process: Triggered when the memory usage of {} exceeds {}MB</span>".format(
                 x.get("project"), x.get("count")
             )
         ),
         "62": (
-            lambda x: "<span>进程：{}的子进程数量超过{}后触发</span>".format(
+            lambda x: "<span>Process: Triggered when the number of child processes exceeds {}</span>".format(
                 x.get("project"), x.get("count")
             )
         ),

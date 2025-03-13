@@ -1,8 +1,8 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aapanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2020 宝塔软件(http://www.bt.cn) All rights reserved.
+# | Copyright (c) 2015-2020 aapanel(http://www.aapanel.com) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: lx
 # | 消息通道飞书通知模块
@@ -13,6 +13,7 @@ import json
 import requests
 import traceback
 import socket
+import public
 
 import requests.packages.urllib3.util.connection as urllib3_cn
 from requests.packages import urllib3
@@ -33,11 +34,11 @@ class FeiShuMsg:
     @classmethod
     def check_args(cls, args: dict) -> Union[dict, str]:
         if "url" not in args or "title" not in args:
-            return "信息不完整"
+            return public.lang('Incomplete information')
 
         title = args["title"]
         if len(title) > 15:
-            return '备注名称不能超过15个字符'
+            return public.lang('Note names cannot be longer than 15 characters')
 
         if "user" in args and isinstance(args["user"], list):
             user = args["user"]
@@ -58,14 +59,14 @@ class FeiShuMsg:
 
         test_obj = cls({"data": data, "id": None})
         test_msg = {
-            "msg_list": ['>配置状态：成功\n\n']
+            "msg_list": ['>configuration state: Success\n\n']
         }
 
-        test_task = get_test_msg("消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
 
         res = test_obj.send_msg(
             test_task.to_feishu_msg(test_msg, test_task.the_push_public_data()),
-            "消息通道配置提醒"
+            "Message channel configuration reminders"
         )
         if res is None:
             return data
@@ -78,7 +79,7 @@ class FeiShuMsg:
         @msg 消息正文
         """
         if not self.config:
-            return '未正确配置飞书信息。'
+            return public.lang('Feishu information is not configured correctly.')
 
         reg = '<font.+>(.+)</font>'
         tmp = re.search(reg, msg)
@@ -90,7 +91,7 @@ class FeiShuMsg:
             self.config["isAtAll"] = True
 
         if self.config["isAtAll"]:
-            msg += "<at userid='all'>所有人</at>"
+            msg += "<at userid='all'>All</at>"
 
         headers = {'Content-Type': 'application/json'}
         data = {
@@ -121,18 +122,18 @@ class FeiShuMsg:
         except:
             error = traceback.format_exc()
 
-        write_push_log("飞书", status, title)
+        write_push_log("feishu", status, title)
 
         return error
 
     def test_send_msg(self) -> Optional[str]:
         test_msg = {
-            "msg_list": ['>配置状态：<font color=#20a53a>成功</font>\n\n']
+            "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n\n']
         }
-        test_task = get_test_msg("消息通道配置提醒")
+        test_task = get_test_msg("Message channel configuration reminders")
         res = self.send_msg(
             test_task.to_feishu_msg(test_msg, test_task.the_push_public_data()),
-            "消息通道配置提醒"
+            "Message channel configuration reminders"
         )
         if res is None:
             return None

@@ -33,29 +33,37 @@ pwd=$1
 mysqld_safe --skip-grant-tables&
 echo 'Changing password...';
 sleep 6
-m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.1.|5.5.|5.6.|10.0.|10.1\.)")
-m2_version=$(cat /www/server/mysql/version.pl|grep -E "(10.5.|10.4.|10.6.|10.7.|10.11.|11.3.)")
-m9_version=$(cat /www/server/mysql/version.pl|grep -E "(9.0|9.1)")
-if [ "$m_version" != "" ];then
-    mysql -uroot -e "UPDATE mysql.user SET password=PASSWORD('${pwd}') WHERE user='root'";
-elif [ "$m2_version" != "" ];then
-    mysql -uroot -e "FLUSH PRIVILEGES;alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
+m_version=$(cat /www/server/mysql/version.pl)
+if echo "$m_version" | grep -E "(5\.1\.|5\.5\.|5\.6\.|10\.0\.|10\.1\.)" >/dev/null; then
+    mysql -uroot -e "UPDATE mysql.user SET password=PASSWORD('${pwd}') WHERE user='root';"
+elif echo "$m_version" | grep -E "(10\.4\.|10\.5\.|10\.6\.|10\.7\.|10\.11\.|11\.3\.|11\.4\.)" >/dev/null; then
+    mysql -uroot -e "
+    FLUSH PRIVILEGES;
+    ALTER USER 'root'@'localhost' IDENTIFIED BY '${pwd}';
+    ALTER USER 'root'@'127.0.0.1' IDENTIFIED BY '${pwd}';
+    FLUSH PRIVILEGES;
+    "
+elif echo "$m_version" | grep -E "(5\.7\.|8\.[0-9]+\..*|9\.[0-9]+\..*)" >/dev/null; then 
+    mysql -uroot -e "
+    FLUSH PRIVILEGES;
+    update mysql.user set authentication_string='' where user='root' and (host='127.0.0.1' or host='localhost');
+    ALTER USER 'root'@'localhost' IDENTIFIED BY '${pwd}';
+    ALTER USER 'root'@'127.0.0.1' IDENTIFIED BY '${pwd}';
+    FLUSH PRIVILEGES;
+    "
 else
-    m_version=$(cat /www/server/mysql/version.pl|grep -E "(5\.7\.|8\.[0-9]+\..*)")
-    if [ "$m_version" != "" ] || [ "${m9_version}" ];then
-        mysql -uroot -e "FLUSH PRIVILEGES;update mysql.user set authentication_string='' where user='root' and (host='127.0.0.1' or host='localhost');alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
-    else
-        mysql -uroot -e "update mysql.user set authentication_string=password('${pwd}') where user='root';"
-    fi
+    mysql -uroot -e "UPDATE mysql.user SET authentication_string=PASSWORD('${pwd}') WHERE user='root';"
 fi
+
 mysql -uroot -e "FLUSH PRIVILEGES";
 pkill -9 mysqld_safe
 pkill -9 mysqld
+
 sleep 2
 /etc/init.d/mysqld start
 
 echo '==========================================='
-echo "The root password set ${pwd}  successuful"''';
+echo "The root password set ${pwd}  successuful"'''
 
     public.writeFile('mysql_root.sh',root_mysql)
     os.system("/bin/bash mysql_root.sh " + password)
@@ -437,7 +445,7 @@ def setup_idc():
         filename = panelPath + '/data/o.pl'
         if not os.path.exists(filename): return False
         o = public.readFile(filename).strip()
-        c_url = 'https://www.bt.cn/api/idc/get_idc_info_bycode?o=%s' % o
+        c_url = 'https://wafapi2.aapanel.com/api/idc/get_idc_info_bycode?o=%s' % o
         idcInfo = json.loads(public.httpGet(c_url))
         if not idcInfo['status']: return False
         pFile = panelPath + '/config/config.json'
@@ -498,6 +506,7 @@ def bt_cli(u_input = 0):
         #     print("                                            (19) Update to aapanel pro version")
         print("(26) Keep/Remove local backup when backing up to cloud storage")
         print("(27) Turn on/off panel SSL                  (28) Modify panel security entrance")
+        print("(33) lift the explosion-proof limit on the panel")
         print("(0) Cancel")
         print(raw_tip)
         try:
@@ -552,7 +561,7 @@ def bt_cli(u_input = 0):
         exit()
     except: pass
 
-    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,27,28]
+    nums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,27,28,33]
     if not u_input in nums:
         print(raw_tip)
         print(public.GetMsg("CANCELLED"))
@@ -608,7 +617,6 @@ def bt_cli(u_input = 0):
         print('Security entrance set successfully：{}'.format(admin_path))
 
     if u_input == 1:
-        if os.path.exists('data/plugin_bin.pl'):os.remove('data/plugin_bin.pl')
         os.system("/etc/init.d/bt restart")
     elif u_input == 2:
         os.system("/etc/init.d/bt stop")
@@ -780,7 +788,18 @@ def bt_cli(u_input = 0):
         else:
             print("|-The local file retention setting is turned on")
             os.mknod(keep_local)
-
+    elif u_input== 33:
+        _config_file='/www/server/panel/data/breaking_through.json'
+        _config={"based_on_username":{"limit":5,"count":8,"type":0,"limit_root":False},"based_on_ip":{"limit":5,"count":8,"command":"","ipset_filter":True},"history_limit":60,"history_start":0,'global_status':True,'username_status':False,'ip_status':True}
+        if os.path.exists(_config_file):
+            try:
+                tmp_config = public.readFile(_config_file)
+                _config = json.loads(tmp_config)
+            except:pass
+        _config['username_status']=False
+        public.writeFile(_config_file,json.dumps(_config))
+        public.ExecShell('rm -f /www/server/panel/data/limit_login.pl')
+        print("|-Aapanel explosion-proof has been turned off")
 
 # 旧的插件系统升级到新的插件系统
 def upgrade_plugins():

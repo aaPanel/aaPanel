@@ -2,7 +2,7 @@
 # +-------------------------------------------------------------------
 # | aaPanel
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2020 宝塔软件(https://www.bt.cn) All rights reserved.
+# | Copyright (c) 2015-2020 aapanel(https://www.bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: baozi <baozi@aapanel.com>
 # | Author: baozi

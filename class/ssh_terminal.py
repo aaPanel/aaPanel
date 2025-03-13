@@ -38,7 +38,7 @@ class ssh_terminal:
     _ssh = None
     _last_cmd = ""
     _last_cmd_tip = 0
-    _log_type = public.get_msg_gettext('aaPanel terminal')
+    _log_type = public.lang("aaPanel terminal")
     _history_len = 0
     _client = ""
     _rep_ssh_config = False
@@ -98,7 +98,7 @@ class ssh_terminal:
                 msg: string 详情
             }
         '''
-        if not self._host: return public.return_msg_gettext(False,'Wrong connection address')
+        if not self._host: return public.return_msg_gettext(False, public.lang("Wrong connection address"))
 
         if not self._user: self._user = 'root'
         if not self._port: self._port = 22
@@ -112,7 +112,7 @@ class ssh_terminal:
         while num < 5:
             num +=1
             try:
-                self.debug(public.get_msg_gettext('Reconnection attempts:{}',(num,)))
+                self.debug(public.lang('Reconnection attempts:{}',num))
                 if self._rep_ssh_config: time.sleep(0.1)
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(2 + num)
@@ -122,7 +122,7 @@ class ssh_terminal:
             except Exception as e:
                 if num == 5:
                     self.set_sshd_config(True)
-                    self.debug(public.get_msg_gettext('Retry connection failed, {}',(e,)))
+                    self.debug(public.lang('Retry connection failed, {}',e))
                     if self._host in ['127.0.0.1','localhost']:
                         return returnMsg(False,'Connection failure: {}',("Authentication failed ," + self._user + "@" + self._host + ":" +str(self._port),))
                     return returnMsg(False,'Connection failure: {}',(self._host,self._port))
@@ -141,7 +141,7 @@ class ssh_terminal:
                 return public.return_msg_gettext(False,'Password or private key cannot both be empty: {}:{}',(self._host,str(self._port)))
             self._tp.banner_timeout=60
             if self._pkey:
-                self.debug(public.get_msg_gettext('Authenticating private key'))
+                self.debug(public.lang("Authenticating private key"))
                 if sys.version_info[0] == 2:
                     try:
                         self._pkey = self._pkey.encode('utf-8')
@@ -181,14 +181,14 @@ class ssh_terminal:
                                 except Exception as ex:
                                     ex = str(ex)
                                     if ex.find('OpenSSH private key file checkints do not match') != -1:
-                                        return public.returnMsg(False,'Incorrect private key password:{}'.format(ex))
+                                        return public.returnMsg(False, public.lang("Incorrect private key password:{}", ex))
                                     elif ex.find('encountered RSA key, expected DSA key') != -1:
                                         pkey = paramiko.RSAKey.from_private_key(p_file,password=self._key_passwd)
                                     else:
-                                        return public.returnMsg(False,'Private key error: {}'.format(ex))
+                                        return public.returnMsg(False, public.lang("Private key error: {}", ex))
                             else:
                                 pkey = paramiko.DSSKey.from_private_key(p_file)
-                if not pkey: return public.returnMsg(False,'Private key error!')
+                if not pkey: return public.returnMsg(False, public.lang("Private key error!"))
                 self._tp.auth_publickey(username=self._user, key=pkey)
             else:
                 try:
@@ -209,7 +209,7 @@ class ssh_terminal:
             self._tp.close()
             e = str(e)
             if e.find('websocket error!') != -1:
-                return public.return_msg_gettext(True,'connection succeeded')
+                return public.return_msg_gettext(True, public.lang("connection succeeded"))
             if e.find('Authentication timeout') != -1:
                 self.debug("认证超时{}".format(e))
                 return public.return_msg_gettext(False,'Authentication timed out, please press enter to try again!{}',(e,))
@@ -222,30 +222,30 @@ class ssh_terminal:
                     return returnMsg(False,'Authentication failed, please check whether the private key is correct: {}'.format(e + "," + self._user + "@" + self._host + ":" +str(self._port)))
                 return public.return_msg_gettext(False,'Account or Password incorrect: {}',(str(e + "," + self._user + "@" + self._host + ":" +str(self._port)),))
             if e.find('Bad authentication type; allowed types') != -1:
-                self.debug(public.get_msg_gettext('Authentication failed {}',(str(e),)))
+                self.debug(public.lang('Authentication failed {}',str(e)))
                 if self._host in ['127.0.0.1','localhost'] and self._pass == 'none':
                     return public.return_msg_gettext(False,'Username or Password incorrect: {}',(str("Authentication failed ," + self._user + "@" + self._host + ":" +str(self._port)),))
                 return public.return_msg_gettext(False,'Unsupported authentication type: {}',(str(e)))
             if e.find('Connection reset by peer') != -1:
-                self.debug(public.get_msg_gettext('The target server actively refused the connection'))
-                return public.return_msg_gettext(False,public.get_msg_gettext('The target server actively refused the connection'))
+                self.debug(public.lang("The target server actively refused the connection"))
+                return public.return_msg_gettext(False,public.lang("The target server actively refused the connection"))
             if e.find('Error reading SSH protocol banner') != -1:
                 self.debug('The protocol header response timed out')
-                return public.return_msg_gettext(False,public.get_msg_gettext('The protocol header response timed out, and the network quality with the target server was too bad: {}',(str(e),)))
+                return public.return_msg_gettext(False,public.lang('The protocol header response timed out, and the network quality with the target server was too bad: {}',str(e)))
             if e.find('encountered RSA key, expected DSA key') != -1:
                 self.debug('Private keys may require password access')
-                return public.return_msg_gettext(False,public.get_msg_gettext('Private keys may require password access: {}',(str(e),)))
+                return public.return_msg_gettext(False,public.lang('Private keys may require password access: {}',str(e)))
             if e.find('password and salt must not be empty') != -1:
                 self.debug('Private keys may require password access')
-                return public.return_msg_gettext(False,public.get_msg_gettext('Private keys may require password access: {}',(str(e),)))
+                return public.return_msg_gettext(False,public.lang('Private keys may require password access: {}',str(e)))
             if not e:
                 self.debug('The SSH protocol handshake timed out')
-                return public.return_msg_gettext(False,"The SSH protocol handshake timed out, and the network quality with the target server is too bad")
+                return public.return_msg_gettext(False, public.lang("The SSH protocol handshake timed out, and the network quality with the target server is too bad"))
             err =  public.get_error_info()
             self.debug(err)
-            return public.return_msg_gettext(False,public.get_msg_gettext('unknown error: {}',(str(err),)))
+            return public.return_msg_gettext(False,public.lang('unknown error: {}',str(err)))
 
-        self.debug(public.get_msg_gettext('The authentication is successful and the session channel is being constructed'))
+        self.debug(public.lang("The authentication is successful and the session channel is being constructed"))
         self._ssh = self._tp.open_session()
         self._ssh.get_pty(term='xterm', width=100, height=34)
         self._ssh.invoke_shell()
@@ -254,9 +254,9 @@ class ssh_terminal:
         from BTPanel import request
         self._client = public.GetClientIp() +':' + str(request.environ.get('REMOTE_PORT'))
         public.write_log_gettext(self._log_type,'Successfully logged in to the SSH server [{}:{}]',(self._host,str(self._port)))
-        self.history_send(public.get_msg_gettext("Login success\n"))
+        self.history_send(public.lang("Login success\n"))
         self.set_sshd_config(True)
-        self.debug(public.get_msg_gettext('Login success'))
+        self.debug(public.lang("Login success"))
         from BTPanel import session
         self._video_addr = "/www/server/panel/plugin/jumpserver/static/video/%s.json" % str(int(self._connect_time))
         if not os.path.exists("/www/server/panel/plugin/jumpserver/static/video/"):
@@ -281,7 +281,7 @@ class ssh_terminal:
                 },
                 "stdout": []
             })
-        return public.return_msg_gettext(True,'connection succeeded')
+        return public.return_msg_gettext(True, public.lang("connection succeeded"))
 
     def _auth_interactive(self):
         self.debug('Verification Code')
@@ -590,8 +590,8 @@ class ssh_terminal:
                 resp_line = self._ssh.recv(1024)
                 if not resp_line:
                     if not self._tp.is_active():
-                        self.debug(public.get_msg_gettext('Channel disconnected'))
-                        self._ws.send(public.get_msg_gettext('The connection is disconnected, press enter to try to reconnect!'))
+                        self.debug(public.lang("Channel disconnected"))
+                        self._ws.send(public.lang("The connection is disconnected, press enter to try to reconnect!"))
                         self.close()
                         return
 
@@ -618,10 +618,10 @@ class ssh_terminal:
             if e.find('closed') != -1:
                 self.debug(public.getMsg('SSH_LOGIN_INFO'))
             elif self._ws.connected:
-                self.debug(public.get_msg_gettext('Error reading tty buffer data, {}',(str(e),)))
+                self.debug(public.lang('Error reading tty buffer data, {}',str(e)))
 
         if not self._ws.connected:
-            self.debug(public.get_msg_gettext('The client has actively disconnected'))
+            self.debug(public.lang("The client has actively disconnected"))
         self.close()
 
     def send(self):
@@ -650,16 +650,16 @@ class ssh_terminal:
             ex = str(ex)
 
             if ex.find('_io.BufferedReader') != -1:
-                self.debug(public.get_msg_gettext('An error occurred while reading data from websocket. Retrying'))
+                self.debug(public.lang("An error occurred while reading data from websocket. Retrying"))
                 self.send()
                 return
             elif ex.find('closed') != -1:
-                self.debug(public.get_msg_gettext('SSH_LOGIN_INFO'))
+                self.debug(public.lang("SSH_LOGIN_INFO"))
             else:
                 self.debug(public.get_msg_gettext('An error occurred while writing data to the buffer: {}',(str(ex),)))
 
         if not self._ws.connected:
-            self.debug(public.get_msg_gettext('The client has actively disconnected'))
+            self.debug(public.lang("The client has actively disconnected"))
         self.close()
 
 
@@ -925,7 +925,7 @@ class ssh_host_admin(ssh_terminal):
         args.host = args.host.strip()
         info_file = self._save_path + args.host +'/info.json'
         if not os.path.exists(info_file):
-            return public.return_msg_gettext(False,'The specified SSH information does not exist!')
+            return public.return_msg_gettext(False, public.lang("The specified SSH information does not exist!"))
         info_tmp = self.get_ssh_info(args.host)
         host_info = {}
         host_info['host'] = args.host
@@ -962,12 +962,12 @@ class ssh_host_admin(ssh_terminal):
         if args.host != args.new_host:
             info_file = self._save_path + args.new_host +'/info.json'
             if os.path.exists(info_file):
-                return public.return_msg_gettext(False,'The specified host address has been added to other SSH information!')
+                return public.return_msg_gettext(False, public.lang("The specified host address has been added to other SSH information!"))
 
         info_file = self._save_path + args.host +'/info.json'
 
         if not os.path.exists(info_file):
-            return public.return_msg_gettext(False,'The specified SSH information does not exist!')
+            return public.return_msg_gettext(False, public.lang("The specified SSH information does not exist!"))
 
         if not 'sort' in args:
             r_data = public.aes_decrypt(public.readFile(info_file),self._pass_str)
@@ -993,7 +993,7 @@ class ssh_host_admin(ssh_terminal):
         if args.host != args.new_host:
             public.ExecShell('mv {} {}'.format(self._save_path + args.host,self._save_path + args.new_host))
         public.write_log_gettext(self._log_type,'Modify the SSH information of HOST: {}',(args.host,))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     def create_host(self,args):
         '''
@@ -1017,7 +1017,7 @@ class ssh_host_admin(ssh_terminal):
         if os.path.exists(info_file):
             args.new_host = args.host
             return self.modify_host(args)
-            #return public.returnMsg(False,'指定SSH信息已经添加过了!')
+            #return public.returnMsg(False, public.lang("Specify that SSH information has been added!"))
         if not os.path.exists(host_path):
             os.makedirs(host_path,384)
         if not 'sort' in args: args.sort = 0
@@ -1037,7 +1037,7 @@ class ssh_host_admin(ssh_terminal):
         if not result['status']: return result
         self.save_ssh_info(args.host,host_info)
         public.write_log_gettext(self._log_type,'Add the SSH information of HOST: {}',(str(args.host),))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
 
     def remove_host(self,args):
@@ -1050,13 +1050,13 @@ class ssh_host_admin(ssh_terminal):
             @return dict
         '''
         args.host = args.host.strip()
-        if not args.host: return public.return_msg_gettext(False,'Parameter ERROR!')
+        if not args.host: return public.return_msg_gettext(False, public.lang("Parameter ERROR!"))
         host_path = self._save_path + args.host
         if not os.path.exists(host_path):
-            return public.return_msg_gettext(False,'The specified SSH information does not exist!')
+            return public.return_msg_gettext(False, public.lang("The specified SSH information does not exist!"))
         public.ExecShell("rm -rf {}".format(host_path))
         public.write_log_gettext(self._log_type,'Delete the SSH information of HOST: {}',(str(args.host),))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
 
     def get_ssh_info(self,host):
@@ -1109,7 +1109,7 @@ class ssh_host_admin(ssh_terminal):
             @return bool
         '''
         if not 'sort_list' in args:
-            return public.return_msg_gettext(False,'Please pass in the [sort_list] field')
+            return public.return_msg_gettext(False, public.lang("Please pass in the [sort_list] field"))
         sort_list = json.loads(args.sort_list)
         for name in sort_list.keys():
             info_file = self._save_path + name + '/info.json'
@@ -1118,7 +1118,7 @@ class ssh_host_admin(ssh_terminal):
             ssh_info = self.get_ssh_info(name)
             ssh_info['sort'] = int(sort_list[name])
             self.save_ssh_info(name,ssh_info)
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     def get_command_list(self,args = None, user_cmd = False , sys_cmd = False):
         '''
@@ -1183,7 +1183,7 @@ class ssh_host_admin(ssh_terminal):
         command = self.get_command_list(sys_cmd=True)
 
         if self.command_exists(command,args.title):
-            return public.return_msg_gettext(False,'The specified command name already exists')
+            return public.return_msg_gettext(False, public.lang("The specified command name already exists"))
 
         cmd = {
             "title": args.title,
@@ -1193,7 +1193,7 @@ class ssh_host_admin(ssh_terminal):
         command.append(cmd)
         self.save_command(command)
         public.write_log_gettext(self._log_type,'Add common commands [{}]',(str(args.title),))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     def get_command_find(self,args = None, title=None):
         '''
@@ -1210,7 +1210,7 @@ class ssh_host_admin(ssh_terminal):
         for cmd in command:
             if cmd['title'] == title or cmd['title'] == args.title:
                 return cmd
-        return public.return_msg_gettext(False,'The specified command does not exist')
+        return public.return_msg_gettext(False, public.lang("The specified command does not exist"))
 
     def modify_command(self,args):
         '''
@@ -1226,7 +1226,7 @@ class ssh_host_admin(ssh_terminal):
         args.title = args.title.strip()
         command = self.get_command_list(sys_cmd=True)
         if not self.command_exists(command,args.title):
-            return public.return_msg_gettext(False,'The specified command does not exist')
+            return public.return_msg_gettext(False, public.lang("The specified command does not exist"))
         for i in range(len(command)):
             if command[i]['title'] == args.title or command[i]['title'] == title:
                 command[i]['title'] = args.new_title.strip()
@@ -1234,7 +1234,7 @@ class ssh_host_admin(ssh_terminal):
                 break
         self.save_command(command)
         public.write_log_gettext(self._log_type,'Modify common commands [{}]',(str(args.title),))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     def remove_command(self,args):
         '''
@@ -1248,7 +1248,7 @@ class ssh_host_admin(ssh_terminal):
         args.title = args.title.strip()
         command = self.get_command_list(sys_cmd=True)
         if not self.command_exists(command,args.title):
-            return public.return_msg_gettext(False,'The specified command does not exist')
+            return public.return_msg_gettext(False, public.lang("The specified command does not exist"))
         for i in range(len(command)):
             if command[i]['title'] == args.title:
                 del(command[i])
@@ -1256,4 +1256,4 @@ class ssh_host_admin(ssh_terminal):
 
         self.save_command(command)
         public.write_log_gettext(self._log_type,'Delete common commands [{}]',(str(args.title),))
-        return public.return_msg_gettext(True,'Setup successfully!')
+        return public.return_msg_gettext(True, public.lang("Setup successfully!"))

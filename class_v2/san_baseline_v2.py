@@ -1105,7 +1105,7 @@ class san_baseline:
         if not os.path.exists(self.logPath): public.returnMsg(False, "无日志")
         ret = json.loads(public.readFile(self.logPath))
         if int(len(ret)) == 0:
-            return public.returnMsg(False, "无日志")
+            return public.returnMsg(False, public.lang("无日志"))
         return public.returnMsg(True, ret)
         # 写输出日志
 
@@ -1120,7 +1120,7 @@ class san_baseline:
         if not os.path.exists(self.config): public.returnMsg(False, "无日志")
         ret = json.loads(public.readFile(self.config))
         if int(len(ret)) == 0:
-            return public.returnMsg(False, "无日志")
+            return public.returnMsg(False, public.lang("无日志"))
         return public.returnMsg(True, ret)
         # 写输出日志
 
@@ -1209,7 +1209,7 @@ class san_baseline:
 
     def start(self, get):
         os.system(public.get_python_bin() + ' /www/server/panel/class/san_baseline.py &')
-        return public.returnMsg(True, '1')
+        return public.returnMsg(True, public.lang("1"))
 
     # 取爆破
     def get_ssh_errorlogin(self, get):

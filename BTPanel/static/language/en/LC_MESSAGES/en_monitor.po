@@ -17,55 +17,21 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: /www/server/panel/plugin/monitor/monitor_main.py:68
 msgid "IP filter program compilation failed"
 msgstr "IP filter program compilation failed"
 
-#: /www/server/panel/plugin/monitor/monitor_main.py:106
-#: /www/server/panel/plugin/monitor/monitor_main.py:174
 msgid "IP address cannot be empty!"
 msgstr "IP address cannot be empty!"
 
-#: /www/server/panel/plugin/monitor/monitor_main.py:111
 msgid "The specified blocking time cannot exceed 24 days!"
 msgstr "The specified blocking time cannot exceed 24 days!"
 
-#: /www/server/panel/plugin/monitor/monitor_main.py:181
 msgid "IP address format is wrong!"
 msgstr "IP address format is wrong!"
 
-#: /www/server/panel/plugin/monitor/monitor_main.py:246
-#: /www/server/panel/plugin/monitor/monitor_main.py:485
-#: /www/server/panel/plugin/monitor/monitor_main.py:511
-#: /www/server/panel/plugin/monitor/monitor_main.py:643
-#: /www/server/panel/plugin/monitor/monitor_main.py:737
-#: /www/server/panel/plugin/monitor/monitor_main.py:758
-#: /www/server/panel/plugin/monitor/monitor_main.py:1419
-#: /www/server/panel/plugin/monitor/monitor_main.py:1519
-#: /www/server/panel/plugin/monitor/monitor_main.py:2024
-#: /www/server/panel/plugin/monitor/monitor_main.py:2155
-#: /www/server/panel/plugin/monitor/monitor_main.py:2342
-#: /www/server/panel/plugin/monitor/monitor_main.py:2380
-#: /www/server/panel/plugin/monitor/monitor_main.py:2416
-#: /www/server/panel/plugin/monitor/monitor_main.py:2467
-#: /www/server/panel/plugin/monitor/monitor_main.py:2531
-#: /www/server/panel/plugin/monitor/monitor_main.py:2569
-#: /www/server/panel/plugin/monitor/monitor_main.py:2691
-#: /www/server/panel/plugin/monitor/monitor_main.py:2880
-#: /www/server/panel/plugin/monitor/monitor_main.py:2945
-#: /www/server/panel/plugin/monitor/monitor_main.py:3004
-#: /www/server/panel/plugin/monitor/monitor_main.py:3034
-#: /www/server/panel/plugin/monitor/monitor_main.py:3090
-#: /www/server/panel/plugin/monitor/monitor_main.py:3116
-#: /www/server/panel/plugin/monitor/monitor_main.py:3218
-#: /www/server/panel/plugin/monitor/monitor_main.py:3293
-#: /www/server/panel/plugin/monitor/monitor_main.py:3357
-#: /www/server/panel/plugin/monitor/monitor_main.py:3464
-#: /www/server/panel/plugin/monitor/monitor_main.py:3548
 msgid "Website name cannot be empty!"
 msgstr "Website name cannot be empty!"
 
-#: /www/server/panel/plugin/monitor/monitor_main.py:249
 msgid "Set successfully!"
 msgstr "Set successfully!"
 

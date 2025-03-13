@@ -1,8 +1,8 @@
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Windows面板
+# | aapanel Windows面板
 # +-------------------------------------------------------------------
-# | Copyright (c) 2015-2020 宝塔软件(https://www.bt.cn) All rights reserved.
+# | Copyright (c) 2015-2020 aapanel(https://www.bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
 # | Author: 沐落 <cjx@aapanel.com>
 # +-------------------------------------------------------------------
@@ -226,10 +226,10 @@ class site_push:
         elif pdata['type'] in ['panel_login']:
             p_module = pdata['module'].split(',')
             if len(p_module) > 1:
-                return public.returnMsg(False,'The panel login alarm only supports one alarm mode.')
+                return public.returnMsg(False, public.lang("The panel login alarm only supports one alarm mode."))
 
             if not pdata['status']:
-                return public.returnMsg(False,'It does not support suspending the panel login alarm, if you need to suspend, please delete it directly.')
+                return public.returnMsg(False, public.lang("It does not support suspending the panel login alarm, if you need to suspend, please delete it directly."))
 
             import config
             c_obj = config.config()
@@ -244,10 +244,10 @@ class site_push:
 
             p_module = pdata['module'].split(',')
             if len(p_module) > 1:
-                return public.returnMsg(False,'SSH login alarm only supports one alarm mode.')
+                return public.returnMsg(False, public.lang("SSH login alarm only supports one alarm mode."))
 
             if not pdata['status']:
-                return public.returnMsg(False,'It does not support suspending the SSH login alarm. If you need to suspend, please delete it directly.')
+                return public.returnMsg(False, public.lang("It does not support suspending the SSH login alarm. If you need to suspend, please delete it directly."))
 
             import ssh_security
             c_obj = ssh_security.ssh_security()
@@ -305,7 +305,7 @@ class site_push:
             del data[module][id]
             public.writeFile(self.__conf_path,json.dumps(data))
         except: pass
-        return public.returnMsg(True, 'successfully deleted.')
+        return public.returnMsg(True, public.lang("successfully deleted."))
 
 
     #-----------------------------------------------------------end 添加推送 ------------------------------------------------------
@@ -357,7 +357,7 @@ class site_push:
         """
 
         if time.time() < data['index'] + 86400:
-            return public.returnMsg(False,"SSL is pushed once a day, skipped.")
+            return public.returnMsg(False, public.lang("SSL is pushed once a day, skipped."))
 
         push_keys = []
         ssl_list = []
@@ -397,7 +397,7 @@ class site_push:
         else:
             project_type = ''
             find = sql.where('name=? and status=1',(data['project'],)).find()
-            if not find: return public.returnMsg(False,"no site available.")
+            if not find: return public.returnMsg(False, public.lang("no site available."))
 
             if not find['project_type'] in ['PHP']:
                 project_type = find['project_type'].lower() + '_'
@@ -426,15 +426,15 @@ class site_push:
 
         #面板更新提醒
         if stime < data['index'] + 86400:
-            return public.returnMsg(False,"push once a day, skip.")
+            return public.returnMsg(False, public.lang("push once a day, skip."))
 
         s_url = '{}/api/panel/updateLinuxEn'
         if public.get_os('windows'): s_url = '{}/api/wpanel/updateWindows'
-        s_url = s_url.format('https://www.aapanel.com')
+        s_url = s_url.format(public.OfficialApiBase())
 
         try:
             res = json.loads(public.httpPost(s_url,{}))
-            if not res: return public.returnMsg(False,"Failed to get update information.")
+            if not res: return public.returnMsg(False, public.lang("Failed to get update information."))
         except:pass
 
         n_ver = res['version']
@@ -572,7 +572,7 @@ class site_push:
             result['push_keys'] = []
 
             if stime < data['index'] + 86400:
-                return public.returnMsg(False,"push once a day, skip.")
+                return public.returnMsg(False, public.lang("push once a day, skip."))
 
             mEdate = public.format_date(format='%Y-%m-%d',times = stime + 86400 * int(data['cycle']))
             web_list = public.M('sites').where('edate>? AND edate<? AND (status=? OR status=?)',('0000-00-00',mEdate,1,u'Running')).field('id,name,edate').select()
@@ -594,7 +594,7 @@ class site_push:
 
         elif data['type'] in ['panel_pwd_endtime']:
             if stime < data['index'] + 86400:
-                return public.returnMsg(False,"push once a day, skip.")
+                return public.returnMsg(False, public.lang("push once a day, skip."))
 
             import config
             c_obj = config.config()
@@ -700,13 +700,13 @@ class site_push:
 
             status = self.get_server_status(ser_name)
             if status > 0:
-                return public.returnMsg(False, "normal status，Skip.")
+                return public.returnMsg(False, public.lang("normal status，Skip."))
             else:
                 if status == 0:
                     return self.__get_service_result(data)
-                return public.returnMsg(False, "service not installed，Skip.")
+                return public.returnMsg(False, public.lang("service not installed，Skip."))
 
-        return public.returnMsg(False, "Threshold not reached，Skip.")
+        return public.returnMsg(False, public.lang("Threshold not reached，Skip."))
 
 
     def get_records_calc(self,skey,table,stype = 0):
@@ -790,7 +790,7 @@ class site_push:
         @return dict
         """
         if len(clist) == 0:
-            return public.returnMsg(False,"Expired certificate not found, skipping.")
+            return public.returnMsg(False, public.lang("Expired certificate not found, skipping."))
 
         result = {'index':time.time(),'push_keys':push_keys }
         for m_module in data['module'].split(','):
@@ -820,7 +820,7 @@ class site_push:
     def __get_service_result(self, data):
         s_idx = int(time.time())
         if s_idx < data['index'] + data['interval']:
-            return public.returnMsg(False, "Interval not reached，Skip.")
+            return public.returnMsg(False, public.lang("Interval not reached，Skip."))
 
         result = {'index': s_idx}
 

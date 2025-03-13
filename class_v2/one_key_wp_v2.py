@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 import panel_mysql_v2 as panelMysql
 from public.validate import Param
 
+
 # import wp-toolkit core
 # from wp_toolkit import wp_version, wpmgr, wpfastcgi_cache
 
@@ -54,8 +55,8 @@ class one_key_wp:
         if not self.__wp_session:
             self.__wp_session = requests.Session()
 
-        import PluginLoader
-        self.__IS_PRO_MEMBER = PluginLoader.get_auth_state() > 0
+        # import PluginLoader
+        # self.__IS_PRO_MEMBER = PluginLoader.get_auth_state() > 0
 
     def get_headers(self):
         return {
@@ -222,13 +223,13 @@ class one_key_wp:
 
         if not self.check_package():
             print("|-MD5 consistent, no need to download...")
-            return public.return_msg_gettext(True, 'MD5 consistent!')
+            return public.return_msg_gettext(True, public.lang("MD5 consistent!"))
         self.download_file()
         if not os.path.exists(self.package_zip):
             self.write_logs("|-Download failed...")
             print("Download failed...")
-            return public.return_msg_gettext(False, 'File download failed!')
-        return public.return_msg_gettext(True, "Download successfully")
+            return public.return_msg_gettext(False, public.lang("File download failed!"))
+        return public.return_msg_gettext(True, public.lang("Download successfully"))
 
     def unzip_package(self, site_path):
         print("Start unzipping the installation package...")
@@ -262,8 +263,7 @@ class one_key_wp:
 
             public.writeFile(dwfile, rewriteConf)
 
-
-    def __write_db(self, s_id, d_id, prefix, user_name, admin_password):
+    def write_db(self, s_id, d_id, prefix, user_name, admin_password):
         print("Inserting data...")
         pdata = {"s_id": s_id, "d_id": d_id, "prefix": prefix, "user": user_name, "pass": admin_password}
         public.M('wordpress_onekey').where('s_id=?', (s_id,)).field('s_id').find()
@@ -294,38 +294,61 @@ class one_key_wp:
 
         self.write_logs("|-Start initializing Wordpress...")
 
-        if self.__IS_PRO_MEMBER:
-            from wp_toolkit import wpmgr
+        from wp_toolkit import wpmgr
 
-            # 初始化WP管理类
-            wpmgr_obj = wpmgr(values['s_id'])
+        # 初始化WP管理类
+        wpmgr_obj = wpmgr(values['s_id'])
 
-            # 初始化WP网站配置
-            self.write_logs("|-Start setup configurations...")
-            ok, msg = wpmgr_obj.setup_config(values['dbname'], values['db_user'], values['db_pwd'], 'localhost', values['prefix'])
-            self.write_logs('|-Setup config >>> {} {}'.format('OK' if ok else 'FAIL', msg))
+        # 初始化WP网站配置
+        self.write_logs("|-Start setup configurations...")
+        ok, msg = wpmgr_obj.setup_config(values['dbname'], values['db_user'], values['db_pwd'], 'localhost',
+                                         values['prefix'])
+        self.write_logs('|-Setup config >>> {} {}'.format('OK' if ok else 'FAIL', msg))
 
-            if not ok:
-                raise Exception(msg)
+        if not ok:
+            raise Exception(msg)
 
-            # 初始化WP网站信息
-            self.write_logs("|-Start installations...")
-            ok, msg = wpmgr_obj.wp_install(values['weblog_title'], values['user_name'], values['admin_email'], values['admin_password'], values['language'])
-            self.write_logs('|-Installation {} {}'.format('OK' if ok else 'FAIL', msg))
+        # 初始化WP网站信息
+        self.write_logs("|-Start installations...")
+        ok, msg = wpmgr_obj.wp_install(values['weblog_title'], values['user_name'], values['admin_email'],
+                                       values['admin_password'], values['language'])
+        self.write_logs('|-Installation {} {}'.format('OK' if ok else 'FAIL', msg))
 
-            if not ok:
-                raise Exception(msg)
-        else:
-            self.request_setup_0(values)
-            time.sleep(1)
-            if not self.request_setup_2(values):
-                return public.return_msg_gettext(False,
-                                                 "The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct.")
-            time.sleep(1)
-            self.request_setup_3(values)
-            time.sleep(1)
-            self.request_setup_4(values)
-            time.sleep(1)
+        if not ok:
+            raise Exception(msg)
+
+        # if self.__IS_PRO_MEMBER:
+        #     from wp_toolkit import wpmgr
+        #
+        #     # 初始化WP管理类
+        #     wpmgr_obj = wpmgr(values['s_id'])
+        #
+        #     # 初始化WP网站配置
+        #     self.write_logs("|-Start setup configurations...")
+        #     ok, msg = wpmgr_obj.setup_config(values['dbname'], values['db_user'], values['db_pwd'], 'localhost', values['prefix'])
+        #     self.write_logs('|-Setup config >>> {} {}'.format('OK' if ok else 'FAIL', msg))
+        #
+        #     if not ok:
+        #         raise Exception(msg)
+        #
+        #     # 初始化WP网站信息
+        #     self.write_logs("|-Start installations...")
+        #     ok, msg = wpmgr_obj.wp_install(values['weblog_title'], values['user_name'], values['admin_email'], values['admin_password'], values['language'])
+        #     self.write_logs('|-Installation {} {}'.format('OK' if ok else 'FAIL', msg))
+        #
+        #     if not ok:
+        #         raise Exception(msg)
+        # else:
+        #     self.request_setup_0(values)
+        #     time.sleep(1)
+        #     if not self.request_setup_2(values):
+        #         return public.return_msg_gettext(False,
+        #                                          "The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct.")
+        #     time.sleep(1)
+        #     self.request_setup_3(values)
+        #     time.sleep(1)
+        #     self.request_setup_4(values)
+        #     time.sleep(1)
 
         # 配置伪静态规则
         self.set_urlrewrite(values['site_name'], values['site_path'])
@@ -530,8 +553,8 @@ class one_key_wp:
         os.remove(self.__php_tmp_file)
         res = a.split('|')
         if res[0] == "True":
-            return public.return_message(0,0, res[1])
-        return public.return_message(-1,0, 'Generated password detection failed!')
+            return public.return_message(0, 0, res[1])
+        return public.return_message(-1, 0, public.lang("Generated password detection failed!"))
 
     def get_cache_status(self, s_id):
         """
@@ -550,14 +573,17 @@ class one_key_wp:
 
         php_v = websitemgr.get_site_php_version(site_name).replace('.', '')
 
-        return fast_cgi().get_fast_cgi_status(site_name, php_v)
+        from wp_toolkit import wpfastcgi_cache
+        return wpfastcgi_cache().get_fast_cgi_status(site_name, php_v)
+
+        # return fast_cgi().get_fast_cgi_status(site_name, php_v)
 
     ##############################对外接口—BEGIN##############################
     def get_wp_username(self, get):
         """
         s_id 网站ID
         """
-         # 校验参数
+        # 校验参数
         try:
             get.validate([
                 Param('s_id').Integer(),
@@ -568,25 +594,24 @@ class one_key_wp:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-
-
         values = self.check_param(get)
-        if values['status']==-1:
+        if values['status'] == -1:
             return values
-        values=values['message']
+        values = values['message']
         db_info = public.M('wordpress_onekey').where('s_id=?', (values['s_id'],)).find()
         db_name = public.M('databases').where('id=?', (db_info['d_id'],)).field('name').find()
         if "name" not in db_name:
-            return public.return_message(-1,0, "The database of this wordpress was not found, this may be caused by the fact that you have manually deleted the database")
+            return public.return_message(-1, 0, public.lang("The database of this wordpress was not found, this may be caused by the fact that you have manually deleted the database"))
         db_name = db_name['name']
         mysql_obj = panelMysql.panelMysql()
         res = mysql_obj.query('select * from {}.{}users'.format(
             db_name, db_info['prefix']))
         if hasattr(res, '__iter__'):
-            return public.return_message(0,0, [i[1] for i in res])
+            return public.return_message(0, 0, [i[1] for i in res])
         else:
-            return public.return_message(-1,0, "Site database [{}] failed to query users, try setting the database for this site. Error: {}".format(
-                                                 db_name, res))
+            return public.return_message(-1, 0,
+                                         "Site database [{}] failed to query users, try setting the database for this site. Error: {}".format(
+                                             db_name, res))
 
     def reset_wp_password(self, get):
         """
@@ -595,7 +620,7 @@ class one_key_wp:
         user 要重置的用户名
         new_pass
         """
-         # 校验参数
+        # 校验参数
         try:
             get.validate([
                 Param('user').String(),
@@ -609,18 +634,17 @@ class one_key_wp:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-
         values = self.check_param(get)
-        if values['status']==-1:
+        if values['status'] == -1:
             return values
-        values=values['message']
+        values = values['message']
         s_id = values['s_id']
         db_info = public.M('wordpress_onekey').where('s_id=?', (s_id,)).find()
         db_name = public.M('databases').where('id=?', (db_info['d_id'],)).field('name').find()['name']
         path = public.M('sites').where('id=?', (s_id,)).field('path').find()['path']
         new_pass = values['new_pass']
         passwd = self.generate_wp_passwd(path, new_pass)
-        if passwd['status']==-1:
+        if passwd['status'] == -1:
             return passwd
 
         passwd = passwd['message']
@@ -635,7 +659,7 @@ class one_key_wp:
         sql = 'update {}.{}users set user_pass = "{}" where user_login = "{}"'.format(
             db_name, db_info['prefix'], passwd, values['user'])
         mysql_obj.execute(sql)
-        return public.return_message(0,0, "Password reset successful")
+        return public.return_message(0, 0, public.lang("Password reset successful"))
 
     # 获取WP可用版本列表
     def get_wp_available_versions(self, args: public.dict_obj):
@@ -660,7 +684,9 @@ class one_key_wp:
         }, wp_version().latest_versions()))
 
         if 'php_version_short' in args:
-            versions = list(filter(lambda x: int(args.php_version_short) >= int(''.join(str(x['php_version']).split('.')[:2])), versions))
+            versions = list(
+                filter(lambda x: int(args.php_version_short) >= int(''.join(str(x['php_version']).split('.')[:2])),
+                       versions))
 
         return public.success_v2(versions)
 
@@ -697,9 +723,9 @@ class one_key_wp:
         s_id 网站ID
         """
         values = self.check_param(get)
-        if values['status']==-1:
+        if values['status'] == -1:
             return values
-        values=values['message']
+        values = values['message']
         online_v = self.get_wp_version_online()
         local_v = self.get_wp_version(values['s_id'])
         update = False
@@ -710,15 +736,15 @@ class one_key_wp:
             "local_v": local_v,
             "update": update
         }
-        return_message=public.return_msg_gettext(True, data)
+        return_message = public.return_msg_gettext(True, data)
         del return_message['status']
-        return public.return_message(0,0, return_message['msg'])
+        return public.return_message(0, 0, return_message['msg'])
 
     def purge_all_cache(self, get):
         """
         清理所有缓存
         """
-         # 校验参数
+        # 校验参数
         try:
             get.validate([
                 Param('s_id').Integer(),
@@ -731,16 +757,19 @@ class one_key_wp:
             return public.return_message(-1, 0, str(ex))
 
         if public.get_webserver() != "nginx":
-            return public.return_message(-1,0, "This feature currently only supports Nginx")
+            return public.return_message(-1, 0, public.lang("This feature currently only supports Nginx"))
 
-        if self.__IS_PRO_MEMBER:
-            from wp_toolkit import wpmgr
-            wpmgr(get.s_id).purge_cache_with_nginx_helper()
-        else:
-            cache_dir = "/dev/shm/nginx-cache/wp"
-            public.ExecShell("rm -rf {}/*".format(cache_dir))
+        from wp_toolkit import wpmgr
+        wpmgr(get.s_id).purge_cache_with_nginx_helper()
 
-        return public.return_message(0,0,"Cleaned up successfully!")
+        # if self.__IS_PRO_MEMBER:
+        #     from wp_toolkit import wpmgr
+        #     wpmgr(get.s_id).purge_cache_with_nginx_helper()
+        # else:
+        #     cache_dir = "/dev/shm/nginx-cache/wp"
+        #     public.ExecShell("rm -rf {}/*".format(cache_dir))
+
+        return public.return_message(0, 0, public.lang("Cleaned up successfully!"))
 
     def set_fastcgi_cache(self, get):
         """
@@ -749,7 +778,7 @@ class one_key_wp:
         sitename 完整名
         act disable/enable 开启关闭缓存
         """
-         # 校验参数
+        # 校验参数
         try:
             get.validate([
                 Param('version').String(),
@@ -763,27 +792,36 @@ class one_key_wp:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-
         if public.get_webserver() != "nginx":
-            return public.return_message(-1,0, "This feature currently only supports Nginx")
+            return public.return_message(-1, 0, public.lang("This feature currently only supports Nginx"))
         values = self.check_param(get)
-        if values['status']==-1:
+        if values['status'] == -1:
             return values
-        values=values['message']
+        values = values['message']
         if '.' in values['version']:
             values['version'] = values['version'].replace('.', '')
 
-        if self.__IS_PRO_MEMBER:
-            from wp_toolkit import wpfastcgi_cache
+        from wp_toolkit import wpfastcgi_cache
 
-            ok, msg = wpfastcgi_cache().set_website_conf(values['version'], values['sitename'], values['act'], immediate=True)
+        ok, msg = wpfastcgi_cache().set_website_conf(values['version'], values['sitename'], values['act'],
+                                                     immediate=True)
 
-            if not ok:
-                return public.fail_v2(msg)
+        if not ok:
+            return public.fail_v2(msg)
 
-            return public.success_v2(msg)
-        else:
-            return fast_cgi().set_website_conf(values['version'], values['sitename'], values['act'])
+        return public.success_v2(msg)
+
+        # if self.__IS_PRO_MEMBER:
+        #     from wp_toolkit import wpfastcgi_cache
+        #
+        #     ok, msg = wpfastcgi_cache().set_website_conf(values['version'], values['sitename'], values['act'], immediate=True)
+        #
+        #     if not ok:
+        #         return public.fail_v2(msg)
+        #
+        #     return public.success_v2(msg)
+        # else:
+        #     return fast_cgi().set_website_conf(values['version'], values['sitename'], values['act'])
 
     # 使用网站ID查询WP站点域名
     def get_wp_auth(self, s_id):
@@ -799,44 +837,65 @@ class one_key_wp:
         s_id 网站ID
         version 需要更新的版本
         """
-        if self.__IS_PRO_MEMBER:
-            from wp_toolkit import wpmgr
+        from wp_toolkit import wpmgr
 
-            # 校验参数
-            try:
-                args.validate([
-                    Param('s_id').Require().Integer('>', 0),
-                    Param('version').Require().Regexp(r'^\d+(?:\.\d+)+$'),
-                ], [
-                    public.validate.trim_filter(),
-                ])
-            except Exception as ex:
-                public.print_log("error info: {}".format(ex))
-                return public.return_message(-1, 0, str(ex))
+        # 校验参数
+        try:
+            args.validate([
+                Param('s_id').Require().Integer('>', 0),
+                Param('version').Require().Regexp(r'^\d+(?:\.\d+)+$'),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
 
-            ok, msg = wpmgr(args.s_id).update_version(args.version)
+        ok, msg = wpmgr(args.s_id).update_version(args.version)
 
-            if not ok:
-                return public.fail_v2(msg)
+        if not ok:
+            return public.fail_v2(msg)
 
-            return public.success_v2('Upgrade to {}'.format(msg))
-        else:
-            self.__load_cookies(args.s_id)
-            param = {
-                "url": "http://{}/wp-admin/update-core.php?action=do-core-upgrade".format(self.__domain),
-                "domain": self.__domain,
-                "data": {
-                    # "_wpnonce":get._wpnonce,
-                    "_wp_http_referer": '/wp-admin/update-core.php',
-                    "version": args.version,
-                    "locale": "en_US",
-                    "upgrade": "Update to version {}".format(args.version)
-                }
-            }
-            self.action_plugin_post(param)
-            return_message=public.return_msg_gettext(True, 'Updated successfully!')
-            del return_message['status']
-            return public.return_message(0,0, return_message['msg'])
+        return public.success_v2('Upgrade to {}'.format(msg))
+
+        # if self.__IS_PRO_MEMBER:
+        #     from wp_toolkit import wpmgr
+        #
+        #     # 校验参数
+        #     try:
+        #         args.validate([
+        #             Param('s_id').Require().Integer('>', 0),
+        #             Param('version').Require().Regexp(r'^\d+(?:\.\d+)+$'),
+        #         ], [
+        #             public.validate.trim_filter(),
+        #         ])
+        #     except Exception as ex:
+        #         public.print_log("error info: {}".format(ex))
+        #         return public.return_message(-1, 0, str(ex))
+        #
+        #     ok, msg = wpmgr(args.s_id).update_version(args.version)
+        #
+        #     if not ok:
+        #         return public.fail_v2(msg)
+        #
+        #     return public.success_v2('Upgrade to {}'.format(msg))
+        # else:
+        #     self.__load_cookies(args.s_id)
+        #     param = {
+        #         "url": "http://{}/wp-admin/update-core.php?action=do-core-upgrade".format(self.__domain),
+        #         "domain": self.__domain,
+        #         "data": {
+        #             # "_wpnonce":get._wpnonce,
+        #             "_wp_http_referer": '/wp-admin/update-core.php',
+        #             "version": args.version,
+        #             "locale": "en_US",
+        #             "upgrade": "Update to version {}".format(args.version)
+        #         }
+        #     }
+        #     self.action_plugin_post(param)
+        #     return_message=public.return_msg_gettext(True, 'Updated successfully!')
+        #     del return_message['status']
+        #     return public.return_message(0,0, return_message['msg'])
 
     # 获取可用的语言列表
     def get_language(self, get=None):
@@ -972,9 +1031,9 @@ class one_key_wp:
             "zh_HK": "香港中文版	",
             "zh_CN": "简体中文",
         }
-        return_message=public.return_msg_gettext(True, language)
+        return_message = public.return_msg_gettext(True, language)
         del return_message['status']
-        return public.return_message(0,0, return_message['msg'])
+        return public.return_message(0, 0, return_message['msg'])
 
     # 请求参数校验
     def check_param(self, args):
@@ -988,25 +1047,25 @@ class one_key_wp:
         rep_domain = r"^(?=^.{3,255}$)[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62}(\.[a-zA-Z0-9\_\-][a-zA-Z0-9\_\-]{0,62})+$"
         values = {}
         if hasattr(args, 'd_id'):
-            if re.search(r'\d+', args.d_id):
+            if isinstance(args.d_id, int) or re.search(r'\d+', args.d_id):
                 values["d_id"] = args.d_id
             else:
-                return public.return_message(-1,0, "Please check if the [{}] format is correct For example: {}".format("d_id", "99"))
+                return public.return_message(-1, 0, public.lang("Please check if the [{}] format is correct For example: {}", "d_id", "99"))
         if hasattr(args, 's_id'):
-            if re.search(r'\d+', args.s_id):
+            if isinstance(args.s_id, int) or re.search(r'\d+', args.s_id):
                 values["s_id"] = args.s_id
             else:
-                return public.return_message(-1,0, "Please check if the [{}] format is correct For example: {}".format("s_id", "99"))
+                return public.return_message(-1, 0, public.lang("Please check if the [{}] format is correct For example: {}", "s_id", "99"))
         if hasattr(args, 'language'):
             if args.language in self.get_language()['message']:
                 values['language'] = args.language
             else:
-                return public.return_message(-1,0, "Please check if the [{}] format is correct For example: {}".format("language", "en"))
+                return public.return_message(-1, 0, public.lang("Please check if the [{}] format is correct For example: {}", "language", "en"))
         if hasattr(args, 'domain'):
             if re.search(rep_domain, args.domain):
                 values['domain'] = public.xssencode2(args.domain)
             else:
-                return public.return_message(-1,0, "Please check if the [{}] format is correct For example: {}".format("domain", "aapanel.com"))
+                return public.return_message(-1, 0, public.lang("Please check if the [{}] format is correct For example: {}", "domain", "aapanel.com"))
         if hasattr(args, 'weblog_title'):
             values['weblog_title'] = public.xssencode2(args.weblog_title)
         if hasattr(args, 'user_name'):
@@ -1017,12 +1076,12 @@ class one_key_wp:
             if args.pw_weak in ['on', 'off']:
                 values['pw_weak'] = args.pw_weak
             else:
-                return public.return_message(-1,0, "Please check if the [{}] format is correct For example: {}".format("pw_weak", "on/off"))
+                return public.return_message(-1, 0, public.lang("Please check if the [{}] format is correct For example: {}", "pw_weak", "on/off"))
         if hasattr(args, 'admin_email'):
             if re.search(rep_email, args.admin_email):
                 values['admin_email'] = public.xssencode2(args.admin_email)
             else:
-                return public.return_message(-1,0, "Please check if the [{}] format is correct For example: {}".format("admin_email", "adimn@aapanel.com"))
+                return public.return_message(-1, 0, public.lang("Please check if the [{}] format is correct For example: {}", "admin_email", "adimn@aapanel.com"))
         if hasattr(args, 'prefix'):
             values['prefix'] = public.xssencode2(args.prefix)
         if hasattr(args, 'php_version'):
@@ -1045,7 +1104,7 @@ class one_key_wp:
             values['act'] = public.xssencode2(args.act)
         if hasattr(args, 'version'):
             values['version'] = public.xssencode2(args.version)
-        return public.return_message(0,0, values)
+        return public.return_message(0, 0, values)
 
     # 删除网站
     def del_site(self, get):
@@ -1105,11 +1164,11 @@ class one_key_wp:
         try:
             self.write_logs('', clean=True)
             values = self.check_param(get)
-            if values['status']==-1:
+            if values['status'] == -1:
                 # 删除自动创建的空白网站
                 self.del_site(get)
                 return values
-            values=values['message']
+            values = values['message']
             s_id = values['s_id']  # 网站ID
             d_id = values['d_id']  # 数据库ID
             prefix = values['prefix']  # 前缀
@@ -1142,78 +1201,83 @@ class one_key_wp:
             values['site_name'] = site_info['name']
 
             # 开始下载安装包
-            if self.__IS_PRO_MEMBER:
-                from wp_toolkit import wp_version
+            from wp_toolkit import wp_version
 
-                wp_version_obj = wp_version()
+            wp_version_obj = wp_version()
 
-                if 'package_version' not in get or get.package_version is None:
-                    get.package_version = wp_version_obj.latest_version()['version']
+            if 'package_version' not in get or get.package_version is None:
+                get.package_version = wp_version_obj.latest_version()['version']
 
-                self.write_logs('|-Package version: {}'.format(get.package_version))
+            self.write_logs('|-Package version: {}'.format(get.package_version))
 
-                # 下载特定版本的安装包
-                self.package_zip = wp_version_obj.download_package(get.package_version)
-            else:
-                # 下载最新版本的安装包
-                self.download_latest_package()
+            # 下载特定版本的安装包
+            self.package_zip = wp_version_obj.download_package(get.package_version)
 
             self.unzip_package(site_info['path'])
 
             # 优化PHP
             res = optimize_php().optimize_php(get)
             if not res['status']:
-                return public.return_message(-1,0,res)
+                return public.return_message(-1, 0, res)
 
             # 初始化wp
             self.init_wp(values)
-            self.__write_db(s_id, d_id, prefix, get.user_name, get.admin_password)
+            self.write_db(s_id, d_id, prefix, get.user_name, get.admin_password)
 
             # 优化mysql
             optimize_db().self_db_cache(get)
 
             # 设置fastcgi缓存
             if int(get.enable_cache) == 1 and public.get_webserver() == 'nginx':
-                if self.__IS_PRO_MEMBER:
-                    from wp_toolkit import wpmgr, wpfastcgi_cache
+                from wp_toolkit import wpmgr, wpfastcgi_cache
 
-                    # 配置Nginx-fastcgi-cache
-                    wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
+                # 配置Nginx-fastcgi-cache
+                wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
 
-                    self.write_logs('|-WP Plugin nginx-helper installing...')
-                    wpmgr(s_id).init_plugin_nginx_helper()
-                    self.write_logs('|-WP Plugin nginx-helper installation succeeded')
-                else:
-                    # 安装nginxHelper
-                    #  slug nginx-helper
-                    values['slug'] = "nginx-helper"
-                    values['wp_action'] = "install-plugin"
-                    self.install_plugin(values)
-                    self.act_nginx_helper_active(values)
+                self.write_logs('|-WP Plugin nginx-helper installing...')
+                wpmgr(s_id).init_plugin_nginx_helper()
+                self.write_logs('|-WP Plugin nginx-helper installation succeeded')
 
-                    # 安装并启用nginx-helper插件
-                    self.set_nginx_helper(get)
+                # if self.__IS_PRO_MEMBER:
+                #     from wp_toolkit import wpmgr, wpfastcgi_cache
+                #
+                #     # 配置Nginx-fastcgi-cache
+                #     wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
+                #
+                #     self.write_logs('|-WP Plugin nginx-helper installing...')
+                #     wpmgr(s_id).init_plugin_nginx_helper()
+                #     self.write_logs('|-WP Plugin nginx-helper installation succeeded')
+                # else:
+                #     # 安装nginxHelper
+                #     #  slug nginx-helper
+                #     values['slug'] = "nginx-helper"
+                #     values['wp_action'] = "install-plugin"
+                #     self.install_plugin(values)
+                #     self.act_nginx_helper_active(values)
+                #
+                #     # 安装并启用nginx-helper插件
+                #     self.set_nginx_helper(get)
 
             # 设置登录入口保护
             if int(get.get('enable_whl', 0)) == 1:
-                if self.__IS_PRO_MEMBER:
-                    from wp_toolkit import wpmgr
+                from wp_toolkit import wpmgr
 
-                    # 安装并启用wps-hide-login插件
-                    self.write_logs('|-WP Plugin wps-hide-login installing...')
-                    wpmgr(s_id).init_plugin_wps_hide_login(get.get('whl_page', 'login'), get.get('whl_redirect_admin', '404'))
-                    self.write_logs('|-WP Plugin wps-hide-login installation succeeded')
+                # 安装并启用wps-hide-login插件
+                self.write_logs('|-WP Plugin wps-hide-login installing...')
+                wpmgr(s_id).init_plugin_wps_hide_login(get.get('whl_page', 'login'),
+                                                       get.get('whl_redirect_admin', '404'))
+                self.write_logs('|-WP Plugin wps-hide-login installation succeeded')
 
             public.ServiceReload()
 
             self.write_logs("\n\n\n|-Deployment was successful!")
 
-            return public.return_message(0,0, "Deployment was successful!")
+            return public.return_message(0, 0, public.lang("Deployment was successful!"))
         except:
             self.del_site(get)
             from traceback import format_exc
             public.print_log(format_exc())
-            return public.return_message(-1,0, "Deployment failed!")
+            return public.return_message(-1, 0, public.lang("Deployment failed!"))
 
     # 重新关联WP网站数据库
     def reset_wp_db(self, args):
@@ -1225,15 +1289,15 @@ class one_key_wp:
         try:
             site_id = int(args.site_id)
         except:
-            return public.return_message(-1,0, "Site ID must be numeric")
+            return public.return_message(-1, 0, public.lang("Site ID must be numeric"))
         db_info = public.M("databases").where("name=?", (db_name,)).field('id').find()
         if 'id' not in db_info:
-            return public.return_message(-1,0, "This database was not found!")
+            return public.return_message(-1, 0, public.lang("This database was not found!"))
         pdata = {
             "d_id": db_info['id']
         }
         public.M('wordpress_onekey').where("s_id=?", (site_id,)).update(pdata)
-        return public.return_message(0,0, "Setup successfully!")
+        return public.return_message(0, 0, public.lang("Setup successfully!"))
 
     # 获取WP Toolkit配置信息
     def get_wp_configurations(self, args: public.dict_obj):
@@ -1249,11 +1313,9 @@ class one_key_wp:
             return public.return_message(-1, 0, str(ex))
 
         from wp_toolkit import wpmgr
-
         wpmgr_obj = wpmgr(args.s_id)
-
         wp_local_version = wpmgr_obj.get_local_version()
-        wp_latest_version = wpmgr_obj.get_latest_version(available=True)['version']
+        wp_latest_version = wpmgr_obj.get_latest_version(available=True).get('version', '')
         can_upgrade = wp_latest_version > wp_local_version
 
         wp_toolkit_config_data = wpmgr_obj.get_wp_toolkit_config_data()
@@ -1330,7 +1392,8 @@ class one_key_wp:
 
             # 启用插件
             else:
-                wpmgr_obj.config_plugin_wps_hide_login(args.get('whl_page', 'login'), args.get('whl_redirect_admin', '404'))
+                wpmgr_obj.config_plugin_wps_hide_login(args.get('whl_page', 'login'),
+                                                       args.get('whl_redirect_admin', '404'))
 
                 # 写操作日志
                 wpmgr.log_opt('Activate plugin [{}] successfully', ('WPS Hide Login',))
@@ -1432,7 +1495,7 @@ class optimize_php:
             one_key_wp().write_logs("|-PHP FPM Optimization failed: {}".format(result))
             return public.return_msg_gettext(False, "PHP FPM Optimization failed: {}", (result,))
         one_key_wp().write_logs("|-PHP FPM optimization succeeded")
-        return public.return_msg_gettext(True, "PHP FPM optimization succeeded")
+        return public.return_msg_gettext(True, public.lang("PHP FPM optimization succeeded"))
 
 
 class optimize_db:
@@ -1442,7 +1505,6 @@ class optimize_db:
         mem_total = int(get_mem())
         if mem_total <= 2048:
             get.key_buffer_size = '128'
-            get.query_cache_size = '64'
             get.tmp_table_size = '64'
             get.innodb_buffer_pool_size = '256'
             get.innodb_log_buffer_size = '16'
@@ -1455,11 +1517,9 @@ class optimize_db:
             get.thread_cache_size = '64'
             get.table_open_cache = '128'
             get.max_connections = '100'
-            get.query_cache_type = '1'
             get.max_heap_table_size = '64'
         elif 2048 < mem_total <= 4096:
             get.key_buffer_size = '256'
-            get.query_cache_size = '128'
             get.tmp_table_size = '384'
             get.innodb_buffer_pool_size = '384'
             get.innodb_log_buffer_size = '16'
@@ -1472,11 +1532,9 @@ class optimize_db:
             get.thread_cache_size = '96'
             get.table_open_cache = '192'
             get.max_connections = '200'
-            get.query_cache_type = '1'
             get.max_heap_table_size = '384'
         elif 4096 < mem_total <= 8192:
             get.key_buffer_size = '384'
-            get.query_cache_size = '192'
             get.tmp_table_size = '512'
             get.innodb_buffer_pool_size = '512'
             get.innodb_log_buffer_size = '16'
@@ -1489,11 +1547,9 @@ class optimize_db:
             get.thread_cache_size = '128'
             get.table_open_cache = '384'
             get.max_connections = '300'
-            get.query_cache_type = '1'
             get.max_heap_table_size = '512'
         elif 8192 < mem_total <= 16384:
             get.key_buffer_size = '512'
-            get.query_cache_size = '256'
             get.tmp_table_size = '1024'
             get.innodb_buffer_pool_size = '1024'
             get.innodb_log_buffer_size = '16'
@@ -1506,11 +1562,9 @@ class optimize_db:
             get.thread_cache_size = '192'
             get.table_open_cache = '1024'
             get.max_connections = '400'
-            get.query_cache_type = '1'
             get.max_heap_table_size = '1024'
         elif 16384 < mem_total <= 32768:
             get.key_buffer_size = '1024'
-            get.query_cache_size = '384'
             get.tmp_table_size = '2048'
             get.innodb_buffer_pool_size = '4096'
             get.innodb_log_buffer_size = '16'
@@ -1523,11 +1577,9 @@ class optimize_db:
             get.thread_cache_size = '256'
             get.table_open_cache = '2048'
             get.max_connections = '500'
-            get.query_cache_type = '1'
             get.max_heap_table_size = '2048'
         elif 32768 < mem_total:
             get.key_buffer_size = '2048'
-            get.query_cache_size = '500'
             get.tmp_table_size = '4096'
             get.innodb_buffer_pool_size = '8192'
             get.innodb_log_buffer_size = '16'
@@ -1540,13 +1592,11 @@ class optimize_db:
             get.thread_cache_size = '512'
             get.table_open_cache = '2048'
             get.max_connections = '1000'
-            get.query_cache_type = '1'
             get.max_heap_table_size = '4096'
         one_key_wp().write_logs("""
  =====================Mysql parameters=======================
 
      key_buffer_size: {}
-     query_cache_size: {}
      tmp_table_size: {}
      innodb_buffer_pool_size: {}
      innodb_log_buffer_size: {}
@@ -1559,15 +1609,14 @@ class optimize_db:
      thread_cache_size: {}
      table_open_cache: {}
      max_connections: {}
-     query_cache_type: {}
      max_heap_table_size: {}
 
  =====================Mysql parameters=======================
 
- """.format(get.key_buffer_size, get.query_cache_size, get.tmp_table_size, get.innodb_buffer_pool_size,
+ """.format(get.key_buffer_size, get.tmp_table_size, get.innodb_buffer_pool_size,
             get.innodb_log_buffer_size, get.sort_buffer_size, get.read_buffer_size, get.read_rnd_buffer_size,
             get.join_buffer_size, get.thread_stack, get.binlog_cache_size, get.thread_cache_size, get.table_open_cache,
-            get.max_connections, get.query_cache_type, get.max_heap_table_size))
+            get.max_connections, get.max_heap_table_size))
         import database
         result = database.database().SetDbConf(get)
         if not result['status']:
@@ -1575,7 +1624,7 @@ class optimize_db:
             return public.return_msg_gettext(False, "Mysql optimization failed {}", (result,))
         public.ExecShell("/etc/init.d/mysqld restart")
         one_key_wp().write_logs("|-Mysql optimization succeeded")
-        return public.return_msg_gettext(True, "Mysql optimization succeeded")
+        return public.return_msg_gettext(True, public.lang("Mysql optimization succeeded"))
 
 
 # Nginx缓存加速WP站点
@@ -1588,15 +1637,15 @@ set $skip_cache 0;
 if ($request_method = POST) {
     set $skip_cache 1;
 }  
- 
+
 if ($query_string != "") {
     set $skip_cache 1;
 } 
-  
+
 if ($request_uri ~* "/wp-admin/|/xmlrpc.php|wp-.*.php|/feed/|index.php|sitemap(_index)?.xml") {
     set $skip_cache 1;
 }
- 
+
 if ($http_cookie ~* "comment_author|wordpress_[a-f0-9]+|wp-postpass|wordpress_no_cache|wordpress_logged_in") {
     set $skip_cache 1;
 }
@@ -1605,7 +1654,7 @@ location ~ (/[^/]+\.php)(/|$) {
     if ( !-f $document_root$1 ) {
         return 404;
     }
-    
+
     # try_files $uri =404;
     fastcgi_pass unix:/tmp/php-cgi-%s.sock;
     fastcgi_index index.php;
@@ -1637,6 +1686,8 @@ location ~ /purge(/.*) {
         if public.get_webserver() != "nginx":
             return False
         conf_path = "/www/server/panel/vhost/nginx/{}.conf".format(sitename)
+        if not os.path.exists(conf_path):
+            return False
         content = public.readFile(conf_path)
         fastcgi_conf = "include enable-php-{}-wpfastcgi.conf;".format(php_v)
         # return conf_path,fastcgi_conf
@@ -1664,7 +1715,7 @@ location ~ /purge(/.*) {
         if "#AAPANEL_FASTCGI_CONF_BEGIN" in content:
             one_key_wp().write_logs("|-Nginx FastCgi cache configuration already exists")
             print("Nginx FastCgi cache configuration already exists")
-            return public.return_msg_gettext(True, "Nginx FastCgi cache configuration already exists")
+            return public.return_msg_gettext(True, public.lang("Nginx FastCgi cache configuration already exists"))
         rep = "http\\s*\n\\s*{"
         content = re.sub(rep, "http\n\t{" + conf, content)
         public.writeFile(conf_path, content)
@@ -1675,10 +1726,10 @@ location ~ /purge(/.*) {
             public.restore_file(conf_path)
             one_key_wp().write_logs("|-Nginx FastCgi configuration error! {}".format(conf_pass))
             print("Nginx FastCgi configuration error! {}".format(conf_pass))
-            return public.return_msg_gettext(False, "Nginx FastCgi configuration error!")
+            return public.return_msg_gettext(False, public.lang("Nginx FastCgi configuration error!"))
         one_key_wp().write_logs("|-Nginx FastCgi cache configuration complete...")
         print("Nginx FastCgi cache configuration complete")
-        return public.return_msg_gettext(True, "Nginx FastCgi cache configuration complete")
+        return public.return_msg_gettext(True, public.lang("Nginx FastCgi cache configuration complete"))
 
     def set_nginx_init(self):
         # if not os.path.exists("/dev/shm/nginx-cache/wp"):
@@ -1697,7 +1748,7 @@ location ~ /purge(/.*) {
         if "#AAPANEL_FASTCGI_CONF_BEGIN" in content_init:
             one_key_wp().write_logs("|-Nginx init FastCgi cache configuration already exists")
             print("Nginx init FastCgi cache configuration already exists")
-            return public.return_msg_gettext(True, "Nginx init FastCgi cache configuration already exists")
+            return public.return_msg_gettext(True, public.lang("Nginx init FastCgi cache configuration already exists"))
         # content_init = re.sub(r"\$NGINX_BIN -c \$CONFIGFILE", + conf2, content_init)
         rep2 = r"\$NGINX_BIN -c \$CONFIGFILE"
         content_init = re.sub(rep2, conf2 + "        $NGINX_BIN -c $CONFIGFILE", content_init)
@@ -1710,10 +1761,10 @@ location ~ /purge(/.*) {
             public.restore_file(init_path)
             one_key_wp().write_logs("|-Nginx init FastCgi configuration error! {}".format(conf_pass))
             print("Nginx init FastCgi configuration error! {}".format(conf_pass))
-            return public.return_msg_gettext(False, "Nginx init FastCgi configuration error!")
+            return public.return_msg_gettext(False, public.lang("Nginx init FastCgi configuration error!"))
         one_key_wp().write_logs("|-Nginx init FastCgi cache configuration complete...")
         print("Nginx init FastCgi cache configuration complete")
-        return public.return_msg_gettext(True, "Nginx init FastCgi cache configuration complete")
+        return public.return_msg_gettext(True, public.lang("Nginx init FastCgi cache configuration complete"))
 
     def set_fastcgi_php_conf(self, version):
         conf_path = "/www/server/nginx/conf/enable-php-{}-wpfastcgi.conf".format(version)
@@ -1730,13 +1781,13 @@ location ~ /purge(/.*) {
         if not conf:
             print("Website configuration file does not exist {}".format(conf_path))
             one_key_wp().write_logs("|-Website configuration file does not exist: {}".format(conf_path))
-            return public.return_message(-1,0,False)
+            return public.return_message(-1, 0, False)
         if act == 'disable':
             fastcgi_conf = "include enable-php-{}-wpfastcgi.conf;".format(version)
             if fastcgi_conf not in conf:
                 print("FastCgi configuration does not exist in website configuration")
                 one_key_wp().write_logs("|-FastCgi configuration does not exist in website configuration, skip")
-                return public.return_message(-1,0, "FastCgi configuration does not exist in website configuration")
+                return public.return_message(-1, 0, public.lang("FastCgi configuration does not exist in website configuration"))
             rep = r"include\s+enable-php-{}-wpfastcgi.conf;".format(version)
             conf = re.sub(rep, "include enable-php-{}.conf;".format(version), conf)
         else:
@@ -1744,8 +1795,7 @@ location ~ /purge(/.*) {
             if fastcgi_conf in conf:
                 one_key_wp().write_logs(
                     "|-The FastCgi configuration already exists in the website configuration, skip it")
-                return public.return_message(0,0,
-                                                 "The FastCgi configuration already exists in the website configuration")
+                return public.return_message(0, 0, public.lang("The FastCgi configuration already exists in the website configuration"))
             rep = r"include\s+enable-php-{}.conf;".format(version)
 
             one_key_wp().write_logs("|-Current configuration: {}".format(conf))
@@ -1760,10 +1810,10 @@ location ~ /purge(/.*) {
             public.restore_file(conf_path)
             print("Website FastCgi configuration error {}".format(conf_pass))
             one_key_wp().write_logs("|-Website FastCgi configuration error: {}", (conf_pass,))
-            return public.return_message(-1,0, "Website FastCgi configuration error！")
+            return public.return_message(-1, 0, public.lang("Website FastCgi configuration error！"))
         print("Website FastCgi configuration complete")
         one_key_wp().write_logs("|-Website FastCgi configuration complete...")
-        return public.return_message(0,0, "Website FastCgi configuration complete")
+        return public.return_message(0, 0, public.lang("Website FastCgi configuration complete"))
 
     def set_fastcgi(self, values):
         """
@@ -1796,7 +1846,7 @@ location ~ /purge(/.*) {
             one_key_wp().write_logs("|-Wordpress configuration file does not exist: {}".format(conf_file))
             return public.return_msg_gettext(False, "Wordpress configuration file does not exist: {}", (conf_file,))
         if re.search(r'''define\(\s*'RT_WP_NGINX_HELPER_CACHE_PATH'\s*,''', conf):
-        # if "RT_WP_NGINX_HELPER_CACHE_PATH" in conf:
+            # if "RT_WP_NGINX_HELPER_CACHE_PATH" in conf:
             one_key_wp().write_logs("|-Cache cleaning configuration already exists, skip")
             print("Cache cleaning configuration already exists")
             return

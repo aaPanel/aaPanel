@@ -143,7 +143,7 @@ class Group:
         """
         # 检查self.config是否为字典
         if not isinstance(self.config, dict):
-            return "参数格式错误"
+            return "Parameter format error"
 
         # 检查'sort_type'键是否存在且值为("simultaneous" or "sequence")
         if "sort_type" not in self.config or self.config["sort_type"] not in ("simultaneous", "sequence"):
@@ -169,7 +169,7 @@ class Group:
 
             # 检查id、level是否为整数
             if not isinstance(project["id"], int) or not isinstance(project["level"], int):
-                return "项目id或优先级参数格式错误"
+                return "The Project ID or Priority parameter is in the wrong format"
 
             # 检查'check_info'是否为字典
             if not isinstance(project["check_info"], dict):
@@ -879,7 +879,7 @@ class GroupMager:
             return "项目组不存在"
         p = public.M("sites").where('project_type=? AND id=?', ('Java', project_id)).find()
         if not p:
-            return "指定项目不存在"
+            return "The specified item does not exist"
 
         target_idx = None
         for idx, p in enumerate(g.config["projects"]):
@@ -932,7 +932,7 @@ class main:
         try:
             group_id = get.group_id.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         g = Group(group_id)
         if not g.config:
             return json_response(status=False, msg="项目组不存在")
@@ -944,7 +944,7 @@ class main:
         try:
             group_name = get.group_name.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         res = GroupMager().add_group({
             "group_name": group_name,
             "sort_type": "simultaneous",
@@ -960,9 +960,9 @@ class main:
         try:
             group_id = get.group_id.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         GroupMager.remove_group(group_id)
-        return json_response(status=True, msg="删除成功")
+        return json_response(status=True, msg="Successfully delete")
 
     @staticmethod
     def add_project_to_group(get):
@@ -980,7 +980,7 @@ class main:
             if hasattr(get, "level") and get.level:
                 level = int(get.level)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         res = GroupMager.add_project_to_group(group_id, project_name, check_info, level)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
@@ -998,9 +998,9 @@ class main:
                 if isinstance(get.project_ids, list):
                     project_ids = get.project_ids
                 else:
-                    return json_response(status=False, msg="参数错误")
+                    return json_response(status=False, msg="Parameter error")
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         res = GroupMager.add_projects_to_group(group_id, project_ids)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
@@ -1013,12 +1013,12 @@ class main:
             group_id = get.group_id.strip()
             project_id = int(get.project_id)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         res = GroupMager.remove_project_from_group(group_id, project_id)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
         else:
-            return json_response(status=True, msg="删除成功")
+            return json_response(status=True, msg="Successfully delete")
 
     @staticmethod
     def modify_group(get):
@@ -1029,7 +1029,7 @@ class main:
             else:
                 group_data = get.group_data
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         res = GroupMager.modify_group(group_id, group_data)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
@@ -1048,7 +1048,7 @@ class main:
             if hasattr(get, "level") and get.level:
                 level = int(get.level)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         res = GroupMager.modify_group_project(group_id, project_id, check_info, level)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
@@ -1064,7 +1064,7 @@ class main:
             else:
                 project_datas = get.project_datas
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         res = GroupMager.modify_group_projects(group_id, project_datas)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
@@ -1077,7 +1077,7 @@ class main:
             group_id = get.group_id.strip()
             sort_type = get.sort_type.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         res = GroupMager.change_sort_type(group_id, sort_type)
         if isinstance(res, str):
             return json_response(status=False, msg=res)
@@ -1089,7 +1089,7 @@ class main:
         try:
             group_id = get.group_id.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         g = Group(group_id)
         if not g.config:
@@ -1107,7 +1107,7 @@ class main:
         try:
             group_id = get.group_id.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         g = Group(group_id)
         if not g.config:
@@ -1128,7 +1128,7 @@ class main:
             if hasattr(get, "last_write_time") and get.last_write_time:
                 last_write_time = float(get.last_write_time)
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
 
         g = Group(group_id)
         if not g.config:
@@ -1150,9 +1150,9 @@ class main:
         try:
             group_id = get.group_id.strip()
         except:
-            return json_response(status=False, msg="参数错误")
+            return json_response(status=False, msg="Parameter error")
         Group(group_id).termination_operation()
-        return json_response(status=True, msg="操作成功")
+        return json_response(status=True, msg="operate successfully")
 
     @staticmethod
     def spring_projects(get):

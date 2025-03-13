@@ -6,8 +6,17 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
+from public.hook_import import hook_import
+hook_import()
+
 import time,public,db,os,sys,json,re,shutil
 os.chdir('/www/server/panel')
+
+if not 'class/' in sys.path:
+    sys.path.insert(0, 'class/')
+
+if not 'class_v2/' in sys.path:
+    sys.path.insert(0, 'class_v2/')
 
 def control_init():
     update_py312()
@@ -43,11 +52,14 @@ def control_init():
     remove_other()
     deb_bashrc()
     # upgrade_gevent()
+    install_pycountry()
     upgrade_polkit()
     #hide_docker()
     rep_pyenv_link()
     rm_apache_cgi_test()
     uninstall_pip_lxml()
+    install_pyroute2()
+    upgrade_fastcgi_cache_conf_format()
 
 def rm_apache_cgi_test():
     '''
@@ -391,7 +403,32 @@ def upgrade_gevent():
         os.system("bash {}".format(upgrade_script_file))
         if os.path.exists(tip_file): os.remove(tip_file)
 
-
+def install_pycountry():
+    '''
+        @name 安装pycountry
+    '''
+    tip_file = '{}/data/install_pycountry.pl'.format(public.get_panel_path())
+    script_file = '{}/script/install_pycountry.sh'.format(public.get_panel_path())
+    if os.path.exists(script_file) and not os.path.exists(tip_file):
+        public.writeFile(tip_file,'1')
+        os.system("bash {}".format(script_file))
+        public.restart_panel()
+    whl_file = '{}/script/pycountry-24.6.1-py3-none-any.whl'.format(public.get_panel_path())
+    if os.path.exists(whl_file):
+        os.remove(whl_file)
+def install_pyroute2():
+    '''
+        @name 安装pyroute2
+    '''
+    tip_file = '{}/data/install_pyroute2.pl'.format(public.get_panel_path())
+    script_file = '{}/script/install_pyroute2.sh'.format(public.get_panel_path())
+    if os.path.exists(script_file) and not os.path.exists(tip_file):
+        public.writeFile(tip_file,'1')
+        os.system("bash {}".format(script_file))
+        public.restart_panel()
+    whl_file = '{}/script/pyroute2-0.7.12-py3-none-any.whl'.format(public.get_panel_path())
+    if os.path.exists(whl_file):
+        os.remove(whl_file)
 def deb_bashrc():
     '''
         @name 针对debian/ubuntu未调用bashrc导致的问题
@@ -460,11 +497,6 @@ def check_default_curl_file():
         default_curl_body = public.readFile(default_file)
         if default_curl_body:
             public.WriteFile(default_file,default_curl_body.strip())
-
-def set_wp_cache_dir():
-    import one_key_wp
-    one_key_wp.fast_cgi().set_nginx_conf()
-    public.ExecShell("/etc/init.d/nginx restart")
 
 def set_php_cli_env():
     '''
@@ -960,6 +992,11 @@ def clean_session():
         return True
     except:return False
 
+
+# 将旧的fastcgi缓存配置文件升级到新的配置文件格式
+def upgrade_fastcgi_cache_conf_format():
+    from wp_toolkit import wpfastcgi_cache
+    wpfastcgi_cache().upgrade_fastcgi_cache_format()
 
 
 if __name__ == '__main__':

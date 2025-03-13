@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsubscribe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .unsubscribe-container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #444;
+        }
+        .options {
+            margin: 20px 0;
+        }
+        .options label {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            font-size: 16px;
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            accent-color:#20a53a;
+        }
+        button {
+            padding: 12px 0px;
+            background-color: #20a53a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #25b942;
+        }
+        /* loading效果 */
+        .loading {
+            position: absolute;
+            display: none;
+            align-items: center;
+            background-color: white;
+            padding: 10px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .spinner {
+            border: 8px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+    <div id="success-message" class="loading">
+        <div class="icon">✔️</div>
+        <p id="tips_success"></p>
+    </div>
+    <div id="error-message" class="loading">
+        <div class="icon">❌</div>
+        <p id="tips_error"></p>
+    </div>
+    <div class="unsubscribe-container" id="container">
+        <h2>Are you sure to unsubscribe?</h2>
+        <div class="options"  id="reasonOptions">
+            <label><input type="checkbox" id="selectAll">Select All</label>
+        </div>
+        <button onclick="confirmUnsubscribe()">Sure</button>
+    </div>
+<script>
+    // 维护用原生写法（Network reasons：不引入jq\layer）
+    function showSuccess(value) {
+        const successBox = document.getElementById('success-message');
+        const containerBox = document.getElementById('container');
+        const tips = document.getElementById('tips_success')
+        tips.textContent = value
+        containerBox.style.display = 'none';
+        successBox.style.display = 'flex';
+    }
+
+    function showError(value) {
+        const errorBox = document.getElementById('error-message');
+        const tips = document.getElementById('tips_error')
+        tips.textContent = value
+        errorBox.style.display = 'flex';
+        setTimeout(() => {
+            errorBox.style.display = 'none';
+        }, 2000);
+    }
+    // 获取页面传参
+    function getQueryParams() {
+        const params = {};
+        const queryString = window.location.search.substring(1);
+        const regex = /([^&=]+)=([^&]*)/g;
+        let m;
+        while (m = regex.exec(queryString)) {
+            params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+        }
+        return params;
+    }
+
+    var params; // 参数
+    window.onload = function() {
+        params = getQueryParams();
+        requestType({email:this.params.email});
+    }
+
+    // 渲染页面类型
+    function renderType(data) {
+        const reasonOptionsDiv = document.getElementById('reasonOptions');
+        data.forEach(reason => {
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = 'reason';
+            checkbox.value = reason.id;
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(reason.mail_type));
+            reasonOptionsDiv.appendChild(label);
+        });
+        // 绑定全选复选框事件
+        const selectAllCheckbox = document.getElementById('selectAll');
+        selectAllCheckbox.addEventListener('change', () => {
+            const checkboxes = document.querySelectorAll('input[name="reason"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked; // 同步选中状态
+            });
+        });
+        // 监测其他复选框的选中状态
+        reasonOptionsDiv.addEventListener('change', () => {
+            const checkboxes = document.querySelectorAll('input[name="reason"]');
+            const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+            selectAllCheckbox.checked = allChecked; // 更新全选复选框的状态
+        });
+    }
+
+    // 请求取消订阅类型
+    function requestType(reqData) {
+        document.getElementById('loading').style.display = 'flex';
+        fetch(params.url_type, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams(reqData).toString()
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status){
+                this.renderType(data.msg);
+            }else{
+                this.showError(data.msg)
+            }
+        })
+        .catch((err) => {
+            this.showError(err)
+        })
+        .finally(() => {
+            document.getElementById('loading').style.display = 'none';
+        });
+    }
+
+    // 请求取消订阅
+    function requestApi(value) {
+        document.getElementById('loading').style.display = 'flex';
+        const data = {
+            jwt: params.jwt,
+            id: value
+        };
+
+        fetch(params.url_unsubscribe, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams(data).toString()
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then((res) => {
+            if(res.status){
+                this.showSuccess(res.msg)
+            }else{
+                this.showError(res.msg)
+            }
+        })
+        .catch((err) => {
+            this.showError(err)
+        })
+        .finally(() => {
+            document.getElementById('loading').style.display = 'none';
+        });
+    }
+
+    // 确认取消事件
+    function confirmUnsubscribe() {
+        const selectedReasons = Array.from(document.querySelectorAll('input[name="reason"]:checked'))
+            .map(checkbox => checkbox.value)
+            .join(',');
+        if (!selectedReasons) {
+            this.showError('Please select at least one')
+            return;
+        }
+        requestApi(selectedReasons);
+    }
+</script>
+</body>
+</html>

@@ -9,9 +9,11 @@ name=$3
 version=$4
 
 check_dash=$(readlink -f /bin/sh)
-if [ "$check_dash" = "/usr/bin/dash" ] || [ "$check_dash" = "dash" ]; then
+if [ "$check_dash" = "/usr/bin/dash" ] || [ "$check_dash" = "/bin/dash" ] || [ "$check_dash" = "dash" ]; then
     if [ -f "/usr/bin/bash" ]; then
         ln -sf /usr/bin/bash /bin/sh
+    elif [ -f "/bin/bash" ]; then
+        ln -sf /bin/bash /bin/sh
     fi
 fi
 
@@ -27,11 +29,11 @@ fi
 
 wget --no-check-certificate -O $name.sh $serverUrl/$mtype/$name.sh
 if [ "$actionType" == 'install' ];then
-	sh lib.sh
+	bash lib.sh
 fi
 
 sed -i 's/download\.bt\.cn/node\.aapanel\.com/g' $name.sh
 
-sh $name.sh $actionType $version
+bash $name.sh $actionType $version
 
 echo '|-Successify --- Command executed! ---'
