@@ -162,5 +162,10 @@
 	"1a297a2e0633fe06b9e826043db42f6e": "Mise à jour du service, veuillez patienter ...",
 	"06933067aafd48425d67bcb01bba5cb6": "Mise à jour",
 	"1e2265cb27ce1ed730d4930830771361": "Nombre de comptes",
-	"d12917fb83613a6173585079ddd0b6e4": "Il existe une nouvelle version ({0}) disponible pour la mise à jour,"
+	"d12917fb83613a6173585079ddd0b6e4": "Il existe une nouvelle version ({0}) disponible pour la mise à jour,",
+	"becb8926a2481afd9fd9185934fbbd6f": "Domaines de messagerie maximum",
+	"4a19980fe559d96c42d74587496f7a6e": "Si l'API n'est pas activée ou que 127.0.0.1 n'est pas ajoutée à la liste blanche de l'API, le bureau de poste de sous-panneau sera inutilisable.",
+	"5589134ff82f1bcf31e45a92417cd572": "Blanchiment en un clic",
+	"79e026bbc1d1e24364be67755d853ea2": "Nombre maximum de domaines de messagerie",
+	"df19b1fcee11636e30b0fb095938c4e7": "Temps de mise à jour:"
 }

@@ -13,6 +13,7 @@ import psutil
 
 from mod.base.web_conf import RealSSLManger
 from script.restart_services import manual_flag
+from ssl_domainModelV2.model import DnsDomainSSL
 from .base_task import BaseTask
 from .mods import PUSH_DATA_PATH, TaskConfig, SenderConfig
 from .send_tool import WxAccountMsg, WxAccountLoginMsg
@@ -20,7 +21,8 @@ from .util import read_file, DB, write_file, check_site_status, GET_CLASS, ExecS
     public_get_cache_func, \
     public_set_cache_func, get_network_ip, public_get_user_info, public_http_post, panel_version
 
-
+import public
+import public.PluginLoader as plugin_loader
 class _WebInfo:
 
     def __init__(self):
@@ -63,6 +65,118 @@ class _WebInfo:
 web_info = _WebInfo()
 
 
+class SSLCertificateTask(BaseTask):
+    def __init__(self):
+        super().__init__()
+        self.source_name = "SSL"
+        self.title = "SSL Certificate expiration"
+        self.template_name = "Certificate (SSL) Expiration"
+        self._task_config = TaskConfig()
+        self.task_id = None
+
+    def get_keyword(self, task_data: dict) -> str:
+        return task_data["project"]
+
+    def get_push_data(self, task_id: str, task_data: dict) -> Optional[dict]:
+        try:
+            days = int(task_data.get("cycle", 15))
+        except Exception:
+            days = 15
+
+        # 过滤要告警的对象
+        msg_list = []
+
+        domain_list = []  # 域名模块
+        mail_list = []  # 邮件模块
+
+        # ============= domain ssl manager ================
+        after_ts = (time.time() + 86400 * days) * 1000
+        ssl_obj = DnsDomainSSL.objects.filter(not_after_ts__lt=after_ts)
+        for ssl in ssl_obj:
+            domain_list.append(ssl.subject)
+
+        # =============  mail ssl  ========================
+        # 有插件 已开启 即将过期
+        mail_database_path = '/www/vmail/postfixadmin.db'
+        vmail_ssl_map = '/etc/postfix/vmail_ssl.map'
+        if os.path.exists(mail_database_path) and os.path.exists(vmail_ssl_map):
+            ssl_conf = public.readFile(vmail_ssl_map)
+            if ssl_conf:
+                try:
+                    with public.S("domain", mail_database_path) as obj:
+
+                        if public.check_field_exists(obj, "domain", "ssl_alarm"):
+                            domains = obj.where('ssl_alarm', 1).select()
+                            mail_domain_list = [i['domain'] for i in domains]
+                            if mail_domain_list:
+                                for domain in mail_domain_list:
+                                
+                                    cert_path = '/www/server/panel/plugin/mail_sys/cert/{}/fullchain.pem'.format(domain)
+                                    if not os.path.exists(cert_path):
+                                        continue
+
+                                    if domain not in ssl_conf:
+                                        continue
+
+                                    # ssl
+                                    main = plugin_loader.get_module('{}/plugin/mail_sys/mail_sys_main.py'.format(public.get_panel_path()))
+                                    mail_sys_main = main.mail_sys_main
+                                    ssl_info = mail_sys_main().get_ssl_info(domain)
+                                    endtime = ssl_info.get('endtime', None)
+                                    
+                                    if endtime and endtime <= 15:
+                                        mail_list.append(domain)
+                except:
+                    pass
+
+        # =================================================
+
+        if domain_list:
+            msg_list.append(f"> Domain SSL {domain_list} certificate expired\n")
+        if mail_list:
+            msg_list.append(f"> Mail Server SSL {mail_list} certificate expired\n")
+
+        return {"msg_list": msg_list} if msg_list else None
+
+    def filter_template(self, template) -> dict:
+        # 前端模板展示选项
+        return template
+
+    def check_task_data(self, task_data: dict) -> Union[dict, str]:
+        # 校验保存更改配置的合法性
+        task_data["interval"] = 60 * 60 * 24  # 默认检测间隔时间 1 天
+        if not (isinstance(task_data['cycle'], int) and task_data['cycle'] >= 1):
+            return "The remaining time parameter is incorrect, at least 1 day"
+        return task_data
+
+    def get_title(self, task_data: dict) -> str:
+        return "SSL Certificate expiration"
+
+    def check_num_rule(self, num_rule: dict) -> Union[dict, str]:
+        num_rule["get_by_func"] = "can_send_by_num_rule"
+        return num_rule
+
+    def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
+        # 构造sms特殊消息体
+        return 'ssl_end|aaPanel SSL Expiration Reminder', {
+            "name": push_public_data["ip"],
+            # "domain": self.ssl_list[0]['domain'],
+            'time': self.ssl_list[0]["notAfter"],
+            'total': len(self.ssl_list)
+        }
+
+    def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
+        # 构造wx特殊消息体
+        msg = WxAccountMsg.new_msg()
+        msg.thing_type = "SSL expiration reminder"
+        msg.msg = "There are {} domains whose certificates will expire, affecting access".format(len(self.ssl_list))
+        msg.next_msg = "Please login to the aaPanel and renew in the certificates"
+        return msg
+
+    # 不需要额外hook
+
+
+# todo 即将弃置
 class SSLTask(BaseTask):
 
     def __init__(self):

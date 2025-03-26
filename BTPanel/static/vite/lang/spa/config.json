@@ -95,7 +95,7 @@
 			"index_94": "Ingrese el número de copias de seguridad",
 			"index_95": "Si la base de datos utilizada por el panel está dañada, no podrá recuperar la base de datos del panel corrupta",
 			"index_96": "Desactivar la copia de seguridad del panel",
-			"index_97": "La copia de seguridad automática no incluye los datos del sitio web y los datos de MySQL"
+			"index_97": "La copia de seguridad automática no incluye datos del sitio web y datos de MySQL"
 		},
 		"Safe": {
 			"index_1": "Seguridad",

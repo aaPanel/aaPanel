@@ -3,23 +3,23 @@
     "id": "1",
     "ver": "1",
     "used": true,
-    "source": "site_ssl",
-    "title": "Site Certificate (SSL) expiration",
+    "source": "ssl",
+    "title": "Certificate (SSL) expiration",
     "load_cls": {
       "load_type": "path",
       "cls_path": "mod.base.push_mod.site_push",
-      "name": "SSLTask"
+      "name": "SSLCertificateTask"
     },
     "template": {
       "field": [
         {
           "attr": "project",
-          "name": "Site",
+          "name": "Model",
           "type": "select",
           "default": "all",
           "items": [
             {
-              "title": "All sites",
+              "title": "ALL SSL",
               "value": "all"
             }
           ]

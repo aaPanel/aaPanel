@@ -612,5 +612,9 @@
 	"13947e370a53808d294c4d7f92ea72e0": "Redirect [{0}] löschen]",
 	"ceca6673ccd2e9fd6e9b4409d38c150b": "Nach dem Löschen der ausgewählten Regel verweist die konfigurierte Umleitungsdomäne oder das Verzeichnis auf die Quelladresse. Willst du weitermachen?",
 	"89bb37413a4afecbf24283c53b69cd0b": "Reverse Proxy löschen [{0}]",
-	"207f290e48d13f6c4a04a71481bf5aec": "Nach dem Löschen der ausgewählten Regel wird die konfigurierte Reverse -Proxy -Regel völlig ungültig. Willst du weitermachen?"
+	"207f290e48d13f6c4a04a71481bf5aec": "Nach dem Löschen der ausgewählten Regel wird die konfigurierte Reverse -Proxy -Regel völlig ungültig. Willst du weitermachen?",
+	"18ba710dae7a42477870d221cc867735": "PHP CLI",
+	"47ef0a48276df2fb9a29d6fd0ac5450f": "Https Schutz",
+	"7be3b8e86469a0c80fadf0c3d298c1ed": "Nach dem Einschalten kann das Problem der HTTPS -Site Crossover gelöst werden",
+	"4d18e28f94ba8141b12ad7c72361e67f": "Unterstützt kein IP-Zertifikat gegen Channeling, öffnen Sie es nicht, wenn Sie IP-Zugriff direkt verwenden"
 }

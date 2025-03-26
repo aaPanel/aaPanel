@@ -216,7 +216,8 @@ menu_map = {
         'memuacrontab': '/crontab',       # Cron
         'memuasoft': '/soft',             # App Store
         'memuaconfig': '/config',         # Settings
-        'dologin': '/login'               # Log out
+        'dologin': '/login',              # Log out
+        'memuASSL': '/ssl_domain'          # Domain management
 }
 try:
     menu_default_conf_path = os.path.join(panel_path, 'config/menu.json')
@@ -2332,7 +2333,7 @@ def panel_public():
 def panel_other(name=None, fun=None, stype=None):
     # 左侧栏路由
     if name in ('site', 'database', 'docker', 'wp', 'mail', 'security', 'crontab', 'waf', 'setting', 'logs',
-                'monitor/system', 'control', 'binds', 'softs', 'modify_password', 'flow'):
+                'monitor/system', 'control', 'binds', 'softs', 'modify_password', 'flow', 'ssl_domain'):
         return index_new('{}/{}'.format(name, fun))
 
     # 插件接口
@@ -2754,16 +2755,20 @@ def get_js_random():
 def get_input():
     data = public.dict_obj()
     exludes = ['blob']
-    for key in request.args.keys():
-        data.set(key, str(request.args.get(key, '')))
+
+    try:
+        for key in request.args.keys():
+            data.set(key, str(request.args.get(key, '')))
+    except:
+        pass
+
     try:
         for key in request.form.keys():
             if key in exludes:
                 continue
+
             data.set(key, str(request.form.get(key, '')))
-
     except Exception as ex:
-
         try:
             post = request.form.to_dict()
             for key in post.keys():
@@ -2782,11 +2787,15 @@ def get_input():
             pass
 
     if 'form_data' in g:
-        for k in g.form_data.keys():
-            data.set(k, str(g.form_data[k]))
+        try:
+            for k in g.form_data.keys():
+                data.set(k, str(g.form_data[k]))
+        except:
+            pass
 
     if not hasattr(data, 'data'):
         data.data = []
+
     return data
 
 
@@ -3664,25 +3673,6 @@ def site_v2(pdata=None):
     )
     return publicObject(siteObject, defs, None, pdata)
 
-# @app.route(route_v2 + '/ssl_domain', methods=method_all)
-# def domain_v2(pdata=None):
-#     # 域名管理
-#     comReturn = comm.local()
-#     if comReturn: return comReturn
-#     import panel_domain_v2
-#     domain_obj = panel_domain_v2.DomainObject()
-#     defs = (
-#         "get_dns_support",
-#         "create_dns_api",
-#         "delete_dns_api",
-#         "list_dns_api",
-#         "edit_dns_api",
-#         "list_dns_record",
-#         "create_dns_record",
-#         "delete_dns_record",
-#     )
-#     return publicObject(domain_obj, defs, None, pdata)
-
 
 @app.route(route_v2 + '/ftp', methods=method_all)
 def ftp_v2(pdata=None):
@@ -4521,6 +4511,39 @@ def ssl_v2(pdata=None):
                          mimetype='application/zip')
     result = publicObject(toObject, defs, get.action, get)
     return result
+
+
+@app.route(route_v2 + '/ssl_domain', methods=method_all)
+def domain_v2(pdata=None):
+    # 域名管理
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from ssl_domainModelV2.api import DomainObject
+    defs = (
+        "sync_dns_info",
+        "get_dns_support",
+        "create_dns_api",
+        "delete_dns_api",
+        "list_dns_api",
+        "edit_dns_api",
+        "list_dns_record",
+        "create_dns_record",
+        "delete_dns_record",
+        "edit_dns_record",
+        "list_domain_details",
+        "list_ssl_info",
+        "download_cert",
+        "renew_cert",
+        "apply_new_ssl",
+        "upload_cert",
+        "switch_auto_renew",
+        "switch_ssl_alarm",
+        "cert_domain_list",
+        "cert_deploy_sites",
+        "remove_cert",
+        "add_site_check",
+    )
+    return publicObject(DomainObject(), defs, None, pdata)
 
 
 @app.route(route_v2 + '/task', methods=method_all)

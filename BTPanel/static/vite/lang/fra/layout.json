@@ -89,7 +89,9 @@
 			"account_3": "Emballer",
 			"account_4": "Bûches",
 			"account_5": "Stockage",
-			"account_6": "Paramètres"
+			"account_6": "Paramètres",
+			"domain_1": "Domaines",
+			"domain_2": "Certificat"
 		},
 		"Footer": {
 			"index_1": "Panneau Aapanel Linux © 2014- {0} aapanel (www.aapanel.com)",
@@ -98,7 +100,7 @@
 		},
 		"MessageBox": {
 			"index_1": "Actuellement pas de tâches!",
-			"index_2": "Si la tâche n'a pas été exécutée depuis longtemps, essayez de cliquer sur [Redémarrer le panneau] pour réinitialiser la file d'attente des tâches",
+			"index_2": "Conseil: si la tâche est bloquée, cliquez sur [Redémarrer le panneau] pour réinitialiser la file d'attente",
 			"index_3": "Liste de tâches",
 			"index_4": "Liste de messages",
 			"index_5": "Journal d'exécution",

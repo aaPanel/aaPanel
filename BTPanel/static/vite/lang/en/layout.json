@@ -89,7 +89,9 @@
 			"account_3": "Package",
 			"account_4": "Logs",
 			"account_5": "Storage",
-			"account_6": "Settings"
+			"account_6": "Settings",
+			"domain_1": "Domains",
+			"domain_2": "Certificate"
 		},
 		"Footer": {
 			"index_1": "aaPanel Linux panel ©2014-{0} aaPanel (www.aapanel.com)",

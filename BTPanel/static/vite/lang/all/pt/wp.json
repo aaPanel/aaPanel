@@ -189,5 +189,7 @@
 	"2b54c0e89a395eefacd9ec9953ea3ee6": "Ignorar a lista",
 	"99041f90bbbbc42c7f9eec3e7dce25a5": "Digitalização, por favor espere ...",
 	"c863dfbe15f5b9cbcec2d12871d8bb10": "Detecte rapidamente vulnerabilidades, riscos potenciais e arquivos modificados manualmente em plugins e temas do WordPress",
-	"c9bf00d6ab370b9c6468616d51e8eb35": "Adicionar site"
+	"c9bf00d6ab370b9c6468616d51e8eb35": "Adicionar site",
+	"cb1018823a7e2fd265971cb2502e62f9": "Aapanel WP Toolkit",
+	"8f0c1fe13a6c5acb059a1de0118d9e6b": "Isso reinstalará os arquivos do WordPress Core sem perder o conteúdo do site. É recomendável que você faça backup do seu site antes de reinstalar."
 }

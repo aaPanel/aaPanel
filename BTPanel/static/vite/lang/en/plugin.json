@@ -25,7 +25,7 @@
 			"index_22": "Restart {0} Service",
 			"index_23": "Restart database for the configuration to take effect",
 			"index_24": "Did you restart the {0} service?",
-			"index_25": "If you need to change the MySQL version, please back up your data, uninstall MySQL and reinstall it.",
+			"index_25": "If you need to change the MySQL version, please backup your data, uninstall MySQL and reinstall it.",
 			"index_26": "Storage location",
 			"index_27": "Optimization",
 			"index_28": "Slow log",

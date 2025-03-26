@@ -1,0 +1,31 @@
+{
+	"Term": {
+		"idnex_1": "Harap masukkan nama perintah",
+		"index_2": "Harap masukkan konten perintah",
+		"index_3": "Tambahkan perintah",
+		"index_4": "Nama perintah",
+		"index_5": "Edit perintah",
+		"index_6": "Hapus informasi",
+		"index_7": "Hapus informasi layanan [{0}], lanjutkan?",
+		"index_8": "IP Server",
+		"index_9": "Harap masukkan IP Server",
+		"index_10": "Akun SSH",
+		"index_11": "Harap masukkan akun SSH",
+		"index_12": "Verifikasi",
+		"index_13": "Kunci pribadi",
+		"index_14": "Harap masukkan kata sandi ssh",
+		"index_15": "Harap masukkan kunci pribadi SSH",
+		"index_16": "Kata sandi utama",
+		"index_17": "Harap masukkan kata sandi utama, bisa kosong",
+		"index_18": "Harap masukkan komentar, bisa kosong",
+		"index_19": "Tambahkan server",
+		"index_20": "Hapus perintah",
+		"index_21": "Hapus perintah [{0}], lanjutkan?",
+		"index_22": "Edit server",
+		"index_23": "Daftar Server",
+		"index_24": "Perintah",
+		"index_25": "Diperlukan server terminal",
+		"index_26": "Harap masukkan alamat IP yang benar",
+		"index_27": "Apakah Anda pasti akan keluar?"
+	}
+}

@@ -189,5 +189,7 @@
 	"2b54c0e89a395eefacd9ec9953ea3ee6": "Ignorar la lista",
 	"99041f90bbbbc42c7f9eec3e7dce25a5": "Escaneo, por favor espere ...",
 	"c863dfbe15f5b9cbcec2d12871d8bb10": "Detectar rápidamente vulnerabilidades, riesgos potenciales y archivos modificados manualmente en complementos y temas de WordPress",
-	"c9bf00d6ab370b9c6468616d51e8eb35": "Agregar sitio"
+	"c9bf00d6ab370b9c6468616d51e8eb35": "Agregar sitio",
+	"cb1018823a7e2fd265971cb2502e62f9": "kit de herramientas WP de AAPANEL",
+	"8f0c1fe13a6c5acb059a1de0118d9e6b": "Esto reinstalará los archivos principales de WordPress sin perder el contenido del sitio. Se recomienda que haga una copia de seguridad de su sitio web antes de reinstalar."
 }

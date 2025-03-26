@@ -30,12 +30,17 @@ def hook_import():
                 panel_path = public.get_panel_path()
                 pyfile = '{}.py'.format(str(name).strip().replace('.', '/'))
 
-                realpath = os.path.join(panel_path, 'class', pyfile)
-                cond = os.path.exists(realpath)
+                realpath = ''
+                cond = False
 
-                if not cond:
-                    realpath = os.path.join(panel_path, 'class_v2', pyfile)
+                for p in set(sys.path):
+                    realpath = os.path.join(panel_path, p, pyfile)
                     cond = os.path.exists(realpath)
+
+                    if not cond:
+                        continue
+
+                    break
 
                 if not cond:
                     realpath = os.path.join(panel_path, pyfile)

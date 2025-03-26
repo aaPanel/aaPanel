@@ -612,5 +612,9 @@
 	"13947e370a53808d294c4d7f92ea72e0": "Excluir redirecionamento [{0}]",
 	"ceca6673ccd2e9fd6e9b4409d38c150b": "Depois de excluir a regra selecionada, o domínio ou diretório de redirecionamento configurado apontará para o endereço de origem. Você quer continuar?",
 	"89bb37413a4afecbf24283c53b69cd0b": "Excluir proxy reverso [{0}]",
-	"207f290e48d13f6c4a04a71481bf5aec": "Depois de excluir a regra selecionada, a regra de proxy reversa configurada se tornará completamente inválida. Você quer continuar?"
+	"207f290e48d13f6c4a04a71481bf5aec": "Depois de excluir a regra selecionada, a regra de proxy reversa configurada se tornará completamente inválida. Você quer continuar?",
+	"18ba710dae7a42477870d221cc867735": "PHP CLI",
+	"47ef0a48276df2fb9a29d6fd0ac5450f": "Proteção HTTPS",
+	"7be3b8e86469a0c80fadf0c3d298c1ed": "Depois de ativá -lo, o problema do crossover do site HTTPS pode ser resolvido",
+	"4d18e28f94ba8141b12ad7c72361e67f": "Não suporta anti-canaling do certificado IP, não o abra se você usar o acesso IP diretamente"
 }

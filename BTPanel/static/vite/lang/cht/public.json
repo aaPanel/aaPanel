@@ -73,7 +73,8 @@
 			"Clear": "清空",
 			"Update": "更新",
 			"Select": "選擇",
-			"Rebuild": "重建"
+			"Rebuild": "重建",
+			"Upload": "上傳"
 		},
 		"Batch": {
 			"Del": "批量刪除",

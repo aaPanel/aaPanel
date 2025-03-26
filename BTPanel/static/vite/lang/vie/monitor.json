@@ -1,0 +1,43 @@
+{
+	"Monitor": {
+		"System": {
+			"index_1": "Tình trạng giám sát",
+			"index_2": "Số ngày để tiết kiệm: ",
+			"index_3": "Biến đổi",
+			"index_4": "Nhật ký sạch",
+			"index_5": "Vui lòng nhập số ngày để lưu",
+			"index_6": "Số ngày tiết kiệm là bất hợp pháp!",
+			"index_7": "Bạn có chắc chắn để làm sạch tất cả các bản ghi của thuốc trưởng?",
+			"index_8": "Tải trung bình",
+			"index_9": "1 phút",
+			"index_10": "5 phút",
+			"index_11": "15 phút",
+			"index_12": "Sử dụng tài nguyên hệ thống",
+			"index_13": "Chi tiết tải",
+			"index_14": "Sử dụng tài nguyên hệ thống: ",
+			"index_15": "Ngày: ",
+			"index_16": "Ký ức",
+			"index_17": "Đĩa I/O.",
+			"index_18": "Đọc",
+			"index_19": "Viết",
+			"index_20": "R/W lần",
+			"index_21": "r/w chờ đợi",
+			"index_22": "Đơn vị: {0}/s",
+			"index_23": "Mạng I/O: ",
+			"index_24": "Thượng nguồn",
+			"index_25": "Hạ nguồn",
+			"index_26": "Toàn màn hình",
+			"index_27": "Thoát toàn màn hình",
+			"index_28": "Tên quy trình",
+			"index_29": "Sử dụng CPU",
+			"index_30": "Người dùng khởi động",
+			"index_31": "Sử dụng bộ nhớ",
+			"index_32": "Sử dụng đĩa",
+			"index_33": "Kích thước nhật ký theo dõi: "
+		},
+		"API": {
+			"system_1": "Đặt trạng thái giám sát, vui lòng đợi ...",
+			"system_2": "Xóa hồ sơ giám sát, vui lòng đợi ..."
+		}
+	}
+}

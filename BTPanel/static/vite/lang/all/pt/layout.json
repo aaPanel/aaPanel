@@ -91,5 +91,8 @@
 	"8ea611679b3d404f7341420279c7b9a6": "Log de execução",
 	"5e82d30cba0ba91f4be0eec7c5e2e193": "Caixa de mensagens",
 	"23b08d4c7fc1f977826971100a15a766": "Limite de tráfego",
-	"02255d367e442f38902762cfe617a513": "Consumo de tempo"
+	"02255d367e442f38902762cfe617a513": "Consumo de tempo",
+	"78cd2c7d5422ffdb6d9545211ca49eeb": "Domínios",
+	"eb0f48a107df1a0f343d4cd513b555e6": "Certificado",
+	"83ef37817a1ad493ee47de70c22a8552": "Dica: Se a tarefa estiver parada, clique em [Reiniciar painel] para redefinir a fila"
 }

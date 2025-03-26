@@ -91,6 +91,14 @@
     "sort": 12
   },
   {
+  "id": "memuASSL",
+  "title": "SSL",
+  "href": "/ssl_domain",
+  "class": "menu_ssl",
+  "show": true,
+  "sort": 12
+},
+  {
     "title": "Account",
     "href": "/whm",
     "class": "menu_account",

@@ -93,6 +93,7 @@ def acme_crond_reinit():
 
         import acme_v2
         acme_v2.acme_v2().set_crond()
+        acme_v2.acme_v2().set_crond_v2()
     except:
         pass
 

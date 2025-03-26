@@ -36,7 +36,7 @@ import process_task
 from public.hook_import import hook_import
 hook_import()
 
-from power_mta.maillog_stat import maillog_event
+from power_mta.maillog_stat import maillog_event, aggregate_maillogs_task
 from power_mta.automations import schedule_automations_forever
 
 
@@ -1583,54 +1583,75 @@ def mailsys_cert_expiry_alarm():
 
 # 邮局自动回复
 def auto_reply_tasks():
+    while True:
+        try:
 
-    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists(
-            '/www/vmail'):
-        return
+            if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists(
+                    '/www/vmail'):
+                time.sleep(3600)
+                continue
 
-    # 检查是否有回复功能  不存在跳过
-    import public.PluginLoader as plugin_loader
-    main = plugin_loader.get_module('{}/plugin/mail_sys/mail_sys_main.py'.format(public.get_panel_path()))
-    mail_sys_main = main.mail_sys_main
-    try:
-        mail_sys_main().auto_reply_tasks()
-    except:
-        public.print_log(public.get_error_info())
-        pass
+            # 检查是否有回复功能
+            import public.PluginLoader as plugin_loader
+            main = plugin_loader.get_module('{}/plugin/mail_sys/mail_sys_main.py'.format(public.get_panel_path()))
+            mail_sys_main = main.mail_sys_main
+            try:
+                mail_sys_main().auto_reply_tasks()
+            except Exception as e:
+                # public.print_log(f"The post office auto-reply task was executed incorrectly: {str(e)}")
+                public.print_log(public.get_error_info())
 
-    # 每小时执行一次
-    time.sleep(3600)
+        except:
+            pass
+
+        # 每小时执行一次
+        time.sleep(3600)
 
 # 邮局自动扫描异常邮箱
 def auto_scan_abnormal_mail():
+    while True:
+        try:
 
-    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py') or not os.path.exists(
-            '/www/vmail'):
-        return
+            if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py') or not os.path.exists(
+                    '/www/vmail'):
+                time.sleep(7200)
+                continue
 
-    endtime = public.get_pd()[1]
-    curtime = int(time.time())
-    if endtime != 0 and endtime < curtime:
-        return False
-    else:
-        path = '/www/server/panel/plugin/mail_sys/data/abnormal_mail_check_switch'
-        if os.path.exists(path):
-            return False
+            # 检查授权
+            endtime = public.get_pd()[1]
+            curtime = int(time.time())
+            if endtime != 0 and endtime < curtime:
+                time.sleep(7200)
+                continue
 
-    # 检查是否有回复功能  不存在跳过
-    import public.PluginLoader as plugin_loader
-    bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(public.get_panel_path()))
-    SendMailBulk = bulk.SendMailBulk
+            # 检查是否关闭了自动扫描
+            path = '/www/server/panel/plugin/mail_sys/data/abnormal_mail_check_switch'
+            if os.path.exists(path):
+                time.sleep(7200)
+                continue
+
+            # 导入并执行扫描
+            import public.PluginLoader as plugin_loader
+            bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(public.get_panel_path()))
+            SendMailBulk = bulk.SendMailBulk
+            try:
+                SendMailBulk().check_abnormal_emails()
+                # public.print_log(f"MailServer automatically scans for abnormal mailboxes ----")
+            except Exception as e:
+                # public.print_log(f"异常邮箱扫描出错: {str(e)}")
+                public.print_log(public.get_error_info())
+
+        except:
+            pass
+
+        time.sleep(7200)
+
+def domain_ssl_service():
     try:
-        SendMailBulk().check_abnormal_emails()
-
-    except:
-        public.print_log(public.get_error_info())
-        pass
-    
-
-    # 每两小时执行一次
-    time.sleep(7200)
+        from ssl_domainModelV2.service import make_suer_org_ssl
+        make_suer_org_ssl()
+    except Exception as e:
+        public.print_log("domain_ssl_service error , %s" % e)
 
 
 
@@ -1650,6 +1671,7 @@ def run_thread():
         "check_panel_msg": check_panel_msg,
         "check_breaking_through_cron": check_breaking_through_cron,
         "push_msg": push_msg,
+        "domain_ssl_service": domain_ssl_service,
         "ProDadmons":ProDadmons,
         "check_panel_auth": check_panel_auth,
         # "process_task_thread":process_task_thread,  # 监控工具不支持
@@ -1663,6 +1685,7 @@ def run_thread():
         "auto_reply_tasks": auto_reply_tasks,  # 每小时执行一次 自动回复邮件
         "auto_scan_abnormal_mail": auto_scan_abnormal_mail,  # 每两小时执行一次 自动扫描异常邮箱
         "maillog_event": maillog_event,
+        "aggregate_maillogs": aggregate_maillogs_task,
         # "print_malloc": print_malloc_thread,
         "mail_automations": schedule_automations_forever,
     }

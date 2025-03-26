@@ -1,0 +1,31 @@
+{
+	"Term": {
+		"idnex_1": "Vui lòng nhập tên lệnh",
+		"index_2": "Vui lòng nhập nội dung lệnh",
+		"index_3": "Thêm lệnh",
+		"index_4": "Tên lệnh",
+		"index_5": "Lệnh chỉnh sửa",
+		"index_6": "Xóa thông tin",
+		"index_7": "Xóa thông tin dịch vụ [{0}], tiếp tục?",
+		"index_8": "IP máy chủ",
+		"index_9": "Vui lòng nhập IP máy chủ",
+		"index_10": "Tài khoản SSH",
+		"index_11": "Vui lòng nhập tài khoản SSH",
+		"index_12": "Xác minh",
+		"index_13": "Khóa riêng",
+		"index_14": "Vui lòng nhập mật khẩu SSH",
+		"index_15": "Vui lòng nhập khóa riêng của SSH",
+		"index_16": "Mật khẩu chính",
+		"index_17": "Vui lòng nhập mật khẩu khóa, có thể trống",
+		"index_18": "Vui lòng nhập nhận xét, có thể trống",
+		"index_19": "Thêm máy chủ",
+		"index_20": "Xóa lệnh",
+		"index_21": "Xóa lệnh [{0}], tiếp tục?",
+		"index_22": "Chỉnh sửa máy chủ",
+		"index_23": "Danh sách máy chủ",
+		"index_24": "Lệnh",
+		"index_25": "Một máy chủ đầu cuối là bắt buộc",
+		"index_26": "Vui lòng nhập địa chỉ IP chính xác",
+		"index_27": "Bạn có chắc chắn đăng xuất không?"
+	}
+}

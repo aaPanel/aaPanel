@@ -811,5 +811,7 @@
 	"ceb73b4c08084ee433f622c8347d8ff4": "Efeito: O conteúdo da página da web é criptografado aleatoriamente em cada visita, impedindo efetivamente os rastreadores.",
 	"a7cd6cc473232d0fc01e1e40977ff4ff": "Impacto: ativar esse recurso dobrará o tráfego em comparação com os níveis anteriores.",
 	"5b9c0fac87a97a8334f2e21a6137bb35": "Recomendação: É recomendável não ativar isso para serviços on -line.",
-	"ab706a5938adcb681b8f2c7e0cae6402": "Aviso: este é um recurso beta. Não o habilite para os serviços de produção !!"
+	"ab706a5938adcb681b8f2c7e0cae6402": "Aviso: este é um recurso beta. Não o habilite para os serviços de produção !!",
+	"b67a41ea491e086fc87abcfdd3172202": "Por favor, use expressões regulares; Backup das expressões originais antes de enviar.",
+	"57322c79b2d81235926ce33864e578de": "Solicitar defesa"
 }

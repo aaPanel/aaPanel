@@ -41,6 +41,7 @@ class panelSite(panelRedirect):
     conf_dir = '{}/vhost/config'.format(public.get_panel_path())  # 防盗链配置
 
     def __init__(self):
+        self._is_nginx_http3 = None
         self.setupPath = public.get_setup_path()
         path = self.setupPath + '/panel/vhost/nginx'
         if not os.path.exists(path): public.ExecShell("mkdir -p " + path + " && chmod -R 644 " + path)
@@ -552,13 +553,27 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 Param('set_ssl').Integer(),
                 Param('force_ssl').Integer(),
                 Param('ftp').Bool(),
-
+                Param('parse_list').String(),  # dns auto
             ], [
                 public.validate.trim_filter(),
             ])
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
+
+        parse_list = []
+        main_domain = {}
+        if hasattr(get, "parse_list"):
+            import json
+            parse_list = json.loads(get.parse_list)
+            if not len(parse_list):
+                return public.fail_v2("domain names not found")
+            main_domain = parse_list.pop(0)
+            get.webname = json.dumps({
+                "domain": main_domain.get("domain").strip(),
+                "domainlist": [x.get("domain", "") for x in parse_list],
+                "count": len(parse_list),
+            })
 
         if get.get('ftp', False):
             # 校验参数
@@ -855,7 +870,22 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             public.serviceReload()
         data = self._set_ssl(get, data, siteMenu)
         data = self._set_redirect(get, data['message'])
+        public.set_module_logs("sys_domain", "AddSite_Manual", 1)
         public.write_log_gettext('Site manager', 'Successfully added site [{}]!', (self.siteName,))
+        # ================ dns domain  =======================
+        if hasattr(get, "parse_list"):
+            try:
+                import threading
+                from ssl_domainModelV2.service import init_sites_dns
+                # 添加申请证书, 解析,代理, 仅限同域
+                new_list = [main_domain] + parse_list
+                task = threading.Thread(target=init_sites_dns, args=(new_list,))
+                task.start()
+                public.set_module_logs("sys_domain", "AddSite_Auto", 1)
+            except Exception as e:
+                import traceback
+                public.print_log(e)
+                public.print_log(f"error, {e}")
         return data
 
     # 添加WP站点
@@ -1810,7 +1840,7 @@ listener Default%s{
                 get.id = public.M('sites').where('name=?', (get.siteName,)).getField('id')
             else:
                 get.id = public.M('sites').where('path=?', (get.path,)).getField('id')
-        if not get.id: return public.return_message(-1, 0, public.lang(""))
+        if not get.id: return False
         if type(get.id) == list: get.id = get.id[0]['id']
         result = self.GetSiteRunPath(get)['message']
         if 'runPath' in result:
@@ -2130,11 +2160,11 @@ listener SSL443 {
         public.writeFile(listen_conf, conf)
 
     def _get_ap_static_security(self, ap_conf):
-        if not ap_conf: return public.return_message(0, 0, public.lang(""))
+        if not ap_conf: return ''
         ap_static_security = re.search('#SECURITY-START(.|\n)*#SECURITY-END', ap_conf)
         if ap_static_security:
-            return public.return_message(0, 0, ap_static_security.group())
-        return public.return_message(0, 0, public.lang(""))
+            return ap_static_security.group()
+        return ''
 
     # 添加SSL配置
     def SetSSLConf(self, get):
@@ -2151,188 +2181,288 @@ listener SSL443 {
 
         # Node项目
         if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
-
+        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/java_' + siteName + '.conf'
+        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/go_' + siteName + '.conf'
+        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/other_' + siteName + '.conf'
+        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/python_' + siteName + '.conf'
+        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/net_' + siteName + '.conf'
+        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/html_' + siteName + '.conf'
         ng_file = file
-        conf = public.readFile(file)
-
+        ng_conf = public.readFile(file)
+        have_nginx_conf = ng_conf is not False
         # 是否为子目录设置SSL
         # if hasattr(get,'binding'):
         #    allconf = conf;
         #    conf = re.search("#BINDING-"+get.binding+"-START(.|\n)*#BINDING-"+get.binding+"-END",conf).group()
-
-        if conf:
-            if conf.find('ssl_certificate') == -1:
-                sslStr = """#error_page 404/404.html;
-    ssl_certificate    /www/server/panel/vhost/cert/%s/fullchain.pem;
-    ssl_certificate_key    /www/server/panel/vhost/cert/%s/privkey.pem;
-    ssl_protocols TLSv1.1 TLSv1.2%s;
-    ssl_ciphers EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
-    ssl_prefer_server_ciphers on;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-    add_header Strict-Transport-Security "max-age=31536000";
-    error_page 497  https://$host$request_uri;
-""" % (get.first_domain, get.first_domain, self.get_tls13())
-                if (conf.find('ssl_certificate') != -1):
-                    if 'isBatch' not in get:
-                        public.serviceReload()
-                        return public.return_message(0, 0, public.lang("SSL turned on!"))
-                    else:
-                        return public.return_message(0, 0, public.lang(""))
-
-                conf = conf.replace('#error_page 404/404.html;', sslStr)
-                conf = re.sub(r"\s+\#SSL\-END", "\n\t\t#SSL-END", conf)
-
-                # 添加端口
-                rep = r"listen.*[\s:]+(\d+).*;"
-                tmp = re.findall(rep, conf)
-                if not public.inArray(tmp, '443'):
-                    listen_re = re.search(rep, conf)
-                    if not listen_re:
-                        conf = re.sub(r"server\s*{\s*", "server\n{\n\t\tlisten 80;\n\t\t", conf)
-                        listen_re = re.search(rep, conf)
-                    listen = listen_re.group()
-                    versionStr = public.readFile('/www/server/nginx/version.pl')
-                    http2 = ''
-                    if versionStr:
-                        if versionStr.find('1.8.1') == -1 and versionStr.find('1.25') == -1 and versionStr.find('1.26') == -1: http2 = ' http2'
-                    default_site = ''
-                    if conf.find('default_server') != -1: default_site = ' default_server'
-
-                    listen_ipv6 = ';'
-                    if self.is_ipv6: listen_ipv6 = ";\n\t\tlisten [::]:443 ssl" + http2 + default_site + ";"
-                    conf = conf.replace(listen, listen + "\n\t\tlisten 443 ssl" + http2 + default_site + listen_ipv6)
-                shutil.copyfile(file, self.nginx_conf_bak)
-
-                public.writeFile(file, conf)
-
-        # Apache配置
-        file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
-        # if not os.path.exists(file): file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
-        is_node_apache = False
-        if not os.path.exists(file):
-            is_node_apache = True
-            file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
-        conf = public.readFile(file)
-        ap_static_security = self._get_ap_static_security(conf)
-        if conf:
-            ap_proxy = self.get_apache_proxy(conf)
-            if conf.find('SSLCertificateFile') == -1 and conf.find('VirtualHost') != -1:
-                find = public.M('sites').where("name=?", (siteName,)).field('id,path').find()
-                tmp = public.M('domain').where('pid=?', (find['id'],)).field('name').select()
-                domains = ''
-                for key in tmp:
-                    domains += key['name'] + ' '
-                path = (find['path'] + '/' + self.GetRunPath(get))['message']['result'].replace('//', '/')
-                index = 'index.php index.html index.htm default.php default.html default.htm'
-
-                try:
-                    httpdVersion = public.readFile(self.setupPath + '/apache/version.pl').strip()
-                except:
-                    httpdVersion = ""
-                if httpdVersion == '2.2':
-                    vName = ""
-                    phpConfig = ""
-                    apaOpt = "Order allow,deny\n\t\tAllow from all"
-                else:
-                    vName = ""
-                    # rep = r"php-cgi-([0-9]{2,3})\.sock"
-                    # version = re.search(rep, conf).groups()[0]
-                    version = public.get_php_version_conf(conf)
-                    if len(version) < 2:
+        try:
+            if ng_conf:
+                if ng_conf.find('ssl_certificate') == -1:
+                    http3_header = '''\n    add_header Alt-Svc 'quic=":443"; h3=":443"; h3-29=":443"; h3-27=":443";h3-25=":443"; h3-T050=":443"; h3-Q050=":443";h3-Q049=":443";h3-Q048=":443"; h3-Q046=":443"; h3-Q043=":443"';'''
+                    if not self.is_nginx_http3():
+                        http3_header = ""
+                    sslStr = """#error_page 404/404.html;
+        ssl_certificate    /www/server/panel/vhost/cert/%s/fullchain.pem;
+        ssl_certificate_key    /www/server/panel/vhost/cert/%s/privkey.pem;
+        ssl_protocols %s;
+        ssl_ciphers EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+        ssl_prefer_server_ciphers on;
+        ssl_session_tickets on;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 10m;
+        add_header Strict-Transport-Security "max-age=31536000";%s
+        error_page 497  https://$host$request_uri;
+    """ % (get.first_domain, get.first_domain, self.get_tls_protocol(self.get_tls13(), is_apache=False), http3_header)
+                    if (ng_conf.find('ssl_certificate') != -1):
                         if 'isBatch' not in get:
-                            return public.return_message(-1, 0, public.lang("Failed to get PHP version!"))
+                            public.serviceReload()
+                            return public.return_message(0, 0, public.lang("SSL turned on!"))
                         else:
-                            return public.return_message(-1, 0, public.lang(""))
-                    phpConfig = '''
-    #PHP
-    <FilesMatch \\.php$>
-            SetHandler "proxy:%s"
-    </FilesMatch>
-    ''' % (public.get_php_proxy(version, 'apache'),)
-                    apaOpt = 'Require all granted'
+                            return True
 
-                sslStr = r'''%s<VirtualHost *:443>
-    ServerAdmin webmaster@example.com
-    DocumentRoot "%s"
-    ServerName SSL.%s
-    ServerAlias %s
-    #errorDocument 404 /404.html
-    ErrorLog "%s-error_log"
-    CustomLog "%s-access_log" combined
-    %s
-    #SSL
-    SSLEngine On
-    SSLCertificateFile /www/server/panel/vhost/cert/%s/fullchain.pem
-    SSLCertificateKeyFile /www/server/panel/vhost/cert/%s/privkey.pem
-    SSLCipherSuite EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5
-    SSLProtocol All -SSLv2 -SSLv3 -TLSv1
-    SSLHonorCipherOrder On
-    %s
-    %s
+                    if ng_conf.find('#error_page 404/404.html;') == -1:
+                        return public.returnMsg(False, "can found【#error_page 404/404.html;】，"
+                                                       "Unable to determine the location to add SSL configuration."
+                                                       " Please try manually adding a marker or restoring the configuration file.")
 
-    #DENY FILES
-     <Files ~ (\.user.ini|\.htaccess|\.git|\.svn|\.project|LICENSE|README.md)$>
-       Order allow,deny
-       Deny from all
-    </Files>
+                    ng_conf = ng_conf.replace('#error_page 404/404.html;', sslStr)
+                    conf = re.sub(r"\s+\#SSL\-END", "\n\t\t#SSL-END", ng_conf)
 
-    #PATH
-    <Directory "%s">
-        SetOutputFilter DEFLATE
-        Options FollowSymLinks
-        AllowOverride All
+                    # 添加端口
+                    rep = r"listen.*[\s:]+(\d+).*;"
+                    tmp = re.findall(rep, ng_conf)
+                    if not public.inArray(tmp, '443'):
+                        listen_re = re.search(rep, ng_conf)
+                        if not listen_re:
+                            ng_conf = re.sub(r"server\s*{\s*", "server\n{\n\t\tlisten 80;\n\t\t", ng_conf)
+                            listen_re = re.search(rep, ng_conf)
+                        listen = listen_re.group()
+                        nginx_ver = public.nginx_version()
+                        default_site = ''
+                        if ng_conf.find('default_server') != -1:
+                            default_site = ' default_server'
+
+                        listen_add_str = []
+                        if nginx_ver:
+                            port_str = ["443"]
+                            if self.is_ipv6:
+                                port_str.append("[::]:443")
+                            use_http2_on = False
+                            for p in port_str:
+                                listen_add_str.append("\n    listen {} ssl".format(p))
+                                if nginx_ver < [1, 9, 5]:
+                                    listen_add_str.append(default_site + ";")
+                                elif [1, 9, 5] <= nginx_ver < [1, 25, 1]:
+                                    listen_add_str.append(" http2 " + default_site + ";")
+                                else:  # >= [1, 25, 1]
+                                    listen_add_str.append(default_site + ";")
+                                    use_http2_on = True
+
+                                if self.is_nginx_http3():
+                                    listen_add_str.append("\n    listen {} quic;".format(p))
+                            if use_http2_on:
+                                listen_add_str.append("\n    http2 on;")
+
+                        else:
+                            listen_add_str.append("\n    listen 443 ssl " + default_site + ";")
+                        listen_add_str_data = "".join(listen_add_str)
+                        ng_conf = ng_conf.replace(listen, listen + listen_add_str_data)
+        except Exception as ng_err:
+            public.print_log(f"set nginx conf error: {ng_err}")
+        # ================================ Apache ========================================
+        # Apache配置
+        try:
+            file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
+            other_project = ""
+            if not os.path.exists(file):
+                file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
+                other_project = "node"
+
+            # if not os.path.exists(file):
+            #     file = self.setupPath + '/panel/vhost/apache/java_' + siteName + '.conf'
+            #     other_project = "java"
+            #
+            # if not os.path.exists(file):
+            #     file = self.setupPath + '/panel/vhost/apache/go_' + siteName + '.conf'
+            #     other_project = "go"
+            #
+            # if not os.path.exists(file):
+            #     file = self.setupPath + '/panel/vhost/apache/other_' + siteName + '.conf'
+            #     other_project = "other"
+            #
+            # if not os.path.exists(file):
+            #     file = self.setupPath + '/panel/vhost/apache/python_' + siteName + '.conf'
+            #     other_project = "python"
+            #
+            # if not os.path.exists(file):
+            #     other_project = "net"
+            #     file = self.setupPath + '/panel/vhost/apache/net_' + siteName + '.conf'
+            #
+            # if not os.path.exists(file):
+            #     other_project = "html"
+            #     file = self.setupPath + '/panel/vhost/apache/html_' + siteName + '.conf'
+
+            ap_conf = public.readFile(file)
+            have_apache_conf = ap_conf is not False
+            ap_static_security = self._get_ap_static_security(ap_conf)
+            if ap_conf:
+                ap_proxy = self.get_apache_proxy(ap_conf)
+                if ap_conf.find('SSLCertificateFile') == -1 and ap_conf.find('VirtualHost') != -1:
+                    find = public.M('sites').where("name=?", (siteName,)).field('id,path').find()
+                    tmp = public.M('domain').where('pid=?', (find['id'],)).field('name').select()
+                    domains = ''
+                    for key in tmp:
+                        domains += key['name'] + ' '
+                    path = (find['path'] + '/' + self.GetRunPath(get)["message"]["result"]).replace('//', '/')
+                    index = 'index.php index.html index.htm default.php default.html default.htm'
+
+                    try:
+                        httpdVersion = public.readFile(self.setupPath + '/apache/version.pl').strip()
+                    except:
+                        httpdVersion = ""
+                    if httpdVersion == '2.2':
+                        vName = ""
+                        phpConfig = ""
+                        apaOpt = "Order allow,deny\n\t\tAllow from all"
+                    else:
+                        vName = ""
+                        # rep = r"php-cgi-([0-9]{2,3})\.sock"
+                        # version = re.search(rep, conf).groups()[0]
+                        version = public.get_php_version_conf(ap_conf)
+                        if len(version) < 2:
+                            if 'isBatch' not in get:
+                                return public.returnMsg(False, 'PHP_GET_ERR')
+                            else:
+                                return False
+                        phpConfig = '''
+        #PHP
+        <FilesMatch \\.php$>
+                SetHandler "proxy:%s"
+        </FilesMatch>
+        ''' % (public.get_php_proxy(version, 'apache'),)
+                        apaOpt = 'Require all granted'
+
+                    sslStr = '''%s<VirtualHost *:443>
+        ServerAdmin webmaster@example.com
+        DocumentRoot "%s"
+        ServerName SSL.%s
+        ServerAlias %s
+        #errorDocument 404 /404.html
+        ErrorLog "%s-error_log"
+        CustomLog "%s-access_log" combined
         %s
-        DirectoryIndex %s
-    </Directory>
-</VirtualHost>''' % (vName, path, siteName, domains, public.GetConfigValue('logs_path') + '/' + siteName,
-                     public.GetConfigValue('logs_path') + '/' + siteName, ap_proxy, get.first_domain, get.first_domain,
-                     ap_static_security, phpConfig, path, apaOpt, index)
-                conf = conf + "\n" + sslStr
-                self.apacheAddPort('443')
-                shutil.copyfile(file, self.apache_conf_bak)
-                public.writeFile(file, conf)
-                if is_node_apache:  # 兼容Nodejs项目
-                    from projectModel.nodejsModel import main
-                    m = main()
-                    project_find = m.get_project_find(siteName)
-                    m.set_apache_config(project_find)
-        # OLS
-        self.set_ols_ssl(get, siteName)
-        isError = public.checkWebConfig()
-        if (isError != True):
-            if os.path.exists(self.nginx_conf_bak): shutil.copyfile(self.nginx_conf_bak, ng_file)
-            if os.path.exists(self.apache_conf_bak): shutil.copyfile(self.apache_conf_bak, file)
-            public.ExecShell("rm -f /tmp/backup_*.conf")
-            if 'isBatch' not in get:
-                return_message = public.return_msg_gettext(False,
-                                                           public.get_msg_gettext(
-                                                               'Certificate ERROR, please check!') + ': <br><a style="color:red;">' + isError.replace(
-                                                               "\n", '<br>') + '</a>')
-                del return_message['status']
-                return public.return_message(-1, 0, return_message['msg'])
-            else:
-                return public.return_message(-1, 0, public.lang(""))
+        #SSL
+        SSLEngine On
+        SSLCertificateFile /www/server/panel/vhost/cert/%s/fullchain.pem
+        SSLCertificateKeyFile /www/server/panel/vhost/cert/%s/privkey.pem
+        SSLCipherSuite EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5:ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP:+eNULL
+        SSLProtocol All -SSLv2 -SSLv3 %s
+        SSLHonorCipherOrder On
+        %s
+        %s
+    
+        #DENY FILES
+         <Files ~ (\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)$>
+           Order allow,deny
+           Deny from all
+        </Files>
+    
+        #PATH
+        <Directory "%s">
+            SetOutputFilter DEFLATE
+            Options FollowSymLinks
+            AllowOverride All
+            %s
+            DirectoryIndex %s
+        </Directory>
+    </VirtualHost>''' % (vName, path, siteName, domains, public.GetConfigValue('logs_path') + '/' + siteName,
+                         public.GetConfigValue('logs_path') + '/' + siteName, ap_proxy,
+                         get.first_domain, get.first_domain, self.get_tls_protocol(is_apache=True),
+                         ap_static_security, phpConfig, path, apaOpt, index)
+                    ap_conf = ap_conf + "\n" + sslStr
+                    self.apacheAddPort('443')
+                    shutil.copyfile(file, self.apache_conf_bak)
+                    public.writeFile(file, ap_conf)
+                    if other_project == "node":  # 兼容Nodejs项目
+                        from projectModel.nodejsModel import main
+                        m = main()
+                        project_find = m.get_project_find(siteName)
+                        m.set_apache_config(project_find)
+                    # if other_project == "java":  # 兼容Java项目
+                    #     try:
+                    #         from mod.project.java.java_web_conf import JavaApacheTool
+                    #         from mod.project.java.projectMod import main
+                    #         JavaApacheTool().set_apache_config_for_ssl(main().get_project_find(siteName))
+                    #     except:
+                    #         from projectModel.javaModel import main
+                    #         m = main()
+                    #         project_find = m.get_project_find(siteName)
+                    #         m.set_apache_config(project_find)
+                    # if other_project == "go":  # 兼容Go项目
+                    #     from projectModel.goModel import main
+                    #     m = main()
+                    #     project_find = m.get_project_find(siteName)
+                    #     m.set_apache_config(project_find)
+                    # if other_project == "other":  # 兼容其他项目
+                    #     from projectModel.otherModel import main
+                    #     m = main()
+                    #     project_find = m.get_project_find(siteName)
+                    #     m.set_apache_config(project_find)
+                    # if other_project == "python":  # 兼容python项目
+                    #     from projectModel.pythonModel import main
+                    #     m = main()
+                    #     project_find = m.get_project_find(siteName)
+                    #     m.set_apache_config(project_find)
+                    # if other_project == "net":
+                    #     from projectModel.netModel import main
+                    #     m = main()
+                    #     project_find = m.get_project_find(siteName)
+                    #     m.set_apache_config(project_find)
+                    #
+                    # if other_project == "html":
+                    #     from projectModel.htmlModel import main
+                    #     m = main()
+                    #     project_find = m.get_project_find(siteName)
+                    #     m.set_apache_config(project_find)
 
-        sql = public.M('firewall')
-        import firewalls
-        get.port = '443'
-        get.ps = 'HTTPS'
-        if not public.M('firewall').where('port=?', ('443',)).count():
-            firewalls.firewalls().AddAcceptPort(get)
-        public.serviceReload()
-        if 'isBatch' not in get: firewalls.firewalls().AddAcceptPort(get)
-        if 'isBatch' not in get: public.serviceReload()
-        self.save_cert(get)
-        public.write_log_gettext('Site manager', 'Site [{}] turned on SSL successfully!', (siteName,))
-        result = public.return_msg_gettext(True, 'SSL turned on!')
+            if not have_nginx_conf and not have_apache_conf:
+                return public.returnMsg(False, 'No server configuration file. '
+                                               'Please check if port forwarding has been enabled!')
+
+            if ng_conf:  # 因为未查明原因，Apache配置过程中会删除掉nginx备份文件（估计是重复调用了本类中的init操作导致的）
+                shutil.copyfile(ng_file, self.nginx_conf_bak)
+                public.writeFile(ng_file, ng_conf)
+        except Exception as ap_err:
+            public.print_log(f"set apache conf error: {ap_err}")
+        # ============================= OLS ==================================
+        try:
+            self.set_ols_ssl(get, siteName)
+            isError = public.checkWebConfig()
+            if (isError != True):
+                if os.path.exists(self.nginx_conf_bak): shutil.copyfile(self.nginx_conf_bak, ng_file)
+                if os.path.exists(self.apache_conf_bak): shutil.copyfile(self.apache_conf_bak, file)
+                public.ExecShell("rm -f /tmp/backup_*.conf")
+                return public.returnMsg(False,
+                                        'ssl cert wrong: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
+
+            sql = public.M('firewall')
+            import firewalls
+            get.port = '443'
+            get.ps = 'HTTPS'
+            if 'isBatch' not in get: firewalls.firewalls().AddAcceptPort(get)
+            if 'isBatch' not in get: public.serviceReload()
+            self.save_cert(get)
+            public.WriteLog('TYPE_SITE', 'SITE_SSL_OPEN_SUCCESS', (siteName,))
+
+        except Exception as ols_err:
+            public.print_log(f"set ols conf error: {ols_err}")
+
+        result = public.returnMsg(True, 'SITE_SSL_OPEN_SUCCESS')
         result['csr'] = public.readFile('/www/server/panel/vhost/cert/' + get.siteName + '/fullchain.pem')
         result['key'] = public.readFile('/www/server/panel/vhost/cert/' + get.siteName + '/privkey.pem')
-        del result['status']
         if 'isBatch' not in get:
-            return public.return_message(0, 0, result)
+            return result
         else:
-            return public.return_message(0, 0, public.lang(""))
+            return True
 
     def save_cert(self, get):
         # try:
@@ -6105,9 +6235,9 @@ location %s
             else:
                 data['fix'] = ''
             try:
-                data['domains'] = ','.join(list(set(re.search("valid_referers\s+none\s+blocked\s+(.+);\n", tmp).groups()[0].split())))
+                data['domains'] = ','.join(list(set(re.search(r"valid_referers\s+none\s+blocked\s+(.+);\n", tmp).groups()[0].split())))
             except:
-                data['domains'] = ','.join(list(set(re.search("valid_referers\s+(.+);\n", tmp).groups()[0].split())))
+                data['domains'] = ','.join(list(set(re.search(r"valid_referers\s+(.+);\n", tmp).groups()[0].split())))
             data['status'] = True
             data['http_status'] = tmp.find('none blocked') != -1
             try:
@@ -7451,6 +7581,60 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             return public.fail_v2(msg)
 
         return public.success_v2(msg)
+    
+    @staticmethod
+    def get_tls_protocol(tls1_3: str = "TLSv1.3", is_apache=False):
+        """获取使用的协议
+        @author baozi <202-04-18>
+        @param:
+        @return
+        """
+        protocols = {
+            "TLSv1": False,
+            "TLSv1.1": True,
+            "TLSv1.2": True,
+            "TLSv1.3": False,
+        }
+        file_path = public.get_panel_path() + "/data/ssl_protocol.json"
+        if os.path.exists(file_path):
+            data = public.readFile(file_path)
+            if data is not False:
+                protocols = json.loads(data)
+                if protocols["TLSv1.3"] and tls1_3 == "":
+                    protocols["TLSv1.3"] = False
+                if is_apache is False:
+                    return " ".join([p for p, v in protocols.items() if v is True])
+                else:
+                    return " ".join(["-" + p for p, v in protocols.items() if v is False])
+        else:
+            if tls1_3 != "":
+                protocols["TLSv1.3"] = True
+            if is_apache is False:
+                return " ".join([p for p, v in protocols.items() if v is True])
+            else:
+                return " ".join(["-" + p for p, v in protocols.items() if v is False])
+
+    @staticmethod
+    def get_ssl_protocol(get):
+        """ 获取全局TLS版本
+        @author baozi <202-04-18>
+        @param:
+        @return
+        """
+        protocols = {
+            "TLSv1": False,
+            "TLSv1.1": True,
+            "TLSv1.2": True,
+            "TLSv1.3": False,
+        }
+        file_path = public.get_panel_path() + "/data/ssl_protocol.json"
+        if os.path.exists(file_path):
+            data = public.readFile(file_path)
+            if data is not False:
+                protocols = json.loads(data)
+                return protocols
+
+        return protocols
 
     # 安装插件
     def wp_install_plugin(self, args: public.dict_obj):
@@ -8026,6 +8210,12 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         except Exception as e:
             public.print_log("error, %s" % e)
             return public.fail_v2("set status error %s" % e)
+
+    def is_nginx_http3(self):
+        if getattr(self, "_is_nginx_http3", None) is None:
+            _is_nginx_http3 = public.ExecShell("nginx -V 2>&1| grep 'http_v3_module'")[0] != ''
+            setattr(self, "_is_nginx_http3", _is_nginx_http3)
+        return self._is_nginx_http3
 
     def set_restart_task(self, get):
         import sys

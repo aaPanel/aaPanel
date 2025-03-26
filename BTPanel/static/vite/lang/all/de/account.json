@@ -162,5 +162,10 @@
 	"1a297a2e0633fe06b9e826043db42f6e": "Aktualisieren des Dienstes, bitte warten Sie ...",
 	"06933067aafd48425d67bcb01bba5cb6": "Aktualisieren",
 	"1e2265cb27ce1ed730d4930830771361": "Anzahl der Konto",
-	"d12917fb83613a6173585079ddd0b6e4": "Es gibt eine neue Version ({0}) für das Update."
+	"d12917fb83613a6173585079ddd0b6e4": "Es gibt eine neue Version ({0}) für das Update.",
+	"becb8926a2481afd9fd9185934fbbd6f": "Max -E -Mail -Domains",
+	"4a19980fe559d96c42d74587496f7a6e": "Wenn die API nicht aktiviert ist oder nicht 127.0.0.1 zur API-Whitelist hinzugefügt wird, ist das Postamt der Unterpanel nicht unbrauchbar.",
+	"5589134ff82f1bcf31e45a92417cd572": "Ein-Klick-Whitening",
+	"79e026bbc1d1e24364be67755d853ea2": "Maximale Anzahl von E -Mail -Domains",
+	"df19b1fcee11636e30b0fb095938c4e7": "Update -Zeit:"
 }

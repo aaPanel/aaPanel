@@ -162,5 +162,10 @@
 	"1a297a2e0633fe06b9e826043db42f6e": "Servicio de actualización, espere ...",
 	"06933067aafd48425d67bcb01bba5cb6": "Actualizar",
 	"1e2265cb27ce1ed730d4930830771361": "Número de cuenta",
-	"d12917fb83613a6173585079ddd0b6e4": "Hay una nueva versión ({0}) disponible para actualizar,"
+	"d12917fb83613a6173585079ddd0b6e4": "Hay una nueva versión ({0}) disponible para actualizar,",
+	"becb8926a2481afd9fd9185934fbbd6f": "Dominios de correo electrónico máximos",
+	"4a19980fe559d96c42d74587496f7a6e": "Si la API no está habilitada o no se agrega 127.0.0.1 a la lista blanca API, la oficina de correos de subanel será inutilizable.",
+	"5589134ff82f1bcf31e45a92417cd572": "Blanqueamiento de un solo clic",
+	"79e026bbc1d1e24364be67755d853ea2": "Número máximo de dominios de correo electrónico",
+	"df19b1fcee11636e30b0fb095938c4e7": "Tiempo de actualización:"
 }

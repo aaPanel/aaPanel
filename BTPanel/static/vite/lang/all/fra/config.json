@@ -394,5 +394,6 @@
 	"799f9bce5f58c4f24423609974461f13": "Êtes-vous sûr de vouloir effacer toutes vos sauvegardes",
 	"71ab9f0eaf2b2e26fe8dd49ee645130a": "Veuillez saisir le nombre de sauvegardes",
 	"47981faddcaafb488a560d008ece8f70": "Si la base de données utilisée par le panneau est corrompue, vous ne pourrez pas récupérer la base de données du panneau corrompu",
-	"4e7c4b436aa01fc3feaea5fb7a4ca328": "Désactiver la sauvegarde du panneau"
+	"4e7c4b436aa01fc3feaea5fb7a4ca328": "Désactiver la sauvegarde du panneau",
+	"d70258b20b78a647f41d38fb5b14ef0b": "La sauvegarde automatique n'inclut pas les données du site Web et les données MySQL"
 }

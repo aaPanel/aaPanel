@@ -1,0 +1,99 @@
+{
+	"Plugin": {
+		"Mysql": {
+			"index_1": "Ini adalah file konfigurasi utama {0}, jika Anda tidak memahami aturan konfigurasi, tolong jangan modifikasinya.",
+			"index_2": "Beri tahu saya saat status berhenti",
+			"index_3": "Negara berhenti pengaturan alarm",
+			"index_4": "Auto-restart",
+			"index_5": "Apakah Anda pasti akan {0} {1} layanan?",
+			"index_6": "Log biner",
+			"index_7": "Kiat hangat: Log biner MySQL adalah untuk merekam log operasi saat ini, dapat digunakan untuk pemulihan data, cadangan data.",
+			"index_8": "Waktu yang terakhir dimodifikasi",
+			"index_9": "Hapus log",
+			"index_10": "Apakah Anda benar -benar ingin menghapus log [{0}]?",
+			"index_11": "Menyalakan penebangan biner dapat melindungi keamanan data MySQL, tetapi pada saat yang sama akan mengkonsumsi sejumlah penyimpanan disk, apakah akan melanjutkan?",
+			"index_12": "Mematikan log biner tidak akan lagi merekam semua operasi modifikasi ke log basis data biner?",
+			"index_13": "Bergerak",
+			"index_14": "Peringatan Risiko: MySQL akan berhenti berlari selama proses migrasi, harap berhati -hati",
+			"index_15": "Peringatan Risiko: Harap tunggu sampai migrasi selesai sebelum melakukan operasi lain selama proses migrasi",
+			"index_16": "Migrasi basis data",
+			"index_17": "Yakin Anda ingin memigrasi database ke [{0}]?",
+			"index_18": "Perlindungan memori",
+			"index_19": "Catatan: Setelah diaktifkan, prioritas memori MySQL akan disesuaikan, dan MySQL tidak akan pernah dibunuh oleh sistem, yang dapat memastikan operasi mySQL yang stabil. Namun, ini dapat menyebabkan proses lain terbunuh secara tidak normal, yang dapat secara serius mempengaruhi operasi sistem. Disarankan untuk mengaktifkannya ketika MySQL perlu berjalan dengan stabil.",
+			"index_20": "Rencana Optimalisasi",
+			"index_21": "Penggunaan Max Ram",
+			"index_22": "Restart {0} layanan",
+			"index_23": "Mulai ulang basis data agar konfigurasi berlaku",
+			"index_24": "Apakah Anda memulai kembali layanan {0}?",
+			"index_25": "Jika Anda perlu mengubah versi MySQL, silakan cadangkan data Anda, uninstall MySQL dan pasang kembali.",
+			"index_26": "Lokasi Penyimpanan",
+			"index_27": "Optimasi",
+			"index_28": "Log lambat",
+			"index_29": "Waktu interval",
+			"index_30": "Mendukung"
+		},
+		"Ftp": {
+			"index_1": "Fitur ini eksklusif untuk versi profesional, {a}",
+			"index_2": "Sakelar manajemen log",
+			"index_3": "Setelah dihidupkan, semua catatan dan catatan operasi pengguna FTP akan direkam.",
+			"index_4": "Manajemen log",
+			"index_5": "Setelah menyalakan manajemen log Pure-FTPD, ia akan mencatat catatan login dan operasi semua pengguna FTP, apakah akan melanjutkan operasi?",
+			"index_6": "Setelah mematikan manajemen log Pure-FTPD, ia tidak akan dapat merekam catatan login dan operasi semua pengguna FTP, apakah akan melanjutkan operasi?",
+			"index_7": "Alamat FTP saat ini adalah",
+			"index_8": "Unduh Alat Koneksi FTP (FileZilla, Sumber Terbuka Gratis)",
+			"index_9": "Versi Switch",
+			"index_10": "Manajemen Pengguna",
+			"index_11": "Versi saat ini sama dengan versi yang dipilih!",
+			"index_12": "Apakah Anda pasti akan menginstal {0}-{1}"
+		},
+		"Redis": {
+			"index_1": "Setelah memodifikasi konfigurasi, Anda perlu memulai kembali Redis agar berlaku, jika data Anda perlu bertahan, harap jalankan operasi simpan terlebih dahulu.",
+			"index_2": "Peringatan: Jangan nyalakan akses ekstranet Redis, karena akses tidak terbatas ke IP sangat mungkin menyebabkan intrusi server.",
+			"index_3": "Setelah pengaturan, direktori redis_cache yang baru akan dibuat di direktori yang dipilih dan diberikan izin Redis",
+			"index_4": "Jalur penyimpanan file yang persisten",
+			"index_5": "Kegigihan",
+			"index_6": "Kegigihan RDB",
+			"index_7": "Atur kegigihan"
+		},
+		"Apache": {
+			"index_1": "Waktu ulang",
+			"index_2": "Waktu startup",
+			"index_3": "Total koneksi",
+			"index_4": "Total byte ditransfer",
+			"index_5": "Permintaan per detik",
+			"index_6": "Proses sibuk",
+			"index_7": "Proses idle",
+			"index_8": "Apache menggunakan CPU",
+			"index_9": "Apache menggunakan memori",
+			"index_10": "Daemon",
+			"index_11": "Daemon dapat dimulai secara otomatis setelah layanan {0} dihentikan untuk memastikan bahwa layanan {0} selalu berjalan.",
+			"index_12": "Bidang",
+			"index_13": "Nilai saat ini",
+			"index_14": "Periksa default setiap 1 menit, dapat diubah di cron"
+		},
+		"Mencached": {
+			"index_1": "Mendengarkan IP, tolong jangan memodifikasinya dengan bebas",
+			"index_2": "Port mendengarkan, umumnya tidak perlu memodifikasi",
+			"index_3": "MB, ukuran cache, disarankan untuk tidak melebihi 512m",
+			"index_4": "Jumlah koneksi maksimum, disarankan untuk tidak melebihi 40960"
+		},
+		"MongoDB": {
+			"index_1": "Setelah pengaturan, buat direktori bt_mongodb baru di direktori yang dipilih dan berikan izin Mongo",
+			"index_2": "Jangan memodifikasi IP pemantauan sesuka hati",
+			"index_3": "Lokasi penyimpanan data",
+			"index_4": "Lokasi File Log",
+			"index_5": "PID Save Path",
+			"index_6": "Port mendengarkan, umumnya tidak perlu memodifikasi",
+			"index_7": "Harap mulai layanan MongoDB terlebih dahulu!",
+			"index_8": "Apakah Anda benar -benar ingin menghapus database [{0}]?"
+		},
+		"Openlitespeed": {
+			"index_1": "Menentukan waktu idle koneksi maksimum (detik) yang diizinkan selama pemrosesan satu permintaan",
+			"index_2": "Mengaktifkan kompresi GZIP/Brotli untuk respons statis dan dinamis",
+			"index_3": "Menentukan tingkat kompresi GZIP yang diterapkan pada konten dinamis. Berkisar dari 1 (terendah) hingga 9 (tertinggi)",
+			"index_4": "Menentukan jumlah maksimum koneksi bersamaan yang dapat diterima server. Ini termasuk koneksi TCP biasa dan koneksi SSL",
+			"index_5": "Menentukan jumlah maksimum permintaan yang dapat dilayani melalui sesi tetap (persisten)",
+			"index_6": "Menentukan jumlah maksimum koneksi SSL bersamaan yang akan diterima server karena total koneksi SSL dan non-SSL secara bersamaan tidak dapat melebihi batas yang ditentukan oleh \"koneksi maks\", jumlah aktual koneksi SSL bersamaan yang diizinkan harus lebih rendah dari batas ini"
+		}
+	}
+}

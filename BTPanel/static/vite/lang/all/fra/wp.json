@@ -189,5 +189,7 @@
 	"2b54c0e89a395eefacd9ec9953ea3ee6": "Ignorer la liste",
 	"99041f90bbbbc42c7f9eec3e7dce25a5": "Numérisation, veuillez patienter ...",
 	"c863dfbe15f5b9cbcec2d12871d8bb10": "Détecter rapidement les vulnérabilités, les risques potentiels et les fichiers modifiés manuellement dans les plugins et thèmes WordPress",
-	"c9bf00d6ab370b9c6468616d51e8eb35": "Ajouter le site"
+	"c9bf00d6ab370b9c6468616d51e8eb35": "Ajouter le site",
+	"cb1018823a7e2fd265971cb2502e62f9": "boîte à outils Aapanel WP",
+	"8f0c1fe13a6c5acb059a1de0118d9e6b": "Cela réinstallera les fichiers Core WordPress sans perdre du contenu du site. Il est recommandé de sauvegarder votre site Web avant de réinstaller."
 }

@@ -324,8 +324,8 @@ class wordpress_scan:
             @return int  0 相等 1 大于 -1 小于
         '''
         # 分割版本号为整数列表
-        v1 = [int(num) for num in version1.split('.')]
-        v2 = [int(num) for num in version2.split('.')]
+        v1 = [int(num) if num.strip() != '' else 0 for num in version1.split('.')]
+        v2 = [int(num) if num.strip() != '' else 0 for num in version2.split('.')]
         # 逐个比较版本号的每个部分
         for num1, num2 in zip(v1, v2):
             if num1 > num2:

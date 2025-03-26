@@ -13,7 +13,7 @@ import shutil
 import sys
 import time
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from hashlib import md5
 from typing import Optional, Tuple, List, Dict
 
@@ -86,6 +86,7 @@ class _SSLDatabase:
                     public.M('ssl_info').execute("ALTER TABLE 'ssl_info' ADD 'ps' TEXT DEFAULT ''", ())
                 except Exception as e:
                     pass
+
 
 ssl_db = _SSLDatabase()
 
@@ -227,7 +228,8 @@ class SSLManger:
     def save_by_data(self, certificate: str,
                      private_key: str,
                      cloud_id: Optional[int] = None,
-                     other_data: Optional[Dict] = None) -> Dict:
+                     other_data: Optional[Dict] = None,
+                     log_file: Optional[str] = "") -> Dict:
 
         if not certificate.startswith("-----BEGIN") or not private_key.startswith("-----BEGIN"):
             raise ValueError(public.lang("Certificate format error"))
@@ -273,8 +275,59 @@ class SSLManger:
 
         res_id = ssl_db.connection().insert(pdata)
         public.M('ssl_info').insert(pdata)  # add default.db ssl_info table
-        if isinstance(res_id, str) and res_id.startswith("error"):
-            raise ValueError(public.lang("db write error"))
+        # ======= save dns domain db ============
+        try:
+            from ssl_domainModelV2.model import DnsDomainProvider, DnsDomainSSL
+            provider, account, token = auth_info.get("auth_to", "||").split("|")
+            p_obj = DnsDomainProvider.objects.filter(
+                name=provider, api_user=account, api_key=token
+            ).first()
+            # upload cert maybe have no provider
+            pid = p_obj.id if p_obj and provider != "" else 0
+            # keep the same ssl cert unique
+            # more detail => self.sub_all_cert(key_file, pem_file)
+            for ssl in DnsDomainSSL.objects.filter(
+                    provider_id=pid,
+                    dns=info.get("dns", []),
+                    subject=info.get("subject", "")
+            ):
+                if all([
+                    ssl.info.get("issuer") == info.get("issuer", ""),
+                    ssl.info.get("issuer_O") == info.get("issuer_O", ""),
+                    ssl.dns == info.get("dns", []),
+                ]):
+                    ssl.delete()
+            try:
+                date_time = datetime.strptime(info.get("notAfter"), "%Y-%m-%d")
+                not_after_ts = int(time.mktime(date_time.timetuple())) * 1000
+            except:
+                not_after_ts = int(
+                    time.mktime(
+                        time.strptime(f"{datetime.now().date() + timedelta(days=30)}", "%Y-%m-%d")
+                    )
+                ) * 1000
+
+            DnsDomainSSL(**{
+                "provider_id": pid,
+                "hash": hash_data,
+                "path": "{}/{}".format(SSL_SAVE_PATH, hash_data),
+                "dns": info.get("dns", []),
+                "subject": info.get("subject", ""),
+                "info": info,
+                "cloud_id": int(cloud_id),
+                "not_after": info.get("notAfter", ""),
+                "not_after_ts": not_after_ts,
+                "auth_info": auth_info,
+                "log": log_file,
+            }).save()
+        except Exception as e:
+            import traceback
+            public.print_log(traceback.format_exc())
+            public.print_log("save dns domain db error: {}".format(e))
+        # =======  end dns domain db  ===========
+
+        # if isinstance(res_id, str) and res_id.startswith("error"):
+        #     raise ValueError(public.lang("db write error"))
 
         pdata["id"] = res_id
         if not os.path.exists(pdata["path"]):
@@ -401,7 +454,7 @@ class SSLManger:
         all_ids = ssl_db.connection().field("id").select()
         for ssl_id in all_ids:
             if ssl_id["id"] not in change_set:
-                ssl_db.connection().where("id = ?", (ssl_id["id"], )).update({"cloud_id": -1})
+                ssl_db.connection().where("id = ?", (ssl_id["id"],)).update({"cloud_id": -1})
 
     # 从本地收集证书
     def _get_ssl_by_local_data(self):  # 从本地获取可用证书
@@ -472,7 +525,7 @@ class SSLManger:
         target["dns"] = json.loads(target["dns"])
         target["info"] = json.loads(target["info"])
         target['endtime'] = int((datetime.strptime(target['not_after'], "%Y-%m-%d").timestamp()
-                                - datetime.today().timestamp()) / (60 * 60 * 24))
+                                 - datetime.today().timestamp()) / (60 * 60 * 24))
         return target
 
     @classmethod
@@ -624,7 +677,7 @@ class SSLManger:
             res_data = json.loads(res_text)
             if res_data["status"] is True:
                 cloud_id = int(res_data["data"].get("id"))
-                ssl_db.connection().where("id = ?", (target["id"], )).update({"cloud_id": cloud_id})
+                ssl_db.connection().where("id = ?", (target["id"],)).update({"cloud_id": cloud_id})
 
                 return res_data
             else:

@@ -95,7 +95,7 @@
 			"index_94": "Bitte geben Sie die Anzahl der Sicherungen ein",
 			"index_95": "Wenn die vom Panel verwendete Datenbank beschädigt ist, können Sie die beschädigte Panel -Datenbank nicht wiederherstellen",
 			"index_96": "Schalten Sie die Backup -Tafel aus",
-			"index_97": "Die automatische Sicherung umfasst keine Website-Daten und MySQL-Daten"
+			"index_97": "Die automatische Sicherung enthält keine Website -Daten und MySQL -Daten"
 		},
 		"Safe": {
 			"index_1": "Sicherheit",

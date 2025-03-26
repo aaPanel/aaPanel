@@ -1,0 +1,168 @@
+{
+	"Component": {
+		"Batch": {
+			"index_1": "Vui lòng chọn",
+			"index_2": "(Đã chọn {0})",
+			"index_3": "Batching {0}, tiến trình hiện tại:"
+		},
+		"Auth": {
+			"index_1": "MIỄN PHÍ",
+			"index_2": "Đổi mới",
+			"index_3": "Mua ngay",
+			"index_4": "Hết hạn: ",
+			"index_5": "Nâng cấp ngay bây giờ",
+			"index_6": "Trọn đời"
+		},
+		"Feedback": {
+			"index_7": "Nhận xét",
+			"index_1": "Bộ sưu tập phản hồi nhu cầu Aapanel",
+			"index_2": "Nếu bạn gặp bất kỳ vấn đề hoặc chức năng không hoàn hảo nào trong quá trình sử dụng, vui lòng mô tả",
+			"index_3": "Các vấn đề hoặc nhu cầu của bạn đối với chúng tôi một cách chi tiết, chúng tôi sẽ cố gắng hết sức để giải quyết hoặc cải thiện",
+			"index_4": "Chúng tôi đặc biệt chú ý đến phản hồi yêu cầu của bạn và chúng tôi tiến hành các yêu cầu hàng tuần thường xuyên. Tôi hy vọng tôi có thể giúp bạn tốt hơn",
+			"index_5": "Vui lòng điền vào phản hồi",
+			"index_6": "Cảm ơn bạn đã tham gia!"
+		},
+		"Coupon": {
+			"index_1": "Nhận phiếu giảm giá trong một thời gian giới hạn",
+			"index_2": "TẮT",
+			"index_3": "Có giá trị cho ",
+			"index_4": "Phiếu giảm giá",
+			"index_5": "Nhận nó ngay bây giờ",
+			"index_6": "Không còn lời nhắc cho ngày hôm nay",
+			"index_7": "Không có lời nhắc trong 7 ngày qua",
+			"index_8": "Đừng bao giờ nhắc bạn mãi mãi",
+			"index_9": "{0}, bạn có chắc không?",
+			"index_10": "Kết thúc tại ",
+			"index_11": "Nhận phiếu giảm giá $ {0}",
+			"index_12": "{0} phiếu giảm giá",
+			"index_13": "Chọn thời gian mà không cần thông báo"
+		},
+		"Pay": {
+			"index_1": "Pro",
+			"index_2": "Khuyến khích",
+			"index_3": "Tính năng Pro",
+			"index_4": "Mô tả trình cắm",
+			"index_5": "Tính năng tương phản",
+			"index_6": "Tiết kiệm nhiều hơn",
+			"index_7": "Phiên bản Linux Pro có sẵn để sử dụng miễn phí plugin này và tất cả các tính năng Pro khác",
+			"index_8": "Câu hỏi? Gửi email cho chúng tôi bất cứ lúc nào: {0}",
+			"index_9": "Chọn kế hoạch của bạn",
+			"index_10": "Phổ biến nhất",
+			"index_11": "Số giấy phép",
+			"index_12": "Đang tải, vui lòng đợi ...",
+			"index_13": "{0} TẮT",
+			"index_14": "{0} {1}",
+			"index_15": "{0} {1}",
+			"index_16": "Op: {0}",
+			"index_17": "Chỉ cắm vào",
+			"index_18": "Phiếu giảm giá ({0})",
+			"index_19": "$ {0} TẮT thanh toán {1}",
+			"index_20": "Không có phiếu giảm giá ưu tiên",
+			"index_21": "Chứng từ",
+			"index_22": "Giấy phép",
+			"index_23": "Tài khoản: ",
+			"index_24": "Thay đổi",
+			"index_25": "Tổng cộng: ",
+			"index_26": "Trả tiền",
+			"index_27": "Nếu {0} không thanh toán, bạn có thể thử sử dụng ",
+			"index_28": "Lệnh thanh toán không thành công, xin vui lòng liên hệ với Quản trị viên!",
+			"index_29": "Đăng ký: ",
+			"index_30": "* Khi giấy phép hết hạn, nó sẽ tự động gia hạn",
+			"index_31": "* Kiểm tra đăng ký, bạn không thể thanh toán bằng đồng địa phương",
+			"index_32": "Vòng nội tệ: ",
+			"index_33": "* Thanh toán bằng phương thức thanh toán địa phương và tiền tệ của bạn",
+			"index_34": "Thông tin giấy phép",
+			"index_35": "Không có giấy phép",
+			"index_36": "Giấy phép",
+			"index_37": "Chứng từ",
+			"index_38": "Không có chứng từ",
+			"index_39": "Sử dụng",
+			"index_40": "Hết hạn sau",
+			"index_41": "Vui lòng đăng ký SSL trước khi mua!",
+			"index_42": "Bật SSL",
+			"index_43": "Ưu đãi thời gian giới hạn: ",
+			"index_44": "Tiết kiệm tối đa $ {0}",
+			"index_45": "Thanh toán khác",
+			"index_46": "Tự động chuyển đổi tiền thanh toán dựa trên vị trí của bạn",
+			"index_47": "Thanh toán ngay bây giờ"
+		},
+		"BindAccount": {
+			"index_1": "Liên kết tài khoản Aapanel",
+			"index_2": "Không có tài khoản, đi đến đăng ký",
+			"index_3": "Đăng nhập",
+			"index_4": "Vui lòng nhập địa chỉ email của bạn",
+			"index_5": "Vui lòng nhập mật khẩu của bạn",
+			"index_6": "Liên kết tài khoản Aapanel",
+			"index_7": "Địa chỉ email của bạn",
+			"index_8": "Mật khẩu của bạn"
+		},
+		"Logs": {
+			"index_1": "Không có nhật ký"
+		},
+		"SelectPath": {
+			"index_1": "Trở lại",
+			"index_2": "Đường dẫn hiện tại",
+			"index_3": "Tên tập tin",
+			"index_4": "Thời gian sửa đổi",
+			"index_5": "Sự cho phép",
+			"index_6": "Người sở hữu",
+			"index_7": "Chọn thư mục"
+		},
+		"Editor": {
+			"index_1": "Mẹo ： Ctrl+F Tìm kiếm Từ khóa"
+		},
+		"Quota": {
+			"index_1": "Hạn ngạch",
+			"index_2": "Không đặt",
+			"index_3": "Công suất đã sử dụng hiện tại: {0}",
+			"index_4": "Nhấp vào sửa đổi hạn ngạch công suất",
+			"index_5": "{1} Đặt hạn ngạch mới [{0}]",
+			"index_6": "Năng lực đã sử dụng hiện tại",
+			"index_7": "Hạn ngạch năng lực hiện tại",
+			"index_8": "Nhắc nhở: Tính năng này là độc quyền cho Phiên bản Pro",
+			"index_9": "Yêu cầu hệ thống tập tin XFS và bao gồm tham số [PRJQOTA] để sử dụng",
+			"index_10": "Ví dụ về fstab: /dev /vdc1 /data xfs mặc định, prjquota 0 0",
+			"index_11": "Hạn ngạch: Để hủy hạn ngạch, được đặt thành \"0\"",
+			"index_12": "Hạn ngạch công suất hiện tại: {0}"
+		},
+		"Terminal": {
+			"index_1": "Kết nối đã bị ngắt kết nối, nhấn Enter sẽ cố gắng kết nối lại!",
+			"index_2": "Cố gắng kết nối lại!"
+		},
+		"Upload": {
+			"index_1": "Chọn Tệp",
+			"index_2": "Không được chọn"
+		},
+		"UploadFile": {
+			"index_1": "Nhấp hoặc kéo tệp vào khu vực",
+			"index_2": "Chỉ nhập định dạng tệp {0}",
+			"index_3": "Tên tập tin",
+			"index_4": "Kích cỡ",
+			"index_5": "Trạng thái",
+			"index_6": "Chọn Tệp",
+			"index_7": "Kích thước tệp [{0}] không thể vượt quá {1} m",
+			"index_8": "Chờ tải lên",
+			"index_9": "Tải lên thành công",
+			"index_10": "Vui lòng chọn tệp để tải lên"
+		},
+		"FormMore": {
+			"index_1": "Thêm cấu hình, bấm để xem"
+		},
+		"Confirm": {
+			"index_1": "Nếu bạn xác nhận thao tác, hãy nhập thủ công \"{text_}\"",
+			"index_2": "Lỗi đầu vào, vui lòng thử lại",
+			"index_3": "{0} đã được hoàn thành, tổng số {1} Nhiệm vụ, {2} thành công, {3} thất bại",
+			"index_4": "Kết quả: ",
+			"index_5": "Kết quả không chính xác, vui lòng thử lại"
+		},
+		"SoftState": {
+			"index_1": "Bạn có chắc bạn phải {0} dịch vụ {1} và tiếp tục?"
+		},
+		"Api": {
+			"index_1": "Đang tải, vui lòng đợi ...",
+			"index_2": "Ràng buộc, vui lòng đợi ...",
+			"index_3": "Gửi phản hồi, vui lòng đợi ..",
+			"index_4": "Tải lên tệp, vui lòng đợi ..."
+		}
+	}
+}

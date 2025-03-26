@@ -89,7 +89,9 @@
 			"account_3": "資源包",
 			"account_4": "日誌",
 			"account_5": "存儲",
-			"account_6": "設定"
+			"account_6": "設定",
+			"domain_1": "域名",
+			"domain_2": "證書"
 		},
 		"Footer": {
 			"index_1": "aaPanel Linux面板©2014-{0} aaPanel(www.aapanel.com)",
@@ -98,7 +100,7 @@
 		},
 		"MessageBox": {
 			"index_1": "當前沒有任務！",
-			"index_2": "提示：若任務長時間未執行，請嘗試點擊【重啓面板】來重置任務隊列",
+			"index_2": "提示：若任務長時間未執行，請嘗試點擊【重啟面板】來重置任務隊列",
 			"index_3": "任務列表",
 			"index_4": "消息列表",
 			"index_5": "執行日誌",

@@ -95,7 +95,7 @@
 			"index_94": "Por favor, insira o número de backups",
 			"index_95": "Se o banco de dados usado pelo painel estiver corrompido, você não poderá recuperar o banco de dados do painel corrompido",
 			"index_96": "Desligue o backup do painel",
-			"index_97": "O backup automático não inclui dados do site e dados do MySQL"
+			"index_97": "O backup automático não inclui dados do site e dados MySQL"
 		},
 		"Safe": {
 			"index_1": "Segurança",

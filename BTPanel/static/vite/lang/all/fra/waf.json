@@ -811,5 +811,7 @@
 	"ceb73b4c08084ee433f622c8347d8ff4": "Effet: le contenu de la page Web est chiffré au hasard à chaque visite, empêchant efficacement des robots de robots.",
 	"a7cd6cc473232d0fc01e1e40977ff4ff": "Impact: l'activation de cette fonctionnalité doublera le trafic par rapport aux niveaux précédents.",
 	"5b9c0fac87a97a8334f2e21a6137bb35": "Recommandation: il est conseillé de ne pas l'activer pour les services en ligne.",
-	"ab706a5938adcb681b8f2c7e0cae6402": "Avertissement: il s'agit d'une fonctionnalité bêta. Ne l'activez pas pour les services de production !!"
+	"ab706a5938adcb681b8f2c7e0cae6402": "Avertissement: il s'agit d'une fonctionnalité bêta. Ne l'activez pas pour les services de production !!",
+	"b67a41ea491e086fc87abcfdd3172202": "Veuillez utiliser des expressions régulières; Sauvegardez les expressions originales avant la soumission.",
+	"57322c79b2d81235926ce33864e578de": "Demandez la défense"
 }

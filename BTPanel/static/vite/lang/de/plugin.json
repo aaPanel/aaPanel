@@ -25,7 +25,7 @@
 			"index_22": "Starten Sie den {0} Service neu",
 			"index_23": "Starten Sie die Datenbank neu, damit die Konfiguration wirksam wird",
 			"index_24": "Haben Sie den {0} -Dienst neu gestartet?",
-			"index_25": "Wenn Sie die MySQL -Version ändern müssen, sichern Sie Ihre Daten, deinstallieren Sie MySQL und installieren Sie sie neu.",
+			"index_25": "Wenn Sie die MySQL -Version ändern müssen, sichern Sie bitte Ihre Daten, deinstallieren Sie MySQL und installieren Sie sie neu.",
 			"index_26": "Speicherort",
 			"index_27": "Optimierung",
 			"index_28": "Langsames Protokoll",

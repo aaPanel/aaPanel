@@ -86,6 +86,8 @@ extract_zone = ExtractZoneTool()
 class BaseDns(object):
     def __init__(self):
         self.dns_provider_name = self.__class__.__name__
+        self.api_user = ""
+        self.api_key = ""
 
     def log_response(self, response):
         try:
@@ -100,15 +102,24 @@ class BaseDns(object):
     def delete_dns_record(self, domain_name, domain_dns_value):
         raise NotImplementedError("delete_dns_record method must be implemented.")
 
-    @classmethod
-    def new(cls, conf_data):
-        raise NotImplementedError("new method must be implemented.")
-
-    def remove_record(self, domain, host, s_type):
-        raise NotImplementedError("remove_record method must be implemented.")
-
     def add_record_for_creat_site(self, domain, server_ip):
+        raise NotImplementedError("add_record_for_creat_site method must be implemented.")
+
+    # =============== 域名管理同步信息 =====================
+    def get_domains(self):
+        raise NotImplementedError("get_domains method must be implemented.")
+
+    def get_dns_record(self, domain_name):
+        raise NotImplementedError("get_dns_record method must be implemented.")
+
+    def create_org_record(self, domain_name, record, record_value, record_type, ttl, **kwargs):
+        raise NotImplementedError("create_org_record method must be implemented.")
+
+    def remove_record(self, domain_name, record, record_type):
         raise NotImplementedError("remove_record method must be implemented.")
+
+    def update_record(self, domain_name, record, new_record, ttl=1, **kwargs):
+        raise NotImplementedError("update_record method must be implemented.")
 
     def raise_resp_error(self, response: requests.Response):
         raise ValueError(
@@ -176,13 +187,6 @@ class TencentCloudDns(BaseDns):
         except TencentCloudSDKException as err:
             return public.returnMsg(False, public.lang('add fail, msg: {}'.format(err)))
 
-    @classmethod
-    def new(cls, conf_data: dict):
-        secret_id = conf_data.get("secret_id", "")
-        secret_key = conf_data.get("secret_key", "")
-
-        return cls(secret_id, secret_key)
-
 
 # 未验证
 # noinspection PyUnresolvedReferences
@@ -246,14 +250,6 @@ class HuaweiCloudDns(BaseDns):
         data = {i["name"][:-1]: i["id"] for i in response["zones"]}
 
         return data
-
-    @classmethod
-    def new(cls, conf_data: dict) -> BaseDns:
-        ak = conf_data.get("ak", None) or conf_data.get("AccessKey", "")
-        sk = conf_data.get("sk", None) or conf_data.get("SecretKey", "")
-        project_id = conf_data.get("project_id", None) or conf_data.get("project_id", "")
-
-        return cls(ak, sk, project_id)
 
 
 # 未验证
@@ -342,24 +338,16 @@ class DNSPodDns(BaseDns):
         domain_name, zone, _ = extract_zone(domain)
         self.add_record(domain_name, zone, server_ip, "A")
 
-    @classmethod
-    def new(cls, conf_data: dict) -> BaseDns:
-        key = conf_data.get("key", None) or conf_data.get("ID", "")
-        secret = conf_data.get("secret", None) or conf_data.get("Token", "")
-        base_url = "https://dnsapi.cn/"
-
-        return cls(key, secret, base_url)
-
 
 class NameCheapDns(BaseDns):
     dns_provider_name = "namecheap"
     _type = 0  # 0:lest 1：锐成
 
-    def __init__(self, api_user, api_key):
+    def __init__(self, api_user, api_key, **kwargs):
         super().__init__()
-        self.timeout = 30
         self.api_user = api_user
         self.api_key = api_key
+        self.timeout = 30
         self.base_url = "https://api.namecheap.com/xml.response"
 
     def _get_hosts(self, domain_name) -> list:
@@ -375,22 +363,20 @@ class NameCheapDns(BaseDns):
         resp = requests.get(url=self.base_url, params=params, timeout=self.timeout)
         if resp.status_code != 200:
             self.raise_resp_error(resp)
-        import xml.etree.ElementTree as EtTree
-        from xml.etree.ElementTree import ParseError as ETParseError
         hosts = []
         index = 0
-        tree_root = resp.text.replace('xmlns="http://api.namecheap.com/xml.response"', '')
-        try:
-            hosts_info = EtTree.fromstring(tree_root).findall(".//host")
-        except ETParseError:
-            hosts_info = []
-
+        hosts_info = self._generate_xml_tree(resp.text, ".//host")
         for host in hosts_info:
             index += 1
+            try:
+                ttl = int(host.get("TTL", 1))
+            except Exception:
+                ttl = 1
             hosts.append({
                 f"HostName{index}": host.get("Name"),
                 f"RecordType{index}": host.get("Type"),
                 f"Address{index}": host.get("Address"),
+                f"TTL{index}": ttl,
             })
         return hosts
 
@@ -420,6 +406,7 @@ class NameCheapDns(BaseDns):
             self.raise_resp_error(setHosts_resp)
 
     def create_dns_record(self, domain_name, domain_dns_value):
+        # acme 调用
         domain_name = domain_name.lstrip("*.")
         root, _, acme_txt = extract_zone(domain_name)
         if self._type != 0:
@@ -429,32 +416,8 @@ class NameCheapDns(BaseDns):
             s_type = "TXT"
         return self.add_record(root, s_type, acme_txt, domain_dns_value)
 
-    def remove_record(self, domain_name, dns_name, s_type="TXT"):
-        hosts_info = self._get_hosts(domain_name)
-        new_hosts = []
-        for host in hosts_info:
-            if dns_name in host.values() and s_type in host.values():
-                continue
-            else:
-                new_hosts.append(host)
-        if new_hosts:
-            new_params = {
-                "ApiUser": self.api_user,
-                "ApiKey": self.api_key,
-                "UserName": self.api_user,
-                "ClientIp": public.GetLocalIp(),
-                "Command": "namecheap.domains.dns.setHosts",
-                "SLD": domain_name.split(".")[0],
-                "TLD": domain_name.split(".")[1],
-                "DomainName": domain_name,
-            }
-            for host in new_hosts:
-                new_params.update(host)
-            setHosts_resp = requests.get(url=self.base_url, params=new_params, timeout=self.timeout)
-            if setHosts_resp.status_code != 200:
-                self.raise_resp_error(setHosts_resp)
-
     def delete_dns_record(self, domain_name, dns_value=None):
+        # 移除挑战值
         domain_name = domain_name.lstrip("*.")
         dns_name = "_acme-challenge" + "." + domain_name
         self.remove_record(domain_name, dns_name, 'TXT')
@@ -464,55 +427,209 @@ class NameCheapDns(BaseDns):
         root, zone, _ = extract_zone(domain)
         self.add_record(root, "A", zone, server_ip)
 
-    @classmethod
-    def new(cls, conf_data: dict):
-        api_user = conf_data.get("Account")
-        api_key = conf_data.get("ApiKey")
-        if api_user is None or api_key is None:
-            raise Exception(public.lang("Account, ApiKey not found"))
-        return cls(api_user, api_key)
+    # =============== 域名管理 ====================
+    @staticmethod
+    def _generate_xml_tree(resp_body: str, findall: str):
+        import xml.etree.ElementTree as EtTree
+        from xml.etree.ElementTree import ParseError as ETParseError
+        tree_root = resp_body.replace('xmlns="http://api.namecheap.com/xml.response"', '')
+        try:
+            targets = EtTree.fromstring(tree_root).findall(findall)
+            return targets
+        except ETParseError:
+            return []
+
+    def get_domains(self) -> list:
+        # 获取账号下所有域名, 判断域名nameserver归属, 并且所有返回均为xml
+        params = {
+            "ApiUser": self.api_user,
+            "ApiKey": self.api_key,
+            "UserName": self.api_user,
+            "Command": "namecheap.domains.getList",  # returns a list of domains for the particular user
+            "ClientIp": public.GetLocalIp(),
+        }
+        resp = requests.get(url=self.base_url, params=params, timeout=self.timeout)
+        if resp.status_code != 200:
+            return []
+        domains = self._generate_xml_tree(resp.text, ".//Domain")
+        domains = [
+            domain.get("Name") for domain in domains if domain.get("IsExpired") == "false"
+        ]
+        res = []
+        for d in domains:
+            try:
+                params = {
+                    "ApiUser": self.api_user,
+                    "ApiKey": self.api_key,
+                    "UserName": self.api_user,
+                    # gets a list of DNS servers associated with the requested domain.
+                    "Command": "namecheap.domains.dns.getList",
+                    "ClientIp": public.GetLocalIp(),
+                    "SLD": d.split(".")[0],
+                    "TLD": d.split(".")[1],
+                }
+                resp = requests.get(url=self.base_url, params=params, timeout=self.timeout)
+                if resp.status_code != 200:
+                    continue
+                tree = self._generate_xml_tree(resp.text, ".//DomainDNSGetListResult")
+                for t in tree:
+                    if t.get("Domain") == d and t.get("IsUsingOurDNS") == "true":
+                        res.append(d)
+                        break
+                time.sleep(1)
+            except Exception as e:
+                public.print_log(f"get_domains error {e}")
+                continue
+        return res
+
+    def get_dns_record(self, domain_name):
+        domain_name, _, _ = extract_zone(domain_name)
+        try:
+            records = self._get_hosts(domain_name)
+        except Exception as e:
+            public.print_log(f"get_dns_record error {e}")
+            records = []
+        res = []
+        for r in records:
+            temp = {}
+            for k, v in r.items():
+                if k.startswith("HostName"):
+                    temp["record"] = v
+                elif k.startswith("RecordType"):
+                    temp["record_type"] = v
+                elif k.startswith("Address"):
+                    temp["record_value"] = v
+                elif k.startswith("TTL"):
+                    temp["ttl"] = r.get("ttl", 1)
+                else:
+                    temp[k] = v
+            res.append(temp)
+        return res
+
+    def __set_hosts_with_params(self, domain_name: str, new_params: dict):
+        try:
+            setHosts_resp = requests.get(url=self.base_url, params=new_params, timeout=self.timeout)
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+        if any([
+            setHosts_resp.status_code != 200,
+            f'Domain="{domain_name}" IsSuccess="true"' not in setHosts_resp.text
+        ]):
+            return {"status": False, "msg": setHosts_resp.text}
+        return {"status": True, "msg": setHosts_resp.text}
+
+    # 创建record
+    def create_org_record(self, domain_name, record, record_value, record_type, ttl=1, **kwargs):
+        domain_name, _, _ = extract_zone(domain_name)
+        hosts = self._get_hosts(domain_name)
+        add_index = len(hosts) + 1
+        params = {
+            "ApiUser": self.api_user,
+            "ApiKey": self.api_key,
+            "UserName": self.api_user,
+            "ClientIp": public.GetLocalIp(),
+            "Command": "namecheap.domains.dns.setHosts",
+            "SLD": domain_name.split(".")[0],
+            "TLD": domain_name.split(".")[1],
+            "DomainName": domain_name,
+        }
+        for index, host in enumerate(hosts):
+            params[f"HostName{index + 1}"] = host[f"HostName{index + 1}"]
+            params[f"Address{index + 1}"] = host[f"Address{index + 1}"]
+            params[f"RecordType{index + 1}"] = host[f"RecordType{index + 1}"]
+            params[f"TTL{index + 1}"] = host[f"TTL{index + 1}"]
+
+        params[f"HostName{add_index}"] = record
+        params[f"Address{add_index}"] = record_value
+        params[f"RecordType{add_index}"] = record_type
+        params[f"TTL{add_index}"] = ttl
+        return self.__set_hosts_with_params(domain_name, params)
+
+    # 删除record
+    def remove_record(self, domain_name, record, record_type="TXT") -> dict:
+        domain_name, _, _ = extract_zone(domain_name)
+        hosts_info = self._get_hosts(domain_name)
+        new_hosts = []
+        for host in hosts_info:
+            if record in host.values() and record_type in host.values():
+                continue
+            else:
+                new_hosts.append(host)
+        if not new_hosts:
+            # is empty
+            return {"status": True, "msg": "Dns Record is empty."}
+        new_params = {
+            "ApiUser": self.api_user,
+            "ApiKey": self.api_key,
+            "UserName": self.api_user,
+            "ClientIp": public.GetLocalIp(),
+            "Command": "namecheap.domains.dns.setHosts",
+            "SLD": domain_name.split(".")[0],
+            "TLD": domain_name.split(".")[1],
+            "DomainName": domain_name,
+        }
+        for host in new_hosts:
+            new_params.update(host)
+        return self.__set_hosts_with_params(domain_name, new_params)
+
+    # 更新record
+    def update_record(self, domain_name, record: dict, new_record: dict, **kwargs):
+        domain_name, _, _ = extract_zone(domain_name)
+        hosts_info = self._get_hosts(domain_name)
+        new_hosts = []
+        for index, host in enumerate(hosts_info):
+            if all([
+                record.get("record") in host.values(),
+                record.get("record_type") in host.values(),
+                record.get("record_value") in host.values(),
+            ]):
+                host[f"HostName{index + 1}"] = new_record.get("record")
+                host[f"RecordType{index + 1}"] = new_record.get("record_type")
+                host[f"Address{index + 1}"] = new_record.get("record_value")
+                host[f"TTL{index + 1}"] = kwargs.get("ttl", 1)
+                new_hosts.append(host)
+            else:
+                new_hosts.append(host)
+        if not new_hosts:  # is empty
+            return {"status": True, "msg": "Dns Record is empty."}
+        new_params = {
+            "ApiUser": self.api_user,
+            "ApiKey": self.api_key,
+            "UserName": self.api_user,
+            "ClientIp": public.GetLocalIp(),
+            "Command": "namecheap.domains.dns.setHosts",
+            "SLD": domain_name.split(".")[0],
+            "TLD": domain_name.split(".")[1],
+            "DomainName": domain_name,
+        }
+        for host in new_hosts:
+            new_params.update(host)
+        return self.__set_hosts_with_params(domain_name, new_params)
 
 
 class CloudFlareDns(BaseDns):
     dns_provider_name = "cloudflare"
     _type = 0  # 0:lest 1：锐成
 
-    def __init__(
-            self,
-            CLOUDFLARE_EMAIL,
-            CLOUDFLARE_API_KEY,
-            CLOUDFLARE_API_BASE_URL="https://api.cloudflare.com/client/v4/",
-    ):
-        self.CLOUDFLARE_DNS_ZONE_ID = None
-        self.CLOUDFLARE_EMAIL = CLOUDFLARE_EMAIL
-        self.CLOUDFLARE_API_KEY = CLOUDFLARE_API_KEY
-        self.CLOUDFLARE_API_BASE_URL = CLOUDFLARE_API_BASE_URL
-        self.HTTP_TIMEOUT = 65  # seconds
-
-        try:
-            import urllib.parse as urlparse
-        except:
-            import urlparse
-
-        if CLOUDFLARE_API_BASE_URL[-1] != "/":
-            self.CLOUDFLARE_API_BASE_URL = CLOUDFLARE_API_BASE_URL + "/"
-        else:
-            self.CLOUDFLARE_API_BASE_URL = CLOUDFLARE_API_BASE_URL
-        super(CloudFlareDns, self).__init__()
+    def __init__(self, api_user, api_key, limit: bool = True, **kwargs):
+        super().__init__()
+        self.cf_zone_id = None
+        self.api_user = api_user
+        self.api_key = api_key
+        self.limit = limit
+        self.cf_base_url = "https://api.cloudflare.com/client/v4/"
+        self.time_out = 65  # seconds
 
     def _get_auth_headers(self) -> dict:
-        # api limit True
-        if os.path.exists('/www/server/panel/data/cf_limit_api.pl'):
-            return {"Authorization": "Bearer " + self.CLOUDFLARE_API_KEY}
-        # if self.CLOUDFLARE_EMAIL is None and isinstance(self.CLOUDFLARE_API_KEY, str):
-        #     return
-        else:  # api limit False
-            return {"X-Auth-Email": self.CLOUDFLARE_EMAIL, "X-Auth-Key": self.CLOUDFLARE_API_KEY}
+        if self.limit is True:
+            return {"Authorization": "Bearer " + self.api_key}
+        else:  # api limit False, is global permissions
+            return {"X-Auth-Email": self.api_user, "X-Auth-Key": self.api_key}
 
     def find_dns_zone(self, domain_name):
-        url = urljoin(self.CLOUDFLARE_API_BASE_URL, "zones?status=active&per_page=1000")
+        url = self.cf_base_url + "zones?status=active&per_page=1000"
         headers = self._get_auth_headers()
-        find_dns_zone_response = requests.get(url, headers=headers, timeout=self.HTTP_TIMEOUT)
+        find_dns_zone_response = requests.get(url, headers=headers, timeout=self.time_out)
         if find_dns_zone_response.status_code != 200:
             raise ValueError(
                 "Error creating cloudflare dns record: status_code={status_code} response={response}".format(
@@ -524,8 +641,8 @@ class CloudFlareDns(BaseDns):
         result = find_dns_zone_response.json()["result"]
         for i in result:
             if i["name"] in domain_name:
-                setattr(self, "CLOUDFLARE_DNS_ZONE_ID", i["id"])
-        if isinstance(self.CLOUDFLARE_DNS_ZONE_ID, type(None)):
+                setattr(self, "cf_zone_id", i["id"])
+        if isinstance(self.cf_zone_id, type(None)):
             raise ValueError(
                 "Error unable to get DNS zone for domain_name={domain_name}: status_code={status_code} response={response}".format(
                     domain_name=domain_name,
@@ -535,9 +652,10 @@ class CloudFlareDns(BaseDns):
             )
 
     def add_record(self, domain_name, value, s_type):
+        self.find_dns_zone(domain_name)
         url = urljoin(
-            self.CLOUDFLARE_API_BASE_URL,
-            "zones/{0}/dns_records".format(self.CLOUDFLARE_DNS_ZONE_ID),
+            self.cf_base_url,
+            "zones/{0}/dns_records".format(self.cf_zone_id),
         )
         headers = self._get_auth_headers()
         body = {
@@ -547,17 +665,18 @@ class CloudFlareDns(BaseDns):
         }
 
         create_resp = requests.post(
-            url, headers=headers, json=body, timeout=self.HTTP_TIMEOUT
+            url, headers=headers, json=body, timeout=self.time_out
         )
         if create_resp.status_code != 200:
             self.raise_resp_error(create_resp)
 
     def create_dns_record(self, domain_name, domain_dns_value):
+        # acme 调用
         domain_name = domain_name.lstrip("*.")
         self.find_dns_zone(domain_name)
         url = urljoin(
-            self.CLOUDFLARE_API_BASE_URL,
-            "zones/{0}/dns_records".format(self.CLOUDFLARE_DNS_ZONE_ID),
+            self.cf_base_url,
+            "zones/{0}/dns_records".format(self.cf_zone_id),
         )
         headers = self._get_auth_headers()
         body = {
@@ -571,7 +690,7 @@ class CloudFlareDns(BaseDns):
             body['name'] = acme_txt.replace('_acme-challenge.', '')
 
         create_cloudflare_dns_record_response = requests.post(
-            url, headers=headers, json=body, timeout=self.HTTP_TIMEOUT
+            url, headers=headers, json=body, timeout=self.time_out
         )
         if create_cloudflare_dns_record_response.status_code != 200:
             # raise error so that we do not continue to make calls to ACME
@@ -583,30 +702,8 @@ class CloudFlareDns(BaseDns):
                 )
             )
 
-    def remove_record(self, domain_name, dns_name, s_type):
-        headers = self._get_auth_headers()
-        list_dns_payload = {"type": s_type, "name": dns_name}
-        list_dns_url = urljoin(
-            self.CLOUDFLARE_API_BASE_URL,
-            "zones/{0}/dns_records".format(self.CLOUDFLARE_DNS_ZONE_ID),
-        )
-
-        list_dns_response = requests.get(
-            list_dns_url, params=list_dns_payload, headers=headers, timeout=self.HTTP_TIMEOUT
-        )
-
-        for i in range(0, len(list_dns_response.json()["result"])):
-            dns_record_id = list_dns_response.json()["result"][i]["id"]
-            url = urljoin(
-                self.CLOUDFLARE_API_BASE_URL,
-                "zones/{0}/dns_records/{1}".format(self.CLOUDFLARE_DNS_ZONE_ID, dns_record_id),
-            )
-            headers = self._get_auth_headers()
-            requests.delete(
-                url, headers=headers, timeout=self.HTTP_TIMEOUT
-            )
-
     def delete_dns_record(self, domain_name, domain_dns_value):
+        # 移除挑战值
         domain_name = domain_name.lstrip("*.")
         dns_name = "_acme-challenge" + "." + domain_name
         self.remove_record(domain_name, dns_name, 'TXT')
@@ -616,133 +713,142 @@ class CloudFlareDns(BaseDns):
         self.find_dns_zone(domain_name)
         self.add_record(zone, server_ip, "A")
 
-    @classmethod
-    def new(cls, conf_data: dict) -> BaseDns:
-        key = conf_data.get("key", None) or conf_data.get("E-Mail", None) or conf_data.get("E-MAIL", None)
-        secret = conf_data.get("secret", None) or conf_data.get("API Key", None) or conf_data.get("API KEY", None)
-        base_url = "https://api.cloudflare.com/client/v4/"
+    # =============== 域名管理 ====================
 
-        if key is None and secret is None:
-            secret = conf_data.get("API Token", None)  # 处理api - token的情况
-        if key is None and secret is None:
-            raise Exception(public.lang("api key, api secret not found"))
-        return cls(key, secret, base_url)
+    def get_domains(self) -> list:
+        url = self.cf_base_url + "zones?status=active&per_page=1000"
+        headers = self._get_auth_headers()
+        res = requests.get(url, headers=headers, timeout=self.time_out)
+        if res.status_code != 200:
+            return []
+        try:
+            result = res.json().get("result", [])
+        except Exception as e:
+            public.print_log(f"cloudflare get_domains error {e}")
+            result = []
+        return [i.get("name", "") for i in result]
 
+    def get_dns_record(self, domain_name: str) -> list:
+        domain_name, _, _ = extract_zone(domain_name)
+        self.find_dns_zone(domain_name)
+        url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records"
+        result = []
+        page = 1
+        per_page = 500
+        fail_count = 0
+        while True:
+            params = {"page": page, "per_page": per_page}
+            try:
+                response = requests.get(
+                    url, headers=self._get_auth_headers(), params=params
+                )
+                data = response.json()
+                if data.get("success"):
+                    records = data.get("result", [])
+                    result.extend([
+                        {
+                            "record": i.get("name", ""),
+                            "record_value": i.get("content", ""),
+                            "record_type": i.get("type", ""),
+                            "proxy": i.get("proxied", False),
+                            "ttl": i.get("ttl", 1),
+                        } for i in records
+                    ])
+                    if len(records) < per_page:
+                        break
+                    page += 1
+                else:
+                    fail_count += 1
+                    if fail_count >= 3:
+                        break
+            except requests.RequestException as e:
+                print("get_dns_record error", e)
+                break
+        return result
 
-# 官方不支持
-class GoDaddyDns(BaseDns):
-    _type = 0  # 0:lest 1：锐成
-    http_timeout = 65
-    _debug = False
-
-    def __init__(self, sso_key: str, sso_secret: str, base_url='https://api.godaddy.com'):
-        self.sso_key = sso_key
-        self.sso_secret = sso_secret
-        # self.base_url = "https://api.ote-godaddy.com/"
-        self.base_url = base_url
-        super(GoDaddyDns, self).__init__()
-        self._headers = None
-
-    def _get_auth_headers(self) -> dict:
-        if self._headers is not None:
-            return self._headers
-        self._headers = {
-            "Authorization": "sso-key {}:{}".format(self.sso_key, self.sso_secret)
+    # 创建record
+    def create_org_record(self, domain_name, record, record_value, record_type, ttl=1, proxied=0):
+        domain_name, _, _ = extract_zone(domain_name)
+        proxied = True if proxied == 1 else False
+        self.find_dns_zone(domain_name)
+        url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records"
+        headers = self._get_auth_headers()
+        body = {
+            "content": record_value,
+            "name": record,
+            "proxied": proxied,
+            "ttl": ttl,
+            "type": record_type
         }
-        return self._headers
+        try:
+            create_res = requests.post(url, headers=headers, json=body, timeout=self.time_out)
+            create_res = create_res.json()
+            if create_res.get("success"):
+                return {"status": True, "msg": create_res}
+            return {"status": False, "msg": str(create_res.get("errors"))}
+        except requests.exceptions.HTTPError as http_err:
+            return {"status": False, "msg": http_err}
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
 
-    def create_dns_record(self, domain_name, domain_dns_value):
-        domain_name = domain_name.lstrip("*.")
-        root, zone, acme_txt = extract_zone(domain_name)
-
-        url = urljoin(
-            self.base_url,
-            "/v1/domains/{}/records".format(root),
-        )
+    # 删除record
+    def remove_record(self, domain_name, record, record_type="TXT") -> dict:
+        domain_name, _, _ = extract_zone(domain_name)
+        self.find_dns_zone(domain_name)
         headers = self._get_auth_headers()
-        body = [
-            {
-                "data": domain_dns_value,
-                "name": acme_txt,
-                "type": "TXT",
-            }
-        ]
-        if self._type == 1:
-            body[0]['type'] = 'CNAME'
-            root, _, acme_txt = extract_zone(domain_name)
-            body[0]['name'] = acme_txt.replace('_acme-challenge.', '')
-
-        create_godaday_dns_record_response = requests.patch(
-            url, headers=headers, json=body, timeout=self.http_timeout
+        list_dns_payload = {"type": record_type, "name": record}
+        list_dns_url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records"
+        list_dns_response = requests.get(
+            list_dns_url, params=list_dns_payload, headers=headers, timeout=self.time_out
         )
-        if create_godaday_dns_record_response.status_code != 200:
-            # raise error so that we do not continue to make calls to ACME
-            # server
-            raise ValueError(
-                "Error creating GoDaddyDns dns record: status_code={status_code} response={response}".format(
-                    status_code=create_godaday_dns_record_response.status_code,
-                    response=self.log_response(create_godaday_dns_record_response),
-                )
-            )
+        try:
+            for i in range(0, len(list_dns_response.json()["result"])):
+                dns_record_id = list_dns_response.json()["result"][i]["id"]
+                url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records/{dns_record_id}"
+                remove_res = requests.delete(url, headers=headers, timeout=self.time_out)
+                remove_res = remove_res.json()
+                if remove_res.get("success"):
+                    return {"status": True, "msg": remove_res}
+                return {"status": False, "msg": str(remove_res.get("errors"))}
+            # is empty
+            return {"status": True, "msg": "Dns Record is empty."}
+        except requests.exceptions.HTTPError as http_err:
+            return {"status": False, "msg": http_err}
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
 
-    def add_record(self, root, host, value, s_type):
-        url = urljoin(
-            self.base_url,
-            "/v1/domains/{}/records".format(root),
-        )
-        headers = self._get_auth_headers()
-
-        body = [{
-            "type": s_type,
-            "name": host,
-            "data": "{0}".format(value),
-        }]
-
-        create_cloudflare_dns_record_response = requests.patch(
-            url, headers=headers, json=body, timeout=self.http_timeout
-        )
-        if create_cloudflare_dns_record_response.status_code != 200:
-            raise ValueError(
-                "Error creating cloudflare dns record: status_code={status_code} response={response}".format(
-                    status_code=create_cloudflare_dns_record_response.status_code,
-                    response=self.log_response(create_cloudflare_dns_record_response),
-                )
-            )
-
-    def remove_record(self, domain_name, dns_name, s_type):
-        headers = self._get_auth_headers()
-
-        list_dns_url = urljoin(
-            self.base_url,
-            "/v1/domains/{}/records/{}/{}".format(domain_name, s_type, dns_name),
-        )
-
-        dns_response = requests.delete(
-            list_dns_url, headers=headers, timeout=self.http_timeout
-        )
-        if dns_response.status_code != 200:
-            raise ValueError(
-                "Error creating cloudflare dns record: status_code={status_code} response={response}".format(
-                    status_code=dns_response.status_code,
-                    response=self.log_response(dns_response),
-                )
-            )
-
-    def add_record_for_creat_site(self, domain, server_ip):
-        root, zone, _ = extract_zone(domain)
-        self.add_record(root, zone, server_ip, "A")
-
-    def delete_dns_record(self, domain_name, domain_dns_value):
-        root, zone, acme_txt = extract_zone(domain_name)
-        self.remove_record(root, acme_txt, 'TXT')
-
-    @classmethod
-    def new(cls, conf_data: dict) -> BaseDns:
-        key = conf_data.get("key", None) or conf_data.get("Key", "")
-        secret = conf_data.get("secret", None) or conf_data.get("Secret", "")
-        base_url = "https://api.godaddy.com"
-
-        return cls(key, secret, base_url)
+    # 更新record
+    def update_record(self, domain_name, record: dict, new_record: dict, **kwargs):
+        domain_name, _, _ = extract_zone(domain_name)
+        self.find_dns_zone(domain_name)
+        record_type = record.get("record_type")
+        record_name = record.get("record")
+        get_url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records?type={record_type}&name={record_name}"
+        try:
+            # get record id
+            get_response = requests.get(get_url, headers=self._get_auth_headers())
+            get_result = get_response.json()
+            if get_result.get("success") and get_result.get("result"):
+                record_id = get_result["result"][0]["id"]
+                update_url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records/{record_id}"
+                body = {
+                    "type": new_record.get("record_type"),
+                    "name": new_record.get("record"),
+                    "content": new_record.get("record_value"),
+                    "ttl": new_record.get("ttl", 1),
+                    "proxied": True if new_record.get("proxy") == 1 else False,
+                }
+                update_response = requests.put(update_url, headers=self._get_auth_headers(), json=body)
+                update_result = update_response.json()
+                if update_result.get("success"):
+                    return {"status": True, "msg": update_result}
+                return {"status": False, "msg": str(update_result.get("errors"))}
+            else:
+                return {"status": False, "msg": "Dns Record Not Found!"}
+        except requests.exceptions.HTTPError as http_err:
+            return {"status": False, "msg": http_err}
+        except Exception as err:
+            return {"status": False, "msg": err}
 
 
 # 未验证
@@ -875,13 +981,6 @@ class AliyunDns(object):
         root, zone, _ = extract_zone(domain)
         self.add_record(root, "A", zone, server_ip)
 
-    @classmethod
-    def new(cls, conf_data: dict) -> "AliyunDns":
-        key = conf_data.get("key", None) or conf_data.get("AccessKey", "")
-        secret = conf_data.get("secret", None) or conf_data.get("SecretKey", "")
-
-        return cls(key, secret)
-
 
 # 未验证
 class CloudxnsDns(object):
@@ -1006,13 +1105,6 @@ class DNSLADns(BaseDns):
         self._token = None
         self.domain_list = None
         super(DNSLADns, self).__init__()
-
-    @classmethod
-    def new(cls, conf_data) -> BaseDns:
-        key = conf_data.get("key", None) or conf_data.get("APIID", "")
-        secret = conf_data.get("secret", None) or conf_data.get("API密钥", "")
-
-        return cls(key, secret)
 
     def _get_auth_headers(self) -> dict:
         if self._token is None:
@@ -1190,7 +1282,7 @@ class DnsMager(object):
         "AliyunDns": AliyunDns,
         "DNSPodDns": DNSPodDns,
         "CloudFlareDns": CloudFlareDns,
-        "GoDaddyDns": GoDaddyDns,
+        # "GoDaddyDns": GoDaddyDns,
         "DNSLADns": DNSLADns,
         "HuaweiCloudDns": HuaweiCloudDns,
         "TencentCloudDns": TencentCloudDns,
@@ -1273,7 +1365,7 @@ class DnsMager(object):
         for rule_name, rule in rule_map.items():
             tmp = {}
             for r_key, r_value in rule.items():
-                account_res = re.search(r_value + "\s*=\s*'(.+)'", account)
+                account_res = re.search(r_value + r"\s*=\s*'(.+)'", account)
                 if account_res:
                     tmp[r_key] = account_res.groups()[0]
 

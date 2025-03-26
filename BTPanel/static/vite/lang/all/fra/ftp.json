@@ -73,7 +73,7 @@
 	"bcfaccebf745acfd5e75351095a5394a": "Désactiver",
 	"ed0d60bf519b45475ab026a0df908a09": "Temps de fonctionnement",
 	"328120e65fd59f9e9220cf06adea33ce": "Type d'opération",
-	"5d167538abe1c3f2a21be70b430cc57a": "CHG PW",
+	"5d167538abe1c3f2a21be70b430cc57a": "Password",
 	"ce0be71e33226e4c1db2bcea5959f16b": "Enregistrer",
 	"00d23a76e43b46dae9ec7aa9dcbebb32": "Activé",
 	"b9f5c797ebbf55adccdd8539a65a0241": "Désactivé",
@@ -116,5 +116,6 @@
 	"3352448c1a1fe6ea7d4168d49ca26525": "Une fois le service de journal FTP activé, les journaux d'accès des utilisateurs FTP sont enregistrés.",
 	"f55466b2890faba9013e50ad5168d4db": "Traitement, veuillez attendre ...",
 	"4f7782d5f52b4192db7211fab8060e6c": "Le nom d'utilisateur FTP doit être supérieur à 3 caractères!",
-	"9607312b59a557e0fa15cdaca4f98586": "Le nom d'utilisateur FTP ne peut pas être inférieur à 3 caractères!"
+	"9607312b59a557e0fa15cdaca4f98586": "Le nom d'utilisateur FTP ne peut pas être inférieur à 3 caractères!",
+	"dc647eb65e6711e155375218212b3964": "Mot de passe"
 }

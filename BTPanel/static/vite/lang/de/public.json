@@ -73,7 +73,8 @@
 			"Clear": "Klar",
 			"Update": "Aktualisieren",
 			"Select": "Wählen",
-			"Rebuild": "Wiederaufbau"
+			"Rebuild": "Wiederaufbau",
+			"Upload": "Hochladen"
 		},
 		"Batch": {
 			"Del": "Stapel löschen",

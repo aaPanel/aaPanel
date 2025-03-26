@@ -162,5 +162,10 @@
 	"1a297a2e0633fe06b9e826043db42f6e": "Serviço de atualização, por favor aguarde ...",
 	"06933067aafd48425d67bcb01bba5cb6": "Atualizar",
 	"1e2265cb27ce1ed730d4930830771361": "Número de conta",
-	"d12917fb83613a6173585079ddd0b6e4": "Existe uma nova versão ({0}) disponível para atualização,"
+	"d12917fb83613a6173585079ddd0b6e4": "Existe uma nova versão ({0}) disponível para atualização,",
+	"becb8926a2481afd9fd9185934fbbd6f": "Domínios máximos de email",
+	"4a19980fe559d96c42d74587496f7a6e": "Se a API não estiver ativada ou 127.0.0.1 não for adicionada à lista de permissões da API, os correios do sub-painel serão inutilizáveis.",
+	"5589134ff82f1bcf31e45a92417cd572": "Um clique de um clique",
+	"79e026bbc1d1e24364be67755d853ea2": "Número máximo de domínios de email",
+	"df19b1fcee11636e30b0fb095938c4e7": "Tempo de atualização:"
 }

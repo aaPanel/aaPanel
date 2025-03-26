@@ -189,5 +189,7 @@
 	"2b54c0e89a395eefacd9ec9953ea3ee6": "Liste ignorieren",
 	"99041f90bbbbc42c7f9eec3e7dce25a5": "Scannen, bitte warten ...",
 	"c863dfbe15f5b9cbcec2d12871d8bb10": "Erkennen Sie schnell Schwachstellen, potenzielle Risiken und manuell geänderte Dateien in WordPress -Plugins und Themen",
-	"c9bf00d6ab370b9c6468616d51e8eb35": "Site hinzufügen"
+	"c9bf00d6ab370b9c6468616d51e8eb35": "Site hinzufügen",
+	"cb1018823a7e2fd265971cb2502e62f9": "Aapanel WP Toolkit",
+	"8f0c1fe13a6c5acb059a1de0118d9e6b": "Dadurch werden die WordPress -Kerndateien neu installiert, ohne den Site -Inhalt zu verlieren. Es wird empfohlen, Ihre Website vor der Neuinstallation zu sichern."
 }

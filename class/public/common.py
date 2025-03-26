@@ -16,6 +16,9 @@ from .tools import is_number
 from .structures import aap_t_simple_result, aap_t_mysql_dump_info, aap_t_http_multipart
 import gzip
 import fcntl
+import shutil
+import tempfile
+from datetime import datetime
 
 
 
@@ -1131,72 +1134,63 @@ def read_file_each_reverse(filename: str, using_gzip: bool = False):
     if not os.path.exists(filename):
         raise ValueError(lang('file not found: {}', filename))
 
-    import shutil
+    if filename.endswith('.gz'):
+        using_gzip = True
 
-    using_tmp_file = False
+    def _open_file():
+        # if using gzip read file
+        # decompress to tmp file
+        if using_gzip:
+            tmp_fp = tempfile.NamedTemporaryFile('wb+')
 
-    # if using gzip read file
-    # decompress to tmp file
-    if using_gzip:
-        tmp_path = make_panel_tmp_path()
-        tmp_file = '{}/{}'.format(tmp_path, GetRandomString(16))
-        using_tmp_file = True
-
-        with open(tmp_file, 'wb') as fp:
             with gzip.open(filename, 'rb') as gz_fp:
-                shutil.copyfileobj(gz_fp, fp)
+                shutil.copyfileobj(gz_fp, tmp_fp)
 
-        filename = tmp_file
+            return tmp_fp
 
-    try:
-        with open(filename, 'rb') as fp:
-            chunk_size = 4096
-            end_pos = fp.seek(0, 2)
-            loops = int(end_pos / chunk_size)
-            last = b''
-            i = 0
+        return open(filename, 'rb')
 
-            while i < loops:
-                fp.seek((chunk_size + chunk_size * i) * -1, 2)
+    with _open_file() as fp:
+        chunk_size = 4096
+        end_pos = fp.seek(0, 2)
+        loops = int(end_pos / chunk_size)
+        last = b''
+        i = 0
 
-                bs = fp.read(chunk_size)
+        while i < loops:
+            fp.seek(end_pos + (chunk_size + chunk_size * i) * -1)
 
-                lines = (bs + last).decode('utf-8', 'ignore').split('\n')
-                last = lines[0].encode('utf-8', 'ignore')
-                k = len(lines)
+            bs = fp.read(chunk_size)
 
-                while k > 1:
-                    yield lines.pop()
-                    k -= 1
+            lines = (bs + last).decode('utf-8', 'ignore').split('\n')
+            last = lines[0].encode('utf-8', 'ignore')
+            k = len(lines)
 
-                i += 1
+            while k > 1:
+                yield lines.pop()
+                k -= 1
 
-            # once flow
-            # handle remain rows
-            for j in range(1):
-                if i < loops:
-                    break
+            i += 1
 
-                remainder = end_pos % chunk_size
+        if i < loops:
+            return
 
-                if remainder == 0:
-                    break
+        remainder = end_pos % chunk_size
 
-                # move cursor to top
-                fp.seek(0, 0)
+        if remainder == 0:
+            return
 
-                bs = fp.read(remainder)
+        # move cursor to top
+        fp.seek(0, 0)
 
-                lines = (bs + last).decode('utf-8', 'ignore').split('\n')
-                last = b''
-                k = len(lines)
+        bs = fp.read(remainder)
 
-                while k > 0:
-                    yield lines.pop()
-                    k -= 1
-    finally:
-        if using_tmp_file:
-            shutil.rmtree(os.path.dirname(filename))
+        lines = (bs + last).decode('utf-8', 'ignore').split('\n')
+        k = len(lines)
+
+        while k > 0:
+            yield lines.pop()
+            k -= 1
 
 
 # 验证证书
@@ -4512,8 +4506,8 @@ class dict_obj:
         return hasattr(self, key)
 
     def __setitem__(self, key, value):
-        if key in key_filter_list:
-            raise ValueError("wrong field name")
+        # if key in key_filter_list:
+        #     raise ValueError("wrong field name")
 
         if not re_key_match.match(key) or re_key_match2.match(key):
             raise ValueError("wrong field name")
@@ -4574,8 +4568,8 @@ class dict_obj:
 
     def set(self, key, value):
         if not isinstance(value, str) or not isinstance(key, str): return False
-        if key in key_filter_list:
-            raise ValueError("wrong field name")
+        # if key in key_filter_list:
+        #     raise ValueError("wrong field name")
         if not re_key_match.match(key) or re_key_match2.match(key):
             raise ValueError("wrong field name")
         return setattr(self, key, value)
@@ -9137,3 +9131,32 @@ def snow_flake(machine_id: int = 0) -> int:
             fp.write(str(cur_snow_flake_time))
 
         return (int(cur_snow_flake_time - 1739376000000) << 22) | ((int(machine_id) & ((1 << 10) - 1)) << 12) | (int(snow_flake_sequence) & ((1 << 12) - 1))
+
+
+# 根据时间区间生成日期字符串序列
+def gen_date_sequence_by_time_section(start_time: int = -1, end_time: int = -1, date_format: str = '%Y%m%d'):
+    if end_time < 1:
+        end_time = int(time.time())
+
+    if end_time < start_time:
+        raise ValueError(lang('end_time must greater than start_time'))
+
+    for i in range(start_time, end_time + (end_time % 86400), 86400):
+        yield datetime.fromtimestamp(i).strftime(date_format)
+
+
+def check_field_exists(db_obj,table_name, field_name):
+    """
+    @name 检查表字段是否存在
+    @param db_obj 数据库对象
+    @param table_name 表名
+    @param field_name 要检查的字段
+    """
+    try:
+        res = db_obj.query("PRAGMA table_info({})".format(table_name))
+        for val in res:
+            if field_name == val[1]:
+                return True
+    except:
+        pass
+    return False

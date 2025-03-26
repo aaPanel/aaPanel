@@ -78,5 +78,6 @@
 	"de3d6de6fb1a6b61d0dd3aea81cca6aa": "Especifica o nível de compactação GZIP aplicada ao conteúdo dinâmico. Varia de 1 (mais baixo) a 9 (mais alto)",
 	"607fa274c6281e6ed123dcc1293f3fc0": "Especifica o número máximo de conexões simultâneas que o servidor pode aceitar. Isso inclui conexões TCP simples e conexões SSL",
 	"67199120cc71036a3f020f7955e4ee37": "Especifica o número máximo de solicitações que podem ser atendidas por meio de uma sessão de Keep-Alive (persistente)",
-	"d9647fa654243adb05ea5d73a5fae511": "Especifica o número máximo de conexões SSL simultâneas que o servidor aceitará, pois as conexões SSL e não-SSL simultâneas não podem exceder o limite especificado por \"conexões máximas\", o número real de conexões SSL simultâneas permitidas deve ser menor que este limite"
+	"d9647fa654243adb05ea5d73a5fae511": "Especifica o número máximo de conexões SSL simultâneas que o servidor aceitará, pois as conexões SSL e não-SSL simultâneas não podem exceder o limite especificado por \"conexões máximas\", o número real de conexões SSL simultâneas permitidas deve ser menor que este limite",
+	"12e2afb8b1475bdd6d48db7548add761": "Se você precisar alterar a versão MySQL, faça backup de seus dados, desinstale o MySQL e reinstale -os."
 }

@@ -1713,12 +1713,12 @@ listener Default%s{
         if result != apis:
             public.writeFile('./config/dns_api.json', json.dumps(result))
 
-        for index, item in enumerate(result):
+        for index, item in enumerate(apis):
             if item.get("title", "") == "Manual resolution":
-                target_dict = result.pop(index)
-                result.insert(0, target_dict)
+                target_dict = apis.pop(index)
+                apis.insert(0, target_dict)
                 break
-        return result
+        return apis
 
     # 设置DNS-API
     def SetDnsApi(self, get):

@@ -73,7 +73,7 @@
 	"bcfaccebf745acfd5e75351095a5394a": "Deaktivieren",
 	"ed0d60bf519b45475ab026a0df908a09": "Betriebszeit",
 	"328120e65fd59f9e9220cf06adea33ce": "Betriebstyp",
-	"5d167538abe1c3f2a21be70b430cc57a": "CHG PW",
+	"5d167538abe1c3f2a21be70b430cc57a": "Passwort",
 	"ce0be71e33226e4c1db2bcea5959f16b": "Protokoll",
 	"00d23a76e43b46dae9ec7aa9dcbebb32": "Ermöglicht",
 	"b9f5c797ebbf55adccdd8539a65a0241": "Deaktiviert",
@@ -116,5 +116,6 @@
 	"3352448c1a1fe6ea7d4168d49ca26525": "Nachdem der FTP -Protokolldienst aktiviert ist, werden die Zugriffsprotokolle von FTP -Benutzern aufgezeichnet.",
 	"f55466b2890faba9013e50ad5168d4db": "Verarbeitung, bitte warten ...",
 	"4f7782d5f52b4192db7211fab8060e6c": "Der FTP -Benutzername muss größer als 3 Zeichen sein!",
-	"9607312b59a557e0fa15cdaca4f98586": "Der FTP -Benutzername kann nicht weniger als 3 Zeichen sein!"
+	"9607312b59a557e0fa15cdaca4f98586": "Der FTP -Benutzername kann nicht weniger als 3 Zeichen sein!",
+	"dc647eb65e6711e155375218212b3964": "Passwort"
 }

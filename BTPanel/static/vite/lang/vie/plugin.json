@@ -1,0 +1,99 @@
+{
+	"Plugin": {
+		"Mysql": {
+			"index_1": "Đây là tệp cấu hình chính của {0}, nếu bạn không hiểu các quy tắc cấu hình, vui lòng không sửa đổi nó.",
+			"index_2": "Thông báo cho tôi khi trạng thái dừng lại",
+			"index_3": "Cài đặt báo thức dừng trạng thái",
+			"index_4": "Tự động khởi xuất",
+			"index_5": "Bạn có chắc chắn dịch vụ {0} {1} không?",
+			"index_6": "Nhật ký nhị phân",
+			"index_7": "Mẹo ấm: Nhật ký nhị phân MySQL là ghi lại nhật ký hoạt động hiện tại, có thể được sử dụng để khôi phục dữ liệu, sao lưu dữ liệu.",
+			"index_8": "Thời gian sửa đổi cuối cùng",
+			"index_9": "Xóa nhật ký",
+			"index_10": "Bạn có thực sự muốn xóa nhật ký [{0}] không?",
+			"index_11": "Bật ghi nhật ký nhị phân có thể bảo vệ bảo mật dữ liệu MySQL, nhưng đồng thời sẽ tiêu thụ một lượng lưu trữ đĩa nhất định, có tiếp tục không?",
+			"index_12": "Tắt nhật ký nhị phân sẽ không còn ghi lại tất cả các hoạt động sửa đổi vào nhật ký nhị phân cơ sở dữ liệu?",
+			"index_13": "Di chuyển",
+			"index_14": "Cảnh báo rủi ro: MySQL sẽ ngừng chạy trong quá trình di chuyển, hãy cẩn thận",
+			"index_15": "Cảnh báo rủi ro: Vui lòng đợi cho đến khi việc di chuyển hoàn tất trước khi thực hiện bất kỳ hoạt động nào khác trong quá trình di chuyển",
+			"index_16": "Di chuyển cơ sở dữ liệu",
+			"index_17": "Chắc chắn bạn muốn di chuyển cơ sở dữ liệu sang [{0}]?",
+			"index_18": "Bảo vệ bộ nhớ",
+			"index_19": "Lưu ý: Sau khi được bật, mức độ ưu tiên của bộ nhớ MySQL sẽ được điều chỉnh và MySQL sẽ không bao giờ bị hệ thống giết chết, điều này có thể đảm bảo hoạt động ổn định của MySQL. Tuy nhiên, nó có thể khiến các quá trình khác bị giết một cách bất thường, điều này có thể ảnh hưởng nghiêm trọng đến hoạt động của hệ thống. Bạn nên kích hoạt nó khi MySQL cần chạy ổn định.",
+			"index_20": "Kế hoạch tối ưu hóa",
+			"index_21": "Sử dụng RAM tối đa",
+			"index_22": "Khởi động lại {0} dịch vụ",
+			"index_23": "Khởi động lại cơ sở dữ liệu để cấu hình có hiệu lực",
+			"index_24": "Bạn đã khởi động lại dịch vụ {0}?",
+			"index_25": "Nếu bạn cần thay đổi phiên bản MySQL, vui lòng sao lưu dữ liệu của bạn, gỡ cài đặt MySQL và cài đặt lại nó.",
+			"index_26": "Vị trí lưu trữ",
+			"index_27": "Tối ưu hóa",
+			"index_28": "Nhật ký chậm",
+			"index_29": "Thời gian khoảng thời gian",
+			"index_30": "Ủng hộ"
+		},
+		"Ftp": {
+			"index_1": "Tính năng này là độc quyền cho phiên bản chuyên nghiệp, {A}",
+			"index_2": "Công tắc quản lý nhật ký",
+			"index_3": "Sau khi được bật, tất cả các bản ghi hoạt động và đăng nhập của người dùng FTP sẽ được ghi lại.",
+			"index_4": "Quản lý nhật ký",
+			"index_5": "Sau khi bật Quản lý nhật ký Pure-FTPD, nó sẽ ghi lại các bản ghi đăng nhập và hoạt động của tất cả người dùng FTP, có tiếp tục hoạt động không?",
+			"index_6": "Sau khi tắt Quản lý nhật ký Pure-FTPD, nó sẽ không thể ghi lại các bản ghi đăng nhập và hoạt động của tất cả người dùng FTP, có tiếp tục hoạt động không?",
+			"index_7": "Địa chỉ FTP hiện tại là",
+			"index_8": "Tải xuống công cụ kết nối FTP (Filezilla, nguồn mở miễn phí)",
+			"index_9": "Phiên bản chuyển đổi",
+			"index_10": "Quản lý người dùng",
+			"index_11": "Phiên bản hiện tại giống như phiên bản đã chọn!",
+			"index_12": "Bạn có chắc chắn cài đặt {0}-{1}"
+		},
+		"Redis": {
+			"index_1": "Sau khi sửa đổi cấu hình, bạn cần khởi động lại Redis để có hiệu lực, nếu dữ liệu của bạn cần được duy trì, vui lòng thực hiện hoạt động lưu trước.",
+			"index_2": "Cảnh báo: Không bật truy cập Redis Extranet, vì quyền truy cập không giới hạn vào IP rất có thể dẫn đến sự xâm nhập của máy chủ.",
+			"index_3": "Sau khi cài đặt, thư mục redis_cache mới sẽ được tạo trong thư mục đã chọn và cho phép Redis",
+			"index_4": "Đường dẫn lưu trữ tệp liên tục",
+			"index_5": "AOF kiên trì",
+			"index_6": "RDB kiên trì",
+			"index_7": "Đặt sự kiên trì"
+		},
+		"Apache": {
+			"index_1": "Khởi động lại thời gian",
+			"index_2": "Thời gian khởi động",
+			"index_3": "Tổng số kết nối",
+			"index_4": "Tổng số byte được chuyển",
+			"index_5": "Yêu cầu mỗi giây",
+			"index_6": "Quá trình bận rộn",
+			"index_7": "Quá trình nhàn rỗi",
+			"index_8": "Apache sử dụng CPU",
+			"index_9": "Apache sử dụng bộ nhớ",
+			"index_10": "Daemon",
+			"index_11": "Daemon có thể được khởi động tự động sau khi dịch vụ {0} được dừng để đảm bảo rằng dịch vụ {0} luôn luôn chạy.",
+			"index_12": "Cánh đồng",
+			"index_13": "Giá trị hiện tại",
+			"index_14": "Kiểm tra mặc định cứ sau 1 phút, có thể được thay đổi trong cron"
+		},
+		"Mencached": {
+			"index_1": "Nghe IP, vui lòng không sửa đổi nó một cách tự do",
+			"index_2": "Cổng nghe, thường không cần sửa đổi",
+			"index_3": "MB, kích thước bộ nhớ cache, khuyến nghị không vượt quá 512m",
+			"index_4": "Số lượng kết nối tối đa, được khuyến nghị không vượt quá 40960"
+		},
+		"MongoDB": {
+			"index_1": "Sau khi cài đặt, hãy tạo thư mục BT_MongODB mới trong thư mục đã chọn và cho phép Mongo",
+			"index_2": "Không sửa đổi IP giám sát theo ý muốn",
+			"index_3": "Vị trí lưu trữ dữ liệu",
+			"index_4": "Vị trí tập tin nhật ký",
+			"index_5": "PID Lưu đường dẫn",
+			"index_6": "Cổng nghe, thường không cần sửa đổi",
+			"index_7": "Vui lòng bắt đầu dịch vụ MongoDB trước!",
+			"index_8": "Bạn có thực sự muốn xóa cơ sở dữ liệu [{0}] không?"
+		},
+		"Openlitespeed": {
+			"index_1": "Chỉ định kết nối tối đa Thời gian nhàn rỗi (giây) được phép trong quá trình xử lý một yêu cầu",
+			"index_2": "Cho phép nén GZIP/Brotli cho cả phản hồi tĩnh và động",
+			"index_3": "Chỉ định mức độ nén GZIP được áp dụng cho nội dung động. Phạm vi từ 1 (thấp nhất) đến 9 (cao nhất)",
+			"index_4": "Chỉ định số lượng kết nối đồng thời tối đa mà máy chủ có thể chấp nhận. Điều này bao gồm cả kết nối TCP đơn giản và kết nối SSL",
+			"index_5": "Chỉ định số lượng yêu cầu tối đa có thể được phục vụ trong phiên giữ (liên tục)",
+			"index_6": "Chỉ định số lượng kết nối SSL đồng thời tối đa mà máy chủ sẽ chấp nhận do tổng số SSL và kết nối không SSL đồng thời không thể vượt quá giới hạn được chỉ định bởi các kết nối tối đa"
+		}
+	}
+}

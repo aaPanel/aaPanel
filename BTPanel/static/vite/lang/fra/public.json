@@ -73,7 +73,8 @@
 			"Clear": "Clair",
 			"Update": "Mise à jour",
 			"Select": "Sélectionner",
-			"Rebuild": "Reconstruire"
+			"Rebuild": "Reconstruire",
+			"Upload": "Télécharger"
 		},
 		"Batch": {
 			"Del": "Suppression par lots",

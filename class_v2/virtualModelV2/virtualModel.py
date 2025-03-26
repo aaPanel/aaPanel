@@ -28,6 +28,7 @@ class main():
     cert_path = '{}/vhost_virtual/data/cert'.format(setup_path)
     crt_path = '{}/vhost.crt'.format(cert_path)
     key_path = '{}/vhost.key'.format(cert_path)
+    not_auto_ssl_file= '{}/vhost_virtual/config/not_auto_ssl.pl'.format(setup_path)
     server_ip_file = '{}/vhost_virtual/config/server_ip.pl'.format(setup_path)
     server_domain_file = '{}/vhost_virtual/config/server_domain.pl'.format(setup_path)
     close_ssl_file= '{}/vhost_virtual/config/close_ssl.pl'.format(setup_path)
@@ -71,7 +72,15 @@ class main():
                 public.print_log("e--------------:{}".format(e))
         # 请求 URL
         # url = http_control+'://'+ public.GetHost()+vhost_port+'/'+url
-        url = http_control+'://127.0.0.1'+vhost_port+'/'+url
+        host="127.0.0.1"
+        host_file="/www/server/panel/data/domain.conf"
+        if os.path.exists(host_file) and os.path.exists(self.server_domain_file):
+            host=public.ReadFile(host_file)
+            if not host or host.strip()=="":
+                host="127.0.0.1"
+            else:
+                 host=host.strip()
+        url = http_control+'://'+host+vhost_port+'/'+url
         # public.print_log("url:{}".format(url))
         # 发起请求
         response = requests.request(
@@ -85,7 +94,6 @@ class main():
             return  response.json()
         else:
             return self.return_message_vhost(-1, 500,public.lang("Request failed"),"",{})
-            # return public.return_message(-1, 0,public.lang("request error"))
 
     def account(self,args):
         """
@@ -472,6 +480,8 @@ class main():
             public.ExecShell('systemctl restart vhost_virtual.service')
             return self.return_message_vhost(-1, 0, public.lang('Please verify if the certificate format and content are correct'),"",{})
 
+        public.writeFile(self.not_auto_ssl_file,'True')
+
 
         #放行端口
         public.M('tasks').add('id,name,type,status,addtime,execstr',(None, 'firewall accept port','execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),self.firewall_exec))
@@ -507,6 +517,7 @@ class main():
         #放行端口
         public.M('tasks').add('id,name,type,status,addtime,execstr',(None, 'firewall accept port','execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),self.firewall_exec))
         public.writeFile('/tmp/panelTask.pl','True')
+        public.writeFile(self.not_auto_ssl_file,'True')
         return self.return_message_vhost(0, 0, public.lang('close Successfully'),"",{})
 
     #获取证书

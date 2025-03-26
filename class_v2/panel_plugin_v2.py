@@ -1164,7 +1164,7 @@ class panelPlugin:
         return public.fail_v2('failed to get soft info')
     def _check_mail_sys(self, args):
         if os.path.exists('/etc/postfix/sqlite_virtual_domains_maps.cf'):
-            public.ExecShell('{} -e "message_size_limit = 102400000"'.format(self._get_postconf()))
+            # public.ExecShell('{} -e "message_size_limit = 102400000"'.format(self._get_postconf()))
             # 修改postfix mydestination配置项
             result = public.readFile("/etc/postfix/main.cf")
             if not result:

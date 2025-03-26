@@ -89,7 +89,9 @@
 			"account_3": "资源包",
 			"account_4": "日志",
 			"account_5": "存储",
-			"account_6": "设置"
+			"account_6": "设置",
+			"domain_1": "域名",
+			"domain_2": "证书"
 		},
 		"Footer": {
 			"index_1": "aaPanel Linux面板©2014-{0} aaPanel(www.aapanel.com)",

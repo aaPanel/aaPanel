@@ -89,7 +89,9 @@
 			"account_3": "Paket",
 			"account_4": "Protokolle",
 			"account_5": "Lagerung",
-			"account_6": "Einstellungen"
+			"account_6": "Einstellungen",
+			"domain_1": "Domänen",
+			"domain_2": "Zertifikat"
 		},
 		"Footer": {
 			"index_1": "Aapanel Linux Panel © 2014- {0} Aapanel (www.aapanel.com)",
@@ -98,7 +100,7 @@
 		},
 		"MessageBox": {
 			"index_1": "Derzeit keine Aufgaben!",
-			"index_2": "Wenn die Aufgabe lange Zeit nicht ausgeführt wurde, klicken Sie bitte auf [Panel neu starten], um die Aufgabenwarteschlange zurückzusetzen",
+			"index_2": "Tipp: Wenn die Aufgabe ins Stocken geraten ist, klicken Sie auf [Panel neu starten], um die Warteschlange zurückzusetzen",
 			"index_3": "Aufgabenliste",
 			"index_4": "Nachrichtenliste",
 			"index_5": "Ausführungsprotokoll",

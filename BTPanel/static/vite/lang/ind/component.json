@@ -1,0 +1,168 @@
+{
+	"Component": {
+		"Batch": {
+			"index_1": "Silakan pilih",
+			"index_2": "(Dipilih {0})",
+			"index_3": "Batching {0}, kemajuan saat ini:"
+		},
+		"Auth": {
+			"index_1": "BEBAS",
+			"index_2": "Pembaruan",
+			"index_3": "Beli sekarang",
+			"index_4": "Kedaluwarsa: ",
+			"index_5": "Tingkatkan sekarang",
+			"index_6": "Seumur hidup"
+		},
+		"Feedback": {
+			"index_7": "Umpan Balik",
+			"index_1": "Koleksi umpan balik permintaan Aapanel",
+			"index_2": "Jika Anda mengalami masalah atau fungsi yang tidak sempurna selama digunakan, tolong jelaskan",
+			"index_3": "Masalah atau kebutuhan Anda kepada kami secara rinci, kami akan berusaha sebaik mungkin untuk menyelesaikan atau memperbaiki",
+			"index_4": "Kami memberikan perhatian khusus pada umpan balik kebutuhan Anda, dan kami melakukan tinjauan persyaratan mingguan reguler. Saya harap saya dapat membantu Anda lebih baik",
+			"index_5": "Harap isi umpan baliknya",
+			"index_6": "Terima kasih atas partisipasinya!"
+		},
+		"Coupon": {
+			"index_1": "Dapatkan kupon untuk waktu terbatas",
+			"index_2": "MATI",
+			"index_3": "Berlaku untuk ",
+			"index_4": "Kupon",
+			"index_5": "Dapatkan sekarang",
+			"index_6": "Tidak ada lagi pengingat untuk hari ini",
+			"index_7": "Tidak ada pengingat dalam 7 hari terakhir",
+			"index_8": "Jangan pernah mengingatkanmu selamanya",
+			"index_9": "{0}, apakah kamu yakin?",
+			"index_10": "Berakhir di ",
+			"index_11": "Dapatkan kupon $ {0}",
+			"index_12": "{0} Kupon",
+			"index_13": "Pilih Waktu Tanpa Pemberitahuan"
+		},
+		"Pay": {
+			"index_1": "PRO",
+			"index_2": "Direkomendasikan",
+			"index_3": "Fitur pro",
+			"index_4": "Deskripsi plug-in",
+			"index_5": "Fitur kontras",
+			"index_6": "Hemat lebih banyak",
+			"index_7": "Linux Pro Edition tersedia untuk penggunaan gratis plugin ini dan semua fitur pro lainnya",
+			"index_8": "Pertanyaan? Email kami kapan saja: {0}",
+			"index_9": "Pilih rencana Anda",
+			"index_10": "Paling Populer",
+			"index_11": "Jumlah lisensi",
+			"index_12": "Memuat, tolong tunggu ...",
+			"index_13": "{0} off",
+			"index_14": "{0} {1}",
+			"index_15": "{0} {1}",
+			"index_16": "Op: {0}",
+			"index_17": "Plug-in saja",
+			"index_18": "Kupon ({0})",
+			"index_19": "$ {0} off {1} pembayaran",
+			"index_20": "Tidak ada kupon preferensial",
+			"index_21": "Voucher",
+			"index_22": "Lisensi",
+			"index_23": "Akun: ",
+			"index_24": "Mengubah",
+			"index_25": "Total: ",
+			"index_26": "Gaji stripe",
+			"index_27": "Jika {0} gagal membayar, Anda dapat mencoba menggunakan ",
+			"index_28": "Pesanan Pembayaran Gagal, silakan hubungi Administrator!",
+			"index_29": "Langganan: ",
+			"index_30": "* Ketika lisensi berakhir, itu akan secara otomatis memperbarui",
+			"index_31": "* Memeriksa langganan, Anda tidak dapat membayar dalam mata uang lokal",
+			"index_32": "Mata uang lokal: ",
+			"index_33": "* Bayar dengan metode pembayaran dan mata uang lokal Anda",
+			"index_34": "Informasi lisensi",
+			"index_35": "Tidak ada lisensi",
+			"index_36": "Lisensi",
+			"index_37": "Voucher",
+			"index_38": "Tidak ada voucher",
+			"index_39": "Menggunakan",
+			"index_40": "Kedaluwarsa setelahnya",
+			"index_41": "Silakan melamar SSL sebelum membeli!",
+			"index_42": "Nyalakan SSL",
+			"index_43": "Penawaran Waktu Terbatas: ",
+			"index_44": "Simpan hingga $ {0}",
+			"index_45": "Pembayaran lainnya",
+			"index_46": "Konversi mata uang pembayaran secara otomatis berdasarkan lokasi Anda",
+			"index_47": "Bayar sekarang"
+		},
+		"BindAccount": {
+			"index_1": "BIND Akun Aapanel",
+			"index_2": "Tidak ada akun, pergi untuk mendaftar",
+			"index_3": "Masuk",
+			"index_4": "Harap masukkan alamat email Anda",
+			"index_5": "Harap masukkan kata sandi Anda",
+			"index_6": "BIND Akun Aapanel",
+			"index_7": "Alamat email Anda",
+			"index_8": "Kata sandi Anda"
+		},
+		"Logs": {
+			"index_1": "Tidak ada log"
+		},
+		"SelectPath": {
+			"index_1": "Kembali",
+			"index_2": "Jalur saat ini",
+			"index_3": "Nama file",
+			"index_4": "Waktu modifikasi",
+			"index_5": "Izin",
+			"index_6": "Pemilik",
+			"index_7": "Pilih Direktori"
+		},
+		"Editor": {
+			"index_1": "Tips ： Ctrl+F Kata kunci pencarian ， Ctrl+S simpan ， ctrl+h Cari dan ganti"
+		},
+		"Quota": {
+			"index_1": "Kuota",
+			"index_2": "Tidak diatur",
+			"index_3": "Kapasitas bekas saat ini: {0}",
+			"index_4": "Klik Modifikasi Kuota Kapasitas",
+			"index_5": "{1} atur kuota baru [{0}]",
+			"index_6": "Kapasitas bekas saat ini",
+			"index_7": "Kuota kapasitas saat ini",
+			"index_8": "Pengingat: Fitur ini eksklusif untuk edisi Pro",
+			"index_9": "Membutuhkan sistem file XFS dan termasuk parameter [prjquota] untuk digunakan",
+			"index_10": "Contoh fstab: /dev /vdc1 /data default XFS, prjquota 0 0",
+			"index_11": "Kuota: Untuk membatalkan kuota, diatur ke \"0\"",
+			"index_12": "Kuota kapasitas saat ini: {0}"
+		},
+		"Terminal": {
+			"index_1": "Koneksi telah terputus, menekan Enter akan berusaha untuk menyambung kembali!",
+			"index_2": "Mencoba menyambung kembali!"
+		},
+		"Upload": {
+			"index_1": "Pilih file",
+			"index_2": "Tidak dipilih"
+		},
+		"UploadFile": {
+			"index_1": "Klik atau seret file ke area tersebut",
+			"index_2": "Hanya dukungan {0} format file impor",
+			"index_3": "Nama file",
+			"index_4": "Ukuran",
+			"index_5": "Status",
+			"index_6": "Pilih file",
+			"index_7": "Ukuran file [{0}] tidak dapat melebihi {1} m",
+			"index_8": "Menunggu unggahan",
+			"index_9": "Unggah kesuksesan",
+			"index_10": "Pilih file yang akan diunggah"
+		},
+		"FormMore": {
+			"index_1": "Lebih banyak konfigurasi, klik untuk dilihat"
+		},
+		"Confirm": {
+			"index_1": "Jika Anda mengonfirmasi operasi, masukkan secara manual \"{text_}\"",
+			"index_2": "Kesalahan masukan, coba lagi",
+			"index_3": "{0} telah selesai, total {1} ​​tugas, {2} sukses, {3} kegagalan",
+			"index_4": "Hasil: ",
+			"index_5": "Hasilnya salah, coba lagi"
+		},
+		"SoftState": {
+			"index_1": "Apakah Anda yakin harus {0} layanan {1} dan lanjutkan?"
+		},
+		"Api": {
+			"index_1": "Memuat, tolong tunggu ...",
+			"index_2": "Mengikat, tunggu ...",
+			"index_3": "Kirimkan umpan balik, harap tunggu ..",
+			"index_4": "Mengunggah file, harap tunggu ..."
+		}
+	}
+}

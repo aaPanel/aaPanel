@@ -78,5 +78,6 @@
 	"de3d6de6fb1a6b61d0dd3aea81cca6aa": "Especifica el nivel de compresión GZIP aplicada al contenido dinámico. Varía de 1 (más bajo) a 9 (más alto)",
 	"607fa274c6281e6ed123dcc1293f3fc0": "Especifica el número máximo de conexiones concurrentes que el servidor puede aceptar. Esto incluye las conexiones TCP simples y las conexiones SSL",
 	"67199120cc71036a3f020f7955e4ee37": "Especifica el número máximo de solicitudes que se pueden atender a través de una sesión de mantenimiento (persistente)",
-	"d9647fa654243adb05ea5d73a5fae511": "Especifica el número máximo de conexiones SSL concurrentes que el servidor aceptará ya que las conexiones SSL concurrentes totales y no SSL no pueden exceder el límite especificado por \"conexiones máximas\", el número real de conexiones SSL concurrentes permitidas debe ser inferior a este límite"
+	"d9647fa654243adb05ea5d73a5fae511": "Especifica el número máximo de conexiones SSL concurrentes que el servidor aceptará ya que las conexiones SSL concurrentes totales y no SSL no pueden exceder el límite especificado por \"conexiones máximas\", el número real de conexiones SSL concurrentes permitidas debe ser inferior a este límite",
+	"12e2afb8b1475bdd6d48db7548add761": "Si necesita cambiar la versión MySQL, haga una copia de seguridad de sus datos, desinstale MySQL y reinstale."
 }

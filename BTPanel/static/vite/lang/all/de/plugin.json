@@ -78,5 +78,6 @@
 	"de3d6de6fb1a6b61d0dd3aea81cca6aa": "Gibt den Niveau der GZIP -Komprimierung an, die auf dynamischen Inhalt angewendet werden. Reicht von 1 (niedrigsten) bis 9 (höchste)",
 	"607fa274c6281e6ed123dcc1293f3fc0": "Gibt die maximale Anzahl von gleichzeitigen Verbindungen an, die der Server akzeptieren kann. Dies umfasst sowohl einfache TCP -Verbindungen als auch SSL -Verbindungen",
 	"67199120cc71036a3f020f7955e4ee37": "Gibt die maximale Anzahl von Anfragen an, die durch eine Keep-Alive-Sitzung (persistierende) Sitzung zugestellt werden können",
-	"d9647fa654243adb05ea5d73a5fae511": "Gibt die maximale Anzahl der gleichzeitigen SSL-Verbindungen an, die der Server akzeptiert, da die gesamten gleichzeitigen SSL- und Nicht-SSL-Verbindungen die durch „maximale Verbindungen“ angegebene Grenze nicht überschreiten können. Die tatsächliche Anzahl der zulässigen gleichzeitigen SSL-Verbindungen muss niedriger sein"
+	"d9647fa654243adb05ea5d73a5fae511": "Gibt die maximale Anzahl der gleichzeitigen SSL-Verbindungen an, die der Server akzeptiert, da die gesamten gleichzeitigen SSL- und Nicht-SSL-Verbindungen die durch „maximale Verbindungen“ angegebene Grenze nicht überschreiten können. Die tatsächliche Anzahl der zulässigen gleichzeitigen SSL-Verbindungen muss niedriger sein",
+	"12e2afb8b1475bdd6d48db7548add761": "Wenn Sie die MySQL -Version ändern müssen, sichern Sie bitte Ihre Daten, deinstallieren Sie MySQL und installieren Sie sie neu."
 }

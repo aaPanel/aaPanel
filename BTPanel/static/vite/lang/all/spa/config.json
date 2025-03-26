@@ -394,5 +394,6 @@
 	"799f9bce5f58c4f24423609974461f13": "¿Estás seguro de que quieres borrar todas tus copias de seguridad?",
 	"71ab9f0eaf2b2e26fe8dd49ee645130a": "Ingrese el número de copias de seguridad",
 	"47981faddcaafb488a560d008ece8f70": "Si la base de datos utilizada por el panel está dañada, no podrá recuperar la base de datos del panel corrupta",
-	"4e7c4b436aa01fc3feaea5fb7a4ca328": "Desactivar la copia de seguridad del panel"
+	"4e7c4b436aa01fc3feaea5fb7a4ca328": "Desactivar la copia de seguridad del panel",
+	"d70258b20b78a647f41d38fb5b14ef0b": "La copia de seguridad automática no incluye datos del sitio web y datos de MySQL"
 }

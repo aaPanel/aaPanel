@@ -1,0 +1,51 @@
+{
+	"Logs": {
+		"Panel": {
+			"index_1": "Nhật ký hoạt động",
+			"index_2": "Chạy nhật ký",
+			"index_3": "Nhật ký cron",
+			"index_4": "Vui lòng nhập tên nhật ký",
+			"index_5": "Xóa nhật ký",
+			"index_6": "Loại hoạt động",
+			"index_7": "Thời gian hoạt động",
+			"index_13": "Thời gian quét",
+			"index_14": "Php tấn công",
+			"index_15": "Sắp xóa nhật ký, tiếp tục?"
+		},
+		"Website": {
+			"index_1": "URL (Top100)",
+			"index_2": "Nhật ký truy cập",
+			"index_3": "Nên tiến hành phân tích bảo mật khi tải máy chủ thấp. Lần này, [{0}]. Tệp nhật ký sẽ được quét và thời gian chờ có thể dài hơn. Bạn có muốn tiếp tục?",
+			"index_4": "Nhật ký lỗi",
+			"index_5": "IP (Top100)"
+		},
+		"Audit": {
+			"index_1": "Vui lòng nhập nguồn/cổng/vai trò/sự kiện"
+		},
+		"SSH": {
+			"index_1": "IP: Cổng"
+		},
+		"Soft": {
+			"index_1": "Tên người dùng FTP",
+			"index_2": "IP hoạt động",
+			"index_3": "Tài liệu",
+			"index_4": "Thời gian hạ cánh",
+			"index_5": "Nhật ký FTP",
+			"index_6": "MySQL nhật ký chậm",
+			"index_7": "Nhật ký lỗi MySQL",
+			"index_8": "Nhật ký hoạt động",
+			"index_9": "Vui lòng nhập từ khóa tìm kiếm"
+		},
+		"Conversion": {
+			"index_1": "Audit nhật ký - Giới thiệu",
+			"index_2": "Phân tích và phân tích các bản ghi phổ biến",
+			"index_3": "Thu thập, phân tích và kiểm toán thông tin như các hoạt động, sự kiện và các tình huống bất thường khác nhau được ghi lại bởi các chương trình hệ thống, mạng và ứng dụng.",
+			"index_4": "Nhật ký FTP - Giới thiệu",
+			"index_5": "Ghi lại và xem nhật ký đăng nhập FTP hiện tại và nhật ký hoạt động",
+			"index_6": "Ghi lại thông tin nhật ký đăng nhập của người dùng FTP người dùng và thông tin nhật ký hoạt động tệp",
+			"index_7": "Nhật ký đăng nhập SSH - Giới thiệu",
+			"index_8": "Ghi lại và xem nhật ký đăng nhập SSH hiện tại",
+			"index_9": "Ghi lại thông tin nhật ký SSH hiện tại"
+		}
+	}
+}

@@ -89,7 +89,9 @@
 			"account_3": "Pacote",
 			"account_4": "Logs",
 			"account_5": "Armazenar",
-			"account_6": "Configurações"
+			"account_6": "Configurações",
+			"domain_1": "Domínios",
+			"domain_2": "Certificado"
 		},
 		"Footer": {
 			"index_1": "Painel Aapanel Linux © 2014- {0} AapAnel (www.aapanel.com)",
@@ -98,7 +100,7 @@
 		},
 		"MessageBox": {
 			"index_1": "Atualmente sem tarefas!",
-			"index_2": "Se a tarefa não foi executada por um longo tempo, tente clicar em [Reiniciar Painel] para redefinir a fila de tarefas",
+			"index_2": "Dica: Se a tarefa estiver parada, clique em [Reiniciar painel] para redefinir a fila",
 			"index_3": "Lista de tarefas",
 			"index_4": "Lista de mensagens",
 			"index_5": "Log de execução",

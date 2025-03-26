@@ -89,7 +89,9 @@
 			"account_3": "Paquete",
 			"account_4": "Registro",
 			"account_5": "Almacenamiento",
-			"account_6": "Ajustes"
+			"account_6": "Ajustes",
+			"domain_1": "Dominio",
+			"domain_2": "Certificado"
 		},
 		"Footer": {
 			"index_1": "AAPANEL LINUX PANEL © 2014- {0} AAPANEL (www.aapanel.com)",
@@ -98,7 +100,7 @@
 		},
 		"MessageBox": {
 			"index_1": "¡Actualmente no hay tareas!",
-			"index_2": "Si la tarea no se ha ejecutado durante mucho tiempo, intente hacer clic en [Reiniciar Panel] para restablecer la cola de tareas",
+			"index_2": "Consejo: si la tarea está estancada, haga clic en [Panel de reinicio] para restablecer la cola",
 			"index_3": "Lista de tareas",
 			"index_4": "Lista de mensajes",
 			"index_5": "Registro de ejecución",

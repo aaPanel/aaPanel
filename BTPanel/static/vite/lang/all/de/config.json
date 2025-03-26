@@ -394,5 +394,6 @@
 	"799f9bce5f58c4f24423609974461f13": "Sind Sie sicher, dass Sie alle Ihre Backups löschen möchten?",
 	"71ab9f0eaf2b2e26fe8dd49ee645130a": "Bitte geben Sie die Anzahl der Sicherungen ein",
 	"47981faddcaafb488a560d008ece8f70": "Wenn die vom Panel verwendete Datenbank beschädigt ist, können Sie die beschädigte Panel -Datenbank nicht wiederherstellen",
-	"4e7c4b436aa01fc3feaea5fb7a4ca328": "Schalten Sie die Backup -Tafel aus"
+	"4e7c4b436aa01fc3feaea5fb7a4ca328": "Schalten Sie die Backup -Tafel aus",
+	"d70258b20b78a647f41d38fb5b14ef0b": "Die automatische Sicherung enthält keine Website -Daten und MySQL -Daten"
 }

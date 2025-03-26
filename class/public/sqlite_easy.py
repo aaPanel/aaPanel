@@ -2112,10 +2112,10 @@ class SqliteEasy:
 
     # 嵌套where
     @contextmanager
-    def where_nest(self):
+    def where_nest(self, logic: str = 'and'):
         query = SqliteEasy(self.__DB)
         yield query
-        self.__OPT_WHERE.add_nest(query.get_where_obj())
+        self.__OPT_WHERE.add_nest(query.get_where_obj(), logic)
 
     def group(self, condition, params=()):
         '''

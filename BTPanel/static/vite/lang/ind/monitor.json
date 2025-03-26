@@ -1,0 +1,43 @@
+{
+	"Monitor": {
+		"System": {
+			"index_1": "Status pemantauan",
+			"index_2": "Jumlah hari untuk menyimpan: ",
+			"index_3": "Memodifikasi",
+			"index_4": "Log Bersih",
+			"index_5": "Harap masukkan jumlah hari untuk menghemat",
+			"index_6": "Jumlah hari penghematan ilegal!",
+			"index_7": "Apakah Anda pasti akan membersihkan semua log Monitory?",
+			"index_8": "Memuat rata -rata",
+			"index_9": "1 menit",
+			"index_10": "5 menit",
+			"index_11": "15 menit",
+			"index_12": "Penggunaan sumber daya sistem",
+			"index_13": "Muat detail",
+			"index_14": "Penggunaan Sumber Daya Sistem: ",
+			"index_15": "Tanggal: ",
+			"index_16": "Ingatan",
+			"index_17": "Disk I/O.",
+			"index_18": "Membaca",
+			"index_19": "Menulis",
+			"index_20": "R/W Times",
+			"index_21": "r/w tunggu",
+			"index_22": "Unit: {0}/s",
+			"index_23": "Jaringan I/O: ",
+			"index_24": "Hulu",
+			"index_25": "Hilir",
+			"index_26": "Layar penuh",
+			"index_27": "Keluar dari layar penuh",
+			"index_28": "Nama proses",
+			"index_29": "Penggunaan CPU",
+			"index_30": "Pengguna pemula",
+			"index_31": "Penggunaan memori",
+			"index_32": "Penggunaan disk",
+			"index_33": "Monitor Ukuran Log: "
+		},
+		"API": {
+			"system_1": "Mengatur status pemantauan, harap tunggu ...",
+			"system_2": "Membersihkan catatan pemantauan, harap tunggu ..."
+		}
+	}
+}

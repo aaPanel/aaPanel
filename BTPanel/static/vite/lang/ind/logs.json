@@ -1,0 +1,51 @@
+{
+	"Logs": {
+		"Panel": {
+			"index_1": "Log Operasi",
+			"index_2": "Jalankan log",
+			"index_3": "Log Cron",
+			"index_4": "Harap masukkan nama log",
+			"index_5": "Log Hapus",
+			"index_6": "Jenis Operasi",
+			"index_7": "Waktu operasi",
+			"index_13": "Waktu pemindaian",
+			"index_14": "Serangan PHP",
+			"index_15": "Akan menghapus log, lanjutkan?"
+		},
+		"Website": {
+			"index_1": "URL (Top100)",
+			"index_2": "Log akses",
+			"index_3": "Disarankan untuk melakukan analisis keamanan ketika beban server rendah. Kali ini, [{0}]. File log akan dipindai, dan waktu tunggu mungkin lebih lama. Apakah Anda ingin melanjutkan?",
+			"index_4": "Log kesalahan",
+			"index_5": "IP (Top100)"
+		},
+		"Audit": {
+			"index_1": "Harap masukkan sumber/port/peran/acara"
+		},
+		"SSH": {
+			"index_1": "IP: Port"
+		},
+		"Soft": {
+			"index_1": "Nama pengguna FTP",
+			"index_2": "IP Operasi",
+			"index_3": "Mengajukan",
+			"index_4": "Waktu pendaratan",
+			"index_5": "Log FTP",
+			"index_6": "Log lambat mysql",
+			"index_7": "Log kesalahan mysql",
+			"index_8": "Log Operasi",
+			"index_9": "Harap masukkan kata kunci pencarian"
+		},
+		"Conversion": {
+			"index_1": "Audit Log - Pendahuluan",
+			"index_2": "Menganalisis dan menguraikan log umum",
+			"index_3": "Kumpulkan, analisis, dan udisi informasi seperti berbagai operasi, acara, dan situasi abnormal yang direkam oleh sistem, jaringan, dan program aplikasi.",
+			"index_4": "Log FTP - Pendahuluan",
+			"index_5": "Catat dan lihat log login FTP saat ini dan log operasi",
+			"index_6": "Rekam Log Login Klien Pengguna FTP dan Informasi Log Operasi File",
+			"index_7": "Log Login SSH - Pendahuluan",
+			"index_8": "Catat dan lihat log login SSH saat ini",
+			"index_9": "Catat informasi log login SSH saat ini"
+		}
+	}
+}

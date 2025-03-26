@@ -1111,7 +1111,7 @@ class panelSSL:
                 if "ssl_hash" in Info:
                     get.ssl_hash = Info['ssl_hash']
                 result = self.SetCertToSite(get)
-                if not result:
+                if not result or result.get("status") is False:
                     set_result['status'] = False
                     failnum += 1
                     faildList.append(set_result)
@@ -1174,6 +1174,9 @@ class panelSSL:
             public.serviceReload()
             return public.return_msg_gettext(True, public.lang("Setup successfully!"))
         except Exception as ex:
+            import traceback
+            public.print_log(traceback.format_exc())
+            public.print_log(f"error : {ex}")
             if 'isBatch' in get: return False
             return public.returnMsg(False, 'SET_ERROR,' + public.get_error_info())
 
@@ -1224,10 +1227,15 @@ class panelSSL:
     # 读取证书
     def GetCert(self, get):
         vpath = os.path.join('/www/server/panel/vhost/ssl', get.certName.replace("*.", ''))
-        if not os.path.exists(vpath): return public.return_msg_gettext(False, public.lang("Certificate does NOT exist!"))
-        data = {}
-        data['privkey'] = public.readFile(vpath + '/privkey.pem')
-        data['fullchain'] = public.readFile(vpath + '/fullchain.pem')
+        if not os.path.exists(vpath):
+            return public.return_msg_gettext(False, public.lang("Certificate does NOT exist!"))
+            # vpath = os.path.join('/www/server/panel/vhost/ssl_saved', get.ssl_hash)
+            # if not os.path.exists(vpath):
+            #     return public.return_msg_gettext(False, public.lang("Certificate does NOT exist!"))
+        data = {
+            'privkey': public.readFile(vpath + '/privkey.pem'),
+            'fullchain': public.readFile(vpath + '/fullchain.pem'),
+        }
         return data
 
     # 获取证书名称
