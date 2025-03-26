@@ -460,7 +460,7 @@
 			"name":"cmake",
 			"ps":"C/C++编译器,编译MySQL时需要它",
 			"check":"/usr/bin/cmake",
-			"debian":"apt install cmake -y",
+			"debian":"apt install cmake gnutls-dev -y",
 			"redhat":"yum install cmake -y",
 			"getv":"cmake --version|awk '{print $3}'"
 		}
