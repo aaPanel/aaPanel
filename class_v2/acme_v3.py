@@ -11,6 +11,10 @@
 # -------------------------------------------------------------------
 # ACME v2客户端
 # -------------------------------------------------------------------
+from public.hook_import import hook_import
+
+hook_import()
+
 import warnings
 
 warnings.filterwarnings("ignore", message=r".*doesn't\s+match\s+a\s+supported\s+version", module="requests")

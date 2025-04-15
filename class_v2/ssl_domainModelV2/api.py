@@ -2,20 +2,24 @@
 # ------------------------------
 # 域名管理
 # ------------------------------
+import ipaddress
 import json
 import os.path
 import shutil
 import threading
 import time
 from datetime import datetime
+from typing import Tuple
 
 import public
 from BTPanel import cache
+from config_v2 import config
 from panelDnsapi import extract_zone
 from panel_site_v2 import panelSite
 from public.aaModel import Q
+from public.exceptions import HintException
 from public.validate import Param
-from .config import DNS_MAP, UseFor, DnsTask
+from .config import DNS_MAP, WorkFor, PANEL_DOMAIN, PANEL_LIMIT_DOMAIN
 from .model import (
     DnsDomainProvider,
     DnsDomainRecord,
@@ -24,10 +28,12 @@ from .model import (
 )
 from .service import (
     init_dns_process,
+    init_panel_dns,
+    generate_panel_task,
     SyncService,
     DomainValid,
     make_suer_alarm_task,
-    make_suer_renew_task,
+    update_ssl_link,
 )
 
 
@@ -35,25 +41,45 @@ from .service import (
 class DomainObject:
     date_format = "%Y-%m-%d"
     vhost = os.path.join(public.get_panel_path(), "vhost")
-    sender_task = os.path.join(
-        public.get_panel_path(), "data/mod_push_data/sender.json"
-    )
+    mail_db_file = "/www/vmail/postfixadmin.db"
 
     def __init__(self):
         self.supports = list(DNS_MAP.keys())
 
     @staticmethod
-    def _end_time(data_str: str) -> int:
-        if not data_str:
-            return 0
-        today = datetime.today().date()
-        end_date = datetime.strptime(data_str, DomainObject.date_format).date()
-        return (end_date - today).days if today <= end_date else 0
+    def _clear_task_force():
+        # clear task, 1 hours
+        try:
+            one_hours = 1000 * 60 * 60
+            out_time = round(time.time() * 1000) - one_hours
+            DnsDomainTask.objects.filter(create_time__lte=out_time).delete()
+        except Exception:
+            pass
 
     @staticmethod
-    def _hide_account(data: dict, key: str = "api_user") -> dict:
-        if len(data.get(key, "")) > 0:
-            data[key] = data[key][:len(data[key]) // 2] + "***"
+    def _end_time(data_str: str) -> int:
+        try:
+            if not data_str:
+                return 0
+            today = datetime.today().date()
+            end_date = datetime.strptime(data_str, DomainObject.date_format).date()
+            return (end_date - today).days if today <= end_date else 0
+        except ValueError:
+            return 0
+
+    @staticmethod
+    def _process_key(data: dict, key: list = None) -> dict:
+        if not key:
+            return data
+        if "api_user" in key:  # 隐藏api_user
+            k = "api_user"
+            if len(data.get(k, "")) > 0:
+                data[k] = data[k][:len(data[k]) // 2] + "***"
+        if "record" in key:  # 隐藏cf自带域名
+            k = "record"
+            endswith_str = f'.{data.get("domain", "")}'
+            if data.get(k, "").endswith(endswith_str):
+                data[k] = data[k].replace(endswith_str, "")
         return data
 
     @staticmethod
@@ -90,7 +116,7 @@ class DomainObject:
     def _add_task_info(data: dict, task_name: str = None) -> dict:
         # 初始化, 申请任意域名, 续签, 同步
         tasks_obj = DnsDomainTask.objects.filter(
-            provider_id=data.get("id", 0), task_status__lt=100
+            provider_id=data.get("id", -1), task_status__lt=100
         )
         if task_name:
             tasks_obj.filter(task_name=task_name)
@@ -117,6 +143,7 @@ class DomainObject:
         """
         dns api 列表
         """
+        public.set_module_logs("sys_domain", "Domain_SSL_Open", 1)
         try:
             get.validate([
                 Param("p").Integer(),
@@ -130,12 +157,7 @@ class DomainObject:
             return public.return_message(-1, 0, str(ex))
 
         # clear task
-        try:
-            one_hours = 1000 * 60 * 60
-            out_time = round(time.time() * 1000) - one_hours
-            DnsDomainTask.objects.filter(create_time__lte=out_time).delete()
-        except Exception:
-            pass
+        self._clear_task_force()
 
         page = int(getattr(get, "p", 1))
         limit = int(getattr(get, "limit", 100))
@@ -145,7 +167,7 @@ class DomainObject:
         total = obj.count()
         result = obj.limit(limit).offset((page - 1) * limit).as_list()
         for r in result:
-            r = self._hide_account(r)
+            r = self._process_key(r, key=["api_user"])
             r = self._add_ssl_info(r)
             r = self._add_task_info(r)
         return public.success_v2({"data": result, "total": total})
@@ -176,20 +198,29 @@ class DomainObject:
                 return public.fail_v2("CloudFlareDns Permission must be 'limit' or 'global'!")
         else:
             get.permission = "-"
+
+        if DnsDomainProvider.objects.filter(alias=get.alias).first():
+            return public.fail_v2("Alias already exists!")
+
+        if DnsDomainProvider.objects.filter(
+                api_user=get.api_user, api_key=get.api_key, name=get.name,
+        ).first():
+            return public.fail_v2(f"Account already exists!")
+
         try:
-            dns_obj = DnsDomainProvider(**get.get_items()).save()
-            if dns_obj:
-                init_task = threading.Thread(
-                    target=init_dns_process, args=(dns_obj.as_dict(),)
-                )
-                init_task.start()
-            else:
+            dns = DnsDomainProvider(**get.get_items())
+            if not dns.is_pro():
                 return public.fail_v2("Please Upgrade PRO Version!")
+            dns.dns_obj.verify()
+            dns_save = dns.save()
+            init_task = threading.Thread(
+                target=init_dns_process, args=(dns_save.as_dict(),)
+            )
+            init_task.start()
+            public.set_module_logs("sys_domain", "Add_Dns_Api", 1)
+            return public.success_v2("Save Successfully!")
         except Exception as ex:
-            import traceback
-            public.print_log(traceback.format_exc())
-            return public.fail_v2(str(ex))
-        return public.success_v2("Save Successfully!")
+            raise ex
 
     def delete_dns_api(self, get):
         try:
@@ -216,7 +247,17 @@ class DomainObject:
         if hasattr(get, "user") and "*" in get.api_user:
             return public.fail_v2("'*' symbols that are not allowed")
 
+        # alias 不允许重复
+        if hasattr(get, "alias") and DnsDomainProvider.objects.filter(alias=get.alias).first():
+            return public.fail_v2("Alias already exists!")
         try:
+            dns = DnsDomainProvider.objects.filter(id=get.id).first()
+            for k, v in get.get_items().items():
+                if k != "id":
+                    setattr(dns, k, v)
+            # 仅当开启时候校验
+            if dns.status == 1:
+                dns.dns_obj.verify()
             DnsDomainProvider.objects.filter(id=get.id).update(get.get_items())
         except Exception as ex:
             return public.fail_v2(str(ex))
@@ -231,6 +272,7 @@ class DomainObject:
                 Param("search_pid").Integer().Require(),
                 Param("domain").String(),
                 Param("search").String(),
+                Param("search_and").String(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -259,21 +301,42 @@ class DomainObject:
             )
             cache.set(key, "1", 60)
 
-        if not hasattr(get, "search"):
+        # search_and
+        if hasattr(get, "search_and"):
+            try:
+                search_and = json.loads(get.search_and)
+            except:
+                search_and = {}
+
+            obj = DnsDomainRecord.objects.filter(
+                provider_id=pid, domain=domain_name, **search_and
+            )
+        # no search, no search_and
+        elif not hasattr(get, "search"):
             obj = DnsDomainRecord.objects.filter(provider_id=pid, domain=domain_name)
+
+        # only search
         else:
+            if hasattr(get, "search_and") and hasattr(get, "search"):
+                return public.fail_v2(
+                    "search_and and search can not be used at the same time"
+                )
+
             obj = DnsDomainRecord.objects.filter(
                 Q(provider_id=pid, domain=domain_name) & (
                         Q(record__like=get.search) | Q(record_value__like=get.search)
                 )
             )
 
-        total = obj.count()
-        result = obj.limit(limit).offset((page - 1) * limit).as_list()
-        data = []
-        for r in result:
-            r = self._hide_account(r)
-            data.append(r)
+        try:
+            total = obj.count()
+            result = obj.limit(limit).offset((page - 1) * limit).as_list()
+        except Exception as e:
+            raise HintException(e)
+
+        data = [
+            self._process_key(x, key=["api_user", "record"]) for x in result
+        ]
         data.sort(key=lambda x: (x["record_type"], x["record"]))
         return public.success_v2({"data": data, "total": total})
 
@@ -446,6 +509,12 @@ class DomainObject:
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
+
+        try:
+            DnsDomainSSL.objects.filter(hash="").delete()
+        except:
+            pass
+
         page = int(getattr(get, "p", 1))
         limit = int(getattr(get, "limit", 100))
         ssl_obj = DnsDomainSSL.objects.all()
@@ -466,7 +535,7 @@ class DomainObject:
                         "csr": public.readFile(ssl.path + "/fullchain.pem"),  # 证书
                         "key": public.readFile(ssl.path + "/privkey.pem"),  # 密钥
                     },
-                    "log": ssl.get_ssl_log(),
+                    "log": ssl.log if ssl.log else ssl.get_ssl_log(),
                     "use_for": ssl.user_for,
                     "alarm": ssl.alarm,
                 },
@@ -519,25 +588,35 @@ class DomainObject:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        if hasattr(get, "hash"):
+        if hasattr(get, "hash"):  # 指定
             ssl_obj = DnsDomainSSL.objects.filter(hash=get.hash)
-        else:
+        else:  # 30天内的cert
             ts_month = 30 * 24 * 60 * 60 * 1000
-            ssl_obj = DnsDomainSSL.objects.filter(not_after_ts__lt=int(time.time() * 1000) + ts_month)
+            ssl_obj = DnsDomainSSL.objects.filter(
+                not_after_ts__lt=int(time.time() * 1000) + ts_month
+            )
 
         log = None
         for ssl in ssl_obj:
             provider = DnsDomainProvider.objects.find_one(id=ssl.provider_id)
-            if not provider:
-                return public.fail_v2("DNS Provider Not Found!")
-            log = provider.get_ssl_log(ssl.dns)
-            renew_task = threading.Thread(target=provider.model_apply_cert, args=(ssl.dns,))
-            renew_task.start()
+            if provider:
+                _ = provider.dns_obj
+                log = provider.get_ssl_log(ssl.dns)
+                renew_task = threading.Thread(
+                    target=provider.model_apply_cert, args=(ssl.dns,)
+                )
+                renew_task.start()
+            else:
+                # 兜底
+                log = ssl.get_ssl_log(ssl.dns)
+                renew_task = threading.Thread(
+                    target=ssl.try_to_apply_ssl, args=(ssl.dns,)
+                )
+                renew_task.start()
 
         if hasattr(get, "hash"):
             return public.success_v2(log)
-        else:
-            return public.success_v2("Successfully Renewed!")
+        return public.success_v2("Successfully Renewed!")
 
     def apply_new_ssl(self, get):
         """
@@ -559,7 +638,10 @@ class DomainObject:
         for d in get.domains:
             if not targets:
                 root, _, _ = extract_zone(d)
-                provider = DnsDomainProvider.objects.find_one(domains__has_element=root)
+                for p in DnsDomainProvider.objects.all():
+                    if root in p.domains:
+                        provider = p
+                        break
                 if not provider:
                     return public.fail_v2(f"DNS Provider Not Found! for {root}")
                 targets = provider.domains
@@ -597,14 +679,10 @@ class DomainObject:
                 if not ssl:
                     del data["id"]
                     del data["create_time"]
-                    # 从auth中尝试匹配现有api
-                    provider, account, token = data.get("auth_info").get("auth_to", "||").split("|")
-                    p_obj = DnsDomainProvider.objects.filter(
-                        name=provider, api_user=account, api_key=token
-                    ).first()
-                    pid = p_obj.id if p_obj and provider != "" else 0
-                    data["provider_id"] = pid
+                    # 尝试匹配现有api
                     DnsDomainSSL(**data).save()
+
+            update_ssl_link()
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.fail_v2(str(ex))
@@ -657,12 +735,10 @@ class DomainObject:
 
         ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
         if not ssl_obj:
-            return public.fail_v2("SSL Certificate Not Found!")
-        if ssl_obj.auto_renew == 1:
-            ssl_obj.auto_renew = 0
-        else:
-            make_suer_renew_task()  # make suer corn task
-            ssl_obj.auto_renew = 1
+            return public.fail_v2("SSL Not Found!")
+        # make_suer_renew_task()  # make suer corn task
+        open_map = {0: 1, 1: 0}
+        ssl_obj.auto_renew = open_map.get(ssl_obj.auto_renew, 1)
         ssl_obj.save()
         return public.success_v2("Setting Successfully!")
 
@@ -683,19 +759,37 @@ class DomainObject:
         ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
         if not ssl_obj:
             return public.fail_v2("SSL Not Found!")
+
         alarm = int(get.alarm)
         if alarm == 1:  # open
-            res, msg = make_suer_alarm_task()  # make suer alarm task
-            if res:
-                ssl_obj.alarm = alarm
-                ssl_obj.save()
-                return public.success_v2("Setting Successfully!")
-            else:
-                return public.fail_v2(msg)
+            make_suer_alarm_task()  # make suer alarm task
+            ssl_obj.alarm = alarm
+            ssl_obj.save()
         else:  # close
             ssl_obj.alarm = alarm
             ssl_obj.save()
-            return public.success_v2("Setting Successfully!")
+        return public.success_v2("Setting Successfully!")
+
+    # =========== Deploy ================
+    @staticmethod
+    def __add_match_flag(targes: list, dns: list, key_word: str = None, match_domain: str = None) -> list:
+        if key_word and match_domain:  # 不能同时存在
+            return targes
+
+        for t in targes:
+            for d in dns:
+                if d.startswith("*."):
+                    d = d[2:]
+                if key_word:
+                    if d in t.get(key_word, ""):
+                        t["match"] = 1
+                        break
+                else:
+                    if d in match_domain:
+                        t["match"] = 1
+                        break
+
+        return targes
 
     def cert_domain_list(self, get):
         """
@@ -714,81 +808,199 @@ class DomainObject:
         ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
         if not ssl_obj:
             return public.fail_v2("SSL Certificate Not Found!")
+        # ====================== sites ======================
+        # 不考虑status
         sites = public.S("sites").field(
             "id", "name", "path", "status", "type_id", "project_type",
         ).select()
-        for s in sites:
-            dns = ssl_obj.dns
-            for sub in dns:
-                if sub.startswith("*."):
-                    sub = sub[2:]
-                if sub in s.get("name", ""):
-                    s["match"] = 1
-                    break
+        sites = self.__add_match_flag(sites, ssl_obj.dns, "name")
+
+        # ====================== mails ======================
+        mails = []
+        if os.path.exists(self.mail_db_file):
+            # 不考虑active
+            mails = public.S("domain", self.mail_db_file).field(
+                "domain", "a_record", "active"
+            ).select()
+            mails = self.__add_match_flag(mails, ssl_obj.dns, "domain")
+
+        # ====================== panel ======================
+        panel = []
+        panel_ssl = config().GetPanelSSL(get=None)
+        if panel_ssl.get("status") == 0:
+            panel = [panel_ssl.get("message")]
+
+        current_domain = ""
+        if os.path.exists(PANEL_LIMIT_DOMAIN):
+            limit_domain = public.readFile(PANEL_LIMIT_DOMAIN)
+            if limit_domain:  # 如果有限制域名
+                current_domain = limit_domain
+            else:
+                if os.path.exists(PANEL_DOMAIN):  # 如果有配置过的域名
+                    current_domain = public.readFile(PANEL_DOMAIN)
+
+        if current_domain and panel:
+            panel = self.__add_match_flag(panel, ssl_obj.dns, None, current_domain)
+
         data = {
             "sites": sites,
-            "mails": [],
+            "mails": mails,
+            "panel": panel,
             "accounts": [],
         }
         return public.success_v2(data)
 
-    def cert_deploy_sites(self, get):
+    @staticmethod
+    def __before_deploy(get: public.dict_obj) -> Tuple[DnsDomainSSL, public.dict_obj]:
         """
-        部署到sites, 包含取消
+        证书部署前通用检查
+        :return: ssl obj, use_for list, get obj
         """
         try:
             get.validate([
                 Param("hash").String().Require(),
-                Param("domains").String().Require(),
+                Param("domains").String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            raise ex
+
+        if hasattr(get, "domains"):
+            try:
+                get.domains = json.loads(get.domains)
+            except json.decoder.JSONDecodeError as js_err:
+                raise js_err
+
+        if hasattr(get, "recover"):
+            try:
+                get.recover = int(get.recover)
+            except TypeError as tr:
+                raise tr
+
+        ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
+        if not ssl_obj:
+            raise Exception("SSL Certificate Not Found!")
+
+        return ssl_obj, get
+
+    def cert_deploy_sites(self, get):
+        """
+        证书部署到 选定的 sites
+        """
+        try:
+            get.validate([
+                Param("remove").Integer(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+            # 返回ssl对象, get对象
+            ssl_obj, get = self.__before_deploy(get)
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.fail_v2(str(ex))
+
+        # 不同的元素
+        diff = list(set(ssl_obj.sites_uf).symmetric_difference(set(get.domains)))
+        public.print_log(f"diff {diff}")
+        # 1, 需要移除的sites
+        for remove in [x for x in diff if x in set(ssl_obj.sites_uf)]:
+            new_get = public.dict_obj()
+            new_get.siteName = remove
+            new_get.updateOf = 1
+            try:
+                # close site's ssl conf
+                remove_res = panelSite().CloseSSLConf(new_get)
+                if hasattr(get, "remove") and int(get.remove) == 1:
+                    # 尝试移除site dns记录, 异步?
+                    provider = DnsDomainProvider.objects.find_one(id=ssl_obj.provider_id)
+                    if provider:
+                        root, zone, _ = extract_zone(remove)
+                        domain_value = root if zone == "" else zone
+                        # CloudFlareDns record 自带域名
+                        if provider.name == "CloudFlareDns":
+                            domain_value += f".{root}"
+                        record = DnsDomainRecord.objects.find_one(
+                            domain=root, record=domain_value, record_type="A",
+                        )
+                        if record:
+                            res = provider.model_delete_dns_record(record.id)
+            except Exception as e:
+                public.print_log(f"error info: {str(e)}")
+                continue
+
+        # 2, 移除diff之后, 部署
+        result = ssl_obj.deploy_sites(get.domains)
+        if result.get("status"):
+            return public.success_v2("Deploy Site's SSL Successfully!")
+        else:
+            return public.fail_v2(result.get("msg", "Deploy Faild..."))
+
+    def cert_deploy_mails(self, get):
+        """
+        证书部署到 选定的 mails
+        """
+        try:
+            ssl_obj, get = self.__before_deploy(get)
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.fail_v2(str(ex))
+
+        # 不同的元素
+        diff = list(set(ssl_obj.mails_uf).symmetric_difference(set(get.domains)))
+        # 1, 需要移除的sites
+        for remove in [x for x in diff if x in set(ssl_obj.mails_uf)]:
+            ...
+
+        return public.success_v2("Deploy Mail's SSL Successfully!")
+
+    def cert_deploy_accounts(self, get):
+        """
+        证书部署到 选定的 accounts
+        """
+        try:
+            ssl_obj, get = self.__before_deploy(get)
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.fail_v2(str(ex))
+
+        return public.success_v2("Deploy Account's SSL Successfully!")
+
+    def cert_deploy_panel(self, get):
+        """
+        指定部署到 panel 主面板, or 恢复自签证书
+        """
+        try:
+            get.validate([
+                Param("hash").String().Require(),
+                Param("recover").Integer().Require(),
             ], [
                 public.validate.trim_filter(),
             ])
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
-            return public.return_message(-1, 0, str(ex))
-        try:
-            get.domains = json.loads(get.domains)
-        except json.decoder.JSONDecodeError as js_err:
-            public.print_log("error info: {}".format(js_err))
-            return public.return_message(-1, 0, str(js_err))
+            return public.fail_v2(str(ex))
 
-        ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
-        if not ssl_obj:
-            return public.fail_v2("SSL Certificate Not Found!")
+        ssl_obj, get = self.__before_deploy(get)
+        res = ssl_obj.deploy_panel(recover=int(get.recover))
+        if res.get("status"):
+            return public.success_v2("Deploy Panel's SSL Successfully!")
+        return public.fail_v2(res.get("msg", "Deploy Panel's SSL Failed!"))
 
-        # 当前得域名
-        user_for = ssl_obj.user_for.get(UseFor.sites.value, [])
-        # 不同的元素
-        diff = list(set(user_for).symmetric_difference(set(get.domains)))
-        # 1, 需要移除的sites
-        for remove in [x for x in diff if x in set(user_for)]:
-            new_get = public.dict_obj()
-            new_get.siteName = remove
-            new_get.updateOf = 1
-            remove_res = panelSite().CloseSSLConf(new_get)
-        # 2, 移除diff之后, 部署
-        result = ssl_obj.deploy_sites(get.domains)
-        if result.get("status"):
-            return public.success_v2("Setup successfully!")
-        else:
-            return public.fail_v2(result.get("msg", "Deploy Faild..."))
-
-    # todo
-    def cert_deploy_mails(self, get):
-        # ssl_obj.user_for[UseFor.mails.value] = []
-        # ssl_obj.save()
-        pass
-
-    # todo
-    def cert_deploy_panel(self, get):
-        # ssl_obj.user_for[UseFor.panel.value] = []
-        # ssl_obj.save()
-        pass
-
-    # =========== add Site ===========
+    # =========== Site ===========
     def add_site_check(self, get):
         """
-        检测域名支持服务
+        dns自动化的检测服务
+        涵盖site, mail, panel, account等
+        :return: {
+            "hash": "", 适用证书
+            "domain": "", 检查的域名
+            "support": [
+                         "auto", 自动解析
+                         "ssl_cert",自动部署
+                         "cf_proxy", cf代理
+                       ],
+        }
         """
         try:
             get.validate([
@@ -804,18 +1016,111 @@ class DomainObject:
             "domain": get.domain,
             "support": [],
         }
-        for ssl in DnsDomainSSL.objects.all():
-            if DomainValid.domain_valid(ssl, get.domain):
+
+        targets = DomainValid.get_best_ssl(get.domain)
+
+        for ssl in targets:
+            if DomainValid.match_ssl_dns(get.domain, ssl, False):
                 result = {
                     "hash": ssl.hash,
                     "domain": get.domain,
                     "support": ["auto", "ssl_cert"],
                 }
                 if bool("CloudFlareDns" in ssl.auth_info.get("auth_to", "")):
-                    result.update({"cf_proxy": 1})
-                    result["support"].append("cf_proxy")
+                    # ip为内网地址不可以开启代理
+                    try:
+                        local_ip = public.GetLocalIp()
+                        provate = ipaddress.IPv4Address(local_ip).is_private
+                    except Exception:
+                        provate = True
+                    if not provate:
+                        result["support"].append("cf_proxy")
                 return public.success_v2(result)
         return public.success_v2(result)
+
+    def ssl_tasks_status(self, get):
+        """
+        获取任务状态
+        """
+        try:
+            get.validate([
+                Param("task_type").Integer(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        # self._clear_task_force()
+
+        task_type = WorkFor.sites.value if not hasattr(get, "task_type") else int(get.task_type)
+        # get.task_type 是否在支持的WorkFor中
+        if task_type not in [x.value for x in WorkFor]:
+            return public.success_v2([])
+
+        filter_obj = DnsDomainTask.objects.filter(
+            task_status__lt=100, task_type=task_type
+        )
+        data = [
+            task.as_dict() for task in filter_obj
+        ]
+        return public.success_v2(data)
+
+    # ========== Panel ===========
+    def get_panel_domain(self, get=None):
+        if not os.path.exists(PANEL_DOMAIN):
+            # 填充已经存在的限制domain
+            if os.path.exists(PANEL_LIMIT_DOMAIN):
+                limit_domain = public.readFile(PANEL_LIMIT_DOMAIN)
+                if limit_domain:
+                    public.writeFile(PANEL_DOMAIN, limit_domain, "w")
+                else:
+                    public.writeFile(PANEL_DOMAIN, "", "w")
+                return public.success_v2({"domain": limit_domain})
+
+            else:
+                public.writeFile(PANEL_DOMAIN, "", "w")
+                return public.success_v2({"domain": ""})
+
+        return public.success_v2({"domain": public.readFile(PANEL_DOMAIN)})
+
+    def set_panel_domain_ssl(self, get):
+        """
+        get.domain = {
+            "hash": "xxx",
+            "domain": "example.com",
+            "support": ["auto" (自动解析), "ssl_cert" (自动部署), "cf_proxy" (开启cf代理)],
+        }
+        """
+        try:
+            get.validate([
+                Param("domain").String().Require(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+            get.domain = json.loads(get.domain)
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        org = public.readFile(PANEL_DOMAIN)
+        if get.domain.get("domain") == org:
+            return public.success_v2("Set Panel's SSL Successfully!")
+
+        # real chage
+        support = get.domain.get("support")
+        if "cf_proxy" in support:
+            support.remove("cf_proxy")
+        get.domain["support"] = support
+
+        task_obj = generate_panel_task(get.domain)
+        task = threading.Thread(
+            target=init_panel_dns,
+            args=(get.domain, task_obj)
+        )
+        task.start()
+        return public.success_v2("Set Panel's SSL Successfully! Please wait a few times.")
 
 
 def move_old_account():

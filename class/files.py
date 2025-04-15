@@ -1068,6 +1068,73 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         except:
             return public.return_msg_gettext(False, public.lang("Failed to create directory!"))
 
+
+    def CheckDelete(self, path):
+        # 系统目录
+        system_dir = {
+            '/proc': 'System process directory',
+            '/dev': 'System Device Catalog',
+            '/sys': 'System call directory',
+            '/tmp': 'System temporary file directory',
+            '/var/log': 'System log directory',
+            '/var/run': 'System operation log directory',
+            '/var/spool': 'System queue directory',
+            '/var/lock': 'System lock directory',
+            '/var/mail': 'System mail directory',
+            '/mnt': 'System mount directory',
+            '/media': 'Multimedia catalog',
+            '/dev/shm': 'Shared memory directory',
+            '/lib': 'System dynamic library directory',
+            '/lib64': 'System dynamic library directory',
+            '/lib32': 'System dynamic library directory',
+            '/usr/lib': 'System dynamic library directory',
+            '/usr/lib64': 'System dynamic library directory',
+            '/usr/local/lib': 'System dynamic library directory',
+            '/usr/local/lib64': 'System dynamic library directory',
+            '/usr/local/libexec': 'System dynamic library directory',
+            '/usr/local/sbin': 'System script directory',
+            '/usr/local/bin': 'System script directory'
+        }
+        # 面板系统目录
+        bt_system_dir = {
+            public.get_panel_path(): 'BT main program directory',
+            '/www/server/data': 'MySQL database default data directory',
+            '/www/server/mysql': 'MySQL program directory',
+            '/www/server/redis': 'Redis program directory',
+            '/www/server/mongodb': 'MongoDB program directory',
+            '/www/server/nvm': 'PM2/NVM/NPM program directory',
+            '/www/server/pass': 'Website Basic Auth authentication password storage directory',
+            '/www/server/speed': 'Website acceleration data directory',
+            '/www/server/docker': 'Docker plugin program and data directory',
+            '/www/server/total': 'Website monitoring report data directory',
+            '/www/server/btwaf': 'WAF firewall data directory',
+            '/www/server/pure-ftpd': 'ftp program directory',
+            '/www/server/phpmyadmin': 'phpMyAdmin program directory',
+            '/www/server/rar': 'rar extension library directory, after deleting, it will lose support for RAR compressed files',
+            '/www/server/stop': 'Website disabled page directory, please do not delete!',
+            '/www/server/nginx': 'Nginx program directory',
+            '/www/server/apache': 'Apache program directory',
+            '/www/server/cron': 'Scheduled task script and log directory',
+            '/www/server/php': 'PHP directory, all PHP version interpreters are in this directory',
+            '/www/server/tomcat': 'Tomcat program directory',
+            '/www/php_session': 'PHP-SESSION isolation directory',
+        }
+        # 面板系统目录
+        # bt_system_file_type = {
+        #     '.sh': 'shell 程序',
+        #     '.py': 'python 程序',
+        #     '.pl': 'pl',
+        #     '.html': 'html',
+        # }
+        if system_dir.get(path):
+            return f"this is [{system_dir.get(path)}] do not delete!"
+
+        msg = bt_system_dir.get(path)
+        if msg:
+            return f"this is [{msg}] panel will be crash if you delete it, please uninstall it normally!"
+        return None
+
+
     #删除目录
     def DeleteDir(self,get):
         if sys.version_info[0] == 2:
@@ -1080,6 +1147,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         # 检查是否敏感目录
         if not self.CheckDir(get.path):
             return public.return_msg_gettext(False, public.lang("Editing this directory may cause service exceptions!"))
+
+        # 检查关键目录
+        msg = self.CheckDelete(get.path)
+        if msg is not None:
+            return public.return_msg_gettext(False, msg)
 
         try:
             # 检查是否存在.user.ini
@@ -1121,6 +1193,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.path = get.path.encode('utf-8')
         if not os.path.exists(get.path)and not os.path.islink(get.path):
             return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
+
+        # 检查关键文件
+        msg = self.CheckDelete(get.path)
+        if msg is not None:
+            return public.return_msg_gettext(False, msg)
 
         # 检查是否为.user.ini
         if get.path.find('.user.ini') != -1:

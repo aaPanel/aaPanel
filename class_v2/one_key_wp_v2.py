@@ -1231,12 +1231,12 @@ class one_key_wp:
             if int(get.enable_cache) == 1 and public.get_webserver() == 'nginx':
                 from wp_toolkit import wpmgr, wpfastcgi_cache
 
-                # 配置Nginx-fastcgi-cache
-                wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
-
                 self.write_logs('|-WP Plugin nginx-helper installing...')
                 wpmgr(s_id).init_plugin_nginx_helper()
                 self.write_logs('|-WP Plugin nginx-helper installation succeeded')
+
+                # 配置Nginx-fastcgi-cache
+                wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
 
                 # if self.__IS_PRO_MEMBER:
                 #     from wp_toolkit import wpmgr, wpfastcgi_cache

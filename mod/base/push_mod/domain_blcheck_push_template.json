@@ -71,12 +71,12 @@
     "id": "82",
     "ver": "1",
     "used": true,
-    "source": "mail_server_certificate_expired",
-    "title": "Your Mail Server certificate expired",
+    "source": "mail_domain_quota_alert",
+    "title": "Your Mail Domain Quota Alert",
     "load_cls": {
       "load_type": "path",
       "cls_path": "mod.base.push_mod.domain_blcheck_push",
-      "name": "CertExpiry"
+      "name": "MailDomainQuota"
     },
     "template": {
       "field": [
@@ -88,7 +88,7 @@
     },
     "advanced_default": {
       "number_rule": {
-        "day_num": 2
+        "day_num": 1
       }
     },
     "send_type_list": [

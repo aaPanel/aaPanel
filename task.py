@@ -1343,6 +1343,8 @@ def mailsys_domain_restrictions():
     if os.path.exists(cloud_yesterday_submit):
         return
 
+    if os.path.exists("/www/server/panel/plugin/mail_sys"):
+        sys.path.insert(1, "/www/server/panel/plugin/mail_sys")
     # 检查版本 检查是否能查询额度  剩余额度
     import public.PluginLoader as plugin_loader
     bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(public.get_panel_path()))
@@ -1529,7 +1531,8 @@ def mailsys_domain_blecklisted_alarm():
     cloud_yesterday_submit = '{}/data/{}_mailsys_domain_blecklisted_alarm.pl'.format(public.get_panel_path(), yesterday)
     if os.path.exists(cloud_yesterday_submit):
         return
-
+    if os.path.exists("/www/server/panel/plugin/mail_sys"):
+        sys.path.insert(1, "/www/server/panel/plugin/mail_sys")
     # 检查版本 检查是否能查询额度  剩余额度
     import public.PluginLoader as plugin_loader
     bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(public.get_panel_path()))
@@ -1553,17 +1556,46 @@ def mailsys_domain_blecklisted_alarm():
     return
 
 # 邮件证书过期告警
-def mailsys_cert_expiry_alarm():
-    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py') or not os.path.exists('/www/vmail'):
+# def mailsys_cert_expiry_alarm():
+#     if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py') or not os.path.exists('/www/vmail'):
+#         return
+#
+#     yesterday = datetime.now() - timedelta(days=1)
+#     yesterday = yesterday.strftime('%Y-%m-%d')
+#     cloud_yesterday_submit = '{}/data/{}_mailsys_cert_expiry_alarm.pl'.format(public.get_panel_path(), yesterday)
+#     if os.path.exists(cloud_yesterday_submit):
+#         return
+#
+#     script = '/www/server/panel/plugin/mail_sys/script/certificate_expired.py'
+#     if not os.path.exists(script):
+#         return
+#
+#     cmd = f"btpython {script}"
+#     aa = public.ExecShell(cmd)
+#
+#
+#     # 添加标记
+#     public.writeFile(cloud_yesterday_submit, '1')
+#     # 删除前天标记
+#     before_yesterday = datetime.now() - timedelta(days=2)
+#     before_yesterday = before_yesterday.strftime('%Y-%m-%d')
+#     cloud_before_yesterday_submit = '{}/data/{}_mailsys_cert_expiry_alarm.pl'.format(public.get_panel_path(), before_yesterday)
+#     if os.path.exists(cloud_before_yesterday_submit):
+#         os.remove(cloud_before_yesterday_submit)
+#     return
+
+# 邮件域名邮箱使用限额告警
+def mailsys_quota_alarm1():
+    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists('/www/vmail'):
         return
 
     yesterday = datetime.now() - timedelta(days=1)
     yesterday = yesterday.strftime('%Y-%m-%d')
-    cloud_yesterday_submit = '{}/data/{}_mailsys_cert_expiry_alarm.pl'.format(public.get_panel_path(), yesterday)
+    cloud_yesterday_submit = '{}/data/{}_mailsys_quota_alarm.pl'.format(public.get_panel_path(), yesterday)
     if os.path.exists(cloud_yesterday_submit):
         return
 
-    script = '/www/server/panel/plugin/mail_sys/script/certificate_expired.py'
+    script = '/www/server/panel/plugin/mail_sys/script/check_quota_alerts.py'
     if not os.path.exists(script):
         return
 
@@ -1576,10 +1608,60 @@ def mailsys_cert_expiry_alarm():
     # 删除前天标记
     before_yesterday = datetime.now() - timedelta(days=2)
     before_yesterday = before_yesterday.strftime('%Y-%m-%d')
-    cloud_before_yesterday_submit = '{}/data/{}_mailsys_cert_expiry_alarm.pl'.format(public.get_panel_path(), before_yesterday)
+    cloud_before_yesterday_submit = '{}/data/{}_mailsys_quota_alarm.pl'.format(public.get_panel_path(), before_yesterday)
     if os.path.exists(cloud_before_yesterday_submit):
         os.remove(cloud_before_yesterday_submit)
     return
+
+# 邮件域名邮箱使用限额告警
+def mailsys_quota_alarm():
+    while True:
+        try:
+            if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists(
+                    '/www/vmail'):
+                # time.sleep(7200)
+                time.sleep(43200)
+                continue
+
+            script = '/www/server/panel/plugin/mail_sys/script/check_quota_alerts.py'
+            if not os.path.exists(script):
+                # time.sleep(7200)
+                time.sleep(43200)
+                continue
+
+            time.sleep(3600)  # 进入脚本前等待 和更新配额错开时间
+            cmd = f"btpython {script}"
+            public.ExecShell(cmd)
+
+        except:
+            pass
+
+        time.sleep(43200)
+
+
+# 邮局更新域名邮箱使用量
+def mailsys_update_usage():
+    while True:
+        try:
+            if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists(
+                    '/www/vmail'):
+                time.sleep(43200)
+                continue
+
+            script = '/www/server/panel/plugin/mail_sys/script/update_usage.py'
+            if not os.path.exists(script):
+                time.sleep(43200)
+                continue
+            cmd = f"btpython {script}"
+            public.ExecShell(cmd)
+
+        except:
+            pass
+
+        # 每12小时执行一次
+        time.sleep(43200)
+
+
 
 # 邮局自动回复
 def auto_reply_tasks():
@@ -1591,14 +1673,12 @@ def auto_reply_tasks():
                 time.sleep(3600)
                 continue
 
-            # 检查是否有回复功能
-            import public.PluginLoader as plugin_loader
-            main = plugin_loader.get_module('{}/plugin/mail_sys/mail_sys_main.py'.format(public.get_panel_path()))
-            mail_sys_main = main.mail_sys_main
+            if os.path.exists("/www/server/panel/plugin/mail_sys"):
+                sys.path.insert(1, "/www/server/panel/plugin/mail_sys")
             try:
+                from plugin.mail_sys.mail_sys_main import mail_sys_main
                 mail_sys_main().auto_reply_tasks()
             except Exception as e:
-                # public.print_log(f"The post office auto-reply task was executed incorrectly: {str(e)}")
                 public.print_log(public.get_error_info())
 
         except:
@@ -1606,6 +1686,9 @@ def auto_reply_tasks():
 
         # 每小时执行一次
         time.sleep(3600)
+
+
+
 
 # 邮局自动扫描异常邮箱
 def auto_scan_abnormal_mail():
@@ -1629,7 +1712,8 @@ def auto_scan_abnormal_mail():
             if os.path.exists(path):
                 time.sleep(7200)
                 continue
-
+            if os.path.exists("/www/server/panel/plugin/mail_sys"):
+                sys.path.insert(1, "/www/server/panel/plugin/mail_sys")
             # 导入并执行扫描
             import public.PluginLoader as plugin_loader
             bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(public.get_panel_path()))
@@ -1646,10 +1730,12 @@ def auto_scan_abnormal_mail():
 
         time.sleep(7200)
 
+
+
 def domain_ssl_service():
     try:
-        from ssl_domainModelV2.service import make_suer_org_ssl
-        make_suer_org_ssl()
+        from ssl_domainModelV2.service import make_suer_ssl_task
+        make_suer_ssl_task()
     except Exception as e:
         public.print_log("domain_ssl_service error , %s" % e)
 
@@ -1679,11 +1765,11 @@ def run_thread():
         "submit_email_statistics": submit_email_statistics,  # 每天一次 昨日邮件发送统计
         "update_vulnerabilities": update_vulnerabilities,
         "submit_module_call_statistics": submit_module_call_statistics,  # 每天一次 提交今天之前的统计数据
-         # "mailsys_domain_restrictions": mailsys_domain_restrictions,  # 更新邮局发件状态 暂停
         "mailsys_domain_blecklisted_alarm": mailsys_domain_blecklisted_alarm,  # 每天一次 邮局黑名单检测
-        "mailsys_cert_expiry_alarm": mailsys_cert_expiry_alarm,  # 每天一次 邮局证书告警
         "auto_reply_tasks": auto_reply_tasks,  # 每小时执行一次 自动回复邮件
         "auto_scan_abnormal_mail": auto_scan_abnormal_mail,  # 每两小时执行一次 自动扫描异常邮箱
+        "mailsys_update_usage": mailsys_update_usage,  # 12h 邮局更新域名邮箱使用量
+        "mailsys_quota_alarm": mailsys_quota_alarm,  # 2h 邮件域名邮箱使用限额告警
         "maillog_event": maillog_event,
         "aggregate_maillogs": aggregate_maillogs_task,
         # "print_malloc": print_malloc_thread,

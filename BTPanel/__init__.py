@@ -4540,11 +4540,31 @@ def domain_v2(pdata=None):
         "switch_ssl_alarm",
         "cert_domain_list",
         "cert_deploy_sites",
+        # "cert_deploy_mails",
+        # "cert_deploy_panel",
         "remove_cert",
+        # 接口改名
+        # "check_domain_automatic",
         "add_site_check",
+        "ssl_tasks_status",
+        "get_panel_domain",
+        "set_panel_domain_ssl",
     )
     return publicObject(DomainObject(), defs, None, pdata)
 
+
+@app.route(route_v2 + '/dns_api', methods=method_all)
+def dns_api_v2(pdata=None):
+    # dns api 开放, 子面板调用
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from ssl_domainModelV2.external_api import SubPanelApi
+    defs = (
+        "account_create_record",
+        "account_list_ssl_info",
+        "account_domain_provider",
+    )
+    return publicObject(SubPanelApi(), defs, None, pdata)
 
 @app.route(route_v2 + '/task', methods=method_all)
 def task_v2(pdata=None):

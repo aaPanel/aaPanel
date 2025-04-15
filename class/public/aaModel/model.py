@@ -3,7 +3,7 @@
 import copy
 from typing import Self, Generator, Optional, Dict, Any
 
-from .fields import aaField
+from .fields import aaField, COMPARE
 from .manager import aaManager
 
 __all__ = ["aaModel"]
@@ -51,6 +51,10 @@ class aaMetaClass(type):
             if isinstance(v, aaField):
                 if k in fields:
                     raise HintException(f"model {name} field '{k}' is already defined")
+                if k in COMPARE:
+                    raise HintException(f"model {name} field '{k}' is compare field, please change the name")
+                if k.startswith("_"):
+                    raise HintException(f"model {name} field '{k}' is not support start with '_'")
                 fields[k] = v
                 if v.primary_key:
                     if pk:
@@ -92,11 +96,9 @@ class aaCusModel(metaclass=aaMetaClass):
     def __init__(self, **kwargs):
         if self.__abstract__ is True:
             raise RuntimeError(f'{self.__class__.__name__} class can not be init')
+        self._field_filter = kwargs.pop("_field_filter", None)
         for f, v in self._generate_init(kwargs):
             setattr(self, f.field_name, v)
-
-    def __repr__(self):
-        return f"<'{self.__class__.__name__}' Model Object, {self.__dict__}>"
 
     def _generate_init(self, val_data: dict) -> Generator:
         for name, field in {**self.__class__.__fields__}.items():
@@ -135,6 +137,9 @@ class aaModel(aaCusModel):
     __destroyed: bool = False
     id: int = None
 
+    def __repr__(self):
+        return f"<'{self.__class__.__name__}' Model Object, {self.as_dict()}>"
+
     @staticmethod
     def check_destroyed(func):
         def wrapper(self, *args, **kwargs):
@@ -146,21 +151,27 @@ class aaModel(aaCusModel):
 
     @classmethod
     @check_destroyed
-    def _output(cls, data: dict) -> dict:
-        return {
-            k: v if not cls.__serializes__.get(k) else cls.__serializes__.get(k).serialized(v, False) for k, v in
-            data.items()
-        }
+    def _output(cls, data: dict, _field_filter=None) -> dict:
+        if not _field_filter:
+            return {
+                k: v if not cls.__serializes__.get(k) else cls.__serializes__.get(k).serialized(v, False) for k, v in
+                data.items()
+            }
+        else:
+            return {
+                k: v if not cls.__serializes__.get(k) else cls.__serializes__.get(k).serialized(v, False) for k, v in
+                data.items() if k in _field_filter
+            }
 
     @classmethod
     @check_destroyed
-    def _serialized_data(cls, data: Optional[dict | list]) -> Optional[dict | list]:
+    def _serialized_data(cls, data: Optional[dict | list], _field_filter=None) -> Optional[dict | list]:
         if not data or not hasattr(cls, "__serializes__"):
             return data
         if isinstance(data, list):
-            return [cls._output(d) for d in data]
+            return [cls._output(d, _field_filter) for d in data]
         elif isinstance(data, dict):
-            return cls._output(data)
+            return cls._output(data, _field_filter)
         else:
             return data
 
@@ -257,4 +268,12 @@ class aaModel(aaCusModel):
         """
         转字典
         """
-        return self.__dict__ if self.__dict__ is not None else {}
+        result = {}
+        field_filter = getattr(self, "_field_filter", None)
+        for k, v in self.__dict__.items():
+            if k.startswith("_"):
+                continue
+            if field_filter is not None and k not in field_filter:
+                continue
+            result[k] = v
+        return result

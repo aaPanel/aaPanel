@@ -17,6 +17,7 @@ import re
 import time
 from typing import Tuple, Union
 
+sys.stdout.reconfigure(encoding="utf-8")
 os.chdir('/www/server/panel')
 if not 'class/' in sys.path:
     sys.path.insert(0, 'class/')

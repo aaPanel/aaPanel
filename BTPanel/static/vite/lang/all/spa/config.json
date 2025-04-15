@@ -395,5 +395,17 @@
 	"71ab9f0eaf2b2e26fe8dd49ee645130a": "Ingrese el número de copias de seguridad",
 	"47981faddcaafb488a560d008ece8f70": "Si la base de datos utilizada por el panel está dañada, no podrá recuperar la base de datos del panel corrupta",
 	"4e7c4b436aa01fc3feaea5fb7a4ca328": "Desactivar la copia de seguridad del panel",
-	"d70258b20b78a647f41d38fb5b14ef0b": "La copia de seguridad automática no incluye datos del sitio web y datos de MySQL"
+	"d70258b20b78a647f41d38fb5b14ef0b": "La copia de seguridad automática no incluye datos del sitio web y datos de MySQL",
+	"f651ba13b7bce517cc8f193c36d7e6cd": "Solicite e implementa un certificado SSL seguro para el panel a través del Centro de Gestión de Dominio, admite la renovación automática antes de vencer",
+	"510720a4322dc108c343c4039cceea01": "Método de aplicación",
+	"512aca9f709d3b54b3707d2e10c27111": "A través del Centro de Gestión de Dominio",
+	"380e62c738887cac147b3d6928fed220": "Dominio del panel",
+	"59740394472eae5da4679e0e21cc2f5a": "Ingrese su dominio de panel",
+	"4dd730005c2ee0ab9305a448993bdcea": "{0} está conectado al centro de administración de dominio y se puede instalar automáticamente",
+	"5cb1671bd558064eb25f7139e1d8c118": "{0} no está conectado al centro de administración de dominio y la instalación automática no es posible",
+	"c7b4f3712a331620b6f267f2f8c44a2d": "Conectar ahora",
+	"0c2d54b264e1f2df4c626b6b251e1510": "Instalar certificado ahora",
+	"ae0d29aefa93b5d13f406b4c844bf5e6": "Por favor ingrese un dominio",
+	"4c835a52a19316b87fbf00485781956f": "Certificado instalado correctamente",
+	"060bf2d587991d8f090a1309b285291c": "Controlar"
 }

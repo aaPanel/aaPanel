@@ -260,7 +260,21 @@
 			"index_166": "Hết hạn",
 			"index_167": "Kiểm tra chi tiết",
 			"index_168": "Tìm hiểu thêm",
-			"index_169": "Vui lòng đọc và đồng ý với rủi ro"
+			"index_169": "Vui lòng đọc và đồng ý với rủi ro",
+			"Ssl": {
+				"index_1": "Đăng ký và triển khai Chứng chỉ SSL an toàn cho bảng thông qua Trung tâm quản lý miền, hỗ trợ gia hạn tự động trước khi hết hạn",
+				"index_2": "Phương thức ứng dụng",
+				"index_3": "Thông qua Trung tâm quản lý miền",
+				"index_4": "Miền bảng điều khiển",
+				"index_5": "Vui lòng nhập tên miền bảng điều khiển của bạn",
+				"index_6": "{0} được kết nối với Trung tâm quản lý miền và có thể được cài đặt tự động",
+				"index_7": "{0} không được kết nối với Trung tâm quản lý tên miền và không thể cài đặt tự động",
+				"index_8": "Kết nối ngay bây giờ",
+				"index_9": "Cài đặt chứng chỉ ngay bây giờ",
+				"index_10": "Vui lòng nhập một miền",
+				"index_11": "Giấy chứng nhận đã cài đặt thành công",
+				"index_12": "Kiểm tra"
+			}
 		},
 		"Alarm": {
 			"index_1": "Thêm tác vụ báo động",

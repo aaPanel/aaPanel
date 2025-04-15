@@ -260,7 +260,21 @@
 			"index_166": "Expired",
 			"index_167": "Check details",
 			"index_168": "Learn more",
-			"index_169": "Please read and agree to the risk"
+			"index_169": "Please read and agree to the risk",
+			"Ssl": {
+				"index_1": "Apply for and deploy a secure SSL certificate for the panel through the Domain Management Center, supports automatic renewal before expiration",
+				"index_2": "Application Method",
+				"index_3": "Through Domain Management Center",
+				"index_4": "Panel Domain",
+				"index_5": "Please enter your panel domain",
+				"index_6": "{0} is connected to the Domain Management Center and can be automatically installed",
+				"index_7": "{0} is not connected to the Domain Management Center and automatic installation is not possible",
+				"index_8": "Connect Now",
+				"index_9": "Install Certificate Now",
+				"index_10": "Please enter a domain",
+				"index_11": "Certificate installed successfully",
+				"index_12": "Check"
+			}
 		},
 		"Alarm": {
 			"index_1": "Add Alarm Task",

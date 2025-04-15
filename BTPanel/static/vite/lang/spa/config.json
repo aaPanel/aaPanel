@@ -260,7 +260,21 @@
 			"index_166": "Venció",
 			"index_167": "Detalles de verificación",
 			"index_168": "Obtenga más información",
-			"index_169": "Lea y acepte el riesgo"
+			"index_169": "Lea y acepte el riesgo",
+			"Ssl": {
+				"index_1": "Solicite e implementa un certificado SSL seguro para el panel a través del Centro de Gestión de Dominio, admite la renovación automática antes de vencer",
+				"index_2": "Método de aplicación",
+				"index_3": "A través del Centro de Gestión de Dominio",
+				"index_4": "Dominio del panel",
+				"index_5": "Ingrese su dominio de panel",
+				"index_6": "{0} está conectado al centro de administración de dominio y se puede instalar automáticamente",
+				"index_7": "{0} no está conectado al centro de administración de dominio y la instalación automática no es posible",
+				"index_8": "Conectar ahora",
+				"index_9": "Instalar certificado ahora",
+				"index_10": "Por favor ingrese un dominio",
+				"index_11": "Certificado instalado correctamente",
+				"index_12": "Controlar"
+			}
 		},
 		"Alarm": {
 			"index_1": "Agregar tarea de alarma",

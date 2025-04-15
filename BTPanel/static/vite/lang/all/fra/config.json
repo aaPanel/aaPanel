@@ -395,5 +395,17 @@
 	"71ab9f0eaf2b2e26fe8dd49ee645130a": "Veuillez saisir le nombre de sauvegardes",
 	"47981faddcaafb488a560d008ece8f70": "Si la base de données utilisée par le panneau est corrompue, vous ne pourrez pas récupérer la base de données du panneau corrompu",
 	"4e7c4b436aa01fc3feaea5fb7a4ca328": "Désactiver la sauvegarde du panneau",
-	"d70258b20b78a647f41d38fb5b14ef0b": "La sauvegarde automatique n'inclut pas les données du site Web et les données MySQL"
+	"d70258b20b78a647f41d38fb5b14ef0b": "La sauvegarde automatique n'inclut pas les données du site Web et les données MySQL",
+	"f651ba13b7bce517cc8f193c36d7e6cd": "Demandez et déployez un certificat SSL sécurisé pour le panneau via le Domain Management Center, prend en charge le renouvellement automatique avant l'expiration",
+	"510720a4322dc108c343c4039cceea01": "Méthode d'application",
+	"512aca9f709d3b54b3707d2e10c27111": "Via le centre de gestion du domaine",
+	"380e62c738887cac147b3d6928fed220": "Domaine de panneau",
+	"59740394472eae5da4679e0e21cc2f5a": "Veuillez saisir le domaine de votre panneau",
+	"4dd730005c2ee0ab9305a448993bdcea": "{0} est connecté au centre de gestion du domaine et peut être installé automatiquement",
+	"5cb1671bd558064eb25f7139e1d8c118": "{0} n'est pas connecté au centre de gestion du domaine et l'installation automatique n'est pas possible",
+	"c7b4f3712a331620b6f267f2f8c44a2d": "Connectez-vous maintenant",
+	"0c2d54b264e1f2df4c626b6b251e1510": "Installez le certificat maintenant",
+	"ae0d29aefa93b5d13f406b4c844bf5e6": "Veuillez saisir un domaine",
+	"4c835a52a19316b87fbf00485781956f": "Certificat installé avec succès",
+	"060bf2d587991d8f090a1309b285291c": "Vérifier"
 }

@@ -260,7 +260,21 @@
 			"index_166": "Kedaluwarsa",
 			"index_167": "Periksa detail",
 			"index_168": "Pelajari lebih lanjut",
-			"index_169": "Harap baca dan setujui risikonya"
+			"index_169": "Harap baca dan setujui risikonya",
+			"Ssl": {
+				"index_1": "Mengajukan dan menggunakan sertifikat SSL yang aman untuk panel melalui Pusat Manajemen Domain, mendukung pembaruan otomatis sebelum kedaluwarsa",
+				"index_2": "Metode aplikasi",
+				"index_3": "Melalui Pusat Manajemen Domain",
+				"index_4": "Domain panel",
+				"index_5": "Harap masukkan domain panel Anda",
+				"index_6": "{0} terhubung ke pusat manajemen domain dan dapat diinstal secara otomatis",
+				"index_7": "{0} tidak terhubung ke pusat manajemen domain dan instalasi otomatis tidak mungkin",
+				"index_8": "Terhubung sekarang",
+				"index_9": "Instal sertifikat sekarang",
+				"index_10": "Harap masukkan domain",
+				"index_11": "Sertifikat terinstal dengan sukses",
+				"index_12": "Memeriksa"
+			}
 		},
 		"Alarm": {
 			"index_1": "Tambahkan tugas alarm",

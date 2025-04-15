@@ -1035,6 +1035,7 @@ SetLink
         # try:
         newpassword = get['password']
         username = get['name']
+        # data_name=get['data_name']
         id = get['id']
         if not newpassword:
             # return public.return_msg_gettext(False, 'Database [{}] password cannot be empty',(username,))
@@ -1042,7 +1043,9 @@ SetLink
         re_list = re.findall("[，。？！；：“”‘’（）【】《》￥&\u4e00-\u9fa5]+", newpassword)
         if re_list: return public.return_message(-1, 0, public.lang('The database password cannot contain Chinese characters {}', " ".join(re_list)))
 
-        db_find = public.M('databases').where('id=?', (id,)).find()
+        db_find = public.M('databases').where("id=? AND LOWER(type)=LOWER('mysql')", (id,)).find()
+        if not db_find:
+            return public.return_message(-1, 0, public.lang("db not found!"))
         name = db_find['name']
 
         rep = r"^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
@@ -1062,22 +1065,27 @@ SetLink
         if self.sid:
             m_version = mysql_obj.query('select version();')[0][0]
 
-        if m_version.find('5.7') == 0 or m_version.find('8.0') == 0:
-            accept = self.map_to_list(
-                mysql_obj.query("select Host from mysql.user where User='" + username + "' AND Host!='localhost'"))
+        if not isinstance(m_version, str):
+            public.ExecShell('mysql -V > /www/server/mysql/version_v.pl')
+            m_version = public.readFile('/www/server/mysql/version_v.pl')
+
+        user_result = mysql_obj.query("select * from mysql.user where User='" + username + "'")
+        if not user_result:
+            return public.return_message(-1,0, "User Db Not Found, please Sync ALL And Reset The Password")
+
+        if any(mysql_version in m_version for mysql_version in ['5.7', '8.0', '8.4', '9.0']):
+            accept = self.map_to_list(mysql_obj.query("select Host from mysql.user where User='" + username + "' AND Host!='localhost'"))
             mysql_obj.execute("update mysql.user set authentication_string='' where User='" + username + "'")
             result = mysql_obj.execute("ALTER USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username, newpassword))
             for my_host in accept:
                 mysql_obj.execute("ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % (username, my_host[0], newpassword))
         elif any(mariadb_ver in m_version for mariadb_ver in ['10.5.', '10.4.', '10.6.', '10.7.', '10.11.', '11.3.']):
-            accept = self.map_to_list(
-                mysql_obj.query("select Host from mysql.user where User='" + username + "' AND Host!='localhost'"))
+            accept = self.map_to_list(mysql_obj.query("select Host from mysql.user where User='" + username + "' AND Host!='localhost'"))
             result = mysql_obj.execute("ALTER USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username, newpassword))
             for my_host in accept:
                 mysql_obj.execute("ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % (username, my_host[0], newpassword))
         else:
-            result = mysql_obj.execute(
-                "update mysql.user set Password=password('" + newpassword + "') where User='" + username + "'")
+            result = mysql_obj.execute("update mysql.user set Password=password('" + newpassword + "') where User='" + username + "'")
 
         isError = self.IsSqlError(result)
         if isError != None:
@@ -1088,7 +1096,7 @@ SetLink
         # if result==False: return public.return_msg_gettext(False, public.lang("Failed to modify, database user does not exist!"))
         # 修改SQLITE
         if int(id) > 0:
-            public.M('databases').where("id=?", (id,)).setField('password', newpassword)
+            public.M('databases').where("id=? AND LOWER(type)=LOWER('mysql')", (id,)).setField('password', newpassword)
         else:
             public.M('config').where("id=?", (id,)).setField('mysql_root', newpassword)
             session['config']['mysql_root'] = newpassword

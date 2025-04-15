@@ -11,6 +11,10 @@
 # -------------------------------------------------------------------
 # ACME v2客户端
 # -------------------------------------------------------------------
+from public.hook_import import hook_import
+
+hook_import()
+
 import warnings
 
 warnings.filterwarnings("ignore", message=r".*doesn't\s+match\s+a\s+supported\s+version", module="requests")
@@ -27,6 +31,7 @@ import os
 import sys
 import uuid
 
+sys.stdout.reconfigure(encoding="utf-8")
 os.chdir('/www/server/panel')
 if not 'class/' in sys.path:
     sys.path.insert(0, 'class/')
@@ -79,7 +84,7 @@ class acme_v2:
     _conf_file = 'config/letsencrypt.json'
     _conf_file_v2 = 'config/letsencrypt_v2.json'
     _request_type = 'curl'
-    # ========== dns domian ============
+    # ========== dns domain ============
     _log_path = f"{public.get_panel_path()}/logs/dns_domain_logs"
     _log_file = ""
 
@@ -105,7 +110,7 @@ class acme_v2:
             # 每个ssl独立log显示
             log = self._log_file
         else:
-            # letsencrypt 公共log, 续签之类
+            # letsencrypt 公共log
             log = 'logs/letsencrypt.log'
         f = open(log, mode)
         log_str += "\n"
@@ -566,6 +571,7 @@ class acme_v2:
             # 检查授权信息是否过期
             if time.time() < self._config['orders'][index]['auths'][0]['expires']:
                 return self._config['orders'][index]['auths']
+        # auto_to => file path
         if self._config['orders'][index]['auth_type'] != 'dns':
             site_run_path = self.get_site_run_path(self._config['orders'][index]['domains'])
             if site_run_path: self._config['orders'][index]['auth_to'] = site_run_path
@@ -873,7 +879,6 @@ if ( $well_known != "" ) {
                 # v2
                 self._dns_class = provider.dns_obj
                 self._dns_class.create_dns_record(public.de_punycode(domain), dns_value)
-                self._dns_domains.append({"domain": domain, "dns_value": dns_value})
             else:
                 # 旧调用方式
                 import panelDnsapi
@@ -882,6 +887,10 @@ if ( $well_known != "" ) {
                 limit = True if os.path.exists(cf_limit_api) else False
                 self._dns_class = getattr(panelDnsapi, dns_name)(key, secret, limit)
                 self._dns_class.create_dns_record(public.de_punycode(domain), dns_value)
+
+            self._dns_domains.append(
+                {"domain": domain, "dns_value": dns_value}
+            )
         except Exception as e:
             import traceback
             print(traceback.format_exc())
@@ -931,8 +940,11 @@ if ( $well_known != "" ) {
 
         if "auths" not in self._config['orders'][index]:
             raise Exception(public.lang("Order verification information is missing, please try reapplying!"))
-
         # 开始验证
+        if len(self._config['orders'][index]['auths']):
+            one_part = round(50 / len(self._config['orders'][index]['auths']))
+        else:
+            one_part = 50
         for auth in self._config['orders'][index]['auths']:
             res = self.check_auth_status(auth['url'])  # 检查是否需要验证
             if res.json()['status'] == 'invalid':
@@ -943,6 +955,7 @@ if ( $well_known != "" ) {
                         domain=f"_acme-challenge.{auth['domain'].replace('*.', '')}",
                         value=auth['auth_value'],
                         s_type="TXT",
+                        task_part=one_part,
                     )
                 self.respond_to_challenge(auth)
 
@@ -1499,12 +1512,15 @@ fullchain.pem       Paste into certificate input box
         return domain_name, domain_alt_names
 
     # 检查DNS记录
-    def check_dns(self, domain, value, s_type='TXT'):
+    def check_dns(self, domain, value, s_type='TXT', task_part: int = None):
         self.logger('|-Attempt to verify DNS records locally, '
                     'domain name: {}, type: {} record value: {}'.format(domain, s_type, value))
         time.sleep(10)
         n = 0
         while n < 20:
+            if task_part:  # 进度
+                self._set_task(add_val=round(task_part / 20))
+
             n += 1
             try:
                 import dns.resolver
@@ -2136,7 +2152,7 @@ fullchain.pem       Paste into certificate input box
             args_obj = public.dict_obj()
             if not cron_id:
                 cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo
-                shell = '{} -u /www/server/panel/class/acme_v2.py --renew_v3=1'.format(sys.executable)
+                shell = '{} -u /www/server/panel/class/acme_v2.py --renew_v2=1'.format(sys.executable)
                 public.writeFile(cronPath, shell)
 
                 # 使用随机时间
@@ -2994,9 +3010,12 @@ fullchain.pem       Paste into certificate input box
         except Exception as e:
             public.print_log("error % s" % e)
 
-    def _set_task(self, val: int):
+    def _set_task(self, val: int = None, add_val: int = None):
         if self._task_obj:
-            self._task_obj.task_transfer(set_status=val)
+            if val:
+                self._task_obj.task_transfer(set_status=val)
+            elif add_val:
+                self._task_obj.task_transfer(add=add_val)
 
     # ========================= new ==============================
     def renew_cert_v3(self, index, cycle=30):
@@ -3031,13 +3050,29 @@ fullchain.pem       Paste into certificate input box
                 continue
 
             if ssl.provider_id == 0:
-                write_log(f"|- Domain Subject:【{ssl.subject}】is not bound to the dns-api, skip it...")
-                continue
+                write_log(
+                    f"|- Domain Subject:【{ssl.subject}】is not bound to the dns-api, try to apply, please wait..."
+                )
+                try:
+                    try_res = ssl.try_to_apply_ssl()
+                    write_log(f"|- Domain Subject:【{ssl.subject}】try to apply result: {try_res.get('msg')}...")
+                    # continue
+                except Exception as e:
+                    write_log(e)
+                    continue
 
             provider = DnsDomainProvider.objects.find_one(id=ssl.provider_id)
             if not provider:
-                write_log(f"|- Domain Subject:【{ssl.subject}】The provider api info is not bound, skip it...")
-                continue
+                write_log(
+                    f"|- Domain Subject:【{ssl.subject}】is not found the dns-api info, try to apply, please wait..."
+                )
+                try:
+                    try_res = ssl.try_to_apply_ssl()
+                    write_log(f"|- Domain Subject:【{ssl.subject}】try to apply result: {try_res.get('msg')}...")
+                    # continue
+                except Exception as e:
+                    write_log(e)
+                    continue
 
             write_log(f"|- Domain Subject:【{ssl.subject}】Trying to use DNS verification for renewal!")
             try:
@@ -3051,7 +3086,7 @@ fullchain.pem       Paste into certificate input box
                     write_log(f"|- Domain Subject:【{ssl.subject}】Renewal SSL certificate Successfully!")
                 else:
                     write_log(
-                        f"|- Domain Subject:【{ssl.subject}】Renewal SSL certificate Error: {res.get('msg')[0]}"
+                        f"|- Domain Subject:【{ssl.subject}】Renewal SSL certificate Error: {res.get('msg')}"
                     )
             except Exception as e:
                 write_log(f"|- Domain Subject:【{ssl.subject}】Renewal SSL certificate Failed:{str(e)}")
@@ -3092,17 +3127,17 @@ fullchain.pem       Paste into certificate input box
                 self._set_task(30)
             self.logger(public.lang("|-Verifying domain name.."))
             self.auth_domain(index)
-            self._set_task(50)
+            self._set_task(80)
             self.remove_dns_record()
             self.logger(public.lang("|-Sending CSR.."))
             self.send_csr(index)
-            self._set_task(70)
+            self._set_task(90)
             self.logger(public.lang("|-Downloading certificate.."))
             cert = self.download_cert(index)
-            self._set_task(90)
+            self._set_task(99)
             cert['status'] = True
             cert['msg'] = public.lang("Application successful!")
-            self.logger(public.lang("|-Successful application, deploying to site.."))
+            self.logger(public.lang("|-Successful application!"))
             return cert
         except Exception as ex:
             self.remove_dns_record()

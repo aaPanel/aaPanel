@@ -260,7 +260,21 @@
 			"index_166": "Abgelaufen",
 			"index_167": "Überprüfen Sie die Details",
 			"index_168": "Erfahren Sie mehr",
-			"index_169": "Bitte lesen und dem Risiko zustimmen"
+			"index_169": "Bitte lesen und dem Risiko zustimmen",
+			"Ssl": {
+				"index_1": "Beantragen und bereitstellen Sie ein sicheres SSL -Zertifikat für das Panel über das Domain Management Center und unterstützt die automatische Erneuerung vor Ablauf",
+				"index_2": "Anwendungsmethode",
+				"index_3": "Durch Domain Management Center",
+				"index_4": "Panel -Domäne",
+				"index_5": "Bitte geben Sie Ihre Panel -Domain ein",
+				"index_6": "{0} ist mit dem Domänenverwaltungszentrum verbunden und kann automatisch installiert werden",
+				"index_7": "{0} ist nicht mit dem Domänenverwaltungszentrum verbunden, und die automatische Installation ist nicht möglich",
+				"index_8": "Verbinden Sie sich jetzt",
+				"index_9": "Zertifikat jetzt installieren",
+				"index_10": "Bitte geben Sie eine Domain ein",
+				"index_11": "Zertifikat erfolgreich installiert",
+				"index_12": "Überprüfen"
+			}
 		},
 		"Alarm": {
 			"index_1": "Alarmaufgabe hinzufügen",

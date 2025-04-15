@@ -93,7 +93,8 @@ class SSLCertificateTask(BaseTask):
         after_ts = (time.time() + 86400 * days) * 1000
         ssl_obj = DnsDomainSSL.objects.filter(not_after_ts__lt=after_ts)
         for ssl in ssl_obj:
-            domain_list.append(ssl.subject)
+            if ssl:
+                domain_list.append(ssl.subject)
 
         # =============  mail ssl  ========================
         # 有插件 已开启 即将过期

@@ -260,7 +260,21 @@
 			"index_166": "Expirado",
 			"index_167": "Verifique os detalhes",
 			"index_168": "Saber mais",
-			"index_169": "Por favor, leia e concorde com o risco"
+			"index_169": "Por favor, leia e concorde com o risco",
+			"Ssl": {
+				"index_1": "Inscreva -se e implante um certificado SSL seguro para o painel através do Centro de Gerenciamento de Domínio, suporta renovação automática antes da expiração",
+				"index_2": "Método de aplicação",
+				"index_3": "Através do centro de gerenciamento de domínio",
+				"index_4": "Domínio do painel",
+				"index_5": "Por favor, insira o domínio do seu painel",
+				"index_6": "{0} está conectado ao centro de gerenciamento de domínio e pode ser instalado automaticamente",
+				"index_7": "{0} não está conectado ao centro de gerenciamento de domínio e a instalação automática não é possível",
+				"index_8": "Conecte agora",
+				"index_9": "Instale o certificado agora",
+				"index_10": "Por favor, insira um domínio",
+				"index_11": "Certificado instalado com sucesso",
+				"index_12": "Verificar"
+			}
 		},
 		"Alarm": {
 			"index_1": "Adicione a tarefa de alarme",

@@ -260,7 +260,21 @@
 			"index_166": "Expiré",
 			"index_167": "Vérifier les détails",
 			"index_168": "Apprendre encore plus",
-			"index_169": "Veuillez lire et accepter le risque"
+			"index_169": "Veuillez lire et accepter le risque",
+			"Ssl": {
+				"index_1": "Demandez et déployez un certificat SSL sécurisé pour le panneau via le Domain Management Center, prend en charge le renouvellement automatique avant l'expiration",
+				"index_2": "Méthode d'application",
+				"index_3": "Via le centre de gestion du domaine",
+				"index_4": "Domaine de panneau",
+				"index_5": "Veuillez saisir le domaine de votre panneau",
+				"index_6": "{0} est connecté au centre de gestion du domaine et peut être installé automatiquement",
+				"index_7": "{0} n'est pas connecté au centre de gestion du domaine et l'installation automatique n'est pas possible",
+				"index_8": "Connectez-vous maintenant",
+				"index_9": "Installez le certificat maintenant",
+				"index_10": "Veuillez saisir un domaine",
+				"index_11": "Certificat installé avec succès",
+				"index_12": "Vérifier"
+			}
 		},
 		"Alarm": {
 			"index_1": "Ajouter la tâche d'alarme",

@@ -20,7 +20,6 @@ except:
 
 class mailUnsubscribe:
 
-    postfix_recipient_blacklist = '/etc/postfix/blacklist'
     # 获取 SECRET_KEY
     def get_SECRET_KEY(self):
         path = '/www/server/panel/data/mail/jwt-secret.txt'

@@ -777,5 +777,17 @@
 	"39a12d8aa48aae04995ebbbb97e2f878": "Đặt trạng thái cảnh báo, vui lòng đợi ...",
 	"4a8710f59a45e007c5821dd39689741d": "Đặt cảnh báo mặc định, vui lòng đợi ...",
 	"4a5cc4ff524800031c3ef0ad7585caf4": "Kiểm tra, vui lòng đợi ...",
-	"16844eff9b901bf6fbafea78fe2051d7": "Unbinding, xin vui lòng đợi ..."
+	"16844eff9b901bf6fbafea78fe2051d7": "Unbinding, xin vui lòng đợi ...",
+	"f651ba13b7bce517cc8f193c36d7e6cd": "Đăng ký và triển khai Chứng chỉ SSL an toàn cho bảng thông qua Trung tâm quản lý miền, hỗ trợ gia hạn tự động trước khi hết hạn",
+	"510720a4322dc108c343c4039cceea01": "Phương thức ứng dụng",
+	"512aca9f709d3b54b3707d2e10c27111": "Thông qua Trung tâm quản lý miền",
+	"380e62c738887cac147b3d6928fed220": "Miền bảng điều khiển",
+	"59740394472eae5da4679e0e21cc2f5a": "Vui lòng nhập tên miền bảng điều khiển của bạn",
+	"4dd730005c2ee0ab9305a448993bdcea": "{0} được kết nối với Trung tâm quản lý miền và có thể được cài đặt tự động",
+	"5cb1671bd558064eb25f7139e1d8c118": "{0} không được kết nối với Trung tâm quản lý tên miền và không thể cài đặt tự động",
+	"c7b4f3712a331620b6f267f2f8c44a2d": "Kết nối ngay bây giờ",
+	"0c2d54b264e1f2df4c626b6b251e1510": "Cài đặt chứng chỉ ngay bây giờ",
+	"ae0d29aefa93b5d13f406b4c844bf5e6": "Vui lòng nhập một miền",
+	"4c835a52a19316b87fbf00485781956f": "Giấy chứng nhận đã cài đặt thành công",
+	"060bf2d587991d8f090a1309b285291c": "Kiểm tra"
 }

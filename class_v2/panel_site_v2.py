@@ -876,10 +876,14 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         if hasattr(get, "parse_list"):
             try:
                 import threading
-                from ssl_domainModelV2.service import init_sites_dns
+                from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
                 # 添加申请证书, 解析,代理, 仅限同域
                 new_list = [main_domain] + parse_list
-                task = threading.Thread(target=init_sites_dns, args=(new_list,))
+                task_obj = generate_sites_task(main_domain, get.pid)
+                task = threading.Thread(
+                    target=init_sites_dns,
+                    args=(new_list, task_obj, get.pid)
+                )
                 task.start()
                 public.set_module_logs("sys_domain", "AddSite_Auto", 1)
             except Exception as e:
@@ -919,12 +923,27 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
                 Param('whl_page').SafePath(),
                 Param('whl_redirect_admin').SafePath(),
                 Param('package_version').String(),
+                Param('wp_parse_list').String(),  # dns auto
             ], [
                 public.validate.trim_filter(),
             ])
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
+
+        # ===========================================
+        main_domain = {}
+        if hasattr(args, "wp_parse_list"):
+            wp_parse_list = json.loads(args.wp_parse_list)
+            if not len(wp_parse_list):
+                return public.fail_v2("domain names not found")
+            main_domain = wp_parse_list.pop(0)
+            args.webname = json.dumps({
+                "domain": main_domain.get("domain").strip(),
+                "domainlist": [x.get("domain", "") for x in wp_parse_list],
+                "count": len(wp_parse_list),
+            })
+        # ===========================================
 
         from copy import deepcopy
         args_dup = public.to_dict_obj(deepcopy(args.get_items()))
@@ -939,7 +958,7 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         if int(data.get('databaseStatus', 0)) != 1:
             raise public.HintException(public.lang("Database creation failed. Please check mysql running status and try again. {}".format(data.get('databaseErrorMsg', ''))))
 
-        return self.deploy_wp(public.to_dict_obj({
+        result = self.deploy_wp(public.to_dict_obj({
             'domain': json.loads(args.webname).get('domain', ''),
             'weblog_title': args.weblog_title,
             'language': args.get('language', ''),
@@ -957,6 +976,25 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             'whl_redirect_admin': args.get('whl_redirect_admin', '404'),
             'package_version': args.get('package_version', None),
         }))
+        # ==================== domain dns ======================
+        if hasattr(args, "wp_parse_list") and result.get("status", 0) == 0:
+            try:
+                import threading
+                from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
+                site_id = data.get("siteId", 0)
+                task_obj = generate_sites_task(main_domain, site_id)
+                task = threading.Thread(
+                    target=init_sites_dns,
+                    args=([main_domain], task_obj, site_id)
+                )
+                task.start()
+                # public.set_module_logs("sys_domain", "AddSite_Auto", 1)
+            except Exception as e:
+                import traceback
+                public.print_log(e)
+                public.print_log(f"error, {e}")
+
+        return result
 
     def _set_redirect(self, get, data):
         try:

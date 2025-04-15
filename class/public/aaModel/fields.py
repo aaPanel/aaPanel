@@ -1,5 +1,5 @@
 # coding: utf-8
-
+import itertools
 import json
 import time
 from collections.abc import Callable
@@ -64,6 +64,7 @@ class aaField(object):
     py_type: type = None
     compare: tuple = None
     serialized: Callable = None
+
     # todo
     # require: bool = False
     # foreign_key: str = None
@@ -270,7 +271,8 @@ class ListField(aaField):
     serialized: Callable = _serialized
     py_type: type = list
     compare: tuple[str] = (
-        "has_element",
+        "contains",
+        "any_contains",
     )
     update: tuple[str] = (
         "append",
@@ -292,8 +294,8 @@ class DictField(aaField):
     serialized: Callable = _serialized
     py_type: type = dict
     compare: tuple[str] = (
-        "has_key",
-        "has_value",
+        # "has_key",
+        # "has_value",
         # "has_key_value",
     )
     update: tuple[str] = (
@@ -360,3 +362,17 @@ class DateTimeStrField(aaField):
             self.default = self._current_timestamp
         elif self.auto_now_add is True:
             self.default = self._current_timestamp
+
+
+COMPARE = tuple(set(
+    itertools.chain(
+        *[
+            StrField.compare,
+            IntField.compare,
+            FloatField.compare,
+            ListField.compare,
+            DictField.compare,
+            DateTimeStrField.compare,
+        ]
+    )
+))

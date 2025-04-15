@@ -1,15 +1,24 @@
 # coding: utf-8
-
+import json
 import uuid
 from functools import reduce
-from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Tuple
+from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator
 
+from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
 from public.sqlite_easy import Db
 
-__all__ = ["aaManager", "Q"]
+__all__ = ["aaManager", "Q", "QueryProperty"]
 
 M = TypeVar("M", bound="aaModel")
+
+
+class QueryProperty:
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, instance, owner):
+        return self.func(owner)
 
 
 class Operator:
@@ -34,92 +43,174 @@ class Operator:
                 "%s's fields %s is not support compare value type: %s" % (self._model_class.__name__, key, val)
             )
 
-    # todo
-    def __json_operator(self, key: str, compare: str, val: Any, sp_compare: tuple):
-        as_name = f"{self._tb}_{key}_je"
-        operate_map = {
-            # ListField
-            "has_element": f"{as_name}.value = {val}",
-            # DictField
-            "has_key": f"{as_name}.key = '{val}'",
-            "has_value": f"{as_name}.value = {val}",
-        }
-        if operate_map.get(compare):
-            self.__check_js_type(key, val)
-            # self._query.join(
-            #     f"json_each({self._tb}.{key}) AS {as_name}",
-            #     operate_map.get(compare),
-            # )
-            self._query.join(
-                f"json_each({self._tb}.{key}) AS {as_name}", operate_map.get(compare)
-            )
-            return "", []
-        else:
-            self._q_error(key, compare, val, sp_compare)
-
-    def __compare_operator(self, key: str, compare: str, val: Any, sp_compare: tuple):
-        def trans(v):
-            try:
-                return f"({v[0]})" if isinstance(v, list) and len(v) == 1 else tuple(v)
-            except TypeError:
-                return v
-
-        operate = {
-            "like": (f"{key} LIKE ?", f"%{val}%"),
-            "gt": (f"{key} > ?", val),
-            "lt": (f"{key} < ?", val),
-            "gte": (f"{key} >= ?", val),
-            "lte": (f"{key} <= ?", val),
-            "ne": (f"{key} != ?", val),
-            "in": (f'{key} IN {trans(val)}', ()),
-            "not_in": (f"{key} NOT IN {trans(val)}", ()),
-            "startswith": (f"{key} LIKE ?", f"{val}%"),
-            "endswith": (f"{key} LIKE ?", f"%{val}")
-        }
-        if operate.get(compare):
-            return operate[compare]
-        else:
-            self._q_error(key, compare, val, sp_compare)
-
-    def __compare_reducer(self, key: str, compare: str, val: Any):
-        sp_compare = getattr(self._fields.get(key), "compare")
-        if sp_compare and compare in sp_compare:
-            if not (self._serializes and self._serializes.get(key)):
-                return self.__compare_operator(key, compare.lower(), val, sp_compare)
-            elif hasattr(self._fields.get(key), "dynamic") and self._serializes.get(key):
-                real_val = self._serializes[key].serialized(value=val, forward=True)
-                return self.__compare_operator(key, compare.lower(), real_val, sp_compare)
+    def __generate_road(self, road):
+        path = "$"
+        for r in road:
+            if r.isdigit():
+                path += f"[{r}]"
             else:
-                self._q_error(key, compare, val, ())
-                # return self.__json_operator(key, compare.lower(), val, sp_compare)
-        else:
-            self._q_error(key, compare, val, sp_compare)
+                path += f".{r}"
+        return path
 
-    def __equal_reducer(self, key: str, val: Any):
-        if self._serializes and key in self._serializes:
-            val = self._serializes[key].serialized(value=val, forward=True)
-        if val is not None:
-            return f"{self._tb}.{key} = ?", [val]
+    def __is_json(self, val: Any):
+        if isinstance(val, (dict, list)):
+            return True, json.dumps(val)
+
+        if isinstance(val, str):
+            val_str = val.strip()
+            if val_str.startswith(("{", "[")) and val_str.endswith(("}", "]")):
+                try:
+                    json.loads(val_str)
+                    return True, val
+                except json.JSONDecodeError:
+                    pass
+        return False, val
+
+    def __compare_operator(self, key: str, compare: str, val: Any, is_json: bool, sp_compare: tuple):
+        def __contains_and_or(v: list, connector: str):
+            if not v:
+                return "1=0", []
+            conditions = []
+            params = []
+            for item in val:
+                if isinstance(item, (dict, list)):
+                    # complicated val
+                    conditions.append(f"instr({key}, ?) > 0")
+                    params.append(json.dumps(item))
+                else:
+                    # simple val
+                    conditions.append(f"EXISTS(SELECT 1 FROM json_each({key}) WHERE value = ?)")
+                    params.append(item)
+            return f" {connector} ".join(conditions), params
+
+        operators = {
+            "gt": (f"{key} > ?", [val]),
+            "lt": (f"{key} < ?", [val]),
+            "gte": (f"{key} >= ?", [val]),
+            "lte": (f"{key} <= ?", [val]),
+            "ne": (f"{key} != ?", [val]),
+            "like": (f"{key} LIKE ?", [f"%{val}%"]),
+            "startswith": (f"{key} LIKE ?", [f"{val}%"]),
+            "endswith": (f"{key} LIKE ?", [f"%{val}"]),
+        }
+        if compare in operators:
+            return operators[compare]
+
+        elif compare in ("contains", "any_contains"):
+            if is_json:
+                try:
+                    val = json.loads(val)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            # list
+            if isinstance(val, list):
+                if compare == "contains":
+                    return __contains_and_or(val, "AND")
+                else:
+                    return __contains_and_or(val, "OR")
+
+            # single
+            elif not isinstance(val, (dict, list)):
+                # simple val
+                return f"EXISTS(SELECT 1 FROM json_each({key}) WHERE value = ?)", [val]
+
+            else:
+                # complicated val
+                return f"instr({key}, ?) > 0", [json.dumps(val)]
+
+        elif compare in ("in", "not_in"):
+            if is_json:
+                try:
+                    val = json.loads(val)
+                except json.JSONDecodeError:
+                    pass
+            placeholders = ", ".join(["?"] * len(val))
+            op = "IN" if compare == "in" else "NOT IN"
+            return f"{key} {op} ({placeholders})", val
+
+        self._q_error(key, compare, val, sp_compare)
+
+    def __compare_reducer(self, key: str, compare: str, road: list, val: Any):
+        sp_compare = getattr(self._fields.get(key), "compare")
+        compare = compare.lower()
+        # 没路径, 正常拦截op
+        # 有路径, 最终字段类型是不确定的, 查询结果不可控
+        if not sp_compare or compare not in [c.lower() for c in sp_compare]:
+            if road:
+                self._q_error(f"{key}__{road}", compare, val, sp_compare)
+            else:
+                self._q_error(key, compare, val, sp_compare)
+
+        is_json, val = self.__is_json(val)
+        if not road:
+            sql, params = self.__compare_operator(
+                f"{self._tb}.{key}", compare, val, is_json, sp_compare
+            )
+            return sql, params
         else:
+            path = self.__generate_road(road)
+            sql, params = self.__compare_operator(
+                f"json_extract({self._tb}.{key}, '{path}')", compare, val, is_json, sp_compare
+            )
+            return sql, params
+
+    def __equal_reducer(self, key: str, road: list, val: Any):
+        is_json, val = self.__is_json(val)
+        if not road:  # normal field
+            if val is not None:
+                if is_json:
+                    return f"json({self._tb}.{key}) = json(?)", [val]
+                return f"{self._tb}.{key} = ?", [val]
+
             return f"{self._tb}.{key} IS NULL", []
 
-    def __split_condition(self, condition: Dict[str, Any]):
-        for k, v in condition.items():
-            key, compare = (k, None) if "__" not in k else k.split("__")
-            if not key or not self._fields.get(key):
-                print("Filter: %s's fields is not found: '%s' it will be pass" % (self._model_class.__name__, k))
-                # raise AttributeError("%s's fields is not found: '%s'" % (self._model_class.__name__, k))
-            else:
-                yield key, compare, v
+        else:  # json field
+            path = self.__generate_road(road)
+            if val is not None:
+                if is_json:
+                    return f"json_extract({self._tb}.{key}, ?) = json(?)", [path, val]
+                return f"json_extract({self._tb}.{key}, ?) = ?", [path, val]
 
-    def reducer_process(self, condition: Dict[str, Any]) -> Tuple[str, tuple]:
-        for key, compare, v in self.__split_condition(condition):
+            return f"json_extract({self._tb}.{key}, ?) IS NULL", [path]
+
+    def __parse_condition(self, condition: Dict[str, Any]):
+        """
+        解析 key, compare, road, val
+        field 字段
+        compare 运算符, None为=
+        road 路径
+        val 值
+        """
+        for k, v in condition.items():
+            parts = k.split("__")
+            field = parts[0]
+
+            if not field or not self._fields.get(field):
+                print("Filter: %s's fields is not found: '%s' it will be pass" % (self._model_class.__name__, k))
+                raise HintException("%s's fields is not found: '%s'" % (self._model_class.__name__, k))
+
+            compare = None
+            roads = []
+            for part in parts[1:]:
+                if part in COMPARE:
+                    compare = part
+                    break
+                roads.append(part)
+
+            yield field, compare, roads, v
+
+    def reducer_process(self, condition: Dict[str, Any]) -> Generator[tuple[str, list[Any] | Any], Any, None]:
+        for key, compare, road, val in self.__parse_condition(condition):
+            if self._serializes and key in self._serializes:
+                val = self._serializes[key].serialized(value=val, forward=True)
+
             if not compare:
-                sql, params = self.__equal_reducer(key=key, val=v)
+                sql, params = self.__equal_reducer(key=key, road=road, val=val)
             else:
-                if v is None:
+                if val is None:
                     raise HintException("do not try to use 'None' value to compare.")
-                sql, params = self.__compare_reducer(key=key, compare=compare, val=v)
+                sql, params = self.__compare_reducer(key=key, compare=compare, road=road, val=val)
+
             if sql:
                 yield sql, params
 
@@ -135,27 +226,41 @@ class Q:
 
     def __init__(self, *args, _connector=None, **kwargs):
         self.children = []
-        if args:
-            self.children.extend(args)  # Q
-        if kwargs:
-            self.children.append(kwargs)  # conditions
         self._connector = _connector or self.AND
+        for arg in args:
+            if isinstance(arg, Q) and arg._connector == self._connector:
+                self.children.extend(arg.children)
+            elif isinstance(arg, (Q, dict)):
+                self.children.append(arg)
+            else:
+                raise HintException(f"unsupported operand type(s) for Q: '{type(arg)}'")
+        if kwargs:
+            self.children.append(kwargs)
 
     def __and__(self, other):
+        if not isinstance(other, Q):
+            raise HintException(f"unsupported operand type(s) for &: 'Q' and '{type(other)}'")
         return Q(self, other, _connector=Q.AND)
 
     def __or__(self, other):
+        if not isinstance(other, Q):
+            raise HintException(f"unsupported operand type(s) for |: 'Q' and '{type(other)}'")
         return Q(self, other, _connector=Q.OR)
 
     def resolve(self, operator, query):
         for child in self.children:
-            with query.where_nest(logic=self._connector) as n:
-                if not isinstance(child, Q):
-                    for s, p in operator.reducer_process(child):
-                        if s:
-                            n.where(s, p)
+            if isinstance(child, dict):
+                for s, p in operator.reducer_process(child):
+                    if s:
+                        query.where(s, p)
+            elif isinstance(child, Q):
+                if child._connector == self._connector:
+                    child.resolve(operator, query)
                 else:
-                    child.resolve(operator, n)
+                    with query.where_nest(logic=self._connector) as n:
+                        child.resolve(operator, n)
+            else:
+                raise HintException(f"Invalid child type: {type(child)}")
 
 
 class QuerySet(Generic[M]):
@@ -168,6 +273,7 @@ class QuerySet(Generic[M]):
         self._tb = self._model_class.__table_name__
         self._query = query
         self._cache = None
+        self._field_filter = None
 
     def __len__(self):
         return len(self.__execute())
@@ -193,7 +299,8 @@ class QuerySet(Generic[M]):
                 new_q.limit(index + 1, index)
                 temp = new_q.find()
                 return self._model_class(
-                    **self._model_class._serialized_data(temp)
+                    _field_filter=self._field_filter,
+                    **self._model_class._serialized_data(temp, self._field_filter)
                 ) if temp else None
         elif isinstance(index, slice):
             if self._cache is not None:
@@ -212,17 +319,17 @@ class QuerySet(Generic[M]):
             try:
                 if len(self._query._SqliteEasy__OPT_FIELD._Field__FIELDS) == 0:
                     self._query.field(f"'{self._tb}'.*")
+
                 self._cache = [
                     self._model_class(
-                        **self._model_class._serialized_data(i)
+                        _field_filter=self._field_filter,
+                        **self._model_class._serialized_data(i, self._field_filter)
                     ) for i in self._query.select()
                 ]
-                return self._cache
             except Exception as e:
                 print("db query error => %s" % str(e))
-                raise PanelError(e)
-        else:
-            return self._cache
+                raise HintException(e)
+        return self._cache
 
     def filter(self, *args: Dict[str, Any] | Q, **kwargs: Dict[str, Any]) -> "QuerySet[M]":
         """
@@ -239,7 +346,7 @@ class QuerySet(Generic[M]):
                     if s:
                         self._query.where(s, p)
             else:
-                raise HintException("args: '%s' must be 'dict'" % args)
+                raise HintException(f"Invalid filter argument: {type(i)}")
         # kwargs
         for s, p in operator.reducer_process(kwargs):
             if s:
@@ -281,8 +388,16 @@ class QuerySet(Generic[M]):
         return self
 
     def fields(self, *args) -> "QuerySet[M]":
-        self._query.field(*(f"{self._tb}.{c}" for c in args))
-        # todo 序列化后出现初始值
+        if not args:
+            return self
+        field_set = set(args)
+        # make suer pk
+        pk = self._model_class.__primary_key__
+        if pk not in field_set:
+            field_set.add(pk)
+        field_set = [f for f in field_set if f in self._model_class.__fields__]
+        self._field_filter = field_set  # model level
+        self._query.field(*(f"{self._tb}.{f}" for f in field_set))  # db level
         return self
 
     def first(self) -> Optional[M]:
@@ -298,7 +413,8 @@ class QuerySet(Generic[M]):
             if not data:
                 return None
             return self._model_class(
-                **self._model_class._serialized_data(data)
+                _field_filter=self._field_filter,
+                **self._model_class._serialized_data(data, self._field_filter)
             )
         else:
             return self._cache[0] if len(self._cache) != 0 else None
@@ -334,7 +450,7 @@ class QuerySet(Generic[M]):
         if not target:
             return 0
         count = 0
-        for i in self._model_class._serialized_data(self._query.select()):
+        for i in self._model_class._serialized_data(self._query.select(), self._field_filter):
             self._model_class(**{**i, **target}).save()
             count += 1
         return count
@@ -478,7 +594,7 @@ class aaMigrate:
         self.__client = Db(model.__db_name__)
         self.__query = None
 
-    def run_migrate(self) -> bool:
+    def run_migrate(self) -> bool | None:
         """
         迁移
         """
@@ -525,7 +641,7 @@ class aaMigrate:
         sql = f"""CREATE TABLE IF NOT EXISTS `{tb_name}` ({field_sql});"""
         return sql
 
-    def __fields_exist(self, add_fields_map: dict = None, del_fields: set = None) -> None:
+    def __fields_exist(self, add_fields_map: dict = None, del_fields: set = None, set_db: set = None) -> None:
         """
         字段处理
         """
@@ -535,25 +651,29 @@ class aaMigrate:
                            f"ADD COLUMN `{k}` {v.field_type} {v.default_val_sql} {self.NULL_MAP.get(v.null)};")
                 self.__query.execute(add_sql)
         else:
-            temp_tb = f"table_{uuid.uuid4().hex}"
-            new = self.__new_tb_transform_sql(temp_tb)
-            if new:
-                try:
-                    self.__query.autocommit(autocommit=False)
-                    self.__query.execute("BEGIN;")
-                    self.__query.execute(new)
-                    new_keys = tuple(self.__model.__fields__.keys())
-                    copy_sql = (f"INSERT INTO `{temp_tb}` {new_keys} "
-                                f"SELECT {', '.join(new_keys)} FROM `{self.__table}`;")
-                    self.__query.execute(copy_sql)
-                    self.__query.execute(f"DROP TABLE `{self.__table}`;")
-                    self.__query.execute(f"ALTER TABLE `{temp_tb}` RENAME TO `{self.__table}`;")
-                    self.__query.commit()
-                except Exception as e:
-                    import traceback
-                    print(traceback.format_exc())
-                    self.__query.rollback()
-                    raise e
+            if set_db:
+                temp_tb = f"table_{uuid.uuid4().hex}"
+                new = self.__new_tb_transform_sql(temp_tb)
+                if new:
+                    try:
+                        self.__query.autocommit(autocommit=False)
+                        self.__query.execute("BEGIN;")
+                        self.__query.execute(new)
+                        # rename fields will be loss old data now
+                        format_keys = ", ".join(
+                            [f"`{k}`" for k in set_db if k not in del_fields]
+                        )
+                        copy_sql = (f"INSERT INTO `{temp_tb}` ({format_keys}) "
+                                    f"SELECT {format_keys} FROM `{self.__table}`;")
+                        self.__query.execute(copy_sql)
+                        self.__query.execute(f"DROP TABLE `{self.__table}`;")
+                        self.__query.execute(f"ALTER TABLE `{temp_tb}` RENAME TO `{self.__table}`;")
+                        self.__query.commit()
+                    except Exception as e:
+                        import traceback
+                        print(traceback.format_exc())
+                        self.__query.rollback()
+                        raise e
 
     def __table_exists(self) -> None:
         """
@@ -571,7 +691,7 @@ class aaMigrate:
             add_fields = set_cur - set_db
             del_fields = set_db - set_cur
             add_fields_map = {k: v for k, v in self.__fields.items() if k in add_fields}
-            self.__fields_exist(add_fields_map, del_fields)
+            self.__fields_exist(add_fields_map, del_fields, set_db)
 
     def __trans_index_key(self, index_info: tuple | str) -> str:
         def __if_raise_error(item: str):
@@ -590,7 +710,7 @@ class aaMigrate:
             raise PanelError("model's index error, should be like ['key1', ('key2', 'key3')]")
         return "(" + col_sql.rstrip(",") + ")"
 
-    def __index_exists(self) -> bool:
+    def __index_exists(self) -> bool | None:
         """
         索引
         """

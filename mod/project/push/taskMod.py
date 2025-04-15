@@ -29,7 +29,7 @@ from mod.base.push_mod import PUSH_DATA_PATH
 def update_mod():
     try:
         with open(UPDATE_VERSION_FILE, 'r') as f:
-            if f.read() == "4":
+            if f.read() == "5":
                 pl = False
             else:
                 pl = True
@@ -44,7 +44,7 @@ def update_mod():
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/ssl_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/domain_blcheck_push_template.json")
         with open(UPDATE_VERSION_FILE, "w") as f:
-            f.write("4")
+            f.write("5")
 
     if not os.path.exists(UPDATE_MOD_PUSH_FILE):
         update_mod_push_msg()

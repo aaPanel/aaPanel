@@ -47,9 +47,9 @@ panel_init(){
         chmod 700 $panel_path/BT-Task
         log_file=$panel_path/logs/error.log
         task_log_file=$panel_path/logs/task.log
-        if [ -f $panel_path/data/ssl.pl ];then
-                log_file=/dev/null
-        fi
+        # if [ -f $panel_path/data/ssl.pl ];then
+        #         log_file=/dev/null
+        # fi
 
         port=$(cat $panel_path/data/port.pl)
 }
@@ -355,12 +355,36 @@ case "$1" in
                 if [ -f $panel_path/data/admin_path.pl ];then
                 	auth_path=$(cat $panel_path/data/admin_path.pl)
                 fi
+                ipv4_address=""
+                ipv6_address=""
                 if [ "$address" = "" ];then
-                	address=$(curl -sS --connect-timeout 10 -m 20 https://www.aapanel.com/api/common/getClientIP)
+                       
+                        ipv4_address=$(curl -4 -sS --connect-timeout 10 -m 15 https://www.aapanel.com/api/common/getClientIP 2>&1)
+                        if [ -z "${ipv4_address}" ];then
+                                ipv4_address=$(curl -4 -sS --connect-timeout 10 -m 15 https://ifconfig.me 2>&1)
+                                if [ -z "${ipv4_address}" ];then
+                                    ipv4_address=$(curl -4 -sS --connect-timeout 10 -m 15 https://www.bt.cn/Api/getIpAddress 2>&1)
+                                fi
+                        fi
+                        IPV4_REGEX="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
+                        if ! [[ $ipv4_address =~ $IPV4_REGEX ]]; then
+                                ipv4_address=""
+                        fi
+                        
+                        ipv6_address=$(curl -6 -sS --connect-timeout 10 -m 15 https://www.aapanel.com/api/common/getClientIP 2>&1)
                         # IPV6_REGEX="^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$"
                         IPV6_REGEX="^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}$"
-                        if [[ $address =~ $IPV6_REGEX ]]; then
-                                address=$(echo "[$address]")
+                        if ! [[ $ipv6_address =~ $IPV6_REGEX ]]; then
+                                ipv6_address=""
+                        else
+                            if [[ ! $ipv6_address =~ ^\[ ]]; then
+                                ipv6_address="[$ipv6_address]"
+                            fi
+                        fi
+
+                        if [ "$address" = "" ] && [ "$ipv4_address" = "" ] && [ "$ipv6_address" = "" ];then
+                            address="SERVER_IP"
+                            echo -e "\033[33mFailed to obtain Internet IP, please use the server Internet IP+PORT to access.\033[0m"
                         fi
                 fi
                 pool=http
@@ -374,8 +398,26 @@ case "$1" in
                 echo -e "=================================================================="
                 echo -e "\033[32maaPanel default info!\033[0m"
                 echo -e "=================================================================="
-                echo  "aaPanel Internet Address: $pool://$address:$port$auth_path"
-                echo  "aaPanel Internal Address: $pool://${LOCAL_IP}:$port$auth_path"
+                #echo  "aaPanel Internet Address: $pool://$address:$port$auth_path"
+                #echo  "aaPanel Internal Address: $pool://${LOCAL_IP}:$port$auth_path"
+
+                if [ "${ipv6_address}" ];then
+                        echo  "aaPanel Internet IPv6 Address: ${pool}://${ipv6_address}:${port}${auth_path}"
+                fi
+                if [ "${ipv4_address}" ];then
+                        echo  "aaPanel Internet IPv4 Address: ${pool}://${ipv4_address}:${port}${auth_path}"
+                fi
+                if [ "${address}" ];then
+                        echo  "aaPanel Internet Address: ${pool}://${address}:${port}${auth_path}"
+                fi
+
+                if [ "${address}" ];then
+                    echo  "aaPanel Internal Address: ${pool}://${address}:${port}${auth_path}"
+                    echo -e "\033[33mNote: After binding a Domain, access is only allowed via the Domain. \nTo unbind the Domain, use: bt 12 \033[0m"
+                else
+                    echo  "aaPanel Internal Address:      ${pool}://${LOCAL_IP}:${port}${auth_path}"
+                fi
+
                 echo -e `$pythonV $panel_path/tools.py username`
                 echo -e "password: $password"
                 echo -e "\033[33mWarning:\033[0m"

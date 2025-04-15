@@ -12,6 +12,8 @@ import time
 
 os.chdir("/www/server/panel")
 sys.path.append('class/')
+
+sys.stdout.reconfigure(encoding="utf-8")
 import public
 
 print('==================================================================')

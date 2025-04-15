@@ -639,6 +639,8 @@ class Automation:
         if not os.path.exists(self.__db_path):
             return
 
+        self.__IS_INIT = True
+
         with self.query() as query:
             query.execute_script('''-- 开启wal模式
 PRAGMA journal_mode = wal;
@@ -667,7 +669,6 @@ create table if not exists `automations` (
 -- 提交事务
 commit;
 ''')
-        self.__IS_INIT = True
 
     def query(self):
         self.__create_tables()

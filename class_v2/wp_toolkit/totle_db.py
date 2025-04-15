@@ -74,6 +74,9 @@ class Sql():
     def __exit__(self, exc_type, exc_value, exc_trackback):
         self.close()
 
+    def __del__(self):
+        self.close()
+
     def __GetConn(self):
         # 取数据库对象
         try:

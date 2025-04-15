@@ -258,11 +258,14 @@ class ssl_info:
             if not cert:
                 return False, "Certificate error, please check if it is the correct PEM format certificate"
             # 使用私钥对消息进行签名
-            signature = private_key.sign(
-                message,
-                padding.PKCS1v15(),
-                hashes.SHA256()
-            )
+            try:
+                signature = private_key.sign(
+                    message,
+                    padding.PKCS1v15(),
+                    hashes.SHA256()
+                )
+            except Exception as e:
+                return True, str(e)
             # 使用证书中的公钥验证签名
             public_key = cert.public_key()
             try:

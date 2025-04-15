@@ -277,41 +277,36 @@ class SSLManger:
         public.M('ssl_info').insert(pdata)  # add default.db ssl_info table
         # ======= save dns domain db ============
         try:
-            from ssl_domainModelV2.model import DnsDomainProvider, DnsDomainSSL
-            provider, account, token = auth_info.get("auth_to", "||").split("|")
-            p_obj = DnsDomainProvider.objects.filter(
-                name=provider, api_user=account, api_key=token
-            ).first()
-            # upload cert maybe have no provider
-            pid = p_obj.id if p_obj and provider != "" else 0
-            # keep the same ssl cert unique
-            # more detail => self.sub_all_cert(key_file, pem_file)
+            from ssl_domainModelV2.model import DnsDomainSSL, account_fix_ssl
+            # upload cert maybe have no provider, pid will be 0
+            pid = account_fix_ssl(pdata)
+            dns = info.get("dns", [])
             for ssl in DnsDomainSSL.objects.filter(
-                    provider_id=pid,
-                    dns=info.get("dns", []),
+                    dns__contains=dns,
                     subject=info.get("subject", "")
             ):
-                if all([
-                    ssl.info.get("issuer") == info.get("issuer", ""),
-                    ssl.info.get("issuer_O") == info.get("issuer_O", ""),
-                    ssl.dns == info.get("dns", []),
-                ]):
-                    ssl.delete()
+                try:
+                    if all([
+                        ssl.info.get("issuer") == info.get("issuer", ""),
+                        ssl.info.get("issuer_O") == info.get("issuer_O", ""),
+                        ssl.not_after > info.get("notAfter", ""),
+                    ]):
+                        # keep the same ssl cert unique
+                        # more detail => self.sub_all_cert(key_file, pem_file)
+                        ssl.delete()
+                except:
+                    continue
             try:
                 date_time = datetime.strptime(info.get("notAfter"), "%Y-%m-%d")
                 not_after_ts = int(time.mktime(date_time.timetuple())) * 1000
             except:
-                not_after_ts = int(
-                    time.mktime(
-                        time.strptime(f"{datetime.now().date() + timedelta(days=30)}", "%Y-%m-%d")
-                    )
-                ) * 1000
+                not_after_ts = 0
 
             DnsDomainSSL(**{
                 "provider_id": pid,
                 "hash": hash_data,
                 "path": "{}/{}".format(SSL_SAVE_PATH, hash_data),
-                "dns": info.get("dns", []),
+                "dns": dns,
                 "subject": info.get("subject", ""),
                 "info": info,
                 "cloud_id": int(cloud_id),
@@ -321,15 +316,14 @@ class SSLManger:
                 "log": log_file,
             }).save()
         except Exception as e:
-            import traceback
-            public.print_log(traceback.format_exc())
-            public.print_log("save dns domain db error: {}".format(e))
+            public.print_log("sys domain ssl save db error: {}".format(e))
         # =======  end dns domain db  ===========
 
         # if isinstance(res_id, str) and res_id.startswith("error"):
         #     raise ValueError(public.lang("db write error"))
+        if isinstance(res_id, int):
+            pdata["id"] = res_id
 
-        pdata["id"] = res_id
         if not os.path.exists(pdata["path"]):
             os.makedirs(pdata["path"], 0o600)
 

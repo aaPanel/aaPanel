@@ -108,21 +108,21 @@ class MailServerDown(BaseTask):
             os.remove(self.push_tip_file)
 
 # 邮局服务异常告警
-class CertExpiry(BaseTask):
-    push_tip_file = "/www/server/panel/data/mail_cert_expiry_send_type.pl"
+class MailDomainQuota(BaseTask):
+    push_tip_file = "/www/server/panel/data/mail_domain_quota_alert_send_type.pl"
 
 
     def __init__(self):
         super().__init__()
-        self.source_name = "mail_server_certificate_expired"
-        self.template_name = "Mail Server certificate expired"
-        self.title = "Your Mail Server certificate expired"
+        self.source_name = "mail_domain_quota_alert"
+        self.template_name = "Your Mail Domain Quota Alert"
+        self.title = "Your Mail Domain Quota Alert"
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         return {}
 
     def get_keyword(self, task_data: dict) -> str:
-        return "mail_server_certificate_expired"
+        return "mail_domain_quota_alert"
 
     def get_push_data(self, task_id: str, task_data: dict) -> Optional[dict]:
         return None
@@ -162,7 +162,7 @@ class ViewMsgFormat(object):
             lambda x: "<span>When your Mail Service is down, an alarm is generated</span>"
         ),
         "3": (
-            lambda x: "<span>When your Mail Server certificate expired, an alarm is generated</span>"
+            lambda x: "<span>When your Mail domain usage exceeds quota, an alarm is generated</span>"
         )
     }
 
