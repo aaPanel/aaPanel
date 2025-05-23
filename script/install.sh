@@ -124,6 +124,27 @@ mkdir -p /www/backup/site
 
 wget -O panel.zip $download_Url/install/src/panel.zip -T 10
 wget -O /etc/init.d/bt $download_Url/install/src/bt.init -T 10
+
+if command -v unzip &>/dev/null; then
+
+else
+	if command -v apt-get &>/dev/null; then
+		sudo apt-get install -y unzip
+	elif command -v yum &>/dev/null; then
+		sudo yum install -y unzip
+	else
+		echo "Error: Unsupported package manager. Please install unzip manually and rerun the script."
+		exit 1
+	fi
+
+	if [ $? -eq 0 ]; then
+		echo "Installation successful. Proceeding with extraction..."
+	else
+		echo "Error: Unable to install unzip. Please install unzip manually and rerun the script."
+		exit 1
+	fi
+fi
+
 if [ -f "$setup_patn/server/panel/data/default.db" ];then
 	if [ -d "/$setup_patn/server/panel/old_data" ];then
 		rm -rf /$setup_patn/server/panel/old_data
