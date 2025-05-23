@@ -296,9 +296,9 @@ export PATH
         if yarn_bin:
             if os.path.exists(package_lock_file): 
                 os.remove(package_lock_file)
-            public.ExecShell(self.get_last_env(nodejs_version) + "cd {} && {} install 2>&1 >> {}".format(project_find['path'],yarn_bin,self._npm_exec_log))
+            public.ExecShell(self.get_last_env(nodejs_version) + "cd {} && {} install >> {} 2>&1".format(project_find['path'],yarn_bin,self._npm_exec_log))
         else:
-            public.ExecShell(self.get_last_env(nodejs_version) + "cd {} && {} install 2>&1 >> {}".format(project_find['path'],npm_bin,self._npm_exec_log))
+            public.ExecShell(self.get_last_env(nodejs_version) + "cd {} && {} install >> {} 2>&1".format(project_find['path'],npm_bin,self._npm_exec_log))
         public.writeFile(self._npm_exec_log,"|-Successify --- Command executed! ---",'a+')
         public.WriteLog(self._log_name, 'Node project: {}, the installation of the dependency package is complete!'.format(project_find['name']))
         if rebuild: # 重新构建已安装模块？
@@ -833,7 +833,7 @@ export PATH
         nodejs_version = project_find['project_config']['nodejs_version']
         npm_bin = self.get_npm_bin(nodejs_version)
 
-        public.ExecShell(self.get_last_env(nodejs_version) + "cd {} && {} rebuild 2>&1 >> {}".format(project_find['path'],npm_bin,self._npm_exec_log))
+        public.ExecShell(self.get_last_env(nodejs_version) + "cd {} && {} rebuild >> {} 2>&1".format(project_find['path'],npm_bin,self._npm_exec_log))
         return True
 
 
@@ -1397,7 +1397,7 @@ export PATH
         return public.return_message(0,0, return_message)
 
 
-    def get_project_pids(self,get = None,pid = None):
+    def get_project_pids(self,get = None,pid = None, without_request = False):
         '''
             @name 获取项目进程pid列表
             @author hwliang<2021-08-10>
@@ -1435,6 +1435,10 @@ export PATH
 
         # 将所有元素转换为整数后进行排序
         sorted_pids = sorted(all_pids, key=convert_to_int)
+
+        if without_request:
+            return sorted_pids
+
         return public.return_message(0,0,sorted_pids)
 
     def get_other_pids(self,pid):
@@ -1611,7 +1615,7 @@ export PATH
             start_cmd = '''{last_env}
 export NODE_PROJECT_NAME="{project_name}"
 cd {project_cwd}
-nohup {node_bin} {project_script} 2>&1 >> {log_file} & 
+nohup {node_bin} {project_script} >> {log_file} 2>&1 & 
 echo $! > {pid_file}
 '''.format(
     project_cwd = project_find['path'],
@@ -1626,7 +1630,7 @@ echo $! > {pid_file}
             start_cmd = '''{last_env}
 export NODE_PROJECT_NAME="{project_name}"
 cd {project_cwd}
-nohup {npm_bin} run {project_script} 2>&1 >> {log_file} &
+nohup {npm_bin} run {project_script} >> {log_file} 2>&1 &
 echo $! > {pid_file}
 '''.format(
     project_cwd = project_find['path'],
@@ -1641,7 +1645,7 @@ echo $! > {pid_file}
             start_cmd = '''{last_env}
 export NODE_PROJECT_NAME="{project_name}"
 cd {project_cwd}
-nohup {project_script} 2>&1 >> {log_file} &
+nohup {project_script} >> {log_file} 2>&1 &
 echo $! > {pid_file}
 '''.format(
     project_cwd = project_find['path'],
@@ -1650,7 +1654,9 @@ echo $! > {pid_file}
     log_file = log_file,
     last_env = last_env,
     project_name = get.project_name
+
 )
+
         script_file = "{}/{}.sh".format(self._node_run_scripts,get.project_name)
 
         # 写入启动脚本
@@ -1664,8 +1670,8 @@ echo $! > {pid_file}
         public.set_own(script_file,project_find['project_config']['run_user'],project_find['project_config']['run_user'])
         public.set_mode(script_file,755)
 
-        # 执行脚本文件
         p = public.ExecShell("bash {}".format(script_file),user=project_find['project_config']['run_user'])
+
         time.sleep(1)
         n = 0
         while n < 5:
@@ -1691,8 +1697,10 @@ echo $! > {pid_file}
             pid = int(public.readFile(pid_file))
         except:
             return public.return_error('Startup failed <br>{}'.format(public.GetNumLines(log_file,20)))
-        pids = self.get_project_pids(pid=pid)
-        if not pids: 
+
+        pids = self.get_project_pids(pid=pid, without_request=True)
+
+        if not pids:
             if os.path.exists(pid_file): os.remove(pid_file)
             return_message=public.return_error('failed to activate<br>{}'.format(public.GetNumLines(log_file,20)))
             del return_message['status']
@@ -1734,7 +1742,7 @@ cd {}
             data = public.readFile(pid_file)
             if isinstance(data,str) and data:
                 pid = int(data)
-                pids = self.get_project_pids(pid=pid)
+                pids = self.get_project_pids(pid=pid, without_request=True)
             else:
                 return_message=public.return_error(public.lang('Project did not start'))
                 del return_message['status']
@@ -2038,7 +2046,7 @@ cd {}
         data=public.readFile(pid_file)
         if isinstance(data,str) and data:
             pid = int(data)
-            pids = self.get_project_pids(pid=pid)
+            pids = self.get_project_pids(pid=pid, without_request=True)
         else:
             return public.return_message(0,0,self.get_project_state_by_cwd(project_name))
         if not pids:
@@ -2245,7 +2253,7 @@ cd {}
         pid_file = "{}/{}.pid".format(self._node_pid_path,project_name)
         if not os.path.exists(pid_file): return False
         pid = public.readFile(pid_file)
-        pids = self.get_project_pids(pid=pid)
+        pids = self.get_project_pids(pid=pid, without_request=True)
         if not pids: return False
         return True
 

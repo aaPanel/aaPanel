@@ -340,6 +340,14 @@ class panelAuth:
             return public.return_message(0, 0,[])
         return public.return_message(0, 0,data['message']['res'])
 
+    def get_voucher_plugin_all(self, get):
+        params = {}
+        params['status'] = '0'
+        data = self.send_cloud('{}/api/user/productVouchers'.format(self.__official_url), params)
+        if data['status']==-1:return data
+        if not data['message']:
+            return public.return_message(0, 0,[])
+        return public.return_message(0, 0,data['message']['res'])
     def create_order_voucher_plugin(self, get):
         # 校验参数
         try:
@@ -569,6 +577,32 @@ class panelAuth:
                 res.append(i)
         return public.return_message(0, 0,res)
 
+    def get_product_auth_all(self, get):
+        # 校验参数
+        try:
+            get.validate([
+                Param('page').Integer(),
+                Param('pageSize').Integer(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        params = {}
+        params['page'] = get.page if 'page' in get else 1
+        params['pageSize'] = get.pageSize if 'pageSize' in get else 15
+        data = self.send_cloud('{}/api/user/productAuthorizes'.format(self.__official_url), params)
+        if not data:
+            return public.return_message(0, 0,[])
+        if 'success' not  in data['message']: return public.return_message(0, 0,[])
+        data = data['message']['res']
+        res = list()
+        for i in data['list']:
+            if i['status'] != 'activated':
+                res.append(i)
+        return public.return_message(0, 0,res)
     def auth_activate(self, get):
         params = {}
         params['serial_no'] = get.serial_no

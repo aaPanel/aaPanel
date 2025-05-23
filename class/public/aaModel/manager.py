@@ -1,8 +1,10 @@
 # coding: utf-8
 import json
+import sqlite3
 import uuid
 from functools import reduce
-from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator
+from itertools import chain
+from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable
 
 from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
@@ -11,6 +13,13 @@ from public.sqlite_easy import Db
 __all__ = ["aaManager", "Q", "QueryProperty"]
 
 M = TypeVar("M", bound="aaModel")
+
+
+def get_flag() -> bool:
+    try:
+        return tuple(map(int, sqlite3.sqlite_version.split("."))) >= (3, 9, 0)
+    except:
+        return False
 
 
 class QueryProperty:
@@ -28,11 +37,83 @@ class Operator:
         self._tb = self._model_class.__table_name__
         self._fields = self._model_class.__fields__
         self._serializes = self._model_class.__serializes__
+        self._flag = get_flag()  # fk flag
 
     def _q_error(self, key: str, act: str, val: Any, sp_act: tuple):
         raise HintException(
             "field: '%s' is not support '%s', you can use: %s" % (key, act, sp_act)
         )
+
+    def _deep_equal(self, obj1: Any, obj2: Any) -> bool:
+        if type(obj1) != type(obj2):
+            return False
+        if isinstance(obj1, dict):
+            if set(obj1.keys()) != set(obj2.keys()):
+                return False
+            return all(self._deep_equal(obj1[k], obj2[k]) for k in obj1)
+        if isinstance(obj1, list):
+            if len(obj1) != len(obj2):
+                return False
+            return all(self._deep_equal(i1, i2) for i1, i2 in zip(obj1, obj2))
+        return obj1 == obj2
+
+    def _deep_equal_in(self, item: Any, container_list: List[Any]) -> bool:
+        for elem in container_list:
+            if self._deep_equal(item, elem):
+                return True
+        return False
+
+    def _python_compare(self, v: Any, op_str: str, q_v: Any) -> bool:
+        try:
+            if op_str == "gt":
+                return v > q_v
+            if op_str == "lt":
+                return v < q_v
+            if op_str == "gte":
+                return v >= q_v
+            if op_str == "lte":
+                return v <= q_v
+            if op_str == "ne":
+                return not self._deep_equal(v, q_v)
+
+            if op_str == "like":
+                return isinstance(v, str) and isinstance(q_v, str) and q_v in v
+            if op_str == "startswith":
+                return isinstance(v, str) and isinstance(q_v, str) and v.startswith(q_v)
+            if op_str == "endswith":
+                return isinstance(v, str) and isinstance(q_v, str) and v.endswith(q_v)
+
+            if op_str == "in":
+                return isinstance(q_v, list) and self._deep_equal_in(v, q_v)
+            if op_str == "not_in":
+                return isinstance(q_v, list) and not self._deep_equal_in(v, q_v)
+
+            if op_str == "contains" or op_str == "any_contains":
+                items_to_search = q_v
+                if not isinstance(items_to_search, list):
+                    items_to_search = [items_to_search]
+                if not items_to_search:  # 如果搜索列表为空
+                    return True if op_str == "contains" else False  # AND(empty)=True, OR(empty)=False
+
+                match_results = []
+                for item in items_to_search:
+                    found = False
+                    if isinstance(v, list):
+                        found = self._deep_equal_in(item, v)
+                    elif isinstance(v, str) and isinstance(item, str):
+                        found = item in v
+                    elif isinstance(v, dict):  # 检查item是否为dict中的值
+                        found = self._deep_equal_in(item, list(v.values()))
+
+                    match_results.append(found)
+
+                return all(match_results) if op_str == "contains" else any(match_results)
+
+        except TypeError:  # 比较不兼容的类型
+            return False
+        except Exception:
+            return False
+        return False
 
     def __check_js_type(self, key: str, val: Any) -> None:
         for t in [str, int]:
@@ -66,21 +147,39 @@ class Operator:
                     pass
         return False, val
 
+    def __navigate_path(self, json_data: Any, road: List[str]) -> tuple[Any, bool]:
+        current_val = json_data
+        for r in road:
+            if isinstance(current_val, dict):
+                if r in current_val:
+                    current_val = current_val[r]
+                else:
+                    return None, False
+            elif isinstance(current_val, list) and r.isdigit():
+                idx = int(r)
+                if 0 <= idx < len(current_val):
+                    current_val = current_val[idx]
+                else:
+                    return None, False
+            else:
+                return None, False
+        return current_val, True
+
     def __compare_operator(self, key: str, compare: str, val: Any, is_json: bool, sp_compare: tuple):
         def __contains_and_or(v: list, connector: str):
             if not v:
-                return "1=0", []
+                return ("1=1" if connector == "AND" else "1=0"), []
             conditions = []
             params = []
-            for item in val:
-                if isinstance(item, (dict, list)):
-                    # complicated val
-                    conditions.append(f"instr({key}, ?) > 0")
-                    params.append(json.dumps(item))
-                else:
+            for item in v:
+                if self._flag is True and not isinstance(item, (dict, list)):
                     # simple val
                     conditions.append(f"EXISTS(SELECT 1 FROM json_each({key}) WHERE value = ?)")
                     params.append(item)
+                else:
+                    # other | complicated val
+                    conditions.append(f"instr({key}, ?) > 0")
+                    params.append(json.dumps(item))
             return f" {connector} ".join(conditions), params
 
         operators = {
@@ -94,6 +193,8 @@ class Operator:
             "endswith": (f"{key} LIKE ?", [f"%{val}"]),
         }
         if compare in operators:
+            if compare == "ne" and self._flag and is_json:
+                return f"NOT (json({key}) = json(?))", [val]
             return operators[compare]
 
         elif compare in ("contains", "any_contains"):
@@ -110,19 +211,19 @@ class Operator:
                     return __contains_and_or(val, "OR")
 
             # single
-            elif not isinstance(val, (dict, list)):
+            elif self._flag is True and not isinstance(val, (dict, list)):
                 # simple val
                 return f"EXISTS(SELECT 1 FROM json_each({key}) WHERE value = ?)", [val]
 
             else:
-                # complicated val
+                # other | complicated val
                 return f"instr({key}, ?) > 0", [json.dumps(val)]
 
         elif compare in ("in", "not_in"):
             if is_json:
                 try:
                     val = json.loads(val)
-                except json.JSONDecodeError:
+                except (json.JSONDecodeError, TypeError):
                     pass
             placeholders = ", ".join(["?"] * len(val))
             op = "IN" if compare == "in" else "NOT IN"
@@ -148,23 +249,59 @@ class Operator:
             )
             return sql, params
         else:
-            path = self.__generate_road(road)
-            sql, params = self.__compare_operator(
-                f"json_extract({self._tb}.{key}, '{path}')", compare, val, is_json, sp_compare
-            )
-            return sql, params
+            if self._flag:
+                path = self.__generate_road(road)
+                sql, params = self.__compare_operator(
+                    f"json_extract({self._tb}.{key}, '{path}')", compare, val, is_json, sp_compare
+                )
+                return sql, params
+
+            if is_json:
+                try:
+                    val = json.loads(val)
+                except:
+                    pass
+            pk_name = self._model_class.__primary_key__
+            q_fork = self._query.fork()
+            db_rows = q_fork.select()
+            matching_pks = []
+            for row_dict in db_rows:
+                field_json_str = row_dict.get(key)
+                if field_json_str is None:
+                    continue
+                if isinstance(field_json_str, str):
+                    try:
+                        current_data = json.loads(field_json_str)
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+                elif isinstance(field_json_str, (dict, list)):
+                    current_data = field_json_str
+                else:
+                    continue
+
+                target_val, path_found = self.__navigate_path(current_data, road)
+                if path_found:
+                    if self._python_compare(target_val, compare, val):
+                        pk_value = row_dict.get(pk_name)
+                        if pk_value is not None:
+                            matching_pks.append(pk_value)
+
+            if matching_pks:
+                placeholders = ",".join(["?"] * len(matching_pks))
+                return f"{self._tb}.{pk_name} IN ({placeholders})", matching_pks
+            else:
+                return "1=0", []
 
     def __equal_reducer(self, key: str, road: list, val: Any):
         is_json, val = self.__is_json(val)
         if not road:  # normal field
             if val is not None:
-                if is_json:
+                if self._flag is True and is_json:
                     return f"json({self._tb}.{key}) = json(?)", [val]
                 return f"{self._tb}.{key} = ?", [val]
 
             return f"{self._tb}.{key} IS NULL", []
-
-        else:  # json field
+        if self._flag is True:
             path = self.__generate_road(road)
             if val is not None:
                 if is_json:
@@ -172,6 +309,37 @@ class Operator:
                 return f"json_extract({self._tb}.{key}, ?) = ?", [path, val]
 
             return f"json_extract({self._tb}.{key}, ?) IS NULL", [path]
+        pk_name = self._model_class.__primary_key__
+        q_fork = self._query.fork()
+        db_rows = q_fork.select()
+        matching_pks = []
+        new_val = json.loads(val) if is_json else val
+        for row in db_rows:
+            field_value = row.get(key)
+            if field_value is None:
+                continue
+            try:
+                if isinstance(field_value, str):
+                    try:
+                        field_value = json.loads(field_value)
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+                elif isinstance(field_value, (dict, list)):
+                    field_value = field_value
+                else:
+                    continue
+                target, path_found = self.__navigate_path(field_value, road)
+                if path_found and self._deep_equal(target, new_val):
+                    pk_value = row.get(pk_name)
+                    if pk_value is not None:
+                        matching_pks.append(pk_value)
+            except:
+                continue
+
+        if matching_pks:
+            placeholders = ",".join(["?"] * len(matching_pks))
+            return f"{self._tb}.{pk_name} IN ({placeholders})", matching_pks
+        return "1=0", []
 
     def __parse_condition(self, condition: Dict[str, Any]):
         """
@@ -225,7 +393,7 @@ class Q:
     OR = "OR"
 
     def __init__(self, *args, _connector=None, **kwargs):
-        self.children = []
+        self.children: list = []
         self._connector = _connector or self.AND
         for arg in args:
             if isinstance(arg, Q) and arg._connector == self._connector:
@@ -314,11 +482,23 @@ class QuerySet(Generic[M]):
         else:
             return None
 
+    def __add__(self, other: "QuerySet") -> Iterable:
+        """
+        合并两个querset
+        :return: 生成器
+        """
+        if not isinstance(other, QuerySet):
+            raise HintException(f"nou support: 'QuerySet' and '{type(other)}'")
+
+        if self._model_class != other._model_class:
+            raise HintException("not the same model class cant be merged")
+        return chain(self.__execute() or [], other.__execute() or [])
+
     def __execute(self) -> Optional[List[M]]:
         if self._cache is None:
             try:
                 if len(self._query._SqliteEasy__OPT_FIELD._Field__FIELDS) == 0:
-                    self._query.field(f"'{self._tb}'.*")
+                    self._query.field(f"`{self._tb}`.*")
 
                 self._cache = [
                     self._model_class(
@@ -331,7 +511,7 @@ class QuerySet(Generic[M]):
                 raise HintException(e)
         return self._cache
 
-    def filter(self, *args: Dict[str, Any] | Q, **kwargs: Dict[str, Any]) -> "QuerySet[M]":
+    def filter(self, *args, **kwargs) -> "QuerySet[M]":
         """
         过滤
         :return: QuerySet
@@ -403,13 +583,12 @@ class QuerySet(Generic[M]):
     def first(self) -> Optional[M]:
         """
         获取第一条数据
-        :return: dict
+        :return: QuerySet
         """
         if self._cache is None:
-            new_q = self._query.fork()
-            if len(new_q._SqliteEasy__OPT_FIELD._Field__FIELDS) == 0:
-                new_q.field(f"'{self._tb}'.*")
-            data = new_q.find()
+            if len(self._query._SqliteEasy__OPT_FIELD._Field__FIELDS) == 0:
+                self._query.field(f"'{self._tb}'.*")
+            data = self._query.find()
             if not data:
                 return None
             return self._model_class(
@@ -666,7 +845,7 @@ class aaMigrate:
                         copy_sql = (f"INSERT INTO `{temp_tb}` ({format_keys}) "
                                     f"SELECT {format_keys} FROM `{self.__table}`;")
                         self.__query.execute(copy_sql)
-                        self.__query.execute(f"DROP TABLE `{self.__table}`;")
+                        self.__query.execute(f"DROP TABLE IF EXISTS `{self.__table}`;")
                         self.__query.execute(f"ALTER TABLE `{temp_tb}` RENAME TO `{self.__table}`;")
                         self.__query.commit()
                     except Exception as e:
@@ -708,7 +887,7 @@ class aaMigrate:
             col_sql = f"`{index_info}`"
         else:
             raise PanelError("model's index error, should be like ['key1', ('key2', 'key3')]")
-        return "(" + col_sql.rstrip(",") + ")"
+        return col_sql.rstrip(",")
 
     def __index_exists(self) -> bool | None:
         """
@@ -717,24 +896,36 @@ class aaMigrate:
         try:
             self.__query.table(self.__table)
             cur = self.__query.query(f"PRAGMA index_list(`{self.__table}`);")
-            if cur:
-                current_index = [x.get("name") for x in cur]
-            else:
-                return False
-            sql = ""
+            current_index = [x.get("name") for x in cur] if cur else []
+            sql_statements = []
             for index_info in self.__model.__index_keys__:
+                """
+                todo
+                index_info 对应字段
+                字段类型不为json: 普通索引
+                如果为list:      分表, 索引, CURD触发, 存在性同步.
+                如果为dict:      路径虚拟列索引
+                复合索引 index_info tuple
+                如果移除索引, 检查上述步骤
+                """
                 col_sql = self.__trans_index_key(index_info)
-                index_name = f"idx_{self.__table}_{'_'.join([col.strip('` ') for col in col_sql.strip('()').split(',')])}"
+                cols = col_sql.split(",")
+                cols = [col.strip("` ") for col in cols]
+                index_name = f"idx_{self.__table}_{'_'.join(cols)}"
+
                 if index_name not in current_index:
-                    idx_sql = f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{self.__table}` {col_sql}; "
-                    sql += idx_sql
+                    idx_sql = f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{self.__table}` ({col_sql}); "
+                    sql_statements.append(idx_sql)
                 else:
                     current_index.remove(index_name)
-            drop = '; '.join([f"DROP INDEX IF EXISTS `{index}`" for index in current_index]) + ';'
-            if drop != ";":
-                sql += drop
-            if sql:
-                self.__query.execute_script(sql)
+
+            for index in current_index:
+                sql_statements.append(f"DROP INDEX IF EXISTS `{index}`;")
+
+            if sql_statements:
+                combined_sql = " ".join(sql_statements)
+                self.__query.execute_script(combined_sql)
+
             return True
         except Exception:
             import traceback

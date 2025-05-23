@@ -69,7 +69,7 @@ class main(safeBase):
   `black_reason` INTEGER
 )'''
 
-            #black_reason 0 手动添加 1 ssh爆破ip 2 aapanel爆破ip 3 ftp爆破ip
+            #black_reason 0 手动添加 1 ssh爆破ip 2 aapanel爆破ip 3 ftp爆破ip 4 历史记录爆破ip
 
             sql.execute(black_white_sql, ())
             sql.close()
@@ -247,7 +247,7 @@ class main(safeBase):
         """
         self._config=self.read_config()
         ssh_info_list=data
-        keys=['journalctl_fail','journalctl_connection',"log_file_fail","log_file_connection"]
+        keys=['journalctl_fail','journalctl_connection','journalctl_invalid_user',"log_file_fail","log_file_connection","log_file_invalid_user"]
         ip_total={}
         limit_time=self._config['based_on_ip']['limit']*60
         now_time=int(time.time())
@@ -274,6 +274,21 @@ class main(safeBase):
                     except: pass
                     
                     ssh_info['service']='sshd'
+                    if ip =="127.0.0.1" and "Connection closed by authenticating user" in line:            
+                        #取ip
+                        try:
+                            ip=line.split(' user ',1)[1].split(' ')[1]
+                        except: pass
+                    #从爆破用户日志取用户
+                    if key in ['journalctl_invalid_user','log_file_invalid_user']:
+                        #取user
+                        try:
+                            user=line.split('Invalid user ',1)[1].split(' ')[0]
+                        except: pass
+
+                    #检测用户是否为空
+                    if user =='':
+                        user='-'
                     ssh_info['ip']=ip
                     ssh_info['user']=user
                     check_result=public.ExecShell('ipset test aapanel.ipv4.blacklist '+ip)[1]
@@ -331,7 +346,7 @@ class main(safeBase):
     """
             
             
-            result = {'journalctl_fail':"",'journalctl_connection':"","log_file_fail":"","log_file_connection":""}
+            result = {'journalctl_fail':"",'journalctl_connection':"",'journalctl_invalid_user':"","log_file_fail":"","log_file_connection":"","log_file_invalid_user":""}
             if os.path.exists("/etc/debian_version"):
                 version = public.readFile('/etc/debian_version').strip()
                 if 'bookworm' in version or 'jammy' in version or 'impish' in version:
@@ -344,6 +359,7 @@ class main(safeBase):
                 if version >= 12:
                     result['journalctl_fail'] = public.ExecShell("journalctl -u ssh --no-pager --since '"+since_time+"'|grep -a 'Failed password for' |grep -v 'invalid'")[0]
                     result['journalctl_connection']=public.ExecShell("journalctl -u ssh --no-pager --since '"+since_time+"'|grep -a 'Connection closed by authenticating user' |grep -a 'preauth'")[0]
+                    result['journalctl_invalid_user']=public.ExecShell("journalctl -u ssh --no-pager --since '"+since_time+"'|grep -a 'sshd' |grep -a 'Invalid user'|grep -v 'Connection closed by'")[0]
                     return result
             for sfile in self.get_ssh_log_files(None):
                 start_timestramp=public.to_date(times=since_time)
@@ -379,6 +395,24 @@ class main(safeBase):
                                 add_result.append(line)
                         add_string='\n'.join(add_result)
                         result['log_file_connection']+=add_string
+                    except:pass
+                    try:
+                        cmd="cat %s|grep -a 'sshd' |grep -a 'Invalid user '|grep -v 'Connection closed by'" % (sfile)
+                        tmp_result= public.ExecShell("cat %s|grep -a 'sshd' |grep -a 'Invalid user'|grep -v 'Connection closed by'" % (sfile))[0].strip()
+                        
+                        add_result=[]
+                        line_list=tmp_result.split('\n')
+                        for line in line_list:
+                            try:
+                                tmp_time=self.format_date_to_timestamp(line[:15])
+                            except:
+                                tmp_time=public.to_date(format="%Y-%m-%dT%H:%M:%S.%f%z",times=line[:32])
+
+                            # print('tmp_time:{}'.format(public.format_date(times=tmp_time)))
+                            if start_timestramp<=tmp_time:
+                                add_result.append(line)
+                        add_string='\n'.join(add_result)
+                        result['log_file_invalid_user']+=add_string
                     except:pass
                 except: pass
             # self.set_ssh_cache(data)
@@ -582,6 +616,8 @@ class main(safeBase):
         # elif get.types == 'ip':
             
         # elif get.types == 'login':
+        #排序
+        result = sorted(result, key=lambda x: x['logintime'], reverse=True)
         #取分页数据
         data = self.get_page(get,result)
         return public.return_message(0,0,data)
@@ -688,7 +724,7 @@ class main(safeBase):
             for ip_info in ip_list:
                 ip=ip_info['ip']
                 ps=ip_info['ps']
-                if ps=='' and len(ip_list)==1 and 'ps' in get:ps=get.ps 
+                if ps=='' and len(ip_list)==1 and 'ps' in get:ps=get.ps
                 if ip=='':continue
                 if 'cron' in get and get.types=='black' and public.M('black_white').where('ip=? and add_type=?', (ip, 'white')).count():
                     # public.print_log('匹配到白名单规则，跳过：{}'.format(ip))

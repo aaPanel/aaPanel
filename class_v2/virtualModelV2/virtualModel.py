@@ -277,6 +277,7 @@ class main():
         public.ExecShell(self.add_permissions)
         public.WriteFile(self.not_accept_port_file,"true")
         public.ExecShell('systemctl start vhost_virtual.service')
+        public.ExecShell('/www/server/v-apache/bin/apachectl graceful')
         os.remove(self.not_accept_port_file)
         # os.system("/etc/init.d/bt restart")
         if self.get_service_status_achieve():
@@ -307,6 +308,7 @@ class main():
         public.ExecShell(self.add_permissions)
         public.WriteFile(self.not_accept_port_file,"true")
         public.ExecShell('systemctl restart vhost_virtual.service')
+        public.ExecShell('/www/server/v-apache/bin/apachectl graceful')
         os.remove(self.not_accept_port_file)
         # os.system("/etc/init.d/bt restart")
         if self.get_service_status_achieve():

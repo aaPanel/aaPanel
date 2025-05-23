@@ -352,7 +352,8 @@
 			"Index_35": "Acesso ao compilador",
 			"Index_36": "Recomenda-se ativar o acesso do compilador de desativar para o recurso de usuários não privilegiados. Isso protegerá melhor o servidor. Quer continuar?",
 			"Index_37": "Baseado em",
-			"Index_38": "Exemplo de comando: ls"
+			"Index_38": "Exemplo de comando: ls",
+			"Index_39": "O IP bloqueado será automaticamente desbloqueado {0} minutos após o bloco."
 		},
 		"WhiteList": {
 			"Index_1": "Endereços IP na lista de permissões sempre podem fazer login no seu servidor",

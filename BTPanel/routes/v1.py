@@ -958,9 +958,9 @@ def auth(pdata=None):
     import panelAuth
     toObject = panelAuth.panelAuth()
     defs = ('free_trial', 'renew_product_auth', 'auth_activate',
-            'get_product_auth', 'get_stripe_session_id',
+            'get_product_auth', 'get_product_auth_all', 'get_stripe_session_id',
             'get_re_order_status_plugin', 'create_plugin_other_order',
-            'get_order_stat', 'get_voucher_plugin',
+            'get_order_stat', 'get_voucher_plugin','get_voucher_plugin_all',
             'create_order_voucher_plugin', 'get_product_discount_by',
             'get_re_order_status', 'create_order_voucher', 'create_order',
             'get_order_status', 'get_voucher', 'flush_pay_status',

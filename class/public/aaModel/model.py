@@ -130,7 +130,7 @@ class aaModel(aaCusModel):
         class _Meta:
             db_name = "default"      默认为 default.db 文件
             table_name = "my_table"  默认为类名驼峰转表名 my_test_model
-            index = [("status", 1)]  索引
+            index = ["status"]  索引
 
     """
     __abstract__: bool = True

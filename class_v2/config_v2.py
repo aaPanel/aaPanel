@@ -493,7 +493,7 @@ class config:
             public.write_log_gettext('User Management', "Edit user {}", (username,))
             return public.return_message(0, 0, public.lang("Setup successfully!"))
         return public.return_message(-1, 0, public.lang("No changes submitted"))
-    
+
     #一键清空面板备份
     def clearBackup(self, get):
         backup_path = '{}/panel'.format(public.get_backup_path())
@@ -538,7 +538,7 @@ class config:
                     if os.path.exists(not_auto_path):
                         return public.return_message(-1, 0, public.lang("Failed to turn on automatic backup of panel data!"))
                     public.WriteLog('TYPE_PANEL', 'Turn on automatic backup of panel data')
-                
+
             if 'limitip' in get:
                 if get.limitip.find('/') != -1:
                     return public.return_message(-1, 0, public.lang("The authorized IP format is incorrect, and the subnet segment writing is not supported"))
@@ -2585,6 +2585,10 @@ class config:
         ]
         result = self.__make_sure_enable_menu(result)
         uid = session.get('uid', 0)
+
+        if session.get("tmp_login"):  # template login all mune
+            return public.return_message(0, 0, sorted(result, key=lambda x: x['sort']))
+
         if uid and uid != 1: # maybe other user
             result = self.__filter_users_menu(uid, menu_init_data, result)
             return public.return_message(0, 0, sorted(result, key=lambda x: x['sort']))
@@ -3679,6 +3683,23 @@ class config:
                     "google": "pt",
                     "title": "Português",
                     "cn": "葡萄牙语"
+                },
+                {
+                    "name": "vie",
+                    "google": "vi",
+                    "title": "Tiếng Việt",
+                    "cn": "越南语"
+                },
+                {
+                    "name": "ind",
+                    "google": "id",
+                    "title": "Bahasa Indonesia",
+                    "cn": "印尼语"
+                }, {
+                    "name": "ru",
+                    "google": "ru",
+                    "title": "Русский",
+                    "cn": "俄语"
                 }
             ]
         }

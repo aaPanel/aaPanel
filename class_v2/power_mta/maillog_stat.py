@@ -1121,7 +1121,7 @@ def aggregate_maillogs():
                         for domain in all_domains:
                             query_nest_1.where_or('s.sender like ?', '%@{}'.format(domain))
 
-                    with query_nest.where_nest('or') as query_nest_2:
+                    with query_nest.where_nest() as query_nest_2:
                         for domain in all_domains:
                             query_nest_2.where_or('rm.recipient like ?', '%@{}'.format(domain))
 
@@ -1296,14 +1296,14 @@ class MailTracker:
 
     def append_tracking_pixel(self):
         if self.__mail_html.find('</body>') > -1:
-            self.__mail_html = self.__mail_html.replace('</body>', '<img src="{}" style="display:none" />'.format(
+            self.__mail_html = self.__mail_html.replace('</body>', '<img src="{}" style="display:none" alt="" />'.format(
                 self.get_tracking_pixel()), 1)
             self.__modified = True
             return
 
         if self.__mail_html.find('</html>') > -1:
             self.__mail_html = self.__mail_html.replace('</html>',
-                                                        '<img src="{}" style="display:none" /></html>'.format(
+                                                        '<img src="{}" style="display:none" alt="" /></html>'.format(
                                                             self.get_tracking_pixel()), 1)
             self.__modified = True
             return

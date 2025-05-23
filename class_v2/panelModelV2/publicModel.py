@@ -13,6 +13,7 @@ import os, sys, re, json, shutil, psutil, time
 from panelModelV2.base import panelBase
 import public, panelTask
 import config_v2 as config
+from script.restart_services import first_time_installed
 
 try:
     from BTPanel import cache,session
@@ -96,6 +97,9 @@ class main(panelBase):
                 except:
                     pass
         data['panel']['backup_info'] = self.get_panel_backup_info()
+
+        # install check for first time
+        first_time_installed(data)
         return public.return_message(0, 0, data)
 
 
@@ -333,5 +337,8 @@ class main(panelBase):
             "s_version": s_version_data.get(name, name),
             "setup": setup
         }
+
+        # install check for first time
+        first_time_installed({name: {"setup": setup}})
         return public.return_message(0, 0,data)
 

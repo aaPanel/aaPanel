@@ -756,6 +756,42 @@ def daemon_panel():
                 logging.info(f'comm file not found for PID {panel_pid}, restarting service...')
                 service_panel('start')
 
+def daemon_service():
+    from script.restart_services import RestartServices, add_daemon
+    try:
+        # remove old deamons
+        from BTPanel import app
+        from crontab_v2 import crontab
+        with app.app_context():
+            old_deamons = public.M('crontab').where("name Like ?", "[Do not delete]%Daemon").select()
+            for i in old_deamons:
+                try:
+                    cron_name = i.get("name")
+                    s_name = cron_name.replace("[Do not delete] ", "").replace(" Daemon", "")
+                    add_daemon(s_name.lower())
+                except:
+                    pass
+                args = public.dict_obj()
+                args.id = i.get("id")
+                crontab().DelCrontab(args)
+            cron_file = "/www/server/cron"
+            for filename in os.listdir(cron_file):
+                filepath = os.path.join(cron_file, filename)
+                if all([
+                    os.path.isfile(filepath),
+                    not filename.endswith(".log"),
+                    "script/restart_services" in (public.readFile(filepath) or ""),
+                ]):
+                    try:
+                        os.remove(filepath)
+                    except:
+                        continue
+    except:
+        pass
+
+    while 1:
+        RestartServices().main()
+        time.sleep(10)
 
 
 def update_panel():
@@ -1731,6 +1767,19 @@ def auto_scan_abnormal_mail():
         time.sleep(7200)
 
 
+# 每天刷新docker app 列表
+def refresh_dockerapps():
+    while True:
+        try:
+
+            from mod.project.docker.app.appManageMod import AppManage
+            AppManage().refresh_apps_list()
+        except Exception as e:
+            # public.print_log(f"每天刷新docker: {str(e)}")
+            pass
+
+        time.sleep(86400)
+
 
 def domain_ssl_service():
     try:
@@ -1750,6 +1799,7 @@ def run_thread():
         "systemTask": systemTask,
         "check502Task": check502Task,
         "daemon_panel": daemon_panel,
+        "daemon_service": daemon_service,
         "restart_panel_service": restart_panel_service,
         "check_panel_ssl": check_panel_ssl,
         "update_software_list": update_software_list,
@@ -1770,6 +1820,7 @@ def run_thread():
         "auto_scan_abnormal_mail": auto_scan_abnormal_mail,  # 每两小时执行一次 自动扫描异常邮箱
         "mailsys_update_usage": mailsys_update_usage,  # 12h 邮局更新域名邮箱使用量
         "mailsys_quota_alarm": mailsys_quota_alarm,  # 2h 邮件域名邮箱使用限额告警
+        "refresh_dockerapps": refresh_dockerapps,
         "maillog_event": maillog_event,
         "aggregate_maillogs": aggregate_maillogs_task,
         # "print_malloc": print_malloc_thread,

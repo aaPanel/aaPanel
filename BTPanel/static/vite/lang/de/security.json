@@ -352,7 +352,8 @@
 			"Index_35": "Compiler -Zugang",
 			"Index_36": "Es wird empfohlen, den Deaktivierungs-Compiler-Zugriff für nicht-privilegierte Benutzerfunktionen einzuschalten. Dies wird den Server besser sichern. Willst du weitermachen?",
 			"Index_37": "Bezogen auf",
-			"Index_38": "Beispielbefehl: ls"
+			"Index_38": "Beispielbefehl: ls",
+			"Index_39": "Die blockierte IP wird automatisch abgeschlossen {0} Minuten nach dem Block."
 		},
 		"WhiteList": {
 			"Index_1": "IP -Adressen auf dem Whitelist können sich jederzeit bei Ihrem Server anmelden",

@@ -352,5 +352,6 @@
 	"3de9e6cb642e9291ae61659aa92da633": "Chemin de commande",
 	"a559b87068921eec05086ce5485e9784": "Modèle",
 	"d08ccf52b4cdd08e41cfb99ec42e0b29": "Autorisation",
-	"7f090bbab1cc7f9c08bf4e54d932d3c0": "Modifier"
+	"7f090bbab1cc7f9c08bf4e54d932d3c0": "Modifier",
+	"2213692c8314b2b43652534f2f38b09c": "L'IP bloquée sera automatiquement débloqué {0} minutes après le bloc."
 }

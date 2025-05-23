@@ -6,6 +6,8 @@
 # +-------------------------------------------------------------------
 # | Author: 沐落 <cjx@aapanel.com>
 # +-------------------------------------------------------------------
+# TODO panel_dns_api_v2.py 废弃
+
 import public,os,sys,json,time,random
 import requests
 from OpenSSL import crypto

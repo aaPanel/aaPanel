@@ -352,7 +352,8 @@
 			"Index_35": "Akses Kompiler",
 			"Index_36": "Disarankan untuk mengaktifkan akses kompiler nonaktifkan untuk fitur pengguna yang tidak istimewa. Ini akan lebih mengamankan server. Ingin melanjutkan?",
 			"Index_37": "Berdasarkan",
-			"Index_38": "Contoh Perintah: ls"
+			"Index_38": "Contoh Perintah: ls",
+			"Index_39": "IP yang diblokir akan secara otomatis tidak diblokir {0} menit setelah blok."
 		},
 		"WhiteList": {
 			"Index_1": "Alamat IP di daftar putih selalu dapat masuk ke server Anda",

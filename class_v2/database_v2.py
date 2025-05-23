@@ -1690,7 +1690,7 @@ SetLink
             return public.fail_v2('Failed to obtain migration information!')
 
         if os.path.exists("/www/server/panel/config/db_dir_cp_status.pl"):
-            return public.success_v2('DATABASE_MOVE_SUCCESS')
+            return public.success_v2('Database move success')
 
         try:
             DB_DIR_CP_INFO = json.loads(public.ReadFile("/www/server/panel/config/db_dir_cp_info.json"))

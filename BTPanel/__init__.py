@@ -264,7 +264,7 @@ def request_check():
                 return abort(403)
             if not public.user_router_authority():
                 return abort(403)
-    if request.method not in ['GET', 'POST']: return abort(404)
+    if request.method not in ['GET', 'POST', 'HEAD']: return abort(404)
     g.request_time = time.time()
     g.return_message = False
 
@@ -1625,9 +1625,9 @@ def auth(pdata=None):
     import panelAuth
     toObject = panelAuth.panelAuth()
     defs = ('free_trial', 'renew_product_auth', 'auth_activate',
-            'get_product_auth', 'get_stripe_session_id',
+            'get_product_auth', 'get_product_auth_all','get_stripe_session_id',
             'get_re_order_status_plugin', 'create_plugin_other_order',
-            'get_order_stat', 'get_voucher_plugin',
+            'get_order_stat', 'get_voucher_plugin','get_voucher_plugin_all',
             'create_order_voucher_plugin', 'get_product_discount_by',
             'get_re_order_status', 'create_order_voucher', 'create_order',
             'get_order_status', 'get_voucher', 'flush_pay_status',
@@ -3783,8 +3783,8 @@ def acme_v2(pdata=None):
     # Let's 证书管理
     comReturn = comm.local()
     if comReturn: return comReturn
-    import acme_v3
-    acme_v2_object = acme_v3.acme_v2()
+    import acme_v2
+    acme_v2_object = acme_v2.acme_v2()
     defs = ('get_orders', 'remove_order', 'get_order_find', 'revoke_order',
             'create_order', 'get_account_info', 'set_account_info',
             'update_zip', 'get_cert_init_api', 'get_auths', 'auth_domain',
@@ -4443,6 +4443,7 @@ def panel_data_v2(pdata=None):
     return publicObject(dataObject, defs, None, pdata)
 
 
+# 计划弃置
 @app.route(route_v2 + '/ssl', methods=method_all)
 def ssl_v2(pdata=None):
     # 商业SSL证书申请接口
@@ -4513,6 +4514,45 @@ def ssl_v2(pdata=None):
     return result
 
 
+@app.route(route_v2 + "/business_ssl", methods=method_all)
+def business_ssl(pdata=None):
+    # 商业SSL证书申请接口
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from ssl_domainModelV2.business_ssl import BusinessSSL
+    toObject = BusinessSSL()
+    defs = (
+        'apply_cert_install_pay',
+        'get_verify_result',
+        'download_cert',
+        'get_order_list',
+        'get_order_find',
+        'get_product_list',
+        'apply_cert_order_pay',
+        'get_cert_admin',
+        'apply_order_ca',
+        'check_domain_suitable',
+        'list_business_ssl',
+    )
+    get = get_input()
+
+    if get.action != "download_cert":
+        result = publicObject(toObject, defs, get.action, get)
+        return result
+
+    from io import BytesIO
+    import base64
+    result = toObject.download_cert(get)
+    # {'success': False, 'res': '[code: 0] no data [file: /www/wwwroot/192.168.1.139/app/Api/Cert/controllers/Cert.php] [line: 955]', 'nonce': 1706498844}
+    fp = BytesIO(base64.b64decode(result['res']['data']))
+    return send_file(
+        fp,
+        download_name=result['res']['filename'],
+        as_attachment=True,
+        mimetype='application/zip',
+    )
+
+
 @app.route(route_v2 + '/ssl_domain', methods=method_all)
 def domain_v2(pdata=None):
     # 域名管理
@@ -4520,6 +4560,7 @@ def domain_v2(pdata=None):
     if comReturn: return comReturn
     from ssl_domainModelV2.api import DomainObject
     defs = (
+        "get_sites",
         "sync_dns_info",
         "get_dns_support",
         "create_dns_api",
@@ -4534,18 +4575,18 @@ def domain_v2(pdata=None):
         "list_ssl_info",
         "download_cert",
         "renew_cert",
+        "manual_apply_check",
+        "manual_apply_vaild",
         "apply_new_ssl",
         "upload_cert",
         "switch_auto_renew",
         "switch_ssl_alarm",
         "cert_domain_list",
         "cert_deploy_sites",
-        # "cert_deploy_mails",
-        # "cert_deploy_panel",
+        "cert_deploy_mails",
+        "cert_deploy_panel",
         "remove_cert",
-        # 接口改名
-        # "check_domain_automatic",
-        "add_site_check",
+        "check_domain_automatic",
         "ssl_tasks_status",
         "get_panel_domain",
         "set_panel_domain_ssl",
@@ -4620,9 +4661,9 @@ def auth_v2(pdata=None):
     import panel_auth_v2
     toObject = panel_auth_v2.panelAuth()
     defs = ('free_trial', 'renew_product_auth', 'auth_activate',
-            'get_product_auth', 'get_stripe_session_id',
+            'get_product_auth', 'get_product_auth_all','get_stripe_session_id',
             'get_re_order_status_plugin', 'create_plugin_other_order',
-            'get_order_stat', 'get_voucher_plugin',
+            'get_order_stat', 'get_voucher_plugin','get_voucher_plugin_all',
             'create_order_voucher_plugin', 'get_product_discount_by',
             'get_re_order_status', 'create_order_voucher', 'create_order',
             'get_order_status', 'get_voucher', 'flush_pay_status',
@@ -6177,6 +6218,7 @@ def wp_login(site_id: int, wp_site_type: str = 'local'):
 
 @app.route('/v2/pmta/<enc_str>', methods=method_get)
 def mail_campaign_handler(enc_str: str):
+    g.api_request = True
     try:
         from power_mta.maillog_stat import campaign_event_handler
         return campaign_event_handler(enc_str)

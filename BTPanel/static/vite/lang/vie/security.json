@@ -352,7 +352,8 @@
 			"Index_35": "Truy cập trình biên dịch",
 			"Index_36": "Bạn nên bật truy cập trình biên dịch vô hiệu hóa cho tính năng người dùng không có đặc quyền. Điều này sẽ bảo mật tốt hơn máy chủ. Muốn tiếp tục?",
 			"Index_37": "Dựa trên",
-			"Index_38": "Lệnh ví dụ: LS"
+			"Index_38": "Lệnh ví dụ: LS",
+			"Index_39": "IP bị chặn sẽ được tự động bỏ chặn {0} phút sau khi khối."
 		},
 		"WhiteList": {
 			"Index_1": "Địa chỉ IP trên danh sách trắng luôn có thể đăng nhập vào máy chủ của bạn",

@@ -352,7 +352,8 @@
 			"Index_35": "Compiler Access",
 			"Index_36": "It is recommended to turn on the Disable compiler access for non-privileged users feature. This will better secure the server. Want to continue?",
 			"Index_37": "Based on",
-			"Index_38": "Example command: ls"
+			"Index_38": "Example command: ls",
+			"Index_39": "The blocked IP will be automatically unblocked {0} minutes after the block."
 		},
 		"WhiteList": {
 			"Index_1": "IP addresses on the whitelist can always log in to your server",

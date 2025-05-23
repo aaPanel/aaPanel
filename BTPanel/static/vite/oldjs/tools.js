@@ -1764,6 +1764,13 @@ var bt_tools = {
 				var that = this;
 				if (this.el) {
 					$(this.el).html(this.$reader_content());
+					if ($('#editCrontabForm .bt_multiple_select_updown').length > 0) {
+						var height = $('#editCrontabForm .bt_multiple_select_updown').parent().height();
+						$('#editCrontabForm .line:eq(3) .tname').css({
+							height: height + 'px',
+							'line-height': height + 'px',
+						});
+					}
 					this.$event_bind();
 				}
 			},
@@ -1895,7 +1902,12 @@ var bt_tools = {
 									'/><span class="vertical_middle">' +
 									item.title +
 									'</span></label>';
-								if (!(typeof item.disabled != 'undefined' && item.disabled)) {
+								if (typeof item.disabled != 'undefined' && item.disabled) {
+									//禁止复选框    同时可设置class:'check_disabled',使鼠标手为禁止状态
+								} else {
+									that.$check_event_bind(_event + '_label', {
+										click: { type: 'checkbox_icon', config: item },
+									});
 									that.$check_event_bind(_event, {
 										input: {
 											type: 'checkbox',
@@ -1906,12 +1918,27 @@ var bt_tools = {
 								}
 								break;
 							case 'radio':
-                $.each(item.list,function(keys,rItem){
-                  var radioRandom = _event+'_radio_'+keys
-                  html+= '<span class="form-radio"><input type="radio" name="'+item.name+'" '+(_value == rItem.value ? 'checked': '')+' id="'+radioRandom+'" class="'+radioRandom+'" value="'+rItem.value+'"><label for="'+radioRandom+'" class="mb0">'+rItem.title+'</span>'
-                  that.$check_event_bind(radioRandom, {'input': {type: 'radio', config: item, event: item.event}})
-                })
-                break;
+								$.each(item.list, function (keys, rItem) {
+									var radioRandom = _event + '_radio_' + keys;
+									html +=
+										'<span class="form-radio"><input type="radio" name="' +
+										item.name +
+										'" ' +
+										(_value == rItem.value ? 'checked' : '') +
+										' id="' +
+										radioRandom +
+										'" class="' +
+										radioRandom +
+										'" value="' +
+										rItem.value +
+										'"><label for="' +
+										radioRandom +
+										'" class="mb0">' +
+										rItem.title +
+										'</span>';
+									that.$check_event_bind(radioRandom, { input: { type: 'radio', config: item, event: item.event } });
+								});
+								break;
 							default:
 								html +=
 									'<input type="' +
@@ -2019,6 +2046,43 @@ var bt_tools = {
 							});
 						}
 						break;
+					case 'multipleSelect':
+						// 使用规则  【配置中必须含有value字段（无需默认值设置空数组）、需要选中的下拉项以数组逗号隔开】
+						html += that.$reader_multipleSelect(item, style, attribute, index);
+						that.$check_event_bind('custom_select', {
+							click: {
+								type: 'custom_select',
+								children: '.bt_select_value',
+							},
+						});
+						that.$check_event_bind('custom_select_item', {
+							click: {
+								type: 'custom_select_item',
+								children: 'li.item',
+							},
+						});
+						that.$check_event_bind('icon_trem_close', {
+							click: {
+								type: 'icon_trem_close',
+								children: '.icon-trem-close',
+							},
+						});
+						break;
+					case 'secondaryMenu': //下拉二级菜单
+						html += that.$reader_secondaryMenu(item, style, attribute, index);
+						that.$check_event_bind('secondary_menu_parent', {
+							'mouseover click': {
+								type: 'secondary_menu_parent',
+								children: '.item-parent',
+							},
+						});
+						that.$check_event_bind('secondary_menu_child', {
+							click: {
+								type: 'secondary_menu_child',
+								children: '.item-child',
+							},
+						});
+						break;
 					case 'select':
 						html += that.$reader_select(item, style, attribute, index);
 						that.$check_event_bind('custom_select', {
@@ -2074,6 +2138,7 @@ var bt_tools = {
 						html += item.boxcontent;
 				}
 				html += item.unit ? '<span class="' + (item.type === 'text-tips' ? 'text-tips' : 'unit') + '">' + item.unit + '</span>' : '';
+				html += item.suffix ? '<span class="text-tips ml10" ' + (item.type === 'select') + '>' + item.suffix + '</span>' : '';
 				html += '</div>';
 				return html;
 			},
@@ -2212,6 +2277,199 @@ var bt_tools = {
 					'</div>'
 				);
 			},
+			/**
+			 * @description 渲染多选下拉，内容方法
+			 */
+			$reader_multipleSelect: function (item, style, attribute, index) {
+				var that = this,
+					list = '',
+					option = '',
+					active = {},
+					mulpActive = [],
+					str = '';
+				if (typeof item.list === 'function') {
+					var event = item.list;
+					event.call(this, this.config.form);
+					item.list = [];
+				}
+				if ($.isArray(item.value)) {
+					mulpActive = item.value;
+				} else {
+					if (!Array.isArray(item.list)) {
+						var config = item.list;
+						bt_tools.send(
+							{
+								url: config.url,
+								data: config.param || config.data || {},
+							},
+							function (res) {
+								if (res.status !== false) {
+									var list = item.list.dataFilter ? item.list.dataFilter(res, that) : res;
+									if (item.list.success) item.list.success(res, that, that.config.form[index], list);
+									item.list = list;
+									if (!item.list.length) {
+										item.disabled = true;
+										layer.msg(item.placeholder || '数据获取为空', { icon: 2 });
+									}
+									that.$replace_render_content(index);
+								} else {
+									bt.msg(res);
+								}
+							}
+						);
+						return false;
+					}
+					if (typeof that.data[item.name] === 'undefined') active = item.list[0];
+					$.each(item.list, function (key, items) {
+						if (items.value === item.value || items.value === that.data[item.name]) {
+							active = items;
+							return false;
+						}
+					});
+				}
+				$.each(item.list, function (key, items) {
+					if ($.isArray(item.value)) {
+						for (var i = 0; i < mulpActive.length; i++) {
+							if (mulpActive.indexOf(items.value) > -1) {
+								active.value = items.value;
+							}
+						}
+					}
+					list +=
+						'<li class="item item1' +
+						_that.$verify(items.value === active.value ? 'active' : '') +
+						' ' +
+						(items.disabled ? 'disabled' : '') +
+						'" title="' +
+						items.title +
+						'">\
+            <span>' +
+						items.title +
+						'</span>\
+            <span class="icon-item-active"></span>\
+          </li>';
+					option += '<option value="' + items.value + '"' + (items.disabled ? 'disabled' : '') + ' ' + _that.$verify(items.value === active.value ? 'selected' : '') + '>' + items.title + '</option>';
+				});
+				for (var i = 0; i < item.list.length; i++) {
+					if (mulpActive.indexOf(item.list[i].value) > -1) {
+						str += '<span class="bt_select_content"><span>' + item.list[i].title + '</span><span class="icon-trem-close"></span></span>';
+					}
+				}
+				var title = !Array.isArray(item.list) ? '获取数据中' : active ? active.title : item.placeholder;
+				return (
+					'<div class="bt_multiple_select_updown bt_select_updown mr10 ' +
+					(item.disabled ? 'bt-disabled' : '') +
+					' ' +
+					+_that.$verify(item['class']) +
+					'" ' +
+					_that.$verify(style, 'style') +
+					' data-name="' +
+					item.name +
+					'">' +
+					'<span class="bt_select_value">' +
+					(item.value.length == 0 ? '<span class="bt_select_content"><span>' + (title || item.placeholder) + '</span><span class="icon-trem-close"></span></span>' : str) +
+					'<div class="icon-down"><svg width="12.000000" height="12.000000" viewBox="0 0 12 5" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><desc>Created with Pixso.</desc><defs></defs><path id="path" d="M0.123291 0.809418L4.71558 5.84385C4.8786 6.02302 5.16846 6.04432 5.33038 5.86389L9.87927 0.783104C10.0412 0.602676 10.04 0.311989 9.87701 0.132816C9.79626 0.0446892 9.68945 0 9.58374 0C9.47693 0 9.36938 0.0459404 9.28827 0.136574L5.02881 4.89284L0.708618 0.15662C0.627869 0.0684967 0.522217 0.0238075 0.415405 0.0238075C0.307434 0.0238075 0.20105 0.0697479 0.119873 0.160381C-0.041626 0.338303 -0.0393677 0.630241 0.123291 0.809418Z" fill-rule="nonzero" fill="#999999"></path></svg></div>\
+            </span>' +
+					'<ul class="bt_select_list">' +
+					(list || '') +
+					'</ul>' +
+					'<select' +
+					attribute +
+					' class="hide" ' +
+					(item.disabled ? 'disabled' : '') +
+					' autocomplete="off" multiple>' +
+					(option || '') +
+					'</select>' +
+					'<div class="bt_select_list_arrow"></div><div class="bt_select_list_arrow_fff"></div>' +
+					'</div>'
+				);
+			},
+			/**
+			 * @description 渲染二级下拉
+			 */
+			$reader_secondaryMenu: function (item, style, attribute, index) {
+				// 规则限制  【通过配置中的data.xx值设置为空，可清除上次选中的内容】
+				// 1.不可通过请求数据来渲染
+				// 2.至少有一个一级内容，一级下拉不可点击
+				var that = this,
+					list = '',
+					active = {};
+				$.each(item.list, function (key, items) {
+					list +=
+						'<li class="item-parent"><div class="item-menu-title" style="' +
+						(function () {
+							for (var i = 0; i < items.child.length; i++) {
+								if (items.child[i].value == item.value || items.child[i].value == that.data[item.name]) {
+									active = items.child[i];
+								}
+								if (items.child[i].value === active.value) {
+									return 'color:#20a53a;';
+								}
+							}
+						})() +
+						'">' +
+						items.title +
+						'</div>' +
+						(function () {
+							var _con = '';
+							if (items.child.length > 0) {
+								_con =
+									'\
+                 <svg style="margin-right: 10px;fill:#999999;" width="5.989136" height="10.000000" viewBox="0 0 5.98914 10" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\
+                 \t<desc>\
+                 \t\t\tCreated with Pixso.\
+                 \t</desc>\
+                 \t<defs/>\
+                 \t<path id="path" d="M0.809448 9.87672L5.84387 5.28442C6.02307 5.12138 6.04431 4.83153 5.86389 4.66962L0.783081 0.120728C0.602661 -0.0411835 0.312012 -0.0400543 0.132812 0.122986C0.0446777 0.203751 0 0.310562 0 0.416229C0 0.523041 0.0458984 0.6306 0.136597 0.711746L4.89282 4.97118L0.156616 9.29137C0.0684814 9.37213 0.0238037 9.4778 0.0238037 9.58461C0.0238037 9.69255 0.0697021 9.79898 0.1604 9.88011C0.338257 10.0416 0.630249 10.0394 0.809448 9.87672Z" fill-rule="nonzero" />\
+                 </svg><div class="item-menu-body-list">\
+								<ul class="">' +
+									(function () {
+										var str = '';
+										$.each(items.child, function (key, child) {
+											str +=
+												'<li class="item-child' +
+												_that.$verify(child.value === active.value ? 'active' : '') +
+												'" title="' +
+												child.title +
+												'" data-value="' +
+												child.value +
+												'"><div class="item-menu-title">' +
+												child.title +
+												'</div></li>';
+										});
+										return str;
+									})() +
+									'</ul></div>';
+							} else {
+								_con = '<span style="top: 0;color: #ccc;">[空]</span>';
+							}
+							return _con;
+						})() +
+						'</li>';
+				});
+				return (
+					'<div class="bt_select_updown bt_seconday_menu" ' +
+					_that.$verify(style, 'style') +
+					' data-name="' +
+					item.name +
+					'">\
+					<span class="bt_select_value"><span class="bt_select_content">' +
+					(!$.isEmptyObject(active) ? active.title : item.placeholder) +
+					'</span>\
+					<div class="icon-down"><svg width="12.000000" height="12.000000" viewBox="0 0 12 5" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><desc>Created with Pixso.</desc><defs></defs><path id="path" d="M0.123291 0.809418L4.71558 5.84385C4.8786 6.02302 5.16846 6.04432 5.33038 5.86389L9.87927 0.783104C10.0412 0.602676 10.04 0.311989 9.87701 0.132816C9.79626 0.0446892 9.68945 0 9.58374 0C9.47693 0 9.36938 0.0459404 9.28827 0.136574L5.02881 4.89284L0.708618 0.15662C0.627869 0.0684967 0.522217 0.0238075 0.415405 0.0238075C0.307434 0.0238075 0.20105 0.0697479 0.119873 0.160381C-0.041626 0.338303 -0.0393677 0.630241 0.123291 0.809418Z" fill-rule="nonzero" fill="#999999"></path></svg></div>\
+					</span>\
+					<ul class="bt_select_list">' +
+					list +
+					'</ul>\
+					<input ' +
+					attribute +
+					' class="hide" value="' +
+					(active.value || '') +
+					'">\
+          <div class="bt_select_list_arrow"></div><div class="bt_select_list_arrow_fff"></div>\
+					</div>'
+				);
+			},
 
 			/**
 			 * @description 替换渲染内容
@@ -2242,6 +2500,10 @@ var bt_tools = {
 				}
 				this.config.form = formConfig;
 				this.$event_bind();
+
+				// 处理复选框重新渲染第一次点击无效
+				formElement.find('.form-checkbox-label').click();
+				formElement.find('.form-checkbox-label').click();
 			},
 
 			/**
@@ -2322,6 +2584,10 @@ var bt_tools = {
 										case 'custom_select_item':
 											config = that.form_config[$(this).parents('.bt_select_updown').attr('data-name')];
 											var item_config = config.list[$(this).index()];
+											var item = $(this).parent().find('.item'),
+												arry = [],
+												_html = '',
+												mulpVal = [];
 											if ($(this).hasClass('disabled')) {
 												$(this).parent().removeClass('show');
 												if (item_config.tips) layer.msg(item_config.tips, { icon: 2 });
@@ -2330,16 +2596,106 @@ var bt_tools = {
 											if (!$(this).hasClass('active') && !$(this).hasClass('disabled')) {
 												var value = item_config.value.toString();
 												$(this).parent().prev().find('.bt_select_content').text($(this).text());
-												$(this).addClass('active').siblings().removeClass('active');
-												$(this).parent().next().val(value);
-												$(this).parent().removeClass('show');
+												$(this).parent().prev().find('.bt_select_content').prop('title', $(this).text());
+												if (config.type != 'multipleSelect') {
+													$(this).addClass('active').siblings().removeClass('active');
+													$(this).parent().next().val(value);
+													$(this).parent().slideUp('fast');
+													$(this).parent().removeClass('show');
+													$('.bt_select_list_arrow').fadeOut(200);
+													$('.bt_select_list_arrow_fff').fadeOut(200);
+												} else {
+													$(this).addClass('active');
+												}
+											} else {
+												if (config.type == 'multipleSelect') {
+													// if($(this).parent().find('.active').length <= 1) return layer.msg('最少选择一个！！！')
+													$(this).removeClass('active');
+												}
 											}
-											that.data[config.name] = value;
+											if (config.type == 'multipleSelect') {
+												for (var i = 0; i < item.length; i++) {
+													if (item.eq(i).hasClass('active')) {
+														arry.push(item.eq(i).text().trim().replace(/\s/g, ''));
+													}
+												}
+												for (var i = 0; i < config.list.length; i++) {
+													if (arry.indexOf(config.list[i].title.trim().replace(/\s/g, '')) > -1) {
+														mulpVal.push(config.list[i].value);
+													}
+												}
+												if (arry.length == 0) {
+													_html += '<span class="bt_select_content_def">' + config.placeholder + '</span>';
+												} else {
+													$(this).parent().prev().find('.bt_select_content_def').remove();
+													for (var i = 0; i < arry.length; i++) {
+														_html += '<span class="bt_select_content"><span>' + arry[i] + '</span><span class="icon-trem-close"></span></span>';
+													}
+												}
+												$(this).parent().prev().find('.bt_select_content').remove();
+												$(this).parent().prev().find('.icon-down').before(_html);
+												$(this).parent().next().val(mulpVal);
+												var height = $(this).parent().parent().parent().height();
+												$(this)
+													.parent()
+													.parent()
+													.parent()
+													.parent()
+													.siblings()
+													.css({
+														height: height + 'px',
+														'line-height': height + 'px',
+													});
+												$(this)
+													.parent()
+													.css('top', height + 12 + 'px');
+												$('.bt_select_list_arrow_fff').css('top', height - 3 + 'px');
+												$('.bt_select_list_arrow').css('top', height - 4 + 'px');
+											}
+											$('.icon-trem-close').click(function () {
+												var str = $(this).siblings().text().trim().replace(/\s/g, '');
+												for (var i = 0; i < item.length; i++) {
+													if (str == item.eq(i).prop('title')) {
+														item.eq(i).click();
+													}
+												}
+												return false;
+											});
+											that.data[config.name] = config.type == 'multipleSelect' ? mulpVal : value;
 											if (items.event) items.event = null;
 											if (config.change) items.event = config.change;
+											ev.stopPropagation();
+											break;
+										case 'icon_trem_close':
+											var str = $(this).siblings().text().trim().replace(/\s/g, ''),
+												item = $(this).parent().parent().siblings('.bt_select_list').find('.item');
+											for (var i = 0; i < item.length; i++) {
+												if (str == item.eq(i).prop('title')) {
+													item.eq(i).click();
+												}
+											}
+											return false;
+											break;
+										case 'secondary_menu_parent':
+											$('.item-menu-title').removeAttr('style');
+											$(this).addClass('down').siblings().removeClass('down').find('.item-menu-body-list').removeClass('show');
+											$(this).siblings().children('svg').css('fill', '#999999');
+											$('.down').children('svg').css('fill', '#666666');
+											if ($(this).find('.item-menu-body-list').length > 0) {
+												$(this).find('.item-menu-body-list').addClass('show').parent().siblings().find('.item-menu-body-list').removeClass('show');
+											}
+											ev.stopPropagation();
+											break;
+										case 'secondary_menu_child':
+											var _value = $(this).attr('data-value');
+											config = that.form_config[$(this).parents('.bt_select_updown').attr('data-name')];
+											that.data[config.name] = _value;
+											if (items.event) items.event = null;
+											if (config.change) items.event = config.change;
+											ev.stopPropagation();
 											break;
 										case 'select_path':
-											bt.select_path('event_' + $(this).prev().attr('name') + '_' + that.random, items.select || '', !items.callback || items.callback.bind(that));
+											bt.select_path('event_' + $(this).prev().attr('name') + '_' + that.random, items.select || '', !items.callback || items.callback.bind(that), items.defaultPath || '');
 											break;
 										case 'checkbox':
 											var checked = $(this).is(':checked');
@@ -2365,15 +2721,19 @@ var bt_tools = {
 			 * @return {object} 表单数据
 			 */
 			$get_form_value: function () {
-				var form = {};
-				this.element.find('input,textarea[disabled="disabled"]').each(function (index, item) {
+				var form = {},
+					ev = this.element;
+				ev.find('input,textarea[disabled="disabled"]').each(function (index, item) {
 					var val = $(this).val();
 					if ($(this).attr('type') === 'checkbox') {
 						val = $(this).prop('checked');
 					}
+					if ($(this).attr('type') === 'radio') {
+						val = ev.find('input[name=' + $(this).attr('name') + ']:radio:checked').val();
+					}
 					form[$(this).attr('name')] = val;
 				});
-				return $.extend({}, this.element.serializeObject(), form);
+				return $.extend({}, ev.serializeObject(), form);
 			},
 
 			/**
@@ -2470,7 +2830,8 @@ var bt_tools = {
 				var form_list = {},
 					form = this.config.form,
 					form_value = this.$get_form_value(),
-					form_element = this.$get_form_element(true);
+					form_element = this.$get_form_element(true),
+					is_verify = true;
 				for (var key = 0; key < form.length; key++) {
 					var item = form[key];
 					if (!Array.isArray(item.group)) item.group = [item.group];
@@ -2479,16 +2840,14 @@ var bt_tools = {
 						var items = item.group[i],
 							name = items.name;
 						if (items.type === 'help') continue;
-						if (typeof items.verify != 'undefined') {
-							var value = items.verify(form_value[name], form_element[name], items, true);
-							if (value === false && form_value[name] !== false) return false;
-							form_list[name] = value;
-						} else {
-							form_list[name] = typeof form_value[name] === 'undefined' && items.disabled ? $('[name="' + name + '"]').val() : form_value[name];
+						if (typeof items.verify == 'function') {
+							var is_verify = items.verify(form_value[name], form_element[name], items, true);
+							is_verify = typeof is_verify == 'boolean' ? false : true;
 						}
 					}
 				}
-				return form_list;
+				if (!is_verify) return is_verify;
+				return form_value;
 			},
 			/**
 			 * @description 提交内容，需要传入url

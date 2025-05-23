@@ -352,7 +352,8 @@
 			"Index_35": "Acceso al compilador",
 			"Index_36": "Se recomienda encender el acceso al compilador Desactive para la función de usuarios no privilegiados. Esto asegurará mejor el servidor. ¿Quieres continuar?",
 			"Index_37": "Residencia en",
-			"Index_38": "Comando de ejemplo: LS"
+			"Index_38": "Comando de ejemplo: LS",
+			"Index_39": "La IP bloqueada se desbloqueará automáticamente {0} minutos después del bloque."
 		},
 		"WhiteList": {
 			"Index_1": "Las direcciones IP en la lista blanca siempre pueden iniciar sesión en su servidor",

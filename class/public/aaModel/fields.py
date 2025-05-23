@@ -14,7 +14,6 @@ __all__ = [
     "IntField",
     "FloatField",
     "BlobField",
-    "BoolField",
     "ListField",
     "DictField",
     "DateTimeStrField",
@@ -230,30 +229,12 @@ class BlobField(aaField):
     py_type: type = bytes
 
 
-@dataclass
-class BoolField(aaField):
-    """
-    Bool field
-    """
-
-    @staticmethod
-    def _serialized(value: bool | int, forward: bool = True) -> bool | int:
-        if forward is True:
-            if value is True:
-                return 1
-            elif value is False:
-                return 0
-        else:
-            if value == 1:
-                return True
-            elif value == 0:
-                return False
-        return value
-
-    default: bool = True
-    field_type: str = "INTEGER"
-    serialized: Callable = _serialized
-    py_type: type = bool
+# @dataclass
+# class BoolField(aaField):
+#     """
+#     Bool field
+#     use Int Field instead
+#     """
 
 
 @dataclass
@@ -271,6 +252,7 @@ class ListField(aaField):
     serialized: Callable = _serialized
     py_type: type = list
     compare: tuple[str] = (
+        "like",
         "contains",
         "any_contains",
     )
@@ -297,6 +279,12 @@ class DictField(aaField):
         # "has_key",
         # "has_value",
         # "has_key_value",
+        "lt",
+        "lte",
+        "gt",
+        "gte",
+        "ne",
+        "like",
     )
     update: tuple[str] = (
         "update",

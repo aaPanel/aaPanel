@@ -504,8 +504,8 @@ class main(databaseBase, panelPgsql):
         elif n == 0:
             # return public.returnMsg(False, public.lang("Sync failed"))
             return public.return_message(-1, 0, public.lang("Sync failed"))
-        # return public.returnMsg(True, 'DATABASE_SYNC_SUCCESS', (str(n),))
-        return public.return_message(0, 0, public.lang("DATABASE_SYNC_SUCCESS {}", n))
+        # return public.returnMsg(True, 'Database sync success', (str(n),))
+        return public.return_message(0, 0, public.lang("Database sync success {}", n))
 
     def ToDataBase(self, find):
         """
@@ -563,8 +563,8 @@ class main(databaseBase, panelPgsql):
                 dbname, dbname, '', '', public.getMsg('INPUT_PS'), time.strftime('%Y-%m-%d %X', time.localtime()),
                 'pgsql', self.sid, db_type)): n += 1
 
-        # return public.returnMsg(True, 'DATABASE_GET_SUCCESS', (str(n),))
-        return public.return_message(0, 0, public.lang("DATABASE_GET_SUCCESS {}", n))
+        # return public.returnMsg(True, 'Database success', (str(n),))
+        return public.return_message(0, 0, public.lang("Database success {}", n))
 
     def ResDatabasePassword(self, args):
         """
@@ -593,9 +593,9 @@ class main(databaseBase, panelPgsql):
         # 修改SQLITE
         public.M('databases').where("id=?", (id,)).setField('password', newpassword)
 
-        public.WriteLog("TYPE_DATABASE", 'DATABASE_PASS_SUCCESS', (find['name'],))
-        # return public.returnMsg(True, 'DATABASE_PASS_SUCCESS', (find['name'],))
-        return public.return_message(0, 0, public.lang("DATABASE_PASS_SUCCESS {}", find['name'],))
+        public.WriteLog("TYPE_DATABASE", 'Database password success', (find['name'],))
+        # return public.returnMsg(True, 'Database password success', (find['name'],))
+        return public.return_message(0, 0, public.lang("Database password success {}", find['name'],))
 
     def get_root_pwd(self, args):
         """

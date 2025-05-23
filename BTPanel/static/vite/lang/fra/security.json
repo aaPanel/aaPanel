@@ -352,7 +352,8 @@
 			"Index_35": "Accès au compilateur",
 			"Index_36": "Il est recommandé d'activer l'accès au compilateur Désactiver pour les utilisateurs non privilégiés. Cela va mieux sécuriser le serveur. Vous voulez continuer?",
 			"Index_37": "Basé sur",
-			"Index_38": "Exemple de commande: ls"
+			"Index_38": "Exemple de commande: ls",
+			"Index_39": "L'IP bloquée sera automatiquement débloqué {0} minutes après le bloc."
 		},
 		"WhiteList": {
 			"Index_1": "Les adresses IP sur la liste blanche peuvent toujours se connecter à votre serveur",

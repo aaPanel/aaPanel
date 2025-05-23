@@ -3050,6 +3050,23 @@ class config:
                         "google": "pt",
                         "title": "Português",
                         "cn": "葡萄牙语"
+                    },
+                    {
+                        "name": "vie",
+                        "google": "vi",
+                        "title": "Tiếng Việt",
+                        "cn": "越南语"
+                    },
+                    {
+                        "name": "ind",
+                        "google": "id",
+                        "title": "Bahasa Indonesia",
+                        "cn": "印尼语"
+                    }, {
+                        "name": "ru",
+                        "google": "ru",
+                        "title": "Русский",
+                        "cn": "俄语"
                     }
                 ]
             }

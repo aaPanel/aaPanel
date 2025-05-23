@@ -73,6 +73,23 @@ if os.path.exists(path):
             "google": "pt",
             "title": "Português",
             "cn": "葡萄牙语"
+        },
+        {
+            "name": "vie",
+            "google": "vi",
+            "title": "Tiếng Việt",
+            "cn": "越南语"
+        },
+        {
+            "name": "ind",
+            "google": "id",
+            "title": "Bahasa Indonesia",
+            "cn": "印尼语"
+        }, {
+            "name": "ru",
+            "google": "ru",
+            "title": "Русский",
+            "cn": "俄语"
         }
     ]
 }
@@ -9160,3 +9177,36 @@ def check_field_exists(db_obj,table_name, field_name):
     except:
         pass
     return False
+
+
+
+def query_dns(domain, dns_type="A", is_root=False):
+    """
+        @name 查询域名DNS解析
+        @author cjxin<2020-12-17>
+        @param domain {string} 被验证的根域名
+        @param dns_type {string} dns记录
+        @param is_root {bool} 是否查询根域名
+        @return void
+    """
+    try:
+        import dns.resolver
+    except:
+        os.system("{} -m pip install dnspython".format(get_python_bin()))
+        import dns.resolver
+
+    if is_root: domain, zone = get_root_domain(domain)
+    try:
+        ret = dns.resolver.query(domain, dns_type)
+        data = []
+        for i in ret.response.answer:
+            for j in i.items:
+                tmp = {
+                    "flags": j.flags,
+                    "tag": j.tag.decode(),
+                    "value": j.value.decode(),
+                }
+                data.append(tmp)
+        return data
+    except:
+        return False

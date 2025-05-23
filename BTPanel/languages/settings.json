@@ -48,6 +48,11 @@
             "google": "id",
             "title": "Bahasa Indonesia",
             "cn": "印尼语"
+        }, {
+            "name": "ru",
+            "google": "ru",
+            "title": "Русский",
+            "cn": "俄语"
         }
     ]
 }

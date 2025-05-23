@@ -1284,6 +1284,18 @@ class AppManage(App):
 
         public.ExecShell("rm -f {}".format(self.installed_json_file))
 
+    # 强制刷新app列表
+    def refresh_apps_list(self,):
+        '''
+            @name 强制刷新app列表
+        '''
+
+        public.ExecShell("rm -f {}".format(self.apps_json_file))
+        public.ExecShell("rm -f {}".format(self.app_tags_file))
+        public.ExecShell("rm -rf {}".format(self.templates_path))
+        self.download_apps_json()
+        self.update_ico()
+
     # 2024/8/2 下午4:47 获取app列表
     def get_apps(self, get):
         '''

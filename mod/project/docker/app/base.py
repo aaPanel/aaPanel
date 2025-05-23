@@ -397,13 +397,15 @@ class App(composeMod):
             compose_ps = self.ps(get)
             is_break = False
             for ps in compose_ps:
-                if ps == "": continue
+                if ps == "":
+                    continue
                 publishers = ps.get("Publishers")
                 for pu in publishers:
                     if int(get.c_port) == int(pu.get("PublishedPort")):
                         is_break = True
                         break
-                if is_break: break
+                if is_break:
+                    break
             else:
                 from safeModel.firewallModel import main as firewall_main
                 get.port = str(get.c_port)
@@ -870,7 +872,8 @@ class App(composeMod):
 
             allow_access = "yes" if i["host_ip"] == "0.0.0.0" else "no" if i["domain"] is None else "yes"
             i["appinfo"].append({"fieldKey": "allow_access", "fieldTitle": "Allow external access", "fieldValue": allow_access})
-            if i["status"] == "created": i["status"] = "initializing"
+            # if i["status"] == "created":
+            #     i["status"] = "initializing"
             if not i in installed_apps:
                 installed_apps.append(i)
 

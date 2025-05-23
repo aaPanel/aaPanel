@@ -5,7 +5,7 @@ import subprocess
 import sys
 import time
 
-import psutil
+import fcntl
 
 os.chdir("/www/server/panel")
 sys.path.insert(0, "class/")
@@ -13,7 +13,20 @@ sys.path.insert(0, "/www/server/panel/")
 
 import public
 
+if not "class_v2" in sys.path:
+    sys.path.insert(0, "/www/server/panel/class_v2")
+from panel_site_v2 import panelSite
+
 SETUP_PATH = public.get_setup_path()
+DATA_PATH = os.path.join(SETUP_PATH, "panel/data")
+
+DAEMON_SERVICE = os.path.join(DATA_PATH, "daemon_service.pl")
+if not os.path.exists(DAEMON_SERVICE):
+    public.writeFile(DAEMON_SERVICE, json.dumps([]))
+
+MANUAL_FLAG = os.path.join(public.get_panel_path(), "data/mod_push_data", "manual_flag.pl")
+if not os.path.exists(MANUAL_FLAG):
+    public.writeFile(MANUAL_FLAG, json.dumps({}))
 
 SERVICES_MAP = {
     "apache": (
@@ -43,65 +56,77 @@ SERVICES_MAP = {
 }
 
 
+def add_daemon(service_name: str) -> bool:
+    if not service_name or service_name not in SERVICES_MAP.keys():
+        return False
+    daemon_list = json.loads(public.readFile(DAEMON_SERVICE))
+    if service_name in daemon_list:
+        return True
+    daemon_list.append(service_name)
+    public.writeFile(DAEMON_SERVICE, json.dumps(list(set(daemon_list))))
+    return True
+
+
+def del_daemon(service_name: str) -> bool:
+    if not service_name:
+        return False
+    try:
+        public.writeFile(DAEMON_SERVICE, json.dumps([
+            x for x in json.loads(public.readFile(DAEMON_SERVICE)) if x != service_name
+        ]))
+    except:
+        return False
+    return True
+
+
+def save_file(path: str, body: str) -> None:
+    try:
+        with open(path, "w+") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.write(body)
+            fcntl.flock(f, fcntl.LOCK_UN)
+    except (IOError, OSError) as _:
+        pass
+
+
+def read_file(path: str) -> dict:
+    try:
+        with open(path, "r") as f:
+            fcntl.flock(f, fcntl.LOCK_SH)
+            content = f.read()
+            fcntl.flock(f, fcntl.LOCK_UN)
+        return json.loads(content) if content else {}
+    except json.JSONDecodeError as _:
+        return {}
+    except (IOError, OSError) as _:
+        return {}
+
+
 def manual_flag(server_name: str = None, open_: str = None) -> dict:
-    import fcntl
-    def save_file(path: str, body: str) -> None:
-        try:
-            with open(path, "w+") as f:
-                fcntl.flock(f, fcntl.LOCK_EX)
-                f.write(body)
-                fcntl.flock(f, fcntl.LOCK_UN)
-        except (IOError, OSError) as e:
-            print("error, %s" % e)
-
-    def read_file(path: str) -> dict:
-        try:
-            with open(path, "r") as f:
-                fcntl.flock(f, fcntl.LOCK_SH)
-                content = f.read()
-                fcntl.flock(f, fcntl.LOCK_UN)
-            return json.loads(content) if content else {}
-        except json.JSONDecodeError as er:
-            print("error, %s" % er)
-            return {}
-        except (IOError, OSError) as e:
-            print("error, %s" % e)
-            return {}
-
-    manual_path = os.path.join(
-        public.get_panel_path(), 'data/mod_push_data', 'manual_flag.json'
-    )
-    if not os.path.exists(manual_path):
-        save_file(manual_path, json.dumps({}))
-        manual = {}
-    else:
-        manual = read_file(manual_path)
+    """人为关闭标记"""
+    manual = read_file(MANUAL_FLAG)
     if server_name and open_ == "stop":
         manual[server_name] = 1
-        save_file(manual_path, json.dumps(manual))
+        save_file(MANUAL_FLAG, json.dumps(manual))
         return manual
     elif server_name and open_ in ["start", "restart"] and manual.get(server_name) == 1:
         manual[server_name] = 0
-        save_file(manual_path, json.dumps(manual))
+        save_file(MANUAL_FLAG, json.dumps(manual))
         return manual
     else:
         return manual
-
-
-def console(body: str):
-    print(public.lang(body))
 
 
 class RestartServices:
     def __init__(self):
-        self.nick_name = original_name
+        self.nick_name = None
         self.serviced = None
         self.pid_file = None
         self.bash = None
 
     def is_support(self) -> bool:
         try:
-            map_info = SERVICES_MAP.get(original_name)
+            map_info = SERVICES_MAP.get(self.nick_name)
             if not map_info:
                 return False
 
@@ -109,11 +134,8 @@ class RestartServices:
 
             if not all([self.serviced, self.pid_file, self.bash]):
                 return False
-            else:
-                return True
-
-        except Exception as e:
-            print("error: %s" % e)
+            return True
+        except:
             return False
 
     def is_install_service(self) -> bool:
@@ -140,91 +162,118 @@ class RestartServices:
             return False
         # sock file
         if self.pid_file.endswith(".sock"):
-            for proc in psutil.process_iter(['pid', 'name', 'connections']):
-                try:
-                    check_list = [self.serviced] if self.serviced != "mysqld" else ["mysqld", "mariadbd"]
-                    for c in check_list:
-                        if c in proc.info['name']:
-                            # noinspection PyDeprecation
-                            for conn in proc.connections(kind='unix'):
-                                if conn.laddr == self.pid_file:
-                                    return True
-
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                    continue
-            return False
+            try:
+                check_list = [self.serviced] if self.serviced != "mysqld" else ["mysqld", "mariadbd"]
+                cmd = f"lsof {self.pid_file} 2>/dev/null | grep -E '{'|'.join(check_list)}'"
+                result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE)
+                return result.returncode == 0
+            except:
+                return False
         else:  # pid file
             try:
                 pid = public.readFile(self.pid_file)
-                pid = int(pid) if pid else 0
-                if pid:
-                    p = psutil.Process(int(pid))
-                    return True if p.is_running() else False
-                else:
+                if not pid:
                     return False
-            except psutil.NoSuchProcess:
-                return False
-            except Exception as e:
-                print("error: %s" % e)
+                pid = int(pid.strip())
+                if not os.path.exists(f"/proc/{pid}"):
+                    return False
+                try:
+                    with open(f"/proc/{pid}/stat", "r") as f:
+                        stat = f.read().split()
+                        return stat[2] != "Z"
+                except:
+                    return False
+            except:
                 return False
 
     def _script(self, act: str) -> None:
         try:
             if act not in ["start", "stop", "restart", "status"]:
                 return
-            console(f"try to {act} [{self.nick_name}]...")
+            # "try to {act} [{self.nick_name}]..."
             bash_path = self.bash if self.bash else f"/etc/init.d/{self.serviced}"
             if self.pid_file.endswith(".sock"):
                 try:
                     subprocess.run([f"rm -f {self.pid_file}"])
                 except FileNotFoundError:
                     pass
-                except Exception as e:
-                    console(str(e))
-            res = subprocess.run(
+                except:
+                    pass
+            subprocess.run(
                 [bash_path, act],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
             )
-            if res.returncode == 0:
-                console(res.stdout)
-            else:
-                console(res.stderr)
         except Exception as e:
             print(str(e))
 
     def main(self):
-        if not self.is_support():
-            console(f"{self.nick_name} is not support...")
-            return
-        if not self.is_install_service():
-            console(f'[{self.nick_name}] is not installed')
-            return
-        if self.is_process_running():
-            manual_flag(original_name, "start")
-            console(f'[{self.nick_name}] is running')
-            return
-        else:
-            console(f"[{self.nick_name}] is not running...\n")
-            if manual_flag().get(original_name) == 1:
-                console(
-                    f'[{self.nick_name}] has been manually stopped, '
-                    f'and this will not affect the daemon service.'
-                    f'\nPlease manually restart the service.'
-                )
-                return
-            else:
-                self._script("start")
-                time.sleep(3)
+        with open(MANUAL_FLAG, 'rb') as fp:
+            fcntl.flock(fp, fcntl.LOCK_SH)
+            check_list = json.loads(public.readFile(DAEMON_SERVICE))
+            manual_info = manual_flag()
+
+            for service in check_list:
+                self.nick_name = service
+                if not self.is_support() or not self.is_install_service():
+                    continue
+
                 if not self.is_process_running():
-                    self._script("restart")
+                    if manual_info.get(self.nick_name) == 1:
+                        # service closed maually, skip
+                        continue
+                    public.WriteLog(
+                        "Service Daemon", f"Service [ {self.nick_name} ] is Not Running, Try to start it..."
+                    )
+                    self._script("start")
+                    time.sleep(5)
+                    if not self.is_process_running():
+                        self._script("restart")
+
+            if manual_info.get(self.nick_name) == 1:
+                # service is running, remove manual flag
+                manual_info[self.nick_name] = 0
+                save_file(MANUAL_FLAG, json.dumps(manual_info))
                 return
+            return
+
+
+def first_time_installed(data: dict) -> None:
+    """
+    首次安装服务启动守护进程服务
+    """
+    if not data:
+        return
+    try:
+        for service in SERVICES_MAP.keys():  # support service
+            pl_name = f"{DATA_PATH}/first_installed_flag_{service}.pl"
+            if data.get(service):  # panel installed
+                setup = data[service].get("setup", False)
+                if setup is False and os.path.exists(pl_name):
+                    os.remove(pl_name)
+                elif setup is True and not os.path.exists(pl_name):
+                    get = public.dict_obj()
+                    get.name = service
+                    get.status = 1
+                    panelSite().set_restart_task(get)
+                    public.writeFile(pl_name, "1", mode="w")
+                else:
+                    pass
+    except:
+        pass
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        original_name = sys.argv[1]
-        RestartServices().main()
-    else:
-        pass
+    pass
+    # import tracemalloc
+
+    # tracemalloc.start()
+    # snapshot1 = tracemalloc.take_snapshot()
+    # RestartServices().main()
+    # snapshot2 = tracemalloc.take_snapshot()
+
+    # top_stats = snapshot2.compare_to(snapshot1, 'lineno')
+    # print("[Top memory differences]")
+    # for stat in top_stats[:3]:
+    #     print("stat", stat)

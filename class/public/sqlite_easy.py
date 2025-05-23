@@ -901,6 +901,9 @@ class DbConnection:
 
         if str(db_name).startswith(':memory:'):
            self.__DB_PATH = ':memory:'
+        else:
+            if os.path.exists(db_name):
+                self.__DB_PATH = db_name
 
         # 数据库连接对象
         self.__CONN: typing.Optional[sqlite3.Connection] = None

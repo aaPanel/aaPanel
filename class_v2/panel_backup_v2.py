@@ -241,7 +241,7 @@ class backup:
                 fname = 'path_{}_{}_{}.tar.gz'.format(dirname, public.format_date("%Y%m%d_%H%M%S"),
                                                       public.GetRandomString(6))
                 dfile = os.path.join(self._BACKUP_DIR, 'path',dirname, fname)
-            
+
             if not self.backup_path_to(spath, dfile, exclude):
                 if self._error_msg:
                     error_msg = self._error_msg
@@ -518,12 +518,12 @@ class backup:
 
         # 获取路径的最后一个部分
         last_part = os.path.basename(spath)
-        
+
         # 获取路径的上一级目录
         parent_dir = os.path.dirname(spath)
-        
+
         # 构建完整路径
-        full_path = os.path.join(parent_dir, last_part)      
+        full_path = os.path.join(parent_dir, last_part)
         # 检查路径的最后一部分是否是文件
         if os.path.isfile(full_path):
             # 如果是文件，返回上一级目录
@@ -775,13 +775,22 @@ class backup:
             upload_path = os.path.join("site", siteName)
             self.echo_info(public.lang("Uploading to {}, please wait...".format(self._cloud._title)))
             res = None
-            try:
-                res = self.__backup_site_cloud_upload(backup_size, dfile, upload_path, siteName, fname)
-            except Exception as e:
-                self.echo_info(public.lang(
-                    "upload to cloud fail...please check if the configuration is correct! error: %s" % e)
-                )
-                public.WriteLog("Cloud_Upload", "upload to cloud fail...")
+            fial_count = 0
+            while fial_count <= 2:  # 防止CloudApi限流
+                try:
+                    res = self.__backup_site_cloud_upload(backup_size, dfile, upload_path, siteName, fname)
+                    break
+                except Exception as e:
+                    self.echo_info(public.lang(
+                        "upload to cloud fail...please check if the configuration is correct! error: %s" % e)
+                    )
+                    self.echo_info(public.lang(
+                        "try again after %")
+                    )
+                    public.WriteLog("Cloud_Upload", f"upload to cloud fail...error:{e}")
+                    time.sleep(10 * (fial_count + 1))
+                    fial_count += 1
+                    continue
             if res:
                 # insert data
                 if find['project_type'] != 'WP2':
@@ -900,7 +909,7 @@ class backup:
             size = sum(os.path.getsize(file) for file in backup_files if os.path.exists(file))
             backup_dir=self._BACKUP_DIR
             self.check_disk_space(size,backup_dir)
-        
+
         self._backup_all = False
 
     # 配置
@@ -989,7 +998,7 @@ class backup:
         else:
             size = 0
             backup_dir=self._DB_BACKUP_DIR
-            self.check_disk_space(size,backup_dir)       
+            self.check_disk_space(size,backup_dir)
         self._backup_all = False
 
     # 备份单个数据库
@@ -1338,8 +1347,8 @@ class backup:
             self.echo_info(public.readFile(self._err_log))
             os.remove(backup_path)
             return False, error_msg
-        
-        
+
+
         self.echo_info("Database backup completed, taking {:.2f} seconds, compressed file size: {}".format(time.time() - stime, public.to_size(gz_size)))
         # self.check_disk_space(gz_size,self._MYSQL_BACKUP_DIR,type=1)        
         return True, backup_path
@@ -1757,7 +1766,7 @@ Please handle it as soon as possible""".format(
 Please handle it as soon as possible""".format(
             server_ip, now, task_name, remark, msg)
         return notice_content
-        
+
     def generate_disk_notice(self, task_name,free_space_gb,remark=""):
         from send_mail import send_mail
         sm = send_mail()
@@ -1775,7 +1784,7 @@ Please handle it as soon as possible""".format(
     """.format(
             server_ip, now, task_name, remark,free_space_gb)
         return notice_content
-    
+
     def get_cron_info(self, cron_name):
         """ 通过计划任务名称查找计划任务配置参数 """
         try:
@@ -1788,7 +1797,7 @@ Please handle it as soon as possible""".format(
 
     def send_success_notification(self, msg, target="", remark=""):
         pass
-    
+
 
     def send_disk_notification(self,free_space_gb,remark=""):
         """发送任务失败消息
@@ -1807,7 +1816,7 @@ Please handle it as soon as possible""".format(
 
         if notice == 1 or notice == 2:
             title = self.generate_failture_title(cron_title)
-            task_name = cron_title               
+            task_name = cron_title
             msg=self.generate_disk_notice(task_name,free_space_gb,remark)
             res = self.send_notification(notice_channel, title, msg)
             if res:
@@ -2087,7 +2096,7 @@ Please handle it as soon as possible""".format(
         public.ExecShell("chattr -i -R {split_dir}".format(split_dir=save_dir))
         public.ExecShell("rm -rf {}".format(save_dir))
         return True, upload_dir
-    
+
     def split_file(self,
                    file_path: str,  # 文件路径
                    split_size: int = None,  # 切割大小 MB
@@ -2173,7 +2182,7 @@ Please handle it as soon as possible""".format(
 
         public.ExecShell("chattr +i -R {split_dir}".format(split_dir=save_dir))
         return True, split_config_info
-    
+
     def get_backup_dir(self, db_find: dict, args: dict, db_type: str) -> str:
         backup_dir = args.get("db_backup_path", "")
         save_local = args.get("save_local", "")
@@ -2197,7 +2206,7 @@ Please handle it as soon as possible""".format(
                 site_backup_dir = db_backup_path
 
         return site_backup_dir
-    
+
     def check_disk_space(self,file_size,backup_dir):
         min_required_space = max(file_size* 5,  1* 1024 * 1024 * 1024)  # 1GB
         disk_usage = public.get_disk_usage(backup_dir)

@@ -10,7 +10,9 @@
 # ------------------------------
 # 网站管理类
 # ------------------------------
-import io, re, public, os, sys, shutil, json, hashlib, socket, time
+import re, public, os, sys, shutil, json, hashlib, socket, time
+from public.hook_import import hook_import
+hook_import()
 
 try:
     import OpenSSL
@@ -539,6 +541,9 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
     def AddSite(self, get, multiple=None):
         # 校验参数
         try:
+            if not hasattr(get, 'is_create_default_file'):
+                get.is_create_default_file = True
+
             get.validate([
                 Param('webname').String(),
                 Param('type').String(),
@@ -553,6 +558,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 Param('set_ssl').Integer(),
                 Param('force_ssl').Integer(),
                 Param('ftp').Bool(),
+                Param('is_create_default_file').Bool(),
                 Param('parse_list').String(),  # dns auto
             ], [
                 public.validate.trim_filter(),
@@ -629,7 +635,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             del return_message['status']
             return public.return_message(-1, 0, return_message['msg'])
 
-        import json, files
+        import json
 
         get.path = self.__get_site_format_path(get.path)
         if not public.check_site_path(get.path):
@@ -761,28 +767,31 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             os.makedirs(ngx_open_basedir_path, 384)
         ngx_open_basedir_file = ngx_open_basedir_path + '/{}.conf'.format(self.siteName)
         ngx_open_basedir_body = '''set $bt_safe_dir "open_basedir";
-set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
+    set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         public.writeFile(ngx_open_basedir_file, ngx_open_basedir_body)
 
-        # 创建默认文档
-        index = self.sitePath + '/index.html'
-        if not os.path.exists(index):
-            public.writeFile(index, public.readFile('data/defaultDoc.html'))
-            public.ExecShell('chmod -R 644 ' + index)
-            public.ExecShell('chown -R www:www ' + index)
+        # 判断是否需要生成默认文件
+        if get.is_create_default_file in [True, 'true', 1, '1']:
+            # 创建默认文档
+            index = self.sitePath + '/index.html'
+            if not os.path.exists(index):
+                public.writeFile(index, public.readFile('data/defaultDoc.html'))
+                public.ExecShell('chmod -R 644 ' + index)
+                public.ExecShell('chown -R www:www ' + index)
 
-        # 创建自定义404页
-        doc404 = self.sitePath + '/404.html'
-        if not os.path.exists(doc404):
-            public.writeFile(doc404, public.readFile('data/404.html'))
-            public.ExecShell('chmod -R 644 ' + doc404)
-            public.ExecShell('chown -R www:www ' + doc404)
-        # 创建自定义502页面
-        doc502 = self.sitePath + '/502.html'
-        if not os.path.exists(doc502) and os.path.exists('data/502.html'):
-            public.writeFile(doc502, public.readFile('data/502.html'))
-            public.ExecShell('chmod -R 644 ' + doc502)
-            public.ExecShell('chown -R www:www ' + doc502)
+            # 创建自定义404页
+            doc404 = self.sitePath + '/404.html'
+            if not os.path.exists(doc404):
+                public.writeFile(doc404, public.readFile('data/404.html'))
+                public.ExecShell('chmod -R 644 ' + doc404)
+                public.ExecShell('chown -R www:www ' + doc404)
+
+            # 创建自定义502页面
+            doc502 = self.sitePath + '/502.html'
+            if not os.path.exists(doc502) and os.path.exists('data/502.html'):
+                public.writeFile(doc502, public.readFile('data/502.html'))
+                public.ExecShell('chmod -R 644 ' + doc502)
+                public.ExecShell('chown -R www:www ' + doc502)
 
         # 写入配置
         result = self.nginxAdd()
@@ -877,12 +886,12 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             try:
                 import threading
                 from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
-                # 添加申请证书, 解析,代理, 仅限同域
+                # 添加申请证书, 解析,代理
                 new_list = [main_domain] + parse_list
                 task_obj = generate_sites_task(main_domain, get.pid)
                 task = threading.Thread(
                     target=init_sites_dns,
-                    args=(new_list, task_obj, get.pid)
+                    args=(new_list, task_obj)
                 )
                 task.start()
                 public.set_module_logs("sys_domain", "AddSite_Auto", 1)
@@ -985,10 +994,10 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
                 task_obj = generate_sites_task(main_domain, site_id)
                 task = threading.Thread(
                     target=init_sites_dns,
-                    args=([main_domain], task_obj, site_id)
+                    args=([main_domain], task_obj)
                 )
                 task.start()
-                # public.set_module_logs("sys_domain", "AddSite_Auto", 1)
+                public.set_module_logs("sys_domain", "AddSite_Auto", 1)
             except Exception as e:
                 import traceback
                 public.print_log(e)
@@ -2688,6 +2697,8 @@ listener SSL443 {
             conf = re.sub(rep, '', conf)
             rep = r"\s+listen\s+\[::\]:443.*;"
             conf = re.sub(rep, '', conf)
+            rep = "\s+http2\s+on;"
+            conf = re.sub(rep, '', conf)
             public.writeFile(file, conf)
 
         file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
@@ -2723,6 +2734,19 @@ listener SSL443 {
 
         public.write_log_gettext('Site manager', 'Site [{}] turned off SSL successfully!', (siteName,))
         public.serviceReload()
+
+        # ================== domian ssl v2 part =========================
+        try:
+            from ssl_domainModelV2.model import DnsDomainSSL
+            for ssl in DnsDomainSSL.objects.all():
+                if get.siteName in ssl.sites_uf:
+                    ssl.sites_uf.remove(get.siteName)
+                    ssl.user_for["sites"] = ssl.sites_uf
+                    ssl.save()
+                    break
+        except:
+            pass
+
         return public.return_message(0, 0, public.lang("SSL turned off!"))
 
     def _del_ols_443_domain(self, sitename):
@@ -2765,13 +2789,33 @@ listener SSL443 {
         file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/' + siteName + '.conf'
 
         # 是否为node项目
-        if not os.path.exists(
-                file): file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/node_' + siteName + '.conf'
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/node_' + siteName + '.conf'
+
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/java_' + siteName + '.conf'
+
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/go_' + siteName + '.conf'
+
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/other_' + siteName + '.conf'
+
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/python_' + siteName + '.conf'
+
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/net_' + siteName + '.conf'
+
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/html_' + siteName + '.conf'
+
         if public.get_webserver() == "openlitespeed":
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/detail/' + siteName + '.conf'
-        conf = public.readFile(file)
-        if not conf: return public.return_message(-1, 0, public.lang("The specified website profile does not exist"))
 
+        conf = public.readFile(file)
+        if not conf:
+            return public.fail_v2(public.lang("The specified website profile does not exist"))
         if public.get_webserver() == 'nginx':
             keyText = 'ssl_certificate'
         elif public.get_webserver() == 'apache':
@@ -2780,31 +2824,21 @@ listener SSL443 {
             keyText = 'openlitespeed/detail/ssl'
 
         status = True
-        if (conf.find(keyText) == -1):
+        if conf.find(keyText) == -1:
             status = False
             type = -1
 
         toHttps = self.IsToHttps(siteName)
         id = public.M('sites').where("name=?", (siteName,)).getField('id')
         domains = public.M('domain').where("pid=?", (id,)).field('name').select()
-        cert_data = {}
-        if csr:
-            get.certPath = csrpath
-            import panel_ssl_v2
-            cert_data = panel_ssl_v2.panelSSL().GetCertName(get)
-            if not cert_data:
-                cert_data = {
-                    'certificate': 0
-                }
-
         email = public.M('users').where('id=?', (1,)).getField('email')
         if email == '287962566@qq.com': email = ''
         index = ''
         auth_type = 'http'
-        if status == True:
+        if status is True:
             if type != 1:
-                import acme_v3
-                acme = acme_v3.acme_v2()
+                import acme_v2
+                acme = acme_v2.acme_v2()
                 index = acme.check_order_exists(csrpath)
                 if index:
                     if index.find('/') == -1:
@@ -2823,12 +2857,37 @@ listener SSL443 {
         oid = -1
         if type == 3:
             oid = int(public.readFile(path + '/certOrderId'))
-        # 作者 muluo
-        # return {'status': status,'oid':oid, 'domain': domains, 'key': key, 'csr': csr, 'type': type, 'httpTohttps': toHttps,'cert_data':cert_data,'email':email,"index":index,'auth_type':auth_type}
-        res = {'status': status, 'oid': oid, 'domain': domains, 'key': key, 'csr': csr, 'type': type,
-               'httpTohttps': toHttps, 'cert_data': cert_data, 'email': email, "index": index, 'auth_type': auth_type}
-        res['push'] = self.get_site_push_status(None, siteName, 'ssl')
-        return public.return_message(0, 0, res)
+
+        # ================== domian ssl v2 part =========================
+        try:
+            from ssl_domainModelV2.service import CertHandler
+            from ssl_domainModelV2.model import DnsDomainSSL
+            ssl = None
+            for s in DnsDomainSSL.objects.all():
+                if siteName in s.sites_uf:
+                    ssl = s
+                    break
+            res = {
+                'status': status,
+                'oid': oid,
+                'domain': domains,
+                'key': key,
+                'csr': csr,
+                'type': type,
+                'httpTohttps': toHttps,
+                'cert_data': CertHandler.get_cert_info(cert_file_path=csrpath),
+                'email': email,
+                "index": index,
+                'auth_type': auth_type,
+                'tls_versions': self.get_ssl_protocol(get),
+                'push': self.get_site_push_status(None, siteName, 'ssl'),
+                'hash': CertHandler.get_hash(cert_pem=csr),
+                'auto_renew': ssl.auto_renew if ssl else 0,
+            }
+        except Exception as e:
+            return public.fail_v2(e)
+
+        return public.success_v2(res)
 
     def get_site_push_status(self, get, siteName=None, stype=None):
         """
@@ -8092,12 +8151,13 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         # 校验参数
         args.validate([
             public.Param('login_url').Require().Url(),
+            public.Param('sub_path').SafePath(),
             public.Param('username').Require(),
             public.Param('password').Require(),
         ])
 
         from wp_toolkit import wpmgr_remote
-        wpmgr_remote().add(args.login_url, args.username, args.password)
+        wpmgr_remote(sub_path=args.get('sub_path', '')).add(args.login_url, args.username, args.password)
 
         return public.success_v2('Success')
 
@@ -8105,12 +8165,13 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         # 校验参数
         args.validate([
             public.Param('login_url').Require().Url(),
+            public.Param('sub_path').SafePath(),
             public.Param('security_key').Require(),
             public.Param('security_token').Require(),
         ])
 
         from wp_toolkit import wpmgr_remote
-        wpmgr_remote().add_manually(args.login_url, args.security_key, args.security_token)
+        wpmgr_remote(sub_path=args.get('sub_path', '')).add_manually(args.login_url, args.security_key, args.security_token)
 
         return public.success_v2('Success')
 
@@ -8256,8 +8317,11 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         return self._is_nginx_http3
 
     def set_restart_task(self, get):
-        import sys
-        import crontab
+        """
+        设置重启任务开关
+        """
+        # import sys
+        # import crontab
         try:
             get.validate([
                 Param('status').Integer().Require(),
@@ -8269,40 +8333,25 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             public.print_log("error, %s" % e)
             return public.fail_v2("parameter error %s" % e)
         sys.path.append("..")  # 添加上一级目录到系统路径
-        from script.restart_services import SERVICES_MAP
+        from script.restart_services import SERVICES_MAP, add_daemon, del_daemon
         if get.name not in SERVICES_MAP.keys():
             return public.fail_v2("service not support now")
         try:
-            p = crontab.crontab()
-            task_name = f'[Do not delete] {get.name.capitalize()} Daemon'
-            if public.M('crontab').where('name=?', (task_name,)).count() == 0:
-                task = {
-                    "name": task_name,
-                    "type": "minute-n",
-                    "where1": "1",
-                    "hour": "0",
-                    "minute": "1",
-                    "week": "1",
-                    "sType": "toShell",
-                    "sName": "",
-                    "backupTo": "",
-                    "save": "",
-                    "sBody": "btpython /www/server/panel/script/restart_services.py %s" % get.name.lower(),
-                    "urladdress": "",
-                    "status": "0",
-                    "notice": 0,
-                }
-                res = p.AddCrontab(task)
-                if res['status']:
-                    return public.success_v2("Settings successful!")
-                else:
-                    return public.fail_v2(res['msg'])
+            if int(get.status) == 1:
+                add_daemon(get.name)
+            elif int(get.status) == 0:
+                del_daemon(get.name)
             else:
-                return public.success_v2(self.set_status(get)['msg'])
+                raise Exception("status error")
         except Exception as e:
             return public.fail_v2("Settings fail!" + str(e))
 
+        return public.success_v2("success")
+
     def get_restart_task(self, get):
+        """
+        获取重启任务状态
+        """
         try:
             get.validate([
                 Param('name').String().Require(),
@@ -8312,14 +8361,14 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         except Exception as e:
             public.print_log("error, %s" % e)
             return public.fail_v2("parameter error %s" % e)
-
+        sys.path.append("..")  # 添加上一级目录到系统路径
+        from script.restart_services import DAEMON_SERVICE
         try:
-            task_name = f'[Do not delete] {get.name.capitalize()} Daemon'
-            crontab_data_list = public.M('crontab').where('name=?', (task_name,)).select()
-            if crontab_data_list:
-                crontab_data = crontab_data_list[0]
+            daemon_list = json.loads(public.readFile(DAEMON_SERVICE))
+            if get.name in daemon_list:
+                status = {"status": 1}
             else:
-                crontab_data = {"status": 0}
-            return public.success_v2(crontab_data)
+                status = {"status": 0}
+            return public.success_v2(status)
         except Exception as e:
             return public.fail_v2("get fail" + str(e))

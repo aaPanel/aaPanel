@@ -161,7 +161,7 @@ class crontab:
     def GetCrontab(self, get):
         try:
             self.checkBackup()
-            self.__clean_log()    
+            self.__clean_log()
             type_id = get.type_id if (hasattr(get, 'type_id') and get.type_id is not None) else ""
             db_obj = public.M('crontab')
             query = db_obj.order("id desc").field(self.field)

@@ -55,14 +55,19 @@ class SimpleCacheSession(BaseCache):
 
     def _prune(self):
         if len(self._cache) > self._threshold:
+            import public
+            public.print_log('+++++++++++++++++++ prune session +++++++++++++++\ncurrent_sessions: {}\nthreshold: {}'.format(len(self._cache), self._threshold))
             now = time()
             toremove = []
             for idx, (key, (expires, _)) in enumerate(self._cache.items()):
-                if (expires != 0 and expires <= now) or idx % 3 == 0:
+                if (expires != 0 and expires <= now) or not os.path.exists(os.path.join(self.__session_basedir, self.md5(key))):
                     toremove.append(key)
             for key in toremove:
                 self._cache.pop(key, None)
                 self.del_session_by_file(key)
+            public.print_log(
+                '+++++++++++++++++++ prune session done +++++++++++++++\ncurrent_sessions: {}'.format(
+                    len(self._cache)))
 
 
     def _normalize_timeout(self, timeout):

@@ -1,27 +1,41 @@
-#coding: utf-8
-import sys,os,time
+# coding: utf-8
+import json
+import sys, os, time
+
 os.chdir('/www/server/panel/')
-sys.path.insert(0,"class/")
-sys.path.insert(0,"/www/server/panel/")
-import traceback
+sys.path.insert(0, "class/")
+sys.path.insert(0, "/www/server/panel/")
 import public
 import http_requests
+
 http_requests.DEFAULT_TYPE = 'src'
 os.environ['BT_TASK'] = '1'
 
 try:
     import panelPush
     import threading
+
     push = panelPush.panelPush()
     push.start()
 
-    from mod.base.push_mod import PushSystem
-    PushSystem().run()
+    # msg bind check
+    flag = False
+    sender = os.path.join(public.get_panel_path(), "data/mod_push_data/sender.json")
+    if os.path.exists(sender):
+        sender_info = public.readFile(sender)
+        try:
+            sender_info = json.loads(sender_info)
+        except:
+            pass
+        if sender_info and isinstance(sender_info, list):
+            for send in sender_info:
+                if send.get("data") != {}:
+                    flag = True  # has bind alarm
+                    break
+    if flag is True:
+        from mod.base.push_mod import PushSystem
+        PushSystem().run()
 
-    # os.system("echo yes,{} > /tmp/push.pl".format(time.time()))
 except Exception as e:
     pass
-    # print(traceback.format_exc())
-    # print("开启推送消息进程异常")
-    os.system("echo no,{},{} > /tmp/push.pl".format(time.time(),e))
-    # os.system("echo no,{},{} > /tmp/push.pl".format(time.time(),traceback.format_exc()))
+    os.system("echo no,{},{} > /tmp/push.pl".format(time.time(), e))

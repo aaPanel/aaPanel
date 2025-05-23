@@ -871,6 +871,8 @@ class system:
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
+        # 提前执行Daemon服务标记
+        self._operate_manual_flag(get)
         #服务管理
         if get.name == 'mysqld':
             public.CheckMyCnf()
@@ -891,7 +893,6 @@ class system:
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl start')
             else:
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart')
-            self._operate_manual_flag(get)
             return public.return_message(0, 0, public.lang("Executed successfully!"))
 
         #检查httpd配置文件
@@ -998,7 +999,6 @@ class system:
             if self.check_service_status(get.name):
                 return public.return_message(-1, 0, public.lang("Service stop failed!"))
 
-        self._operate_manual_flag(get)
         return public.return_message(0, 0, public.lang("Executed successfully!"))
 
     def check_service_status(self,name):

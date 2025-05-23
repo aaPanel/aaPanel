@@ -230,25 +230,44 @@ class SSLManger:
                      cloud_id: Optional[int] = None,
                      other_data: Optional[Dict] = None,
                      log_file: Optional[str] = "") -> Dict:
-
         if not certificate.startswith("-----BEGIN") or not private_key.startswith("-----BEGIN"):
             raise ValueError(public.lang("Certificate format error"))
-
         if cloud_id is None:
             cloud_id = -1
 
-        hash_data = self.ssl_hash(certificate=certificate)
-        db_data = self.get_ssl_info_by_hash(hash_data)
-        if db_data is not None:  # 已经保存过的
-            # 检查 cloud_id 与 保存的 cloud_id 不同时，更新cloud_id
-            if db_data['cloud_id'] != cloud_id and cloud_id != -1:
-                ssl_db.connection().where("id = ?", (db_data["id"],)).update({"cloud_id": cloud_id})
-                db_data['cloud_id'] = cloud_id
-            db_data["dns"] = json.loads(db_data["dns"])
-            db_data["info"] = json.loads(db_data["info"])
-            db_data["auth_info"] = json.loads(db_data["auth_info"])
-            db_data["use_for_site"] = json.loads(db_data["use_for_site"])
-            return db_data
+        from ssl_domainModelV2.model import DnsDomainSSL
+        from ssl_domainModelV2.service import CertHandler
+        handler = CertHandler()
+
+        try:
+            cert = handler.normalize_cert_chain(certificate)
+            key = handler.normalize_private(private_key)
+            valid = handler.validate_key_pair(cert_pem=cert, key=key)
+            if valid is False:
+                raise Exception(public.lang("Certificate is invalid"))
+        except Exception as e:
+            raise e
+
+        try:
+            hash_data = handler.get_hash(certificate)
+        except:
+            hash_data = self.ssl_hash(certificate=certificate)
+
+        ssl_obj = DnsDomainSSL.objects.filter(hash=hash_data).first()
+        if ssl_obj:
+            return ssl_obj.as_dict()
+        # db_data = self.get_ssl_info_by_hash(hash_data)
+        # if db_data is not None:  # 已经保存过的
+        #     # 检查 cloud_id 与 保存的 cloud_id 不同时，更新cloud_id
+        #     if db_data['cloud_id'] != cloud_id and cloud_id != -1:
+        #         ssl_db.connection().where("id = ?", (db_data["id"],)).update({"cloud_id": cloud_id})
+        #         db_data['cloud_id'] = cloud_id
+        #     db_data["dns"] = json.loads(db_data["dns"])
+        #     db_data["info"] = json.loads(db_data["info"])
+        #     db_data["auth_info"] = json.loads(db_data["auth_info"])
+        #     db_data["use_for_site"] = json.loads(db_data["use_for_site"])
+        #     return db_data
+
         info = self.get_cert_info(certificate=certificate)
         if info is None:
             raise ValueError(public.lang("Certificate info format error"))
@@ -273,29 +292,22 @@ class SSLManger:
                 if key in self._OTHER_DATA_NAME:
                     pdata[key] = other_data
 
-        res_id = ssl_db.connection().insert(pdata)
-        public.M('ssl_info').insert(pdata)  # add default.db ssl_info table
+        try:
+            res_id = ssl_db.connection().insert(pdata)
+            public.M('ssl_info').insert(pdata)  # add default.db ssl_info table
+        except:
+            res_id = None
+            pass
         # ======= save dns domain db ============
         try:
-            from ssl_domainModelV2.model import DnsDomainSSL, account_fix_ssl
             # upload cert maybe have no provider, pid will be 0
-            pid = account_fix_ssl(pdata)
-            dns = info.get("dns", [])
-            for ssl in DnsDomainSSL.objects.filter(
-                    dns__contains=dns,
-                    subject=info.get("subject", "")
-            ):
-                try:
-                    if all([
-                        ssl.info.get("issuer") == info.get("issuer", ""),
-                        ssl.info.get("issuer_O") == info.get("issuer_O", ""),
-                        ssl.not_after > info.get("notAfter", ""),
-                    ]):
-                        # keep the same ssl cert unique
-                        # more detail => self.sub_all_cert(key_file, pem_file)
-                        ssl.delete()
-                except:
-                    continue
+            try:
+                provider = handler.match_provider(info=info)
+                user_for = handler.keep_same_dns_ssl_unique(info=info)
+            except:
+                provider = None
+                user_for = {}
+
             try:
                 date_time = datetime.strptime(info.get("notAfter"), "%Y-%m-%d")
                 not_after_ts = int(time.mktime(date_time.timetuple())) * 1000
@@ -303,13 +315,14 @@ class SSLManger:
                 not_after_ts = 0
 
             DnsDomainSSL(**{
-                "provider_id": pid,
+                "provider_id": provider.id if provider else 0,
                 "hash": hash_data,
                 "path": "{}/{}".format(SSL_SAVE_PATH, hash_data),
-                "dns": dns,
+                "dns": info.get("dns", []),
                 "subject": info.get("subject", ""),
                 "info": info,
-                "cloud_id": int(cloud_id),
+                "user_for": user_for,
+                # "cloud_id": int(cloud_id),
                 "not_after": info.get("notAfter", ""),
                 "not_after_ts": not_after_ts,
                 "auth_info": auth_info,

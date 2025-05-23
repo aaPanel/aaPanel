@@ -352,5 +352,6 @@
 	"3de9e6cb642e9291ae61659aa92da633": "Caminho de comando",
 	"a559b87068921eec05086ce5485e9784": "Modelo",
 	"d08ccf52b4cdd08e41cfb99ec42e0b29": "Permissões",
-	"7f090bbab1cc7f9c08bf4e54d932d3c0": "Modificar"
+	"7f090bbab1cc7f9c08bf4e54d932d3c0": "Modificar",
+	"2213692c8314b2b43652534f2f38b09c": "O IP bloqueado será automaticamente desbloqueado {0} minutos após o bloco."
 }

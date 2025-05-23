@@ -301,8 +301,8 @@ def acme_v2(pdata=None):
     # Let's 证书管理
     comReturn = comm.local()
     if comReturn: return comReturn
-    import acme_v3
-    acme_v2_object = acme_v3.acme_v2()
+    import acme_v2
+    acme_v2_object = acme_v2.acme_v2()
     defs = ('get_orders', 'remove_order', 'get_order_find', 'revoke_order',
             'create_order', 'get_account_info', 'set_account_info',
             'update_zip', 'get_cert_init_api', 'get_auths', 'auth_domain',
@@ -996,9 +996,9 @@ def auth_v2(pdata=None):
     import panel_auth_v2
     toObject = panel_auth_v2.panelAuth()
     defs = ('free_trial', 'renew_product_auth', 'auth_activate',
-            'get_product_auth', 'get_stripe_session_id',
+            'get_product_auth', 'get_product_auth_all', 'get_stripe_session_id',
             'get_re_order_status_plugin', 'create_plugin_other_order',
-            'get_order_stat', 'get_voucher_plugin',
+            'get_order_stat', 'get_voucher_plugin','get_voucher_plugin_all',
             'create_order_voucher_plugin', 'get_product_discount_by',
             'get_re_order_status', 'create_order_voucher', 'create_order',
             'get_order_status', 'get_voucher', 'flush_pay_status',

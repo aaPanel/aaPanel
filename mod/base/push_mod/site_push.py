@@ -815,11 +815,13 @@ class ServicesTask(BaseTask):
             status = False
             for proc in psutil.process_iter(['pid', 'name', 'connections']):
                 try:
-                    if process_name in proc.info['name']:
-                        # noinspection PyDeprecation
-                        for conn in proc.connections(kind='unix'):
-                            if conn.laddr == sock_path:
-                                status = True
+                    check_list = [process_name] if process_name != "mysqld" else ["mysqld", "mariadbd"]
+                    for c in check_list:
+                        if c in proc.info['name']:
+                            # noinspection PyDeprecation
+                            for conn in proc.connections(kind='unix'):
+                                if conn.laddr == sock_path:
+                                    status = True
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     continue
             if status is True:
