@@ -1,65 +1,65 @@
 {
-    "default": "uk",
-    "languages": [
-        {
-            "name": "uk",
-            "google": "uk",
-            "title": "\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430",
-            "cn": "\u4e4c\u514b\u5170\u8bed"
-        },
-        {
-            "name": "cht",
-            "google": "zh-tw",
-            "title": "\u7e41\u9ad4\u4e2d\u6587",
-            "cn": "\u7e41\u9ad4\u4e2d\u6587"
-        },
-        {
-            "name": "en",
-            "google": "en",
-            "title": "English",
-            "cn": "\u82f1\u8bed"
-        },
-        {
-            "name": "de",
-            "google": "de",
-            "title": "Deutsch",
-            "cn": "\u5fb7\u8bed"
-        },
-        {
-            "name": "fra",
-            "google": "fr",
-            "title": "Fran\u00e7ais",
-            "cn": "\u6cd5\u8bed"
-        },
-        {
-            "name": "spa",
-            "google": "es",
-            "title": "Espa\u00f1ol",
-            "cn": "\u897f\u73ed\u7259\u8bed"
-        },
-        {
-            "name": "pt",
-            "google": "pt",
-            "title": "Portugu\u00eas",
-            "cn": "\u8461\u8404\u7259\u8bed"
-        },
-        {
-            "name": "vie",
-            "google": "vi",
-            "title": "Ti\u1ebfng Vi\u1ec7t",
-            "cn": "\u8d8a\u5357\u8bed"
-        },
-        {
-            "name": "ind",
-            "google": "id",
-            "title": "Bahasa Indonesia",
-            "cn": "\u5370\u5c3c\u8bed"
-        },
-        {
-            "name": "ru",
-            "google": "ru",
-            "title": "\u0420\u0443\u0441\u0441\u043a\u0438\u0439",
-            "cn": "\u4fc4\u8bed"
-        }
-    ]
+  "default": "en",
+  "languages": [
+    {
+      "name": "uk",
+      "google": "uk",
+      "title": "Українська",
+      "cn": "乌克兰语"
+    },
+    {
+      "name": "cht",
+      "google": "zh-tw",
+      "title": "繁體中文",
+      "cn": "繁體中文"
+    },
+    {
+      "name": "en",
+      "google": "en",
+      "title": "English",
+      "cn": "英语"
+    },
+    {
+      "name": "de",
+      "google": "de",
+      "title": "Deutsch",
+      "cn": "德语"
+    },
+    {
+      "name": "fra",
+      "google": "fr",
+      "title": "Français",
+      "cn": "法语"
+    },
+    {
+      "name": "spa",
+      "google": "es",
+      "title": "Español",
+      "cn": "西班牙语"
+    },
+    {
+      "name": "pt",
+      "google": "pt",
+      "title": "Português",
+      "cn": "葡萄牙语"
+    },
+    {
+      "name": "vie",
+      "google": "vi",
+      "title": "Tiếng Việt",
+      "cn": "越南语"
+    },
+    {
+      "name": "ind",
+      "google": "id",
+      "title": "Bahasa Indonesia",
+      "cn": "印尼语"
+    },
+    {
+      "name": "ru",
+      "google": "ru",
+      "title": "Русский",
+      "cn": "俄语"
+    }
+  ]
 }
