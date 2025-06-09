@@ -95,7 +95,9 @@
 			"index_94": "Vui lòng nhập số lượng bản sao lưu",
 			"index_95": "Nếu cơ sở dữ liệu được sử dụng bởi bảng điều khiển bị hỏng, bạn sẽ không thể khôi phục cơ sở dữ liệu bảng điều khiển bị hỏng",
 			"index_96": "Tắt bản sao lưu bảng điều khiển",
-			"index_97": "Sao lưu tự động không bao gồm dữ liệu trang web và dữ liệu MySQL"
+			"index_97": "Sao lưu tự động không bao gồm dữ liệu trang web và dữ liệu MySQL",
+			"index_98": "Proxy CDN",
+			"index_99": "Lấy IP thực của yêu cầu từ proxy CDN"
 		},
 		"Safe": {
 			"index_1": "Bảo vệ",

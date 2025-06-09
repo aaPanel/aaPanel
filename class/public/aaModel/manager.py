@@ -1,6 +1,5 @@
 # coding: utf-8
 import json
-import sqlite3
 import uuid
 from functools import reduce
 from itertools import chain
@@ -16,8 +15,16 @@ M = TypeVar("M", bound="aaModel")
 
 
 def get_flag() -> bool:
+    import sqlite3
     try:
-        return tuple(map(int, sqlite3.sqlite_version.split("."))) >= (3, 9, 0)
+        conn = sqlite3.connect(":memory:")
+        cursor = conn.cursor()
+        cursor.execute("SELECT json_extract('{\"a\": 1}', '$.a')")
+        cursor.execute("SELECT COUNT(*) FROM json_each('{\"a\":1, \"b\":2}')")
+        conn.close()
+        return True
+    except sqlite3.Error:
+        return False
     except:
         return False
 
@@ -31,13 +38,20 @@ class QueryProperty:
 
 
 class Operator:
+    _shared_flag = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._shared_flag is None:
+            cls._shared_flag = get_flag()
+        return super().__new__(cls)
+
     def __init__(self, model_class: M, query: Db.query):
         self._model_class: M = model_class
         self._query = query
         self._tb = self._model_class.__table_name__
         self._fields = self._model_class.__fields__
         self._serializes = self._model_class.__serializes__
-        self._flag = get_flag()  # fk flag
+        self._flag = self._shared_flag  # fk flag
 
     def _q_error(self, key: str, act: str, val: Any, sp_act: tuple):
         raise HintException(

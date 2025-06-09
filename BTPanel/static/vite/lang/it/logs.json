@@ -1,0 +1,51 @@
+{
+	"Logs": {
+		"Panel": {
+			"index_1": "Registri operativi",
+			"index_2": "Esegui registri",
+			"index_3": "Cron Logs",
+			"index_4": "Inserisci il nome del registro",
+			"index_5": "Cancella registri",
+			"index_6": "Tipo di operazione",
+			"index_7": "Tempo operativo",
+			"index_13": "Tempo di scansione",
+			"index_14": "Attacco PHP",
+			"index_15": "In procinto di cancellare i registri, continuare?"
+		},
+		"Website": {
+			"index_1": "URL (Top100)",
+			"index_2": "Registri di accesso",
+			"index_3": "Si consiglia di condurre analisi di sicurezza quando il carico del server è basso. Questa volta, il file di registro [{0}]. Verrà scansionato e il tempo di attesa potrebbe essere più lungo. Vuoi continuare?",
+			"index_4": "Registri di errore",
+			"index_5": "IP (Top100)"
+		},
+		"Audit": {
+			"index_1": "Inserisci sorgente/porta/ruolo/evento"
+		},
+		"SSH": {
+			"index_1": "IP: porta"
+		},
+		"Soft": {
+			"index_1": "Nome utente FTP",
+			"index_2": "Operazione IP",
+			"index_3": "File",
+			"index_4": "Tempo di atterraggio",
+			"index_5": "Registri FTP",
+			"index_6": "Mysql Slow Logs",
+			"index_7": "Registri di errore mysql",
+			"index_8": "Registro operativo",
+			"index_9": "Inserisci le parole chiave di ricerca"
+		},
+		"Conversion": {
+			"index_1": "Audit dei registri - Introduzione",
+			"index_2": "Analizzare e analizzare i registri comuni",
+			"index_3": "Raccogliere, analizzare e controllare informazioni come varie operazioni, eventi e situazioni anormali registrate dai programmi di sistema, rete e applicazioni.",
+			"index_4": "Log FTP - Introduzione",
+			"index_5": "Registra e visualizza il registro di accesso FTP corrente e il registro delle operazioni",
+			"index_6": "Registra le informazioni del registro del registro del registro del client utente FTP e del registro delle operazioni del file",
+			"index_7": "Log di accesso SSH - Introduzione",
+			"index_8": "Registra e visualizza i registri di accesso SSH corrente",
+			"index_9": "Registra le informazioni sui registri di accesso SSH corrente"
+		}
+	}
+}

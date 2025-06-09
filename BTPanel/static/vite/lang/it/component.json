@@ -1,0 +1,168 @@
+{
+	"Component": {
+		"Batch": {
+			"index_1": "Si prega di scegliere",
+			"index_2": "(Selezionato {0})",
+			"index_3": "Batching {0}, progresso attuale:"
+		},
+		"Auth": {
+			"index_1": "GRATUITO",
+			"index_2": "Rinnovo",
+			"index_3": "Acquista ora",
+			"index_4": "Scadere su: ",
+			"index_5": "Aggiornamento ora",
+			"index_6": "Tutta la vita"
+		},
+		"Feedback": {
+			"index_7": "Feedback",
+			"index_1": "raccolta di feedback della domanda di Aapanel",
+			"index_2": "In caso di problemi o funzioni imperfette durante l'uso, descrivi",
+			"index_3": "I tuoi problemi o necessari in dettaglio, faremo del nostro meglio per risolvere o migliorare",
+			"index_4": "Prestiamo particolare attenzione al feedback delle tue esigenze e conduciamo revisioni regolari dei requisiti settimanali. Spero di poterti aiutare meglio",
+			"index_5": "Si prega di compilare il feedback",
+			"index_6": "Grazie per la tua partecipazione!"
+		},
+		"Coupon": {
+			"index_1": "Ottieni coupon per un tempo limitato",
+			"index_2": "SPENTO",
+			"index_3": "Valido per ",
+			"index_4": "Coupon",
+			"index_5": "Prendilo ora",
+			"index_6": "Niente più promemoria per oggi",
+			"index_7": "Nessun promemoria negli ultimi 7 giorni",
+			"index_8": "Non ricordarti mai per sempre",
+			"index_9": "{0}, sei sicuro?",
+			"index_10": "Terminare a ",
+			"index_11": "Ottieni coupon $ {0}",
+			"index_12": "{0} coupon",
+			"index_13": "Scegli il tempo senza preavviso"
+		},
+		"Pay": {
+			"index_1": "Pro",
+			"index_2": "Raccomandato",
+			"index_3": "Funzione Pro",
+			"index_4": "Descrizione plug-in",
+			"index_5": "Contrasto delle caratteristiche",
+			"index_6": "Salva di più",
+			"index_7": "Linux Pro Edition è disponibile gratuitamente Utilizzo questo plugin e tutte le altre funzionalità Pro Pro",
+			"index_8": "Domande? Inviaci in qualsiasi momento: {0}",
+			"index_9": "Scegli il tuo piano",
+			"index_10": "Più popolare",
+			"index_11": "Numero di licenza",
+			"index_12": "Caricamento, per favore aspetta ...",
+			"index_13": "{0} off",
+			"index_14": "{0} {1}",
+			"index_15": "{0} {1}",
+			"index_16": "Op: {0}",
+			"index_17": "Solo plug-in",
+			"index_18": "Coupon ({0})",
+			"index_19": "$ {0} fuori da {1} pagamento",
+			"index_20": "Nessun coupon preferenziale",
+			"index_21": "Voucher",
+			"index_22": "Licenza",
+			"index_23": "Account: ",
+			"index_24": "Modifica",
+			"index_25": "Totale: ",
+			"index_26": "Retribuzione a strisce",
+			"index_27": "Se {0} non riesce a pagare, puoi provare a utilizzare ",
+			"index_28": "Ordine di pagamento non riuscito, contatta l'amministratore!",
+			"index_29": "Sottoscrizione: ",
+			"index_30": "* Quando la licenza scade, si rinnoverà automaticamente",
+			"index_31": "* Controllando l'abbonamento, non è possibile pagare in valuta locale",
+			"index_32": "Valuta locale: ",
+			"index_33": "* Paga con il metodo di pagamento e la valuta locale",
+			"index_34": "Informazioni sulla licenza",
+			"index_35": "Nessuna licenza",
+			"index_36": "Licenza",
+			"index_37": "Voucher",
+			"index_38": "Nessun buono",
+			"index_39": "Utilizzo",
+			"index_40": "Scade dopo",
+			"index_41": "Si prega di richiedere SSL prima dell'acquisto!",
+			"index_42": "Accendi SSL",
+			"index_43": "Offerta a tempo limitato: ",
+			"index_44": "Salva fino a $ {0}",
+			"index_45": "Altro pagamento",
+			"index_46": "Convertire automaticamente la valuta di pagamento in base alla tua posizione",
+			"index_47": "Paga ora"
+		},
+		"BindAccount": {
+			"index_1": "Associa l'account Aapanel",
+			"index_2": "Nessun account, vai a registrarsi",
+			"index_3": "Login",
+			"index_4": "Inserisci il tuo indirizzo email",
+			"index_5": "Inserisci la tua password",
+			"index_6": "Associa l'account Aapanel",
+			"index_7": "Il tuo indirizzo di posta elettronica",
+			"index_8": "La tua password"
+		},
+		"Logs": {
+			"index_1": "Nessuno registri"
+		},
+		"SelectPath": {
+			"index_1": "Ritorno",
+			"index_2": "Percorso attuale",
+			"index_3": "Nome file",
+			"index_4": "Tempo di modifica",
+			"index_5": "Autorizzazione",
+			"index_6": "Proprietario",
+			"index_7": "Seleziona la directory"
+		},
+		"Editor": {
+			"index_1": "Suggerimenti ： Ctrl+F Search Parole chiave ， Ctrl+S Salva ， Ctrl+H Cerca e sostituisci"
+		},
+		"Quota": {
+			"index_1": "Quota",
+			"index_2": "Non impostato",
+			"index_3": "Capacità usata corrente: {0}",
+			"index_4": "Fare clic su Modifica la quota di capacità",
+			"index_5": "{1} imposta nuova quota [{0}]",
+			"index_6": "Capacità utilizzata corrente",
+			"index_7": "Quota di capacità attuale",
+			"index_8": "Promemoria: questa funzione è esclusiva per l'edizione Pro",
+			"index_9": "Richiede un filesystem XFS e include il parametro [prjquota] da utilizzare",
+			"index_10": "Esempio di fstab: /dev /vdc1 /data xfs predefiniti, prjquota 0 0",
+			"index_11": "Quota: per annullare la quota, impostata su \"0\"",
+			"index_12": "Quota di capacità corrente: {0}"
+		},
+		"Terminal": {
+			"index_1": "La connessione è stata scollegata, premendo ENTER tenterà di riconnettersi!",
+			"index_2": "Cercando di riconnettersi!"
+		},
+		"Upload": {
+			"index_1": "Seleziona file",
+			"index_2": "Non selezionato"
+		},
+		"UploadFile": {
+			"index_1": "Fare clic o trascinare il file nell'area",
+			"index_2": "Solo supporto {0} Importazione del formato file",
+			"index_3": "Nome file",
+			"index_4": "Misurare",
+			"index_5": "Stato",
+			"index_6": "Seleziona file",
+			"index_7": "La dimensione del file [{0}] non può superare {1} m",
+			"index_8": "In attesa di caricamento",
+			"index_9": "Carica il successo",
+			"index_10": "Seleziona il file da caricare"
+		},
+		"FormMore": {
+			"index_1": "Più configurazione, fai clic per visualizzare"
+		},
+		"Confirm": {
+			"index_1": "Se confermi l'operazione, inseriscila manualmente \"{text_}\"",
+			"index_2": "Errore di input, riprova",
+			"index_3": "{0} è stato completato, totali {1} compiti, {2} successi, {3} fallimenti",
+			"index_4": "Risultato: ",
+			"index_5": "Il risultato non è corretto, riprova"
+		},
+		"SoftState": {
+			"index_1": "Sei sicuro di dover {0} il servizio {1} e continuare?"
+		},
+		"Api": {
+			"index_1": "Caricamento, per favore aspetta ...",
+			"index_2": "Binding, per favore aspetta ...",
+			"index_3": "Invia un feedback, aspetta ..",
+			"index_4": "Caricamento del file, aspetta ..."
+		}
+	}
+}

@@ -509,9 +509,95 @@ def GetMemUsed():
     except:
         return 1
 
+
+# 更新 GeoLite2-Country.json
+def flush_geoip():
+    """
+        @name 检测如果大小小于3M或大于1个月则更新
+        @author wzz <2024/5/21 下午5:33>
+        @param "data":{"参数名":""} <数据类型> 参数描述
+        @return dict{"status":True/False,"msg":"提示信息"}
+    """
+    _ips_path = "/www/server/panel/data/firewall/GeoLite2-Country.json"
+    m_time_file = "/www/server/panel/data/firewall/geoip_mtime.pl"
+    if not os.path.exists(_ips_path):
+        os.system("mkdir -p /www/server/panel/data/firewall")
+        os.system("touch {}".format(_ips_path))
+
+    try:
+        if not os.path.exists(_ips_path):
+            public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)), _ips_path)
+            public.writeFile(m_time_file, str(int(time.time())))
+            return
+
+        _ips_size = os.path.getsize(_ips_path)
+        if os.path.exists(m_time_file):
+            _ips_mtime = int(public.readFile(m_time_file))
+        else:
+            _ips_mtime = 0
+
+        if _ips_size < 3145728 or time.time() - _ips_mtime > 2592000:
+            os.system("rm -f {}".format(_ips_path))
+            os.system("rm -f {}".format(m_time_file))
+            public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)), _ips_path)
+            public.writeFile(m_time_file, str(int(time.time())))
+            if os.path.exists(_ips_path):
+                try:
+                    import json
+                    from xml.etree.ElementTree import ElementTree, Element
+                    from safeModelV2.firewallModel import main as firewall
+
+                    firewallobj = firewall()
+                    ips_list = json.loads(public.readFile(_ips_path))
+                    if ips_list:
+                        for ip_dict in ips_list:
+                            if os.path.exists('/usr/bin/apt-get') and not os.path.exists("/etc/redhat-release"):
+                                btsh_path = "/etc/ufw/btsh"
+                                if not os.path.exists(btsh_path):
+                                    os.makedirs(btsh_path)
+                                tmp_path = '{}/{}.sh'.format(btsh_path, ip_dict['brief'])
+                                if os.path.exists(tmp_path):
+                                    public.writeFile(tmp_path, "")
+
+                                _string = "#!/bin/bash\n"
+                                for ip in ip_dict['ips']:
+                                    if firewallobj.verify_ip(ip):
+                                        _string = _string + 'ipset add ' + ip_dict['brief'] + ' ' + ip + '\n'
+                                public.writeFile(tmp_path, _string)
+                            else:
+                                xml_path = "/etc/firewalld/ipsets/{}.xml.old".format(ip_dict['brief'])
+                                xml_body = """<?xml version="1.0" encoding="utf-8"?>
+<ipset type="hash:net">
+<option name="maxelem" value="1000000"/>
+</ipset>
+"""
+                                if os.path.exists(xml_path):
+                                    public.writeFile(xml_path, xml_body)
+                                else:
+                                    os.makedirs(os.path.dirname(xml_path), exist_ok=True)
+                                    public.writeFile(xml_path, xml_body)
+
+                                tree = ElementTree()
+                                tree.parse(xml_path)
+                                root = tree.getroot()
+                                for ip in ip_dict['ips']:
+                                    if firewallobj.verify_ip(ip):
+                                        entry = Element("entry")
+                                        entry.text = ip
+                                        root.append(entry)
+
+                                firewallobj.format(root)
+                                tree.write(xml_path, 'utf-8', xml_declaration=True)
+                except:
+                    pass
+    except:
+        try:
+            public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)), _ips_path)
+            public.writeFile(m_time_file, str(int(time.time())))
+        except:
+            pass
+
 # 检查502错误
-
-
 def check502():
     try:
         phpversions = public.get_php_versions()
@@ -530,8 +616,6 @@ def check502():
         logging.info(ex)
 
 # 处理指定PHP版本
-
-
 def startPHPVersion(version):
     try:
         fpm = '/etc/init.d/php-fpm-' + version
@@ -593,6 +677,7 @@ def check502Task():
             sess_expire()
             mysql_quota_check()
             siteEdate()
+            flush_geoip()
             time.sleep(600)
     except Exception as ex:
         logging.info(ex)
@@ -757,7 +842,7 @@ def daemon_panel():
                 service_panel('start')
 
 def daemon_service():
-    from script.restart_services import RestartServices, add_daemon
+    from script.restart_services import RestartServices, DaemonManager
     try:
         # remove old deamons
         from BTPanel import app
@@ -768,7 +853,7 @@ def daemon_service():
                 try:
                     cron_name = i.get("name")
                     s_name = cron_name.replace("[Do not delete] ", "").replace(" Daemon", "")
-                    add_daemon(s_name.lower())
+                    DaemonManager.add_daemon(s_name.lower())
                 except:
                     pass
                 args = public.dict_obj()

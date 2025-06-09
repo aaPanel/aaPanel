@@ -95,7 +95,9 @@
 			"index_94": "Por favor, insira o número de backups",
 			"index_95": "Se o banco de dados usado pelo painel estiver corrompido, você não poderá recuperar o banco de dados do painel corrompido",
 			"index_96": "Desligue o backup do painel",
-			"index_97": "O backup automático não inclui dados do site e dados MySQL"
+			"index_97": "O backup automático não inclui dados do site e dados MySQL",
+			"index_98": "Proxy de CDN",
+			"index_99": "Recuperar o IP real da solicitação do proxy CDN"
 		},
 		"Safe": {
 			"index_1": "Segurança",

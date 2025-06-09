@@ -14,7 +14,6 @@
 
 import re
 import subprocess
-import os
 import sys
 
 if "/www/server/panel/class" not in sys.path:
@@ -23,10 +22,9 @@ import public
 from firewallModelV2.app.appBase import Base
 
 
-# import re
-
 class Iptables(Base):
     def __init__(self):
+        super().__init__()
         self.cmd_str = self._set_cmd_str()
         self.protocol = {
             "6": "tcp",
@@ -39,77 +37,77 @@ class Iptables(Base):
 
     # 2024/3/19 下午 5:00 获取系统防火墙的运行状态
     def status(self):
-        '''
+        """
             @name 获取系统防火墙的运行状态
             @author wzz <2024/3/19 下午 5:00>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         return "running"
 
     # 2024/3/19 下午 5:00 获取系统防火墙的版本号
     def version(self):
-        '''
+        """
             @name 获取系统防火墙的版本号
             @author wzz <2024/3/19 下午 5:00>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             result = public.ExecShell("iptables -v 2>&1|awk '{print $2}'|head -1")[0].replace("\n", "")
             if result == "":
                 return "Unknown version of iptables"
             return result
-        except Exception as e:
+        except Exception as _:
             return "Unknown version"
 
     # 2024/3/19 下午 5:00 启动防火墙
     def start(self):
-        '''
+        """
             @name 启动防火墙
             @author wzz <2024/3/19 下午 5:00>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         return self._result(True, public.lang("The current system firewall is iptables and does not support setting status."))
 
     # 2024/3/19 下午 5:00 停止防火墙
     def stop(self):
-        '''
+        """
             @name 停止防火墙
             @author wzz <2024/3/19 下午 5:00>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         return self._result(True, public.lang("The current system firewall is iptables and does not support stopping."))
 
     # 2024/3/19 下午 4:59 重启防火墙
     def restart(self):
-        '''
+        """
             @name 重启防火墙
             @author wzz <2024/3/19 下午 4:59>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         return self._result(True, public.lang("The current system firewall is iptables and does not support restarting."))
 
     # 2024/3/19 下午 4:59 重载防火墙
     def reload(self):
-        '''
+        """
             @name 重载防火墙
             @author wzz <2024/3/19 下午 4:59>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         return self._result(True, public.lang("The current system firewall is iptables,which does not support reloading. "))
 
     # 2024/3/19 下午 3:36 检查表名是否合法
     def check_table_name(self, table_name):
-        '''
+        """
             @name 检查表名是否合法
             @param "table_name": "filter/nat/mangle/raw/security"
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         table_names = ['filter', 'nat', 'mangle', 'raw', 'security']
         if table_name not in table_names:
             return False
@@ -117,7 +115,7 @@ class Iptables(Base):
 
     # 2024/3/19 下午 3:55 解析规则列表输出，返回规则列表字典
     def parse_rules(self, stdout):
-        '''
+        """
             @name 解析规则列表输出，返回规则列表字典
             @author wzz <2024/3/19 下午 3:53>
                 字段含义:
@@ -141,7 +139,7 @@ class Iptables(Base):
                     17: UDP（用户数据报协议）
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         lines = stdout.strip().split('\n')
         rules = []
         current_chain = None
@@ -173,12 +171,12 @@ class Iptables(Base):
 
     # 2024/3/19 下午 3:02 列出指定表的指定链的规则
     def list_rules(self, parm):
-        '''
+        """
             @name 列出指定表的指定链的规则
             @author wzz <2024/3/19 下午 3:02>
             @param
             @return
-        '''
+        """
         try:
             if not self.check_table_name(parm['table']):
                 return "Error: Unsupported table name."
@@ -187,12 +185,12 @@ class Iptables(Base):
                 stderr=subprocess.STDOUT, universal_newlines=True
             )
             return self.parse_rules(stdout)
-        except Exception as e:
+        except Exception as _:
             return []
 
     # 2024/4/29 下午12:16 列出iptables中所有INPUT和OUTPUT的端口规则
     def list_port(self):
-        '''
+        """
             @name 列出iptables中所有INPUT和OUTPUT的端口规则
             @return [{
                       "Protocol": "tcp",
@@ -202,7 +200,7 @@ class Iptables(Base):
                       "Address": "all",
                       "Chain": "INPUT"
                    }]
-        '''
+        """
         try:
             list_port = self.list_input_port() + self.list_output_port()
             for i in list_port:
@@ -213,7 +211,7 @@ class Iptables(Base):
 
     # 2024/4/29 下午2:39 列出防火墙中所有的INPUT端口规则
     def list_input_port(self):
-        '''
+        """
             @name 列出防火墙中所有的INPUT端口规则
             @return [{
                       "Protocol": "tcp",
@@ -223,7 +221,7 @@ class Iptables(Base):
                       "Address": "all",
                       "Chain": "INPUT"
                    }]
-        '''
+        """
         try:
             list_port = self.get_chain_port("INPUT")
             for i in list_port:
@@ -234,7 +232,7 @@ class Iptables(Base):
 
     # 2024/4/29 下午2:39 列出防火墙中所有的OUTPUT端口规则
     def list_output_port(self):
-        '''
+        """
             @name 列出防火墙中所有的OUTPUT端口规则
             @return [{
                       "Protocol": "tcp",
@@ -244,7 +242,7 @@ class Iptables(Base):
                       "Address": "all",
                       "Chain": "OUTPUT"
                    }]
-        '''
+        """
         try:
             list_port = self.get_chain_port("OUTPUT")
             for i in list_port:
@@ -255,7 +253,7 @@ class Iptables(Base):
 
     # 2024/4/29 下午3:28 根据链来获取端口规则，暂时只支持INPUT/OUTPUT链
     def get_chain_port(self, chain):
-        '''
+        """
             @name 根据链来获取端口规则
             @author wzz <2024/4/29 下午3:29>
             @param chain = INPUT/OUTPUT
@@ -267,7 +265,7 @@ class Iptables(Base):
                       "Address": "all",
                       "Chain": "OUTPUT"
                    }]
-        '''
+        """
         if chain not in ["INPUT", "OUTPUT"]:
             return []
 
@@ -325,7 +323,7 @@ class Iptables(Base):
 
     # 2024/4/29 下午3:28 根据链来获取IP规则，暂时只支持INPUT/OUTPUT链
     def get_chain_ip(self, chain):
-        '''
+        """
             @name 根据链来获取端口规则
             @author wzz <2024/4/29 下午3:29>
             @param chain = INPUT/OUTPUT
@@ -337,7 +335,7 @@ class Iptables(Base):
                           "Chain": "INPUT"
                        }
                     ]
-        '''
+        """
         if chain not in ["INPUT", "OUTPUT"]:
             return []
 
@@ -379,112 +377,112 @@ class Iptables(Base):
                 rules.append(rule)
 
             return rules
-        except Exception as e:
+        except Exception as _:
             return []
 
     # 2024/4/29 下午4:01 获取指定链的数据
     def get_chain_data(self, chain):
-        '''
+        """
             @name 获取指定链的数据
             @author wzz <2024/4/29 下午4:01>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             cmd = "{} -t filter -L {} -nv --line-numbers".format(self.cmd_str, chain)
             stdout, stderr = public.ExecShell(cmd)
             return stdout
-        except Exception as e:
+        except Exception as _:
             return ""
 
     # 2024/4/29 下午2:46 列出防火墙中所有的INPUT和OUTPUT的ip规则
     def list_address(self):
-        '''
+        """
             @name 列出防火墙中所有的ip规则
             @author wzz <2024/4/29 下午2:47>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return
-        '''
+        """
         try:
             list_address = self.get_chain_ip("INPUT") + self.get_chain_ip("OUTPUT")
             for i in list_address:
                 i["Strategy"] = i["Strategy"].lower()
             return list_address
-        except Exception as e:
+        except Exception as _:
             return []
 
     # 2024/4/29 下午2:48 列出防火墙中所有input的ip规则
     def list_input_address(self):
-        '''
+        """
             @name 列出防火墙中所有input的ip规则
             @author wzz <2024/4/29 下午2:48>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             list_address = self.get_chain_ip("INPUT")
             for i in list_address:
                 i["Strategy"] = i["Strategy"].lower()
             return list_address
-        except Exception as e:
+        except Exception as _:
             return []
 
     # 2024/4/29 下午2:49 列出防火墙中所有output的ip规则
     def list_output_address(self):
-        '''
+        """
             @name 列出防火墙中所有output的ip规则
             @author wzz <2024/4/29 下午2:49>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             list_address = self.get_chain_ip("OUTPUT")
             for i in list_address:
                 i["Strategy"] = i["Strategy"].lower()
             return list_address
-        except Exception as e:
+        except Exception as _:
             return []
 
     # 2024/4/29 下午2:49 添加INPUT端口规则
     def input_port(self, info, operation):
-        '''
+        """
             @name 添加INPUT端口规则
             @author wzz <2024/4/29 下午2:50>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             return self.set_chain_port(info, operation, "INPUT")
         except Exception as e:
-            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}", str(e)))
 
     # 2024/4/29 下午2:50 设置output端口策略
     def output_port(self, info, operation):
-        '''
+        """
             @name 设置output端口策略
             @author wzz <2024/4/29 下午2:50>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             return self.set_chain_port(info, operation, "OUTPUT")
         except Exception as e:
-            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}", str(e)))
 
     # 2024/4/29 下午4:49 添加/删除指定链的端口规则
     def set_chain_port(self, info, operation, chain):
-        '''
+        """
             @name 添加/删除指定链的端口规则
             @author wzz <2024/4/29 下午4:49>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             if not chain in ["INPUT", "OUTPUT"]:
-                return self._result(False, public.lang("Failed to set a port rule:{}","Unsupported chain types"))
+                return self._result(False, public.lang("Failed to set a port rule:{}", "Unsupported chain types"))
 
             if info['Protocol'] not in ["tcp", "udp"]:
-                return self._result(False, public.lang("Failed to set a port rule:{}","Unsupported protocol types"))
+                return self._result(False, public.lang("Failed to set a port rule:{}", "Unsupported protocol types"))
             if info["Strategy"] == "accept":
                 info["Strategy"] = "ACCEPT"
             elif info["Strategy"] == "drop":
@@ -492,7 +490,8 @@ class Iptables(Base):
             elif info["Strategy"] == "reject":
                 info["Strategy"] = "REJECT"
             else:
-                return self._result(False, public.lang("Failed to set a port rule:{}","The type of policy that is not supported"))
+                return self._result(False, public.lang("Failed to set a port rule:{}",
+                                                       "The type of policy that is not supported"))
 
             if operation == "add":
                 operation = "-I"
@@ -508,30 +507,31 @@ class Iptables(Base):
                 info['Strategy']
             )
             stdout, stderr = public.ExecShell(rule)
-            if stderr:
-                return self._result(False, public.lang("Failed to set a port rule:{}",stderr))
+            if stderr and "setlocale: LC_ALL: cannot change locale (en_US.UTF-8)" not in stderr:
+                return self._result(False, public.lang("Failed to set a port rule:{}", stderr))
             return self._result(True, public.lang("The port rule was successfully configured"))
         except Exception as e:
-            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}", str(e)))
 
     # 2024/4/29 下午5:01 添加/删除指定链的复杂端口规则
     def set_chain_rich_port(self, info, operation, chain):
-        '''
+        """
             @name 添加/删除指定链的复杂端口规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             if not chain in ["INPUT", "OUTPUT"]:
-                return self._result(False, public.lang("Failed to set a port rule:{}","Unsupported chain types"))
+                return self._result(False, public.lang("Failed to set a port rule:{}", "Unsupported chain types"))
 
             if "Address" in info and info["Address"] == "":
                 info["Address"] = "all"
             if "Address" in info and public.is_ipv6(info['Address']):
-                return self._result(False, public.lang("Failed to set a port rule:{}","IPV 6 addresses that are not supported"))
+                return self._result(False, public.lang("Failed to set a port rule:{}",
+                                                       "IPV 6 addresses that are not supported"))
 
             if info['Protocol'] not in ["tcp", "udp"]:
-                return self._result(False, public.lang("Failed to set a port rule:{}","Unsupported protocol types"))
+                return self._result(False, public.lang("Failed to set a port rule:{}", "Unsupported protocol types"))
             if info["Strategy"] == "accept":
                 info["Strategy"] = "ACCEPT"
             elif info["Strategy"] == "drop":
@@ -539,7 +539,8 @@ class Iptables(Base):
             elif info["Strategy"] == "reject":
                 info["Strategy"] = "REJECT"
             else:
-                return self._result(False, public.lang("Failed to set a port rule:{}","The type of policy that is not supported"))
+                return self._result(False, public.lang("Failed to set a port rule:{}",
+                                                       "The type of policy that is not supported"))
 
             if operation == "add":
                 operation = "-I"
@@ -596,27 +597,27 @@ class Iptables(Base):
                     )
 
             stdout, stderr = public.ExecShell(rule)
-            if stderr:
-                return self._result(False, public.lang("Failed to set a port rule:{}",stderr))
+            if stderr and "setlocale: LC_ALL: cannot change locale (en_US.UTF-8)" not in stderr:
+                return self._result(False, public.lang("Failed to set a port rule:{}", stderr))
             return self._result(True, public.lang("The port rule was successfully configured"))
         except Exception as e:
-            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}", str(e)))
 
     # 2024/4/29 下午5:01 添加/删除指定链的复杂ip规则
     def set_chain_rich_ip(self, info, operation, chain):
-        '''
+        """
             @name 添加/删除指定链的复杂ip规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             if not chain in ["INPUT", "OUTPUT"]:
-                return self._result(False, public.lang("Failed to set the rule:{}","Unsupported chain types"))
+                return self._result(False, public.lang("Failed to set the rule:{}", "Unsupported chain types"))
 
             if "Address" in info and info["Address"] == "":
                 info["Address"] = "all"
             if "Address" in info and public.is_ipv6(info['Address']):
-                return self._result(False, public.lang("Failed to set the rule:{}","IPV 6 addresses that are not supported"))
+                return self._result(False, public.lang("Failed to set the rule:{}", "IPV 6 addresses that are not supported"))
 
             if info["Strategy"] == "accept":
                 info["Strategy"] = "ACCEPT"
@@ -625,7 +626,8 @@ class Iptables(Base):
             elif info["Strategy"] == "reject":
                 info["Strategy"] = "REJECT"
             else:
-                return self._result(False, public.lang("Failed to set the rule:{}","The type of policy that is not supported"))
+                return self._result(False, public.lang("Failed to set the rule:{}",
+                                                       "The type of policy that is not supported"))
 
             if operation == "add":
                 operation = "-I"
@@ -651,69 +653,68 @@ class Iptables(Base):
                     info['Strategy']
                 )
 
-
             stdout, stderr = public.ExecShell(rule)
-            if stderr:
+            if stderr and "setlocale: LC_ALL: cannot change locale (en_US.UTF-8)" not in stderr:
                 return self._result(False, public.lang("Failed to set the rule:{}", stderr))
             return self._result(True, public.lang("The rule is set successfully"))
         except Exception as e:
-            return self._result(False, public.lang("Failed to set the rule:{}",str(e)))
+            return self._result(False, public.lang("Failed to set the rule:{}", str(e)))
 
     # 2024/4/29 下午2:51 INPUT复杂一些的规则管理
     def rich_rules(self, info, operation):
-        '''
+        """
             @name
             @author wzz <2024/4/29 下午2:51>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             if "Priority" in info and not "Port" in info:
                 return self.set_chain_rich_ip(info, operation, "INPUT")
             else:
                 return self.set_chain_rich_port(info, operation, "INPUT")
         except Exception as e:
-            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}", str(e)))
 
     # 2024/4/29 下午2:52 OUTPUT复杂一些的规则管理
     def output_rich_rules(self, info, operation):
-        '''
+        """
             @name OUTPUT复杂一些的规则管理
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             if "Priority" in info and not "Port" in info:
                 return self.set_chain_rich_ip(info, operation, "OUTPUT")
             else:
                 return self.set_chain_rich_port(info, operation, "OUTPUT")
         except Exception as e:
-            return self._result(False, public.lang("Failed to set a port rule:{}",str(e)))
+            return self._result(False, public.lang("Failed to set a port rule:{}", str(e)))
 
     # 2024/3/19 下午 3:03 清空指定链中的所有规则
     def flush_chain(self, chain_name):
-        '''
+        """
             @name 清空指定链中的所有规则
             @author wzz <2024/3/19 下午 3:03>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             subprocess.check_output(
                 [self.cmd_str, '-F', chain_name], stderr=subprocess.STDOUT, universal_newlines=True
             )
             return chain_name + " chain flushed successfully."
-        except Exception as e:
+        except Exception as _:
             return "Failed to flush " + chain_name + " chain."
 
     # 2024/3/19 下午 3:03 获取当前系统中可用的链的名称列表
     def get_chain_names(self, parm):
-        '''
+        """
             @name 获取当前系统中可用的链的名称列表
             @author wzz <2024/3/19 下午 3:03>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             if not self.check_table_name(parm['table']):
                 return "Error: Unsupported table name."
@@ -727,7 +728,7 @@ class Iptables(Base):
 
     # 2024/3/19 下午 3:17 构造端口转发规则，然后调用insert_rule方法插入规则
     def port_forward(self, info, operation):
-        '''
+        """
             @name 构造端口转发规则，然后调用insert_rule方法插入规则
             @param "info": {
                     "Protocol": "tcp/udp",
@@ -737,7 +738,7 @@ class Iptables(Base):
                 }
             @param "operation": "add" or "remove"
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             rule = " -p {}".format(info['Protocol'])
 
@@ -764,47 +765,47 @@ class Iptables(Base):
                 parm['type'] = "-D"
             return self.rule_manage(parm)
         except Exception as e:
-            return self._result(False, public.lang("Failed to set a port forwarding rule:{}",str(e)))
+            return self._result(False, public.lang("Failed to set a port forwarding rule:{}", str(e)))
 
     # 2024/3/19 下午 3:03 在指定链中管理规则
     def rule_manage(self, parm):
-        '''
+        """
             @name 在指定链中管理规则
             @author wzz <2024/3/19 下午 3:03>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             if not self.check_table_name(parm['table']):
-                return self._result(False, public.lang("Unsupported table names: {}",parm['table']))
+                return self._result(False, public.lang("Unsupported table names: {}", parm['table']))
 
             rule = "{} -t {} {} {} {}".format(
                 self.cmd_str, parm['table'], parm['type'], parm['chain_name'], parm['rule']
             )
             stdout, stderr = public.ExecShell(rule)
-            if stderr:
-                return self._result(False, public.lang("The rule setup failed:{}",stderr))
+            if stderr and "setlocale: LC_ALL: cannot change locale (en_US.UTF-8)" not in stderr:
+                return self._result(False, public.lang("The rule setup failed:{}", stderr))
 
             return self._result(True, public.lang("The rule is set successfully"))
         except Exception as e:
-            return self._result(False, public.lang("The rule setup failed: {}",str(e)))
+            return self._result(False, public.lang("The rule setup failed: {}", str(e)))
 
     # 2024/4/29 下午5:55 获取所有端口转发列表
     def list_port_forward(self):
-        '''
+        """
             @name 获取所有端口转发列表
             @author wzz <2024/4/29 下午5:55>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         return self.get_nat_prerouting_rules()
 
     # 2024/3/19 下午 4:00 调用list_rules获取所有nat表中的PREROUTING链的规则(端口转发规则),并分析成字典返回
     def get_nat_prerouting_rules(self):
-        '''
+        """
             @name 调用list_rules获取所有nat表中的PREROUTING链的规则(端口转发规则),并分析成字典返回
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             port_forward_rules = self.list_rules({"table": "nat", "chain_name": "PREROUTING"})
             rules = []
@@ -829,16 +830,16 @@ class Iptables(Base):
                     "Protocol": protocol.lower()
                 })
             return rules
-        except Exception as e:
+        except Exception as _:
             return []
 
     # 2024/4/29 下午2:43 格式化输出json
     def format_json(self, data):
-        '''
+        """
             @name 格式化输出json
             @param "data": json数据
             @return json字符串
-        '''
+        """
         import json
         from pygments import highlight, lexers, formatters
 

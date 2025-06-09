@@ -111,7 +111,7 @@
 				"index_15": "Thêm thời gian",
 				"index_16": "Sửa đổi chiến lược IP [{0}]",
 				"index_17": "Thay đổi chính sách địa chỉ IP để phát hành. Sau khi địa chỉ IP được đặt, truy cập bình thường được khôi phục. Bạn có muốn tiếp tục?",
-				"index_18": "Xóa quy tắc cổng [{0}]",
+				"index_18": "Xóa quy tắc IP [{0}]",
 				"index_19": "Quy tắc hiện tại đang bị xóa. Bạn có muốn tiếp tục?",
 				"index_20": "Xóa hàng loạt",
 				"index_21": "Batch Xóa IP",

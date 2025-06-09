@@ -111,7 +111,7 @@
 				"index_15": "Zeit hinzufügen",
 				"index_16": "Ändern Sie die IP -Strategie [{0}]",
 				"index_17": "Ändern Sie die IP -Adressrichtlinie zur Veröffentlichung. Nachdem die IP -Adresse festgelegt wurde, wird der normale Zugriff wiederhergestellt. Willst du weitermachen?",
-				"index_18": "Portregel löschen [{0}]",
+				"index_18": "IP -Regel löschen [{0}]",
 				"index_19": "Die aktuelle Regel wird gelöscht. Willst du weitermachen?",
 				"index_20": "Stapel löschen",
 				"index_21": "Batch löschen IP",

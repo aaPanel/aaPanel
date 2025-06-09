@@ -171,14 +171,14 @@
 			"index_16": "Selecione o nome de domínio",
 			"index_17": "Verificação do arquivo",
 			"index_18": "Crie arquivo HTML",
-			"index_19": "Dicas: O certificado para [{0}] expirou, por favor, atualize-o rapidamente!",
-			"index_20": "Combinar automaticamente nomes de domínio",
+			"index_19": "Dicas: Certificado para [{0}] expirou, atualize prontamente!",
+			"index_20": "Combine automaticamente nomes de domínio do pan",
 			"index_21": "Conectar",
 			"index_22": "Lembrar",
-			"index_23": "O SSL será renovado automaticamente 1 mês antes da data de expiração",
-			"index_24": "Certificado gratuito Let's Encrypt gerado automaticamente",
-			"index_25": "Se você tiver seu próprio SSL, mude para a guia [outro certificado] para adicionar",
-			"index_26": "Dica: O certificado [{0}] expirará em {1} dias, por favor, renove-o!"
+			"index_23": "O SSL será renovado automaticamente 1 mês antes da data de validade",
+			"index_24": "Gerado automaticamente, vamos criptografar certificado grátis",
+			"index_25": "Se você tiver seu próprio SSL, mude para [outro certificado] para adicionar",
+			"index_26": "Dica: o certificado [{0}] expirará em {1} dias, renove -o!"
 		}
 	}
 }

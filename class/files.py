@@ -581,7 +581,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 fname = file_info[0].encode('unicode_escape').decode("unicode_escape")
                 filename = os.path.join(get.path, fname)
                 if not os.path.exists(filename) and not os.path.islink(filename): continue
-                file_info = self.__format_stat(filename, get.path)
+                file_info = self.__format_stat_old(filename, get.path)
                 if not file_info: continue
                 favorite = self.__check_favorite(filename, data['STORE'])
                 r_file = self.__filename_flater(file_info['name']) + ';' + str(file_info['size']) + ';' + str(file_info['mtime']) + ';' + str(
@@ -634,6 +634,349 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         # 2023-3-6,增加融入企业级防篡改
         data = self._check_tamper(data)
         data = self._get_bt_sync_status_old(data)
+        return data
+
+    # 取文件/目录列表New
+    def GetDirNew(self, get):
+        if not hasattr(get, 'path'):
+            get.path = public.get_site_path()  # '/www/wwwroot'
+        if sys.version_info[0] == 2:
+            get.path = get.path.encode('utf-8')
+        if get.path == '':
+            get.path = '/www'
+        # 转换包含~的路径
+        if get.path.find('~') != -1:
+            get.path = os.path.expanduser(get.path)
+        get.path = self.xssdecode(get.path)
+        if not os.path.exists(get.path):
+            get.path = public.get_site_path()
+            # return public.ReturnMsg(False, '指定目录不存在!')
+        if os.path.basename(get.path) == '.Recycle_bin':
+            return public.returnMsg(False, '此为回收站目录，请在右上角按【回收站】按钮打开')
+        if not os.path.isdir(get.path):
+            get.path = os.path.dirname(get.path)
+        if not os.path.isdir(get.path):
+            return public.returnMsg(False, '这不是一个目录!')
+        dirnames = []
+        filenames = []
+        search = None
+        if hasattr(get, 'search'):
+            search = get.search.strip().lower()
+            public.set_search_history('files', 'get_list', search)
+        if hasattr(get, 'all'):
+            return self.SearchFilesNew(get)
+        # 获取分页数据
+        data = {}
+        top_data = self.__get_topping_data()
+        data['store'] = self.get_files_store(None)
+        data['file_recycle'] = os.path.exists('data/recycle_bin.pl')
+        if not hasattr(get, 'reverse'): get.reverse = 'False'
+        if not hasattr(get, 'sort'): get.sort = 'name'
+        reverse = bool(get.reverse)
+        if get.reverse == 'False':
+            reverse = False
+        # list_data = self.__list_dir(get.path, get.sort, reverse, search)
+        n_count, list_data = self.files_list(get.path, search, my_sort=get.sort, reverse=reverse)
+        # 包含分页类
+        import page
+        # 实例化分页类
+        page = page.Page()
+        info = {
+            'count': n_count,
+            'uri': {},
+            'row': int(get.showRow) if hasattr(get,
+                                               'showRow') else 2000 if 'disk' in get and get.disk == 'true' else 5000 if 'share' in get and get.share else 500,
+            'p': int(get.get('p', 1)),
+            'return_js': get.tojs if hasattr(get, 'tojs') else '',
+        }
+        # if 'disk' in get:
+        #     if get.disk == 'true': info['row'] = 2000
+        # if 'share' in get and get.share:
+        #     info['row'] = 5000
+        # info['p'] = int(get.get('p', 1))
+        # info['uri'] = {}
+        # info['return_js'] = ''
+        # if hasattr(get, 'tojs'):
+        #     info['return_js'] = get.tojs
+        # if hasattr(get, 'showRow'):
+        #     info['row'] = int(get.showRow)
+        data['page'] = page.GetPage(info, '1,2,3,4,5,6,7,8')
+        import html
+        pss = self.get_file_ps_list()
+        self.get_download_list()
+        top_dir = []
+        top_file = []
+        file_nm = []
+        dir_nm = []
+
+        for file_info in list_data[page.SHIFT:page.SHIFT + page.ROW]:
+            filename = os.path.join(get.path, file_info[0])
+
+            if not os.path.exists(filename) and not os.path.islink(filename): continue
+            content = os.stat(filename) if not os.path.islink(filename) or os.path.exists(
+                filename) else public.to_dict_obj({'st_size': 0, 'st_mtime': 0, 'st_mode': 0, 'st_uid': 0})
+
+            try:
+                if get.path != "/":
+                    user_name = pwd.getpwuid(content.st_uid).pw_name
+                else:
+                    user_name = 'root'
+            except KeyError:
+                user_name = ''
+
+            if str(filename).endswith(".bt_split_json"):
+                pss.update({filename: "PS：拆分恢复配置文件"})
+            if str(filename).endswith(".bt_split"):
+                pss.update({filename: "PS：拆分单元文件"})
+            # 备注
+            try:
+                rmk = public.readFile('data/files_ps/' + public.Md5(filename)) if os.path.exists(
+                    'data/files_ps/' + public.Md5(filename)) else pss.get(filename, '')
+            except:
+                rmk = ''
+
+            try:
+                r_file = {
+                    'nm': html.unescape(file_info[0]),  # 文件名
+                    'sz': content.st_size,  # 文件大小
+                    'mt': int(content.st_mtime),  # 修改时间
+                    'acc': str(oct(content.st_mode)[-3:]),  # 权限
+                    'user': user_name,  # 用户
+                    'lnk': '->' + str(os.readlink(filename)) if os.path.islink(filename) else '',  # 链接
+                    'durl': str(self.download_token_list.get(filename, '')),  # 下载链接
+                    'cmp': 1 if os.path.exists(filename + '/composer.json') else 0,  # 是否包含composer.json
+                    'fav': self.__check_favorite(filename, data['store']),  # 是否为收藏
+                    'rmk': rmk,  # 备注
+                    'top': 1 if html.unescape(filename) in top_data else 0,  # 文件或者目录是否置顶
+                    'sn': file_info[0]
+                }
+                if os.path.isdir(filename):
+                    if int(r_file['top']):
+                        top_dir.append(r_file)
+                    else:
+                        dirnames.append(r_file)
+                    dir_nm.append(r_file['nm'])
+                else:
+                    if int(r_file['top']):
+                        top_file.append(r_file)
+                    else:
+                        filenames.append(r_file)
+                    file_nm.append(r_file['nm'])
+            except:
+                pass
+
+        data['path'] = str(get.path)
+        data['dir'] = top_dir + dirnames
+        data['files'] = top_file + filenames
+        if hasattr(get, 'disk'):
+            import system
+            data['disk'] = system.system().GetDiskInfo()
+        data['dir_history'] = public.get_dir_history('files', 'GetDirList')
+        data['search_history'] = public.get_search_history('files', 'get_list')
+        public.set_dir_history('files', 'GetDirList', data['path'])
+        # 2023-3-6,增加融入企业级防篡改
+        data['tamper_data'] = self._new_check_tamper(data)
+        data['is_max'] = False
+        data = self._get_bt_sync_status(data)
+        return data
+
+    def get_file_ps_list(self):
+        pss = {
+            '/www/server/data': '此为MySQL数据库默认数据目录，请勿删除!',
+            '/www/server/mysql': 'MySQL程序目录',
+            '/www/server/redis': 'Redis程序目录',
+            '/www/server/mongodb': 'MongoDB程序目录',
+            '/www/server/nvm': 'PM2/NVM/NPM程序目录',
+            '/www/server/pass': '网站BasicAuth认证密码存储目录',
+            '/www/server/speed': '网站加速数据目录',
+            '/www/server/docker': 'Docker插件程序与数据目录',
+            '/www/server/total': '网站监控报表数据目录',
+            '/www/server/btwaf': 'WAF防火墙数据目录',
+            '/www/server/pure-ftpd': 'ftp程序目录',
+            '/www/server/phpmyadmin': 'phpMyAdmin程序目录',
+            '/www/server/rar': 'rar扩展库目录，删除后将失去对RAR压缩文件的支持',
+            '/www/server/stop': '网站停用页面目录,请勿删除!',
+            '/www/server/nginx': 'Nginx程序目录',
+            '/www/server/apache': 'Apache程序目录',
+            '/www/server/cron': '计划任务脚本与日志目录',
+            '/www/server/php': 'PHP目录，所有PHP版本的解释器都在此目录下',
+            '/www/server/tomcat': 'Tomcat程序目录',
+            '/www/php_session': 'PHP-SESSION隔离目录',
+            '/proc': '系统进程目录',
+            '/dev': '系统设备目录',
+            '/sys': '系统调用目录',
+            '/tmp': '系统临时文件目录',
+            '/var/log': '系统日志目录',
+            '/var/run': '系统运行日志目录',
+            '/var/spool': '系统队列目录',
+            '/var/lock': '系统锁定目录',
+            '/var/mail': '系统邮件目录',
+            '/mnt': '系统挂载目录',
+            '/media': '系统多媒体目录',
+            '/dev/shm': '系统共享内存目录',
+            '/lib': '系统动态库目录',
+            '/lib64': '系统动态库目录',
+            '/lib32': '系统动态库目录',
+            '/usr/lib': '系统动态库目录',
+            '/usr/lib64': '系统动态库目录',
+            '/usr/local/lib': '系统动态库目录',
+            '/usr/local/lib64': '系统动态库目录',
+            '/usr/local/libexec': '系统动态库目录',
+            '/usr/local/sbin': '系统脚本目录',
+            '/usr/local/bin': '系统脚本目录',
+            '/www/reserve_space.pl': '面板磁盘预留空间文件,可以删除'
+        }
+        recycle_list = public.get_recycle_bin_list()
+        recycle_list = {i: "PS：回收站目录" for i in recycle_list}
+        pss.update(recycle_list)
+        return pss
+
+
+    def SearchFilesNew(self, get):
+        if not hasattr(get, 'path'):
+            get.path = public.get_site_path()
+        if sys.version_info[0] == 2:
+            get.path = get.path.encode('utf-8')
+        if not os.path.exists(get.path):
+            get.path = '/www'
+        search = ""
+        if hasattr(get, 'search'):
+            search = get.search.strip().lower()
+        my_dirs = []
+        my_files = []
+        count = 0
+        max = 3000
+        is_max = False
+        for d_list in os.walk(get.path):
+            if count >= max:
+                is_max = True
+                break
+            for d in d_list[1]:
+                if count >= max:
+                    break
+                sn = d
+                d = self.xssencode(d)
+                if d.lower().find(search) != -1:
+                    filename = '{}/{}'.format(d_list[0] if d_list[0] != '/' else '', d)
+                    if not os.path.exists(filename):
+                        continue
+                    my_dirs.append(self.__get_stat(filename, get.path, sn=sn))
+                    count += 1
+
+            for f in d_list[2]:
+                if count >= max:
+                    break
+                sn = f
+                f = self.xssencode(f)
+                if f.lower().find(search) != -1:
+                    filename = '{}/{}'.format(d_list[0] if d_list[0] != '/' else '', f)
+                    if not os.path.exists(filename):
+                        continue
+                    my_files.append(self.__get_stat(filename, get.path, sn=sn))
+                    count += 1
+        data = {}
+        # data['DIR'] = sorted(my_dirs)
+        # data['FILES'] = sorted(my_files)
+        sort = 'nm'
+        reverse = False
+        if 'sort' in get and get.sort:
+            sort = 'nm' if get.sort == 'name' else 'sz' if get.sort == 'size' else 'mt' if get.sort == 'mtime' else 'nm'
+            if 'reverse' in get and get.reverse in ('True', 'true', '1', 1):
+                reverse = True
+        # 先对目录和文件进行排序
+        sorted_dirs = sorted(my_dirs, key=lambda file: file[sort], reverse=reverse)
+        sorted_files = sorted(my_files, key=lambda file: file[sort], reverse=reverse)
+
+        # 计算起始和结束位置
+        start = (int(get.p) - 1) * int(get.showRow)
+        end = start + int(get.showRow)
+
+        # 如果目录数大于等于结束位置，则按范围提取目录和文件
+        if len(sorted_dirs) >= end:
+            data['dir'] = sorted_dirs[start:end]
+            data['files'] = []
+        # 如果起始位置小于目录数但结束位置大于目录数，则提取部分目录和剩余文件
+        elif start < len(sorted_dirs) < end:
+            data['dir'] = sorted_dirs[start:len(sorted_dirs)]
+            data['files'] = sorted_files[:end - len(sorted_dirs)]
+        # 否则目录和文件都为空
+        else:
+            data['dir'] = []
+            data['files'] = sorted_files[start:end]
+
+        # data['dir'] = sorted(my_dirs, key=lambda file: file['nm'], reverse=False)
+        # data['files'] = sorted(my_files, key=lambda file: file['nm'], reverse=False)
+        data['path'] = str(get.path)
+        data['page'] = public.get_page(
+            len(my_dirs) + len(my_files), 1, max, 'GetFiles')['page']
+        data['store'] = self.get_files_store(None)
+
+        data['dir_history'] = public.get_dir_history('files', 'GetDirList')
+        data['search_history'] = public.get_search_history('files', 'get_list')
+        data['tamper_data'] = self._new_check_tamper(data)
+        data['file_recycle'] = os.path.exists('data/recycle_bin.pl')
+        data['is_max'] = is_max
+        data = self._get_bt_sync_status(data)
+        return data
+
+    # 用于GetDir 防篡改：获取文件是否在保护列表中
+    def _new_check_tamper(self, data):
+        try:
+            import PluginLoader
+        except:
+            return {}
+        args = public.dict_obj()
+        args.client_ip = public.GetClientIp()
+        args.fun = "check_dir_safe"
+        args.s = "check_dir_safe"
+        args.file_data = {
+            "base_path": data["path"],
+            "dirs": [i["sn"] for i in data["dir"]],
+            "files": [i["sn"] for i in data["files"]]
+        }
+        tamper_data = PluginLoader.plugin_run("tamper_core", "check_dir_safe", args)
+        return tamper_data
+
+    # 获取文件同步状态
+    @staticmethod
+    def _get_bt_sync_status(data):
+        config_file = "{}/plugin/rsync/config4.json".format(public.get_panel_path())
+        if not os.path.exists(config_file):
+            data["bt_sync"] = []
+            return data
+        try:
+            conf = json.loads(public.readFile(config_file))
+        except json.JSONDecodeError:
+            data["bt_sync"] = []
+            return data
+
+        dirs = []
+        for i in data["dir"]:
+            dirs.append(data['path'] + "/" + i["sn"])
+
+        res = [{} for _ in range(len(dirs))]
+        for idx, d in enumerate(dirs):
+            for value in conf.get("modules", []):
+                if value.get("path", "").rstrip("/") == d:
+                    res[idx] = {
+                        "type": "modules",
+                        "name": value.get("name", ""),
+                        "status": value.get("recv_status", True),
+                        "path": d,
+                    }
+
+        for idx, d in enumerate(dirs):
+            for value in conf.get("senders", []):
+                if value.get("source", "").rstrip("/") == d:
+                    target = value.get("target_list", [{}])[0]
+                    res[idx] = {
+                        "type": "senders",
+                        "name": target.get("name", ""),
+                        "status": target.get("status", True),
+                        "path": d,
+                    }
+
+        data["bt_sync"] = res
         return data
 
     # ———————————————————
@@ -870,14 +1213,27 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         except:pass
         return tmp_files
 
+    def __format_stat_old(self, filename, path):
+        try:
+            stat = self.__get_stat_old(filename, path)
+            if not stat:
+                return None
+            tmp_stat = stat.split(';')
+            file_info = {'name': self.xssencode(tmp_stat[0].replace('/', '')), 'size': int(tmp_stat[1]), 'mtime': int(
+                tmp_stat[2]), 'accept': int(tmp_stat[3]), 'user': tmp_stat[4], 'link': tmp_stat[5]}
+            return file_info
+        except:
+            return None
     def __format_stat(self, filename, path):
         try:
             stat = self.__get_stat(filename, path)
             if not stat:
                 return None
             tmp_stat = stat.split(';')
-            file_info = {'name': self.xssencode(tmp_stat[0].replace('/', '')), 'size': int(tmp_stat[1]), 'mtime': int(
-                tmp_stat[2]), 'accept': int(tmp_stat[3]), 'user': tmp_stat[4], 'link': tmp_stat[5]}
+            file_info = {
+                'name': self.xssencode(tmp_stat[0].replace('/', '')), 'size': int(tmp_stat[1]), 'mtime': int(
+                    tmp_stat[2]), 'accept': tmp_stat[3], 'user': tmp_stat[4], 'link': tmp_stat[5]
+            }
             return file_info
         except:
             return None
@@ -905,7 +1261,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     filename = d_list[0] + '/' + d
                     if not os.path.exists(filename):
                         continue
-                    my_dirs.append(self.__get_stat(filename, get.path))
+                    my_dirs.append(self.__get_stat_old(filename, get.path))
                     count += 1
 
             for f in d_list[2]:
@@ -916,7 +1272,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     filename = d_list[0] + '/' + f
                     if not os.path.exists(filename):
                         continue
-                    my_files.append(self.__get_stat(filename, get.path))
+                    my_files.append(self.__get_stat_old(filename, get.path))
                     count += 1
         data = {}
         data['DIR'] = sorted(my_dirs)
@@ -927,7 +1283,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         data['STORE'] = self.get_files_store(None)
         return data
 
-    def __get_stat(self, filename, path=None):
+    def __get_stat_old(self, filename, path=None, sn=None):
         if os.path.islink(filename) and not os.path.exists(filename):
             accept = "0"
             mtime = "0"
@@ -953,6 +1309,48 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         favorite = self.__check_favorite(filename, self.get_files_store(None))
         return filename + ';' + size + ';' + mtime + ';' + accept + ';' + user + ';' + link+';'+ down_url+';'+ \
                self.is_composer_json(filename)+';'+favorite+';'+self.__check_share(filename)
+
+    def __get_stat(self, filename, path=None, sn=None):
+        if os.path.islink(filename) and not os.path.exists(filename):
+            accept = "0"
+            mtime = "0"
+            user = "0"
+            size = "0"
+        else:
+            stat = os.stat(filename)
+            accept = str(oct(stat.st_mode)[-3:])
+            mtime = str(int(stat.st_mtime))
+            user = ''
+            try:
+                user = pwd.getpwuid(stat.st_uid).pw_name
+            except:
+                user = str(stat.st_uid)
+            size = str(stat.st_size)
+        link = ''
+        down_url = self.get_download_id(filename)
+        if os.path.islink(filename):
+            link = ' -> ' + os.readlink(filename)
+        tmp_path = (path + '/').replace('//', '/')
+        if path and tmp_path != '/':
+            filename = filename.replace(tmp_path, '', 1)
+        favorite = self.__check_favorite(filename, self.get_files_store(None))
+
+        file_info = {
+            'nm': filename,  # 文件名
+            'sz': int(size),  # 文件大小
+            'mt': int(mtime),  # 修改时间
+            'acc': accept,  # 权限
+            'user': user,  # 用户
+            'lnk': link,  # 链接
+            'durl': down_url,  # 下载链接
+            'cmp': self.is_composer_json(filename),  # composer.json
+            'fav': favorite,  # 收藏
+            'share': self.__check_share(filename),  # 共享
+            'sn': sn or ''
+        }
+
+        return file_info
+
 
     #获取指定目录下的所有视频或音频文件
     def get_videos(self,args):

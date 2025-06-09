@@ -789,5 +789,7 @@
 	"0c2d54b264e1f2df4c626b6b251e1510": "Cài đặt chứng chỉ ngay bây giờ",
 	"ae0d29aefa93b5d13f406b4c844bf5e6": "Vui lòng nhập một miền",
 	"4c835a52a19316b87fbf00485781956f": "Giấy chứng nhận đã cài đặt thành công",
-	"060bf2d587991d8f090a1309b285291c": "Kiểm tra"
+	"060bf2d587991d8f090a1309b285291c": "Kiểm tra",
+	"379d14bce48f85e00034b833d5c9c408": "Proxy CDN",
+	"c5bd9f0dd02f86e8581c609f3a14d0c1": "Lấy IP thực của yêu cầu từ proxy CDN"
 }

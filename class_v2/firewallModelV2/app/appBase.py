@@ -11,53 +11,45 @@
 # 系统防火墙模型 - 底层基类
 # ------------------------------
 
-import sys
 import subprocess
+import sys
+
 if "/www/server/panel/class" not in sys.path:
     sys.path.insert(0, "/www/server/panel/class")
 import public
 
 
 class Base(object):
-
     def __init__(self):
         pass
 
     # 2024/3/22 下午 3:18 通用返回
     def _result(self, status: bool, msg: str) -> dict:
-        '''
+        """
             @name 通用返回
             @author wzz <2024/3/22 下午 3:19>
             @param status: True/False
                     msg: 提示信息
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         return {"status": status, "msg": msg}
-        # status_int = 0 if status else -1
-        # return public.return_message(status_int, 0, msg)
-
-    # def _result_list(self, msg: list) -> dict:
-    #     '''
-    #         @name 通用返回 list转通用格式
-    #         @author wzz <2024/3/22 下午 3:19>
-    #         @param msg: 提示信息
-    #         @return dict{
-    #                 "status": 0,
-    #                 "timestamp": 时间戳,
-    #                 "message": {
-    #                     "result": []
-    #                     }
-    #                 }
-    #     '''
-    #     return public.return_message(0, 0, msg)
 
     # 2024/3/22 下午 4:55 检查是否设置了net.ipv4.ip_forward = 1，没有则设置
     def check_ip_forward(self) -> dict:
-        '''
+        """
             @name 检查是否设置了net.ipv4.ip_forward = 1，没有则设置
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
+        import os
+        if os.path.exists("/etc/default/ufw"):
+            # ufw需要开启转发
+            public.ExecShell(
+                """ grep -q 'DEFAULT_FORWARD_POLICY="DROP"' /etc/default/ufw && sed -i 's/DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw && ufw reload """
+            )
+            public.ExecShell(
+                "iptables -t nat -C POSTROUTING -j MASQUERADE 2>/dev/null || sudo iptables -t nat -A POSTROUTING -j MASQUERADE"
+            )
         stdout, stderr = public.ExecShell("sysctl net.ipv4.ip_forward")
         if "net.ipv4.ip_forward = 1" not in stdout:
             # 2024/3/22 下午 4:56 永久设置
@@ -74,12 +66,12 @@ class Base(object):
     # 2024/3/18 上午 11:35 处理192.168.1.100-192.168.1.200这种ip范围
     # 返回192.168.1.100,192.168.1.101,192.168.1...,192.168.1.200列表
     def handle_ip_range(self, ip):
-        '''
+        """
             @name 处理192.168.1.100-192.168.1.200这种ip范围的ip列表
             @author wzz <2024/3/19 下午 4:58>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         ip_range = ip.split("-")
         ip_start = ip_range[0]
         ip_end = ip_range[1]
@@ -94,9 +86,28 @@ class Base(object):
                     for l in range(ip_start[3], ip_end[3] + 1):
                         ip_list.append("{}.{}.{}.{}".format(i, j, k, l))
         return ip_list
+
+    # 处理70-79这种端口范围
+    # 返回70,71,72,...79列表
+    def handle_port_range(self, port):
+        """
+            @name 处理70-79这种端口范围的端口列表
+            @param "data":{"参数名":""} <数据类型> 参数描述
+            @return dict{"status":True/False,"msg":"提示信息"}
+        """
+        port_range = port.split("-")
+        port_start = int(port_range[0])
+        port_end = int(port_range[1])
+        port_list = []
+        for i in range(port_start, port_end + 1):
+            port_list.append(i)
+        return port_list
+
     def run_command(self, command):
         try:
-            result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            result = subprocess.run(
+                command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
             return result.stdout, result.stderr
         except subprocess.CalledProcessError as e:
             return e.stdout, e.stderr

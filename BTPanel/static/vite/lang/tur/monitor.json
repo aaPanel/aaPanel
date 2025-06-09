@@ -1,0 +1,43 @@
+{
+	"Monitor": {
+		"System": {
+			"index_1": "İzleme Durumu",
+			"index_2": "Tasarruf için gün sayısı: ",
+			"index_3": "Değiştirmek",
+			"index_4": "Temiz kütükler",
+			"index_5": "Lütfen tasarruf etmek için gün sayısını girin",
+			"index_6": "Tasarruf günü sayısı yasadışı!",
+			"index_7": "Monitory'nin tüm kütüklerini temizlediğinizden emin misiniz?",
+			"index_8": "Yük ortalaması",
+			"index_9": "1 dakika",
+			"index_10": "5 dakika",
+			"index_11": "15 dakika",
+			"index_12": "Sistem Kaynağı Kullanımı",
+			"index_13": "Yük detayları",
+			"index_14": "Sistem Kaynağı Kullanımı: ",
+			"index_15": "Tarih: ",
+			"index_16": "Hafıza",
+			"index_17": "Disk G/Ç",
+			"index_18": "Okumak",
+			"index_19": "Yazmak",
+			"index_20": "R/W Times",
+			"index_21": "R/W Bekle",
+			"index_22": "Birim: {0}/s",
+			"index_23": "Ağ G/Ç: ",
+			"index_24": "Yukarı akış",
+			"index_25": "Aşağı akış",
+			"index_26": "Tam ekran",
+			"index_27": "Tam ekrandan çıkın",
+			"index_28": "Süreç adı",
+			"index_29": "CPU kullanımı",
+			"index_30": "Başlangıç ​​kullanıcısı",
+			"index_31": "Bellek Kullanımı",
+			"index_32": "Disk kullanımı",
+			"index_33": "Monitör Günlük Boyutu: "
+		},
+		"API": {
+			"system_1": "İzleme Durumunu ayarlayın, lütfen bekleyin ...",
+			"system_2": "İzleme kayıtlarını temizleme, lütfen bekleyin ..."
+		}
+	}
+}

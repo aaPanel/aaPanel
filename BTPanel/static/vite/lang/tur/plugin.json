@@ -1,0 +1,99 @@
+{
+	"Plugin": {
+		"Mysql": {
+			"index_1": "Bu, {0} 'un ana yapılandırma dosyasıdır, yapılandırma kurallarını anlamıyorsanız, lütfen değiştirmeyin.",
+			"index_2": "Durum durduğunda beni uyar",
+			"index_3": "Durum Durdurma Alarm Ayarı",
+			"index_4": "Otomatik Restart",
+			"index_5": "{0} {1} hizmetinden emin misiniz?",
+			"index_6": "İkili kütük",
+			"index_7": "Sıcak ipuçları: MySQL ikili günlük, geçerli işlem günlüğünü kaydetmek, veri kurtarma, veri yedekleme için kullanılabilir.",
+			"index_8": "Son Değiştirilmiş Zaman",
+			"index_9": "Günlüğü sil",
+			"index_10": "[{0}] günlüğünü gerçekten silmek istiyor musunuz?",
+			"index_11": "İkili günlüğe açma MySQL veri güvenliğini koruyabilir, ancak aynı zamanda devam edip devam edeceğiniz belirli bir disk depolama alanı tüketir mi?",
+			"index_12": "İkili günlüğü kapatmak artık tüm değişiklik işlemlerini veritabanı ikili günlüğüne kaydetmeyecek mi?",
+			"index_13": "Taşınmak",
+			"index_14": "Risk Uyarısı: MySQL göç süreci sırasında çalışmayı bırakacak, lütfen dikkatli olun",
+			"index_15": "Risk Uyarısı: Taşıma işlemi sırasında başka işlemler yapmadan önce göç tamamlanana kadar lütfen bekleyin",
+			"index_16": "Veritabanı geçişi",
+			"index_17": "Veritabanını [{0}] olarak mı taşımak istiyorsunuz?",
+			"index_18": "Bellek koruması",
+			"index_19": "Not: Etkinleştirildikten sonra, MySQL bellek önceliği ayarlanacak ve MySQL, MySQL'in kararlı çalışmasını sağlayabilen sistem tarafından asla öldürülmeyecektir. Bununla birlikte, diğer süreçlerin anormal olarak öldürülmesine neden olabilir, bu da sistemin çalışmasını ciddi şekilde etkileyebilir. MySQL'in stabil bir şekilde çalışması gerektiğinde etkinleştirilmesi önerilir.",
+			"index_20": "Optimizasyon planı",
+			"index_21": "Max Ram Kullanımı",
+			"index_22": "{0} hizmetini yeniden başlatın",
+			"index_23": "Yapılandırmanın yürürlüğe girmesi için veritabanını yeniden başlatın",
+			"index_24": "{0} hizmetini yeniden başlattınız mı?",
+			"index_25": "MySQL sürümünü değiştirmeniz gerekiyorsa, lütfen verilerinizi yedekleyin, MySQL'i kaldırın ve yeniden yükleyin.",
+			"index_26": "Depolama yeri",
+			"index_27": "Optimizasyon",
+			"index_28": "Yavaş kütük",
+			"index_29": "Aralık zamanı",
+			"index_30": "Destek"
+		},
+		"Ftp": {
+			"index_1": "Bu özellik, profesyonel sürüme özeldir, {A}",
+			"index_2": "Günlük Yönetimi Anahtarı",
+			"index_3": "Açıldıktan sonra, tüm FTP kullanıcılarının giriş ve işlem kayıtları kaydedilecektir.",
+			"index_4": "Günlük yönetimi",
+			"index_5": "Pure-FTPD günlük yönetimini açtıktan sonra, çalışmaya devam edip etmeyeceğiniz tüm FTP kullanıcılarının oturum açma ve işlem kayıtlarını kaydeder mi?",
+			"index_6": "Saf-FTPD günlük yönetimini kapattıktan sonra, tüm FTP kullanıcılarının oturum açma ve işlem kayıtlarını, çalışmaya devam edip etmeyecek mi?",
+			"index_7": "Mevcut FTP adresi",
+			"index_8": "FTP Bağlantı Aracı İndir (FileZilla, Ücretsiz Açık Kaynak)",
+			"index_9": "Switch Versiyon",
+			"index_10": "Kullanıcı yönetimi",
+			"index_11": "Mevcut sürüm seçilen sürümle aynıdır!",
+			"index_12": "{0}-{1} yüklediğinizden emin misiniz?"
+		},
+		"Redis": {
+			"index_1": "Yapılandırmayı değiştirdikten sonra, verilerinizin devam etmesi gerekiyorsa, REDIS'i yeniden başlatmanız gerekir, lütfen önce Kaydet işlemini çalıştırın.",
+			"index_2": "UYARI: IP'ye sınırsız erişimin sunucu girişine yol açması muhtemel olduğundan, Redis Extranet erişimini açmayın.",
+			"index_3": "Ayarladıktan sonra, yeni Redis_Cache dizini seçilen dizinde oluşturulacak ve Redis izinleri verilecek",
+			"index_4": "Kalıcı dosya depolama yolu",
+			"index_5": "AOF kalıcılığı",
+			"index_6": "RDB kalıcılığı",
+			"index_7": "Kalıcılığı belirlemek"
+		},
+		"Apache": {
+			"index_1": "Yeniden Başlatma Süresi",
+			"index_2": "Başlangıç ​​zamanı",
+			"index_3": "Toplam bağlantılar",
+			"index_4": "Aktarılan toplam bayt",
+			"index_5": "Saniyede istekler",
+			"index_6": "Yoğun süreç",
+			"index_7": "Boş süreç",
+			"index_8": "Apache CPU kullanıyor",
+			"index_9": "Apache bellek kullanır",
+			"index_10": "Padon",
+			"index_11": "Daemon, {0} hizmetinin her zaman çalıştığından emin olmak için {0} hizmeti durdurulduktan sonra otomatik olarak başlatılabilir.",
+			"index_12": "Alanlar",
+			"index_13": "Mevcut değer",
+			"index_14": "Varsayılan her 1 dakikada bir kontrol edin, Cron'da değiştirilebilir"
+		},
+		"Mencached": {
+			"index_1": "IP dinleme, lütfen özgürce değiştirmeyin",
+			"index_2": "Dinleme bağlantı noktası, genellikle değiştirmeye gerek yok",
+			"index_3": "MB, önbellek boyutu, 512m'yi aşmaması önerilir",
+			"index_4": "40960'ı geçmemeniz önerilen maksimum bağlantı sayısı"
+		},
+		"MongoDB": {
+			"index_1": "Ayarladıktan sonra, seçilen dizinde yeni bir BT_Mongodb dizin oluşturun ve Mongo izni verin",
+			"index_2": "İzleme IP'sini Will'de değiştirmeyin",
+			"index_3": "Veri Depolama Konumu",
+			"index_4": "Günlük Dosyası Konumu",
+			"index_5": "PID Kaydet Yolu",
+			"index_6": "Dinleme bağlantı noktası, genellikle değiştirmeye gerek yok",
+			"index_7": "Lütfen önce MongoDB hizmetini başlatın!",
+			"index_8": "[{0}] veritabanını gerçekten silmek istiyor musunuz?"
+		},
+		"Openlitespeed": {
+			"index_1": "Bir isteği işleme sırasında izin verilen maksimum bağlantı boşta kalma süresini (saniye) belirtir",
+			"index_2": "Hem statik hem de dinamik yanıtlar için GZIP/Brotli sıkıştırmasını sağlar",
+			"index_3": "Dinamik içeriğe uygulanan GZIP sıkıştırma seviyesini belirtir. 1 (en düşük) ile 9 (en yüksek) arasında değişir",
+			"index_4": "Sunucunun kabul edebileceği maksimum eşzamanlı bağlantı sayısını belirtir. Bu hem düz TCP bağlantıları hem de SSL bağlantıları içerir",
+			"index_5": "Bir tutucu (kalıcı) oturum aracılığıyla sunulabilecek maksimum istek sayısını belirtir",
+			"index_6": "Sunucunun kabul edeceği maksimum eşzamanlı SSL bağlantıları sayısını belirtir, çünkü toplam eşzamanlı SSL ve SSL olmayan bağlantılar “maksimum bağlantılar” ile belirtilen sınırı aşamaz, bu sınırdan izin verilen gerçek eşzamanlı SSL bağlantılarının sayısı bu sınırdan daha düşük olmalıdır"
+		}
+	}
+}

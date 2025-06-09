@@ -1,0 +1,51 @@
+{
+	"Logs": {
+		"Panel": {
+			"index_1": "Operasyon Günlükleri",
+			"index_2": "Günlükleri Çalıştır",
+			"index_3": "Cron günlükleri",
+			"index_4": "Lütfen günlük adını girin",
+			"index_5": "Net Günlükler",
+			"index_6": "Çalışma türü",
+			"index_7": "Çalışma süresi",
+			"index_13": "SCREDE TARAYINIZ",
+			"index_14": "PHP saldırısı",
+			"index_15": "Günlükleri temizlemek üzere, devam et?"
+		},
+		"Website": {
+			"index_1": "URL (Top100)",
+			"index_2": "Erişim Günlükleri",
+			"index_3": "Sunucu yükü düşük olduğunda güvenlik analizi yapılması önerilir. Bu kez, [{0}]. Günlük dosyası taranacak ve bekleme süresi daha uzun olabilir. Devam etmek ister misin?",
+			"index_4": "Hata günlükleri",
+			"index_5": "IP (TOP100)"
+		},
+		"Audit": {
+			"index_1": "Lütfen Kaynak/Port/Rol/Etkinlik girin"
+		},
+		"SSH": {
+			"index_1": "IP: Port"
+		},
+		"Soft": {
+			"index_1": "FTP kullanıcı adı",
+			"index_2": "IP işlemi",
+			"index_3": "Dosya",
+			"index_4": "İniş zamanı",
+			"index_5": "FTP günlükleri",
+			"index_6": "MySQL Yavaş Günlükler",
+			"index_7": "MySQL hata günlükleri",
+			"index_8": "Çalışma günlüğü",
+			"index_9": "Lütfen Arama Anahtar Kelimeleri girin"
+		},
+		"Conversion": {
+			"index_1": "Günlük Denetimi - Giriş",
+			"index_2": "Ortak günlükleri analiz edin ve ayrıştırın",
+			"index_3": "Sistem, ağ ve uygulama programları tarafından kaydedilen çeşitli işlemler, olaylar ve anormal durumlar gibi bilgileri toplayın, analiz edin ve denetleyin.",
+			"index_4": "FTP Günlükleri - Giriş",
+			"index_5": "Geçerli FTP Oturum Açma Günlüğü ve Çalışma Günlüğünü Kaydedin ve Görüntüle",
+			"index_6": "FTP Kullanıcı İstemcisi Oturum Açma Günlüğü ve Dosya İşlem Günlüğü Bilgileri",
+			"index_7": "SSH Giriş Günlükleri - Giriş",
+			"index_8": "Mevcut SSH Oturum Açma Günlüklerini kaydedin ve görüntüleyin",
+			"index_9": "Mevcut SSH Oturum Açma Günlük Bilgilerini Kaydedin"
+		}
+	}
+}

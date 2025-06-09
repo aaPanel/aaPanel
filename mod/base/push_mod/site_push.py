@@ -825,10 +825,7 @@ class ServicesTask(BaseTask):
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     continue
             if status is True:
-                manual_flag(self.service_name, "start")
                 return True
-            else:
-                return False
         return False
 
     def get_server_status(self) -> bool:
@@ -880,8 +877,6 @@ class ServicesTask(BaseTask):
                 if self.get_pid_name('java'):
                     status = True
 
-            if status is True:
-                manual_flag(self.service_name, "start")
             return status
 
         elif self.service_name == 'pure-ftpd':
@@ -916,7 +911,6 @@ class ServicesTask(BaseTask):
         try:
             pid = read_file(pid_f)
             if pid and int(pid) in psutil.pids():
-                manual_flag(self.service_name, "start")
                 return True
             return False
         except Exception as e:

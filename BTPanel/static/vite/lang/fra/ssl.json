@@ -171,14 +171,14 @@
 			"index_16": "Veuillez sélectionner le nom de domaine",
 			"index_17": "Vérification des fichiers",
 			"index_18": "Créer un fichier HTML",
-			"index_19": "Conseils : Le certificat pour [{0}] a expiré, veuillez le mettre à jour rapidement !",
-			"index_20": "Combiner automatiquement les noms de domaine",
+			"index_19": "Conseils: Certificat pour [{0}] a expiré, veuillez mettre à jour rapidement!",
+			"index_20": "Combiner automatiquement les noms de domaine panoramique",
 			"index_21": "Connecter",
 			"index_22": "Rappeler",
-			"index_23": "Le SSL sera renouvelé automatiquement 1 mois avant la date d'expiration",
-			"index_24": "Certificat gratuit Let's Encrypt généré automatiquement",
-			"index_25": "Si vous avez votre propre SSL, veuillez passer à l'onglet [autre certificat] pour ajouter",
-			"index_26": "Conseil : Le certificat [{0}] expirera dans {1} jours, veuillez le renouveler !"
+			"index_23": "Le SSL sera automatiquement renouvelé 1 mois avant la date d'expiration",
+			"index_24": "Certificat gratuit, généré automatiquement, crypte",
+			"index_25": "Si vous avez votre propre SSL, veuillez passer à l'onglet [d'autres certificats] à ajouter",
+			"index_26": "Astuce: le certificat [{0}] expirera en {1} jours, veuillez le renouveler!"
 		}
 	}
 }

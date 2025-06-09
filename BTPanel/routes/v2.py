@@ -580,7 +580,7 @@ def files_v2(pdata=None):
             'back_path_permissions', 'upload_file_exists', 'CheckExistsFiles',
             'GetExecLog', 'GetSearch', 'ExecShell', 'GetExecShellMsg',
             'exec_git', 'exec_composer', 'create_download_url', 'UploadFile',
-            'GetDir', 'CreateFile', 'CreateDir', 'DeleteDir', 'DeleteFile',
+            'GetDir', 'GetDirNew','CreateFile', 'CreateDir', 'DeleteDir', 'DeleteFile',
             'get_download_url_list', 'remove_download_url',
             'modify_download_url', 'CopyFile', 'CopyDir', 'MvFile',
             'GetFileBody', 'SaveFileBody', 'Zip', 'UnZip',

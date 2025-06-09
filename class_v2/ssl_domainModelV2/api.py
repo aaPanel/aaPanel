@@ -44,6 +44,8 @@ from .service import (
     make_suer_alarm_task,
     generate_sites_task,
     find_site_with_domain,
+    CertHandler,
+    sync_site_ssl,
 )
 
 
@@ -53,7 +55,6 @@ class DomainObject:
     vhost = os.path.join(public.get_panel_path(), "vhost")
     mail_db_file = "/www/vmail/postfixadmin.db"
     manual_apply = os.path.join(os.path.dirname(__file__), "manual_apply.pl")
-    manual_apply_recycle = os.path.join(os.path.dirname(__file__), "manual_apply_recycle.pl")
     deploy_map = {
         1: UserFor.sites,
         2: UserFor.panel,
@@ -157,7 +158,7 @@ class DomainObject:
         if running is False:
             task = threading.Thread(target=SyncService(target_id).process)
             task.start()
-        return public.success_v2("success")
+        return public.success_v2(public.lang("success"))
 
     def list_dns_api(self, get):
         """
@@ -208,29 +209,29 @@ class DomainObject:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
         if "*" in get.api_user:
-            return public.fail_v2("'*' Symbols that are not allowed")
+            return public.fail_v2(public.lang("'*' Symbols that are not allowed"))
         if hasattr(get, "status"):
             get.status = int(get.status)
         if get.name not in self.supports:
-            return public.fail_v2(f"Provider not support! Support DNS provider :{self.supports}")
+            return public.fail_v2(public.lang(f"Provider not support! Support DNS provider :{self.supports}"))
         if get.name == "CloudFlareDns":
             if not hasattr(get, "permission") or get.permission not in ["limit", "global"]:
-                return public.fail_v2("CloudFlareDns Permission must be 'limit' or 'global'!")
+                return public.fail_v2(public.lang("CloudFlareDns Permission must be 'limit' or 'global'!"))
         else:
             get.permission = "-"
 
         if DnsDomainProvider.objects.filter(alias=get.alias).first():
-            return public.fail_v2("Alias already exists!")
+            return public.fail_v2(public.lang("Alias already exists!"))
 
         if DnsDomainProvider.objects.filter(
                 api_user=get.api_user, api_key=get.api_key, name=get.name,
         ).first():
-            return public.fail_v2(f"Account already exists!")
+            return public.fail_v2(public.lang(f"Account already exists!"))
 
         try:
             dns = DnsDomainProvider(**get.get_items())
             if not dns.is_pro():
-                return public.fail_v2("Please Upgrade PRO Version!")
+                return public.fail_v2(public.lang("Please Upgrade PRO Version!"))
             dns.dns_obj.verify()
             dns_save = dns.save()
             init_task = threading.Thread(
@@ -238,7 +239,7 @@ class DomainObject:
             )
             init_task.start()
             public.set_module_logs("sys_domain", "Add_Dns_Api", 1)
-            return public.success_v2("Save Successfully!")
+            return public.success_v2(public.lang("Save Successfully!"))
         except Exception as ex:
             raise ex
 
@@ -257,22 +258,22 @@ class DomainObject:
         msg = f"DNS: {provider.name} Alias: {provider.alias} , Delete Successfully!"
         provider.delete()
         public.WriteLog("DnsSSLManager", msg)
-        return public.success_v2("Delete Successfully!")
+        return public.success_v2(public.lang("Delete Successfully!"))
 
     def edit_dns_api(self, get):
         if not hasattr(get, "id"):
-            return public.fail_v2("id is required")
+            return public.fail_v2(public.lang("id is required"))
         if hasattr(get, "status"):
             get.status = int(get.status)
         if hasattr(get, "name") and get.name == "CloudFlareDns":
             if not hasattr(get, "permission") or get.permission not in ["limit", "global"]:
-                return public.fail_v2("CloudFlareDns Permission must be 'limit' or 'global'")
+                return public.fail_v2(public.lang("CloudFlareDns Permission must be 'limit' or 'global'"))
         if hasattr(get, "user") and "*" in get.api_user:
-            return public.fail_v2("'*' symbols that are not allowed")
+            return public.fail_v2(public.lang("'*' symbols that are not allowed"))
 
         # alias 不允许重复
         if hasattr(get, "alias") and DnsDomainProvider.objects.filter(alias=get.alias).first():
-            return public.fail_v2("Alias already exists!")
+            return public.fail_v2(public.lang("Alias already exists!"))
         try:
             dns = DnsDomainProvider.objects.filter(id=get.id).first()
             for k, v in get.get_items().items():
@@ -284,7 +285,7 @@ class DomainObject:
             DnsDomainProvider.objects.filter(id=get.id).update(get.get_items())
         except Exception as ex:
             return public.fail_v2(str(ex))
-        return public.success_v2("Save Successfully!")
+        return public.success_v2(public.lang("Save Successfully!"))
 
     # =========== dns 记录 ===========
     def list_dns_record(self, get):
@@ -307,7 +308,7 @@ class DomainObject:
         pid = int(get.search_pid)
         provider = DnsDomainProvider.objects.find_one(id=pid)
         if not provider:
-            return public.fail_v2("Provider not found!")
+            return public.fail_v2(public.lang("Provider not found!"))
         if hasattr(get, "domain"):
             domain_name = get.domain
         else:
@@ -342,7 +343,7 @@ class DomainObject:
         else:
             if hasattr(get, "search_and") and hasattr(get, "search"):
                 return public.fail_v2(
-                    "search_and and search can not be used at the same time"
+                    public.lang("search_and and search can not be used at the same time")
                 )
 
             obj = DnsDomainRecord.objects.filter(
@@ -400,7 +401,7 @@ class DomainObject:
         response = provider.model_create_dns_record(body)
         if not response.get("status"):
             return public.fail_v2(response.get("msg"))
-        return public.success_v2("Save Successfully!")
+        return public.success_v2(public.lang("Save Successfully!"))
 
     def delete_dns_record(self, get):
         try:
@@ -414,14 +415,14 @@ class DomainObject:
             return public.return_message(-1, 0, str(ex))
         record = DnsDomainRecord.objects.find_one(id=int(get.id))
         if not record:
-            return public.fail_v2("DNS record Not Found!")
+            return public.fail_v2(public.lang("DNS record Not Found!"))
         provider = DnsDomainProvider.objects.find_one(id=record.provider_id)
         if not provider:
-            return public.fail_v2("DNS Provider Not Found!")
+            return public.fail_v2(public.lang("DNS Provider Not Found!"))
         response = provider.model_delete_dns_record(int(get.id))
         if not response.get("status"):
             return public.fail_v2(response.get("msg"))
-        return public.success_v2("Delete Successfully!")
+        return public.success_v2(public.lang("Delete Successfully!"))
 
     def edit_dns_record(self, get):
         try:
@@ -450,10 +451,10 @@ class DomainObject:
         real_change = False
         provider = DnsDomainProvider.objects.find_one(id=pid)
         if not provider:
-            return public.fail_v2("DNS Provider Not Found!")
+            return public.fail_v2(public.lang("DNS Provider Not Found!"))
         target = DnsDomainRecord.objects.find_one(id=record_id)
         if not target:
-            return public.fail_v2("DNS Record Not Found!")
+            return public.fail_v2(public.lang("DNS Record Not Found!"))
         new_body = {
             "provider_id": provider.id,
             "provider_name": provider.name,
@@ -478,16 +479,16 @@ class DomainObject:
             real_change = True
         if not real_change:
             DnsDomainRecord.objects.filter(id=record_id).update(new_body)
-            return public.success_v2("Update Successfully!")
+            return public.success_v2(public.lang("Update Successfully!"))
         # real change
         try:
             update = provider.model_edit_dns_record(record_id, new_body)
             if update.get("status"):
-                return public.success_v2("Update Successfully!")
+                return public.success_v2(public.lang("Update Successfully!"))
             else:
-                return public.fail_v2(update.get("msg", "Update Failed..."))
+                return public.fail_v2(public.lang(update.get("msg", "Update Failed...")))
         except Exception as ex:
-            return public.fail_v2(str(ex))
+            return public.fail_v2(public.lang(str(ex)))
 
     # ========== 域名管理概况 SSL =======
     def list_domain_details(self, get):
@@ -508,7 +509,7 @@ class DomainObject:
         limit = int(getattr(get, "limit", 100))
         provider = DnsDomainProvider.objects.find_one(id=get.id)
         if not provider:
-            return public.fail_v2("DNS Provider Not Found!")
+            return public.fail_v2(public.lang("DNS Provider Not Found!"))
         data = self._add_ssl_info(provider.as_dict())
         data = data.get("domains", [])
         if hasattr(get, "domain"):  # filter domain
@@ -590,7 +591,7 @@ class DomainObject:
             return public.return_message(-1, 0, str(ex))
         file_path = "/www/server/panel/vhost" + f"/ssl_saved/{get.hash}"
         if not os.path.exists(file_path):
-            return public.fail_v2("SSL Certificate  Not Found!")
+            return public.fail_v2(public.lang("SSL Certificate  Not Found!"))
 
         download_path = os.path.join(self.vhost, f"/ssl_saved/download")
         if not os.path.exists(download_path):
@@ -647,6 +648,10 @@ class DomainObject:
                     dns_renew_task.start()
             else:  # http
                 log = ssl.get_ssl_log()
+                if any("*." in i for i in ssl.dns):
+                    msg = "Error: The wildcard domain name can only be verified by DNS. \n"
+                    public.AppendFile(log, msg)
+                    continue
                 http_renew_task = threading.Thread(
                     target=apply_cert, kwargs=({
                         "domains": ssl.dns,
@@ -658,9 +663,12 @@ class DomainObject:
 
         if hasattr(get, "hash"):
             return public.success_v2(log)
-        return public.success_v2("Successfully Renewed!")
+        return public.success_v2(public.lang("Successfully Renewed!"))
 
     def manual_apply_vaild(self, get):
+        """
+        手动申请验证
+        """
         try:
             get.validate([
                 Param("site_id").Integer().Require(),
@@ -675,25 +683,26 @@ class DomainObject:
             public.readFile(self.manual_apply)
         )
         if get.site_id not in manual_apply.keys():
-            return public.fail_v2("Site Id Not Found!")
+            return public.fail_v2(public.lang("Site Id Not Found!"))
         new_get = public.dict_obj()
         new_get.index = manual_apply[get.site_id]
         vaild = acme_v2().validate_domain(new_get)
         if vaild.get("save_path"):
-            ssl_obj = DnsDomainSSL.objects.filter(dns__contains=vaild.get("domains", "")).first()
+            ssl_hash = CertHandler.get_hash(vaild.get("cert", "") + vaild.get("root", ""))
+            ssl_obj = DnsDomainSSL.objects.filter(hash=ssl_hash).first()
             site_name = public.M("sites").where("id=?", get.site_id).getField("name")
             if site_name and ssl_obj:
                 ssl_obj.deploy_sites([site_name])
             if get.site_id in manual_apply.keys():
                 del manual_apply[get.site_id]
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
-            return public.success_v2(vaild.get("msg", "Apply Successfully!"))
+            return public.success_v2(public.lang(vaild.get("msg", "Apply Successfully!")))
         if vaild.get("status") is True:
             if get.site_id in manual_apply.keys():
                 del manual_apply[get.site_id]
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
-            return public.success_v2("Apply Successfully!")
-        return public.fail_v2(vaild.get("msg") or vaild.get("message"))
+            return public.success_v2(public.lang("Apply Successfully!"))
+        return public.fail_v2(public.lang(str(vaild.get("msg"))))
 
     def manual_apply_check(self, get):
         try:
@@ -710,28 +719,18 @@ class DomainObject:
         manual_apply: Dict[str, str] = json.loads(
             public.readFile(self.manual_apply)
         )
-        if target in manual_apply.keys():
+        target_detail = None
+        for k in list(manual_apply.keys()):
             new_get = public.dict_obj()
-            new_get.index = manual_apply[target]
+            new_get.index = manual_apply[k]
+            detail = acme_v2().get_order_detail(new_get)
+            target_detail = detail.get("message") if target == k else None
+            if detail.get("status") == 0 and detail["message"].get("endtime") <= 0:
+                del manual_apply[k]
+                public.writeFile(self.manual_apply, json.dumps(manual_apply))
 
-            detail = acme_v2().get_order_detail(new_get).get('message', {})
-
-            if len(get.get("domains", [])) > 0:
-                s1 = set(map(lambda x: str(x.get('domain', '')).rstrip('*.'), detail.get('auths', [])))
-                s2 = set(get.get('domains'))
-
-                if len(s1) != len(s2) or s1.difference(s2):
-                    # 将订单号移入回收站
-                    with open(self.manual_apply_recycle, 'a') as fp:
-                        fp.write('{} {}\n'.format(target, manual_apply[target]))
-
-                    del manual_apply[target]
-                    public.writeFile(self.manual_apply, json.dumps(manual_apply))
-
-                    return public.success_v2({})
-
-            return public.success_v2(detail)
-
+        if target_detail:
+            return public.success_v2(target_detail)
         return public.success_v2({})
 
     def apply_new_ssl(self, get):
@@ -752,9 +751,9 @@ class DomainObject:
             ])
             get.domains = json.loads(get.domains)
             if get.auth_type not in ["dns", "http", "dns_manual"]:
-                return public.fail_v2("auth_type must be 'dns', 'http' or 'dns_manual'")
+                return public.fail_v2(public.lang("auth_type must be 'dns', 'http' or 'dns_manual'"))
             if len(get.domains) == 0:
-                return public.fail_v2("domains is empty")
+                return public.fail_v2(public.lang("domains is empty"))
             get.deploy = getattr(get, "deploy", -1)
             get.site_id = str(getattr(get, "site_id", "-1"))
             auto_wildcard = False if int(getattr(get, "auto_wildcard", 0)) == 0 else True
@@ -769,7 +768,7 @@ class DomainObject:
 
         for d in apply_domains:
             if not DomainValid.is_valid_domain(d.replace("*.", "")):
-                return public.fail_v2(f"Invalid domain name: {d}")
+                return public.fail_v2(public.lang(f"Invalid domain name: {d}"))
 
         if get.auth_type == "dns":  # auto dns verify
             provider = None
@@ -779,7 +778,7 @@ class DomainObject:
                     domains__contains=temp_root
                 ).first()
                 if not provider:
-                    return public.fail_v2(f"DNS Provider Not Found! for {temp_root}")
+                    return public.fail_v2(public.lang(f"DNS Provider Not Found! for {temp_root}"))
             dns_task = generate_sites_task({}, -1)
             threading.Thread(target=provider.model_apply_cert,
                              kwargs=({
@@ -789,17 +788,24 @@ class DomainObject:
                                  "task_obj": dns_task,
                              })).start()
             return public.success_v2({
-                "result": success_msg,
+                "result": public.lang(success_msg),
                 "task_id": dns_task.id
             })
 
         elif get.auth_type == "http":  # file verify
             site = find_site_with_domain(get.domains[0])
             if not site:
-                return public.fail_v2("Site Not Found")
+                return public.fail_v2(public.lang("Site Not Found"))
             if site.get("status") != "1":
-                return public.fail_v2("Site Not Running")
+                return public.fail_v2(public.lang("Site Not Running"))
             http_task = generate_sites_task({}, -1)
+            if any("*." in i for i in get.domains):
+                err_msg = "Error: The wildcard domain name can only be verified by DNS. \n"
+                http_task.task_done(task_code=-1, task_result=err_msg)
+                return public.success_v2({
+                    "result": public.lang(err_msg),
+                    "task_id": http_task.id
+                })
             threading.Thread(target=apply_cert,
                              kwargs=({
                                  "domains": apply_domains,
@@ -809,7 +815,7 @@ class DomainObject:
                                  "deploy": deploy_flag,
                              })).start()
             return public.success_v2({
-                "result": success_msg,
+                "result": public.lang(success_msg),
                 "task_id": http_task.id
             })
 
@@ -829,7 +835,8 @@ class DomainObject:
                 auto_wildcard=auto_wildcard,
             )
             if apply_res.get("save_path"):  # 免认证期间将跳过验证, 直接下发ssl
-                ssl_obj = DnsDomainSSL.objects.filter(dns__contains=apply_domains).first()
+                ssl_hash = CertHandler.get_hash(apply_res.get("cert", "") + apply_res.get("root", ""))
+                ssl_obj = DnsDomainSSL.objects.filter(hash=ssl_hash).first()
                 site_name = public.M("sites").where("id=?", get.site_id).getField("name")
                 deploy = {}
                 if site_name and ssl_obj:
@@ -840,7 +847,7 @@ class DomainObject:
                 success_msg = {"result": apply_res.get("msg", "Apply Successfully!")}
                 if deploy.get("status"):
                     success_msg.update({"deploy": deploy.get("status")})
-                return public.success_v2(success_msg)
+                return public.success_v2(public.lang(success_msg))
             if apply_res.get("index"):
                 manual_apply.update({get.site_id: apply_res.get("index")})
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
@@ -848,10 +855,10 @@ class DomainObject:
                 new_get.index = apply_res.get("index")
                 return acme_v2().get_order_detail(new_get)
             if apply_res.get("status") is False:
-                return public.fail_v2(apply_res.get("msg", "Apply Failed!"))
-            return public.success_v2("Apply Successfully!")
+                return public.fail_v2(public.lang(apply_res.get("msg", "Apply Failed!")))
+            return public.success_v2(public.lang("Apply Successfully!"))
 
-        return public.fail_v2("Unknown Auth Type")
+        return public.fail_v2(public.lang("Unknown Auth Type"))
 
     def upload_cert(self, get):
         """
@@ -871,7 +878,7 @@ class DomainObject:
             from ssl_domainModelV2.service import CertHandler
             data = CertHandler().save_by_data(get.cert, get.key)
             if not data:
-                return public.fail_v2("update cert failed")
+                return public.fail_v2(public.lang("update cert failed"))
             return public.success_v2(data)
         except Exception as ex:
             return public.fail_v2(str(ex))
@@ -891,7 +898,7 @@ class DomainObject:
             return public.return_message(-1, 0, str(ex))
         ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
         if not ssl_obj:
-            return public.fail_v2("SSL Certificate Not Found!")
+            return public.fail_v2(public.lang("SSL Certificate Not Found!"))
         # vhost/ssl为site ssl证书存放目录
         cert_name = ssl_obj.subject.replace("*.", "")
         vpath = os.path.join(self.vhost, "ssl", cert_name)
@@ -904,7 +911,7 @@ class DomainObject:
             public.print_log("error info: {}".format(ex))
             return public.fail_v2(str(ex))
 
-        return public.success_v2("Remove Successfully!")
+        return public.success_v2(public.lang("Remove Successfully!"))
 
     def switch_auto_renew(self, get):
         """
@@ -922,12 +929,12 @@ class DomainObject:
 
         ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
         if not ssl_obj:
-            return public.fail_v2("SSL Not Found!")
+            return public.fail_v2(public.lang("SSL Not Found!"))
         # make_suer_renew_task()  # make suer corn task
         open_map = {0: 1, 1: 0}
         ssl_obj.auto_renew = open_map.get(ssl_obj.auto_renew, 1)
         ssl_obj.save()
-        return public.success_v2("Setting Successfully!")
+        return public.success_v2(public.lang("Setting Successfully!"))
 
     def switch_ssl_alarm(self, get):
         """
@@ -945,7 +952,7 @@ class DomainObject:
             return public.return_message(-1, 0, str(ex))
         ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
         if not ssl_obj:
-            return public.fail_v2("SSL Not Found!")
+            return public.fail_v2(public.lang("SSL Not Found!"))
 
         alarm = int(get.alarm)
         if alarm == 1:  # open
@@ -955,7 +962,7 @@ class DomainObject:
         else:  # close
             ssl_obj.alarm = alarm
             ssl_obj.save()
-        return public.success_v2("Setting Successfully!")
+        return public.success_v2(public.lang("Setting Successfully!"))
 
     # =========== Deploy ================
     @staticmethod
@@ -985,7 +992,7 @@ class DomainObject:
 
         ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
         if not ssl_obj:
-            return public.fail_v2("SSL Certificate Not Found!")
+            return public.fail_v2(public.lang("SSL Certificate Not Found!"))
         # ====================== sites ======================
         # 不考虑status
         sites = public.S("sites").field(
@@ -1097,7 +1104,7 @@ class DomainObject:
                     continue
             # 2, 移除diff之后, 部署
             result = ssl_obj.deploy_sites(site_names=get.domains, replace=True)
-        return public.return_message(0 if result.get("status") else -1, 0, result.get("msg"))
+        return public.return_message(0 if result.get("status") else -1, 0, public.lang(result.get("msg")))
 
     def cert_deploy_mails(self, get):
         """
@@ -1135,9 +1142,9 @@ class DomainObject:
         # 2, 移除diff之后, 部署
         result = ssl_obj.deploy_mails(get.domains)
         if result.get("status"):
-            return public.success_v2("Deploy Mail's SSL Successfully!")
+            return public.success_v2(public.lang("Deploy Mail's SSL Successfully!"))
 
-        return public.fail_v2(result.get("msg", "Deploy Faild..."))
+        return public.fail_v2(public.lang(result.get("msg", "Deploy Faild...")))
 
     def cert_deploy_accounts(self, get):
         """
@@ -1149,7 +1156,7 @@ class DomainObject:
             public.print_log("error info: {}".format(ex))
             return public.fail_v2(str(ex))
 
-        return public.success_v2("Deploy Account's SSL Successfully!")
+        return public.success_v2(public.lang("Deploy Account's SSL Successfully!"))
 
     def cert_deploy_panel(self, get):
         """
@@ -1169,8 +1176,8 @@ class DomainObject:
         ssl_obj, get = self.__before_deploy(get)
         res = ssl_obj.deploy_panel(recover=int(get.recover))
         if res.get("status"):
-            return public.success_v2("Deploy Panel's SSL Successfully!")
-        return public.fail_v2(res.get("msg", "Deploy Panel's SSL Failed!"))
+            return public.success_v2(public.lang("Deploy Panel's SSL Successfully!"))
+        return public.fail_v2(public.lang(res.get("msg", "Deploy Panel's SSL Failed!")))
 
     # =========== Site ===========
     def get_sites(self, get):
@@ -1300,15 +1307,15 @@ class DomainObject:
         auth_type = get.domain.get("auth_type")
         domain = get.domain.get("domain", "").strip()
         if "*." in domain:
-            return public.fail_v2("Wildcard domain is not supported!")
+            return public.fail_v2(public.lang("Wildcard domain is not supported!"))
         if not DomainValid.is_valid_domain(domain):
-            return public.fail_v2("Domain Not Valid!")
+            return public.fail_v2(public.lang("Domain Not Valid!"))
 
         get.domain["domain"] = domain
         if not domain:
-            return public.fail_v2("domain is empty")
+            return public.fail_v2(public.lang("domain is empty"))
         if auth_type not in ["http", "dns"]:
-            return public.fail_v2("auth_type must be 'http' or 'dns'")
+            return public.fail_v2(public.lang("auth_type must be 'http' or 'dns'"))
         # org = public.readFile(PANEL_DOMAIN)
         # if domain == org:
         #     return public.success_v2("Set Panel's SSL Successfully!")
@@ -1414,3 +1421,4 @@ def move_old_account():
 
 
 move_old_account()
+sync_site_ssl()

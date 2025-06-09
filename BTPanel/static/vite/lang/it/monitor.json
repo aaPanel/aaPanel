@@ -1,0 +1,43 @@
+{
+	"Monitor": {
+		"System": {
+			"index_1": "Stato di monitoraggio",
+			"index_2": "Numero di giorni per salvare: ",
+			"index_3": "Modificare",
+			"index_4": "Registri puliti",
+			"index_5": "Inserisci il numero di giorni per salvare",
+			"index_6": "Il numero di risparmio è illegale!",
+			"index_7": "Sei sicuro di pulire tutti i tronchi del monitorio?",
+			"index_8": "Carica media",
+			"index_9": "1 min",
+			"index_10": "5 min",
+			"index_11": "15 min",
+			"index_12": "Utilizzo delle risorse di sistema",
+			"index_13": "Dettagli di carico",
+			"index_14": "Utilizzo delle risorse del sistema: ",
+			"index_15": "Data: ",
+			"index_16": "Memoria",
+			"index_17": "Disco I/O.",
+			"index_18": "Leggere",
+			"index_19": "Scrivere",
+			"index_20": "tempi r/w.",
+			"index_21": "R/W Aspetta",
+			"index_22": "Unità: {0}/s",
+			"index_23": "Rete I/O: ",
+			"index_24": "A monte",
+			"index_25": "A valle",
+			"index_26": "A schermo intero",
+			"index_27": "Esci da schermo intero",
+			"index_28": "Nome del processo",
+			"index_29": "Utilizzo della CPU",
+			"index_30": "Utente di avvio",
+			"index_31": "Utilizzo della memoria",
+			"index_32": "Utilizzo del disco",
+			"index_33": "Dimensione del registro del monitor: "
+		},
+		"API": {
+			"system_1": "Impostazione dello stato di monitoraggio, attendere ...",
+			"system_2": "Cancamento dei record di monitoraggio, aspetta ..."
+		}
+	}
+}

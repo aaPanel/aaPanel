@@ -3845,3 +3845,27 @@ class config:
                 return public.return_message(0, 0,  "删除成功！")
         except Exception as e:
             return public.return_message(-1, 0, "删除失败！" + str(e))
+
+    # 设置CDN代理状态
+    def set_cdn_status(self, get):
+        from flask import current_app
+        try:
+            cdn_switch = int(get.get('cdn_switch', 0))
+            config_path = '/www/server/panel/config/cdn.conf'
+            config_dir = os.path.dirname(config_path)
+
+            # 确保配置目录存在
+            if not os.path.exists(config_dir):
+                os.makedirs(config_dir)
+
+            # 写入配置文件
+            with open(config_path, 'w') as f:
+                if cdn_switch == 1:
+                    current_app.config['CDN_PROXY'] = True
+                    f.write('CDN_PROXY=True')
+                elif cdn_switch == 0:
+                    current_app.config['CDN_PROXY'] = False
+                    f.write('CDN_PROXY=False')
+            return public.success_v2(f"CDN proxy status updated successfully")
+        except Exception as e:
+            return public.fail_v2(str(e))

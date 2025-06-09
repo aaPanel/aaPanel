@@ -5779,6 +5779,11 @@ location %s
             get.configFile = self.setupPath + '/nginx/conf/nginx.conf'
             if os.path.exists(self.setupPath + '/panel/vhost/nginx/phpmyadmin.conf'):
                 get.configFile = self.setupPath + '/panel/vhost/nginx/phpmyadmin.conf'
+                conf = public.readFile(get.configFile)
+                rep = "\n\s*#AUTH_START(.|\n){1,200}#AUTH_END"
+                conf = re.sub(rep, '', conf)
+                public.writeFile(get.configFile, conf)
+
         else:
             get.configFile = self.setupPath + '/panel/vhost/nginx/' + get.siteName + '.conf'
 
@@ -5845,6 +5850,12 @@ location %s
 
         if get.siteName == 'phpmyadmin':
             get.configFile = self.setupPath + '/nginx/conf/nginx.conf'
+            # 2025/6/4 修复php额外密码访问
+            if os.path.exists('/www/server/panel/vhost/nginx/phpmyadmin.conf'):
+                conf = public.readFile('/www/server/panel/vhost/nginx/phpmyadmin.conf')
+                rep = "\n\s*#AUTH_START(.|\n){1,200}#AUTH_END"
+                conf = re.sub(rep, '', conf)
+                public.writeFile('/www/server/panel/vhost/nginx/phpmyadmin.conf', conf)
         else:
             get.configFile = self.setupPath + '/panel/vhost/nginx/' + get.siteName + '.conf'
 
@@ -5856,6 +5867,9 @@ location %s
 
         if get.siteName == 'phpmyadmin':
             get.configFile = self.setupPath + '/apache/conf/extra/httpd-vhosts.conf'
+            # 2025/6/4 修复php额外密码访问
+            if os.path.exists(self.setupPath + '/panel/vhost/apache/phpmyadmin.conf'):
+                get.configFile = self.setupPath + '/panel/vhost/apache/phpmyadmin.conf'
         else:
             get.configFile = self.setupPath + '/panel/vhost/apache/' + get.siteName + '.conf'
 
@@ -8151,13 +8165,12 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         # 校验参数
         args.validate([
             public.Param('login_url').Require().Url(),
-            public.Param('sub_path').SafePath(),
             public.Param('username').Require(),
             public.Param('password').Require(),
         ])
 
         from wp_toolkit import wpmgr_remote
-        wpmgr_remote(sub_path=args.get('sub_path', '')).add(args.login_url, args.username, args.password)
+        wpmgr_remote().add(args.login_url, args.username, args.password)
 
         return public.success_v2('Success')
 
@@ -8165,13 +8178,12 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         # 校验参数
         args.validate([
             public.Param('login_url').Require().Url(),
-            public.Param('sub_path').SafePath(),
             public.Param('security_key').Require(),
             public.Param('security_token').Require(),
         ])
 
         from wp_toolkit import wpmgr_remote
-        wpmgr_remote(sub_path=args.get('sub_path', '')).add_manually(args.login_url, args.security_key, args.security_token)
+        wpmgr_remote().add_manually(args.login_url, args.security_key, args.security_token)
 
         return public.success_v2('Success')
 
@@ -8320,8 +8332,6 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         """
         设置重启任务开关
         """
-        # import sys
-        # import crontab
         try:
             get.validate([
                 Param('status').Integer().Require(),
@@ -8333,14 +8343,14 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             public.print_log("error, %s" % e)
             return public.fail_v2("parameter error %s" % e)
         sys.path.append("..")  # 添加上一级目录到系统路径
-        from script.restart_services import SERVICES_MAP, add_daemon, del_daemon
+        from script.restart_services import SERVICES_MAP, DaemonManager
         if get.name not in SERVICES_MAP.keys():
             return public.fail_v2("service not support now")
         try:
             if int(get.status) == 1:
-                add_daemon(get.name)
+                DaemonManager.add_daemon(get.name)
             elif int(get.status) == 0:
-                del_daemon(get.name)
+                DaemonManager.remove_daemon(get.name)
             else:
                 raise Exception("status error")
         except Exception as e:
@@ -8362,10 +8372,10 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             public.print_log("error, %s" % e)
             return public.fail_v2("parameter error %s" % e)
         sys.path.append("..")  # 添加上一级目录到系统路径
-        from script.restart_services import DAEMON_SERVICE
+        from script.restart_services import DaemonManager
         try:
-            daemon_list = json.loads(public.readFile(DAEMON_SERVICE))
-            if get.name in daemon_list:
+            daemon_info = DaemonManager.safe_read()
+            if get.name in daemon_info:
                 status = {"status": 1}
             else:
                 status = {"status": 0}

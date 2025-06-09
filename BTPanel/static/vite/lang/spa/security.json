@@ -111,7 +111,7 @@
 				"index_15": "Agregar tiempo",
 				"index_16": "Modificar la estrategia de IP [{0}]",
 				"index_17": "Cambie la política de dirección IP a la liberación. Después de establecer la dirección IP, se restaura el acceso normal. ¿Quieres continuar?",
-				"index_18": "Eliminar la regla del puerto [{0}]",
+				"index_18": "Eliminar la regla de IP [{0}]",
 				"index_19": "La regla actual se está eliminando. ¿Quieres continuar?",
 				"index_20": "Eliminar por lotes",
 				"index_21": "Lotes eliminar IP",

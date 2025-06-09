@@ -95,7 +95,9 @@
 			"index_94": "Veuillez saisir le nombre de sauvegardes",
 			"index_95": "Si la base de données utilisée par le panneau est corrompue, vous ne pourrez pas récupérer la base de données du panneau corrompu",
 			"index_96": "Désactiver la sauvegarde du panneau",
-			"index_97": "La sauvegarde automatique n'inclut pas les données du site Web et les données MySQL"
+			"index_97": "La sauvegarde automatique n'inclut pas les données du site Web et les données MySQL",
+			"index_98": "Proxy CDN",
+			"index_99": "Récupérez la vraie propriété intellectuelle de la demande du proxy CDN"
 		},
 		"Safe": {
 			"index_1": "Sécurité",

@@ -1,0 +1,31 @@
+{
+	"Term": {
+		"idnex_1": "Lütfen Komut Adını Girin",
+		"index_2": "Lütfen Komut İçeriğini Girin",
+		"index_3": "Komut ekle",
+		"index_4": "Komut Adı",
+		"index_5": "Komutu Düzenle",
+		"index_6": "Bilgileri Sil",
+		"index_7": "Hizmet bilgilerini silin [{0}], devam et?",
+		"index_8": "Sunucu IP",
+		"index_9": "Lütfen Sunucu IP'yi girin",
+		"index_10": "SSH hesabı",
+		"index_11": "Lütfen SSH hesabını girin",
+		"index_12": "Doğrulama",
+		"index_13": "Özel anahtar",
+		"index_14": "Lütfen SSH şifresini girin",
+		"index_15": "Lütfen SSH özel anahtarını girin",
+		"index_16": "Anahtar şifre",
+		"index_17": "Lütfen anahtar şifre girin, boş olabilir",
+		"index_18": "Lütfen açıklamaları girin, boş olabilir",
+		"index_19": "Sunucu ekle",
+		"index_20": "Komutu sil",
+		"index_21": "[{0}] komutunu sil, devam et?",
+		"index_22": "Sunucuyu Düzenle",
+		"index_23": "Sunucu Listesi",
+		"index_24": "Komutlar",
+		"index_25": "Bir terminal sunucusu gerekli",
+		"index_26": "Lütfen doğru IP adresini girin",
+		"index_27": "Oturumu kapatacağınızdan emin misiniz?"
+	}
+}

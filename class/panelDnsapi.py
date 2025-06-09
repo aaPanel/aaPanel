@@ -790,7 +790,7 @@ class PorkBunDns(BaseDns):
                 sync_log(f"|-- warning: [{d.get('domain')}] is Not ACTIVE, Skip It...")
                 continue
 
-            if d.get("expireDate") < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
+            if d.get("expireDate") and d.get("expireDate") < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
                 sync_log(f"|-- warning: [{d.get('domain')}] is Expired, Skip It...")
                 continue
 
@@ -1011,7 +1011,7 @@ class NameSiloDns(BaseDns):
         for d in domains:
             try:
                 d = d.get("domain", {})
-                if d.get("expires") < datetime.now().strftime("%Y-%m-%d"):
+                if d.get("expires") and d.get("expires") < datetime.now().strftime("%Y-%m-%d"):
                     sync_log(f"|-- warning: [{d.get('domain')}] is Expired, Skip It...")
                     continue
                 # domain detail info

@@ -235,10 +235,20 @@ except Exception as e:
 
 # ===================================Flask HOOK========================#
 # Flask请求勾子
+from flask import current_app
 @app.before_request
 def request_check():
-    # 获取客户端真实IP
-    x_real_ip = request.headers.get('X-Real-Ip')
+    # 获取客户端真实IP，判断是否启动CDN代理
+    CDN_PROXY = current_app.config.get('CDN_PROXY', False)
+    if CDN_PROXY:
+        if 'CF-Connecting-IP' in request.headers:
+            x_real_ip = request.headers['CF-Connecting-IP']
+        elif 'X-Forwarded-For' in request.headers:
+            x_real_ip = request.headers['X-Forwarded-For'].split(',')[0].strip()
+        else:
+            x_real_ip = request.headers.get('X-Real-Ip')
+    else:
+        x_real_ip = request.headers.get('X-Real-Ip')
     if x_real_ip:
         request.remote_addr = x_real_ip
         request.environ.setdefault('REMOTE_PORT', public.get_remote_port())
@@ -1240,7 +1250,7 @@ def files(pdata=None):
             'back_path_permissions', 'upload_file_exists', 'CheckExistsFiles',
             'GetExecLog', 'GetSearch', 'ExecShell', 'GetExecShellMsg',
             'exec_git', 'exec_composer', 'create_download_url', 'UploadFile',
-            'GetDir', 'CreateFile', 'CreateDir', 'DeleteDir', 'DeleteFile',
+            'GetDir', 'GetDirNew','CreateFile', 'CreateDir', 'DeleteDir', 'DeleteFile',
             'get_download_url_list', 'remove_download_url',
             'modify_download_url', 'CopyFile', 'CopyDir', 'MvFile',
             'GetFileBody', 'SaveFileBody', 'Zip', 'UnZip',
@@ -1427,7 +1437,6 @@ def config(pdata=None):
         # 'test_language',
          'set_hou',
          'replace_data',
-
     )
     return publicObject(config.config(), defs, None, pdata)
 
@@ -4119,7 +4128,7 @@ def files_v2(pdata=None):
             'back_path_permissions', 'upload_file_exists', 'CheckExistsFiles',
             'GetExecLog', 'GetSearch', 'ExecShell', 'GetExecShellMsg',
             'exec_git', 'exec_composer', 'create_download_url', 'UploadFile',
-            'GetDir', 'CreateFile', 'CreateDir', 'DeleteDir', 'DeleteFile',
+            'GetDir','GetDirNew', 'CreateFile', 'CreateDir', 'DeleteDir', 'DeleteFile',
             'get_download_url_list', 'remove_download_url',
             'modify_download_url', 'CopyFile', 'CopyDir', 'MvFile',
             'GetFileBody', 'SaveFileBody', 'Zip', 'UnZip',
@@ -4371,6 +4380,7 @@ def config_v2(pdata=None):
         'get_limit_ua',
         'modify_ua',
         'delete_ua',
+        'set_cdn_status',
 
 
     )
@@ -6263,3 +6273,26 @@ def get_mod_input():
 
     if not hasattr(data, 'data'): data.data = []
     return data
+
+# 初始化CDN的配置
+def init_cdn_config(app):
+    config_path = '/www/server/panel/config/cdn.conf'
+    config_dir = os.path.dirname(config_path)
+    # 确保配置目录存在
+    if not os.path.exists(config_dir):
+        app.config['CDN_PROXY'] = False
+        return
+    if not os.path.exists(config_path):
+        app.config['CDN_PROXY'] = False
+        with open(config_path, 'w') as f:
+            f.write('CDN_PROXY=False')
+        return
+    with open(config_path, 'r') as f:
+        content = f.read().strip()
+        if content == 'CDN_PROXY=True':
+            app.config['CDN_PROXY'] = True
+        else:
+            app.config['CDN_PROXY'] = False
+    return
+
+init_cdn_config(app)

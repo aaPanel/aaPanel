@@ -97,7 +97,7 @@ class main(panelBase):
                 except:
                     pass
         data['panel']['backup_info'] = self.get_panel_backup_info()
-
+        data['cdn_status'] = self.get_cdn_status() # 获取CDN代理状态
         # install check for first time
         first_time_installed(data)
         return public.return_message(0, 0, data)
@@ -341,4 +341,9 @@ class main(panelBase):
         # install check for first time
         first_time_installed({name: {"setup": setup}})
         return public.return_message(0, 0,data)
+
+    # 获取CDN代理状态
+    def get_cdn_status(self):
+        from flask import current_app
+        return current_app.config['CDN_PROXY']
 

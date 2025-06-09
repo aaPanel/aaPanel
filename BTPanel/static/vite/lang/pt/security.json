@@ -111,7 +111,7 @@
 				"index_15": "Adicione tempo",
 				"index_16": "Modifique a estratégia IP [{0}]",
 				"index_17": "Altere a política de endereço IP para lançar. Depois que o endereço IP é definido, o acesso normal é restaurado. Você quer continuar?",
-				"index_18": "Excluir regra da porta [{0}]",
+				"index_18": "Excluir regra IP [{0}]",
 				"index_19": "A regra atual está sendo excluída. Você quer continuar?",
 				"index_20": "Excluir lote",
 				"index_21": "Batch Excluir IP",

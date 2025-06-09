@@ -12,7 +12,6 @@
 import sys, os, json, re, time, sqlite3
 import contextlib
 import traceback
-from types import coroutine
 from xml.etree.ElementTree import ElementTree, Element
 from safeModelV2.base import safeBase
 from flask import send_file, abort
@@ -26,7 +25,6 @@ from public import dict_obj
 from public.validate import Param
 
 class main(safeBase):
-
     __isFirewalld = False
     __isUfw = False
     __firewall_obj = None
@@ -39,30 +37,33 @@ class main(safeBase):
 
     _trans_status = "/www/server/panel/plugin/firewall/status.json"
     _rule_path = "/www/server/panel/plugin/firewall/"
-    _ips_path = "/www/server/panel/plugin/firewall/ips.txt"
+    old_ips_path = "/www/server/panel/plugin/firewall/ips.txt"
+    _ips_path = "/www/server/panel/plugin/firewall/GeoLite2-Country.json"
     _country_path = "/www/server/panel/plugin/firewall/country.txt"
     _white_list_file = "/www/server/panel/plugin/firewall/whitelist.txt"  # 证书验证IP
 
     _white_list = []
-    _firewall_create_tip = '{}/data/firewall_sqlite.pl'.format(
-        public.get_panel_path())
+    _host_ip = None
+    _firewall_create_tip = '{}/data/firewall_sqlite.pl'.format(public.get_panel_path())
 
     def __init__(self):
+        super().__init__()
         self.__firewall_obj = firewalld()
         if os.path.exists('/usr/sbin/firewalld') and os.path.exists('/usr/bin/yum'):
             self.__isFirewalld = True
         if os.path.exists('/usr/sbin/ufw') and os.path.exists('/usr/bin/apt-get'):
             self.__isUfw = True
-            # self.__ufw = '/usr/sbin/ufw'
+
         self.get_old_rule()
 
         if not os.path.exists(self._trans_status):
             ret = {"status": "close"}
             public.writeFile(self._trans_status, json.dumps(ret))
 
-        if not os.path.exists(self._firewall_create_tip):
-            Sqlite()
-            public.writeFile(self._firewall_create_tip, '')
+        Sqlite()
+        # if not os.path.exists(self._firewall_create_tip):
+        #     Sqlite()
+        #     public.writeFile(self._firewall_create_tip, '')
 
     def get_old_rule(self):
         """
@@ -85,8 +86,7 @@ class main(safeBase):
         if os.path.exists(self._white_list_file):
             n_path = self._white_list_file.replace('plugin', 'data')
             if not os.path.exists(n_path):
-                public.writeFile(n_path,
-                                 public.readFile(self._white_list_file))
+                public.writeFile(n_path, public.readFile(self._white_list_file))
 
         if os.path.exists(self._country_path):
             n_path = self._country_path.replace('plugin', 'data')
@@ -105,9 +105,7 @@ class main(safeBase):
 
         res = public.install_sys_firewall()
         if res:
-            # return public.returnMsg(True, public.lang("Successful installation"))
             return public.return_message(0, 0, public.lang("Successful installation"))
-        # return public.returnMsg(False, public.lang("installation failed"))
         return public.return_message(-1, 0, public.lang("installation failed"))
 
     def get_firewall_info(self, get):
@@ -132,111 +130,56 @@ class main(safeBase):
 
         data['ping'] = isPing
         data['status'] = self.get_firewall_status()
-        # return data
         return public.return_message(0, 0, data)
 
     # 服务状态获取
-    # def get_firewall_status(self):
-    #     if self.__isUfw:
-    #         res = public.ExecShell("systemctl is-active ufw")[0]
-    #         if res == "active":
-    #             return True
-    #
-    #         res = public.ExecShell("systemctl list-units | grep ufw")[0]
-    #         if res.find('active running') != -1:
-    #             return True
-    #
-    #         res = public.ExecShell('/lib/ufw/ufw-init status')[0]
-    #         if res.find("Firewall is not running") != -1:
-    #            return False
-    #
-    #         res = public.ExecShell('ufw status verbose')[0]
-    #         if res.find('inactive') != -1:
-    #            return False
-    #
-    #         return True
-    #
-    #
-    #     if self.__isFirewalld:
-    #         res = public.ExecShell("ps -ef|grep firewalld|grep -v grep")[0]
-    #         if res:
-    #             return True
-    #
-    #         res = public.ExecShell("systemctl is-active firewalld")[0]
-    #         if res == "active":
-    #             return True
-    #
-    #         res = public.ExecShell("systemctl list-units | grep firewalld")[0]
-    #         if res.find('active running') != -1:
-    #             return True
-    #         return False
-    #
-    #     else:
-    #         res = public.ExecShell("/etc/init.d/iptables status")[0]
-    #         if res.find('not running') != -1:
-    #             return False
-    #
-    #         res = public.ExecShell("systemctl is-active iptables")[0]
-    #         if res == "active":
-    #             return True
-    #
-    #         return True
     def get_firewall_status(self):
         if self.__isUfw:
             res = public.ExecShell("systemctl is-active ufw")[0]
             if res == "active":
-                # return True
                 return public.return_message(0, 0, True)
             res = public.ExecShell("systemctl list-units | grep ufw")[0]
             if res.find('active running') != -1:
-                # return True
                 return public.return_message(0, 0, True)
             res = public.ExecShell('/lib/ufw/ufw-init status')[0]
             if res.find("Firewall is not running") != -1:
-                # return False
                return public.return_message(-1, 0, True)
             res = public.ExecShell('ufw status verbose')[0]
             if res.find('inactive') != -1:
-                # return False
                return public.return_message(-1, 0, True)
-            # return True
             return public.return_message(0, 0, True)
-
         if self.__isFirewalld:
             res = public.ExecShell("ps -ef|grep firewalld|grep -v grep")[0]
             if res:
-                # return True
                 return public.return_message(0, 0, True)
             res = public.ExecShell("systemctl is-active firewalld")[0]
             if res == "active":
-                # return True
                 return public.return_message(0, 0, True)
             res = public.ExecShell("systemctl list-units | grep firewalld")[0]
             if res.find('active running') != -1:
-                # return True
                 return public.return_message(0, 0, True)
-            # return False
             return public.return_message(-1, 0, True)
         else:
             res = public.ExecShell("/etc/init.d/iptables status")[0]
             if res.find('not running') != -1:
-                # return False
                return public.return_message(-1, 0, True)
             res = public.ExecShell("systemctl is-active iptables")[0]
             if res == "active":
-                # return True
                 return public.return_message(0, 0, True)
-            # return True
             return public.return_message(0, 0, True)
 
     def SetPing(self, get):
-
+        if "status" not in get:
+            return public.return_message(-1, 0, 'params status not found')
         if get.status == '1':
             get.status = '0'
         else:
             get.status = '1'
         filename = '/etc/sysctl.conf'
         conf = public.readFile(filename)
+        if not conf:
+            return public.return_message(-1, 0, '/etc/sysctl.conf File Read Exception，Unable to set ping ban')
+
         if conf.find('net.ipv4.icmp_echo') != -1:
             rep = r"net\.ipv4\.icmp_echo.*"
             conf = re.sub(rep, 'net.ipv4.icmp_echo_ignore_all=' + get.status + "\n", conf)
@@ -255,27 +198,21 @@ class main(safeBase):
                 '4. If you use other security software, please uninstall it first<br>'
             )
 
-
-
     # 服务状态控制 dict_obj.
     def firewall_admin(self, get: dict_obj):
-
-        # try:
-        #     get.validate([
-        #         Param('status').Require().String('in', ['start', 'stop', 'restart']).Xss(),
-        #
-        #     ], [
-        #         public.validate.trim_filter(),
-        #     ])
-        # except Exception as ex:
-        #     public.print_log("error info: {}".format(ex))
-        #     return public.return_message(-1, 0, str(ex))
-
         order = ['reload', 'restart', 'stop', 'start']
         if not get.status in order:
             return public.returnMsg(False, public.lang("unknown control command!"))
         names = ["reload", "restart", "stop", "start"]
         result = dict(zip(order, names))
+
+        cache_key = "firewall_info"
+        from BTPanel import cache
+        data = cache.get(cache_key)
+        if data:
+            cache.delete(cache_key)
+
+        public.ExecShell("systemctl reload BT-FirewallServices")
         if self.__isUfw:
             if get.status == "stop":
                 public.ExecShell('/usr/sbin/ufw disable')
@@ -291,19 +228,17 @@ class main(safeBase):
             filename = '/etc/sysctl.conf'
             conf = public.readFile(filename)
             if conf.find('net.ipv4.icmp_echo') != -1:
-                    public.ExecShell("sysctl -p")
+                public.ExecShell("sysctl -p")
+
             public.WriteLog("system firewall", "firewall {}".format(result[get.status]))
-            # return public.returnMsg(True, public.lang("firewall has {}", result[get.status]))
             return public.return_message(0, 0, public.lang("firewall has {}", result[get.status]))
         if self.__isFirewalld:
             public.ExecShell('systemctl {} firewalld'.format(get.status))
             public.WriteLog("system firewall", "firewall {}".format(result[get.status]))
-            # return public.returnMsg(True, public.lang("firewall has {}", result[get.status]))
             return public.return_message(0, 0, public.lang("firewall has {}", result[get.status]))
         else:
             public.ExecShell('service iptables {}'.format(get.status))
         public.WriteLog("system firewall", "firewall {}".format(result[get.status]))
-        # return public.returnMsg(True, public.lang("firewall has {}", result[get.status]))
         return public.return_message(0, 0, public.lang("fire/wall has {}", result[get.status]))
 
     # 重载防火墙配置
@@ -328,6 +263,7 @@ class main(safeBase):
         temp = {}
         temp['port'] = port
         temp['local'] = True
+
         try:
             if 'tcp' in protocol.lower():
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -377,12 +313,13 @@ class main(safeBase):
 
             if hasattr(args, 'query'):
                 where = " ports like '%{search}%' or brief like '%{search}%' or address like '%{search}%'".format(
-                    search=args.query)
-
+                    search=args.query
+                )
             count = sql.where(where, ()).count()
             data = public.get_page(count, int(p), int(limit))
-            data['data'] = sql.where(where, ()).limit('{},{}'.format(
-                data['shift'], data['row'])).order('addtime desc').select()
+            data['data'] = sql.where(where, ()).limit('{},{}'.format(data['shift'], data['row'])).order(
+                'addtime desc'
+            ).select()
             res_data = data['data']
             for i in range(len(res_data)):
                 if not 'ports' in res_data[i]:
@@ -391,19 +328,15 @@ class main(safeBase):
                 d = res_data[i]
                 _port = d['ports']
                 _protocol = d['protocol']
-                if _port.find(':') != -1 or _port.find('.') != -1 or _port.find(
-                        '-') != -1:
+                if _port.find(':') != -1 or _port.find('.') != -1 or _port.find('-') != -1:
                     d['status'] = -1
                 else:
-                        d['status'] = self.CheckPort(int(_port), _protocol)
+                    d['status'] = self.CheckPort(int(_port), _protocol)
             for i in res_data:
                 if 'brief' in i:
                     i['brief'] = public.xsssec(i['brief'])
-
             return public.return_message(0, 0, res_data)
-            # return res_data
         except Exception as e:
-            # return []
             return public.return_message(-1, 0, [])
 
     def check_firewall_rule(self, args):
@@ -533,8 +466,7 @@ class main(safeBase):
                     for port in port_list:
                         if port.find(':') != -1:
                             port = port.replace(':', '-')
-                        self.add_firewall_rule(source_ip, protocol, port,
-                                               types)
+                        self.add_firewall_rule(source_ip, protocol, port, types)
                 else:
                     for port in port_list:
                         self.add_iptables_rule(source_ip, protocol, port, types)
@@ -577,7 +509,6 @@ class main(safeBase):
         domain = '' if ("domain" not in get or not get.domain) else get.domain.strip() + '|' + address
         result = self.check_port(port_list)  # 检测端口
         if result:
-            # return result
             return public.return_message(0, 0, result)
 
         allow_ips = []
@@ -593,7 +524,6 @@ class main(safeBase):
 
             for source_ip in _ips:
                 if not re.search(rep2, source_ip) and not self.is_ipv6_network_segment_or_ipv6_address(source_ip):
-                    # return public.returnMsg(False, public.lang("IP address you've input is illegal!"))
                     return public.return_message(-1, 0, public.lang("IP address you've input is illegal!"))
                 query_result = public.M('firewall_new').where(
                     'ports=? and address=? and protocol=? and types=?',
@@ -627,10 +557,21 @@ class main(safeBase):
                 self._add_firewall_rules(source_ip, protocol, port, types)
 
                 if not query_result:
-                    self._add_sid = public.M('firewall_new').add(
-                        'ports,brief,protocol,address,types,addtime,domain,sid',
-                        (port, public.xsssec(brief), protocol, source_ip, types, addtime, domain, 0)
-                    )
+                    try:
+                        self._add_sid = public.M('firewall_new').add(
+                            'ports,brief,protocol,address,types,addtime,domain,sid',
+                            (port, public.xsssec(brief), protocol, source_ip, types, addtime, domain, 0)
+                        )
+                    except Exception as e:
+                        if "table firewall_new has no column named" in str(e):
+                            public.M('firewall_new').execute(
+                                'ALTER TABLE "firewall_domain" ADD "domain_total" TEXT DEFAULT ""')
+                            public.M('firewall_new').execute('ALTER TABLE "firewall_new" ADD "domain" TEXT DEFAULT ""')
+                            public.M('firewall_new').execute('ALTER TABLE "firewall_new" ADD "sid" INT DEFAULT 0')
+                        self._add_sid = public.M('firewall_new').add(
+                            'ports,brief,protocol,address,types,addtime,domain,sid',
+                            (port, public.xsssec(brief), protocol, source_ip, types, addtime, domain, 0)
+                        )
 
                 if domain:
                     domain_sid = public.M('firewall_domain').add(
@@ -653,9 +594,7 @@ class main(safeBase):
         public.WriteLog("system firewall", "Add port rules: Protocol:{}, Port:{}, Policy:{}, IP:{}".format(protocol, ports, strategy, log_ip))
         # 如果有忽略的端口，返回忽略的端口
         if ignore_list:
-            # return public.returnMsg(True, public.lang("Added successfully, {} The same rule exists for the port and has been skipped", ', '.join(ignore_list)))
             return public.return_message(0, 0, public.lang("Added successfully, {} The same rule exists for the port and has been skipped", ', '.join(ignore_list)))
-        # return public.returnMsg(True, public.lang("Added successfully!"))
         return public.return_message(0, 0, public.lang("Added successfully!"))
 
     # 删除入栈规则
@@ -669,7 +608,6 @@ class main(safeBase):
         '''
         # 检测是否开启防火墙 hezhihong
         if not self.get_firewall_status():
-            # return public.returnMsg(False, public.lang("Please enable the firewall before proceeding."))
             return public.return_message(-1, 0, public.lang("Please enable the firewall before proceeding."))
 
         # {
@@ -713,8 +651,7 @@ class main(safeBase):
             strategy = "accept"
         elif types == 'drop':
             strategy = "drop"
-        public.WriteLog("system firewall", "Delete port rules: Protocol:{}, Port:{}, Policy:{}, IP:{}".format(get.protocol, get.ports, types, log_ip))
-        # return public.returnMsg(True, public.lang("Delete successfully!"))
+        public.WriteLog("system firewall", "Delete port rules: Protocol:{}, Port:{}, Policy:{}, IP:{}".format(get.protocol, get.ports, strategy, log_ip))
         return public.return_message(-1, 0, public.lang("Delete successfully!"))
 
 
@@ -763,7 +700,7 @@ class main(safeBase):
         data = public.M('firewall_new').where('id=?', (id, )).field(
             'id,address,protocol,ports,types,brief,addtime,domain'
         ).find()
-        if data:
+        if data and type(data) == dict:
             _address = data.get("address", "")
             _protocol = data.get("protocol", "")
             _port = data.get("ports", "")
@@ -772,12 +709,13 @@ class main(safeBase):
             _address = _protocol = _port = _type = ""
         self._modify_firewall_rules(_address, _protocol, _port, _type, address, protocol, ports, types)
         addtime = time.strftime('%Y-%m-%d %X', time.localtime())
-        public.M('firewall_new').where('id=?', id).update({
-            'address': address,
-            'protocol': protocol,
-            'ports': ports,
-            'types': types,
-            'brief': brief,
+        public.M('firewall_new').where('id=?', id).update(
+            {
+                'address': address,
+                'protocol': protocol,
+                'ports': ports,
+                'types': types,
+                'brief': brief,
                 'addtime': addtime,
                 'sid': sid,
                 'domain': domain
@@ -801,7 +739,6 @@ class main(safeBase):
         elif get.types == 'drop':
             strategy = "drop"
         public.WriteLog("system firewall", "Modify port rules: Protocol:{}, Port:{}, Strategy:{}, IP:{}".format(get.protocol, get.ports.strip(), get.types, log_ip))
-        # return public.returnMsg(True, public.lang("操作成功"))
         return public.return_message(-1, 0, public.lang("operate successfully"))
 
     # firewall端口规则添加
@@ -1578,6 +1515,7 @@ class main(safeBase):
     def check_ip(self, address_list):
         rep = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
         for address in address_list:
+            address = address.strip()
             address = address.split('/')[0]
             if address.find('-') != -1:
                 addresses = address.split('-')
@@ -1617,6 +1555,9 @@ class main(safeBase):
             'firewall-cmd --permanent --zone=public --new-ipset=' + address +
             ' --type=hash:net')
         xml_path = "/etc/firewalld/ipsets/%s.xml" % address
+        import os
+        if not os.path.exists(xml_path):
+            return
         tree = ElementTree()
         tree.parse(xml_path)
         root = tree.getroot()
@@ -1643,19 +1584,22 @@ class main(safeBase):
 
     # 检查IP地址是否在范围内
     def ip_in_range(self, ip, ip_range):
-        import ipaddress
-        # 2024/1/3 下午 7:59 兼容192.168.0.0/24这种形式
-        if ip_range.find('/') != -1:
-            return ipaddress.ip_address(ip) in ipaddress.ip_network(ip_range)
+        try:
+            import ipaddress
+            # 2024/1/3 下午 7:59 兼容192.168.0.0/24这种形式
+            if ip_range.find('/') != -1:
+                return ipaddress.ip_address(ip) in ipaddress.ip_network(ip_range)
 
-        ip_range = ip_range.split('-')
-        if len(ip_range) == 1:  # 如果只有一个IP地址
-            return ipaddress.ip_address(ip) == ipaddress.ip_address(ip_range[0])
-        else:  # 如果是一个IP范围
-            start_ip, end_ip = ip_range
-            ip_networks = ipaddress.summarize_address_range(ipaddress.ip_address(start_ip), ipaddress.ip_address(end_ip))
-            return any(ipaddress.ip_address(ip) in net for net in ip_networks)
-
+            ip_range = ip_range.split('-')
+            if len(ip_range) == 1:  # 如果只有一个IP地址
+                return ipaddress.ip_address(ip) == ipaddress.ip_address(ip_range[0])
+            else:  # 如果是一个IP范围
+                start_ip, end_ip = ip_range
+                ip_networks = ipaddress.summarize_address_range(ipaddress.ip_address(start_ip),
+                                                                ipaddress.ip_address(end_ip))
+                return any(ipaddress.ip_address(ip) in net for net in ip_networks)
+        except:
+            return True
 
     # 添加IP规则
     def create_ip_rules(self, get):
@@ -1695,57 +1639,37 @@ class main(safeBase):
         domain_total = '' if ('domain' not in get or not get.domain) else get.domain.strip()
         domain = '' if ('domain' not in get or not get.domain) else get.domain.strip() + '|' + _address
         address_list = _address.split(',')
-        # public.print_log('############ ip接口 {}'.format(address_list))
         result = self.check_ip(address_list)
 
         if result:
-            # return result
-            # return public.return_message(0, 0, result)
             return public.return_message(-1, 0, result['msg'])
 
         # 先处理用户的IP地址
         old_login_ip = public.M('firewall_ip').where("brief=?", ("IP that allows users to log in",)).field('id, address').select()
-        # public.print_log('############  ip接口user_ip {}'.format(user_ip))
         for ip_range in address_list:
-
-            if self.ip_in_range(user_ip, ip_range):
-
+            if self.ip_in_range(user_ip, ip_range.strip()):
                 if old_login_ip and old_login_ip[0][' address'] != user_ip:
                     address = old_login_ip[0][' address']
                     public.M('firewall_ip').where("address=?", (address,)).delete()
-
                     self.update_panel_data(address)  # 删除面板自带防火墙的表数据
-
                 self.add_rule(user_ip, "accept", "IP that allows users to log in", domain, domain_total)
 
-                break
-
-        # 然后处理其他的IP地址
-        for address in address_list:
-
-            self.add_rule(address, original_types, brief, domain, domain_total)
+            self.add_rule(ip_range.strip(), original_types, brief, domain, domain_total)
 
         self.FirewallReload()
 
-
         public.WriteLog("system firewall", "Add IP rules: IP: {}, policy: {}".format(_address, original_types))
-
-        # return public.returnMsg(True, public.lang("Added successfully!"))
         return public.return_message(0, 0, public.lang("Added successfully!"))
 
     # 添加单个IP规则
     def add_rule(self, address, types, brief, domain, domain_total):
         if public.M('firewall_ip').where("address=? and types=? and domain=?", (address, types, domain)).count() > 0:
-
             return
         if self.__isUfw:
-            # public.print_log('############ ip接口 1')
             _rule = "allow" if types == "accept" else "deny"
             if address.find('-') != -1:
-                # public.print_log('############!!! ip接口 2')
                 self.handle_ufw_ip(address, types)
             else:
-                # public.print_log('############!!! ip接口 3')
                 is_debian = True if public.get_os_version().lower().find("debian") != -1 else False
                 if not is_debian:
                     if _rule == "allow":
@@ -1758,9 +1682,7 @@ class main(safeBase):
                 else:
                     public.ExecShell('iptables -I INPUT -s ' + address + ' -j ' + types.upper())
         else:
-            # public.print_log('############!!! ip接口 4')
             if self.__isFirewalld:
-                # public.print_log('############ ip接口 6')
                 if address.find('-') != -1:
                     self.handle_firewall_ip(address, types)
                 else:
@@ -1774,7 +1696,6 @@ class main(safeBase):
                             public.ExecShell(
                                 'firewall-cmd --permanent --add-rich-rule=\'rule family=ipv4 source address="' + address + '" ' + types + '\'')
             else:
-                # public.print_log('############ ip接口 7')
                 if address.find('-') != -1:
                     self.handle_ufw_ip(address, types)
                 else:
@@ -1782,13 +1703,10 @@ class main(safeBase):
         addtime = time.strftime('%Y-%m-%d %X', time.localtime())
         self._add_sid = public.M('firewall_ip').add('address,types,brief,addtime,domain,sid',
                                                     (address, types, public.xsssec(brief), addtime, domain, 0,))
-        # public.print_log('############ ip接口 8{}'.format(self._add_sid))
         if domain:
-            # public.print_log('############ ip接口9{}'.format(domain))
             domain_sid = public.M('firewall_domain').add(
                 'types,domain,port,address,brief,addtime,sid,protocol,domain_total', (
                     types, domain, '', address, public.xsssec(brief), addtime, self._add_sid, '', domain_total))
-
             public.M('firewall_ip').where("id=?", (self._add_sid,)).save('sid', domain_sid)
 
 
@@ -1958,7 +1876,6 @@ class main(safeBase):
         domain_total = domain.split('|')[0]
         # return 22
         if result:
-            # return result
             return public.return_message(0, 0, result)
         data = public.M('firewall_ip').where(
             'id=?', (id, )).field('id,address,types,brief,addtime').find()
@@ -1979,7 +1896,6 @@ class main(safeBase):
                     cmd = "iptables -D INPUT -s " + address + " -j " + _type.upper(
                     )
                     public.ExecShell(cmd)
-                # public.ExecShell('ufw delete ' + rule1 + ' from ' + _address + ' to any')
             rule2 = "allow" if types == "accept" else "deny"
             if address.find('-') != -1:
                 self.handle_ufw_ip(address, types)
@@ -2064,8 +1980,7 @@ class main(safeBase):
             strategy = "accept"
         elif get.types == 'drop':
             strategy = "drop"
-        public.WriteLog("system firewall", "Modify rules, IP:{}, Strategy:{} -> IP:{}, Strategy:{}".format(_address, old_strategy, get.address.strip(), get.types))
-        # return public.returnMsg(True, public.lang("Successful operation"))
+        public.WriteLog("system firewall", "Modify rules, IP:{}, Strategy:{} -> IP:{}, Strategy:{}".format(_address, old_strategy, get.address.strip(), strategy))
         return public.return_message(0, 0, public.lang("Successful operation"))
 
     # 查看端口转发状态
@@ -2140,22 +2055,16 @@ class main(safeBase):
         protocol = get.protocol
         rep1 = r"^\d{1,5}(:\d{1,5})?$"
         if not re.search(rep1, s_port):
-            # return public.returnMsg(False, public.lang("Port range is incorrect!"))
             return public.return_message(-1, 0, public.lang("Port range is incorrect!"))
         if not re.search(rep1, d_port):
-            # return public.returnMsg(False, public.lang("Port range is incorrect!"))
             return public.return_message(-1, 0, public.lang("Port range is incorrect!"))
         rep = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
         if d_ip:
-            if not re.search(rep, get.d_address) and not public.is_ipv6(
-                    get.d_address):
-                # return public.returnMsg(False, public.lang("IP address you've input is illegal!"))
+            if not re.search(rep, get.d_address) and not public.is_ipv6(get.d_address):
                 return public.return_message(-1, 0, public.lang("IP address you've input is illegal!"))
             if d_ip in ["127.0.0.1", "localhost"]:
                 d_ip = ""
-        if public.M('firewall_trans').where("start_port=?",
-                                            (s_port, )).count() > 0:
-            # return public.returnMsg(False, public.lang("This port already exists, please do not add it again!"))
+        if public.M('firewall_trans').where("start_port=?", (s_port, )).count() > 0:
             return public.return_message(-1, 0, public.lang("This port already exists, please do not add it again!"))
 
         if self.__isUfw:
@@ -2172,7 +2081,6 @@ class main(safeBase):
             (s_port, d_ip, d_port, protocol, addtime))
         self.FirewallReload()
         public.WriteLog("system firewall", "Add port forwarding rules: Start port: {}, Destination port: {}, Destination IP: {}".format(s_port, d_port, d_ip))
-        # return public.returnMsg(True, public.lang("Added successfully!"))
         return public.return_message(0, 0, public.lang("Added successfully!"))
 
 
@@ -2209,7 +2117,6 @@ class main(safeBase):
         public.M('firewall_trans').where("id=?", (id, )).delete()
         self.FirewallReload()
         public.WriteLog("system firewall", "Delete port forwarding rules: Start port: {}, Destination port: {}, Destination IP: {}".format(s_port, d_port, d_ip))
-        # return public.returnMsg(True, public.lang("Delete successfully!"))
         return public.return_message(0, 0, public.lang("Delete successfully!"))
 
     # 修改端口转发
@@ -2237,10 +2144,8 @@ class main(safeBase):
         pool = get.protocol
         rep1 = r"^\d{1,5}(:\d{1,5})?$"
         if not re.search(rep1, s_port):
-            # return public.returnMsg(False, public.lang("Port range is incorrect!"))
             return public.return_message(-1, 0, public.lang("Port range is incorrect!"))
         if not re.search(rep1, d_port):
-            # return public.returnMsg(False, public.lang("Port range is incorrect!"))
             return public.return_message(-1, 0, public.lang("Port range is incorrect!"))
         data = public.M('firewall_trans').where('id=?', (id, )).field(
             'id,start_port,ended_ip,ended_port,protocol,addtime').find()
@@ -2250,9 +2155,7 @@ class main(safeBase):
         protocol = data.get("protocol", "")
         if d_ip:
             rep = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
-            if not re.search(rep, get.d_address) and not public.is_ipv6(
-                    get.d_address):
-                # return public.returnMsg(False, public.lang("IP address you've input is illegal!"))
+            if not re.search(rep, get.d_address) and not public.is_ipv6(get.d_address):
                 return public.return_message(-1, 0, public.lang("IP address you've input is illegal!"))
             if d_ip in ["127.0.0.1", "localhost"]:
                 d_ip = ""
@@ -2275,7 +2178,6 @@ class main(safeBase):
             {'start_port': s_port, "ended_ip": d_ip, "ended_port": d_port, "protocol": pool})
         self.FirewallReload()
         public.WriteLog("system firewall", "Modify port forwarding rules: Start port: {}, Destination port: {}, Destination IP: {} -> Start port: {}, Destination port: {}, Destination IP: {}".format(start_port, ended_port, ended_ip, s_port, d_port, d_ip))
-        # return public.returnMsg(True, public.lang("Successful operation."))
         return public.return_message(0, 0, public.lang("Successful operation"))
 
     # 处理ufw的端口转发添加
@@ -2315,8 +2217,7 @@ class main(safeBase):
         return content
 
     # 处理ufw的端口转发修改
-    def ufw_handle_update(self, start_port, ended_ip, ended_port, protocol,
-                          s_port, d_ip, d_port, pool):
+    def ufw_handle_update(self, start_port, ended_ip, ended_port, protocol, s_port, d_ip, d_port, pool):
         content = self.get_profile(self._ufw_before)
         if ended_ip == "":
             s_string = "-A PREROUTING -p {0} --dport {1} -j REDIRECT --to-port {2}\n".format(
@@ -2552,8 +2453,7 @@ class main(safeBase):
             self.save_profile(self._ufw_default, content1)
             self.save_profile(self._ufw_sysctl, content2)
             self.FirewallReload()
-            return public.returnMsg(True,
-                                    'Enable' if get.status == "open" else "Disable")
+            return public.returnMsg(True, 'Enable' if get.status == "open" else "Disable")
         if self.__isFirewalld:
             if get.status == 'open':
                 public.ExecShell('firewall-cmd --add-masquerade --permanent')
@@ -2572,15 +2472,16 @@ class main(safeBase):
         查询本机ip地址
         :return:
         """
-        try:
-            import socket
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(('8.8.8.8', 80))
-            ip = s.getsockname()[0]
-        finally:
-            s.close()
+        if self._host_ip is None:
+            try:
+                import socket
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(('8.8.8.8', 80))
+                self._host_ip = s.getsockname()[0]
+            finally:
+                s.close()
 
-        return ip
+        return self._host_ip
 
     def load_white_list(self):
         try:
@@ -2591,92 +2492,70 @@ class main(safeBase):
                 for ip_obj in white_list_ips:
                     white_list += ip_obj["ips"]
                 self._white_list = white_list
-                # public.WriteLog("firewall_debug", str(white_list))
             return self._white_list
         except Exception as e:
             public.WriteLog("firewall", "Failed to load whitelist！")
         return []
 
+    def ip_in_network(self, ip, ip_make_net):
+        """判断 IP 是否属于网段"""
+        # 解析网段
+        network_ip, prefix = ip_make_net.split("/")
+        prefix = int(prefix)
+
+        # 将 IP 和网段转换为整数
+        ip_int = int.from_bytes(map(int, ip.split(".")), "big")
+        network_int = int.from_bytes(map(int, network_ip.split(".")), "big")
+
+        # 计算掩码
+        mask = (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF
+
+        # 判断 IP 是否属于网段
+        return (ip_int & mask) == (network_int & mask)
+
     def verify_ip(self, ip_entry):
         """检查规则IP是否和内网IP重叠"""
         try:
-            try:
-                import IPy
-            except:
-                ipy_tips = '/tmp/bt_ipy.pl'
-                if not os.path.exists(ipy_tips):
-                    os.system("nohup btpip install IPy &>/dev/null &")
-                    public.WriteFile(ipy_tips, 'True')
+            ip_start = ip_entry.split(".")
+            if ip_start[0] in ('127', '10'):
+                return False
 
-            release_ips = [
-                IPy.IP("127.0.0.1"),
-                IPy.IP("172.16.1.1"),
-                IPy.IP("10.0.0.1"),
-                IPy.IP("192.168.0.0"),
-                IPy.IP(self.get_host_ip())
-            ]
+            if (ip_start[0] == "172" and ip_start[1] == "16") or (ip_start[0] == "192" and ip_start[1] == "168"):
+                return False
 
+            release_ips = [self.get_host_ip()]
             white_list = self.load_white_list()
-
             release_ips += white_list
 
-            ip = IPy.IP(ip_entry, make_net=True)
-            for rip_obj in release_ips:
-                overlap = ip.overlaps(rip_obj)
-                if overlap > 0:
+            for rip in release_ips:
+                if self.ip_in_network(rip, ip_entry):
                     return False
             return True
         except:
             return False
 
-    def handle_firewall_country(self, brief, ip_list, types, port_list):
-        try:
-            public.ExecShell(
-                'firewall-cmd --permanent --zone=public --new-ipset=' + brief +
-                ' --type=hash:net')
-            xml_path = "/etc/firewalld/ipsets/%s.xml" % brief
-            tree = ElementTree()
-            tree.parse(xml_path)
-            root = tree.getroot()
+    def handle_firewall_country(self, brief, ip_list, types, port_list, is_update=False):
+        _ipset = "in_bt_country_{}".format(brief)
+        firewall_ipset_path = "/tmp/firewall_{}.txt".format(brief)
+        if is_update or not os.path.exists(firewall_ipset_path):
+            tmp_file = open(firewall_ipset_path, 'w')
+            _string = ""
             for ip in ip_list:
                 if self.verify_ip(ip):
-                    entry = Element("entry")
-                    entry.text = ip
-                    root.append(entry)
-            self.format(root)
-            tree.write(xml_path, 'utf-8', xml_declaration=True)
-            if port_list:
-                for port in port_list:
-                    public.ExecShell(
-                        'firewall-cmd --permanent --zone=public --add-rich-rule=\'rule source ipset="'
-                        + brief + '" port port="' + port + '" protocol=tcp ' +
-                        types + '\'')
-            else:
-                public.ExecShell(
-                    'firewall-cmd --permanent --zone=public --add-rich-rule=\'rule source ipset="'
-                    + brief + '" ' + types + '\'')
-        except Exception as e:
-            return {"status": "error", "msg": e}
+                    _string = _string + "add {} {}\n".format(_ipset, ip)
+            tmp_file.write(_string)
+            tmp_file.close()
+            public.ExecShell(
+                'ipset create {} hash:net maxelem 1000000; ipset restore -f {}'.format(_ipset, firewall_ipset_path))
+        else:
+            public.ExecShell(
+                'ipset create {} hash:net maxelem 1000000; ipset restore -f {}'.format(_ipset, firewall_ipset_path))
 
-    def handle_ufw_country(self, brief, ip_list, types, port_list):
-        tmp_path = '/tmp/firewall_tmp.sh'
-        tmp_file = open(tmp_path, 'w')
-        _string = "#!/bin/bash\n"
-        for ip in ip_list:
-            if self.verify_ip(ip):
-                _string = _string + 'ipset add ' + brief + ' ' + ip + '\n'
-        tmp_file.write(_string)
-        tmp_file.close()
-        public.ExecShell('ipset create ' + brief +
-                         ' hash:net; /bin/bash /tmp/firewall_tmp.sh')
         if port_list:
             for port in port_list:
-                public.ExecShell('iptables -I INPUT -m set --match-set ' +
-                                 brief + ' src -p tcp --destination-port ' +
-                                 port + ' -j ' + types.upper())
+                public.ExecShell('iptables -I IN_BT_Country -m set --match-set {} src -p tcp --destination-port {} -j {}'.format(_ipset,port,types.upper()))
         else:
-            public.ExecShell('iptables -I INPUT -m set --match-set ' + brief +
-                             ' src -j ' + types.upper())
+            public.ExecShell('iptables -I IN_BT_Country -m set --match-set {} src -j {}'.format(_ipset, types.upper()))
 
     # 查询区域规则
     def get_country_list(self, args):
@@ -2703,24 +2582,22 @@ class main(safeBase):
         sql = public.M('firewall_country')
 
         if hasattr(args, 'query'):
-            where = " country like '%{search}%' or brief like '%{search}%'".format(
-                search=args.query)
+            where = " country like '%{search}%' or brief like '%{search}%'".format(search=args.query)
 
-        # count = sql.where(where, ()).count()
-        count = sql.count()
+        count = sql.where(where, ()).count()
         data = public.get_page(count, int(p), int(limit))
-        data['data'] = sql.where(where, ()).limit('{},{}'.format(
-            data['shift'], data['row'])).order('addtime desc').select()
-        # return data
+        data['data'] = sql.where(where, ()).limit('{},{}'.format(data['shift'], data['row'])).order(
+            'addtime desc'
+        ).select()
         return public.return_message(0, 0, data)
 
-    def create_countries(self, get):
+    def create_countrys(self, get):
         try:
+            get.country = get.get("country", None)
             if not hasattr(get, 'country'):
                 return public.return_message(-1, 0, public.lang("Please enter the country name!"))
             input_country = get.country
-            countrys = self._get_countries(None)
-
+            countrys = self.get_countrys(None)["message"]
             countrys = countrys[1:]
 
             # 2024/1/6 下午 5:00 获取防火墙状态，如果没有启动则启动防火墙
@@ -2728,30 +2605,44 @@ class main(safeBase):
                 get.status = "start"
                 self.firewall_admin(get)
 
+            content = self.get_profile(self._ips_path)
+            ip_dict = {}
+            try:
+                content = json.loads(content)
+            except:
+                return public.return_message(-1, 0, 'Failed to get region list!')
+            for cont in content:  # {"US":[],"XX":[]}
+                ip_dict.update({cont["brief"]: cont["ips"]})
+
             if "Except China" in input_country:
                 input_country = [i['CH'] for i in countrys if not "China" in i['CH']]
                 countrys_dict = {i['CH']: i['brief'] for i in countrys}
-                content = self.get_profile(self._ips_path)
 
                 for i in input_country:
                     get.brief = countrys_dict.get(i, None)
                     get.country = i
-                    self.create_country(get, True, content)
+                    ip_list = ip_dict.get(get.brief)
+                    if ip_list:
+                        self.create_country(get, True, ip_list)
             else:
-                countrys_dict = {i['CH']: i['brief'] for i in countrys if 'brief' in i}
+                countrys_dict = {i['CH']: i['brief'] for i in countrys}
                 if isinstance(input_country, str):
                     input_country = [input_country]
                 for i in input_country:
                     get.brief = countrys_dict.get(i, None)
                     get.country = i
-                    self.create_country(get, True)
+                    ip_list = ip_dict.get(get.brief)
+                    if ip_list is None:
+                        continue
+
+                    self.create_country(get, True, ip_list)
             get.status = "restart"
             self.firewall_admin(get)
             return public.return_message(0, 0, public.lang("Added successfully"))
-        except:
+        except Exception as e:
             public.print_log(public.get_error_info())
             print(traceback.format_exc())
-            return public.return_message(-1, 0, public.lang("Add failed"))
+            return public.return_message(-1, 0, public.lang(str(e)))
 
     # 添加区域规则
     def create_country(self, get, is_mutil=False, _ips_paths=None):
@@ -2768,7 +2659,7 @@ class main(safeBase):
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-
+        get.is_update = get.get("is_update", False)
         brief = get.brief
         types = get.types  # types in [accept, drop]
         ports = get.ports
@@ -2778,75 +2669,62 @@ class main(safeBase):
 
         # 检测该区域是否已添加过全部端口规则 hezhihong  status must in ['start', 'stop']
         add_list = public.M('firewall_country').where("country=?", (country,)).field('ports').select()
-
         for add in add_list:
             if not add['ports']:
-                # return public.returnMsg(False, public.lang("This area has already been added, please do not add it again!"))
                 return public.return_message(-1, 0, public.lang("This area has already been added, please do not add it again!"))
         if ports:
             port_list = ports.split(',')
             for port in port_list:
                 if not re.search(rep, port):
-                    # return public.returnMsg(False, public.lang("Port range is incorrect!"))
                     return public.return_message(-1, 0, public.lang("Port range is incorrect!"))
                 if public.M('firewall_country').where(
-                        "country=? and ports=?", (country, port)).count() > 0:
-                    # public.print_log('############ 地区接口8{}'.format(port))
+                        "country=? and ports=?", (country, port)
+                ).count() > 0:
                     return public.return_message(-1, 0, public.lang("This area has already been added, please do not add it again!"))
+
+        cache_key = "firewall_info"
+        from BTPanel import cache
+        data = cache.get(cache_key)
+        if data: cache.delete(cache_key)
+
         self.get_os_info()
+        ip_list = []
         if _ips_paths is None:
             content = self.get_profile(self._ips_path)
+            try:
+                result = json.loads(content)
+            except:
+                return public.return_message(-1, 0, 'Failed to get region list!')
+            for r in result:
+                if brief == r["brief"]:
+                    ip_list = r["ips"]
+                    break
+            if not ip_list:
+                return public.return_message(-1, 0, "Please enter the correct region name!")
         else:
-            content = _ips_paths
-        result = json.loads(content)
-        # public.print_log('############ 地区接口7 {}'.format(result))
-        ip_list = []
-        for r in result:
-            if brief == r["brief"]:
-                ip_list = r["ips"]
-                break
-        if not ip_list:
-            # return public.returnMsg(True, public.lang("Please enter the correct area name!"))
-            return public.return_message(0, 0, public.lang("Please enter the correct area name!"))
-        if self.__isUfw:
-            self.handle_ufw_country(brief, ip_list, types, port_list)
-        else:
-            if self.__isFirewalld:
-                result = self.handle_firewall_country(brief, ip_list, types,
-                                                      port_list)
-                if result:
-                    # return result
-                    return public.return_message(0, 0, result)
-            else:
-                self.handle_ufw_country(brief, ip_list, types, port_list)
+            ip_list = _ips_paths
+
+        self.handle_firewall_country(brief, ip_list, types, port_list, get.is_update)
+
         addtime = time.strftime('%Y-%m-%d %X', time.localtime())
         if port_list:
             for port in port_list:
-                public.M('firewall_country').add(
-                    'country,types,brief,ports,addtime',
-                    (country, types, brief, port, addtime))
-
+                public.M('firewall_country').add('country,types,brief,ports,addtime',
+                                                 (country, types, brief, port, addtime))
         else:
-            public.M('firewall_country').add(
-                'country,types,brief,ports,addtime',
-                (country, types, brief, '', addtime))
-
+            public.M('firewall_country').add('country,types,brief,ports,addtime', (country, types, brief, '', addtime))
         if is_mutil is False:
-            # self.FirewallReload()
             get.status = "restart"
             self.firewall_admin(get)
         if not get.ports:
-            log_port = "All ports"
+            log_port = "All Ports"
         else:
             log_port = get.ports
-        # strategy = ''
-        # if get.types == 'accept':
-        #     strategy = "accept"
-        # elif get.types == 'drop':
-        #     strategy = "drop"
-        # public.print_log('############ 地区接口5'.format())
-        public.WriteLog("system firewall", "Add regional rules: Region:{}, Policy:{}, Port:{}".format(get.country, get.types, log_port))
-        # return public.returnMsg(True, public.lang("Added successfully!"))
+        if get.types == 'accept':
+            strategy = "accept"
+        else:
+            strategy = "drop"
+        public.WriteLog("system firewall", "Add regional rules: Region:{}, Policy:{}, Port:{}".format(get.country, strategy, log_port))
         return public.return_message(0, 0, public.lang("Added successfully!"))
 
     # 删除区域规则
@@ -2868,65 +2746,64 @@ class main(safeBase):
         types = get.types
         brief = get.brief
         ports = get.ports
-        country = get.country
-        reload = True
-        if "not_reload" in get:
-            reload = get.not_reload.lower() == "true"
-        public.M('firewall_country').where("id=?", (id, )).delete()
-        if self.__isUfw:
-            if not ports:
-                public.ExecShell('iptables -D INPUT -m set --match-set ' +
-                                 brief + ' src -j ' + types.upper())
-            else:
-                public.ExecShell('iptables -D INPUT -m set --match-set ' +
-                                 brief + ' src -p tcp --destination-port ' +
-                                 ports + ' -j ' + types.upper())
-            if not public.M('firewall_country').where("country=?",
-                                                      (country, )).count() > 0:
-                public.ExecShell('ipset destroy ' + brief)
+        get.reload = get.get("reload/d", 1)
+        _ipset = "in_bt_country_{}".format(brief)
+        cache_key = "firewall_info"
+        from BTPanel import cache
+        data = cache.get(cache_key)
+        if data: cache.delete(cache_key)
+
+        public.M('firewall_country').where("id=?", (id,)).delete()
+        if not ports:
+            public.ExecShell('iptables -D IN_BT_Country -m set --match-set ' + _ipset + ' src -j ' + types.upper())
         else:
-            if self.__isFirewalld:
-                if not ports:
-                    public.ExecShell(
-                        'firewall-cmd --permanent --zone=public --remove-rich-rule=\'rule source ipset="'
-                        + brief + '" ' + types + '\'')
-                else:
-                    public.ExecShell(
-                        'firewall-cmd --permanent --zone=public --remove-rich-rule=\'rule source ipset="'
-                        + brief + '" port port="' + ports + '" protocol=tcp ' +
-                        types + '\'')
-                if not public.M('firewall_country').where(
-                        "country=?", (country, )).count() > 0:
-                    public.ExecShell(
-                        'firewall-cmd --permanent --zone=public --delete-ipset='
-                        + brief)
-            else:
-                if not ports:
-                    public.ExecShell('iptables -D INPUT -m set --match-set ' +
-                                     brief + ' src -j ' + types.upper())
-                else:
-                    public.ExecShell('iptables -D INPUT -m set --match-set ' +
-                                     brief +
-                                     ' src -p tcp --destination-port ' +
-                                     ports + ' -j ' + types.upper())
-                if not public.M('firewall_country').where(
-                        "country=?", (country, )).count() > 0:
-                    public.ExecShell('ipset destroy ' + brief)
-        if reload:
-            get.status = "restart"
-            self.firewall_admin(get)
+            public.ExecShell('iptables -D IN_BT_Country -m set --match-set ' + _ipset + ' src -p tcp --destination-port ' + ports + ' -j ' + types.upper())
         if not get.ports:
-            log_port = "All ports"
+            log_port = "All Ports"
         else:
             log_port = get.ports
-        strategy = ''
         if get.types == 'accept':
             strategy = "accept"
         elif get.types == 'drop':
             strategy = 'drop'
         public.WriteLog("system firewall", "Delete zone rules: Region:{}, Policy:{}, Port:{}".format(get.country, strategy, log_port))
-        # return public.returnMsg(True, public.lang("Delete successfully!"))
         return public.return_message(0, 0, public.lang("Delete successfully!"))
+
+    # 2024/6/5 下午5:48 批量删除区域规则
+    def batch_remove_country(self, get):
+        '''
+            @name 批量删除区域规则
+            @author wzz <2024/6/5 下午5:49>
+            @param "data":{"参数名":""} <数据类型> 参数描述
+            @return dict{"status":True/False,"msg":"提示信息"}
+        '''
+        get.remove_country = get.get("remove_country", [])
+
+        if not isinstance(get.remove_country, list):
+            return public.return_message(-1, 0, "params remove_country is not json")
+
+        if len(get.remove_country) == 0:
+            return public.return_message(-1, 0, "Please select the rules to be deleted")
+
+        get.reload = 0
+        result_list = []
+        for r in get.remove_country:
+            args = public.to_dict_obj({
+                "id": r["id"],
+                "types": r["types"],
+                "brief": r["brief"],
+                "ports": r["ports"],
+                "country": r["country"],
+                "reload": 0,
+            })
+            result = self.remove_country(args)
+            if not result["status"]:
+                result_list.append({"country": r["country"], "status": False})
+                continue
+
+            result_list.append({"country": r["country"], "status": True})
+
+        return public.return_message(0, 0, result_list)
 
     # 编辑区域规则
     def modify_country(self, get):
@@ -2934,7 +2811,7 @@ class main(safeBase):
         # 校验参数
         try:
             get.validate([
-                Param('id').Require().Integer().Xss(),
+                Param('id').Require().Integer(),
                 Param('country').Require().Xss(),
                 Param('types').Require().String('in', ['accept', 'drop']),
             ], [
@@ -2944,15 +2821,18 @@ class main(safeBase):
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-
-        # 2022/11/24 修复编辑地区端口规则问题 lx
         id = get.id
-        # types = get.types
-        # brief = get.brief
-        # country = get.country
-        data = public.M('firewall_country').where(
-            'id=?',
-            (id, )).field('id,country,types,brief,ports,addtime').find()
+        rep = "^\d{1,5}(:\d{1,5})?$"
+
+        if "ports" in get and get.ports:
+            port_list = get.ports.split(',')
+            for port in port_list:
+                if not re.search(rep, port):
+                    return public.return_message(-1, 0, 'PORT_CHECK_RANGE')
+                if public.M('firewall_country').where("country=? and ports=?", (get.country, port)).count() > 0:
+                    return public.return_message(-1, 0, 'This area has already been added, please do not add it again!')
+
+        data = public.M('firewall_country').where('id=?', (id,)).field('id,country,types,brief,ports,addtime').find()
         ori_get = public.dict_obj()
         ori_get.id = id
         ori_get.types = data.get("types", "")
@@ -2964,9 +2844,7 @@ class main(safeBase):
         if rm_res["status"] == 0:
             create_res = self.create_country(get)
             if create_res["status"] == 0:
-                # return public.returnMsg(True, public.lang("Successful operation"))
                 return public.return_message(0, 0, public.lang("Successful operation"))
-        # return public.returnMsg(False, public.lang("operation failed"))
         return public.return_message(0, 0, public.lang("operation failed"))
 
     # 获取服务端列表：centos
@@ -3052,27 +2930,27 @@ class main(safeBase):
             if dt['start_port'] == ports: return dt
         return False
 
-    # 规则导出：服务器 todo
+    # 规则导出：服务器
     def export_rules(self, get):
-        rule_name = get.rule_name
-        arry = []
-        data_list = None
-        filename = ''
-        if rule_name == "port_rule":
+        get.rule_name = get.get("rule_name", None)
+        if get.rule_name is None:
+            return public.return_message(-1, 0, 'parmas rule_name not found')
+
+        if get.rule_name == "port_rule":
             filename = self._rule_path + "port.json"
             data_list = public.M('firewall_new').order("id desc").select()
-        elif rule_name == "ip_rule":
+        elif get.rule_name == "ip_rule":
             filename = self._rule_path + "ip.json"
             data_list = public.M('firewall_ip').order("id desc").select()
-        elif rule_name == "trans_rule":
+        elif get.rule_name == "trans_rule":
             filename = self._rule_path + "forward.json"
             data_list = public.M('firewall_trans').order("id desc").select()
-        elif rule_name == "country_rule":
+        elif get.rule_name == "country_rule":
             filename = self._rule_path + "country.json"
             data_list = public.M('firewall_country').order("id desc").select()
-        if not data_list:
-            data_list = []
-        # 将数据格式换成以|分割的字符串 hezhihong
+        else:
+            return public.return_message(-1, 0, 'unknow type: {}'.format(get.rule_name))
+
         write_string = ""
         if data_list:
             for i in data_list:
@@ -3082,9 +2960,9 @@ class main(safeBase):
                 write_string += '\n'
         public.writeFile(filename, write_string)
         public.WriteLog("system firewall", "Export port rules")
-        return  public.return_message(0, 0, filename)
+        return public.return_message(0, 0, filename)
 
-    # 规则导出：本地  todo
+    # 规则导出：本地
     def get_file(self, args):
         filename = args.filename
         mimetype = "application/octet-stream"
@@ -3096,7 +2974,7 @@ class main(safeBase):
                          attachment_filename=os.path.basename(filename),
                          cache_timeout=0)
 
-    # 规则导入：json todo
+    # 规则导入：json
     def import_rules(self, get):
         try:
             rule_name = get.rule_name  # 规则名:[port_rule, ip_rule, trans_rule, country_rule]
@@ -3184,7 +3062,6 @@ class main(safeBase):
                     "{}<br/>The designated domain name function is exclusive to the Enterprise Edition, and the following rules are not imported:<br/>{}".format(result["msg"], not_pay_list)
                 )
             public.WriteLog("system firewall", "Import port rules")
-            # return public.ReturnMsg(result["status"], result["msg"])
             st = 0 if result["status"] else -1
             return public.return_message(st, 0, result["msg"])
         except Exception:
@@ -3287,44 +3164,30 @@ class main(safeBase):
             return {"status": False, "msg": "Import failed!"}
         return {"status": True, "msg": "Imported successfully!"}
 
-    def get_countries(self, get):
-        result = []
-        content = self.get_profile(self._country_path)
-        result = json.loads(content)
-        result = sorted(result, key=lambda x : x['CH'], reverse=True);
+    def get_countrys(self, get):
+        try:
+            content = self.get_profile(self._country_path)
+            result = json.loads(content)
+            result = sorted(result, key=lambda x: x['CH'], reverse=True)
 
-        if isinstance(result, list):
-            result.insert(0, {"CH": "Except China", "brief": "OTHER"})
-        return public.return_message(0, 0, result)
-    def _get_countries(self, get):
-        result = []
-        content = self.get_profile(self._country_path)
-        result = json.loads(content)
-        result = sorted(result, key=lambda x : x['CH'], reverse=True);
+            if isinstance(result, list):
+                result.insert(0, {"CH": "Except China", "brief": "OTHER"})
+            return public.return_message(0, 0, result)
+        except:
+            return public.return_message(0, 0, [])
 
-        if isinstance(result, list):
-            result.insert(0, {"CH": "Except China", "brief": "OTHER"})
-        return result
     # 读取配置文件
     def get_profile(self, path):
-        # https://www.aapanel.com/install/lib/country.txt   --path: /www/server/panel/data/firewall/country.txt
 
         if not os.path.exists(path):
             b_path = os.path.dirname(path)
             if not os.path.exists(b_path): os.makedirs(b_path)
 
-            if path in [
-                    self._ips_path, self._country_path, self._white_list_file
-            ]:
-                # 取英文版本 country_en.txt
-                namep = os.path.basename(path)
-                if namep == 'country.txt':
-                    namep = 'country_en.txt'
-                public.downloadFile('https://node.aapanel.com/install/lib/{}'.format(namep), path)
-
+            if path in [self._ips_path, self._country_path, self._white_list_file]:
+                public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(path)), path)
 
         content = ""
-        with open(path, "r") as fr:
+        with open(path, "r", encoding='utf-8', errors='ignore') as fr:
             content = fr.read()
         return content
 
@@ -3342,7 +3205,6 @@ class main(safeBase):
     # 获取端口规则列表
     def get_port_rules(self, get):
         rule_list = public.M('firewall_new').order("id desc").select()
-        # return public.returnMsg(True, rule_list)
         return public.return_message(0, 0, rule_list)
 
     # 整理配置文件格式
@@ -3441,8 +3303,8 @@ class main(safeBase):
             # 2024/1/6 下午 5:00 获取防火墙状态，如果没有启动则启动防火墙
             if not self.get_firewall_status():
                 get = public.dict_obj()
-                # get.status = 1
-                get.status = 'start'
+                get.status = 1
+                # get.status = 'start'
                 self.firewall_admin(get)
 
             for port in port_list:
@@ -3459,7 +3321,6 @@ class main(safeBase):
                     'ports=? and address=? and protocol=? and types=?',
                     (port, "", protocol, types)
                 ).find()
-                print(query_result)
                 if query_result: continue
 
                 addtime = time.strftime('%Y-%m-%d %X', time.localtime())
@@ -3467,11 +3328,9 @@ class main(safeBase):
                     'ports,brief,protocol,address,types,addtime,domain,sid',
                     (port, "", protocol, "", types, addtime, "", 0)
                 )
-            # return public.returnMsg(True, public.lang("Added successfully!"))
             return public.return_message(0, 0, public.lang("Added successfully!"))
         except Exception:
             print(traceback.format_exc())
-            # return public.returnMsg(False, public.lang("ADD_ERROR"))
             return public.return_message(0, 0, public.lang("Failed to add"))
 
     def _get_webserver(self):
@@ -3527,14 +3386,11 @@ class main(safeBase):
         ports_list.append("39000-40000")
 
         if self.__isUfw:
-            # return self._get_ufw_port_status(ports_list, result_list)
             list1 = self._get_ufw_port_status(ports_list, result_list)
             return public.return_message(0, 0, list1)
         if self.__isFirewalld:
-            # return self._get_firewall_port_status(ports_list, result_list)
             list1 = self._get_firewall_port_status(ports_list, result_list)
             return public.return_message(0, 0, list1)
-        # return {}
         return public.return_message(0, 0, {})
 
     def _get_firewall_port_status(self, ports_list, result_list):
@@ -3545,8 +3401,9 @@ class main(safeBase):
         @return:
         '''
         with contextlib.suppress(Exception):
+            if self.__firewall_obj is None:
+                return result_list
             _firewalld_ports, _ = self.__firewall_obj.GetAcceptPortList()
-            # print("_firewalld_ports: ", _firewalld_ports)
             for firewalld_port in _firewalld_ports:
                 if firewalld_port['ports'] in ports_list:
                     for result in result_list:
@@ -3564,7 +3421,6 @@ class main(safeBase):
         '''
         with contextlib.suppress(Exception):
             rules_result = self._get_ufw_port_info()
-            # print("rules_result: ", rules_result)
             ports_set = set(ports_list)  # 将要查找的端口列表转换成集合，以便进行高效查找
 
             for rule in rules_result:
@@ -3625,10 +3481,7 @@ class main(safeBase):
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        print("get.get_items().keys(): ", get.get_items().keys())
-
         if get.port.find('-') != -1 or get.port.find(':') != -1:
-            # return public.returnMsg(False, public.lang("Range ports not supported"))
             return public.return_message(-1, 0, public.lang("Range ports not supported"))
 
 
@@ -3636,26 +3489,22 @@ class main(safeBase):
         process_pid = ''
         process_cmd = ''
 
-        cmd = "lsof -i:{}|grep LISTEN|grep -v COMMAND".format(get.port) + "|awk '{print $1,$2}'"
-        info_list = public.ExecShell(cmd)[0].split("\n")[0].split(" ")
-        if len(info_list) == 2:
-            process_name = info_list[0]
-            process_pid = info_list[1]
+        cmd = "lsof -F c -i:{}".format(get.port)
+        info_list = public.ExecShell(cmd)[0].strip("\n").split("\n")
+
+        if len(info_list) >= 2:
+            process_name = info_list[1][1:]
+            process_pid = info_list[0][1:]
             cmd_ps = "ps aux|grep {}|grep -v grep".format(process_pid)
             cmd_awk = "|awk '{print $11,$12,$13,$14}'"
             process_cmd = public.ExecShell(cmd_ps + cmd_awk)[0].split("\n")[0].strip(" ")
 
-        # return {
-        #     "process_name": process_name,
-        #     "process_pid": process_pid,
-        #     "process_cmd": process_cmd
-        # }
-
-        return public.return_message(0, 0, {
+        data = {
             "process_name": process_name,
             "process_pid": process_pid,
             "process_cmd": process_cmd
-        })
+        }
+        return public.return_message(0, 0, data)
 
     def get_diff_panel_firewall_rules(self, get):
         '''
@@ -3668,7 +3517,6 @@ class main(safeBase):
         firewall_rules = self.get_sys_firewall_rules()
         # 取出差异的规则
         diff_rules = self._get_diff_rules(panel_firewall_rules, firewall_rules)
-        # return diff_rules
         return public.return_message(0, 0, diff_rules)
 
     def get_panel_firewall_rules(self):
@@ -3686,8 +3534,12 @@ class main(safeBase):
         获取防火墙配置文件
         @return:
         '''
-        if self.__isUfw: return self._get_ufw_port_info()
-        if self.__isFirewalld: return self.__firewall_obj.recombine_rules()
+        if self.__isUfw:
+            return self._get_ufw_port_info()
+        if self.__isFirewalld:
+            if self.__firewall_obj is None:
+                return []
+            return self.__firewall_obj.recombine_rules()
         return []
 
     def _diff_dict_list(self, list1, list2):
@@ -3762,15 +3614,12 @@ class main(safeBase):
             panel_excludes = get.panel_exclude if "panel_exclude" in get.get_items().keys() else {}
             sys_excludes = get.sys_exclude if "sys_exclude" in get.get_items().keys() else {}
             status = get.status if "status" in get.get_items().keys() else {}
-            # print("panel_excludes: ", panel_excludes)
 
             if status == 'add':
                 return self._add_exclude(panel_excludes, sys_excludes)
             elif status == 'del':
                 return self._del_exclude(panel_excludes, sys_excludes)
         except Exception as e:
-            # print(e)
-            # return public.returnMsg(False, public.lang("Ignore rule failed,{}!", e))
             return public.return_message(0, 0, public.lang("Ignore rule failed,{}!", e))
 
     def _add_exclude(self, panel_excludes, sys_excludes):
@@ -3826,7 +3675,6 @@ class main(safeBase):
         firewall_diff_rules['panel_exclude'] = new_panel_exclude
         firewall_diff_rules['sys_exclude'] = new_sys_exclude
         public.save_config(firewall_diff_rules_name, firewall_diff_rules)
-        # return public.returnMsg(True, public.lang("Cancel ignore rule successfully"))
         return public.return_message(0, 0, public.lang("Cancel ignore rule successfully"))
 
     def _add_firewall_rules(self, source_ip, protocol, port, types):
@@ -3929,7 +3777,6 @@ class main(safeBase):
                 result_dict["total_banned"] += int(logs_result["msg"]["total_banned"])
                 result_dict["banned_ip_list"] += logs_result["msg"]["banned_ip_list"]
 
-        # return result_dict
         return public.return_message(0, 0, result_dict)
 
     def get_anti_scan_status(self, get):
@@ -3941,11 +3788,9 @@ class main(safeBase):
         result_data = {"status": 0, "installed": 1}
         if not os.path.exists("{}".format(plugin_path)):
             result_data['installed'] = 0
-            # return result_data
             return public.return_message(0, 0, result_data)
         sock = "{}/fail2ban.sock".format(plugin_path)
         if not os.path.exists(sock):
-            # return result_data
             return public.return_message(0, 0, result_data)
 
 
@@ -3955,24 +3800,21 @@ class main(safeBase):
             try:
                 data = json.loads(public.readFile(s_file))
                 if len(data) == 0:
-                    # return result_data
                     return public.return_message(0, 0, result_data)
 
                 for key in server_lists:
                     if key in data:
                         if data[key]['act'] != 'true':
                             result_data['status'] = 0
-                            # return result_data
                             return public.return_message(0, 0, result_data)
 
                 result_data['status'] = 1
-                # return result_data
                 return public.return_message(0, 0, result_data)
             except:
                 pass
 
-        # return result_data
         return public.return_message(0, 0, result_data)
+
     def set_anti_scan_status(self, get):
         """
         @name 设置常用端口防扫描
@@ -3993,7 +3835,6 @@ class main(safeBase):
         _set_up_path = "/www/server/panel/plugin/fail2ban"
         _config = _set_up_path + "/config.json"
         if not os.path.exists(_set_up_path + "/fail2ban_main.py"):
-            # return public.returnMsg(False, public.lang("fail2ban plugin is not installed"))
             return public.return_message(0, 0, public.lang("fail2ban plugin is not installed"))
 
         if os.path.exists(_config):
@@ -4032,7 +3873,6 @@ class main(safeBase):
         #     PluginLoader.plugin_run('fail2ban', 'set_fail2ban_status', get)
 
         public.WriteLog("Port Scanning Prevention", "[Security]-[System Firewall]-[Set Port Scanning Prevention]")
-        # return public.returnMsg(True, public.lang("Setup successful!"))
         return public.return_message(0, 0, public.lang("Setup successful!"))
 
     def del_ban_ip(self, get):
@@ -4048,7 +3888,6 @@ class main(safeBase):
             get.mode = key
             PluginLoader.plugin_run('fail2ban', 'ban_ip_release', get)
 
-        # return public.returnMsg(True, public.lang("Unlocked successfully"))
         return public.return_message(0, 0, public.lang("Unlocked successful!"))
 
 
@@ -4062,11 +3901,16 @@ class firewalld:
 
     # 初始化配置文件XML对象
     def __init__(self):
-        if self.__TREE: return
-        if not os.path.exists(self.__CONF_FILE): return
+        if self.__TREE:
+            return
+        if not os.path.exists(self.__CONF_FILE):
+            return
         self.__TREE = ElementTree()
-        self.__TREE.parse(self.__CONF_FILE)
-        self.__ROOT = self.__TREE.getroot()
+        try:
+            self.__TREE.parse(self.__CONF_FILE)
+            self.__ROOT = self.__TREE.getroot()
+        except:
+            return
 
     # 获取规则列表
     def GetAcceptPortList(self):
@@ -4154,24 +3998,21 @@ class Sqlite():
 
     def __init__(self):
         self.db_file = "/www/server/panel/data/default.db"
+        # self.db_file = "/www/server/panel/data/db/firewall.db"
         self.create_table()
 
     # 获取数据库对象
     def GetConn(self):
         try:
-            if self.connection == None:
+            if self.connection is None:
                 self.connection = sqlite3.connect(self.db_file)
                 self.connection.text_factory = str
         except Exception as ex:
-            import traceback
-            traceback.print_exc()
             return "error: " + str(ex)
 
     def create_table(self):
         # 创建firewall_new表记录端口规则
-        if not public.M('sqlite_master').where(
-                'type=? AND name=?', ('table', 'firewall_new')).count():
-            public.M('').execute('''CREATE TABLE "firewall_new" (
+        public.M(None).db('firewall_new').execute('''CREATE TABLE IF NOT EXISTS "firewall_new" (
                 "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                 "protocol" TEXT DEFAULT '',
                 "ports" TEXT,
@@ -4179,8 +4020,7 @@ class Sqlite():
                 "address" TEXT DEFAULT '',
                 "brief" TEXT DEFAULT '',
                 "addtime" TEXT DEFAULT '');''')
-            public.M('').execute(
-                'CREATE INDEX firewall_new_port ON firewall_new (ports);')
+        public.M(None).db('firewall_new').execute('CREATE INDEX firewall_new_port ON firewall_new (ports);')
 
         if public.M('firewall_new').count() < 1:
             # 写入默认数据
@@ -4267,6 +4107,7 @@ class Sqlite():
                 "addtime" TEXT DEFAULT '');''')
             public.M('').execute('CREATE INDEX firewall_domain_addr ON firewall_domain (domain);')
 
+        public.M(None).db('firewall_malicious_ip').execute('CREATE INDEX firewall_malicious_ip_address ON firewall_malicious_ip (address);')
 
         # 修复之前已经创建的 firewall_domain 表无 domain_total 字段的问题
         create_table_str = public.M('firewall_new').table('sqlite_master').where(
@@ -4305,7 +4146,6 @@ class Sqlite():
             result = self.connection.execute(sql)
             id = result.lastrowid
             self.connection.commit()
-            self.rm_lock()
             return id
         except Exception as ex:
             return "error: " + str(ex)

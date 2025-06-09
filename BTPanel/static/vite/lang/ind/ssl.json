@@ -171,14 +171,14 @@
 			"index_16": "Pilih Nama Domain",
 			"index_17": "Verifikasi file",
 			"index_18": "Buat file HTML",
-			"index_19": "Tips: Sertifikat untuk [{0}] telah kedaluwarsa, silakan perbarui segera!",
-			"index_20": "Menggabungkan nama domain secara otomatis",
-			"index_21": "Sambungkan",
-			"index_22": "Pengingat",
+			"index_19": "Kiat: Sertifikat untuk [{0}] telah kedaluwarsa, segera perbarui!",
+			"index_20": "Secara otomatis menggabungkan nama domain pan",
+			"index_21": "Menghubungkan",
+			"index_22": "Mengingatkan",
 			"index_23": "SSL akan diperbarui secara otomatis 1 bulan sebelum tanggal kedaluwarsa",
-			"index_24": "Sertifikat gratis Let's Encrypt yang dihasilkan secara otomatis",
-			"index_25": "Jika Anda memiliki SSL sendiri, silakan beralih ke tab [sertifikat lain] untuk menambahkannya",
-			"index_26": "Tips: Sertifikat [{0}] akan kedaluwarsa dalam {1} hari, silakan perbarui!"
+			"index_24": "Secara otomatis dihasilkan mari kita mengenkripsi sertifikat gratis",
+			"index_25": "Jika Anda memiliki SSL sendiri, silakan beralih ke tab [Sertifikat Lainnya] untuk ditambahkan",
+			"index_26": "Tip: Sertifikat [{0}] akan kedaluwarsa dalam {1} hari, tolong persiapkannya!"
 		}
 	}
 }

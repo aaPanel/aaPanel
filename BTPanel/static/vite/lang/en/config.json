@@ -95,7 +95,9 @@
 			"index_94": "Please enter the number of backups",
 			"index_95": "If the database used by the panel is corrupted, you will not be able to recover the corrupted panel database",
 			"index_96": "Turn off panel backup",
-			"index_97": "Automatic backup does not include website data and MySQL data"
+			"index_97": "Automatic backup does not include website data and MySQL data",
+			"index_98": "CDN Proxy",
+			"index_99": "Retrieve the real IP of the request from the CDN proxy"
 		},
 		"Safe": {
 			"index_1": "Security",

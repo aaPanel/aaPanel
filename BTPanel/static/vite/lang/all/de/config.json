@@ -407,5 +407,7 @@
 	"0c2d54b264e1f2df4c626b6b251e1510": "Zertifikat jetzt installieren",
 	"ae0d29aefa93b5d13f406b4c844bf5e6": "Bitte geben Sie eine Domain ein",
 	"4c835a52a19316b87fbf00485781956f": "Zertifikat erfolgreich installiert",
-	"060bf2d587991d8f090a1309b285291c": "Überprüfen"
+	"060bf2d587991d8f090a1309b285291c": "Überprüfen",
+	"379d14bce48f85e00034b833d5c9c408": "CDN Proxy",
+	"c5bd9f0dd02f86e8581c609f3a14d0c1": "Rufen Sie die reale IP der Anforderung vom CDN -Proxy ab"
 }

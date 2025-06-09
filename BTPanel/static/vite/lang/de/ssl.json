@@ -171,14 +171,14 @@
 			"index_16": "Bitte wählen Sie den Domain -Namen",
 			"index_17": "Dateiüberprüfung",
 			"index_18": "Erstellen Sie die HTML -Datei",
-			"index_19": "Hinweis: Das Zertifikat für [{0}] ist abgelaufen, bitte aktualisieren Sie es umgehend!",
-			"index_20": "Automatisch mehrere Domains kombinieren",
+			"index_19": "Tipps: Zertifikat für [{0}] ist abgelaufen, bitte aktualisieren Sie sie sofort!",
+			"index_20": "Automatisch Pan-Domain-Namen kombinieren",
 			"index_21": "Verbinden",
 			"index_22": "Erinnern",
-			"index_23": "Das SSL wird 1 Monat vor dem Ablaufdatum automatisch erneuert",
-			"index_24": "Automatisch generiertes Let's Encrypt kostenloses Zertifikat",
-			"index_25": "Wenn Sie Ihr eigenes SSL haben, wechseln Sie bitte zum Tab [anderes Zertifikat], um es hinzuzufügen",
-			"index_26": "Hinweis: Das Zertifikat [{0}] läuft in {1} Tagen ab, bitte erneuern Sie es!"
+			"index_23": "Die SSL wird 1 Monat vor dem Ablaufdatum automatisch erneuert",
+			"index_24": "Automatisch generiert werden wir kostenloses Zertifikat verschlüsseln",
+			"index_25": "Wenn Sie Ihre eigene SSL haben, wechseln Sie bitte auf die Registerkarte [ein anderes Zertifikat], um hinzuzufügen",
+			"index_26": "Tipp: Das [{0}] Zertifikat verfällt in {1} Tagen, bitte erneuern Sie es!"
 		}
 	}
 }

@@ -4,29 +4,22 @@ import os
 import subprocess
 import sys
 import time
-
+from functools import wraps
+from typing import Optional, Dict
+# import asyncio
 import fcntl
 
 os.chdir("/www/server/panel")
 sys.path.insert(0, "class/")
-sys.path.insert(0, "/www/server/panel/")
-
+sys.path.insert(0, "class_v2/")
 import public
-
-if not "class_v2" in sys.path:
-    sys.path.insert(0, "/www/server/panel/class_v2")
-from panel_site_v2 import panelSite
 
 SETUP_PATH = public.get_setup_path()
 DATA_PATH = os.path.join(SETUP_PATH, "panel/data")
 
 DAEMON_SERVICE = os.path.join(DATA_PATH, "daemon_service.pl")
-if not os.path.exists(DAEMON_SERVICE):
-    public.writeFile(DAEMON_SERVICE, json.dumps([]))
-
+DAEMON_SERVICE_LOCK = os.path.join(DATA_PATH, "daemon_service_lock.pl")
 MANUAL_FLAG = os.path.join(public.get_panel_path(), "data/mod_push_data", "manual_flag.pl")
-if not os.path.exists(MANUAL_FLAG):
-    public.writeFile(MANUAL_FLAG, json.dumps({}))
 
 SERVICES_MAP = {
     "apache": (
@@ -56,73 +49,196 @@ SERVICES_MAP = {
 }
 
 
-def add_daemon(service_name: str) -> bool:
-    if not service_name or service_name not in SERVICES_MAP.keys():
-        return False
-    daemon_list = json.loads(public.readFile(DAEMON_SERVICE))
-    if service_name in daemon_list:
-        return True
-    daemon_list.append(service_name)
-    public.writeFile(DAEMON_SERVICE, json.dumps(list(set(daemon_list))))
-    return True
+def manual_flag(server_name: str = None, open_: str = None) -> Optional[dict]:
+    if not server_name:  # only read
+        return DaemonManager.safe_read()
+    # 人为干预
+    if open_ in ["start", "restart"]:  # 激活服务检查
+        return DaemonManager.active_daemon(server_name)
+    elif open_ == "stop":  # 跳过服务检查
+        return DaemonManager.skip_daemon(server_name)
+    return DaemonManager.safe_read()
 
 
-def del_daemon(service_name: str) -> bool:
-    if not service_name:
-        return False
-    try:
-        public.writeFile(DAEMON_SERVICE, json.dumps([
-            x for x in json.loads(public.readFile(DAEMON_SERVICE)) if x != service_name
-        ]))
-    except:
-        return False
-    return True
+class DaemonManager:
+    @classmethod
+    def __ensure(cls):
+        if not os.path.exists(DAEMON_SERVICE_LOCK):
+            with open(DAEMON_SERVICE_LOCK, "w") as _:
+                pass
+        if not os.path.exists(MANUAL_FLAG):
+            public.writeFile(MANUAL_FLAG, json.dumps({}))
+        if not os.path.exists(DAEMON_SERVICE):
+            public.writeFile(DAEMON_SERVICE, json.dumps([]))
 
+    @staticmethod
+    def read_lock(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            DaemonManager.__ensure()
+            with open(DAEMON_SERVICE_LOCK, "r") as lock_file:
+                fcntl.flock(lock_file, fcntl.LOCK_SH)
+                try:
+                    result = func(*args, **kwargs)
+                finally:
+                    fcntl.flock(lock_file, fcntl.LOCK_UN)
+                return result
 
-def save_file(path: str, body: str) -> None:
-    try:
-        with open(path, "w+") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
-            f.write(body)
-            fcntl.flock(f, fcntl.LOCK_UN)
-    except (IOError, OSError) as _:
-        pass
+        return wrapper
 
+    @staticmethod
+    def write_lock(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            DaemonManager.__ensure()
+            with open(DAEMON_SERVICE_LOCK, "r+") as lock_file:
+                fcntl.flock(lock_file, fcntl.LOCK_EX)
+                try:
+                    result = func(*args, **kwargs)
+                finally:
+                    fcntl.flock(lock_file, fcntl.LOCK_UN)
+                return result
 
-def read_file(path: str) -> dict:
-    try:
-        with open(path, "r") as f:
-            fcntl.flock(f, fcntl.LOCK_SH)
-            content = f.read()
-            fcntl.flock(f, fcntl.LOCK_UN)
-        return json.loads(content) if content else {}
-    except json.JSONDecodeError as _:
-        return {}
-    except (IOError, OSError) as _:
-        return {}
+        return wrapper
 
+    @staticmethod
+    @write_lock
+    def operate_daemon(service_name: str, flag: int = 0) -> list:
+        """
+        flag: 0 add, 1 del
+        """
+        with open(DAEMON_SERVICE, "r+") as f:
+            try:
+                service = json.load(f)
+            except json.JSONDecodeError:
+                service = []
+            if flag == 0:
+                service.append(service_name)
+            elif flag == 1:
+                service = [x for x in service if x != service_name]
+            service = list(set(service))
+            f.seek(0)
+            # noinspection PyTypeChecker
+            json.dump(service, f)
+            f.truncate()
+            return service
 
-def manual_flag(server_name: str = None, open_: str = None) -> dict:
-    """人为关闭标记"""
-    manual = read_file(MANUAL_FLAG)
-    if server_name and open_ == "stop":
-        manual[server_name] = 1
-        save_file(MANUAL_FLAG, json.dumps(manual))
-        return manual
-    elif server_name and open_ in ["start", "restart"] and manual.get(server_name) == 1:
-        manual[server_name] = 0
-        save_file(MANUAL_FLAG, json.dumps(manual))
-        return manual
-    else:
-        return manual
+    @staticmethod
+    @write_lock
+    def operate_manual_flag(service_name: str, flag: int = 0) -> dict:
+        """
+        flag: 0 normal, 1 manual closed
+        """
+        with open(MANUAL_FLAG, "r+") as f:
+            try:
+                service = json.load(f)
+            except json.JSONDecodeError:
+                service = {}
+            service[service_name] = flag
+            f.seek(0)
+            # noinspection PyTypeChecker
+            json.dump(service, f)
+            f.truncate()
+            return service
+
+    @staticmethod
+    def remove_daemon(service_name: str) -> list:
+        """移除守护进程服务"""
+        return DaemonManager.operate_daemon(service_name, 1)
+
+    @staticmethod
+    def add_daemon(service_name: str) -> list:
+        """添加守护进程服务"""
+        return DaemonManager.operate_daemon(service_name, 0)
+
+    @staticmethod
+    def skip_daemon(service_name: str) -> dict:
+        """跳过服务检查"""
+        return DaemonManager.operate_manual_flag(service_name, 1)
+
+    @staticmethod
+    def active_daemon(service_name: str) -> dict:
+        """激活服务检查"""
+        return DaemonManager.operate_manual_flag(service_name, 0)
+
+    @staticmethod
+    @read_lock
+    def safe_read():
+        try:
+            res = public.readFile(DAEMON_SERVICE)
+            return json.loads(res) if res else []
+        except:
+            return []
 
 
 class RestartServices:
+    COUNT = 30
+    RECORD: Dict[str, int] = {}
+
     def __init__(self):
         self.nick_name = None
         self.serviced = None
         self.pid_file = None
         self.bash = None
+
+    def __keep_flag_right(self, manual_info: dict) -> None:
+        try:
+            with open(MANUAL_FLAG, "r+") as f:
+                try:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                    f.seek(0)
+                    # noinspection PyTypeChecker
+                    json.dump(manual_info, f)
+                    f.truncate()
+                except:
+                    print("Error writing manual flag file")
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        except Exception as e:
+            print("Error keep_flag_right:", e)
+
+    def _overhead(self) -> bool:
+        if self.nick_name not in self.RECORD:
+            self.RECORD[self.nick_name] = 0
+            return True
+
+        if self.RECORD[self.nick_name] >= self.COUNT:
+            return False
+
+        self.RECORD[self.nick_name] += 1
+        return True
+
+    def _script(self, act: str) -> None:
+        try:
+            if act not in ["start", "stop", "restart", "status"]:
+                return
+            # "try to {act} [{self.nick_name}]..."
+            bash_path = self.bash if self.bash else f"/etc/init.d/{self.serviced}"
+            if self.pid_file.endswith(".sock"):
+                try:
+                    os.remove(self.pid_file)
+                except:
+                    pass
+            result = subprocess.run(
+                [bash_path, act],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=10,
+            )
+            if result.returncode != 0:
+                public.WriteLog(
+                    "Service Daemon", f"Failed to {act} {self.nick_name}, error: {result.stderr.strip()}"
+                )
+        except subprocess.TimeoutExpired as t:
+            public.WriteLog(
+                "Service Daemon", f"Failed to {act} {self.nick_name}, error: time out, {t}"
+            )
+        except Exception as e:
+            print(str(e))
+            public.WriteLog(
+                "Service Daemon", f"Failed to {act} {self.nick_name}, error: {e}"
+            )
 
     def is_support(self) -> bool:
         try:
@@ -186,57 +302,43 @@ class RestartServices:
             except:
                 return False
 
-    def _script(self, act: str) -> None:
-        try:
-            if act not in ["start", "stop", "restart", "status"]:
-                return
-            # "try to {act} [{self.nick_name}]..."
-            bash_path = self.bash if self.bash else f"/etc/init.d/{self.serviced}"
-            if self.pid_file.endswith(".sock"):
-                try:
-                    subprocess.run([f"rm -f {self.pid_file}"])
-                except FileNotFoundError:
-                    pass
-                except:
-                    pass
-            subprocess.run(
-                [bash_path, act],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-        except Exception as e:
-            print(str(e))
-
+    @DaemonManager.read_lock
     def main(self):
-        with open(MANUAL_FLAG, 'rb') as fp:
-            fcntl.flock(fp, fcntl.LOCK_SH)
-            check_list = json.loads(public.readFile(DAEMON_SERVICE))
-            manual_info = manual_flag()
+        manaul = public.readFile(MANUAL_FLAG)
+        services = public.readFile(DAEMON_SERVICE)
+        try:
+            manual_info = json.loads(manaul) if manaul else {}
+            check_list = json.loads(services) if services else []
+        except Exception as e:
+            public.print_log(f"error, {e}")
+            return
 
-            for service in check_list:
-                self.nick_name = service
-                if not self.is_support() or not self.is_install_service():
+        for service in [
+            x for x in check_list if self.RECORD.get(x, 0) < self.COUNT
+        ]:
+            self.nick_name = service
+            if not self.is_support() or not self.is_install_service():
+                continue
+
+            if not self.is_process_running():
+                if manual_info.get(self.nick_name) == 1:
+                    # service closed maually, skip
                     continue
-
+                public.WriteLog(
+                    "Service Daemon", f"Service [ {self.nick_name} ] is Not Running, Try to start it..."
+                )
+                self._overhead()
+                self._script("start")
+                time.sleep(3)
                 if not self.is_process_running():
-                    if manual_info.get(self.nick_name) == 1:
-                        # service closed maually, skip
-                        continue
-                    public.WriteLog(
-                        "Service Daemon", f"Service [ {self.nick_name} ] is Not Running, Try to start it..."
-                    )
-                    self._script("start")
-                    time.sleep(5)
-                    if not self.is_process_running():
-                        self._script("restart")
+                    self._overhead()
+                    self._script("restart")
 
             if manual_info.get(self.nick_name) == 1:
-                # service is running, remove manual flag
+                # service is running, fix the wrong flag
                 manual_info[self.nick_name] = 0
-                save_file(MANUAL_FLAG, json.dumps(manual_info))
-                return
-            return
+                # under lock file read lock
+                self.__keep_flag_right(manual_info)
 
 
 def first_time_installed(data: dict) -> None:
@@ -253,10 +355,7 @@ def first_time_installed(data: dict) -> None:
                 if setup is False and os.path.exists(pl_name):
                     os.remove(pl_name)
                 elif setup is True and not os.path.exists(pl_name):
-                    get = public.dict_obj()
-                    get.name = service
-                    get.status = 1
-                    panelSite().set_restart_task(get)
+                    DaemonManager.add_daemon(service)
                     public.writeFile(pl_name, "1", mode="w")
                 else:
                     pass

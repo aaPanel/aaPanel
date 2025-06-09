@@ -1,0 +1,99 @@
+{
+	"Plugin": {
+		"Mysql": {
+			"index_1": "Questo è il file di configurazione principale di {0}, se non si capisce le regole di configurazione, non modificarlo.",
+			"index_2": "Avviso quando lo stato si ferma",
+			"index_3": "Impostazione dell'allarme di arresto dello stato",
+			"index_4": "Ripristino automatico",
+			"index_5": "Sei sicuro di {0} {1} servizio?",
+			"index_6": "Registro binario",
+			"index_7": "Suggerimenti caldi: il registro binario MySQL consiste nel registrare il registro operativo corrente, può essere utilizzato per il recupero dei dati, il backup dei dati.",
+			"index_8": "Ultimo tempo modificato",
+			"index_9": "Elimina registro",
+			"index_10": "Vuoi davvero eliminare il registro [{0}]?",
+			"index_11": "L'accensione della registrazione binaria può proteggere la sicurezza dei dati MySQL, ma allo stesso tempo consumerà una certa quantità di archiviazione su disco, se continuare?",
+			"index_12": "Disattiva il registro binario non registrerà più tutte le operazioni di modifica nel registro binario del database?",
+			"index_13": "Mossa",
+			"index_14": "Avviso di rischio: MySQL smetterà di funzionare durante il processo di migrazione, fai attenzione",
+			"index_15": "Avviso di rischio: attendere fino al completamento della migrazione prima di eseguire qualsiasi altra operazione durante il processo di migrazione",
+			"index_16": "Migrazione del database",
+			"index_17": "Sicuro di voler migrare il database su [{0}]?",
+			"index_18": "Protezione della memoria",
+			"index_19": "Nota: dopo che è abilitato, la priorità di memoria MySQL verrà regolata e MySQL non verrà mai ucciso dal sistema, il che può garantire il funzionamento stabile di MySQL. Tuttavia, può causare l'uccisione in modo anomalo di altri processi, il che può influire seriamente sul funzionamento del sistema. Si consiglia di abilitarlo quando MySQL deve funzionare stabilmente.",
+			"index_20": "Piano di ottimizzazione",
+			"index_21": "Utilizzo Max Ram",
+			"index_22": "Riavvia il servizio {0}",
+			"index_23": "Riavvia database per la configurazione per avere effetto",
+			"index_24": "Hai riavviato il servizio {0}?",
+			"index_25": "Se hai bisogno di modificare la versione MySQL, eseguire il backup dei dati, disinstallare MySQL e reinstallarli.",
+			"index_26": "Posizione di stoccaggio",
+			"index_27": "Ottimizzazione",
+			"index_28": "Registro lento",
+			"index_29": "Tempo di intervallo",
+			"index_30": "Supporto"
+		},
+		"Ftp": {
+			"index_1": "Questa funzione è esclusiva della versione professionale, {a}",
+			"index_2": "Switch di gestione del registro",
+			"index_3": "Dopo aver acceso, verranno registrati tutti i record di accesso e operazioni degli utenti FTP.",
+			"index_4": "Gestione dei registri",
+			"index_5": "Dopo aver attivato la gestione del registro Pure-FTPD, registrerà i record di accesso e operazioni di tutti gli utenti FTP, se continuare l'operazione?",
+			"index_6": "Dopo aver disattivato la gestione del registro Pure-FTPD, non sarà in grado di registrare i record di accesso e operazioni di tutti gli utenti FTP, se continuare l'operazione?",
+			"index_7": "L'attuale indirizzo FTP è",
+			"index_8": "Scarica lo strumento di connessione FTP (filezilla, open source gratuita)",
+			"index_9": "Switch Version",
+			"index_10": "Gestione degli utenti",
+			"index_11": "La versione corrente è la stessa della versione selezionata!",
+			"index_12": "Sei sicuro di installare {0}-{1}"
+		},
+		"Redis": {
+			"index_1": "Dopo aver modificato la configurazione, è necessario riavviare Redis per avere effetto, se i tuoi dati devono essere persistiti, si prega di eseguire prima l'operazione di salvataggio.",
+			"index_2": "ATTENZIONE: non attivare l'accesso a Redis Extranet, poiché è molto probabile che l'accesso senza restrizioni all'IP porti all'intrusione del server.",
+			"index_3": "Dopo l'impostazione, la nuova directory Redis_Cache verrà creata nella directory selezionata e viene fornita le autorizzazioni Redis",
+			"index_4": "Percorso di archiviazione file persistente",
+			"index_5": "Aof persistenza",
+			"index_6": "RDB Persistence",
+			"index_7": "Impostare la persistenza"
+		},
+		"Apache": {
+			"index_1": "Tempo di riavvio",
+			"index_2": "Tempo di avvio",
+			"index_3": "Connessioni totali",
+			"index_4": "Byte totali trasferiti",
+			"index_5": "Richieste al secondo",
+			"index_6": "Processo occupato",
+			"index_7": "Processo inattivo",
+			"index_8": "Apache utilizza CPU",
+			"index_9": "Apache usa la memoria",
+			"index_10": "Demone",
+			"index_11": "Il demone può essere avviato automaticamente dopo che il servizio {0} viene interrotto per garantire che il servizio {0} sia sempre in esecuzione.",
+			"index_12": "Campi",
+			"index_13": "Valore corrente",
+			"index_14": "Controllare predefinito ogni 1 minuto, può essere modificato in cron"
+		},
+		"Mencached": {
+			"index_1": "Ascoltando IP, per favore non modificarlo liberamente",
+			"index_2": "Porta di ascolto, generalmente non è necessario modificare",
+			"index_3": "MB, dimensione della cache, si consiglia di non superare i 512 m",
+			"index_4": "Numero massimo di connessioni, consigliato di non superare 40960"
+		},
+		"MongoDB": {
+			"index_1": "Dopo l'impostazione, creare una nuova directory BT_mongoDB nella directory selezionata e dare autorizzazione a Mongo",
+			"index_2": "Non modificare l'IP di monitoraggio a piacimento",
+			"index_3": "Posizione di archiviazione dei dati",
+			"index_4": "Posizione del file di registro",
+			"index_5": "PID Salva percorso",
+			"index_6": "Porta di ascolto, generalmente non è necessario modificare",
+			"index_7": "Si prega di iniziare prima il servizio MongoDB!",
+			"index_8": "Vuoi davvero eliminare il database [{0}]?"
+		},
+		"Openlitespeed": {
+			"index_1": "Specifica il tempo inattivo della connessione massima (secondi) consentito durante l'elaborazione di una richiesta",
+			"index_2": "Abilita la compressione GZIP/BROTLI per le risposte statiche e dinamiche",
+			"index_3": "Specifica il livello di compressione GZIP applicata al contenuto dinamico. Varia da 1 (più basso) a 9 (più alto)",
+			"index_4": "Specifica il numero massimo di connessioni simultanee che il server può accettare. Ciò include sia connessioni TCP semplici che connessioni SSL",
+			"index_5": "Specifica il numero massimo di richieste che possono essere servite attraverso una sessione Keep-Alive (persistente)",
+			"index_6": "Specifica il numero massimo di connessioni SSL simultanee che il server accetterà poiché le connessioni SSL e non-SSL simultanee totali non possono superare il limite specificato dalle \"connessioni massime\", il numero effettivo di connessioni SSL simultanee consentite deve essere inferiore a questo limite"
+		}
+	}
+}

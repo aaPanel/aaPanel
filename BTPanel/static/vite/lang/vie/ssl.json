@@ -172,13 +172,13 @@
 			"index_17": "Xác minh tập tin",
 			"index_18": "Tạo tệp HTML",
 			"index_19": "Mẹo: Chứng chỉ cho [{0}] đã hết hạn, vui lòng cập nhật kịp thời!",
-			"index_20": "Tự động kết hợp tên miền",
+			"index_20": "Tự động kết hợp tên miền pan",
 			"index_21": "Kết nối",
-			"index_22": "Nhắc nhở",
+			"index_22": "Nhắc lại",
 			"index_23": "SSL sẽ tự động gia hạn 1 tháng trước ngày hết hạn",
-			"index_24": "Chứng chỉ miễn phí Let's Encrypt được tự động tạo",
-			"index_25": "Nếu bạn có SSL riêng, vui lòng chuyển đến tab [chứng chỉ khác] để thêm",
-			"index_26": "Mẹo: Chứng chỉ [{0}] sẽ hết hạn trong {1} ngày, vui lòng gia hạn!"
+			"index_24": "Tự động tạo Let's Encrypt chứng chỉ miễn phí",
+			"index_25": "Nếu bạn có SSL của riêng mình, vui lòng chuyển sang tab [Chứng chỉ khác] để thêm",
+			"index_26": "Mẹo: Chứng chỉ [{0}] sẽ hết hạn trong {1} ngày, vui lòng gia hạn nó!"
 		}
 	}
 }

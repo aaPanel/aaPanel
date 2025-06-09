@@ -700,8 +700,8 @@ class ajax:
 
 
         try:
-            if not public.IsRestart():
-                return public.return_message(-1, 0, public.lang("Please run the program when all install tasks finished!"))
+            # if not public.IsRestart():
+            #     return public.return_message(-1, 0, public.lang("Please run the program when all install tasks finished!"))
 
             import json
             conf_status = public.M('config').where("id=?",('1',)).field('status').find()

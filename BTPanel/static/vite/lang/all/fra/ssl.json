@@ -166,5 +166,13 @@
 	"066f9fe777b12bfb7d2487c3c8456dfb": "Veuillez vérifier si la résolution d'enregistrement A du domaine pointe vers ce serveur IP. Non résolu fera l'échec de l'application.",
 	"9ec73173ab50a63aeb2e8e1a54095f9f": "Veuillez sélectionner le nom de domaine",
 	"bda7e16f8d124dca3c14862fef9c7333": "Vérification des fichiers",
-	"b72576b856066a25b50c73316606dc0b": "Créer un fichier HTML"
+	"b72576b856066a25b50c73316606dc0b": "Créer un fichier HTML",
+	"8e33946537dfb9cb3571d4548c4606d2": "Conseils: Certificat pour [{0}] a expiré, veuillez mettre à jour rapidement!",
+	"0e8bea2bbf1375cb481167bf771c3ee5": "Combiner automatiquement les noms de domaine panoramique",
+	"49ab28040dfa07f53544970c6d147e1e": "Connecter",
+	"791ad6dd8697623a4456580bf3eec763": "Rappeler",
+	"a09dee8571ee91d1c75f2e6ddee6c008": "Le SSL sera automatiquement renouvelé 1 mois avant la date d'expiration",
+	"aea0c1b44f454eb13b0f30e990c0bfed": "Certificat gratuit, généré automatiquement, crypte",
+	"f7d4c6f9188c467d6843dc0af9425559": "Si vous avez votre propre SSL, veuillez passer à l'onglet [d'autres certificats] à ajouter",
+	"3bfebd448efe3151d92a0d14ae762b5a": "Astuce: le certificat [{0}] expirera en {1} jours, veuillez le renouveler!"
 }

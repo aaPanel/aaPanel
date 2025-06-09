@@ -111,7 +111,7 @@
 				"index_15": "Ajouter du temps",
 				"index_16": "Modifier la stratégie IP [{0}]",
 				"index_17": "Modifiez la stratégie d'adresse IP à libérer. Une fois l'adresse IP définie, l'accès normal est restauré. Voulez-vous continuer?",
-				"index_18": "Supprimer la règle du port [{0}]",
+				"index_18": "Supprimer la règle IP [{0}]",
 				"index_19": "La règle actuelle est supprimée. Voulez-vous continuer?",
 				"index_20": "Suppression par lots",
 				"index_21": "Supprimer le lot IP",

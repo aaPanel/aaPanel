@@ -407,5 +407,7 @@
 	"0c2d54b264e1f2df4c626b6b251e1510": "Instalar certificado ahora",
 	"ae0d29aefa93b5d13f406b4c844bf5e6": "Por favor ingrese un dominio",
 	"4c835a52a19316b87fbf00485781956f": "Certificado instalado correctamente",
-	"060bf2d587991d8f090a1309b285291c": "Controlar"
+	"060bf2d587991d8f090a1309b285291c": "Controlar",
+	"379d14bce48f85e00034b833d5c9c408": "Proxy CDN",
+	"c5bd9f0dd02f86e8581c609f3a14d0c1": "Recupere la IP real de la solicitud del proxy CDN"
 }

@@ -698,5 +698,6 @@
 	"8aee2fed6d3de4d60ac6aa7fad01186f": "Thiết lập thành công",
 	"4319574340bd69d3034c9126724e1e33": "Vui lòng chọn người dùng",
 	"96f87dfab229df2a41f55f79befc0071": "Bạn có chắc chắn xóa người dùng này không?",
-	"2213692c8314b2b43652534f2f38b09c": "IP bị chặn sẽ được tự động bỏ chặn {0} phút sau khi khối."
+	"2213692c8314b2b43652534f2f38b09c": "IP bị chặn sẽ được tự động bỏ chặn {0} phút sau khi khối.",
+	"fb3b01a5d527b4a1f6b64edaa08d0aa2": "Xóa quy tắc IP [{0}]"
 }

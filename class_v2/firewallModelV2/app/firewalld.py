@@ -15,7 +15,6 @@
 import os
 import sys
 
-
 if "/www/server/panel/class" not in sys.path:
     sys.path.insert(0, "/www/server/panel/class")
 import public
@@ -32,29 +31,28 @@ class Firewalld(Base):
 
     # 2024/3/20 下午 12:00 获取防火墙状态
     def status(self) -> bool:
-        '''
+        """
             @name 获取防火墙状态
             @author wzz <2024/3/20 下午 12:01>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             stdout, stderr = public.ExecShell("systemctl is-active firewalld")
             if "not running" in stdout:
                 return False
             return True
-        except Exception as e:
+        except Exception as _:
             return False
 
     # 2024/3/20 下午 12:00 获取防火墙版本号 
     def version(self) -> str:
-        '''
+        """
             @name 获取防火墙版本号
             @author wzz <2024/3/20 下午 12:00>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
-        # stdout, stderr = public.ExecShell("firewall-cmd --version")
+        """
         stdout, stderr = self.run_command("firewall-cmd --version")
         if "FirewallD is not running" in stdout:
             return "Firewalld has not started, please start it and try again."
@@ -64,13 +62,12 @@ class Firewalld(Base):
 
     # 2024/3/20 下午 12:08 启动防火墙
     def start(self) -> dict:
-        '''
+        """
             @name 启动防火墙
             @author wzz <2024/3/20 下午 12:08>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
-        # stdout, stderr = public.ExecShell("systemctl start firewalld")
+        """
         stdout, stderr = self.run_command("systemctl start firewalld")
         if stderr:
             return self._result(False, "Startup failed, err: {}".format(stderr))
@@ -78,13 +75,12 @@ class Firewalld(Base):
 
     # 2024/3/20 下午 12:10 停止防火墙
     def stop(self) -> dict:
-        '''
+        """
             @name 停止防火墙
             @author wzz <2024/3/20 下午 12:10>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
-        # stdout, stderr = public.ExecShell("systemctl stop firewalld")
+        """
         stdout, stderr = self.run_command("systemctl stop firewalld")
         if stderr:
             return self._result(False, "Stop failed, err: {}".format(stderr))
@@ -92,13 +88,12 @@ class Firewalld(Base):
 
     # 2024/3/20 下午 12:11 重启防火墙
     def restart(self) -> dict:
-        '''
+        """
             @name 重启防火墙
             @author wzz <2024/3/20 下午 12:11>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
-        # stdout, stderr = public.ExecShell("systemctl restart firewalld")
+        """
         stdout, stderr = self.run_command("systemctl restart firewalld")
         if stderr:
             return self._result(False, "The reboot failed, err: {}".format(stderr))
@@ -106,13 +101,12 @@ class Firewalld(Base):
 
     # 2024/3/20 下午 12:11 重载防火墙
     def reload(self) -> dict:
-        '''
+        """
             @name 重载防火墙
             @author wzz <2024/3/20 下午 12:11>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
-        # stdout, stderr = public.ExecShell("firewall-cmd --reload")
+        """
         stdout, stderr = self.run_command("firewall-cmd --reload")
         if stderr:
             return self._result(False, "Overload failed, err: {}".format(stderr))
@@ -120,31 +114,31 @@ class Firewalld(Base):
 
     # 2024/3/20 下午 12:12 获取所有防火墙端口列表
     def list_port(self) -> list:
-        '''
+        """
             @name 获取所有防火墙端口列表
             @author wzz <2024/3/20 下午 12:12>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         return self.parse_public_zone()["ports"] + self.list_output_port()
 
     # 2024/3/20 下午 12:12 获取防火墙端口INPUT列表
     def list_input_port(self) -> list:
-        '''
+        """
             @name 获取防火墙端口列表
             @author wzz <2024/3/20 下午 12:12>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         return self.parse_public_zone()["ports"]
 
     # 2024/3/22 上午 11:28 获取所有OUTPUT的direct 端口规则
     def list_output_port(self) -> list:
-        '''
+        """
             @name 获取所有OUTPUT的direct 端口规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         list_direct_rules = self.parse_direct_xml()["ports"]
         datas = []
         for rule in list_direct_rules:
@@ -154,31 +148,31 @@ class Firewalld(Base):
 
     # 2024/3/20 下午 12:21 获取防火墙的rule的ip规则列表
     def list_address(self) -> list:
-        '''
+        """
             @name 获取防火墙的rule的ip规则列表
             @author wzz <2024/3/20 下午 2:45>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
-        return self.parse_public_zone()["rules"] + self.list_output_address()
+        """
+        return self.parse_public_zone()["rules"] + self.parse_trusted_zone()["rules"] + self.list_output_address()
 
     # 2024/3/20 下午 12:21 获取防火墙的rule input的ip规则列表
     def list_input_address(self) -> list:
-        '''
+        """
             @name 获取防火墙的rule input的ip规则列表
             @author wzz <2024/3/20 下午 2:45>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
-        return self.parse_public_zone()["rules"]
+        """
+        return self.parse_public_zone()["rules"] + self.parse_trusted_zone()["rules"]
 
     # 2024/3/22 下午 4:07 获取所有OUTPUT的direct ip规则
     def list_output_address(self) -> list:
-        '''
+        """
             @name 获取所有OUTPUT的direct ip规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         list_direct_rules = self.parse_direct_xml()["rules"]
         datas = []
         for rule in list_direct_rules:
@@ -188,14 +182,13 @@ class Firewalld(Base):
 
     # 2024/3/20 下午 5:34 添加或删除防火墙端口
     def input_port(self, info: dict, operation: str) -> dict:
-        '''
+        """
             @name 添加或删除防火墙端口
             @author wzz <2024/3/20 下午 5:34>
             @param info:{"Port": args[2], "Protocol": args[3]}
                     operation: add/remove
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
-
+        """
         if operation not in ["add", "remove"]:
             return self._result(False, "Unsupported actions: {}".format(operation))
 
@@ -240,11 +233,11 @@ class Firewalld(Base):
 
     # 2024/3/20 下午 6:02 设置output的防火墙端口规则
     def output_port(self, info: dict, operation: str) -> dict:
-        '''
+        """
             @name 设置output的防火墙端口规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         if operation not in ["add", "remove"]:
             return self._result(False, "Unsupported actions: {}".format(operation))
 
@@ -263,7 +256,8 @@ class Firewalld(Base):
             info['Protocol'] = info['Protocol'].split("/")
             for pp in info['Protocol']:
                 if not pp in ["tcp", "udp"]:
-                    return self._result(False, "Failed to set outbound port, err: The protocol is not supported {}".format(pp))
+                    return self._result(False,
+                                        "Failed to set outbound port, err: The protocol is not supported {}".format(pp))
 
                 stdout, stderr = public.ExecShell(
                     "{cmd_str} --permanent --direct --{operation}-rule ipv4 filter OUTPUT {priority} -p {prot} --dport {port} -j {strategy}"
@@ -297,11 +291,11 @@ class Firewalld(Base):
         return self._result(True, "The outbound port was set successfully")
 
     def set_rich_rule(self, info: dict, operation: str) -> dict:
-        '''
+        """
             @name 添加或删除复杂规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         rule_str = "rule family={}".format(info['Family'].lower())
         if "Address" in info and info["Address"] != "all":
             rule_str += " source address={}".format(info['Address'])
@@ -321,16 +315,18 @@ class Firewalld(Base):
 
     # 2024/3/22 上午 11:35 添加或删除复杂规则
     def rich_rules(self, info: dict, operation: str) -> dict:
-        '''
+        """
             @name 添加或删除复杂规则
             @author wzz <2024/3/22 上午 11:35>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
 
         if operation not in ["add", "remove"]:
             return self._result(False, "Unsupported rule actions: {}".format(operation))
 
+        if "Zone" in info and info["Zone"] == "trusted":
+            return self.rich_trusted_rule(info, operation)
 
         if "Protocol" in info and info["Protocol"] == "all":
             info["Protocol"] = "tcp/udp"
@@ -347,11 +343,11 @@ class Firewalld(Base):
 
     # 2024/7/23 下午4:36 设置trusted区域的ip规则
     def rich_trusted_rule(self, info: dict, operation: str) -> dict:
-        '''
+        """
             @name 设置trusted区域的ip规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         try:
             if operation not in ["add", "remove"]:
                 return self._result(False, "Unsupported actions: {}".format(operation))
@@ -378,11 +374,11 @@ class Firewalld(Base):
 
     # 2024/3/24 下午 10:43 设置output的防火墙ip规则
     def output_rich_rules(self, info: dict, operation: str) -> dict:
-        '''
+        """
             @name 设置output的防火墙ip规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         if operation not in ["add", "remove"]:
             return self._result(False, "Unsupported actions: {}".format(operation))
 
@@ -417,12 +413,12 @@ class Firewalld(Base):
 
     # 2024/3/22 下午 12:22 解析public区域的防火墙规则
     def parse_public_zone(self) -> dict:
-        '''
+        """
             @name 解析public区域的防火墙规则
             @author wzz <2024/3/22 下午 12:22>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"services": services, "ports": ports, "rules": rules} rules是ip规则
-        '''
+        """
         try:
             import xml.etree.ElementTree as ET
             file_path = "/etc/firewalld/zones/public.xml"
@@ -505,6 +501,7 @@ class Firewalld(Base):
                             continue
 
                         rule["Chain"] = "INPUT"
+                        rule["Zone"] = "public"
                         rules.append(rule)
                 # 2024/3/25 下午 2:57 端口转发规则
                 elif elem.tag == "forward-port":
@@ -525,12 +522,12 @@ class Firewalld(Base):
 
     # 2024/3/22 下午 2:32 解析direct.xml的防火墙规则
     def parse_direct_xml(self) -> dict:
-        '''
+        """
             @name 解析direct.xml的防火墙规则
             @author wzz <2024/3/22 下午 2:32>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return list[dict{}...]
-        '''
+        """
         try:
             import xml.etree.ElementTree as ET
             file_path = "/etc/firewalld/direct.xml"
@@ -554,7 +551,7 @@ class Firewalld(Base):
                     # 2024/3/22 下午 4:14 解析 Options 得到端口,策略,地址,协议
                     for i in elem_t:
                         if i == "-p":
-                            protocol = elem_t[elem_t.index(i) + 1] # 如果找到匹配项，结果为索引+1的值，-p tcp,值为tcp
+                            protocol = elem_t[elem_t.index(i) + 1]  # 如果找到匹配项，结果为索引+1的值，-p tcp,值为tcp
                         elif i == "--dport":
                             port = elem_t[elem_t.index(i) + 1]
                         elif i == "-j":
@@ -563,12 +560,13 @@ class Firewalld(Base):
                             address = elem_t[elem_t.index(i) + 1]
 
                     rule = {
-                            "Family": elem.attrib["ipv"],
-                            "Chain": elem.attrib["chain"],
-                            "Strategy": strategy.lower(),
-                            "Address": address if address != "" else "all",
-                            # "Options": elem.text
-                        }
+                        "Family": elem.attrib["ipv"],
+                        "Chain": elem.attrib["chain"],
+                        "Strategy": strategy.lower(),
+                        "Address": address if address != "" else "all",
+                        "Zone": "direct",
+                        # "Options": elem.text
+                    }
 
                     # 2024/3/22 下午 4:13 如果端口不为空,就是端口规则
                     if port != "":
@@ -586,11 +584,11 @@ class Firewalld(Base):
 
     # 2024/7/17 下午3:29 解析trusted区域的防火墙规则
     def parse_trusted_zone(self) -> dict:
-        '''
+        """
             @name 解析trusted区域的防火墙规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"services": services, "ports": ports, "rules": rules, "forward_ports": forward_ports} rules是ip规则
-        '''
+        """
         try:
             import xml.etree.ElementTree as ET
             file_path = "/etc/firewalld/zones/trusted.xml"
@@ -632,16 +630,16 @@ class Firewalld(Base):
                         rules.append(rule)
 
             return {"services": services, "ports": ports, "rules": rules, "forward_ports": forward_ports}
-        except Exception as e:
+        except Exception as _:
             return {"services": [], "ports": [], "rules": [], "forward_ports": []}
 
     # 2024/3/22 下午 4:54 检查是否开启了masquerade，没有则开启
     def check_masquerade(self) -> dict:
-        '''
+        """
             @name 检查是否开启了masquerade，没有则开启
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         stdout, stderr = public.ExecShell("firewall-cmd --query-masquerade")
         if "no" in stdout:
             stdout, stderr = public.ExecShell("firewall-cmd --add-masquerade")
@@ -652,11 +650,11 @@ class Firewalld(Base):
 
     # 2024/3/22 下午 4:57 设置端口转发
     def port_forward(self, info: dict, operation: str) -> dict:
-        '''
+        """
             @name 设置端口转发
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
-        '''
+        """
         if operation not in ["add", "remove"]:
             return self._result(False, "Unsupported actions: {}".format(operation))
 
@@ -671,13 +669,13 @@ class Firewalld(Base):
             if info['Protocol'].find("/") != -1:
                 rich_rules = self.cmd_str + " --zone=public"
                 rich_rules += " --{0}-rich-rule='rule family=\"{1}\" source address=\"{2}\" forward-port port=\"{3}\" protocol=\"tcp\" to-port=\"{4}\" to-addr=\"{5}\"' --permanent".format(
-                            operation,
-                            info['Family'],
-                            info['S_Address'],
-                            info['S_Port'],
-                            info['T_Port'],
-                            info['T_Address'],
-                        )
+                    operation,
+                    info['Family'],
+                    info['S_Address'],
+                    info['S_Port'],
+                    info['T_Port'],
+                    info['T_Address'],
+                )
                 stdout, stderr = public.ExecShell(rich_rules)
                 if "success" not in stdout and stderr:
                     if "ALREADY_ENABLED" in stderr:
@@ -686,13 +684,13 @@ class Firewalld(Base):
 
                 rich_rules = self.cmd_str + " --zone=public"
                 rich_rules += " --{0}-rich-rule='rule family=\"{1}\" source address=\"{2}\" forward-port port=\"{3}\" protocol=\"udp\" to-port=\"{4}\" to-addr=\"{5}\"' --permanent".format(
-                            operation,
-                            info['Family'],
-                            info['S_Address'],
-                            info['S_Port'],
-                            info['T_Port'],
-                            info['T_Address'],
-                        )
+                    operation,
+                    info['Family'],
+                    info['S_Address'],
+                    info['S_Port'],
+                    info['T_Port'],
+                    info['T_Address'],
+                )
                 stdout, stderr = public.ExecShell(rich_rules)
                 if "success" not in stdout and stderr:
                     if "ALREADY_ENABLED" in stderr:
@@ -743,7 +741,8 @@ class Firewalld(Base):
             else:
                 stdout, stderr = public.ExecShell(
                     "{} --zone=public --{}-forward-port='port={}:proto={}:toport={}:toaddr={}' --permanent"
-                    .format(self.cmd_str, operation, info['S_Port'], info['Protocol'], info['T_Port'], info['T_Address'])
+                    .format(self.cmd_str, operation, info['S_Port'], info['Protocol'], info['T_Port'],
+                            info['T_Address'])
                 )
                 if "success" not in stdout and stderr:
                     if "ALREADY_ENABLED" in stderr:
@@ -754,89 +753,9 @@ class Firewalld(Base):
 
     # 2024/3/25 下午 2:37 获取所有端口转发规则
     def list_port_forward(self) -> list:
-        '''
+        """
             @name 获取所有端口转发规则
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return list[dict{}...]
-        '''
+        """
         return self.parse_public_zone()["forward_ports"]
-
-
-# if __name__ == '__main__':
-#     args = sys.argv
-#     firewall = Firewalld()
-#     Firewalld_status = firewall.status()
-#     if len(args) < 2:
-#         print("Welcome to the Firewalld command-line interface!")
-#         print("Firewall status is :", Firewalld_status)
-#         print("Firewall version: ", firewall.version())
-#         if Firewalld_status == "not running":
-#             print("Firewalld未启动,请启动Firewalld后再执行命令!")
-#             print("启动命令: start")
-#             print()
-#             sys.exit(1)
-#         print("Usage: ")
-#         print("status: Get the status of the firewall.")
-#         print("version: Get the version of the firewall.")
-#         print("start: Start the firewall.")
-#         print("stop: Stop the firewall.")
-#         print("restart: Restart the firewall.")
-#         print("reload: Reload the firewall.")
-#         print("list_input_port: List all input ports.")
-#         print("list_input_address: List all input address rules.")
-#         print("input_port: Add or remove input port.")
-#         print("output_port: Add or remove output port.")
-#         print("list_output_port: List all output ports.")
-#         print("list_output_address: List all output address rules.")
-#         print("rich_rules: Add or remove rich rules.")
-#         sys.exit(1)
-#
-#     if args[1] == "status":
-#         print("Firewall status is :", Firewalld_status)
-#     elif args[1] == "version":
-#         print("Firewall version: ", firewall.version())
-#     elif args[1] == "start":
-#         print(firewall.start())
-#     elif args[1] == "stop":
-#         print(firewall.stop())
-#     elif args[1] == "restart":
-#         print(firewall.restart())
-#     elif args[1] == "reload":
-#         print(firewall.reload())
-#     elif args[1] == "list_input_port":
-#         print(firewall.list_input_port())
-#     elif args[1] == "list_input_address":
-#         print(firewall.list_input_address())
-#     elif args[1] == "input_port":
-#         if len(args) < 4:
-#             print("Usage: input_port Port Protocol")
-#             sys.exit(1)
-#         print(firewall.input_port({"Port": args[2], "Protocol": args[3]}, args[4]))
-#     elif args[1] == "output_port":
-#         if len(args) < 6:
-#             print("Usage: output_port Port Protocol Strategy Priority")
-#             sys.exit(1)
-#         print(firewall.output_port({"Port": args[2], "Protocol": args[3], "Strategy": args[4], "Priority": args[5]}, args[6]))
-#     elif args[1] == "list_output_port":
-#         print(firewall.list_output_port())
-#     elif args[1] == "list_output_address":
-#         print(firewall.list_output_address())
-#     elif args[1] == "rich_rules":
-#         if len(args) < 4:
-#             print("Usage: rich_rules Family Address Port Protocol Strategy")
-#             sys.exit(1)
-#         print(firewall.rich_rules({"Family": args[2], "Address": args[3], "Port": args[4], "Protocol": args[5], "Strategy": args[6]}, args[7]))
-#     elif args[1] == "output_rich_rules":
-#         if len(args) < 6:
-#             print("Usage: output_rich_rules Family Address Port Protocol Strategy Priority")
-#             sys.exit(1)
-#         print(firewall.output_rich_rules({"Family": args[2], "Address": args[3], "Port": args[4], "Protocol": args[5], "Strategy": args[6], "Priority": args[7]}, args[8]))
-#     elif args[1] == "port_forward":
-#         if len(args) < 7:
-#             print("Usage: port_forward Port Protocol ToPort ToAddr")
-#             sys.exit(1)
-#         print(firewall.port_forward({"Port": args[2], "Protocol": args[3], "ToPort": args[4], "ToAddr": args[5]}, args[6]))
-#     else:
-#         print("Command not found!")
-#         sys.exit(1)
-

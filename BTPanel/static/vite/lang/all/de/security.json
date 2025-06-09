@@ -353,5 +353,6 @@
 	"a559b87068921eec05086ce5485e9784": "Modell",
 	"d08ccf52b4cdd08e41cfb99ec42e0b29": "Berechtigungen",
 	"7f090bbab1cc7f9c08bf4e54d932d3c0": "Ändern",
-	"2213692c8314b2b43652534f2f38b09c": "Die blockierte IP wird automatisch abgeschlossen {0} Minuten nach dem Block."
+	"2213692c8314b2b43652534f2f38b09c": "Die blockierte IP wird automatisch abgeschlossen {0} Minuten nach dem Block.",
+	"fb3b01a5d527b4a1f6b64edaa08d0aa2": "IP -Regel löschen [{0}]"
 }

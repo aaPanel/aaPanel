@@ -95,7 +95,9 @@
 			"index_94": "Harap masukkan jumlah cadangan",
 			"index_95": "Jika database yang digunakan oleh panel rusak, Anda tidak akan dapat memulihkan database panel yang rusak",
 			"index_96": "Matikan Cadangan Panel",
-			"index_97": "Cadangan Otomatis Tidak Termasuk Data Situs Web dan Data MySQL"
+			"index_97": "Cadangan Otomatis Tidak Termasuk Data Situs Web dan Data MySQL",
+			"index_98": "Proxy CDN",
+			"index_99": "Ambil IP nyata dari permintaan dari proxy CDN"
 		},
 		"Safe": {
 			"index_1": "Keamanan",

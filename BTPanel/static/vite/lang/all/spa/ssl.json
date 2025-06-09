@@ -166,5 +166,13 @@
 	"066f9fe777b12bfb7d2487c3c8456dfb": "Compruebe si la resolución de registro del dominio apunta a este IP del servidor. No resuelto hará que la aplicación falle.",
 	"9ec73173ab50a63aeb2e8e1a54095f9f": "Seleccione el nombre de dominio",
 	"bda7e16f8d124dca3c14862fef9c7333": "Verificación de archivos",
-	"b72576b856066a25b50c73316606dc0b": "Crear archivo HTML"
+	"b72576b856066a25b50c73316606dc0b": "Crear archivo HTML",
+	"8e33946537dfb9cb3571d4548c4606d2": "Consejos: el certificado para [{0}] ha expirado, ¡actualice de inmediato!",
+	"0e8bea2bbf1375cb481167bf771c3ee5": "Combinar automáticamente los nombres de dominio de la bandeja",
+	"49ab28040dfa07f53544970c6d147e1e": "Conectar",
+	"791ad6dd8697623a4456580bf3eec763": "Recordar",
+	"a09dee8571ee91d1c75f2e6ddee6c008": "El SSL se renovará automáticamente 1 mes antes de la fecha de vencimiento",
+	"aea0c1b44f454eb13b0f30e990c0bfed": "Generado automáticamente Cifrar el certificado gratuito",
+	"f7d4c6f9188c467d6843dc0af9425559": "Si tiene su propio SSL, cambie a la pestaña [Otro certificado] para agregar",
+	"3bfebd448efe3151d92a0d14ae762b5a": "Consejo: el certificado [{0}] caducará en {1} días, ¡renovarlo!"
 }

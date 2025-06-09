@@ -353,5 +353,6 @@
 	"a559b87068921eec05086ce5485e9784": "Modelo",
 	"d08ccf52b4cdd08e41cfb99ec42e0b29": "Permisos",
 	"7f090bbab1cc7f9c08bf4e54d932d3c0": "Modificar",
-	"2213692c8314b2b43652534f2f38b09c": "La IP bloqueada se desbloqueará automáticamente {0} minutos después del bloque."
+	"2213692c8314b2b43652534f2f38b09c": "La IP bloqueada se desbloqueará automáticamente {0} minutos después del bloque.",
+	"fb3b01a5d527b4a1f6b64edaa08d0aa2": "Eliminar la regla de IP [{0}]"
 }

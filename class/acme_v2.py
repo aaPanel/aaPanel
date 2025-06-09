@@ -896,9 +896,7 @@ if ( $well_known != "" ) {
                 {"domain": domain, "dns_value": dns_value}
             )
         except Exception as e:
-            import traceback
-            print(traceback.format_exc())
-            raise Exception("error: %s" % e)
+            self.logger("error: %s" % e)
 
     # todo 废弃
     # 解析DNSAPI信息
@@ -1393,7 +1391,12 @@ fullchain.pem       Paste into certificate input box
     # 替换服务器上的同域名同品牌证书
     def sub_all_cert(self, key_file, pem_file):
         cert_init = self.get_cert_init(pem_file)  # 获取新证书的基本信息
-        paths = ['/www/server/panel/vhost/cert', '/www/server/panel/vhost/ssl', '/www/server/panel']
+        paths = [
+            '/www/server/panel/vhost/cert',
+            '/www/server/panel/vhost/ssl',
+            '/www/server/panel',
+            '/www/server/panel/plugin/mail_sys/cert',
+        ]
         # is_panel = False
         for path in paths:
             if not os.path.exists(path):
@@ -1531,6 +1534,41 @@ fullchain.pem       Paste into certificate input box
                     'domain name: {}, type: {} record value: {}'.format(domain, s_type, value))
         time.sleep(10)
         n = 0
+        # public_dns_servers = [
+        #     "8.8.8.8",  # Google DNS
+        #     "1.1.1.1",  # Cloudflare DNS
+        #     "9.9.9.9",  # Quad9
+        #     "208.67.222.222",  # OpenDNS
+        # ]
+        # import dns.resolver
+        # try:
+        #     default_resolver = dns.resolver.Resolver()
+        #     public_dns_servers.extend(default_resolver.nameservers)
+        # except:
+        #     pass
+        # nameservers = list(set(public_dns_servers))
+        # success_count = 0
+        # all_records = []
+        # for nameserver in nameservers:
+        #     self.logger(f"|-Check Dns use NS: {nameserver}, domain: {domain}, type: {s_type}, value: {value}")
+        #     try:
+        #         resolver = dns.resolver.Resolver(configure=False)
+        #         resolver.nameservers = [nameserver]
+        #         resolver.timeout = 5
+        #         resolver.lifetime = 5
+        #         answers = resolver.resolve(domain, s_type)
+        #         for j in answers.response.answer:
+        #             for i in j.items:
+        #                 txt_value = i.to_text().replace('"', '').strip()
+        #                 if txt_value == value:
+        #                     self.logger(f"|-Check Dns use NS: {nameserver}, Result Pass")
+        #                     success_count += 1
+        #     except Exception as e:
+        #         self.logger(str(e))
+        #
+        # if success_count > len(nameservers) / 2:
+        #     self.logger(f"|-Check Result Pass")
+        #     return True
         while n < 20:
             if task_part:  # 进度
                 self._set_task(add_val=round(task_part / 20))
@@ -2744,6 +2782,7 @@ fullchain.pem       Paste into certificate input box
 
         result = {
             "auths": [],
+            "endtime": endtime,
             "expires": f"{endtime:.1f} days left",
         }
         if data["auth_type"] == "dns":

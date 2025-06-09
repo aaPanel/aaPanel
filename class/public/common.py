@@ -1318,7 +1318,7 @@ def downloadFile(url, filename):
             urllib.request.install_opener(opener)
             urllib.request.urlretrieve(url, filename=filename)
     except:
-        ExecShell("wget -O --no-check-certificate {} {}".format(filename, url))
+        ExecShell("wget -O {} {} --no-check-certificate".format(filename, url))
 
 
 def exists_args(args, get):
@@ -1972,6 +1972,70 @@ MySQL_Opt
     WriteLog('TYPE_SOFE', 'MYSQL_CHECK_ERR')
     return True
 
+
+# 检查导出的sql文件是否完整
+def check_sql_file(filename, tables):
+    """
+        同步国内的
+        @name 检查导出的sql文件是否完整
+        @param filename<string> 文件名
+        @param tables<list> 表名列表
+        @return tuple (status_code<int>,msg<string>) 状态码 0:sql文件不存在 1:无异常,-1:sql文件不完整,-2:缺少表，消息
+    """
+    if not os.path.exists(filename): return 0, 'backup file not exists'
+    file_size = os.path.getsize(filename)
+    # 超过10M的文件不检查
+    if file_size > 10 * 1024 * 1024: return 1, 'Normal'
+
+    # 读取文件
+    with open(filename, 'rb') as f:
+        # 读取文件尾 128 字节
+        f.seek(-1, 2)  # 从文件尾开始向前移动1个字节
+        pos = f.tell()  # 获取当前位置
+        to_read = min(128, pos)  # 获取读取位置
+
+        f.seek(-to_read, 1)  # 从当前位置向前移动to_read个字节
+        last_line = f.read(to_read)  # 读取最后to_read个字节
+
+        # 检查文件尾是否有结束标识
+        if last_line.find(b"Dump completed on") == -1:
+            return -1, 'Backup file lacks termination marker'
+
+        # 逐行检查表是否存在
+        f.seek(0)
+        checked_tables = []
+
+        while True:
+            line = f.readline()
+            if not line: break
+
+            line = line.strip()
+            # 跳过空行
+            if not line: continue
+
+            # 检查是否是创建表语句
+            if not line.startswith(b"CREATE TABLE "): continue
+
+            # 获取表名
+            table = line.split(b"`")[1].decode('utf-8')
+
+            # 跳过空表名
+            if not table: continue
+
+            # 跳过已检查的表
+            if table in checked_tables: continue
+
+            # 检查是否在表名列表中
+            if table in tables:
+                checked_tables.append(table)  # 添加到已检查列表
+
+        # 检查是否有缺少的表
+        if len(checked_tables) != len(tables):
+            # 计算两个列表的差集
+            empty_tables = set(tables).difference(checked_tables)
+            return -2, 'Missing tables in backup file :{}'.format(','.join(empty_tables))
+
+    return 1, 'Normal'
 
 def GetSSHPort():
     try:
@@ -9210,3 +9274,32 @@ def query_dns(domain, dns_type="A", is_root=False):
         return data
     except:
         return False
+
+# 解析journalctl --disk-usage 获取的容量
+def parse_journal_disk_usage(output):
+    import re
+    # 使用正则表达式来提取数字和单位
+    match = re.search(r'take up (\d+(\.\d+)?)\s*([KMGTP]?)', output)
+    total_bytes = 0
+    if match:
+        value = float(match.group(1))  # 数字
+        unit = match.group(3)  # 单位
+        # 将所有单位转换为字节
+        if unit == '':
+            unit_value = 1
+        elif unit == 'K':
+            unit_value = 1024
+        elif unit == 'M':
+            unit_value = 1024 * 1024
+        elif unit == 'G':
+            unit_value = 1024 * 1024 * 1024
+        elif unit == 'T':
+            unit_value = 1024 * 1024 * 1024 * 1024
+        elif unit == 'P':
+            unit_value = 1024 * 1024 * 1024 * 1024 * 1024
+        else:
+            unit_value = 0
+
+        # 计算总字节数
+        total_bytes = value * unit_value
+    return total_bytes

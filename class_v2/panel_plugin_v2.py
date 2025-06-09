@@ -1936,7 +1936,14 @@ class panelPlugin:
                     ssl_enabled = True
                     ssl_port = m.group(1)
 
-            if conf.find('AUTH_START') != -1: pauth = True
+            # 2025/6/4 修复php额外密码访问
+            if os.path.exists(setupPath + '/panel/vhost/nginx/phpmyadmin.conf'):
+                php_conf = public.readFile(os.path.join(setupPath, 'panel/vhost/nginx/phpmyadmin.conf'))
+            else:
+                php_conf = configFile
+            if php_conf.find('AUTH_START') != -1:
+                pauth = True
+
             if conf.find(setupPath + '/stop') == -1: pstatus = True
             configFile = setupPath + '/nginx/conf/enable-php.conf'
             if not os.path.exists(configFile): public.writeFile(configFile, public.readFile(
@@ -1977,7 +1984,13 @@ class panelPlugin:
                     ssl_enabled = True
                     ssl_port = m.group(1)
 
-            if conf.find('AUTH_START') != -1: pauth = True
+            # 2025/6/4 修复php额外密码访问
+            if os.path.exists(setupPath + '/panel/vhost/apache/phpmyadmin.conf'):
+                php_conf = public.readFile(os.path.join(setupPath, 'panel/vhost/apache/phpmyadmin.conf'))
+            else:
+                php_conf = configFile
+            if php_conf.find('AUTH_START') != -1: pauth = True
+
             if conf.find('/www/server/stop') == -1: pstatus = True
 
         if os.path.exists('/usr/local/lsws/bin/lswsctrl'):
