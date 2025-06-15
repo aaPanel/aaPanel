@@ -99,7 +99,7 @@
 		"index_95": "Lire les octets",
 		"index_96": "Écrire des octets",
 		"Install": {
-			"index_1_1": "Recommandé d'utiliser les packages en un clic suivants, veuillez choisir à la demande ou dans {soft_} Choisissez par vous-même, recommandé d'installer LEMP.",
+			"index_1_1": "Recommandé d'utiliser les packages en un clic suivants, veuillez choisir à la demande ou dans {soft_} Choisissez par vous-même, recommandé d'installer LNMP.",
 			"index_1_2": "Magasin de logiciels",
 			"index_2": "LNMP (recommandé)",
 			"index_3": "LAMPE",

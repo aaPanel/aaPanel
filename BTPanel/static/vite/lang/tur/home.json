@@ -99,7 +99,7 @@
 		"index_95": "Bayt oku",
 		"index_96": "Bayt yaz",
 		"Install": {
-			"index_1_1": "Aşağıdaki tek tıklamalı paketleri kullanmanız önerilir, lütfen isteğe bağlı olarak seçin veya {soft_} içinde kendiniz seçin, LEMP'yi yüklemeniz önerilir.",
+			"index_1_1": "Aşağıdaki tek tıklamalı paketleri kullanmanız önerilir, lütfen isteğe bağlı olarak seçin veya {soft_} içinde kendiniz seçin, LNMP'yi yüklemeniz önerilir.",
 			"index_1_2": "Yazılım mağazası",
 			"index_2": "LNMP (Önerilen)",
 			"index_3": "LAMBA",

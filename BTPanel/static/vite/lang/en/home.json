@@ -99,7 +99,7 @@
 		"index_95": "Read Bytes",
 		"index_96": "Write Bytes",
 		"Install": {
-			"index_1_1": "Recommended to use the following one-click packages, please choose on demand or in {soft_} choose by yourself, recommended to install LEMP.",
+			"index_1_1": "Recommended to use the following one-click packages, please choose on demand or in {soft_} choose by yourself, recommended to install LNMP.",
 			"index_1_2": "Software Store",
 			"index_2": "LNMP (Recommended)",
 			"index_3": "LAMP",
