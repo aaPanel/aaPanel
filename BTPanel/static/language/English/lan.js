@@ -566,7 +566,7 @@ var lan = {
 		"install_title":"Recommended software packages",
 		"install_ps":"Recommended to use the following one-click packages, please choose on demand or in",
 		"install_s":"Software Store",
-		"install_s1":"choose by yourself, recommended to install LEMP.",
+		"install_s1":"choose by yourself, recommended to install LNMP.",
 		"install_lnmp":"LNMP(Recommended)",
 		"install_type":"Method",
 		"install_rpm":"Fast",

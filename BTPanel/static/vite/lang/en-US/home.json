@@ -96,7 +96,7 @@
 		"index_94": "Write wait",
 		"Install": {
 			"index_1": {
-				"0": "Recommended to use the following one-click packages, please choose on demand or in {btn} choose by yourself, recommended to install LEMP.",
+				"0": "Recommended to use the following one-click packages, please choose on demand or in {btn} choose by yourself, recommended to install LNMP.",
 				"1": "Software Store"
 			},
 			"index_2": "LNMP (Recommended)",
