@@ -1536,7 +1536,6 @@ SetLink
         return result
 
     # 取慢日志
-# 取慢日志
     def GetSlowLogs(self, get):
         filename = ''
         try:
