@@ -1348,13 +1348,24 @@ SetLink
 
     # 获取错误日志
     def GetErrorLog(self, get):
-        path = self.GetMySQLInfo(get)['datadir']
         filename = ''
-        for n in os.listdir(path):
-            if len(n) < 5: continue
-            if n[-3:] == 'err':
-                filename = path + '/' + n
-                break
+        try:
+            mycnf = public.readFile('/etc/my.cnf')
+            if mycnf:
+                log_match = re.search(r'^\s*(?<!#)log[-_]error\s*=\s*(\S+)', mycnf, re.MULTILINE)
+                if log_match:
+                    path_from_cnf = log_match.group(1).strip().strip('\'"')
+                    if os.path.exists(path_from_cnf):
+                        filename = path_from_cnf
+        except:
+            pass
+        if not filename:
+            path = self.GetMySQLInfo(get)['datadir']
+            for n in os.listdir(path):
+                if len(n) < 5: continue
+                if n[-3:] == 'err':
+                    filename = path + '/' + n
+                    break
         if not os.path.exists(filename): return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
         if hasattr(get, 'close'):
             public.writeFile(filename, '')
@@ -1525,10 +1536,24 @@ SetLink
         return result
 
     # 取慢日志
+# 取慢日志
     def GetSlowLogs(self, get):
-        path = self.GetMySQLInfo(get)['datadir'] + '/mysql-slow.log'
-        if not os.path.exists(path): return public.return_msg_gettext(False, public.lang("Log file does NOT exist!"))
-        return public.return_msg_gettext(True, public.GetNumLines(path, 100))
+        filename = ''
+        try:
+            mycnf = public.readFile('/etc/my.cnf')
+            if mycnf:
+                log_match = re.search(r'^\s*(?<!#)slow[-_]query[-_]log[-_]file\s*=\s*(\S+)', mycnf, re.MULTILINE)
+                if log_match:
+                    path_from_cnf = log_match.group(1).strip().strip('\'"')
+                    if os.path.exists(path_from_cnf):
+                        filename = path_from_cnf
+        except:
+            pass
+        if not filename:
+            path = self.GetMySQLInfo(get)['datadir'] + '/mysql-slow.log'
+            filename = path
+        if not os.path.exists(filename): return public.return_msg_gettext(False, public.lang("Log file does NOT exist!"))
+        return public.return_msg_gettext(True, public.GetNumLines(filename, 100))
 
     # 获取binlog文件列表
     def GetMySQLBinlogs(self, get):
