@@ -134,3 +134,11 @@ def check_site_status(web):
         if not other().get_project_run_state(project_name=web['name']):
             return None
     return True
+
+def get_db_by_file(file: str):
+    import db
+    if not os.path.exists(file):
+        return None
+    db_obj = db.Sql()
+    db_obj._Sql__DB_FILE = file
+    return db_obj

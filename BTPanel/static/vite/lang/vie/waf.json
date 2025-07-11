@@ -34,7 +34,12 @@
 			"index_30": "Báo cáo khối hôm nay >>",
 			"index_31": "Loại khối (hôm nay)",
 			"index_32": "Khối hôm nay",
-			"index_33": "{0} \n {1}/item, {2}%"
+			"index_33": "{0} \n {1}/item, {2}%",
+			"index_34": "Bản đồ 3D",
+			"index_35": "Bật bản đồ 3D",
+			"index_36": "Tắt bản đồ 3D",
+			"index_37": "Sau khi bật bản đồ 3D, bản đồ sẽ chuyển sang chế độ 3D. Xác nhận?",
+			"index_38": "Sau khi vô hiệu hóa bản đồ 3D, bản đồ sẽ chuyển sang chế độ 2D. Xác nhận?"
 		},
 		"Site": {
 			"index_1": "Chặn quyền truy cập từ các IP độc hại đã biết của Aapanel",
@@ -840,6 +845,7 @@
 		},
 		"Api": {
 			"overview_1": "Một lần nhấp vào kích hoạt đang được tiến hành, vui lòng đợi ...",
+			"overview_2": "Cài đặt, vui lòng đợi ...",
 			"site_2": "Đặt công tắc cấu hình toàn cầu, vui lòng đợi ...",
 			"site_3": "Đặt trạng thái trang web, vui lòng đợi ...",
 			"site_4": "Phát hiện môi trường captcha, vui lòng đợi ...",

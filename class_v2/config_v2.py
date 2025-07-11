@@ -1015,7 +1015,8 @@ class config:
         @author hezhihong
         """
         # 取国际标准0时时间戳
-        time_str = public.HttpGet('wafapi2.aapanel.com'+ '/api/index/get_time')
+        time_str = public.HttpGet('https://wafapi2.aapanel.com'+ '/api/index/get_time')
+
         try:
             new_time = int(time_str) - 28800
         except:
@@ -1925,6 +1926,24 @@ class config:
         lang = self.get_language()
         data['language'] = lang['default']
         data['language_list'] = lang['languages']
+        data['waf'] = {"is_install":0,"status":0,"version":""}
+        try:
+            data["waf"]["is_install"] = 1 if os.path.exists('/www/server/panel/plugin/btwaf') else 0
+            config_data = json.loads(public.readFile("/www/server/btwaf/config.json"))
+            data["waf"]["status"] = config_data.get("open","")
+            info_data = json.loads(public.readFile("/www/server/panel/plugin/btwaf/info.json"))
+            data["waf"]["version"] = info_data.get("versions","")
+        except:
+            pass
+        data['monitor'] = {"is_install":0,"status":0,"version":""}
+        try:
+            data["monitor"]["is_install"] = 1 if os.path.exists('/www/server/panel/plugin/monitor') else 0
+            config_data = json.loads(public.readFile("/www/server/monitor/config/config.json"))
+            data["monitor"]["status"] = config_data.get("open","")
+            info_data = json.loads(public.readFile("/www/server/panel/plugin/monitor/info.json"))
+            data["monitor"]["version"] = info_data.get("versions","")
+        except:
+            pass
         return data
 
     def get_configV1(self,get):

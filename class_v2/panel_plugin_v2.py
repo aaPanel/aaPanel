@@ -78,6 +78,273 @@ class panelPlugin:
         if not os.path.exists(self.__tmp_path):
             os.makedirs(self.__tmp_path, 0o755)
 
+    def input_package(self, get):
+        """
+            @name 导入插件包到面板, 前置简单检查
+            @author hwliang<2021-06-23>
+            @param filename<string> 解包后的文件路径
+            @param plugin_name<string> 插件名称
+            @param install_opt<string> 安装选项 i.安装 r.修复 u.升级 默认: i
+            @return dict
+        """
+        get.exists(['tmp_path', 'plugin_name', 'install_opt'])
+        if not os.path.exists(get.tmp_path):
+            return public.returnMsg(False, 'Installer temporary file does not exist: {}'.format(get.tmp_path))
+
+        if not get.install_opt in ['r', 'i', 'u']:
+            return public.returnMsg(False, 'Installation Options[install_opt]Error, only for i.install r.fix u.upgrade')
+
+        if not get.plugin_name:
+            return public.returnMsg(False, 'Plugin name cannot be null!')
+
+        return self.__input_plugin(get.tmp_path, get.plugin_name, get.install_opt)
+
+    def __set_pyenv(self, filename):
+        """
+            @name 设置安全脚本的Python环境变量
+            @param filename<string> 安装脚本文件名
+            @return bool
+        """
+        if not os.path.exists(filename): return False
+        env_py = self.__panel_path + '/pyenv/bin'
+        if not os.path.exists(env_py): return False
+        temp_file = public.readFile(filename)
+        env_path = [
+            'PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin'
+        ]
+        rep_path = [
+            'PATH={}/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin'
+            .format(env_py + ":")
+        ]
+        for index_key in range(len(env_path)):
+            temp_file = temp_file.replace(env_path[index_key],
+                                          rep_path[index_key])
+        public.writeFile(filename, temp_file)
+        return True
+
+    def __copy_path(self, src_path, dst_path, input_not_substituted=[]):
+        """
+            @name 复制文件夹
+            @author hwliang<2021-06-24>
+            @param src_path<string> 源路径
+            @param dst_path<string> 目标路径
+            @param input_not_substituted<list> 不复盖规则
+            @return bool
+        """
+        if not os.path.exists(src_path):
+            raise public.PanelError('Specifies that the source directory does not exist:{}'.format(src_path))
+
+        if not os.path.exists(dst_path):
+            os.makedirs(dst_path, 384)
+
+        for tmp_list_name in os.listdir(src_path):
+            tmp_src_path = os.path.join(src_path, tmp_list_name)
+            tmp_dst_path = os.path.join(dst_path, tmp_list_name)
+
+            # 目标文件存在，且被不覆盖规则匹配，则跳过此文件
+            if os.path.exists(tmp_dst_path):
+                if self.__sub_check(tmp_src_path, input_not_substituted):
+                    continue
+            # 递归目录
+            if os.path.isdir(tmp_src_path):
+                self.__copy_path(tmp_src_path, tmp_dst_path,
+                                 input_not_substituted)
+                continue
+
+            # 复制文件
+            shutil.copyfile(tmp_src_path, tmp_dst_path)
+            self.__replace_check(tmp_dst_path)
+
+        return True
+
+    def __replace_check(self, filename):
+        """
+            @name 检查文件内容是否需要替换
+            @author hwliang<2021-06-28>
+            @param filename<string> 文件全路径
+            @return void
+        """
+        # 检查前置替换关系
+        rkey = 'replace_files'
+        if not rkey in self.__plugin_info: return
+        if not self.__plugin_info[rkey]: return
+        if not self.__replace_rule: return
+
+        # 指定文件名是否需要替换
+        p_file_name = os.path.basename(filename)
+        if not p_file_name in self.__plugin_info[rkey]: return
+
+        # 开始替换文件内容
+        f_body = public.readFile(filename)
+        is_write = False
+        for temp_i_rule in self.__replace_rule:
+            if f_body.find(temp_i_rule['find']) == -1: continue
+            f_body = f_body.replace(temp_i_rule['find'],
+                                    temp_i_rule['replace'])
+            is_write = True
+
+        # 是否需要写入数据
+        if is_write: public.writeFile(filename, f_body)
+
+    def __sub_check(self, filename, input_not_substituted):
+        """
+            @name 不覆盖规则检查
+            @author hwliang<2021-06-24>
+            @param filename<string> 文件或文件夹名称
+            @param input_not_substituted<list> 不复盖规则
+            @return bool
+        """
+        is_file = os.path.isfile(filename)
+        # 不匹配全路径
+        f_i_name = os.path.basename(filename)
+        for temp_i_rule in self.__format_sub_rule(input_not_substituted):
+            if temp_i_rule['fd'] == 'd' and is_file: continue
+            if temp_i_rule['fd'] == 'f' and not is_file: continue
+
+            # 完全匹配？
+            if temp_i_rule['type'] == 'find':
+                if f_i_name == temp_i_rule['rule']:
+                    return True
+            # 正则表达式？
+            elif temp_i_rule['type'] == 're':
+                if temp_i_rule['rule'].search(f_i_name):
+                    return True
+        return False
+
+    def __format_sub_rule(self, input_not_substituted):
+        """
+            @name 解析覆盖规则
+            @author hwliang<2021-06-24>
+            @param input_not_substituted<list> 不复盖规则
+            @return list
+        """
+        if self.__sub_rules:
+            return self.__sub_rules
+        self.__sub_rules = []
+        for item_sub_rule in input_not_substituted:
+            temp_i_rule = {}
+            f_sub_2 = item_sub_rule[-2:]
+            _type_fd = '' if f_sub_2[0] != '|' else f_sub_2[1]
+            temp_i_rule['fd'] = _type_fd
+            if item_sub_rule[:3] == 're|':
+                temp_i_rule['type'] = 're'
+                if _type_fd:
+                    item_re_string = item_sub_rule[3:-2]
+                else:
+                    item_re_string = item_sub_rule[3:]
+                temp_i_rule['rule'] = re.compile(item_re_string)
+            else:
+                temp_i_rule['type'] = 'find'
+                if _type_fd:
+                    temp_i_rule['rule'] = item_sub_rule[:-2]
+                else:
+                    temp_i_rule['rule'] = item_sub_rule
+            self.__sub_rules.append(temp_i_rule)
+
+        return self.__sub_rules
+
+    def __read_file(self, filename, open_mode='r'):
+        """
+            @name 读取指定文件
+            @author hwliang<2021-06-16>
+            @param filename<string> 文件名
+            @param mode<string> 打开模式, 默认: r
+            @return bytes or string
+        """
+        f_object = open(filename, mode=open_mode)
+        file_body = f_object.read()
+        f_object.close()
+        return file_body
+
+    def __input_plugin(self,
+                       filename,
+                       input_plugin_name,
+                       input_install_opt='i'):
+        """
+            @name 导入插件包到面板
+            @author hwliang<2021-06-21>
+            @param filename<string> 解包后的文件路径
+            @param input_plugin_name<string> 插件名称
+            @param input_install_opt<string> 安装选项 i.安装 r.修复 u.升级 默认: i
+            @return dict
+        """
+
+        if public.is_debug():
+            mod_key = input_plugin_name + '_main'
+            if mod_key in sys.modules:
+                return public.returnMsg(False, 'The plugin is currently being used, please restart the panel and try again!')
+
+        opts = {'i': 'install', 'u': 'upgrade', 'r': 'repair'}
+        i_opts = {
+            'i': 'install.sh install',
+            'u': 'upgrade.sh',
+            'r': 'repair.sh'
+        }
+
+        if not os.path.exists(filename):
+            return public.returnMsg(False, 'File validation failed, please reinstall this plugin!')
+        plugin_path_panel = self.__plugin_path + input_plugin_name
+        if input_install_opt == 'r' and os.path.exists(
+                filename + '/' + i_opts[input_install_opt]):
+            public.ExecShell(f"echo \"repair\" > {filename}/repair.pl")
+            i_opts[input_install_opt] = 'install.sh install'
+        if input_install_opt == 'u' and os.path.exists(
+                filename + '/' + i_opts[input_install_opt]):
+            public.ExecShell(f"echo \"upgrade\" > {filename}/upgrade.pl")
+            i_opts[input_install_opt] = 'install.sh install'
+        if not os.path.exists(plugin_path_panel):
+            os.makedirs(plugin_path_panel)
+        p_info = public.ReadFile(filename + '/info.json')
+        if not p_info: raise public.PanelError(filename)
+        p_info = json.loads(p_info)
+        if not 'not_substituted' in p_info: p_info['not_substituted'] = []
+        self.__plugin_info = p_info
+        self.__copy_path(filename, plugin_path_panel,
+                         p_info['not_substituted'])
+        self.__set_pyenv(plugin_path_panel + '/install.sh')
+        log_file = '/tmp/panelShell.pl'
+        if os.path.exists(log_file): os.remove(log_file)
+        public.stop_syssafe()
+        print('cd ' + plugin_path_panel + ' && bash {} &> /tmp/panelShell.pl'.format(i_opts[input_install_opt]))
+        public.ExecShell('cd ' + plugin_path_panel + ' && bash {} &> /tmp/panelShell.pl'.format(i_opts[input_install_opt]))
+        public.start_syssafe()
+        # 清理临时文件
+        if os.path.exists(filename): shutil.rmtree(filename)
+        if p_info and os.path.exists(plugin_path_panel):
+
+            # ------ 2023-07-31 cjx 增加svg图标支持
+            # 复制图标
+            for ico_file in ['svg', 'png']:
+                icon_sfile = plugin_path_panel + '/icon.' + ico_file
+                icon_dfile = self.__panel_path + '/BTPanel/static/img/soft_ico/ico-{}.{}'.format(
+                    input_plugin_name, ico_file)
+                if os.path.exists(plugin_path_panel + '/icon.' + ico_file):
+                    shutil.copyfile(icon_sfile, icon_dfile)
+
+            public.WriteLog('software management', '{}plug-in (software component)[{}]'.format(opts[input_install_opt], p_info['title']))
+
+            # 标记一次重新加载插件
+            reload_file = os.path.join(self.__panel_path, 'data/{}.pl'.format(input_plugin_name))
+            public.writeFile(reload_file, '')
+            pluginInfo = self.__get_plugin_find(input_plugin_name)
+            public.run_thread(
+                public.httpPost,
+                (public.GetConfigValue('home') + '/api/panel/plugin_total', {
+                    "pid": pluginInfo['id'],
+                    'p_name': input_plugin_name
+                }, 10))  # 线程
+            if os.path.exists(log_file): os.remove(log_file)
+            return public.returnMsg(True,
+                                    '{}successes!'.format(opts[input_install_opt]))
+
+        # 安装失败清理安装文件？
+        if os.path.exists(plugin_path_panel): shutil.rmtree(plugin_path_panel)
+        err_msg = public.GetNumLines(log_file, 30)
+        if os.path.exists(log_file): os.remove(log_file)
+        return public.returnMsg(
+            False, '{}fail (e.g. experiments): <pre>{}</pre>'.format(opts[input_install_opt],
+                                                  err_msg))
+
     # 检查依赖
     def check_deps(self,get):
         cacheKey = 'plugin_lib_list'
@@ -1005,12 +1272,36 @@ class panelPlugin:
         return sList
 
 
+    def get_soft_ps(self, ps):
+        """
+        @处理软件说明
+        """
+        try:
+            index = ps.find('<a')
+            if index > 0:
+                ps = ps.replace(ps[:index], '<span class="description-line">{}</span>'.format(ps[:index]))
+            else:
+                ps = '<span class="description-line">{}</span>'.format(ps)
+        except:
+            pass
+        return ps
+
     #检查软件状态
     def check_status(self,softInfo):
-        softInfo['setup'] = os.path.exists(softInfo['install_checks'])
+        softInfo['setup'] = os.path.exists(softInfo['install_checks']) if "install_checks" in softInfo else False
         softInfo['status'] = False
-        softInfo['task'] = self.check_setup_task(softInfo['name'])
+        softInfo['task'] = self.check_setup_task(softInfo['name']) if "name" in softInfo else "1"
         softInfo['is_beta'] = self.is_beta_plugin(softInfo['name']) if "name" in softInfo else False
+        softInfo['ps'] = self.get_soft_ps(softInfo['ps'])
+
+        key_info = ''
+        if 'keys' in softInfo:
+            softInfo['keys'] = softInfo['keys'].split('|')
+            if len(softInfo['keys']) > 0:
+                key_info = softInfo['keys'][0]
+                if softInfo['setup']: key_info = ' '.join(softInfo['keys'])
+            softInfo['ps'] += key_info
+
         if softInfo['name'].find('php-') != -1: softInfo['fpm'] = False
         if softInfo['setup']:
             softInfo['shell'] = softInfo['version']
@@ -1202,8 +1493,11 @@ class panelPlugin:
     #获取版本信息
     def get_version_info(self,sInfo):
         version = ''
-        vFile1 = sInfo['uninsatll_checks'] + '/version_check.pl'
-        vFile2 = sInfo['uninsatll_checks'] + '/info.json'
+        # 2025-06-12 修复拼写错误, 但是不知道是否继续沿用的问题.
+        key = "uninsatll_checks" if sInfo.get("uninsatll_checks") else "uninstall_checks"
+
+        vFile1 = sInfo[key] + '/version_check.pl'
+        vFile2 = sInfo[key] + '/info.json'
         if os.path.exists(vFile1):
             version = public.xss_version(public.ReadFile(vFile1).strip())
             if not version: os.remove(vFile1)
@@ -1239,12 +1533,12 @@ class panelPlugin:
             if version:
                 public.writeFile(vFile1,version)
             else:
-                vFile4 = sInfo['uninsatll_checks'] + '/version.pl'
+                vFile4 = sInfo[key] + '/version.pl'
                 if os.path.exists(vFile4):
                     version = public.xss_version(public.readFile(vFile4).strip())
 
         if sInfo['name'] == 'mysql':
-            vFile3 = sInfo['uninsatll_checks'] + '/version.pl'
+            vFile3 = sInfo[key] + '/version.pl'
             version_str = None
             if os.path.exists(vFile3):
                 version_str = public.xss_version(public.readFile(vFile3))
@@ -2422,7 +2716,7 @@ class panelPlugin:
                 data = json.loads(public.ReadFile(p_info).decode('utf-8-sig'))
             data['size'] = public.get_path_size(tmp_path)
             if not 'author' in data: data['author'] = public.lang("Unknown")
-            if not 'home' in data: data['home'] = 'https://www.bt.cn/bbs/forum-40-1.html'
+            if not 'home' in data: data['home'] = 'https://www.aapanel.com/forum'
 
             plugin_path = '/www/server/panel/plugin/' + data['name'] + '/info.json'
             data['old_version'] = '0'
@@ -2438,6 +2732,7 @@ class panelPlugin:
 
         data['update'] = update
         return data
+
     def update_zip(self,get = None,tmp_file = None, update = False):
         tmp_path = '/www/server/panel/temp'
         if not os.path.exists(tmp_path):
@@ -2480,7 +2775,7 @@ class panelPlugin:
                 data = json.loads(public.ReadFile(p_info).decode('utf-8-sig'))
             data['size'] = public.get_path_size(tmp_path)
             if not 'author' in data: data['author'] = public.lang("Unknown")
-            if not 'home' in data: data['home'] = 'https://www.bt.cn/bbs/forum-40-1.html'
+            if not 'home' in data: data['home'] = 'https://www.aapanel.com/forum'
 
             plugin_path = '/www/server/panel/plugin/' + data['name'] + '/info.json'
             data['old_version'] = '0'

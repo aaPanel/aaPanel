@@ -1,0 +1,196 @@
+[
+  {
+    "id": "122",
+    "ver": "1",
+    "used": true,
+    "source": "vulnerability_scanning",
+    "title": "Website vulnerability alert",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.safe_mod_push",
+      "name": "VulnerabilityScanningTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "cycle",
+          "name": "Interval period",
+          "type": "number",
+          "suffix": "",
+          "unit": "day",
+          "default": 1
+        },
+        {
+          "attr": "help",
+          "name": "source",
+          "type": "help",
+          "unit": "",
+          "style": {
+            "margin-top": "6px"
+          },
+          "list": [
+            "【Website】-> 【Vulnerability Scanning】-> 【Automatic Scanning】"
+          ],
+          "suffix": "",
+          "default": 600
+        }
+      ],
+      "sorted": [
+        [
+          "cycle"
+        ],
+        [
+          "help"
+        ]
+      ]
+    },
+    "default": {
+    },
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 1
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": true,
+    "tags": [
+      "safe",
+      "site"
+    ],
+    "description": "Regularly scan all websites on the server and identify various popular open-source CMS programs to help users quickly discover potential security vulnerabilities on the website and send alert notifications",
+    "is_pro": true
+  },
+  {
+    "id": "123",
+    "ver": "1",
+    "used": true,
+    "source": "file_detect",
+    "title": "System file integrity reminder",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.safe_mod_push",
+      "name": "FileDetectTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "hour",
+          "name": "daily",
+          "type": "number",
+          "suffix": "",
+          "unit": "hour",
+          "default": 4
+        },
+        {
+          "attr": "minute",
+          "name": " ",
+          "type": "number",
+          "suffix": "Execute detection tasks",
+          "unit": "minute",
+          "default": 10
+        },
+        {
+          "attr": "help",
+          "name": "source",
+          "type": "help",
+          "unit": "",
+          "style": {
+            "margin-top": "6px"
+          },
+          "list": [
+            "【Security】-> 【Security testing】-> 【File integrity check】-> 【Regular scanning】"
+          ],
+          "suffix": "",
+          "default": 600
+        }
+      ],
+      "sorted": [
+        [
+          "hour",
+          "minute"
+        ],
+        [
+          "help"
+        ]
+      ]
+    },
+    "default": {
+    },
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 1
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "tg"
+    ],
+    "unique": true,
+    "tags": [
+      "safe"
+    ],
+    "is_pro": true,
+    "description": "Regularly scan the system's critical file directory (such as /var/bin) according to the rules, identify abnormal situations such as file tampering, deletion, or movement, and send alert notifications to the administrator"
+  },
+    {
+    "id": "124",
+    "ver": "1",
+    "used": true,
+    "source": "safe_cloud_hinge",
+    "title": "Cloud Security Center Alert",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.safe_mod_push",
+      "name": "SafeCloudTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "help",
+          "name": "help",
+          "type": "link",
+          "unit": "",
+          "style": {
+            "margin-top": "6px"
+          },
+          "list": [
+            "<a href=\"/\">Go to 【 Home>Baota Cloud Security Center 】 to view details</a>"
+          ]
+        }
+      ],
+      "sorted": [
+        [
+          "help"
+        ]
+      ]
+    },
+    "default": {},
+    "advanced_default": {},
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "wx_account",
+      "tg"
+    ],
+    "unique": true,
+    "tags": [
+      "safe"
+    ],
+    "is_pro": true,
+    "description": "The Baota Cloud Security Center will scan server files, identify abnormal situations such as occupying a large amount of resources or maliciously controlling servers, and send alert notifications to administrators."
+  }
+]

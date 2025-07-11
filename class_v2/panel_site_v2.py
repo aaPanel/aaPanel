@@ -2388,7 +2388,7 @@ listener SSL443 {
         ''' % (public.get_php_proxy(version, 'apache'),)
                         apaOpt = 'Require all granted'
 
-                    sslStr = '''%s<VirtualHost *:443>
+                    sslStr = r'''%s<VirtualHost *:443>
         ServerAdmin webmaster@example.com
         DocumentRoot "%s"
         ServerName SSL.%s
@@ -2697,7 +2697,7 @@ listener SSL443 {
             conf = re.sub(rep, '', conf)
             rep = r"\s+listen\s+\[::\]:443.*;"
             conf = re.sub(rep, '', conf)
-            rep = "\s+http2\s+on;"
+            rep = r"\s+http2\s+on;"
             conf = re.sub(rep, '', conf)
             public.writeFile(file, conf)
 
@@ -5780,7 +5780,7 @@ location %s
             if os.path.exists(self.setupPath + '/panel/vhost/nginx/phpmyadmin.conf'):
                 get.configFile = self.setupPath + '/panel/vhost/nginx/phpmyadmin.conf'
                 conf = public.readFile(get.configFile)
-                rep = "\n\s*#AUTH_START(.|\n){1,200}#AUTH_END"
+                rep = r"\n\s*#AUTH_START(.|\n){1,200}#AUTH_END"
                 conf = re.sub(rep, '', conf)
                 public.writeFile(get.configFile, conf)
 
@@ -5853,7 +5853,7 @@ location %s
             # 2025/6/4 修复php额外密码访问
             if os.path.exists('/www/server/panel/vhost/nginx/phpmyadmin.conf'):
                 conf = public.readFile('/www/server/panel/vhost/nginx/phpmyadmin.conf')
-                rep = "\n\s*#AUTH_START(.|\n){1,200}#AUTH_END"
+                rep = r"\n\s*#AUTH_START(.|\n){1,200}#AUTH_END"
                 conf = re.sub(rep, '', conf)
                 public.writeFile('/www/server/panel/vhost/nginx/phpmyadmin.conf', conf)
         else:
@@ -7457,6 +7457,142 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         import one_key_wp_v2 as one_key_wp
         return one_key_wp.one_key_wp().save_wp_configurations(args)
 
+    # 批量设置wp网站类型
+    def set_wp_site_type(self, args):
+        site_ids = json.loads(args.site_ids)
+        if not args.get('site_type',''):
+            return public.return_message(-1, 0, "Type parameter is missing!")
+        site_type_sql = public.M("wp_site_types").where("id=?", (args.site_type,)).find()
+
+        if not site_type_sql:
+            return public.return_message(-1, 0, "Type ID does not exist!")
+
+        site_sql = public.M("wordpress_onekey")
+        for s_id in site_ids:
+            site_sql.where("s_id=?", (s_id,)).setField("site_type", site_type_sql['name'])
+
+        return public.return_message(0, 0,"Setup successfully!")
+
+    # 添加wp网站类型
+    def add_wp_site_type(self, args):
+        try:
+            args.validate([
+                Param('name').String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        args.name = args.name.strip()
+        if not args.name:
+            return_message = public.return_msg_gettext(False, 'Category name cannot be empty')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+        if len(args.name) > 16:
+            return_message = public.return_msg_gettext(False, 'Category name cannot exceed 16 letters')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+        type_sql = public.M('wp_site_types')
+        if type_sql.count() >= 10:
+            return_message = public.return_msg_gettext(False, 'Add up to 10 categories!')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+        if type_sql.where('name=?', (args.name,)).count() > 0:
+            return_message = public.return_msg_gettext(False, 'Specified category name already exists!')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+        type_sql.add("name", (args.name))
+        return_message = public.return_msg_gettext(True, 'Setup successfully!')
+        del return_message['status']
+        return public.return_message(0, 0, return_message['msg'])
+
+    # 编辑wp网站类型
+    def edit_wp_site_type(self, args):
+        try:
+            args.validate([
+                Param('id').Integer(),
+                Param('name').String()
+            ], [
+                public.validate.trim_filter()
+            ])
+        except Exception as ex:
+            return public.return_message(-1, 0, str(ex))
+
+        args.name = args.name.strip()
+        if not args.name:
+            return_message = public.return_msg_gettext(False, 'Category name cannot be empty')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+
+        if len(args.name) > 16:
+            return_message = public.return_msg_gettext(False, 'Category name cannot exceed 16 letters')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+
+        if args.id == 1:
+            return_message = public.return_msg_gettext(False, 'Default value does not support modification')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+
+        type_sql = public.M('wp_site_types')
+
+        # 检查ID是否存在
+        site_type = type_sql.where('id=?', (args.id,)).find()
+        if not site_type:
+            return_message = public.return_msg_gettext(False, 'Category does not exist!')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+
+        # 检查新名称是否已存在(排除自身)
+        if type_sql.where('name=?', (args.name,)).count() > 0:
+            return_message = public.return_msg_gettext(False, 'Specified category name already exists!')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+
+        # 更新分类，不使用外键约束
+        type_sql.where('id=?', (args.id,)).setField('name', args.name)
+
+        # 更新所有相关网站的分类
+        public.M('wordpress_onekey').where('site_type=?', (site_type['name'],)).setField('site_type', args.name)
+        return_message = public.return_msg_gettext(True, 'Update successfully!')
+        del return_message['status']
+        return public.return_message(0, 0, return_message['msg'])
+
+    # 删除wp网站类型
+    def del_wp_site_type(self, args):
+        try:
+            args.validate([
+                Param('id').Integer(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        if args.id in [1,'1']:
+            return_message = public.return_msg_gettext(False, 'Default value does not support modification')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+
+        type_sql = public.M('wp_site_types')
+
+        # 获取旧类型
+        old_type = type_sql.where('id=?', (args.id,)).find()
+        if not old_type:
+            return_message = public.return_msg_gettext(False, 'Specified category does NOT exist!')
+            del return_message['status']
+            return public.return_message(-1, 0, return_message['msg'])
+        type_sql.where('id=?', (args.id,)).delete()
+        res = public.M("wordpress_onekey").where("site_type=?", (old_type['name'],)).update({
+            'site_type': 'Default category',
+        })
+        return_message = public.return_msg_gettext(True, 'Category deleted!')
+        del return_message['status']
+        return public.return_message(0, 0, return_message['msg'])
+
     # 获取wp 安全模块配置
     def get_wp_security_info(self, get):
         from wp_toolkit import wp_security
@@ -7589,8 +7725,13 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
     # 从 [网站管理] 迁移到 [WP Toolkit]
     def wp_migrate_from_website_to_wptoolkit(self, args: public.dict_obj):
+        sites_list = json.loads(args.get('sites_list','[]'))
+
+        if not sites_list:
+            return public.fail_v2('There are no websites that can be migrated')
+
         from wp_toolkit import wpmigration
-        ok, msg = wpmigration.migrate_aap_from_website_to_wptoolkit()
+        ok, msg = wpmigration.migrate_aap_from_website_to_wptoolkit(sites_list)
 
         if not ok:
             return public.fail_v2(msg)
@@ -7601,6 +7742,15 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     def wp_can_migrate_from_website_to_wptoolkit(self, args: public.dict_obj):
         from wp_toolkit import wpmigration
         return public.success_v2(wpmigration.can_migrations_of_aap_website())
+
+    # 从用户手动备份中创建WP站点
+    def wp_create_with_manual_bak(self, args: public.dict_obj):
+        from wp_toolkit import wpbackup
+        ok, msg = wpbackup.wp_deploy_with_manual_bak(args)
+
+        if not ok:
+            return public.fail_v2(msg)
+        return public.success_v2(msg)
 
     # 从aapanel WP备份中创建WP站点
     def wp_create_with_aap_bak(self, args: public.dict_obj):
@@ -8238,7 +8388,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         except (json.JSONDecodeError, AttributeError, KeyError):
             return public.return_message(-1, 0, public.lang("参数错误"))
         try:
-            from panel_dns_api_v2 import DnsMager
+            # from panel_dns_api_v2 import DnsMager
             public.print_log("开始测试域名解析---- {}")
             # public.print_log("开始测试域名解析---- {}".format(domains[0]))
 
@@ -8288,7 +8438,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         if 'path' not in get: public.return_message(0, 0, public.lang("Parameter error"))
         from wp_toolkit import wordpress_scan
         return wordpress_scan.wordpress_scan().set_auth_scan(get.path)
-    
+
     def get_auth_scan_status(self,get):
         if 'path' not in get: public.return_message(0, 0, public.lang("Parameter error"))
         from wp_toolkit import wordpress_scan
@@ -8382,3 +8532,864 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             return public.success_v2(status)
         except Exception as e:
             return public.fail_v2("get fail" + str(e))
+
+    # ======================面板漏洞扫描 start======================== #
+    def get_cron_scanin_info(self, get):
+        """获取漏洞扫描定时任务信息"""
+        if "/www/server/panel" not in sys.path:
+            sys.path.insert(0, '/www/server/panel')
+
+        from mod.base.push_mod import TaskConfig
+        res = TaskConfig().get_by_keyword("vulnerability_scanning", "vulnerability_scanning")
+        if not res:
+            return public.return_message(0,0,{"cycle": 1, "channel": "", "status": 0})
+        else:
+            return public.return_message(0,0,{
+                "cycle": res['task_data']["cycle"],
+                "channel": ",".join(res['sender']),
+                "status": int(res['status'])
+            })
+
+
+    @classmethod
+    def set_push_task(self,status: bool, day: int, sender: list):
+        """构造告警推送模板"""
+        push_data = {
+            "template_id": "122",
+            "task_data": {
+                "status": status,
+                "sender": sender,
+                "task_data": {
+                    "cycle": day,
+                }
+            }
+        }
+        from mod.base.push_mod.manager import PushManager
+        return PushManager().set_task_conf_data(push_data)
+
+
+    def set_cron_scanin_info(self, get):
+        """设置漏洞扫描定时任务
+        @param get: 请求参数对象
+        @return: dict 设置结果
+        """
+        try:
+            # 参数处理部分
+            try:
+                status = bool(int(get.get("status", 0)))
+            except (ValueError, TypeError):
+                status = False
+
+            channel = get.get("channel", "")
+            if not isinstance(channel, str):
+                channel = str(channel)
+
+            try:
+                # 先尝试转换为浮点数，再向下取整
+                day_float = float(get.get("day", 0))
+                day = int(day_float)  # 浮点数向下取整
+            except (ValueError, TypeError):
+                day = 1
+
+            # 确保参数在有效范围内
+            if day < 0:
+                day = 1
+
+            try:
+
+                # 处理channel参数
+                if isinstance(channel, str):
+                    channel_list = channel.split(",") if channel else []
+                elif isinstance(channel, list):
+                    channel_list = channel
+                else:
+                    channel_list = []
+
+                # 设置推送任务
+                res = self.set_push_task(status, day, channel_list)
+                if not res:
+                    return public.return_message(0,0, 'Setting successful')
+                else:
+                    return public.return_message(-1,0, res)
+            except ImportError as e:
+                return public.return_message(-1,0, f"No relevant module found, please confirm system integrity,{e}")
+            except Exception as e:
+                return public.return_message(-1,0, "Error setting task: {}".format(str(e)))
+
+        except Exception as e:
+            # 捕获所有可能的异常，确保API不会崩溃
+            return public.return_message(-1,0, 'Setting failed: {}'.format(str(e)))
+
+    def get_Scan(self, get):
+        try:
+            res = self.startScan(get)
+            return res
+        except Exception as e:
+            print(e)
+        return {}
+
+
+    def startScan(self, get):
+        '''
+        @name 开始扫描
+        @author lkq<2022-3-30>
+        @param get
+        '''
+        self.__cachekey = public.Md5('vulnerability_scanning' + time.strftime('%Y-%m-%d'))
+        self.__config_file = '/www/server/panel/config/vulnerability_scanning.json'
+        result22 = []
+        time_info = int(time.time())
+        webInfo = self.getWebInfo(None)
+        config = self.get_config()
+        for web in webInfo:
+            for cms in config:
+                data = cms
+                if 'cms_name' in web:
+                    if web['cms_name'] != cms['cms_name']:
+                        if not web['cms_name'] in cms['cms_list']: continue
+                if self.getCmsType(web, data):
+                    if not 'cms' in web:
+                        web['cms'] = []
+                        web['cms'].append(cms)
+                    else:
+                        web['cms'].append(cms)
+                else:
+                    if not 'cms' in web:
+                        web['cms'] = []
+            if not 'is_vufix' in web:
+                web['is_vufix'] = False
+        for i in webInfo:
+            if i['is_vufix']:
+                result22.append(i)
+        result = {"info": [], "time": time_info}
+        loophole_num = sum([len(i['cms']) for i in result22])
+        result['loophole_num'] = loophole_num
+        result['site_num'] = len(webInfo)
+        return result
+
+    def getWebInfo(self, get):
+        '''
+        @name 获取网站的信息
+        @author lkq<2022-3-30>
+        @param get
+        '''
+        return public.M('sites').where('project_type=?', ('PHP')).select()
+
+    def get_config(self):
+        '''
+        @name 获取配置文件
+        @author lkq<2022-3-23>
+        @return
+        '''
+        result = [
+            {"cms_list": [], "dangerous": "2", "cms_name": "XunruiCMS",
+             "ps": "The XunruiCMS version is too low",
+             "name": "The XunruiCMS version is too low",
+             "determine": ["dayrui/My/Config/Version.php"],
+             "version": {"type": "file", "file": "dayrui/My/Config/Version.php",
+                         "regular": r"version.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": "3.2.0~4.5.4", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "dayrui/My/Config/Version.php",
+                                       "regular": ''' if (preg_match('/(php|jsp|asp|exe|sh|cmd|vb|vbs|phtml)/i', $value)) {'''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "pbootcms",
+             "ps": "pbootcms 3.0.0~3.0.4 There are multiple high-severity vulnerabilities CNVD-2020-48981,CNVD-2020-48677,CNVD-2020-48469,CNVD-2020-57593,CNVD-2020-56006,CNVD-2021-00794,CNVD-2021-30081,CNVD-2021-30113,CNVD-2021-32163",
+             "name": "pbootcms 2.0.0~2.0.8 There are multiple high-severity vulnerabilities CNVD-2020-48981,CNVD-2020-48677,CNVD-2020-48469,CNVD-2020-57593,CNVD-2020-56006,CNVD-2021-00794,CNVD-2021-30081,CNVD-2021-30113,CNVD-2021-32163",
+             "determine": ["apps/common/version.php", "core/basic/Config.php",
+                           "apps/admin/view/default/js/mylayui.js",
+                           "apps/api/controller/ContentController.php"],
+             "version": {"type": "file", "file": "apps/common/version.php",
+                         "regular": r"app_version.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": "3.0.0~3.0.4", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "apps/admin/controller/system/ConfigController.php",
+                                       "regular": ''' if (preg_match('/(php|jsp|asp|exe|sh|cmd|vb|vbs|phtml)/i', $value)) {'''}]},
+             }
+            , {"cms_list": [], "dangerous": "3", "cms_name": "pbootcms",
+               "ps": "pbootcms 2.0.0~2.0.8 There are multiple high-severity vulnerabilities CNVD-2020-04104,CNVD-2020-13536,CNVD-2020-24744,CNVD-2020-32198,CNVD-2020-32180,CNVD-2020-32177,CNVD-2020-31495,CNVD-2019-43060",
+               "name": "pbootcms 2.0.0~2.0.8 There are multiple high-severity vulnerabilities CNVD-2020-04104,CNVD-2020-13536,CNVD-2020-24744,CNVD-2020-32198,CNVD-2020-32180,CNVD-2020-32177,CNVD-2020-31495,CNVD-2019-43060",
+               "determine": ["apps/common/version.php", "core/basic/Config.php",
+                             "apps/admin/view/default/js/mylayui.js",
+                             "apps/api/controller/ContentController.php"],
+               "version": {"type": "file", "file": "apps/common/version.php",
+                           "regular": r"app_version.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                           "vul_version": "2.0.0~2.0.8", "ver_type": "range"},
+               "repair_file": {"type": "file",
+                               "file": [{"file": "apps/home/controller/ParserController.php",
+                                         "regular": r''' if (preg_match('/(\$_GET\[)|(\$_POST\[)|(\$_REQUEST\[)|(\$_COOKIE\[)|(\$_SESSION\[)|(file_put_contents)|(file_get_contents)|(fwrite)|(phpinfo)|(base64)|(`)|(shell_exec)|(eval)|(assert)|(system)|(exec)|(passthru)|(print_r)|(urldecode)|(chr)|(include)|(request)|(__FILE__)|(__DIR__)|(copy)/i', $matches[1][$i]))'''}]},
+               }
+            ,
+            {"cms_list": [], "dangerous": "3", "cms_name": "pbootcms",
+             "ps": "pbootcms 1.3.0~1.3.8 There are multiple high-severity vulnerabilities CNVD-2018-26355,CNVD-2018-24253,CNVD-2018-26938,CNVD-2019-14855,CNVD-2019-27743,CNVD-2020-23841",
+             "name": "pbootcms 1.3.0~1.3.8 There are multiple high-severity vulnerabilities CNVD-2018-26355,CNVD-2018-24253,CNVD-2018-26938,CNVD-2019-14855,CNVD-2019-27743,CNVD-2020-23841",
+             "determine": ["apps/common/version.php", "core/basic/Config.php",
+                           "apps/admin/view/default/js/mylayui.js",
+                           "apps/api/controller/ContentController.php"],
+             "version": {"type": "file", "file": "apps/common/version.php",
+                         "regular": r"app_version.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": "1.3.0~1.3.8", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "apps/admin/controller/system/ConfigController.php",
+                                       "regular": r'''$config = preg_replace('/(\'' . $key . '\'([\s]+)?=>([\s]+)?)[\w\'\"\s,]+,/', '${1}\'' . $value . '\',', $config);'''}]},
+             }
+            , {"cms_list": [], "dangerous": "3", "cms_name": "pbootcms",
+               "ps": "pbootcms 1.2.0~1.2.2 There are multiple high-severity vulnerabilities CNVD-2018-21503,CNVD-2018-19945,CNVD-2018-22854,CNVD-2018-22142,CNVD-2018-26780,CNVD-2018-24845",
+               "name": "pbootcms 1.0.1~1.2.2 There are multiple high-severity vulnerabilities CNVD-2018-21503,CNVD-2018-19945,CNVD-2018-22854,CNVD-2018-22142,CNVD-2018-26780,CNVD-2018-24845",
+               "determine": ["apps/common/version.php", "core/basic/Config.php",
+                             "apps/admin/view/default/js/mylayui.js",
+                             "apps/api/controller/ContentController.php"],
+               "version": {"type": "file", "file": "apps/common/version.php",
+                           "regular": r"app_version.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                           "vul_version": ["1.2.0", "1.2.1", "1.2.2"], "ver_type": "list"},
+               "repair_file": {"type": "file",
+                               "file": [{"file": "apps/admin/controller/system/DatabaseController.php",
+                                         "regular": r'''if ($value && ! preg_match('/(^|[\s]+)(drop|truncate|set)[\s]+/i', $value)) {'''}]},
+               },
+            {"cms_list": [], "dangerous": "3", "cms_name": "pbootcms",
+             "ps": "pbootcms 1.1.9  an SQL injection vulnerability exists CNVD-2018-18069",
+             "name": "pbootcms 1.1.9  an SQL injection vulnerability exists CNVD-2018-18069",
+             "determine": ["apps/common/version.php", "core/basic/Config.php",
+                           "apps/admin/view/default/js/mylayui.js",
+                           "apps/api/controller/ContentController.php"],
+             "version": {"type": "file", "file": "apps/common/version.php",
+                         "regular": r"app_version.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": ["1.1.9"], "ver_type": "list"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "core/function/handle.php",
+                                       "regular": '''if (Config::get('url_type') == 2 && strrpos($indexfile, 'index.php') !== false)'''}]},
+             },
+            {"cms_list": [], "dangerous": "4", "cms_name": "pbootcms",
+             "ps": "pbootcms 1.1.6~1.1.8 There are foreground code execution vulnerabilities and multiple SQL injection vulnerabilities CNVD-2018-17412,CNVD-2018-17741,CNVD-2018-17747,CNVD-2018-17750,CNVD-2018-17751,CNVD-2018-17752,CNVD-2018-17753,CNVD-2018-17754",
+             "name": "pbootcms 1.1.6~1.1.8  There are foreground code execution vulnerabilities and multiple SQL injection vulnerabilities CNVD-2018-17412,CNVD-2018-17741,CNVD-2018-17747,CNVD-2018-17750,CNVD-2018-17751,CNVD-2018-17752,CNVD-2018-17753,CNVD-2018-17754",
+             "determine": ["apps/common/version.php", "core/basic/Config.php",
+                           "apps/admin/view/default/js/mylayui.js",
+                           "apps/api/controller/ContentController.php"],
+             "version": {"type": "file", "file": "apps/common/version.php",
+                         "regular": r"app_version.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": ["1.1.6", "1.1.7", "1.1.8"], "ver_type": "list"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "core/function/handle.php",
+                                       "regular": '''if (is_array($string)) { 
+                foreach ($string as $key => $value) {
+                    $string[$key] = decode_slashes($value);
+                }'''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "pbootcms",
+             "ps": "pbootcms 1.1.4 an SQL injection vulnerability exists CNVD-2018-13335,CNVD-2018-13336",
+             "name": "pbootcms 1.1.4 an SQL injection vulnerability exists CNVD-2018-13335,CNVD-2018-13336",
+             "determine": ["apps/common/version.php", "core/basic/Config.php",
+                           "apps/admin/view/default/js/mylayui.js",
+                           "apps/api/controller/ContentController.php"],
+             "version": {"type": "file", "file": "apps/common/version.php",
+                         "regular": r"app_version.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": ["1.1.4"], "ver_type": "list"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "core/extend/ueditor/php/controller.php",
+                                       "regular": '''if (! ini_get('session.auto_start') && ! isset($_SESSION)'''}]},
+             }
+            , {"cms_list": [], "dangerous": "3", "cms_name": "maccms10",
+               "ps": "maccms10 <=2022.1000.3025 ssrf and xss vulnerabilities exist",
+               "name": "maccms10 <=2022.1000.3025 ssrf and xss vulnerabilities exist",
+               "determine": ["application/extra/version.php", "application/api/controller/Wechat.php",
+                             "thinkphp/library/think/Route.php",
+                             "application/admin/controller/Upload.php"],
+               "version": {"type": "file", "file": "application/extra/version.php",
+                           "regular": r"code.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                           "vul_version": ["2022.1000.3025", "2022.1000.3005", "2022.1000.3024", "2022.1000.3020",
+                                           "2022.1000.3023",
+                                           "2022.1000.3002", "2022.1000.1099", "2021.1000.1081"], "ver_type": "list"},
+               "repair_file": {"type": "file",
+                               "file": [{"file": "application/common/model/Actor.php",
+                                         "regular": '''$data[$filter_field] = mac_filter_xss($data[$filter_field]);'''}]},
+               }
+            ,
+            {"cms_list": [], "dangerous": "3", "cms_name": "maccms10",
+             "ps": "maccms10 <=2022.1000.3024 There are vulnerabilities in which any user in the foreground logs in, the background session verification is bypassed, any file is written in the background, and any file is deleted",
+             "name": "maccms10 <=2022.1000.3024 There are vulnerabilities in which any user in the foreground logs in, the background session verification is bypassed, any file is written in the background, and any file is deleted",
+             "determine": ["application/extra/version.php", "application/api/controller/Wechat.php",
+                           "thinkphp/library/think/Route.php",
+                           "application/admin/controller/Upload.php"],
+             "version": {"type": "file", "file": "application/extra/version.php",
+                         "regular": r"code.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": ["2022.1000.3005", "2022.1000.3024", "2022.1000.3020", "2022.1000.3023",
+                                         "2022.1000.3002", "2022.1000.1099", "2021.1000.1081"], "ver_type": "list"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "application/common/model/Annex.php",
+                                       "regular": '''if (stripos($v['annex_file'], '../') !== false)'''}]},
+             }
+            , {"cms_list": [], "dangerous": "3", "cms_name": "eyoucms",
+               "ps": "eyoucms 1.5.5~1.5.7 There are multiple security vulnerabilities",
+               "name": "eyoucms 1.5.1~1.5.4 There are multiple security vulnerabilities",
+               "determine": ["data/conf/version.txt", "application/api/controller/Uploadify.php",
+                             "application/extra/extra_cache_key.php",
+                             "application/admin/controller/Uploadify.php"],
+               "version": {"type": "file", "file": "data/conf/version.txt",
+                           "regular": r"(\d+.\d+.\d+)", "regular_len": 0,
+                           "vul_version": "1.5.5~1.5.7", "ver_type": "range"},
+               "repair_file": {"type": "file",
+                               "file": [{"file": "application/common.php",
+                                         "regular": '''$login_errnum_key = 'adminlogin_'.md5('login_errnum_'.$admin_info['user_name']);'''}]},
+               }
+            ,
+            {"cms_list": [], "dangerous": "4", "cms_name": "eyoucms",
+             "ps": "eyoucms 1.5.1~1.5.4 There are multiple high-risk security vulnerabilities,CNVD-2021-82431,CNVD-2021-82429,CNVD-2021-72772,CNVD-2021-51838,CNVD-2021-51836,CNVD-2021-41520,CNVD-2021-24745,,CNVD-2021-26007,CNVD-2021-26099,CNVD-2021-41520",
+             "name": "eyoucms 1.5.1~1.5.4 There are multiple high-risk security vulnerabilities ,CNVD-2021-82431,CNVD-2021-82429,CNVD-2021-72772,CNVD-2021-51838,CNVD-2021-51836,CNVD-2021-41520,CNVD-2021-24745,,CNVD-2021-26007,CNVD-2021-26099,CNVD-2021-41520",
+             "determine": ["data/conf/version.txt", "application/api/controller/Uploadify.php",
+                           "application/extra/extra_cache_key.php",
+                           "application/admin/controller/Uploadify.php"],
+             "version": {"type": "file", "file": "data/conf/version.txt",
+                         "regular": r"(\d+.\d+.\d+)", "regular_len": 0,
+                         "vul_version": "1.5.1~1.5.4", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "application/common.php",
+                                       "regular": '''$citysite_db->where(['domain'=>$s_arr[0]])->cache(true, EYOUCMS_CACHE_TIME, 'citysite')->count()'''}]},
+             },
+            {"cms_list": [], "dangerous": "4", "cms_name": "eyoucms",
+             "ps": "eyoucms 1.4.7 There are multiple high-risk security vulnerabilities ,CNVD-2020-46317,CNVD-2020-49065,CNVD-2020-44394,CNVD-2020-44392,CNVD-2020-44391,CNVD-2020-47671,CNVD-2020-50721",
+             "name": "eyoucms 1.4.7 There are multiple high-risk security vulnerabilities ,CNVD-2020-46317,CNVD-2020-49065,CNVD-2020-44394,CNVD-2020-44392,CNVD-2020-44391,CNVD-2020-47671,CNVD-2020-50721",
+             "determine": ["data/conf/version.txt", "application/api/controller/Uploadify.php",
+                           "application/extra/extra_cache_key.php",
+                           "application/admin/controller/Uploadify.php"],
+             "version": {"type": "file", "file": "data/conf/version.txt",
+                         "regular": r"(\d+.\d+.\d+)", "regular_len": 0,
+                         "vul_version": "1.4.7~1.4.7", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "application/common.php",
+                                       "regular": '''function GetTagIndexRanking($limit = 5, $field = 'id, tag')'''}]},
+             },
+            {"cms_list": [], "dangerous": "4", "cms_name": "eyoucms",
+             "ps": "eyoucms 1.4.6 There are multiple high-risk security vulnerabilities ,CNVD-2020-44116,CNVD-2020-32622,CNVD-2020-28132,CNVD-2020-28083,CNVD-2020-28064,CNVD-2020-33104",
+             "name": "eyoucms 1.4.6 There are multiple high-risk security vulnerabilities ,CNVD-2020-44116,CNVD-2020-32622,CNVD-2020-28132,CNVD-2020-28083,CNVD-2020-28064,CNVD-2020-33104",
+             "determine": ["data/conf/version.txt", "application/api/controller/Uploadify.php",
+                           "application/extra/extra_cache_key.php",
+                           "application/admin/controller/Uploadify.php"],
+             "version": {"type": "file", "file": "data/conf/version.txt",
+                         "regular": r"(\d+.\d+.\d+)", "regular_len": 0,
+                         "vul_version": "1.4.6~1.4.6", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "application/common.php",
+                                       "regular": r'''preg_replace('#^(/[/\w]+)?(/uploads/|/public/static/)#i'''}]},
+             }
+            , {"cms_list": [], "dangerous": "4", "cms_name": "eyoucms",
+               "ps": "eyoucms 1.3.9~1.4.4  There are multiple security vulnerabilities CNVD-2020-02271,CNVD-2020-02824,CNVD-2020-18735,CNVD-2020-18677,CNVD-2020-23229,CNVD-2020-23805,CNVD-2020-23820",
+               "name": "eyoucms 1.3.9~1.4.4  There are multiple security vulnerabilities CNVD-2020-02271,CNVD-2020-02824,CNVD-2020-18735,CNVD-2020-18677,CNVD-2020-23229,CNVD-2020-23805,CNVD-2020-23820",
+               "determine": ["data/conf/version.txt", "application/api/controller/Uploadify.php",
+                             "application/extra/extra_cache_key.php",
+                             "application/admin/controller/Uploadify.php"],
+               "version": {"type": "file", "file": "data/conf/version.txt",
+                           "regular": r"(\d+.\d+.\d+)", "regular_len": 0,
+                           "vul_version": "1.3.9~1.4.4", "ver_type": "range"},
+               "repair_file": {"type": "file",
+                               "file": [{"file": "application/common.php",
+                                         "regular": '''$TimingTaskRow = model('Weapp')->getWeappList('TimingTask');'''}]},
+               },
+            {"cms_list": [], "dangerous": "4", "cms_name": "eyoucms", "ps": "eyoucms 1.4.1 There is a command execution vulnerability",
+             "name": "eyoucms 1.4.1 There is a command execution vulnerability",
+             "determine": ["data/conf/version.txt", "application/api/controller/Uploadify.php",
+                           "application/extra/extra_cache_key.php",
+                           "application/admin/controller/Uploadify.php"],
+             "version": {"type": "file", "file": "data/conf/version.txt",
+                         "regular": r"(\d+.\d+.\d+)", "regular_len": 0,
+                         "vul_version": "1.4.1~1.4.1", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "application/route.php",
+                                       "regular": '''$weapp_route_file = 'plugins/route.php';'''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "eyoucms", "ps": "eyoucms<=1.3.8 There are SQL injection and plug-in upload vulnerabilities",
+             "name": "eyoucms<=1.3.8 There are SQL injection and plug-in upload vulnerabilities",
+             "determine": ["data/conf/version.txt", "application/api/controller/Uploadify.php",
+                           "application/extra/extra_cache_key.php",
+                           "application/admin/controller/Uploadify.php"],
+             "version": {"type": "file", "file": "data/conf/version.txt",
+                         "regular": r"(\d+.\d+.\d+)", "regular_len": 0,
+                         "vul_version": "1.0.0~1.3.8", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "core/library/think/template/taglib/Eyou.php",
+                                       "regular": '''$notypeid  = !empty($tag['notypeid']) ? $tag['notypeid'] : '';'''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "eyoucms", "ps": "eyoucms<=1.3.4 There is a background file upload vulnerability",
+             "name": "eyoucms<=1.3.4 There is a background file upload vulnerability",
+             "determine": ["data/conf/version.txt", "application/api/controller/Uploadify.php",
+                           "application/extra/extra_cache_key.php",
+                           "application/admin/controller/Uploadify.php"],
+             "version": {"type": "file", "file": "data/conf/version.txt",
+                         "regular": r"(\d+.\d+.\d+)", "regular_len": 0,
+                         "vul_version": "1.0.0~1.3.4", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "application/common.php",
+                                       "regular": '''include_once EXTEND_PATH."function.php";'''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "eyoucms", "ps": "eyoucms 1.0 There is a vulnerability in uploading arbitrary files",
+             "name": "eyoucms 1.0 There is a vulnerability in uploading arbitrary files",
+             "determine": ["data/conf/version.txt", "application/api/controller/Uploadify.php",
+                           "application/extra/extra_cache_key.php",
+                           "application/admin/controller/Uploadify.php"],
+             "version": {"type": "file", "file": "data/conf/version.txt",
+                         "regular": r"(\d+.\d+.\d+)", "regular_len": 0,
+                         "vul_version": "1.0.0~1.1.0", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "application/api/controller/Uploadify.php",
+                                       "regular": '''not api '''}]},
+             },
+            {"cms_list": [], "dangerous": "2", "cms_name": "Marine CMS", "ps": "Marine CMSVersion too low",
+             "name": "Marine CMSVersion too low",
+             "determine": ["data/admin/ver.txt", "include/common.php", "include/main.class.php",
+                           "detail/index.php"],
+             "version": {"type": "file", "file": "data/admin/ver.txt",
+                         "regular": r"(\d+.\d+?|\d+)", "regular_len": 0,
+                         "vul_version": ["6.28", "6.54", "7.2", "8.4", "8.5", "8.6", "8.7", "8.8", "8.9", "9", "9.1",
+                                         "9.2", "9.3", "9.4", "9.5", "9.6", "9.7", "9.8", "9.9", "9.91", "9.92", "9.93",
+                                         "9.94", "9.96", "9.97", "9.98", "9.99", "10", "10.1", "10.2", "10.3", "10.4",
+                                         "10.5", "10.6", "10.7", "10.8", "10.9", "11", "11.1", "11.2", "11.3", "11.4",
+                                         "11.5"], "ver_type": "list"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "Marine CMS", "ps": "Marine CMS <=9.95 Existence of front-end RCE",
+             "name": "Marine CMS <=9.95 Existence of front-end RCE",
+             "determine": ["data/admin/ver.txt", "include/common.php", "include/main.class.php",
+                           "detail/index.php"],
+             "version": {"type": "file", "file": "data/admin/ver.txt",
+                         "regular": r"(\d+.\d+?|\d+)", "regular_len": 0,
+                         "vul_version": ["6.28", "6.54", "7.2", "8.4", "8.5", "8.6", "8.7", "8.8", "8.9", "9", "9.1",
+                                         "9.2", "9.3", "9.4", "9.5", "9.6", "9.7", "9.8", "9.9", "9.91", "9.92", "9.93",
+                                         "9.94"], "ver_type": "list"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "include/common.php",
+                                       "regular": ''''$jpurl='//'.$_SERVER['SERVER_NAME']'''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "ThinkCMF", "ps": "ThinkCMF CVE-2019-6713漏洞",
+             "name": "ThinkCMF CVE-2019-6713",
+             "determine": ["public/index.php", "app/admin/hooks.php", "app/admin/controller/NavMenuController.php",
+                           "simplewind/cmf/hooks.php"],
+             "version": {"type": "file", "file": "public/index.php",
+                         "regular": r"THINKCMF_VERSION.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": ["5.0.190111", "5.0.181231", "5.0.181212", "5.0.180901", "5.0.180626",
+                                         "5.0.180525", "5.0.180508"], "ver_type": "list"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "app/admin/validate/RouteValidate.php",
+                                       "regular": '''protected function checkUrl($value, $rule, $data)'''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "ThinkCMF", "ps": "ThinkCMF templateFile  Remote code execution vulnerability",
+             "name": "ThinkCMF templateFile Remote code execution vulnerability",
+             "determine": ["simplewind/Core/ThinkPHP.php", "index.php",
+                           "data/conf/db.php", "application/Admin/Controller/NavcatController.class.php",
+                           "application/Comment/Controller/WidgetController.class.php"],
+             "version": {"type": "file", "file": "index.php",
+                         "regular": r"THINKCMF_VERSION.+(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": "1.6.0~2.2.2", "ver_type": "range"},
+             "repair_file": {"type": "file",
+                             "file": [{"file": "application/Comment/Controller/WidgetController.class.php",
+                                       "regular": '''protected function display('''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "zfaka", "ps": "zfaka an SQL injection vulnerability exists ", "name": "zfaka an SQL injection vulnerability exists ",
+             "determine": ["application/init.php", "application/function/F_Network.php",
+                           "application/controllers/Error.php", "application/modules/Admin/controllers/Profiles.php"],
+             "version": {"type": "file", "file": "application/init.php",
+                         "regular": r"VERSION.+'(\d+.\d+.\d+)'", "regular_len": 0,
+                         "vul_version": "1.0.0~1.4.4", "ver_type": "range"},
+             "repair_file": {"type": "file", "file": [{"file": "application/function/F_Network.php",
+                                                       "regular": '''if(filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4'''}]},
+             }
+            ,
+            {"cms_list": [], "dangerous": "3", "cms_name": "dedecms", "ps": "dedecms 20210719  Security Update",
+             "name": "dedecms 20210719 Security Update",
+             "determine": ["data/admin/ver.txt", "data/common.inc.php",
+                           "dede/shops_operations_userinfo.php", "member/edit_space_info.php"],
+             "version": {"type": "file", "file": "data/admin/ver.txt",
+                         "regular": r"(\d+)", "regular_len": 0,
+                         "vul_version": ["20180109"], "ver_type": "list"},
+             "repair_file": {"type": "file", "file": [{"file": "include/dedemodule.class.php",
+                                                       "regular": r'''if(preg_match("#[^a-z]+(eval|assert)[\s]*[(]#i"'''}]},
+             }
+            ,
+            {"cms_list": [], "dangerous": "3", "cms_name": "dedecms", "ps": "dedecms 20220125 Security Update",
+             "name": "dedecms 20220125 Security Update",
+             "determine": ["data/admin/ver.txt", "data/common.inc.php",
+                           "dede/shops_operations_userinfo.php", "member/edit_space_info.php"],
+             "version": {"type": "file", "file": "data/admin/ver.txt",
+                         "regular": r"(\d+)", "regular_len": 0,
+                         "vul_version": ["20180109", "20220325", "20210201", "20210806"], "ver_type": "list"},
+             "repair_file": {"type": "file", "file": [{"file": "include/downmix.inc.php",
+                                                       "regular": '''上海卓卓网络科技有限公司'''}]},
+             }
+            ,
+            {"cms_list": [], "dangerous": "3", "cms_name": "dedecms", "ps": "dedecms 20220218 Security Update",
+             "name": "dedecms 20220218 Security Update",
+             "determine": ["data/admin/ver.txt", "data/common.inc.php",
+                           "dede/shops_operations_userinfo.php", "member/edit_space_info.php"],
+             "version": {"type": "file", "file": "data/admin/ver.txt",
+                         "regular": r"(\d+)", "regular_len": 0,
+                         "vul_version": ["20180109", "20220325", "20210201", "20210806"], "ver_type": "list"},
+             "repair_file": {"type": "file", "file": [{"file": "dede/file_manage_control.php",
+                                                       "regular": '''phpinfo,eval,assert,exec,passthru,shell_exec,system,proc_open,popen'''}]},
+             }
+            , {"cms_list": [], "dangerous": "3", "cms_name": "dedecms", "ps": "dedecms 20220310 Security Update",
+               "name": "dedecms 20220310 Security Update",
+               "determine": ["data/admin/ver.txt", "data/common.inc.php",
+                             "dede/shops_operations_userinfo.php", "member/edit_space_info.php"],
+               "version": {"type": "file", "file": "data/admin/ver.txt",
+                           "regular": r"(\d+)", "regular_len": 0,
+                           "vul_version": ["20180109", "20220325", "20210201", "20210806"], "ver_type": "list"},
+               "repair_file": {"type": "file", "file": [{"file": "dede/file_manage_control.php",
+                                                         "regular": '''phpinfo,eval,assert,exec,passthru,shell_exec,system,proc_open,popen'''}]},
+               },
+            {"cms_list": [], "dangerous": "3", "cms_name": "dedecms", "ps": "dedecms 20220325 Security Update",
+             "name": "dedecms 20220325 Security Update",
+             "determine": ["data/admin/ver.txt", "data/common.inc.php",
+                           "dede/shops_operations_userinfo.php", "member/edit_space_info.php"],
+             "version": {"type": "file", "file": "data/admin/ver.txt",
+                         "regular": r"(\d+)", "regular_len": 0,
+                         "vul_version": ["20180109", "20220325", "20210201", "20210806"], "ver_type": "list"},
+             "repair_file": {"type": "file", "file": [{"file": "plus/mytag_js.php",
+                                                       "regular": '''phpinfo,eval,assert,exec,passthru,shell_exec,system,proc_open,popen'''}]},
+             },
+            {"cms_list": [], "dangerous": "2", "cms_name": "dedecms", "ps": "dedecms The member registration function has been enabled",
+             "name": "dedecms The member registration function has been enabled",
+             "determine": ["data/admin/ver.txt", "data/common.inc.php",
+                           "dede/shops_operations_userinfo.php", "member/edit_space_info.php"],
+             "version": {"type": "file", "file": "data/admin/ver.txt",
+                         "regular": r"(\d+)", "regular_len": 0,
+                         "vul_version": ["20180109", "20220325", "20210201", "20210806"], "ver_type": "list"},
+             "repair_file": {"type": "phpshell", "file": [{"file": "member/get_user_cfg_mb_open.php",
+                                                           "phptext": '''<?php require_once(dirname(__FILE__).'/../include/common.inc.php');echo 'start'.$cfg_mb_open.'end';?>''',
+                                                           "regular": r'''start(\w)end''', "reulst_type": "str",
+                                                           "result": "startYend"}]},
+             }
+            , {"cms_list": [], "dangerous": "3", "cms_name": "MetInfo", "ps": "MetInfo 7.5.0 an SQL injection vulnerability exists ",
+               "name": "MetInfo7.5.0 an SQL injection vulnerability exists ",
+               "determine": ["cache/config/config_metinfo.php", "app/system/entrance.php",
+                             "app/system/databack/admin/index.class.php", "cache/config/app_config_metinfo.php"],
+               "version": {"type": "file", "file": "cache/config/config_metinfo.php",
+                           "regular": r"value.+'(\d+.\d+.\d+)'", "vul_version": "7.5.0~7.5.0", "ver_type": "range"},
+               "repair_file": {"type": "version", "file": []},
+               },
+            {"cms_list": [], "dangerous": "3", "cms_name": "MetInfo", "ps": "MetInfo 7.3.0 an SQL injection vulnerability exists ",
+             "name": "MetInfo 7.3.0 an SQL injection vulnerability exists ",
+             "determine": ["app/system/entrance.php", "app/system/admin/admin/index.class.php",
+                           "app/system/admin/admin/templates/admin_add.php"],
+             "version": {"type": "file", "file": "app/system/entrance.php",
+                         "regular": r"SYS_VER.+'(\d+.\d+.\d+)'", "vul_version": "7.3.0~7.3.0", "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "MetInfo", "ps": "MetInfo 7.2.0 an SQL injection vulnerability exists ",
+             "name": "MetInfo 7.2.0 an SQL injection vulnerability exists",
+             "determine": ["app/system/entrance.php", "app/system/admin/admin/index.class.php",
+                           "app/system/admin/admin/templates/admin_add.php"],
+             "version": {"type": "file", "file": "app/system/entrance.php",
+                         "regular": r"SYS_VER.+'(\d+.\d+.\d+)'", "vul_version": "7.2.0~7.2.0", "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "MetInfo", "ps": "MetInfo 7.1.0 There are file upload vulnerabilities, SQL injection vulnerabilities, and XSS vulnerabilities present",
+             "name": "MetInfo 7.1.0 There are file upload vulnerabilities, SQL injection vulnerabilities, and XSS vulnerabilities present",
+             "determine": ["app/system/entrance.php", "app/system/admin/admin/index.class.php",
+                           "app/system/admin/admin/templates/admin_add.php"],
+             "version": {"type": "file", "file": "app/system/entrance.php",
+                         "regular": r"SYS_VER.+'(\d+.\d+.\d+)'", "vul_version": "7.1.0~7.1.0", "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "MetInfo", "ps": "MetInfo 7.0.0  an SQL injection vulnerability exists ",
+             "name": "MetInfo7.0.0 an SQL injection vulnerability exists ",
+             "determine": ["app/system/entrance.php", "app/system/admin/admin/index.class.php",
+                           "app/system/admin/admin/templates/admin_add.php"],
+             "version": {"type": "file", "file": "app/system/entrance.php",
+                         "regular": r"SYS_VER.+'(\d+.\d+.\d+)'", "vul_version": "7.0.0~7.0.0", "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "MetInfo", "ps": "MetInfo 6.1.2 an SQL injection vulnerability exists ",
+             "name": "MetInfo 6.1.2 an SQL injection vulnerability exists ",
+             "determine": ["app/system/entrance.php", "app/system/admin/admin/templates/admin_add.php"],
+             "version": {"type": "file", "file": "app/system/entrance.php",
+                         "regular": r"SYS_VER.+'(\d+.\d+.\d+)'", "vul_version": "6.1.2~6.1.2", "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "MetInfo", "ps": "MetInfo 6.1.1 There is a known backend permission that can exploit the webshell vulnerability",
+             "name": "MetInfo 6.1.1 There is a known backend permission that can exploit the webshell vulnerability",
+             "determine": ["app/system/entrance.php", "app/system/admin/admin/templates/admin_add.php"],
+             "version": {"type": "file", "file": "app/system/entrance.php",
+                         "regular": r"SYS_VER.+'(\d+.\d+.\d+)'", "vul_version": "6.1.1~6.1.1", "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "2", "cms_name": "emlog", "ps": "EMlog version is too low. It is recommended to upgrade to Pro version",
+             "name": "EMlog version is too low. It is recommended to upgrade to Pro version",
+             "determine": ["include/lib/option.php", "admin/views/template_install.php",
+                           "include/lib/checkcode.php", "include/controller/author_controller.php"],
+             "version": {"type": "file", "file": "include/lib/option.php",
+                         "regular": r"EMLOG_VERSION.+'(\d+.\d+.\d+)'", "vul_version": "5.3.1~6.0.0",
+                         "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "1", "cms_name": "Empire CMS", "ps": "EmpireCMs7.0  Backend XSS vulnerability ",
+             "name": "EmpireCMs7.0 Backend XSS vulnerability ",
+             "determine": ["e/class/EmpireCMS_version.php", "e/search/index.php",
+                           "e/member/EditInfo/index.php", "e/ViewImg/index.html"],
+             "version": {"type": "file", "file": "e/class/EmpireCMS_version.php",
+                         "regular": r"EmpireCMS_VERSION.+'(\d+.\d+)'", "vul_version": "7.0~7.0", "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "2", "cms_name": "Empire CMS", "ps": "EmpireCMs6.0~7.5 Backend code execution",
+             "name": "EmpireCMs6.0~7.5 Backend code execution",
+             "determine": ["e/class/EmpireCMS_version.php", "e/search/index.php",
+                           "e/member/EditInfo/index.php", "e/ViewImg/index.html"],
+             "version": {"type": "file", "file": "e/class/EmpireCMS_version.php",
+                         "regular": r"EmpireCMS_VERSION.+'(\d+.\d+)'", "vul_version": "6.0~7.5", "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "2", "cms_name": "Empire CMS", "ps": "EmpireCMs6.0~7.5 Backend import model code execution",
+             "name": "EmpireCMs6.0~7.5 Backend import model code execution",
+             "determine": ["e/class/EmpireCMS_version.php", "e/search/index.php",
+                           "e/member/EditInfo/index.php", "e/ViewImg/index.html"],
+             "version": {"type": "file", "file": "e/class/EmpireCMS_version.php",
+                         "regular": r"EmpireCMS_VERSION.+'(\d+.\d+)'", "vul_version": "6.0~7.5", "ver_type": "range"},
+             "repair_file": {"type": "version", "file": []},
+             },
+            {"cms_list": [], "dangerous": "2", "cms_name": "discuz", "ps": "Discuz utility Component external access",
+             "name": "Discuz utility Component external access",
+             "determine": ["uc_client/client.php", "uc_server/lib/uccode.class.php",
+                           "uc_server/model/version.php", "source/discuz_version.php"],
+             "version": {"type": "single_file", "file": "utility/convert/index.php",
+                         "regular": r"DISCUZ_RELEASE.+'(\d+)'", "regular_len": 0,
+                         "vul_version": ["1"], "ver_type": "list"},
+             "repair_file": {"type": "single_file", "file": [{"file": "utility/convert/index.php",
+                                                              "regular": '''$source = getgpc('source') ? getgpc('source') : getgpc('s');'''}]},
+             },
+            {"cms_list": [], "dangerous": "2", "cms_name": "discuz", "ps": "Discuz Email authentication entrance CSRF and time limit can bypass vulnerabilities",
+             "name": "Discuz Email authentication entrance CSRF and time limit can bypass vulnerabilities",
+             "determine": ["uc_client/client.php", "uc_server/lib/uccode.class.php",
+                           "uc_server/model/version.php", "source/discuz_version.php"],
+             "version": {"type": "file", "file": "source/discuz_version.php",
+                         "regular": r"DISCUZ_RELEASE.+'(\d+)'", "regular_len": 0,
+                         "vul_version": ["20210816",
+                                         "20210630", "20210520", "20210320", "20210119", "20200818", "20191201",
+                                         "20190917"], "ver_type": "list"},
+             "repair_file": {"type": "file", "file": [{"file": "source/admincp/admincp_setting.php",
+                                                       "regular": '''showsetting('setting_permissions_mailinterval', 'settingnew[mailinterval]', $setting['mailinterval'], 'text');'''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "discuz", "ps": "Discuz Error injection SQL", "name": "Discuz Error injection SQL",
+             "determine": ["uc_client/client.php", "uc_server/lib/uccode.class.php",
+                           "uc_server/model/version.php", "source/discuz_version.php"],
+             "version": {"type": "file", "file": "source/discuz_version.php",
+                         "regular": r"DISCUZ_RELEASE.+'(\d+)'", "regular_len": 0,
+                         "vul_version": ["20211124", "20211022", "20210926", "20210917", "20210816",
+                                         "20210630", "20210520", "20210320", "20210119", "20200818", "20191201",
+                                         "20190917"], "ver_type": "list"},
+             "repair_file": {"type": "file", "file": [
+                 {"file": "api/uc.php",
+                  "regular": r'''if($len > 22 || $len < 3 || preg_match("/\s+|^c:\\con\\con|[%,\*\"\s\<\>\&\(\)']/is", $get['newusername']))'''}]},
+             }
+            , {"cms_list": [], "dangerous": "3", "cms_name": "discuz", "ps": "Discuz Backup and recovery function execution arbitrary SQL vulnerability",
+               "name": "Discuz Backup and recovery function execution arbitrary SQL vulnerability",
+               "determine": ["uc_client/client.php", "uc_server/lib/uccode.class.php", "uc_server/model/version.php",
+                             "source/discuz_version.php"],
+               "version": {"type": "file", "file": "source/discuz_version.php", "regular": r"DISCUZ_RELEASE.+'(\d+)'",
+                           "regular_len": 0,
+                           "vul_version": ["20211231", "20211124", "20211022", "20210926", "20210917", "20210816",
+                                           "20210630", "20210520", "20210320", "20210119", "20200818", "20191201",
+                                           "20190917"], "ver_type": "list"},
+               "repair_file": {"type": "file", "file": [
+                   {"file": "api/db/dbbak.php",
+                    "regular": r'''if(!preg_match('/^backup_(\d+)_\w+$/', $get['sqlpath']) || !preg_match('/^\d+_\w+\-(\d+).sql$/', $get['dumpfile']))'''}]},
+               },
+            {"cms_list": ["maccms10"], "dangerous": "4", "cms_name": "Thinkphp", "ps": "thinkphp5.0.X loophole",
+             "name": "Thinkphp5.X code execution",
+             "determine": ["thinkphp/base.php", "thinkphp/library/think/App.php", "thinkphp/library/think/Request.php"],
+             "version": {"type": "file", "file": "thinkphp/base.php", "regular": r"THINK_VERSION.+(\d+.\d+.\d+)",
+                         "vul_version": "5.0.0~5.0.24", "ver_type": "range"},
+             "repair_file": {"type": "file", "file": [
+                 {"file": "thinkphp/library/think/App.php", "regular": r'''(!preg_match('/^[A-Za-z](\w|\.)*$/'''},
+                 {"file": "thinkphp/library/think/Request.php",
+                  "regular": '''if (in_array($method, ['GET', 'POST', 'DELETE', 'PUT', 'PATCH']))'''}]},
+             },
+            {"cms_list": ["maccms10"], "dangerous": "3", "cms_name": "Thinkphp", "ps": "Thinkphp5.0.15 sql injection ",
+             "name": "Thinkphp5.0.15 sql injection ",
+             "determine": ["thinkphp/base.php", "thinkphp/library/think/App.php",
+                           "thinkphp/library/think/Request.php"],
+             "version": {"type": "file", "file": "thinkphp/base.php", "regular": r"THINK_VERSION.+(\d+.\d+.\d+)",
+                         "vul_version": "5.0.13~5.0.15", "ver_type": "range"},
+             "repair_file": {"type": "file", "file": [
+                 {"file": "thinkphp/library/think/db/Builder.php",
+                  "regular": '''if ($key == $val[1]) {
+                                $result[$item] = $this->parseKey($val[1]) . '+' . floatval($val[2]);
+                            }'''}]},
+             },
+            {"cms_list": ["maccms10"], "dangerous": "3", "cms_name": "Thinkphp", "ps": "Thinkphp5.0.10 sql injection ",
+             "name": "Thinkphp5.0.10 sql injection ",
+             "determine": ["thinkphp/base.php", "thinkphp/library/think/App.php",
+                           "thinkphp/library/think/Request.php"],
+             "version": {"type": "file", "file": "thinkphp/base.php", "regular": r"THINK_VERSION.+(\d+.\d+.\d+)",
+                         "vul_version": "5.0.10~5.0.10", "ver_type": "range"},
+             "repair_file": {"type": "file", "file": [
+                 {"file": "thinkphp/library/think/Request.php",
+                  "regular": '''preg_match('/^(EXP|NEQ|GT|EGT|LT|ELT|OR|XOR|LIKE|NOTLIKE|NOT LIKE|NOT BETWEEN|NOTBETWEEN|BETWEEN|NOTIN|NOT IN|IN)$/i'''}]},
+             },
+            {"cms_list": ["maccms10"], "dangerous": "3", "cms_name": "Thinkphp",
+             "ps": "Thinkphp5.0.0 ~ Thinkphp5.0.21 sql injection ", "name": "Thinkphp5.0.21 sql injection ",
+             "determine": ["thinkphp/base.php", "thinkphp/library/think/App.php",
+                           "thinkphp/library/think/Request.php"],
+             "version": {"type": "file", "file": "thinkphp/base.php", "regular": r"THINK_VERSION.+(\d+.\d+.\d+)",
+                         "vul_version": "5.0.0~5.0.21", "ver_type": "range"},
+             "repair_file": {"type": "file", "file": [
+                 {"file": "thinkphp/library/think/db/builder/Mysql.php",
+                  "regular":r'''if ($strict && !preg_match('/^[\w\.\*]+$/', $key))'''}]},
+             },
+            {"cms_list": ["maccms10"], "dangerous": "3", "cms_name": "Thinkphp", "ps": "Thinkphp5.0.18 The file contains vulnerabilities",
+             "name": "Thinkphp5.0.18 The file contains vulnerabilities",
+             "determine": ["thinkphp/base.php", "thinkphp/library/think/App.php",
+                           "thinkphp/library/think/Request.php"],
+             "version": {"type": "file", "file": "thinkphp/base.php", "regular": r"THINK_VERSION.+(\d+.\d+.\d+)",
+                         "vul_version": "5.0.0~5.0.18", "ver_type": "range"},
+             "repair_file": {"type": "file", "file": [
+                 {"file": "thinkphp/library/think/template/driver/File.php",
+                  "regular": '''$this->cacheFile = $cacheFile;'''}]},
+             },
+            {"cms_list": ["maccms10"], "dangerous": "4", "cms_name": "Thinkphp", "ps": "Thinkphp5.0.10 remote code execution",
+             "name": "Thinkphp5.0.10 remote code execution",
+             "determine": ["thinkphp/base.php", "thinkphp/library/think/App.php",
+                           "thinkphp/library/think/Request.php"],
+             "version": {"type": "file", "file": "thinkphp/base.php", "regular": r"THINK_VERSION.+(\d+.\d+.\d+)",
+                         "vul_version": "5.0.0~5.0.10", "ver_type": "range"},
+             "repair_file": {"type": "file", "file": [
+                 {"file": "thinkphp/library/think/App.php",
+                  "regular": '''$data   = "<?php\n//" . sprintf('%012d', $expire) . "\n exit();?>;'''}]},
+             },
+            {"cms_list": [], "dangerous": "3", "cms_name": "Wordpress", "ps": "CVE-2022–21661 Wordpress sql injection",
+             "name": "CVE-2022–21661 Wordpress sql injection",
+             "determine": ["wp-includes/version.php", "wp-settings.php", "wp-comments-post.php",
+                           "wp-includes/class-wp-hook.php"],
+             "version": {"type": "file", "file": "wp-includes/version.php", "regular": r"wp_version.+(\d+.\d+.\d+)",
+                         "vul_version": "4.1.0~5.8.2", "ver_type": "range"},
+             "repair_file": {"type": "file", "file": [{"file": "wp-includes/class-wp-tax-query.php",
+                                                       "regular": '''if ( 'slug' === $query['field'] || 'name' === $query['field'] )'''}]}}
+        ]
+        return result
+
+    def getCmsType(self, webinfo, cmsinfo):
+        '''
+        @name 确定CMS类型
+        @author lkq<2022-3-30>
+        @param webinfo   网站信息
+        @param cmsinfo   CMS信息
+        '''
+
+        for i in cmsinfo['determine']:
+            path = webinfo['path'] + '/' + i
+            if not os.path.exists(path):
+                return False
+
+        # 获取cms 的版本
+        if 'cms_name' in webinfo:
+            if webinfo['cms_name'] != cmsinfo['cms_name']:
+                if not cmsinfo['cms_name'] in cmsinfo['cms_list']: return False
+
+        version = self.getCmsVersion(webinfo, cmsinfo)
+        if not version: return False
+        webinfo['version_info'] = version
+        # 判断是否在漏洞版本中
+        if not self.getVersionInfo(version, cmsinfo['version']): return False
+        webinfo['cms_name'] = cmsinfo['cms_name']
+        # 判断该网站是否修复了
+        is_vufix = self.getCmsVersionVulFix(webinfo, cmsinfo)
+        if not is_vufix: return False
+        webinfo['is_vufix'] = True
+        return True
+
+    def getCmsVersion(self, webinfo, cmsinfo):
+        '''
+        @name 获取CMS版本号
+        @author lkq<2022-3-30>
+        @param get
+        '''
+
+        version = cmsinfo["version"]
+        if 'regular_len' in version:
+            info = version['regular_len']
+        else:
+            info = 0
+        if version['type'] == 'file':
+            path = webinfo['path'] + '/' + version['file']
+            # public.print_log(path)
+            if os.path.exists(path):
+                path_info = public.ReadFile(path)
+                if path_info and re.search(version['regular'], path_info):
+                    if not 'cms_name' in webinfo:
+                        webinfo['cms_name'] = cmsinfo['cms_name']
+                    return re.findall(version['regular'], path_info)[info]
+        elif version['type'] == 'single_file':
+            return "1"
+        elif version["type"] == 'is_file':
+            path = webinfo['path'] + '/' + version['file']
+            if os.path.exists(path):
+                return "1"
+        return False
+
+    def getVersionInfo(self, version, versionlist):
+        '''
+        @name 判断当前版本在不在受影响的版本列表中
+        @author lkq<2022-3-30>
+        @param version 版本号
+        @param versionlist 版本号列表
+        '''
+        if versionlist['ver_type'] == 'range':
+            try:
+                versionlist = versionlist['vul_version']
+                start, end = versionlist.split('~')
+                if version.split('.')[0] >= start.split('.')[0] and version.split('.')[0] <= end.split('.')[0]:
+                    start = ''.join(start.split('.'))
+                    end = ''.join(end.split('.'))
+                    version = ''.join(version.split('.'))
+                    if version >= start and version <= end:
+                        return True
+                return False
+            except:
+                return False
+        elif versionlist['ver_type'] == 'list':
+            if version in versionlist['vul_version']:
+                return True
+            return False
+
+    def getCmsVersionVulFix(self, webinfo, cmsinfo):
+        '''
+        @name 判断漏洞是否修复
+        @author lkq<2022-3-30>
+        @param get
+        '''
+        repair_file = cmsinfo['repair_file']
+        if repair_file['type'] == 'file':
+            for i in repair_file['file']:
+                path = webinfo['path'] + '/' + i['file']
+                if os.path.exists(path):
+                    path_info = public.ReadFile(path)
+                    if not i['regular'] in path_info:
+                        return True
+        elif repair_file['type'] == 'single_file':
+            for i in repair_file['file']:
+                path = webinfo['path'] + '/' + i['file']
+                if os.path.exists(path):
+                    path_info = public.ReadFile(path)
+                    if i['regular'] in path_info:
+                        return True
+        elif repair_file['type'] == 'version':
+            return True
+        elif repair_file['type'] == 'is_file':
+            for i in repair_file['file']:
+                path = webinfo['path'] + '/' + i['file']
+                if os.path.exists(path):
+                    return True
+        elif repair_file['type'] == 'phpshell':
+            for i in repair_file['file']:
+                try:
+                    path = webinfo['path'] + '/' + i['file']
+                    public.WriteFile(path, i['phptext'])
+                    dir_name = os.path.dirname(path)
+                    getname = os.path.basename(path)
+                    data = public.ExecShell("cd %s && php %s" % (dir_name, getname))
+                    if len(data) <= 0: return False
+                    if i['result'] in data[0]:
+                        os.remove(path)
+                        return True
+                    else:
+                        os.remove(path)
+                except:
+                    continue
+        return False
+    # ======================面板漏洞扫描 end======================= #

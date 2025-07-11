@@ -143,10 +143,11 @@ def ufw_batch_remove_ip_rule(rule_dict):
 
             chain = 'INPUT' if direction == 'in' else 'OUTPUT' if direction == 'out' else None
             strategy = 'DROP' if action == 'deny' else 'ACCEPT' if action == 'allow' else None
-
-            if (ip in rule_dict and
-                    chain.upper() == rule_dict[ip]['Chain'].upper() and
-                    strategy.upper() == rule_dict[ip]['Strategy'].upper()):
+            if chain and strategy and all([
+                ip in rule_dict,
+                chain.upper() == rule_dict[ip]['Chain'].upper(),
+                strategy.upper() == rule_dict[ip]['Strategy'].upper(),
+            ]):
                 # 如果匹配，跳过这三行（即删除）
                 i += 3
             else:
@@ -196,6 +197,10 @@ def upgrade_countrys(commodel):
     country_list = public.M('firewall_country').select()
     if len(country_list) == 0:
         return
+
+    from safeModelV2.firewallModel import main as firewallModel
+    firewallmodel = firewallModel()
+
     print("-* Area rule data being migrated...")
     for country in country_list:
         ports = country['ports']
@@ -212,15 +217,20 @@ def upgrade_countrys(commodel):
                 )
         else:
             if not ports:
-                public.ExecShell(
+                o, e = public.ExecShell(
                     "firewall-cmd --permanent --direct --remove-rule ipv4 filter INPUT 0 -m set --match-set {} src -j {}".format(
-                        brief, types.upper())
-                )
+                        brief, types.upper()))
+                if e != '':
+                    public.ExecShell(
+                        'firewall-cmd --permanent --remove-rich-rule=\'rule source ipset="{}" {}\''.format(brief,
+                                                                                                           types.upper()))
             else:
-                public.ExecShell(
+                o, e = public.ExecShell(
                     'firewall-cmd --permanent --direct --remove-rule ipv4 filter INPUT 0 -m set --match-set {} src -p tcp --dport {} -j {}'.format(
-                        brief, ports, types.upper())
-                )
+                        brief, ports, types.upper()))
+                if e != '':
+                    public.ExecShell(
+                        'firewall-cmd --permanent --remove-rich-rule=\'rule source ipset="' + brief + '" port port="' + ports + '" protocol=tcp ' + types.upper() + '\'')
 
     commodel.firewall.reload()
     for country in country_list:
@@ -229,24 +239,48 @@ def upgrade_countrys(commodel):
         types = country['types']
 
         print("Rules for relocation areas:{}".format(brief))
-        public.ExecShell("ipset destroy " + brief)
+        o, e = public.ExecShell("ipset destroy " + brief)
+        if e != '':
+            public.ExecShell("firewall-cmd --permanent --delete-ipset=" + brief)
 
         tmp_file = "/tmp/firewall_{}.txt".format(brief)
-        command = '''grep -q "in_bt_country" {filename} || awk '{{print "add in_bt_country_" $2, $3}}' {filename} > {filename}.tmp && mv {filename}.tmp {filename}'''.format(
-            filename=tmp_file)
-        public.ExecShell(command)
 
-        _ipset = "in_bt_country_" + brief
-        public.ExecShell('ipset create {} hash:net maxelem 1000000; ipset restore -f {}'.format(_ipset, tmp_file))
+        if os.path.exists(tmp_file):  # bt 9.5.0之后
+            command = '''grep -q "in_bt_country" {filename} || awk '{{print "add in_bt_country_" $2, $3}}' {filename} > {filename}.tmp && mv {filename}.tmp {filename}'''.format(
+                filename=tmp_file
+            )
+            public.ExecShell(command)
 
-        if ports:
+            _ipset = "in_bt_country_" + brief
             public.ExecShell(
-                'iptables -I IN_BT_Country -m set --match-set {} src -p tcp --destination-port {} -j {}'.format(_ipset,
-                                                                                                                ports,
-                                                                                                                types.upper()))
-        else:
-            public.ExecShell('iptables -I IN_BT_Country -m set --match-set {} src -j {}'.format(_ipset, types.upper()))
-    public.ExecShell("systemctl reload BT-FirewallServices")
+                'ipset create {} hash:net maxelem 1000000; ipset restore -f {}'.format(_ipset, tmp_file)
+            )
+
+            if ports:
+                public.ExecShell(
+                    'iptables -I IN_BT_Country -m set --match-set {} src -p tcp --destination-port {} -j {}'.format(
+                        _ipset,
+                        ports,
+                        types.upper())
+                )
+            else:
+                public.ExecShell(
+                    'iptables -I IN_BT_Country -m set --match-set {} src -j {}'.format(_ipset, types.upper())
+                )
+            public.ExecShell("systemctl reload BT-FirewallServices")
+
+        else:  # bt 9.5.0之前
+            public.M("firewall_country").where("id=?", (country['id'],)).delete()
+            get_tmp = public.dict_obj()
+            get_tmp.country = country['country']
+            get_tmp.types = country['types']
+            get_tmp.ports = country['ports']
+            get_tmp.choose = "all"
+            get_tmp.is_update = True
+            res = firewallmodel.create_countrys(get_tmp)
+            if res['status'] is False:
+                print(f"[ {brief} ] Area rule migrated fail : {res['message']}")
+
     print("-* Area rule data migration completed...")
 
 

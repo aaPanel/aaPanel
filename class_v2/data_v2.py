@@ -7,12 +7,20 @@
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import sys,os,re,time
+
+import requests
+
 if not 'class/' in sys.path:
     sys.path.insert(0,'class/')
 import db,public,panelMysql
 import json
 import public
 from public.validate import Param
+
+try:
+    from BTPanel import cache
+except:
+    cache = None
 
 class data:
     __ERROR_COUNT = 0
@@ -399,6 +407,21 @@ class data:
                     data['data'][i]['quota'] = self.get_database_quota(data['data'][i]['name'])
 
                 if table == 'sites':
+                    if get.get('project_type','') == 'WP2':
+                        # 检测类型表，是否正确
+                        import one_key_wp_v2
+                        ok, msg = one_key_wp_v2.checklist_fields()
+                        if not ok and msg== "no such table: wordpress_onekey":
+                            return public.return_message(0, 0, msg)
+                        elif not ok:
+                            return public.return_message(-1, 0, msg)
+
+                    # 获取网站类型
+                    if get.get('site_type', ''):
+                        site_sql = public.M("wordpress_onekey").select()
+                        site_type = public.M("wp_site_types").where('`id` = ?', (get.get('site_type', ''),)).find()
+                        filtered_data = []
+
                     for i in range(len(data['data'])):
 
                         data['data'][i]['domain'] = SQL.table('domain').where("pid=?",(data['data'][i]['id'],)).count()
@@ -449,13 +472,38 @@ class data:
                         if not data['data'][i].get('rname', ''):
                             data['data'][i]['rname'] = data['data'][i]['name']
                         data["net_flow_info"] = {}
+                        data['data'][i]['ico']=""
+                        data["data"][i]["last_backup_time"]=""
+                        try:
+                            data['data'][i]['last_backup_time']  = public.M("backup").where("pid=? and type=?", (data['data'][i]['id'], "0")).field("addtime").order("id desc").select()[0]["addtime"]
+                        except:
+                            pass
+                        # 拼接路径
+                        try:
+                            import os
+                            ico_b64_path = os.path.join(public.get_panel_path(), "data/site_favs", data['data'][i]['name'] + ".b64")
+
+                            if os.path.exists(ico_b64_path):
+                                data['data'][i]['ico'] = public.readFile(ico_b64_path)
+
+                            # 判断是否启动类型筛选，启动后为数据添加类型
+                            if get.get('site_type', ''):
+                                for type_ in site_sql:
+                                    if data['data'][i]['id'] == type_['s_id'] and site_type['name'] == type_[
+                                        'site_type']:
+                                        data['data'][i]['site_type'] = type_['site_type']
+                                        filtered_data.append(data['data'][i])
+
+                        except:
+                            public.print_log(public.get_error_info())
                     # try:
                     #     net_flow_json_info = json.loads(public.readFile(net_flow_json_file))
                     #     data["net_flow_info"] = net_flow_json_info
                     # except Exception:
                     #     data["net_flow_info"] = {}
-
-
+                    # 判断是否进行了类型筛选
+                    if get.get('site_type', ''):
+                        data['data'] = filtered_data
             elif table == 'firewall':
                 for i in range(len(data['data'])):
                     if data['data'][i]['port'].find(':') != -1 or data['data'][i]['port'].find('.') != -1 or data['data'][i]['port'].find('-') != -1:
@@ -619,7 +667,7 @@ class data:
                            info[sort_key] = ''
 
             data['data'] = sorted(data['data'],key=lambda x:x[sort_key],reverse=reverse)
-            data['data'] = data['data'][plist['shift'] : plist['row'] ]
+            data['data'] = data['data'][plist['shift']: plist['shift'] + plist['row']]
         return data
 
     '''
@@ -907,3 +955,239 @@ class data:
         get.action = 'get_result'
         data = log_analysis.log_analysis().get_result(get)
         return int(data['php']) + int(data['san']) + int(data['sql']) + int(data['xss'])
+
+    # 获取网站监控报表数据
+    def getSiteThirtyTotal(self, get=None):
+        cache_file = os.path.join(public.get_panel_path(), 'plugin/monitor/site_thirty_total.json')
+        result ={}
+        try:
+            version=self.get_plugin_version(os.path.join(public.get_panel_path(),"plugin/monitor/info.json"))
+            version_list=version.split(".")
+            if len(version_list)<3:return result
+            if int(version_list[0])<4:return result
+            if int(version_list[0])==4 and int(version_list[1])<1:return result
+            if int(version_list[0])==4 and int(version_list[2])<2:return result
+            #取网站域名列表
+            domain_list = public.M('sites').where('project_type=?',("PHP")).field('name').select()
+            now_time = int(time.time())
+            start_date = public.format_date(format="%Y-%m-%d", times=now_time - 86400 * 30)
+            end_date = public.format_date(format="%Y-%m-%d", times=now_time)
+            
+            cache_info = {}
+            
+            if get!=None:
+                content = public.readFile(cache_file)
+                
+                if content:
+                    cache_info = json.loads(content)
+            
+            
+            #取网站统计信息
+            for domain in domain_list:
+                result[domain["name"]]={"list":[],"total":{"request":0}}
+                site_requests= {}
+                if get==None:
+                    # 等待500ms
+                    time.sleep(0.1)
+                    args=public.dict_obj()
+                    args.start_date=start_date
+                    args.end_date=end_date
+                    args.part_type="date"
+                    args.SiteName=domain["name"]
+                    site_requests = public.run_plugin("monitor","get_site_total_list_custom",args)
+                    try:
+                        if "list" in site_requests:
+                            result[domain["name"]]["total"]["request"]=site_requests["total"]["request"]
+                            for site in site_requests["list"]:
+                                # 等待100ms
+                                time.sleep(0.03)
+                                result[domain["name"]]["list"].append({"request":site["request"],"date":site["date"]})
+                                
+                            
+                    except Exception as e:
+                        # public.print_log('Error__________ {}'.format(str(e)))
+                        pass
+                    
+                else:
+                    try:
+                        if cache_info and "list" in cache_info[domain["name"]]:
+                            result[domain["name"]]=cache_info[domain["name"]]
+                    except Exception as e:
+                        # public.print_log('Error__________ {}'.format(str(e)))
+                        result[domain["name"]]={}
+        except Exception as e:
+            # public.print_log(public.get_error_info())
+            pass
+        
+        if get==None:
+            public.writeFile(cache_file, json.dumps(result))
+        return {'status': 0, "timestamp": int(time.time()), "message": result}
+        
+    # 获取waf报表数据
+    def getSiteWafConfig(self, get=None):
+        cache_file = os.path.join(public.get_panel_path(), "plugin/btwaf/site_waf_config_php.json")
+        if get!=None:
+            try:
+                result=json.loads(public.readFile(cache_file))
+                if "status" in result:
+                    result={}
+            except Exception as e:
+                result={}
+            return {'status': 0, "timestamp": int(time.time()), "message": result}
+
+        result ={}
+        try:
+            version=self.get_plugin_version(os.path.join(public.get_panel_path(),"plugin/btwaf/info.json"))
+            version_list=version.split(".")
+            if len(version_list)<3:return result
+            if int(version_list[0])<9:return result
+            if int(version_list[0])==9 and int(version_list[1])<6:return result
+            if int(version_list[0])==9 and int(version_list[2])<8:return result
+            get=public.dict_obj()
+            get.p=1
+            get.limit=10000
+            get.search=""
+            result = public.run_plugin("btwaf","get_site_config3",get)
+            if "status" in result:
+                result={}
+            public.writeFile(cache_file, json.dumps(result))
+        except Exception as e:
+            public.print_log(public.get_error_info())
+            pass
+        return result
+    
+
+    def get_plugin_version(self,filename):
+        if os.path.exists(filename):
+            try:
+                with open(filename, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                return data.get("versions")
+            except: return "0.0.0"
+        return "0.0.0"
+
+
+    def find_stored_favicons(self):
+        cur_time = int(time.time())
+        last_find_stored_favicons_time = cache.get('last_find_stored_favicons_time')
+
+        if last_find_stored_favicons_time and cur_time - last_find_stored_favicons_time < 3600:
+            return
+
+        import requests
+        import base64
+
+        site_favs_root = os.path.join(public.get_panel_path(), "data/site_favs")
+
+        if not os.path.exists(site_favs_root):
+            os.makedirs(site_favs_root, 0o755)
+
+        sites = public.S('sites').field('id', 'name', 'path').select()
+
+        reg_obj = re.compile(r'<link (?:rel="(?:shortcut|icon| )+" *|type="image/x-icon" *|href="([^"]+)" *)+[^>]*>')
+
+        for site in sites:
+            site_name = site['name']
+            site_path = site['path']
+            ico_path = os.path.join(site_path, "favicon.ico")
+            stored_ico_path = os.path.join(site_favs_root, site_name + '.ico')
+
+            if not os.path.exists(ico_path) and (not os.path.exists(stored_ico_path) or os.path.getmtime(stored_ico_path) < cur_time - 86400):
+                # 尝试请求favicon.ico
+                domains = public.S('domain').where('pid=?', (site['id'],)).field('name', 'port').select()
+                for domain in domains:
+                    domain_name = domain['name']
+                    port = domain['port'] if domain['port'] else 80
+                    protocol = 'https' if port == 443 else 'http'
+                    url = "{}://127.0.0.1{}/".format(protocol, ':{}'.format(port) if port not in [80, 443] else '')
+
+                   # public.print_log('url: {} {}'.format(domain, url))
+
+                    try:
+                        # 首先尝试直接请求favicon.ico
+                        ico_url = "{}/favicon.ico".format(url.strip('/'))
+
+                        # public.print_log('ico_url: {}'.format(ico_url))
+
+                        # 等待500ms
+                        time.sleep(0.5)
+
+                        try:
+                            ico_response = requests.get(ico_url, headers={
+                                'host': domain_name,
+                                'user-agent': 'aaPanel',
+                            }, verify=False, timeout=15)
+
+                            if ico_response.status_code == 200 and ico_response.headers.get('Content-Type', '').lower() == 'image/x-icon':
+                                ico_content = ico_response.content
+                                with open(stored_ico_path, 'wb') as f:
+                                    f.write(ico_content)
+                                # public.print_log('Successfully fetched favicon.ico from {}'.format(ico_url))
+                                break
+                        except:
+                            pass
+
+                        # 等待500ms
+                        time.sleep(0.5)
+
+                        # 无法获取favicon.ico，尝试从首页中获取
+                        response = requests.get(url, headers={
+                            'host': domain_name,
+                            'user-agent': 'aaPanel',
+                        }, verify=False, allow_redirects=True, timeout=15)
+                        if response.status_code == 200:
+                            # 尝试从首页中获取favicon.ico
+                            m = reg_obj.search(response.text)
+
+                            # public.print_log('matched ico_url: {}'.format(m.group(1) if m else 'None'))
+
+                            if m:
+                                ico_url = m.group(1)
+                                headers = {
+                                        'user-agent': 'aaPanel',
+                                    }
+                                if not ico_url.startswith('http'):
+                                    headers['host'] = domain_name
+                                    # 如果favicon.ico是相对路径，拼接完整URL
+                                    if ico_url.startswith('//') and ico_url[2:].startswith(domain_name):
+                                        ico_url = url + ico_url[2:].split('/', 2)[-1]
+                                    else:
+                                        ico_url = url + ico_url.lstrip('/')
+
+                                # 等待500ms
+                                time.sleep(0.5)
+
+                                try:
+                                    ico_response = requests.get(ico_url, headers=headers, verify=False, timeout=15)
+                                    if ico_response.status_code == 200:
+                                        ico_content = ico_response.content
+                                        with open(stored_ico_path, 'wb') as f:
+                                            f.write(ico_content)
+                                        break  # 成功获取favicon.ico后跳出循环
+                                except requests.RequestException as e:
+                                    public.print_log("Error fetching favicon from {}: {}".format(ico_url, str(e)), _level='error')
+
+                                break  # 成功获取favicon.ico后跳出循环
+                    except requests.RequestException as e:
+                        public.print_log("Error fetching favicon for {}: {}".format(domain_name, str(e)), _level='error')
+
+            if not os.path.exists(ico_path):
+                # 如果仍然没有favicon.ico，尝试从存储的favicon中读取
+                if os.path.exists(stored_ico_path):
+                    ico_path = stored_ico_path
+
+            if os.path.exists(ico_path):
+                try:
+                    with open(ico_path, 'rb') as f:
+                        ico_content = f.read()
+                    base64_ico = "data:image/x-icon;base64," + base64.b64encode(ico_content).decode('utf-8')
+                    public.writeFile(os.path.join(site_favs_root, site_name + '.b64'), base64_ico)
+                except Exception as e:
+                    public.print_log("Error storing favicon for {}: {}".format(site_name, str(e)), _level='error')
+
+        cache.set('last_find_stored_favicons_time', cur_time, timeout=3600 * 2)
+
+    # 获取wp类型
+    def get_wp_classification(self, get=None):
+        data = public.M("wp_site_types").select()
+        return public.return_message(0, 0, data)

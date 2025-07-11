@@ -34,7 +34,12 @@
 			"index_30": "Rapporto sul blocco di oggi >>",
 			"index_31": "Tipo di blocco (oggi)",
 			"index_32": "Blocco di oggi",
-			"index_33": "{0} \n {1}/item, {2}%"
+			"index_33": "{0} \n {1}/item, {2}%",
+			"index_34": "Mappa 3D",
+			"index_35": "Abilita la mappa 3D",
+			"index_36": "Disabilita la mappa 3D",
+			"index_37": "Dopo aver abilitato la mappa 3D, la mappa passerà alla modalità 3D. Confermare?",
+			"index_38": "Dopo aver disabilitato la mappa 3D, la mappa passerà alla modalità 2D. Confermare?"
 		},
 		"Site": {
 			"index_1": "Intercetta l'accesso da IPs maligosi noti di Aapanel",
@@ -840,6 +845,7 @@
 		},
 		"Api": {
 			"overview_1": "Attivazione con un clic in corso, per favore aspetta ...",
+			"overview_2": "Impostazione, per favore aspetta ...",
 			"site_2": "Impostazione dell'interruttore di configurazione globale, attendere ...",
 			"site_3": "Impostazione dello stato del sito, attendere ...",
 			"site_4": "Rilevare l'ambiente CAPTCHA, per favore aspetta ...",

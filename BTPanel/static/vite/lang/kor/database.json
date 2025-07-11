@@ -2,7 +2,7 @@
 	"Database": {
 		"index_1": "DB 추가",
 		"index_2": "루트 비밀번호",
-		"index_3": "phpmyadmin",
+		"index_3": "phpMyAdmin",
 		"index_4": "원격 DB",
 		"index_5": "모두 동기화하십시오",
 		"index_6": "서버에서 DB를 가져옵니다",
@@ -25,7 +25,7 @@
 		"index_17": "존재 ({0})",
 		"index_18": "존재하지 않습니다",
 		"index_19": "위치",
-		"index_20": "phpmyadmin",
+		"index_20": "phpMyAdmin",
 		"index_21": "허가",
 		"index_22": "도구",
 		"index_23": "비밀번호",
@@ -110,7 +110,7 @@
 		},
 		"tools": {
 			"index_1": "데이터베이스 이름 : ",
-			"index_2": "크기:",
+			"index_2": "크기: ",
 			"index_3": "수리하다",
 			"index_4": "최적화",
 			"index_5": "Innodb로 변환하십시오",

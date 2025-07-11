@@ -813,5 +813,11 @@
 	"5b9c0fac87a97a8334f2e21a6137bb35": "Recommandation: il est conseillé de ne pas l'activer pour les services en ligne.",
 	"ab706a5938adcb681b8f2c7e0cae6402": "Avertissement: il s'agit d'une fonctionnalité bêta. Ne l'activez pas pour les services de production !!",
 	"b67a41ea491e086fc87abcfdd3172202": "Veuillez utiliser des expressions régulières; Sauvegardez les expressions originales avant la soumission.",
-	"57322c79b2d81235926ce33864e578de": "Demandez la défense"
+	"57322c79b2d81235926ce33864e578de": "Demandez la défense",
+	"6806d45f993a5a42976a1ecb85ea8553": "Carte 3D",
+	"de572bbd2cfd3c680a1ab9445604f977": "Activer la carte 3D",
+	"3e8859dd023902cb08788fe23ddbacd1": "Désactiver la carte 3D",
+	"1eb909392e6668d574fd03c93b298148": "Après avoir activé la carte 3D, la carte passera en mode 3D. Confirmer?",
+	"54bb63c860b140f07c34d5c5791ba1b7": "Après avoir désactivé la carte 3D, la carte passera en mode 2D. Confirmer?",
+	"6a771b435e66f6502c7d5bac79779564": "Réglage, veuillez attendre ..."
 }

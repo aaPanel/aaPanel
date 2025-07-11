@@ -251,10 +251,9 @@ class aws_s3:
             sys.path.insert(0, '/www/server/panel/plugin/aws_s3')
         try:
             from s3lib.client.aws_s3 import COSClient as cc
-            # from aws_s3_main import aws_s3_main as cc
             self.cc_obj = cc()
-            # self.cc_obj.upload_file = self.cc_obj.upload_file1
-            # self.cc_obj.resumable_upload = self.cc_obj.upload_file1
+            self.cc_obj.upload_file = self.cc_obj.upload_file1
+            self.cc_obj.resumable_upload = self.cc_obj.multipart_upload
             self.cc_obj.authorize()
         except:
             self.flag = False
@@ -548,8 +547,7 @@ class CloudStoraUpload:
         """
         try:
             return self.obj.resumable_upload(file_name, object_name=upload_path, *args, **kwargs)
-        except Exception as e:
-            # print(e)
+        except Exception as _:
             return False
 
     def cloud_delete_dir(self, file_path: str, *args, **kwargs):

@@ -60,9 +60,20 @@ class Lang:
         lang_file = os.path.join(self.getLanguagePath(),lang,'server.json')
         lang_data = {}
 
+        # if os.path.exists(lang_file):
+        #     with open(lang_file,'r',encoding='utf-8') as file:
+        #         lang_data = json.loads(file.read())
+
         if os.path.exists(lang_file):
-            with open(lang_file,'r',encoding='utf-8') as file:
-                lang_data = json.loads(file.read())
+            try:
+                with open(lang_file, 'r', encoding='utf-8') as file:
+                    file_content = file.read().strip()
+                    if file_content:
+                        lang_data = json.loads(file_content)
+                    else:
+                        lang_data = {}
+            except Exception as e:
+                lang_data = {}
         
         lang_content = content
         if lang_data.get(hash):

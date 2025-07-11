@@ -34,7 +34,12 @@
 			"index_30": "Today's Block report >>",
 			"index_31": "Block type (today)",
 			"index_32": "Today's Block",
-			"index_33": "{0}\n{1}/Item, {2}%"
+			"index_33": "{0}\n{1}/Item, {2}%",
+			"index_34": "3D Map",
+			"index_35": "Enable 3D Map",
+			"index_36": "Disable 3D Map",
+			"index_37": "After enabling the 3D map, the map will switch to 3D mode. Confirm?",
+			"index_38": "After disabling the 3D map, the map will switch to 2D mode. Confirm?"
 		},
 		"Site": {
 			"index_1": "Intercept access from known malicious IPs of aaPanel",
@@ -840,6 +845,7 @@
 		},
 		"Api": {
 			"overview_1": "One-click activation in progress, please wait...",
+			"overview_2": "Setting, please wait...",
 			"site_2": "Setting global configuration switch, please wait...",
 			"site_3": "Setting site status, please wait...",
 			"site_4": "Detecting CAPTCHA environment, please wait...",

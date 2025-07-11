@@ -17,7 +17,7 @@
 		"index_15": "플러그인을 설치하십시오",
 		"index_16": "테마를 설치하십시오",
 		"index_17": "작가",
-		"index_18": "wp",
+		"index_18": "WP",
 		"index_19": "평가",
 		"index_20": "설치 성공",
 		"index_21": "WP 로그인",
@@ -81,7 +81,7 @@
 			"import_6": "백업 파일 경로를 입력하십시오"
 		},
 		"TableRow": {
-			"index_1": "WordPress",
+			"index_1": "워드프레스",
 			"index_2": "WP 설정",
 			"index_3": "보호",
 			"index_4": "무결성 점검",
@@ -114,7 +114,7 @@
 			"index_3": "웹 사이트 언어",
 			"index_4": "WPS-Hide-Login",
 			"index_5": "파일 보호",
-			"index_6": "nginx waf",
+			"index_6": "Nginx WAF",
 			"index_7": "핫 링크 보호"
 		},
 		"clone": {

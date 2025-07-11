@@ -813,5 +813,11 @@
 	"5b9c0fac87a97a8334f2e21a6137bb35": "Recomendação: É recomendável não ativar isso para serviços on -line.",
 	"ab706a5938adcb681b8f2c7e0cae6402": "Aviso: este é um recurso beta. Não o habilite para os serviços de produção !!",
 	"b67a41ea491e086fc87abcfdd3172202": "Por favor, use expressões regulares; Backup das expressões originais antes de enviar.",
-	"57322c79b2d81235926ce33864e578de": "Solicitar defesa"
+	"57322c79b2d81235926ce33864e578de": "Solicitar defesa",
+	"6806d45f993a5a42976a1ecb85ea8553": "Mapa 3D",
+	"de572bbd2cfd3c680a1ab9445604f977": "Ativar mapa 3D",
+	"3e8859dd023902cb08788fe23ddbacd1": "Desativar mapa 3D",
+	"1eb909392e6668d574fd03c93b298148": "Depois de ativar o mapa 3D, o mapa mudará para o modo 3D. Confirmar?",
+	"54bb63c860b140f07c34d5c5791ba1b7": "Após desativar o mapa 3D, o mapa mudará para o modo 2D. Confirmar?",
+	"6a771b435e66f6502c7d5bac79779564": "Configuração, por favor, espere ..."
 }

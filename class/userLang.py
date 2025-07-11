@@ -89,7 +89,27 @@ class userLang:
                 ]
             }
             public.writeFile(settings, json.dumps(data))
-        data = json.loads(public.readFile(settings))
+
+        settings_content = public.readFile(settings)
+        try:
+            if settings_content and settings_content.strip():
+                data = json.loads(settings_content)
+            else:
+                data = {}
+        except Exception as e:
+            # public.print_log(f"settings.json 解析失败: {e}")
+            data = {}
+
+        #  保证default字段存在
+        if 'default' not in data or not data['default']:
+            data['default'] = 'en'
+        #  保证languages字段存在
+        if 'languages' not in data or not isinstance(data['languages'], list):
+            data['languages'] = ['en']
+
+
+
+        # data = json.loads(public.readFile(settings))
         if os.path.exists(custom):
             data['languages'].append({
                 "name": "my",

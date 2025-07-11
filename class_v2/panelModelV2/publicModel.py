@@ -97,7 +97,13 @@ class main(panelBase):
                 except:
                     pass
         data['panel']['backup_info'] = self.get_panel_backup_info()
-        data['cdn_status'] = self.get_cdn_status() # 获取CDN代理状态
+
+        # 获取CDN代理状态
+        try:
+            data['cdn_status'] = self.get_cdn_status()
+        except:
+            data['cdn_status'] = False
+
         # install check for first time
         first_time_installed(data)
         return public.return_message(0, 0, data)

@@ -4104,3 +4104,89 @@ CREATE TABLE index_tb(
         import panel_restore_v2 as panel_restore
         pr = panel_restore.panel_restore()
         return pr.get_progress(args)
+
+    # 获取各类型数据库的SQL备份文件list
+    def get_sql_backup(self, get):
+        """
+            @name 获取各类型数据库的SQL备份文件
+            # 替换原获取接口
+            @param p 页码
+            @param limit 每页条数
+            @param search 文件名称过滤
+            @param type_sql 数据库类型，参数示例：mysql、mongodb、pgsql
+        """
+        p = getattr(get, "p", 1)
+        limit = getattr(get, "limit", 10)
+        search = getattr(get, "search", None)
+        type_sql = getattr(get, "type_sql", "")
+        return_js = getattr(get, "return_js", "")
+        # 从设置中获取备份路径
+        backup_path = public.M('config').where("id=?", ('1',)).getField('backup_path')
+        path_root_directory = os.path.join(backup_path, 'database')
+        if not str(p).isdigit():
+            return public.return_message(-1,0, "ParameterError！ p")
+        if not str(limit).isdigit():
+            return public.return_message(-1,0, "ParameterError！limit")
+        if type_sql not in ['mysql', 'mongodb', 'pgsql']:
+            return public.return_message(-1, 0, "ParameterError！type_sql")
+
+        p = int(p)
+        limit = int(limit)
+
+        ext_list = ["sql", "tar.gz", "gz", "zip"]
+
+        backup_list = []
+
+        # 递归获取备份文件
+        def get_dir_backup(backup_dir: str, backup_list: list, is_recursion: bool):
+            if not os.path.exists(backup_dir): return
+            for name in os.listdir(backup_dir):
+                path = os.path.join(backup_dir, name)
+                if os.path.isdir(path) and name == "all_backup": continue  # 跳过全部备份目录
+                if os.path.isfile(path):
+                    ext = name.split(".")[-1]
+                    if ext.lower() not in ext_list: continue
+                    if search is not None and search not in name: continue
+
+                    stat_file = os.stat(path)
+                    path_data = {
+                        "name": name,
+                        "path": path,
+                        "size": stat_file.st_size,
+                        "mtime": int(stat_file.st_mtime),
+                        "ctime": int(stat_file.st_ctime),
+                    }
+                    backup_list.append(path_data)
+                elif os.path.isdir(path) and is_recursion is True:
+                    get_dir_backup(path, backup_list, is_recursion)
+
+        # 获取备份目录，其中mysql手动备份文件在根目录下
+        path_directory = os.path.join(path_root_directory, type_sql)
+        if type_sql == 'mysql':
+            get_dir_backup(path_root_directory, backup_list, False)
+        if os.path.exists(path_directory):
+            get_dir_backup(path_directory, backup_list, True)
+
+        try:
+            from flask import request
+            uri = public.url_encode(request.full_path)
+        except:
+            uri = ''
+        # 包含分页类
+        import page
+        # 实例化分页类
+        page = page.Page()
+        info = {
+            "p": p,
+            "count": len(backup_list),
+            "row": limit,
+            "return_js": return_js,
+            "uri": uri,
+        }
+        page_info = page.GetPage(info)
+
+        start_idx = (int(p) - 1) * limit
+        end_idx = p * limit if p * limit < len(backup_list) else len(backup_list)
+        backup_list.sort(key=lambda data: data["mtime"], reverse=True)
+        backup_list = backup_list[start_idx:end_idx]
+        return public.return_message(0,0,{ "data": backup_list, "page": page_info})

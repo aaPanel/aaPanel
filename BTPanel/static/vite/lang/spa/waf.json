@@ -34,7 +34,12 @@
 			"index_30": "Informe de bloque de hoy >>",
 			"index_31": "Tipo de bloque (hoy)",
 			"index_32": "Bloque de hoy",
-			"index_33": "{0} \n {1}/item, {2}%"
+			"index_33": "{0} \n {1}/item, {2}%",
+			"index_34": "Mapa 3d",
+			"index_35": "Habilitar el mapa 3D",
+			"index_36": "Deshabilitar el mapa 3D",
+			"index_37": "Después de habilitar el mapa 3D, el mapa cambiará al modo 3D. ¿Confirmar?",
+			"index_38": "Después de deshabilitar el mapa 3D, el mapa cambiará al modo 2D. ¿Confirmar?"
 		},
 		"Site": {
 			"index_1": "Intercepto de acceso a partir de IP maliciosos conocidos de Aapanel",
@@ -840,6 +845,7 @@
 		},
 		"Api": {
 			"overview_1": "Activación de un solo clic en progreso, por favor espere ...",
+			"overview_2": "Configuración, por favor espere ...",
 			"site_2": "Configuración del interruptor de configuración global, espere ...",
 			"site_3": "Configuración del estado del sitio, espere ...",
 			"site_4": "Detección del entorno Captcha, por favor espere ...",

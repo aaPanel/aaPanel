@@ -1391,13 +1391,14 @@ fullchain.pem       Paste into certificate input box
     # 替换服务器上的同域名同品牌证书
     def sub_all_cert(self, key_file, pem_file):
         cert_init = self.get_cert_init(pem_file)  # 获取新证书的基本信息
+        if not cert_init:
+            return
         paths = [
             '/www/server/panel/vhost/cert',
             '/www/server/panel/vhost/ssl',
             '/www/server/panel',
             '/www/server/panel/plugin/mail_sys/cert',
         ]
-        # is_panel = False
         for path in paths:
             if not os.path.exists(path):
                 continue
@@ -1415,10 +1416,13 @@ fullchain.pem       Paste into certificate input box
                         continue
                 # 获取目标证书的基本信息
                 to_cert_init = self.get_cert_init(to_pem_file)
-                # 判断证书品牌是否一致
+                # 判断证书是否一致
                 try:
-                    if to_cert_init['issuer'] != cert_init['issuer'] and to_cert_init['issuer'].find(
-                            "Let's Encrypt") == -1 and to_cert_init.get('issuer_O', '') != "Let's Encrypt":
+                    to_issuer_o = to_cert_init.get('issuer_O', '')
+                    cert_issuer_o = cert_init.get('issuer_O', '')
+                    is_let_cert = "Let's Encrypt" in cert_issuer_o
+                    is_same_brand = to_issuer_o == cert_issuer_o
+                    if not is_let_cert and not is_same_brand:
                         continue
                 except:
                     continue
@@ -1434,7 +1438,6 @@ fullchain.pem       Paste into certificate input box
                         is_copy = False
                 if not is_copy:
                     continue
-
                 # 替换新的证书文件和基本信息
                 public.writeFile(
                     to_pem_file, public.readFile(pem_file, 'rb'), 'wb')
@@ -2732,6 +2735,21 @@ fullchain.pem       Paste into certificate input box
             pass
         return orders
 
+    def remove_manual_apply_lock(self, order_index: str) -> None:
+        manual_apply_lock = f"{public.get_panel_path()}/class_v2/ssl_domainModelV2/manual_apply.pl"
+        if os.path.exists(manual_apply_lock):
+            manual_apply = public.readFile(manual_apply_lock)
+            if manual_apply:
+                try:
+                    manual_apply = json.loads(manual_apply)
+                    for k, v in manual_apply.items():
+                        if v == order_index:
+                            del manual_apply[k]
+                            public.writeFile(manual_apply_lock, json.dumps(manual_apply))
+                            break
+                except Exception as e:
+                    public.print_log(f"Error remove manual apply lock file: {e}")
+
     def get_order_detail(self, get):
         """
         订单详情
@@ -2777,8 +2795,8 @@ fullchain.pem       Paste into certificate input box
         endtime = ((data.get('expires', 0) or 0) - datetime.datetime.today().timestamp()) / (60 * 60 * 24)
         if endtime <= 0:
             # 移除锁
+            self.remove_manual_apply_lock(order_index)
             return public.fail_v2("The order has expired. Please apply again!")
-
 
         result = {
             "auths": [],
@@ -2839,6 +2857,8 @@ fullchain.pem       Paste into certificate input box
             return public.fail_v2("The order verification information is lost. Please try to apply again.")
         endtime = ((data.get('expires', 0) or 0) - datetime.datetime.today().timestamp()) / (60 * 60 * 24)
         if endtime <= 0:
+            # 移除锁
+            self.remove_manual_apply_lock(order_index)
             return public.fail_v2("The order has expired. Please apply again.")
         return self.apply_cert_domain([], "dns", "dns", index=order_index)
 
@@ -2976,8 +2996,17 @@ fullchain.pem       Paste into certificate input box
             return True
 
     # ========================= new ==============================
+    def renew_cert(self, get: public.dict_obj):
+        """暂时兼容非常旧的接口"""
+        try:
+            index = get.index
+            return self.renew_cert_v3(index, 30)
+        except Exception:
+            import traceback
+            public.print_log(traceback.format_exc())
+
     def renew_cert_v3(self, index, cycle=30):
-        # ============= make sure corn work ===============
+        # ============= import ===============
         import sys
         panel_path = public.get_panel_path()
         if panel_path + "/class_v2" not in sys.path:
@@ -2985,26 +3014,26 @@ fullchain.pem       Paste into certificate input box
         if not 'class_v2/' in sys.path:
             sys.path.insert(0, 'class_v2/')
         # =============== end ===========================
-
         from ssl_domainModelV2.model import DnsDomainSSL, DnsDomainProvider
         cycle = 30 if not cycle else int(cycle)
         if index:
             ssl_obj = DnsDomainSSL.objects.filter(hash=index)
         else:
-            # 开了自动续签的ssl对象
+            # 开了自动续签的ssl对象, 包括免费,商业
             ssl_obj = DnsDomainSSL.objects.filter(auto_renew=1)
         s = 0
         count = ssl_obj.count()
         write_log("", "wb+")
+        order_list = None  # businiess list
         for ssl in ssl_obj:
             s += 1
             write_log(f"|-Renewing the {s} certificate，There are {count} certificates in total...")
-            if ssl.info.get("issuer") not in (
-                    "R3", "R8", "R11", "R10", "R5"
-            ) and ssl.info.get("issuer_O") != "Let's Encrypt":
-                write_log(
-                    f"|- Domain Subject:【{ssl.subject}】It's not a Let's Encrypt certificate and cannot be renewed!")
-                continue
+            # if ssl.info.get("issuer") not in (
+            #         "R3", "R8", "R11", "R10", "R5"
+            # ) and ssl.info.get("issuer_O") != "Let's Encrypt":
+            #     write_log(
+            #         f"|- Domain Subject:【{ssl.subject}】It's not a Let's Encrypt certificate and cannot be renewed!")
+            #     continue
             # 计算 30 天后的日期
             after_ts = round((time.time() + 86400 * cycle) * 1000)
             if ssl.not_after_ts > after_ts:
@@ -3013,6 +3042,47 @@ fullchain.pem       Paste into certificate input box
                     f" so there is no need for renewal!"
                 )
                 continue
+
+            #  ================   businiess ssl renew =========================
+            if ssl.is_order == 1:
+                from BTPanel import app
+                from ssl_domainModelV2.business_ssl import BusinessSSL
+                with app.app_context():
+                    busines_api = BusinessSSL()
+                    if not order_list: order_list = busines_api.get_order_list().get("message", [])
+                    if not order_list: continue
+                    for order in order_list:
+                        if not (order.get("certId") == ssl.cert_id and order.get("renew", False) is True):
+                            continue
+                        write_log(
+                            f"|- Domain Subject:【{ssl.subject}】Business SSL certificate is being renewed, please wait..."
+                        )
+                        try:
+                            new_get = public.dict_obj
+                            new_get.uc_id = order["uc_id"]
+                            res = busines_api.renew_cert_order(new_get, cert_id=order["certId"])
+                            if res.get("status") == 0:
+                                write_log(
+                                    f"|- Domain Subject:【{ssl.subject}】Business SSL certificate renewal successfully!"
+                                )
+                            else:
+                                write_log(
+                                    f"|- Domain Subject:【{ssl.subject}】Business SSL certificate renewal failed: {res.get('message', 'Unknown error')}"
+                                )
+                        except Exception as e:
+                            write_log(
+                                f"|- Domain Subject:【{ssl.subject}】Business SSL certificate renewal failed: {str(e)}"
+                            )
+                        finally:
+                            busines_api.list_business_ssl(public.to_dict_obj({"p": 1, "limit": "10"}))
+                            break
+                    else:  # for else
+                        write_log(
+                            f"|- Domain Subject:【{ssl.subject}】Business SSL certificate is not is not enabled renew, "
+                            f"can only be skipped."
+                        )
+                        continue
+            #  ================   businiess ssl renew end =========================
 
             auth_type = ssl.auth_info.get("auth_type")
 
@@ -3061,7 +3131,7 @@ fullchain.pem       Paste into certificate input box
 
             # try dns verfication
             provider = DnsDomainProvider.objects.find_one(id=ssl.provider_id)
-            if ssl.provider_id == 0 or not provider:
+            if (ssl.provider_id == 0 or not provider) and ssl.auth_info:
                 write_log(
                     f"|- Domain Subject:【{ssl.subject}】is not found the dns-api info, try to apply, please wait..."
                 )
@@ -3072,7 +3142,8 @@ fullchain.pem       Paste into certificate input box
                 except Exception as e:
                     write_log(e)
                     continue
-            # 判断是否已经不再归属dns api
+
+            # 判断是否有归属的dns api
             not_belong = False
             for i in ssl.dns:
                 temp_root, _ = self.extract_zone(i)
@@ -3192,15 +3263,26 @@ def echo_err(msg):
     exit()
 
 
+def __write(log_file: str, log_str: str, mode="ab+"):
+    if "b" in mode:
+        if isinstance(log_str, str):
+            log_str = log_str.encode("utf-8")
+        log_str += b"\n"
+        with open(log_file, mode) as f:
+            f.write(log_str)
+    else:
+        log_str += "\n"
+        with open(log_file, mode, encoding="utf-8") as f:
+            f.write(log_str)
+    return True
+
+
 def write_log_old(log_str, mode="ab+"):
     if __name__ == "__main__":
         print(log_str)
         return
     _log_file = 'logs/letsencrypt_old.log'
-    with open(_log_file, mode, encoding="utf-8") as f:
-        log_str += "\n"
-        f.write(log_str)
-    return True
+    __write(_log_file, log_str, mode)
 
 
 # 写日志
@@ -3209,10 +3291,7 @@ def write_log(log_str, mode="ab+"):
         print(log_str)
         return
     _log_file = 'logs/letsencrypt.log'
-    with open(_log_file, mode, encoding="utf-8") as f:
-        log_str += "\n"
-        f.write(log_str)
-    return True
+    __write(_log_file, log_str, mode)
 
 
 if __name__ == "__main__":
@@ -3246,7 +3325,7 @@ if __name__ == "__main__":
         write_log(result)
         exit()
 
-    if args.renew_v3:
+    if args.renew_v3 or args.renew_v2 or args.renew:
         sys.path.append(public.get_panel_path())
         p = acme_v2()
         if args.cycle:
@@ -3255,17 +3334,6 @@ if __name__ == "__main__":
             except:
                 args.cycle = None
         p.renew_cert_v3(args.index, args.cycle)
-        exit()
-    # 计划弃置
-    elif args.renew_v2 or args.renew:  # force run v2
-        sys.path.append(public.get_panel_path())
-        p = acme_v2()
-        if args.cycle:
-            try:
-                int(args.cycle)
-            except:
-                args.cycle = None
-        p.renew_cert_v2(args.index, args.cycle)
         exit()
 
     else:

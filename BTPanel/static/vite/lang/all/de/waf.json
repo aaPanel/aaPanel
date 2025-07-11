@@ -813,5 +813,11 @@
 	"5b9c0fac87a97a8334f2e21a6137bb35": "Empfehlung: Es wird empfohlen, dies nicht für Online -Dienste zu aktivieren.",
 	"ab706a5938adcb681b8f2c7e0cae6402": "Warnung: Dies ist eine Beta -Funktion. Aktivieren Sie es nicht für Produktionsdienste !!",
 	"b67a41ea491e086fc87abcfdd3172202": "Bitte verwenden Sie reguläre Ausdrücke; Sichern Sie die ursprünglichen Ausdrücke vor dem Einreichen.",
-	"57322c79b2d81235926ce33864e578de": "Verteidigung anfordern"
+	"57322c79b2d81235926ce33864e578de": "Verteidigung anfordern",
+	"6806d45f993a5a42976a1ecb85ea8553": "3D -Karte",
+	"de572bbd2cfd3c680a1ab9445604f977": "Aktivieren Sie die 3D -Karte",
+	"3e8859dd023902cb08788fe23ddbacd1": "3D -Karte deaktivieren",
+	"1eb909392e6668d574fd03c93b298148": "Nach der Aktivierung der 3D -Karte wechselt die Karte in den 3D -Modus. Bestätigen?",
+	"54bb63c860b140f07c34d5c5791ba1b7": "Nach dem Deaktivieren der 3D -Karte wechselt die Karte in den 2D -Modus. Bestätigen?",
+	"6a771b435e66f6502c7d5bac79779564": "Einstellung, bitte warten ..."
 }

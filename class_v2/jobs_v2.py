@@ -11,6 +11,7 @@ os.chdir('/www/server/panel')
 
 def control_init():
     public.chdck_salt()
+    rep_websocket_conf()
     clear_other_files()
     sql_pacth()
     #disable_putenv('putenv')
@@ -104,7 +105,26 @@ def hide_docker():
     public.writeFile(tip_file,'True')
 
 
+def rep_websocket_conf():
+    """
+        @name 修复websocket配置文件
+        @return void
+    """
+    conf = '''map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''  close;
+}'''
 
+    conf_file = '{}/vhost/nginx/0.websocket.conf'.format(public.get_panel_path())
+    if os.path.exists(conf_file):
+        conf_body = public.readFile(conf_file)
+        if conf_body.find('map $http_upgrade $connection_upgrade') != -1: return
+
+    public.writeFile(conf_file,conf)
+    setupPath = public.get_setup_path()
+    result = public.ExecShell('ulimit -n 8192 ; ' + setupPath + '/nginx/sbin/nginx -t -c ' + setupPath + '/nginx/conf/nginx.conf')
+    if 'connection_upgrade' in result[1]:
+        if os.path.exists(conf_file): os.remove(conf_file)
 
 
 def upgrade_polkit():

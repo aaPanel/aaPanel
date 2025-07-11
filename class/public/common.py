@@ -19,6 +19,7 @@ import fcntl
 import shutil
 import tempfile
 from datetime import datetime
+from .sqlite_easy import Db, SqliteEasy
 
 
 
@@ -135,7 +136,7 @@ def M(table):
 
 
 # Easy Sqlite Toolkit for query
-def S(table_name: typing.Optional[str] = None, db_name: str = 'default'):
+def S(table_name: typing.Optional[str] = None, db_name: str = 'default') -> SqliteEasy:
     from .sqlite_easy import Db
 
     query = Db(db_name).query()
@@ -147,8 +148,7 @@ def S(table_name: typing.Optional[str] = None, db_name: str = 'default'):
 
 
 # Easy Sqlite Toolkit for connection
-def SqliteConn(db_name: str = 'default'):
-    from .sqlite_easy import Db
+def SqliteConn(db_name: str = 'default') -> Db:
     return Db(db_name)
 
 
@@ -616,11 +616,11 @@ def WriteLog(type, logMsg, args=(), not_web=False):
                 logMsg = logMsg.replace(rep, args[i])
         if type in keys: type = _LAN_LOG[type]
 
-        try:
-            if 'login_address' in session:
-                logMsg = '{} {}'.format(session['login_address'], logMsg)
-        except:
-            pass
+        # try:
+        #     if 'login_address' in session:
+        #         logMsg = '{} {}'.format(session['login_address'], logMsg)
+        # except:
+        #     pass
 
         sql = db.Sql()
         mDate = time.strftime('%Y-%m-%d %X', time.localtime())
@@ -1830,11 +1830,20 @@ def IsRestart():
     return True
 
 
-# 加密密码字符
-def hasPwd(password):
-    import crypt
-    return crypt.crypt(password, password)
+# # 加密密码字符
+# def hasPwd(password):
+#     import crypt
+#     return crypt.crypt(password, password)
 
+def hasPwd(password: str) -> str:
+    import bcrypt
+    # 将密码转换为字节
+    password_bytes = password.encode('utf-8')
+    # 生成随机盐值并哈希
+    salt = bcrypt.gensalt()
+    hashed_bytes = bcrypt.hashpw(password_bytes, salt)
+    # 转回字符串
+    return hashed_bytes.decode('utf-8')
 
 def getDate(format='%Y-%m-%d %X'):
     # 取格式时间

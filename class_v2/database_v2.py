@@ -497,9 +497,9 @@ class database(datatool.datatools):
             ).count():
                 return public.fail_v2('Database exists!')
 
-            if sql.where("name=?", (data_name)).count():
+            if sql.where("name=? AND LOWER(type)=LOWER('mysql')", (data_name)).count():
                 return public.return_message(-1, 0, public.lang("Database exists!"))
-            if sql.where("username=?", (username)).count():
+            if sql.where("username=? AND LOWER(type)=LOWER('mysql')", (username)).count():
                 return public.return_message(-1, 0, 'The user name already exists. For security reasons, we do not allow '
                                                    'one database user to manage multiple databases')
             address = get['address'].strip()
@@ -507,7 +507,6 @@ class database(datatool.datatools):
                 return public.return_message(-1, 0, 'If the access permission is [Specified IP], '
                                                     'you need to enter the IP address!')
 
-            user = '是'
             password = data_pwd
 
             codeing = get['codeing']
@@ -664,8 +663,7 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
         result = mysql_obj.execute("grant all privileges on `%s`.* to `%s`@`localhost`" % (dbname, username))
         if str(result).find('1044') != -1:
             mysql_obj.execute(
-                "grant SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER,CREATE TEMPORARY TABLES,"
-                "LOCK TABLES,EXECUTE,CREATE VIEW,SHOW VIEW,EVENT,TRIGGER on `%s`.* to `%s`@`localhost`" % (
+                "grant SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER,CREATE TEMPORARY TABLES,LOCK TABLES,EXECUTE,CREATE VIEW,SHOW VIEW,EVENT,TRIGGER on `%s`.* to `%s`@`localhost`" % (
                     dbname, username
                 )
             )
@@ -674,16 +672,15 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
                 "update mysql.user set ssl_type='' where user='%s' and host='localhost'" % username
             )
 
-        for a in address.split(','):
+        for a in address.strip("\n").split(','):
             if not a:
                 continue
-            mysql_obj.execute("CREATE USER `%s`@`%s` IDENTIFIED BY '%s'" % (username, a, password))
+            mysql_obj.execute("CREATE USER `{}`@`{}` IDENTIFIED BY '{}'".format(username, a, password))
             result = mysql_obj.execute("grant all privileges on `%s`.* to `%s`@`%s`" % (dbname, username, a))
             if str(result).find('1044') != -1:
                 mysql_obj.execute(
-                    "grant SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER,CREATE TEMPORARY TABLES,"
-                    "LOCK TABLES,EXECUTE,CREATE VIEW,SHOW VIEW,EVENT,TRIGGER on `%s`.* to `%s`@`%s` %s" % (
-                        dbname, username, a, ssl
+                    "grant SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER,CREATE TEMPORARY TABLES,LOCK TABLES,EXECUTE,CREATE VIEW,SHOW VIEW,EVENT,TRIGGER on `%s`.* to `%s`@`%s`" % (
+                        dbname, username, a
                     )
                 )
         mysql_obj.execute("flush privileges")
@@ -1301,7 +1298,6 @@ SetLink
 
         public.write_log_gettext("Database manager", 'Successfully modifyied password for database [{}]!', (name,))
         return public.return_message(0, 0, public.lang("Successfully modifyied password for database [{}]!", name))
-
 
     # 备份数据库 同步国内2025/5/24
     def ToBackup(self, get):
@@ -2436,19 +2432,26 @@ SetLink
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        db_name = get['name']
+        name = get['name']
+        db_name = public.M('databases').where("username=? AND LOWER(type)=LOWER('mysql')", name).getField('name')
         mysql_obj = public.get_mysql_obj(db_name)
         if mysql_obj is False:
             return public.return_message(-1, 0, "Failed to connect to database")
-        user_name = public.M('databases').where("username=? AND LOWER(type)=LOWER('mysql')", db_name).getField('username')
-        results = mysql_obj.query(
-            "SELECT Host, ssl_type FROM mysql.user WHERE User='%s' AND Host!='localhost'" % user_name
+        # todo db ssl_type 计划移除
+        users = mysql_obj.query(
+            "select Host, ssl_type from mysql.user where User='" + name + "' AND Host!='localhost'"
         )
-        self.__check_mysql_query_error(results)
+        self.__check_mysql_query_error(users)
         try:
-            permission = [x[0] for x in results if x[0]]
-            ssl_type = [x[1] for x in results if x[1]]
-            permission = '127.0.0.1' if len(permission) < 1 else ','.join(permission)
+            users = self.map_to_list(users)
+            ssl_type = [x[1] for x in users if x[1]]
+            if len(users) < 1:
+                permission = "127.0.0.1"
+            else:
+                accs = []
+                for c in users:
+                    accs.append(c[0])
+                permission = ','.join(accs)
         except Exception as e:
             public.print_log("error info: {}".format(e))
             permission = '127.0.0.1'
@@ -2473,29 +2476,46 @@ SetLink
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        user_name = get['name']
-        access = get['access'].strip()
-        ssl = get.ssl if hasattr(get, 'ssl') else ''
+        names = get['name'].split(',')
+        set_phpv_successfully = []
+        set_phpv_failed = {}
+        for name in names:
+            try:
+                db_find = public.M('databases').where("username=? AND LOWER(type)=LOWER('mysql')", (name,)).find()
+                db_name = db_find['name']
+                self.sid = db_find['sid']
+                mysql_obj = public.get_mysql_obj(db_name)
+                access = get['access'].strip()
+                if access in ['']:
+                    return public.fail_v2(public.lang('IP not found!'))
+                # todo db ssl 计划移除
+                ssl = get.ssl if hasattr(get, 'ssl') else ''
+                if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get)["message"].get("status"):
+                    return public.return_message(-1, 0, public.lang(
+                        "SSL is not enabled in the database, please open it in the Mysql manager first"
+                    ))
 
-        if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get)["message"].get("status"):
-            return public.return_message(-1, 0, public.lang(
-                "SSL is not enabled in the database, please open it in the Mysql manager first"
-            ))
+                password = public.M('databases').where(
+                    "username=? AND LOWER(type)=LOWER('mysql')", (name,)
+                ).getField('password')
+                result = mysql_obj.query("show databases")
+                isError = self.IsSqlError(result)
+                if isError is not None:
+                    return public.fail_v2(public.lang(isError))
+                
+                users = mysql_obj.query("select Host from mysql.user where User='" + name + "' AND Host!='localhost'")
+                for us in users:
+                    mysql_obj.execute("drop user `{name}`@`{host}`".format(name=name, host=us[0]))
 
-        db_find = public.M('databases').where('username=?', (user_name,)).find()
-        db_name = db_find['name']
-        password = db_find['password']
-        mysql_obj = public.get_mysql_obj(db_name)
-        hosts = mysql_obj.query(
-            "SELECT Host FROM mysql.user WHERE User='%s' AND Host!='localhost'" % user_name
-        )
-        self.__check_mysql_query_error(hosts)
-        for host in hosts:
-            mysql_obj.execute("DROP user '%s'@'%s'" % (user_name, host[0]))
+                self.__CreateUsers(db_name, name, password, access)
+                set_phpv_successfully.append(db_name)
+            except Exception as e:
+                set_phpv_failed[name] = f"set fail: {e}"
+                pass
 
-        self.sid = db_find['sid']
-        self.__CreateUsers(db_name, user_name, password, access, ssl)
-        return public.return_message(0, 0, public.lang("Setup successfully!"))
+        if not set_phpv_failed:
+            return public.return_message(0, 0, public.lang("Setup successfully!"))
+        return public.fail_v2(f"Setup failed! {set_phpv_failed}")
 
     # 获取数据库配置信息
     def GetMySQLInfo(self, get):
@@ -3000,9 +3020,9 @@ SetLink
         result = {}
         for id in ids:
             if not is_pid:
-                x = public.M('databases').where("id=? AND LOWER(type)=LOWER('mysql')", id).field('id,sid,pid,name,type,ps,addtime').find()
+                x = public.M('databases').where("id=?", id).field('id,sid,pid,name,type,ps,addtime').find()
             else:
-                x = public.M('databases').where("pid=? AND LOWER(type)=LOWER('mysql')", id).field('id,sid,pid,name,ps,type,addtime').find()
+                x = public.M('databases').where("pid=?", id).field('id,sid,pid,name,ps,type,addtime').find()
             if not x: continue
             x['backup_count'] = public.M('backup').where("pid=? AND type=?", (x['id'], '1')).count()
             if (x['type']).lower() == 'mysql':
@@ -3016,7 +3036,6 @@ SetLink
                     get['data'] = {'db_id': x['id']}
                     get['mod_name'] = x['type'].lower()
                     get['def_name'] = 'get_database_size_by_id'
-
                     x['total'] = project_obj.model(get)
                 except:
                     x['total'] = int(public.get_database_size_by_id(x['id']))

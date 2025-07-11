@@ -10,10 +10,11 @@ import time
 
 import public
 from BTPanel import app
+from acme_v2 import acme_v2
 from public.validate import Param
 from ssl_domainModelV2.api import DomainObject
 from ssl_domainModelV2.model import DnsDomainProvider, DnsDomainSSL, DnsDomainRecord
-from ssl_domainModelV2.service import CertHandler
+from ssl_domainModelV2.service import CertHandler, SyncService
 
 
 # noinspection PyUnusedLocal
@@ -136,6 +137,8 @@ class BusinessSSL(object):
     # 商业证书订单列表
     def get_order_list(self, get=None):
         result = self.request("cert/user/list")
+        if result.get("success") is False:
+            return public.fail_v2(public.lang("Failed to get order list, please try again later!"))
         return public.success_v2(result.get("res"))
 
     # 获取网站运行目录
@@ -308,7 +311,7 @@ class BusinessSSL(object):
                         f"DCVdnsHost={DCVdnsHost}, DCVdnsType={DCVdnsType}, domainName root={root}"
                     )
                     return
-
+                SyncService().records_process(provider_obj=provider, all_domains=[root])
                 record = DnsDomainRecord.objects.filter(
                     provider_id=provider.id,
                     domain=root,
@@ -317,6 +320,16 @@ class BusinessSSL(object):
                 ).first()
                 if record:
                     provider.model_delete_dns_record(record.id)
+
+    @staticmethod
+    def _replace_all_cert(ssl_info: dict):
+        try:
+            acme_v2().sub_all_cert(
+                key_file=os.path.join(ssl_info["path"], "privkey.pem"),
+                pem_file=os.path.join(ssl_info["path"], "fullchain.pem"),
+            )
+        except Exception as e:
+            public.print_log("replace business cert error: {}".format(e))
 
     # 验证URL是否匹配
     def check_url_txt(self, args, timeout=5):
@@ -345,73 +358,80 @@ class BusinessSSL(object):
 
     # 获取商业证书验证结果, 包含验证信息
     def get_verify_result(self, args):
-        self.__PDATA['uc_id'] = args.uc_id
-        res = self.request('cert/user/validate')
-        if res["success"] is False:
-            return public.fail_v2(res)
-        verify_info = res['res']
+        try:
+            self.__PDATA['uc_id'] = args.uc_id
+            res = self.request('cert/user/validate')
+            if res.get("success", False) is False:
+                return public.fail_v2(
+                    res.get("res", "Failed to get verification result, please try again later!")
+                )
+            verify_info = res['res']
 
-        if verify_info['status'] in ['COMPLETE', False]:
-            return public.success_v2(verify_info)
+            if verify_info['status'] in ['COMPLETE', False]:
+                return public.success_v2(verify_info)
 
-        is_file_verify = 'CNAME_CSR_HASH' != verify_info['data']['dcvList'][0]['dcvMethod']
-        verify_info['paths'] = []
-        verify_info['hosts'] = []
-        if verify_info['data']['application']['status'] == 'ongoing':
-            return public.fail_v2(
-                public.lang("In verification, please contact aaPanel if the audit still fails after 24 hours")
-            )
+            is_file_verify = 'CNAME_CSR_HASH' != verify_info['data']['dcvList'][0]['dcvMethod']
+            verify_info['paths'] = []
+            verify_info['hosts'] = []
+            if verify_info['data']['application']['status'] == 'ongoing':
+                return public.fail_v2(
+                    public.lang("In verification, please contact aaPanel if the audit still fails after 24 hours")
+                )
 
-        for dinfo in verify_info['data']['dcvList']:
-            is_https = dinfo['dcvMethod'] == 'HTTPS_CSR_HASH'
-            if is_https:
-                is_https = 's'
-            else:
-                is_https = ''
-            domain = dinfo['domainName']
-            if domain[:2] == '*.':
-                domain = domain[2:]
-            dinfo['domainName'] = domain
-
-            if is_file_verify:
-                # 判断是否是Springboot 项目
-                if public.M('sites').where('id=?', (
-                        public.M('domain').where('name=?', (dinfo['domainName'])).getField('pid'),)).getField(
-                    'project_type') == 'Java' or public.M('sites').where('id=?', (
-                        public.M('domain').where('name=?', (dinfo['domainName'])).getField('pid'),)).getField(
-                    'project_type') == 'Go' or public.M('sites').where('id=?', (
-                        public.M('domain').where('name=?', (dinfo['domainName'])).getField('pid'),)).getField(
-                    'project_type') == 'Other':
-                    siteRunPath = '/www/wwwroot/java_node_ssl'
+            for dinfo in verify_info['data']['dcvList']:
+                is_https = dinfo['dcvMethod'] == 'HTTPS_CSR_HASH'
+                if is_https:
+                    is_https = 's'
                 else:
-                    siteRunPath = self._get_domain_run_path(domain)
-                # if domain[:4] == 'www.': domain = domain[4:]
-                status = 0
-                url = 'http' + is_https + '://' + domain + '/.well-known/pki-validation/' + verify_info['data'][
-                    'DCVfileName']
-                get = public.dict_obj()
-                get.url = url
-                get.content = verify_info['data']['DCVfileContent']
-                status = self.check_url_txt(get)
-
-                verify_info['paths'].append({'url': url, 'status': status})
-                if not siteRunPath:
-                    continue
-
-                verify_path = siteRunPath + '/.well-known/pki-validation'
-                if not os.path.exists(verify_path):
-                    os.makedirs(verify_path)
-                verify_file = verify_path + '/' + verify_info['data']['DCVfileName']
-                if os.path.exists(verify_file):
-                    continue
-                public.writeFile(verify_file, verify_info['data']['DCVfileContent'])
-            else:
-                # if domain[:4] == 'www.': domain = domain[4:]
-                domain, subb = public.get_root_domain(domain)
+                    is_https = ''
+                domain = dinfo['domainName']
+                if domain[:2] == '*.':
+                    domain = domain[2:]
                 dinfo['domainName'] = domain
-                verify_info['hosts'].append(verify_info['data']['DCVdnsHost'] + '.' + domain)
 
-        return public.success_v2(verify_info)
+                if is_file_verify:
+                    # 判断是否是Springboot 项目
+                    if public.M('sites').where('id=?', (
+                            public.M('domain').where('name=?', (dinfo['domainName'])).getField('pid'),)).getField(
+                        'project_type') == 'Java' or public.M('sites').where('id=?', (
+                            public.M('domain').where('name=?', (dinfo['domainName'])).getField('pid'),)).getField(
+                        'project_type') == 'Go' or public.M('sites').where('id=?', (
+                            public.M('domain').where('name=?', (dinfo['domainName'])).getField('pid'),)).getField(
+                        'project_type') == 'Other':
+                        siteRunPath = '/www/wwwroot/java_node_ssl'
+                    else:
+                        siteRunPath = self._get_domain_run_path(domain)
+                    # if domain[:4] == 'www.': domain = domain[4:]
+                    status = 0
+                    url = 'http' + is_https + '://' + domain + '/.well-known/pki-validation/' + verify_info['data'][
+                        'DCVfileName']
+                    get = public.dict_obj()
+                    get.url = url
+                    get.content = verify_info['data']['DCVfileContent']
+                    status = self.check_url_txt(get)
+
+                    verify_info['paths'].append({'url': url, 'status': status})
+                    if not siteRunPath:
+                        continue
+
+                    verify_path = siteRunPath + '/.well-known/pki-validation'
+                    if not os.path.exists(verify_path):
+                        os.makedirs(verify_path)
+                    verify_file = verify_path + '/' + verify_info['data']['DCVfileName']
+                    if os.path.exists(verify_file):
+                        continue
+                    public.writeFile(verify_file, verify_info['data']['DCVfileContent'])
+                else:
+                    # if domain[:4] == 'www.': domain = domain[4:]
+                    domain, subb = public.get_root_domain(domain)
+                    dinfo['domainName'] = domain
+                    if verify_info['data'].get('DCVdnsHost'):
+                        verify_info['hosts'].append(verify_info['data']['DCVdnsHost'] + '.' + domain)
+
+            return public.success_v2(verify_info)
+        except Exception as e:
+            return public.fail_v2("Failed to get verification result, please try again later!")
+
 
     # 下载证书
     def download_cert(self, get):
@@ -437,6 +457,7 @@ class BusinessSSL(object):
             hash_ = handler.get_hash(cert_pem)
             # cert maybe uploaded to the free pages, resave.
             DnsDomainSSL.objects.filter(hash=hash_).delete()
+            # 入库, 继承user_for
             ssl_info = handler.save_by_data(
                 cert_pem=cert_pem,
                 private_key=cert_private,
@@ -446,27 +467,90 @@ class BusinessSSL(object):
                 }
             )
             if ssl_info:
-                try:
+                try:  # 首次入库替换证书
+                    self._replace_all_cert(ssl_info)
+                except Exception as e1:
+                    public.print_log(f"replace business cert error: {e1}")
+                try:  # 首次入库尝试移除caname
                     task = threading.Thread(
                         target=self._remove_caname,
                         args=(order.get("uc_id"), ssl_info,)
                     )
                     task.start()
                 except Exception as err:
-                    public.print_log(f"remove caname error: {err}")
+                    public.print_log(f"remove business ssl caname error: {err}")
         except Exception as e:
             public.print_log(f"update business ssl error: {e}")
             return
 
-    # 商业证书列表
-    def list_business_ssl(self, get):
+
+    @staticmethod
+    def find_next_cert(cert_id: str):
+        if not cert_id:
+            return None
         try:
-            get.validate([
-                Param("p").Integer(),
-                Param("limit").String(),
-            ], [
-                public.validate.trim_filter(),
-            ])
+            while 1:
+                time.sleep(3)
+                order_list = BusinessSSL().get_order_list().get("message", [])
+                for o in order_list:
+                    if o.get("p_certId") == cert_id:
+                        return o
+        except Exception as e:
+            public.print_log(f"find_cert error: {e}")
+            raise Exception(f"Failed to find cert for {cert_id}, please try again later!")
+
+
+    # 商业续签
+    def renew_cert_order(self, get, cert_id: str):
+        """
+        @name 商业证书续签
+        首次续签请求续签然后verify轮询
+        cert_id 续签得cert_id, 可能会被不断重签, 需要不断轮询获取最新的cert_id去验证
+        """
+
+        self.__PDATA['uc_id'] = get.uc_id
+        result = self.request('cert/user/renew')
+        count = 99
+        try:
+            new_order = None
+            cur_cert_id = cert_id
+            while count >= 0:
+                count -= 1
+                if not new_order:
+                    new_order = self.find_next_cert(cur_cert_id)
+                # 验证 new_order 订单
+                args = public.dict_obj
+                args.uc_id = new_order.get("uc_id")
+                time.sleep(3)
+                verify = self.get_verify_result(args)
+                if verify.get("status") == 0:
+                    if verify.get("message").get("status") == "REISSUED":
+                        # new_order has been REISSUED, update cur_cert_id, reset new_order
+                        cur_cert_id = new_order['certId']
+                        new_order = None
+                        continue
+
+                    if verify.get("message").get("status") == "COMPLETE":
+                        return public.success_v2("success")
+        except Exception as e:
+            return public.fail_v2("Failed to renew certificate, please try again later: {}".format(e))
+
+        finally:
+            # it will renew db cert
+            self.list_business_ssl(public.to_dict_obj({"p": 1, "limit": "10"}))
+
+        return public.fail_v2("failed to verify certificate")
+
+    # 商业证书列表
+    def list_business_ssl(self, get=None):
+        try:
+            if get:
+                get.validate([
+                    Param("p").Integer(),
+                    Param("limit").String(),
+                ], [
+                    public.validate.trim_filter(),
+                ])
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
@@ -474,24 +558,30 @@ class BusinessSSL(object):
         org_orders = self.get_order_list()
         if org_orders.get("status") != 0:
             return public.fail_v2("Failed To Get Order List, Please Try Again Later")
+        if not isinstance(org_orders.get("message"), list):
+            return public.fail_v2("Failed to get order list, please try again later!")
+
+        msg = "Get Business SSL Order Successfully"
+        if len(org_orders.get("message")) == 0:
+            DnsDomainSSL.objects.filter(is_order=1).delete()
+            return public.success_v2({"data": [], "total": 0, "msg": msg})
 
         res = []
-        if isinstance(org_orders.get("message"), list):
-            msg = "Get Business SSL Order Successfully"
-            if len(org_orders.get("message")) == 0:
-                DnsDomainSSL.objects.filter(is_order=1).delete()
-            for o in org_orders.get("message"):
-                if o.get("order_status") == "COMPLETE" and o.get("certId"):
-                    self._save_ssl(o)
-                else:
-                    DnsDomainSSL.objects.filter(
-                        order_info__pid=o.get("pid"),
-                        order_info__uc_id=o.get("uc_id"),
-                        order_info__oid=o.get("oid"),
-                    ).delete()
-                    res.append({"order_info": o})
-        else:
-            msg = "Failed To Connect To Official Website, Please Try Again Later!"
+        org_orders["message"].sort(key=lambda i: i.get("uc_id"))
+        for o in org_orders["message"]:
+            if o.get("order_status") == "COMPLETE" and o.get("certId"):
+                if bool([x for x in org_orders["message"] if x.get("p_certId") == o.get("certId")]):
+                    continue
+                self._save_ssl(o)
+            else:
+                DnsDomainSSL.objects.filter(
+                    order_info__pid=o.get("pid"),
+                    order_info__uc_id=o.get("uc_id"),
+                    order_info__oid=o.get("oid"),
+                ).delete()
+                if o.get("order_status") == "REISSUED":
+                    continue
+                res.append({"order_info": o})
 
         page = int(getattr(get, "p", 1))
         limit = int(getattr(get, "limit", 100))
@@ -507,6 +597,7 @@ class BusinessSSL(object):
                 "end_time": DomainObject._end_time(ssl.not_after),
                 "end_date": ssl.not_after,
                 "last_apply_time": ssl.info.get("notBefore", ""),
+                "auto_renew": ssl.auto_renew,
                 "cert": {
                     "csr": public.readFile(ssl.path + "/fullchain.pem"),  # 证书
                     "key": public.readFile(ssl.path + "/privkey.pem"),  # 密钥

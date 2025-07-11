@@ -595,5 +595,6 @@
 	"75f24fd22bcdebf788c00df6721f4faf": "Efek default: Ganti semua 'http://www.aapanel.com' dengan 'https://www.aapanel.com'.",
 	"6cb377a9cc9c0a595f359c57158418bb": "Websocket global diaktifkan dan tidak diizinkan dinonaktifkan secara individual",
 	"130f00db5ce836a6b86e3175bf893fd1": "Hapus proyek proxy terbalik",
-	"fcdb0820b609e6bcb1a661a095274b69": "Ganti semua kata kunci yang cocok"
+	"fcdb0820b609e6bcb1a661a095274b69": "Ganti semua kata kunci yang cocok",
+	"3293b90f17c2a86dff994a657361e810": "{0} hari"
 }

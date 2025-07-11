@@ -5,6 +5,7 @@ from functools import reduce
 from itertools import chain
 from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable
 
+import public
 from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
 from public.sqlite_easy import Db
@@ -669,7 +670,9 @@ class QuerySet(Generic[M]):
         获取数量
         :return: int
         """
-        return self._query.fork().count()
+        if self._cache is None:
+            self.__execute()
+        return len(self._cache) if self._cache else 0
 
     def as_list(self) -> list:
         """
@@ -941,9 +944,8 @@ class aaMigrate:
                 self.__query.execute_script(combined_sql)
 
             return True
-        except Exception:
-            import traceback
-            print(traceback.format_exc())
+        except:
+            pass
 
 
 class aaManager:

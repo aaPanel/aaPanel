@@ -208,3 +208,8 @@ class BaseTask:
             ">IPAddress: {}(Internet) {}(Internal)".format(push_public_data['ip'], push_public_data['local_ip']),
             ">SendingTime: " + push_public_data['time']
         ])
+
+class BaseTaskViewMsg:
+
+    def get_msg(self, task: dict) -> Optional[str]:
+        return ""

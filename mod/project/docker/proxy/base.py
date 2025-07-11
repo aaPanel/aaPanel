@@ -87,7 +87,7 @@ class main():
                 "return_resource": "404",
                 "http_status": False,
                 "domains": "",
-                "security_conf": "    #SECURITY-START 防盗链配置"
+                "security_conf": "    #SECURITY-START Hotlink protection configuration"
                                  "\n    location ~ .*\.({static_resource})$"
                                  "\n    {{\n        expires      {expires};"
                                  "\n        access_log /dev/null;"
@@ -419,7 +419,7 @@ server {{
         from mod.base.web_conf import util
         webserver = util.webserver()
         if webserver != "nginx" or webserver is None:
-            return public.returnResult(status=False, msg="仅支持Nginx，请安装Nginx后再使用！")
+            return public.returnResult(status=False, msg="Only Nginx is supported. Please install Nginx before using it!")
 
         from panelSite import panelSite
         site_obj = panelSite()
@@ -429,7 +429,7 @@ server {{
         if not wc_err:
             return public.returnResult(
                 status=False,
-                msg='ERROR: 检测到配置文件有错误,请先排除后再操作<br><br><a style="color:red;">' +
+                msg='ERROR: There is an error in the configuration file, please exclude it before operation<br><br><a style="color:red;">' +
                     wc_err.replace("\n", '<br>') + '</a>'
             )
         get.site_name = util.to_puny_code(get.domain_list[0].strip().split(":")[0]).strip().lower()
@@ -440,18 +440,18 @@ server {{
         opid = public.M('domain').where("name=? and port=?", (main_domain, int(get.site_port))).getField('pid')
         if opid:
             if public.M('sites').where('id=?', (opid,)).count():
-                return public.returnResult(status=False, msg='网站【{}】已存在，请勿重复添加！'.format(main_domain))
+                return public.returnResult(status=False, msg='Website [{}] already exists, please do not add again!'.format(main_domain))
             public.M('domain').where('pid=?', (opid,)).delete()
 
         if public.M('binding').where('domain=?', (main_domain,)).count():
-            return public.returnResult(status=False, msg='网站【{}】已存在，请勿重复添加！'.format(main_domain))
+            return public.returnResult(status=False, msg='Website [{}] already exists, please do not add again!'.format(main_domain))
 
         sql = public.M('sites')
         if sql.where("name=?", (get.site_name,)).count():
             if public.is_ipv4(get.site_name):
                 get.site_name = get.site_name + "_" + str(get.site_port)
             else:
-                return public.returnResult(status=False, msg='网站【{}】已存在，请勿重复添加！'.format(main_domain))
+                return public.returnResult(status=False, msg='Website [{}] already exists, please do not add again!'.format(main_domain))
 
         return public.returnResult(True)
 
@@ -496,7 +496,7 @@ server {{
             public.M('dk_domain').where('pid=?', (get.dk_pid,)).delete()
             return public.returnResult(
                 status=False,
-                msg='ERROR: 检测到配置文件有错误,请先排除后再操作<br><br><a style="color:red;">' +
+                msg='ERROR: There is an error in the configuration file, please exclude it before operation<br><br><a style="color:red;">' +
                     wc_err.replace("\n", '<br>') + '</a>'
             )
         if type(wc_err) != bool and "test failed" in wc_err:
@@ -508,7 +508,7 @@ server {{
             public.M('dk_domain').where('pid=?', (get.dk_pid,)).delete()
             return public.returnResult(
                 status=False,
-                msg='ERROR: 检测到配置文件有错误,请先排除后再操作<br><br><a style="color:red;">' +
+                msg='ERROR: There is an error in the configuration file, please exclude it before operation<br><br><a style="color:red;">' +
                     wc_err.replace("\n", '<br>') + '</a>'
             )
 
@@ -629,23 +629,22 @@ server {{
 
         # 2024/4/18 上午9:45 参数校验
         if not get.domains:
-            return public.returnResult(status=False, msg="域名不能为空，至少输入一个域名！")
+            return public.returnResult(status=False, msg="Domain name cannot be empty. At least one domain must be entered!")
         if not get.proxy_pass:
-            return public.returnResult(status=False, msg="代理目标不能为空！")
+            return public.returnResult(status=False, msg="Proxy target cannot be empty!")
         if get.remark != "":
             get.remark = public.xssencode2(get.remark)
         if get.proxy_type == "unix":
             if not get.proxy_pass.startswith("/"):
-                return public.returnResult(status=False, msg="unix文件路径必须以/开头，如/tmp/flask_app.sock！")
+                return public.returnResult(status=False, msg="The Unix file path must start with '/', such as /tmp/flask_app.sock!")
             if not get.proxy_pass.endswith(".sock"):
-                return public.returnResult(status=False, msg="unix文件必须以.sock结尾，如/tmp/flask_app.sock！")
+                return public.returnResult(status=False, msg="The Unix file must end with '.sock', such as /tmp/flask_app.sock!")
             if not os.path.exists(get.proxy_pass):
-                return public.returnResult(status=False, msg="代理目标不存在！")
+                return public.returnResult(status=False, msg="The proxy target does not exist!")
             get.proxy_pass = "http://unix:{}".format(get.proxy_pass)
         elif get.proxy_type == "http":
             if not get.proxy_pass.startswith("http://") and not get.proxy_pass.startswith("https://"):
-                return public.returnResult(status=False, msg="代理目标必须以http://或https://开头！")
-
+                return public.returnResult(status=False, msg="The proxy target must start with 'http://' or 'https://'.")
         get.domain_list = get.domains.split("\n")
         get.site_port = get.domain_list[0].strip().split(":")[1] if ":" in get.domain_list[0] else "80"
         get.port_list = [get.site_port]
@@ -655,8 +654,7 @@ server {{
 
         get.site_path = "/www/wwwroot/" + get.site_name
         if not public.checkPort(get.site_port):
-            return public.returnResult(status=False, msg='端口【{}】不合法！'.format(get.site_port))
-
+            return public.returnResult(status=False, msg='Port 【{}】 is invalid!'.format(get.site_port))
         if len(get.domain_list) > 1:
             for domain in get.domain_list[1:]:
                 if not ":" in domain.strip():
@@ -664,8 +662,7 @@ server {{
 
                 d_port = domain.strip().split(":")[1]
                 if not public.checkPort(d_port):
-                    return public.returnResult(status=False, msg='端口【{}】不合法！'.format(d_port))
-
+                    return public.returnResult(status=False, msg='Port 【{}】 is invalid!'.format(d_port))
                 if not d_port in get.port_list:
                     get.port_list.append(d_port)
 
@@ -702,7 +699,7 @@ server {{
         public.WriteLog('TYPE_SITE', 'SITE_ADD_SUCCESS', (get.site_name,))
         public.set_module_logs('dk_site_proxy', 'create', 1)
         public.serviceReload()
-        return public.returnResult(msg="docker反代添加成功！")
+        return public.returnResult(msg="Docker reverse proxy added successfully")
 
     def read_json_conf(self, get):
         '''
@@ -734,24 +731,24 @@ server {{
         '''
         get.site_name = get.get("site_name", "")
         if get.site_name == "":
-            return public.returnResult(status=False, msg="site_name不能为空！")
+            return public.returnResult(status=False, msg="site_name cannot be empty")
 
         get.log_type = get.get("log_type", "default")
         if not get.log_type in ["default", "file", "rsyslog", "off"]:
-            return public.returnResult(status=False, msg="日志类型错误，请传入default/file/rsyslog/off！")
+            return public.returnResult(status=False, msg="Invalid log type! Please specify one of: default/file/rsyslog/off.")
 
         get.proxy_json_conf = self.read_json_conf(get)
         if not get.proxy_json_conf:
-            return public.returnResult(status=False, msg="读取配置文件失败，请删除网站重新添加！")
+            return public.returnResult(status=False, msg="Failed to read the configuration file! Please delete the site and re-add it.")
 
         get.proxy_json_conf["proxy_log"]["log_type"] = get.log_type
 
         if get.log_type == "file":
             get.log_path = get.get("log_path", "")
             if get.log_path == "":
-                return public.returnResult(status=False, msg="日志路径不能为空！")
+                return public.returnResult(status=False, msg="Log path cannot be empty!")
             if not get.log_path.startswith("/"):
-                return public.returnResult(status=False, msg="日志路径必须以/开头！")
+                return public.returnResult(status=False, msg="Log path must start with '/'")
 
             get.proxy_json_conf["proxy_log"]["log_path"] = get.log_path
             get.proxy_json_conf["proxy_log"]["log_conf"] = self._init_proxy_conf["proxy_log"]["log_conf"].format(
@@ -761,7 +758,7 @@ server {{
         elif get.log_type == "rsyslog":
             get.log_path = get.get("log_path", "")
             if get.log_path == "":
-                return public.returnResult(status=False, msg="日志路径不能为空！")
+                return public.returnResult(status=False, msg="Log path cannot be empty!")
             site_name = get.site_name.replace(".", "_")
             get.proxy_json_conf["proxy_log"]["log_conf"] = (
             "\n    access_log syslog:server={server_host},nohostname,tag=nginx_{site_name}_access;"
@@ -785,7 +782,7 @@ server {{
             return public.returnResult(status=False, msg=update_result["msg"])
         public.serviceReload()
 
-        return public.returnResult(msg="设置成功！")
+        return public.returnResult(msg="Settings successfully!")
 
     # 2024/4/18 下午10:21 设置basic_auth
     def set_dir_auth(self, get):

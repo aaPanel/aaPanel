@@ -1109,8 +1109,6 @@ def aggregate_maillogs():
                 continue
 
             with maillog_db_query('senders', day_date) as query:
-                query.get_db().debug()
-
                 query.alias('s')
                 query.inner_join('receive_mails rm', 's.postfix_message_id=rm.postfix_message_id')
                 query.where('rm.log_time > ?', start_time)

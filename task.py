@@ -38,6 +38,12 @@ hook_import()
 
 from power_mta.maillog_stat import maillog_event, aggregate_maillogs_task
 from power_mta.automations import schedule_automations_forever
+from data_v2 import data as data_v2_cls
+
+try:
+    from BTPanel import cache
+except:
+    cache = None
 
 
 task_obj = panelTask.bt_task()
@@ -1873,6 +1879,33 @@ def domain_ssl_service():
     except Exception as e:
         public.print_log("domain_ssl_service error , %s" % e)
 
+#每隔20分钟更新一次网站报表数据
+def update_monitor_requests():
+    while True:
+        try:
+            import class_v2.data_v2 as data_v2
+            dataObject = data_v2.data()
+            dataObject.getSiteThirtyTotal()
+        except Exception as e:
+            public.print_log(f"更新网站报表数据: {str(e)}")
+            pass
+
+        time.sleep(60*20)
+
+# 每隔20分钟更新一次waf报表数据
+def update_waf_config():
+    while True:
+        try:
+            import class_v2.data_v2 as data_v2
+            dataObject = data_v2.data()
+            dataObject.getSiteWafConfig()
+        except Exception as e:
+            public.print_log(f"更新Waf报表数据: {str(e)}")
+            pass
+
+        time.sleep(60*20)
+
+
 
 
 def run_thread():
@@ -1881,6 +1914,9 @@ def run_thread():
 
     thread_list = {
         "start_task": task_obj.start_task,
+        "find_stored_favs": data_v2_cls().find_stored_favicons,
+        "update_waf_config": update_waf_config,
+        "update_monitor_requests": update_monitor_requests,
         "systemTask": systemTask,
         "check502Task": check502Task,
         "daemon_panel": daemon_panel,

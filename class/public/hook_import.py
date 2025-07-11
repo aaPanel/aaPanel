@@ -57,6 +57,30 @@ def hook_import():
                     if cond:
                         break
 
+                    # if os.path.isdir(realpath[:-3]) and len(fromlist) > 0:
+                    #     remove_props = []
+                    #     m = None
+                    #     for prop_name in fromlist:
+                    #         prop_path = os.path.join(realpath[:-3], prop_name + '.py')
+                    #         if os.path.exists(prop_path):
+                    #             try:
+                    #                 m = plugin_loader.get_module(prop_path)
+                    #
+                    #                 if globals is not None:
+                    #                     globals[prop_name] = m
+                    #
+                    #                 if locals is not None:
+                    #                     locals[prop_name] = m
+                    #
+                    #                 remove_props.append(prop_name)
+                    #             except Exception:
+                    #                 raise
+                    #
+                    #     fromlist = tuple(filter(lambda x: x not in remove_props, fromlist))
+                    #
+                    #     if m is not None:
+                    #         return m
+
                 if not cond:
                     realpath = os.path.join(panel_path, pyfile)
                     cond = os.path.exists(realpath)
@@ -94,6 +118,32 @@ def hook_import():
 
                     if cond:
                         break
+
+                    # if os.path.isdir(realpath[:-3]) and len(fromlist) > 0:
+                    #     public.print_log('######################\ndir: {}'.format(realpath[:-3]))
+                    #
+                    #     remove_props = []
+                    #     m = None
+                    #     for prop_name in fromlist:
+                    #         prop_path = os.path.join(realpath[:-3], prop_name + '.py')
+                    #         if os.path.exists(prop_path):
+                    #             try:
+                    #                 m = plugin_loader.get_module(prop_path)
+                    #
+                    #                 if globals is not None:
+                    #                     globals[prop_name] = m
+                    #
+                    #                 if locals is not None:
+                    #                     locals[prop_name] = m
+                    #
+                    #                 remove_props.append(prop_name)
+                    #             except Exception:
+                    #                 raise
+                    #
+                    #     fromlist = tuple(filter(lambda x: x not in remove_props, fromlist))
+                    #
+                    #     if m is not None:
+                    #         return m
 
                 if not cond:
                     realpath = os.path.join(panel_path, pyfile)
