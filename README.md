@@ -54,9 +54,7 @@ It can easily manage the server through the Web terminal, improving the operatio
 * System: Ubuntu 22.04 24.04, Debian 11 12, CentOS 9, Rocky/AlmaLinux 8 9,  to ensure that it is a clean operating system, there is no other environment with Apache/Nginx/php/MySQL installed (the existing environment can not be installed)
 
 **aaPanel Installation Command**
-```
-URL=https://www.aapanel.com/script/install_6.0_en.sh && if [ -f /usr/bin/curl ];then curl -ksSO "$URL" ;else wget --no-check-certificate -O install_6.0_en.sh "$URL";fi;bash install_6.0_en.sh 66959f96
-```
+`URL=https://www.aapanel.com/script/install_6.0_en.sh && if [ -f /usr/bin/curl ];then curl -ksSO "$URL" ;else wget --no-check-certificate -O install_6.0_en.sh "$URL";fi;bash install_6.0_en.sh 66959f96`
 
 **aaPanel Docker Deployment**
 
