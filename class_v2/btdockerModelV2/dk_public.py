@@ -125,24 +125,37 @@ def get_mem_info():
 
 
 def byte_conversion(data):
-    data = data.lower()  # 将数据转换为小写字母形式
-    if "gib" in data:
-        return float(data.replace('gib', '')) * 1024 * 1024 * 1024
-    elif "mib" in data:
-        return float(data.replace('mib', '')) * 1024 * 1024
-    elif "kib" in data:
-        return float(data.replace('kib', '')) * 1024
-    elif "gb" in data:
-        return float(data.replace('gb', '')) * 1024 * 1024 * 1024
-    elif "mb" in data:
-        return float(data.replace('mb', '')) * 1024 * 1024
-    elif "kb" in data:
-        return float(data.replace('kb', '')) * 1024
-    elif "b" in data:
-        return float(data.replace('b', ''))
-    else:
-        return False
+    data = data.strip().lower().replace(" ", "")  # buang spasi dan ubah ke lowercase
 
+    try:
+        if "gib" in data:
+            return float(data.replace('gib', '')) * 1024 ** 3
+        elif "mib" in data:
+            return float(data.replace('mib', '')) * 1024 ** 2
+        elif "kib" in data:
+            return float(data.replace('kib', '')) * 1024
+        elif "gb" in data:
+            return float(data.replace('gb', '')) * 1024 ** 3
+        elif "mb" in data:
+            return float(data.replace('mb', '')) * 1024 ** 2
+        elif "kb" in data:
+            return float(data.replace('kb', '')) * 1024
+        elif "tb" in data:
+            return float(data.replace('tb', '')) * 1024 ** 4
+        elif "b" in data:
+            return float(data.replace('b', ''))
+        elif "g" in data:
+            return float(data.replace('g', '')) * 1024 ** 3
+        elif "m" in data:
+            return float(data.replace('m', '')) * 1024 ** 2
+        elif "k" in data:
+            return float(data.replace('k', '')) * 1024
+        elif "t" in data:
+            return float(data.replace('t', '')) * 1024 ** 4
+        else:
+            return False
+    except:
+        return 0
 
 def bytes_to_human_readable(bytes_num):
     """
