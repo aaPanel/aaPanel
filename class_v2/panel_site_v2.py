@@ -8305,6 +8305,161 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         return public.success_v2(msg)
 
+    # WP工具页
+    def set_wp_tool(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0),
+        ])
+
+        from wp_toolkit import wpmgr
+
+        ok, msg = wpmgr(args.set_id).set_wp_tool(args)
+
+        if not ok:
+            raise public.HintException(msg)
+
+        return public.success_v2(msg)
+
+    # 获取工具页数据
+    def get_wp_tool(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0),
+        ])
+        from wp_toolkit import wpmgr
+
+        ok, msg = wpmgr(args.set_id).get_wp_tool()
+
+        if not ok:
+            raise public.HintException(msg)
+
+        return public.success_v2(msg)
+
+    # 获取wp调试模式debug日志
+    def get_wp_debug_log(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0),
+            public.Param('lines')
+        ])
+        from wp_toolkit import wpmgr
+
+        ok, msg = wpmgr(args.set_id).get_wp_debug_log(args.get('lines', 100))
+
+        if not ok:
+            raise public.HintException(msg)
+        return public.success_v2(msg)
+
+    # 数据复制
+    def wp_copy_data(self,args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('target_id').Require().Integer('>', 0),
+            public.Param('source_id').Require().Integer('>', 0),
+            public.Param('is_backup'),
+            public.Param('cp_data_tables'),
+            public.Param('data_tables'),
+            public.Param('cp_files'),
+        ])
+        from wp_toolkit import wpmigration
+
+        ok, msg = wpmigration().thread_copy_data(args)
+        if not ok:
+            raise public.HintException(msg)
+
+        return public.success_v2('Replicating Success')
+
+    # 获取wp网站数据（简化版，不使用getData通用接口）
+    def get_wp_sites(self, args: public.dict_obj):
+        wp_sites = public.M('sites').where('project_type=?', ('WP2',)).field('id,name,path').select()
+        return public.success_v2(wp_sites)
+
+    # 获取源网站数据表
+    def get_source_tables(self, args: public.dict_obj):
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0),
+        ])
+        try:
+            from wp_toolkit import wpmgr
+
+            source_conn, _ = wpmgr(args.set_id)._get_db_connection()
+            res = []
+
+            with source_conn.cursor() as source_cursor:
+                source_cursor.execute("""
+                                      SELECT table_name
+                                      FROM information_schema.tables
+                                      WHERE table_schema = DATABASE()
+                                      ORDER BY table_name
+                                      """)
+                tables = source_cursor.fetchall()
+
+                if tables:
+                    for row in tables:
+                        table_name = row.get('table_name') or row.get('TABLE_NAME')
+                        if table_name:
+                            res.append(table_name)
+
+            return public.success_v2(res)
+        except Exception as e:
+            raise public.HintException('Database connection failed, please check the database status!')
+
+    # 获取wp复制进度
+    def get_wp_copy_progress(self, args: public.dict_obj):
+        from pathlib import Path
+        import threading
+        try:
+            task_status =  Path("/tmp") / "wp_copy_status.log"  # 进度文件
+            lock_file = Path("/tmp") / "wp_copy_lock.lock"  # 锁文件
+
+            # 检查进度文件是否存在，不存在直接返回status:1
+            if not task_status.exists():
+                return public.success_v2({'status': 1})
+
+            # 检查锁文件是否存在
+            if lock_file.exists():
+                try:
+                    # 读取锁文件中的线程ID
+                    with open(lock_file, 'r') as f:
+                        thread_id_str = f.read().strip()
+
+                    if not thread_id_str:
+                        # 线程ID为空，清理锁文件和进度文件
+                        lock_file.unlink(missing_ok=True)
+                        task_status.unlink()
+                        return public.success_v2({'status': 1})
+
+                    # 转换线程ID为整数
+                    thread_id = int(thread_id_str)
+
+                    # 检查线程是否存在且活跃
+                    thread_exists = False
+                    for thread in threading.enumerate():
+                        if hasattr(thread, '_ident') and thread._ident == thread_id:
+                            thread_exists = True
+                            break
+
+                    if not thread_exists:
+                        # 线程不存在，清理文件
+                        lock_file.unlink(missing_ok=True)
+                        task_status.unlink()
+                        return public.success_v2({'status': 1})
+
+                except (ValueError, IOError) as e:
+                    # 处理线程ID转换错误或文件读取错误，清理异常状态
+                    lock_file.unlink(missing_ok=True)
+                    if os.path.exists(task_status):
+                        os.remove(task_status)
+                    return public.success_v2({'status': 1})
+
+            # 线程存在且正常，读取并返回进度信息
+            with open(task_status, 'r') as f:
+                res = json.loads(f.read())
+                return public.success_v2(res)
+        except Exception as e:
+            raise public.HintException('Failed to retrieve replication progress:' + str(e))
+
     # *********** WP Toolkit --End-- *************
 
 

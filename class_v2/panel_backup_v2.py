@@ -278,7 +278,7 @@ class backup:
                         upload_file_path=os.path.join(self._cloud.backup_path , 'path',dirname, fname)
                     else:
                         upload_file_path="path"
-
+                    # use cloud func name : upload_file
                     if self._cloud.upload_file(dfile, upload_file_path):
                         self.echo_info("Successfully uploaded to {}".format(self._cloud._title))
                     else:

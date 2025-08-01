@@ -670,9 +670,7 @@ class QuerySet(Generic[M]):
         获取数量
         :return: int
         """
-        if self._cache is None:
-            self.__execute()
-        return len(self._cache) if self._cache else 0
+        return self._query.fork().count()
 
     def as_list(self) -> list:
         """

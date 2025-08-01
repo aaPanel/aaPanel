@@ -1130,11 +1130,32 @@ class data:
                         # 等待500ms
                         time.sleep(0.5)
 
-                        # 无法获取favicon.ico，尝试从首页中获取
-                        response = requests.get(url, headers={
-                            'host': domain_name,
-                            'user-agent': 'aaPanel',
-                        }, verify=False, allow_redirects=True, timeout=15)
+                        max_redirects = 5
+
+                        for _ in range(max_redirects):
+                            # 无法获取favicon.ico，尝试从首页中获取
+                            response = requests.get(url, headers={
+                                'host': domain_name,
+                                'user-agent': 'aaPanel',
+                            }, verify=False, timeout=15)
+
+                            # 检查是否重定向
+                            if response.status_code >= 300 and response.status_code < 400:
+                                new_url = response.headers.get('location')
+
+                                # 从new_url中提取域名和端口
+                                if new_url:
+                                    # public.print_log('Redirected to: {}'.format(new_url))
+                                    parsed_url = requests.utils.urlparse(new_url)
+                                    domain_name = parsed_url.netloc.split(':')[0]
+                                    continue
+
+                                # 等待500ms
+                                time.sleep(0.5)
+                                continue
+
+                            break
+
                         if response.status_code == 200:
                             # 尝试从首页中获取favicon.ico
                             m = reg_obj.search(response.text)

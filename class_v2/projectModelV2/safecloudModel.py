@@ -984,9 +984,9 @@ class main(projectBase):
             os.makedirs(self.__path, mode=0o755)
         self.__config = Config(os.path.join(self.__path, 'config.json'))
 
-        # 判断是否开启动态扫描
+        # 删除原定时任务。此任务移动至task.py中
         if self.__config.config['dynamic_detection']:
-            self._add_webshell_detection_task()
+            self._remove_webshell_detection_task()
 
         # 创建日志目录
         self.__log_dir = os.path.join(self.__path, 'log')
@@ -1906,8 +1906,6 @@ class main(projectBase):
                     'error_msg': "dynamic_detection parameter must 'true' or 'false'",
                     'success_msg': lambda x: "The dynamic killing function has been {}".format(
                         "enabled" if x else "turned off"),
-                    'post_process': self._handle_dynamic_detection_change
-
                 },
                 'scan_oss': {
                     'validator': lambda x: str(x).lower() in ('true', 'false'),
@@ -1941,7 +1939,7 @@ class main(projectBase):
                     'converter': lambda x: list(set(p.strip() for p in x.strip().split('\\n') if p.strip())),
                     # Split by newline, strip, filter empty, unique
                     'error_msg': 'exclude_dirs: Format error, please ensure one directory path per line',
-                    'success_msg': lambda x: "排除目录列表已更新，当前共{}个目录".format(len(x))
+                    'success_msg': lambda x: "The exclusion directory list has been updated, currently there are {} directories in total".format(len(x))
                 },
             }
 
@@ -2124,7 +2122,7 @@ class main(projectBase):
         if self.get_service_status2(): return public.returnMsg(False, 'Service started!')
         self.wrtie_init()
         shell_info = '''
-            # 填写启动服务脚本
+            # Fill in the startup service script
         '''
         init_file = '/etc/init.d/bt_cloud_safe'
         public.WriteFile('/www/server/panel/class/projectModel/bt_cloud_safe', shell_info)
@@ -2859,7 +2857,7 @@ class main(projectBase):
                                 # 只收集状态为 False（有风险）的项
                                 if item.get('status', True) is False:
                                     risk_items.append({
-                                        'title': item.get('title', '未知风险'),  # 风险标题
+                                        'title': item.get('title', 'Unknown Risk'),  # 风险标题
                                         'ps': item.get('ps', ''),  # 风险备注
                                         'level': item.get('level', 0),  # 风险等级
                                         'ignore': item.get('ignore', False),  # 是否忽略
@@ -4254,48 +4252,19 @@ class main(projectBase):
             # public.print_log("获取安全动态失败: {}".format(str(e)))
             return public.return_message(-1,0,{'events': []})
 
-    def _handle_dynamic_detection_change(self, new_value):
-        """处理 dynamic_detection 配置项变化"""
-        try:
-            if new_value:
-                # 如果 dynamic_detection 被设置为 true，则添加定时任务
-                self._add_webshell_detection_task()
-            else:
-                # 如果 dynamic_detection 被设置为 false，则移除定时任务
-                self._remove_webshell_detection_task()
-        except Exception as e:
-            pass
-
-    # 添加 动态查杀 检测定时任务
-    def _add_webshell_detection_task(self):
-        if not public.M('crontab').where('name=?', ('[Do not delete] Malicious file scanning task',)).count():
-            # 定义定时任务的命令
-            args = {
-                "name": "[Do not delete] Malicious file scanning task",
-                "type": "hour-n",
-                "where1": '6',
-                "hour": '',
-                "minute": '0',
-                "sName": "",
-                "sType": 'toShell',
-                "notice": '',
-                "notice_channel": '',
-                "save": '',
-                "save_local": '1',
-                "backupTo": '',
-                "sBody": 'btpython /www/server/panel/script/webshell_detection_task.py is_task=true',
-                "urladdress": '',
-                "user":'root'
-            }
-            # 导入 crontab 模块并添加定时任务
-            import crontab_v2 as crontab
-            crontab.crontab().AddCrontab(args)
-            public.ExecShell('chmod 750 /www/server/panel/script/webshell_detection_task.py')
-        return True
-
+    # 两个版本后删除，7/14
     def _remove_webshell_detection_task(self):
-        """移除 Webshell 检测定时任务"""
-        public.M('crontab').where('name=?', ('[Do not delete] Malicious file scanning task',)).delete()
+        """移除 原 Webshell 检测定时任务"""
+        task_list = public.M('crontab').where('name=?', ('[Do not delete] Malicious file scanning task',)).field('id').select()
+        if not task_list:
+            return True
+
+        import crontab_v2 as crontab
+        crontab_main = crontab.crontab()
+
+        for i in task_list:
+            crontab_main.DelCrontab({'id': i['id']})
+        return True
 
     # 此处重构原宝塔忽略文件：取消误报上传，支持批量忽略
     def ignore_file(self, get):

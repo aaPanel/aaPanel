@@ -1441,6 +1441,7 @@ def config(pdata=None):
         # 'test_language',
          'set_hou',
          'replace_data',
+        'set_theme',
     )
     return publicObject(config.config(), defs, None, pdata)
 
@@ -3691,7 +3692,14 @@ def site_v2(pdata=None):
         'set_wp_site_type',
         'add_wp_site_type',
         'edit_wp_site_type',
-        'del_wp_site_type'
+        'del_wp_site_type',
+        'set_wp_tool',
+        'get_wp_tool',
+        'get_wp_debug_log',
+        'get_wp_sites',
+        'wp_copy_data',
+        'get_source_tables',
+        'get_wp_copy_progress'
     )
     return publicObject(siteObject, defs, None, pdata)
 
@@ -3987,6 +3995,8 @@ def panel_warning_v2(pdata=None):
         cache.delete(ikey)
     return publicObject(dataObject, defs, None, pdata)
 
+# -----------------------------------------  安全模块路由区 start----------------------------------------
+
 @app.route(route_v2 + '/safecloud', methods=method_all)
 def safecloud(pdata=None):
     # 安全
@@ -4000,13 +4010,14 @@ def safecloud(pdata=None):
             'webshell_detection','ignore_file','get_ignored_list','del_ignored')
     return publicObject(toObject, defs, None, pdata)
 
+# 避免加密后变成单例模式
+from safeModel.reportModel import main as report_main
 @app.route(route_v2 + '/safe/report', methods=method_all)
 def report(pdata=None):
     # 安全报告
     comReturn = comm.local()
     if comReturn: return comReturn
-    from safeModel.reportModel import main
-    toObject = main()
+    toObject = report_main()
     defs = ('get_report')
     return publicObject(toObject, defs, None, pdata)
 
@@ -4028,6 +4039,7 @@ def safe_detect(pdata=None):
     defs = ('get_safe_count')
     return publicObject(toObject, defs, None, pdata)
 
+# -----------------------------------------  安全模块路由区 end----------------------------------------
 
 @app.route(route_v2 + '/bak', methods=method_all)
 def backup_bak_v2(pdata=None):
@@ -4199,7 +4211,7 @@ def files_v2(pdata=None):
             'Re_Recycle_bin', 'Get_Recycle_bin', 'Del_Recycle_bin',
             'Close_Recycle_bin', 'Recycle_bin', 'file_webshell_check',
             'dir_webshell_check', 'files_search', 'files_replace',
-            'get_replace_logs','get_sql_backup' )
+            'get_replace_logs', 'get_sql_backup', 'test_path', 'upload_files_exists')
 
     return publicObject(filesObject, defs, None, pdata)
 
@@ -4436,6 +4448,7 @@ def config_v2(pdata=None):
         'modify_ua',
         'delete_ua',
         'set_cdn_status',
+        'set_theme',
 
 
     )
@@ -4599,6 +4612,8 @@ def business_ssl(pdata=None):
         'check_domain_suitable',
         'list_business_ssl',
         'renew_cert_order',
+        'check_url_txt',
+        'again_verify',
     )
     get = get_input()
 

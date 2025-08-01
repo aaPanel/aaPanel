@@ -15,6 +15,7 @@ from public.validate import Param
 from ssl_domainModelV2.api import DomainObject
 from ssl_domainModelV2.model import DnsDomainProvider, DnsDomainSSL, DnsDomainRecord
 from ssl_domainModelV2.service import CertHandler, SyncService
+from panelDnsapi import extract_zone
 
 
 # noinspection PyUnusedLocal
@@ -60,19 +61,27 @@ class BusinessSSL(object):
         """
         校验域名是否符合
         """
-        if not hasattr(get, "domain"):
+        if not hasattr(get, "domains"):
             return public.fail_v2("Domain name cannot be empty")
-        domian = str(get.domain).strip()
-        if not domian:
+        domains = str(get.domains).strip()
+        if not domains:
+            return public.fail_v2("Domain name cannot be empty")
+        domains = domains.split(",")
+        if len(domains) == 0:
             return public.fail_v2("Domain name cannot be empty")
 
-        res = {"auto": {}}
-        root, _ = public.get_root_domain(domian)
-        obj = DnsDomainProvider.objects.filter(
-            domains__contains=root, status=1
-        ).fields("id", "name", "alias").first()
-        if obj:
-            res = {"auto": obj.as_dict()}
+        auto = []
+        for d in domains:
+            if not d:
+                continue
+            root, _, _ = extract_zone(d)
+            obj = DnsDomainProvider.objects.filter(
+                domains__contains=root, status=1
+            ).fields("id", "name", "alias").first()
+            if obj:
+                auto.append({"domain": d, **obj.as_dict()})
+
+        res = {"auto": auto}
         return public.success_v2(res)
 
     # 发送请求
@@ -232,17 +241,34 @@ class BusinessSSL(object):
 
     # 完善资料CA, 提交资料 (前提支付接口完成)
     def apply_order_ca(self, args):
+        """
+        auto = [
+          {
+            "domain": "testwpsite.aapanel.org",
+            "id": 13,
+            "name": "CloudFlareDns",
+            "alias": "a"
+          },
+          {
+            "domain": "testphp22.aapanel.org",
+            "id": 14,
+            "name": "CloudFlareDns",
+            "alias": "b"
+          }
+        ]
+        """
         pdata = json.loads(args.pdata)
         result = self.check_ssl_caa(pdata['domains'])
         if result:
             return public.fail_v2(result)
-
-        # auto params {"id": 1, "name": "CloudFlareDns", "alias": "cf"}
-        auto = pdata.pop("auto")
+        auto: list = pdata.pop("auto")
         uc_id = pdata.pop("uc_id")
 
         self.__PDATA["data"] = pdata
         result = self.request("cert/user/update_profile")  # submit
+        if result.get("success") is False:
+            return public.fail_v2(result.get("res", "Failed to submit data, please try again later!"))
+
         if not auto or not uc_id:
             return public.success_v2(result.get("res"))
 
@@ -250,8 +276,28 @@ class BusinessSSL(object):
         task.start()
         return public.success_v2(result.get("res"))
 
+    # 修改验证方式
+    def again_verify(self, args):
+        try:
+            args.validate([
+                Param("uc_id").String().Require(),
+                Param("dcv_method").String().Require(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        self.__PDATA['uc_id'] = args.uc_id
+        self.__PDATA['dcv_method'] = args.dcv_method
+        result = self.request('cert/user/update_dcv')
+        if result.get("success"):
+            return public.success_v2(result.get("res"))
+        return public.fail_v2(result.get("res"))
+
     # dns auto parsed
-    def _auto_dns(self, auto: dict, uc_id: int) -> None:
+    def _auto_dns(self, auto: list, uc_id: int) -> None:
         with app.app_context():
             # makesure pending
             count = 0
@@ -267,20 +313,29 @@ class BusinessSSL(object):
                 count += 1
                 time.sleep(10)
 
-            provider = DnsDomainProvider.objects.filter(id=auto.get("id")).first()
-            boyd = {
-                "provider_id": provider.id,
-                "provider_name": provider.name,
-                "api_user": provider.api_user,
-                "domain": verify_data.get("dcvList")[0].get("domainName"),
-                "record": verify_data.get("DCVdnsHost"),
-                "record_value": verify_data.get("DCVdnsValue"),
-                "record_type": verify_data.get("DCVdnsType"),
-                "ttl": 1,
-                "proxy": 0 if auto.get("name") == "CloudFlareDns" else -1,
-                "priority": -1,
-            }
-            provider.model_create_dns_record(boyd)
+            for a in auto:
+                if not a.get("id"):
+                    continue
+                if not a.get("domain"):
+                    continue
+                if not a.get("name"):
+                    continue
+
+                provider = DnsDomainProvider.objects.filter(id=a.get("id")).first()
+                if provider:
+                    boyd = {
+                        "provider_id": provider.id,
+                        "provider_name": provider.name,
+                        "api_user": provider.api_user,
+                        "domain": verify_data.get("dcvList")[0].get("domainName"),
+                        "record": verify_data.get("DCVdnsHost"),
+                        "record_value": verify_data.get("DCVdnsValue"),
+                        "record_type": verify_data.get("DCVdnsType"),
+                        "ttl": 1,
+                        "proxy": 0 if a.get("name") == "CloudFlareDns" else -1,
+                        "priority": -1,
+                    }
+                    provider.model_create_dns_record(boyd)
 
     # 验证通过后移除CNAME
     def _remove_caname(self, uc_id: int, ssl_info: dict) -> None:
@@ -332,29 +387,44 @@ class BusinessSSL(object):
             public.print_log("replace business cert error: {}".format(e))
 
     # 验证URL是否匹配
-    def check_url_txt(self, args, timeout=5):
+    def check_url_txt(self, args):
+        try:
+            args.validate([
+                Param("url").String().Require(),
+                Param("content").String().Require(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
         url = args.url
         content = args.content
 
         import http_requests
-        res = http_requests.get(url, s_type='curl', timeout=timeout)
+        res = http_requests.get(url, s_type='curl', timeout=5)
         result = res.text
+        status = 0
         if not result:
-            return 0
+            status = 0
         if result.find('11001') != -1 or result.find('curl: (6)') != -1:
-            return -1
+            status = -1
         if result.find('curl: (7)') != -1 or res.status_code in [403, 401]:
-            return -5
+            status = -5
         if result.find('Not Found') != -1 or result.find('not found') != -1 or res.status_code in [404]:
-            return -2
+            status = -2
         if result.find('timed out') != -1:
-            return -3
+            status = -3
         if result.find('301') != -1 or result.find('302') != -1 or result.find(
                 'Redirecting...') != -1 or res.status_code in [301, 302]:
-            return -4
+            status = -4
         if result == content:
-            return 1
-        return 0
+            status = 1
+        if status == 1:
+            return public.success_v2({"status": status})
+        else:
+            return public.fail_v2({"status": status})
 
     # 获取商业证书验证结果, 包含验证信息
     def get_verify_result(self, args):
@@ -390,31 +460,18 @@ class BusinessSSL(object):
                 dinfo['domainName'] = domain
 
                 if is_file_verify:
-                    # 判断是否是Springboot 项目
-                    if public.M('sites').where('id=?', (
-                            public.M('domain').where('name=?', (dinfo['domainName'])).getField('pid'),)).getField(
-                        'project_type') == 'Java' or public.M('sites').where('id=?', (
-                            public.M('domain').where('name=?', (dinfo['domainName'])).getField('pid'),)).getField(
-                        'project_type') == 'Go' or public.M('sites').where('id=?', (
-                            public.M('domain').where('name=?', (dinfo['domainName'])).getField('pid'),)).getField(
-                        'project_type') == 'Other':
-                        siteRunPath = '/www/wwwroot/java_node_ssl'
-                    else:
-                        siteRunPath = self._get_domain_run_path(domain)
-                    # if domain[:4] == 'www.': domain = domain[4:]
-                    status = 0
-                    url = 'http' + is_https + '://' + domain + '/.well-known/pki-validation/' + verify_info['data'][
-                        'DCVfileName']
+                    valid_path = "/.well-known/pki-validation"
+                    siteRunPath = self._get_domain_run_path(domain)
+                    url = 'http' + is_https + '://' + domain + valid_path + '/' + verify_info['data']['DCVfileName']
                     get = public.dict_obj()
                     get.url = url
                     get.content = verify_info['data']['DCVfileContent']
-                    status = self.check_url_txt(get)
-
+                    status = self.check_url_txt(get)["message"].get("status")
                     verify_info['paths'].append({'url': url, 'status': status})
                     if not siteRunPath:
                         continue
 
-                    verify_path = siteRunPath + '/.well-known/pki-validation'
+                    verify_path = siteRunPath + valid_path
                     if not os.path.exists(verify_path):
                         os.makedirs(verify_path)
                     verify_file = verify_path + '/' + verify_info['data']['DCVfileName']
@@ -431,7 +488,6 @@ class BusinessSSL(object):
             return public.success_v2(verify_info)
         except Exception as e:
             return public.fail_v2("Failed to get verification result, please try again later!")
-
 
     # 下载证书
     def download_cert(self, get):
@@ -483,7 +539,6 @@ class BusinessSSL(object):
             public.print_log(f"update business ssl error: {e}")
             return
 
-
     @staticmethod
     def find_next_cert(cert_id: str):
         if not cert_id:
@@ -498,7 +553,6 @@ class BusinessSSL(object):
         except Exception as e:
             public.print_log(f"find_cert error: {e}")
             raise Exception(f"Failed to find cert for {cert_id}, please try again later!")
-
 
     # 商业续签
     def renew_cert_order(self, get, cert_id: str):

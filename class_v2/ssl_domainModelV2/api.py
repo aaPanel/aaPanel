@@ -85,7 +85,7 @@ class DomainObject:
                 return 0
             today = datetime.today().date()
             end_date = datetime.strptime(data_str, DomainObject.date_format).date()
-            return (end_date - today).days - 1 if today <= end_date else 0
+            return max((end_date - today).days - 1 if today <= end_date else 0, 0)
         except ValueError:
             return 0
 
@@ -706,7 +706,10 @@ class DomainObject:
                 del manual_apply[domians_index]
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
             return public.success_v2(public.lang("Apply Successfully!"))
-        return public.fail_v2(public.lang(str(vaild.get("msg"))))
+        try:
+            return public.fail_v2((str(vaild.get("msg", "Vaild failed! please try again"))))
+        except:
+            return public.fail_v2("Vaild failed! please try again")
 
     def manual_apply_check(self, get):
         """
@@ -1219,29 +1222,30 @@ class DomainObject:
             "domain": get.domain,
             "support": [],
         }
+        root, _, _ = extract_zone(get.domain)
+        if DnsDomainProvider.objects.filter(domains__contains=root).first():
+            result["support"].append("auto")  # 自动解析功能
+            result["support"].append("ssl_cert")  # 自动部署证书
 
-        targets = DomainValid.get_best_ssl(get.domain)
-
-        for ssl in targets:
+        exist = None
+        for ssl in DomainValid.get_best_ssl(get.domain):
             if DomainValid.match_ssl_dns(get.domain, ssl, False):
-                result = {
-                    "hash": ssl.hash,
-                    "domain": get.domain,
-                    "support": ["ssl_cert"],
-                }
-                if bool("CloudFlareDns" in ssl.auth_info.get("auth_to", "")):
-                    # ip为内网地址不可以开启代理
-                    try:
-                        local_ip = public.GetLocalIp()
-                        provate = ipaddress.IPv4Address(local_ip).is_private
-                    except Exception:
-                        provate = True
-                    if not provate:
-                        result["support"].append("cf_proxy")
-                root, _, _ = extract_zone(get.domain)
-                if DnsDomainProvider.objects.filter(domains__contains=root).first():
-                    result["support"].append("auto")
-                return public.success_v2(result)
+                exist = ssl
+                break
+
+        if exist is not None:
+            result["hash"] = exist.hash
+            if bool("CloudFlareDns" in exist.auth_info.get("auth_to", "")):
+                # ip为内网地址不可以开启代理
+                try:
+                    local_ip = public.GetLocalIp()
+                    provate = ipaddress.IPv4Address(local_ip).is_private
+                except Exception:
+                    provate = True
+                if not provate:
+                    # 是否支持 CF 代理
+                    result["support"].append("cf_proxy")
+
         return public.success_v2(result)
 
     def ssl_tasks_status(self, get):
@@ -1261,13 +1265,9 @@ class DomainObject:
 
         if not hasattr(get, "task_id"):
             task_type = WorkFor.sites if not hasattr(get, "task_type") else int(get.task_type)
-            # get.task_type 是否在支持的WorkFor中
-            if task_type not in [x for x in WorkFor]:
-                return public.success_v2([])
-            objs = DnsDomainTask.objects.filter(
-                task_status__lt=100, task_type=task_type
-            )
-            data = [task.as_dict() for task in objs]
+            data = DnsDomainTask.objects.filter(
+                task_type=task_type, task_status__lt=100,
+            ).as_list()
         else:
             objs = DnsDomainTask.objects.filter(id=get.task_id).first()
             data = objs.as_dict() if objs else "Task Not Found!"

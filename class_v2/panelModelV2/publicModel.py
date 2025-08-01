@@ -140,6 +140,8 @@ class main(panelBase):
         data['language_list'] = lang['languages']
 
         data['isPro'] = True if os.path.exists("/www/server/panel/data/panel_pro.pl") else False
+        theme_mark_path = "/www/server/panel/data/theme.pl"
+        data['theme'] = public.readFile(theme_mark_path) if os.path.exists(theme_mark_path) else 'fresh'
 
         return public.return_message(0, 0, data)
 

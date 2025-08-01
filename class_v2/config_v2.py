@@ -3557,6 +3557,7 @@ class config:
                 Param('questions').String(),
                 Param('product_type').Integer(),
                 Param('rate').Integer(),
+                # Param('submit_entry').Integer(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -3566,6 +3567,11 @@ class config:
 
         if 'product_type' not in get:
             return public.return_message(-1, 0, public.lang("Parameter error"))
+        if 'submit_entry' in get:
+            #判断submit_entry值是否在501-518之间
+            submit_entry=int(get.get('submit_entry', 518))
+            if submit_entry < 501 or submit_entry > 518:
+                return public.return_message(-1, 0, public.lang("Parameter error"))
 
         # if 'questions' not in get:
         #     public.returnMsg(False, '参数错误')
@@ -3587,6 +3593,7 @@ class config:
             # 'phone_back': get['back_phone'],  # 是否回访
             # 'feedback': get['feedback']  # 反馈内容
             # 'reason_tags': get['reason_tags'],  # 问题标签
+            'submit_entry': get.get('submit_entry', 518),  # 提交入口
             'rate': get.get('rate', 1),  # 评分  1~10
             'product_type': get.get('product_type', 1),  # 产品类型
             # 'server_id': user_info['server_id'],  # 服务器ID
@@ -3888,3 +3895,12 @@ class config:
             return public.success_v2(f"CDN proxy status updated successfully")
         except Exception as e:
             return public.fail_v2(str(e))
+    # 设置主题切换
+    def set_theme(self, args):
+        name = args.name
+        path = "/www/server/panel/data/theme.pl"
+        public.WriteFile(path, name)
+        public.set_module_logs('theme', 'set_theme', 1)
+        # # 重启面板
+        # public.restart_panel()
+        return public.return_message(0, 0, 'The setup was successful')

@@ -446,9 +446,7 @@ class DataManager(SoftModule):
         """获取db数据库列表"""
         result: list = []
         try:
-            # data = public.M('databases').field('name,type,id,sid,ps').select()
-            # todo 隐藏mg和pg
-            data = public.M('databases').where("LOWER(type)=LOWER('mysql')", ()).field('name,type,id,sid,ps').select()
+            data = public.M('databases').field('name,type,id,sid,ps').select()
             for i in data:
                 db_size = 0
                 db_name = None

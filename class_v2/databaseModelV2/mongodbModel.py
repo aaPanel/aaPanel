@@ -1223,7 +1223,7 @@ class main(databaseBase):
                 if value['db_type'] in ['1', 1]:
                     continue  # 跳过远程数据库
                 result = self.ToDataBase(value)
-                if result == 1:
+                if result.get("status") == 0 and result["message"].get("result") == 1:
                     n += 1
         else:
             import json
@@ -1231,7 +1231,7 @@ class main(databaseBase):
             for value in data:
                 find = sql.where("id=?", (value,)).field('id,name,username,password,sid,db_type,accept,type').find()
                 result = self.ToDataBase(find)
-                if result == 1:
+                if result.get("status") == 0 and result["message"].get("result") == 1:
                     n += 1
         if n == 1:
             return public.return_message(0, 0, public.lang("Synchronization succeeded"))

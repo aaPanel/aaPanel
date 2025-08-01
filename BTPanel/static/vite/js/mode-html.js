@@ -878,7 +878,7 @@ var Tag = function () {
     this.end = { row: 0, column: 0 };
 };
 function is(token, type) {
-    return token && token.type && token.type.lastIndexOf(type + ".xml") > -1;
+    return token.type.lastIndexOf(type + ".xml") > -1;
 }
 (function () {
     this.getFoldWidget = function (session, foldStyle, row) {
@@ -1294,10 +1294,10 @@ var CssHighlightRules = function () {
                 token: "constant.numeric", // hex3 color
                 regex: "#[a-f0-9]{3}"
             }, {
-                token: ["punctuation", "entity.other.attribute-name.pseudo-element.css?v=1752142539265"],
+                token: ["punctuation", "entity.other.attribute-name.pseudo-element.css?v=1753954525509"],
                 regex: pseudoElements
             }, {
-                token: ["punctuation", "entity.other.attribute-name.pseudo-class.css?v=1752142539265"],
+                token: ["punctuation", "entity.other.attribute-name.pseudo-class.css?v=1753954525509"],
                 regex: pseudoClasses
             }, {
                 include: "url"

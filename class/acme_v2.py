@@ -2039,6 +2039,7 @@ fullchain.pem       Paste into certificate input box
             self.logger(public.lang("|-Successful application, deploying to site.."))
             return cert
         except Exception as ex:
+            self.remove_manual_apply_lock(index)
             self.remove_dns_record()
             ex = str(ex)
             if ex.find(">>>>") != -1:
@@ -3131,16 +3132,23 @@ fullchain.pem       Paste into certificate input box
 
             # try dns verfication
             provider = DnsDomainProvider.objects.find_one(id=ssl.provider_id)
-            if (ssl.provider_id == 0 or not provider) and ssl.auth_info:
-                write_log(
-                    f"|- Domain Subject:【{ssl.subject}】is not found the dns-api info, try to apply, please wait..."
-                )
-                try:
-                    try_res = ssl.try_to_apply_ssl()
-                    write_log(f"|- Domain Subject:【{ssl.subject}】try to apply result: {try_res.get('msg')}...")
-                    continue
-                except Exception as e:
-                    write_log(e)
+            if not provider or ssl.provider_id == 0:
+                if ssl.auth_info and ssl.auth_info.get("auth_to"):
+                    write_log(
+                        f"|- Domain Subject:【{ssl.subject}】is not found the dns-api info, try to apply, please wait..."
+                    )
+                    try:
+                        try_res = ssl.try_to_apply_ssl()
+                        write_log(f"|- Domain Subject:【{ssl.subject}】try to apply result: {try_res.get('msg')}...")
+                        continue
+                    except Exception as e:
+                        write_log(e)
+                        continue
+                else:
+                    write_log(
+                        f"|- Domain Subject:【{ssl.subject}】is not found the dns-api info, "
+                        f"so the DNS Verification Renewal can only be Skipped."
+                    )
                     continue
 
             # 判断是否有归属的dns api
@@ -3245,6 +3253,7 @@ fullchain.pem       Paste into certificate input box
             self.logger(public.lang("|-Successful application!"))
             return cert
         except Exception as ex:
+            self.remove_manual_apply_lock(index)
             self.remove_dns_record()
             ex = str(ex)
             if ex.find(">>>>") != -1:

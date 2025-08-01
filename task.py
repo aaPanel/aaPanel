@@ -32,6 +32,7 @@ import json
 import threading
 import panelTask
 import process_task
+import shutil
 
 from public.hook_import import hook_import
 hook_import()
@@ -44,6 +45,8 @@ try:
     from BTPanel import cache
 except:
     cache = None
+
+CURRENT_TASK_VERSION = '1.0.0'
 
 
 task_obj = panelTask.bt_task()
@@ -806,7 +809,7 @@ def daemon_panel():
         if not os.path.exists(panel_pid_file):
             logging.info(f'{panel_pid_file} not found, starting panel service...')
             continue
-        
+
         panel_pid=""
         try:
         # 读取PID文件
@@ -865,18 +868,6 @@ def daemon_service():
                 args = public.dict_obj()
                 args.id = i.get("id")
                 crontab().DelCrontab(args)
-            cron_file = "/www/server/cron"
-            for filename in os.listdir(cron_file):
-                filepath = os.path.join(cron_file, filename)
-                if all([
-                    os.path.isfile(filepath),
-                    not filename.endswith(".log"),
-                    "script/restart_services" in (public.readFile(filepath) or ""),
-                ]):
-                    try:
-                        os.remove(filepath)
-                    except:
-                        continue
     except:
         pass
 
@@ -1071,12 +1062,12 @@ def check_panel_auth():
         if os.path.exists(pro_file):
             python_bin = get_python_bin()
             from BTPanel import cache
-            if cache: 
+            if cache:
                 key='pro_check_sdfjslk'
                 res = cache.get(key)
             if os.path.exists(update_file) or res is None:
                 os.system('nohup {} /www/server/panel/script/check_auth.py > /dev/null 2>&1 &'.format(python_bin))
-                if cache: 
+                if cache:
                     cache.set(key, 'sddsf', 3600)
         if os.path.exists(update_file):os.remove(update_file)
         time.sleep(2)
@@ -1381,7 +1372,7 @@ def submit_email_statistics():
         return
 
     # 处理昨天数据
-    all = _get_yesterday_count()
+    all = _get_yesterday_count2()
     if not all:
         return
 
@@ -1559,93 +1550,126 @@ def _get_utc_offset():
         return abs(timezone_offset), False
 
 
-# 获取昨日邮局收发件统计数据
-def _get_yesterday_count():
-    maillog_path = '/var/log/maillog'
-    if "ubuntu" in public.get_linux_distribution().lower():
-        maillog_path = '/var/log/mail.log'
+def _get_yesterday_count2():
+    # 获取昨天的开始时间和结束时间（本地时间）
+    today = datetime.now()
+    yesterday = today - timedelta(days=1)
 
-    if not os.path.exists(maillog_path):
-        return 0
-    output, err = public.ExecShell(
-    f'pflogsumm -d yesterday --verbose-msg-detail --zero-fill --iso-date-time --rej-add-from {maillog_path}')
-    if err:
-        # public.print_log(f"err 4444 {err}")
-        return 0
+    # 昨天 00:00:00
+    yesterday_start = datetime(yesterday.year, yesterday.month, yesterday.day, 0, 0, 0)
 
-    data = _pflogsumm_data_treating(output)
-    all = 0
-    # public.print_log(f"yesterday sent: {data['stats_dict']}")
-    if data.get('stats_dict', None):
-        all = data['stats_dict'].get('delivered', 0)
-    return all
-# 分析命令执行后的数据
-def _pflogsumm_data_treating(output):
-    import re
-    stats_dict = {}
+    # 昨天 23:59:59
+    yesterday_end = datetime(yesterday.year, yesterday.month, yesterday.day, 23, 59, 59)
 
-    # 使用正则表达式来匹配和提取关键信息
-    patterns = [
-        r'(\d+)\s+received',
-        r'(\d+)\s+delivered',
-        r'(\d+)\s+forwarded',
-        r'(\d+)\s+deferred\s+\((\d+)\s+deferrals\)',
-        r'(\d+)\s+bounced',
-        r'(\d+)\s+rejected\s+\((\d+)%\)',
-        r'(\d+)\s+reject\s+warnings',
-        r'(\d+)\s+held',
-        r'(\d+)\s+discarded\s+\((\d+)%\)',
-        r'(\d+)\s+bytes\s+received',
-        r'(\d+)k\s+bytes\s+delivered',
-        r'(\d+)\s+senders',
-        r'(\d+)\s+sending\s+hosts/domains',
-        r'(\d+)\s+recipients',
-        r'(\d+)\s+recipient\s+hosts/domains'
-    ]
+    # 转为时间戳
+    start_time = int(yesterday_start.timestamp())
+    end_time = int(yesterday_end.timestamp())
 
-    for pattern in patterns:
-        match = re.search(pattern, output)
-        if match:
-            # 将找到的数字转换为整数并存入字典
-            stats_dict[pattern] = int(match.group(1))
+    try:
+        query = public.S('send_mails').alias('rm').prefix('')
+        query.inner_join('senders s', 'rm.postfix_message_id=s.postfix_message_id')
+        query.where('s.postfix_message_id is not null')
+        if start_time > 0:
+            query.where('rm.log_time > ?', start_time - 1)
+        if end_time > 0:
+            query.where('rm.log_time < ?', end_time + 1)
 
-    friendly_names = {
-        r'(\d+)\s+received': 'received',
-        r'(\d+)\s+delivered': 'delivered',
-        r'(\d+)\s+forwarded': 'forwarded',
-        r'(\d+)\s+deferred\s+\((\d+)\s+deferrals\)': 'deferred',
-        r'(\d+)\s+bounced': 'bounced',
-        r'(\d+)\s+rejected\s+\((\d+)%\)': 'rejected',
-        r'(\d+)\s+reject\s+warnings': 'reject_warnings',
-        r'(\d+)\s+held': 'held',
-        r'(\d+)\s+discarded\s+\((\d+)%\)': 'discarded',
-        r'(\d+)\s+bytes\s+received': 'bytes_received',
-        r'(\d+)k\s+bytes\s+delivered': 'bytes_delivered_kilo',
-        r'(\d+)\s+senders': 'senders',
-        r'(\d+)\s+sending\s+hosts/domains': 'sending_hosts_domains',
-        r'(\d+)\s+recipients': 'recipients',
-        r'(\d+)\s+recipient\s+hosts/domains': 'recipient_hosts_domains'
-    }
+        query.where('rm.status  =?', 'sent')
+        from power_mta.maillog_stat import query_maillog_with_time_section
+        ret = query_maillog_with_time_section(query, start_time, end_time)
+        allnum = len(ret)
+    except:
+        allnum = 0
+    return allnum
 
-    stats_dict = {friendly_names[key]: value for key, value in stats_dict.items() if key in friendly_names}
-    keys_to_remove = [
-        "reject_warnings",
-        "held",
-        "discarded",
-        "bytes_received",
-        "senders",
-        "sending_hosts_domains",
-        "recipients",
-        "recipient_hosts_domains"
-    ]
-
-    for key in keys_to_remove:
-        stats_dict.pop(key, None)
-
-    data = {
-        "stats_dict": stats_dict,
-    }
-    return data
+# # 获取昨日邮局收发件统计数据
+# def _get_yesterday_count():
+#     maillog_path = '/var/log/maillog'
+#     if "ubuntu" in public.get_linux_distribution().lower():
+#         maillog_path = '/var/log/mail.log'
+#
+#     if not os.path.exists(maillog_path):
+#         return 0
+#     output, err = public.ExecShell(
+#     f'pflogsumm -d yesterday --verbose-msg-detail --zero-fill --iso-date-time --rej-add-from {maillog_path}')
+#     if err:
+#         # public.print_log(f"err 4444 {err}")
+#         return 0
+#
+#     data = _pflogsumm_data_treating(output)
+#     all = 0
+#     # public.print_log(f"yesterday sent: {data['stats_dict']}")
+#     if data.get('stats_dict', None):
+#         all = data['stats_dict'].get('delivered', 0)
+#     return all
+#
+# # 分析命令执行后的数据
+# def _pflogsumm_data_treating(output):
+#     import re
+#     stats_dict = {}
+#
+#     # 使用正则表达式来匹配和提取关键信息
+#     patterns = [
+#         r'(\d+)\s+received',
+#         r'(\d+)\s+delivered',
+#         r'(\d+)\s+forwarded',
+#         r'(\d+)\s+deferred\s+\((\d+)\s+deferrals\)',
+#         r'(\d+)\s+bounced',
+#         r'(\d+)\s+rejected\s+\((\d+)%\)',
+#         r'(\d+)\s+reject\s+warnings',
+#         r'(\d+)\s+held',
+#         r'(\d+)\s+discarded\s+\((\d+)%\)',
+#         r'(\d+)\s+bytes\s+received',
+#         r'(\d+)k\s+bytes\s+delivered',
+#         r'(\d+)\s+senders',
+#         r'(\d+)\s+sending\s+hosts/domains',
+#         r'(\d+)\s+recipients',
+#         r'(\d+)\s+recipient\s+hosts/domains'
+#     ]
+#
+#     for pattern in patterns:
+#         match = re.search(pattern, output)
+#         if match:
+#             # 将找到的数字转换为整数并存入字典
+#             stats_dict[pattern] = int(match.group(1))
+#
+#     friendly_names = {
+#         r'(\d+)\s+received': 'received',
+#         r'(\d+)\s+delivered': 'delivered',
+#         r'(\d+)\s+forwarded': 'forwarded',
+#         r'(\d+)\s+deferred\s+\((\d+)\s+deferrals\)': 'deferred',
+#         r'(\d+)\s+bounced': 'bounced',
+#         r'(\d+)\s+rejected\s+\((\d+)%\)': 'rejected',
+#         r'(\d+)\s+reject\s+warnings': 'reject_warnings',
+#         r'(\d+)\s+held': 'held',
+#         r'(\d+)\s+discarded\s+\((\d+)%\)': 'discarded',
+#         r'(\d+)\s+bytes\s+received': 'bytes_received',
+#         r'(\d+)k\s+bytes\s+delivered': 'bytes_delivered_kilo',
+#         r'(\d+)\s+senders': 'senders',
+#         r'(\d+)\s+sending\s+hosts/domains': 'sending_hosts_domains',
+#         r'(\d+)\s+recipients': 'recipients',
+#         r'(\d+)\s+recipient\s+hosts/domains': 'recipient_hosts_domains'
+#     }
+#
+#     stats_dict = {friendly_names[key]: value for key, value in stats_dict.items() if key in friendly_names}
+#     keys_to_remove = [
+#         "reject_warnings",
+#         "held",
+#         "discarded",
+#         "bytes_received",
+#         "senders",
+#         "sending_hosts_domains",
+#         "recipients",
+#         "recipient_hosts_domains"
+#     ]
+#
+#     for key in keys_to_remove:
+#         stats_dict.pop(key, None)
+#
+#     data = {
+#         "stats_dict": stats_dict,
+#     }
+#     return data
 
 
 
@@ -1873,11 +1897,13 @@ def refresh_dockerapps():
 
 
 def domain_ssl_service():
-    try:
-        from ssl_domainModelV2.service import make_suer_ssl_task
-        make_suer_ssl_task()
-    except Exception as e:
-        public.print_log("domain_ssl_service error , %s" % e)
+    while 1:
+        try:
+            from ssl_domainModelV2.service import make_suer_ssl_task
+            make_suer_ssl_task()
+        except Exception as e:
+            public.print_log("domain_ssl_service error , %s" % e)
+        time.sleep(3600 * 6)
 
 #每隔20分钟更新一次网站报表数据
 def update_monitor_requests():
@@ -1905,55 +1931,139 @@ def update_waf_config():
 
         time.sleep(60*20)
 
+# 每6小时进行恶意文件扫描
+def malicious_file_scanning():
+    while True:
+        try:
+            from projectModelV2 import safecloudModel
+            safecloud = safecloudModel.main()
+            # 调用 webshell_detection 函数
+            safecloud.webshell_detection({'is_task': 'true'})
+        except Exception as e:
+            public.print_log(f"Malicious file scanning: {str(e)}")
+            pass
 
+        time.sleep(60*60*6)
 
 
 def run_thread():
     global thread_dict,task_obj
-    tkeys = thread_dict.keys()
+    thread_keys = thread_dict.keys()
+    # thread_list = {
+    #     "malicious_file_scanning": malicious_file_scanning,
+    #     "start_task": task_obj.start_task,
+    #     "find_stored_favs": data_v2_cls().find_stored_favicons,
+    #     "update_waf_config": update_waf_config,
+    #     "update_monitor_requests": update_monitor_requests,
+    #     "systemTask": systemTask,
+    #     "check502Task": check502Task,
+    #     "daemon_panel": daemon_panel,
+    #     "daemon_service": daemon_service,
+    #     "restart_panel_service": restart_panel_service,
+    #     "check_panel_ssl": check_panel_ssl,
+    #     "update_software_list": update_software_list,
+    #     "send_mail_time": send_mail_time,
+    #     "check_panel_msg": check_panel_msg,
+    #     "check_breaking_through_cron": check_breaking_through_cron,
+    #     "push_msg": push_msg,
+    #     "domain_ssl_service": domain_ssl_service,
+    #     "ProDadmons":ProDadmons, # 项目守护, 没有使用
+    #     "check_panel_auth": check_panel_auth,
+    #     # "process_task_thread":process_task_thread,  # 监控工具不支持
+    #     "count_ssh_logs": count_ssh_logs,
+    #     "submit_email_statistics": submit_email_statistics,  # 每天一次 昨日邮件发送统计
+    #     "update_vulnerabilities": update_vulnerabilities,
+    #     "submit_module_call_statistics": submit_module_call_statistics,  # 每天一次 提交今天之前的统计数据
+    #     "mailsys_domain_blecklisted_alarm": mailsys_domain_blecklisted_alarm,  # 每天一次 邮局黑名单检测
+    #     "auto_reply_tasks": auto_reply_tasks,  # 每小时执行一次 自动回复邮件
+    #     "auto_scan_abnormal_mail": auto_scan_abnormal_mail,  # 每两小时执行一次 自动扫描异常邮箱
+    #     "mailsys_update_usage": mailsys_update_usage,  # 12h 邮局更新域名邮箱使用量
+    #     "mailsys_quota_alarm": mailsys_quota_alarm,  # 2h 邮件域名邮箱使用限额告警
+    #     "refresh_dockerapps": refresh_dockerapps,
+    #     "maillog_event": maillog_event,
+    #     "aggregate_maillogs": aggregate_maillogs_task,
+    #     # "print_malloc": print_malloc_thread,
+    #     "mail_automations": schedule_automations_forever,
+    # }
+    # for skey in thread_list.keys():
+    #     if not skey in tkeys or not thread_dict[skey].is_alive():
+    #         # logging.info('restart thread - {}'.format(skey))
+    #         thread_dict[skey] = threading.Thread(target=thread_list[skey])
+    #         # thread_dict[skey].setDaemon(True)
+    #         thread_dict[skey].start()
 
-    thread_list = {
-        "start_task": task_obj.start_task,
-        "find_stored_favs": data_v2_cls().find_stored_favicons,
-        "update_waf_config": update_waf_config,
-        "update_monitor_requests": update_monitor_requests,
-        "systemTask": systemTask,
-        "check502Task": check502Task,
-        "daemon_panel": daemon_panel,
-        "daemon_service": daemon_service,
-        "restart_panel_service": restart_panel_service,
-        "check_panel_ssl": check_panel_ssl,
-        "update_software_list": update_software_list,
-        "send_mail_time": send_mail_time,
-        "check_panel_msg": check_panel_msg,
-        "check_breaking_through_cron": check_breaking_through_cron,
-        "push_msg": push_msg,
-        "domain_ssl_service": domain_ssl_service,
-        "ProDadmons":ProDadmons,
-        "check_panel_auth": check_panel_auth,
-        # "process_task_thread":process_task_thread,  # 监控工具不支持
-        "count_ssh_logs": count_ssh_logs,
-        "submit_email_statistics": submit_email_statistics,  # 每天一次 昨日邮件发送统计
-        "update_vulnerabilities": update_vulnerabilities,
-        "submit_module_call_statistics": submit_module_call_statistics,  # 每天一次 提交今天之前的统计数据
-        "mailsys_domain_blecklisted_alarm": mailsys_domain_blecklisted_alarm,  # 每天一次 邮局黑名单检测
-        "auto_reply_tasks": auto_reply_tasks,  # 每小时执行一次 自动回复邮件
-        "auto_scan_abnormal_mail": auto_scan_abnormal_mail,  # 每两小时执行一次 自动扫描异常邮箱
-        "mailsys_update_usage": mailsys_update_usage,  # 12h 邮局更新域名邮箱使用量
-        "mailsys_quota_alarm": mailsys_quota_alarm,  # 2h 邮件域名邮箱使用限额告警
-        "refresh_dockerapps": refresh_dockerapps,
-        "maillog_event": maillog_event,
-        "aggregate_maillogs": aggregate_maillogs_task,
-        # "print_malloc": print_malloc_thread,
-        "mail_automations": schedule_automations_forever,
+    # 优先启动
+    core_tasks_list = {
+        "daemon_panel": daemon_panel,  # 面板守护
+        "daemon_service": daemon_service,  # 服务守护
+        "restart_panel_service": restart_panel_service,  # 面板重启服务
+        "check_panel_auth": check_panel_auth,  # 面板授权检查
+        "push_msg": push_msg,  # 面板推送消息
+        "start_task": task_obj.start_task, # panel task
+        "systemTask": systemTask, # 系统监控
+        "check_panel_msg": check_panel_msg,  # 面板消息提醒
+        "check_breaking_through_cron": check_breaking_through_cron,  # 检测防爆破计划任务
     }
 
-    for skey in thread_list.keys():
-        if not skey in tkeys or not thread_dict[skey].is_alive():
-            # logging.info('restart thread - {}'.format(skey))
-            thread_dict[skey] = threading.Thread(target=thread_list[skey])
-            # thread_dict[skey].setDaemon(True)
-            thread_dict[skey].start()
+    # 延迟启动
+    normal_tasks_list = {
+        "check502Task": check502Task,  # 检测502
+        "send_mail_time": send_mail_time, # 每3分钟检测邮件信息
+        "update_waf_config": update_waf_config, # 每隔20分钟更新一次waf报表数据
+        "update_monitor_requests": update_monitor_requests, # 每隔20分钟更新一次网站报表数据
+        "check_panel_ssl": check_panel_ssl, # 每小时检查面板SSL证书
+        "find_stored_favs": data_v2_cls().find_stored_favicons, # 每1小时找favicons
+        "update_software_list": update_software_list,  # 每5小时更新软件列表
+        "malicious_file_scanning": malicious_file_scanning, # 每6小时进行恶意文件扫描
+        "domain_ssl_service": domain_ssl_service, # 每6小时进行域名SSL服务
+
+        "maillog_event": maillog_event,  # 邮局日志事件监控 event loop
+        "aggregate_maillogs": aggregate_maillogs_task,  # 每分钟聚合邮局日志
+        "mail_automations": schedule_automations_forever,  # 每分钟邮局自动化任务
+        "auto_reply_tasks": auto_reply_tasks,  # 每1小时执行一次 自动回复邮件
+        "mailsys_quota_alarm": mailsys_quota_alarm,  # 2h 邮件域名邮箱使用限额告警
+        "auto_scan_abnormal_mail": auto_scan_abnormal_mail,  # 每2小时执行一次 自动扫描异常邮箱
+        "mailsys_update_usage": mailsys_update_usage,  # 12h 邮局更新域名邮箱使用量
+        "submit_email_statistics": submit_email_statistics,  # 每天一次 昨日邮件发送统计
+        "submit_module_call_statistics": submit_module_call_statistics,  # 每天一次 提交今天之前的统计数据
+        "mailsys_domain_blecklisted_alarm": mailsys_domain_blecklisted_alarm,  # 每天一次 邮局黑名单检测
+
+        "count_ssh_logs": count_ssh_logs,  # 每天一次统计SSH登录日志
+        "update_vulnerabilities": update_vulnerabilities,  # 每天一次 更新漏洞信息
+        "refresh_dockerapps": refresh_dockerapps, # 每天刷新docker app 列表
+    }
+
+    for core in core_tasks_list.keys():
+        if not core in thread_keys or not thread_dict[core].is_alive():
+            thread_dict[core] = threading.Thread(target=core_tasks_list[core])
+            thread_dict[core].start()
+            time.sleep(0.5) # 错峰
+    time.sleep(3) # 等核心稳定
+
+    max_cpu_rate = 70
+    total_time = 0
+    for normal in normal_tasks_list.keys():
+        if normal in core_tasks_list.keys():
+            continue
+        if not normal in thread_keys or not thread_dict[normal].is_alive():
+            while 1:
+                if total_time >= 60:  # 累计超过1分钟, 直接运行
+                    thread_dict[normal] = threading.Thread(target=normal_tasks_list[normal])
+                    thread_dict[normal].start()
+                    break
+
+                current_cpu = cpu_percent(interval=1)
+                if current_cpu < max_cpu_rate:
+                    thread_dict[normal] = threading.Thread(target=normal_tasks_list[normal])
+                    thread_dict[normal].start()
+                    break
+                else:
+                    delay = min(max(1 + (current_cpu / 10) * 0.5, 1), 5)
+                    total_time += delay
+                    time.sleep(delay)
+            time.sleep(0.5)
+
+
 
 def func():
     os.system(get_python_bin() + " {}/script/scan_log.py > /dev/null".format(base_path))
@@ -1996,7 +2106,42 @@ def check_breaking_through_cron():
         public.writeFile('/www/server/panel/logs/breaking_through.log',"{}".format(e))
         check_breaking_through_cron()
 
+def run_post_update_tasks(from_version, to_version):
+    """
+    在版本更新后执行一次性任务。
+    :param from_version: 旧版本号
+    :param to_version: 新版本号
+    :return: bool, 任务是否成功
+    """
+    try:
+        if from_version == to_version:
+            logging.info("Current task version is the same as the last version, no update tasks to run.")
+            return True
 
+        logging.info(f"Detected update program start, {from_version} -> {to_version}. Executing one-time update tasks...")
+
+        if from_version < '1.0.0':
+            base_path = public.get_panel_path()
+            dirs_to_clean = [
+                os.path.join(base_path, 'logs/sqlite_easy'),
+                os.path.join(base_path, 'logs/sql_log')
+            ]
+
+            for dir_path in dirs_to_clean:
+                if os.path.isdir(dir_path):
+                    try:
+                        shutil.rmtree(dir_path)
+                        logging.info(f"Removed directory: {dir_path}")
+                    except Exception as e:
+                        logging.error(f"Removing directory {dir_path} failed: {str(e)}")
+                else:
+                    logging.info(f"Directory not exists, skipped: {dir_path}")
+
+        logging.info("All one-time update tasks executed successfully.")
+        return True
+    except Exception as e:
+        logging.error(f"Executing one-time update task failed: {str(e)}")
+        return False
 
 
 def main():
@@ -2033,6 +2178,17 @@ def main():
         print(ex)
     logging.info('Service Up')
     time.sleep(5)
+
+    # run_post_update_tasks
+    version_file = '{}/data/task_version.pl'.format(public.get_panel_path())
+    last_version = "0.0.0"  # 默认为一个很旧的版本
+
+    if os.path.exists(version_file):
+        last_version = public.readFile(version_file) or "0.0.0"
+
+    if run_post_update_tasks(last_version, CURRENT_TASK_VERSION):
+        public.writeFile(version_file, CURRENT_TASK_VERSION)
+
     run_thread()
     # time.sleep(15)
     startTask()

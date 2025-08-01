@@ -37,7 +37,7 @@ def update_mod():
         pl = True
 
     if pl:
-        print("========================rewrite=====================")
+        # print("========================rewrite=====================")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/site_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/system_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/database_push_template.json")

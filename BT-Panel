@@ -99,6 +99,8 @@ if is_debug:
             logger.debug('File detected: {} -> {}'.format(filename,in_type))
 
             fname = os.path.basename(filename)
+            os.chmod(_PATH + "/BT-Panel", 700)
+            os.chmod(_PATH + "/BT-Task", 700)
             if fname in ['task.py','BT-Task']:
                 logger.debug('Background task...')
                 public.ExecShell("{} {}/BT-Task".format(public.get_python_bin(),_PATH))

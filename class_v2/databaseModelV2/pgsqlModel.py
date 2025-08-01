@@ -815,7 +815,7 @@ class main(databaseBase, panelPgsql):
         # 清理导入临时目录
         if is_zip is True:
             public.ExecShell("rm -rf '{input_dir}'".format(input_dir=input_dir))
-        public.WriteLog("TYPE_DATABASE", '导入数据库[{}]成功'.format(db_name))
+        public.WriteLog("TYPE_DATABASE", 'input [{}] success'.format(db_name))
         return public.success_v2(public.lang('DATABASE_INPUT_SUCCESS'))
 
     # 获取备份文件

@@ -201,17 +201,22 @@ class main(DataManager):
         return self.return_data(status=True, data=server_data)
 
     def get_progress(self, get=None):
+        try:
+            get.validate([
+                Param("type").String(opt="in", length_or_list=["backup", "restore"]).Require(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.fail_v2(str(ex))
+
         type = get.type
         progress_data = self.get_progress_with_type(type)
-        # if type == "backup":
-        #     progress_data = BackupManager().get_backup_progress()
-        # elif type == "restore":
-        #     progress_data = RestoreManager().get_restore_progress()
         if progress_data['status'] is True:
-            return self.return_data(True, public.lang("Successfully retrieved"), "", progress_data.get('msg'))
-        else:
-            return self.return_data(False, public.lang("Exception"), "",
-                                    progress_data.get('msg', public.lang("Failed to get progress")))
+            return self.return_data(True, public.lang("Successfully retrieved"), data=progress_data.get('msg'))
+
+        return self.return_data(False, error_msg=progress_data.get('msg', public.lang("Failed to get progress")))
 
     def get_details(self, get):
         """ 获取备份或还原任务的详细信息"""
@@ -341,6 +346,7 @@ class main(DataManager):
                 pass
 
         timestamp = get.timestamp
+
         public.ExecShell(
             "nohup btpython /www/server/panel/mod/project/backup_restore/restore_manager.py restore_data {} {} > /dev/null 2>&1 &".format(
                 int(timestamp), int(get.force_restore)

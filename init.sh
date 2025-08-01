@@ -255,6 +255,7 @@ panel_reload()
                 done
                         rm -f $pidfile
                         echo -e "Reload Bt-Panel.\c";
+                        chmod 700 $panel_path/BT-Panel
                         nohup $panel_path/BT-Panel >> $log_file 2>&1 &
                         isStart=""
                         n=0

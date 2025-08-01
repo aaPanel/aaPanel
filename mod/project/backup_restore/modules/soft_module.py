@@ -759,14 +759,14 @@ export NODE_PATH="/www/server/nodejs/{node_ver}/etc/node_modules"
             public.print_log("Error installing FTP server: {}".format(str(e)))
             pass
 
-        try:
-            if soft_json_data['node_list']:
-                self.install_node(timestamp)
-        except Exception as e:
-            import traceback
-            public.print_log(traceback.format_exc())
-            public.print_log("Error installing Node.js: {}".format(str(e)))
-            pass
+        # try:
+        #     if soft_json_data['node_list']:
+        #         self.install_node(timestamp)
+        # except Exception as e:
+        #     import traceback
+        #     public.print_log(traceback.format_exc())
+        #     public.print_log("Error installing Node.js: {}".format(str(e)))
+        #     pass
 
         try:
             if soft_json_data['redis_server']:

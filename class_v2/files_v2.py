@@ -20,6 +20,7 @@ import re
 import sqlite3
 from BTPanel import session, request
 from public.validate import Param
+from datetime import datetime
 
 
 class files:
@@ -1719,6 +1720,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
         if not os.path.exists(get.path) and not os.path.islink(get.path):
+            try:
+                public.M("backup").where("filename=?", get.path).delete()
+            except Exception:
+                pass
             return public.return_message(-1, 0, public.lang("Configuration file not exist"))
         # 检查关键文件
         msg = self.CheckDelete(get.path)
@@ -4120,73 +4125,180 @@ CREATE TABLE index_tb(
         search = getattr(get, "search", None)
         type_sql = getattr(get, "type_sql", "")
         return_js = getattr(get, "return_js", "")
-        # 从设置中获取备份路径
-        backup_path = public.M('config').where("id=?", ('1',)).getField('backup_path')
-        path_root_directory = os.path.join(backup_path, 'database')
+        search_lower = search.lower() if search else None
+
+        # 参数验证优化
         if not str(p).isdigit():
-            return public.return_message(-1,0, "ParameterError！ p")
+            return public.return_message(-1, 0, "ParameterError！ p")
         if not str(limit).isdigit():
-            return public.return_message(-1,0, "ParameterError！limit")
+            return public.return_message(-1, 0, "ParameterError！limit")
         if type_sql not in ['mysql', 'mongodb', 'pgsql']:
             return public.return_message(-1, 0, "ParameterError！type_sql")
+
+        # 从设置中获取备份路径，用于获取手动上次文件
+        backup_path = public.M('config').where("id=?", ('1',)).getField('backup_path')
+        path_root_directory = os.path.join(backup_path, 'database')
+
+        if type_sql == 'mysql':
+            type_link = '%_mysql_%'
+        elif type_sql == 'mongodb':
+            type_link = '%_mongodb_%'
+            path_root_directory = os.path.join(path_root_directory, 'mongodb')
+        elif type_sql == 'pgsql':
+            type_link = '%_pgsql_%'
+            path_root_directory = os.path.join(path_root_directory, 'pgsql')
 
         p = int(p)
         limit = int(limit)
 
-        ext_list = ["sql", "tar.gz", "gz", "zip"]
+        # 从数据库中查询备份文件
+        if search_lower:
+            search_lower_sql = f"%{search_lower}%"
+            backup_list = public.M('backup').field('name,filename,size,addtime').where("type=1 and name LIKE ? and name LIKE ?",(type_link,search_lower_sql,)).order("addtime DESC").select()
+        else:
+            backup_list = public.M('backup').field('name,filename,size,addtime').where("type=1 and name LIKE ?", (type_link,)).order("addtime DESC").select()
 
-        backup_list = []
+        # 获取手动上传的备份文件
+        upload_list = self.get_dir_backup(path_root_directory, False, search_lower)
+        backup_list.extend(upload_list)
 
-        # 递归获取备份文件
-        def get_dir_backup(backup_dir: str, backup_list: list, is_recursion: bool):
-            if not os.path.exists(backup_dir): return
-            for name in os.listdir(backup_dir):
-                path = os.path.join(backup_dir, name)
-                if os.path.isdir(path) and name == "all_backup": continue  # 跳过全部备份目录
-                if os.path.isfile(path):
-                    ext = name.split(".")[-1]
-                    if ext.lower() not in ext_list: continue
-                    if search is not None and search not in name: continue
+        # 分页处理优化
+        total = len(backup_list)
+        start_idx = (p - 1) * limit
+        end_idx = start_idx + limit
 
-                    stat_file = os.stat(path)
-                    path_data = {
-                        "name": name,
-                        "path": path,
-                        "size": stat_file.st_size,
-                        "mtime": int(stat_file.st_mtime),
-                        "ctime": int(stat_file.st_ctime),
-                    }
-                    backup_list.append(path_data)
-                elif os.path.isdir(path) and is_recursion is True:
-                    get_dir_backup(path, backup_list, is_recursion)
+        if total > 0:
+            backup_list.sort(key=lambda x: x["addtime"], reverse=True)
+            backup_list = backup_list[start_idx:end_idx]
 
-        # 获取备份目录，其中mysql手动备份文件在根目录下
-        path_directory = os.path.join(path_root_directory, type_sql)
-        if type_sql == 'mysql':
-            get_dir_backup(path_root_directory, backup_list, False)
-        if os.path.exists(path_directory):
-            get_dir_backup(path_directory, backup_list, True)
+        for i in backup_list:
+            try:
+                if 'filename' in i:
+                    i['path'] = i['filename']
+                    del i['filename']
+                i['ctime'] = datetime.strptime(i['addtime'], "%Y-%m-%d %H:%M:%S").timestamp()
+                del i['addtime']
+            except:
+                pass
 
+        # 分页信息处理
         try:
             from flask import request
             uri = public.url_encode(request.full_path)
         except:
             uri = ''
-        # 包含分页类
+
         import page
-        # 实例化分页类
-        page = page.Page()
-        info = {
+        page_obj = page.Page()
+        page_info = page_obj.GetPage({
             "p": p,
-            "count": len(backup_list),
+            "count": total,
             "row": limit,
             "return_js": return_js,
             "uri": uri,
-        }
-        page_info = page.GetPage(info)
+        })
+        return public.return_message(0, 0, {"data": backup_list, "page": page_info})
 
-        start_idx = (int(p) - 1) * limit
-        end_idx = p * limit if p * limit < len(backup_list) else len(backup_list)
-        backup_list.sort(key=lambda data: data["mtime"], reverse=True)
-        backup_list = backup_list[start_idx:end_idx]
-        return public.return_message(0,0,{ "data": backup_list, "page": page_info})
+    # 数据库上传文件扫描函数
+    def get_dir_backup(self, backup_dir: str, is_recursion: bool,search_lower=None) -> list:
+        """
+            param backup_dir: 备份目录路径
+            param is_recursion: 是否递归查找子目录
+            param search_lower: 搜索过滤条件，默认为None
+            return: 返回备份文件列表
+        """
+        ext_set = {"sql", "tar.gz", "gz", "zip"}
+        backup_list = []
+        if not os.path.exists(backup_dir):
+            return backup_list
+        with os.scandir(backup_dir) as entries:
+            for entry in entries:
+                try:
+                    if entry.is_dir(follow_symlinks=False):
+                        if entry.name == "all_backup":
+                            continue
+                        if is_recursion:
+                            self.get_dir_backup(entry.path, is_recursion)
+                    elif entry.is_file(follow_symlinks=False):
+                        # 提取并验证扩展名
+                        name = entry.name
+                        ext = name.split(".")[-1].lower() if "." in name else ""
+                        if ext not in ext_set:
+                            continue
+
+                        # 搜索过滤
+                        if search_lower and search_lower not in name.lower():
+                            continue
+
+                        # 获取文件属性
+                        stat = entry.stat()
+                        backup_list.append({
+                            "name": name,
+                            "path": entry.path,
+                            "size": stat.st_size,
+                            "addtime": datetime.fromtimestamp(stat.st_ctime).strftime("%Y-%m-%d %H:%M:%S"),
+                        })
+                except OSError:
+                    continue  # 忽略无法访问的文件/目录
+        return backup_list
+
+    @staticmethod
+    def test_path(get=None):
+        try:
+            path = get.path.strip()
+        except AttributeError:
+            return public.return_message(-1, 0, "Parameter error")
+
+
+        if not os.path.exists(path):
+            return public.return_message(0, 0,  {
+                "path": "",
+                "is_dir": None,
+                "exists": False
+            })
+
+        if os.path.islink(path):
+            real_path = os.path.abspath(os.readlink(path))
+            if not os.path.exists(real_path):
+                return public.return_message(0, 0,  {
+                    "path": "",
+                    "is_dir": None,
+                    "exists": False
+                })
+        else:
+            real_path = path
+
+        return public.return_message(0, 0,  {
+            "path": real_path,
+            "is_dir": os.path.isdir(real_path),
+            "exists": True,
+        })
+
+
+    # 上传前批量检查文件是否存在
+    def upload_files_exists(self, args):
+        '''
+            @name 上传前批量检查文件是否存在
+            @param files<string> 文件列表,多个用\n分隔
+            @return dict
+        '''
+        check_files = []
+        if hasattr(args, 'files'):
+            check_files = args.files.split('\n')
+        file_list = []
+        for filename in check_files:
+            try:
+                if not os.path.exists(filename):
+                    file_list.append({'filename': filename, 'exists': False, 'size': 0, 'mtime': 0, 'isfile': False})
+                    continue
+                _stat = os.stat(filename)
+                file_list.append({
+                    'filename': filename,
+                    'exists': True,
+                    'size': _stat.st_size,
+                    'mtime': int(_stat.st_mtime),
+                    'isfile': os.path.isfile(filename)
+                })
+            except:
+                file_list.append({'filename': filename, 'exists': False, 'size': 0, 'mtime': 0, 'isfile': False})
+        return  public.return_message(0, 0,  file_list)

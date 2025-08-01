@@ -50,6 +50,8 @@ class DatabaseModule(DataManager):
         self.base_path = '/www/backup/backup_restore'
         self.bakcup_task_json = self.base_path + '/backup_task.json'
         self.mysql_table_data_exist = True
+        self.mg_table_data_exist = True
+        self.pgsql_table_data_exist = True
 
     def get_database_backup_conf(self, timestamp=None):
         mysql_data = public.M('databases').select()
@@ -226,14 +228,10 @@ class DatabaseModule(DataManager):
                         backup_result = self.backup_mysql_data(db['name'], timestamp)
 
                     elif db.get('type', '').lower() == 'mongodb':
-                        # TODO: 存在问题，下个版本修复
-                        # backup_result = self.backup_mongodb_data(db['name'], timestamp)
-                        backup_result = {"status": False, "msg": "not supported yet"}
+                        backup_result = self.backup_mongodb_data(db['name'], timestamp)
 
                     elif db.get('type', '').lower() == 'pgsql':
-                        # TODO: 存在问题，下个版本修复
-                        # backup_result = self.backup_pgsql_data(db['name'], timestamp)
-                        backup_result = {"status": False, "msg": "not supported yet"}
+                        backup_result = self.backup_pgsql_data(db['name'], timestamp)
 
                     elif db.get('type', '').lower() == 'redis':
                         backup_result = self.backup_redis_data(timestamp)
@@ -271,11 +269,6 @@ class DatabaseModule(DataManager):
                 db['msg'] = str(e)
                 continue
             self.update_backup_data_list(timestamp, data_list)
-
-        # try:
-        #     self.backup_sqlite_data(timestamp)
-        # except:
-        #     pass
 
         get_remote_list_result = self.get_remote_db_list()
         if get_remote_list_result['status'] is True:
@@ -438,9 +431,16 @@ class DatabaseModule(DataManager):
         # 构建备份命令
         mongodump_shell = f"'{self._MONGODBDUMP_BIN}' --host='{db_host}' --port={int(db_port)} --db='{db_name}' --out='{export_dir}'"
 
+        auth_status = panelMongoDB.panelMongoDB().get_config_options("security", "authorization",
+                                                                     "disabled") == "enabled"
+
+        if auth_status and not os.path.exists(f"{export_dir}/auth.pl"):
+            public.ExecShell(f"echo True > {export_dir}/auth.pl")
+
         # 如果需要认证，添加用户名和密码
-        if db_password:
+        if auth_status and db_password:
             mongodump_shell += f" --username='{db_user}' --password='{db_password}'"
+
         # 执行备份命令
         public.ExecShell(mongodump_shell)
 
@@ -521,36 +521,117 @@ class DatabaseModule(DataManager):
         public.WriteLog("TYPE_DATABASE", "DATABASE_BACKUP_SUCCESS", (db_name,))
         return {"status": True, "msg": backup_file}
 
-    def _mysql__init(self):
+    def _sync_database(self, db_client: object):
+        bin_path = None
+        name = "unknown"
         try:
-            self._init_mysql_root()
+            if hasattr(db_client, "_MYSQL_BIN"):
+                bin_path = "/www/server/mysql/bin/mysqld"
+                name = "MySQL"
+            elif hasattr(db_client, "_MONGODBDUMP_BIN"):
+                bin_path = "/www/server/mongodb/bin/mongod"
+                name = "MongoDB"
+            elif hasattr(db_client, "_PSQL_BIN"):
+                bin_path = "/www/server/pgsql/bin/pg_config"
+                name = "PostgreSQL"
+            if not bin_path or not os.path.exists(bin_path) or not name:
+                return
 
-            if os.path.exists("/www/server/mysql/bin/mysqld"):
-                count = 0
-                log = public.lang("MySQL db synchronization...")
-                self.print_log(log, "restore")
-                while count <= 10:
-                    sync_db_user_pwd = database.database().SyncToDatabases(public.to_dict_obj({"ids": 0, "type": 0}))
-                    if sync_db_user_pwd.get("status") != 0:
-                        time.sleep(1)
-                        continue
-                    else:
-                        self.replace_log(
-                            log, public.lang("MySQL db synchronization completed."), "restore"
-                        )
-                        break
+            log = public.lang(f"{name} synchronization...")
+            self.print_log(log, "restore")
+            # noinspection PyUnresolvedReferences
+            sync_db_user_pwd = db_client.SyncToDatabases(public.to_dict_obj({"type": 0, "ids": "[]"}))
+            public.print_log(f"sync_db_user_pwd {name}>>> {sync_db_user_pwd}")
+            self.replace_log(log, public.lang(f"{name} synchronization completed!"), "restore")
+        except Exception as e:
+            public.print_log("{} sync database func error: {}".format(name, str(e)))
+
+    def _init_mysql_root(self):
+        try:
+            root_pwd = None
+            if self.overwrite:  # table config has overwrited this time
+                root_pwd = public.M("config").where("id=?", (1,)).getField("mysql_root")
+
+            if not os.path.exists("/www/server/panel/data/remysql_root.pl"):
+                root_pwd = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
+
+            if root_pwd:
+                init_root_cmd = "btpython /www/server/panel/tools.py root {}".format(root_pwd)
+                public.ExecShell(init_root_cmd)
+                public.ExecShell("echo 'True' > /www/server/panel/data/remysql_root.pl")
+                self.print_log(public.lang("MySQL initialization successful!"), "restore")
+                self.print_log(public.lang("MySQL will restart, please wait..."), "restore")
+                time.sleep(5)
+                public.ExecShell("/etc/init.d/mysqld restart")
+                time.sleep(7)
         except:
             pass
 
+    def _init_mg_root(self, timestamp: int):
+        if not self.overwrite:
+            return
+        try:
+            auth = os.path.join(self.base_path, f"{timestamp}_backup/database/mongodb/auth.pl")
+            body = {"status": 1} if auth else {"status": 0}
+            set_root = panelMongoDB.main().set_auth_status(public.to_dict_obj(body))
+            time.sleep(1)
+            if set_root.get("status") == 0:
+                self.print_log(public.lang("MongoDB initialization successful!"), "restore")
+            else:
+                self.print_log(public.lang(f"MongoDB set auth failed!"), "restore")
+        except Exception as e:
+            self.print_log(public.lang("MongoDB set auth failed! error: {}".format(e)), "restore")
+
+    def _init_pg_root(self):
+        try:
+            current_root = panelPgsql.main().get_root_pwd(public.dict_obj())["message"].get("result")
+        except:
+            current_root = None
+
+        pwd_root = current_root if current_root else public.GetRandomString(16)
+        set_root = panelPgsql.main().set_root_pwd(
+            public.to_dict_obj({"password": pwd_root})
+        )
+        time.sleep(1)
+        if set_root.get("status") == 0:
+            self.print_log(public.lang("PostgreSQL initialization successful!"), "restore")
+        else:
+            self.print_log(public.lang(f"PostgreSQL set root failed!"), "restore")
+
+    def _init_redis(self):
+        config = public.readFile("/www/server/redis/redis.conf")
+        if config and "protected-mode yes" in config and not re.search(
+                r"# Redis configuration file example.\nrequirepass (\S+)", config
+        ):
+            config = config.replace(
+                "# Redis configuration file example.\n",
+                f"# Redis configuration file example.\nrequirepass {public.GetRandomString(16)}\n",
+            )
+            public.writeFile("/www/server/redis/redis.conf", config)
+            self.print_log(public.lang("Redis initialization successful!"), "restore")
+            public.ExecShell("/etc/init.d/redis restart")
+            time.sleep(1)
+
+    def _before_restore(self, timestamp: int):
+        # init root
+        self._init_mysql_root()
+        self._init_mg_root(timestamp)
+        self._init_pg_root()
+        self._init_redis()
+        # sync to database
+        self._sync_database(database.database())
+        self._sync_database(panelMongoDB.main())
+        self._sync_database(panelPgsql.main())
+
     def restore_database_data(self, timestamp):
         self.print_log("==================================", "restore")
-        self.print_log(public.lang("Start restoring database data"), "restore")
+        self.print_log(public.lang("Start restoring database"), "restore")
         restore_data = self.get_restore_data_list(timestamp)
         database_data = restore_data['data_list']['database']
         with app.app_context():
-            # === before mysql ===
-            self._mysql__init()
-
+            # === before restore ===
+            self._before_restore(timestamp)
+            self.print_log(public.lang("Start restoring database's data..."), "restore")
             for db_data in database_data:
                 log_str = public.lang("Restoring {} database {}").format(db_data['type'], db_data['name'])
                 result = None
@@ -563,6 +644,7 @@ class DatabaseModule(DataManager):
                         # ==================== MySQL  ====================
                         if db_data['type'] == 'MySQL':
                             self.restore_mysql_info(db_data)
+                            result = self.input_mysql_sql(db_data)
 
                         # ==================== MongoDB  ====================
                         elif db_data['type'] == 'MongoDB':
@@ -614,35 +696,6 @@ class DatabaseModule(DataManager):
             self.resotre_remote_db_server(restore_data['data_list']['remote_db_list'])
             self.print_log(public.lang("Remote database restoration completed"), "restore")
 
-        # ==================== sqlite  ====================
-        # try:
-        #     self.restore_sqlite_data(timestamp)
-        # except:
-        #     pass
-
-    def _init_mysql_root(self):
-        try:
-            root_pwd = None
-            if self.overwrite:  # table config has overwrited this time
-                root_pwd = public.M("config").where("id=?", (1,)).getField("mysql_root")
-
-            if not os.path.exists("/www/server/panel/data/remysql_root.pl"):
-                root_pwd = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
-
-            if root_pwd:
-                init_root_cmd = "btpython /www/server/panel/tools.py root {}".format(root_pwd)
-                public.ExecShell(init_root_cmd)
-                public.ExecShell("echo 'True' > /www/server/panel/data/remysql_root.pl")
-                self.print_log(
-                    public.lang("MySQL initialization successful with password {}").format(root_pwd), "restore"
-                )
-                self.print_log(public.lang("MySQL will restart, please wait..."), "restore")
-                time.sleep(5)
-                public.ExecShell("/etc/init.d/mysqld restart")
-                time.sleep(7)
-        except:
-            pass
-
     def _get_mysql_db_access(self, db_data) -> tuple[str, str]:
         real_access = db_data.get("real_access", "127.0.0.1")
         if real_access == "%":
@@ -660,36 +713,6 @@ class DatabaseModule(DataManager):
             "password": password,
         }))
         return res
-
-    def _before_restore_table_data(self, db_client, if_exist: dict, database_record: dict) -> dict:
-        """
-        pg & mg 公共部分, 密码还原, 等
-        :param db_client: 数据库客户端
-        :param if_exist: 当前数据库记录
-        :param database_record: 源数据库记录
-        :return: 清理后待覆盖数据库记录
-        """
-        password = database_record.get("password", "")
-        if "id" in database_record:
-            del database_record["id"]
-        if "pid" in database_record:
-            del database_record["pid"]
-        if 'password' in database_record:
-            del database_record['password']
-
-        # reset password
-        reset = self._reset_password(
-            db_client=db_client,
-            id=if_exist['id'],
-            name=if_exist['username'],
-            password=password
-        )
-        if reset.get('status') != 0:
-            self.print_log(public.lang("{} database password restoration failed. Reason: {}").format(if_exist['name'],
-                                                                                                     reset['message']),
-                           "restore")
-        # return database record which need to update
-        return database_record
 
     def _before_input_sql(self, db_client, db_data: dict, db_type: str) -> dict:
         # 插入前备份
@@ -724,7 +747,6 @@ class DatabaseModule(DataManager):
             if not self.overwrite:
                 return {"status": True, "msg": public.lang("MySQL database {} already exists").format(db_data['name'])}
             # default.db is overwrited
-            result = self.input_mysql_sql(db_data)  # create db table data
             # mysql real access
             set_res = database.database().SetDatabaseAccess(public.to_dict_obj({
                 "dataAccess": dataAccess,
@@ -734,11 +756,12 @@ class DatabaseModule(DataManager):
             }))
             if set_res.get("status") != 0:
                 self.print_log(
-                    public.lang("Failed to restore {} database access permissions. Reason: {}").format(db_data['name'],
-                                                                                                       set_res[
-                                                                                                           'message']),
-                    "restore")
-            return result
+                    public.lang(
+                        "Failed to restore {} database access permissions. Reason: {}"
+                    ).format(db_data['name'], set_res['message']),
+                    "restore"
+                )
+            return set_res
         else:  # no exitst
             self.mysql_table_data_exist = False
             args = public.dict_obj()
@@ -755,12 +778,11 @@ class DatabaseModule(DataManager):
             args.listen_ip = "0.0.0.0/0"
             args.active = False
             res = database.database().AddDatabase(args)
-            result = self.input_mysql_sql(db_data)  # input data
             if res['status'] != 0:
                 self.print_log(
                     public.lang("Failed to create {} database. Reason: {}").format(db_data['name'], res['message']),
                     "restore")
-            return result
+            return res
 
     def input_mysql_sql(self, db_data):
         db_host = "localhost"
@@ -809,26 +831,14 @@ class DatabaseModule(DataManager):
             "name=? AND LOWER(type)=LOWER('mongodb')", (db_data["name"],)
         ).find()
         if if_exist:
-            # always fix pid, mongodb pid always eq 0, skip
+            self.mg_table_data_exist = True
             if not self.overwrite:
-                return {"status": True,
-                        "msg": public.lang("MongoDB database {} already exists").format(db_data['name'])}
-            # org db table data
-            database_record = db_data.get("database_record")
-            if not database_record:
-                raise Exception(public.lang("Database record validation failed, restoration stopped"))
-
-            database_record = self._before_restore_table_data(
-                db_client=panelMongoDB.main(),
-                if_exist=if_exist,
-                database_record=database_record,
-            )
-            # update , mongodb pid always eq 0
-            public.M('databases').where('id=?', (if_exist["id"],)).update({
-                **database_record, "pid": 0,
-            })
-
+                return {
+                    "status": True, "msg": public.lang("MongoDB database {} already exists").format(db_data['name'])
+                }
+            return {"status": True, "msg": public.lang(f"MongoDB database {db_data['name']} successfully")}
         else:
+            self.mg_table_data_exist = False
             args = public.dict_obj()
             args.name = db_data['name']
             args.db_user = db_data['username']
@@ -848,7 +858,7 @@ class DatabaseModule(DataManager):
                 return {"status": True, "msg": public.lang("Creation successful")}
 
     def input_mongodb_data(self, db_data):
-        if not self.overwrite:
+        if self.mg_table_data_exist and not self.overwrite:
             return {"status": True, "msg": public.lang("Database already exists, skipping data restoration")}
 
         back_up = self._before_input_sql(
@@ -875,25 +885,15 @@ class DatabaseModule(DataManager):
             "name=? AND LOWER(type)=LOWER('pgsql')", (db_data["name"],)
         ).find()
         if if_exist:
-            # always fix pid, pgsql pid always eq 0, skip
+            self.pgsql_table_data_exist = True
             if not self.overwrite:
                 return {"status": True,
                         "msg": public.lang("PostgreSQL database {} already exists").format(db_data['name'])}
-            # org db table data
-            database_record = db_data.get("database_record")
-            if not database_record:
-                raise Exception(public.lang("Database record validation failed, restoration stopped"))
-
-            database_record = self._before_restore_table_data(
-                db_client=panelPgsql.main(),
-                if_exist=if_exist,
-                database_record=database_record,
-            )
-            # update , pgsql pid always eq 0
-            public.M('databases').where("id=?", (if_exist["id"],)).update({
-                **database_record, "pid": 0,
-            })
+            return {
+                "status": True, "msg": public.lang(f"PostgreSQL database {db_data['name']} successfully")
+            }
         else:
+            self.pgsql_table_data_exist = False
             args = public.dict_obj()
             args.name = db_data['name']
             args.db_user = db_data['username']
@@ -919,7 +919,7 @@ class DatabaseModule(DataManager):
         @param db_data: dict 数据库信息
         """
         try:
-            if not self.overwrite:
+            if self.pgsql_table_data_exist and not self.overwrite:
                 return {"status": True, "msg": public.lang("Database already exists, skipping data restoration")}
             # 备份数据库
             back_up = self._before_input_sql(
@@ -961,9 +961,8 @@ class DatabaseModule(DataManager):
 
             # 执行还原命令
             result = public.ExecShell("{} < '{}'".format(shell, sql_file), env={"PGPASSWORD": db_password})
-
-            if "error:" in result[0].lower() or "error:" in result[1].lower():
-                return {"status": False, "msg": result[0] + result[1]}
+            # if "error:" in result[0].lower() or "error:" in result[1].lower():
+            #     return {"status": False, "msg": result[0] + result[1]}
 
             return {"status": True, "msg": public.lang("Restoration successful")}
 

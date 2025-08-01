@@ -878,7 +878,7 @@ var Tag = function () {
     this.end = { row: 0, column: 0 };
 };
 function is(token, type) {
-    return token && token.type && token.type.lastIndexOf(type + ".xml") > -1;
+    return token.type.lastIndexOf(type + ".xml") > -1;
 }
 (function () {
     this.getFoldWidget = function (session, foldStyle, row) {
@@ -1240,8 +1240,10 @@ var JavaHighlightRules = function () {
         "char|final|interface|static|void|" +
         "class|finally|long|strictfp|volatile|" +
         "const|float|native|super|while|" +
-        "yield|when|record|var|" +
-        "permits|(?:non\\-)?sealed");
+        "var|exports|opens|requires|uses|yield|" +
+        "module|permits|(?:non\\-)?sealed|var|" +
+        "provides|to|when|" +
+        "open|record|transitive|with");
     var buildinConstants = ("null|Infinity|NaN|undefined");
     var langClasses = ("AbstractMethodError|AssertionError|ClassCircularityError|" +
         "ClassFormatError|Deprecated|EnumConstantNotPresentException|" +
@@ -1274,7 +1276,16 @@ var JavaHighlightRules = function () {
     }, "identifier");
     this.$rules = {
         "start": [
-            { include: "comments" },
+            {
+                token: "comment",
+                regex: "\\/\\/.*$"
+            },
+            DocCommentHighlightRules.getStartRule("doc-start"),
+            {
+                token: "comment", // multi line comment
+                regex: "\\/\\*",
+                next: "comment"
+            },
             { include: "multiline-strings" },
             { include: "strings" },
             { include: "constants" },
@@ -1284,18 +1295,14 @@ var JavaHighlightRules = function () {
                 next: [{
                         regex: "{",
                         token: "paren.lparen",
-                        push: [
-                            {
+                        next: [{
                                 regex: "}",
                                 token: "paren.rparen",
-                                next: "pop"
-                            },
-                            { include: "comments" },
-                            {
+                                next: "start"
+                            }, {
                                 regex: "\\b(requires|transitive|exports|opens|to|uses|provides|with)\\b",
                                 token: "keyword"
-                            }
-                        ]
+                            }]
                     }, {
                         token: "text",
                         regex: "\\s+"
@@ -1315,29 +1322,14 @@ var JavaHighlightRules = function () {
             },
             { include: "statements" }
         ],
-        "comments": [
+        "comment": [
             {
-                token: "comment",
-                regex: "\\/\\/.*$"
-            },
-            {
-                token: "comment.doc", // doc comment
-                regex: /\/\*\*(?!\/)/,
-                push: "doc-start"
-            },
-            {
-                token: "comment", // multi line comment
-                regex: "\\/\\*",
-                push: [
-                    {
-                        token: "comment", // closing comment
-                        regex: "\\*\\/",
-                        next: "pop"
-                    }, {
-                        defaultToken: "comment"
-                    }
-                ]
-            },
+                token: "comment", // closing comment
+                regex: "\\*\\/",
+                next: "start"
+            }, {
+                defaultToken: "comment"
+            }
         ],
         "strings": [
             {
@@ -1480,7 +1472,7 @@ var JavaHighlightRules = function () {
             }
         ]
     };
-    this.embedRules(DocCommentHighlightRules, "doc-", [DocCommentHighlightRules.getEndRule("pop")]);
+    this.embedRules(DocCommentHighlightRules, "doc-", [DocCommentHighlightRules.getEndRule("start")]);
     this.normalizeRules();
 };
 oop.inherits(JavaHighlightRules, TextHighlightRules);
@@ -1543,7 +1535,6 @@ var Mode = function () {
     JavaScriptMode.call(this);
     this.HighlightRules = JavaHighlightRules;
     this.foldingRules = new JavaFoldMode();
-    this.$behaviour = this.$defaultBehaviour;
 };
 oop.inherits(Mode, JavaScriptMode);
 (function () {

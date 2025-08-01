@@ -18,9 +18,53 @@ if not 'class/' in sys.path:
 if not 'class_v2/' in sys.path:
     sys.path.insert(0, 'class_v2/')
 
-"""
-目前面板启动弃用job v1
-"""
+def control_init_now():
+    update_py312()
+    sql_pacth()
+    run_new()
+    rep_pyenv_link()
+    public.chdck_salt()
+    files_set_mode()
+    set_pma_access()
+    check_enable_php()
+
+def control_init_delay():
+    delay_list = [
+        (rep_websocket_conf,),
+        (clear_other_files,),
+        (remove_tty1,),
+        (clean_hook_log,),
+        (acme_crond_reinit,),
+        (clear_fastcgi_safe,),
+        (run_script,),
+        (set_php_cli_env,),
+        (check_default_curl_file,),
+        (null_html,),
+        (remove_other,),
+        (upgrade_polkit,),
+        (deb_bashrc,),
+        (install_pycountry,),
+        (install_pyroute2,),
+        (upgrade_fastcgi_cache_conf_format,),
+        (clean_max_log, '/www/server/panel/plugin/rsync/lsyncd.log'),
+        (clean_max_log, '/var/log/rsyncd.log', 1024 * 1024 * 10),
+        (clean_max_log, '/root/.pm2/pm2.log', 1024 * 1024 * 20),
+        (clean_max_log, '/www/server/cron', 1024 * 1024 * 5, 20),
+        (clean_max_log, "/www/server/panel/plugin/webhook/script", 1024 * 1024 * 1),
+    ]
+    for task in delay_list:
+        try:
+            if len(task) >= 2:
+                task[0](*task[1:])
+            else:
+                task[0]()
+            time.sleep(0.5)
+        except Exception as e:
+            public.print_log(f"error: {task[0].__name__} - {str(e)}")
+
+def control_init_new():
+    control_init_now()
+    control_init_delay()
 
 def control_init():
     update_py312()
@@ -1021,7 +1065,7 @@ def clean_session():
             filename = os.path.join(session_path,fname)
             if not os.path.exists(filename): continue
             modify_time = os.path.getmtime(filename)
-            if (now_time - modify_time) > p_time: 
+            if (now_time - modify_time) > p_time:
                 old_state = True
                 break
         if old_state: public.ExecShell("rm -f " + session_path + '/*')
@@ -1036,6 +1080,6 @@ def upgrade_fastcgi_cache_conf_format():
 
 
 if __name__ == '__main__':
-    control_init()
+    control_init_new()
 
 

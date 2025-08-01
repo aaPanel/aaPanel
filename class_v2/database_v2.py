@@ -1714,6 +1714,11 @@ SetLink
             file = local_path
 
         if not os.path.exists(file):
+            # 实际文件不存在，则尝试删除数据库记录
+            try:
+                public.M("backup").where("filename=?", file).delete()
+            except Exception:
+                pass
             return public.return_message(-1, 0, "import path not found!")
         if not os.path.isfile(file):
             return public.return_message(-1, 0, "Only compressed files are supported for import")
