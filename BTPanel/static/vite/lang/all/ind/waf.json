@@ -808,5 +808,11 @@
 	"6ffb0601c3a822dfec80b423d9146728": "Menghapus kata -kata terlarang, harap tunggu ...",
 	"a39ca836a42e051fd9ccf7d030b630e2": "Kliring kata -kata terlarang, harap tunggu ...",
 	"b67a41ea491e086fc87abcfdd3172202": "Harap gunakan ekspresi reguler; Cadangkan ekspresi asli sebelum mengirimkan.",
-	"57322c79b2d81235926ce33864e578de": "Meminta pertahanan"
+	"57322c79b2d81235926ce33864e578de": "Meminta pertahanan",
+	"6806d45f993a5a42976a1ecb85ea8553": "Peta 3D",
+	"de572bbd2cfd3c680a1ab9445604f977": "Aktifkan peta 3D",
+	"3e8859dd023902cb08788fe23ddbacd1": "Nonaktifkan peta 3D",
+	"1eb909392e6668d574fd03c93b298148": "Setelah mengaktifkan peta 3D, peta akan beralih ke mode 3D. Mengonfirmasi?",
+	"54bb63c860b140f07c34d5c5791ba1b7": "Setelah menonaktifkan peta 3D, peta akan beralih ke mode 2D. Mengonfirmasi?",
+	"6a771b435e66f6502c7d5bac79779564": "Pengaturan, tolong tunggu ..."
 }

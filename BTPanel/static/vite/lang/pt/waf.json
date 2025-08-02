@@ -34,7 +34,12 @@
 			"index_30": "Relatório de bloco de hoje >>",
 			"index_31": "Tipo de bloco (hoje)",
 			"index_32": "Bloco de hoje",
-			"index_33": "{0} \n {1}/item, {2}%"
+			"index_33": "{0} \n {1}/item, {2}%",
+			"index_34": "Mapa 3D",
+			"index_35": "Ativar mapa 3D",
+			"index_36": "Desativar mapa 3D",
+			"index_37": "Depois de ativar o mapa 3D, o mapa mudará para o modo 3D. Confirmar?",
+			"index_38": "Após desativar o mapa 3D, o mapa mudará para o modo 2D. Confirmar?"
 		},
 		"Site": {
 			"index_1": "Interceptar o acesso de IPs maliciosos conhecidos de AAPALEL",
@@ -840,6 +845,7 @@
 		},
 		"Api": {
 			"overview_1": "Ativação com um clique em andamento, aguarde ...",
+			"overview_2": "Configuração, por favor, espere ...",
 			"site_2": "Definindo o interruptor de configuração global, aguarde ...",
 			"site_3": "Configurando o status do site, aguarde ...",
 			"site_4": "Detectando o ambiente Captcha, por favor, espere ...",

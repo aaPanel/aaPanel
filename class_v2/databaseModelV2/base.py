@@ -1,30 +1,43 @@
 # coding: utf-8
-import os, sys, time, json
+import json
+import os
+import sys
+import time
 
 panelPath = '/www/server/panel'
 os.chdir(panelPath)
 if not panelPath + "/class/" in sys.path:
     sys.path.insert(0, panelPath + "/class/")
 import public, re
+from public.exceptions import HintException
 
 
 class databaseBase:
-
     def get_base_list(self, args, sql_type='mysql'):
         """
         @获取数据库列表
         @type:数据库类型，MySQL,SQLServer
         """
-
         search = ''
         if 'search' in args: search = args['search']
 
-        SQL = public.M('databases');
+        conditions = ''
+        if '_' in search:
+            cs = ''
+            for i in search:
+                if i == '_':
+                    cs += '/_'
+                else:
+                    cs += i
+            search = cs
+            conditions = " escape '/'"
+
+        SQL = public.M('databases')
 
         where = "lower(type) = lower('{}')".format(sql_type)
         if search:
-            where += "AND (name like '%{search}%' or ps like '%{search}%')".format(search=search)
-
+            where += "AND (name like '%{search}%' or ps like '%{search}%'{conditions})".format(search=search,
+                                                                                               conditions=conditions)
         if 'db_type' in args:
             where += " AND db_type='{}'".format(args['db_type'])
 
@@ -40,21 +53,21 @@ class databaseBase:
         info['p'] = 1
         info['row'] = 20
         result = '1,2,3,4,5,8'
-        info['count'] = SQL.where(where, ()).count();
+        info['count'] = SQL.where(where, ()).count()
 
         if hasattr(args, 'limit'): info['row'] = int(args.limit)
-        if hasattr(args, 'result'): result = args.result;
+        if hasattr(args, 'result'): result = args.result
         if hasattr(args, 'p'): info['p'] = int(args['p'])
 
         import page
         # 实例化分页类
-        page = page.Page();
+        page = page.Page()
 
         info['uri'] = args
         info['return_js'] = ''
         if hasattr(args, 'tojs'): info['return_js'] = args.tojs
 
-        rdata['where'] = where;
+        rdata['where'] = where
 
         # 获取分页数据
         rdata['page'] = page.GetPage(info, result)
@@ -63,18 +76,27 @@ class databaseBase:
             'id,sid,pid,name,username,password,accept,ps,addtime,type,db_type,conn_config').limit(
             str(page.SHIFT) + ',' + str(page.ROW)).select()
 
-        for sdata in rdata['data']:
-            sdata['backup_count'] = public.M('backup').where("pid=? AND type=1", (sdata['id'])).count()
+        if type(rdata['data']) == str:
+            raise HintException("Database query error: " + rdata['data'])
 
+        for sdata in rdata['data']:
+            # 清除不存在的
+            backup_count = 0
+            backup_list = public.M('backup').where("pid=? AND type=1", (sdata['id'])).select()
+            for backup in backup_list:
+                if not os.path.exists(backup["filename"]):
+                    public.M('backup').where("id=? AND type=1", (backup['id'])).delete()
+                    continue
+                backup_count += 1
+            sdata['backup_count'] = backup_count
             sdata['conn_config'] = json.loads(sdata['conn_config'])
-        return rdata;
+        return rdata
 
     def get_databaseModel(self):
         '''
         获取数据库模型对象
         @db_type 数据库类型
         '''
-        # from panelDatabaseController import DatabaseController
         from panelDatabaseControllerV2 import DatabaseController
 
         project_obj = DatabaseController()
@@ -116,8 +138,10 @@ class databaseBase:
                     get['data'] = {'db_id': x['id']}
                     get['mod_name'] = x['type'].lower()
                     get['def_name'] = 'get_database_size_by_id'
-
-                    x['total'] = p.model(get)
+                    try:
+                        x['total'] = p.model(get)["message"]["result"]
+                    except:
+                        x['total'] = 0
                 except:
                     x['total'] = 0
             result[x['name']] = x
@@ -128,9 +152,11 @@ class databaseBase:
         """
         @删除数据库前置检测
         """
+        if not hasattr(get, 'ids'):
+            raise HintException("Parameter 'ids' is required for deletion.")
         ids = json.loads(get.ids)
-        slist = {};
-        result = [];
+        slist = {}
+        result = []
         db_list_size = []
         db_data = self.get_database_size(ids)
 
@@ -159,7 +185,7 @@ class databaseBase:
 
         return p.model(get)
 
-    def add_base_database(self, get):
+    def add_base_database(self, get, dtype):
         """
         @添加数据库前置检测
         @return username 用户名
@@ -168,18 +194,19 @@ class databaseBase:
         """
         data_name = get['name'].strip().lower()
         if self.check_recyclebin(data_name):
-            return public.returnMsg(False, public.lang("Database [' + data_name + '] is already in recycle bin, please restore from recycle bin!"));
+            return public.returnMsg(False, public.lang(
+                "Database [' + data_name + '] is already in recycle bin, please restore from recycle bin!"))
 
         if len(data_name) > 16:
             return public.returnMsg(False, public.lang("Database name cannot be more than 16 characters!"))
 
-        if not hasattr(get, 'db_user'): get.db_user = data_name;
-        username = get.db_user.strip();
+        if not hasattr(get, 'db_user'): get.db_user = data_name
+        username = get.db_user.strip()
         checks = ['root', 'mysql', 'test', 'sys', 'panel_logs']
         if username in checks or len(username) < 1:
-            return public.returnMsg(False, public.lang("Database username is invalid!"));
+            return public.returnMsg(False, public.lang("Database username is invalid!"))
         if data_name in checks or len(data_name) < 1:
-            return public.returnMsg(False, public.lang("Database name is invalid!"));
+            return public.returnMsg(False, public.lang("Database name is invalid!"))
 
         reg = r"^\w+$"
         if not re.match(reg, data_name):
@@ -189,7 +216,8 @@ class databaseBase:
         if len(data_pwd) < 1:
             data_pwd = public.md5(str(time.time()))[0:8]
 
-        if public.M('databases').where("name=? or username=?", (data_name, username)).count():
+        if public.M('databases').where("(name=? or username=?) AND LOWER(type)=LOWER(?)",
+                                       (data_name, username, dtype)).count():
             return public.returnMsg(False, public.lang("Database exists!"))
 
         res = {
@@ -211,23 +239,22 @@ class databaseBase:
         filename = public.M('backup').where(where, (id,)).getField('filename')
         if os.path.exists(filename): os.remove(filename)
 
-        if filename == 'qiniu':
-            name = public.M('backup').where(where, (id,)).getField('name');
-
-            public.ExecShell(public.get_run_python("[PYTHON] " + public.GetConfigValue(
-                'setup_path') + '/panel/script/backup_qiniu.py delete_file ' + name))
+        # if filename == 'qiniu':
+        #     name = public.M('backup').where(where, (id,)).getField('name')
+        #
+        #     public.ExecShell(public.get_run_python("[PYTHON] " + public.GetConfigValue('setup_path') + '/panel/script/backup_qiniu.py delete_file ' + name))
         public.M('backup').where(where, (id,)).delete()
         public.WriteLog("TYPE_DATABASE", 'DATABASE_BACKUP_DEL_SUCCESS', (name, filename))
-        public.return_message(0, 0, 'DEL_SUCCESS')
+        return public.return_message(0, 0, 'DEL_SUCCESS')
 
     # 检查是否在回收站
     def check_recyclebin(self, name):
         try:
-            for n in os.listdir('{}/Recycle_bin'.format(public.get_soft_path())):
-                if n.find('BTDB_' + name + '_t_') != -1: return True;
-            return False;
+            for n in os.listdir('{}/Recycle_bin'.format(public.get_setup_path())):
+                if n.find('BTDB_' + name + '_t_') != -1: return True
+            return False
         except:
-            return False;
+            return False
 
     # map to list
     def map_to_list(self, map_obj):
@@ -248,22 +275,19 @@ class databaseBase:
         for key in nlist:
             if not key in get:
                 return public.return_message(-1, 0, public.lang("Parameter passing error, missing parameter {}!", key))
-        return True
+        return public.return_message(0, 0, "success")
 
     def check_cloud_database(self, args):
         '''
         @检查远程数据库是否存在
         @conn_config param
         '''
-
         p = self.get_databaseModel()
 
         get = public.dict_obj()
-        # get['db_name'] = 'localhost'
         get['data'] = args
         get['mod_name'] = args['type']
         get['def_name'] = 'check_cloud_database_status'
-        # public.print_log("-------------------进入检测远程数据库是否存在: {}".format(p.model(get)))
         return p.model(get)
 
     def AddBaseCloudServer(self, get):
@@ -278,44 +302,17 @@ class databaseBase:
         @param type<string> 数据库类型，mysql/sqlserver/sqlite
         @return dict
         """
-        # mongodb  {"db_host":"192.168.168.12","db_port":"27017","db_user":"root","db_password":"8thA5dgB8lr5ACfx","db_ps":"cecee","type":"mongodb"}
-        # sqlserver  {"db_host":"192.168.1.23","db_port":"1433","db_user":"sa","db_password":"MfyDytnjXBTD8e6x","db_ps":"666","type":"sqlserver"}
-
-
         arrs = ['db_host', 'db_port', 'db_user', 'db_password', 'db_ps', 'type']
         if get.type == 'redis':
             arrs = ['db_host', 'db_port', 'db_password', 'db_ps', 'type']
-        # try:
         cRet = self.check_cloud_args(get, arrs)
         if isinstance(cRet, dict):
             return cRet
 
-        # try:
         get['db_name'] = None
-        try:
-            res = self.check_cloud_database(get)
-        except BaseException as ex:
-            # public.print_log("获取远程数据库状态00: {}".format(ex))
-            return public.return_message(-1, 0, public.lang("Database connection failed"))
-
-
-        # # mongodb 远程检测有问题 暂时跳过检测
-        # if get.type != 'mongodb':
-        #     if res['message'].get('result', '') == '' or res['message'].get('result', '') == False:
-        #         return public.return_message(-1, 0, public.lang("The remote database could not be connected"))
-        # {'status': 0, 'timestamp': 1715394490, 'message': AttributeError("'str' object has no attribute 'command'")}
-
-        # 检测数据库连接状态
-        try:
-            if not isinstance(res['message'], dict):
-                return public.return_message(-1, 0, public.lang("The remote database could not be connected"))
-            if res['message'].get('result', '') == '' or res['message'].get('result', '') == False:
-                return public.return_message(-1, 0, public.lang("The remote database could not be connected"))
-            if res['status'] == -1:
-                return public.return_message(-1, 0, public.lang("The remote database could not be connected"))
-        except Exception as e:
-            # public.print_log("获取远程数据库状态22: {}".format(e))
-            return public.return_message(-1, 0, public.lang("The remote database could not be connected"))
+        res = self.check_cloud_database(get)
+        if isinstance(res, dict):
+            return res
 
         if public.M('database_servers').where('db_host=? AND db_port=?', (get['db_host'], get['db_port'])).count():
             return public.return_message(-1, 0, 'The specified server already exists: [{}:{}]'.format(get['db_host'],
@@ -334,12 +331,8 @@ class databaseBase:
 
         if isinstance(result, int):
             public.WriteLog('Database manager', 'Add remote MySQL server[{}:{}]'.format(get['db_host'], get['db_port']))
-            # return public.returnMsg(True, public.lang("Added successfully!"))
             return public.return_message(0, 0, public.lang("Added successfully!"))
         return public.return_message(0, 0, public.lang("Add failed： {}", result))
-        # except Exception as ex:
-        #     public.print_log("error info777: {}".format(ex))
-        #     return public.return_message(-1, 0, str(ex))
 
     def GetBaseCloudServer(self, get):
         '''
@@ -366,7 +359,7 @@ class databaseBase:
         elif get['type'] == 'sqlserver':
             pass
         elif get['type'] == 'mongodb':
-            if os.path.exists('/www/server/mongodb'):
+            if os.path.exists('/www/server/mongodb/bin'):
                 data.insert(0, {'id': 0, 'db_host': '127.0.0.1', 'db_port': 27017, 'db_user': 'root', 'db_password': '',
                                 'ps': 'local server', 'addtime': 0, 'db_type': 'mongodb'})
         elif get['type'] == 'redis':
@@ -422,9 +415,7 @@ class databaseBase:
         cRet = self.check_cloud_args(get, arrs)
         if isinstance(cRet, dict):
             return cRet
-        # if not cRet['status']:
-        #     return public.return_message(-1, 0,)
-        # return cRet
+
         get['db_name'] = None
         id = int(get.id)
         get['db_port'] = int(get['db_port'])
@@ -438,21 +429,13 @@ class databaseBase:
                 return public.return_message(-1, 0,
                                              'The specified server already exists: [{}:{}]'.format(get['db_host'],
                                                                                                    get['db_port']))
-
         if db_find['db_user'] != get['db_user'] or db_find['db_password'] != get['db_password']:
             _modify = True
         _modify = True
 
         if _modify:
-            try:
-                res = self.check_cloud_database(get)
-            except BaseException as ex:
-                # public.print_log("获取远程数据库链接状态报错: {}".format(ex))
-                return public.return_message(-1, 0, public.lang("Database connection failed"))
-
-            if res['message'].get('result', '') == '' or res['message'].get('result', '') == False:
-                return public.return_message(-1, 0, public.lang("The remote database could not be connected"))
-
+            res = self.check_cloud_database(get)
+            if isinstance(res, dict): return res
         pdata = {
             'db_host': get['db_host'],
             'db_port': int(get['db_port']),
@@ -480,13 +463,16 @@ class databaseBase:
             if "2002," in mysqlMsg:
                 return public.return_message(-1, 0, public.lang("ERROR to connect database"))
             if "2003," in mysqlMsg:
-                return public.return_message(-1, 0, public.lang("Database connection timed out, please check if the configuration is correct."))
+                return public.return_message(-1, 0, public.lang(
+                    "Database connection timed out, please check if the configuration is correct."))
             if "1045," in mysqlMsg:
                 return public.return_message(-1, 0, public.lang("MySQL password error."))
             if "1040," in mysqlMsg:
-                return public.return_message(-1, 0, public.lang("Exceeded maximum number of connections, please try again later."))
+                return public.return_message(-1, 0, public.lang(
+                    "Exceeded maximum number of connections, please try again later."))
             if "1130," in mysqlMsg:
-                return public.return_message(-1, 0, public.lang("Database connection failed, please check whether the root user is authorized to access 127.0.0.1."))
+                return public.return_message(-1, 0, public.lang(
+                    "Database connection failed, please check whether the root user is authorized to access 127.0.0.1."))
             if "using password:" in mysqlMsg:
                 return public.return_message(-1, 0, public.lang("Database password is incorrect!"))
             if "Connection refused" in mysqlMsg:
@@ -494,11 +480,14 @@ class databaseBase:
             if "1133" in mysqlMsg:
                 return public.return_message(-1, 0, public.lang("Database user does NOT exist!"))
             if "2005_login_error" == mysqlMsg:
-                return public.return_message(-1, 0, public.lang("The connection times out, please manually enable the TCP/IP function (Start Menu->SQL 2005->Configuration Tools->2005 Network Configuration->TCP/IP->Enable)"))
+                return public.return_message(-1, 0, public.lang(
+                    "The connection times out, please manually enable the TCP/IP function (Start Menu->SQL 2005->Configuration Tools->2005 Network Configuration->TCP/IP->Enable)"))
             if 'already exists' in mysqlMsg:
-                return public.return_message(-1, 0, public.lang("The specified database already exists, please do not add it repeatedly."))
+                return public.return_message(-1, 0, public.lang(
+                    "The specified database already exists, please do not add it repeatedly."))
             if 'Cannot open backup device' in mysqlMsg:
-                return public.return_message(-1, 0, public.lang("The operation failed, the remote database does not support the operation."))
+                return public.return_message(-1, 0, public.lang(
+                    "The operation failed, the remote database does not support the operation."))
 
             if '1142' in mysqlMsg:
                 return public.return_message(-1, 0, public.lang("Insufficient permissions, please use root user."))

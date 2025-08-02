@@ -1,6 +1,5 @@
 [
   "sw_ping",
-  "sw_panel_swing",
   "sw_ssh_passmin",
   "sw_ssh_passmax",
   "sw_ssh_clientalive",

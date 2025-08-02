@@ -20,7 +20,7 @@ _level = 2  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
 _date = '2022-8-10'  # 最后更新时间
 _ignore = os.path.exists("data/warning/ignore/sw_panel_swing.pl")
 _tips = [
-    "Enable it in [Settings] - [Notification]"
+    "Enable it in [Settings] - [Security]"
 ]
 _help = ''
 _remind = 'This solution can strengthen the panel protection and reduce the risk of the panel being attacked. '
@@ -36,7 +36,7 @@ def check_run():
         filename = 'data/' + fname
         if os.path.exists(filename):
             return True, 'Risk-free'
-    return False, 'Please enable it in [Settings] - [Notification]'
+    return False, 'Please enable it in [Settings] - [Security]'
 
 
 

@@ -37,7 +37,7 @@ def update_mod():
         pl = True
 
     if pl:
-        print("========================rewrite=====================")
+        # print("========================rewrite=====================")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/site_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/system_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/database_push_template.json")
@@ -107,8 +107,8 @@ class main(PushManager):
                             task_match = True
                     if keyword_filter_lower in task["title"].lower() or \
                         (task["task_data"].get("title") and keyword_filter_lower in task["task_data"]["title"].lower()) or \
-                        keyword_filter_lower in str(task["time_rule"]["send_interval"]) or \
-                        keyword_filter_lower in str(task["number_rule"]["day_num"]):
+                        (task["time_rule"].get("send_interval") and keyword_filter_lower in str(task["time_rule"]["send_interval"])) or \
+                        (task["number_rule"].get("day_num") and keyword_filter_lower in str(task["number_rule"]["day_num"])):
                         task_match = True
                     else:
                         for sender_id in task["sender"]:
@@ -224,6 +224,9 @@ class main(PushManager):
             to = p_sys.get_task_object(i["id"], i["load_cls"])
             if not to:
                 continue
+            # 以下模板，只允许在安全模块中使用
+            if i['id'] in ['121','122','123','124']:
+                continue
             t = to.filter_template(i["template"])
             if not t:
                 continue
@@ -244,8 +247,9 @@ class main(PushManager):
         from mod.base.push_mod.load_push import ViewMsgFormat as Lv
         from mod.base.push_mod.ssl_push import ViewMsgFormat as SSLv
         from mod.base.push_mod.domain_blcheck_push import ViewMsgFormat as DBv
+        from mod.base.push_mod.safe_mod_push import ViewMsgFormat as SAv
 
-        list_obj = [Rv(), Sv(), Tv(), Dv(), SSv(), Lv(), SSLv(), DBv()]
+        list_obj = [Rv(), Sv(), Tv(), Dv(), SSv(), Lv(), SSLv(), DBv(), SAv()]
         for i in list_obj:
             res = i.get_msg(task)
             if res is not None:

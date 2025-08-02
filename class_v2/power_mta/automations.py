@@ -1577,17 +1577,21 @@ create index if not exists `recipient_isSent` on `recipient_info` (`recipient`, 
         Scheduler(automation_id).schedule(subscriber)
 
     def schedule_forever(self):
-        time.sleep(self.__interval)
+        while True:
+            time.sleep(self.__interval)
 
-        if self.__automation.is_init():
-            for automation_id, _ in self.walk_running_tasks():
-                logging.debug('schedule mail automation -- {}'.format(automation_id))
-                scheduler = Scheduler(automation_id)
-                scheduler.schedule()
-                scheduler.schedule_email_sending()
-                scheduler.sync_maillog_stat()
-
-        self.schedule_forever()
+            if self.__automation.is_init():
+                try:
+                    for automation_id, _ in self.walk_running_tasks():
+                        logging.debug('schedule mail automation -- {}'.format(automation_id))
+                        scheduler = Scheduler(automation_id)
+                        scheduler.schedule()
+                        scheduler.schedule_email_sending()
+                        scheduler.sync_maillog_stat()
+                except:
+                    public.print_error()
+                    # 发生未知错误时，短暂休眠以防循环过于频繁地失败
+                    time.sleep(60)
 
     def fire(self, trigger_type: str, subscriber: typing.Union[str, typing.List[str]], group_ids: typing.Union[int, typing.List[int]] = 0):
         for automation_id, triggers in self.walk_running_tasks(include_inactive=True):

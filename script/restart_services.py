@@ -6,7 +6,7 @@ import sys
 import time
 from functools import wraps
 from typing import Optional, Dict
-# import asyncio
+
 import fcntl
 
 os.chdir("/www/server/panel")
@@ -51,13 +51,13 @@ SERVICES_MAP = {
 
 def manual_flag(server_name: str = None, open_: str = None) -> Optional[dict]:
     if not server_name:  # only read
-        return DaemonManager.safe_read()
+        return DaemonManager.manual_safe_read()
     # 人为干预
     if open_ in ["start", "restart"]:  # 激活服务检查
         return DaemonManager.active_daemon(server_name)
     elif open_ == "stop":  # 跳过服务检查
         return DaemonManager.skip_daemon(server_name)
-    return DaemonManager.safe_read()
+    return DaemonManager.manual_safe_read()
 
 
 class DaemonManager:
@@ -66,10 +66,13 @@ class DaemonManager:
         if not os.path.exists(DAEMON_SERVICE_LOCK):
             with open(DAEMON_SERVICE_LOCK, "w") as _:
                 pass
+        os.makedirs(os.path.dirname(MANUAL_FLAG), exist_ok=True)
         if not os.path.exists(MANUAL_FLAG):
-            public.writeFile(MANUAL_FLAG, json.dumps({}))
+            with open(MANUAL_FLAG, "w") as fm:
+                fm.write(json.dumps({}))
         if not os.path.exists(DAEMON_SERVICE):
-            public.writeFile(DAEMON_SERVICE, json.dumps([]))
+            with open(DAEMON_SERVICE, "w") as fm:
+                fm.write(json.dumps([]))
 
     @staticmethod
     def read_lock(func):
@@ -164,11 +167,22 @@ class DaemonManager:
     @staticmethod
     @read_lock
     def safe_read():
+        """服务守护进程服务列表"""
         try:
             res = public.readFile(DAEMON_SERVICE)
             return json.loads(res) if res else []
         except:
             return []
+
+    @staticmethod
+    @read_lock
+    def manual_safe_read():
+        """手动干预服务字典, 0: 需要干预, 1: 被手动关闭的"""
+        try:
+            manual = public.readFile(MANUAL_FLAG)
+            return json.loads(manual) if manual else {}
+        except:
+            return {}
 
 
 class RestartServices:
@@ -230,6 +244,17 @@ class RestartServices:
                 public.WriteLog(
                     "Service Daemon", f"Failed to {act} {self.nick_name}, error: {result.stderr.strip()}"
                 )
+                # todo 暂时解决公共安装脚本无法启动mongodb的问题
+                mg_path = f"{SETUP_PATH}/mongodb"
+                if act == "restart" and self.nick_name == "mongodb" and os.path.exists(f"{mg_path}/bin/mongod"):
+                    try:
+                        public.ExecShell(f"rm -f {mg_path}/log/configsvr.pid")
+                        public.ExecShell("rm -f /tmp/mongodb-27017.sock")
+                        public.ExecShell(f"chown -R mongo:mongo {mg_path}")
+                        public.ExecShell(f"sudo -u mongo {mg_path}/bin/mongod -f {mg_path}/config.conf")
+                    except:
+                        pass
+
         except subprocess.TimeoutExpired as t:
             public.WriteLog(
                 "Service Daemon", f"Failed to {act} {self.nick_name}, error: time out, {t}"

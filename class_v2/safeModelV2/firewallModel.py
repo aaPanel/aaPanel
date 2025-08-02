@@ -2599,6 +2599,9 @@ class main(safeBase):
             input_country = get.country
             countrys = self.get_countrys(None)["message"]
             countrys = countrys[1:]
+            countrys = [
+                {'CH': x['CH'], 'brief': x['brief'].strip()} for x in countrys
+            ]
 
             # 2024/1/6 下午 5:00 获取防火墙状态，如果没有启动则启动防火墙
             if not self.get_firewall_status():
@@ -2606,13 +2609,14 @@ class main(safeBase):
                 self.firewall_admin(get)
 
             content = self.get_profile(self._ips_path)
-            ip_dict = {}
             try:
                 content = json.loads(content)
             except:
                 return public.return_message(-1, 0, 'Failed to get region list!')
-            for cont in content:  # {"US":[],"XX":[]}
-                ip_dict.update({cont["brief"]: cont["ips"]})
+            # {"US":[],"XX":[]}
+            ip_dict = {
+                x['brief'].strip(): x['ips'] for x in content
+            }
 
             if "Except China" in input_country:
                 input_country = [i['CH'] for i in countrys if not "China" in i['CH']]

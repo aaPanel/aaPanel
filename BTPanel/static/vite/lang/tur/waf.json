@@ -34,7 +34,12 @@
 			"index_30": "Bugünün Blok Raporu >>",
 			"index_31": "Blok Türü (Bugün)",
 			"index_32": "Bugünün Bloğu",
-			"index_33": "{0} \n {1}/öğe, {2}%"
+			"index_33": "{0} \n {1}/öğe, {2}%",
+			"index_34": "3D harita",
+			"index_35": "3D haritayı etkinleştir",
+			"index_36": "3D haritayı devre dışı bırak",
+			"index_37": "3D haritayı etkinleştirdikten sonra harita 3D moduna geçecektir. Onaylamak?",
+			"index_38": "3D haritayı devre dışı bıraktıktan sonra harita 2D moduna geçecektir. Onaylamak?"
 		},
 		"Site": {
 			"index_1": "Aapanel'in bilinen kötü niyetli IP'lerinden erişimi engelleyin",
@@ -840,6 +845,7 @@
 		},
 		"Api": {
 			"overview_1": "Devam eden tek tıklamayla aktivasyon, lütfen bekleyin ...",
+			"overview_2": "Ayar, lütfen bekleyin ...",
 			"site_2": "Global Yapılandırma anahtarını ayarlayın, lütfen bekleyin ...",
 			"site_3": "Site Durumunu ayarlayın, lütfen bekleyin ...",
 			"site_4": "Captcha ortamını tespit etmek, lütfen bekleyin ...",

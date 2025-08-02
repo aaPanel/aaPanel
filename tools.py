@@ -432,10 +432,23 @@ def set_panel_username(username = None):
         print(public.GetMsg("NEW_NAME",(username,)))
         return;
 
-    username = sql.table('users').where('id=?',(1,)).getField('username')
-    if username == 'admin':
-        username = public.GetRandomString(8).lower()
-        sql.table('users').where('id=?',(1,)).setField('username',username)
+    try:
+        count = 0
+        while count <= 5:
+            count += 1
+            username = sql.table('users').where('id=?',(1,)).getField('username')
+            if username == 'admin':
+                username = public.GetRandomString(8).lower()
+                sql.table('users').where('id=?',(1,)).setField('username',username)
+                current_username = sql.table('users').where('id=?',(1,)).getField('username')
+                if current_username in ['admin', None]:
+                    time.sleep(1)
+                    continue
+                else:
+                    break
+    except Exception as e:
+        public.print_log("set_panel_username error: {}".format(str(e)))
+
     print('username: ' + username)
 
 #设定idc

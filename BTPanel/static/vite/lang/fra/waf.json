@@ -34,7 +34,12 @@
 			"index_30": "Rapport de bloc d'aujourd'hui >>",
 			"index_31": "Type de bloc (aujourd'hui)",
 			"index_32": "Bloc d'aujourd'hui",
-			"index_33": "{0} \n {1} / item, {2}%"
+			"index_33": "{0} \n {1} / item, {2}%",
+			"index_34": "Carte 3D",
+			"index_35": "Activer la carte 3D",
+			"index_36": "Désactiver la carte 3D",
+			"index_37": "Après avoir activé la carte 3D, la carte passera en mode 3D. Confirmer?",
+			"index_38": "Après avoir désactivé la carte 3D, la carte passera en mode 2D. Confirmer?"
 		},
 		"Site": {
 			"index_1": "Intercepter l'accès à des IP malveillants connus d'AAPanel",
@@ -840,6 +845,7 @@
 		},
 		"Api": {
 			"overview_1": "Activation en un clic en cours, veuillez patienter ...",
+			"overview_2": "Réglage, veuillez attendre ...",
 			"site_2": "Définition du commutateur de configuration globale, veuillez patienter ...",
 			"site_3": "Réglage de l'état du site, veuillez attendre ...",
 			"site_4": "Détection de l'environnement CAPTCHA, veuillez patienter ...",

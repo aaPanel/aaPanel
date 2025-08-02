@@ -29,6 +29,8 @@
 ## Demo
 
 Demo：https://demo.aapanel.com/fdgi87jbn/<br/>
+username: aapanel<br/>
+password: aapanel
 
 ![image](https://github.com/aaPanel/aaPanel/assets/31841517/c40d68f5-1cbb-4117-ab47-b52b14228cce)
 
@@ -49,7 +51,7 @@ It can easily manage the server through the Web terminal, improving the operatio
 
 * Hard disk: More than 100M available hard disk space (Pure panel for about 20M disk space)
 
-* System: CentOS 7.1+ (Ubuntu16.04+., Debian9.0+), to ensure that it is a clean operating system, there is no other environment with Apache/Nginx/php/MySQL installed (the existing environment can not be installed)
+* System: Ubuntu 22.04 24.04, Debian 11 12, CentOS 9, Rocky/AlmaLinux 8 9,  to ensure that it is a clean operating system, there is no other environment with Apache/Nginx/php/MySQL installed (the existing environment can not be installed)
 
 **aaPanel Installation Command**
 

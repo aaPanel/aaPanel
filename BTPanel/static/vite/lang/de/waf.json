@@ -34,7 +34,12 @@
 			"index_30": "Der heutige Blockbericht >>",
 			"index_31": "Blocktyp (heute)",
 			"index_32": "Der heutige Block",
-			"index_33": "{0} \n {1}/item, {2}%"
+			"index_33": "{0} \n {1}/item, {2}%",
+			"index_34": "3D -Karte",
+			"index_35": "Aktivieren Sie die 3D -Karte",
+			"index_36": "3D -Karte deaktivieren",
+			"index_37": "Nach der Aktivierung der 3D -Karte wechselt die Karte in den 3D -Modus. Bestätigen?",
+			"index_38": "Nach dem Deaktivieren der 3D -Karte wechselt die Karte in den 2D -Modus. Bestätigen?"
 		},
 		"Site": {
 			"index_1": "Abfangenzugriff von bekannten böswilligen iPs von Aapanel",
@@ -840,6 +845,7 @@
 		},
 		"Api": {
 			"overview_1": "One-Click-Aktivierung in Arbeit, bitte warte ...",
+			"overview_2": "Einstellung, bitte warten ...",
 			"site_2": "Einstellen des globalen Konfigurationsschalters, bitte warten Sie ...",
 			"site_3": "Setzen Sie den Standortstatus ein, bitte warten Sie ...",
 			"site_4": "Erkennen Sie die Captcha -Umgebung, bitte warten Sie ...",

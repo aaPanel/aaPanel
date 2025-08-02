@@ -58,6 +58,10 @@ class PushManager:
                     task_data[k] = v
 
             result["task_data"] = task_data
+        # 避免default为空时，无数据
+        else:
+            result["task_data"] = task.get("task_data", {})
+
 
         if "task_data" not in result:
             result["task_data"] = {}
@@ -116,7 +120,15 @@ class PushManager:
         template = self.template_conf.get_by_id(template_id)
 
         if not template:
-            return "No alarm template was found"
+            # 如果没有找到模板，则尝试加载默认的安全推送模板
+            from .mods import  load_task_template_by_file
+            if not os.path.exists("/www/server/panel/mod/base/push_mod/safe_mod_push_template.json"):
+                return "No alarm template was found"
+            load_task_template_by_file("/www/server/panel/mod/base/push_mod/safe_mod_push_template.json")
+            self.template_conf = TaskTemplateConfig()
+            template = self.template_conf.get_by_id(template_id)
+            if not template:
+                return "No alarm template was found"
 
         if template["unique"] and not target_task_conf:
             for i in self.task_conf.config:

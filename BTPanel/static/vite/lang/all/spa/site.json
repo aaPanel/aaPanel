@@ -616,5 +616,6 @@
 	"18ba710dae7a42477870d221cc867735": "PHP CLI",
 	"47ef0a48276df2fb9a29d6fd0ac5450f": "Protección HTTPS",
 	"7be3b8e86469a0c80fadf0c3d298c1ed": "Después de encenderlo, se puede resolver el problema del crossover del sitio HTTPS",
-	"4d18e28f94ba8141b12ad7c72361e67f": "No admite el certificado IP anti-canalización, no lo abra si usa el acceso IP directamente"
+	"4d18e28f94ba8141b12ad7c72361e67f": "No admite el certificado IP anti-canalización, no lo abra si usa el acceso IP directamente",
+	"3293b90f17c2a86dff994a657361e810": "{0} días"
 }

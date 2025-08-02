@@ -1148,5 +1148,6 @@
 	"75f24fd22bcdebf788c00df6721f4faf": "Hiệu ứng mặc định: Thay thế tất cả 'http://www.aapanel.com' bằng 'https://www.aapanel.com'.",
 	"6cb377a9cc9c0a595f359c57158418bb": "WebSocket toàn cầu được bật và không được phép bị vô hiệu hóa riêng lẻ",
 	"130f00db5ce836a6b86e3175bf893fd1": "Xóa dự án proxy ngược",
-	"fcdb0820b609e6bcb1a661a095274b69": "Thay thế tất cả các từ khóa phù hợp"
+	"fcdb0820b609e6bcb1a661a095274b69": "Thay thế tất cả các từ khóa phù hợp",
+	"3293b90f17c2a86dff994a657361e810": "{0} ngày"
 }

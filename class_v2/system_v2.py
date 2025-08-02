@@ -663,6 +663,7 @@ class system:
         networkInfo['ftp_total'] = public.M('ftps').count()
         networkInfo['database_total'] = public.M('databases').count()
         networkInfo['system'] = self.GetSystemVersion()
+        networkInfo['simple_system'] = networkInfo['system'].split(' ')[0] + ' ' + re.search('\d+', networkInfo['system']).group()
         networkInfo['installed'] = self.CheckInstalled()
         import panel_ssl_v2 as panelSSL
         user_info = panelSSL.panelSSL().GetUserInfo(None)

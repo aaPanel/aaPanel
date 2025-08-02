@@ -95,5 +95,7 @@
 	"78cd2c7d5422ffdb6d9545211ca49eeb": "Domaines",
 	"eb0f48a107df1a0f343d4cd513b555e6": "Certificat",
 	"83ef37817a1ad493ee47de70c22a8552": "Conseil: si la tâche est bloquée, cliquez sur [Redémarrer le panneau] pour réinitialiser la file d'attente",
-	"3c58585271f114ff1b034f378e5692c0": "Panneau Aapanel Linux © 2014- {0} AAPANEL"
+	"3c58585271f114ff1b034f378e5692c0": "Panneau Aapanel Linux © 2014- {0} AAPANEL",
+	"cc246bead7d06808781c69caf49f5a06": "Restauration de sauvegarde",
+	"10b5b21ed1ee90eca305b558caf7d03b": "Émigrer"
 }

@@ -1,0 +1,1 @@
+System.register(["./echarts-legacy.js?v=1753954525509"],(function(a,e){"use strict";var t,r,s,c,n,u,i,f,g,y,h,o,b,d;return{setters:[a=>{t=a.y,r=a.a5,s=a.a6,c=a.a7,n=a.a8,u=a.a9,i=a.aa,f=a.ab,g=a.ac,y=a.ad,h=a.ae,o=a.af,b=a.ag,d=a.ah,a.a4}],execute:function(){t([r,s,c,n,u,i,f,g,y,h,o,b,d])}}}));

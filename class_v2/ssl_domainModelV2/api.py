@@ -12,7 +12,6 @@ from datetime import datetime
 from typing import Tuple, Dict
 
 import public
-from BTPanel import cache
 from acme_v2 import acme_v2
 from config_v2 import config
 from panelDnsapi import extract_zone
@@ -46,6 +45,8 @@ from .service import (
     find_site_with_domain,
     CertHandler,
     sync_site_ssl,
+    record_ensure,
+    check_legal,
 )
 
 
@@ -69,9 +70,9 @@ class DomainObject:
 
     @staticmethod
     def _clear_task_force():
-        # clear task, 1 hours
+        # clear task, 3 hours
         try:
-            one_hours = 1000 * 60 * 60
+            one_hours = 1000 * 60 * 60 * 3
             out_time = round(time.time() * 1000) - one_hours
             DnsDomainTask.objects.filter(create_time__lte=out_time).delete()
         except Exception:
@@ -84,7 +85,7 @@ class DomainObject:
                 return 0
             today = datetime.today().date()
             end_date = datetime.strptime(data_str, DomainObject.date_format).date()
-            return (end_date - today).days - 1 if today <= end_date else 0
+            return max((end_date - today).days - 1 if today <= end_date else 0, 0)
         except ValueError:
             return 0
 
@@ -179,7 +180,7 @@ class DomainObject:
 
         # clear task
         self._clear_task_force()
-
+        check_legal()
         page = int(getattr(get, "p", 1))
         limit = int(getattr(get, "limit", 100))
         obj = DnsDomainProvider.objects.all()
@@ -314,16 +315,7 @@ class DomainObject:
         else:
             domain_name = provider.domains[0] if provider.domains else ""
 
-        cache_expire = False
-        key = f"aaDomain_{provider.id}_{domain_name}"
-        if cache:  # 1min cache
-            cache_data = cache.get(key)
-            cache_expire = True if cache_data is None else False
-        if cache_expire:  # refresh data
-            SyncService().records_process(
-                provider_obj=provider, all_domains=[domain_name]
-            )
-            cache.set(key, "1", 60)
+        record_ensure(provider, domain_name)
 
         # search_and
         if hasattr(get, "search_and"):
@@ -593,13 +585,13 @@ class DomainObject:
         if not os.path.exists(file_path):
             return public.fail_v2(public.lang("SSL Certificate  Not Found!"))
 
-        download_path = os.path.join(self.vhost, f"/ssl_saved/download")
-        if not os.path.exists(download_path):
-            os.makedirs(download_path)
+        CertHandler.make_last_info(file_path, force=True)
 
+        download_path = os.path.join(self.vhost, "ssl_saved/download")
+        os.makedirs(download_path, exist_ok=True)
         output_path = os.path.join(download_path, f"{get.hash}")
         if os.path.exists(f"{output_path}.zip"):
-            return public.success_v2(f"{output_path}.zip")
+            public.ExecShell(f"rm -f {output_path}.zip")
         try:
             shutil.make_archive(output_path, "zip", file_path)
         except Exception as e:
@@ -620,13 +612,19 @@ class DomainObject:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        if hasattr(get, "hash"):  # 指定
+        ts_month = 30 * 24 * 60 * 60 * 1000
+        months = int(time.time() * 1000) + ts_month
+
+        if hasattr(get, "hash"):  # 指定, 单个
             ssl_obj = DnsDomainSSL.objects.filter(hash=get.hash)
+            for i in ssl_obj:
+                if i and i.not_after_ts > months:  # gt 30 days
+                    return public.fail_v2(public.lang("SSL Certificate is less than 30 days, no need to renew!"))
+                if i and not i.auth_info:  # not verified
+                    return public.fail_v2(public.lang("SSL Certificate does not have any auth info, cannot renew!"))
+
         else:  # 30天内的cert
-            ts_month = 30 * 24 * 60 * 60 * 1000
-            ssl_obj = DnsDomainSSL.objects.filter(
-                not_after_ts__lt=int(time.time() * 1000) + ts_month
-            )
+            ssl_obj = DnsDomainSSL.objects.filter(not_after_ts__lt=months)
 
         log = None
         for ssl in ssl_obj:
@@ -672,39 +670,51 @@ class DomainObject:
         try:
             get.validate([
                 Param("site_id").Integer().Require(),
+                Param("domains").String().Require(),
             ], [
                 public.validate.trim_filter(),
             ])
             get.site_id = str(get.site_id)
+            domains = [x.strip() for x in list(set(get.domains.split(",")))]
+            domains.sort()
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
         manual_apply: Dict[str, str] = json.loads(
             public.readFile(self.manual_apply)
         )
-        if get.site_id not in manual_apply.keys():
-            return public.fail_v2(public.lang("Site Id Not Found!"))
+        domians_index = CertHandler.original_md5(domains)
+        if domians_index not in manual_apply.keys():
+            return public.fail_v2(public.lang("Order Not Found!"))
         new_get = public.dict_obj()
-        new_get.index = manual_apply[get.site_id]
+        new_get.index = manual_apply[domians_index]
         vaild = acme_v2().validate_domain(new_get)
+
         if vaild.get("save_path"):
             ssl_hash = CertHandler.get_hash(vaild.get("cert", "") + vaild.get("root", ""))
             ssl_obj = DnsDomainSSL.objects.filter(hash=ssl_hash).first()
             site_name = public.M("sites").where("id=?", get.site_id).getField("name")
             if site_name and ssl_obj:
                 ssl_obj.deploy_sites([site_name])
-            if get.site_id in manual_apply.keys():
-                del manual_apply[get.site_id]
+            if domians_index in manual_apply.keys():
+                del manual_apply[domians_index]
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
             return public.success_v2(public.lang(vaild.get("msg", "Apply Successfully!")))
+
         if vaild.get("status") is True:
-            if get.site_id in manual_apply.keys():
-                del manual_apply[get.site_id]
+            if domians_index in manual_apply.keys():
+                del manual_apply[domians_index]
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
             return public.success_v2(public.lang("Apply Successfully!"))
-        return public.fail_v2(public.lang(str(vaild.get("msg"))))
+        try:
+            return public.fail_v2((str(vaild.get("msg", "Vaild failed! please try again"))))
+        except:
+            return public.fail_v2("Vaild failed! please try again")
 
     def manual_apply_check(self, get):
+        """
+        手动申请验证兜底
+        """
         try:
             get.validate([
                 Param("site_id").Integer().Require(),
@@ -712,26 +722,23 @@ class DomainObject:
             ], [
                 public.validate.trim_filter(),
             ])
-            target = str(get.site_id)
+            domains = [x.strip() for x in list(set(get.domains))]
+            domains.sort()
+            target = CertHandler.original_md5(domains)
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
         manual_apply: Dict[str, str] = json.loads(
             public.readFile(self.manual_apply)
         )
-        target_detail = None
+        target_detail = {}
         for k in list(manual_apply.keys()):
             new_get = public.dict_obj()
             new_get.index = manual_apply[k]
-            detail = acme_v2().get_order_detail(new_get)
-            target_detail = detail.get("message") if target == k else None
-            if detail.get("status") == 0 and detail["message"].get("endtime") <= 0:
-                del manual_apply[k]
-                public.writeFile(self.manual_apply, json.dumps(manual_apply))
-
-        if target_detail:
-            return public.success_v2(target_detail)
-        return public.success_v2({})
+            detail = acme_v2().get_order_detail(new_get)  # loop for clean expires
+            if target == k:
+                target_detail = detail.get("message")
+        return public.success_v2(target_detail)
 
     def apply_new_ssl(self, get):
         """
@@ -789,7 +796,8 @@ class DomainObject:
                              })).start()
             return public.success_v2({
                 "result": public.lang(success_msg),
-                "task_id": dns_task.id
+                "task_id": dns_task.id,
+                "path": dns_task.task_log,
             })
 
         elif get.auth_type == "http":  # file verify
@@ -798,14 +806,9 @@ class DomainObject:
                 return public.fail_v2(public.lang("Site Not Found"))
             if site.get("status") != "1":
                 return public.fail_v2(public.lang("Site Not Running"))
-            http_task = generate_sites_task({}, -1)
             if any("*." in i for i in get.domains):
-                err_msg = "Error: The wildcard domain name can only be verified by DNS. \n"
-                http_task.task_done(task_code=-1, task_result=err_msg)
-                return public.success_v2({
-                    "result": public.lang(err_msg),
-                    "task_id": http_task.id
-                })
+                return public.fail_v2(public.lang("Error: The wildcard domain name can only be verified by DNS."))
+            http_task = generate_sites_task({}, -1)
             threading.Thread(target=apply_cert,
                              kwargs=({
                                  "domains": apply_domains,
@@ -816,16 +819,18 @@ class DomainObject:
                              })).start()
             return public.success_v2({
                 "result": public.lang(success_msg),
-                "task_id": http_task.id
+                "task_id": http_task.id,
+                "path": http_task.task_log,
             })
 
         elif get.auth_type == "dns_manual":  # manual dns verify
             manual_apply: Dict[str, str] = json.loads(
                 public.readFile(self.manual_apply)
             )
-            if get.site_id in manual_apply.keys():
+            domian_index = CertHandler.original_md5(apply_domains)
+            if domian_index in manual_apply.keys():
                 new_get = public.dict_obj()
-                new_get.index = manual_apply[get.site_id]
+                new_get.index = manual_apply[domian_index]
                 return acme_v2().get_order_detail(new_get)
 
             apply_res = acme_v2().apply_cert_domain(
@@ -841,15 +846,16 @@ class DomainObject:
                 deploy = {}
                 if site_name and ssl_obj:
                     deploy = ssl_obj.deploy_sites([site_name])
-                if get.site_id in manual_apply.keys():
-                    del manual_apply[get.site_id]
+                if domian_index in manual_apply.keys():
+                    del manual_apply[domian_index]
                     public.writeFile(self.manual_apply, json.dumps(manual_apply))
                 success_msg = {"result": apply_res.get("msg", "Apply Successfully!")}
                 if deploy.get("status"):
                     success_msg.update({"deploy": deploy.get("status")})
                 return public.success_v2(public.lang(success_msg))
-            if apply_res.get("index"):
-                manual_apply.update({get.site_id: apply_res.get("index")})
+
+            if apply_res.get("index"):  # 新申请
+                manual_apply.update({domian_index: apply_res.get("index")})
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
                 new_get = public.dict_obj()
                 new_get.index = apply_res.get("index")
@@ -1216,26 +1222,30 @@ class DomainObject:
             "domain": get.domain,
             "support": [],
         }
+        root, _, _ = extract_zone(get.domain)
+        if DnsDomainProvider.objects.filter(domains__contains=root).first():
+            result["support"].append("auto")  # 自动解析功能
+            result["support"].append("ssl_cert")  # 自动部署证书
 
-        targets = DomainValid.get_best_ssl(get.domain)
-
-        for ssl in targets:
+        exist = None
+        for ssl in DomainValid.get_best_ssl(get.domain):
             if DomainValid.match_ssl_dns(get.domain, ssl, False):
-                result = {
-                    "hash": ssl.hash,
-                    "domain": get.domain,
-                    "support": ["auto", "ssl_cert"],
-                }
-                if bool("CloudFlareDns" in ssl.auth_info.get("auth_to", "")):
-                    # ip为内网地址不可以开启代理
-                    try:
-                        local_ip = public.GetLocalIp()
-                        provate = ipaddress.IPv4Address(local_ip).is_private
-                    except Exception:
-                        provate = True
-                    if not provate:
-                        result["support"].append("cf_proxy")
-                return public.success_v2(result)
+                exist = ssl
+                break
+
+        if exist is not None:
+            result["hash"] = exist.hash
+            if bool("CloudFlareDns" in exist.auth_info.get("auth_to", "")):
+                # ip为内网地址不可以开启代理
+                try:
+                    local_ip = public.GetLocalIp()
+                    provate = ipaddress.IPv4Address(local_ip).is_private
+                except Exception:
+                    provate = True
+                if not provate:
+                    # 是否支持 CF 代理
+                    result["support"].append("cf_proxy")
+
         return public.success_v2(result)
 
     def ssl_tasks_status(self, get):
@@ -1255,13 +1265,9 @@ class DomainObject:
 
         if not hasattr(get, "task_id"):
             task_type = WorkFor.sites if not hasattr(get, "task_type") else int(get.task_type)
-            # get.task_type 是否在支持的WorkFor中
-            if task_type not in [x for x in WorkFor]:
-                return public.success_v2([])
-            objs = DnsDomainTask.objects.filter(
-                task_status__lt=100, task_type=task_type
-            )
-            data = [task.as_dict() for task in objs]
+            data = DnsDomainTask.objects.filter(
+                task_type=task_type, task_status__lt=100,
+            ).as_list()
         else:
             objs = DnsDomainTask.objects.filter(id=get.task_id).first()
             data = objs.as_dict() if objs else "Task Not Found!"

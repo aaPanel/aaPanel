@@ -34,7 +34,12 @@
 			"index_30": "Laporan Blok Hari Ini >>",
 			"index_31": "Jenis Blok (Hari Ini)",
 			"index_32": "Blok hari ini",
-			"index_33": "{0} \n {1}/item, {2}%"
+			"index_33": "{0} \n {1}/item, {2}%",
+			"index_34": "Peta 3D",
+			"index_35": "Aktifkan peta 3D",
+			"index_36": "Nonaktifkan peta 3D",
+			"index_37": "Setelah mengaktifkan peta 3D, peta akan beralih ke mode 3D. Mengonfirmasi?",
+			"index_38": "Setelah menonaktifkan peta 3D, peta akan beralih ke mode 2D. Mengonfirmasi?"
 		},
 		"Site": {
 			"index_1": "Access Intercept dari IP Aapanel jahat yang diketahui",
@@ -840,6 +845,7 @@
 		},
 		"Api": {
 			"overview_1": "Aktivasi satu klik sedang berlangsung, harap tunggu ...",
+			"overview_2": "Pengaturan, tolong tunggu ...",
 			"site_2": "Mengatur sakelar konfigurasi global, harap tunggu ...",
 			"site_3": "Mengatur status situs, harap tunggu ...",
 			"site_4": "Mendeteksi lingkungan captcha, tunggu ...",

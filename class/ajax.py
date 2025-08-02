@@ -749,8 +749,10 @@ class ajax:
                 if httpUrl: updateInfo['downUrl'] =  httpUrl + '/install/' + uptype + '/LinuxPanel_EN-' + updateInfo['version'] + '.zip'
                 public.downloadFile(updateInfo['downUrl'],'panel.zip')
                 if os.path.getsize('panel.zip') < 1048576: return public.return_msg_gettext(False, public.lang("File download failed, please try again or update manually!"))
-                public.ExecShell('unzip -o panel.zip -d ' + setupPath + '/')
-                # import compileall
+                cmd = 'unzip -o panel.zip -d {}/ && chmod 700 {}/panel/BT-Panel'.format(setupPath, setupPath)
+                public.print_log(cmd)
+                public.ExecShell(cmd)
+
                 if os.path.exists('/www/server/panel/runserver.py'): public.ExecShell('rm -f /www/server/panel/*.pyc')
                 if os.path.exists('/www/server/panel/class/common.py'): public.ExecShell('rm -f /www/server/panel/class/*.pyc')
                 

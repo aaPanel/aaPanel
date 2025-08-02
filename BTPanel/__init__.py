@@ -211,6 +211,7 @@ menu_map = {
         'memu_mailsys': '/mail',          # Mail Server
         'memuafiles': '/files',           # Files
         'memualogs': '/logs',             # Logs
+        'menu_ssl': '/ssl_domain',        # SSL
         'memuaxterm': '/xterm',           # Terminal
         'memuaccount': '/whm',            # Account
         'memuacrontab': '/crontab',       # Cron
@@ -415,6 +416,9 @@ def request_check():
             return send_file(static_file, conditional=True, etag=True)
 
     if request.path.find('/static/img/soft_ico/ico') >= 0:
+        # 路径安全检查
+        if public.path_safe_check(request.path) is False:
+            return abort(404)
         static_file = "{}/BTPanel/{}".format(panel_path, request.path)
         if not os.path.exists(static_file):
             static_file = "{}/BTPanel/static/img/soft_ico/icon_plug.svg".format(panel_path)
@@ -1437,6 +1441,7 @@ def config(pdata=None):
         # 'test_language',
          'set_hou',
          'replace_data',
+        'set_theme',
     )
     return publicObject(config.config(), defs, None, pdata)
 
@@ -1996,11 +2001,27 @@ def login():
         import base64
         data['login_translations'] = base64.b64encode(json.dumps(load_login_translations()).encode()).decode()
         settings = '{}/BTPanel/languages/settings.json'.format(public.get_panel_path())
-        default = json.loads(public.readFile(settings))['default']
+        # default = json.loads(public.readFile(settings))['default']
+
+        settings_content = public.readFile(settings)
+        try:
+            if settings_content and settings_content.strip():
+                settings_json = json.loads(settings_content)
+            else:
+                settings_json = {}
+        except Exception as e:
+            settings_json = {}
+
+        default = settings_json.get('default', 'en')  # 默认值
+
+
         if default == '':
             default = 'en'
         data['login_lang'] = default if default else 'en'
         data['public_key'] = public.get_rsa_public_key()
+
+
+
 
         import userLang
         get_language = userLang.userLang().get_language(None)['message']
@@ -2028,22 +2049,8 @@ def userRegister():
 
     return publicObject(reg, defs, None, None)
 
-# 新增登录设置语言
-@app.route('/userLang', methods=method_all)
-def userLang():
-    g.is_aes = False
-    import userLang
-    reg = userLang.userLang()
-    defs = ('get_language', 'set_language')
-    return publicObject(reg, defs, None, None)
-# 邮局调用退订接口
-@app.route('/mailUnsubscribe', methods=method_all)
-def mailUnsubscribe():
-    g.is_aes = False
-    import mailUnsubscribe
-    reg = mailUnsubscribe.mailUnsubscribe()
-    defs = ('Unsubscribe', 'Subscribe', 'get_mail_type_list')
-    return publicObject(reg, defs, None, None)
+
+
 @app.route('/close', methods=method_get)
 def close():
     # 面板已关闭页面
@@ -3679,6 +3686,20 @@ def site_v2(pdata=None):
         'get_restart_task',
         'set_https_mode',
         'get_https_mode',
+        'get_cron_scanin_info',
+        'set_cron_scanin_info',
+        'wp_create_with_manual_bak',
+        'set_wp_site_type',
+        'add_wp_site_type',
+        'edit_wp_site_type',
+        'del_wp_site_type',
+        'set_wp_tool',
+        'get_wp_tool',
+        'get_wp_debug_log',
+        'get_wp_sites',
+        'wp_copy_data',
+        'get_source_tables',
+        'get_wp_copy_progress'
     )
     return publicObject(siteObject, defs, None, pdata)
 
@@ -3968,12 +3989,57 @@ def panel_warning_v2(pdata=None):
 
     defs = ('get_list', 'set_ignore', 'check_find', 'check_cve',
             'set_vuln_ignore', 'get_scan_bar', 'get_tmp_result',
-            'kill_get_list')
+            'kill_get_list','get_res_list')
 
     if get.action in ['set_ignore', 'check_find', 'set_vuln_ignore']:
         cache.delete(ikey)
     return publicObject(dataObject, defs, None, pdata)
 
+# -----------------------------------------  安全模块路由区 start----------------------------------------
+
+@app.route(route_v2 + '/safecloud', methods=method_all)
+def safecloud(pdata=None):
+    # 安全
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from projectModelV2.safecloudModel import main
+    toObject = main()
+    defs = ('get_safe_overview','get_pending_alarm_trend','get_security_trend',
+            'get_security_dynamic','set_config','get_safecloud_list',
+            'get_webshell_result','get_config','deal_webshell_file','set_alarm_config',
+            'webshell_detection','ignore_file','get_ignored_list','del_ignored')
+    return publicObject(toObject, defs, None, pdata)
+
+# 避免加密后变成单例模式
+from safeModel.reportModel import main as report_main
+@app.route(route_v2 + '/safe/report', methods=method_all)
+def report(pdata=None):
+    # 安全报告
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    toObject = report_main()
+    defs = ('get_report')
+    return publicObject(toObject, defs, None, pdata)
+
+@app.route(route_v2 + '/scanning', methods=method_all)
+def scanning(pdata=None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from projectModelV2.scanningModel import main
+    toObject = main()
+    defs = ('get_vuln_info', 'startScan')
+    return publicObject(toObject, defs, None, pdata)
+
+@app.route(route_v2 + '/safe_detect', methods=method_all)
+def safe_detect(pdata=None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from projectModelV2.safe_detectModel import main
+    toObject = main()
+    defs = ('get_safe_count')
+    return publicObject(toObject, defs, None, pdata)
+
+# -----------------------------------------  安全模块路由区 end----------------------------------------
 
 @app.route(route_v2 + '/bak', methods=method_all)
 def backup_bak_v2(pdata=None):
@@ -4145,7 +4211,8 @@ def files_v2(pdata=None):
             'Re_Recycle_bin', 'Get_Recycle_bin', 'Del_Recycle_bin',
             'Close_Recycle_bin', 'Recycle_bin', 'file_webshell_check',
             'dir_webshell_check', 'files_search', 'files_replace',
-            'get_replace_logs')
+            'get_replace_logs', 'get_sql_backup', 'test_path', 'upload_files_exists')
+
     return publicObject(filesObject, defs, None, pdata)
 
 
@@ -4381,6 +4448,7 @@ def config_v2(pdata=None):
         'modify_ua',
         'delete_ua',
         'set_cdn_status',
+        'set_theme',
 
 
     )
@@ -4449,7 +4517,7 @@ def panel_data_v2(pdata=None):
     if comReturn: return comReturn
     import data_v2
     dataObject = data_v2.data()
-    defs = ('setPs', 'getData', 'getFind', 'getKey')
+    defs = ('setPs', 'getData', 'getFind', 'getKey', 'getSiteWafConfig', 'getSiteThirtyTotal','get_wp_classification')
     return publicObject(dataObject, defs, None, pdata)
 
 
@@ -4543,6 +4611,9 @@ def business_ssl(pdata=None):
         'apply_order_ca',
         'check_domain_suitable',
         'list_business_ssl',
+        'renew_cert_order',
+        'check_url_txt',
+        'again_verify',
     )
     get = get_input()
 
@@ -5982,49 +6053,40 @@ def push_v2(pdata=None):
 
 
 # 2024/1/24 上午 11:42 新场景模型的路由
-# @app.route(route_v2 + '/mod/<name>/<sub_name>/<fun>', methods=method_all)
-# @app.route(route_v2 + '/mod/<name>/<sub_name>/<fun>/<path:stype>', methods=method_all)
 # def panel_mod_v2(name=None, sub_name=None, fun=None, stype=None):
-# @app.route('/mod/proxy/com/<fun>', methods=method_all)
-# @app.route('/mod/proxy/com/<fun>/<path:stype>', methods=method_all)
 @app.route(route_v2 + '/mod/push/msgconf/<fun>', methods=method_all)
 @app.route(route_v2 + '/mod/push/task/<fun>', methods=method_all)
 @app.route(route_v2 + '/mod/proxy/com/<fun>', methods=method_all)
 @app.route(route_v2 + '/mod/proxy/com/<fun>/<path:stype>', methods=method_all)
 @app.route(route_v2 + '/mod/docker/com/<fun>', methods=method_all)
 @app.route(route_v2 + '/mod/docker/com/<fun>/<path:stype>', methods=method_all)
-# @app.route(route_v2 + '/project/proxy/<fun>', methods=method_all)
-# @app.route(route_v2 + '/project/proxy/<fun>/<path:stype>', methods=method_all)
+@app.route(route_v2 + '/mod/backup_restore/com/<fun>', methods=method_all)
+@app.route(route_v2 + '/mod/backup_restore/com/<fun>/<path:stype>', methods=method_all)
 def panel_mod_v2(fun=None, stype=None):
-    '''
+    """
         @name 新场景模型的路由
         @param "data":{"参数名":""} <数据类型> 参数描述
         @return dict{"status":True/False,"msg":"提示信息"}
-    '''
-
-    if request.method not in ['GET', 'POST']: return
-    path_split = request.path.split("/")
-    if len(path_split) < 5: return
-    name = path_split[3]
-    sub_name = path_split[4]
+    """
     # if not public.is_bind():
     #     return redirect('/bind', 302)
     if public.is_error_path():
         return redirect('/error', 302)
-    if not name:
 
+    path_split = request.path.split("/")
+    if len(path_split) < 5: return
+    name = path_split[3]
+    sub_name = path_split[4]
+
+    if not name:
         return abort(404)
     if not sub_name:
-
         return abort(404)
     if not re.match(r"^[\w\-]+$", name):
-
         return abort(404)
     if not re.match(r"^[\w\-]+$", sub_name):
-
         return abort(404)
-    if fun and not re.match(r"^[\w\-\.]+$", fun):
-
+    if fun and not re.match(r"^[\w\-.]+$", fun):
         return abort(404)
 
     comReturn = comm.local()
@@ -6104,8 +6166,7 @@ def panel_mod_v2(fun=None, stype=None):
                                            data={"error_msg": data['msg']})
                 return public.returnJson(
                     False,
-                    public.getMsg('PUBLIC_ERR_RETURN').format(
-                        r_type)), json_header
+                    public.getMsg('Bad return type [{}]').format(r_type)), json_header
             return data
     except:
         if not 'login' in session: return abort(404)
@@ -6273,6 +6334,48 @@ def get_mod_input():
 
     if not hasattr(data, 'data'): data.data = []
     return data
+
+
+# -----------------------------------------  无登录校验路由 start----------------------------------------
+
+# 邮局调用退订接口
+@app.route('/mailUnsubscribe', methods=method_all)
+def mailUnsubscribe():
+    # 插件判断
+    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_send_bulk.py') or not os.path.exists('/www/vmail/postfixadmin.db'):
+        return abort(404)
+
+    g.is_aes = False
+    import mailUnsubscribe
+    reg = mailUnsubscribe.mailUnsubscribe()
+    defs = ('Unsubscribe', 'get_mail_type_list')
+    return publicObject(reg, defs, None, None)
+
+
+# 新增登录设置语言
+@app.route('/userLang', methods=method_all)
+def userLang():
+    if public.cache_get(
+            public.Md5(
+                uuid.UUID(int=uuid.getnode()).hex[-12:] +
+                public.GetClientIp())) != 'check':
+
+        return abort(404)
+
+    global admin_check_auth, admin_path, route_path, admin_path_file
+    if admin_path != '/bt' and os.path.exists(
+            admin_path_file) and not 'admin_auth' in session:
+        return abort(404)
+
+    g.is_aes = False
+    import userLang
+    reg = userLang.userLang()
+    defs = ('get_language', 'set_language')
+    return publicObject(reg, defs, None, None)
+
+
+# -----------------------------------------  无登录校验路由 end----------------------------------------
+
 
 # 初始化CDN的配置
 def init_cdn_config(app):

@@ -278,7 +278,7 @@ class backup:
                         upload_file_path=os.path.join(self._cloud.backup_path , 'path',dirname, fname)
                     else:
                         upload_file_path="path"
-
+                    # use cloud func name : upload_file
                     if self._cloud.upload_file(dfile, upload_file_path):
                         self.echo_info("Successfully uploaded to {}".format(self._cloud._title))
                     else:
@@ -2216,31 +2216,79 @@ Please handle it as soon as possible""".format(
 
     def check_databases(self):
         """检查数据表是否存在"""
-        tables = ["backup_status"]
         import sqlite3
-        conn = sqlite3.connect("/www/server/panel/data/system.db")
-        cur = conn.cursor()
-        table_key = ",".join(["'"+t+"'" for t in tables])
-        sel_res = cur.execute("SELECT name FROM sqlite_master WHERE type='table' and name in ({})".format(table_key))
-        res = sel_res.fetchall()
-        to_commit = False
-        exists_dbs = []
-        if res:
-            exists_dbs = [d[0] for d in res]
+        db_path = "/www/server/panel/data/system.db"
+        fixed_path = f"{db_path}.fixed"
 
-        if "backup_status" not in exists_dbs:
-            csql = '''CREATE TABLE IF NOT EXISTS `backup_status` (
-                    `id` INTEGER,
-                    `target` TEXT,
-                    `status` INTEGER,
-                    `msg` TEXT DEFAULT "",
-                    `addtime` DATETIME DEFAULT CURRENT_TIMESTAMP
-                )'''
-            cur.execute(csql)
-            to_commit = True
+        try:
+            tables = ["backup_status"]
+            with sqlite3.connect(db_path) as conn:
+                cur = conn.cursor()
+                table_key = ",".join([f"'{t}'" for t in tables])
+                cur.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name IN ({table_key})")
+                exists_dbs = [row[0] for row in cur.fetchall()]
+                if "backup_status" not in exists_dbs:
+                    cur.execute('''
+                                CREATE TABLE `backup_status`
+                                (
+                                    `id`      INTEGER PRIMARY KEY,
+                                    `target`  TEXT,
+                                    `status`  INTEGER,
+                                    `msg`     TEXT     DEFAULT "",
+                                    `addtime` DATETIME DEFAULT CURRENT_TIMESTAMP
+                                )
+                                ''')
+            return True
 
-        if to_commit:
-            conn.commit()
-        cur.close()
-        conn.close()
-        return True
+        except sqlite3.DatabaseError as e:
+            public.print_log("System.db database is damaged, try repairing it!")
+
+            # 尝试修复数据库
+            ok = self._repair_database(db_path, fixed_path)
+            if not ok:
+                # 修复失败跳过
+                public.print_log("System.db database repair failed!")
+                return False
+
+        except Exception:
+            return False
+
+    def _repair_database(self, db_path, fixed_path):
+        """修复损坏的SQLite数据库，失败时直接删除原文件"""
+
+        try:
+            # 检查数据库文件是否存在
+            if not os.path.exists(db_path):
+                public.print_log(f"Error: Database file does not exist- {db_path}")
+                return False
+
+            # 执行修复命令
+            repair_cmd = f"sqlite3 {db_path} '.recover' | sqlite3 {fixed_path}"
+            if os.system(repair_cmd) == 0 and os.path.exists(fixed_path):
+                # 验证修复后的数据库
+                check_cmd = f"sqlite3 {fixed_path} 'PRAGMA integrity_check;'"
+                result = subprocess.getoutput(check_cmd)
+
+                if "ok" in result.lower():
+                    os.replace(fixed_path, db_path)
+                    public.print_log("Database repair successful!")
+                    return self.check_databases()
+                else:
+                    public.print_log(f"The repaired database still has issues:: {result}")
+                    raise Exception("Repair validation failed")
+
+            # 修复失败，原数据库文件删除后重建
+            public.print_log(f"Monitoring data is damaged, will be rebuilt after deletion: {db_path}")
+            os.remove(db_path)
+            public.print_log(f"Monitoring data repair failed, file has been deleted: {db_path}")
+            return False
+
+        except Exception as e:
+            public.print_log(f"An error occurred during the repair process: {str(e)}")
+
+            # 原数据库文件删除
+            if os.path.exists(db_path):
+                os.remove(db_path)
+                public.print_log(f"Monitoring data repair failed, file has been deleted: {db_path}")
+
+            return False

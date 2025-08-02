@@ -5,6 +5,7 @@ from functools import reduce
 from itertools import chain
 from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable
 
+import public
 from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
 from public.sqlite_easy import Db
@@ -941,9 +942,8 @@ class aaMigrate:
                 self.__query.execute_script(combined_sql)
 
             return True
-        except Exception:
-            import traceback
-            print(traceback.format_exc())
+        except:
+            pass
 
 
 class aaManager:

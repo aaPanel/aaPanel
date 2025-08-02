@@ -813,5 +813,11 @@
 	"5b9c0fac87a97a8334f2e21a6137bb35": "Recomendación: se recomienda no habilitar esto para los servicios en línea.",
 	"ab706a5938adcb681b8f2c7e0cae6402": "ADVERTENCIA: Esta es una característica beta. ¡No lo habilite para los servicios de producción!",
 	"b67a41ea491e086fc87abcfdd3172202": "Utilice expresiones regulares; Haga una copia de seguridad de las expresiones originales antes de enviar.",
-	"57322c79b2d81235926ce33864e578de": "Defensa de solicitud"
+	"57322c79b2d81235926ce33864e578de": "Defensa de solicitud",
+	"6806d45f993a5a42976a1ecb85ea8553": "Mapa 3d",
+	"de572bbd2cfd3c680a1ab9445604f977": "Habilitar el mapa 3D",
+	"3e8859dd023902cb08788fe23ddbacd1": "Deshabilitar el mapa 3D",
+	"1eb909392e6668d574fd03c93b298148": "Después de habilitar el mapa 3D, el mapa cambiará al modo 3D. ¿Confirmar?",
+	"54bb63c860b140f07c34d5c5791ba1b7": "Después de deshabilitar el mapa 3D, el mapa cambiará al modo 2D. ¿Confirmar?",
+	"6a771b435e66f6502c7d5bac79779564": "Configuración, por favor espere ..."
 }

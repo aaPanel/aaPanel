@@ -342,19 +342,68 @@ class panelWarning:
     def set_ignore(self, args):
         '''
             @name 设置指定项忽略状态
-            @author hwliang<2020-08-04>
             @param dict_obj {
                 m_name<string> 模块名称
             }
             @return dict
         '''
+        is_add_or_del = True
         m_name = args.m_name.strip()
         ignore_file = self.__ignore + '/' + m_name + '.pl'
         if os.path.exists(ignore_file):
+            is_add_or_del = False
             os.remove(ignore_file)
         else:
             public.writeFile(ignore_file, '1')
+
+        # 删除日志信息,避免重新扫描
+        result_file = self.__path + '/resultresult.json'
+        if not os.path.exists(result_file):
+            return public.return_message(-1, 0, 'Please perform a scan first!')
+
+        res = public.ReadFile(result_file)
+        res = json.loads(res)
+        ignore = None
+
+        # 如果是添加忽略，则从风险列表中删除
+        if is_add_or_del:
+            for r in res['risk']:
+                if r['m_name'] == m_name:
+                    ignore = r
+                    break
+            if ignore:
+                res['risk'].remove(ignore)
+                res['ignore'].append(ignore)
+        else:
+            for r in res['ignore']:
+                if r['m_name'] == m_name:
+                    ignore = r
+                    break
+            if ignore:
+                res['ignore'].remove(ignore)
+                res['risk'].append(ignore)
+
+        public.writeFile(result_file, json.dumps(res))
         return public.return_message(0, 0, public.lang("successfully set!"))
+
+    def get_res_list(self, get):
+        '''
+            @name 检获取结果列表
+            @param dict_obj {
+                m_name<string> 模块名称
+            }
+            @return dict
+        '''
+        try:
+            result_file = self.__path + '/resultresult.json'
+            if not os.path.exists(result_file):
+                return public.return_message(-1,0,'Please perform a scan first!')
+
+            res = public.ReadFile(result_file)
+            res = json.loads(res)
+            return public.return_message(0,0,res)
+        except Exception as e:
+            return public.return_message(-1,0,'Please perform a scan first!')
 
     def check_find(self, args):
         '''
@@ -983,14 +1032,15 @@ class panelWarning:
         @return:
         '''
         if not os.path.exists(self.__path + '/pid.txt'):
-            return {"status": False, "msg": "Interrupt failure"}
+            return public.return_message(-1,0,"Interrupt failure")
         pid = public.ReadFile(self.__path + '/pid.txt')
         err = public.ExecShell("kill -9 {}".format(str(pid)))[1].strip()
         if err:
-            return {"status": False, "msg": "Interrupt failure"}
+            return public.return_message(-1,0,"Interrupt failure")
         else:
             public.WriteFile(self.__path + '/kill.pl', "True")
-            return {"status": True, "msg": "Interrupt successfully"}
+            return public.return_message(0,0,'Interrupt successfully')
+
 
     def dump_tmp_result(self):
         '''
@@ -1008,7 +1058,7 @@ class panelWarning:
         '''
         if not os.path.exists(self.__path + '/tmp_result.json'):
             return "err"
-        return json.loads(public.ReadFile(self.__path + '/tmp_result.json'))
+        return public.return_message(0,0,json.loads(public.ReadFile(self.__path + '/tmp_result.json')))
 
     def new_system_scan2(self):
         '''

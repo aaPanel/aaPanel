@@ -242,8 +242,10 @@ class one_key_wp:
         self.set_permission(site_path)
 
     def set_permission(self, site_path):
-        os.system('chmod -R 755 ' + site_path)
-        os.system('chown -R www.www ' + site_path)
+        # 区分目录文件权限，分别赋权
+        os.system(f'chmod -R 644 {site_path}')
+        os.system(f'find {site_path} -type d -exec chmod 755 {{}} \;')
+        os.system(f'chown -R www:www {site_path}')
 
     def set_urlrewrite(self, site_name, site_path):
         webserver = public.get_webserver()
@@ -1319,6 +1321,7 @@ class one_key_wp:
         can_upgrade = wp_latest_version > wp_local_version
 
         wp_toolkit_config_data = wpmgr_obj.get_wp_toolkit_config_data()
+        type_ = query_wpsite_type(args.s_id)[0]
 
         return public.success_v2({
             'local_version': wp_local_version,
@@ -1326,13 +1329,16 @@ class one_key_wp:
             'can_upgrade': can_upgrade,
             'language': wp_toolkit_config_data['locale'],
             'login_url': wp_toolkit_config_data['login_url'],
-            'home_url': wp_toolkit_config_data['site_url'],
+            'site_url': wp_toolkit_config_data['site_url'],
             'cache_enabled': self.get_cache_status(args.s_id),
             'admin_user': wp_toolkit_config_data['admin_info']['user_login'],
             'admin_email': wp_toolkit_config_data['admin_info']['user_email'],
             'whl_enabled': wp_toolkit_config_data['whl_config'].get('activated', False),
             'whl_page': wp_toolkit_config_data['whl_config'].get('whl_page', 'login'),
             'whl_redirect_admin': wp_toolkit_config_data['whl_config'].get('whl_redirect_admin', '404'),
+            'wp_title': wp_toolkit_config_data.get('wp_title', 'Acquisition failed, MySQL error occurred'),
+            'wp_home': wp_toolkit_config_data.get('wp_home', 'Acquisition failed, MySQL error occurred'),
+            'site_type': type_.get("site_type",'')
         })
 
     # 保存WP Toolkit配置
@@ -1347,6 +1353,9 @@ class one_key_wp:
                 Param('whl_enabled').Integer('in', [0, 1]),
                 Param('whl_page').SafePath(),
                 Param('whl_redirect_admin').SafePath(),
+                Param('wp_title').String(),
+                Param('wp_home').String(),
+                Param('site_url').String(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -1357,6 +1366,40 @@ class one_key_wp:
         from wp_toolkit import wpmgr
 
         wpmgr_obj = wpmgr(args.s_id)
+
+        # 获取当前网站的配置信息
+        wp_title, wp_home, wp_site_url = wpmgr_obj.get_db_info()
+
+        configs = {}
+
+        # 更新网站标题
+        if 'wp_title' in args and args.get('wp_title', '') and args.get('wp_title', '') != wp_title:
+            configs['blogname'] = args.wp_title
+
+        # 更新网站首页
+        if 'wp_home' in args and args.get('wp_home', '') and args.get('wp_home', '') != wp_home:
+            if wpmgr_obj.validate_url(args.wp_home):
+                configs['home'] = args.wp_home
+            else:
+                return public.return_message(-1,0, 'The homepage URL format is not supported!')
+
+        # 更新网站URL
+        if 'site_url' in args and args.get('site_url', '') and args.get('site_url', '') != wp_site_url:
+            if wpmgr_obj.validate_url(args.site_url):
+                configs['siteurl'] = args.site_url
+            else:
+                return public.return_message(-1,0, 'The website URL format is not supported')
+
+        # 更新数据库信息
+        if configs:
+            ok , msg = wpmgr_obj.update_db_info(configs)
+
+            if not ok:
+                return public.return_message(-1,0, msg)
+
+            # 写操作日志
+            for key, value in configs.items():
+                wpmgr.log_opt('Update {} from [{}] to [{}] successfully', (key, locals().get(key, ''), value))
 
         # 更新语言
         if 'language' in args:
@@ -1890,3 +1933,61 @@ def retry(func, max_retries=10):
                 return False
 
     return None
+
+# 查询网站类型
+def query_wpsite_type(site_id=None):
+    try:
+        ok , msg = checklist_fields()
+        if not ok:
+            return public.return_message(-1, 0, msg)
+
+        data = []
+        if site_id:
+            data = public.M("wordpress_onekey").field("site_type").where("s_id=?", (site_id,)).select()
+        else:
+            data = public.M("wordpress_onekey").field("id,s_id,site_type").order("id asc").select()
+
+        return data
+    except Exception as e:
+        return []
+
+ # 检查wordpress_onekey表是否存在分类字段,以及类型表是否存在
+def checklist_fields() -> (bool, str):
+    import sqlite3
+
+    try:
+        conn = sqlite3.connect('/www/server/panel/data/default.db')
+        cursor = conn.cursor()
+
+        # 获取wordpress_onekey表的结构信息
+        cursor.execute("PRAGMA table_info(wordpress_onekey)")
+        columns = cursor.fetchall()
+
+        # 检查是否存在site_type字段
+        has_site_type = any(column[1] == 'site_type' for column in columns)
+
+        if not has_site_type:
+            # 添加site_type字段，类型为TEXT，
+            cursor.execute("ALTER TABLE wordpress_onekey ADD COLUMN site_type TEXT DEFAULT 'Default category'")
+            conn.commit()
+
+        # 检查wp_site_types表是否存在
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='wp_site_types'")
+        site_types_table_exists = cursor.fetchone() is not None
+
+        if not site_types_table_exists:
+            # 创建wp_site_types表
+            cursor.execute('''
+                CREATE TABLE wp_site_types (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT,
+                    ps TEXT
+                )
+            ''')
+            # 插入默认类型
+            cursor.executemany("INSERT INTO wp_site_types (name) VALUES (?)", [("Default category",)])
+            conn.commit()
+
+        return True, "Table structure is valid and updated successfully!"
+    except sqlite3.Error as e:
+        return False, str(e)

@@ -8,7 +8,7 @@
 # | 消息通道电报模块
 # +-------------------------------------------------------------------
 
-import sys, os, re, asyncio, public, json, requests
+import sys, os, re, public, json, requests
 
 try:
     import telegram
@@ -24,13 +24,9 @@ from requests.packages import urllib3
 # 关闭警告
 urllib3.disable_warnings()
 
-import smtplib
-import traceback
-from email.mime.text import MIMEText
-from email.utils import formataddr
-from typing import Tuple, Union, Optional
+from typing import Union, Optional
 
-from mod.base.msg.util import write_push_log, write_mail_push_log, get_test_msg
+from mod.base.msg.util import write_push_log, get_test_msg
 
 
 class TgMsg:
@@ -39,20 +35,6 @@ class TgMsg:
     __module_name = None
     __default_pl = "{}/data/default_msg_channel.pl".format(panelPath)
 
-    # def __init__(self):
-    #     try:
-    #         red_conf_path = public.readFile(self.conf_path)
-    #
-    #         self.__tg_info = json.loads(red_conf_path)
-    #         if not 'bot_token' in self.__tg_info or not 'my_id' in self.__tg_info:
-    #             self.__tg_info = None
-    #     except:
-    #         self.__tg_info = None
-    #     self.__module_name = self.__class__.__name__.replace('_msg', '')
-
-    # def __init__(self, tg_data):
-    #     self.my_id = tg_data["data"]["my_id"]
-    #     self.bot_token = tg_data["data"]["bot_token"]
     def __init__(self, conf):
         self.conf = conf
         self.bot_token = self.conf['data']['bot_token']
@@ -151,21 +133,12 @@ class TgMsg:
         tg发送信息
         @msg 消息正文
         """
-        # msg, title = self.get_send_msg(msg)
 
         bot_token = self.bot_token
         chat_id = self.my_id
 
-        # public.print_log("tg 消息正文-- 发送数据 {}".format(msg))
-        # 去掉消息前后的空格
         msg = msg.strip()
-        # 特殊字符处理
-        character = ['\\', '_', '`', '*', '{', '}', '[', ']', '(', ')', '>', '#', '+', '-', '=', '.', '!']
-        for c in character:
-            if c in msg:
-                msg = msg.replace(c, '\\' + c)
-
-        # public.print_log("tg 消息正文-- 修改后 {}".format(msg))
+        msg = self.escape_markdown_v2(msg)
         import asyncio
 
         loop = asyncio.new_event_loop()
@@ -173,10 +146,6 @@ class TgMsg:
 
         try:
             loop.run_until_complete(self.send_msg_async(bot_token, chat_id, msg))
-            # ret = {'success': 1}
-            # 192.168.168.162(intranet) Title：[ Notification Configuration Reminder],method to informe:[None]，recipient:[ success：Fail ]
-            # Title: [], Notification: [mail], Result: [ Success ], Addressee: [ lotk1@moyumao.top ]
-            # public.write_push_log(self.__module_name, title, ret)
             write_push_log("Telegram", True, title)
 
             public.print_log('message sent successfully!')
@@ -186,14 +155,20 @@ class TgMsg:
 
 
         except Exception as e:
-            public.print_log('Error 123:{}'.format(str(public.get_error_info())))
-
-            # ret = {'success': 0}
-
-            # public.write_push_log(self.__module_name, title, ret)
+            public.print_log('tg sent error:{}'.format(str(public.get_error_info())))
             write_push_log("Telegram", False, title)
 
             return public.lang("Telegram Failed to send {}",e)
+
+    def escape_markdown_v2(self, text):
+        """
+        Escape special characters for Telegram's MarkdownV2 mode.
+        """
+        # 所有需要转义的 MarkdownV2 字符
+        escape_chars = r'\_*[]()~`>#+-=|{}.!'
+        for ch in escape_chars:
+            text = text.replace(ch, '\\' + ch)
+        return text
 
     @classmethod
     def check_args(cls, args: dict) -> Union[dict, str]:
@@ -216,14 +191,9 @@ class TgMsg:
             "data": data
         }
 
-        # self.bot_token = self.conf['data']['bot_token']
-        # self.my_id = self.conf['data']['my_id']
         # 调用TgMsg的方法
         tg = TgMsg(conf)
         try:
-            # info = public.get_push_info('Notification Configuration Reminder',
-            #                             ['>Configuration status：<font color=#20a53a>successfully</font>\n\n'])
-            # public.print_log('TgMsg info 00000:{}'.format(info))
 
             test_msg = {
                 "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n\n']
@@ -233,8 +203,6 @@ class TgMsg:
                 test_task.to_tg_msg(test_msg, test_task.the_push_public_data()),
                 "Message channel configuration reminders"
             )
-
-            # ret = tg.send_msg(info['msg'], title) # 调用 send_msg 方法
 
 
         except:

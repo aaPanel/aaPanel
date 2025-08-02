@@ -19,6 +19,7 @@ import fcntl
 import shutil
 import tempfile
 from datetime import datetime
+from .sqlite_easy import Db, SqliteEasy
 
 
 
@@ -135,7 +136,7 @@ def M(table):
 
 
 # Easy Sqlite Toolkit for query
-def S(table_name: typing.Optional[str] = None, db_name: str = 'default'):
+def S(table_name: typing.Optional[str] = None, db_name: str = 'default') -> SqliteEasy:
     from .sqlite_easy import Db
 
     query = Db(db_name).query()
@@ -147,8 +148,7 @@ def S(table_name: typing.Optional[str] = None, db_name: str = 'default'):
 
 
 # Easy Sqlite Toolkit for connection
-def SqliteConn(db_name: str = 'default'):
-    from .sqlite_easy import Db
+def SqliteConn(db_name: str = 'default') -> Db:
     return Db(db_name)
 
 
@@ -616,11 +616,11 @@ def WriteLog(type, logMsg, args=(), not_web=False):
                 logMsg = logMsg.replace(rep, args[i])
         if type in keys: type = _LAN_LOG[type]
 
-        try:
-            if 'login_address' in session:
-                logMsg = '{} {}'.format(session['login_address'], logMsg)
-        except:
-            pass
+        # try:
+        #     if 'login_address' in session:
+        #         logMsg = '{} {}'.format(session['login_address'], logMsg)
+        # except:
+        #     pass
 
         sql = db.Sql()
         mDate = time.strftime('%Y-%m-%d %X', time.localtime())
@@ -1830,11 +1830,20 @@ def IsRestart():
     return True
 
 
-# 加密密码字符
-def hasPwd(password):
-    import crypt
-    return crypt.crypt(password, password)
+# # 加密密码字符
+# def hasPwd(password):
+#     import crypt
+#     return crypt.crypt(password, password)
 
+def hasPwd(password: str) -> str:
+    import bcrypt
+    # 将密码转换为字节
+    password_bytes = password.encode('utf-8')
+    # 生成随机盐值并哈希
+    salt = bcrypt.gensalt()
+    hashed_bytes = bcrypt.hashpw(password_bytes, salt)
+    # 转回字符串
+    return hashed_bytes.decode('utf-8')
 
 def getDate(format='%Y-%m-%d %X'):
     # 取格式时间
@@ -8787,33 +8796,41 @@ def load_soft_list(force: bool = True, retry_count: int = 0):
     local_cache_file = '{}/data/plugin_bin.pl'.format(get_panel_path())
 
     if force or not os.path.exists(local_cache_file) or os.path.getsize(local_cache_file) < 10:
+        # 如果是重试，sleep一段时间
+        if retry_count > 0:
+            time.sleep(2 * retry_count + 1)
+
         cloudUrl = '{}/api/panel/getSoftListEn'.format(OfficialApiBase())
         import panelAuth
         import requests
         pdata = panelAuth.panelAuth().create_serverid(None)
-        url_headers = {}
+        url_headers = {
+            'user-agent': 'aaPanel/1.0',
+        }
         if 'token' in pdata:
             url_headers = {"authorization": "bt {}".format(pdata['token'])}
+
         pdata['environment_info'] = json.dumps(fetch_env_info())
 
         update_ok = False
         ex = None
 
         # 默认重试5次
-        for _ in range(5):
-            try:
-                resp = requests.post(cloudUrl, params=pdata, headers=url_headers, verify=False, timeout=10)
+        try:
+            resp = requests.post(cloudUrl, params=pdata, headers=url_headers, verify=False, timeout=10)
 
-                # 请求成功后将授权密文信息写入本地文件
-                if resp.ok:
-                    with open(local_cache_file, 'w') as fp:
-                        fp.write(resp.text)
-                    update_ok = True
-                    break
+            # 请求成功后将授权密文信息写入本地文件
+            if resp.ok:
+                with open(local_cache_file, 'w') as fp:
+                    fp.write(resp.text)
+                update_ok = True
 
-            except Exception as e:
-                ex = e
-                pass
+        except Exception as e:
+            ex = e
+
+            if retry_count < 6:
+                # 获取软件列表失败，重试
+                return load_soft_list(force, retry_count + 1)
 
         # 本地缓存存在则让其读取本地缓存
         if not update_ok:

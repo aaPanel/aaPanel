@@ -766,15 +766,15 @@ class ajax:
                 except:
                     pass
 
-            # 更新时默认安装pflogsumm
-            if not os.path.exists('/usr/sbin/pflogsumm'):
-                linux_distr = public.get_linux_distribution().lower()
-                if linux_distr == 'centos7':
-                    public.ExecShell('yum install postfix-pflogsumm -y')
-                elif linux_distr == 'centos8':
-                    public.ExecShell('yum install postfix-pflogsumm -y')
-                elif linux_distr == 'ubuntu':
-                    public.ExecShell('apt install pflogsumm -y')
+            # # 更新时默认安装pflogsumm
+            # if not os.path.exists('/usr/sbin/pflogsumm'):
+            #     linux_distr = public.get_linux_distribution().lower()
+            #     if linux_distr == 'centos7':
+            #         public.ExecShell('yum install postfix-pflogsumm -y')
+            #     elif linux_distr == 'centos8':
+            #         public.ExecShell('yum install postfix-pflogsumm -y')
+            #     elif linux_distr == 'ubuntu':
+            #         public.ExecShell('apt install pflogsumm -y')
 
             # 判断邮局版本并更新
             # if os.path.exists('/www/server/panel/plugin/mail_sys/info.json'):
@@ -840,8 +840,9 @@ class ajax:
                 if httpUrl: updateInfo['downUrl'] = httpUrl + '/install/' + uptype + panel_update_name + updateInfo['version'] + '.zip'
                 public.downloadFile(updateInfo['downUrl'],'panel.zip')
                 if os.path.getsize('panel.zip') < 1048576: return public.return_message(-1, 0, public.lang("File download failed, please try again or update manually!"))
-                public.ExecShell('unzip -o panel.zip -d ' + setupPath + '/')
-                # import compileall
+                cmd = 'unzip -o panel.zip -d {}/ && chmod 700 {}/panel/BT-Panel'.format(setupPath, setupPath)
+                public.print_log(cmd)
+                public.ExecShell(cmd)
 
                 # 清除pycache编译缓存
                 remove_py_caches = [

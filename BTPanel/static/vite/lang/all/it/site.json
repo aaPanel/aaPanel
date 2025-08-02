@@ -594,5 +594,6 @@
 	"75f24fd22bcdebf788c00df6721f4faf": "Effetto predefinito: sostituire tutto 'http://www.aapanel.com' con 'https://www.aapanel.com'.",
 	"6cb377a9cc9c0a595f359c57158418bb": "WebSocket globale è abilitato e non è consentito essere disabilitato individualmente",
 	"130f00db5ce836a6b86e3175bf893fd1": "Elimina il progetto proxy inverso",
-	"fcdb0820b609e6bcb1a661a095274b69": "Sostituisci tutte le parole chiave abbinate"
+	"fcdb0820b609e6bcb1a661a095274b69": "Sostituisci tutte le parole chiave abbinate",
+	"3293b90f17c2a86dff994a657361e810": "{0} giorni"
 }
