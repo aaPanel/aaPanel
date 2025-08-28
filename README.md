@@ -32,7 +32,8 @@ Demo：https://demo.aapanel.com/fdgi87jbn/<br/>
 username: aapanel<br/>
 password: aapanel
 
-![image](https://github.com/aaPanel/aaPanel/assets/31841517/c40d68f5-1cbb-4117-ab47-b52b14228cce)
+<!-- ![image](https://github.com/aaPanel/aaPanel/assets/31841517/c40d68f5-1cbb-4117-ab47-b52b14228cce) -->
+![image](https://www.aapanel.com/static/new/images/index/home.png)
 
 ## What can I do
 
