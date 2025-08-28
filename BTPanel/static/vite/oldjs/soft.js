@@ -4000,6 +4000,22 @@ var soft = {
 							ps: '* UNIX socket recommended',
 						},
 						{
+						    title: 'Information',
+							name: 'bind',
+							value: rdata.bind,
+							type: 'string',
+							width: '200px',
+							ps: 'Bind IP: Listening port or Uinx socket address',
+						},
+						{
+						    title: 'IP Whitelist',
+							name: 'allowed',
+							value: rdata.allowed,
+							type: 'string',
+							width: '200px',
+							ps: 'Allow access to PHP IP, multiple separated by commas',
+						},
+						{
 							title: lan.soft.php_fpm_model,
 							name: 'pm',
 							value: rdata.pm,

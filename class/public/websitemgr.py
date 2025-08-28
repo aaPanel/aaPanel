@@ -147,13 +147,14 @@ def create_php_site_with_mysql(domain: str, site_path: str, php_ver_short: str, 
         'codeing': 'utf8mb4',
         'ps': domain.replace('.', '_').replace('-', '_'),
     }))
-
     if int(data.get('status', 0)) != 0:
         raise HintException(data.get('message', {})['result'])
 
-    data = data.get('message', {})
-
+    data = data['message']
     if int(data.get('databaseStatus', 0)) != 1:
+        if data['siteId'] is not None:
+            from public import websitemgr
+            websitemgr.remove_site(data['siteId'])
         raise HintException(public.lang('Database creation failed. Please check mysql running status and try again.'))
 
     return aap_t_simple_site_info(data['siteId'], data['d_id'])

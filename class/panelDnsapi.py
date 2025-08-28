@@ -32,44 +32,12 @@ __all__ = [
 
 
 class ExtractZoneTool(object):
-    _top_domain_list = [
-        ".ac.cn", ".ah.cn", ".bj.cn", ".com.cn", ".cq.cn", ".fj.cn", ".gd.cn",
-        ".gov.cn", ".gs.cn", ".gx.cn", ".gz.cn", ".ha.cn", ".hb.cn", ".he.cn",
-        ".hi.cn", ".hk.cn", ".hl.cn", ".hn.cn", ".jl.cn", ".js.cn", ".jx.cn",
-        ".ln.cn", ".mo.cn", ".net.cn", ".nm.cn", ".nx.cn", ".org.cn", ".sch.id",
-    ]
-    _cache = {}
-
-    def __init__(self):
-        if not self._cache:
-            top_domain_list_data = public.readFile("{}/config/domain_root.txt".format(public.get_panel_path()))
-            if top_domain_list_data:
-                self.top_domain_list = set(self._top_domain_list + top_domain_list_data.strip().split('\n'))
-            else:
-                self.top_domain_list = self._top_domain_list
-            self._cache = self.top_domain_list
-        else:
-            self.top_domain_list = self._cache
-
     def __call__(self, domain_name):
-        domain_name = domain_name.lstrip("*.")
-        old_domain_name = domain_name
-        top_domain = "." + ".".join(domain_name.rsplit(".")[-2:])
-        new_top_domain = "." + top_domain.replace(".", "")
-        is_tow_top = False
-        if top_domain in self.top_domain_list:
-            is_tow_top = True
-            domain_name = domain_name[:-len(top_domain)] + new_top_domain
-        if domain_name.count(".") <= 1:
-            zone = ""
-            root = old_domain_name
+        root, zone = public.split_domain_sld(domain_name)
+        if not zone:
             acme_txt = "_acme-challenge"
         else:
-            zone, middle, last = domain_name.rsplit(".", 2)
             acme_txt = "_acme-challenge.%s" % zone
-            if is_tow_top:
-                last = top_domain[1:]
-            root = ".".join([middle, last])
         return root, zone, acme_txt
 
 
@@ -510,7 +478,7 @@ class CloudFlareDns(BaseDns):
 
         result = find_dns_zone_response.json()["result"]
         for i in result:
-            if i["name"] in domain_name:
+            if i["name"] == domain_name:  # 完全匹配
                 setattr(self, "cf_zone_id", i["id"])
         if isinstance(self.cf_zone_id, type(None)):
             raise HintException(

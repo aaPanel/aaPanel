@@ -43,7 +43,7 @@ It can easily manage the server through the Web terminal, improving the operatio
 ## Installation
 
 > Make sure it is a clean operating system, and have not installed Apache /Nginx/php/MySQL from other environments
-> aaPanel is developed based on Centos7+, it is strongly recommended to use centos7 + linux distribution*\**
+> aaPanel is developed based on Ubuntu 22+, it is strongly recommended to use Ubuntu 22+ linux distribution
 
  Note, please execute the installation command with root authority
 
@@ -51,7 +51,7 @@ It can easily manage the server through the Web terminal, improving the operatio
 
 * Hard disk: More than 100M available hard disk space (Pure panel for about 20M disk space)
 
-* System: Ubuntu 22.04 24.04, Debian 11 12, CentOS 9, Rocky/AlmaLinux 8 9,  to ensure that it is a clean operating system, there is no other environment with Apache/Nginx/php/MySQL installed (the existing environment can not be installed)
+* System: Ubuntu 22.04 24.04, Debian 11 12, CentOS 9, Rocky/AlmaLinux 8 9, to ensure that it is a clean operating system, there is no other environment with Apache/Nginx/php/MySQL installed (the existing environment can not be installed)
 
 **aaPanel Installation Command**
 

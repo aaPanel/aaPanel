@@ -1,6 +1,6 @@
 import os
 import sys
-import glob
+import subprocess
 from datetime import datetime
 
 if "/www/server/panel/class" not in sys.path:
@@ -25,6 +25,26 @@ class SecureManage(SSHbase):
         else:
             self.ssh_log_path = "/var/log/message"
 
+    def execshell(self, commands):
+        """
+        执行shell命令并返回结果。
+        仅适用于 获取需要通过 标准输出和标准错误输出的命令。
+        """
+        try:
+            result = subprocess.run(
+                commands,
+                shell=True,
+                text=True,
+                capture_output=True,
+                executable="/bin/bash"
+            )
+            count = int(result.stdout.strip())
+            datas = result.stderr.strip().split("\n")
+        except Exception as e:
+            count = 0
+            datas = []
+        return count, datas
+
     def get_secure_logs(self,login_type,pagesize=10,page=1,query=''):
         """
             读取SSH日志文件的内容。
@@ -44,24 +64,23 @@ class SecureManage(SSHbase):
 
         if query != '':
             query = "|grep -aE '{}'".format(query)
-        commands = "ls -tr {file_path}|grep -v '\.gz$'|xargs cat|grep -aE '({login_type})'{query}|tail -n {end}|head -n {pagesize}|tac".format(
-            file_path=self.ssh_log_path,
-            login_type=login_type,
-            query=query,
-            end=end,
-            pagesize=pagesize)
+        commands = "ls -tr {file_path}|grep -v '\.gz$'|xargs cat|grep -aE '({login_type})'{query}| tee >(tail -n {end}|head -n {pagesize}|tac >&2)|wc -l".format(
+        file_path=self.ssh_log_path,
+        login_type=login_type,
+        query=query,
+        end=end,
+        pagesize=pagesize)
+        count,datas = self.execshell(commands)
 
         year = datetime.now().year
-        result, err = public.ExecShell(commands)
-        lines = result.split('\n')
-        for line in lines:
+        for line in datas:
             parts = line.split()
             if not parts:
                 continue
             entry = self.parse_login_entry(parts, year)
             if entry:
                 new_logins.append(entry)
-        return new_logins
+        return count,new_logins
 
     def get_secure_log_count(self,login_type,query=''):
         """

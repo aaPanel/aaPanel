@@ -537,7 +537,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         except:
             pass
 
-    # 添加站点
+    # 旧版添加站点，保留
     def AddSite(self, get, multiple=None):
         # 校验参数
         try:
@@ -814,92 +814,567 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         if not hasattr(get, 'type_id'): get.type_id = 0
         if not hasattr(get, 'project_type'): get.project_type = "PHP"
         public.check_domain_cloud(self.siteName)
+
         # 统计wordpress安装次数
         if get.project_type == 'WP':
             public.count_wp()
+
         # 写入数据库
         get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type', (
             self.siteName, self.sitePath, '1', ps, get.type_id, public.getDate(), get.project_type))
-
-        # 添加更多域名
-        for domain in siteMenu['domainlist']:
-            get.domain = domain
-            get.webname = self.siteName
-            get.id = str(get.pid)
-            self.AddDomain(get, multiple)
-
-        sql.table('domain').add('pid,name,port,addtime', (get.pid, self.siteName, self.sitePort, public.getDate()))
-
         data = {}
-        data['siteStatus'] = True
         data['siteId'] = get.pid
+        try:
+            # 添加更多域名
+            for domain in siteMenu['domainlist']:
+                get.domain = domain
+                get.webname = self.siteName
+                get.id = str(get.pid)
+                self.AddDomain(get, multiple)
 
-        # 添加FTP
-        data['ftpStatus'] = False
-        if 'ftp' not in get:
-            get.ftp = False
-        if get.ftp == 'true':
-            import ftp
-            get.ps = self.siteName
-            result = ftp.ftp().AddUser(get)
-            if result['status']:
-                data['ftpStatus'] = True
-                data['ftpUser'] = get.ftp_username
-                data['ftpPass'] = get.ftp_password
+            sql.table('domain').add('pid,name,port,addtime', (get.pid, self.siteName, self.sitePort, public.getDate()))
+            data['siteStatus'] = True
 
-        # 添加数据库
-        data['databaseStatus'] = False
-        if 'sql' not in get:
-            get.sql = 'false'
-        if get.sql == 'true' or get.sql == 'MySQL':
-            import database
-            if len(get.datauser) > 16: get.datauser = get.datauser[:16]
+            # 添加FTP
+            data['ftpStatus'] = False
+            if 'ftp' not in get:
+                get.ftp = False
+            if get.ftp == 'true':
+                import ftp
+                get.ps = self.siteName
+                result = ftp.ftp().AddUser(get)
+                if result['status']:
+                    data['ftpStatus'] = True
+                    data['ftpUser'] = get.ftp_username
+                    data['ftpPass'] = get.ftp_password
+            # 添加数据库
+            data['databaseStatus'] = False
+            if 'sql' not in get:
+                get.sql = 'false'
+            if get.sql == 'true' or get.sql == 'MySQL':
+                import database
+                if len(get.datauser) > 16: get.datauser = get.datauser[:16]
 
-            # 生成不重复的数据库用户名
-            db_name = public.ensure_unique_db_name(get.datauser)
+                # 生成不重复的数据库用户名
+                db_name = public.ensure_unique_db_name(get.datauser)
 
-            get.name = db_name
-            get.db_user = db_name
-            get.password = get.datapassword
-            get.address = '127.0.0.1'
-            get.ps = self.siteName
-            result = database.database().AddDatabase(get)
-            if result['status']:
-                data['databaseStatus'] = True
-                data['databaseUser'] = get.datauser
-                data['databasePass'] = get.datapassword
-                data['d_id'] = str(public.M('databases').where('pid=?', (get.pid,)).field('id').find()['id'])
-            else:
-                # 已经存在数据库 用之前数据库 修改pid public.print_log("存在 更新pid   ---{}".format(result))
-                if result['msg'].find('Database exists') != -1:
-                    datauser = get['name'].strip().lower()
-                    public.M('databases').where('name=?', (datauser,)).update({"pid":get.pid})
-                data['databaseErrorMsg'] = result['msg']
-        if not multiple:
-            public.serviceReload()
-        data = self._set_ssl(get, data, siteMenu)
-        data = self._set_redirect(get, data['message'])
-        public.set_module_logs("sys_domain", "AddSite_Manual", 1)
-        public.write_log_gettext('Site manager', 'Successfully added site [{}]!', (self.siteName,))
-        # ================ dns domain  =======================
-        if hasattr(get, "parse_list"):
+                get.name = db_name
+                get.db_user = db_name
+                get.password = get.datapassword
+                get.address = '127.0.0.1'
+                get.ps = self.siteName
+                result = database.database().AddDatabase(get)
+                if result['status']:
+                    data['databaseStatus'] = True
+                    data['databaseUser'] = get.datauser
+                    data['databasePass'] = get.datapassword
+                    data['d_id'] = str(public.M('databases').where('pid=?', (get.pid,)).field('id').find()['id'])
+                else:
+                    # 已经存在数据库 用之前数据库 修改pid public.print_log("存在 更新pid   ---{}".format(result))
+                    if result['msg'].find('Database exists') != -1:
+                        datauser = get['name'].strip().lower()
+                        public.M('databases').where('name=?', (datauser,)).update({"pid": get.pid})
+                    data['databaseErrorMsg'] = result['msg']
+            if not multiple:
+                public.serviceReload()
+            data = self._set_ssl(get, data, siteMenu)
+            data = self._set_redirect(get, data['message'])
+            public.set_module_logs("sys_domain", "AddSite_Manual", 1)
+            public.write_log_gettext('Site manager', 'Successfully added site [{}]!', (self.siteName,))
+            # ================ dns domain  =======================
+            if hasattr(get, "parse_list"):
+                try:
+                    import threading
+                    from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
+                    # 添加申请证书, 解析,代理
+                    new_list = [main_domain] + parse_list
+                    task_obj = generate_sites_task(main_domain, get.pid)
+                    task = threading.Thread(
+                        target=init_sites_dns,
+                        args=(new_list, task_obj)
+                    )
+                    task.start()
+                    public.set_module_logs("sys_domain", "AddSite_Auto", 1)
+                except Exception as e:
+                    # 删除站点
+                    if get.pid is not None:
+                        from public import websitemgr
+                        websitemgr.remove_site(get.pid)
+
+            return data
+        except Exception as e:
+            return data
+
+
+    # 添加站点
+    def add_sites(self, get, app=None, multiple=None):
+        import json
+        task_status = os.path.join('/tmp', 'wp_aapanel_deploy.log')
+        lock_file = os.path.join('/tmp', 'wp_aapanel_deploy.lock')
+
+        progress_log = {
+            "status": 0,
+            "parameter_verification": {"ps": public.lang("Verification is underway....."),
+                                       "status": 0, "error": '',
+                                       "title": public.lang("Parameter verification")},
+            "create_website": {"ps": public.lang("{} The website is being created....", get.get('weblog_title', '')),
+                               "status": 2, "error": '',
+                               "title": public.lang("Create website")},
+            "optional_configurations": {"ps": public.lang("Add optional configurations: database, FTP"),
+                                        "status": 2, "error": '',
+                                        "title": public.lang("Add optional configurations")},
+        }
+
+        public.writeFile(task_status, json.dumps(progress_log))
+
+        # 校验参数
+        try:
+            # 获取线程id写进锁文件
+            import threading
+            thread_id = threading.get_ident()
+            with open(lock_file, 'w') as f:
+                f.write(str(thread_id))
+
+            # =========wp创建==========
+            if get.get('project_type', '') == 'WP2':
+                args = get
+                main_domain = {}
+                if hasattr(get, "wp_parse_list"):
+                    wp_parse_list = json.loads(args.wp_parse_list)
+                    if not len(wp_parse_list):
+                        raise ValueError("domain names not found")
+                    main_domain = wp_parse_list.pop(0)
+                    get.webname = json.dumps({
+                        "domain": main_domain.get("domain").strip(),
+                        "domainlist": [x.get("domain", "") for x in wp_parse_list],
+                        "count": len(wp_parse_list),
+                    })
+
+                from copy import deepcopy
+                get = public.to_dict_obj(deepcopy(get.get_items()))
+            # ===========================================
+
+            if not hasattr(get, 'is_create_default_file'):
+                get.is_create_default_file = True
+
+            get.validate([
+                Param('webname').String(),
+                Param('type').String(),
+                Param('ps').String(),
+                Param('path').String(),
+                Param('version').String(),
+                Param('sql').String(),
+                Param('datapassword').String(),
+                Param('codeing').String(),
+                Param('port').Integer(),
+                Param('type_id').Integer(),
+                Param('set_ssl').Integer(),
+                Param('force_ssl').Integer(),
+                Param('ftp').Bool(),
+                Param('is_create_default_file').Bool(),
+                Param('parse_list').String(),  # dns auto
+            ], [
+                public.validate.trim_filter(),
+            ])
+
+            parse_list = []
+            main_domain = {}
+            if hasattr(get, "parse_list"):
+                parse_list = json.loads(get.parse_list)
+                if not len(parse_list):
+                    raise ValueError("domain names not found")
+
+                main_domain = parse_list.pop(0)
+                get.webname = json.dumps({
+                    "domain": main_domain.get("domain").strip(),
+                    "domainlist": [x.get("domain", "") for x in parse_list],
+                    "count": len(parse_list),
+                })
+
+            if get.get('ftp', False):
+                # 校验参数
+                get.validate([
+                    Param('ftp_username').String(),
+                    Param('ftp_password').String(),
+                ], [
+                    public.validate.trim_filter(),
+                ])
+
+            if not get.path:
+                raise ValueError("Please fill in the website path")
+
+            if get.path == "/":
+                raise ValueError("The website path cannot be the root directory [/]")
+
+            rep_email = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
+
+            if hasattr(get, 'email'):
+                if not re.search(rep_email, get.email):
+                    raise ValueError("Please check if the [Email] format correct")
+
+            if hasattr(get, 'password') and hasattr(get, 'pw_weak'):
+                l = public.check_password(get.password)
+                if l == 0 and get.pw_weak == 'off':
+                    raise ValueError(
+                        'Password very weak, if you are sure to use it, please tick [ Allow weak passwords ]')
+
+                # 判断Mysql PHP 没有安装不能继续
+                if not os.path.exists("/www/server/mysql") or not os.path.exists("/www/server/php"):
+                    raise ValueError('Please install Mysql and PHP first!')
+
+            self.check_default()
+
+            self.check_php_conf()
+
+            isError = public.checkWebConfig()
+            if isError != True:
+                raise ValueError('The website configuration detection failed')
+
+            get.path = self.__get_site_format_path(get.path)
+            if not public.check_site_path(get.path):
+                a, c = public.get_sys_path()
+                raise ValueError(
+                    'Please do not set the website root directory to the system main directory:<br> {}'.format(
+                        "<br>".join(a + c)))
+
             try:
-                import threading
-                from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
-                # 添加申请证书, 解析,代理
-                new_list = [main_domain] + parse_list
-                task_obj = generate_sites_task(main_domain, get.pid)
-                task = threading.Thread(
-                    target=init_sites_dns,
-                    args=(new_list, task_obj)
-                )
-                task.start()
-                public.set_module_logs("sys_domain", "AddSite_Auto", 1)
+                siteMenu = json.loads(get.webname)
+            except:
+                raise ValueError(
+                    'The format of the webname parameter is incorrect, it should be a parseable JSON string')
+
+            self.siteName = self.ToPunycode(siteMenu['domain'].strip().split(':')[0]).strip().lower()
+            self.sitePath = self.ToPunycodePath(self.GetPath(get.path.replace(' ', ''))).strip()
+            self.sitePort = get.port.strip().replace(' ', '')
+
+            if self.sitePort == "": get.port = "80"
+            if not public.checkPort(self.sitePort):
+                raise ValueError('Port range is incorrect! should be between 100-65535')
+
+            for domain in siteMenu['domainlist']:
+                if not len(domain.split(':')) == 2:
+                    continue
+                if not public.checkPort(domain.split(':')[1]):
+                    raise ValueError('Port range is incorrect! should be between 100-65535')
+
+            if hasattr(get, 'version'):
+                self.phpVersion = get.version.replace(' ', '')
+            else:
+                self.phpVersion = '00'
+
+            if not self.phpVersion: self.phpVersion = '00'
+
+            php_version = self.GetPHPVersion(get, False)
+            is_phpv = False
+            for php_v in php_version:
+                if self.phpVersion == php_v['version']:
+                    is_phpv = True
+                    break
+            if not is_phpv:
+                raise ValueError('Requested PHP version does NOT exist!')
+
+            domain = None
+            # if siteMenu['count']:
+            #    domain            = get.domain.replace(' ','')
+            # 表单验证
+            if not self.__check_site_path(self.sitePath):
+                raise ValueError('System critical directory cannot be used as site directory')
+
+            if len(self.phpVersion) < 2:
+                raise ValueError('PHP version cannot be empty')
+
+            reg = r"^([\w\-\*]{1,100}\.){1,24}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
+            if not re.match(reg, self.siteName):
+                raise ValueError('Format of primary domain is incorrect')
+
+            if self.siteName.find('*') != -1:
+                raise ValueError('Primary domain cannot be wildcard DNS record')
+
+            if self.sitePath[-1] == '.':
+                raise ValueError('Incorrect website path')
+
+            if not domain: domain = self.siteName
+
+            # 是否重复
+            sql = public.M('sites')
+            if sql.where("name=?", (self.siteName,)).count():
+                raise ValueError('The site you tried to add already exists!')
+
+            opid = public.M('domain').where("name=?", (self.siteName,)).getField('pid')
+
+            if opid:
+                if public.M('sites').where('id=?', (opid,)).count():
+                    raise ValueError('The domain you tried to add already exists!')
+
+                public.M('domain').where('pid=?', (opid,)).delete()
+
+            if public.M('binding').where('domain=?', (self.siteName,)).count():
+                raise ValueError('The domain you tried to add already exists!')
+
+        except Exception as e:
+            progress_log['parameter_verification']['ps'] = public.lang('Parameter verification failed')
+            progress_log['parameter_verification']['status'] = -1
+            progress_log['parameter_verification']['error'] = public.lang('Parameter verification failed: {}', e)
+            progress_log['status'] = 1
+            public.writeFile(task_status, json.dumps(progress_log))
+            public.progress_release_lock(lock_file)
+            return
+
+        with app.app_context():
+            try:
+                progress_log['parameter_verification']['ps'] = public.lang('Parameter verification successful')
+                progress_log['parameter_verification']['status'] = 1
+                progress_log['create_website']['status'] = 0
+                public.writeFile(task_status, json.dumps(progress_log))
+
+                # 创建根目录
+                if not os.path.exists(self.sitePath):
+                    try:
+                        os.makedirs(self.sitePath)
+                    except Exception as ex:
+                        raise ValueError(f'Failed to create site document root,{ex}')
+
+                    public.ExecShell('chmod -R 755 ' + self.sitePath)
+                    public.ExecShell('chown -R www:www ' + self.sitePath)
+
+                # 创建basedir
+                self.DelUserInI(self.sitePath)
+                userIni = self.sitePath + '/.user.ini'
+                if not os.path.exists(userIni):
+                    public.writeFile(userIni, 'open_basedir=' + self.sitePath + '/:/tmp/')
+                    public.ExecShell('chmod 644 ' + userIni)
+                    public.ExecShell('chown root:root ' + userIni)
+                    public.ExecShell('chattr +i ' + userIni)
+
+                ngx_open_basedir_path = self.setupPath + '/panel/vhost/open_basedir/nginx'
+                if not os.path.exists(ngx_open_basedir_path):
+                    os.makedirs(ngx_open_basedir_path, 384)
+                ngx_open_basedir_file = ngx_open_basedir_path + '/{}.conf'.format(self.siteName)
+                ngx_open_basedir_body = '''set $bt_safe_dir "open_basedir";
+            set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
+                public.writeFile(ngx_open_basedir_file, ngx_open_basedir_body)
+
+                # 判断是否需要生成默认文件
+                if get.is_create_default_file in [True, 'true', 1, '1']:
+                    # 创建默认文档
+                    index = self.sitePath + '/index.html'
+                    if not os.path.exists(index):
+                        public.writeFile(index, public.readFile('data/defaultDoc.html'))
+                        public.ExecShell('chmod -R 644 ' + index)
+                        public.ExecShell('chown -R www:www ' + index)
+
+                    # 创建自定义404页
+                    doc404 = self.sitePath + '/404.html'
+                    if not os.path.exists(doc404):
+                        public.writeFile(doc404, public.readFile('data/404.html'))
+                        public.ExecShell('chmod -R 644 ' + doc404)
+                        public.ExecShell('chown -R www:www ' + doc404)
+
+                    # 创建自定义502页面
+                    doc502 = self.sitePath + '/502.html'
+                    if not os.path.exists(doc502) and os.path.exists('data/502.html'):
+                        public.writeFile(doc502, public.readFile('data/502.html'))
+                        public.ExecShell('chmod -R 644 ' + doc502)
+                        public.ExecShell('chown -R www:www ' + doc502)
+
+                # 写入配置
+                result = self.nginxAdd()
+                result = self.apacheAdd()
+                result = self.openlitespeed_add_site(get)
+
+                # 检查处理结果
+                if not result:
+                    raise ValueError('Failed to add, write configuraton ERROR!')
+
+                ps = public.xssencode2(get.ps)
+
+                # 添加放行端口
+                if self.sitePort != '80':
+                    import firewalls
+                    get.port = self.sitePort
+                    get.ps = self.siteName
+                    firewalls.firewalls().AddAcceptPort(get)
+
+                if not hasattr(get, 'type_id'): get.type_id = 0
+                if not hasattr(get, 'project_type'): get.project_type = "PHP"
+                public.check_domain_cloud(self.siteName)
+                # 统计wordpress安装次数
+                if get.project_type == 'WP':
+                    public.count_wp()
+                # 写入数据库
+                get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type', (
+                    self.siteName, self.sitePath, '1', ps, get.type_id, public.getDate(), get.project_type))
+
+                # 添加更多域名
+                for domain in siteMenu['domainlist']:
+                    get.domain = domain
+                    get.webname = self.siteName
+                    get.id = str(get.pid)
+                    self.AddDomain(get, multiple)
+
+                sql.table('domain').add('pid,name,port,addtime',
+                                        (get.pid, self.siteName, self.sitePort, public.getDate()))
+
+                data = {}
+                data['siteStatus'] = True
+                data['siteId'] = get.pid
             except Exception as e:
-                import traceback
-                public.print_log(e)
-                public.print_log(f"error, {e}")
-        return data
+                # 删除站点
+                if get.pid is not None:
+                    from public import websitemgr
+                    websitemgr.remove_site(get.pid)
+                progress_log['create_website']['ps'] = public.lang('Failed to create the website')
+                progress_log['create_website']['status'] = -1
+                progress_log['create_website']['error'] = public.lang('Failed to create the website: {}', e)
+                progress_log['status'] = 1
+                public.writeFile(task_status, json.dumps(progress_log))
+                public.progress_release_lock(lock_file)
+                return
+
+            try:
+                progress_log['create_website']['ps'] = public.lang('The website was successfully created')
+                progress_log['create_website']['status'] = 1
+                progress_log['optional_configurations']['status'] = 0
+                public.writeFile(task_status, json.dumps(progress_log))
+
+                # 添加FTP
+                data['ftpStatus'] = False
+                if 'ftp' not in get:
+                    get.ftp = False
+                if get.ftp == 'true':
+                    import ftp
+                    get.ps = self.siteName
+                    result = ftp.ftp().AddUser(get)
+                    if result['status']:
+                        data['ftpStatus'] = True
+                        data['ftpUser'] = get.ftp_username
+                        data['ftpPass'] = get.ftp_password
+
+                # 添加数据库
+                data['databaseStatus'] = False
+                if 'sql' not in get:
+                    get.sql = 'false'
+                if get.sql == 'true' or get.sql == 'MySQL':
+                    import database
+                    if len(get.datauser) > 16: get.datauser = get.datauser[:16]
+
+                    # 生成不重复的数据库用户名
+                    db_name = public.ensure_unique_db_name(get.datauser)
+
+                    get.name = db_name
+                    get.db_user = db_name
+                    get.password = get.datapassword
+                    get.address = '127.0.0.1'
+                    get.ps = self.siteName
+                    result = database.database().AddDatabase(get)
+                    if result['status']:
+                        data['databaseStatus'] = True
+                        data['databaseUser'] = get.datauser
+                        data['databasePass'] = get.datapassword
+                        data['d_id'] = str(public.M('databases').where('pid=?', (get.pid,)).field('id').find()['id'])
+                    else:
+                        # 已经存在数据库 用之前数据库 修改pid public.print_log("存在 更新pid   ---{}".format(result))
+                        if result['msg'].find('Database exists') != -1:
+                            datauser = get['name'].strip().lower()
+                            public.M('databases').where('name=?', (datauser,)).update({"pid": get.pid})
+                        data['databaseErrorMsg'] = result['msg']
+
+                if not multiple:
+                    public.serviceReload()
+                data = self._set_ssl(get, data, siteMenu)
+                data = self._set_redirect(get, data['message'])
+                public.set_module_logs("sys_domain", "AddSite_Manual", 1)
+                public.write_log_gettext('Site manager', 'Successfully added site [{}]!', (self.siteName,))
+                # ================ dns domain  =======================
+
+                if hasattr(get, "parse_list"):
+                    try:
+                        import threading
+                        from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
+                        # 添加申请证书, 解析,代理
+                        new_list = [main_domain] + parse_list
+                        task_obj = generate_sites_task(main_domain, get.pid)
+                        task = threading.Thread(
+                            target=init_sites_dns,
+                            args=(new_list, task_obj)
+                        )
+                        task.start()
+                        public.set_module_logs("sys_domain", "AddSite_Auto", 1)
+                    except Exception as e:
+                        import traceback
+                        public.print_log(e)
+
+                # ====================================wp创建======================================
+                if get.get('project_type', '') == 'WP2':
+
+                    if int(data.get('status', 0)) == 0:
+                        data = data.get('message', {})
+
+                        if int(data.get('databaseStatus')) != 1:
+                            raise ValueError(public.lang(
+                                "Database creation failed. Please check mysql running status and try again. {}".format(
+                                    data.get('databaseErrorMsg', ''))))
+
+                        result = self.deploy_wp(public.to_dict_obj({
+                            'domain': json.loads(args.webname).get('domain', ''),
+                            'weblog_title': args.weblog_title,
+                            'language': args.get('language', ''),
+                            'php_version': args.version,
+                            'user_name': args.user_name,
+                            'admin_password': args.password,
+                            'pw_weak': args.pw_weak,
+                            'admin_email': args.email,
+                            'prefix': args.prefix,
+                            'enable_cache': args.enable_cache,
+                            'd_id': data.get('d_id', 0),
+                            's_id': data.get('siteId', 0),
+                            'enable_whl': args.get('enable_whl', 0),
+                            'whl_page': args.get('whl_page', 'login'),
+                            'whl_redirect_admin': args.get('whl_redirect_admin', '404'),
+                            'package_version': args.get('package_version', None),
+                        }))
+                        if result['status'] == -1:
+                            raise ValueError(result['message']['result'])
+
+                        # ==================== domain dns ======================
+                        if hasattr(args, "wp_parse_list") and result.get("status", 0) == 0:
+                            try:
+                                import threading
+                                from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
+                                site_id = data.get("siteId", 0)
+                                task_obj = generate_sites_task(main_domain, site_id)
+                                task = threading.Thread(
+                                    target=init_sites_dns,
+                                    args=([main_domain], task_obj)
+                                )
+                                task.start()
+                                public.set_module_logs("sys_domain", "AddSite_Auto", 1)
+                            except Exception as e:
+                                import traceback
+                                public.print_log(e)
+                                public.print_log(f"error, {e}")
+                # ==============================================================================
+
+                progress_log['optional_configurations']['ps'] = public.lang('Success')
+                progress_log['optional_configurations']['status'] = 1
+                progress_log['status'] = 1
+                public.writeFile(task_status, json.dumps(progress_log))
+                public.progress_release_lock(lock_file)
+                return data
+            except Exception as e:
+                # 删除站点
+                if get.pid is not None:
+                    from public import websitemgr
+                    websitemgr.remove_site(get.pid)
+                progress_log['optional_configurations']['ps'] = public.lang(
+                    'Failed to create an optional configuration')
+                progress_log['optional_configurations']['status'] = -1
+                progress_log['optional_configurations']['error'] = public.lang('Failed: {}', e)
+                progress_log['status'] = 1
+                public.writeFile(task_status, json.dumps(progress_log))
+                public.progress_release_lock(lock_file)
+                return data
+
 
     # 添加WP站点
     def AddWPSite(self, args: public.dict_obj):
@@ -940,70 +1415,22 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        # ===========================================
-        main_domain = {}
-        if hasattr(args, "wp_parse_list"):
-            wp_parse_list = json.loads(args.wp_parse_list)
-            if not len(wp_parse_list):
-                return public.fail_v2("domain names not found")
-            main_domain = wp_parse_list.pop(0)
-            args.webname = json.dumps({
-                "domain": main_domain.get("domain").strip(),
-                "domainlist": [x.get("domain", "") for x in wp_parse_list],
-                "count": len(wp_parse_list),
-            })
-        # ===========================================
+        from flask import Flask
+        app = Flask(__name__)
 
-        from copy import deepcopy
-        args_dup = public.to_dict_obj(deepcopy(args.get_items()))
+        lock_file = os.path.join('/tmp', 'wp_aapanel_deploy.lock')
 
-        data = self.AddSite(args_dup)
+        if not public.progress_acquire_lock(lock_file):
+            return public.return_message(-1, 0, public.lang(
+                'Other sites are being deployed. Please wait for the task to complete!'))
 
-        if int(data.get('status', 0)) != 0:
-            return data
+        from concurrent.futures import ThreadPoolExecutor
 
-        data = data.get('message', {})
+        # 创建单线程池
+        thread = ThreadPoolExecutor(max_workers=1)
+        thread.submit(self.add_sites, args, app)
 
-        if int(data.get('databaseStatus', 0)) != 1:
-            raise public.HintException(public.lang("Database creation failed. Please check mysql running status and try again. {}".format(data.get('databaseErrorMsg', ''))))
-
-        result = self.deploy_wp(public.to_dict_obj({
-            'domain': json.loads(args.webname).get('domain', ''),
-            'weblog_title': args.weblog_title,
-            'language': args.get('language', ''),
-            'php_version': args.version,
-            'user_name': args.user_name,
-            'admin_password': args.password,
-            'pw_weak': args.pw_weak,
-            'admin_email': args.email,
-            'prefix': args.prefix,
-            'enable_cache': args.enable_cache,
-            'd_id': data.get('d_id', 0),
-            's_id': data.get('siteId', 0),
-            'enable_whl': args.get('enable_whl', 0),
-            'whl_page': args.get('whl_page', 'login'),
-            'whl_redirect_admin': args.get('whl_redirect_admin', '404'),
-            'package_version': args.get('package_version', None),
-        }))
-        # ==================== domain dns ======================
-        if hasattr(args, "wp_parse_list") and result.get("status", 0) == 0:
-            try:
-                import threading
-                from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
-                site_id = data.get("siteId", 0)
-                task_obj = generate_sites_task(main_domain, site_id)
-                task = threading.Thread(
-                    target=init_sites_dns,
-                    args=([main_domain], task_obj)
-                )
-                task.start()
-                public.set_module_logs("sys_domain", "AddSite_Auto", 1)
-            except Exception as e:
-                import traceback
-                public.print_log(e)
-                public.print_log(f"error, {e}")
-
-        return result
+        return public.return_message(0, 0, public.lang('Successful startup!'))
 
     def _set_redirect(self, get, data):
         try:
@@ -1243,7 +1670,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         public.M('binding').where("pid=?", (id,)).delete()
         public.M('domain').where("pid=?", (id,)).delete()
         public.M('wordpress_onekey').where("s_id=?", (id,)).delete()
-        public.write_log_gettext('Site manager', 'Successfully deleted site!', (siteName,))
+        public.write_log_gettext('Site manager', 'Successfully deleted site {}!', (siteName,))
 
         # 是否删除关联数据库
         if hasattr(get, 'database'):
@@ -6560,7 +6987,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             del return_message['status']
             return public.return_message(-1, 0, return_message['msg'])
         # return public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 1000)))
-        return_message = public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 1000)))
+        return_message = public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 100))) # 暂时限制行数，后期加分页
         del return_message['status']
         return public.return_message(0, 0, return_message['msg'])
         # if not os.path.exists(logPath): return public.return_message(-1, 0, public.lang("Log is empty"))
@@ -7596,15 +8023,79 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     # 获取wp 安全模块配置
     def get_wp_security_info(self, get):
         from wp_toolkit import wp_security
-        result = wp_security().get_security_info(get)
-        get.name = get.site_name
-        # 取防盗链配置
-        hotlink = self.GetSecurity(get)
+
+        # 去安全模块获取配置信息
         try:
-            result['message']['hotlink_status'] = 1 if hotlink['message']['status'] else 0
-        except:
-            pass
-        return result
+            result = {}
+            security = wp_security().get_security_info(get)
+            if security['status'] != 0:
+                return public.return_message(-1, 0, security['message'])
+            result = security['message']
+        except Exception as e:
+            result['firewall_status'] = 0
+            result['firewall_count'] = 0
+
+        # 更新防盗链状态
+        get.name = get.site_name
+        hotlink = self.GetSecurity(get)
+        if hotlink['status'] != 0:
+            return public.return_message(-1, 0, hotlink['message'])
+        result['hotlink_status'] = 1 if hotlink['message']['status'] else 0
+
+        # 获取病毒扫描状态
+        get.path = get.path[:-1]
+        scan_status = self.get_auth_scan_status(get)
+        if scan_status['status'] != 0:
+            return public.return_message(-1, 0, scan_status['message'])
+        result['virus_scanning'] = 1 if scan_status['message']['result'] in ['True', 'true', True] else 0
+        return public.return_message(0, 0, result)
+
+    # 获取wp安全图标状态
+    def get_wp_security_status(self, get):
+        domain_list = public.S('sites').where_in('project_type', 'WP2').field('id,name,path').select()
+        data = []
+        for i in domain_list:
+            info = public.to_dict_obj(i)
+            info.site_name = info.name
+
+            # try:
+            #     res = self.get_wp_security_info(info)
+            #     if not res["status"] == 0:
+            #         data.append({i['name']: False})
+            #         continue
+            #
+            #     if res['message']["file_status"] == 1 and res['message']["firewall_status"] == 1:
+            #         data.append({i['name']: True})
+            #         continue
+            #
+            #     data.append({i['name']: False})
+            #
+            # except Exception as e:
+            #     data.append({i['name']: False})
+
+            # 获取防火墙状态
+            result = public.run_plugin('btwaf', 'get_site_config_byname',
+                                       public.to_dict_obj({'siteName': info.site_name}))
+            firewall_status = 0
+            try:
+                if result['open']:
+                    firewall_status = 1
+            except:
+                pass
+
+            # 新增获取病毒扫描状态
+            scan_status = self.get_auth_scan_status(info)
+            if scan_status['status'] != 0:
+                return public.return_message(-1, 0, scan_status['message'])
+            virus_scanning = 1 if scan_status['message']['result'] in ['True', 'true', True] else 0
+
+            # 判断网站安全图标状态
+            if virus_scanning == 1 and firewall_status == 1:
+                data.append({i['name']: True})
+            else:
+                data.append({i['name']: False})
+
+        return public.return_message(0, 0, data)
 
     # 开启WP 文件防护
     def open_wp_file_protection(self, get):
@@ -7746,7 +8237,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     # 从用户手动备份中创建WP站点
     def wp_create_with_manual_bak(self, args: public.dict_obj):
         from wp_toolkit import wpbackup
-        ok, msg = wpbackup.wp_deploy_with_manual_bak(args)
+        args.backup_type = 'manual'
+        ok, msg = wpbackup.wp_backup_deploy(args)
 
         if not ok:
             return public.fail_v2(msg)
@@ -7755,7 +8247,9 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     # 从aapanel WP备份中创建WP站点
     def wp_create_with_aap_bak(self, args: public.dict_obj):
         from wp_toolkit import wpbackup
-        ok, msg = wpbackup.wp_deploy_with_aap_bak(args)
+
+        args.backup_type = 'aapanel'
+        ok, msg = wpbackup.wp_backup_deploy(args)
 
         if not ok:
             return public.fail_v2(msg)
@@ -7765,7 +8259,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     # 从plesk/cpanel WP备份中创建WP站点
     def wp_create_with_plesk_or_cpanel_bak(self, args: public.dict_obj):
         from wp_toolkit import wpbackup
-        ok, msg = wpbackup.wp_deploy_with_plesk_or_cpanel_bak(args)
+        args.backup_type = 'cpanel'
+        ok, msg = wpbackup.wp_backup_deploy(args)
 
         if not ok:
             return public.fail_v2(msg)
@@ -7906,8 +8401,15 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         ])
 
         from wp_toolkit import wpmgr
+        wpmgr_obj = wpmgr(args.s_id)
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
 
-        ok, msg = wpmgr(args.s_id).install_plugin(args.slug)
+
+        ok, msg = wpmgr_obj.install_plugin(args.slug)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
 
         if not ok:
             return public.fail_v2(msg)
@@ -7935,8 +8437,16 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         ])
 
         from wp_toolkit import wpmgr
+        wpmgr_obj = wpmgr(args.s_id)
 
-        ok, msg = wpmgr(args.s_id).update_plugin(args.plugin_file)
+        # 校验是否开启维护模式
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
+
+        ok, msg = wpmgr_obj.update_plugin(args.plugin_file)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
 
         if not ok:
             return public.fail_v2(msg)
@@ -7956,12 +8466,19 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         wpmgr_obj = wpmgr(args.s_id)
 
+        # 校验是否开启维护模式
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
+
         if int(args.enable) == 1:
             fn = wpmgr_obj.enable_plugin_auto_update
         else:
             fn = wpmgr_obj.disable_plugin_auto_update
 
         ok, msg = fn(args.plugin_file)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
 
         if not ok:
             return public.fail_v2(msg)
@@ -7980,6 +8497,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         from wp_toolkit import wpmgr
 
         wpmgr_obj = wpmgr(args.s_id)
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
 
         if int(args.activate) == 1:
             fn = wpmgr_obj.activate_plugins
@@ -7988,7 +8507,12 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             fn = wpmgr_obj.deactivate_plugins
             errmsg = public.lang("Deactivate plugin failed, please try again later.")
 
-        if not fn(args.plugin_file):
+        res = fn(args.plugin_file)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
+
+        if not res:
             return public.fail_v2(errmsg)
 
         return public.success_v2('Success')
@@ -8002,8 +8526,14 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         ])
 
         from wp_toolkit import wpmgr
+        wpmgr_obj = wpmgr(args.s_id)
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
 
-        ok, msg = wpmgr(args.s_id).uninstall_plugin(args.plugin_file)
+        ok, msg = wpmgr_obj.uninstall_plugin(args.plugin_file)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
 
         if not ok:
             return public.fail_v2(msg)
@@ -8042,8 +8572,16 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         ])
 
         from wp_toolkit import wpmgr
+        wpmgr_obj = wpmgr(args.s_id)
 
-        ok, msg = wpmgr(args.s_id).install_theme(args.slug)
+        # 校验是否开启维护模式
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
+
+        ok, msg = wpmgr_obj.install_theme(args.slug)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
 
         if not ok:
             return public.fail_v2(msg)
@@ -8072,7 +8610,16 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         from wp_toolkit import wpmgr
 
+        wpmgr_obj = wpmgr(args.s_id)
+
+        # 校验是否开启维护模式
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
+
         ok, msg = wpmgr(args.s_id).update_theme(args.stylesheet)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
 
         if not ok:
             return public.fail_v2(msg)
@@ -8092,12 +8639,19 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         wpmgr_obj = wpmgr(args.s_id)
 
+        # 校验是否开启维护模式
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
+
         if int(args.enable) == 1:
             fn = wpmgr_obj.enable_theme_auto_update
         else:
             fn = wpmgr_obj.disable_theme_auto_update
 
         ok, msg = fn(args.stylesheet)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
 
         if not ok:
             return public.fail_v2(msg)
@@ -8113,8 +8667,17 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         ])
 
         from wp_toolkit import wpmgr
+        wpmgr_obj = wpmgr(args.s_id)
+        # 校验是否开启维护模式
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
 
-        if not wpmgr(args.s_id).switch_theme(args.stylesheet):
+        res = wpmgr_obj.switch_theme(args.stylesheet)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
+
+        if not res:
             return public.fail_v2('Switch theme failed, please try again later.')
 
         return public.success_v2('Success')
@@ -8128,8 +8691,15 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         ])
 
         from wp_toolkit import wpmgr
+        wpmgr_obj = wpmgr(args.s_id)
+        # 校验是否开启维护模式
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+        is_maintenance = self.check_maintenance_mode(site_path)
 
-        ok, msg = wpmgr(args.s_id).uninstall_theme(args.stylesheet)
+        ok, msg = wpmgr_obj.uninstall_theme(args.stylesheet)
+
+        if is_maintenance:
+            self.restore_maintenance_mode(site_path)
 
         if not ok:
             return public.fail_v2(msg)
@@ -8372,7 +8942,12 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
     # 获取wp网站数据（简化版，不使用getData通用接口）
     def get_wp_sites(self, args: public.dict_obj):
-        wp_sites = public.M('sites').where('project_type=?', ('WP2',)).field('id,name,path').select()
+        wp_sites = []
+        try:
+            wp_sites = public.M('sites').where('project_type=?', ('WP2',)).field('id,name,path').select()
+        except Exception as e:
+            pass
+
         return public.success_v2(wp_sites)
 
     # 获取源网站数据表
@@ -8403,15 +8978,25 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
             return public.success_v2(res)
         except Exception as e:
-            raise public.HintException('Database connection failed, please check the database status!')
+            raise public.HintException(public.lang('Database connection failed, please check the database status!'))
 
     # 获取wp复制进度
-    def get_wp_copy_progress(self, args: public.dict_obj):
+    def get_wp_progress(self, args: public.dict_obj):
+        """
+            兼容备份部署与数据复制
+        """
         from pathlib import Path
         import threading
         try:
-            task_status =  Path("/tmp") / "wp_copy_status.log"  # 进度文件
-            lock_file = Path("/tmp") / "wp_copy_lock.lock"  # 锁文件
+            # 进度类型区分
+            if args.get('progress_type', '') == 'backup_deploy':
+                task_status = Path('/tmp') / 'wp_aapanel_deploy.log'
+                lock_file = Path('/tmp') / 'wp_aapanel_deploy.lock'
+            elif args.get('progress_type', '') == 'wp_copy':
+                task_status = Path("/tmp") / "wp_copy_status.log"  # 进度文件
+                lock_file = Path("/tmp") / "wp_copy_lock.lock"  # 锁文件
+            else:
+                raise public.HintException('Progress type error')
 
             # 检查进度文件是否存在，不存在直接返回status:1
             if not task_status.exists():
@@ -9548,3 +10133,555 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                     continue
         return False
     # ======================面板漏洞扫描 end======================= #
+    # 获取wp维护模式配置
+    def get_wp_maintenance(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0),
+        ])
+        from wp_toolkit import wpmgr
+
+        ok, msg = wpmgr(args.set_id).get_maintenance_config()
+
+        if not ok:
+            raise public.HintException(msg)
+        return public.success_v2(msg)
+
+    # 设置wp维护模式配置
+    def set_wp_maintenance(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0),
+        ])
+        from wp_toolkit import wpmgr
+
+        ok, msg = wpmgr(args.set_id).set_maintenance_config(args)
+
+        if not ok:
+            raise public.HintException(msg)
+
+        return public.success_v2(msg)
+
+    # 获取网站维护模式配置页
+    def get_site_maintenance(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0),
+        ])
+
+        # 获取网站根目录
+        sites = public.M('sites').where('id=?', (args.get('set_id'),)).field('path,name').find()
+        if not sites:
+            raise ValueError("Website ID does not exist!")
+        site_path = sites['path']
+
+        # 读取维护模式配置，三个服务使用同一配置文件
+        maintenance_config_path = os.path.join(site_path, 'aapanel-maintenance' , 'sites_maintenance_config.json')
+        data = {}
+        if not os.path.exists(maintenance_config_path):
+            data['maintenance'] = 'false'
+            data['maintenance_title'] = 'Regular maintenance'
+            data['maintenance_big_text'] = 'The website is undergoing maintenance!'
+            data['maintenance_small_text'] = 'Sorry for any inconvenience caused. The website will soon return to normal.\n Please come back later!'
+            data['social_network_links'] = [{"title": "", "value": ""}]
+            data['times'] = ''
+            data['template_upload'] = ''
+            data['background_upload'] = ''
+            return public.success_v2(data)
+        else:
+            with open(maintenance_config_path, 'r') as f:
+                maintenance_config = json.load(f)
+                data['maintenance'] = 'true' if maintenance_config.get('maintenance') in ['true', 'True'] else 'false'
+                data['maintenance_title'] = maintenance_config.get('maintenance_title', '')
+                data['maintenance_big_text'] = maintenance_config.get('maintenance_big_text','')
+                data['maintenance_small_text'] = maintenance_config.get('maintenance_small_text','')
+                data['social_network_links'] = maintenance_config.get('social_network_links',[])
+                data['times'] = maintenance_config.get('times', '')
+                data['template_upload'] = maintenance_config.get('template_upload', '')
+                data['background_upload'] = maintenance_config.get('background_upload', '')
+        return public.success_v2(data)
+
+    # 设置网站维护模式
+    def set_site_maintenance(self, args: public.dict_obj):
+        # 校验参数
+        args.validate([
+            public.Param('set_id').Require().Integer('>', 0),
+            public.Param('maintenance'),
+        ])
+        maintenance = args.get('maintenance', 'false')
+        title = args.get('maintenance_title', '')
+        big_text = args.get('maintenance_big_text', '')
+        small_text = args.get('maintenance_small_text', '')
+        social_links = json.loads(args.get('social_network_links', '[]'))
+        times = args.get('times', '')
+        maintenance = args.get('maintenance', '')
+        background_upload = args.get('background_upload', '')
+        template_upload = args.get('template_upload', '')
+
+        try:
+            # 获取服务类型
+            service_type = public.get_webserver()
+
+            # 获取网站根目录
+            sites = public.M('sites').where('id=?', (args.get('set_id'),)).field('path,name').find()
+            if not sites:
+                raise ValueError("Website ID does not exist!")
+            site_path = sites['path']
+
+            maintenance_dir = os.path.join(site_path, 'aapanel-maintenance') # 维护目录
+            maintenance_page = os.path.join(site_path, 'aapanel-maintenance.html') # 维护页
+            template_file = os.path.join(site_path, 'aapanel-maintenance', 'maintenance-template.html') # 模板页
+            template_dir = os.path.join(public.get_panel_path(), 'data', 'aapanel-maintenance') # 面板静态文件
+            BG = os.path.join(site_path,'aapanel-maintenance' , 'assets' , 'bg.png')   # 背景文件
+
+            # 兼容nginx，apache，openLiteSpeed
+            if service_type == 'nginx':
+                # 获取当前网站的nginx配置文件路径
+                config_path = f'/www/server/panel/vhost/nginx/{sites['name']}.conf'
+                if not os.path.exists(config_path):
+                    raise ValueError('Nginx configuration file does not exist!')
+
+                if maintenance in ['true', 'True']:
+                    # 判断用户是否上传了模板文件
+                    if template_upload:
+                        if not os.path.exists(template_upload):
+                            raise ValueError('Template file does not exist!')
+
+                        if ' ' in template_upload.strip() or template_upload[:-1] == '/':
+                            raise ValueError('File paths cannot have Spaces or end with /!')
+
+                        ok ,msg =  self.update_nginx_maintenance_block(config_path, template_upload, site_path)
+                        if not ok:
+                            raise ValueError(msg)
+
+                        # 重启服务并记录配置参数
+                        ok, msg = self.restart_record_config(site_path, {
+                                "maintenance" : 'true',
+                                "maintenance_title": title,
+                                "maintenance_big_text": big_text,
+                                "maintenance_small_text": small_text,
+                                "social_network_links": social_links,
+                                "times": times,
+                                "template_upload": template_upload,
+                                "background_upload": background_upload
+                            },'nginx')
+
+                        if not ok:
+                            raise ValueError(msg)
+
+                        return public.success_v2('Setting successful')
+
+                    else:
+                        # 未上传模板，默认使用系统模板
+                        ok ,msg = self.update_nginx_maintenance_block(config_path, maintenance_page, site_path)
+                        if not ok:
+                            raise ValueError(msg)
+
+                else:
+                    # 维护模式关闭，删除配置块
+                    self.remove_nginx_maintenance_block(config_path)
+                    ok, msg = self.restart_record_config(site_path, {
+                        "maintenance": 'false',
+                        "maintenance_title": title,
+                        "maintenance_big_text": big_text,
+                        "maintenance_small_text": small_text,
+                        "social_network_links": social_links,
+                        "times": times,
+                        "template_upload": template_upload,
+                        "background_upload": background_upload
+                    }, 'nginx')
+                    if not ok:
+                        raise ValueError(msg)
+
+                    return public.success_v2('Setting successful')
+
+            elif service_type in ['apache', 'openlitespeed']:
+                # 修改.htaccess配置文件
+                config_path = os.path.join(site_path,'.htaccess')
+
+                # 检查配置块是否存在
+                status = self.is_maintenance_enabled(config_path)
+
+                if maintenance in ['true', 'True']:
+                    # 存在即先删除配置块再写入
+                    if status:
+                        self.remove_maintenance_block(config_path)
+
+                    # 判断用户是否上传了模板文件
+                    if template_upload:
+                        if not os.path.exists(template_upload):
+                            raise ValueError('Template file does not exist!')
+
+                        if ' ' in template_upload.strip() or template_upload[:-1] == '/':
+                            raise ValueError('File paths cannot have Spaces or end with /!')
+
+                        self.add_maintenance_block(config_path, template_upload)
+
+                        ok, msg = self.restart_record_config(site_path, {
+                            "maintenance": 'true',
+                            "maintenance_title": title,
+                            "maintenance_big_text": big_text,
+                            "maintenance_small_text": small_text,
+                            "social_network_links": social_links,
+                            "times": times,
+                            "template_upload": template_upload,
+                            "background_upload": background_upload
+                        }, service_type)
+                        if not ok:
+                            raise ValueError(msg)
+
+                        return public.success_v2('Setting successful')
+
+                    else:
+                        # 未上传模板，默认使用系统模板
+                        self.add_maintenance_block(config_path, maintenance_page)
+
+                else:
+                    if status:
+                        self.remove_maintenance_block(config_path)
+
+                    ok, msg = self.restart_record_config(site_path, {
+                        "maintenance": 'false',
+                        "maintenance_title": title,
+                        "maintenance_big_text": big_text,
+                        "maintenance_small_text": small_text,
+                        "social_network_links": social_links,
+                        "times": times,
+                        "template_upload": template_upload,
+                        "background_upload": background_upload
+                    }, service_type)
+                    if not ok:
+                        raise ValueError(msg)
+
+                    return public.success_v2('Setting successful!')
+
+            # 校验模板文件是否正确
+            if not os.path.exists(template_file):
+                if os.path.exists(maintenance_dir):
+                    os.remove(maintenance_dir)
+
+                if not os.path.exists(template_dir):
+                    raise ValueError('The default template does not exist')
+
+                public.ExecShell(f'cp -r {template_dir} {site_path}')
+
+            # # 读取配置参数
+            with open(template_file, 'r', encoding='utf-8') as f:
+                template_content = f.read()
+
+            # 替换模板内容
+            content = template_content.replace("{{TITLE}}", title)
+            content = content.replace("{{BIG_TEXT}}", big_text)
+            content = content.replace("{{SMALL_TEXT}}", small_text.replace("\n", "<br>"))
+            content = content.replace("{{TIMES}}", times)
+
+            # 判断用户是否上传图片
+            if background_upload:
+                if os.path.exists(background_upload):
+                    bg_data = public.image_to_base64(background_upload)
+                    content = content.replace("{{BG}}", bg_data)
+                else:
+                    return False, 'Background file does not exist!'
+            else:
+                # 使用系统默认背景图
+                bg_data = public.image_to_base64(BG)
+                content = content.replace("{{BG}}", bg_data)
+
+            social_html = ""
+            for link in social_links:
+                if link['title'] and link['value']:
+                    social_html += f'<a href="{link['value']}" target="_blank"> {link['title']} </a>\n'
+                elif  link['title'] and not link['value']:
+                    social_html += f'<a" target="_blank"> {link['title']} </a>\n'
+
+            content = content.replace("{{SOCIAL_LINKS}}", social_html)
+
+            with open(maintenance_page, 'w', encoding='utf-8') as f:
+                f.write(content)
+
+            # 记录配置
+            ok, msg = self.restart_record_config(site_path, {
+                "maintenance": 'true',
+                "maintenance_title": title,
+                "maintenance_big_text": big_text,
+                "maintenance_small_text": small_text,
+                "social_network_links": social_links,
+                "times": times,
+                "template_upload": template_upload,
+                "background_upload": background_upload
+            }, service_type)
+            if not ok:
+                raise ValueError(msg)
+
+            return public.success_v2('Setting successful')
+        except Exception as e:
+            raise public.HintException(f"Set error: {e}")
+
+    # 检测apache与openLiteSpeed维护模式配置块是否存在
+    def is_maintenance_enabled(self, htaccess_path: str)-> bool:
+        """
+        简化判断：检测维护模式配置块是否存在
+        :param htaccess_path: .htaccess文件路径
+        :return: True（存在配置块，视为开启）/False（不存在配置块，视为关闭）
+        """
+        if not os.path.exists(htaccess_path):
+            return False
+
+        # 读取.htaccess内容
+        with open(htaccess_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+
+        # 匹配维护模式的开始和结束标记
+        start_pattern = r'# ========== maintenance mode start============='
+        end_pattern = r'# ========== maintenance mode end============='
+
+        # 同时存在开始和结束标记，且开始标记在结束标记之前，视为配置块存在
+        has_start = re.search(start_pattern, content) is not None
+        has_end = re.search(end_pattern, content) is not None
+
+        # 确保开始标记在结束标记之前
+        if has_start and has_end:
+            start_pos = re.search(start_pattern, content).start()
+            end_pos = re.search(end_pattern, content).start()
+            return start_pos < end_pos
+
+        return False
+
+    # 添加apache与openLiteSpeed维护模式配置块
+    def add_maintenance_block(self, htaccess_path: str, template_path: str)-> bool:
+        """
+        向.htaccess添加维护模式配置块
+        :param htaccess_path: .htaccess文件路径
+        :param template_path: 模板路径
+        :return: True（添加成功）/False（已存在配置块）
+        """
+        with open(htaccess_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+
+        # 构建维护模式配置块内容
+        maintenance_block = f"""# ========== maintenance mode start=============
+    # #Newly added or modified configurations between the start and end of maintenance mode will be overwritten.
+    RewriteEngine On
+    RewriteCond %{{REQUEST_URI}} !^{template_path}$
+    RewriteCond %{{REQUEST_URI}} !\\.(css|js|png|jpg|jpeg|gif|ico|svg|webp)$
+    RewriteRule ^(.*)$ {template_path}
+    <Files "maintenance.html">
+        Require all granted
+        Header set Cache-Control "no-store, no-cache, must-revalidate"
+        Header set Pragma "no-cache"
+    </Files>
+    # ========== maintenance mode end=============
+
+    """
+
+        # 将配置块添加到文件开头（也可根据需要添加到末尾）
+        new_content = maintenance_block + content
+
+        # 写回文件
+        with open(htaccess_path, 'w', encoding='utf-8', errors='ignore') as f:
+            f.write(new_content)
+
+        return True
+
+    # 删除apache与openLiteSpeed维护模式配置块
+    def remove_maintenance_block(self, htaccess_path: str) -> tuple[bool,str]:
+        """
+        删除.htaccess中的维护模式配置块（包括开始和结束标记）
+        :param htaccess_path: .htaccess文件路径
+        :return: True（删除成功）/False（文件不存在或无配置块）
+        """
+        try:
+            if os.path.exists(htaccess_path):
+
+                # 读取文件内容
+                with open(htaccess_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+
+                # 正则匹配整个维护模式配置块（包括开始和结束标记）
+                block_pattern = re.compile(
+                    r'# ========== maintenance mode start=============.*?'
+                    r'# ========== maintenance mode end=============.*?\n',
+                    re.DOTALL  # 匹配换行符
+                )
+
+                # 检查是否存在配置块
+                if not block_pattern.search(content):
+                    return False  # 无配置块，无需删除
+
+                # 移除配置块
+                new_content = block_pattern.sub('', content)
+
+                # 写回文件
+                with open(htaccess_path, 'w', encoding='utf-8', errors='ignore') as f:
+                    f.write(new_content)
+            return True, 'success'
+        except Exception as e:
+            return False,str(e)
+
+    # 删除nginx维护模式配置块
+    def remove_nginx_maintenance_block(self, nginx_conf_path: str) -> tuple[bool, str]:
+        """
+        简单删除开始标记到结束标记之间的所有内容（包括标记本身）
+        :param nginx_conf_path: Nginx配置文件路径
+        :return: 元组 (是否成功, 处理后的内容/错误信息)
+        """
+        start_marker = "# ========== maintenance mode start============="
+        end_marker = "# ========== maintenance mode end============="
+
+        # 读取文件内容
+        try:
+            with open(nginx_conf_path, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()  # 按行读取，方便处理
+        except FileNotFoundError:
+            return False, f"Error: File {nginx_conf_path} not found"
+        except Exception as e:
+            return False, f"Read error: {str(e)}"
+
+        # 查找开始和结束标记的位置
+        start_idx = None
+        end_idx = None
+        for i, line in enumerate(lines):
+            if start_marker in line:
+                start_idx = i
+            if end_marker in line:
+                end_idx = i
+
+        # 检查块块不存在的情况
+        if start_idx is None or end_idx is None or start_idx >= end_idx:
+            return True, "No maintenance block found, nothing to delete"
+
+        # 删除从开始标记到结束标记的所有行（包括标记行）
+        del lines[start_idx:end_idx + 1]
+
+        # 合并行并清理空行
+        new_content = ''.join(lines)
+        new_content = re.sub(r'\n{3,}', '\n\n', new_content).strip() + '\n'
+
+        # 写回文件
+        try:
+            with open(nginx_conf_path, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            return True, "Maintenance block removed successfully"
+        except Exception as e:
+            return False, f"Write error: {str(e)}"
+
+    # 更新nginx维护配置
+    def update_nginx_maintenance_block(self, nginx_conf_path: str, template_path: str, site_root: str) -> tuple[bool, str]:
+        """
+        更新Nginx配置文件中的维护模式配置块（先删除再添加）
+        :param nginx_conf_path: Nginx配置文件路径
+        :param template_path: 维护页面模板路径（相对于网站根目录）
+        :param site_root: 网站根目录绝对路径
+        :return: True（操作成功）/False（操作失败）
+        """
+        try:
+            # 先删除现有配置块
+            self.remove_nginx_maintenance_block(nginx_conf_path)
+
+            # 如果是首次添加，result就是原始内容；如果是更新，result是删除后的内容
+            with open(nginx_conf_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content =  f.read()
+
+            # 构建新的维护模式配置块内容
+            start_marker = "# ========== maintenance mode start============="
+            end_marker = "# ========== maintenance mode end============="
+            maintenance_block = fr"""    {start_marker}
+    error_page 503 @maintenance;
+    location @maintenance {{
+        root {site_root};
+        
+        try_files /{template_path.split('/')[-1]} =503;
+        
+    }}
+    
+    location / {{
+
+        if ($request_uri !~ ^/{template_path.split('/')[-1]}$) {{
+            return 503;
+        }}
+
+        if ($request_filename ~* ^{site_root}/.*\.(css|js|png|jpg|jpeg|gif|ico|svg|webp)$) {{
+            root /;  
+            break;
+        }}
+        return 503;
+    }}
+
+    location = /maintenance.enable {{
+        deny all;
+        return 403;
+    }}
+    {end_marker}
+
+        """
+            root_pattern = r'(root\s+[^;]+;)'
+            match = re.search(root_pattern, content)
+
+            if match:
+                root_line = match.group(0)
+                new_content = content.replace(
+                    root_line,
+                    f"{root_line}\n\n{maintenance_block}"
+                )
+            else:
+                if re.search(r'server\s*\{', content, re.IGNORECASE):
+                    new_content = re.sub(
+                        r'(server\s*\{)',
+                        f'\\1\n{maintenance_block}',
+                        content,
+                        flags=re.IGNORECASE
+                    )
+                else:
+                    return False, "Error: Nginx configuration file does not contain a valid server block"
+
+        # 写回配置文件
+            with open(nginx_conf_path, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            return True, f"Updated successfully"
+        except Exception as e:
+            return False, f"Error: {e}"
+
+    # 重启服务与记录配置参数
+    def restart_record_config(self,site_path : str, config: dict,  service_name = None) ->  tuple[bool, str]:
+        import system_v2
+        server_restart = system_v2.system()
+
+        # 记录配置
+        maintenance_config_path = os.path.join(site_path, 'aapanel-maintenance', 'sites_maintenance_config.json')
+
+        if not os.path.exists(maintenance_config_path):
+            template_dir = os.path.join(public.get_panel_path(), 'data', 'aapanel-maintenance')
+            if not os.path.exists(template_dir):
+                raise ValueError('The default template does not exist')
+
+            public.ExecShell(f'cp -r {template_dir} {site_path}')
+
+        with open(maintenance_config_path, 'w') as f:
+            f.write(json.dumps(config))
+
+        # 重启服务
+        get = public.to_dict_obj({
+            'name': service_name,
+            'type': 'restart'
+        })
+        ok = server_restart.ServiceAdmin(get)
+        if ok.get('status') == -1:
+            return False, f"Failed to restart the service, please check the configuration file and try manually restarting!"
+
+        return True, 'Setting successful!'
+
+    # 校验是否开启维护模式，开启即关闭
+    def check_maintenance_mode(self,site_path: str) -> bool:
+        maintenance_file = os.path.join(site_path, '.maintenance')
+        if os.path.exists(maintenance_file):
+            os.rename(maintenance_file, maintenance_file + '.bak.bak')
+            return True
+        return False
+
+    # 恢复维护模式
+    def restore_maintenance_mode(self, site_path: str) -> bool:
+        bak_file = os.path.join(site_path, '.maintenance.bak.bak')
+        if os.path.exists(bak_file):
+            os.rename(bak_file, os.path.join(site_path, '.maintenance'))
+
+        return True

@@ -229,16 +229,6 @@ class main(safeBase):
         timestamp = parsed_time.timestamp()
         return timestamp
         
-        # # 输出时间戳
-        # print("Timestamp:", timestamp)
-        
-    # def get_ssh_info_test(self,get):
-    #     limit_time=int(self._config['based_on_username']['limit'])*60
-    #     now_time=old_limit=time.time()
-    #     start_time=public.format_date(times=now_time-limit_time)
-    #     ssh_info=self.get_ssh_intrusion(start_time)
-    #     result,ip_total=self.get_ssh_info(ssh_info)
-    #     return result
         
     def get_ssh_info(self,result, data=[], keyword='', get_data: bool = False):
         """
@@ -513,7 +503,6 @@ class main(safeBase):
         return
 
 
-    
 
     def is_shell_command(self,command_string):
         # 尝试使用shlex.split处理字符串
@@ -534,8 +523,39 @@ class main(safeBase):
             pass
         
         return False
+    
+    def get_ssh_info_v2(self,search='',select='Failed',limit=999):
+        """
+        @name 获取ssh信息
+        """
+        from pathlib import Path
+        import public.PluginLoader as plugin_loader
+        mod_relative_path = "mod/project/ssh/comMod.py"
+        # 拼接路径
+        mod_file = str(Path(public.get_panel_path()) / mod_relative_path)
+        plugin_class = plugin_loader.get_module(mod_file)
+        class_string='main'
+        plugin_object = getattr(plugin_class,class_string)()
+        pdata = public.dict_obj()
+        pdata.p=1
+        pdata.limit=limit
+        pdata.search=search
+        pdata.select=select
+        result = getattr(plugin_object,"get_ssh_list")(pdata)
         
-    def get_history_record(self,get):
+        if isinstance(result, dict):
+            try:
+                #检测数据获取是否成功
+                status=result.get("status",-1)
+                if status<0:
+                    return 0,[]
+                data = result["message"]["data"]
+                return len(data),data
+            except:
+                return 0,[]
+        return 0,[]
+        
+    def get_history_record2(self,get):
         """
         @name 获取历史记录，能匹配关键词搜索
         
@@ -564,6 +584,7 @@ class main(safeBase):
         if self._config['history_start'] !=0 and int(time.time())-int(self._config['history_start'])<limit_time:
             start_time=public.format_date(times=self._config['history_start'])
         if get.types == 'login':
+            #取面板登录记录
             login_info=public.M('logs').where('type=? and addtime>=? and log LIKE ?',('Login',start_time,'%is incorrec%')).select()
             if len(login_info)>0:
                 for i in login_info:
@@ -583,11 +604,28 @@ class main(safeBase):
                     "service":"aapanel",
                     "country_name":""
                     }
+                    #搜索过滤
                     if keyword !='' and (keyword in aapanel_user or keyword in ip or keyword in "aapanel" or keyword in i['addtime']) :result.append(single_info)
                     if keyword =='':result.append(single_info)
             #取ssh记录
-            ssh_info=self.get_ssh_intrusion(start_time)
-            result,ip_total=self.get_ssh_info(ssh_info, result, keyword=keyword, get_data=True)
+            _,ssh_result=self.get_ssh_info_v2()
+            for i in ssh_result:
+                timeleft= 0 if now_time>public.to_date(i['timestamp'])+limit_time else now_time-(public.to_date(i['timestamp'])+limit_time)
+                tt_time=public.format_date(times=public.to_date(times=i['timestamp'])+limit_time)
+                single_info={"timeleft":timeleft,
+                    "user":i["user"],
+                    "ip":i["address"],
+                    "authservice":"sshd",
+                    "exptime":tt_time,#当前时间-超时时间-登录时间
+                    "country_code":"",
+                    "logintime":i['time'],
+                    "service":"sshd",
+                    "country_name":""
+                    }
+                #搜索过滤
+                if keyword !='' and (keyword in aapanel_user or keyword in i["address"] or keyword in "sshd" or keyword in single_info['logintime']) :result.append(single_info)
+                if keyword =='':result.append(single_info)
+
                     
         elif get.types == 'ip':
             ip_info=public.M('black_white').where('add_type=? and timeout !=? and add_time>?', ('black',0,start_time )).select()
@@ -609,19 +647,214 @@ class main(safeBase):
                 }
                 result.append(single_info)
                 
-            # if len(result)==0:
-            #     #取ssh记录
-            #     ssh_info=self.get_ssh_intrusion(start_time)
-            #     result,ip_total=self.get_ssh_info(ssh_info,result,keyword=get.keyword)
-        # elif get.types == 'ip':
-            
-        # elif get.types == 'login':
+
         #排序
         result = sorted(result, key=lambda x: x['logintime'], reverse=True)
         #取分页数据
         data = self.get_page(get,result)
         return public.return_message(0,0,data)
+    
+
+    def get_history_record(self, get):
+        """
+        获取历史记录，支持关键词搜索
         
+        返回格式:
+        {'error_logins': [
+            {
+                "timeleft": "356099",  # 解封剩余分钟数
+                "user": "anonymous",   # 用户名
+                "exptime": "2025-04-09 10:21:01",  # 解封时间
+                "ip": "34.22.135.234",
+                "authservice": "pure-ftpd",  # 身份验证服务
+                "country_code": "BE",  # 国家简称
+                "logintime": "2024-08-02 10:21:01",  # 登录时间
+                "service": "system",   # 服务
+                "country_name": "Belgium",  # 国家名称
+                "lock_status": 0  # 0(未封锁)/1(封锁中)
+            }
+        ]}
+        """
+        # 常量定义：避免硬编码，便于维护
+        SERVICE_AAPANEL = "aapanel"
+        SERVICE_SSHD = "sshd"
+        BLOCK_REASON_SSH = "Trigger SSH explosion-proof rule breaking"
+        BLOCK_REASON_PANEL = "Trigger aapanel explosion-proof rule breaking"
+
+        # 初始化配置和时间参数
+        self._config = self.read_config()
+        now_time = int(time.time())
+        keyword = get.keyword.strip()
+        limit_time = int(self._config['history_limit']) * 60  # 默认最近1小时
+        start_time = self._get_start_time(now_time, limit_time)
+
+        # 获取用户名
+        aapanel_user = public.M('users').where("id=?", (1,)).getField('username')
+
+        result = []
+        # 根据类型分发处理逻辑
+        if get.types == 'login':
+            result = self._handle_login_type(
+                start_time, now_time, limit_time, 
+                aapanel_user, keyword, 
+                SERVICE_AAPANEL, SERVICE_SSHD
+            )
+            # 排序
+            if len(result)>1:
+                result = sorted(result, key=lambda x: x['logintime'], reverse=True)
+        elif get.types == 'ip':
+            result = self._handle_ip_type(
+                start_time, now_time, keyword,
+                SERVICE_AAPANEL, BLOCK_REASON_SSH, BLOCK_REASON_PANEL
+            )
+
+            # 排序
+            if len(result)>1:
+                result = sorted(result, key=lambda x: x['begin'], reverse=True)
+        #分页返回结果
+        data = self.get_page(get, result)
+        return public.return_message(0, 0, data)
+
+    # ------------------------------
+    # 拆分后的逻辑模块
+    # ------------------------------
+    def _get_start_time(self, now_time, limit_time):
+        """计算查询的起始时间"""
+        config_start = self._config['history_start']
+        if config_start != 0 and (now_time - int(config_start) < limit_time):
+            return public.format_date(times=config_start)
+        return public.format_date(times=now_time - limit_time)
+
+    def _handle_login_type(self, start_time, now_time, limit_time, aapanel_user, keyword, service_panel, service_sshd):
+        """处理登录类型(login)的记录逻辑"""
+        result = []
+        # 1. 处理面板登录记录
+        panel_logs = public.M('logs').where(
+            'type=? and addtime>=? and log LIKE ?',
+            ('Login', start_time, '%is incorrec%')
+        ).select()
+        for login_log in panel_logs:
+            login_info = self._build_panel_login_info(
+                login_log, aapanel_user, now_time, limit_time, service_panel
+            )
+            if self._is_match_keyword(login_info, keyword, service_panel):
+                result.append(login_info)
+        
+        # 2. 处理SSH登录记录
+        _, ssh_logs = self.get_ssh_info_v2()
+        start_time_int= public.to_date(times=start_time)
+        for ssh_log in ssh_logs:
+            if ssh_log["timestamp"]<start_time_int:continue
+            ssh_info = self._build_ssh_login_info(
+                ssh_log, now_time, limit_time, service_sshd
+            )
+            if self._is_match_keyword(ssh_info, keyword, service_sshd):
+                result.append(ssh_info)
+        
+        return result
+
+    def _handle_ip_type(self, start_time, now_time, keyword, service, reason_ssh, reason_panel):
+        """处理IP类型(ip)的记录逻辑"""
+        result = []
+        ip_logs = public.M('black_white').where(
+            'add_type=? and timeout !=? and add_time>?',
+            ('black', 0, start_time)
+        ).select()
+        
+        for ip_log in ip_logs:
+            # 关键词过滤
+            if keyword and not self._ip_log_match_keyword(ip_log, keyword, service):
+                continue
+            # 构建IP记录信息
+            ip_info = self._build_ip_info(ip_log, now_time, service, reason_ssh, reason_panel)
+            result.append(ip_info)
+        
+        return result
+
+    # ------------------------------
+    # 信息构建与过滤
+    # ------------------------------
+    def _build_panel_login_info(self, login_log, username, now_time, limit_time, service):
+        """构建面板登录记录的信息字典"""
+        # 解析IP地址
+        log_str = login_log['log']
+        ip = log_str.split('Login IP:')[1].strip().split(':')[0]
+        
+        # 计算过期时间和剩余时间
+        login_timestamp = public.to_date(login_log['addtime'])
+        expire_timestamp = login_timestamp + limit_time
+        timeleft = self._calculate_timeleft(now_time, expire_timestamp)
+        
+        return {
+            "timeleft": timeleft,
+            "user": username,
+            "ip": ip,
+            "authservice": service,
+            "exptime": public.format_date(times=expire_timestamp),
+            "country_code": "",
+            "logintime": login_log['addtime'],
+            "service": service,
+            "country_name": ""
+        }
+
+    def _build_ssh_login_info(self, ssh_log, now_time, limit_time, service):
+        """构建SSH登录记录的信息字典"""
+        login_timestamp = public.to_date(ssh_log['timestamp'])
+        expire_timestamp = login_timestamp + limit_time
+        timeleft = self._calculate_timeleft(now_time, expire_timestamp)
+        
+        return {
+            "timeleft": timeleft,
+            "user": ssh_log["user"],
+            "ip": ssh_log["address"],
+            "authservice": service,
+            "exptime": public.format_date(times=expire_timestamp),
+            "country_code": "",
+            "logintime": ssh_log['time'],
+            "service": service,
+            "country_name": ""
+        }
+
+    def _build_ip_info(self, ip_log, now_time, service, reason_ssh, reason_panel):
+        """构建IP封锁记录的信息字典"""
+        add_timestamp = int(public.to_date(times=ip_log['add_time']))
+        exptime_timestamp = add_timestamp + ip_log['timeout']
+        timeleft = self._calculate_timeleft(now_time, exptime_timestamp) // 60  # 转换为分钟
+        
+        # 确定封锁原因
+        block_reason = reason_ssh if ip_log['black_reason'] == 1 else reason_panel
+        
+        return {
+            "timeleft": timeleft,
+            "ip": ip_log['ip'],
+            "exptime": public.format_date(times=exptime_timestamp),
+            "begin": ip_log['add_time'],
+            "country_code": "",
+            "note": "",
+            "action": service,
+            "country_name": "",
+            'lock_status': 'blocked',
+            'block_reason': block_reason
+        }
+
+    def _calculate_timeleft(self, now_time, expire_timestamp):
+        """计算剩余时间（如果已过期则返回0）"""
+        return max(0, expire_timestamp - now_time) if now_time <= expire_timestamp else 0
+
+    def _is_match_keyword(self, info, keyword, service):
+        """判断记录是否匹配关键词（无关键词时默认匹配）"""
+        if not keyword:
+            return True
+        # 检查关键词是否在关键字段中
+        match_fields = [
+            info['user'], info['ip'], service, info['logintime']
+        ]
+        return any(keyword in str(field) for field in match_fields)
+
+    def _ip_log_match_keyword(self, ip_log, keyword, service):
+        """IP记录的关键词匹配逻辑"""
+        return (keyword in ip_log['ip']) or (keyword in service) or (keyword in ip_log['add_time'])
+            
     def set_history_record_limit(self,get=None):
         """
         @name 设置历史记录时间
@@ -643,8 +876,8 @@ class main(safeBase):
         public.writeFile(self._config_file,json.dumps(self._config))
             
         return public.return_message(0, 0, public.lang("Setting successful"))
-        
-        
+            
+            
     def clear_history_record_limit(self,get):
         """
         @name 移除并清空历史记录
@@ -696,7 +929,7 @@ class main(safeBase):
             if public.is_ipv4(ip):
                 ip_list.append(single_info)
             else:
-                public.print_log('ip:{}'.format(ip))
+                # public.print_log('ip:{}'.format(ip))
                 return {'status': -1, "timestamp": int(time.time()), "message": {'result':'[{}] IP address incorrect'.format(ip)}}
         if len(ip_list)==0:
             #清空黑/白名单
@@ -773,34 +1006,7 @@ class main(safeBase):
         public.writeFile(self._breaking_white_file,ip_string)
         return 
         
-        
-    # def modify_black_white(self,get):
-    #     """
-    #     @name 编辑黑/白名单
-    #     """
-    #     if public.M('black_white').where('id=?', (get.id, )).count():
-    #         public.M('black_white').where('id=?',(get.id, )).setField('ps',get.ps)
-    #     return public.return_message(0, 0, public.lang("Edited successfully"))
-            
-        
-    # def del_balck_white(self,get):
-    #     """
-    #     @name 删除黑/白名单
-    #     """
-    #     # public.print_log('---------010')
-    #     #数据库内添加指定数据并返回数据库id
-    #     #rgs_obj.id = public.M('crontab').add('name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sType,sName,sBody,urladdress',("续签Let's Encrypt证书",'day','',hour,minute,echo,time.strftime('%Y-%m-%d %X',time.localtime()),0,'','localhost','toShell','',shell,''))
-    #     if not public.M('black_white').where('id=?', (get.id,)).count():
-    #         public.M('black_white').where('id=?', (get.id,)).delete()
-    #     ip=public.M('black_white').where("id=?", (get.id,)).getField('ip')
-    #     # public.print_log('---------01')
-    #     types=public.M('black_white').where("id=?", (get.id,)).getField('add_type')
-    #     public.print_log('---------02')
-    #     public.print_log('id:{}'.format(get.id))
-    #     public.M('black_white').where('id=?', (get.id,)).delete()
-    #     public.ExecShell('ipset del '+self._types[types]+' '+ip)
-    #     public.print_log('---------03')
-    #     return public.return_message(0, 0, public.lang("Delete successfully"))
+
 
         
     def check_local_ip_white(self,get):

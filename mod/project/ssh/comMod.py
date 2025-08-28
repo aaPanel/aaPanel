@@ -46,17 +46,13 @@ class main(JournalctlManage, SecureManage):
 
         if history == "all":
             self.ssh_log_path += "*"
-        login_list = self.get_secure_logs(login_type=login_type,pagesize=limit, page=page, query=query)
+        total,login_list = self.get_secure_logs(login_type=login_type,pagesize=limit, page=page, query=query)
 
         for log in login_list:
             if log["address"] in ip_rules:
                 log["deny_status"] = 1
         data = self.return_area(login_list, 'address')
-        count = self.get_secure_log_count(login_type, query)
-        result = public.get_page(count=count,p=page,rows=limit)
-        result["data"] = data
-
-        return result
+        return public.return_message(0, 0, {"data":data, "total":total})
 
     def get_ssh_intrusion(self, get):
         """
@@ -84,7 +80,7 @@ class main(JournalctlManage, SecureManage):
         except Exception as e:
             import traceback
             public.print_log(f"Failed to get SSH login information: {traceback.format_exc()}")
-        return stats
+        return public.return_message(0, 0,stats)
 
     def clean_ssh_list(self, get):
         """
@@ -111,12 +107,12 @@ class main(JournalctlManage, SecureManage):
             today = datetime.now()
             yesterday = today - timedelta(days=1)
 
-            if "auth" in self.ssh_log_path:
+            if "debian" in public.get_os_version().lower():
                 today_str = today.strftime("%Y-%m-%d")
                 yesterday_str = yesterday.strftime("%Y-%m-%d")
             else:
-                today_str = today.strftime("%B %d").replace(" 0", " ")
-                yesterday_str = yesterday.strftime("%B %d").replace(" 0", " ")
+                today_str = today.strftime("%b %d").replace(" 0", " ")
+                yesterday_str = yesterday.strftime("%b %d").replace(" 0", " ")
 
             today_count = self.get_secure_log_count(self.login_all_flag, today_str)
             yesterday_count = self.get_secure_log_count(self.login_all_flag, yesterday_str)

@@ -45,6 +45,7 @@ def control_init_delay():
         (deb_bashrc,),
         (install_pycountry,),
         (install_pyroute2,),
+        (update_pubsuffix_dat,),
         (upgrade_fastcgi_cache_conf_format,),
         (clean_max_log, '/www/server/panel/plugin/rsync/lsyncd.log'),
         (clean_max_log, '/var/log/rsyncd.log', 1024 * 1024 * 10),
@@ -1078,6 +1079,13 @@ def upgrade_fastcgi_cache_conf_format():
     from wp_toolkit import wpfastcgi_cache
     wpfastcgi_cache().upgrade_fastcgi_cache_format()
 
+
+def update_pubsuffix_dat():
+    try:
+        from pubsuffix import update_dat
+        update_dat()
+    except:
+        public.print_error()
 
 if __name__ == '__main__':
     control_init_new()

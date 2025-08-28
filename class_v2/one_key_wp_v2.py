@@ -244,7 +244,7 @@ class one_key_wp:
     def set_permission(self, site_path):
         # 区分目录文件权限，分别赋权
         os.system(f'chmod -R 644 {site_path}')
-        os.system(f'find {site_path} -type d -exec chmod 755 {{}} \;')
+        os.system(rf'find {site_path} -type d -exec chmod 755 {{}} \;')
         os.system(f'chown -R www:www {site_path}')
 
     def set_urlrewrite(self, site_name, site_path):
@@ -560,15 +560,31 @@ class one_key_wp:
 
     def get_cache_status(self, s_id):
         """
+        兼容ols，nginx
         s_id 网站id
         """
         import data
-        site_info = public.M('sites').where('id=?', (s_id,)).field('name').find()
-
+        site_info = public.M('sites').where('id=?', (s_id,)).field('id,name').find()
         if not isinstance(site_info, dict):
             return False
 
         site_name = site_info['name']
+
+        # 兼容ols
+        if public.get_webserver() == "openlitespeed":
+            from wp_toolkit import wpmgr
+            wpmgr_obj = wpmgr(site_info['id'])
+
+            conn, prefix = wpmgr_obj._get_db_connection()
+            table = f"{prefix}options"
+
+            with conn.cursor() as cursor:
+                cursor.execute(f"SELECT option_value FROM {table} WHERE option_name = 'litespeed.conf.cache'")
+                res = cursor.fetchone()
+
+            if not res:
+                return False
+            return True if res['option_value'] in ['1',1] else False
 
         # 获取WP站点绑定的PHP可执行文件
         from public import websitemgr
@@ -758,6 +774,10 @@ class one_key_wp:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
+        # 新增ols缓存清理反馈
+        if public.get_webserver() == "openlitespeed":
+            return public.return_message(-1, 0, public.lang("Please go to the LiteSpeed Toolbox to manually clear the cache"))
+
         if public.get_webserver() != "nginx":
             return public.return_message(-1, 0, public.lang("This feature currently only supports Nginx"))
 
@@ -794,8 +814,68 @@ class one_key_wp:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        if public.get_webserver() != "nginx":
-            return public.return_message(-1, 0, public.lang("This feature currently only supports Nginx"))
+        if public.get_webserver() not in  ["nginx", "openlitespeed"]:
+            return public.return_message(-1, 0, public.lang("Cache does not support apache for the time being"))
+
+        if public.get_webserver() == "openlitespeed":
+            site = public.M('sites').where('name=?', (get.sitename,)).field('id,path').find()
+            if not site:
+                return public.fail_v2(public.lang("The specified site does not exist!"))
+
+            from wp_toolkit import wpmgr
+            wpmgr_obj = wpmgr(site['id'])
+
+            # 检测插件安装状态
+            plugins_list = wpmgr_obj.installed_plugins(False)
+            is_installed = False
+            for plugins in plugins_list:
+                if plugins['name'] == 'LiteSpeed Cache':
+                    is_installed = True
+                    break
+
+            # 未安装，尝试安装缓存插件
+            if not is_installed:
+                # 检测是否开启维护模式
+                is_maintenance = False
+                maintenance_file = os.path.join(site['path'], '.maintenance')
+                if os.path.exists(maintenance_file):
+                    os.rename(maintenance_file, maintenance_file + '.bak.bak')
+                    is_maintenance =  True
+
+                ok, msg = wpmgr_obj.install_plugin('litespeed-cache')
+
+                if is_maintenance:
+                    bak_file = os.path.join(site['path'], '.maintenance.bak.bak')
+                    if os.path.exists(bak_file):
+                        os.rename(bak_file, os.path.join(site['path'], '.maintenance'))
+
+                if not ok:
+                    return public.fail_v2(public.lang("The installation of the cache plugin failed"))
+
+                # 激活插件
+                res = wpmgr_obj.activate_plugins('litespeed-cache/litespeed-cache.php')
+                if not res:
+                    return public.fail_v2(public.lang("The cache plugin failed to activate. Please try to activate it manually and then enable the cache"))
+                return public.success_v2(public.lang("The OLS cache Settings were successful!"))
+
+            try:
+                # 更新缓存状态
+                conn, prefix = wpmgr_obj._get_db_connection()
+                table = f"{prefix}options"
+
+                with conn.cursor() as cursor:
+                    # 开始事务
+                    conn.begin()
+
+                    new_value = '1' if get.get('act') == 'enable' else '0',
+                    cursor.execute(f"UPDATE {table} SET option_value = %s WHERE option_name = %s",(new_value, 'litespeed.conf.cache'))
+
+                    # 提交事务
+                    conn.commit()
+                return public.success_v2(public.lang("The OLS cache Settings were successful!"))
+            except Exception as e:
+                return public.fail_v2(public.lang("OLS cache configuration failed: {}", e))
+
         values = self.check_param(get)
         if values['status'] == -1:
             return values
@@ -1275,11 +1355,11 @@ class one_key_wp:
             self.write_logs("\n\n\n|-Deployment was successful!")
 
             return public.return_message(0, 0, public.lang("Deployment was successful!"))
-        except:
+        except Exception as e:
             self.del_site(get)
             from traceback import format_exc
             public.print_log(format_exc())
-            return public.return_message(-1, 0, public.lang("Deployment failed!"))
+            return public.return_message(-1, 0, public.lang("Deployment failed: {}", e))
 
     # 重新关联WP网站数据库
     def reset_wp_db(self, args):
@@ -1323,6 +1403,11 @@ class one_key_wp:
         wp_toolkit_config_data = wpmgr_obj.get_wp_toolkit_config_data()
         type_ = query_wpsite_type(args.s_id)[0]
 
+        # 添加维护模式状态
+        wp_path = wpmgr_obj.retrieve_wp_root_path()
+        if os.path.exists(os.path.join(wp_path, '.maintenance')):
+            wp_toolkit_config_data['maintenance_mode'] = True
+
         return public.success_v2({
             'local_version': wp_local_version,
             'latest_version': wp_latest_version,
@@ -1338,7 +1423,8 @@ class one_key_wp:
             'whl_redirect_admin': wp_toolkit_config_data['whl_config'].get('whl_redirect_admin', '404'),
             'wp_title': wp_toolkit_config_data.get('wp_title', 'Acquisition failed, MySQL error occurred'),
             'wp_home': wp_toolkit_config_data.get('wp_home', 'Acquisition failed, MySQL error occurred'),
-            'site_type': type_.get("site_type",'')
+            'site_type': type_.get("site_type",''),
+            'maintenance' : wp_toolkit_config_data.get('maintenance_mode', False),
         })
 
     # 保存WP Toolkit配置
@@ -1366,6 +1452,14 @@ class one_key_wp:
         from wp_toolkit import wpmgr
 
         wpmgr_obj = wpmgr(args.s_id)
+        site_path = wpmgr_obj.retrieve_wp_root_path()
+
+        # 检测是否开启维护模式
+        is_maintenance = False
+        maintenance_file = os.path.join(site_path, '.maintenance')
+        if os.path.exists(maintenance_file):
+            os.rename(maintenance_file, maintenance_file + '.bak.bak')
+            is_maintenance = True
 
         # 获取当前网站的配置信息
         wp_title, wp_home, wp_site_url = wpmgr_obj.get_db_info()
@@ -1440,6 +1534,10 @@ class one_key_wp:
 
                 # 写操作日志
                 wpmgr.log_opt('Activate plugin [{}] successfully', ('WPS Hide Login',))
+
+        if is_maintenance:
+            if os.path.exists(maintenance_file + '.bak.bak'):
+                os.rename(maintenance_file + '.bak.bak', maintenance_file)
 
         return public.success_v2('Update successfully')
 

@@ -1,11 +1,12 @@
 # coding: utf-8
 import json
+import sys
 import uuid
 from functools import reduce
 from itertools import chain
 from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable
 
-import public
+from public import ExecShell
 from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
 from public.sqlite_easy import Db
@@ -30,6 +31,24 @@ def get_flag() -> bool:
         return False
 
 
+def _setup():
+    if get_flag():
+        return
+    try:
+        import pysqlite3
+        sys.modules["sqlite3"] = pysqlite3
+    except ImportError:
+        try:
+            ExecShell("btpip install pysqlite3-binary")
+            import pysqlite3
+            sys.modules["sqlite3"] = pysqlite3
+        except:
+            pass
+
+
+# _setup()
+
+
 class QueryProperty:
     def __init__(self, func):
         self.func = func
@@ -50,8 +69,8 @@ class Operator:
         self._model_class: M = model_class
         self._query = query
         self._tb = self._model_class.__table_name__
-        self._fields = self._model_class.__fields__
-        self._serializes = self._model_class.__serializes__
+        self._fields = self._model_class._get_fields()
+        self._serializes = self._model_class._get_serialized()
         self._flag = self._shared_flag  # fk flag
 
     def _q_error(self, key: str, act: str, val: Any, sp_act: tuple):
@@ -218,6 +237,8 @@ class Operator:
                     val = json.loads(val)
                 except (json.JSONDecodeError, TypeError):
                     pass
+            if not isinstance(val, list):
+                val = [val]
             # list
             if isinstance(val, list):
                 if compare == "contains":
@@ -240,6 +261,11 @@ class Operator:
                     val = json.loads(val)
                 except (json.JSONDecodeError, TypeError):
                     pass
+            if not isinstance(val, (list, tuple, set)):
+                raise HintException(f"{key}__{compare} expects a list/tuple/set")
+            val = list(val)
+            if len(val) == 0:
+                return ("1=0" if compare == "in" else "1=1"), []
             placeholders = ", ".join(["?"] * len(val))
             op = "IN" if compare == "in" else "NOT IN"
             return f"{key} {op} ({placeholders})", val
@@ -278,6 +304,12 @@ class Operator:
                     pass
             pk_name = self._model_class.__primary_key__
             q_fork = self._query.fork()
+            q_fork._SqliteEasy__OPT_LIMIT.clear()
+            q_fork._SqliteEasy__OPT_ORDER.clear()
+            q_fork._SqliteEasy__OPT_GROUP.clear()
+            q_fork._SqliteEasy__OPT_HAVING.clear()
+            q_fork._SqliteEasy__OPT_FIELD.clear()
+            q_fork.field(f"{self._tb}.{pk_name}", f"{self._tb}.{key}")
             db_rows = q_fork.select()
             matching_pks = []
             for row_dict in db_rows:
@@ -326,6 +358,12 @@ class Operator:
             return f"json_extract({self._tb}.{key}, ?) IS NULL", [path]
         pk_name = self._model_class.__primary_key__
         q_fork = self._query.fork()
+        q_fork._SqliteEasy__OPT_LIMIT.clear()
+        q_fork._SqliteEasy__OPT_ORDER.clear()
+        q_fork._SqliteEasy__OPT_GROUP.clear()
+        q_fork._SqliteEasy__OPT_HAVING.clear()
+        q_fork._SqliteEasy__OPT_FIELD.clear()
+        q_fork.field(f"{self._tb}.{pk_name}", f"{self._tb}.{key}")
         db_rows = q_fork.select()
         matching_pks = []
         new_val = json.loads(val) if is_json else val
@@ -369,7 +407,6 @@ class Operator:
             field = parts[0]
 
             if not field or not self._fields.get(field):
-                print("Filter: %s's fields is not found: '%s' it will be pass" % (self._model_class.__name__, k))
                 raise HintException("%s's fields is not found: '%s'" % (self._model_class.__name__, k))
 
             compare = None
@@ -459,10 +496,14 @@ class QuerySet(Generic[M]):
         self._field_filter = None
 
     def __len__(self):
-        return len(self.__execute())
+        if self._cache:
+            return len(self._cache)
+        raise RuntimeError("QuerySet is not executed, use count() instead")
 
     def __bool__(self):
-        return bool(self.__len__())
+        if self._cache is not None:
+            return bool(self._cache)
+        return self.exists()
 
     def __iter__(self) -> Generator[M, None, None]:
         yield from self.__execute()
@@ -472,30 +513,31 @@ class QuerySet(Generic[M]):
         查询结果切片
         """
         if isinstance(index, int):
+            if index < 0:
+                raise HintException("index is not supported")
             if self._cache is not None:
                 try:
                     return self._cache[index]
                 except IndexError:
                     raise HintException("list index out of range")
             else:
-                new_q = self._query.fork()
-                new_q.limit(index + 1, index)
+                new_q = self._clone_q.limit(1).skip(index)
                 temp = new_q.find()
-                return self._model_class(
-                    _field_filter=self._field_filter,
-                    **self._model_class._serialized_data(temp, self._field_filter)
-                ) if temp else None
+                return self._gen_M(temp) if temp else None
         elif isinstance(index, slice):
-            if self._cache is not None:
-                try:
-                    return self._cache[index.start:index.stop]
-                except IndexError:
-                    raise HintException("list index out of range")
-            else:
+            start = index.start or 0
+            if start < 0:
+                raise HintException("start index is not supported")
+            if index.stop is None:
+                # not stop, get all
                 self.__execute()
-                return self._cache[index.start:index.stop]
-        else:
-            return None
+                return self._cache[start: index.stop]
+            limit = max(0, index.stop - start)
+            q = self._clone_q.skip(start).limit(limit)
+            return [
+                self._gen_M(r) for r in q.select() or []
+            ]
+        return None
 
     def __add__(self, other: "QuerySet") -> Iterable:
         """
@@ -509,6 +551,16 @@ class QuerySet(Generic[M]):
             raise HintException("not the same model class cant be merged")
         return chain(self.__execute() or [], other.__execute() or [])
 
+    @property
+    def _clone_q(self) -> Db.query:
+        return self._query.fork()
+
+    def _gen_M(self, data) -> M:
+        return self._model_class(
+            _field_filter=self._field_filter,
+            **self._model_class._serialized_data(data, self._field_filter)
+        )
+
     def __execute(self) -> Optional[List[M]]:
         if self._cache is None:
             try:
@@ -516,10 +568,7 @@ class QuerySet(Generic[M]):
                     self._query.field(f"`{self._tb}`.*")
 
                 self._cache = [
-                    self._model_class(
-                        _field_filter=self._field_filter,
-                        **self._model_class._serialized_data(i, self._field_filter)
-                    ) for i in self._query.select()
+                    self._gen_M(i) for i in self._query.select() or []
                 ]
             except Exception as e:
                 print("db query error => %s" % str(e))
@@ -568,6 +617,7 @@ class QuerySet(Generic[M]):
         """
         以指定字段去重
         """
+        # todo
         return self
 
     def order_by(self, *args) -> "QuerySet[M]":
@@ -582,6 +632,10 @@ class QuerySet(Generic[M]):
         )
         return self
 
+    def values(self, *args) -> "QuerySet[M]":
+        # todo
+        raise NotImplementedError("values")
+
     def fields(self, *args) -> "QuerySet[M]":
         if not args:
             return self
@@ -590,7 +644,7 @@ class QuerySet(Generic[M]):
         pk = self._model_class.__primary_key__
         if pk not in field_set:
             field_set.add(pk)
-        field_set = [f for f in field_set if f in self._model_class.__fields__]
+        field_set = [f for f in field_set if f in self._model_class._get_fields()]
         self._field_filter = field_set  # model level
         self._query.field(*(f"{self._tb}.{f}" for f in field_set))  # db level
         return self
@@ -602,14 +656,11 @@ class QuerySet(Generic[M]):
         """
         if self._cache is None:
             if len(self._query._SqliteEasy__OPT_FIELD._Field__FIELDS) == 0:
-                self._query.field(f"'{self._tb}'.*")
+                self._query.field(f"`{self._tb}`.*")
             data = self._query.find()
             if not data:
                 return None
-            return self._model_class(
-                _field_filter=self._field_filter,
-                **self._model_class._serialized_data(data, self._field_filter)
-            )
+            return self._gen_M(data)
         else:
             return self._cache[0] if len(self._cache) != 0 else None
 
@@ -619,9 +670,8 @@ class QuerySet(Generic[M]):
         :param key_name: 字段名
         :return: Any
         """
-        # noinspection PyUnresolvedReferences
-        f = self.first().as_dict()
-        return f.get(key_name) if f else None
+        f = self.first()
+        return f.as_dict().get(key_name) if f else None
 
     def update(self, *args, **kwargs) -> int:
         """
@@ -643,11 +693,11 @@ class QuerySet(Generic[M]):
             target = None
         if not target:
             return 0
-        count = 0
-        for i in self._model_class._serialized_data(self._query.select(), self._field_filter):
-            self._model_class(**{**i, **target}).save()
-            count += 1
-        return count
+        serlz = self._model_class._get_serialized()
+        body = {
+            k: (serlz[k].serialized(v, True) if k in serlz else v) for k, v in target.items()
+        }
+        return self._query.update(body)
 
     def delete(self) -> int:
         """
@@ -663,14 +713,24 @@ class QuerySet(Generic[M]):
         存在数据
         :return: bool
         """
-        return bool(self.__execute())
+        q_fk = self._clone_q
+        q_fk.field(self._model_class.__primary_key__)
+        q_fk.limit(1)
+        return bool(q_fk.find())
 
     def count(self) -> int:
         """
         获取数量
         :return: int
         """
-        return self._query.fork().count()
+        if self._cache is not None:
+            return len(self._cache)
+        q = self._clone_q
+        q._SqliteEasy__OPT_LIMIT.clear()
+        q._SqliteEasy__OPT_ORDER.clear()
+        q._SqliteEasy__OPT_GROUP.clear()
+        q._SqliteEasy__OPT_HAVING.clear()
+        return q.count()
 
     def as_list(self) -> list:
         """
@@ -691,9 +751,7 @@ class aaObjects(Generic[M]):
     def __new__(cls, args):
         if hasattr(args, "__table_name__") and not cls.__m_map__.get(args.__table_name__):
             cls.__m_map__[args.__table_name__] = aaMigrate(args).run_migrate()
-            return super(aaObjects, cls).__new__(cls)
-        else:
-            return super(aaObjects, cls).__new__(cls)
+        return super(aaObjects, cls).__new__(cls)
 
     def __init__(self, model: M):
         self._model = model
@@ -704,9 +762,7 @@ class aaObjects(Generic[M]):
         if not self.__q:
             q = Db(self._model.__db_name__).query()
             self.__q = q.table(self._model.__table_name__)
-            return self.__q
-        else:
-            return self.__q
+        return self.__q
 
     def _insert(self, val_data) -> int:
         return self._query.insert(val_data)
@@ -739,16 +795,15 @@ class aaObjects(Generic[M]):
         :raise_exp bool 不抛异常则跳过异常继续插入
         :return: int 影响行数
         """
+        valid_list = []
         for i in data:
-            try:
-                self._model(**i)._validate(raise_exp=raise_exp)
-            except Exception as e:
-                if raise_exp:
-                    raise HintException(f"{e}, data: {i}")
-                else:
-                    data.remove(i)
-                    continue
-        return self._query.insert_all(data)
+            if i and isinstance(i, dict):
+                temp = self._model(**i)._validate(raise_exp=raise_exp)
+                if temp:
+                    valid_list.append(temp)
+        if not valid_list:
+            return 0
+        return self._query.insert_all(valid_list)
 
     def find_one(self, **kwargs) -> Optional[M]:
         """
@@ -756,8 +811,7 @@ class aaObjects(Generic[M]):
         :kwargs dict
         :return: QuerySet | None
         """
-        # noinspection PyUnresolvedReferences
-        return QuerySet(self._model, self._query).filter(**kwargs).first()
+        return QuerySet(self._model, self._query.fork()).filter(**kwargs).first()
 
     def filter(self, *args, **kwargs) -> "QuerySet[M]":
         """
@@ -765,14 +819,14 @@ class aaObjects(Generic[M]):
         :kwargs dict
         :return: QuerySet
         """
-        return QuerySet(self._model, self._query).filter(*args, **kwargs)
+        return QuerySet(self._model, self._query.fork()).filter(*args, **kwargs)
 
     def all(self) -> "QuerySet[M]":
         """
         所有数据
         return: QuerySet
         """
-        return QuerySet(self._model, self._query)
+        return QuerySet(self._model, self._query.fork())
 
 
 class aaMigrate:
@@ -784,8 +838,8 @@ class aaMigrate:
     def __init__(self, model: M):
         self.__model = model
         self.__table = self.__model.__table_name__
-        self.__fields = self.__model.__fields__
-        self.__client = Db(model.__db_name__)
+        self.__fields = self.__model._get_fields()
+        self.__client = None
         self.__query = None
 
     def run_migrate(self) -> bool | None:
@@ -802,13 +856,16 @@ class aaMigrate:
             raise PanelError(f"{self.__model.__class__.__name__} need 'fields'")
 
         try:
+            self.__client = Db(self.__model.__db_name__)
             self.__table_exists()
             self.__index_exists()
         except Exception as e:
             raise PanelError(e)
         finally:
-            self.__query.close()
-            self.__client.close()
+            if self.__query:
+                self.__query.close()
+            if self.__client:
+                self.__client.close()
         return True
 
     def __new_tb_transform_sql(self, tb_name: str) -> str:
@@ -826,7 +883,7 @@ class aaMigrate:
                 pk_flag += 1
                 if val.field_type != "INTEGER":
                     raise PanelError("'primary_key' only support IntegerField now")
-                field_sql += f"'{key}' {val.field_type} PRIMARY KEY AUTOINCREMENT, "
+                field_sql += f"`{key}` {val.field_type} PRIMARY KEY AUTOINCREMENT, "
         if not field_sql:
             return ""
         if pk_flag != 1:
@@ -889,7 +946,7 @@ class aaMigrate:
 
     def __trans_index_key(self, index_info: tuple | str) -> str:
         def __if_raise_error(item: str):
-            if not self.__model.__fields__.get(item):
+            if not self.__model._get_fields().get(item):
                 raise PanelError(f"create index error, '{item}' is not in model's fields")
 
         col_sql = ""
@@ -909,10 +966,15 @@ class aaMigrate:
         索引
         """
         try:
+            if not hasattr(self.__model, "__index_keys__"):
+                return True
             self.__query.table(self.__table)
-            cur = self.__query.query(f"PRAGMA index_list(`{self.__table}`);")
-            current_index = [x.get("name") for x in cur] if cur else []
+            cur = self.__query.query(f"PRAGMA index_list(`{self.__table}`);") or []
+            current_index = [
+                x.get("name") for x in cur if str(x.get("origin", "c")).lower() == "c"
+            ] if cur else []
             sql_statements = []
+            wanted = set()
             for index_info in self.__model.__index_keys__:
                 """
                 todo
@@ -924,23 +986,22 @@ class aaMigrate:
                 如果移除索引, 检查上述步骤
                 """
                 col_sql = self.__trans_index_key(index_info)
-                cols = col_sql.split(",")
-                cols = [col.strip("` ") for col in cols]
+                cols = [col.strip("` ") for col in col_sql.split(",")]
                 index_name = f"idx_{self.__table}_{'_'.join(cols)}"
-
+                wanted.add(index_name)
                 if index_name not in current_index:
-                    idx_sql = f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{self.__table}` ({col_sql}); "
-                    sql_statements.append(idx_sql)
-                else:
-                    current_index.remove(index_name)
+                    sql_statements.append(
+                        f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{self.__table}` ({col_sql}); "
+                    )
 
             for index in current_index:
-                sql_statements.append(f"DROP INDEX IF EXISTS `{index}`;")
+                if index not in wanted:
+                    sql_statements.append(f"DROP INDEX IF EXISTS `{index}`;")
 
             if sql_statements:
-                combined_sql = " ".join(sql_statements)
-                self.__query.execute_script(combined_sql)
-
+                self.__query.execute_script(
+                    " ".join(sql_statements)
+                )
             return True
         except:
             pass

@@ -521,6 +521,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         for m in ms.keys():
             filename = filename.replace(m, ms[m])
         return filename
+
     def files_list(self, path, search=None, my_sort='off', reverse=False):
         '''
             @name 遍历目录，并获取全量文件信息列表
@@ -596,6 +597,92 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             # 否则文件数量小于10000时，按文件名排序
             if count < 10000:
                 nlist = sorted(nlist, key=lambda x: x[0], reverse=reverse)
+
+        return count, nlist
+
+    def files_list_new(self, path, search=None, my_sort='off', reverse=False):
+        '''
+            @name 遍历目录，确保目录在前（优先显示在第一页），再分别排序
+            @param path<string> 目录路径
+            @param search<string> 搜索关键词
+            @param my_sort<string> 排序字段
+            @param reverse<bool> 是否降序
+            @return tuple (int,list)
+        '''
+
+        nlist = []
+        count = 0
+
+        if not os.path.exists(path):
+            return count, nlist
+
+        # 排序字段映射
+        sort_key = -1
+        if my_sort == 'off':
+            sort_key = -1
+        elif my_sort == 'name':
+            sort_key = 0
+        elif my_sort == 'size':
+            sort_key = 1
+        elif my_sort == 'mtime':
+            sort_key = 2
+        elif my_sort == 'accept':
+            sort_key = 3
+        elif my_sort == 'user':
+            sort_key = 4
+
+        # 分离目录和文件列表
+        dirs = []  # 存储目录：(名称, 排序值)
+        files = []  # 存储文件：(名称, 排序值)
+
+        with os.scandir(path) as it:
+            try:
+                for entry in it:
+                    # 搜索过滤
+                    if search and entry.name.lower().find(search) == -1:
+                        continue
+
+                    # 获取排序值
+                    sort_val = 0
+                    if sort_key not in (-1, 0):
+                        try:
+                            fstat = entry.stat()
+                            if sort_key == 1:
+                                sort_val = fstat.st_size
+                            elif sort_key == 2:
+                                sort_val = fstat.st_mtime
+                            elif sort_key == 3:
+                                sort_val = fstat.st_mode
+                            elif sort_key == 4:
+                                sort_val = fstat.st_uid
+                        except:
+                            pass
+
+                    # 分离目录和文件
+                    if entry.is_dir():
+                        dirs.append((entry.name, sort_val))
+                    else:
+                        files.append((entry.name, sort_val))
+                    count += 1
+            except:
+                pass
+
+        # 定义二级排序函数（目录和文件内部排序）
+        def get_secondary_key(item):
+            if sort_key == 0:
+                return item[0].lower()  # 按名称
+            elif sort_key > 0:
+                return item[1]  # 按指定字段
+            else:
+                return item[0].lower()  # 默认按名称
+
+        # 目录内部排序
+        dirs_sorted = sorted(dirs, key=get_secondary_key, reverse=reverse)
+        # 文件内部排序
+        files_sorted = sorted(files, key=get_secondary_key, reverse=reverse)
+
+        # 合并：目录在前，文件在后
+        nlist = dirs_sorted + files_sorted
 
         return count, nlist
 
@@ -802,7 +889,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if get.reverse == 'False':
             reverse = False
         # list_data = self.__list_dir(get.path, get.sort, reverse, search)
-        n_count, list_data = self.files_list(get.path, search, my_sort=get.sort, reverse=reverse)
+        n_count, list_data = self.files_list_new(get.path, search, my_sort=get.sort, reverse=reverse)
         # 包含分页类
         import page
         # 实例化分页类
@@ -1668,7 +1755,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         # 检查关键目录
         msg = self.CheckDelete(get.path)
         if msg is not None:
-            return public.return_msg_gettext(False, msg)
+            return public.return_message(-1, 0,  msg)
         try:
             # 检查是否存在.user.ini
             # if os.path.exists(get.path+'/.user.ini'):
@@ -1689,7 +1776,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             shutil.rmtree(get.path)
             self.site_path_safe(get)
             public.add_security_logs("Del dir", "Delete directory: " + get.path)
-            public.WriteLog('TYPE_FILE', 'Successfully deleted directory [{}]!', (get.path,))
+            public.WriteLog('TYPE_FILE', 'Successfully deleted directory [{1}]!', (get.path,))
             self.remove_file_ps(get)
             return public.return_message(0, 0, public.lang(" Successfully deleted directory!"))
         except:
@@ -1728,7 +1815,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         # 检查关键文件
         msg = self.CheckDelete(get.path)
         if msg is not None:
-            return public.return_msg_gettext(False, msg)
+            return public.return_message(-1, 0,  msg)
         # 检查是否为.user.ini
         if get.path.find('.user.ini') != -1:
             public.ExecShell("chattr -i '" + get.path + "'")
@@ -1737,6 +1824,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 if self.Mv_Recycle_bin(get):
                     self.site_path_safe(get)
                     self.remove_file_ps(get)
+                    # 删除数据库中的数据
+                    try:
+                        public.M("backup").where("filename=?", get.path).delete()
+                    except Exception:
+                        pass
                     public.add_security_logs("Del file", "Delete file: " + get.path)
                     return public.return_message(0, 0, public.lang("File moved to recycle bin"))
             os.remove(get.path)
@@ -1791,8 +1883,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if _ok: break
 
         if dFile.find('BTDB_') != -1:
-            import database
-            return database.database().RecycleDB(get.path)
+            import database_v2
+            return database_v2.database().RecycleDB(get.path)
         try:
             import shutil
             if os.path.isdir(get.path) and os.path.exists(dFile):
@@ -1871,14 +1963,17 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     rPath = r_path
                     filename = os.path.join(rPath, get.path)
                     break
-            if _ok: break
+            if _ok:
+                break
 
         tfile = get.path.replace('_bt_', '/').split('_t_')[0]
-        if not _ok: return public.return_message(-1, 0, 'Error deleting file : {}', (tfile,))
+
+        if not _ok:
+            return public.return_message(-1, 0, 'Error deleting file : {}', tfile)
 
         if dFile.find('BTDB_') != -1:
-            import database
-            return database.database().DeleteTo(filename)
+            import database_v2
+            return database_v2.database().DeleteTo(filename)
         if not self.CheckDir(filename):
             return public.return_message(-1, 0, public.lang("Never trouble troubles till troubles trouble you!"))
 
@@ -1895,8 +1990,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 os.remove(filename)
             except:
                 public.ExecShell("rm -f " + filename)
-        public.write_log_gettext('File manager', 'Parmanently deleted {} from recycle bin!', (tfile,))
-        return public.return_message(0, 0, 'Parmanently deleted {} from recycle bin!', (tfile,))
+
+        return public.return_message(0, 0, public.lang('Parmanently deleted {} from recycle bin!', tfile))
 
     # 清空回收站
     def Close_Recycle_bin(self, get):
@@ -2466,7 +2561,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if os.uname().machine != 'x86_64':
                 return public.return_message(-1, 0, public.lang("RAR component does not support aarch 64 platform"))
 
-        import panelTask
+        import panel_task_v2 as panelTask
         task_obj = panelTask.bt_task()
         max_size = 1024 * 1024 * 100
         max_num = 10000
@@ -2485,17 +2580,17 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return task_obj._zip(get.path, get.sfile, get.dfile, '/tmp/zip.log', get.z_type)
 
         # 否则在后台线程压缩
-        task_obj.create_task('压缩文件', 3, get.path, json.dumps(
+        task_obj.create_task('Compress files', 3, get.path, json.dumps(
             {"sfile": get.sfile, "dfile": get.dfile, "z_type": get.z_type}))
         public.WriteLog("TYPE_FILE", 'ZIP_SUCCESS', (get.sfile, get.dfile))
-        return public.return_message(0, 0,public.lang("已将压缩任务添加到消息队列!"))
+        return public.return_message(0, 0, public.lang("The compression task has been added to the message queue!"))
 
     # 文件解压
     def UnZip(self, get):
         if get.sfile[-4:] == '.rar':
             if os.uname().machine != 'x86_64':
                 return public.return_message(-1, 0, public.lang("RAR component does not support aarch 64 platform"))
-        import panelTask
+        import panel_task_v2 as panelTask
         if not 'password' in get:
             get.password = ''
         if not os.path.exists(get.sfile):
@@ -2733,7 +2828,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         public.writeSpeed(None, 0, 0);
         errorCount = len(myfiles) - i
         del (session['selected'])
-        return public.return_message(0, 0, 'Batch operating succeeded [{}], failed [{}]', (str(i), str(errorCount)))
+        return public.return_message(0, 0, public.lang('Batch operating succeeded [{}], failed [{}]', str(i), str(errorCount)))
 
     # 移动和重命名
     def move(self, sfile, dfile):
@@ -3171,7 +3266,7 @@ cd %s
         data = public.get_page(count, int(get.p), 12, get.collback)
         data['data'] = public.M(my_table).order('id desc').field(
             'id,filename,token,expire,ps,total,password,addtime').limit(data['shift'] + ',' + data['row']).select()
-        return data
+        return public.return_message(0, 0, data)
 
     # 获取短列表
     def get_download_list(self):
@@ -3204,7 +3299,7 @@ cd %s
         my_table = 'download_token'
         data = public.M(my_table).where('id=?', (id,)).find()
         if not data: return public.return_message(-1, 0, public.lang("The specified address does not exist!"))
-        return data
+        return public.return_message(0, 0, data)
 
     # 删除下载地址
     def remove_download_url(self, get):
@@ -3431,7 +3526,7 @@ cd %s
             if os.path.exists(get.path + '/composer.lock'):
                 data['message']['comp_lock'] = public.lang(
                     '[Composer.lock] file exists in the specified directory, please delete it before executing')
-        return data
+        return public.return_message(0, 0,data)
 
     # 升级composer版本
     def update_composer(self, get):
@@ -4057,7 +4152,7 @@ CREATE TABLE index_tb(
     # 获取所有备份
     def get_all_back(self, get):
         data = self._operate_db('select id,remark,date,first_path from index_tb').fetchall()
-        return sorted(data, key=lambda x: x[2], reverse=True)
+        return public.return_message(0, 0, sorted(data, key=lambda x: x[2], reverse=True))
 
     def _get_total_back(self):
         data = self._operate_db('select id from index_tb').fetchall()

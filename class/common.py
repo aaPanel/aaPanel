@@ -6,17 +6,38 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
-from BTPanel import session, cache , request, redirect, g,abort, Response
-from datetime import datetime
-from public import dict_obj
-import os
-import public
 import json
+import os
 import sys
 import time
+from datetime import datetime
+
+import public
+from BTPanel import (
+    session,
+    request,
+    redirect,
+    g,
+    abort,
+    Response,
+)
+
+PANEL_PATH = public.get_panel_path()
+public.sys_path_append("class_v2/")
 
 
 class panelSetup:
+    def __init_panel_asset(self) -> None:
+        from config_v2 import config as config_v2
+        panel_asset = config_v2().get_panel_asset()
+        if panel_asset.get("status") == 0:
+            g.panel_asset = panel_asset.get("message")
+            return
+
+        from BTPanel import PANEL_DEFAULT_ASSET
+        g.panel_asset = PANEL_DEFAULT_ASSET
+
+
     def init(self):
         panel_path = public.get_panel_path()
         if os.getcwd() != panel_path: os.chdir(panel_path)
@@ -27,12 +48,13 @@ class panelSetup:
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return abort(403)
 
-        g.version = '7.46.0'
+        g.version = '7.49.0'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
         g.pyversion = sys.version_info[0]
         session['version'] = g.version
+        self.__init_panel_asset()  # 初始化面板asset资源
 
         if not public.get_improvement(): session['is_flush_soft_list'] = 1
         if request.method == 'GET':
@@ -99,7 +121,6 @@ class panelAdmin(panelSetup):
         g.menus = public.get_menus_for_session_router()
         g.yaer = datetime.now().year
         session['menus'] = g.menus
-
 
     # 设置基础Session
     def setSession(self):
@@ -254,8 +275,8 @@ class panelAdmin(panelSetup):
                 api_check = self.get_sk()
                 if api_check:
                     # if not isinstance(api_check, dict):
-                        # if public.get_admin_path() == '/login':
-                            # return redirect('/login?err=1')
+                    # if public.get_admin_path() == '/login':
+                    # return redirect('/login?err=1')
                     return api_check
                 g.api_request = True
             else:
@@ -265,23 +286,25 @@ class panelAdmin(panelSetup):
                     s_file = 'data/session/{}'.format(session['tmp_login_id'])
                     if session['tmp_login_expire'] < time.time():
                         if os.path.exists(s_file): os.remove(s_file)
-                        return self.to_login(public.get_admin_path(), 'The temporary login has expired, please log in again')
+                        return self.to_login(public.get_admin_path(),
+                                             'The temporary login has expired, please log in again')
                     if not os.path.exists(s_file):
-                        return self.to_login(public.get_admin_path(),'The temporary login has expired, please log in again')
+                        return self.to_login(public.get_admin_path(),
+                                             'The temporary login has expired, please log in again')
 
                 # 检查客户端hash -- 不要删除
                 if not public.check_client_hash():
-                    return self.to_login(public.get_admin_path(),'Client verification failed, please log in again')
+                    return self.to_login(public.get_admin_path(), 'Client verification failed, please log in again')
 
             if api_check:
                 now_time = time.time()
                 session_timeout = session.get('session_timeout', 0)
                 if session_timeout < now_time and session_timeout != 0:
-                    return self.to_login(public.get_admin_path(),"Login session has expired, please log in again")
+                    return self.to_login(public.get_admin_path(), "Login session has expired, please log in again")
 
             login_token = session.get('login_token', '')
             if login_token and login_token != public.get_login_token_auth():
-                return self.to_login(public.get_admin_path(),'Login verification failed, please log in again')
+                return self.to_login(public.get_admin_path(), 'Login verification failed, please log in again')
 
             # if api_check:
             #     filename = 'data/sess_files/' + public.get_sess_key()
@@ -296,8 +319,7 @@ class panelAdmin(panelSetup):
             public.print_log(public.get_error_info())
             public.print_error()
             public.print_log("except  Login has expired, please log in again")
-            return self.to_login('/login',' Login has expired, please log in again')
-
+            return self.to_login('/login', ' Login has expired, please log in again')
 
     def check_session(self):
         white_list = ['/favicon.ico', '/system?action=GetNetWork']

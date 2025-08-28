@@ -89,8 +89,8 @@ class Lang:
     server_extension = [".py"]                                              # 后端文件后缀
     server_path = ['class', 'class_v2', 'plugin', 'mod']                    # 后端代码 目录
     # client_path = "../BTPanel"
-    exec_path = '/www/server/panel/BTPanel/languages'                       # 语言包目录
-    panel_path = '/www/server/panel'                                        # 项目目录
+    exec_path = os.getcwd() # 语言包目录
+    panel_path = os.path.dirname(os.path.dirname(exec_path)) # 项目目录
 
 
 
@@ -306,7 +306,9 @@ class Lang:
 
 
 if __name__ == "__main__":
-    # 设置代理
+    # PS: 在项目目录/BTPanel/languages/lang.py 中运行此脚本
+    # 需要先安装 googletrans==4.0.0-rc1 和 requests
+    # 设置代理（如果你已在本机开启了系统代理，可以注释下面两行代码，否则将其设置为你的HTTP代理地址）
     os.environ["http_proxy"] = "http://192.168.168.162:7890"
     os.environ["https_proxy"] = "http://192.168.168.162:7890"
 

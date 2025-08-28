@@ -44,7 +44,6 @@ from .service import (
     generate_sites_task,
     find_site_with_domain,
     CertHandler,
-    sync_site_ssl,
     record_ensure,
     check_legal,
 )
@@ -478,9 +477,9 @@ class DomainObject:
             if update.get("status"):
                 return public.success_v2(public.lang("Update Successfully!"))
             else:
-                return public.fail_v2(public.lang(update.get("msg", "Update Failed...")))
+                return public.fail_v2(public.lang("Update Failed..."))
         except Exception as ex:
-            return public.fail_v2(public.lang(str(ex)))
+            return public.fail_v2(str(ex))
 
     # ========== 域名管理概况 SSL =======
     def list_domain_details(self, get):
@@ -699,7 +698,7 @@ class DomainObject:
             if domians_index in manual_apply.keys():
                 del manual_apply[domians_index]
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
-            return public.success_v2(public.lang(vaild.get("msg", "Apply Successfully!")))
+            return public.success_v2(public.lang("Apply Successfully!"))
 
         if vaild.get("status") is True:
             if domians_index in manual_apply.keys():
@@ -861,7 +860,7 @@ class DomainObject:
                 new_get.index = apply_res.get("index")
                 return acme_v2().get_order_detail(new_get)
             if apply_res.get("status") is False:
-                return public.fail_v2(public.lang(apply_res.get("msg", "Apply Failed!")))
+                return public.fail_v2(apply_res.get("msg", "Apply Failed!"))
             return public.success_v2(public.lang("Apply Successfully!"))
 
         return public.fail_v2(public.lang("Unknown Auth Type"))
@@ -1427,4 +1426,3 @@ def move_old_account():
 
 
 move_old_account()
-sync_site_ssl()

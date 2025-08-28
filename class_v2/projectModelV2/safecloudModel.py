@@ -3547,26 +3547,26 @@ class main(projectBase):
             if score >= 90:
                 return {
                     'level': 'Secure',
-                    'level_description': 'The current system security status is good, and there are no obvious vulnerabilities or risks'
+                    'level_description': public.lang('The current system security status is good, and there are no obvious vulnerabilities or risks')
                 }
             elif score >= 80:
                 return {
                     'level': 'Good',
-                    'level_description': 'There are certain security risks in the system, and some configurations or policies need to be improved'
+                    'level_description': public.lang('There are certain security risks in the system, and some configurations or policies need to be improved')
                 }
             elif score >= 60:
                 return {
                     'level': 'Medium',
-                    'level_description': 'The system has obvious security vulnerabilities, please fix them in time'
+                    'level_description': public.lang('The system has obvious security vulnerabilities, please fix them in time')
                 }
             else:
                 return {
                     'level': 'High',
-                    'level_description': 'The system is in a high-risk state, please repair the relevant risk items as soon as possible'
+                    'level_description': public.lang('The system is in a high-risk state, please repair the relevant risk items as soon as possible')
                 }
         except Exception as e:
             return {'level': 'Secure',
-                    'level_description': 'The current system security status is good, and there are no obvious vulnerabilities or risks'}
+                    'level_description': public.lang('The current system security status is good, and there are no obvious vulnerabilities or risks')}
 
     def _check_no_new_risks_days(self, days: int) -> bool:
         """检查指定天数内是否无新增风险
@@ -3618,7 +3618,7 @@ class main(projectBase):
             result = {
                 "score": 100,
                 "level": "Secure",
-                "level_description": "The current system security status is good, and there are no obvious vulnerabilities or risks",
+                "level_description":  public.lang("The current system security status is good, and there are no obvious vulnerabilities or risks"),
                 "risk_count": 0,
                 "protect_days": 1,
                 "virus_update_time": "",
@@ -3790,7 +3790,7 @@ class main(projectBase):
             return public.return_message(-1,0,{
                 "score": 100,
                 "level": "secure",
-                "level_description": "The current system security status is good, and there are no obvious vulnerabilities or risks",
+                "level_description":  public.lang("The current system security status is good, and there are no obvious vulnerabilities or risks"),
                 "risk_count": 0,
                 "protect_days": 1,
                 "virus_update_time": "",

@@ -157,7 +157,7 @@ class bt_task:
                     "kill -9 $(ps aux|grep '"+task_info['shell']+"'|grep -v grep|awk '{print $2}')")
 
             public.ExecShell("/etc/init.d/bt start")
-        return public.return_msg_gettext(True, public.lang("Task cancelled!"))
+        return public.return_message(0, 0,  public.lang("Task cancelled!"))
 
     # 取一条任务
     def get_task_find(self, id):
@@ -323,7 +323,7 @@ class bt_task:
             path = path.encode('utf-8')
         if sfile.find(',') == -1:
             if not os.path.exists(path+'/'+sfile):
-                return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
+                return public.return_message(-1, 0,  public.lang("Configuration file not exist"))
         # 处理多文件压缩
         sfiles = ''
         for sfile in sfile.split(','):
@@ -350,15 +350,15 @@ class bt_task:
                 self.install_7zip()
                 err_msg = 'The p7zip component is not installed, an automatic installation has been attempted, please wait a few minutes and try again!'
                 public.WriteLog("File manager","Failed to compress file, reason: {}, file: {}".format(err_msg,sfile))
-                return public.returnMsg(False, err_msg)
+                return public.return_message(-1, 0, err_msg)
             public.ExecShell("cd {} && {} a -t7z {} {} -y &> {}".format(path, _7z_bin, dfile, sfiles, log_file))
         else:
-            return public.return_msg_gettext(False, public.lang("Specified compression format is not supported!"))
+            return public.return_message(-1, 0, public.lang("Specified compression format is not supported!"))
 
         self.set_file_accept(dfile)
         #public.WriteLog("TYPE_FILE", 'Compression succeeded!', (sfiles, dfile),not_web = self.not_web)
         public.write_log_gettext("File manager", 'Compressed file [ {} ] to [ {} ] success', (sfiles, dfile))
-        return public.return_msg_gettext(True, public.lang("Compression succeeded!"))
+        return public.return_message(0, 0, public.lang("Compression succeeded!"))
 
     # 文件解压
     def _unzip(self, sfile, dfile, password, log_file):
@@ -366,7 +366,7 @@ class bt_task:
             sfile = sfile.encode('utf-8')
             dfile = dfile.encode('utf-8')
         if not os.path.exists(sfile):
-            return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
+            return public.return_message(-1, 0, public.lang("Configuration file not exist"))
 
         # 判断压缩包格式
         if sfile[-4:] == '.zip':
@@ -398,7 +398,7 @@ class bt_task:
                 self.install_7zip()
                 err_msg = 'The p7zip component is not installed, an automatic installation has been attempted, please wait a few minutes and try again!'
                 public.WriteLog("File manager","Failed to compress file, reason: {}, file: {}".format(err_msg,sfile))
-                return public.returnMsg(False, err_msg)
+                return public.return_message(-1, 0, err_msg)
             pass_opt = ""
             if password:
                 pass_opt = '-p"{}"'.format(password)
@@ -424,7 +424,7 @@ class bt_task:
             elif log_msg.find("gzip: stdin") != -1:
                 public.ExecShell("tar xvf '" + sfile + "' -C '" + dfile + "' &> " + log_file)
 
-        if err_msg: return public.returnMsg(False, err_msg)
+        if err_msg: return public.return_message(-1, 0, err_msg)
 
         # 检查是否设置权限
         if self.check_dir(dfile):
@@ -439,7 +439,7 @@ class bt_task:
 
         #public.WriteLog("TYPE_FILE", 'Uncompression succeeded!', (sfile, dfile),not_web = self.not_web)
         public.write_log_gettext("File manager", 'unzip file [ {} ] -> [ {} ] success', (sfile, dfile))
-        return public.return_msg_gettext(True, public.lang("Uncompression succeeded!"))
+        return public.return_message(0, 0,  public.lang("Uncompression succeeded!"))
 
     def get_7z_bin(self):
         '''

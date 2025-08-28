@@ -55,7 +55,20 @@ class Lang:
             @example lang('Hello {} {}', 'World', '!')
             @example lang('Hello')
         '''
-        hash = public.md5(content)
+        # 2025/08/13 修改翻译入口
+        try:
+            hash_ = public.md5(content)
+        except AttributeError:
+            try:
+                content = str(content)
+                hash_ = public.md5(content)
+            except:
+                raise Exception
+        except Exception:  # 避免500
+            if len(args) > 0:
+                content = content.format(*args)
+            return content
+
         lang = self.getLanguage()
         lang_file = os.path.join(self.getLanguagePath(),lang,'server.json')
         lang_data = {}
@@ -76,8 +89,8 @@ class Lang:
                 lang_data = {}
         
         lang_content = content
-        if lang_data.get(hash):
-            lang_content = lang_data[hash]
+        if lang_data.get(hash_):
+            lang_content = lang_data[hash_]
         if len(args) > 0:
             lang_content = lang_content.format(*args)
         return lang_content

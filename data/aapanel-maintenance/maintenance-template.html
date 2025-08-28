@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{TITLE}}</title>
+    <style>
+      :root {
+        --primary-color: #20a53a;
+        --primary-dark: #059669;
+        --primary-light: #34d399;
+        --text-color: #1f2937;
+        --text-light: #6b7280;
+        --text-muted: #9ca3af;
+        --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --card-bg: rgba(255, 255, 255, 0.85);
+        --card-border: rgba(255, 255, 255, 0.2);
+        --footer-bg: rgba(255, 255, 255, 0.9);
+        --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        --border-radius: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background: url({{BG}}) no-repeat center center fixed;
+        background-size: cover;
+        color: var(--text-color);
+        line-height: 1.6;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        font-size: 16px;
+        position: relative;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg-gradient);
+        opacity: 0.1;
+        z-index: -1;
+      }
+
+      .main-content {
+        flex: 1;
+        padding: 2rem 1rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .container {
+        background: rgba(33, 50, 69, 0.4);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-lg);
+        padding: 3rem 2.5rem;
+        text-align: center;
+        border: 1px solid var(--card-border);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        max-width: 1200px;
+      }
+
+      .container::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-color);
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+      }
+
+      .status-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-color);
+        border-radius: 50%;
+        box-shadow: var(--shadow-sm);
+        animation: pulse 2s infinite;
+      }
+
+      .status-icon i {
+        font-size: 2rem;
+        color: white;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      .main-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        padding-bottom: 1rem;
+        color: var(--text-color);
+        background: var(--primary-color);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.2;
+      }
+
+      .sub-text {
+        font-size: 1.1rem;
+        line-height: 1.7;
+        margin-bottom: 2.5rem;
+        font-weight: 400;
+        color: white;
+      }
+
+      .countdown {
+        max-width: 600px;
+        border-radius: 12px;
+        padding: 2rem 1.5rem;
+        margin: 2rem auto;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: block;
+        /* 确保默认显示 */
+      }
+
+      .countdown.hidden {
+        display: none !important;
+        /* 用于隐藏 */
+      }
+
+      .countdown-title {
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+        color: white;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .countdown-time {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        gap: 1rem;
+        justify-content: center;
+      }
+
+      .time-unit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem 0.5rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+      }
+
+      .time-unit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.2);
+      }
+
+      .time-value {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 2.2rem;
+        font-weight: 600;
+        line-height: 1;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+      }
+
+      .time-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .social-icons {
+        margin: 2.5rem 0 0;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        color: white;
+      }
+
+      .social-icons a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 8px;
+        background: #20a53a;
+        color: #ffffff;
+        transition: var(--transition);
+        text-decoration: none;
+      }
+
+      .social-icons a:hover {
+        background: #1d9534;
+        color: white;
+        transform: translateY(-3px);
+      }
+
+      .social-icons a i {
+        font-size: 1.2rem;
+      }
+
+      .login-link {
+        display: flex;
+        align-items: center;
+        color: white;
+        text-decoration: none;
+        transition: var(--transition);
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+      }
+
+      .login-link img {
+        height: 24px;
+        margin-right: 0.5rem;
+        border-radius: 4px;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .main-content {
+          padding: 1rem;
+        }
+
+        .container {
+          padding: 2rem 1.5rem;
+        }
+
+        .main-title {
+          font-size: 2rem;
+        }
+
+        .sub-text {
+          font-size: 1rem;
+        }
+
+        .status-icon {
+          width: 60px;
+          height: 60px;
+          margin-bottom: 1.5rem;
+        }
+
+        .status-icon i {
+          font-size: 1.5rem;
+        }
+
+        .time-value {
+          font-size: 1.8rem;
+        }
+
+        .countdown-time {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.75rem;
+        }
+
+        .time-unit {
+          padding: 0.75rem 0.5rem;
+        }
+
+        .footer-content {
+          flex-direction: column;
+          gap: 1rem;
+          text-align: center;
+          width: 90%;
+        }
+      }
+
+      /* 加载动画 */
+      .container {
+        animation: fadeInUp 0.8s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="main-content">
+      <div class="container">
+        <div class="status-icon">
+          <svg
+            class="icon"
+            width="48px"
+            height="48px"
+            viewBox="0 0 1024 1024"
+            version="1.1"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M585.6428032 285.25745493c12.77842773 84.4005376 78.9184512 150.7098624 163.2927744 163.69800534-4.3941888 0.36590933-8.82005333 0.54941013-13.27104 0.54941013a153.27341227 153.27341227 0 0 1-31.3065472-3.2473088l-38.76017493-8.1002496-28.00790187 28.00790187-374.8626432 374.90633386c-19.1070208 19.1463424-50.12084053 19.17801813-69.26390613 0.0688128-19.14743467-19.1070208-19.17801813-50.11647147-0.0688128-69.26390613L568.20804267 397.01490347l28.01117866-28.0068096-8.1002496-38.76563627a152.96211627 152.96211627 0 0 1-2.65857706-45.03197013m128.0049152-208.2799616c-4.24564053 0.0131072-8.4836352 0.34952533-12.67357014 1.0092544A223.42642347 223.42642347 0 0 0 516.63121067 345.0732544L141.81444267 719.93043627c-46.32958293 47.92101547-45.6884224 124.14266027 1.4450688 171.27615146 47.13567573 47.13130667 123.35295147 47.77683627 171.2750592 1.4450688L689.39502933 517.78901333a226.44217173 226.44217173 0 0 0 46.31210667 4.5744128c110.2020608 0.2392064 204.06490453-80.019456 220.95243947-188.91844266 4.5776896-30.43273387-7.41102933-47.77683627-23.42912-47.77683627a34.10274987 34.10274987 0 0 0-23.3897984 11.4393088l-44.7086592 44.7152128c-48.17660587 44.1024512-122.5162752 42.51757227-168.7748608-3.588096-46.2553088-46.1111296-48.07502507-120.44752213-4.1254912-168.7617536 43.94625707-48.31860053 20.04200107-19.95461973 44.70975146-44.7152128 22.15007573-22.15007573 11.12036693-47.86967893-23.56893013-47.86967893l0.09284267 0.0425984z m0 0"
+              fill="#ffffff"
+            />
+            <path
+              d="M228.12972373 765.6964096c-19.43033173 0.00764587-36.1463808 13.73525333-39.93545386 32.78984533-3.7879808 19.05568427 6.4126976 38.1321216 24.35863893 45.56936534 17.9503104 7.438336 38.65204053 1.16217173 49.4501888-14.98699094 10.79814827-16.15353173 8.68898133-37.68210773-5.04081067-51.4260992a40.55913813 40.55913813 0 0 0-28.8325632-11.94612053z m-11.9013376-460.71589547l141.1383296 141.18638934 57.57228374-57.6192512L273.84763733 247.40932267l-31.6243968-60.40999254-100.77252266-71.9880192L83.83146667 172.58359467l71.9880192 100.81949013 60.40890026 31.57742933z m472.29392214 299.4864128c-7.95170133-7.9429632-20.83170987-7.9429632-28.78450347 0l-86.49550507 86.40375467c-7.9429632 7.95170133-7.9429632 20.83607893 0 28.78450347l203.79183787 203.79511466a81.46670933 81.46670933 0 0 0 79.16202667 22.08453974 81.46343253 81.46343253 0 0 0 36.0251392-137.27716694L688.52230827 604.46692693z m0 0"
+              fill="#ffffff"
+            />
+          </svg>
+        </div>
+
+        <h1 class="main-title">{{BIG_TEXT}}</h1>
+        <p class="sub-text">{{SMALL_TEXT}}</p>
+
+        <div class="countdown" id="countdown-container">
+          <div class="countdown-title">Estimated recovery time</div>
+          <div class="countdown-time" id="countdown"></div>
+        </div>
+
+        <div class="social-icons">{{SOCIAL_LINKS}}</div>
+      </div>
+    </main>
+
+    <script>
+      // 页面加载完成后执行
+      document.addEventListener("DOMContentLoaded", () => {
+        // 处理时间戳
+        processTimestamp();
+
+        // 设置当前年份
+        setCurrentYear();
+      });
+
+      // 处理时间戳并计算倒计时
+      function processTimestamp() {
+        // 从模板变量获取时间戳字符串
+        const timestampString = "{{TIMES}}";
+
+        // 检查时间戳是否存在且有效
+        if (timestampString) {
+          try {
+            const countdownContainer = document.getElementById(
+              "countdown-container"
+            );
+            let timestamp = parseInt(timestampString.trim());
+            if (timestamp.toString().length === 10) {
+              timestamp = timestamp * 1000;
+            }
+
+            // 将时间戳转换为日期对象
+            const targetTime = new Date(timestamp);
+            const now = new Date();
+
+            // 验证日期是否有效
+            if (isNaN(targetTime.getTime())) {
+              countdownContainer.classList.add("hidden");
+              return;
+            }
+
+            // 如果目标时间已过，则不显示倒计时
+            if (targetTime <= now) {
+              countdownContainer.classList.add("hidden");
+              return;
+            }
+
+            // 确保显示倒计时容器
+            countdownContainer.classList.remove("hidden");
+            countdownContainer.style.display = "block";
+
+            // 立即更新一次倒计时显示
+            updateCountdown(targetTime);
+
+            // 开始倒计时
+            const countdownInterval = setInterval(() => {
+              const currentTime = new Date();
+
+              // 如果倒计时结束，清除定时器
+              if (targetTime <= currentTime) {
+                clearInterval(countdownInterval);
+                countdownContainer.classList.add("hidden");
+                return;
+              }
+
+              updateCountdown(targetTime);
+            }, 1000);
+          } catch (error) {
+            const countdownContainer = document.getElementById(
+              "countdown-container"
+            );
+            if (countdownContainer) {
+              countdownContainer.classList.add("hidden");
+            }
+          }
+        } else {
+          // 如果没有提供时间戳，则隐藏倒计时容器
+          const countdownContainer = document.getElementById(
+            "countdown-container"
+          );
+          if (countdownContainer) {
+            countdownContainer.classList.add("hidden");
+          }
+        }
+      }
+
+      // 设置当前年份
+      function setCurrentYear() {
+        const currentYear = new Date().getFullYear();
+        document.getElementById(
+          "copyright"
+        ).innerHTML = `&copy; ${currentYear}`;
+      }
+
+      // 更新倒计时显示
+      function updateCountdown(targetTime) {
+        const countdownElement = document.getElementById("countdown");
+        if (!countdownElement) {
+          console.error("找不到倒计时显示元素");
+          return;
+        }
+
+        const now = new Date();
+
+        // 计算剩余时间（毫秒）
+        let remainingTime = targetTime - now;
+
+        // 如果剩余时间小于等于0，则倒计时结束
+        if (remainingTime <= 0) {
+          countdownElement.innerHTML =
+            '<div class="time-unit"><div class="time-value">Expired</div><div class="time-label">Expired</div></div>';
+          return;
+        }
+
+        // 计算剩余的天、小时、分钟和秒数
+        const totalSeconds = Math.floor(remainingTime / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        // 格式化时间
+        let timeDisplay = "";
+
+        if (days > 0) {
+          timeDisplay += `<div class="time-unit"><div class="time-value">${days}</div><div class="time-label">Days</div></div>`;
+        }
+
+        timeDisplay += `<div class="time-unit"><div class="time-value">${hours
+          .toString()
+          .padStart(2, "0")}</div><div class="time-label">Hours</div></div>`;
+        timeDisplay += `<div class="time-unit"><div class="time-value">${minutes
+          .toString()
+          .padStart(2, "0")}</div><div class="time-label">Minutes</div></div>`;
+        timeDisplay += `<div class="time-unit"><div class="time-value">${seconds
+          .toString()
+          .padStart(2, "0")}</div><div class="time-label">Seconds</div></div>`;
+
+        // 更新显示
+        countdownElement.innerHTML = timeDisplay;
+
+        // 第一次更新时输出调试信息
+        if (!updateCountdown.hasLogged) {
+          updateCountdown.hasLogged = true;
+        }
+      }
+    </script>
+  </body>
+</html>

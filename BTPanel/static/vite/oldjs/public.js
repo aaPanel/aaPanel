@@ -1618,7 +1618,7 @@ var aceEditor = {
 	},
 	// 渲染文件列表
 	reader_file_dir_menu: function (obj, callback) {
-		var _path = getCookie('Path'),
+		var _path = getCookie('FileEditorPath'),
 			_this = this;
 		if (obj === undefined) obj = {};
 		if (obj['el'] === undefined) obj['el'] = '.cd-accordion-menu';
@@ -3978,7 +3978,7 @@ function setSelectChecked(c, d) {
 // GetTaskCount();
 
 function RecInstall() {
-	$.getScript('jquery.fly.min.js.js?v=1753954525509');
+	$.getScript('jquery.fly.min.js.js?v=1756367574781');
 	$.post('/ajax?action=GetSoftList', '', function (l) {
 		var c = '';
 		var g = '';
@@ -5632,12 +5632,12 @@ var Term = {
 	//     var termRows = 34;
 	//     var loadT = layer.msg('It is loading the files required by the terminal. Please wait...', { icon: 16, time: 0, shade: 0.3 });
 	//     loadScript([
-	//         "/static/build/xterm.min.js?v=1753954525509",
-	//         "/static/build/addons/attach/attach.min.js?v=1753954525509",
-	//         "/static/build/addons/fit/fit.min.js?v=1753954525509",
-	//         "/static/build/addons/fullscreen/fullscreen.min.js?v=1753954525509",
-	//         "/static/build/addons/search/search.min.js?v=1753954525509",
-	//         "/static/build/addons/winptyCompat/winptyCompat.js?v=1753954525509"
+	//         "/static/build/xterm.min.js?v=1756367574781",
+	//         "/static/build/addons/attach/attach.min.js?v=1756367574781",
+	//         "/static/build/addons/fit/fit.min.js?v=1756367574781",
+	//         "/static/build/addons/fullscreen/fullscreen.min.js?v=1756367574781",
+	//         "/static/build/addons/search/search.min.js?v=1756367574781",
+	//         "/static/build/addons/winptyCompat/winptyCompat.js?v=1756367574781"
 	//     ], function () {
 	//         layer.close(loadT);
 	//         Term.term = new Terminal({ cols: termCols, rows: termRows, screenKeys: true, useStyle: true });
@@ -5648,8 +5648,8 @@ var Term = {
 	//             area: ['920px', '630px'],
 	//             closeBtn: 2,
 	//             shadeClose: false,
-	//             content: '<link rel="stylesheet" href="/static/build/xterm.min.css?v=1753954525509" />\
-	// 					<link rel="stylesheet" href="/static/build/addons/fullscreen/fullscreen.min.css?v=1753954525509" />\
+	//             content: '<link rel="stylesheet" href="/static/build/xterm.min.css?v=1756367574781" />\
+	// 					<link rel="stylesheet" href="/static/build/addons/fullscreen/fullscreen.min.css?v=1756367574781" />\
 	//             <a class="btlink" onclick="show_ssh_login(1)" style="position: fixed;margin-left: 83px;margin-top: -30px;">[' + lan.public.set + ']</a>\
 	//             <div class="term-box" style="background-color:#000"><div id="term"></div></div>',
 	//             cancel: function () {
@@ -5679,7 +5679,7 @@ var Term = {
 		// 	return;
 		// }
 		var loadT = layer.msg('It is loading the files required by the terminal. Please wait...', { icon: 16, time: 0, shade: 0.3 });
-		loadScript(['/static/js/xterm.js?v=1753954525509'], function () {
+		loadScript(['/static/js/xterm.js?v=1756367574781'], function () {
 			layer.close(loadT);
 			Term.term = new Terminal({
 				rendererType: 'canvas',
@@ -5699,7 +5699,7 @@ var Term = {
 				shadeClose: false,
 				skin: 'term_box_all',
 				content:
-					'<link rel="stylesheet" href="/static/css/xterm.css?v=1753954525509" />\
+					'<link rel="stylesheet" href="/static/css/xterm.css?v=1756367574781" />\
 	            <div class="term-box" style="background-color:#000;padding-top: 7px;" id="term"></div>',
 				cancel: function (index, lay) {
 					bt.confirm(

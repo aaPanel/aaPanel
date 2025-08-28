@@ -30,6 +30,7 @@ class main():
     key_path = '{}/vhost.key'.format(cert_path)
     not_auto_ssl_file= '{}/vhost_virtual/config/not_auto_ssl.pl'.format(setup_path)
     server_ip_file = '{}/vhost_virtual/config/server_ip.pl'.format(setup_path)
+    server_port_file = '{}/vhost_virtual/config/server_port.pl'.format(setup_path)
     server_domain_file = '{}/vhost_virtual/config/server_domain.pl'.format(setup_path)
     close_ssl_file= '{}/vhost_virtual/config/close_ssl.pl'.format(setup_path)
     not_accept_port_file = '{}/vhost_virtual/config/not_accept_port.pl'.format(setup_path)
@@ -47,53 +48,127 @@ class main():
         """
         return {"status":status,"code":code,"msg":msg,"error_msg":error_msg,"message":data}
 
-    def forward_request(self,args,url):
+    def forward_request(self, args: any, url_path: str) -> dict[str, any]:
         """
-        @name 请求虚拟空间平台数据
+        请求虚拟空间平台数据
+
+        @param args: 请求参数对象（需包含 get_items() 方法获取请求体）
+        @param url_path: 接口路径（如 "account/get_type_list"）
+        @return: 接口响应结果（成功返回 JSON 数据，失败返回统一错误格式）
         """
+        # 1. 前置检查：服务是否已启动
         if not self.get_service_status_achieve():
-            return self.return_message_vhost(-1, 500,public.lang("Account service not started, please start the service first"),"",{})
-        #携带"access_token"请求头
-        access_token = public.ReadFile("/www/server/vhost_virtual/data/config/local_access_token.pl")
+            error_msg = public.lang("Account service not started, please start the service first")
+            return self.return_message_vhost(-1, 500, error_msg, "", {})
+
+        # 2. 获取请求头：access_token
+        access_token = public.ReadFile("/www/server/vhost_virtual/data/config/local_access_token.pl") or ""
+
+        # 3. 读取配置：确定请求协议（HTTP/HTTPS）和端口后缀
+        protocol, port_suffix = self._get_vhost_protocol_and_port()
+
+        # 4. 确定请求主机地址
+        request_host = self._get_request_host()
+
+        # 5. 构造完整请求 URL
+        full_url = f"{protocol}://{request_host}{port_suffix}/{url_path}"
+        public.print_log(f"vhost---------Constructed request URL: {full_url}")  # 增强日志上下文
+
+        # 6. 发送 POST 请求并处理响应
+        try:
+            # 发送请求（超时30s，跳过SSL验证，携带access_token头）
+            response = requests.post(
+                url=full_url,
+                data=args.get_items(),
+                timeout=30,
+                headers={"access_token": access_token},
+                verify=False
+            )
+            # 处理正常响应
+            response.raise_for_status()  # 自动抛出 HTTP 错误（如404、500）
+            return response.json()
+
+        # 捕获请求相关异常（细分异常类型，便于排查）
+        except requests.exceptions.Timeout:
+            error_msg = "Request timed out (timeout: 30s)"
+            public.print_log(f"vhost---------Error: {error_msg}, URL: {full_url}")
+            return self.return_message_vhost(-1, 500, error_msg, error_msg, {})
         
-        if not access_token:
-            access_token = ""
-        vhost_port = ":8000"
-        http_control = "http"
-        with open(self.default_yaml, 'r') as file:
-            self.data=yaml.safe_load(file)
-            try:
-                if self.data["server"].get("address"):
-                    vhost_port=self.data["server"]["address"]
-                if self.data["server"].get("httpsAddr"):
-                    vhost_port = self.data["server"]["httpsAddr"]
-                    http_control = "https"
-            except Exception as e:
-                public.print_log("e--------------:{}".format(e))
-        # 请求 URL
-        # url = http_control+'://'+ public.GetHost()+vhost_port+'/'+url
-        host="127.0.0.1"
-        host_file="/www/server/panel/data/domain.conf"
-        if os.path.exists(host_file) and os.path.exists(self.server_domain_file):
-            host=public.ReadFile(host_file)
-            if not host or host.strip()=="":
-                host="127.0.0.1"
-            else:
-                 host=host.strip()
-        url = http_control+'://'+host+vhost_port+'/'+url
-        # public.print_log("url:{}".format(url))
-        # 发起请求
-        response = requests.request(
-            method="post",
-            url=url,
-            headers={'access_token': access_token},
-            json=args.get_items(),
-            verify=False,
-        )
-        if response.status_code == 200:
-            return  response.json()
-        else:
-            return self.return_message_vhost(-1, 500,public.lang("Request failed"),"",{})
+        except requests.exceptions.HTTPError as e:
+            error_msg = f"HTTP request failed (status: {e.response.status_code})"
+            public.print_log(f"vhost---------Error: {error_msg}, URL: {full_url}, Details: {str(e)}")
+            return self.return_message_vhost(-1, 500, error_msg, str(e), {})
+        
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Request failed: {str(e)}"
+            public.print_log(f"vhost---------Error: {error_msg}, URL: {full_url}")
+            return self.return_message_vhost(-1, 500, error_msg, str(e), {})
+
+    def _get_vhost_protocol_and_port(self) -> tuple[str, str]:
+        """
+        私有辅助方法：从配置文件读取虚拟主机的请求协议（HTTP/HTTPS）和端口后缀（如 ":8001"）
+        @return: (protocol: str, port_suffix: str)
+        """
+        # 默认配置：HTTP + 8000端口
+        protocol = "http"
+        port_suffix = ":8000"
+
+        # 1. 读取主配置文件（yaml）
+        try:
+            with open(self.default_yaml, "r", encoding="utf-8") as f:  # 指定编码，避免乱码
+                config_data = yaml.safe_load(f) or {}
+                server_config = config_data.get("server", {})
+
+                # 优先使用 HTTPS 端口（若配置存在）
+                https_port = server_config.get("httpsAddr", "")
+                if https_port:
+                    protocol = "https"
+                    port_suffix = https_port
+                # 若HTTPS未配置，使用HTTP端口
+                else:
+                    http_port = server_config.get("address", "")
+                    if http_port:
+                        port_suffix = http_port
+
+        # 配置文件读取失败：沿用默认配置，打印日志
+        except FileNotFoundError:
+            public.print_log(f"vhost---------Config file not found: {self.default_yaml}, use default port")
+        except yaml.YAMLError as e:
+            public.print_log(f"vhost---------YAML parse error: {str(e)}, use default port")
+        except Exception as e:
+            public.print_log(f"vhost---------Unknown error when reading config: {str(e)}, use default port")
+
+        # 2. 读取自定义端口文件（优先级高于主配置）
+        try:
+            if os.path.exists(self.server_port_file):
+                custom_port = public.readFile(self.server_port_file).strip()  # 去空格，避免无效字符
+                if custom_port and custom_port.isdigit():  # 验证端口合法性（数字）
+                    port_suffix = f":{custom_port}"
+                    public.print_log(f"vhost---------Use custom port: {custom_port}")
+        except Exception as e:
+            public.print_log(f"vhost---------Error reading custom port file: {str(e)}")
+
+        return protocol, port_suffix
+
+    def _get_request_host(self) -> str:
+        """
+        私有辅助方法：确定请求的主机地址（优先从配置文件读取，默认 127.0.0.1）
+        @return: request_host: str
+        """
+        default_host = "127.0.0.1"
+        host_file = "/www/server/panel/data/domain.conf"
+        server_domain_file = self.server_domain_file  # 假设已在类中定义
+
+        # 检查配置文件是否存在（需同时满足两个文件存在才读取）
+        if not (os.path.exists(host_file) and os.path.exists(server_domain_file)):
+            public.print_log(f"vhost---------Host config file missing, use default host: {default_host}")
+            return default_host
+
+        # 读取并清理主机地址
+        host = public.ReadFile(host_file).strip()
+        return host if host else default_host
+        
+        
 
     def account(self,args):
         """
@@ -351,7 +426,20 @@ class main():
         if not ver:
             ver = '1.0.0'
 
-        return public.return_message(0, 0, {'install_status': install_status,"run_status":run_status, "version": ver})
+        #当已经安装服务，取端口
+        server_port="50443"
+        if install_status==2 and self.check_version(ver, '2.1.9'):
+            server_port = public.readFile(self.server_port_file)
+            if  server_port:
+                server_port = server_port.strip()
+            # else:
+            #     #获取不到端口，则自动修复 
+            #     execstr="cd /www/server/panel/install && /bin/bash vhost_virtual.sh"
+            #     public.M('tasks').add('id,name,type,status,addtime,execstr',(None, 'Install [vhost_virtual-1.0]','execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
+            #     public.writeFile('/tmp/panelTask.pl','True')
+
+        return public.return_message(0, 0, {'install_status': install_status,"run_status":run_status, "version": ver,"server_port":server_port})
+
 
     #获取虚拟空间安装进度
     def get_install_log(self,args):
@@ -588,7 +676,69 @@ class main():
         
         return self.return_message_vhost(0, 200, "获取成功","",{"ip":ip,"domain":domain,"protocol":protocol,"port":port})
 
+    #自定义端口
+    def modify_service_port(self,args):
+        """
+        @修改服务端口
+        """
+        # 校验参数
+        try:
+            args.validate([
+                Param('port').Require().Number(">=", 1).Number("<=", 65535),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+        #默认端口检测
+        ports = ['21','22', '25', '80', '443', '8080', '888', '8888', '7800']
+        if args.port in ports:
+            return public.return_message(-1, 0, public.lang("Do NOT use common default port!"))
+        #检测新旧端口是否一致
+        server_port = public.readFile(self.server_port_file)
+        if not server_port:
+            return public.return_message(-1, 0, "Port acquisition exception, please restart the service and try again")
+        if args.port == server_port:
+            return public.return_message(-1, 0, "The old and new port are consistent and have not been modified")
+            
+        #端口占用检测
+        if self.IsOpen(args.port): 
+            return public.return_message(-1, 0,'This port is already occupied, please modify your project port, port: {}'.format(args.port))
+        # 添加放行端口
+        import firewalls
+        args.ps = "vhost virtual service"
+        firewalls.firewalls().AddAcceptPort(args)
+        public.WriteFile(self.server_port_file,args.port)
+        public.ExecShell('systemctl restart vhost_virtual.service')
+        public.ExecShell('/www/server/v-apache/bin/apachectl graceful')
+        return public.return_message(0, 0, public.lang('Operation executed'))
+    
 
+    def IsOpen(self,port):
+        #检查端口是否占用
+        if not port: return False
+        import socket
+        s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        try:
+            s.connect(('127.0.0.1',int(port)))
+            s.shutdown(2)
+            return True
+        except:
+            return False
+    
 
+     # 查看子面板版本并比较  低于指定版本 禁止使用
+    def check_version(self,cur_ver, min_ver):
+        cur_major, cur_minor, cur_patch = map(int, cur_ver.split('.'))
+        min_major, min_minor, min_patch = map(int, min_ver.split('.'))
+        if cur_major < min_major:
+            return False
 
+        if cur_major == min_major and cur_minor < min_minor:
+            return False
 
+        if cur_major == min_major and cur_minor == min_minor and cur_patch < min_patch:
+            return False
+
+        return True

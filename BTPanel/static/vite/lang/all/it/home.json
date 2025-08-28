@@ -248,5 +248,17 @@
 	"397abe6f2839e9bc48d5a8b06bf66927": "Rilevamento della sicurezza del server",
 	"495c55c275d09a00aaeb7482365ab300": "Scansione",
 	"8875e9cace6c0f3bb7f2cf1581f2ef82": "Articolo privo di rischio",
-	"05f685d0d76a49eef2dd90aff3f311ed": "In attesa di scansione"
+	"05f685d0d76a49eef2dd90aff3f311ed": "In attesa di scansione",
+	"bc44b6b4fc2bf0b74ca3aa0cf0f64f12": "Spazio su disco:",
+	"a1fa27779242b4902f7ae3bdd5c6d508": "Tipo",
+	"0bc0058b2b986d2f1a1c89a94d6bfda6": "Punto di montaggio",
+	"78945de8de090e90045d299651a68a9b": "Disponibile",
+	"96b0141273eabab320119c467cdcaf17": "Totale",
+	"019d1ca7d50cc54b995f60d456435e87": "Usato",
+	"a45da96d0bf6575970f2d27af22be28a": "Sistema",
+	"53b936091a984a22f4042eeb94499891": "File system",
+	"20ccc0b936ae721235fbb251882e09af": "Inodi totali",
+	"921fd067f5f59d36f697493e0b0e7f97": "Uso usato",
+	"ea211fd1ca41812bd3e73d8b1bb57504": "Disponibile inodo",
+	"9dd90affd6244a7fc2f09dc8fb7a0551": "Uso inodo"
 }

@@ -542,8 +542,7 @@ class database(datatool.datatools):
             mysql_obj.execute("DROP USER `{}`@`localhost`".format(username))
             for a in address.split(','):
                 mysql_obj.execute("DROP USER `{}`@`localhost`".format(username, a))
-
-            self.__CreateUsers(data_name, username, password, address, ssl)
+                self.__CreateUsers(data_name, username, password, a)
 
             if get['ps'] == '': get['ps'] = public.lang('Edit notes')
             get['ps'] = public.xssencode2(get['ps'])
@@ -994,32 +993,35 @@ SetLink
 
     # 删除数据库到回收站
     def DeleteToRecycleBin(self, name):
-        import json
+        Recycle_path = '/www/.Recycle_bin/'
+
         data = public.M('databases').where(
             "name=? AND LOWER(type)=LOWER('mysql') AND sid=0", (name,)
         ).field('id,pid,name,username,password,accept,ps,addtime').find()
         if not data:
             return public.fail_v2("database not found!")
         username = data['username']
+
         mysql_obj = panelMysql.panelMysql()
-        mysql_obj.execute("drop user '" + username + "'@'localhost'")
-        users = mysql_obj.query("select Host from mysql.user where User='{}';".format(username))
-        if isinstance(users, list):
-            for host in users:
+
+        user_host = mysql_obj.query("select Host from mysql.user where User='{}';".format(username))
+        if isinstance(user_host, list):
+            for host in user_host:
                 mysql_obj.execute("DROP USER `{}`@`{}`;".format(username, host[0]))
+
         mysql_obj.execute("flush privileges")
 
-        rPath = '/www/.Recycle_bin/'
         data['rmtime'] = int(time.time())
         u_name = self.db_name_to_unicode(name)
-        rm_path = '{}/BTDB_{}_t_{}'.format(rPath, u_name, data['rmtime'])
+        rm_path = os.path.join(Recycle_path, "BTDB_{}_t_{}".format(u_name, data['rmtime']))
 
         idx = 1
         while os.path.exists(rm_path):
-            rm_path = os.path.join(rPath, "BTDB_{}_t_{}({})".format(u_name, data['rmtime'], idx))
+            rm_path = os.path.join(Recycle_path, "BTDB_{}_t_{}({})".format(u_name, data['rmtime'], idx))
             idx += 1
 
         rm_config_file = os.path.join(rm_path, "config.json")
+
         datadir = public.get_datadir()
         db_path = os.path.join(datadir, u_name)
         if not os.path.exists(db_path):
@@ -1040,18 +1042,18 @@ SetLink
             data = json.loads(public.readFile(filename))
             if public.M('databases').where("name=? AND LOWER(type)=LOWER('mysql')", (data['name'],)).count():
                 os.remove(filename)
-                return public.return_msg_gettext(True, public.lang("Successfully deleted"))
+                return public.return_message(0, 0, public.lang("Successfully deleted"))
         else:
             if os.path.exists(filename):
                 try:
                     data = json.loads(public.readFile(os.path.join(filename, "config.json")))
                 except:
-                    return public.returnMsg(False, "Recycle Bin does not exist for this database!")
+                    return public.return_message(-1, 0, "Recycle Bin does not exist for this database!")
 
         mysql_obj = panelMysql.panelMysql()
         databases_tmp = mysql_obj.query('show databases')
         if not isinstance(databases_tmp, list):
-            return public.returnMsg(False, "Connect database fail!")
+            return public.return_message(-1, 0, "Connect database fail!")
 
         flag = False
         for i in databases_tmp:
@@ -1068,7 +1070,8 @@ SetLink
             result = mysql_obj.execute("DROP database  `{}`;".format(data['name']))
             isError = self.IsSqlError(result)
             if isError is not None:
-                return isError
+                # return isError
+                return public.return_message(-1, 0, isError)
             user_host = mysql_obj.query("select Host from mysql.user where User='{}';".format(data["username"]))
             if isinstance(user_host, list):
                 for host in user_host:
@@ -1085,7 +1088,7 @@ SetLink
             public.write_log_gettext("Database manager", 'Successfully deleted database [{}]!', (data['name'],))
         except:
             pass
-        return public.return_msg_gettext(True, public.lang("Successfully deleted"))
+        return public.return_message(0, 0, public.lang("Successfully deleted"))
 
     # 恢复数据库
     def RecycleDB(self, filename):
@@ -1099,22 +1102,21 @@ SetLink
             u_name = self.db_name_to_unicode(data['name'])
             db_path = os.path.join(public.get_datadir(), u_name)
             if os.path.exists(db_path):
-                return public.return_msg_gettext(False, public.lang("There is a database with the same name in the current database. To ensure data security, stop recovery!"))
+                return public.return_message(-1, 0, public.lang("There is a database with the same name in the current database. To ensure data security, stop recovery!"))
             _isdir = True
-
         db_info = public.M('databases').where("name=? AND LOWER(type)=LOWER('mysql')", (data['name'],)).find()
         if db_info:
             if db_info["db_type"] != 0 or db_info["sid"] != 0:
-                return public.return_msg_gettext(False, "Database recovery failed! A remote database with the same name already exists.")
+                return public.return_message(-1, 0, "Database recovery failed! A remote database with the same name already exists.")
             if not _isdir: os.remove(filename)
-            return public.returnMsg(True, 'RECYCLEDB')
+            return public.return_message(0, 0, 'Recycling Database')
 
         if not _isdir:
             os.remove(filename)
         else:
             public.ExecShell('mv -f {} {}'.format(filename, db_path))
             if not os.path.exists(db_path):
-                return public.return_msg_gettext(False, 'Database recovery failed!')
+                return public.return_message(-1, 0,'Database recovery failed!')
 
             db_config_file = os.path.join(db_path, "config.json")
             if os.path.exists(db_config_file): os.remove(db_config_file)
@@ -1123,12 +1125,13 @@ SetLink
             public.ExecShell("chown -R mysql:mysql {}".format(db_path))
             public.ExecShell("chmod -R 660 {}".format(db_path))
             public.ExecShell("chmod  700 {}".format(db_path))
-
+        self.sid = 0
         self.__CreateUsers(data['name'], data['username'], data['password'], data['accept'])
-        public.M('databases').add('id,pid,name,username,password,accept,ps,addtime', (
-        data['id'], data['pid'], data['name'], data['username'], data['password'], data['accept'], data['ps'],
-        data['addtime']))
-        return public.return_msg_gettext(True, public.lang("Database recovered!"))
+        public.M('databases').add(
+            'id,pid,name,username,password,accept,ps,addtime',
+            (data['id'], data['pid'], data['name'], data['username'], data['password'], data['accept'], data['ps'], data['addtime'])
+        )
+        return public.success_v2(public.lang("Database recovered!"))
 
     # 设置ROOT密码
     def SetupPassword(self, get):
@@ -1543,7 +1546,7 @@ SetLink
             public.ExecShell("echo '=====================================================' >> /tmp/backup_sql_{}.log".format(db_id))
             public.ExecShell("echo 'Database Backup successful!' >> /tmp/backup_sql_{}.log".format(db_id))
 
-            public.WriteLog("TYPE_DATABASE", "DATABASE_BACKUP_SUCCESS", (db_name,))
+            public.WriteLog("TYPE_DATABASE", public.lang("Backup database [{}] succeed!", db_name))
             return public.return_message(0, 0, "BACKUP_SUCCESS")
         except Exception as e:
             return public.return_message(-1, 0, str(e))
@@ -1905,7 +1908,7 @@ SetLink
         # 清理导入临时目录
         if is_zip is True:
             public.ExecShell("rm -rf '{input_dir}'".format(input_dir=input_dir))
-        public.WriteLog("TYPE_DATABASE", "DATABASE_INPUT_SUCCESS", (db_name,))
+        public.WriteLog("TYPE_DATABASE", public.lang("Successfully imported database [{}]".format(db_name)))
         public.ExecShell("echo 'Database recovery successful!' >> /tmp/import_sql.log")
         return public.return_message(0, 0, "DATABASE_INPUT_SUCCESS")
 
@@ -1970,7 +1973,7 @@ SetLink
                 if match:
                     result = match.group(0)
                     db_name = result.split("：")[-1].strip()
-                    import_p = public.ExecShell("ps -ef|grep mysql|grep '\-\-force'|grep '{}$'".format(db_name))
+                    import_p = public.ExecShell(r"ps -ef|grep mysql|grep '\-\-force'|grep '{}$'".format(db_name))
                     if import_p[0]:
                         data['db_name'] = db_name
                     else:
@@ -2714,7 +2717,7 @@ SetLink
             # public.ExecShell("rm -f {}/mysql-bin.*".format(mysql_data_dir))
         else:  # 开启 binlog 日志
             if re.search(r"\n#\s*log-bin", mysql_cnf):
-                mysql_cnf = re.sub("\n#\s*log-bin", "\nlog-bin", mysql_cnf)
+                mysql_cnf = re.sub(r"\n#\s*log-bin", r"\nlog-bin", mysql_cnf)
             else:
                 if not re.search(r"\n\s*log-bin", mysql_cnf):
                     mysql_cnf = re.sub(r"\[mysqld]", "[mysqld]\nlog-bin=mysql-bin", mysql_cnf)
@@ -3355,7 +3358,7 @@ SetLink
         last_access_list = []
         for access_item in access_data:
             re_obj = re.search(
-                "GRANT\s*([^.]+)\s*ON\s*([^.]+)\.([^.]+)\s*TO", access_item[0], flags=re.IGNORECASE
+                r"GRANT\s*([^.]+)\s*ON\s*([^.]+)\.([^.]+)\s*TO", access_item[0], flags=re.IGNORECASE
             )
             if re_obj:
                 access_str = re_obj.group(1)

@@ -240,5 +240,13 @@
 	"e4ef6c0561888c0c1b81d3392adc35d4": "服務器安全檢測",
 	"8fa855d9696e0933a1fd1cc9e5c557c3": "正在掃描",
 	"0e2aac4e9dd642a942ab66cd15f7c501": "無風險項",
-	"6695ef780c02ce031067b871b5eced8c": "等待掃描"
+	"6695ef780c02ce031067b871b5eced8c": "等待掃描",
+	"226b0912184333c81babf2f1894ec0c1": "類型",
+	"1c61dfb86fe293d129eb8b2d1bffb7dd": "掛載點",
+	"ad6b70383f0ecebbd9d2f23b95b04d26": "可用",
+	"249c1fd8d11e0520d833605f2a99bda5": "總共",
+	"0cdb5ef2906cbe03a6d922c5192461d1": "已用",
+	"b4e642bf94d358d05d0efa929610f3c7": "系統佔用",
+	"8dc8bbbc206dfad6ccf6d358ebdb1f73": "文件系統",
+	"41d8b22480ee21ac3dc810dec0a07f24": "使用率"
 }

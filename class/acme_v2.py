@@ -373,28 +373,7 @@ class acme_v2:
 
     # 取根域名和记录值
     def extract_zone(self, domain_name):
-        top_domain_list = public.readFile('{}/config/domain_root.txt'.format(public.get_panel_path()))
-        if top_domain_list:
-            top_domain_list = top_domain_list.strip().split('\n')
-        else:
-            top_domain_list = []
-        old_domain_name = domain_name
-        top_domain = "." + ".".join(domain_name.rsplit('.')[-2:])
-        new_top_domain = "." + top_domain.replace(".", "")
-        is_tow_top = False
-        if top_domain in top_domain_list:
-            is_tow_top = True
-            domain_name = domain_name[:-len(top_domain)] + new_top_domain
-
-        if domain_name.count(".") > 1:
-            zone, middle, last = domain_name.rsplit(".", 2)
-            if is_tow_top:
-                last = top_domain[1:]
-            root = ".".join([middle, last])
-        else:
-            zone = ""
-            root = old_domain_name
-        return root, zone
+        return public.split_domain_sld(domain_name)
 
     # 自动构造通配符
     def auto_wildcard(self, domains):

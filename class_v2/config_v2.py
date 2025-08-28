@@ -6,23 +6,29 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
-import base64
 import public, re, os, nginx, apache, json, time, ols
 from public.validate import Param
-import shutil
-import zipfile
 try:
     import pyotp
 except:
     public.ExecShell("pip install pyotp &")
 try:
-    from BTPanel import session, admin_path_checks, g, request, cache
+    from BTPanel import (
+        session,
+        admin_path_checks,
+        g,
+        request,
+        cache,
+        PANEL_DEFAULT_ASSET,
+    )
     import send_mail
 except:
     pass
 
 
 class config:
+    __mail_list = []
+    __weixin_user = []
     _setup_path = "/www/server/panel"
     _key_file = _setup_path + "/data/two_step_auth.txt"
     _bk_key_file = _setup_path + "/data/bk_two_step_auth.txt"
@@ -31,8 +37,8 @@ class config:
     __mail_config = _setup_path + '/data/stmp_mail.json'
     __mail_list_data = _setup_path + '/data/mail_list.json'
     __dingding_config = _setup_path + '/data/dingding.json'
-    __mail_list = []
-    __weixin_user = []
+    __panel_asset_config = '/www/server/panel/data/panel_asset.json'
+
 
     def __init__(self):
         try:
@@ -3895,6 +3901,7 @@ class config:
             return public.success_v2(f"CDN proxy status updated successfully")
         except Exception as e:
             return public.fail_v2(str(e))
+
     # 设置主题切换
     def set_theme(self, args):
         name = args.name
@@ -3904,3 +3911,105 @@ class config:
         # # 重启面板
         # public.restart_panel()
         return public.return_message(0, 0, 'The setup was successful')
+
+    # 设置面板界面配置
+    def set_panel_asset(self, get):
+        if cache:
+            cache.delete("panel_asset_config")
+
+        # 定义允许的配置字段映射
+        allowed_fields = set(PANEL_DEFAULT_ASSET.keys())
+        try:
+            # 收集请求中的有效配置数据
+            new_data = {
+                key: getattr(get, key) for key in allowed_fields if hasattr(get, key)
+            }
+            # 读取现有配置（如果存在）
+            if os.path.exists(self.__panel_asset_config):
+                existing_data = json.loads(public.readFile(self.__panel_asset_config))
+                existing_data.update(new_data)
+                updated_data = json.dumps(existing_data, indent=2)
+            else:
+                updated_data = json.dumps(new_data, indent=2)
+            # 存储配置
+            public.writeFile(self.__panel_asset_config, updated_data)
+            return public.success_v2(public.lang("Set Asset Successfully!"))
+
+        except Exception as e:
+            return public.fail_v2(public.lang("Set Asset Failed {}", e))
+
+
+    # 获取面板界面配置
+    def get_panel_asset(self, get=None):
+        try:
+            cache_data = cache.get("panel_asset_config")
+            if cache_data:
+                return public.success_v2(cache_data)
+        except Exception as e:
+            public.print_log(f"get_panel_asset cache error: {e}")
+
+        # 合法的字段和默认值
+        default_values = {
+            k: v for k, v in PANEL_DEFAULT_ASSET.items()
+        }
+        # 旧字段与新字段的映射
+        old_to_new = {
+            'bg_images': 'login_bg_images',
+            'bg_images_opacity': 'login_bg_images_opacity',
+            'tab_logo': 'menu_logo',
+            'main_opacity': 'main_content_opacity',
+            'menu_theme_color': 'theme_color',
+            'menu_theme': 'theme_name',
+            'show_main_bg_image': 'show_main_bg_images',
+            'main_bg_image': 'main_bg_images',
+            'main_bg_image_opacity': 'main_bg_images_opacity',
+        }
+        if not os.path.exists(self.__panel_asset_config):
+            return public.success_v2(default_values)
+
+        # 旧配置字段替换成新key
+        path_data = json.loads(public.readFile(self.__panel_asset_config))
+
+        for old_key, new_key in old_to_new.items():
+            if old_key in path_data:
+                path_data[new_key] = path_data.pop(old_key)
+
+        # 更新配置文件
+        public.writeFile(self.__panel_asset_config, json.dumps(path_data, indent=2))
+        try:
+            result = {}
+            for key, default in default_values.items():
+                value = path_data.get(key, default)
+                # 处理特殊情况
+                if key in [
+                    "login_logo", "login_bg_images", "main_bg_images", "menu_logo"
+                ]:
+                    # 允许空字符串，但不允许 "undefined"
+                    if str(value).strip() == "undefined":
+                        value = default
+                if key in [
+                    "login_bg_images_opacity",
+                    "main_bg_images_opacity",
+                    "main_content_opacity",
+                    "menu_bg_opacity",
+                    "main_shadow_opacity",
+                    "home_state_font_size"
+                ]:
+                    # 转换为整数
+                    try:
+                        value = int(value)
+                    except (ValueError, TypeError):
+                        value = default
+
+                result[key] = value
+                # 将字符串的true和false转换为布尔值
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        result[key] = True
+                    elif value.lower() == 'false':
+                        result[key] = False
+            if cache:
+                cache.set("panel_asset_config", result)
+            return public.success_v2(result)
+        except:
+            return public.success_v2(default_values)

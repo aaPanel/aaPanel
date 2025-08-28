@@ -2,11 +2,10 @@
 # @author Zhj<2024/06/15>
 import contextlib
 import json, os, sys, time, re, socket, importlib, binascii, base64, io, string, psutil, requests
-import shutil
 import gettext
 import typing
 import werkzeug.datastructures
-
+from typing import Any, List
 import public
 from .exceptions import PanelError
 from .validate import Param, trim_filter
@@ -20,7 +19,7 @@ import shutil
 import tempfile
 from datetime import datetime
 from .sqlite_easy import Db, SqliteEasy
-
+import threading
 
 
 path = "/www/server/panel/BTPanel/languages/language.pl"
@@ -609,13 +608,11 @@ def WriteLog(type, logMsg, args=(), not_web=False):
         if not _LAN_LOG:
             _LAN_LOG = json.loads(ReadFile('BTPanel/static/language/' + GetLanguage() + '/log.json'))
         keys = _LAN_LOG.keys()
-        if logMsg in keys:
-            logMsg = _LAN_LOG[logMsg]
+        if type in keys:
+            type = _LAN_LOG[type]
             for i in range(len(args)):
                 rep = '{' + str(i + 1) + '}'
                 logMsg = logMsg.replace(rep, args[i])
-        if type in keys: type = _LAN_LOG[type]
-
         # try:
         #     if 'login_address' in session:
         #         logMsg = '{} {}'.format(session['login_address'], logMsg)
@@ -2795,10 +2792,10 @@ def set_own(filename, user, group=None):
 def recursive_set_own(path, user, group):
     """递归应用public.set_own到目录及其内容"""
     import public
-    
+
     # 应用到当前路径
     public.set_own(path, user, group)
-    
+
     # 递归应用到子目录和文件
     for root, dirs, files in os.walk(path):
         for dir_name in dirs:
@@ -3174,7 +3171,7 @@ def auto_backup_panel():
                 pass
         if backup_number < 1:
             return False
-        
+
 
         # 导出面板数据库结构+数据
         dump_panel_databases()
@@ -7743,31 +7740,34 @@ def get_client_hash():
     if is_tmp_login:
         client_hash = md5(request.remote_addr)
     else:
-        skey = 'client_ips'
-        ckey = 'client_sync_count'
-        client_ips = session.get(skey, [])
-        client_sync_count = session.get(ckey, 0)
 
-        # 是否唯一IP
-        if len(client_ips) <= 1:
-            # 唯一IP连续访问次数超过100次，使用IP+UA生成HASH
-            r_max = 101
-            if client_sync_count >= r_max - 1:
-                client_hash = md5(request.remote_addr)
-                if client_sync_count < r_max:
-                    session['client_hash'] = client_hash
-                    client_sync_count += 1
-                    session[ckey] = client_sync_count
-                return client_hash
-
-            # 记录IP
-            if not request.remote_addr in client_ips:
-                client_ips.append(request.remote_addr)
-                session[skey] = client_ips
-
-            # 记录访问次数
-            client_sync_count += 1
-            session[ckey] = client_sync_count
+        # TODO: 关闭唯一IP哈希，暂时注释
+        # skey = 'client_ips'
+        # ckey = 'client_sync_count'
+        # client_ips = session.get(skey, [])
+        # client_sync_count = session.get(ckey, 0)
+        #
+        #
+        # # 是否唯一IP
+        # if len(client_ips) <= 1:
+        #     # 唯一IP连续访问次数超过100次，使用IP+UA生成HASH
+        #     r_max = 101
+        #     if client_sync_count >= r_max - 1:
+        #         client_hash = md5(request.remote_addr)
+        #         if client_sync_count < r_max:
+        #             session['client_hash'] = client_hash
+        #             client_sync_count += 1
+        #             session[ckey] = client_sync_count
+        #         return client_hash
+        #
+        #     # 记录IP
+        #     if not request.remote_addr in client_ips:
+        #         client_ips.append(request.remote_addr)
+        #         session[skey] = client_ips
+        #
+        #     # 记录访问次数
+        #     client_sync_count += 1
+        #     session[ckey] = client_sync_count
 
         # 非唯一IP，使用UA生成HASH
         client_hash = md5('')
@@ -9320,3 +9320,129 @@ def parse_journal_disk_usage(output):
         # 计算总字节数
         total_bytes = value * unit_value
     return total_bytes
+
+# 将图片文件转换为Base64编码字符串
+def image_to_base64(image_path):
+        import base64
+        try:
+            if not os.path.exists(image_path):
+                return ''
+
+            # 获取图片MIME类型
+            ext = os.path.splitext(image_path)[1].lower()
+            mime_types = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.svg': 'image/svg+xml',
+                '.webp': 'image/webp',
+                # # 视频类型, 暂时不支持
+                # '.mp4': 'video/mp4',
+                # '.webm': 'video/webm',
+                # '.mov': 'video/quicktime'
+            }
+            mime_type = mime_types.get(ext, 'application/octet-stream')
+
+            # 读取并编码图片
+            with open(image_path, 'rb') as f:
+                img_data = f.read()
+                base64_str = base64.b64encode(img_data).decode('utf-8')
+
+            return f"data:{mime_type};base64,{base64_str}"
+        except Exception as e:
+            return ''
+
+# 自定义进度线程文件锁
+def progress_acquire_lock(lock_file):
+    """
+    检查锁文件状态并获取锁：
+    - 锁不存在 → 获取锁
+    - 锁存在但文件为空 → 获取锁
+    - 锁存在且有内容 → 检查记录的线程ID是否存在
+      - 线程不存在 → 获取锁
+      - 线程存在 → 不允许获取
+    """
+    try:
+        # 检查锁文件是否存在
+        if os.path.exists(lock_file):
+            # 读取锁文件内容
+            with open(lock_file, 'r') as f:
+                thread_id_str = f.read().strip()
+
+            # 情况1：文件为空，允许获取锁
+            if not thread_id_str:
+                # 清理空锁文件并创建新锁
+                os.remove(lock_file)
+
+            # 情况2：文件不为空，检查线程ID是否有效
+            else:
+                try:
+                    thread_id = int(thread_id_str)
+                    # 检查线程是否存在
+                    thread_exists = any(
+                        hasattr(thread, '_ident') and thread._ident == thread_id
+                        for thread in threading.enumerate()
+                    )
+                    # 线程存在则不允许获取锁
+                    if thread_exists:
+                        return False
+                    # 线程不存在则清理旧锁
+                    else:
+                        os.remove(lock_file)
+                except ValueError:
+                    # 线程ID格式无效，视为无效锁
+                    if os.path.exists(lock_file):
+                        os.remove(lock_file)
+
+        # 创建新锁文件并写入当前线程ID
+        with open(lock_file, 'w') as f:
+            f.write('')
+            f.flush()
+            os.fsync(f.fileno())  # 确保写入磁盘
+        return True
+
+    except Exception:
+        # 任何异常都视为获取锁失败
+        return False
+
+# 释放进度线程文件锁
+def progress_release_lock(lock_file):
+    if os.path.exists(lock_file):
+        try:
+            os.remove(lock_file)
+        except OSError:
+            pass
+
+
+def find_value_by_key(data: dict | List[dict], key: str, default: Any = None) -> Any:
+    """返回嵌套dict中第一个匹配到的key的value, 找不到返default"""
+    try:
+        import jsonpath
+    except ImportError:
+        os.system("{} -m pip install jsonpath".format(get_python_bin()))
+        import jsonpath
+
+    matches = jsonpath.jsonpath(data, f'$..{key}')
+    if matches:
+        return matches[0]
+    return default
+
+
+def split_domain_sld(domain: str):
+    """分离域名的顶级域名, 子域名"""
+    if not domain or not isinstance(domain, str):
+        return domain, ""
+
+    from pubsuffix import get_tld
+
+    tld = get_tld(domain)
+    parts = domain.strip('.').split('.')
+    num_of_tld_parts = 0 if tld is None else tld.count('.') + 1
+
+    # 当域名的子域名数量小于等于TLD数量+1时，则返回整个域名，
+    # 如: "baidu.com.cn" 返回 ("baidu.com.cn", "") tld 部分是"com.cn"
+    if len(parts) <= num_of_tld_parts + 1:
+        return domain, ""
+    else:
+        return ".".join(parts[-num_of_tld_parts-1:]), ".".join(parts[:-num_of_tld_parts-1])

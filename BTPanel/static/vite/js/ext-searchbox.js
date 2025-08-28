@@ -2,7 +2,33 @@ ace.define("ace/ext/searchbox-css",["require","exports","module"], function(requ
 
 });
 
-ace.define("ace/ext/searchbox",["require","exports","module","ace/lib/dom","ace/lib/lang","ace/lib/event","ace/ext/searchbox-css","ace/keyboard/hash_handler","ace/lib/keys","ace/config"], function(require, exports, module){"use strict";
+ace.define("ace/ext/searchbox",["require","exports","module","ace/ext/searchbox","ace/ext/searchbox","ace/lib/dom","ace/lib/lang","ace/lib/event","ace/ext/searchbox-css","ace/keyboard/hash_handler","ace/lib/keys","ace/config"], function(require, exports, module){/**
+ * ## Interactive search and replace UI extension for text editing
+ *
+ * Provides a floating search box interface with find/replace functionality including live search results, regex
+ * support, case sensitivity options, whole word matching, and scoped selection searching. Features keyboard shortcuts
+ * for quick access and navigation, with visual feedback for search matches and a counter showing current position
+ * in results.
+ *
+ * **Key Features:**
+ * - Real-time search with highlighted matches
+ * - Find and replace with individual or bulk operations
+ * - Advanced options: regex, case sensitivity, whole words, search in selection
+ * - Keyboard navigation and shortcuts
+ * - Visual match counter and no-match indicators
+ *
+ * **Usage:**
+ * ```javascript
+ * // Show search box
+ * require("ace/ext/searchbox").Search(editor);
+ *
+ * // Show with replace functionality
+ * require("ace/ext/searchbox").Search(editor, true);
+ * ```
+ *
+ * @module
+ */
+"use strict";
 var dom = require("../lib/dom");
 var lang = require("../lib/lang");
 var event = require("../lib/event");
@@ -15,8 +41,7 @@ dom.importCssString(searchboxCss, "ace_searchbox", false);
 var SearchBox = /** @class */ (function () {
     function SearchBox(editor, range, showReplaceForm) {
         this.activeInput;
-        var div = dom.createElement("div");
-        dom.buildDom(["div", { class: "ace_search right" },
+        this.element = dom.buildDom(["div", { class: "ace_search right" },
             ["span", { action: "hide", class: "ace_searchbtn_close" }],
             ["div", { class: "ace_search_form" },
                 ["input", { class: "ace_search_field", placeholder: nls("search-box.find.placeholder", "Search for"), spellcheck: "false" }],
@@ -38,12 +63,13 @@ var SearchBox = /** @class */ (function () {
                 ["span", { action: "toggleWholeWords", class: "ace_button", title: nls("search-box.toggle-whole-word.title", "Whole Word Search") }, "\\b"],
                 ["span", { action: "searchInSelection", class: "ace_button", title: nls("search-box.toggle-in-selection.title", "Search In Selection") }, "S"]
             ]
-        ], div);
-        this.element = div.firstChild;
+        ]);
         this.setSession = this.setSession.bind(this);
+        this.$onEditorInput = this.onEditorInput.bind(this);
         this.$init();
         this.setEditor(editor);
         dom.importCssString(searchboxCss, "ace_searchbox", editor.container);
+        event.addListener(this.element, "touchstart", function (e) { e.stopPropagation(); }, editor);
     }
     SearchBox.prototype.setEditor = function (editor) {
         editor.searchBox = this;
@@ -53,6 +79,9 @@ var SearchBox = /** @class */ (function () {
     SearchBox.prototype.setSession = function (e) {
         this.searchRange = null;
         this.$syncOptions(true);
+    };
+    SearchBox.prototype.onEditorInput = function () {
+        this.find(false, false, true);
     };
     SearchBox.prototype.$initElements = function (sb) {
         this.searchBox = sb.querySelector(".ace_search_form");
@@ -135,6 +164,8 @@ var SearchBox = /** @class */ (function () {
         this.editor.renderer.updateBackMarkers();
     };
     SearchBox.prototype.find = function (skipCurrent, backwards, preventScroll) {
+        if (!this.editor.session)
+            return;
         var range = this.editor.find(this.searchInput.value, {
             skipCurrent: skipCurrent,
             backwards: backwards,
@@ -161,6 +192,10 @@ var SearchBox = /** @class */ (function () {
             var value = this.searchRange
                 ? editor.session.getTextRange(this.searchRange)
                 : editor.getValue();
+            if (editor.$search.$isMultilineSearch(editor.getLastSearchOptions())) {
+                value = value.replace(/\r\n|\r|\n/g, "\n");
+                editor.session.doc.$autoNewLine = "\n";
+            }
             var offset = editor.session.doc.positionToIndex(editor.selection.anchor);
             if (this.searchRange)
                 offset -= editor.session.doc.positionToIndex(this.searchRange.start);
@@ -218,6 +253,7 @@ var SearchBox = /** @class */ (function () {
         this.active = false;
         this.setSearchRange(null);
         this.editor.off("changeSession", this.setSession);
+        this.editor.off("input", this.$onEditorInput);
         this.element.style.display = "none";
         this.editor.keyBinding.removeKeyboardHandler(this.$closeSearchBarKb);
         this.editor.focus();
@@ -225,9 +261,12 @@ var SearchBox = /** @class */ (function () {
     SearchBox.prototype.show = function (value, isReplace) {
         this.active = true;
         this.editor.on("changeSession", this.setSession);
+        this.editor.on("input", this.$onEditorInput);
         this.element.style.display = "";
         this.replaceOption.checked = isReplace;
-        if (value)
+        if (this.editor.$search.$options.regExp)
+            value = lang.escapeRegExp(value);
+        if (value != undefined)
             this.searchInput.value = value;
         this.searchInput.focus();
         this.searchInput.select();
@@ -331,7 +370,9 @@ SearchBox.prototype.$closeSearchBarKb = $closeSearchBarKb;
 exports.SearchBox = SearchBox;
 exports.Search = function (editor, isReplace) {
     var sb = editor.searchBox || new SearchBox(editor);
-    sb.show(editor.session.getTextRange(), isReplace);
+    var range = editor.session.selection.getRange();
+    var value = range.isMultiLine() ? "" : editor.session.getTextRange(range);
+    sb.show(value, isReplace);
 };
 
 });                (function() {

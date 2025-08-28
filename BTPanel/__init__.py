@@ -233,6 +233,31 @@ except Exception as e:
 
 # ========================== Menu Map End ============================
 
+# ====================== Panel Settings Asset Default =================
+PANEL_DEFAULT_ASSET = {
+    'favicon': '/static/favicon.ico',  # 默认网站favicon图标
+    'show_login_logo': True,  # 默认不显示登录logo
+    'show_login_bg_images': False,  # 默认不显示登录背景图片
+    'login_logo': '/static/icons/logo-green.svg',  # 默认登录logo图片
+    'login_bg_images': '',  # 默认登录背景图片
+    'login_bg_images_opacity': 100,  # 默认登录背景图片透明度
+    'show_main_bg_images': True,  # 默认不显示主界面背景图
+    'main_bg_images': '/static/icons/main_bg.png',  # 主界面背景图
+    'main_bg_images_opacity': 100,  # 主界面背景图透明度
+    'main_content_opacity': 100,  # 主界面内容透明度
+    'main_shadow_color': '#000000',  # 主界面阴影颜色
+    'main_shadow_opacity': 5,  # 主界面阴影透明度
+    'menu_logo': '/static/icons/menu_logo.png',  # 菜单栏顶部logo图标
+    'menu_bg_opacity': 100,  # 默认侧边栏背景透明度
+    'theme_color': '#3c444d',  # 默认主色
+    'theme_name': 'default',  # 默认主题名称
+    'home_state_font_size': 24,  # 首页概览字体大小
+    'main_bg_images_dark': '/static/icons/main_bg_dark.png',  # 这个是用来搞黑暗模式的
+}
+
+# ============================== Asset End ============================
+
+
 
 # ===================================Flask HOOK========================#
 # Flask请求勾子
@@ -3699,7 +3724,12 @@ def site_v2(pdata=None):
         'get_wp_sites',
         'wp_copy_data',
         'get_source_tables',
-        'get_wp_copy_progress'
+        'get_wp_progress',
+        'set_wp_maintenance',
+        'get_wp_maintenance',
+        'get_site_maintenance',
+        'set_site_maintenance',
+        'get_wp_security_status'
     )
     return publicObject(siteObject, defs, None, pdata)
 
@@ -4449,8 +4479,8 @@ def config_v2(pdata=None):
         'delete_ua',
         'set_cdn_status',
         'set_theme',
-
-
+        'set_panel_asset',
+        'get_panel_asset',
     )
     return publicObject(config_v2.config(), defs, None, pdata)
 
@@ -4517,7 +4547,7 @@ def panel_data_v2(pdata=None):
     if comReturn: return comReturn
     import data_v2
     dataObject = data_v2.data()
-    defs = ('setPs', 'getData', 'getFind', 'getKey', 'getSiteWafConfig', 'getSiteThirtyTotal','get_wp_classification')
+    defs = ('setPs', 'getData', 'getFind', 'getKey', 'getSiteWafConfig', 'getSiteThirtyTotal','get_wp_classification','get_wp_site_list')
     return publicObject(dataObject, defs, None, pdata)
 
 
@@ -6060,6 +6090,8 @@ def push_v2(pdata=None):
 @app.route(route_v2 + '/mod/proxy/com/<fun>/<path:stype>', methods=method_all)
 @app.route(route_v2 + '/mod/docker/com/<fun>', methods=method_all)
 @app.route(route_v2 + '/mod/docker/com/<fun>/<path:stype>', methods=method_all)
+@app.route(route_v2 + '/mod/ssh/com/<fun>', methods=method_all)
+@app.route(route_v2 + '/mod/ssh/com/<fun>/<path:stype>', methods=method_all)
 @app.route(route_v2 + '/mod/backup_restore/com/<fun>', methods=method_all)
 @app.route(route_v2 + '/mod/backup_restore/com/<fun>/<path:stype>', methods=method_all)
 def panel_mod_v2(fun=None, stype=None):

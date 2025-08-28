@@ -365,7 +365,6 @@ class data:
         user_Data = self.get_user_power()
         if user_Data != 'all' and table in ['sites', 'databases', 'ftps']:
             data['data'] = [i for i in data['data'] if str(i['id']) in user_Data.get(table, [])]
-
         try:
             # table = get.table
             # data = self.GetSql(get)
@@ -393,18 +392,44 @@ class data:
 
             elif table == 'sites' or table == 'databases':
                 type = '0'
+                site_ids=[]
                 if table == 'databases':
                     type = '1'
                 for i in range(len(data['data'])):
-                    backup_count = 0
-                    try:
-                        backup_count = SQL.table('backup').where("pid=? AND type=?",(data['data'][i]['id'],type)).count()
-                    except:
-                        pass
-
-                    data['data'][i]['backup_count'] = backup_count
+                    #将data['data'][i]['id']添加到site_ids列表中
+                    site_ids.append(data['data'][i]['id'])
                     if table == 'databases': data['data'][i]['conn_config'] = json.loads(data['data'][i]['conn_config'])
                     data['data'][i]['quota'] = self.get_database_quota(data['data'][i]['name'])
+                try:
+                    # 兼容wp备份时间，转换格式
+                    if get.get('project_type','') == 'WP2':
+                        backup_records = public.S('wordpress_backups').where_in('s_id', site_ids).group('s_id').field(
+                            's_id', 'count(*) as cnt', 'max(bak_time) as last_backup_time').select()
+                        backup_info_map = {}
+                        for record in backup_records:
+                            s_id = record['s_id']
+                            last_backup_time = record['last_backup_time']
+                            if isinstance(last_backup_time, (int, float)):
+                                formatted_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(last_backup_time))
+                            else:
+                                try:
+                                    formatted_time = last_backup_time.strftime("%Y-%m-%d %H:%M:%S")
+                                except Exception:
+                                    formatted_time = ''
+                            formatted_record = {
+                                's_id': s_id,
+                                'cnt': record['cnt'],
+                                'last_backup_time': formatted_time
+                            }
+
+                            # 添加到映射表
+                            backup_info_map[s_id] = formatted_record
+                    else:
+                        backup_info_map = {j['pid']: j for j in public.S('backup').where_in('pid', site_ids).where("type", type).group('pid').field('pid','count(*) as cnt','max(addtime) as last_backup_time').select()}
+                except Exception as e:
+                    backup_info_map = {}
+
+                for i in range(len(data['data'])): data['data'][i]['backup_count'] = backup_info_map.get(data['data'][i]['id'], {}).get("cnt", 0)
 
                 if table == 'sites':
                     if get.get('project_type','') == 'WP2':
@@ -423,6 +448,17 @@ class data:
                         filtered_data = []
 
                     for i in range(len(data['data'])):
+                        # 添加维护模式状态
+                        if get.get('project_type', '') == 'WP2':
+                            import os
+                            data['data'][i]['maintenance'] = False
+                            path = os.path.join(data['data'][i]['path'],'.maintenance')
+                            if os.path.exists(path):
+                                data['data'][i]['maintenance'] = True
+                        elif get.get('project_type', '') == 'PHP':
+                            pass
+
+                        data["data"][i]["last_backup_time"] = backup_info_map.get(data['data'][i]['id'], {}).get("last_backup_time", "")
 
                         data['data'][i]['domain'] = SQL.table('domain').where("pid=?",(data['data'][i]['id'],)).count()
                         # data['data'][i]['ssl'] = self.get_site_ssl_info(data['data'][i]['name'])
@@ -473,11 +509,6 @@ class data:
                             data['data'][i]['rname'] = data['data'][i]['name']
                         data["net_flow_info"] = {}
                         data['data'][i]['ico']=""
-                        data["data"][i]["last_backup_time"]=""
-                        try:
-                            data['data'][i]['last_backup_time']  = public.M("backup").where("pid=? and type=?", (data['data'][i]['id'], "0")).field("addtime").order("id desc").select()[0]["addtime"]
-                        except:
-                            pass
                         # 拼接路径
                         try:
                             import os
@@ -530,7 +561,7 @@ class data:
             res = public.get_error_info()
             # return public.get_error_info()
             return public.return_message(0, 0, res)
-
+            
     def get_data_list(self, get):
 
             try:
@@ -968,7 +999,11 @@ class data:
             if int(version_list[0])==4 and int(version_list[1])<1:return result
             if int(version_list[0])==4 and int(version_list[2])<2:return result
             #取网站域名列表
-            domain_list = public.M('sites').where('project_type=?',("PHP")).field('name').select()
+            try:
+                prorject_type=["PHP","WP2"]
+                domain_list = public.S('sites').where_in('project_type',prorject_type).field('name').select()
+            except Exception as ex:
+                domain_list = []
             now_time = int(time.time())
             start_date = public.format_date(format="%Y-%m-%d", times=now_time - 86400 * 30)
             end_date = public.format_date(format="%Y-%m-%d", times=now_time)
@@ -1021,6 +1056,7 @@ class data:
         
         if get==None:
             public.writeFile(cache_file, json.dumps(result))
+
         return {'status': 0, "timestamp": int(time.time()), "message": result}
         
     # 获取waf报表数据
@@ -1212,3 +1248,192 @@ class data:
     def get_wp_classification(self, get=None):
         data = public.M("wp_site_types").select()
         return public.return_message(0, 0, data)
+
+    # 获取wp网站列表（新）get_wp_site_list
+    def get_wp_site_list(self, get=None):
+        try:
+            # 检测类型表，是否正确
+            import one_key_wp_v2
+            ok, msg = one_key_wp_v2.checklist_fields()
+
+            # 未安装wp toolkit时
+            if not ok and msg == "no such table: wordpress_onekey":
+                return public.return_message(0, 0, "")
+
+            elif not ok:
+                return public.return_message(-1, 0, msg)
+
+            # 校验参数
+            try:
+                p = int(get.get('p', 1))
+                limit = int(get.get('limit', 100))
+                search = get.get('search', '').strip()
+                site_type = get.get('site_type', '').strip()
+                order = get.get('order', 'addtime DESC')
+                table = get.get('table', '')
+                if not isinstance(p, int) or p < 1:
+                    p = 1
+                if not isinstance(limit, int) or limit < 1:
+                    limit = 100
+            except Exception as e:
+                return public.return_message(-1, 0, str(e))
+
+            # wp页域名查询
+            if table == 'domain':
+                data = self.GetSql(get)
+                return public.return_message(0, 0, data)
+
+            # wp部署类型
+            import one_key_wp_v2
+            one_key_wp_obj = one_key_wp_v2.one_key_wp()
+
+            # 查询网站列表
+            query = public.S('sites').prefix('').where('project_type = ?', 'WP2').alias('s')
+
+            # 处理搜索条件
+            if search:
+                query = query.where('s.name LIKE ? or s.ps LIKE ?', (f'%{search}%',f'%{search}%'))
+
+            # # 获取网站类型
+            if site_type:
+                query = query.join(
+                'wordpress_onekey wok',
+                's.id = wok.s_id',
+                'INNER'
+            ).join(
+                'wp_site_types wst',
+                'wok.site_type = wst.name',
+                'INNER',
+            ).where('wst.id = ?',site_type)
+
+            # # 关联备份表
+            # query = query.left_join(
+            #     'wordpress_backups wb',
+            #     's.id = wb.s_id',
+            # )
+            #
+            # # 筛选字段并添加备份统计字段
+            # query = query.field(
+            #     's.id',
+            #     's.name',
+            #     's.path',
+            #     's.status',
+            #     's.addtime',
+            #     's.ps',
+            #     'project_type',
+            #     'COALESCE(COUNT(wb.id), 0) AS backup_count',
+            #     'MAX(wb.bak_time) AS last_backup_time'
+            # ).group('s.id')
+
+            # 检查wordpress_backups表是否存在
+            has_backup_table = True
+            try:
+                has_backup_table = public.S('wordpress_backups').exists()
+            except Exception as e:
+                has_backup_table = False
+
+            # 关联备份表（仅当表存在时）
+            if has_backup_table:
+                query = query.left_join(
+                    'wordpress_backups wb',
+                    's.id = wb.s_id',
+                )
+                # 筛选字段并添加备份统计字段
+                query = query.field(
+                    's.id',
+                    's.name',
+                    's.path',
+                    's.status',
+                    's.addtime',
+                    's.ps',
+                    'project_type',
+                    'COALESCE(COUNT(wb.id), 0) AS backup_count',
+                    'MAX(wb.bak_time) AS last_backup_time'
+                ).group('s.id')
+            else:
+                # 表不存在时，不查询备份相关字段
+                query = query.field(
+                    's.id',
+                    's.name',
+                    's.path',
+                    's.status',
+                    's.addtime',
+                    's.ps',
+                    'project_type'
+                )
+
+            # 排序分页
+            order_list = order.split(' ')
+
+            # ssl排序特殊处理，后面排序
+            if order_list[0] != 'site_ssl':
+                data = query.order(order_list[0],order_list[1]).select()
+            else:
+                data = query.select()
+
+            total = len(data)
+            data = data[(p - 1) * limit:p * limit]
+
+            # 补充字段
+            for item in data:
+                # 处理备份时间
+                if item.get('last_backup_time', None):
+                    try:
+                        item['last_backup_time'] = public.format_date("%Y-%m-%d %H:%M:%S", item['last_backup_time'])
+                    except:
+                        item['last_backup_time'] = ''
+                else:
+                    item['last_backup_time'] = ''
+
+                # 维护模式状态
+                item['maintenance'] = False
+                path = os.path.join(item['path'], '.maintenance')
+                if os.path.exists(path):
+                    item['maintenance'] = True
+
+                # 添加ssl字段
+                ssl_info = self.get_site_ssl_info(item['name'])
+                item['ssl'] = ssl_info
+                item['site_ssl'] = ssl_info['endtime'] if ssl_info != -1 else -1
+
+                # domain
+                # item['domain'] = public.S('domain').where("pid=?", (item['id'],)).count()
+
+                # PHP版本信息
+                item['php_version'] = self.get_php_version(item['name'])
+
+                # wp版本与缓存，改用v2版本
+                try:
+                    item['cache_status'] = one_key_wp_obj.get_cache_status(item['id'])
+                    item['wp_version'] = one_key_wp_obj.get_wp_version(item['id'])
+                except Exception as e:
+                    item['cache_status'] = False
+                    item['wp_version'] = '0.0.0'
+
+                # 登录url
+                item['login_url'] = '/v2/wp/login/{}'.format(item['id'])
+
+                # 站点图标(暂定，可用于网站多服务区分)
+                ico_b64_path = os.path.join(public.get_panel_path(), "data/site_favs", item['name'] + ".b64")
+
+                if os.path.exists(ico_b64_path):
+                    item['ico'] = public.readFile(ico_b64_path)
+                else:
+                    item['ico'] = ''
+
+            # 处理ssl排序
+            if order_list[0] == 'site_ssl':
+                if order_list[1] == "asc":
+                    data = sorted(data, key=lambda x: x[order_list[0]])
+                else:
+                    data = sorted(data, key=lambda x: x[order_list[0]], reverse=True)
+
+            res = {
+                'data': data,
+                'total': total
+            }
+
+            return public.return_message(0, 0, res)
+        except Exception as e:
+
+            return public.return_message(-1, 0, str(e))

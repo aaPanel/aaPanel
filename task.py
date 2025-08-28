@@ -546,6 +546,8 @@ def flush_geoip():
             _ips_mtime = 0
 
         if _ips_size < 3145728 or time.time() - _ips_mtime > 2592000:
+            core = cpu_count()
+            delay = round(1 / (core if core > 0 else 1), 2)
             os.system("rm -f {}".format(_ips_path))
             os.system("rm -f {}".format(m_time_file))
             public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)), _ips_path)
@@ -559,21 +561,30 @@ def flush_geoip():
                     firewallobj = firewall()
                     ips_list = json.loads(public.readFile(_ips_path))
                     if ips_list:
-                        for ip_dict in ips_list:
-                            if os.path.exists('/usr/bin/apt-get') and not os.path.exists("/etc/redhat-release"):
-                                btsh_path = "/etc/ufw/btsh"
-                                if not os.path.exists(btsh_path):
-                                    os.makedirs(btsh_path)
-                                tmp_path = '{}/{}.sh'.format(btsh_path, ip_dict['brief'])
-                                if os.path.exists(tmp_path):
-                                    public.writeFile(tmp_path, "")
+                        bash = os.path.exists('/usr/bin/apt-get') and not os.path.exists("/etc/redhat-release")
+                        if bash:
+                            btsh_path = "/etc/ufw/btsh"
+                            if not os.path.exists(btsh_path):
+                                os.makedirs(btsh_path)
 
-                                _string = "#!/bin/bash\n"
-                                for ip in ip_dict['ips']:
-                                    if firewallobj.verify_ip(ip):
-                                        _string = _string + 'ipset add ' + ip_dict['brief'] + ' ' + ip + '\n'
-                                public.writeFile(tmp_path, _string)
-                            else:
+                            write_map = {}
+                            for ip_dict in ips_list:
+                                tmp_path = '{}/{}.sh'.format(btsh_path, ip_dict['brief'])
+                                commands = [
+                                    f'ipset add {ip_dict["brief"]} {ip}'
+                                    for ip in ip_dict.get("ips", [])
+                                    if firewallobj.verify_ip(ip)
+                                ]
+                                if commands:
+                                    script_content = "#!/bin/bash\n" + "\n".join(commands) + "\n"
+                                    write_map[tmp_path] = script_content
+                                time.sleep(delay)
+
+                            for path, content in write_map.items():
+                                public.writeFile(path, content)
+                                time.sleep(0.05)
+                        else:
+                            for ip_dict in ips_list:
                                 xml_path = "/etc/firewalld/ipsets/{}.xml.old".format(ip_dict['brief'])
                                 xml_body = """<?xml version="1.0" encoding="utf-8"?>
 <ipset type="hash:net">
@@ -597,11 +608,14 @@ def flush_geoip():
 
                                 firewallobj.format(root)
                                 tree.write(xml_path, 'utf-8', xml_declaration=True)
+                                time.sleep(delay)
                 except:
                     pass
     except:
         try:
-            public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)), _ips_path)
+            public.downloadFile(
+                '{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)), _ips_path
+            )
             public.writeFile(m_time_file, str(int(time.time())))
         except:
             pass
@@ -1949,49 +1963,6 @@ def malicious_file_scanning():
 def run_thread():
     global thread_dict,task_obj
     thread_keys = thread_dict.keys()
-    # thread_list = {
-    #     "malicious_file_scanning": malicious_file_scanning,
-    #     "start_task": task_obj.start_task,
-    #     "find_stored_favs": data_v2_cls().find_stored_favicons,
-    #     "update_waf_config": update_waf_config,
-    #     "update_monitor_requests": update_monitor_requests,
-    #     "systemTask": systemTask,
-    #     "check502Task": check502Task,
-    #     "daemon_panel": daemon_panel,
-    #     "daemon_service": daemon_service,
-    #     "restart_panel_service": restart_panel_service,
-    #     "check_panel_ssl": check_panel_ssl,
-    #     "update_software_list": update_software_list,
-    #     "send_mail_time": send_mail_time,
-    #     "check_panel_msg": check_panel_msg,
-    #     "check_breaking_through_cron": check_breaking_through_cron,
-    #     "push_msg": push_msg,
-    #     "domain_ssl_service": domain_ssl_service,
-    #     "ProDadmons":ProDadmons, # 项目守护, 没有使用
-    #     "check_panel_auth": check_panel_auth,
-    #     # "process_task_thread":process_task_thread,  # 监控工具不支持
-    #     "count_ssh_logs": count_ssh_logs,
-    #     "submit_email_statistics": submit_email_statistics,  # 每天一次 昨日邮件发送统计
-    #     "update_vulnerabilities": update_vulnerabilities,
-    #     "submit_module_call_statistics": submit_module_call_statistics,  # 每天一次 提交今天之前的统计数据
-    #     "mailsys_domain_blecklisted_alarm": mailsys_domain_blecklisted_alarm,  # 每天一次 邮局黑名单检测
-    #     "auto_reply_tasks": auto_reply_tasks,  # 每小时执行一次 自动回复邮件
-    #     "auto_scan_abnormal_mail": auto_scan_abnormal_mail,  # 每两小时执行一次 自动扫描异常邮箱
-    #     "mailsys_update_usage": mailsys_update_usage,  # 12h 邮局更新域名邮箱使用量
-    #     "mailsys_quota_alarm": mailsys_quota_alarm,  # 2h 邮件域名邮箱使用限额告警
-    #     "refresh_dockerapps": refresh_dockerapps,
-    #     "maillog_event": maillog_event,
-    #     "aggregate_maillogs": aggregate_maillogs_task,
-    #     # "print_malloc": print_malloc_thread,
-    #     "mail_automations": schedule_automations_forever,
-    # }
-    # for skey in thread_list.keys():
-    #     if not skey in tkeys or not thread_dict[skey].is_alive():
-    #         # logging.info('restart thread - {}'.format(skey))
-    #         thread_dict[skey] = threading.Thread(target=thread_list[skey])
-    #         # thread_dict[skey].setDaemon(True)
-    #         thread_dict[skey].start()
-
     # 优先启动
     core_tasks_list = {
         "daemon_panel": daemon_panel,  # 面板守护
@@ -2035,7 +2006,9 @@ def run_thread():
 
     for core in core_tasks_list.keys():
         if not core in thread_keys or not thread_dict[core].is_alive():
-            thread_dict[core] = threading.Thread(target=core_tasks_list[core])
+            thread_dict[core] = threading.Thread(
+                target=core_tasks_list[core]
+            )
             thread_dict[core].start()
             time.sleep(0.5) # 错峰
     time.sleep(3) # 等核心稳定
@@ -2048,13 +2021,17 @@ def run_thread():
         if not normal in thread_keys or not thread_dict[normal].is_alive():
             while 1:
                 if total_time >= 60:  # 累计超过1分钟, 直接运行
-                    thread_dict[normal] = threading.Thread(target=normal_tasks_list[normal])
+                    thread_dict[normal] = threading.Thread(
+                        target=normal_tasks_list[normal]
+                    )
                     thread_dict[normal].start()
                     break
 
                 current_cpu = cpu_percent(interval=1)
                 if current_cpu < max_cpu_rate:
-                    thread_dict[normal] = threading.Thread(target=normal_tasks_list[normal])
+                    thread_dict[normal] = threading.Thread(
+                        target=normal_tasks_list[normal]
+                    )
                     thread_dict[normal].start()
                     break
                 else:

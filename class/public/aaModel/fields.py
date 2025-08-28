@@ -39,6 +39,101 @@ def json_func(v_type: type, value: Any, forward: bool = True):
         raise e
 
 
+def marks_dirty(func: Callable) -> Callable:
+    """脏 wrapper"""
+
+    def wrapper(self, *args, **kwargs):
+        result = func(self, *args, **kwargs)
+        if hasattr(self, "_mark_dirty"):
+            self._mark_dirty()
+        return result
+
+    return wrapper
+
+
+class TrackedList(list):
+    """override list, track fields dirty"""
+    __slots__ = ("_tracker", "_field_name", "_batch")
+
+    def __init__(self, *args, tracker=None, field_name=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._tracker = tracker
+        self._field_name = field_name
+        self._batch = False
+
+    def _mark_dirty(self):
+        if self._tracker and self._field_name and self._batch is False:
+            self._tracker._mark_dirty(self._field_name)
+
+    @marks_dirty
+    def append(self, item):
+        super().append(item)
+
+    @marks_dirty
+    def remove(self, item):
+        super().remove(item)
+
+    @marks_dirty
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+
+    @marks_dirty
+    def pop(self, *args, **kwargs):
+        return super().pop(*args, **kwargs)
+
+    @marks_dirty
+    def clear(self):
+        super().clear()
+
+    def extend(self, iterable):
+        self._batch = True
+        try:
+            super().extend(iterable)
+        finally:
+            self._batch = False
+            self._mark_dirty()
+
+
+class TrackedDict(dict):
+    """override dict, track fields dirty"""
+    __slots__ = ("_tracker", "_field_name", "_batch")
+
+    def __init__(self, *args, tracker=None, field_name=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._tracker = tracker
+        self._field_name = field_name
+        self._batch = False
+
+    def _mark_dirty(self):
+        if self._tracker and self._field_name and self._batch is False:
+            self._tracker._mark_dirty(self._field_name)
+
+    @marks_dirty
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+
+    @marks_dirty
+    def __delitem__(self, key):
+        super().__delitem__(key)
+
+    @marks_dirty
+    def pop(self, key, *args, **kwargs):
+        return super().pop(key, *args, **kwargs)
+
+    @marks_dirty
+    def clear(self):
+        super().clear()
+
+    def update(self, *args, **kwargs):
+        self._batch = True
+        try:
+            # noinspection PyArgumentList
+            super().update(*args, **kwargs)
+        finally:
+            self._batch = False
+            self._mark_dirty()
+
+
 @dataclass
 class aaField(object):
     """
@@ -64,10 +159,6 @@ class aaField(object):
     compare: tuple = None
     serialized: Callable = None
 
-    # todo
-    # require: bool = False
-    # foreign_key: str = None
-
     def __set_name__(self, owner: M, name: str):
         self.__model = owner
         self.field_name = str(name)
@@ -80,8 +171,12 @@ class aaField(object):
         except KeyError:
             raise AttributeError(f'{self.field_name} is not set')
 
-    def __set__(self, instance, value):
-        instance.__dict__[self.field_name] = value
+    def __set__(self, instance: M, value: Any):
+        # base type field, check new set value
+        if self.field_name not in instance.__dict__ or instance.__dict__[self.field_name] != value:
+            instance.__dict__[self.field_name] = value
+            if hasattr(instance, "_mark_dirty"):
+                instance._mark_dirty(self.field_name)
 
     def __delete__(self, instance):
         try:
@@ -96,10 +191,11 @@ class aaField(object):
         else:
             return False
 
-    def _check_type(self, target: Any, raise_exp=True) -> bool:
+    def _check_type(self, target: Any, raise_exp=True) -> Optional[bool]:
         target = target if not isinstance(target, Callable) else target()
-        flag = True if any([isinstance(target, x) for x in self.py_types]) else False
-        return True if flag is True else self._raise_error(raise_exp=raise_exp)
+        if any(isinstance(target, x) for x in self.py_types):
+            return True
+        return self._raise_error(raise_exp=raise_exp)
 
     @property
     def default_val_sql(self) -> str:
@@ -229,19 +325,23 @@ class BlobField(aaField):
     py_type: type = bytes
 
 
-# @dataclass
-# class BoolField(aaField):
-#     """
-#     Bool field
-#     use Int Field instead
-#     """
-
 
 @dataclass
 class ListField(aaField):
     """
     List field
     """
+
+    # override __get__ to return tracker
+    def __get__(self, instance: M, owner):
+        if instance is None:
+            return self
+        value = instance.__dict__.get(self.field_name, self.default or [])
+        if not isinstance(value, TrackedList):
+            # generate tracker
+            value = TrackedList(value, tracker=instance, field_name=self.field_name)
+            instance.__dict__[self.field_name] = value  # update instance's attr
+        return value
 
     @staticmethod
     def _serialized(value: list | str, forward: bool = True) -> list | Any:
@@ -267,6 +367,16 @@ class DictField(aaField):
     Dict field
     """
 
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        value = instance.__dict__.get(self.field_name, self.default or {})
+        if not isinstance(value, TrackedDict):
+            # generate tracker
+            value = TrackedDict(value, tracker=instance, field_name=self.field_name)
+            instance.__dict__[self.field_name] = value  # update instance's attr
+        return value
+
     @staticmethod
     def _serialized(value: dict | str, forward: bool = True) -> dict | Any:
         return json_func(dict, value, forward)
@@ -285,6 +395,8 @@ class DictField(aaField):
         "gte",
         "ne",
         "like",
+        "startswith",
+        "endswith",
     )
     update: tuple[str] = (
         "update",

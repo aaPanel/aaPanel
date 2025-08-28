@@ -1,6 +1,8 @@
 # coding: utf-8
 
 import copy
+from dataclasses import replace as replace_dataclass
+from functools import lru_cache
 from typing import Self, Generator, Optional, Dict, Any
 
 from .fields import aaField, COMPARE
@@ -11,6 +13,7 @@ __all__ = ["aaModel"]
 from public.exceptions import HintException
 
 
+@lru_cache(maxsize=16)
 def generate_table_name(class_name: str) -> str:
     """
     驼峰名转表名
@@ -26,8 +29,6 @@ class aaMetaClass(type):
     __primary_key__: str
     __serializes__: dict
     __index_keys__: list
-
-    # __foreign_keys__: object
 
     def __new__(cls, name, bases, attrs):
         if attrs.get("__abstract__") is True:
@@ -65,7 +66,6 @@ class aaMetaClass(type):
             raise HintException(f"sth wrong with {name}'s primary key, please check the model")
         setattr(obj, "__primary_key__", pk)
         setattr(obj, "__fields__", fields)
-        setattr(obj, "__serializes__", cls.__get_serialized(fields))
 
     @classmethod
     def __database_process(cls, obj: "aaMetaClass", name: str, attrs: dict):
@@ -82,27 +82,34 @@ class aaMetaClass(type):
         setattr(obj, "__table_name__", tb_name)
         setattr(obj, "__index_keys__", idx)
 
-    @staticmethod
-    def __get_serialized(fields: Dict[str, aaField]) -> Dict[str, aaField]:
-        return dict(filter(
-            lambda x: x[1].serialized is not None, {**fields}.items()
-        ))
-
 
 class aaCusModel(metaclass=aaMetaClass):
     __abstract__ = True
     objects = aaManager()
+    _dirty_fields: set = None
 
     def __init__(self, **kwargs):
         if self.__abstract__ is True:
             raise RuntimeError(f'{self.__class__.__name__} class can not be init')
         self._field_filter = kwargs.pop("_field_filter", None)
-        for f, v in self._generate_init(kwargs):
+        for f, v in self._generate_init(kwargs, all_flag=True):
             setattr(self, f.field_name, v)
+        # after init set, init dirty fields set
+        self._dirty_fields = set()
 
-    def _generate_init(self, val_data: dict) -> Generator:
-        for name, field in {**self.__class__.__fields__}.items():
-            val = val_data.pop(name) if name in val_data else field.get_default_val()
+    def _mark_dirty(self, field_name: str):
+        if self._dirty_fields is not None:
+            self._dirty_fields.add(field_name)
+
+    def _generate_init(self, val_data: dict, all_flag: bool = False) -> Generator:
+        fields_map = self._get_fields() if all_flag else {
+            k: v for k, v in self._get_fields().items()
+            if k in val_data or (hasattr(v, "dynamic") and v.auto_now is True)
+        }
+
+        for name, field in fields_map.items():
+            default_val = field.get_default_val()
+            val = val_data.get(name, default_val)
             if field.primary_key is True and val == 0:
                 continue  # skip default id val
             if field.primary_key is True and val != 0:
@@ -111,9 +118,27 @@ class aaCusModel(metaclass=aaMetaClass):
                 except Exception:
                     pass
             yield field, val
-        if val_data:  # other field
-            # raise AttributeError(f"model '{self.__class__.__name__}' has no field {val_data}")
-            pass
+
+        # if val_data:  # other field
+        # raise AttributeError(f"model '{self.__class__.__name__}' has no field {val_data}")
+        # pass
+
+    # =========================================
+    @classmethod
+    @lru_cache(maxsize=32)
+    def _get_fields(cls):
+        return cls.__fields__
+
+    @classmethod
+    @lru_cache(maxsize=32)
+    def _get_serialized(cls) -> dict:
+        return {
+            k: replace_dataclass(v) for k, v in cls._get_fields().items() if v.serialized is not None
+        }
+
+    @classmethod
+    def _get_serialized_fields_fz(cls) -> frozenset:
+        return frozenset(cls._get_serialized().keys())
 
 
 class aaModel(aaCusModel):
@@ -138,7 +163,7 @@ class aaModel(aaCusModel):
     id: int = None
 
     def __repr__(self):
-        return f"<'{self.__class__.__name__}' Model Object, {self.as_dict()}>"
+        return f"<{self.__class__.__name__}: {self.as_dict()}>"
 
     @staticmethod
     def check_destroyed(func):
@@ -152,22 +177,19 @@ class aaModel(aaCusModel):
     @classmethod
     @check_destroyed
     def _output(cls, data: dict, _field_filter=None) -> dict:
-        if not _field_filter:
-            return {
-                k: v if not cls.__serializes__.get(k) else cls.__serializes__.get(k).serialized(v, False) for k, v in
-                data.items()
-            }
-        else:
-            return {
-                k: v if not cls.__serializes__.get(k) else cls.__serializes__.get(k).serialized(v, False) for k, v in
-                data.items() if k in _field_filter
-            }
+        serlz = cls._get_serialized()
+        serlz_fields = cls._get_serialized_fields_fz()
+        if _field_filter is not None:
+            data = {k: v for k, v in data.items() if k in _field_filter}
+
+        return {
+            k: serlz[k].serialized(v, False) if k in serlz_fields else v
+            for k, v in data.items()
+        }
 
     @classmethod
     @check_destroyed
     def _serialized_data(cls, data: Optional[dict | list], _field_filter=None) -> Optional[dict | list]:
-        if not data or not hasattr(cls, "__serializes__"):
-            return data
         if isinstance(data, list):
             return [cls._output(d, _field_filter) for d in data]
         elif isinstance(data, dict):
@@ -176,34 +198,44 @@ class aaModel(aaCusModel):
             return data
 
     @check_destroyed
-    def _validate(self, raise_exp: bool = True) -> Optional[Dict[str, Any]]:
+    def _validate(self, target: dict = None, raise_exp: bool = True) -> Optional[Dict[str, Any]]:
         """
-        模型验证
+        模型验证, 返回序列化后的结果
         """
         body = {}
-        for f, cur_val in self._generate_init(copy.deepcopy(self.__dict__)):
+        for f, cur_val in self._generate_init(target or copy.deepcopy(self.__dict__)):
             try:
-                f.model_check_type(target=cur_val, raise_exp=True)
                 # 1, dynamic generated
                 if hasattr(f, "dynamic") and f.dynamic is True:
                     cur_val = f._dynamic(f, cur_val)
                     setattr(self, f.field_name, cur_val)
-                # 2, serialized
-                body[f.field_name] = f.serialized(cur_val, True) if f.serialized else cur_val
-            except TypeError as t:
-                if raise_exp:
-                    raise t
+                # 2, check type and return serialized
+                if f.model_check_type(target=cur_val, raise_exp=raise_exp) is True:
+                    body[f.field_name] = f.serialized(cur_val, True) if f.serialized else cur_val
                 else:
-                    return {}
+                    # if not raise_exp and check is False, return {}
+                    return None
+            except HintException as e1:
+                if raise_exp:
+                    raise e1
+                return None
             except Exception as e:
-                raise e
+                raise Exception(e)
         return body
 
-    def _before_save(self) -> bool:
+    def _before_save(self):
         # override
-        return True
+        pass
 
-    def _after_save(self) -> None:
+    def _after_save(self):
+        # override
+        pass
+
+    def _before_update(self):
+        # override
+        pass
+
+    def _after_update(self):
         # override
         pass
 
@@ -218,38 +250,43 @@ class aaModel(aaCusModel):
             raise RuntimeError(f'{self.__class__.__name__} class can not be save')
         try:
             cls = self.__class__
-            validate = self._validate(raise_exp=raise_exp)
             primary_key = cls.__primary_key__
-            if validate and primary_key:
-                if primary_key in validate:
-                    target_id = validate.pop(primary_key)
-                    exist = cls.objects._query.where(f"{primary_key}=?", (target_id,)).exists()
-                    if exist:  # update
-                        res = cls.objects._query.where(f"{primary_key}=?", (target_id,)).update(validate)
-                        if res == 1:
-                            self._after_save()
-                            return self
-                        else:
-                            if raise_exp:
-                                raise HintException("update error")
-                            else:
-                                return None
-                    else:
-                        validate[primary_key] = target_id
-                # save
-                if not self._before_save():
+            pk = int(self.__dict__.get(primary_key, 0))
+            dirtys = {f: self.__dict__[f] for f in self._dirty_fields}
+            if dirtys:
+                validate = self._validate(target=dirtys, raise_exp=raise_exp)
+            else:
+                validate = self._validate(raise_exp=raise_exp)
+
+            if not validate:
+                return None
+
+            q = cls.objects._query
+            if pk != 0:  # update
+                self._before_update()
+                if q.where(f"{primary_key}=?", (pk,)).update(validate) == 1:
+                    self._after_update()
+                else:  # update failed
                     return None
-                new_id = cls.objects._query.insert(validate)
-                self._after_save()
-                return cls(**{primary_key: new_id, **self.__dict__})
-            return None
-        except TypeError as t:
+            else:  # save
+                self._before_save()
+                new_id = q.insert(validate)
+                if new_id:
+                    setattr(self, primary_key, new_id)
+                    self._after_save()
+            return self
+            # return self if not new_id else cls(**{primary_key: new_id, **self.__dict__})
+        except (TypeError, AttributeError) as t:
             if raise_exp:
                 raise t
-            else:
-                return None
+            return None
         except Exception as e:
+            import traceback
+            print(traceback.format_exc())
             raise HintException(e)
+        finally:
+            if self._dirty_fields:
+                self._dirty_fields.clear()
 
     @check_destroyed
     def delete(self) -> int:
@@ -269,11 +306,10 @@ class aaModel(aaCusModel):
         转字典
         """
         result = {}
-        field_filter = getattr(self, "_field_filter", None)
         for k, v in self.__dict__.items():
             if k.startswith("_"):
                 continue
-            if field_filter is not None and k not in field_filter:
+            if self._field_filter is not None and k not in self._field_filter:
                 continue
             result[k] = v
         return result
