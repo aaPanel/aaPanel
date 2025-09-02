@@ -674,7 +674,7 @@ class DomainObject:
                 public.validate.trim_filter(),
             ])
             get.site_id = str(get.site_id)
-            domains = [x.strip() for x in list(set(get.domains.split(",")))]
+            domains = [x.strip() for x in list(set(get.domains.splitlines()))]
             domains.sort()
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
