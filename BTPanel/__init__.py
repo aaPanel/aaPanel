@@ -305,7 +305,7 @@ def request_check():
     g.return_message = False
 
     # URI过滤 1
-    if not request.path.startswith('/v2/pmta/'):
+    if request.path not in ('/google/redirect', '/google/callback') and not request.path.startswith('/v2/pmta/'):
         # 路由和URI长度过滤
         if len(request.path) > 256: return abort(403)
         if len(request.url) > 1024: return abort(403)
@@ -2697,8 +2697,7 @@ def check_csrf():
 def publicObject(toObject, defs, action=None, get=None, is_csrf=True):
     try:
         # 模块访问前置检查
-        if is_csrf and public.get_csrf_sess_html_token_value() and session.get(
-                'login', None):
+        if is_csrf and public.get_csrf_sess_html_token_value() and session.get('login', None):
             if not check_csrf():
                 return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
 
@@ -3354,6 +3353,31 @@ def pma_proxy(path_full=None):
     return px.proxy(proxy_url)
 
 
+@app.route("/adminer/<path:path_full>", methods=method_all)
+def adminer_proxy(path_full=None):
+    """
+        @name adminer代理
+        @return Response
+    """
+    comReturn = comm.local()
+    if comReturn:
+        return comReturn
+    try:
+        from adminer.manager import AdminerManager
+        manager = AdminerManager()
+        if not manager.is_install:
+            return 'Adminer is not install, please install it first!'
+        path, port = manager.adminer_dir_port
+    except public.HintException as e:
+        return str(e)
+
+    endpoint = request.full_path.replace("/adminer/", "")
+    proxy_url = f"http://127.0.0.1:{port}/{path}/{endpoint}"
+    from panelHttpProxy import HttpProxy
+    px = HttpProxy()
+    return px.proxy(proxy_url, True)
+
+
 @app.route('/p/<int:port>', methods=method_all)
 @app.route('/p/<int:port>/', methods=method_all)
 @app.route('/p/<int:port>/<path:full_path>', methods=method_all)
@@ -3729,7 +3753,15 @@ def site_v2(pdata=None):
         'get_wp_maintenance',
         'get_site_maintenance',
         'set_site_maintenance',
-        'get_wp_security_status'
+        'get_wp_security_status',
+        # 新增多服务
+        'get_multi_webservice_status',
+        'switch_multi_webservice_status',
+        'switch_webservice',
+        'get_current_webservice',
+        'multi_service_check_repair',
+        'website_rollback',
+        'service_install_count'
     )
     return publicObject(siteObject, defs, None, pdata)
 
@@ -4717,6 +4749,25 @@ def dns_api_v2(pdata=None):
         "account_domain_provider",
     )
     return publicObject(SubPanelApi(), defs, None, pdata)
+
+
+
+@app.route(route_v2 + '/adminer_manager', methods=method_all)
+def adminer_manager_v2(pdata=None):
+    comReturn = comm.local()
+    if comReturn:
+        return comReturn
+    from adminer.api import AdminerApi
+    defs = (
+        "support_versions",
+        "install",
+        "repair",
+        "uninstall",
+        "get_status",
+        "switch_php",
+        "switch_port",
+    )
+    return publicObject(AdminerApi(), defs, None, pdata)
 
 @app.route(route_v2 + '/task', methods=method_all)
 def task_v2(pdata=None):
@@ -5968,6 +6019,11 @@ def webssh_v2(ws):
             if not ssh_info: ssh_info = {"host": "127.0.0.1"}
             if not 'port' in ssh_info:
                 ssh_info['port'] = public.get_ssh_port()
+            #当密码和key都为空的时候
+            if not 'password' in ssh_info and not 'pkey' in ssh_info:
+                import ssh_security_v2
+                sshobject = ssh_security_v2.ssh_security()
+                ssh_info['pkey'] = sshobject.get_key(get).get("message",{}).get("result","")
     else:
         # public.print_log("无host")
         ssh_info = sp.get_ssh_info('127.0.0.1')
@@ -6404,6 +6460,54 @@ def userLang():
     reg = userLang.userLang()
     defs = ('get_language', 'set_language')
     return publicObject(reg, defs, None, None)
+
+
+# ===========================================================  Google OAuth2.0  start ===========================================================#
+
+@app.route('/google/redirect', methods=method_get)
+def google_redirect():
+    comReturn = comm.local()
+    if comReturn: return comReturn
+
+    nonce = public.md5(str(time.time()) + public.GetClientIp())
+    session['google_nonce'] = nonce
+
+    redirect_url = public.httpPost('{}/google/redirect'.format(public.OfficialApiBase()), headers={
+        'X-Forwarded-For': public.GetClientIp(),
+    }, data={
+        'redirect_url': 'https://{}{}{}'.format(public.GetHost(), ':{}'.format(str(public.ReadFile('data/port.pl')).strip()) if os.path.exists('data/port.pl') else '', '/google/callback'),
+        'nonce': nonce,
+        'from_panel': 1,
+    })
+
+    return redirect(redirect_url)
+
+
+@app.route('/google/callback', methods=method_get)
+def google_callback():
+    comReturn = comm.local()
+    if comReturn: return comReturn
+
+    get = get_input()
+
+    # validate nonce
+    if 'google_nonce' not in session or not session['google_nonce'] or 'nonce' not in get or not get.nonce or session['google_nonce'] != get.nonce:
+        return abort(403)
+
+    # remove nonce
+    session['google_nonce'] = None
+    session.pop('google_nonce', None)
+
+    bind = 'data/bind.pl'
+    if os.path.exists(bind): os.remove(bind)
+    userinfo = json.loads(public.base64url_decode(get.user_data))
+    userinfo['token'] = get.token
+    # 用户信息写入文件
+    public.writeFile('data/userInfo.json', json.dumps(userinfo))
+    session['focre_cloud'] = True
+    return redirect('/')
+
+# ==========================================================  Google OAuth2.0  end ===========================================================#
 
 
 # -----------------------------------------  无登录校验路由 end----------------------------------------

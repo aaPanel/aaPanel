@@ -229,5 +229,19 @@
 	"dcfc75a36b7498a34c870230e513cd72": "[{0}] 'nın izni kaldırılmak üzere. Devam etmek ister misin?",
 	"2dce2897ee1bda606563ea97e058ab4f": "Alarm ayarı",
 	"943a2abea1cd576ed3ab95fea4d9e168": "Ayarladıktan sonra, etkili olmak için veritabanını manuel olarak yeniden başlatın",
-	"50c2efb1f4d2a9769b22dace8c66ee86": "MySQL SSL kendi kendine imzalı sertifikayı indirin"
+	"50c2efb1f4d2a9769b22dace8c66ee86": "MySQL SSL kendi kendine imzalı sertifikayı indirin",
+	"e8d7e0bf456f6474e7d916070bf8ce59": "Yönetici sürücüleri şu anda çalışan PHP sürümüne bağlıdır. Sürücülerin eksik olduğunu görürseniz, lütfen PHP Mongo ve PHP PGSQL uzantılarını gerektiği gibi yükleyin.",
+	"29ba9315d084c5d8b6acf54af0afc7c7": "Mevcut Durum: ",
+	"4457d440870ad6d42bab9082d9bf9b61": "Sabit",
+	"349838fb1d851d3e2014b9fe39203275": "Düzenlemek",
+	"a27dfe771799a09fd55fea73286eb6ab": "Kaldırmak",
+	"c319512b280c8d027b6406a17d760891": "Düzeltmek istediğinden emin misin?",
+	"ad2f5c899dc1ae9b55ffef7aa5aac778": "Yüklemek istediğinden emin misiniz?",
+	"876f23178c29dc2552c0b48bf23cd9bd": "Kaldırmak istediğinden emin misiniz?",
+	"6731e61bb032534b2d2c73d64fb7e006": "Yönetime atlamak, lütfen bekleyin ...",
+	"1ec05514f18775b2952d83f821d3948d": "PHP sürümünü değiştirme, lütfen bekleyin ...",
+	"a91f378bf120f4a971b2ad4f7bfdce70": "Yükleme, lütfen bekleyin ...",
+	"dbded73d898181a0721b5f0973e9ee74": "Kaldırma, lütfen bekleyin ...",
+	"c2fd5a116b9d3bcd0185dbf233365764": "Port değiştirme, lütfen bekleyin ...",
+	"1fb4173c812ebb31f38c565e1769d090": "Yönetici sürücüsü şu anda çalışan PHP sürüm ortamına bağlıdır. Sürücünün eksik olduğunu fark ederseniz, lütfen php_mongodb ve pdo_pgsql yüklemek için php uzantılarına gidin"
 }

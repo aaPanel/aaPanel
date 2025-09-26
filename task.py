@@ -46,7 +46,7 @@ try:
 except:
     cache = None
 
-CURRENT_TASK_VERSION = '1.0.0'
+CURRENT_TASK_VERSION = '1.0.1'
 
 
 task_obj = panelTask.bt_task()
@@ -1982,6 +1982,7 @@ def run_thread():
         "send_mail_time": send_mail_time, # 每3分钟检测邮件信息
         "update_waf_config": update_waf_config, # 每隔20分钟更新一次waf报表数据
         "update_monitor_requests": update_monitor_requests, # 每隔20分钟更新一次网站报表数据
+        "check_site_monitor": check_site_monitor, # 每10分钟检查站点监控
         "check_panel_ssl": check_panel_ssl, # 每小时检查面板SSL证书
         "find_stored_favs": data_v2_cls().find_stored_favicons, # 每1小时找favicons
         "update_software_list": update_software_list,  # 每5小时更新软件列表
@@ -2067,6 +2068,18 @@ def scan_log_site():
 #         os.system('{} {}/script/check_msg.py &'.format(python_bin,base_path))
 #         time.sleep(600)
 
+
+
+#预安装网站监控报表
+def check_site_monitor():
+    while True:
+        install_name = 'Install [site_total_monitor]'
+        if public.GetWebServer() !="openlitespeed" and not os.path.exists("/www/server/site_total") and not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")) and public.M('tasks').where('name=? and status=?',(install_name,'0')).count() < 1:
+            execstr="curl https://node.aapanel.com/site_total/install.sh|bash"
+            public.M('tasks').add('id,name,type,status,addtime,execstr',(None, install_name,'execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
+            public.writeFile('/tmp/panelTask.pl','True')
+        time.sleep(600)
+
 # 检测防爆破计划任务
 def check_breaking_through_cron():
     try:
@@ -2113,6 +2126,22 @@ def run_post_update_tasks(from_version, to_version):
                         logging.error(f"Removing directory {dir_path} failed: {str(e)}")
                 else:
                     logging.info(f"Directory not exists, skipped: {dir_path}")
+
+        if from_version < '1.0.1':
+            sites = public.M('sites').field('id,name,path').select()
+            pattern = r'<a class="btlink" href="https://www\.aapanel\.com/new/download\.html\?invite_code=aapanele" target="_blank">(.+?)</a>'
+            import re
+            for site in sites:
+                dir = [
+                    os.path.join(site['path'], '404.html'),
+                    os.path.join(site['path'], '502.html'),
+                    os.path.join(site['path'], 'index.html'),
+                ]
+                for d in dir:
+                    if os.path.exists(d):
+                        html = public.readFile(d)
+                        result = re.sub(pattern, r'\1', html)
+                        public.writeFile(d, result.strip())
 
         logging.info("All one-time update tasks executed successfully.")
         return True

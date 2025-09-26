@@ -217,7 +217,8 @@
 			"index_29": "Die Passwörter in zwei Eingängen sind inkonsistent!",
 			"index_30": "PHP -Version",
 			"index_31": "Bitte wählen Sie die PHP-CLI-Version aus",
-			"index_32": "Eine Verbindung zum Remote -Server, bitte warten Sie ..."
+			"index_32": "Eine Verbindung zum Remote -Server, bitte warten Sie ...",
+			"index_33": "Der Adminer -Treiber hängt von der derzeit ausgeführten PHP -Versionsumgebung ab. Wenn Sie feststellen, dass der Treiber fehlt, gehen Sie bitte zu PHP -Erweiterungen, um PHP_MONGODB und PDO_PGSQL zu installieren"
 		},
 		"Api": {
 			"Index_1": "Ändern Sie Informationen zum Remote -Serververbindung, bitte warten Sie ...",
@@ -232,6 +233,22 @@
 			"Index_10": "Speichern von Redis -Daten, bitte warten ...",
 			"Index_11": "Backup löschen, bitte warte ...",
 			"Index_12": "Backup löschen, bitte warte ..."
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "Aktueller Status: ",
+				"fixed": "Behoben",
+				"install": "Installieren",
+				"uninstall": "Deinstallieren",
+				"confirmFixed": "Sind Sie sicher, dass Sie reparieren möchten?",
+				"confirmInstall": "Sind Sie sicher, dass Sie installieren möchten?",
+				"confirmUninstall": "Sind Sie sicher, dass Sie deinstallieren möchten?",
+				"jumpingToAdminer": "Springen zum Administrator, bitte warte ..."
+			},
+			"switchingPhp": "PHP -Version wechseln, bitte warten ...",
+			"installing": "Installieren, bitte warten ...",
+			"uninstalling": "Deinstallieren, bitte warte ...",
+			"switchingPort": "Anschluss wechseln, bitte warten ..."
 		},
 		"Mysql": {
 			"index_1": "Auto -Backup -Datenbank",

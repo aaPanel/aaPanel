@@ -164,9 +164,11 @@ class FileExecuteDeny:
         else:
             if deny_name in exist_deny_name:
                 return public.return_message(-1, 0, public.lang("The specify rule name is already exists! [ {} ]", deny_name))
+
         self._set_nginx_file_deny(deny_name,dir,suffix)
-        self._set_apache_file_deny(deny_name,dir,suffix)
-        self._set_ols_file_deny(deny_name,dir,suffix)
+        if not public.get_multi_webservice_status():
+            self._set_apache_file_deny(deny_name,dir,suffix)
+            self._set_ols_file_deny(deny_name,dir,suffix)
         public.serviceReload()
         return public.return_message(0, 0, public.lang("Setup successfully!"))
 

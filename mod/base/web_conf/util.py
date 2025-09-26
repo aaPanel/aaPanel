@@ -9,10 +9,10 @@ import public
 
 
 def webserver() -> Optional[str]:
-    if os.path.exists('/www/server/apache/bin/apachectl'):
-        web_server = 'apache'
-    elif os.path.exists('/www/server/nginx/sbin/nginx'):
+    if os.path.exists('/www/server/nginx/sbin/nginx'):
         web_server = 'nginx'
+    elif os.path.exists('/www/server/apache/bin/apachectl'):
+        web_server = 'apache'
     elif os.path.exists('/usr/local/lsws/bin/lswsctrl'):
         web_server = 'openlitespeed'
     else:

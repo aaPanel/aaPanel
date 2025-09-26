@@ -143,6 +143,11 @@ class panelSite(panelRedirect):
             phpConfig = ""
             apaOpt = r"Order allow,deny\n\t\tAllow from all"
         else:
+            port_conf = self.sitePort
+            # 2.4版本 添加多服务处理
+            if public.get_multi_webservice_status() and self.sitePort in ['80','443']:
+                port_conf = '8288' if self.sitePort == '80' else '8290'
+
             vName = ""
             phpConfig = '''
     #PHP
@@ -175,7 +180,7 @@ class panelSite(panelRedirect):
         %s
         DirectoryIndex index.php index.html index.htm default.php default.html default.htm
     </Directory>
-</VirtualHost>''' % (vName, self.sitePort, self.sitePath, acc, self.siteName, self.siteName,
+</VirtualHost>''' % (vName, port_conf, self.sitePath, acc, self.siteName, self.siteName,
                      public.GetConfigValue('logs_path') + '/' + self.siteName,
                      public.GetConfigValue('logs_path') + '/' + self.siteName, phpConfig, self.sitePath, apaOpt)
 
@@ -660,7 +665,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
         if self.sitePort == "": get.port = "80"
         if not public.checkPort(self.sitePort):
-            return_message = public.return_msg_gettext(False, 'Port range is incorrect! should be between 100-65535')
+            return_message = public.return_msg_gettext(False, 'The port is occupied or the port range is incorrect! It should be between 100 and 65535')
             del return_message['status']
             return public.return_message(-1, 0, return_message['msg'])
 
@@ -669,7 +674,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 continue
             if not public.checkPort(domain.split(':')[1]):
                 return_message = public.return_msg_gettext(False,
-                                                           'Port range is incorrect! should be between 100-65535')
+                                                           'The port is occupied or the port range is incorrect! It should be between 100 and 65535')
                 del return_message['status']
                 return public.return_message(-1, 0, return_message['msg'])
 
@@ -977,19 +982,19 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 public.validate.trim_filter(),
             ])
 
-            parse_list = []
-            main_domain = {}
-            if hasattr(get, "parse_list"):
-                parse_list = json.loads(get.parse_list)
-                if not len(parse_list):
-                    raise ValueError("domain names not found")
-
-                main_domain = parse_list.pop(0)
-                get.webname = json.dumps({
-                    "domain": main_domain.get("domain").strip(),
-                    "domainlist": [x.get("domain", "") for x in parse_list],
-                    "count": len(parse_list),
-                })
+                # parse_list = []
+                # main_domain = {}
+                # if hasattr(get, "parse_list"):
+                #     parse_list = json.loads(get.parse_list)
+                #     if not len(parse_list):
+                #         raise ValueError("domain names not found")
+                #
+                #     main_domain = parse_list.pop(0)
+                #     get.webname = json.dumps({
+                #         "domain": main_domain.get("domain").strip(),
+                #         "domainlist": [x.get("domain", "") for x in parse_list],
+                #         "count": len(parse_list),
+                #     })
 
             if get.get('ftp', False):
                 # 校验参数
@@ -1049,13 +1054,13 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
             if self.sitePort == "": get.port = "80"
             if not public.checkPort(self.sitePort):
-                raise ValueError('Port range is incorrect! should be between 100-65535')
+                raise ValueError('The port is occupied or the port range is incorrect! It should be between 100 and 65535')
 
             for domain in siteMenu['domainlist']:
                 if not len(domain.split(':')) == 2:
                     continue
                 if not public.checkPort(domain.split(':')[1]):
-                    raise ValueError('Port range is incorrect! should be between 100-65535')
+                    raise ValueError('The port is occupied or the port range is incorrect! It should be between 100 and 65535')
 
             if hasattr(get, 'version'):
                 self.phpVersion = get.version.replace(' ', '')
@@ -1285,24 +1290,24 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 data = self._set_redirect(get, data['message'])
                 public.set_module_logs("sys_domain", "AddSite_Manual", 1)
                 public.write_log_gettext('Site manager', 'Successfully added site [{}]!', (self.siteName,))
-                # ================ dns domain  =======================
-
-                if hasattr(get, "parse_list"):
-                    try:
-                        import threading
-                        from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
-                        # 添加申请证书, 解析,代理
-                        new_list = [main_domain] + parse_list
-                        task_obj = generate_sites_task(main_domain, get.pid)
-                        task = threading.Thread(
-                            target=init_sites_dns,
-                            args=(new_list, task_obj)
-                        )
-                        task.start()
-                        public.set_module_logs("sys_domain", "AddSite_Auto", 1)
-                    except Exception as e:
-                        import traceback
-                        public.print_log(e)
+                # # ================ dns domain  =======================
+                #
+                # if hasattr(get, "parse_list"):
+                #     try:
+                #         import threading
+                #         from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
+                #         # 添加申请证书, 解析,代理
+                #         new_list = [main_domain] + parse_list
+                #         task_obj = generate_sites_task(main_domain, get.pid)
+                #         task = threading.Thread(
+                #             target=init_sites_dns,
+                #             args=(new_list, task_obj)
+                #         )
+                #         task.start()
+                #         public.set_module_logs("sys_domain", "AddSite_Auto", 1)
+                #     except Exception as e:
+                #         import traceback
+                #         public.print_log(e)
 
                 # ====================================wp创建======================================
                 if get.get('project_type', '') == 'WP2':
@@ -1354,6 +1359,11 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                                 public.print_log(e)
                                 public.print_log(f"error, {e}")
                 # ==============================================================================
+
+                #多服务下默认为ols
+                if public.get_multi_webservice_status():
+                    dict_obj = public.to_dict_obj({'site_id' : data.get('siteId', 0),'service_type' : 'openlitespeed'})
+                    self.switch_webservice(dict_obj)
 
                 progress_log['optional_configurations']['ps'] = public.lang('Success')
                 progress_log['optional_configurations']['status'] = 1
@@ -1836,7 +1846,10 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             if get.port == "": get.port = "80"
 
             # 判断端口是否合法
-            if not public.checkPort(get.port): return public.return_message(-1, 0, public.lang("Port range is incorrect! should be between 100-65535"))
+            if not public.checkPort(get.port):
+                if get.port in ['21', '25', '443', '8080', '888', '999', '8888', '8443', '7800', '8188', '8189', '8288', '8289', '8290']:
+                    return public.return_message(-1, 0, public.lang("Do not use the ports of the panel service!"))
+                return public.return_message(-1, 0, public.lang("The port is occupied or the port range is incorrect! It should be between 100 and 65535"))
             # 检查域名是否存在
             sql = public.M('domain')
             opid = sql.where("name=? AND (port=? OR pid=?)", (get.domain, get.port, get.id)).getField('pid')
@@ -1954,15 +1967,23 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 listen_rep = r"secure\s*0"
                 listen_conf = re.sub(listen_rep, "secure 0\n" + map_tmp, listen_conf)
         else:
+            Default_port = get.port
             listen_conf = """
 listener Default%s{
     address *:%s
     secure 0
     map %s %s
 }
-""" % (get.port, get.port, get.webname, get.domain)
+""" % (Default_port, get.port, get.webname, get.domain)
         # 保存配置文件
         public.writeFile(listen_file, listen_conf)
+
+        # 多服务下仅添加80
+        if public.get_multi_webservice_status() and get.port != '80':
+            if os.path.exists(listen_file):
+                shutil.move(listen_file, listen_file + '.barduo')
+                get.port = '80'
+                self.openlitespeed_domain(get) # 插入80端口
         return public.return_message(0, 0, True)
 
     # Nginx写域名配置
@@ -1995,13 +2016,21 @@ listener Default%s{
         file = self.setupPath + '/panel/vhost/apache/' + get.webname + '.conf'
         conf = public.readFile(file)
         if not conf: return public.return_message(-1, 0, 'domains file not exists:' + file)
-
+        ssl_port = 443
         port = get.port
         siteName = get.webname
         newDomain = get.domain
-        find = public.M('sites').where("id=?", (get.id,)).field('id,name,path').find()
+        find = public.M('sites').where("id=?", (get.id,)).field('id,name,path,service_type').find()
         sitePath = find['path']
         siteIndex = 'index.php index.html index.htm default.php default.html default.htm'
+        webservice_status = public.get_multi_webservice_status()
+
+        # 开启多服务后, 兼容端口
+        if port == '80' and webservice_status:
+            port = '8288'
+
+        if webservice_status and port == '443':
+            ssl_port = '8290'
 
         # 添加域名
         if conf.find('<VirtualHost *:' + port + '>') != -1:
@@ -2015,8 +2044,9 @@ listener Default%s{
                 newServerName = rs + ' ' + newDomain + "\n"
                 myconf = domainV.replace(tmp, newServerName)
                 conf = re.sub(repV, myconf, conf)
-            if conf.find('<VirtualHost *:443>') != -1:
-                repV = r"<VirtualHost\s+\*\:443>(.|\n)*</VirtualHost>"
+
+            if conf.find(f'<VirtualHost *:{ssl_port}>') != -1:
+                repV = fr"<VirtualHost\s+\*\:{ssl_port}>(.|\n)*</VirtualHost>"
                 domainV = re.search(repV, conf).group()
                 rep = r"ServerAlias\s*(.*)\n"
                 tmp = re.search(rep, domainV).group(0)
@@ -2054,6 +2084,9 @@ listener Default%s{
     ''' % (public.get_php_proxy(version, 'apache'),)
                 apaOpt = 'Require all granted'
 
+            # 判断是否是多服务状态
+            if webservice_status:
+                port = '8288'
             newconf = r'''<VirtualHost *:%s>
     ServerAdmin webmaster@example.com
     DocumentRoot "%s"
@@ -2078,12 +2111,12 @@ listener Default%s{
         %s
         DirectoryIndex %s
     </Directory>
-</VirtualHost>''' % (port, sitePath, siteName, port, newDomain, public.GetConfigValue('logs_path') + '/' + siteName,
+</VirtualHost>''' % (port, sitePath, siteName, get.port, newDomain, public.GetConfigValue('logs_path') + '/' + siteName,
                      public.GetConfigValue('logs_path') + '/' + siteName, phpConfig, sitePath, apaOpt, siteIndex)
             conf += "\n\n" + newconf
 
         # 添加端口
-        if port != '80' and port != '888': self.apacheAddPort(port)
+        if port != '80' and port != '888' and not webservice_status: self.apacheAddPort(get.port)
 
         # 保存配置文件
         public.writeFile(file, conf)
@@ -2171,29 +2204,34 @@ listener Default%s{
             public.writeFile(file, conf)
 
         # apache
-        file = self.setupPath + '/panel/vhost/apache/' + get['webname'] + '.conf'
-        conf = public.readFile(file)
-        if conf:
-            # 删除域名
-            try:
-                rep = r"\n*<VirtualHost \*\:" + port + ">(.|\n)*</VirtualHost>"
-                tmp = re.search(rep, conf).group()
+        if  public.get_multi_webservice_status():
+            get.port = '8188'
+            port = '8288'
+            self._del_apache_domain(get)
+        else:
+            file = self.setupPath + '/panel/vhost/apache/' + get['webname'] + '.conf'
+            conf = public.readFile(file)
+            if conf:
+                # 删除域名
+                try:
+                    rep = r"\n*<VirtualHost \*\:" + port + ">(.|\n)*</VirtualHost>"
+                    tmp = re.search(rep, conf).group()
 
-                rep1 = "ServerAlias\\s+(.+)\n"
-                tmp1 = re.findall(rep1, tmp)
-                tmp2 = tmp1[0].split(' ')
-                if len(tmp2) < 2:
-                    conf = re.sub(rep, '', conf)
-                    rep = r"NameVirtualHost.+\:" + port + "\n"
-                    conf = re.sub(rep, '', conf)
-                else:
-                    newServerName = tmp.replace(' ' + get['domain'] + "\n", "\n")
-                    newServerName = newServerName.replace(' ' + get['domain'] + ' ', ' ')
-                    conf = conf.replace(tmp, newServerName)
-                # 保存配置
-                public.writeFile(file, conf.strip())
-            except:
-                pass
+                    rep1 = "ServerAlias\\s+(.+)\n"
+                    tmp1 = re.findall(rep1, tmp)
+                    tmp2 = tmp1[0].split(' ')
+                    if len(tmp2) < 2:
+                        conf = re.sub(rep, '', conf)
+                        rep = r"NameVirtualHost.+\:" + port + "\n"
+                        conf = re.sub(rep, '', conf)
+                    else:
+                        newServerName = tmp.replace(' ' + get['domain'] + "\n", "\n")
+                        newServerName = newServerName.replace(' ' + get['domain'] + ' ', ' ')
+                        conf = conf.replace(tmp, newServerName)
+                    # 保存配置
+                    public.writeFile(file, conf.strip())
+                except:
+                    pass
 
         # openlitespeed
         self._del_ols_domain(get)
@@ -2205,11 +2243,37 @@ listener Default%s{
             public.serviceReload()
         return public.return_message(0, 0, public.lang("Successfully deleted"))
 
+    # apache根据域名删除指定域名
+    def _del_apache_domain(self, get):
+        file = f"{self.setupPath}/panel/vhost/apache/{get['webname']}.conf"
+        conf = public.readFile(file)
+        if not conf:
+            return False
+
+        vhost_pattern = r'<VirtualHost.*?</VirtualHost>'
+        rep = "ServerAlias\\s+(.+)\n"
+        vhost_list = re.findall(vhost_pattern, conf, re.DOTALL | re.MULTILINE)
+        if vhost_list:
+            conf = ''
+            for i in range(len(vhost_list)):
+                if get['domain'] in vhost_list[i]:
+                    tmp1 = re.findall(rep, vhost_list[i])
+                    tmp = tmp1[0].split(' ')
+                    if len(tmp) < 2:
+                        vhost_list[i] = ''
+                    else:
+                        newServerName = vhost_list[i].replace(' ' + get['domain'] + "\n", "\n")
+                        newServerName = newServerName.replace(' ' + get['domain'] + ' ', ' ')
+                        vhost_list[i] = newServerName.replace(vhost_list[i], newServerName)
+                conf += vhost_list[i] + '\n\n'
+        public.writeFile(file, conf)
+        return True
+
     # openlitespeed删除域名
     def _del_ols_domain(self, get):
         conf_dir = '/www/server/panel/vhost/openlitespeed/listen/'
         if not os.path.exists(conf_dir):
-            return return_message(-1, 0, 'directory not exists:' + conf_dir)
+            return public.return_message(-1, 0, 'directory not exists:' + conf_dir)
         for i in os.listdir(conf_dir):
             file_name = conf_dir + i
             if os.path.isdir(file_name):
@@ -2606,10 +2670,15 @@ listener Default%s{
         detail_file = self.setupPath + '/panel/vhost/openlitespeed/detail/{}.conf'.format(siteName)
         public.writeFile(detail_file, include_ssl, 'a+')
         if not conf:
+            # 判断是否启用多服务
+            prot = '443'
+            if public.get_multi_webservice_status():
+                prot = '8190'
+
             conf = """
 listener SSL443 {
   map                     BTSITENAME BTDOMAIN
-  address                 *:443
+  address                 *:{prot}
   secure                  1
   keyFile                 /www/server/panel/vhost/cert/BTSITENAME/privkey.pem
   certFile                /www/server/panel/vhost/cert/BTSITENAME/fullchain.pem
@@ -2623,7 +2692,7 @@ listener SSL443 {
   enableStapling           1
   ocspRespMaxAge           86400
 }
-"""
+""".format(prot=prot)
 
         else:
             rep = r'listener\s*SSL443\s*{'
@@ -2781,13 +2850,14 @@ listener SSL443 {
             if ap_conf:
                 ap_proxy = self.get_apache_proxy(ap_conf)
                 if ap_conf.find('SSLCertificateFile') == -1 and ap_conf.find('VirtualHost') != -1:
-                    find = public.M('sites').where("name=?", (siteName,)).field('id,path').find()
+                    find = public.M('sites').where("name=?", (siteName,)).field('id,path,service_type').find()
                     tmp = public.M('domain').where('pid=?', (find['id'],)).field('name').select()
                     domains = ''
                     for key in tmp:
                         domains += key['name'] + ' '
                     path = (find['path'] + '/' + self.GetRunPath(get)["message"]["result"]).replace('//', '/')
                     index = 'index.php index.html index.htm default.php default.html default.htm'
+                    ssl_prot = '8290' if public.get_multi_webservice_status()  else '443'  # 多服务端口
 
                     try:
                         httpdVersion = public.readFile(self.setupPath + '/apache/version.pl').strip()
@@ -2815,7 +2885,7 @@ listener SSL443 {
         ''' % (public.get_php_proxy(version, 'apache'),)
                         apaOpt = 'Require all granted'
 
-                    sslStr = r'''%s<VirtualHost *:443>
+                    sslStr = fr'''%s<VirtualHost *:%s>
         ServerAdmin webmaster@example.com
         DocumentRoot "%s"
         ServerName SSL.%s
@@ -2848,12 +2918,12 @@ listener SSL443 {
             %s
             DirectoryIndex %s
         </Directory>
-    </VirtualHost>''' % (vName, path, siteName, domains, public.GetConfigValue('logs_path') + '/' + siteName,
+    </VirtualHost>''' % (vName, ssl_prot, path, siteName, domains, public.GetConfigValue('logs_path') + '/' + siteName,
                          public.GetConfigValue('logs_path') + '/' + siteName, ap_proxy,
                          get.first_domain, get.first_domain, self.get_tls_protocol(is_apache=True),
                          ap_static_security, phpConfig, path, apaOpt, index)
                     ap_conf = ap_conf + "\n" + sslStr
-                    self.apacheAddPort('443')
+                    self.apacheAddPort(ssl_prot)
                     shutil.copyfile(file, self.apache_conf_bak)
                     public.writeFile(file, ap_conf)
                     if other_project == "node":  # 兼容Nodejs项目
@@ -2920,12 +2990,12 @@ listener SSL443 {
 
             sql = public.M('firewall')
             import firewalls
-            get.port = '443'
+            get.port = ssl_prot
             get.ps = 'HTTPS'
             if 'isBatch' not in get: firewalls.firewalls().AddAcceptPort(get)
             if 'isBatch' not in get: public.serviceReload()
             self.save_cert(get)
-            public.WriteLog('TYPE_SITE', 'SITE_SSL_OPEN_SUCCESS', (siteName,))
+            public.WriteLog('TYPE_SITE', 'Site [{}] turned on SSL successfully!'.format(siteName))
 
         except Exception as ols_err:
             public.print_log(f"set ols conf error: {ols_err}")
@@ -2982,12 +3052,29 @@ listener SSL443 {
             conf = conf.replace('#error_page 404/404.html;', to)
             public.writeFile(file, conf)
 
-        file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
-        if not os.path.exists(file):
-            file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
-        conf = public.readFile(file)
-        if conf:
-            httpTohttos = '''combined
+        # 多服务下不添加apache与ols配置
+        if not public.get_multi_webservice_status():
+            file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
+            if not os.path.exists(file):
+                file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
+            conf = public.readFile(file)
+            if conf:
+                httpTohttos = '''combined
+        #HTTP_TO_HTTPS_START
+        <IfModule mod_rewrite.c>
+            RewriteEngine on
+            RewriteCond %{SERVER_PORT} !^443$
+            RewriteRule (.*) https://%{SERVER_NAME}$1 [L,R=301]
+        </IfModule>
+        #HTTP_TO_HTTPS_END'''
+                conf = re.sub('combined', httpTohttos, conf, 1)
+                public.writeFile(file, conf)
+            # OLS
+            conf_dir = '{}/panel/vhost/openlitespeed/redirect/{}/'.format(self.setupPath, siteName)
+            if not os.path.exists(conf_dir):
+                os.makedirs(conf_dir)
+            file = conf_dir + 'force_https.conf'
+            ols_force_https = '''
     #HTTP_TO_HTTPS_START
     <IfModule mod_rewrite.c>
         RewriteEngine on
@@ -2995,22 +3082,7 @@ listener SSL443 {
         RewriteRule (.*) https://%{SERVER_NAME}$1 [L,R=301]
     </IfModule>
     #HTTP_TO_HTTPS_END'''
-            conf = re.sub('combined', httpTohttos, conf, 1)
-            public.writeFile(file, conf)
-        # OLS
-        conf_dir = '{}/panel/vhost/openlitespeed/redirect/{}/'.format(self.setupPath, siteName)
-        if not os.path.exists(conf_dir):
-            os.makedirs(conf_dir)
-        file = conf_dir + 'force_https.conf'
-        ols_force_https = '''
-#HTTP_TO_HTTPS_START
-<IfModule mod_rewrite.c>
-    RewriteEngine on
-    RewriteCond %{SERVER_PORT} !^443$
-    RewriteRule (.*) https://%{SERVER_NAME}$1 [L,R=301]
-</IfModule>
-#HTTP_TO_HTTPS_END'''
-        public.writeFile(file, ols_force_https)
+            public.writeFile(file, ols_force_https)
         public.serviceReload()
         return_message = public.return_msg_gettext(True, 'Setup successfully!')
         del return_message['status']
@@ -3898,7 +3970,7 @@ listener SSL443 {
             return_message = public.return_msg_gettext(False, 'Format of primary domain is incorrect')
             del return_message['status']
             return public.return_message(-1, 0, return_message['msg'])
-        siteInfo = public.M('sites').where("id=?", (id,)).field('id,path,name').find()
+        siteInfo = public.M('sites').where("id=?", (id,)).field('id,path,name,service_type').find()
         # 实际运行目录
         root_path = siteInfo['path']
         run_path = self.GetRunPath(get)['message']['result']
@@ -3938,7 +4010,10 @@ listener SSL443 {
                 return public.return_message(-1, 0, public.lang("Get enable php config failed!"))
             tmp = tmp.groups()
             version = tmp[0]
-            bindingConf = r'''
+
+            if public.get_multi_webservice_status() and siteInfo['service_type'] in ['openlitespeed', 'apache']:
+                port_p = '8188' if siteInfo['service_type'] == 'openlitespeed' else '8288'
+                bindingConf = r'''
 #BINDING-%s-START
 server
 {
@@ -3947,7 +4022,7 @@ server
     index index.php index.html index.htm default.php default.htm default.html;
     root %s;
 
-    include enable-php-%s.conf;
+    # include enable-php-%s.conf;
     include %s/panel/vhost/rewrite/%s.conf;
     %s
     location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
@@ -3958,28 +4033,89 @@ server
     %s
     location ~ \.well-known{
         allow all;
+        root %s;
+        try_files $uri =404;
+    }
+    location / {
+        proxy_pass http://127.0.0.1:%s;
+
+        # 保留原始请求信息
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header REMOTE-HOST $remote_addr;
+        proxy_set_header SERVER_PROTOCOL $server_protocol;
+        proxy_set_header HTTPS $https;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header REMOTE_ADDR $remote_addr;
+        proxy_set_header REMOTE_PORT $remote_port;
+        add_header Cache-Control no-cache;
+    }
+    #Prohibit putting sensitive files in certificate verification directory
+    if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {
+        return 403;
     }
 
-    location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$
+    # Forbidden files or directories
+    location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
     {
-        expires      30d;
-        error_log /dev/null;
-        access_log /dev/null; 
-    }
-    location ~ .*\\.(js|css)?$
-    {
-        expires      12h;
-        error_log /dev/null;
-        access_log /dev/null; 
+        return 404;
     }
     access_log %s.log;
     error_log  %s.error.log;
 }
-#BINDING-%s-END''' % (domain, port, listen_ipv6, domain, webdir, version, self.setupPath, siteInfo['name'],
+#BINDING-%s-END''' % (domain, port, listen_ipv6, domain, webdir, version, self.setupPath,
+                      siteInfo['name'],
                       ("# Forbidden files or directories"), public.get_msg_gettext(
-                '# Directory verification related settings for one-click application for SSL certificate'),
+    '# Directory verification related settings for one-click application for SSL certificate'),webdir,port_p,
                       public.GetConfigValue('logs_path') + '/' + siteInfo['name'],
                       public.GetConfigValue('logs_path') + '/' + siteInfo['name'], domain)
+            else:
+                bindingConf = r'''
+    #BINDING-%s-START
+    server
+    {
+        listen %s;%s
+        server_name %s;
+        index index.php index.html index.htm default.php default.htm default.html;
+        root %s;
+    
+        include enable-php-%s.conf;
+        include %s/panel/vhost/rewrite/%s.conf;
+        %s
+        location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
+        {
+            return 404;
+        }
+    
+        %s
+        location ~ \.well-known{
+            allow all;
+        }
+    
+        location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$
+        {
+            expires      30d;
+            error_log /dev/null;
+            access_log /dev/null; 
+        }
+        location ~ .*\\.(js|css)?$
+        {
+            expires      12h;
+            error_log /dev/null;
+            access_log /dev/null; 
+        }
+        access_log %s.log;
+        error_log  %s.error.log;
+    }
+    #BINDING-%s-END''' % (domain, port, listen_ipv6, domain, webdir, version, self.setupPath, siteInfo['name'],
+                          ("# Forbidden files or directories"), public.get_msg_gettext(
+                    '# Directory verification related settings for one-click application for SSL certificate'),
+                          public.GetConfigValue('logs_path') + '/' + siteInfo['name'],
+                          public.GetConfigValue('logs_path') + '/' + siteInfo['name'], domain)
 
             conf += bindingConf
             shutil.copyfile(filename, self.nginx_conf_bak)
@@ -4008,6 +4144,9 @@ server
     </FilesMatch>
     ''' % (public.get_php_proxy(version, 'apache'),)
                     apaOpt = 'Require all granted'
+                port_apache = port
+                if public.get_multi_webservice_status():
+                    port_apache = '8288'
 
                 bindingConf = r'''
 
@@ -4036,7 +4175,7 @@ server
         DirectoryIndex index.php index.html index.htm default.php default.html default.htm
     </Directory>
 </VirtualHost>
-#BINDING-%s-END''' % (domain, port, webdir, domain, public.GetConfigValue('logs_path') + '/' + siteInfo['name'],
+#BINDING-%s-END''' % (domain, port_apache, webdir, domain, public.GetConfigValue('logs_path') + '/' + siteInfo['name'],
                       public.GetConfigValue('logs_path') + '/' + siteInfo['name'], phpConfig, webdir, apaOpt, domain)
 
                 conf += bindingConf
@@ -4169,16 +4308,20 @@ server
     def GetDirRewrite(self, get):
         id = get.id
         find = public.M('binding').where("id=?", (id,)).field('id,pid,domain,path').find()
-        site = public.M('sites').where("id=?", (find['pid'],)).field('id,name,path').find()
+        site = public.M('sites').where("id=?", (find['pid'],)).field('id,name,path,service_type').find()
+        # 兼容多服务
+        webserver = public.get_webserver()
+        if public.get_multi_webservice_status():
+            webserver = site['service_type'] if site['service_type'] else 'nginx'
 
-        if (public.get_webserver() != 'nginx'):
+        if (webserver != 'nginx'):
             filename = site['path'] + '/' + find['path'] + '/.htaccess'
         else:
             filename = self.setupPath + '/panel/vhost/rewrite/' + site['name'] + '_' + find['path'] + '.conf'
 
         if hasattr(get, 'add'):
             public.writeFile(filename, '')
-            if public.get_webserver() == 'nginx':
+            if webserver == 'nginx':
                 file = self.setupPath + '/panel/vhost/nginx/' + site['name'] + '.conf'
                 conf = public.readFile(file)
                 domain = find['domain']
@@ -4194,7 +4337,6 @@ server
             return_status = 0
             data['data'] = public.readFile(filename)
             data['rlist'] = ['0.default']
-            webserver = public.get_webserver()
             if webserver == "openlitespeed":
                 webserver = "apache"
             for ds in os.listdir('rewrite/' + webserver):
@@ -4421,6 +4563,8 @@ server
                     else:
                         continue
                 data.append(tmp)
+
+        data = sorted(data, key=lambda x: x['version'], reverse=True)
         if is_http:
             return public.return_message(0, 0, data)
         return data
@@ -4812,7 +4956,10 @@ server
                 get.advanced = 0
                 get.cachetime = 1
                 get.cache = 0
+                get.keepuri = 1
                 get.subfilter = "[{\"sub1\":\"\",\"sub2\":\"\"},{\"sub1\":\"\",\"sub2\":\"\"},{\"sub1\":\"\",\"sub2\":\"\"}]"
+                get.keepuri=1
+                get.rewritedir="[{\"dir1\":\"\",\"dir2\":\"\"},{\"dir1\":\"\",\"dir2\":\"\"},{\"dir1\":\"\",\"dir2\":\"\"}]"
 
                 # proxyname_md5 = self.__calc_md5(get.proxyname)
                 # 备份并替换老虚拟主机配置文件
@@ -4832,10 +4979,58 @@ server
         proxyUrl = self.__read_config(self.__proxyfile)
         sitename = get.sitename
         proxylist = []
+        # webserver=public.GetWebServer()
         for i in proxyUrl:
+            i["advancedfeature"]=0
+            try:
+                for j in i["rewritedir"]:
+                    if j:
+                        i["advancedfeature"]=1
+                        break
+            except:pass
+            for j in i["subfilter"]:
+                if j:
+                    i["advancedfeature"]=1
+                    break
+            if "rewritedir" not in i:
+                i["rewritedir"] = []
             if i["sitename"] == sitename:
                 proxylist.append(i)
         return public.return_message(0, 0, proxylist)
+
+    def check_proxy_pass_ending(self,config_content):
+        """
+        检查Nginx配置中proxy_pass的结尾格式
+        
+        参数:
+            config_content: 包含Nginx配置的字符串
+            
+        返回:
+            str: 可能的结果包括:
+                - "以 /; 结束"
+                - "以 ; 结束（非 /;）"
+                - "未找到 proxy_pass 配置"
+        """
+        # 正则表达式匹配 proxy_pass 行，捕获结尾部分
+        # 匹配规则：
+        # - 匹配 proxy_pass 开头
+        # - 中间允许任意字符（非贪婪模式）
+        # - 捕获结尾的 ; 或 /;
+        pattern = r'proxy_pass\s+.*?(/?);'
+        
+        # 在配置内容中查找匹配
+        match = re.search(pattern, config_content, re.IGNORECASE)
+        
+        if not match:
+            return 0
+        
+        # 获取捕获的结尾部分（/; 或 ;）
+        ending = match.group(1) + ';'
+        
+        if ending == '/;':
+            return 1
+        else:
+            return 0
 
     def del_proxy_multiple(self, get):
         '''
@@ -4930,6 +5125,8 @@ server
                 return public.return_message(0, 0, public.lang(""))
         for i in conf_data:
             if i["sitename"] == get.sitename:
+                if i["proxydir"]=="/":i["advanced"]=0
+                else:i["advanced"]=1
                 if i["advanced"] != int(get.advanced):
                     return public.return_message(-1, 0, i)
         return public.return_message(0, 0, public.lang(""))
@@ -5181,6 +5378,32 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                 return public.return_message(-1, 0, public.lang("A global reverse proxy already exists in the rewrite/nginx master configuration/vhost file"))
         return public.return_message(0, 0, public.lang(""))
 
+    #检测重写路径
+    def CheckRewriteDirArgs(self, get):
+        #检测重写路径
+        rewritedir=json.loads(get.rewritedir)
+        check_dirs=[]
+        for i in rewritedir:
+            if (i.get('dir1', None) and not i.get('dir2', None)) or (not i.get('dir1', None) and i.get('dir2', None)):
+                return public.lang("Rewrite source directory and rewrite target directory must be filled in at the same time")
+            #检测路径是否相同
+            if i.get('dir1', None) and i.get('dir2', None) and i.get('dir1', None) == i.get('dir2', None):
+                return public.lang("Rewrite source directory and rewrite target directory cannot be the same")
+            #检测重写的路径是否存在
+            if i.get('dir1', None):
+                check_dirs.append(i.get('dir1', None))
+
+            #检测路径是否以/开头
+            if i.get('dir1', None) and not i.get('dir1', None).startswith('/'):
+                return public.lang("Rewrite source directory must start with /")
+            if i.get('dir2', None) and not i.get('dir2', None).startswith('/'):
+                return public.lang("Rewrite target directory must start with /")
+        #检测重写路径是否重复
+        if len(check_dirs) != len(set(check_dirs)):
+            return public.lang("Rewrite source directory and rewrite target directory cannot be the same")
+        return ""
+
+
     # 创建反向代理
     def CreateProxy(self, get):
         # 校验参数
@@ -5192,10 +5415,13 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                 Param('todomain').String(),
                 Param('sitename').String(),
                 Param('subfilter').String(),
+                Param('rewritedir').String(),
                 Param('type').Integer(),
                 Param('cache').Integer(),
                 Param('advanced').Integer(),
                 Param('cachetime').Integer(),
+                Param('keepuri').Integer(),
+                
             ], [
                 public.validate.trim_filter(),
             ])
@@ -5210,12 +5436,19 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         if not get.get('proxysite', None):
             return public.return_message(-1, 0, public.lang("Destination URL cannot be empty"))
 
+        #检测重写路径
+        checkRewriteDirArgs=self.CheckRewriteDirArgs(get)
+        if checkRewriteDirArgs !="":
+            return public.return_message(-1, 0, checkRewriteDirArgs)
+
         if not nocheck:
+            #检测参数
+            get.advanced = 0 if get.proxydir=="/" else 1
             ret = self.__CheckStart(get, "create")
             if ret is not None and int(ret.get('status', 0)) != 0:
                 return ret
-
-        if public.get_webserver() == 'nginx':
+        site = public.M('sites').where("name=?", (get.sitename,)).field('id,service_type').find()
+        if public.get_webserver() == 'nginx' and site['service_type'] not in ['apache','openlitespeed']:
             ret = self.CheckLocation(get)
             if ret is not None and int(ret.get('status', 0)) != 0:
                 return ret
@@ -5225,6 +5458,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         # project_type = public.M('sites').where('name=?', (get.sitename,)).field('project_type').find()['project_type']
         # if project_type == 'WP':
         #     return public.return_msg_gettext(False, public.lang("Reverse proxies are not currently available for Wordpress sites that use one-click deployment"))
+        
         proxyUrl = self.__read_config(self.__proxyfile)
         proxyUrl.append({
             "proxyname": get.proxyname,
@@ -5236,15 +5470,36 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
             "cache": int(get.cache),
             "subfilter": json.loads(get.subfilter),
             "advanced": int(get.advanced),
-            "cachetime": int(get.cachetime)
+            "cachetime": int(get.cachetime),
+            "keepuri": int(get.keepuri),
+            "rewritedir": json.loads(get.rewritedir),
+
         })
+        # 多服务下
+        if public.get_multi_webservice_status():
+            if not site['service_type'] or site['service_type'] == 'nginx':
+                self.SetNginx(get)
+                status = self.SetProxy(get)
+                if status["status"] == -1:
+                    return status
+            else:
+                if get.proxydir == '/':
+                    return public.return_message(-1, 0, 'Under Multi-WebServer Hosting, global [/] reverse proxies are not allowed to be added')
+                self.SetNginx(get)
+                self.SetApache(get.sitename)
+                self._set_ols_proxy(get)
+                status = self.SetProxy(get)
+                if status["status"] == -1:
+                    return status
+        else:
+            self.SetNginx(get)
+            self.SetApache(get.sitename)
+            self._set_ols_proxy(get)
+            status = self.SetProxy(get)
+            if status["status"] == -1:
+                return status
+
         self.__write_config(self.__proxyfile, proxyUrl)
-        self.SetNginx(get)
-        self.SetApache(get.sitename)
-        self._set_ols_proxy(get)
-        status = self.SetProxy(get)
-        if status["status"] == -1:
-            return status
         if get.proxydir == '/':
             get.version = '00'
             get.siteName = get.sitename
@@ -5317,6 +5572,73 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         self.CreateProxy(get)
         return public.return_message(0, 0, public.readFile(ng_conf_file))
 
+    def replace_nginx_rewrite(self,nginx_config):
+        # 1. 将配置按行分割，保留每行的原始缩进和格式
+        config_lines = nginx_config.split('\n')
+        # 标记是否已添加过 #rewritedir（确保只保留一个）
+        has_rewritedir = False
+        # 存储处理后的配置行
+        processed_lines = []
+
+        for line in config_lines:
+            # 2. 去除行首尾空白，判断是否为 rewrite 行（避免误判注释中的 rewrite）
+            stripped_line = line.strip()
+            if stripped_line.startswith('rewrite '):
+                # 3. 只保留第一个 rewrite 对应的 #rewritedir
+                if not has_rewritedir:
+                    # 保留原 rewrite 行的缩进，替换内容为 #rewritedir
+                    indent = line[:len(line) - len(line.lstrip())]  # 提取缩进（如空格、制表符）
+                    processed_lines.append(f"{indent}#Set Rewrite Dir")
+                    has_rewritedir = True  # 标记已添加，后续 rewrite 行跳过
+            else:
+                # 4. 非 rewrite 行直接保留原格式
+                processed_lines.append(line)
+
+        # 5. 将处理后的行重新拼接为完整配置字符串
+        nginx_config = '\n'.join(processed_lines)
+        if nginx_config.find('#Set Rewrite Dir') == -1:
+            #将proxy_pass 替换为"\n\t#Set Rewrite Dir \n\tproxy_pass "
+            nginx_config = nginx_config.replace('proxy_pass', '\t#Set Rewrite Dir \n\tproxy_pass')
+        # 6. 去除连接两个的换行符
+        nginx_config = nginx_config.replace('\n\n', '\n')
+        return nginx_config
+
+
+    #去除所有连接两个两行的空行
+    def remove_consecutive_blank_lines_from_string(self,nginx_config_str):
+        """
+        对指定的 Nginx 配置字符串去除连续空行（保留单个空行）
+        
+        参数:
+            nginx_config_str (str): 原始 Nginx 配置字符串
+        返回:
+            str: 处理后去除连续空行的 Nginx 配置字符串
+        """
+        # 1. 将字符串按行拆分，保留每行的换行符（splitlines(True) 保留换行符）
+        lines = nginx_config_str.splitlines(True)
+        
+        # 2. 过滤连续空行
+        filtered_lines = []
+        prev_line_blank = False  # 标记前一行是否为空行（初始为 False）
+
+        for line in lines:
+            # 判断当前行是否为空行（仅含空格/制表符或完全空白）
+            # strip() 去除所有空白字符（空格、制表符、换行符），长度为0则为空行
+            current_line_blank = len(line.strip()) == 0
+
+            # 保留规则：
+            # - 非空行 → 必须保留
+            # - 空行 → 仅当前一行非空时保留（避免连续空行）
+            if not current_line_blank or not prev_line_blank:
+                filtered_lines.append(line)
+            
+            # 更新“前一行是否为空”的状态，为下一行判断做准备
+            prev_line_blank = current_line_blank
+
+        # 3. 将过滤后的行列表重新拼接为字符串
+        cleaned_config = ''.join(filtered_lines)
+        return cleaned_config
+
     # 修改反向代理
     def ModifyProxy(self, get):
         # 校验参数
@@ -5328,16 +5650,25 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                 Param('todomain').String(),
                 Param('sitename').String(),
                 Param('subfilter').String(),
+                Param('rewritedir').String(),
                 Param('type').Integer(),
                 Param('cache').Integer(),
                 Param('advanced').Integer(),
                 Param('cachetime').Integer(),
+                Param('keepuri').Integer(),
             ], [
                 public.validate.trim_filter(),
             ])
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
+
+        
+        #检测重写路径参数
+        #检测重写路径
+        checkRewriteDirArgs=self.CheckRewriteDirArgs(get)
+        if checkRewriteDirArgs !="":
+            return public.return_message(-1, 0, checkRewriteDirArgs)
         if not get.get('proxysite', None):
             return public.return_message(-1, 0, public.lang("Destination URL cannot be empty"))
         proxyname_md5 = self.__calc_md5(get.proxyname)
@@ -5347,8 +5678,11 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
             p=self.setupPath, s=get.sitename, n=proxyname_md5)
         ols_conf_file = "{p}/panel/vhost/openlitespeed/proxy/{s}/urlrewrite/{n}_{s}.conf".format(
             p=self.setupPath, s=get.sitename, n=proxyname_md5)
+        #检测参数
+        get.advanced = 0 if get.proxydir=="/" else 1
         if self.__CheckStart(get):
             return self.__CheckStart(get)
+            
         conf = self.__read_config(self.__proxyfile)
         random_string = public.GetRandomString(8)
         for i in range(len(conf)):
@@ -5372,12 +5706,18 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     ng_conf = self.old_proxy_conf(ng_conf, ng_conf_file, get)['message']['result']
                     # 修改nginx配置
                     # 如果代理URL后缀带有URI则删除URI，正则匹配不支持proxypass处带有uri
+                    proxy_site=get.proxysite
+                    if int(get.keepuri) == 0:
+                        proxy_site+="/"
+                        
                     php_pass_proxy = get.proxysite
                     if get.proxysite[-1] == '/' or get.proxysite.count('/') > 2 or '?' in get.proxysite:
                         php_pass_proxy = re.search(r'(https?\:\/\/[\w\.]+)', get.proxysite).group(0)
                     ng_conf = re.sub(r"location\s+[\^\~]*\s?%s" % conf[i]["proxydir"], "location ^~ " + get.proxydir,
                                      ng_conf)
-                    ng_conf = re.sub(r"proxy_pass\s+%s" % conf[i]["proxysite"], "proxy_pass " + get.proxysite, ng_conf)
+                    
+                    ng_conf = re.sub(r"proxy_pass\s+%s" % conf[i]["proxysite"], "proxy_pass " + proxy_site, ng_conf)
+                    ng_conf = re.sub(r"proxy_pass\s+%s" % conf[i]["proxysite"]+"/", "proxy_pass " + proxy_site, ng_conf)
                     ng_conf = re.sub("location\\s+\\~\\*\\s+\\\\.\\(php.*\n\\{\\s*proxy_pass\\s+%s.*" % (php_pass_proxy),
                                      "location ~* \\.(php|jsp|cgi|asp|aspx)$\n{\n\tproxy_pass %s;" % php_pass_proxy,
                                      ng_conf)
@@ -5476,6 +5816,12 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                         sub_rep = r'#Set\s+Nginx\s+Cache'
                         ng_conf = re.sub(sub_rep, '#Set Nginx Cache\n' + ng_sub_filter, ng_conf)
 
+                        #replace_nginx_rewrite
+                        rewriteconf=self.setRewritedir(get)
+                        ng_conf=self.replace_nginx_rewrite(ng_conf)
+                        ng_conf = ng_conf.replace('#Set Rewrite Dir', rewriteconf)
+                        ng_conf=self.remove_consecutive_blank_lines_from_string(ng_conf)
+
                     # 修改apache配置
                     ap_conf = public.readFile(ap_conf_file)
                     ap_conf = re.sub(r"ProxyPass\s+%s\s+%s" % (conf[i]["proxydir"], conf[i]["proxysite"]),
@@ -5511,6 +5857,8 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     conf[i]["subfilter"] = json.loads(get.subfilter)
                     conf[i]["advanced"] = int(get.advanced)
                     conf[i]["cachetime"] = int(get.cachetime)
+                    conf[i]["keepuri"] = int(get.keepuri)
+                    conf[i]["rewritedir"] =  json.loads(get.rewritedir)
 
                     public.writeFile(ng_conf_file, ng_conf)
                     public.writeFile(ap_conf_file, ap_conf)
@@ -5525,9 +5873,28 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     if not hasattr(get, 'notreload'):
                         public.serviceReload()
                     return public.return_message(0, 0, public.lang("Setup successfully!"))
+    
+    # ## 修改重定向
+    # def setRewritedir(self, get):
+    #     rewriteconf = ""
+    #     if get.rewritedir:
+    #         for d in json.loads(get.rewritedir):
+    #             if not d["dir1"] or not d["dir2"] or d["dir1"] == d["dir2"] or d["dir1"] == "/":
+    #                 continue
+    #             rewriteconf += '\n\t\trewrite \^{0}/(\.\*)$ {1}\/$1 break;'.format(d["dir1"], d["dir2"])
+    #     return rewriteconf
+    ## 修改重定向
+    def setRewritedir(self, get):
+        rewriteconf = ""
+        if "rewritedir" not in get:
+            return rewriteconf
+        for d in json.loads(get.rewritedir):
+            if not d["dir1"] or not d["dir2"] or d["dir1"] == d["dir2"] or d["dir1"] == "/":
+                continue
+            rewriteconf += '\trewrite ^{0}/(.*)$ {1}/$1 break;'.format(d["dir1"], d["dir2"])
+        return rewriteconf
 
         # 设置反向代理
-
     def SetProxy(self, get):
         sitename = get.sitename  # 站点名称
         advanced = int(get.advanced)
@@ -5535,6 +5902,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         cache = int(get.cache)
         cachetime = int(get.cachetime)
         proxysite = get.proxysite
+        keepuri= int(get.keepuri)
         proxydir = get.proxydir
         ng_file = self.setupPath + "/panel/vhost/nginx/" + sitename + ".conf"
         ap_file = self.setupPath + "/panel/vhost/apache/" + sitename + ".conf"
@@ -5553,6 +5921,16 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
 
         # 配置Nginx
         # 构造清理缓存连接
+
+        #构造重写url
+        rewriteconf=self.setRewritedir(get)
+        # if get.rewritedir:
+        #     for d in json.loads(get.rewritedir):
+        #         if not d["dir1"] or not d["dir2"] or d["dir1"] == d["dir2"] or d["dir1"] == "/":
+        #             continue
+        #         rewriteconf += '\n\trewrite \^{0}/(\.\*)$ {1}\/$1 break;'.format(d["dir1"], d["dir2"])
+        
+            
 
         # 构造缓存配置
         ng_cache = r"""
@@ -5582,6 +5960,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
 
 location %s
 {
+    %s
     proxy_pass %s;
     proxy_set_header Host %s;
     proxy_set_header X-Real-IP $remote_addr;
@@ -5631,30 +6010,35 @@ location %s
         # php_pass_proxy = get.proxysite
         # if get.proxysite[-1] == '/' or get.proxysite.count('/') > 2 or '?' in get.proxysite:
         #     php_pass_proxy = re.search(r'(https?\:\/\/[\w\.]+)', get.proxysite).group(0)
+        if keepuri==1: # 保留URI
+            if proxysite[-1] == '/':
+                proxysite = proxysite[:-1]
+        else: # 删除URI
+            proxysite = '{}/'.format(proxysite)
         if advanced == 1:
             if proxydir[-1] != '/':
                 proxydir = '{}/'.format(proxydir)
-            if proxysite[-1] != '/':
-                proxysite = '{}/'.format(proxysite)
+            # if proxysite[-1] != '/':
+            #     proxysite = '{}/'.format(proxysite)
             if type == 1 and cache == 1:
                 ng_proxy_cache += ng_proxy % (
-                    proxydir, proxydir, proxysite, get.todomain,
+                    proxydir, proxydir,rewriteconf, proxysite, get.todomain,
                     ("#Persistent connection related configuration"), ng_sub_filter, ng_cache,
                     get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, get.proxydir, proxysite, get.todomain,
+                    get.proxydir, get.proxydir,rewriteconf, proxysite, get.todomain,
                     ("#Persistent connection related configuration"), ng_sub_filter, no_cache,
                     get.proxydir)
         else:
             if type == 1 and cache == 1:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, get.proxydir, get.proxysite, get.todomain,
+                    get.proxydir, get.proxydir,rewriteconf, proxysite, get.todomain,
                     ("#Persistent connection related configuration"), ng_sub_filter, ng_cache,
                     get.proxydir)
             if type == 1 and cache == 0:
                 ng_proxy_cache += ng_proxy % (
-                    get.proxydir, get.proxydir, get.proxysite, get.todomain,
+                    get.proxydir, get.proxydir,rewriteconf, proxysite, get.todomain,
                     ("#Persistent connection related configuration"), ng_sub_filter, no_cache,
                     get.proxydir)
         public.writeFile(ng_proxyfile, ng_proxy_cache)
@@ -5773,7 +6157,16 @@ location %s
         if get.siteName.find('node_') == 0:
             get.siteName = get.siteName.replace('node_', '')
         rewriteList = {}
-        ws = public.get_webserver()
+
+        # 处理多服务
+        if public.get_multi_webservice_status():
+            service = public.M('sites').where("name=?", (get.siteName,)).field('id,service_type').find()
+            if not service:
+                return public.return_message(-1, 0, 'The website does not exist.')
+            get.id = service['id']
+            ws = service['service_type'] if service['service_type'] else 'nginx'
+        else:
+            ws = public.get_webserver()
         if ws == "openlitespeed":
             ws = "apache"
         if ws == 'apache':
@@ -5807,6 +6200,11 @@ location %s
             return public.return_message(-1, 0, str(ex))
 
         ws = public.get_webserver()
+        if public.get_multi_webservice_status() and get.get('site_id',''):
+            service_type = public.M('sites').where('id = ?',get.site_id).field('service_type').find()
+            if service_type:
+                ws = service_type['service_type'] if service_type['service_type'] else 'nginx'
+
         if not get.name:
             return_message = public.return_msg_gettext(True, 'Please enter a template name')
             del return_message['status']
@@ -6052,7 +6450,7 @@ location %s
             #     conf = conf.replace("ErrorLog", "#ErrorLog").replace('CustomLog', '#CustomLog')
 
             if conf and conf.find('CustomLog') > -1:
-                regex_obj = re.compile(r'(?:# *)?(CustomLog +(?:.*))( +env=!dontlog)?')
+                regex_obj = re.compile(r'(?:# *)?(CustomLog(?: +\S+){0,2})[^\r\n]*')
                 # 检查环境变量dontlog是否存在
                 if conf.find('SetEnvIf Request_URI ".*" dontlog') > -1:
                     # 启用Access日志
@@ -6416,11 +6814,25 @@ location %s
 
     # 取当站点前运行目录
     def GetSiteRunPath(self, get):
-        siteName = public.M('sites').where('id=?', (get.id,)).getField('name')
-        sitePath = public.M('sites').where('id=?', (get.id,)).getField('path')
+        site = public.M('sites').where('id=?', (get.id,)).field('name,path,service_type').find()
+        if not site:
+            return public.return_message(-1, 0, public.lang("The website does not exist"))
+
+        siteName = site['name']
+        sitePath = site['path']
+        serviceType = site['service_type']
         if not siteName or os.path.isfile(sitePath): return public.return_message(0, 0, {"runPath": "/", 'dirs': []})
         path = sitePath
-        if public.get_webserver() == 'nginx':
+
+        # 添加多服务识别
+        webserver = public.get_webserver()
+        if public.get_multi_webservice_status():
+            if not serviceType or serviceType == 'nginx':
+                webserver = 'nginx'
+            else:
+                webserver = serviceType
+
+        if webserver == 'nginx':
             filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
             if os.path.exists(filename):
                 conf = public.readFile(filename)
@@ -6431,7 +6843,7 @@ location %s
                     del return_message['status']
                     return public.return_message(-1, 0, return_message['msg'])
                 path = path.groups()[0]
-        elif public.get_webserver() == 'apache':
+        elif webserver == 'apache':
             filename = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
             if os.path.exists(filename):
                 conf = public.readFile(filename)
@@ -6836,6 +7248,11 @@ location %s
             "return_rule": get.return_rule,
         }
         public.writeFile(conf_file, json.dumps(data))
+
+        site = public.M('sites').where('name=?', (get.name,)).field('id,service_type').find()
+        if not site:
+            return public.return_message(-1, 0,'site is not found!')
+
         # nginx
         file = '/www/server/panel/vhost/nginx/' + get.name + '.conf'
         if os.path.exists(file):
@@ -6845,7 +7262,7 @@ location %s
                 rep = r"\s+valid_referers.+"
                 conf = re.sub(rep, '', conf)
                 # 再替换配置部分
-                rep = "\\s+#SECURITY-START(\n|.){1,500}#SECURITY-END\n?"
+                rep = "\\s+#?#SECURITY-START(\n|.){1,500}#SECURITY-END\n?"
                 conf = re.sub(rep, '\n', conf)
             if get.status == 'false':
                 public.write_log_gettext('Site manager', "Hotlink Protection for site [{}] disabled!", (get.name,))
@@ -6861,6 +7278,10 @@ location %s
                             if get.return_rule[0] != '/':
                                 return public.return_message(-1, 0, public.lang("Response resources should use URI path or HTTP status code, such as: /test.png or 404"))
                             return_rule = 'rewrite /.* {} break'.format(get.return_rule)
+                    # 处理多服务PHP版本
+                    s = ''
+                    if site['service_type'] in ['apache', 'openlitespeed']:
+                        s = '#'
                     rconf = r'''#SECURITY-START Hotlink protection configuration
     location ~ .*\.(%s)$
     {
@@ -6872,8 +7293,9 @@ location %s
         }
     }
     #SECURITY-END
-    include enable-php-''' % (
-                        get.fix.strip().replace(',', '|'), get.domains.strip().replace(',', ' '), return_rule)
+    %sinclude enable-php-''' % (
+                        get.fix.strip().replace(',', '|'), get.domains.strip().replace(',', ' '), return_rule,s)
+
                     conf = re.sub(r"include\s+enable-php-", rconf, conf)
                     public.write_log_gettext('Site manager', "Hotlink Protection for site [{}] enabled!", (get.name,))
 
@@ -10133,6 +10555,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                     continue
         return False
     # ======================面板漏洞扫描 end======================= #
+
+    # ======================wp 维护模式 start======================= #
     # 获取wp维护模式配置
     def get_wp_maintenance(self, args: public.dict_obj):
         # 校验参数
@@ -10177,6 +10601,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         # 读取维护模式配置，三个服务使用同一配置文件
         maintenance_config_path = os.path.join(site_path, 'aapanel-maintenance' , 'sites_maintenance_config.json')
+        # print(os.path.exists(maintenance_config_path))
         data = {}
         if not os.path.exists(maintenance_config_path):
             data['maintenance'] = 'false'
@@ -10614,14 +11039,58 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     {end_marker}
 
         """
+            maintenance_core1 = fr"""
+    {start_marker}
+    if ($request_uri !~ ^/{template_path.split('/')[-1]}$) {{
+        return 503;
+    }}
+
+    if ($request_filename ~* ^{site_root}/.*\.(css|js|png|jpg|jpeg|gif|ico|svg|webp)$) {{
+        root /;  
+        break;
+    }}
+    return 503;
+    {end_marker}
+            """
+            maintenance_core2 = fr"""     {start_marker}
+    error_page 503 @maintenance;
+    location @maintenance {{
+        root {site_root};
+        
+        try_files /{template_path.split('/')[-1]} =503;
+        
+    }}
+    {end_marker}
+    """
             root_pattern = r'(root\s+[^;]+;)'
-            match = re.search(root_pattern, content)
+            root_matches = re.finditer(root_pattern, content)
+            match = next(root_matches, None)
+            location_pattern = r'(location\s+/\s*\{)'
+            location_match = re.search(location_pattern, content, re.IGNORECASE)
+
+            # 判断是否存在location /配置块
+            if location_match:
+                location_start = location_match.group(0)
+
+                # 查找location /块中的第一个{后的位置，插入维护规则
+                replacement = f"{location_start}\n{maintenance_core1.strip()}"
+
+                # 替换原location /块
+                location_content = re.sub(
+                    location_pattern,
+                    replacement,
+                    content,
+                    flags=re.IGNORECASE
+                )
+                content = location_content
+                maintenance_block = maintenance_core2
 
             if match:
                 root_line = match.group(0)
                 new_content = content.replace(
                     root_line,
-                    f"{root_line}\n\n{maintenance_block}"
+                    f"{root_line}\n\n{maintenance_block}",
+                    1
                 )
             else:
                 if re.search(r'server\s*\{', content, re.IGNORECASE):
@@ -10629,6 +11098,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                         r'(server\s*\{)',
                         f'\\1\n{maintenance_block}',
                         content,
+                        count=1,
                         flags=re.IGNORECASE
                     )
                 else:
@@ -10685,3 +11155,1016 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             os.rename(bak_file, os.path.join(site_path, '.maintenance'))
 
         return True
+
+    # ======================wp 维护模式 end======================= #
+
+    # ======================网站多服务 start======================= #
+    # 获取网站多服务状态
+    def get_multi_webservice_status(self, args: public.dict_obj):
+        from panelModelV2.publicModel import main
+        public_obj = main()
+        data = {
+            'nginx': False,
+            'openlitespeed': False,
+            'apache': False,
+            'status':False
+        }
+        for service in ['openlitespeed', 'apache', 'nginx']:
+            args = public.to_dict_obj({'name': service})
+            res = public_obj.get_soft_status(args)
+
+            if res['status'] == 0:
+                data[service] = res['message']['s_status']
+
+        data['status'] = public.get_multi_webservice_status()
+        return public.return_message(0, 0, data)
+
+    # 切换多服务状态
+    def switch_multi_webservice_status(self, args: public.dict_obj):
+        try:
+            status = args.get('status', '')
+            reserve = args.get('reserve', '')
+            multi_webservice_status = public.get_multi_webservice_status()
+        except:
+            return public.return_message(-1, 0, 'Parameter error')
+
+        if status not in ['enable', 'disable']:
+            return public.return_message(-1, 0, 'Parameter error')
+
+        # 切换服务
+        if status == 'enable':
+            # if multi_webservice_status:
+            #     return public.return_message(-1, 0, public.lang('The multi-service of the website has been enabled. '
+            #                                                     'If a service is unavailable, please try to disable it and then re-enable it.'))
+
+            ok, msg = self.enable_multi_webservice()
+            if not ok:
+                return public.return_message(-1, 0, f'Error: {msg}')
+
+        else:
+            if not reserve:
+                return public.return_message(-1, 0, public.lang('Please select the retained service'))
+            elif not multi_webservice_status:
+                return public.return_message(-1, 0, public.lang('Please enable multiple services first'))
+
+            ok, msg = self.disable_multi_webservice(reserve)
+
+        if not ok:
+            return public.return_message(-1, 0, f'Error: {msg}')
+
+        return public.return_message(0, 0, msg)
+
+    # 开启多服务
+    def enable_multi_webservice(self) -> tuple[bool, str]:
+        from panel_plugin_v2 import panelPlugin
+        from panelModelV2.publicModel import main
+        from files_v2 import files
+        plugin = panelPlugin()
+        files_obj = files()
+        public_obj = main()
+
+        # 获取当前服务
+        current_status = public.get_webserver()
+
+        # 当前服务若为nginx，检查是否为openresty版本
+        if current_status == 'nginx':
+            args = public.to_dict_obj({'name': 'nginx'})
+            nginx_version = public_obj.get_soft_status(args)
+
+            if nginx_version.get('status', -1) == -1:
+                return False, public.lang('Error in obtaining nginx version information')
+
+            if 'openresty' in nginx_version['message'].get('version', ''):
+                return False, public.lang('Currently, openresty is not supported')
+
+        if files_obj.GetTaskSpeed(None)['status'] != -1:
+            return False, public.lang('There is already an installation task. Please wait for it to complete first!')
+
+        try:
+            # 校验服务是否都成功安装
+            if len(public.get_multi_webservice_list()) != 3:
+                raise ValueError(public.lang('Service installation failed. Please try again!'))
+
+            # 停止nginx
+            public.webservice_operation('nginx','stop')
+
+            # 关闭全部网站的强制Https，避免重定向
+            try:
+                sites = public.M('sites').field('name').select()
+                for site in sites:
+                    obj = public.to_dict_obj({'siteName': site['name']})
+                    ssl_data = self.GetSSL(obj)
+                    if ssl_data['status'] == 0 and ssl_data['message']['httpTohttps'] in ['true', True]:
+                        self.CloseToHttps(obj)
+            except Exception as e:
+                public.print_log(str(e))
+
+            # 解决自定义端口冲突
+            self.cheak_port_conflict('enable')
+
+            # 修改配置
+            ok, msg = self.ols_update_config('enable')
+            if not ok:
+                raise ValueError(msg)
+
+            ok, msg = self.apache_update_config('enable')
+            if not ok:
+                raise ValueError(msg)
+
+            # 重启nginx
+            public.webservice_operation('nginx')
+
+            # 检查服务状态
+            for service in ['openlitespeed', 'apache', 'nginx']:
+                args = public.to_dict_obj({'name': service})
+                res = public_obj.get_soft_status(args)
+                if res['status'] != 0:
+                    raise ValueError(public.lang("Service startup failed: {}", service))
+
+            if os.path.exists('/tmp/multi_service_install.log'):
+                os.remove('/tmp/multi_service_install.log')
+            public.write_log_gettext('Site manager', 'Successfully activated the Multi-WebServer Hosting!')
+            public.set_module_logs(f'Multi-WebServer', 'enable_multi_webservice')
+            return True, public.lang('The multi-service mode has been successfully enabled')
+        except Exception as e:
+            if os.path.exists('/tmp/multi_service_install.log'):
+                os.remove('/tmp/multi_service_install.log')
+            try:
+                # 开启失败，关闭服务
+                self.disable_multi_webservice(current_status)
+            except:
+                pass
+            return False, str(e)
+
+    # 关闭多服务, 保留指定服务，卸载其他
+    def disable_multi_webservice(self, reserve: str) -> tuple[bool, str]:
+        from panel_plugin_v2 import panelPlugin
+        from panelModelV2.publicModel import main
+        public_obj = main()
+        plugin = panelPlugin()
+        service_list = ['nginx', 'apache', 'openlitespeed']
+        service_list.remove(reserve)  # 移除保留服务
+
+        # 卸载服务
+        for service in service_list:
+            args = public.to_dict_obj({'name': service})
+            service_status = public_obj.get_soft_status(args)
+
+            if service_status['status'] == 0:
+                args = public.to_dict_obj({'sName': service_status['message']['name'],
+                                           'version': service_status['message']['version']})
+                res = plugin.uninstall_plugin(args)
+
+                if res.get('status', -1) == -1:
+                    return False, public.lang("Failed to uninstall {} service. Please try again!",service)
+
+        # 恢复端口
+        self.cheak_port_conflict('d')
+
+        # 恢复配置
+        self.apache_update_config('disable', False)
+
+        self.ols_update_config('disable', False)
+
+        # 统一恢复nginx配置文件
+        sites = public.M('sites').where('service_type = ? or service_type = ?', ('apache','openlitespeed')).field('id,name,path,service_type').select()
+        for site in sites:
+            config_path = os.path.join(public.get_panel_path(), 'vhost', 'nginx', site['name'] + '.conf')
+            self.nginx_update_config('nginx', config_path, site['service_type'], site['name'], site['path'], site['id'])
+        public.M('sites').where('service_type = ? or service_type = ?', ('apache', 'openlitespeed')).update({'service_type': ''})
+
+        # 处理ols 7080端口遗留
+        if reserve != 'openlitespeed':
+            process_id = public.ExecShell('lsof -t -i:7080')[0]
+            if process_id:
+                id_list = process_id.split('\n')
+                for id in id_list:
+                    public.ExecShell(f'kill -9 {id}')
+
+        # 重启指定服务
+        ok = public.webservice_operation(reserve)
+        if not ok:
+            return False, public.lang("The {} service failed to restart. Please try a manual restart or check the configuration file.",reserve)
+
+        public.write_log_gettext('Site manager	', 'Successfully shut down the Multi-WebServer Hosting and retain [{}]!',
+                                 (reserve,))
+        return True, public.lang('The multi-service mode has been successfully enabled')
+
+    # ols 修改多服务配置文件
+    def ols_update_config(self, status, is_restart=True) -> tuple[bool, str]:
+        """
+            端口关系：
+                8188:80
+                8190:443
+        """
+        listen_dir = os.path.join(public.get_panel_path(), 'vhost', 'openlitespeed')
+        listen_main = os.path.join(listen_dir, 'listen', '80.conf')  # 主监听
+        listen_ssl = os.path.join(listen_dir, 'listen', '443.conf')
+
+        phpmyadmin = [
+            os.path.join(listen_dir, 'listen', '887.conf'),
+            os.path.join(listen_dir, 'listen', '888.conf'),
+            os.path.join(listen_dir, 'phpmyadmin.conf'),
+            os.path.join(listen_dir, 'detail', 'phpmyadmin.conf')
+        ]
+        pattern = '*:80'
+        pattern_ANY = '[ANY]:80'
+        pattern_ssl = '*:443'
+        pattern_ssl_ANY = '[ANY]:443'
+
+        if status == 'enable':
+            if os.path.exists(listen_main):
+                content = public.readFile(listen_main)
+                content = content.replace(pattern, '*:8188')
+                content = content.replace(pattern_ANY, '[ANY]:8188')
+                public.writeFile(listen_main, content)
+
+            if os.path.exists(listen_ssl):
+                content = public.readFile(listen_ssl)
+                content = content.replace(pattern_ssl, '*:8190')
+                content = content.replace(pattern_ssl_ANY, '[ANY]:8190')
+                public.writeFile(listen_ssl, content)
+
+            # 取消监听phpmyadmin
+            for path in phpmyadmin:
+                if os.path.exists(path):
+                    shutil.move(path, path + '.bar')
+
+        elif status == 'disable':
+            pattern = '*:8188'
+            pattern_ANY = '[ANY]:8188'
+            pattern_ssl = '*:8190'
+            pattern_ssl_ANY = '[ANY]:8190'
+
+            # 恢复服务
+            if os.path.exists(listen_main):
+                content = public.readFile(listen_main)
+                content = content.replace(pattern, '*:80')
+                content = content.replace(pattern_ANY, '[ANY]:80')
+                public.writeFile(listen_main, content)
+
+            if os.path.exists(listen_ssl):
+                content = public.readFile(listen_ssl)
+                content = content.replace(pattern_ssl, '*:443')
+                content = content.replace(pattern_ssl_ANY, '[ANY]:443')
+                public.writeFile(listen_ssl, content)
+
+            for path in phpmyadmin:
+                if os.path.exists(path + '.bar'):
+                    shutil.move(path + '.bar', path)
+
+            # 处理用户添加的端口恢复
+            listen_custom_dir = os.path.join(listen_dir, 'listen')
+            if os.path.exists(listen_custom_dir):
+                for filename in os.listdir(listen_custom_dir):
+                    file = filename.split('.')[0]
+                    if file not in ['80', '443', '887', '888']:
+                        content = public.readFile(os.path.join(listen_custom_dir,filename))
+                        content = content.replace(pattern, '*:'+file)
+                        content = content.replace(pattern_ANY, '*:'+file)
+                        public.writeFile(os.path.join(listen_custom_dir,filename), content)
+
+        # 重启ols
+        if is_restart:
+            ok = public.webservice_operation('openlitespeed')
+
+            if not ok:
+                return False, public.lang(
+                    "The service restart failed. Please check the openlitespeed configuration file!")
+
+        return True, "The ols configuration modification was successful！"
+
+    # apache 修改多服务配置文件
+    def apache_update_config(self, status, is_restart=True) -> tuple[bool, str]:
+        """
+            端口关系：
+                8288:80
+                8289:888
+                8290:443
+        """
+        main_config = '/www/server/apache/conf/httpd.conf'  # 主配置文件
+        httpd_vhosts = '/www/server/apache/conf/extra/httpd-vhosts.conf'
+        httpd_ssl = '/www/server/apache/conf/extra/httpd-ssl.conf'
+        phpadmin = os.path.join(public.get_panel_path() , 'vhost' ,'apache','phpmyadmin.conf')
+        from adminer import config
+        ols_adminer = config.OLS_CONF_PATH
+        apache_adminer = config.APC_CONF_PATH
+        bar_list = [phpadmin,ols_adminer,apache_adminer]
+
+        port_80 = '80'
+        new_port_80 = '8288'
+        port_888 = '888'
+        new_port_888 = '8289'
+        port_443 = '443'
+        new_port_443 = '8290'
+
+        if status == 'disable':
+            port_80 = '8288'
+            new_port_80 = '80'
+            port_888 = '8289'
+            new_port_888 = '888'
+            port_443 = '8290'
+            new_port_443 = '443'
+
+            # 恢复配置文件
+            for bar in bar_list:
+                if os.path.exists(bar + '.bar'):
+                    shutil.move(bar + '.bar', bar)
+        else:
+            # 使配置文件无效
+            for bar in bar_list:
+                if os.path.exists(bar):
+                    shutil.move(bar, bar + '.bar')
+
+        # 修改虚拟主机端口配置
+        site_name = public.M('sites').field('name,project_type').select()
+        for name in site_name:
+            # 判断是否是Node项目
+            if name['project_type'] == 'Node':
+                self.check_node_project(name['name'], status)
+            path = os.path.join(public.get_panel_path(), 'vhost', 'apache', name['name'] + '.conf')
+            if os.path.exists(path):
+                content = public.readFile(path)
+                content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
+                content = content.replace(f'*:{port_443}', f'*:{new_port_443}')
+                public.writeFile(path, content)
+
+        if os.path.exists(main_config):
+            content = public.readFile(main_config)
+            content = content.replace(f'Listen {port_80}', f'Listen {new_port_80}')
+            content = content.replace(f'Listen {port_443}', f'Listen {new_port_443}')
+            content = content.replace(f'ServerName 0.0.0.0:{port_80}', f'ServerName 0.0.0.0:{new_port_80}')
+            public.writeFile(main_config, content)
+
+        if os.path.exists(httpd_vhosts):
+            content = public.readFile(httpd_vhosts)
+            content = content.replace(f'Listen {port_888}', f'Listen {new_port_888}')
+            content = content.replace(f'*:{port_888}', f'*:{new_port_888}')
+            content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
+            public.writeFile(httpd_vhosts, content)
+
+        if os.path.exists(httpd_ssl):
+            content = public.readFile(httpd_ssl)
+            content = content.replace(f'{port_443}', f'{new_port_443}')
+            public.writeFile(httpd_ssl, content)
+
+        if is_restart:
+            ok = public.webservice_operation('apache')
+
+            if not ok:
+                return False, public.lang("The service restart failed. Please check the apache configuration file!")
+        return True, ' '
+
+    # nginx 修改多服务配置文件
+    def nginx_update_config(self, service_type, config_path, old_type, site_name, site_path, site_id) -> bool:
+        ssl_port = '443'
+        listen_port = '80'
+
+        content = public.readFile(config_path)
+        if not content:
+            return False
+
+        # 备份原nginx配置文件
+        shutil.copy2(config_path, config_path + '.bar.bar')
+
+        # 匹配服务名称，索引文件，PHP配置块，日志文件等
+        patterns = {
+            'server_name': r'(server_name\s+[^;]+\s*;)',
+            'ssl': r'#SSL-START.*?\n(.*?)#SSL-END',
+            'Monitor' : r'#Monitor-Config-Start.*?#Monitor-Config-End',
+            'include_php': r'#PHP-INFO-START.*?\n(.*?)#PHP-INFO-END',
+            'listen' : r'^\s*listen\b.*?;.*$',
+            'rert_apply_check': r'#CERT-APPLY-CHECK--START.*?\n(.*?)#CERT-APPLY-CHECK--END',
+            'begin_deny' :  r'(\s*#BEGIN_DENY_(\w+)\s*\n.*?#END_DENY_\2\s*\n)',
+            'default_document' : r'(index\s+[^;]+\s*;)',
+        }
+
+        res = {}
+        for key, pattern in patterns.items():
+            # 特殊处理生成类配置
+            if key in ['rert_apply_check','ssl','include_php']:
+                match = re.search(pattern, content, re.DOTALL)
+                res[key] = match.group(1).strip() if (match and match.group(1)) else ''
+
+                # 处理php版本, 代理后注释原nginx的php版本
+                if key == 'include_php' and res[key] != '\n' and service_type == 'nginx':
+                    matches = re.findall(r'^\s*#include enable-.*$', res[key], re.MULTILINE)
+                    if matches:
+                        if matches[0].lstrip().startswith('#'):
+                            res[key] = res[key].replace(matches[0].lstrip(), matches[0].lstrip()[1:])
+                elif key == 'include_php' and res[key] != '\n' and service_type != 'nginx':
+                    matches = re.findall(r'^\s*include enable-.*$', res[key], re.MULTILINE)
+                    if matches:
+                        if not matches[0].lstrip().startswith('#'):
+                            res[key] = res[key].replace(matches[0].lstrip(), '#' + matches[0].lstrip())
+
+            elif key == 'Monitor' or key == 'rert_apply_check' :
+                match = re.findall(pattern, content, re.DOTALL)
+                res[key] = match[0] if match else '\n'
+
+            elif key == 'listen' or key == 'default_document':
+                matches = re.findall(pattern, content, re.MULTILINE)
+                unique_matches = list(set(matches))
+                res[key] = ''
+                if unique_matches:
+                    for m in unique_matches:
+                        res[key] += '\t\t' + m.strip() + '\n'
+
+            elif key == 'begin_deny':
+                matches = re.findall(pattern, content, re.DOTALL)
+                blocks = '\n'.join([match[0].strip() for match in matches])
+                res[key] =blocks if blocks else ''
+            else:
+                matches = re.findall(pattern, content)
+                if matches:
+                    res[key] = f"{matches[0]}\n"
+                else:
+                    return False
+
+        # 检查是否存在重定向
+        res['referenced_redirect'] = ''
+        if "#referenced redirect rule" in content:
+            res['referenced_redirect']= f"""
+    #referenced redirect rule, if comented, the configured redirect rule will be invalid
+    include /www/server/panel/vhost/nginx/redirect/{site_name}/*.conf;
+"""
+
+        log_path = public.GetConfigValue('logs_path') + '/' + site_name
+        # 获取运行目录
+        dict_obj = public.to_dict_obj({'id': site_id })
+        run_path = self.GetSiteRunPath(dict_obj)
+        if run_path['status'] == 0:
+            site_path = site_path + run_path['message']['runPath']
+
+        # 切换到nginx
+        if service_type == 'nginx':
+            # 构建配置块
+            conf = r'''server
+ {{
+{listen}
+    {server_name}
+{default_document}
+    root {site_path};
+
+    #SSL-START SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules
+    {ssl}
+    #SSL-END
+    
+    {rert_apply_check}
+
+    #ERROR-PAGE-START  Error page configuration, allowed to be commented, deleted or modified
+    error_page 404 /404.html;
+    error_page 502 /502.html;
+    #ERROR-PAGE-END
+    {begin_deny}
+    
+    #PHP-INFO-START PHP reference configuration, allowed to be commented, deleted or modified
+    {include_php}
+    #PHP-INFO-END
+    {referenced_redirect}
+    #REWRITE-START URL rewrite rule reference, any modification will invalidate the rewrite rules set by the panel
+    include /www/server/panel/vhost/rewrite/{site_name}.conf;
+    #REWRITE-END
+
+    # Forbidden files or directories
+    location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
+    {{
+        return 404;
+    }}
+
+    # Directory verification related settings for one-click application for SSL certificate'
+    location ~ \.well-known{{
+        allow all;
+    }}
+
+    #Prohibit putting sensitive files in certificate verification directory
+    if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {{
+        return 403;
+    }}
+
+    access_log {_log}.log;
+    error_log  {_log}.error.log;  
+    
+    {Monitor}
+}}'''.format(server_name=res['server_name'], include_php=res['include_php'], Monitor=res['Monitor'],rert_apply_check=res['rert_apply_check'],
+             listen_port=listen_port, site_name=site_name, site_path=site_path, ssl=res['ssl'],listen=res['listen'],begin_deny=res['begin_deny'],
+             _log=log_path,default_document=res['default_document'],referenced_redirect=res['referenced_redirect'])
+
+            public.writeFile(config_path, conf)
+            wp_path = os.path.join(site_path, 'wp-config.php')
+            if old_type == 'apache' and os.path.exists(wp_path):
+                self.wp_https_conf(wp_path, 'delete')
+            return True
+
+        # 构建apache/ols的nginx配置块
+        if service_type == 'apache':
+            ssl_port = '8290'
+            listen_port = '8288'
+        elif service_type == 'openlitespeed':
+            ssl_port = '8190'
+            listen_port = '8188'
+
+        new_block = r"""server 
+{{
+{listen}
+    {server_name}
+{default_document} 
+    root {site_path};   
+    {rert_apply_check}
+
+    #PHP-INFO-START\s+PHP reference configuration, allowed to be commented, deleted or modified
+    {include_php}
+    #PHP-INFO-END
+
+    #SSL-START SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules
+    {ssl}
+    #SSL-END
+    {referenced_redirect}
+    #REWRITE-START URL rewrite rule reference, any modification will invalidate the rewrite rules set by the panel
+    # include /www/server/panel/vhost/rewrite/{site_name}.conf;
+    #REWRITE-END
+
+    #ERROR-PAGE-START  Error page configuration, allowed to be commented, deleted or modified
+    #error_page 404 /404.html;
+    #error_page 502 /502.html;
+    #ERROR-PAGE-END
+    {begin_deny}
+
+    location / {{
+        proxy_pass http://127.0.0.1:{listen_port};
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header REMOTE-HOST $remote_addr;
+		proxy_set_header SERVER_PROTOCOL $server_protocol;
+        proxy_set_header HTTPS $https;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header REMOTE_ADDR $remote_addr;
+        proxy_set_header REMOTE_PORT $remote_port;
+        add_header Cache-Control no-cache;
+    }}
+
+    # Forbidden files or directories
+    location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
+    {{
+        return 404;
+    }}
+
+    location ~ \.well-known{{
+        allow all;
+        root {site_path};
+        try_files $uri =404;
+    }}
+
+    #Prohibit putting sensitive files in certificate verification directory
+    if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {{
+        return 403;
+    }}
+    
+    access_log {_log}.log;
+    error_log  {_log}.error.log;  
+
+    {Monitor}
+}} """.format(server_name=res['server_name'], include_php=res['include_php'],rert_apply_check=res['rert_apply_check'],
+                   listen_port=listen_port, ssl_port=ssl_port, ssl=res['ssl'],Monitor=res['Monitor'],begin_deny=res['begin_deny'],
+                   site_name=site_name, site_path=site_path,listen=res['listen'],_log=log_path,default_document=res['default_document'],
+              referenced_redirect=res['referenced_redirect'])
+        public.writeFile(config_path, new_block)
+
+        # 处理apache配置ssl后，强制重定向
+        wp_path = os.path.join(site_path, 'wp-config.php')
+        if service_type == 'apache' and os.path.exists(wp_path):
+            self.wp_https_conf(wp_path)
+        elif old_type == 'apache' and os.path.exists(wp_path):
+            self.wp_https_conf(wp_path,'delete')
+        return True
+
+    # 添加wp https识别
+    def wp_https_conf(self,file_path, action='add'):
+        start_comment = r'/\*\* Make WordPress correctly recognize HTTPS\. start \*/'
+        end_comment = r'/\*\* Make WordPress correctly recognize HTTPS\. end \*/'
+        code_block = f'{start_comment}.*?{end_comment}'
+        pattern = re.compile(code_block, re.DOTALL)
+        try:
+            content = public.readFile(file_path)
+            if not content:
+                return  False
+
+            if action == 'delete':
+                new_content = pattern.sub('', content)
+
+            elif action == 'add':
+                if pattern.search(content):
+                    return True
+
+                # 插入
+                insert_marker = re.compile(r'/\* That\'s all, stop editing! Happy publishing\. \*/', re.IGNORECASE)
+                match = insert_marker.search(content)
+
+                if match:
+                    code_to_add = """
+/** Make WordPress correctly recognize HTTPS. start */
+if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') {
+    $_SERVER['HTTPS'] = 'on';
+    $_SERVER['SERVER_PORT'] = 443; 
+}
+/** Make WordPress correctly recognize HTTPS. end */
+"""
+                    new_content = content[:match.start()] + code_to_add + content[match.start():]
+
+            public.writeFile(file_path,new_content)
+            return  True
+        except:
+            return  False
+
+    # 切换网站服务
+    def switch_webservice(self, args: public.dict_obj):
+        try:
+            site_id = args.get('site_id', '')
+            site_list = json.loads(args.get('site_list', '[]'))
+            service_type = args.get('service_type', '')
+        except Exception as e :
+            return public.return_message(-1, 0, public.lang('Parameter error'))
+
+        if (not site_id and not site_list) or not service_type:
+            return public.return_message(-1, 0, public.lang('Parameter error'))
+
+        if service_type not in ['nginx', 'apache', 'openlitespeed']:
+            return public.return_message(-1, 0, public.lang('The specified service type does not exist'))
+
+        # 批量切换
+        if site_list:
+            ok , res = self.batch_switch_website_services(site_list, service_type)
+            if not ok:
+                return public.return_message(-1, 0, public.lang('An error occurred when switching services in batches!'))
+            return public.return_message(0, 0, res)
+
+        site = public.M('sites').where('id = ?', (site_id,)).field('id,name,path,project_type,service_type').find()
+
+        if not site:
+            return public.return_message(-1, 0, public.lang('Website ID does not exist'))
+
+        if site['service_type'] == service_type or (not site['service_type'] and service_type == 'nginx'):
+            return public.return_message(-1, 0, public.lang('The current website service is already {}', service_type))
+
+        old_type = site['service_type'] if site['service_type'] else 'nginx'
+        config_path = os.path.join(public.get_panel_path(), 'vhost', 'nginx', site['name'] + '.conf')
+
+        # 检测是否与用户配置的反向代理冲突
+        ok, msg = self.check_switch_service(site['name'], site['id'],site['service_type'],site['project_type'])
+        if not ok:
+            return public.return_message(-1, 0, public.lang('{}',msg))
+
+        # 切换服务,apache需同步修改虚拟主机端口
+        if service_type == 'apache':
+            path = os.path.join(public.get_panel_path(), 'vhost', 'apache', site['name'] + '.conf')
+            if os.path.exists(path):
+                content = public.readFile(path)
+                content = content.replace(f'*:80', f'*:8288')
+                content = content.replace(f'*:443', f'*:443')
+                public.writeFile(path, content)
+
+        # 修改nginx代理, 若是回滚操作则不修改配置，直接恢复备份
+        if not args.get('website_rollback', False):
+            ok = self.nginx_update_config(service_type, config_path, old_type, site['name'], site['path'], site['id'])
+            if not ok:
+                return public.return_message(-1, 0, public.lang('The configuration modification failed.'
+                                                               ' Please ensure that the website configuration is correct or try switching to the nginx service before using it.'))
+
+        # 更新服务
+        public.M('sites').where('id = ?', (site_id,)).update({"service_type": service_type})
+
+        # 重启与重载服务，避免重启后配置仍不生效
+        if args.get('is_reload', True):
+            public.webservice_operation('nginx', 'reload')
+            public.webservice_operation(service_type, 'reload')
+
+        public.write_log_gettext('Site manager	', 'Successfully switched the website [{}] from [{}] service to [{}]!',
+                                 (site['name'],old_type,service_type))
+        # 统计次数
+        public.set_module_logs('Multi-WebServer', f'switch_webservice-{site['project_type']}')
+        return public.return_message(0, 0, public.lang('Successfully switched to {}', service_type))
+
+    # 获取当前网站服务类型
+    def get_current_webservice(self, args: public.dict_obj):
+        try:
+            if not public.get_multi_webservice_status():
+                return public.return_message(0, 0, public.get_webserver())
+
+            service_type = public.M('sites').where('id = ?', (args.site_id,)).field('service_type').find()
+
+            if not service_type['service_type']:
+                return public.return_message(0, 0, 'nginx')
+
+            return public.return_message(0, 0, service_type['service_type'])
+        except Exception as e:
+            return public.return_message(-1, 0, public.lang('The type of website service obtained is incorrect'))
+
+    # 多服务检查与修复
+    def multi_service_check_repair(self, args=None):
+        from panelModelV2.publicModel import main
+        public_obj = main()
+
+        if not public.get_multi_webservice_status():
+            return public.return_message(-1,0,'Please enable Multi-WebEngine Hosting first')
+
+        try:
+            # 尝试重新修改配置
+            self.cheak_port_conflict('enable')
+
+            ok, msg = self.ols_update_config('enable')
+            if not ok:
+                raise ValueError(msg)
+
+            ok, msg = self.apache_update_config('enable')
+            if not ok:
+                raise ValueError(msg)
+
+            public.webservice_operation('nginx')
+
+            # 检查服务状态
+            for service in ['openlitespeed', 'apache', 'nginx']:
+                args = public.to_dict_obj({'name': service})
+                res = public_obj.get_soft_status(args)
+                if res['status'] != 0:
+                    raise ValueError(public.lang("Service startup failed: {}", service))
+                if not res['message']['s_status']:
+                    raise ValueError(public.lang("Service startup failed: {}", service))
+
+            return public.return_message(0, 0, public.lang('Repaired successfully'))
+        except Exception as e:
+            print(e)
+            return public.return_message(-1,0,public.lang('An error occurred in multi-service and the repair failed. Please try to close multi-service and then reopen it!:{}',str(e)))
+
+    # 批量切换网站服务
+    def batch_switch_website_services(self, site_list, service_type):
+        try:
+            res = []
+            for site_id in site_list:
+                site = public.M('sites').where('id = ?', (site_id,)).field('id,name,path,project_type,service_type').find()
+
+                if not site:
+                    continue
+
+                if site['service_type'] == service_type or (not site['service_type'] and service_type == 'nginx'):
+                    res.append({site['name'] : public.lang('The current website service is already {}', service_type)})
+                    continue
+
+                old_type = site['service_type'] if site['service_type'] else 'nginx'
+                config_path = os.path.join(public.get_panel_path(), 'vhost', 'nginx', site['name'] + '.conf')
+
+                # 检测是否与用户配置的反向代理冲突
+                ok, msg= self.check_switch_service(site['name'],site['id'],site['service_type'],site['project_type'])
+                if not ok:
+                    res.append({site['name'] : msg })
+                    continue
+
+                # 切换服务,apache需同步修改虚拟主机端口
+                if service_type == 'apache':
+                    path = os.path.join(public.get_panel_path(), 'vhost', 'apache', site['name'] + '.conf')
+                    if os.path.exists(path):
+                        content = public.readFile(path)
+                        content = content.replace(f'*:80', f'*:8288')
+                        content = content.replace(f'*:443', f'*:443')
+                        public.writeFile(path, content)
+                    else:
+                        res.append({site['name']: public.lang('Theconfiguration file does not exist')})
+                        continue
+
+                ok = self.nginx_update_config(service_type, config_path, old_type, site['name'], site['path'], site['id'])
+                if not ok:
+                    res.append({site['name']: public.lang('The configuration modification failed.')})
+                    continue
+
+                # 更新服务
+                public.M('sites').where('id = ?', (site_id,)).update({"service_type": service_type})
+                res.append({site['name']: 'Success'})
+                # 统计次数
+                public.set_module_logs('Multi-WebServer', f'switch_webservice-{site['project_type']}')
+
+            # 重启与重载服务，避免重启后配置仍不生效
+            public.webservice_operation('nginx', 'reload')
+            public.webservice_operation(service_type, 'reload')
+
+            return True, res
+        except Exception as e:
+            return True, e
+
+    # 检测是否存在反向代理冲突
+    def cheak_reverse_proxy(self,name):
+        dict_obj = public.to_dict_obj({'sitename': name})
+        proxy = self.GetProxyList(dict_obj)
+        proxy_list = proxy["message"] if proxy['status'] == 0 else []
+
+        for proxy in proxy_list:
+            if proxy['proxydir'] in ['/', '/*']:
+                # dict_obj = public.to_dict_obj({'sitename': name,'proxyname': proxy['proxyname']})
+                # self.RemoveProxy(dict_obj)
+                return False
+        return True
+
+    # 判断是否存在子目录绑定
+    def cheak_dirbinding(self,site_id):
+        try:
+            obj = public.to_dict_obj({'id':site_id})
+            dir_data = self.GetDirBinding(obj)
+            if dir_data['status'] != 0:
+                return
+
+            dir = dir_data['message']['binding']
+            if dir:
+                for i in dir:
+                    obj_dir = public.to_dict_obj({'id':i['id']})
+                    self.DelDirBinding(obj_dir)
+            return
+        except Exception as e:
+            return
+
+    # 检测node项目，多服务下默认走nginx
+    def check_node_project(self, site_name, is_ = 'enable'):
+        conf = os.path.join(public.get_panel_path(),'vhost', 'apache', f'node_{site_name}.conf')
+
+        # 使多服务下apache文件不生效
+        if is_ == 'enable':
+            if os.path.exists(conf):
+                shutil.move(conf, conf + '.barduo')
+        else:
+            if os.path.exists(conf + '.barduo'):
+                shutil.move(conf + '.barduo', conf )
+        return True
+
+    # 网站回滚
+    def website_rollback(self, get):
+        try:
+            get.validate([
+                Param('site_id').String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            return public.return_message(-1, 0, str(ex))
+
+        site = public.M('sites').where('id = ?', (get.site_id,)).field('id,name,path,service_type').find()
+        if not site:
+            return public.return_message(-1, 0, 'The website does not exist.')
+
+        conf_path = os.path.join(public.get_panel_path(),'vhost','nginx',site['name']+'.conf')
+        if not os.path.exists(conf_path + '.bar.bar'):
+            return public.return_message(-1, 0, public.lang('The backed-up configuration file does not exist: {}',site['name']))
+
+        # 判断上一次服务类型
+        conf_bar = public.readFile(conf_path + '.bar.bar')
+        if ':8188' in conf_bar:
+            service_type = 'openlitespeed'
+        elif ':8288' in conf_bar:
+            service_type = 'apache'
+        else:
+            service_type = 'nginx'
+
+        res  = self.switch_webservice(public.to_dict_obj({'site_id': get.site_id, 'service_type': service_type, 'website_rollback': True}))
+        if res['status'] != 0:
+            return public.return_message(-1, 0, res['message'])
+
+        # 写入备份文件
+        public.writeFile(conf_path, conf_bar)
+        return public.return_message(0, 0, public.lang('Successful recovery'))
+
+    # 服务安装统计
+    def service_install_count(self, get):
+        if get.get('type', '') == 'install':
+            public.set_module_logs('WebServer-install', f'service_install_count')
+        return public.return_message(0, 0,'')
+
+    # 切换服务检测
+    def check_switch_service(self, site_name, site_id, service_type,p_type):
+        try:
+            # 检测nginx配置冲突
+            ok = self.CheckLocation(public.to_dict_obj({'sitename': site_name}))
+            if ok['status'] != 0 and service_type not in ['apache', 'openlitespeed'] and p_type != 'WP2' :
+                raise ValueError( public.lang('There are global proxy or url rewriting conflicts on the website. Please delete it and try again!'))
+
+            # 检测是否存在反向代理冲突
+            dict_obj = public.to_dict_obj({'sitename': site_name})
+            proxy = self.GetProxyList(dict_obj)
+            proxy_list = proxy["message"] if proxy['status'] == 0 else []
+
+            if proxy_list :
+                raise ValueError(
+                    public.lang('This website has a reverse proxy. Please delete it and try again!'))
+
+            # for proxy in proxy_list:
+            #     if proxy['proxydir'] in ['/', '/*']:
+            #         # dict_obj = public.to_dict_obj({'sitename': name,'proxyname': proxy['proxyname']})
+            #         # self.RemoveProxy(dict_obj)
+            #         raise ValueError( public.lang('The website has configured a global reverse proxy. Please cancel it first!'))
+
+            # 检测子目录冲突
+            obj = public.to_dict_obj({'id':site_id})
+            dir_data = self.GetDirBinding(obj)
+            if dir_data['status'] != 0:
+                raise  ValueError('Subdirectory detection error')
+
+            dir = dir_data['message']['binding']
+            if dir:
+                raise  ValueError(public.lang('The website is configured with subdirectory domain name binding. Please cancel it first!'))
+                # for i in dir:
+                #     obj_dir = public.to_dict_obj({'id':i['id']})
+                #     self.DelDirBinding(obj_dir)
+
+            return True,''
+        except Exception as e:
+            return False, str(e)
+
+    # 处理网站自定义端口冲突
+    def cheak_port_conflict(self,status='enable'):
+        apache_path = os.path.join(public.get_panel_path(), 'vhost', 'apache')
+        ols_path = os.path.join(public.get_panel_path(), 'vhost', 'openlitespeed','listen')
+        sites_port = public.M('domain').where('port <> ?', (80)).field('pid,name,port').select()
+        apache_port = '8288'
+
+        for site_port in sites_port:
+            site_name = public.M('sites').where('id = ?', (site_port['pid'],)).getField('name')
+
+            # 处理apache占用
+            apache_conf_path = os.path.join(apache_path, site_name+'.conf')
+            if os.path.exists(apache_conf_path):
+                if status =='enable':
+                    content = public.readFile(apache_conf_path)
+                    content = content.replace(f'*:{site_port['port']}', f'*:{apache_port}')
+                    content = content.replace(f'[::]:{site_port['port']}', f'[::]:{apache_port}')
+                    public.writeFile(apache_conf_path, content)
+                else:
+                    content = public.readFile(apache_conf_path)
+                    vhost_pattern = r'<VirtualHost.*?</VirtualHost>'
+                    vhost_list = re.findall(vhost_pattern, content, re.DOTALL | re.MULTILINE)
+                    if vhost_list:
+                        conf = ''
+                        for i in range(len(vhost_list)):
+                            if site_name+'.'+ str(site_port['port']) in vhost_list[i]:
+                                vhost_list[i] = vhost_list[i].replace(f'*:{apache_port}', f'*:{site_port['port']}')
+                                vhost_list[i] = vhost_list[i].replace(f'[::]:{apache_port}', f'[::]:{site_port['port']}')
+                            conf += vhost_list[i] + '\n\n'
+                        public.writeFile(apache_conf_path, conf)
+
+            # 处理ols占用
+            ols_conf_path = os.path.join(ols_path, str(site_port['port']) +'.conf')
+            ols_80conf = os.path.join(ols_path, '80.conf')
+
+            if status == 'enable':
+                if os.path.exists(ols_conf_path):
+                    shutil.move(ols_conf_path, ols_conf_path + '.barduo')
+
+                    # 插入80端口
+                    get_obj = public.to_dict_obj({'port':'80','webname': site_name,'domain':site_port['name']})
+                    self.openlitespeed_domain(get_obj)
+            else:
+                if os.path.exists(ols_conf_path + '.barduo'):
+                    shutil.move(ols_conf_path + '.barduo', ols_conf_path )
+
+                # 删除80.conf中的自定义端口
+                if os.path.exists(ols_80conf):
+                    conf = public.readFile(ols_80conf)
+                    map_pattern = r'map\s+{}\s+(.*)'.format(re.escape(site_name))
+                    match = re.search(map_pattern, conf)
+
+                    if match:
+                        domains = match.group(1).split(',')
+                        if site_port['name'] in domains:
+                            domains.remove(site_port['name'])
+                            new_domains_str = ",".join(domains)
+                            new_map_line = f"map\t{site_name} {new_domains_str}"
+                            updated_conf = re.sub(map_pattern, new_map_line, conf)
+
+                            public.writeFile(ols_80conf, updated_conf)
+
+        # 取消主配置文件的端口监听
+        self.cheak_apache_httpconf(status)
+        return True
+
+    # 检测apache主配置文件端口监听
+    def cheak_apache_httpconf(self,status):
+        config_path = '/www/server/apache/conf/httpd.conf'
+        if os.path.exists(config_path):
+            listen_pattern = r'(?i)^\s*listen\b.*$'  # 开启匹配
+            listen_d = r'(?i)^\s*#listen\b.*$'      # 关闭匹配
+
+            content = public.readFile(config_path)
+            if status == 'enable':
+                port_listen  = re.findall(listen_pattern, content, re.MULTILINE)
+                for port in port_listen:
+                    if port not in ['Listen 80','Listen 443','Listen 8288','Listen 8290'] and ':' not in port:  # 不处理手动自定义端口号
+                        content = content.replace(port, '#' + port)
+                public.writeFile(config_path, content)
+            else:
+                port_listen  = re.findall(listen_d, content, re.MULTILINE)
+                for port in port_listen:
+                    if port not in ['Listen 80','Listen 443'] and ':' not in port:
+                        content = content.replace(port, port[1:])
+                public.writeFile(config_path, content)
+
+        return True
+    # ======================网站多服务 end==============================

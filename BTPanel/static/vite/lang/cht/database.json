@@ -217,7 +217,8 @@
 			"index_29": "用戶名或密碼不能少於 3 位！",
 			"index_30": "兩個輸入框中的密碼不一致！",
 			"index_31": "PHP版本",
-			"index_32": "請選擇 PHP-CLI 版本"
+			"index_32": "請選擇 PHP-CLI 版本",
+			"index_33": "adminer驅動器依賴當前運行的php版本環境，如果你發現缺少驅動器，請到php php_mongodb，pdo_pgsql"
 		},
 		"Api": {
 			"Index_1": "正在保存遠程服務器連接信息，請稍候...",
@@ -232,6 +233,22 @@
 			"Index_10": "正在保存REDIS數據，請稍候...",
 			"Index_11": "正在刪除備份，請稍候...",
 			"Index_12": "正在刪除備份，請稍候..."
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "當前狀態：",
+				"fixed": "修復",
+				"install": "安裝",
+				"uninstall": "卸載",
+				"confirmFixed": "您確定要修復嗎？",
+				"confirmInstall": "您確定要安裝嗎？",
+				"confirmUninstall": "您確定要卸載嗎？",
+				"jumpingToAdminer": "正在跳轉Adminer，請稍候..."
+			},
+			"switchingPhp": "正在切換PHP版本中，請稍候...",
+			"installing": "正在安裝中，請稍候...",
+			"uninstalling": "正在卸載中，請稍候...",
+			"switchingPort": "正在切換端口中，請稍候..."
 		},
 		"Mysql": {
 			"index_1": "自動備份數據庫",

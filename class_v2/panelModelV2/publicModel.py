@@ -143,6 +143,15 @@ class main(panelBase):
         theme_mark_path = "/www/server/panel/data/theme.pl"
         data['theme'] = public.readFile(theme_mark_path) if os.path.exists(theme_mark_path) else 'fresh'
 
+        # 判断是否进行多服务安装
+        data['multi_service_install'] = False
+        multi_service_path = '/tmp/multi_service_install.log'
+        if os.path.exists(multi_service_path):
+            data['multi_service_install'] = True
+
+        # 判断是否是多服务状态
+        data['multi_service'] = public.get_multi_webservice_status()
+
         return public.return_message(0, 0, data)
 
     #统计面板备份占用空间

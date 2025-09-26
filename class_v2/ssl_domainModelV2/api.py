@@ -46,6 +46,7 @@ from .service import (
     CertHandler,
     record_ensure,
     check_legal,
+    sync_site_ssl,
 )
 
 
@@ -277,12 +278,12 @@ class DomainObject:
         try:
             dns = DnsDomainProvider.objects.filter(id=get.id).first()
             for k, v in get.get_items().items():
-                if k != "id":
+                if hasattr(dns, k) and k != "id":
                     setattr(dns, k, v)
             # 仅当开启时候校验
             if dns.status == 1:
                 dns.dns_obj.verify()
-            DnsDomainProvider.objects.filter(id=get.id).update(get.get_items())
+            DnsDomainProvider.objects.filter(id=get.id).update(dns.as_dict())
         except Exception as ex:
             return public.fail_v2(str(ex))
         return public.success_v2(public.lang("Save Successfully!"))
@@ -535,7 +536,7 @@ class DomainObject:
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
-
+        sync_site_ssl()
         page = int(getattr(get, "p", 1))
         limit = int(getattr(get, "limit", 100))
         ssl_obj = DnsDomainSSL.objects.filter(
@@ -611,6 +612,11 @@ class DomainObject:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
+        def update_ssl_log(ssl, log):
+            if not ssl.log or ssl.log != log:
+                ssl.log = log
+                ssl.save()
+
         ts_month = 30 * 24 * 60 * 60 * 1000
         months = int(time.time() * 1000) + ts_month
 
@@ -625,13 +631,25 @@ class DomainObject:
         else:  # 30天内的cert
             ssl_obj = DnsDomainSSL.objects.filter(not_after_ts__lt=months)
 
+        if ssl_obj.count() == 0:
+            raise HintException(
+                "This certificate renewal information not found, please reapply at the domain management center."
+                "To apply for a new certificate to be managed by the management center."
+            )
+
         log = None
         for ssl in ssl_obj:
             if ssl.auth_info.get("auth_type") == "dns":
+                if ssl.auth_info.get("auth_to") == "dns":
+                    raise HintException(
+                        f"[{ssl.subject}] certificate was applied for by manual DNS verification, "
+                        f"cannot be renewed automatically. please use manual apply ssl."
+                    )
                 provider = DnsDomainProvider.objects.find_one(id=ssl.provider_id)
                 if provider:
                     _ = provider.dns_obj
                     log = provider.get_ssl_log(ssl.dns)
+                    update_ssl_log(ssl, log)
                     dns_renew_task = threading.Thread(
                         target=provider.model_apply_cert, args=(ssl.dns,)
                     )
@@ -639,12 +657,14 @@ class DomainObject:
                 else:
                     # 兜底
                     log = ssl.get_ssl_log()
+                    update_ssl_log(ssl, log)
                     dns_renew_task = threading.Thread(
                         target=ssl.try_to_apply_ssl, args=(ssl.dns,)
                     )
                     dns_renew_task.start()
             else:  # http
                 log = ssl.get_ssl_log()
+                update_ssl_log(ssl, log)
                 if any("*." in i for i in ssl.dns):
                     msg = "Error: The wildcard domain name can only be verified by DNS. \n"
                     public.AppendFile(log, msg)
@@ -658,8 +678,9 @@ class DomainObject:
                 )
                 http_renew_task.start()
 
-        if hasattr(get, "hash"):
+        if hasattr(get, "hash") and log:
             return public.success_v2(log)
+
         return public.success_v2(public.lang("Successfully Renewed!"))
 
     def manual_apply_vaild(self, get):

@@ -1087,7 +1087,8 @@ export PATH
         if not project_find['project_config']['bind_extranet']: return False
         if not project_find['project_config']['domains']: return False
         self.set_nginx_config(project_find)
-        self.set_apache_config(project_find)
+        if not public.get_multi_webservice_status():
+            self.set_apache_config(project_find)
         public.serviceReload()
         return True
 
@@ -1362,6 +1363,12 @@ export PATH
 
         # 写配置文件
         public.writeFile(config_file,apache_config_body)
+
+        # 多服务下使apache配置文件失效
+        if public.get_multi_webservice_status():
+            if os.path.exists(config_file):
+                shutil.move(config_file, config_file + '.barduo')
+
         return True
     
 

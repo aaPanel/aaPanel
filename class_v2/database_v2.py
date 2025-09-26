@@ -2103,27 +2103,29 @@ SetLink
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
+        db_name = ""
+        filename = ""
         try:
             id = get.id
             where = "id=?"
             backup_info = public.M('backup').where(where, (id,)).find()
             filename = backup_info['filename']
-            if os.path.exists(filename): os.remove(filename)
-            db_name = ''
-            if filename == 'qiniu':
-                name = backup_info['name']
-                public.ExecShell(public.get_python_bin() + " " + public.GetConfigValue(
-                    'setup_path') + '/panel/script/backup_qiniu.py delete_file ' + name)
+            if os.path.exists(filename):
+                os.remove(filename)
             public.M('backup').where(where, (id,)).delete()
             # 取实际
             pid = backup_info['pid']
-            db_name = public.M('databases').where("id=? AND LOWER(type)=LOWER('mysql')", (pid,)).getField('name')
-            public.write_log_gettext("Database manager", 'Successfully deleted backup [{}] for database [{}]!',
-                                     (db_name, filename))
+            db_name = public.M('databases').where("id=?", (pid,)).getField('name')
+            public.write_log_gettext(
+                "Database manager",
+                f'Successfully deleted backup [{filename}] for database [{db_name}]!'
+            )
             return public.return_message(0, 0, public.lang("Successfully deleted"))
         except Exception as ex:
-            public.write_log_gettext("Database manager", 'Failed to delete backup [{}] for database [{}]! => {}',
-                                     (db_name, filename, str(ex)))
+            public.write_log_gettext(
+                "Database manager",
+                f'Failed to delete backup [{filename}] for database [{db_name}]! => {str(ex)}'
+            )
             return public.return_message(-1, 0, public.lang("Failed to delete"))
 
     # 导入

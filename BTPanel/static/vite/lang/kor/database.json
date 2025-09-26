@@ -217,7 +217,8 @@
 			"index_29": "사용자 이름이나 비밀번호는 3 자리 미만일 수 없습니다!",
 			"index_30": "두 입력의 암호는 일관성이 없습니다!",
 			"index_31": "PHP 버전",
-			"index_32": "PHP-CLI 버전을 선택하십시오"
+			"index_32": "PHP-CLI 버전을 선택하십시오",
+			"index_33": "관리자 드라이버는 현재 실행중인 PHP 버전 환경에 따라 다릅니다. 드라이버가 누락 된 경우 PHP_MongoDB 및 PDO_PGSQL을 설치하려면 PHP 확장으로 이동하십시오."
 		},
 		"Api": {
 			"Index_1": "원격 서버에 연결하면 기다려주세요 ...",
@@ -232,6 +233,22 @@
 			"Index_10": "데이터 복구, 기다려주세요 ...",
 			"Index_11": "Redis 데이터 저장, 기다려주세요 ...",
 			"Index_12": "백업 삭제, 잠깐만 ..."
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "현재 상태 : ",
+				"fixed": "결정된",
+				"install": "설치하다",
+				"uninstall": "제거하십시오",
+				"confirmFixed": "고치고 싶습니까?",
+				"confirmInstall": "설치 하시겠습니까?",
+				"confirmUninstall": "제거하고 싶습니까?",
+				"jumpingToAdminer": "관리자에게 점프하면 기다려주세요 ..."
+			},
+			"switchingPhp": "PHP 버전 전환, 기다려주세요 ...",
+			"installing": "설치, 잠깐만 ...",
+			"uninstalling": "제거 해제, 잠깐만 ...",
+			"switchingPort": "포트 전환, 잠깐만 ..."
 		},
 		"Mysql": {
 			"index_1": "자동 백업 데이터베이스",

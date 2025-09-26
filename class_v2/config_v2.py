@@ -2444,7 +2444,10 @@ class config:
         site_info = public.M('sites').where('id=?', (get.id,)).field('name,path').find()
         if site_info:
             import panel_site_v2
-            run_path = panel_site_v2.panelSite().GetSiteRunPath(get)['message']["runPath"]
+            try:
+                run_path = panel_site_v2.panelSite().GetSiteRunPath(get)['message']["runPath"]
+            except:
+                return public.return_message(0, 0, False)
             # run_path = panelSite.panelSite().GetSiteRunPath(get)["runPath"]
             user_ini_file = "{site_path}{run_path}/.user.ini".format(site_path=site_info["path"], run_path=run_path)
             conf = public.readFile(user_ini_file)

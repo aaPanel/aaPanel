@@ -228,15 +228,14 @@ class RestartServices:
                 return
             # "try to {act} [{self.nick_name}]..."
             bash_path = self.bash if self.bash else f"/etc/init.d/{self.serviced}"
-            if self.pid_file.endswith(".sock"):
+            if self.pid_file and self.pid_file.endswith(".sock"):
                 try:
                     os.remove(self.pid_file)
                 except:
                     pass
             result = subprocess.run(
                 [bash_path, act],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
                 timeout=10,
             )
@@ -244,17 +243,6 @@ class RestartServices:
                 public.WriteLog(
                     "Service Daemon", f"Failed to {act} {self.nick_name}, error: {result.stderr.strip()}"
                 )
-                # todo 暂时解决公共安装脚本无法启动mongodb的问题
-                mg_path = f"{SETUP_PATH}/mongodb"
-                if act == "restart" and self.nick_name == "mongodb" and os.path.exists(f"{mg_path}/bin/mongod"):
-                    try:
-                        public.ExecShell(f"rm -f {mg_path}/log/configsvr.pid")
-                        public.ExecShell("rm -f /tmp/mongodb-27017.sock")
-                        public.ExecShell(f"chown -R mongo:mongo {mg_path}")
-                        public.ExecShell(f"sudo -u mongo {mg_path}/bin/mongod -f {mg_path}/config.conf")
-                    except:
-                        pass
-
         except subprocess.TimeoutExpired as t:
             public.WriteLog(
                 "Service Daemon", f"Failed to {act} {self.nick_name}, error: time out, {t}"
@@ -304,26 +292,19 @@ class RestartServices:
         # sock file
         if self.pid_file.endswith(".sock"):
             try:
-                check_list = [self.serviced] if self.serviced != "mysqld" else ["mysqld", "mariadbd"]
-                cmd = f"lsof {self.pid_file} 2>/dev/null | grep -E '{'|'.join(check_list)}'"
-                result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE)
-                return result.returncode == 0
+                check_list = ["mysqld", "mariadbd"] if self.serviced == "mysqld" else [self.serviced]
+                check_list = '|'.join(check_list)
+                # read pid -> show process name -> grep
+                command = f"lsof -t {self.pid_file} 2>/dev/null | xargs -r ps -o comm= -p | grep -Ewq '{check_list}'"
+                return subprocess.run(command, shell=True).returncode == 0
             except:
                 return False
         else:  # pid file
             try:
-                pid = public.readFile(self.pid_file)
-                if not pid:
-                    return False
-                pid = int(pid.strip())
-                if not os.path.exists(f"/proc/{pid}"):
-                    return False
-                try:
-                    with open(f"/proc/{pid}/stat", "r") as f:
-                        stat = f.read().split()
-                        return stat[2] != "Z"
-                except:
-                    return False
+                with open(self.pid_file, "r") as f:
+                    pid = int(f.read().strip())
+                with open(f"/proc/{pid}/stat", "r") as f:
+                    return f.read().split()[2] != "Z"
             except:
                 return False
 
@@ -337,7 +318,6 @@ class RestartServices:
         except Exception as e:
             public.print_log(f"error, {e}")
             return
-
         for service in [
             x for x in check_list if self.RECORD.get(x, 0) < self.COUNT
         ]:

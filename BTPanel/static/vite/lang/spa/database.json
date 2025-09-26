@@ -217,7 +217,8 @@
 			"index_29": "¡Las contraseñas en dos entradas son inconsistentes!",
 			"index_30": "Versión php",
 			"index_31": "Seleccione la versión php-cli",
-			"index_32": "Conectando al servidor remoto, espere ..."
+			"index_32": "Conectando al servidor remoto, espere ...",
+			"index_33": "El controlador de administrador depende del entorno de versión PHP actualmente en ejecución. Si encuentra que falta el controlador, vaya a PHP Extensions para instalar PHP_MONGODB y PDO_PGSQL"
 		},
 		"Api": {
 			"Index_1": "Modificación de la información de conexión del servidor remoto, espere ...",
@@ -232,6 +233,22 @@
 			"Index_10": "Guardar datos de Redis, espere ...",
 			"Index_11": "Eliminar copias de seguridad, por favor espere ...",
 			"Index_12": "Eliminar copias de seguridad, por favor espere ..."
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "Estado actual: ",
+				"fixed": "Fijado",
+				"install": "Instalar",
+				"uninstall": "Desinstalar",
+				"confirmFixed": "¿Estás seguro de que quieres arreglar?",
+				"confirmInstall": "¿Estás seguro de que quieres instalar?",
+				"confirmUninstall": "¿Estás seguro de que quieres desinstalar?",
+				"jumpingToAdminer": "Saltar al administrador, por favor espera ..."
+			},
+			"switchingPhp": "Cambiar la versión PHP, por favor espere ...",
+			"installing": "Instalando, espere ...",
+			"uninstalling": "Desinstalando, por favor espera ...",
+			"switchingPort": "Puerto de cambio, espere ..."
 		},
 		"Mysql": {
 			"index_1": "Base de datos de copia de seguridad",

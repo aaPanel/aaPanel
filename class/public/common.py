@@ -1,26 +1,40 @@
 # 公共模块
 # @author Zhj<2024/06/15>
+import base64
+import binascii
 import contextlib
-import json, os, sys, time, re, socket, importlib, binascii, base64, io, string, psutil, requests
+import fnmatch
 import gettext
+import gzip
+import importlib
+import json
+import os
+import psutil
+import re
+import shutil
+import socket
+import string
+import sys
+import tempfile
+import threading
+import time
 import typing
+from datetime import datetime
+from typing import Any, List, Set
+
+import fcntl
 import werkzeug.datastructures
-from typing import Any, List
+
 import public
 from .exceptions import PanelError
-from .validate import Param, trim_filter
-from .regexplib import match_ipv4, match_ipv6, match_class_private_property, match_safe_path, match_based_host, \
-    find_url_root, search_sql_special_chars
-from .tools import is_number
-from .structures import aap_t_simple_result, aap_t_mysql_dump_info, aap_t_http_multipart
-import gzip
-import fcntl
-import shutil
-import tempfile
-from datetime import datetime
+from .regexplib import *
 from .sqlite_easy import Db, SqliteEasy
-import threading
+from .structures import *
+from .tools import is_number
+from .validate import Param, trim_filter
 
+aap_t_simple_result = aap_t_simple_result
+aap_t_mysql_dump_info = aap_t_mysql_dump_info
 
 path = "/www/server/panel/BTPanel/languages/language.pl"
 if os.path.exists(path):
@@ -608,11 +622,12 @@ def WriteLog(type, logMsg, args=(), not_web=False):
         if not _LAN_LOG:
             _LAN_LOG = json.loads(ReadFile('BTPanel/static/language/' + GetLanguage() + '/log.json'))
         keys = _LAN_LOG.keys()
-        if type in keys:
-            type = _LAN_LOG[type]
+        if logMsg in keys:
+            logMsg = _LAN_LOG[logMsg]
             for i in range(len(args)):
                 rep = '{' + str(i + 1) + '}'
                 logMsg = logMsg.replace(rep, args[i])
+        if type in keys: type = _LAN_LOG[type]
         # try:
         #     if 'login_address' in session:
         #         logMsg = '{} {}'.format(session['login_address'], logMsg)
@@ -722,6 +737,27 @@ def getMsg(key, args=()):
 
 # 获取Web服务器
 def GetWebServer():
+    # 优先从请求头获取（仅在 Flask 请求上下文中）
+    try:
+        from flask import has_request_context
+    except Exception:
+        has_request_context = lambda: False
+
+    if has_request_context():
+        try:
+            from flask import request
+            header_val = request.headers.get('Aap-Web-Server')
+            if header_val:
+                v = str(header_val).strip().lower()
+                # 支持常见别名
+                if v in ('nginx', 'apache', 'openlitespeed', 'ols'):
+                    # 规范化返回 openlitespeed 名称
+                    if v == 'ols':
+                        return 'openlitespeed'
+                    return v
+        except Exception:
+            pass
+
     nginxSbin = '{}/nginx/sbin/nginx'.format(get_setup_path())
     apacheBin = '{}/apache/bin/apachectl'.format(get_setup_path())
     olsBin = '/usr/local/lsws/bin/lswsctrl'
@@ -744,16 +780,49 @@ def get_webserver():
 
 
 def ServiceReload():
-    # 重载Web服务配置
-    if os.path.exists('{}/nginx/sbin/nginx'.format(get_setup_path())):
-        result = ExecShell('/etc/init.d/nginx reload')
-        if result[1].find('nginx.pid') != -1:
-            ExecShell('pkill -9 nginx && sleep 1')
-            ExecShell('/etc/init.d/nginx start')
-    elif os.path.exists('{}/apache/bin/apachectl'.format(get_setup_path())):
-        result = ExecShell('/etc/init.d/httpd reload')
+    # 获取多服务状态和安装路径
+    is_multi = get_multi_webservice_status()
+    setup_path = get_setup_path()
+
+    # 定义服务操作映射
+    services = [
+        (
+            f"{setup_path}/nginx/sbin/nginx",
+            "/etc/init.d/nginx reload",
+            "pkill -9 nginx && sleep 1 && /etc/init.d/nginx start"
+        ),
+        (
+            f"{setup_path}/apache/bin/apachectl",
+            "/etc/init.d/httpd reload",
+            None
+        ),
+        (
+            "/usr/local/lsws/bin/lswsctrl",
+            "rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart",
+            None
+        )
+    ]
+
+    result = None
+    # 多服务模式：遍历所有服务并执行
+    if is_multi:
+        for path, cmd, err_cmd in services:
+            if os.path.exists(path):
+                result = ExecShell(cmd)
+                # 处理nginx pid异常
+                if "nginx" in path and result[1].find("nginx.pid") != -1:
+                    result = ExecShell(err_cmd)
+
+    # 单服务模式：找到第一个存在的服务执行
     else:
-        result = ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart')
+        for path, cmd, err_cmd in services:
+            if os.path.exists(path):
+                result = ExecShell(cmd)
+                # 处理nginx pid异常
+                if "nginx" in path and result[1].find("nginx.pid") != -1:
+                    result = ExecShell(err_cmd)
+                break  # 只执行第一个匹配的服务
+
     return result
 
 
@@ -1788,10 +1857,18 @@ def checkIp(ip):
 # 检查端口是否合法
 def checkPort(port):
     if not is_number(port): return False
-    ports = ['21', '25', '443', '8080', '888', '8888', '8443', '7800']
+    ports = [
+        '21', '25', '443', '8080', '888', '999', '8888', '8443', '7800', '8188', '8189', '8288', '8289', '8290'
+    ]
     if port in ports: return False
     intport = int(port)
     if intport < 1 or intport > 65535: return False
+
+    # 判断端口占用，避免多服务崩溃
+    res = ExecShell(f'lsof -i :{port} -P -n -l -F pnc')
+    if res[0] and port != '80':
+        return False
+
     return True
 
 
@@ -2213,7 +2290,7 @@ def load_module(pluginCode):
 
 # 解密数据
 def auth_decode(data):
-    token = GetToken()
+    token: dict = GetToken()
     # 是否有生成Token
     if not token: return returnMsg(False, 'REQUEST_ERR')
 
@@ -3184,11 +3261,14 @@ def auto_backup_panel():
         if os.path.getsize('{}/data/system.db'.format(panel_paeh)) > max_size:
             ignore_system = 'system.db'
         os.makedirs(backup_path, 384)
-        import shutil
-        shutil.copytree(panel_paeh + '/data', backup_path + '/data',
-                        ignore=shutil.ignore_patterns(ignore_system, ignore_default, 'wp_package_checksums', 'wp_packages','maillog', 'mail'))
-        shutil.copytree(panel_paeh + '/config', backup_path + '/config')
-        shutil.copytree(panel_paeh + '/vhost', backup_path + '/vhost')
+        ignore_list = [
+            ignore_system, ignore_default,
+            'wp_package_checksums', 'wp_packages', 'maillog', 'mail', '*.sock'
+        ]
+        cp_dir(f"{panel_paeh}/data", f"{backup_path}/data", ignores=ignore_list)
+        cp_dir(f"{panel_paeh}/config", f"{backup_path}/config")
+        cp_dir(f"{panel_paeh}/vhost", f"{backup_path}/vhost")
+
         ExecShell("cd {} && zip {} -r {}/".format(b_path, backup_file, day_date))
         ExecShell("chmod -R 600 {path};chown -R root.root {path}".format(path=backup_file))
         if os.path.exists(backup_path): shutil.rmtree(backup_path)
@@ -3446,6 +3526,9 @@ def get_site_php_version(siteName):
         @return string
     '''
     web_server = get_webserver()
+    if public.get_multi_webservice_status():
+        site = public.M('sites').where('name = ?',siteName).field('service_type').find()
+        web_server = site['service_type'] if site['service_type'] else 'nginx'
     vhost_path = get_vhost_path()
     conf = readFile(vhost_path + '/' + web_server + '/' + siteName + '.conf')
     if web_server == 'openlitespeed':
@@ -5371,7 +5454,7 @@ def check_site_path(site_path):
     try:
         if site_path in ['/', '/usr', '/dev', '/home', '/media', '/mnt', '/opt', '/tmp', '/var']:
             return False
-        whites = ['/www/server/tomcat', '/www/server/stop', '/www/server/phpmyadmin']
+        whites = ['/www/server/tomcat', '/www/server/stop', '/www/server/phpmyadmin', '/www/server/adminer']
         for w in whites:
             if site_path.find(w) == 0: return True
         a, error_paths = get_sys_path()
@@ -8174,7 +8257,6 @@ def check_area_panel():
     @name: 检查地区限制
     @return:
     '''
-    import contextlib
     areas_dict = get_limit_area()
 
     # 关闭状态直接返回false
@@ -9446,3 +9528,118 @@ def split_domain_sld(domain: str):
         return domain, ""
     else:
         return ".".join(parts[-num_of_tld_parts-1:]), ".".join(parts[:-num_of_tld_parts-1])
+
+# 获取多服务状态
+def get_multi_webservice_status():
+    nginxSbin = '{}/nginx/sbin/nginx'.format(get_setup_path())
+    apacheBin = '{}/apache/bin/apachectl'.format(get_setup_path())
+    olsBin = '/usr/local/lsws/bin/lswsctrl'
+
+    if os.path.exists(nginxSbin) and (os.path.exists(apacheBin) or os.path.exists(olsBin)):
+        return True
+    return False
+
+# 获取已存在的服务
+def get_multi_webservice_list() -> list:
+    nginxSbin = '{}/nginx/sbin/nginx'.format(get_setup_path())
+    apacheBin = '{}/apache/bin/apachectl'.format(get_setup_path())
+    olsBin = '/usr/local/lsws/bin/lswsctrl'
+
+    server_list = []
+    if os.path.exists(nginxSbin):
+        server_list.append('nginx')
+
+    if os.path.exists(apacheBin):
+        server_list.append('apache')
+
+    if os.path.exists(olsBin):
+        server_list.append('openlitespeed')
+
+    return server_list
+
+# 操作指定web服务
+def webservice_operation(service: str, type = 'restart') -> bool:
+    """
+        service 服务名称
+        type 类型：关闭，重启，开启
+    """
+    try:
+        import system_v2
+        server_restart = system_v2.system()
+        get = public.to_dict_obj({
+            'name': service,
+            'type': type
+        })
+        ok = server_restart.ServiceAdmin(get)
+
+        if ok.get('status') == 0:
+            return True
+        return False
+    except Exception as e:
+        print(e)
+        return False
+
+# Base64URL 编码
+def base64url_encode(data: bytes) -> str:
+    import base64
+    return base64.urlsafe_b64encode(data).rstrip(b'=').decode('utf-8')
+
+# Base64URL 解码
+def base64url_decode(data: str) -> bytes:
+    import base64
+    padding = '=' * (4 - (len(data) % 4)) if len(data) % 4 != 0 else ''
+    return base64.urlsafe_b64decode(data + padding)
+
+
+def cp_dir(src: str, dst: str, ignores: List[str] | Set[str] = None, overwrite: bool = True, ) -> None:
+    """
+    site 递归复制文件夹
+    src:   源路径
+    dst:   目标路径
+    ignore: 忽略的 list
+    overwrite:  存在时是否覆盖
+
+    ps: ignore内的每个对象支持：
+    *：匹配任意数量的任意字符（包括零个字符）。
+    ?：匹配任意单个字符。
+    [abc]：匹配序列 abc中的任意字符。
+    [!abc]：匹配不在序列 abc中的任意字符。
+    """
+    if not os.path.exists(src):
+        return
+
+    overwrite = False if isinstance(overwrite, int) and overwrite == 0 else True
+    ignores = set(ignores) if ignores else set()
+
+    # 确保目标目录存在
+    if not os.path.exists(dst):
+        os.makedirs(dst, 0o755, exist_ok=True)
+
+    def _copy2(src_file: str, dst_file: str):
+        if overwrite or not os.path.exists(dst_file):
+            try:
+                shutil.copy2(src_file, dst_file)
+            except Exception:
+                lock = False
+                try:
+                    a, e = ExecShell(f"lsattr -d {dst_file}")
+                    if not e and "i" in a:
+                        lock = True
+                        ExecShell(f"chattr -i {dst_file}")
+                        shutil.copy2(src_file, dst_file)
+                except:
+                    pass
+                finally:
+                    if lock is True and os.path.exists(dst_file):
+                        ExecShell(f"chattr +i {dst_file}")
+
+    # 复制源目录下的所有内容到目标目录
+    for item in os.listdir(src):
+        src_item = os.path.join(src, item)
+        dst_item = os.path.join(dst, item)
+        if ignores and any(fnmatch.fnmatch(item, ignore) for ignore in ignores):
+            continue
+        if os.path.isdir(src_item):
+            cp_dir(src_item, dst_item, ignores, overwrite)
+        else:
+            _copy2(src_item, dst_item)

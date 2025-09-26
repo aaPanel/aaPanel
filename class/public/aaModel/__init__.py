@@ -1,11 +1,17 @@
 # coding: utf-8
-
 from .fields import *
 from .manager import Q, QueryProperty
 from .model import aaModel
 
-__version__ = "1.1.2"
+# from .file_model import *
+
+__version__ = "1.1.3"
 
 __all__ = [
-              "aaModel", "Q", "QueryProperty",
+              "__version__",
+              # "DictFileModel",
+              # "ListFileModel",
+              "QueryProperty",
+              "aaModel",
+              "Q",
           ] + fields.__all__

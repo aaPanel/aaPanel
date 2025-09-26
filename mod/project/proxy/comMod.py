@@ -78,6 +78,7 @@ class main():
             "sub_filter": {
                 "sub_filter_str": [],
             },
+            "rewritedir":[],
             "websocket": {
                 "websocket_status": True,
                 "websocket_conf": "proxy_http_version 1.1;\n      proxy_set_header Upgrade $http_upgrade;\n      proxy_set_header Connection \"upgrade\";",
@@ -236,6 +237,7 @@ server {{
             custom_conf="",
             timeout_conf=get.proxy_timeout,
             websocket_support=self._init_proxy_conf["websocket"]["websocket_conf"],
+            rewrite_direct=self.setRewritedir(get.get("rewritedir",'[{"dir1":"","dir2":""}]')),
         )
 
         get.proxy_info = {
@@ -243,6 +245,7 @@ server {{
             "proxy_path": get.proxy_path,
             "proxy_pass": get.proxy_pass,
             "proxy_host": get.proxy_host,
+            "keepuri": get.keepuri,
             "ip_limit": {
                 "ip_black": [],
                 "ip_white": [],
@@ -265,6 +268,7 @@ server {{
             "sub_filter": {
                 "sub_filter_str": [],
             },
+            "rewritedir": json.loads(get.get("rewritedir", '[{"dir1":"","dir2":""}]')),
             "websocket": {
                 "websocket_status": True,
                 "websocket_conf": "proxy_http_version 1.1;\n      proxy_set_header Upgrade $http_upgrade;\n      proxy_set_header Connection \"upgrade\";",
@@ -284,6 +288,17 @@ server {{
             "remark": "",
             "template_proxy_conf": self._template_proxy_conf,
         }
+
+    ## 修改重定向
+    def setRewritedir(self, get):
+        rewriteconf = ""
+        if "rewritedir" not in get:
+            return rewriteconf
+        for d in json.loads(get.get("rewritedir", '[{"dir1":"","dir2":""}]')):
+            if not d["dir1"] or not d["dir2"] or d["dir1"] == d["dir2"] or d["dir1"] == "/":
+                continue
+            rewriteconf += '\trewrite ^{0}/(.*)$ {1}/$1 break;'.format(d["dir1"], d["dir2"])
+        return rewriteconf
 
     # 2024/4/18 上午10:53 构造反向代理的配置文件
     def structure_nginx(self, get):
@@ -308,6 +323,7 @@ server {{
         get.server_block = get.get("server_block", "")
         get.websocket_status = get.get("websocket_status", True)
         get.proxy_timeout = "proxy_connect_timeout 60s;\n      proxy_send_timeout 600s;\n      proxy_read_timeout 600s;"
+        get.rewrite_direct_conf=self.setRewritedir(get)
         self.structure_proxy_conf(get)
         is_subs = public.ExecShell("nginx -V 2>&1|grep 'ngx_http_substitutions_filter' -o")[0]
 
@@ -323,6 +339,7 @@ server {{
         self._init_proxy_conf["http_block"] = ""
         self._init_proxy_conf["proxy_info"].append(get.proxy_info)
         self._init_proxy_conf["proxy_cache"]["cache_zone"] = get.site_name.replace(".", "_") + "_cache"
+        self._init_proxy_conf["rewritedir"] = json.loads(get.get("rewritedir", '[{"dir1":"","dir2":""}]'))
 
     # 2024/4/18 上午10:35 写入Nginx配置文件
     def write_nginx_conf(self, get):
@@ -385,6 +402,10 @@ server {{
             websocket_support=self._init_proxy_conf["websocket"]["websocket_conf"],
             monitor_conf=monitor_conf,
         )
+        rewriteconf=self.setRewritedir(get)
+        if conf.find("rewrite ") == -1 and rewriteconf != "":
+            rewrite_conf="{}\n\tproxy_pass".format(rewriteconf)
+            conf=conf.replace("proxy_pass",rewrite_conf)
 
         # 写配置文件
         well_known_path = "{}/vhost/nginx/well-known".format(public.get_panel_path())
@@ -406,6 +427,31 @@ server {{
         '''
         return public.ExecShell("nginx -V 2>&1| grep 'http_v3_module' -o")[0]
 
+    #检测重写路径
+    def CheckRewriteDirArgs(self, get):
+        #检测重写路径
+        rewritedir=json.loads(get.get("rewritedir",'[{"dir1":"","dir2":""}]'))
+        check_dirs=[]
+        for i in rewritedir:
+            if (i.get('dir1', None) and not i.get('dir2', None)) or (not i.get('dir1', None) and i.get('dir2', None)):
+                return public.lang("Rewrite source directory and rewrite target directory must be filled in at the same time")
+            #检测路径是否相同
+            if i.get('dir1', None) and i.get('dir2', None) and i.get('dir1', None) == i.get('dir2', None):
+                return public.lang("Rewrite source directory and rewrite target directory cannot be the same")
+            #检测重写的路径是否存在
+            if i.get('dir1', None):
+                check_dirs.append(i.get('dir1', None))
+
+            #检测路径是否以/开头
+            if i.get('dir1', None) and not i.get('dir1', None).startswith('/'):
+                return public.lang("Rewrite source directory must start with /")
+            if i.get('dir2', None) and not i.get('dir2', None).startswith('/'):
+                return public.lang("Rewrite target directory must start with /")
+        #检测重写路径是否重复
+        if len(check_dirs) != len(set(check_dirs)):
+            return public.lang("Rewrite source directory and rewrite target directory cannot be the same")
+        return ""
+
     # 2024/4/18 上午9:26 创建反向代理
     def create(self, get):
         '''
@@ -421,6 +467,8 @@ server {{
                 Param('proxy_pass').String(),
                 Param('domains').String(),
                 Param('proxy_host').String(),
+                # Param('rewritedir').String(),
+                Param('keepuri').Integer(),
 
             ], [
                 public.validate.trim_filter(),
@@ -452,10 +500,14 @@ server {{
         # 2024/4/18 上午9:45 参数处理
         get.domains = get.get("domains", "")
         get.proxy_path = get.get("proxy_path", "/")
+        get.keepuri = get.get("keepuri", 1)
         get.proxy_pass = get.get("proxy_pass", "")
         get.proxy_host = get.get("proxy_host", "$http_host")
         get.remark = get.get("remark", "")
         get.proxy_type = get.get("proxy_type", "http")
+
+        #去掉路径最后的/
+        get.proxy_pass = get.proxy_pass.rstrip("/")
 
         # 2024/4/18 上午9:45 参数校验
         if not get.domains:
@@ -475,6 +527,14 @@ server {{
         elif get.proxy_type == "http":
             if not get.proxy_pass.startswith("http://") and not get.proxy_pass.startswith("https://"):
                 return public.return_message(-1, 0, public.lang("The proxy target must start with http://or https://!"))
+            #检测重写路径
+            checkRewriteDirArgs=self.CheckRewriteDirArgs(get)
+            if checkRewriteDirArgs !="":
+                return public.return_message(-1, 0, checkRewriteDirArgs)
+            #/目录不支持关闭保持uri
+            if get.proxy_path == "/" and int(get.keepuri) == 0:
+                return public.return_message(-1, 0, public.lang("Proxy_path is root directory, cannot close Show Proxy Path!"))
+            
 
         # 2024/4/18 上午9:45 创建反向代理
         get.domain_list = get.domains.split("\n")
@@ -1171,10 +1231,13 @@ server {{
         get.proxy_pass = get.get("proxy_pass", "")
         if get.proxy_pass == "":
             return public.return_message(-1, 0, public.lang("Proxy_pass cannot be empty!"))
+        #去掉路径最后的/
+        get.proxy_pass = get.proxy_pass.rstrip("/")
 
         get.proxy_host = get.get("proxy_host", "$http_host")
         get.proxy_type = get.get("proxy_type", "http")
         get.remark = get.get("remark", "")
+        get.keepuri = get.get("keepuri", 1)
         get.proxy_timeout = "proxy_connect_timeout 60s;\n      proxy_send_timeout 600s;\n      proxy_read_timeout 600s;"
 
         if get.remark != "":
@@ -1191,6 +1254,10 @@ server {{
         elif get.proxy_type == "http":
             if not get.proxy_pass.startswith("http://") and not get.proxy_pass.startswith("https://"):
                 return public.return_message(-1, 0, public.lang("The proxy target must start with http://or https://"))
+            #检测重写路径
+            checkRewriteDirArgs=self.CheckRewriteDirArgs(get)
+            if checkRewriteDirArgs !="":
+                return public.return_message(-1, 0, checkRewriteDirArgs)
 
         get.proxy_json_conf = self.read_json_conf(get)['message']
         if not get.proxy_json_conf:
@@ -1220,6 +1287,7 @@ server {{
             custom_conf="",
             timeout_conf=get.proxy_timeout,
             websocket_support=get.proxy_json_conf["websocket"]["websocket_conf"],
+            rewrite_direct=self.setRewritedir(get.get("rewritedir",'[{"dir1":"","dir2":""}]')),
         )
 
         get.proxy_json_conf["proxy_info"].append({
@@ -1227,6 +1295,7 @@ server {{
             "proxy_path": get.proxy_path,
             "proxy_pass": get.proxy_pass,
             "proxy_host": get.proxy_host,
+            "keepuri": get.keepuri,
             "ip_limit": {
                 "ip_black": [],
                 "ip_white": [],
@@ -1249,6 +1318,7 @@ server {{
             "sub_filter": {
                 "sub_filter_str": [],
             },
+            "rewritedir": json.loads(get.get("rewritedir", '[{"dir1":"","dir2":""}]')),
             "websocket": {
                 "websocket_status": True,
                 "websocket_conf": "proxy_http_version 1.1;\n      proxy_set_header Upgrade $http_upgrade;\n      proxy_set_header Connection \"upgrade\";",
@@ -1980,6 +2050,14 @@ server {{
                     proxy_send_timeout=info["timeout"]["proxy_send_timeout"].replace("s", "") + "s",
                     proxy_read_timeout=info["timeout"]["proxy_read_timeout"].replace("s", "") + "s",
                 )
+                args = public.dict_obj()
+                args.rewritedir = json.dumps(info.get("rewritedir", [{"dir1":"","dir2":""}]))
+                rewriteconf=self.setRewritedir(args)
+
+                
+                proxy_pass_target=info["proxy_pass"]
+                if int(get.get("keepuri", 1)) ==0:
+                    proxy_pass_target+="/"
 
                 tmp_conf = info["template_proxy_conf"].format(
                     basic_auth=proxy_auth_conf,
@@ -1988,13 +2066,17 @@ server {{
                     sub_filter=p_sub_filter,
                     proxy_cache=info["proxy_cache"]["cache_conf"],
                     server_log="",
-                    proxy_pass=info["proxy_pass"],
+                    proxy_pass=proxy_pass_target,
                     proxy_host=info["proxy_host"],
                     proxy_path=info["proxy_path"],
                     custom_conf=info["custom_conf"],
                     timeout_conf=timeout_conf,
                     websocket_support=p_websocket_support,
+                    rewrite_direct=rewriteconf,
                 )
+                if tmp_conf.find("rewrite_direct") == -1 and tmp_conf.find("rewrite ") == -1 and rewriteconf != "":
+                    rewrite_conf="{}\n\tproxy_pass".format(rewriteconf)
+                    tmp_conf=tmp_conf.replace("proxy_pass",rewrite_conf)
                 info["proxy_conf"] = tmp_conf
                 proxy_conf += tmp_conf + "\n    "
 
@@ -2944,6 +3026,12 @@ server {{
                 if info["proxy_path"] == get.proxy_path:
                     info["global_websocket"] = get.proxy_json_conf["websocket"]["websocket_status"]
                     info["subs_filter"] = subs_filter
+                    if "rewritedir" not in info:
+                        info["rewritedir"] = json.loads(get.proxy_json_conf.get("rewritedir",'[{"dir1":"","dir2":""}]'))
+                    if "keepuri" not in info:
+                        info["keepuri"] = get.proxy_json_conf.get("keepuri",1)
+                    if info["proxy_path"] == "/":
+                        info["keepuri"]=1
                     if "http://unix:" in info["proxy_pass"]:
                         info["proxy_pass"] = info["proxy_pass"].replace("http://unix:", "")
                     return public.return_message(0, 0,info)
@@ -3000,10 +3088,12 @@ server {{
                 Param('proxy_pass').String(),
                 Param('proxy_host').String(),
                 Param('proxy_type').String(),
+                # Param('rewritedir').String(),
                 Param('websocket').Integer(),
                 Param('proxy_connect_timeout').Integer(),
                 Param('proxy_send_timeout').Integer(),
                 Param('proxy_read_timeout').Integer(),
+                Param('keepuri').Integer(),
 
             ], [
                 public.validate.trim_filter(),
@@ -3021,6 +3111,11 @@ server {{
         get.proxy_path = get.get("proxy_path", "")
         if get.proxy_path == "":
             return public.return_message(-1, 0, public.lang("Proxy_path cannot be empty!"))
+        #/目录不支持关闭保持uri
+        if get.proxy_path == "/" and int(get.keepuri) == 0:
+            return public.return_message(-1, 0, public.lang("Proxy_path is root directory, cannot close Show Proxy Path!"))
+
+     
 
         get.proxy_host = get.get("proxy_host", "")
         if get.proxy_host == "":
@@ -3029,10 +3124,13 @@ server {{
         get.proxy_pass = get.get("proxy_pass", "")
         if get.proxy_pass == "":
             return public.return_message(-1, 0, public.lang("Proxy_pass cannot be empty!"))
+        #去掉路径最后的/
+        get.proxy_pass = get.proxy_pass.rstrip("/")
 
         get.proxy_type = get.get("proxy_type", "")
         if get.proxy_type == "":
             return public.return_message(-1, 0, public.lang("Proxy_type cannot be empty!"))
+
 
         get.proxy_connect_timeout = get.get("proxy_connect_timeout", "60s")
         get.proxy_send_timeout = get.get("proxy_send_timeout", "600s")
@@ -3054,6 +3152,10 @@ server {{
         elif get.proxy_type == "http":
             if not get.proxy_pass.startswith("http://") and not get.proxy_pass.startswith("https://"):
                 return public.return_message(-1, 0, public.lang("The proxy target must start with http://or https://!"))
+            #检测重写路径
+            checkRewriteDirArgs=self.CheckRewriteDirArgs(get)
+            if checkRewriteDirArgs !="":
+                return public.return_message(-1, 0, checkRewriteDirArgs)
 
         get.websocket = get.get("websocket/d", 1)
 
@@ -3074,6 +3176,8 @@ server {{
                 info["timeout"]["proxy_read_timeout"] = get.proxy_read_timeout.replace("s", "")
                 info["websocket"]["websocket_status"] = True if get.websocket == 1 else False
                 info["remark"] = get.remark
+                info["keepuri"]=int(get.keepuri)
+                info["rewritedir"]= json.loads(get.get("rewritedir", '[{"dir1":"","dir2":""}]'))
                 break
         else:
             return public.return_message(-1, 0, public.lang("No proxy information found for this URL [{}]!", get.proxy_path))

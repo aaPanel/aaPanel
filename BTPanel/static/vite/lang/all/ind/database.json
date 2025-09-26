@@ -230,5 +230,19 @@
 	"dcfc75a36b7498a34c870230e513cd72": "Izin [{0}] akan dihapus. Apakah Anda ingin melanjutkan?",
 	"2dce2897ee1bda606563ea97e058ab4f": "Pengaturan alarm",
 	"943a2abea1cd576ed3ab95fea4d9e168": "Setelah pengaturan, restart secara manual database agar berlaku",
-	"50c2efb1f4d2a9769b22dace8c66ee86": "Unduh sertifikat mandiri mysql ssl"
+	"50c2efb1f4d2a9769b22dace8c66ee86": "Unduh sertifikat mandiri mysql ssl",
+	"e8d7e0bf456f6474e7d916070bf8ce59": "Driver Adminer bergantung pada versi PHP yang sedang berjalan. Jika Anda menemukan bahwa driver hilang, silakan instal ekstensi PHP Mongo dan PHP PGSQL sesuai kebutuhan.",
+	"29ba9315d084c5d8b6acf54af0afc7c7": "Status Saat Ini: ",
+	"4457d440870ad6d42bab9082d9bf9b61": "Tetap",
+	"349838fb1d851d3e2014b9fe39203275": "Memasang",
+	"a27dfe771799a09fd55fea73286eb6ab": "Uninstall",
+	"c319512b280c8d027b6406a17d760891": "Apakah Anda yakin ingin memperbaiki?",
+	"ad2f5c899dc1ae9b55ffef7aa5aac778": "Anda yakin ingin menginstal?",
+	"876f23178c29dc2552c0b48bf23cd9bd": "Apakah Anda yakin ingin menghapus instalan?",
+	"6731e61bb032534b2d2c73d64fb7e006": "Melompat ke Administrasi, harap tunggu ...",
+	"1ec05514f18775b2952d83f821d3948d": "Beralih versi php, harap tunggu ...",
+	"a91f378bf120f4a971b2ad4f7bfdce70": "Menginstal, tunggu ...",
+	"dbded73d898181a0721b5f0973e9ee74": "Menghapus instalasi, tolong tunggu ...",
+	"c2fd5a116b9d3bcd0185dbf233365764": "Beralih port, harap tunggu ...",
+	"1fb4173c812ebb31f38c565e1769d090": "Driver Adminer tergantung pada lingkungan versi PHP yang sedang berjalan. Jika Anda menemukan bahwa pengemudi hilang, silakan buka ekstensi php untuk menginstal php_mongodb dan pdo_pgsql"
 }

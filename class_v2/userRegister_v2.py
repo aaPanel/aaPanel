@@ -63,8 +63,9 @@ class userRegister:
             else:
                 sUrl = '{}/api/user/register_on_panel'.format(public.OfficialApiBase())
 
-
-            aa = public.httpPost(sUrl, params, timeout=60)
+            aa = public.httpPost(sUrl, params, headers={
+                'X-Forwarded-For': public.GetClientIp(),
+            }, timeout=60)
             data = json.loads(aa)
 
 

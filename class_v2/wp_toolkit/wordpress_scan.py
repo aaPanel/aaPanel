@@ -16,7 +16,7 @@ import sys,os
 if "/www/server/panel/class_v2/wp_toolkit/" not in sys.path:
     sys.path.insert(1, "/www/server/panel/class_v2/wp_toolkit/")
 #进入到
-import totle_db
+from . import totle_db
 
 class wordpress_scan:
     wordpress_diff_path = "/www/wordpress_diff_path"
@@ -50,6 +50,7 @@ class wordpress_scan:
         "Template": "Theme Name",
         "Stylesheet": "Theme Name",
     }
+
     def check_dir(self):
         '''
             @name 检查需要的目录是否存在
@@ -59,6 +60,7 @@ class wordpress_scan:
         '''
         if not os.path.exists(self.wordpress_diff_path):
             os.makedirs(self.wordpress_diff_path)
+
         if not os.path.exists(self.wordpress_diff_path + "/plugin/"):
             os.makedirs(self.wordpress_diff_path + "/plugin/")
 
@@ -70,6 +72,7 @@ class wordpress_scan:
         '''
         with totle_db.Sql(db) as sql:
             return sql.table(table)
+
     def get_wordpress_version(self, path):
         '''
             @name 获取WordPress版本
@@ -179,6 +182,7 @@ class wordpress_scan:
             my_hash.update(b)
         f.close()
         return my_hash.hexdigest()
+
     def get_plugin(self, path,one=''):
         '''
             @name 获取WordPress插件信息
@@ -316,6 +320,7 @@ class wordpress_scan:
         }
         response = requests.get(url, headers=headers, proxies=proxies)
         print(response.text)
+
     def compare_versions(self,version1, version2):
         '''
             @name 对比版本号
@@ -339,6 +344,7 @@ class wordpress_scan:
             return -1 if any(num > 0 for num in v2[len(v1):]) else 0
         # 如果完全相同
         return 0
+
     def let_identify(self,version,vlun_infos):
         '''
             @name 对比版本号判断是否存在漏洞
@@ -527,7 +533,6 @@ class wordpress_scan:
         public.WriteFile(wordpress_scan_path,json.dumps(wordpress_scan_info))
         return vlun_list
 
-
     def ignore_vuln(self,get):
         '''
             @name 增加忽略漏洞
@@ -608,7 +613,6 @@ class wordpress_scan:
         else:
             return public.return_message(0, 0, [])
 
-
     def download_file_with_progress(self,url, filename,slug,re=False):
         '''
             @name 下载插件的文件
@@ -663,6 +667,7 @@ class wordpress_scan:
                     os.remove(filename)
                     print("\nThe downloaded file is incomplete and has been deleted. The file is currently being re downloaded", filename)
                     self.download_file_with_progress(url, filename,slug)
+
     def zip_file_plugin_data(self,file_data, default_headers, context=''):
         '''
             @参考：/wp-admin/includes/plugin.php get_plugin_data 代码
@@ -809,7 +814,6 @@ class wordpress_scan:
             #今天的日期
             return time.strftime("%Y-%m-%d", time.localtime(time.time()))
 
-
     def auto_scan(self):
         '''
             @name 自动扫描 每天扫描一次 每个网站延迟1S
@@ -849,8 +853,6 @@ class wordpress_scan:
             wordpress_wp_scan[i["path"]]["vulnerabilities"]=len(vlun_list)
         public.WriteFile(wordpress_scan_path,json.dumps(wordpress_wp_scan))
 
-
-
     def set_auth_scan(self,path):
         '''
             @name 停止扫描
@@ -882,7 +884,6 @@ class wordpress_scan:
         if flag:
             return public.return_message(0,0,public.lang("Started successfully"))
         return public.return_message(0,0,public.lang("Stopped successfully"))
-
 
     def get_auth_scan_status(self,path):
         '''

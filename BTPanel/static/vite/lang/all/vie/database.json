@@ -426,5 +426,19 @@
 	"dcfc75a36b7498a34c870230e513cd72": "Sự cho phép của [{0}] sắp được gỡ bỏ. Bạn có muốn tiếp tục?",
 	"2dce2897ee1bda606563ea97e058ab4f": "Cài đặt báo động",
 	"943a2abea1cd576ed3ab95fea4d9e168": "Sau khi cài đặt, khởi động lại cơ sở dữ liệu để có hiệu lực theo cách thủ công",
-	"50c2efb1f4d2a9769b22dace8c66ee86": "Tải xuống chứng chỉ tự ký MySQL SSL"
+	"50c2efb1f4d2a9769b22dace8c66ee86": "Tải xuống chứng chỉ tự ký MySQL SSL",
+	"e8d7e0bf456f6474e7d916070bf8ce59": "Trình điều khiển của quản trị viên phụ thuộc vào phiên bản PHP hiện đang chạy. Nếu bạn thấy rằng các trình điều khiển bị thiếu, vui lòng cài đặt các phần mở rộng PHP Mongo và PHP PGSQL khi cần thiết.",
+	"29ba9315d084c5d8b6acf54af0afc7c7": "Tình trạng hiện tại: ",
+	"4457d440870ad6d42bab9082d9bf9b61": "Đã sửa",
+	"349838fb1d851d3e2014b9fe39203275": "Cài đặt",
+	"a27dfe771799a09fd55fea73286eb6ab": "Gỡ cài đặt",
+	"c319512b280c8d027b6406a17d760891": "Bạn có chắc là bạn muốn sửa?",
+	"ad2f5c899dc1ae9b55ffef7aa5aac778": "Bạn có chắc bạn muốn cài đặt không?",
+	"876f23178c29dc2552c0b48bf23cd9bd": "Bạn có chắc là bạn muốn gỡ cài đặt?",
+	"6731e61bb032534b2d2c73d64fb7e006": "Nhảy đến quản trị viên, vui lòng đợi ...",
+	"1ec05514f18775b2952d83f821d3948d": "Chuyển đổi phiên bản PHP, vui lòng đợi ...",
+	"a91f378bf120f4a971b2ad4f7bfdce70": "Cài đặt, vui lòng đợi ...",
+	"dbded73d898181a0721b5f0973e9ee74": "Gỡ cài đặt, vui lòng đợi ...",
+	"c2fd5a116b9d3bcd0185dbf233365764": "Chuyển đổi cổng, vui lòng đợi ...",
+	"1fb4173c812ebb31f38c565e1769d090": "Trình điều khiển quản trị viên phụ thuộc vào môi trường phiên bản PHP hiện đang chạy. Nếu bạn thấy rằng trình điều khiển bị thiếu, vui lòng chuyển đến các tiện ích mở rộng PHP để cài đặt php_mongodb và pdo_pgsql"
 }

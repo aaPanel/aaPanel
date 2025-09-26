@@ -29,7 +29,7 @@ from mod.base.push_mod import PUSH_DATA_PATH
 def update_mod():
     try:
         with open(UPDATE_VERSION_FILE, 'r') as f:
-            if f.read() == "5":
+            if f.read() == "6":
                 pl = False
             else:
                 pl = True
@@ -41,10 +41,9 @@ def update_mod():
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/site_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/system_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/database_push_template.json")
-        load_task_template_by_file("/www/server/panel/mod/base/push_mod/ssl_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/domain_blcheck_push_template.json")
         with open(UPDATE_VERSION_FILE, "w") as f:
-            f.write("5")
+            f.write("6")
 
     if not os.path.exists(UPDATE_MOD_PUSH_FILE):
         update_mod_push_msg()
@@ -245,13 +244,13 @@ class main(PushManager):
         from mod.base.push_mod.database_push import ViewMsgFormat as Dv
         from mod.base.push_mod.system_push import ViewMsgFormat as SSv
         from mod.base.push_mod.load_push import ViewMsgFormat as Lv
-        from mod.base.push_mod.ssl_push import ViewMsgFormat as SSLv
         from mod.base.push_mod.domain_blcheck_push import ViewMsgFormat as DBv
         from mod.base.push_mod.safe_mod_push import ViewMsgFormat as SAv
 
-        list_obj = [Rv(), Sv(), Tv(), Dv(), SSv(), Lv(), SSLv(), DBv(), SAv()]
+        list_obj = [Rv(), Sv(), Tv(), Dv(), SSv(), Lv(), DBv(), SAv()]
         for i in list_obj:
             res = i.get_msg(task)
             if res is not None:
                 return res
         return '<span>--</span>'
+

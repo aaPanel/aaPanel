@@ -232,5 +232,19 @@
 	"dcfc75a36b7498a34c870230e513cd72": "A permissão de [{0}] está prestes a ser removida. Você quer continuar?",
 	"2dce2897ee1bda606563ea97e058ab4f": "Configuração de alarme",
 	"943a2abea1cd576ed3ab95fea4d9e168": "Após a definição, reinicie manualmente o banco de dados para entrar em vigor",
-	"50c2efb1f4d2a9769b22dace8c66ee86": "Baixe o certificado MySQL SSL Auto-si mesmo"
+	"50c2efb1f4d2a9769b22dace8c66ee86": "Baixe o certificado MySQL SSL Auto-si mesmo",
+	"e8d7e0bf456f6474e7d916070bf8ce59": "Os drivers do administrador dependem da versão PHP atualmente em execução. Se você achar que os drivers estão ausentes, instale as extensões PHP Mongo e PHP PGSQL, conforme necessário.",
+	"29ba9315d084c5d8b6acf54af0afc7c7": "Status atual: ",
+	"4457d440870ad6d42bab9082d9bf9b61": "Fixo",
+	"349838fb1d851d3e2014b9fe39203275": "Instalar",
+	"a27dfe771799a09fd55fea73286eb6ab": "Desinstalar",
+	"c319512b280c8d027b6406a17d760891": "Tem certeza de que deseja consertar?",
+	"ad2f5c899dc1ae9b55ffef7aa5aac778": "Tem certeza de que deseja instalar?",
+	"876f23178c29dc2552c0b48bf23cd9bd": "Tem certeza de que deseja desinstalar?",
+	"6731e61bb032534b2d2c73d64fb7e006": "Saltando para o Administrador, por favor, espere ...",
+	"1ec05514f18775b2952d83f821d3948d": "Mudar a versão do PHP, por favor aguarde ...",
+	"a91f378bf120f4a971b2ad4f7bfdce70": "Instalando, por favor, espere ...",
+	"dbded73d898181a0721b5f0973e9ee74": "Desinstalação, por favor espere ...",
+	"c2fd5a116b9d3bcd0185dbf233365764": "Porta de troca, por favor, espere ...",
+	"1fb4173c812ebb31f38c565e1769d090": "O driver administrador depende do ambiente de versão PHP atualmente em execução. Se você achar que o driver está faltando, vá para extensões PHP para instalar php_mongodb e PDO_PGSQL"
 }

@@ -217,7 +217,8 @@
 			"index_29": "Les mots de passe en deux entrées sont incohérents!",
 			"index_30": "Version PHP",
 			"index_31": "Veuillez sélectionner la version PHP-CLI",
-			"index_32": "Connexion au serveur distant, veuillez patienter ..."
+			"index_32": "Connexion au serveur distant, veuillez patienter ...",
+			"index_33": "Le pilote d'administration dépend de l'environnement de version PHP en cours d'exécution. Si vous constatez que le pilote est manquant, veuillez consulter les extensions PHP pour installer PHP_MONGODB et PDO_PGSQL"
 		},
 		"Api": {
 			"Index_1": "Modification des informations de connexion du serveur distant, veuillez patienter ...",
@@ -232,6 +233,22 @@
 			"Index_10": "Enregistrement des données Redis, veuillez patienter ...",
 			"Index_11": "Suppression de sauvegarde, veuillez patienter ...",
 			"Index_12": "Suppression de sauvegarde, veuillez patienter ..."
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "État actuel: ",
+				"fixed": "Fixé",
+				"install": "Installer",
+				"uninstall": "Désinstaller",
+				"confirmFixed": "Êtes-vous sûr de vouloir réparer?",
+				"confirmInstall": "Êtes-vous sûr de vouloir installer?",
+				"confirmUninstall": "Êtes-vous sûr de vouloir désinstaller?",
+				"jumpingToAdminer": "Sauter à l'administrateur, veuillez patienter ..."
+			},
+			"switchingPhp": "Changeant de la version PHP, veuillez patienter ...",
+			"installing": "Installation, veuillez patienter ...",
+			"uninstalling": "Désinstallé, veuillez attendre ...",
+			"switchingPort": "Port de commutation, veuillez patienter ..."
 		},
 		"Mysql": {
 			"index_1": "Base de données de sauvegarde automatique",

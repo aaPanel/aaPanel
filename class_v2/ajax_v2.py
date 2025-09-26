@@ -123,7 +123,10 @@ class ajax:
         data = json.loads(tmp)
         tasks = public.M('tasks').where("status!=?",('1',)).field('status,name').select()
         for i in range(len(data)):
-            data[i]['check'] = public.GetConfigValue('root_path')+'/'+data[i]['check']
+            if data[i]['name'] == 'Openlitespeed':
+                data[i]['check'] = public.GetConfigValue('openlitespeed_path') + '/' + data[i]['check']
+            else:
+                data[i]['check'] = public.GetConfigValue('root_path')+'/'+data[i]['check']
             for n in range(len(data[i]['versions'])):
                 #处理任务标记
                 isTask = '1'
@@ -142,9 +145,10 @@ class ajax:
                     checkFile = data[i]['check'].replace('VERSION',data[i]['versions'][n]['version'].replace('.',''))
                 else:
                     data[i]['task'] = isTask
-                    version = public.readFile(public.GetConfigValue('root_path')+'/server/'+data[i]['name'].lower()+'/version.pl')
-                    if not version:continue
-                    if version.find(data[i]['versions'][n]['version']) == -1:continue
+                    if data[i]['name'] != 'Openlitespeed':
+                        version = public.readFile(public.GetConfigValue('root_path')+'/server/'+data[i]['name'].lower()+'/version.pl')
+                        if not version:continue
+                        if version.find(data[i]['versions'][n]['version']) == -1:continue
                     checkFile = data[i]['check']
                 data[i]['versions'][n]['status'] = os.path.exists(checkFile)
         return public.return_message(0, 0, data)
@@ -885,7 +889,7 @@ class ajax:
     #取已安装软件列表
     def GetInstalled(self,get):
         import system_v2 as system_v2
-        data = system.system().GetConcifInfo()
+        data = system_v2.system().GetConcifInfo()
         return data
 
     #取PHP配置
@@ -938,8 +942,10 @@ class ajax:
                 lib['status'] = False
                 get.php_version = "{}.{}".format(get.version[0],get.version[1])
                 if not phpini_ols:
-                    phpini_ols = self.php_info(get)['phpinfo']['modules'].lower()
-                    phpini_ols = phpini_ols.split()
+                    phpini_ols = self.php_info(get)
+                    if phpini_ols['status'] != 0:
+                        return False
+                    phpini_ols = phpini_ols['message']['phpinfo']['modules'].lower().split()
                 for i in phpini_ols:
                     if lib['check'][:-3].lower() == i :
                         lib['status'] = True
@@ -953,6 +959,8 @@ class ajax:
                 else:
                     lib['status'] = True
 
+            # 过滤版本不匹配的插件
+            if get.version not in lib['versions']:continue
             libs.append(lib)
 
         data['libs'] = libs
@@ -995,7 +1003,7 @@ class ajax:
     def GetPHPInfo(self,get):
         if public.get_webserver() == "openlitespeed":
             shell_str = "/usr/local/lsws/lsphp{}/bin/php -i".format(get.version)
-            return public.ExecShell(shell_str)[0]
+            return public.return_message(0,0,public.ExecShell(shell_str)[0])
         sPath = '/www/server/phpinfo'
         if os.path.exists(sPath):
             public.ExecShell("rm -rf " + sPath)
@@ -1003,7 +1011,7 @@ class ajax:
         public.writeFile(p_file,'<?php phpinfo(); ?>')
         phpinfo = public.request_php(get.version,'/phpinfo.php','/dev/shm')
         if os.path.exists(p_file): os.remove(p_file)
-        return phpinfo.decode()
+        return public.return_message(0,0,phpinfo.decode())
 
     #清理日志
     def delClose(self,get):
@@ -1082,7 +1090,10 @@ class ajax:
         except:
             return public.fail_v2(public.lang('Please enter the correct port number'))
 
-        for i in ["nginx","apache"]:
+        service_type = ["nginx","apache"]
+        if public.get_multi_webservice_status():
+            service_type = ["nginx"]
+        for i in service_type:
             file = "/www/server/panel/vhost/{}/phpmyadmin.conf".format(i)
             conf = public.readFile(file)
             if not conf:
@@ -1092,8 +1103,8 @@ class ajax:
                 return public.fail_v2(public.lang('Please do NOT use the usual port as the phpMyAdmin port!'))
 
             if i == "nginx":
-                if not os.path.exists("/www/server/panel/vhost/apache/phpmyadmin.conf"):
-                    return public.fail_v2(public.lang('Did not find the apache phpmyadmin ssl configuration file, please try to close the ssl port settings before opening'))
+                if not os.path.exists("/www/server/panel/vhost/nginx/phpmyadmin.conf"):
+                    return public.fail_v2(public.lang('Did not find the nginx phpmyadmin ssl configuration file, please try to close the ssl port settings before opening'))
 
                 rep = r"listen\s*([0-9]+)\s*.*;"
                 oldPort = re.search(rep, conf)
@@ -1241,46 +1252,47 @@ class ajax:
         Require user jose
         #AUTH_END
             """
-            # apache配置
-            ssl_conf = r'''Listen 887
-<VirtualHost *:887>
-    ServerAdmin webmaster@example.com
-    DocumentRoot "/www/server/phpmyadmin"
-    ServerName 0b842aa5.phpmyadmin
-    ServerAlias phpmyadmin.com
-    #ErrorLog "/www/wwwlogs/BT_default_error.log"
-    #CustomLog "/www/wwwlogs/BT_default_access.log" combined
-    
-    #SSL
-    SSLEngine On
-    SSLCertificateFile /www/server/panel/ssl/certificate.pem
-    SSLCertificateKeyFile /www/server/panel/ssl/privateKey.pem
-    SSLCipherSuite EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH
-    SSLProtocol All -SSLv2 -SSLv3
-    SSLHonorCipherOrder On
-    
-    #PHP
-    <FilesMatch \.php$>
-           SetHandler "proxy:{}"
-    </FilesMatch>
-    
-    #DENY FILES
-    <Files ~ (\.user.ini|\.htaccess|\.git|\.svn|\.project|LICENSE|README.md)$>
-      Order allow,deny
-      Deny from all
-    </Files>
-    
-    #PATH
-    <Directory "/www/wwwroot/bt.youbadbad.cn/">
-{}
-       SetOutputFilter DEFLATE
-       Options FollowSymLinks
-       AllowOverride All
-       Require all granted
-       DirectoryIndex index.php index.html index.htm default.php default.html default.htm
-    </Directory>
-</VirtualHost>'''.format(public.get_php_proxy(v["ext"]["phpversion"],'apache'),auth)
-            public.writeFile("/www/server/panel/vhost/apache/phpmyadmin.conf", ssl_conf)
+            # apache配置,多服务下不写入apache
+            if not public.get_multi_webservice_status():
+                ssl_conf = r'''Listen 887
+    <VirtualHost *:887>
+        ServerAdmin webmaster@example.com
+        DocumentRoot "/www/server/phpmyadmin"
+        ServerName 0b842aa5.phpmyadmin
+        ServerAlias phpmyadmin.com
+        #ErrorLog "/www/wwwlogs/BT_default_error.log"
+        #CustomLog "/www/wwwlogs/BT_default_access.log" combined
+        
+        #SSL
+        SSLEngine On
+        SSLCertificateFile /www/server/panel/ssl/certificate.pem
+        SSLCertificateKeyFile /www/server/panel/ssl/privateKey.pem
+        SSLCipherSuite EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH
+        SSLProtocol All -SSLv2 -SSLv3
+        SSLHonorCipherOrder On
+        
+        #PHP
+        <FilesMatch \.php$>
+               SetHandler "proxy:{}"
+        </FilesMatch>
+        
+        #DENY FILES
+        <Files ~ (\.user.ini|\.htaccess|\.git|\.svn|\.project|LICENSE|README.md)$>
+          Order allow,deny
+          Deny from all
+        </Files>
+        
+        #PATH
+        <Directory "/www/wwwroot/bt.youbadbad.cn/">
+    {}
+           SetOutputFilter DEFLATE
+           Options FollowSymLinks
+           AllowOverride All
+           Require all granted
+           DirectoryIndex index.php index.html index.htm default.php default.html default.htm
+        </Directory>
+    </VirtualHost>'''.format(public.get_php_proxy(v["ext"]["phpversion"],'apache'),auth)
+                public.writeFile("/www/server/panel/vhost/apache/phpmyadmin.conf", ssl_conf)
 
             import firewalls
             fw = firewalls.firewalls()
@@ -1775,7 +1787,7 @@ class ajax:
         del(result['php_version'])
         del(result['modules'])
         del(result['ini'])
-        return result
+        return public.return_message(0,0,result)
 
     #取指定行
     def get_lines(self,args):

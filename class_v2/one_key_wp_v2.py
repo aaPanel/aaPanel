@@ -564,14 +564,16 @@ class one_key_wp:
         s_id 网站id
         """
         import data
-        site_info = public.M('sites').where('id=?', (s_id,)).field('id,name').find()
+        site_info = public.M('sites').where('id=?', (s_id,)).field('id,name,service_type').find()
         if not isinstance(site_info, dict):
             return False
-
         site_name = site_info['name']
 
         # 兼容ols
-        if public.get_webserver() == "openlitespeed":
+        get_webserver = public.get_webserver()
+        if public.get_multi_webservice_status():
+            get_webserver = site_info['service_type'] if site_info['service_type'] else 'nginx'
+        if get_webserver == "openlitespeed":
             from wp_toolkit import wpmgr
             wpmgr_obj = wpmgr(site_info['id'])
 
@@ -814,13 +816,17 @@ class one_key_wp:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        if public.get_webserver() not in  ["nginx", "openlitespeed"]:
+        # 添加多服务状态
+        webserver = public.get_webserver()
+
+        site = public.M('sites').where('name=?', (get.sitename,)).field('id,path,service_type').find()
+        if not site:
+            return public.fail_v2(public.lang("The specified site does not exist!"))
+
+        if webserver not in  ["nginx", "openlitespeed"] or site['service_type'] == 'apache':
             return public.return_message(-1, 0, public.lang("Cache does not support apache for the time being"))
 
-        if public.get_webserver() == "openlitespeed":
-            site = public.M('sites').where('name=?', (get.sitename,)).field('id,path').find()
-            if not site:
-                return public.fail_v2(public.lang("The specified site does not exist!"))
+        if webserver == "openlitespeed" or site['service_type'] == 'openlitespeed':
 
             from wp_toolkit import wpmgr
             wpmgr_obj = wpmgr(site['id'])

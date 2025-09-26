@@ -153,7 +153,7 @@ def split_log(siteName, num, log_cut_path):
     httpd_access_log = os.path.join(logsPath, siteName + '-access_log')
     httpd_error_log = os.path.join(logsPath, siteName + '-error_log')
     if os.path.exists(httpd_access_log):
-        history_log_file = log_path + '/' + siteName + '_access_' + his_date + '.log'
+        history_log_file = log_path + '/' + siteName + '_apache_access_' + his_date + '.log'
         if not os.path.exists(history_log_file):
             shutil.move(httpd_access_log, history_log_file)
             if is_gzip:
@@ -162,7 +162,7 @@ def split_log(siteName, num, log_cut_path):
             else:
                 print('|---Cut logs to:' + history_log_file + '.gz')
     if os.path.exists(httpd_error_log):
-        history_log_file = log_path + '/' + siteName + '_error_' + his_date + '.log'
+        history_log_file = log_path + '/' + siteName + '_apache_error_' + his_date + '.log'
         if not os.path.exists(history_log_file):
             shutil.move(httpd_error_log, history_log_file)
             if is_gzip:
@@ -174,7 +174,7 @@ def split_log(siteName, num, log_cut_path):
     ols_access_log = os.path.join(logsPath, siteName + '_ols.access_log')
     ols_error_log = os.path.join(logsPath, siteName + '_ols.error_log')
     if os.path.exists(ols_access_log):
-        history_log_file = log_path + '/' + siteName + '_access_' + his_date + '.log'
+        history_log_file = log_path + '/' + siteName + '_ols_access_' + his_date + '.log'
         if not os.path.exists(history_log_file):
             shutil.move(ols_access_log, history_log_file)
             if is_gzip:
@@ -183,7 +183,7 @@ def split_log(siteName, num, log_cut_path):
             else:
                 print('|---Cut logs to:' + history_log_file + '.gz')
     if os.path.exists(ols_error_log):
-        history_log_file = log_path + '/' + siteName + '_error_' + his_date + '.log'
+        history_log_file = log_path + '/' + siteName + '_ols_error_' + his_date + '.log'
         if not os.path.exists(history_log_file):
             shutil.move(ols_error_log, history_log_file)
             if is_gzip:

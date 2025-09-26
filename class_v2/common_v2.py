@@ -122,6 +122,10 @@ class panelAdmin(panelSetup):
     # 检查Web服务器类型
     def checkWebType(self):
         #if request.method == 'GET':
+        if public.get_multi_webservice_status():
+            session['webserver'] = 'nginx'
+            return
+
         if not 'webserver' in session:
             if os.path.exists('/usr/local/lsws/bin/lswsctrl'):
                 session['webserver'] = 'openlitespeed'

@@ -5015,11 +5015,17 @@ location %s
 
     #取当站点前运行目录
     def GetSiteRunPath(self,get):
-        siteName = public.M('sites').where('id=?',(get.id,)).getField('name')
-        sitePath = public.M('sites').where('id=?',(get.id,)).getField('path')
+        site = public.M('sites').where('id=?',(get.id,)).field('name,path,service_type').find()
+        if not site: return {"runPath": "/", 'dirs': []}
+        siteName = site['name']
+        sitePath = site['path']
         if not siteName or os.path.isfile(sitePath): return {"runPath":"/",'dirs':[]}
-        path = sitePath
-        if public.get_webserver() == 'nginx':
+        # 兼容多服务
+        webserver = public.get_webserver()
+        if public.get_multi_webservice_status():
+            webserver = site['service_type']  if site['service_type'] else 'nginx'
+
+        if webserver == 'nginx':
             filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
             if os.path.exists(filename):
                 conf = public.readFile(filename)
@@ -5028,7 +5034,7 @@ location %s
                 if not path:
                     return public.return_msg_gettext(False, public.lang("Get Site run path false"))
                 path = path.groups()[0]
-        elif public.get_webserver() == 'apache':
+        elif webserver == 'apache':
             filename = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
             if os.path.exists(filename):
                 conf = public.readFile(filename)
@@ -5720,7 +5726,12 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             @author hwliang<2022-01-14>
             @return bool
         '''
-        default_conf_body = '''<VirtualHost *:80>
+        port_80 = '80'
+        port_443 = '443'
+        if public.get_multi_webservice_status():
+            port_443 = '8290'
+            port_80 = '8288'
+        default_conf_body = f'''<VirtualHost *:{port_80}>
     ServerAdmin webmaster@example.com
     DocumentRoot "/www/server/apache/htdocs"
     ServerName bt.default.com
@@ -5733,7 +5744,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         DirectoryIndex index.html
     </Directory>
 </VirtualHost>
-<VirtualHost *:443>
+<VirtualHost *:{port_443}>
     ServerAdmin webmaster@example.com
     DocumentRoot "/www/server/apache/htdocs"
     ServerName ssl.default.com
@@ -5765,7 +5776,10 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             @author hwliang<2022-01-14>
             @return bool
         '''
-        default_conf_body = '''<VirtualHost *:80>
+        port = '80'
+        if public.get_multi_webservice_status():
+            port = '8290'
+        default_conf_body = f'''<VirtualHost *:{port}>
     ServerAdmin webmaster@example.com
     DocumentRoot "/www/server/apache/htdocs"
     ServerName bt.default.com

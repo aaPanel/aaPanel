@@ -1,3 +1,4 @@
+import importlib
 import sys
 from typing import Optional, Type, TypeVar
 import traceback
@@ -68,7 +69,13 @@ def load_task_cls_by_path(path: str, cls_name: str) -> Optional[Type[T_CLS]]:
             return cls.__class__
         else:
             return None
-    except:
+    except ModuleNotFoundError as e:
+        # 忽略 ssl_push
+        if 'mod.base.push_mod.ssl_push' in str(e):
+            return None
+        else:
+            return None
+    except Exception as e:
         print(traceback.format_exc())
         print(sys.path)
         debug_log(traceback.format_exc())

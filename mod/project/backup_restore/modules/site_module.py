@@ -176,14 +176,17 @@ class SiteModule(DataManager):
             # wp prefix
             hit = False
             for p in wp_onekey:
-                if p["s_id"] == site["id"] and p.get('prefix'):
-                    site["wp_onekey"] = {
-                        "prefix": p['prefix'],
-                        "user": p.get('user', ''),
-                        "pass": p.get('pass', ''),
-                    }
-                    hit = True
-                    break
+                try: # wp may be not exist
+                    if p["s_id"] == site["id"] and p.get('prefix'):
+                        site["wp_onekey"] = {
+                            "prefix": p['prefix'],
+                            "user": p.get('user', ''),
+                            "pass": p.get('pass', ''),
+                        }
+                        hit = True
+                        break
+                except:
+                    pass
             if not hit:
                 site["wp_onekey"] = {}
 

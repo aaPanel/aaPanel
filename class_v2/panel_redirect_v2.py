@@ -135,7 +135,7 @@ class panelRedirect:
         if os.path.exists(ap_file):
             ap_conf = public.readFile(ap_file)
             if p_conf == "[]":
-                rep = "\n*%s\n+\\s+IncludeOptiona[\\s\\w\\/\\.\\*]+" % ("#referenced redirect rule, if commented, the configured redirect rule will be invalid")
+                rep = "\n*%s\n+\\s+IncludeOptiona[\\s\\w\\-\\/\\.\\*]+" % ("#referenced redirect rule, if commented, the configured redirect rule will be invalid")
                 ap_conf = re.sub(rep, '', ap_conf)
                 public.writeFile(ap_file, ap_conf)
                 return
@@ -146,7 +146,7 @@ class panelRedirect:
                     ap_conf = ap_conf.replace(rep1, rep1 + "\n\t%s" % ("#referenced redirect rule, if commented, the configured redirect rule will be invalid") +"\n\tIncludeOptional " + ap_redirectfile)
                     public.writeFile(ap_file,ap_conf)
             else:
-                rep = "\n*%s\n+\\s+IncludeOptiona[\\s\\w\\/\\.\\*]+" % ("#referenced redirect rule, if commented, the configured redirect rule will be invalid")
+                rep = "\n*%s\n+\\s+IncludeOptiona[\\s\\w\\-\\/\\.\\*]+" % ("#referenced redirect rule, if commented, the configured redirect rule will be invalid")
                 ap_conf = re.sub(rep,'', ap_conf)
                 public.writeFile(ap_file, ap_conf)
 

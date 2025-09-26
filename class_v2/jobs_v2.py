@@ -148,13 +148,13 @@ def clear_other_files():
         public.ExecShell("/etc/init.d/nginx reload")
         public.ExecShell("/etc/init.d/nginx start")
 
-    dirPath = '/www/server/adminer'
-    if os.path.exists(dirPath):
-        public.ExecShell("rm -rf {}".format(dirPath))
-
-    dirPath = '/www/server/panel/adminer'
-    if os.path.exists(dirPath):
-        public.ExecShell("rm -rf {}".format(dirPath))
+    # dirPath = '/www/server/adminer'
+    # if os.path.exists(dirPath):
+    #     public.ExecShell("rm -rf {}".format(dirPath))
+    #
+    # dirPath = '/www/server/panel/adminer'
+    # if os.path.exists(dirPath):
+    #     public.ExecShell("rm -rf {}".format(dirPath))
 
     filename = '/www/server/nginx/off'
     if os.path.exists(filename): os.remove(filename)
@@ -636,6 +636,7 @@ def files_set_mode():
         ["/dev/shm/session_py3","","root",600,True],
         ["/dev/shm/session_py2","","root",600,True],
         ["/www/server/phpmyadmin","","root",755,True],
+        ["/www/server/adminer", "", "root", 755, True],
         ["/www/server/coll","","root",700,True],
         ["/www/server/panel/init.sh","","root",600,False],
         ["/www/server/panel/license.txt","","root",600,False],

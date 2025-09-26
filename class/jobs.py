@@ -239,13 +239,13 @@ def clear_other_files():
         public.ExecShell("/etc/init.d/nginx reload")
         public.ExecShell("/etc/init.d/nginx start")
 
-    dirPath = '/www/server/adminer'
-    if os.path.exists(dirPath):
-        public.ExecShell("rm -rf {}".format(dirPath))
+    # dirPath = '/www/server/adminer'
+    # if os.path.exists(dirPath):
+    #     public.ExecShell("rm -rf {}".format(dirPath))
 
-    dirPath = '/www/server/panel/adminer'
-    if os.path.exists(dirPath):
-        public.ExecShell("rm -rf {}".format(dirPath))
+    # dirPath = '/www/server/panel/adminer'
+    # if os.path.exists(dirPath):
+    #     public.ExecShell("rm -rf {}".format(dirPath))
 
     filename = '/www/server/nginx/off'
     if os.path.exists(filename): os.remove(filename)
@@ -285,8 +285,8 @@ def clear_other_files():
     public.ExecShell('chmod 755 /www;chmod 755 /www/server')
     if os.path.exists('/www/server/phpmyadmin/pma'):
         public.ExecShell("rm -rf /www/server/phpmyadmin/pma")
-    if os.path.exists("/www/server/adminer"):
-        public.ExecShell("rm -rf /www/server/adminer")
+    # if os.path.exists("/www/server/adminer"):
+    #     public.ExecShell("rm -rf /www/server/adminer")
     if os.path.exists("/www/server/panel/adminer"):
         public.ExecShell("rm -rf /www/server/panel/adminer")
     if os.path.exists('/dev/shm/session.db'):
@@ -320,6 +320,9 @@ def sql_pacth():
 
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%edate%')).count():
         public.M('sites').execute("alter TABLE sites add edate integer DEFAULT '0000-00-00'",())
+
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites', '%service_type%')).count():
+        public.M('sites').execute("alter TABLE sites add service_type TEXT DEFAULT ''", ())
 
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%project_type%')).count():
         public.M('sites').execute("alter TABLE sites add project_type STRING DEFAULT 'PHP'",())
@@ -765,6 +768,7 @@ def files_set_mode():
         ["/dev/shm/session_py3","","root",600,True],
         ["/dev/shm/session_py2","","root",600,True],
         ["/www/server/phpmyadmin","","root",755,True],
+        ["/www/server/adminer","","root",755,True],
         ["/www/server/coll","","root",700,True],
         ["/www/server/panel/init.sh","","root",600,False],
         ["/www/server/panel/license.txt","","root",600,False],

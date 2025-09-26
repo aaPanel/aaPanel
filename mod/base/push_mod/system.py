@@ -37,10 +37,29 @@ class PushSystem:
         return self._sender_type_class[sender_type]
 
     @staticmethod
+    def remove_old_task(task: dict):
+        if not task.get("id"):
+            return
+        task_id = task["id"]
+        try:
+            from . import PushManager
+            PushManager().remove_task_conf(public.to_dict_obj(
+                {"task_id": task_id}
+            ))
+        except:
+            pass
+
+    @staticmethod
     def can_run_task_list():
         result = []
         result_template = {}
         for task in TaskConfig().config:  # all task
+
+            # ======== 移除旧任务 ==============
+            if task.get("source") == "cert_endtime" and task.get("task_data", {}).get("title") == "Certificate expiration":
+                PushSystem.remove_old_task(task) # 移除旧的ssl通知
+            # ======== 移除旧任务 End ==========
+
             if not task["status"]:
                 continue
             # 间隔检测时间未到跳过

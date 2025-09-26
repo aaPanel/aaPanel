@@ -1776,7 +1776,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             shutil.rmtree(get.path)
             self.site_path_safe(get)
             public.add_security_logs("Del dir", "Delete directory: " + get.path)
-            public.WriteLog('TYPE_FILE', 'Successfully deleted directory [{1}]!', (get.path,))
+            public.write_log_gettext('File manager', 'Successfully deleted directory [{}]!', (get.path,))
             self.remove_file_ps(get)
             return public.return_message(0, 0, public.lang(" Successfully deleted directory!"))
         except:
@@ -2130,7 +2130,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 public.write_log_gettext('File manager', '[{}] renamed to [{}]', (get.sfile, get.dfile))
                 return public.return_message(0, 0, public.lang("Successfully renamed!"))
             else:
-                public.write_log_gettext('File manager', 'File moved!',
+                public.write_log_gettext('File manager', 'Successfully moved [{}] to [{}]!',
                                          (get.sfile, get.dfile))
                 return public.return_message(0, 0, public.lang("File moved!"))
         except:

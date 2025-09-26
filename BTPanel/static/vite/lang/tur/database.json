@@ -217,7 +217,8 @@
 			"index_29": "Kullanıcı adı veya şifre 3 basamaktan az olamaz!",
 			"index_30": "İki girişteki şifreler tutarsızdır!",
 			"index_31": "PHP sürümü",
-			"index_32": "Lütfen PHP-CLI sürümünü seçin"
+			"index_32": "Lütfen PHP-CLI sürümünü seçin",
+			"index_33": "Yönetici sürücüsü şu anda çalışan PHP sürüm ortamına bağlıdır. Sürücünün eksik olduğunu fark ederseniz, lütfen php_mongodb ve pdo_pgsql yüklemek için php uzantılarına gidin"
 		},
 		"Api": {
 			"Index_1": "Uzak sunucuya bağlanma, lütfen bekleyin ...",
@@ -232,6 +233,22 @@
 			"Index_10": "Verileri kurtarmak, lütfen bekleyin ...",
 			"Index_11": "Redis verilerini kaydedin, lütfen bekleyin ...",
 			"Index_12": "Yedeklemeyi silme, lütfen bekleyin ..."
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "Mevcut Durum: ",
+				"fixed": "Sabit",
+				"install": "Düzenlemek",
+				"uninstall": "Kaldırmak",
+				"confirmFixed": "Düzeltmek istediğinden emin misin?",
+				"confirmInstall": "Yüklemek istediğinden emin misiniz?",
+				"confirmUninstall": "Kaldırmak istediğinden emin misiniz?",
+				"jumpingToAdminer": "Yönetime atlamak, lütfen bekleyin ..."
+			},
+			"switchingPhp": "PHP sürümünü değiştirme, lütfen bekleyin ...",
+			"installing": "Yükleme, lütfen bekleyin ...",
+			"uninstalling": "Kaldırma, lütfen bekleyin ...",
+			"switchingPort": "Port değiştirme, lütfen bekleyin ..."
 		},
 		"Mysql": {
 			"index_1": "Otomatik yedekleme veritabanı",

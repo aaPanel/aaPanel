@@ -887,15 +887,17 @@ class DbConnection:
         @name Sqlite数据库连接类(相比Db类更加底层)
         @author Zhj<2022-12-13>
     '''
-    __slots__ = ['__DB_NAME', '__DB_PATH', '__DB_LOCK_FILE', '__CONN', '__DEBUG_LOG']
+    __slots__ = ['__DB_NAME', '__DB_PATH', '__DB_LOCK_FILE', '__CONN', '__DEBUG_LOG', 'ENGINE']
 
-    def __init__(self, db_name):
+    def __init__(self, db_name, engine=None):
         '''
             @name 初始化函数
             @author Zhj<2022-12-14>
             @param db_name<string>  数据库名称(全路径 不包含.db)
             @return void
         '''
+
+        self.ENGINE = sqlite3 if engine is None else engine
         self.__DB_NAME = db_name
         self.__DB_PATH = '{}.db'.format(db_name)
 
@@ -961,11 +963,11 @@ class DbConnection:
 
     # 连接sqlite
     def connect(self):
-        if isinstance(self.__CONN, sqlite3.Connection):
+        if isinstance(self.__CONN, self.ENGINE.Connection):
             return self.__CONN
 
         # 连接数据库(写)
-        self.__CONN = sqlite3.connect(self.__DB_PATH, timeout=15, check_same_thread=False)
+        self.__CONN = self.ENGINE.connect(self.__DB_PATH, timeout=15, check_same_thread=False)
         self.__CONN.text_factory = str
         self.__CONN.isolation_level = 'IMMEDIATE'
 
@@ -975,7 +977,7 @@ class DbConnection:
             @name 关闭sqlite连接
         '''
         # 关闭sqlite数据库连接
-        if isinstance(self.__CONN, sqlite3.Connection):
+        if isinstance(self.__CONN, self.ENGINE.Connection):
             try:
                 self.__CONN.close()
             except BaseException as e:
@@ -995,7 +997,7 @@ class DbConnection:
             @name 提交事务
             @return bool
         '''
-        if isinstance(self.__CONN, sqlite3.Connection) and self.__CONN.in_transaction:
+        if isinstance(self.__CONN, self.ENGINE.Connection) and self.__CONN.in_transaction:
             self.__CONN.commit()
             return True
 
@@ -1007,7 +1009,7 @@ class DbConnection:
             @name 回滚事务
             @return bool
         '''
-        if isinstance(self.__CONN, sqlite3.Connection) and self.__CONN.in_transaction:
+        if isinstance(self.__CONN, self.ENGINE.Connection) and self.__CONN.in_transaction:
             self.__CONN.rollback()
             return True
 
@@ -1022,9 +1024,9 @@ class DbConnection:
             try:
                 return fn(*args, **kwargs)
             except (
-            SystemError, KeyError, sqlite3.InterfaceError, sqlite3.InternalError, sqlite3.OperationalError) as e:
+            SystemError, KeyError, self.ENGINE.InterfaceError, self.ENGINE.InternalError, self.ENGINE.OperationalError) as e:
                 # 数据库操作错误，不是锁协议错误，直接抛出异常
-                if isinstance(e, sqlite3.OperationalError) and str(e) not in ['locking protocol',
+                if isinstance(e, self.ENGINE.OperationalError) and str(e) not in ['locking protocol',
                                                                               'database is locked']:
                     raise e
 
@@ -1299,11 +1301,11 @@ class Db:
         @name Sqlite数据库连接类
         @author Zhj<2022-07-18>
     '''
-    __slots__ = ['__DB_NAME', '__DB_CONN', '__AUTO_COMMIT', '__AUTO_VACUUM', '__NEED_VACUUM', '__DEBUG_LOG', '__QUERIES']
+    __slots__ = ['__DB_NAME', '__DB_CONN', '__AUTO_COMMIT', '__AUTO_VACUUM', '__NEED_VACUUM', '__DEBUG_LOG', '__QUERIES', 'ENGINE']
 
     __DB_ROOT_DIR = '{}/data/'.format(_BASE_DIR)
 
-    def __init__(self, db_name):
+    def __init__(self, db_name, engine=None):
         '''
             @name 初始化函数
             @author Zhj<2022-12-14>
@@ -1311,6 +1313,7 @@ class Db:
             @param brandnew<bool>   是否开启一个全新连接
             @return void
         '''
+        self.ENGINE = sqlite3 if engine is None else engine
         if str(db_name).startswith(':memory:'):
             self.__DB_NAME = db_name  # 内存数据库
         else:
@@ -1340,7 +1343,7 @@ class Db:
             @author Zhj<2022-07-16>
             @return self
         '''
-        self.__DB_CONN = DbConnection(self.__DB_NAME)
+        self.__DB_CONN = DbConnection(db_name=self.__DB_NAME, engine=self.ENGINE)
         return self
 
     def close(self):

@@ -65,7 +65,8 @@ class databaseBase:
 
         info['uri'] = args
         info['return_js'] = ''
-        if hasattr(args, 'tojs'): info['return_js'] = args.tojs
+        if hasattr(args, 'tojs'):
+            info['return_js'] = args.tojs
 
         rdata['where'] = where
 
@@ -73,19 +74,21 @@ class databaseBase:
         rdata['page'] = page.GetPage(info, result)
         # 取出数据
         rdata['data'] = SQL.where(where, ()).order(order).field(
-            'id,sid,pid,name,username,password,accept,ps,addtime,type,db_type,conn_config').limit(
-            str(page.SHIFT) + ',' + str(page.ROW)).select()
+            'id,sid,pid,name,username,password,accept,ps,addtime,type,db_type,conn_config'
+        ).limit(
+            str(page.SHIFT) + ',' + str(page.ROW)
+        ).select()
 
         if type(rdata['data']) == str:
             raise HintException("Database query error: " + rdata['data'])
 
         for sdata in rdata['data']:
-            # 清除不存在的
             backup_count = 0
-            backup_list = public.M('backup').where("pid=? AND type=1", (sdata['id'])).select()
+            backup_list = public.S('backup').where("pid=? AND type=1", (sdata['id'],)).select()
             for backup in backup_list:
-                if not os.path.exists(backup["filename"]):
-                    public.M('backup').where("id=? AND type=1", (backup['id'])).delete()
+                # 清除本地不存在的, 云端保留
+                if not os.path.exists(backup["filename"]) and backup["filename"].find("|") == -1:
+                    public.S('backup').where("id=? AND type=1", (backup['id'])).delete()
                     continue
                 backup_count += 1
             sdata['backup_count'] = backup_count
@@ -233,18 +236,24 @@ class databaseBase:
         @删除备份文件
         """
 
-        name = ''
         id = get.id
         where = "id=?"
-        filename = public.M('backup').where(where, (id,)).getField('filename')
-        if os.path.exists(filename): os.remove(filename)
+        obj = public.S("backup").where(where, (id,)).find()
+        if not obj:
+            return public.return_message(-1, 0, 'The specified backup file does not exist!')
+        filename = obj.get("filename")
+        if os.path.exists(filename):
+            os.remove(filename)
 
-        # if filename == 'qiniu':
-        #     name = public.M('backup').where(where, (id,)).getField('name')
-        #
-        #     public.ExecShell(public.get_run_python("[PYTHON] " + public.GetConfigValue('setup_path') + '/panel/script/backup_qiniu.py delete_file ' + name))
+        pid = obj.get("pid")
+        db_info = public.S("database").where("id=?", pid).find()
+        db_type = db_info.get("type", "mysql")
+        db_name = db_info.get("name", "unknown")
         public.M('backup').where(where, (id,)).delete()
-        public.WriteLog("TYPE_DATABASE", 'DATABASE_BACKUP_DEL_SUCCESS', (name, filename))
+        public.WriteLog(
+            "TYPE_DATABASE",
+            f"Successfully deleted backup [{filename}] for database [{db_type}-{db_name}]!"
+        )
         return public.return_message(0, 0, 'DEL_SUCCESS')
 
     # 检查是否在回收站

@@ -6,7 +6,8 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
-import sys,os,re,time
+import sys,os,re,time,json
+from datetime import datetime, timedelta
 
 import requests
 
@@ -447,10 +448,17 @@ class data:
                         site_type = public.M("wp_site_types").where('`id` = ?', (get.get('site_type', ''),)).find()
                         filtered_data = []
 
+                    # 加载网站图标
+                    import os
+                    multi_webservice_status = public.get_multi_webservice_status()
+                    webservice = public.get_webserver()
+                    nginx_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/soft_ico/ico-nginx.png"))
+                    apache_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/apache.png"))
+                    ols_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/soft_ico/ico-openlitespeed.png"))
+
                     for i in range(len(data['data'])):
                         # 添加维护模式状态
                         if get.get('project_type', '') == 'WP2':
-                            import os
                             data['data'][i]['maintenance'] = False
                             path = os.path.join(data['data'][i]['path'],'.maintenance')
                             if os.path.exists(path):
@@ -508,14 +516,37 @@ class data:
                         if not data['data'][i].get('rname', ''):
                             data['data'][i]['rname'] = data['data'][i]['name']
                         data["net_flow_info"] = {}
+
+                        # 网站图标
                         data['data'][i]['ico']=""
-                        # 拼接路径
                         try:
                             import os
                             ico_b64_path = os.path.join(public.get_panel_path(), "data/site_favs", data['data'][i]['name'] + ".b64")
 
-                            if os.path.exists(ico_b64_path):
-                                data['data'][i]['ico'] = public.readFile(ico_b64_path)
+                            default = public.readFile(ico_b64_path) if os.path.exists(ico_b64_path) else ''
+
+                            if multi_webservice_status:
+                                if default:
+                                    data['data'][i]['ico'] = default
+                                elif 'apache' == data['data'][i]['service_type']:
+                                    data['data'][i]['ico'] = apache_b64_path
+                                elif 'nginx' == data['data'][i]['service_type'] or not data['data'][i]['service_type']:
+                                    data['data'][i]['ico'] = nginx_b64_path
+                                elif 'openlitespeed' == data['data'][i]['service_type']:
+                                    data['data'][i]['ico'] = ols_b64_path
+                                else:
+                                    data['data'][i]['ico'] = default
+                            else:
+                                if default:
+                                    data['data'][i]['ico'] = default
+                                elif webservice == 'nginx':
+                                    data['data'][i]['ico'] = nginx_b64_path
+                                elif webservice == 'apache':
+                                    data['data'][i]['ico'] = apache_b64_path
+                                elif webservice == 'openlitespeed':
+                                    data['data'][i]['ico'] = ols_b64_path
+                                else:
+                                    data['data'][i]['ico'] = default
 
                             # 判断是否启动类型筛选，启动后为数据添加类型
                             if get.get('site_type', ''):
@@ -965,7 +996,7 @@ class data:
     # 获取返回的字段
     def GetField(self,tableName):
         fields = {
-            'sites'     :   "id,name,path,status,ps,addtime,edate",
+            'sites'     :   "id,name,path,status,ps,addtime,edate,service_type",
             'ftps'      :   "id,pid,name,password,status,ps,addtime,path",
             'databases' :   "id,sid,pid,name,username,password,accept,ps,addtime,db_type,conn_config",
             'logs'      :   "id,uid,username,type,log,addtime",
@@ -987,17 +1018,186 @@ class data:
         data = log_analysis.log_analysis().get_result(get)
         return int(data['php']) + int(data['san']) + int(data['sql']) + int(data['xss'])
 
+
+
+
+    def get_date_range(self,
+        start_date: str = None,
+        end_date: str = None,
+        date_format: str = "%Y-%m-%d"
+    ) -> list[str]:
+        """
+        根据起止日期获取日期列表，支持指定日期格式
+        
+        参数:
+            start_date: 开始日期字符串（格式与date_format一致，默认None表示end_date往前推29天）
+            end_date: 结束日期字符串（格式与date_format一致，默认None表示今天）
+            date_format: 日期字符串格式（默认"%Y-%m-%d"）
+        
+        返回:
+            日期字符串列表（按从end_date到start_date的顺序排列，包含两端日期）
+        
+        异常:
+            ValueError: 日期格式错误或start_date晚于end_date
+        """
+        # 处理默认结束日期（默认为今天）
+        if end_date is None:
+            end_date_obj = datetime.now().date()
+        else:
+            try:
+                end_date_obj = datetime.strptime(end_date, date_format).date()
+            except ValueError:
+                raise ValueError(f"结束日期格式错误，应为{date_format}")
+        
+        # 处理默认开始日期（默认是结束日期往前推29天，共30天）
+        if start_date is None:
+            start_date_obj = end_date_obj - timedelta(days=29)
+        else:
+            try:
+                start_date_obj = datetime.strptime(start_date, date_format).date()
+            except ValueError:
+                raise ValueError(f"开始日期格式错误，应为{date_format}")
+        
+        # 校验日期逻辑（开始日期不能晚于结束日期）
+        if start_date_obj > end_date_obj:
+            raise ValueError(f"开始日期({start_date})不能晚于结束日期({end_date})")
+        
+        # 生成日期列表（从start_date递增到end_date，自然从小到大）
+        date_list = []
+        current_date = start_date_obj  # 从开始日期开始
+        while current_date <= end_date_obj:  # 循环到结束日期为止
+            date_list.append(current_date.strftime(date_format))
+            current_date += timedelta(days=1)  # 日期递增
+        
+        return date_list
+
+
+
+    def get_site_data(self,
+        base_dir: str,
+        site_name: str,
+        date_list: list[str]
+    ) -> dict[str, any]:
+        """
+        获取单个站点的统计数据
+        
+        参数:
+            base_dir: 基础数据目录
+            site_name: 站点名称
+            date_list: 日期列表（YYYY-MM-DD格式）
+        
+        返回:
+            包含list和total的站点数据字典
+        """
+        site_dir = os.path.join(base_dir, site_name)
+        daily_data = []
+        total_requests = 0
+
+        # 处理每个日期的数据
+        for date_str in date_list:
+            # 转换日期格式为YYYYMMDD（整数类型）
+            date_int = int(date_str.replace("-", ""))
+            file_path = os.path.join(site_dir, f"{date_str}.json")
+            
+            # 初始化当日请求数为0
+            requests = 0
+            
+            # 尝试读取文件
+            if os.path.exists(file_path) and os.path.isfile(file_path):
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        # 确保requests字段存在且为数字
+                        if isinstance(data.get("requests"), (int, float)):
+                            requests = int(data["requests"])
+                except (json.JSONDecodeError, Exception):
+                    # 解析错误或其他异常时保持请求数为0
+                    pass
+            
+            # 添加当日数据
+            daily_data.append({
+                "request": requests,
+                "date": date_int
+            })
+            # 累计总请求数
+            total_requests += requests
+
+        return {
+            "list": daily_data,
+            "total": {
+                "request": total_requests
+            }
+        }
+
+    
+
+
+    def get_multi_site_stats(self,
+        base_dir: str = "/www/server/site_total/data/total",
+        site_names: list[str] = None,
+        start_date: str = None,
+        end_date: str = None
+    ) -> dict[str, any]:
+        """
+        获取多个站点的统计数据，返回指定格式的结果
+        
+        参数:
+            base_dir: 基础数据目录
+            site_names: 要查询的站点名称列表，默认包含示例站点
+        
+        返回:
+            符合指定格式的统计数据字典
+        """
+        message = {}
+        # 默认站点列表
+        if site_names is None:
+            return message
+        
+        # 获取日期列表
+        date_list = self.get_date_range(start_date, end_date)
+        
+        # 收集所有站点数据
+        
+        for site in site_names:
+            # 检查站点目录是否存在
+            site_dir = os.path.join(base_dir, site)
+            if os.path.exists(site_dir) and os.path.isdir(site_dir):
+                message[site] = self.get_site_data(base_dir, site, date_list)
+            else:
+                # 站点不存在时返回空数据结构
+                message[site] = {
+                    "list": [{"request": 0, "date": int(date.replace("-", ""))} for date in date_list],
+                    "total": {"request": 0}
+                }
+        
+        # 构建最终返回格式
+        return message
+
+    def __check_auth(self):
+        from plugin_auth_v2 import Plugin as Plugin
+        plugin_obj = Plugin(False)
+        plugin_list = plugin_obj.get_plugin_list()
+        import PluginLoader
+        self.__IS_PRO_MEMBER = PluginLoader.get_auth_state() > 0
+        return int(plugin_list["pro"]) > time.time() or self.__IS_PRO_MEMBER
+
     # 获取网站监控报表数据
     def getSiteThirtyTotal(self, get=None):
+        #检测插件是否安装
+        if not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")):
+            site_names = [ i.get('name','') for i in public.M("sites").field("name").select() if i.get('name','') !='' ]
+            start_date= None if get==None else get.get('start_date',None)
+            end_date= None if get==None else get.get('end_date',None)
+            return {'status': 0, "timestamp": int(time.time()), "message": self.get_multi_site_stats(site_names=site_names,start_date=start_date,end_date=end_date)}
         cache_file = os.path.join(public.get_panel_path(), 'plugin/monitor/site_thirty_total.json')
         result ={}
         try:
             version=self.get_plugin_version(os.path.join(public.get_panel_path(),"plugin/monitor/info.json"))
             version_list=version.split(".")
-            if len(version_list)<3:return result
-            if int(version_list[0])<4:return result
-            if int(version_list[0])==4 and int(version_list[1])<1:return result
-            if int(version_list[0])==4 and int(version_list[2])<2:return result
+            if len(version_list)<3:return {'status': 0, "timestamp": int(time.time()), "message": result}
+            if int(version_list[0])<4:return {'status': 0, "timestamp": int(time.time()), "message": result}
+            if int(version_list[0])==4 and int(version_list[1])<1:return {'status': 0, "timestamp": int(time.time()), "message": result}
+            if int(version_list[0])==4 and int(version_list[2])<2:return {'status': 0, "timestamp": int(time.time()), "message": result}
             #取网站域名列表
             try:
                 prorject_type=["PHP","WP2"]
@@ -1306,25 +1506,6 @@ class data:
                 'INNER',
             ).where('wst.id = ?',site_type)
 
-            # # 关联备份表
-            # query = query.left_join(
-            #     'wordpress_backups wb',
-            #     's.id = wb.s_id',
-            # )
-            #
-            # # 筛选字段并添加备份统计字段
-            # query = query.field(
-            #     's.id',
-            #     's.name',
-            #     's.path',
-            #     's.status',
-            #     's.addtime',
-            #     's.ps',
-            #     'project_type',
-            #     'COALESCE(COUNT(wb.id), 0) AS backup_count',
-            #     'MAX(wb.bak_time) AS last_backup_time'
-            # ).group('s.id')
-
             # 检查wordpress_backups表是否存在
             has_backup_table = True
             try:
@@ -1347,6 +1528,7 @@ class data:
                     's.addtime',
                     's.ps',
                     'project_type',
+                    'service_type',
                     'COALESCE(COUNT(wb.id), 0) AS backup_count',
                     'MAX(wb.bak_time) AS last_backup_time'
                 ).group('s.id')
@@ -1359,7 +1541,8 @@ class data:
                     's.status',
                     's.addtime',
                     's.ps',
-                    'project_type'
+                    'project_type',
+                    'service_type'
                 )
 
             # 排序分页
@@ -1373,6 +1556,13 @@ class data:
 
             total = len(data)
             data = data[(p - 1) * limit:p * limit]
+
+            # 加载网站图标
+            multi_webservice_status = public.get_multi_webservice_status()
+            webservice = public.get_webserver()
+            nginx_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/soft_ico/ico-nginx.png"))
+            apache_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/apache.png"))
+            ols_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/soft_ico/ico-openlitespeed.png"))
 
             # 补充字段
             for item in data:
@@ -1413,13 +1603,32 @@ class data:
                 # 登录url
                 item['login_url'] = '/v2/wp/login/{}'.format(item['id'])
 
-                # 站点图标(暂定，可用于网站多服务区分)
-                ico_b64_path = os.path.join(public.get_panel_path(), "data/site_favs", item['name'] + ".b64")
+                # 站点图标(用于网站多服务区分)
+                ico_b64_path = os.path.join(public.get_panel_path(), "data/site_favs", item['name'] + ".b64")  # 用户自主图标
+                default = public.readFile(ico_b64_path) if os.path.exists(ico_b64_path) else ''
 
-                if os.path.exists(ico_b64_path):
-                    item['ico'] = public.readFile(ico_b64_path)
+                if multi_webservice_status:
+                    if default:
+                        item['ico'] = default
+                    elif 'apache' == item['service_type']:
+                        item['ico'] = apache_b64_path
+                    elif 'nginx' == item['service_type'] or not item['service_type']:
+                        item['ico'] = nginx_b64_path
+                    elif 'openlitespeed' == item['service_type']:
+                        item['ico'] = ols_b64_path
+                    else:
+                        item['ico'] = ''
                 else:
-                    item['ico'] = ''
+                    if default:
+                        item['ico'] = default
+                    elif webservice == 'nginx':
+                        item['ico'] = nginx_b64_path
+                    elif webservice == 'apache':
+                        item['ico'] = apache_b64_path
+                    elif webservice == 'openlitespeed':
+                        item['ico'] = ols_b64_path
+                    else:
+                        item['ico'] = ''
 
             # 处理ssl排序
             if order_list[0] == 'site_ssl':

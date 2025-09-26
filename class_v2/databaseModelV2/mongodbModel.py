@@ -315,76 +315,8 @@ class main(databaseBase):
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
-        search = ''
-        if 'search' in get:
-            search = get['search']
-        conditions = ''
-        if '_' in search:
-            cs = ''
-            for i in search:
-                if i == '_':
-                    cs += '/_'
-                else:
-                    cs += i
-            search = cs
-            conditions = " escape '/'"
 
-        SQL = public.M('databases')
-
-        where = "lower(type) = lower('mongodb')"
-        if search:
-            where += "AND (name like '%{search}%' or ps like '%{search}%'{conditions})".format(search=search,
-                                                                                               conditions=conditions)
-        if 'db_type' in get:
-            where += " AND db_type='{}'".format(get['db_type'])
-
-        if 'sid' in get:
-            where += " AND sid='{}'".format(get['sid'])
-
-        order = "id desc"
-        if hasattr(get, 'order'): order = get.order
-
-        info = {}
-        rdata = {}
-
-        info['p'] = 1
-        info['row'] = 20
-        result = '1,2,3,4,5,8'
-        info['count'] = SQL.where(where, ()).count()
-
-        if hasattr(get, 'limit'): info['row'] = int(get.limit)
-        if hasattr(get, 'result'): result = get.result;
-        if hasattr(get, 'p'): info['p'] = int(get['p'])
-
-        import page
-        # 实例化分页类
-        page = page.Page()
-
-        info['uri'] = get
-        info['return_js'] = ''
-        if hasattr(get, 'tojs'): info['return_js'] = get.tojs
-
-        rdata['where'] = where
-
-        # 获取分页数据
-        rdata['page'] = page.GetPage(info, result)
-        # 取出数据
-        rdata['data'] = SQL.where(where, ()).order(order).field(
-            'id,sid,pid,name,username,password,accept,ps,addtime,type,db_type,conn_config').limit(
-            str(page.SHIFT) + ',' + str(page.ROW)).select()
-
-        for sdata in rdata['data']:
-            # 清除不存在的
-            backup_count = 0
-            backup_list = public.M('backup').where("pid=? AND type=1", (sdata['id'])).select()
-            for backup in backup_list:
-                if not os.path.exists(backup["filename"]):
-                    public.M('backup').where("id=? AND type=1", (backup['id'])).delete()
-                    continue
-                backup_count += 1
-            sdata['backup_count'] = backup_count
-
-            sdata['conn_config'] = json.loads(sdata['conn_config'])
+        rdata = self.get_base_list(get, sql_type="mongodb")
         return public.success_v2(rdata)
 
     def GetCloudServer(self, get):
@@ -707,6 +639,7 @@ class main(databaseBase):
 
         db_obj.chat.insert_one({})
         if auth_status:
+            _, db_obj = mongodb_obj.get_db_obj_new()
             db_obj.command(
                 "createUser",
                 username,
@@ -1194,22 +1127,7 @@ class main(databaseBase):
         """
         @删除备份文件
         """
-        try:
-            name = ''
-            id = get.id
-            where = "id=?"
-            filename = public.M('backup').where(where, (id,)).getField('filename')
-            if os.path.exists(filename): os.remove(filename)
-            # if filename == 'qiniu':
-            #     name = public.M('backup').where(where, (id,)).getField('name');
-            #
-            #     public.ExecShell(public.get_run_python("[PYTHON] " + public.GetConfigValue(
-            #         'setup_path') + '/panel/script/backup_qiniu.py delete_file ' + name))
-            public.M('backup').where(where, (id,)).delete()
-            public.WriteLog("TYPE_DATABASE", 'DATABASE_BACKUP_DEL_SUCCESS', (name, filename))
-            return public.success_v2(public.lang('DEL_SUCCESS'))
-        except Exception as _:
-            return public.fail_v2(public.lang("Failed to delete backup file!"))
+        self.delete_base_backup(get)
 
     # 同步数据库到服务器
     def SyncToDatabases(self, get):
@@ -1272,6 +1190,7 @@ class main(databaseBase):
             except:
                 pass
             try:
+                _, db_obj = mongodb_obj.get_db_obj_new()
                 db_obj.command(
                     "createUser",
                     find['username'],
@@ -1371,6 +1290,7 @@ class main(databaseBase):
             try:
                 db_obj.command("updateUser", username, pwd=newpassword)
             except:
+                _, db_obj = mongodb_obj.get_db_obj_new(username)
                 db_obj.command("createUser", username, pwd=newpassword, roles=[{'role': 'dbOwner', 'db': find['name']},
                                                                                {'role': 'userAdmin',
                                                                                 'db': find['name']}])

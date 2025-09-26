@@ -498,6 +498,7 @@ class panelPlugin:
         result = self.__get_download_speed(get.plugin_name)
         return result
 
+
     # 取消下载
     def close_install(self, get):
         '''
@@ -524,16 +525,37 @@ class panelPlugin:
         #处理ols还不支持php81的情况
         # if get.sName == "php-8.1" and public.get_webserver() == 'openlitespeed':
         #     return public.return_msg_gettext(False, public.lang("Sorry, currently OLS official does not support php8.1"))
+
+        # 处理多服务版本限制
+        if get.sName == 'nginx' and public.get_multi_webservice_status():
+            try:
+                version = float(get.version)
+                if version < 1.24:
+                    return public.return_message(-1, 0, public.lang("In Multi-WebServer Hosting,  only nginx 1.24 and above versions are supported!"))
+            except:
+                return public.return_message(-1,0,public.lang("In Multi-WebServer Hosting,  only nginx 1.24 and above versions are supported!"))
+
         pluginInfo = self.get_soft_find(get.sName)['message']
         get.pluginInfo = pluginInfo
         check_result = self.check_install_limit(get)
-        if check_result:
+        if check_result and get.get('Skip', False) not in [True,'true']:  # 判断是否跳过排斥检查。仅用于多服务相关插件
             return check_result
+
+        # 多服务安装日志
+        if get.get('Skip', False) in [True,'true']:
+            public.writeFile('/tmp/multi_service_install.log','True')
+
         if pluginInfo['name'] in ['dns_manager','mail_sys']:
             pluginInfo['type'] = 5
 
         if pluginInfo['type'] != 5:
             result = self.install_sync(pluginInfo,get)
+            try:
+                # 添加多服务处理
+                if public.get_multi_webservice_status():
+                    public.ExecShell('/www/server/panel/pyenv/bin/python3 /www/server/panel/script/modify_ports_multiple_services.py')
+            except:
+                pass
         else:
             result = self.install_async(pluginInfo,get)
         # public.print_log("hdfh222  {}".format(result))
@@ -659,6 +681,11 @@ class panelPlugin:
         # 清理日志文件
         if os.path.exists("/tmp/panelExec.log"):
             public.writeFile("/tmp/panelExec.log","")
+
+        # 多服务下，强制修改端口
+        if public.get_multi_webservice_status():
+            execstr += ' && /www/server/panel/pyenv/bin/python3 /www/server/panel/script/modify_ports_multiple_services.py'
+        # public.print_log(execstr)
         public.M('tasks').add('id,name,type,status,addtime,execstr',(None, mmsg + '['+get.sName+'-'+get.version+']','execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
         cache.delete('install_task')
         public.writeFile('/tmp/panelTask.pl','True')
@@ -1450,9 +1477,20 @@ class panelPlugin:
                         softInfo["php_ini"] = "/www/server/php/{}/etc/php.ini".format(v1)
                 if sName == 'mail_sys':
                     softInfo['mail_sys_status'] = self._check_mail_sys(None)["status"]
-                return public.success_v2(self.check_status(softInfo))
+                data = self.check_status(softInfo)
 
+                # # 多服务下切换版本，仅支持24以上
+                # if public.get_multi_webservice_status() and sName == 'nginx':
+                #     versions = []
+                #
+                #     for i in data['versions']:
+                #         if i['m_version'] in ['1.24', '1.25', '1.27', '1.26','1.28']:
+                #             versions.append(i)
+                #     data['versions'] = versions
+
+                return public.success_v2(data)
         return public.fail_v2('failed to get soft info')
+
     def _check_mail_sys(self, args):
         if os.path.exists('/etc/postfix/sqlite_virtual_domains_maps.cf'):
             # public.ExecShell('{} -e "message_size_limit = 102400000"'.format(self._get_postconf()))
@@ -2256,44 +2294,44 @@ class panelPlugin:
                     rep = r"php-cgi.*\.sock"
                     public.writeFile(configFile, conf)
                     phpversion = '54'
+        if not public.get_multi_webservice_status():
+            configFile = setupPath + '/apache/conf/extra/httpd-vhosts.conf'
+            if os.path.exists(configFile):
+                conf = public.readFile(configFile)
+                rep = r"php-cgi-([0-9]+)\.sock"
+                rtmp = re.search(rep, conf)
+                if rtmp:
+                    phpversion = rtmp.groups()[0]
+                rep = r"Listen\s+([0-9]+)\s*\n"
+                rtmp = re.search(rep, conf)
+                if rtmp:
+                    phpport = rtmp.groups()[0]
 
-        configFile = setupPath + '/apache/conf/extra/httpd-vhosts.conf'
-        if os.path.exists(configFile):
-            conf = public.readFile(configFile)
-            rep = r"php-cgi-([0-9]+)\.sock"
-            rtmp = re.search(rep, conf)
-            if rtmp:
-                phpversion = rtmp.groups()[0]
-            rep = r"Listen\s+([0-9]+)\s*\n"
-            rtmp = re.search(rep, conf)
-            if rtmp:
-                phpport = rtmp.groups()[0]
+                # SSL配置文件查看
+                ssl_config_file = '{}/vhost/apache/phpmyadmin.conf'.format(public.get_panel_path())
+                if os.path.exists(ssl_config_file) and os.path.getsize(ssl_config_file) > 10:
+                    tmps = public.readFile(ssl_config_file)
+                    m = re.search(r"Listen\s*(\d+)", tmps)
+                    if m is not None:
+                        ssl_enabled = True
+                        ssl_port = m.group(1)
 
-            # SSL配置文件查看
-            ssl_config_file = '{}/vhost/apache/phpmyadmin.conf'.format(public.get_panel_path())
-            if os.path.exists(ssl_config_file) and os.path.getsize(ssl_config_file) > 10:
-                tmps = public.readFile(ssl_config_file)
-                m = re.search(r"Listen\s*(\d+)", tmps)
-                if m is not None:
-                    ssl_enabled = True
-                    ssl_port = m.group(1)
+                # 2025/6/4 修复php额外密码访问
+                if os.path.exists(setupPath + '/panel/vhost/apache/phpmyadmin.conf'):
+                    php_conf = public.readFile(os.path.join(setupPath, 'panel/vhost/apache/phpmyadmin.conf'))
+                else:
+                    php_conf = configFile
+                if php_conf.find('AUTH_START') != -1: pauth = True
 
-            # 2025/6/4 修复php额外密码访问
-            if os.path.exists(setupPath + '/panel/vhost/apache/phpmyadmin.conf'):
-                php_conf = public.readFile(os.path.join(setupPath, 'panel/vhost/apache/phpmyadmin.conf'))
-            else:
-                php_conf = configFile
-            if php_conf.find('AUTH_START') != -1: pauth = True
+                if conf.find('/www/server/stop') == -1: pstatus = True
 
-            if conf.find('/www/server/stop') == -1: pstatus = True
-
-        if os.path.exists('/usr/local/lsws/bin/lswsctrl'):
-            result = self._get_ols_myphpadmin_info()
-            if result:
-                phpversion = result['php_version']
-                phpport = result['php_port']
-                pauth = result['pauth']
-                pstatus = result['pstatus']
+            if os.path.exists('/usr/local/lsws/bin/lswsctrl'):
+                result = self._get_ols_myphpadmin_info()
+                if result:
+                    phpversion = result['php_version']
+                    phpport = result['php_port']
+                    pauth = result['pauth']
+                    pstatus = result['pstatus']
         try:
             vfile = setupPath + '/phpmyadmin/version.pl'
             if os.path.exists(vfile):

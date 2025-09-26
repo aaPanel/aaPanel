@@ -398,7 +398,7 @@ class acme_v2:
 
     # 构造域名列表
     def format_domains(self, domains):
-        if type(domains) != list:
+        if not isinstance(domains, list):
             return []
         # 是否自动构造通配符
         if self._auto_wildcard:
@@ -2932,7 +2932,7 @@ fullchain.pem       Paste into certificate input box
         from hashlib import md5
         try:
             md5_obj = md5()
-            body = f"{auth_to}{domains}"
+            body = f"{auth_to.rstrip('/')}{domains}"
             md5_obj.update(body.encode("utf-8"))
             self._log_file = f"{self._log_path}/{md5_obj.hexdigest()}.log"
             if not os.path.exists(self._log_path):
@@ -3077,8 +3077,14 @@ fullchain.pem       Paste into certificate input box
                         continue
 
                 # other site ssl
-                site_path = ssl.auth_info.get("auth_to")
+                site_path = ssl.auth_info.get("auth_to").rstrip("/")
                 site_info = public.S("sites").where("path=?", site_path).find()
+                if not site_info:
+                    site_name, _ = self.get_site_name_by_domains(ssl.dns)
+                    if site_name:
+                        site_info = public.S("sites").where("name=?", site_name).find()
+                        site_path = site_info.get("path", "") if site_info else site_path
+
                 site_name = site_info.get("name") if site_info else ""
                 if self._check_site(site_path, site_info, ssl):
                     # try http verfication

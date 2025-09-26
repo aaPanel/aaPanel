@@ -205,7 +205,7 @@ class firewalls:
                 public.ExecShell('iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport ' + port + ' -j ACCEPT')
                 if not port in notudps: public.ExecShell(
                     'iptables -I INPUT -p tcp -m state --state NEW -m udp --dport ' + port + ' -j ACCEPT')
-        public.WriteLog("TYPE_FIREWALL", 'FIREWALL_ACCEPT_PORT', (port,))
+        public.WriteLog("TYPE_FIREWALL", 'Successfully accepted port [{}]!'.format(port))
         addtime = time.strftime('%Y-%m-%d %X', time.localtime())
         if not is_exists: public.M('firewall').add('port,ps,addtime', (port, ps, addtime))
         self.FirewallReload()

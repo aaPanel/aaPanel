@@ -420,8 +420,10 @@ class main(databaseBase):
             total = redis_obj.dbsize()
         except Exception as err:
             if str(err).find("Connection refused"):
-                return public.fail_v2(public.lang(f"redis connection failed, please check if the database service is started!"))
-            return public.fail_v2(public.lang(f"redis connection failed, please check if the database service is started!{err}"))
+                return public.fail_v2(
+                    public.lang(f"redis connection failed, please check if the database service is started!"))
+            return public.fail_v2(
+                public.lang(f"redis connection failed, please check if the database service is started!{err}"))
         info = {'p': 1, 'row': 20, 'count': total}
 
         if hasattr(args, 'limit'): info['row'] = int(args.limit)
@@ -643,7 +645,6 @@ class main(databaseBase):
             return public.return_message(0, 0, public.lang("Restore Successful."))
         return public.return_message(-1, 0, public.lang("Restore failure."))
 
-
     def get_backup_list(self, get):
         """
         @获取备份文件列表
@@ -659,6 +660,22 @@ class main(databaseBase):
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
+        def rd_file_info(f_path: str, arrs: list) -> dict:
+            stat = os.stat(f_path)
+            item = {
+                'name': os.path.basename(f_path),
+                'filepath': f_path,
+                'size': stat.st_size,
+                'mtime': int(stat.st_mtime),
+                'sid': arrs[0],
+            }
+            try:
+                if 0 <= int(arrs[0]) <= 15:
+                    item['conn_config'] = cloud_list['id-' + str(arrs[0])]
+            except ValueError:
+                pass
+            return item
+
         search = ''
         if hasattr(get, 'search'):
             search = get['search'].strip().lower()
@@ -672,27 +689,21 @@ class main(databaseBase):
             if search:
                 if name.lower().find(search) == -1: continue
 
-            arrs = name.split('_')
-
             file_path = os.path.join(self._REDIS_BACKUP_DIR, name).replace('//', '/')
-            if not os.path.isfile(file_path):
+
+            if os.path.isdir(file_path):
+                for f in os.listdir(file_path):
+                    f_path = os.path.join(file_path, f).replace('//', '/')
+                    if os.path.isfile(f_path):
+                        nlist.append(
+                            rd_file_info(f_path, f.split('_'))
+                        )
+            elif os.path.isfile(file_path):
+                nlist.append(
+                    rd_file_info(file_path, name.split('_'))
+                )
+            else:
                 continue
-
-            stat = os.stat(file_path)
-
-            item = {}
-            item['name'] = name
-            item['filepath'] = file_path
-            item['size'] = stat.st_size
-            item['mtime'] = int(stat.st_mtime)
-            item['sid'] = arrs[0]
-            try:
-                if 0 <= int(arrs[0]) <= 15:
-                    item['conn_config'] = cloud_list['id-' + str(arrs[0])]
-            except ValueError:
-                pass
-
-            nlist.append(item)
 
         if hasattr(get, 'sort'):
             nlist = sorted(nlist, key=lambda data: data['mtime'], reverse=get["sort"] == "desc")

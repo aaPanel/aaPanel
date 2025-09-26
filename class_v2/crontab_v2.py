@@ -1506,23 +1506,16 @@ rm -f {cronFile}
 
     # 获取各个类型数据库
     def GetDatabases(self, get):
-        from panelMysql import panelMysql
+        from panel_mysql_v2 import panelMysql
         db_type = getattr(get, "db_type", "mysql")
 
         crontab_databases = public.M("crontab").field("id,sName").where("LOWER(type)=LOWER(?)", (db_type)).select()
         for db in crontab_databases:
             db["sName"] = set(db["sName"].split(","))
-            # table_list = panelMysql().query("show tables from `{db_name}`;".format(db_name=database["name"]))
 
         if db_type == "redis":
-            database_list = []
-            cron_id = None
-            for db in crontab_databases:
-                if db_type in db["sName"]:
-                    cron_id = db["id"]
-                    break
-            database_list.append({"name": "Local Database", "ps": "", "cron_id": cron_id})
-            return public.return_message(0,0,database_list)
+            # 默认ALL
+            return public.return_message(0, 0, [])
 
         databases = public.M("databases").field("name,ps").where("LOWER(type)=LOWER(?)", (db_type)).select()
 

@@ -217,7 +217,8 @@
 			"index_29": "Tên người dùng hoặc mật khẩu không thể dưới 3 chữ số!",
 			"index_30": "Mật khẩu trong hai đầu vào không nhất quán!",
 			"index_31": "Phiên bản PHP",
-			"index_32": "Vui lòng chọn phiên bản PHP-CLI"
+			"index_32": "Vui lòng chọn phiên bản PHP-CLI",
+			"index_33": "Trình điều khiển quản trị viên phụ thuộc vào môi trường phiên bản PHP hiện đang chạy. Nếu bạn thấy rằng trình điều khiển bị thiếu, vui lòng chuyển đến các tiện ích mở rộng PHP để cài đặt php_mongodb và pdo_pgsql"
 		},
 		"Api": {
 			"Index_1": "Kết nối với máy chủ từ xa, vui lòng đợi ...",
@@ -232,6 +233,22 @@
 			"Index_10": "Khôi phục dữ liệu, vui lòng đợi ...",
 			"Index_11": "Lưu dữ liệu Redis, vui lòng đợi ...",
 			"Index_12": "Xóa sao lưu, vui lòng đợi ..."
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "Tình trạng hiện tại: ",
+				"fixed": "Đã sửa",
+				"install": "Cài đặt",
+				"uninstall": "Gỡ cài đặt",
+				"confirmFixed": "Bạn có chắc là bạn muốn sửa?",
+				"confirmInstall": "Bạn có chắc bạn muốn cài đặt không?",
+				"confirmUninstall": "Bạn có chắc là bạn muốn gỡ cài đặt?",
+				"jumpingToAdminer": "Nhảy đến quản trị viên, vui lòng đợi ..."
+			},
+			"switchingPhp": "Chuyển đổi phiên bản PHP, vui lòng đợi ...",
+			"installing": "Cài đặt, vui lòng đợi ...",
+			"uninstalling": "Gỡ cài đặt, vui lòng đợi ...",
+			"switchingPort": "Chuyển đổi cổng, vui lòng đợi ..."
 		},
 		"Mysql": {
 			"index_1": "Cơ sở dữ liệu sao lưu tự động",

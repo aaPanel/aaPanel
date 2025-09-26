@@ -1,12 +1,12 @@
 # coding: utf-8
 import json
-import sys
+import os
+import sqlite3 as Engine
 import uuid
 from functools import reduce
 from itertools import chain
 from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable
 
-from public import ExecShell
 from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
 from public.sqlite_easy import Db
@@ -16,37 +16,48 @@ __all__ = ["aaManager", "Q", "QueryProperty"]
 M = TypeVar("M", bound="aaModel")
 
 
-def get_flag() -> bool:
-    import sqlite3
+# ==================== Patch ==================
+def _builtin(check_engine: Engine = None) -> bool:
+    if not check_engine:
+        check_engine = Engine
     try:
-        conn = sqlite3.connect(":memory:")
+        conn = check_engine.connect(":memory:")
         cursor = conn.cursor()
         cursor.execute("SELECT json_extract('{\"a\": 1}', '$.a')")
         cursor.execute("SELECT COUNT(*) FROM json_each('{\"a\":1, \"b\":2}')")
         conn.close()
         return True
-    except sqlite3.Error:
-        return False
     except:
         return False
 
 
-def _setup():
-    if get_flag():
-        return
+def _get_engine() -> tuple[bool, Engine]:
     try:
-        import pysqlite3
-        sys.modules["sqlite3"] = pysqlite3
-    except ImportError:
+        import pysqlite3 as engine
+        flag = True
+    except:
         try:
-            ExecShell("btpip install pysqlite3-binary")
-            import pysqlite3
-            sys.modules["sqlite3"] = pysqlite3
+            os.system("btpip install pysqlite3-binary")
+            import pysqlite3 as engine
+            flag = True
         except:
-            pass
+            engine = Engine
+            flag = False
+
+    return flag, engine
 
 
-# _setup()
+_ENGINE = None
+_INSTEAD = False
+_ORG = _builtin()
+
+if not _ORG:
+    _INSTEAD, _ENGINE = _get_engine()
+else:
+    _ENGINE = Engine
+
+
+# ==================== Patch End ==================
 
 
 class QueryProperty:
@@ -58,20 +69,13 @@ class QueryProperty:
 
 
 class Operator:
-    _shared_flag = None
-
-    def __new__(cls, *args, **kwargs):
-        if cls._shared_flag is None:
-            cls._shared_flag = get_flag()
-        return super().__new__(cls)
-
     def __init__(self, model_class: M, query: Db.query):
         self._model_class: M = model_class
         self._query = query
         self._tb = self._model_class.__table_name__
         self._fields = self._model_class._get_fields()
         self._serializes = self._model_class._get_serialized()
-        self._flag = self._shared_flag  # fk flag
+        self._flag = _ORG or _INSTEAD  # fk flag
 
     def _q_error(self, key: str, act: str, val: Any, sp_act: tuple):
         raise HintException(
@@ -760,7 +764,10 @@ class aaObjects(Generic[M]):
     @property
     def _query(self) -> Db.query:
         if not self.__q:
-            q = Db(self._model.__db_name__).query()
+            q = Db(
+                db_name=self._model.__db_name__,
+                engine=_ENGINE,
+            ).query()
             self.__q = q.table(self._model.__table_name__)
         return self.__q
 
@@ -856,7 +863,9 @@ class aaMigrate:
             raise PanelError(f"{self.__model.__class__.__name__} need 'fields'")
 
         try:
-            self.__client = Db(self.__model.__db_name__)
+            self.__client = Db(
+                db_name=self.__model.__db_name__, engine=_ENGINE
+            )
             self.__table_exists()
             self.__index_exists()
         except Exception as e:

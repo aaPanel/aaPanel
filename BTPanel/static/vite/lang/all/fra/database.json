@@ -232,5 +232,19 @@
 	"dcfc75a36b7498a34c870230e513cd72": "L'autorisation de [{0}] est sur le point d'être supprimée. Voulez-vous continuer?",
 	"2dce2897ee1bda606563ea97e058ab4f": "Réglage d'alarme",
 	"943a2abea1cd576ed3ab95fea4d9e168": "Après le réglage, redémarrez manuellement la base de données pour prendre effet",
-	"50c2efb1f4d2a9769b22dace8c66ee86": "Télécharger le certificat auto-signé MySQL SSL"
+	"50c2efb1f4d2a9769b22dace8c66ee86": "Télécharger le certificat auto-signé MySQL SSL",
+	"e8d7e0bf456f6474e7d916070bf8ce59": "Les pilotes de l'administration dépendent de la version PHP en cours d'exécution. Si vous constatez que les pilotes sont manquants, veuillez installer les extensions PHP Mongo et PHP PGSQL au besoin.",
+	"29ba9315d084c5d8b6acf54af0afc7c7": "État actuel: ",
+	"4457d440870ad6d42bab9082d9bf9b61": "Fixé",
+	"349838fb1d851d3e2014b9fe39203275": "Installer",
+	"a27dfe771799a09fd55fea73286eb6ab": "Désinstaller",
+	"c319512b280c8d027b6406a17d760891": "Êtes-vous sûr de vouloir réparer?",
+	"ad2f5c899dc1ae9b55ffef7aa5aac778": "Êtes-vous sûr de vouloir installer?",
+	"876f23178c29dc2552c0b48bf23cd9bd": "Êtes-vous sûr de vouloir désinstaller?",
+	"6731e61bb032534b2d2c73d64fb7e006": "Sauter à l'administrateur, veuillez patienter ...",
+	"1ec05514f18775b2952d83f821d3948d": "Changeant de la version PHP, veuillez patienter ...",
+	"a91f378bf120f4a971b2ad4f7bfdce70": "Installation, veuillez patienter ...",
+	"dbded73d898181a0721b5f0973e9ee74": "Désinstallé, veuillez attendre ...",
+	"c2fd5a116b9d3bcd0185dbf233365764": "Port de commutation, veuillez patienter ...",
+	"1fb4173c812ebb31f38c565e1769d090": "Le pilote d'administration dépend de l'environnement de version PHP en cours d'exécution. Si vous constatez que le pilote est manquant, veuillez consulter les extensions PHP pour installer PHP_MONGODB et PDO_PGSQL"
 }

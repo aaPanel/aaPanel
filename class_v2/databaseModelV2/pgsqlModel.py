@@ -13,16 +13,12 @@ import os
 import re
 import time
 import warnings
-from typing import Tuple, Union
+from typing import Union, Optional, Tuple
 
 import public
 from databaseModelV2.base import databaseBase
 from public import Param, validate
 
-try:
-    from BTPanel import session
-except:
-    pass
 try:
     import psycopg2
     from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
@@ -70,34 +66,15 @@ class panelPgsql:
                 return False
         return True
 
-    def _socket(self) -> str:
-        # 临时
-        s_path = os.path.join(public.get_setup_path(), "pgsql/socket")
-        if not os.path.exists(s_path):
-            public.ExecShell(f"mkdir -p {s_path}")
-            public.ExecShell(f"chown postgres:postgres {s_path}")
-            public.ExecShell(f"chmod 700 {s_path}")
-            public.ExecShell("/etc/init.d/pgsql restart")
-
-        conf = public.readFile(self._CONFIG_PATH)
-        if conf and "#unix_socket_directories" in conf:
-            pattern = r'^\s*#\s*unix_socket_directories\b.*$'
-            new_content = re.sub(
-                pattern, f"unix_socket_directories = '{s_path}'", conf, flags=re.MULTILINE
-            )
-            public.writeFile(self._CONFIG_PATH, new_content)
-            public.ExecShell("/etc/init.d/pgsql restart")
-        return "/www/server/pgsql/socket"
-
-
     # 连接PGSQL数据库
     def connect(self) -> Tuple[bool, str]:
         if self.__CONN_KWARGS.get("password") is None:
             if self.__CONN_KWARGS["host"] in ["localhost", "127.0.0.1"] and os.path.exists("/www/server/pgsql/data"):
                 self.__CONN_KWARGS["port"] = self.get_config_options("port", int, 5432)
-                tmp_args = public.dict_obj()
-                tmp_args.is_True = True
-                self.__CONN_KWARGS["password"] = main().get_root_pwd(tmp_args)["message"].get("result")
+                self.__CONN_KWARGS["password"] = public.find_value_by_key(
+                    data=main().get_root_pwd(public.to_dict_obj({"is_True": True})),
+                    key="result"
+                )
         try:
             self.__DB_CONN = psycopg2.connect(**self.__CONN_KWARGS)
             self.__DB_CONN.autocommit = True
@@ -139,7 +116,7 @@ class panelPgsql:
             self.__CONN_KWARGS["port"] = int(self.__CONN_KWARGS["port"])
         return self
 
-    def execute(self, sql):
+    def execute(self, sql) -> Optional[int | str]:
         # 执行SQL语句返回受影响行
         if self.__DB_CONN is None:
             status, err_msg = self.connect()
@@ -152,14 +129,13 @@ class panelPgsql:
         try:
             result = self.__DB_CUR.execute(sql)
             self.__DB_CONN.commit()
-            self.__Close()
             return result
         except Exception as ex:
+            return str(ex)
+        finally:
+            self.__Close()
 
-            return ex
-
-    def query(self, sql):
-
+    def query(self, sql) -> Optional[list | str]:
         # 执行SQL语句返回数据集
         if self.__DB_CONN is None:
             status, err_msg = self.connect()
@@ -172,17 +148,19 @@ class panelPgsql:
         try:
             self.__DB_CUR.execute(sql)
             result = self.__DB_CUR.fetchall()
-
-            data = list(map(list, result))
-            self.__Close()
+            data = [list(x) for x in result] if isinstance(result, (list, tuple)) else []
             return data
         except Exception as ex:
-            return ex
+            return str(ex)
+        finally:
+            self.__Close()
 
     # 关闭连接
     def __Close(self):
-        self.__DB_CUR.close()
-        self.__DB_CONN.close()
+        if self.__DB_CUR:
+            self.__DB_CUR.close()
+        if self.__DB_CONN:
+            self.__DB_CONN.close()
 
     # 获取未注释的配置文件参数
     @classmethod
@@ -212,6 +190,7 @@ class panelPgsql:
             int: "(\d+)",
             bool: "(on|off)",
         }
+        # noinspection PyTypeChecker
         re_str = re_type_dict.get(value_type, "([^\n]*)")
 
         conf_obj = re.search(r"\n{}\s*=\s*{}".format(name, re_str), conf_data)
@@ -233,6 +212,9 @@ class panelPgsql:
                 default = value_type(default)
             return default
         return None
+
+    def __del__(self):
+        self.__Close()
 
 
 class main(databaseBase, panelPgsql):
@@ -256,7 +238,7 @@ class main(databaseBase, panelPgsql):
         if v_info:
             ver = v_info.split('.')[0]
             self.__ser_name = 'postgresql-x64-{}'.format(ver)
-            self.__soft_path = '{}/pgsql/{}'.format(s_path)
+            self.__soft_path = '{}/pgsql'.format(s_path)
 
     # 获取配置项
     def get_options(self, get):
@@ -272,7 +254,7 @@ class main(databaseBase, panelPgsql):
             data[opt] = tmp[0].strip()
             if opt == 'listen_addresses':
                 data[opt] = data[opt].replace('\'', '')
-        data['password'] = self.get_root_pwd(None)['msg']
+        data['password'] = self.get_root_pwd()['msg']
         return public.return_message(0, 0, data)
 
     def get_list(self, args):
@@ -327,6 +309,15 @@ class main(databaseBase, panelPgsql):
                 raise public.PanelError(e)
         else:
             db_obj = panelPgsql()
+            # sid = 0 时, 允许注入切换当前数据库
+            if conn_config:
+                db_obj = db_obj.set_host(
+                    host=conn_config["db_host"],
+                    port=conn_config["db_port"],
+                    database=conn_config.get("db_name"),
+                    user=conn_config["db_user"],
+                    password=conn_config["db_password"]
+                )
         return db_obj
 
     def get_sql_obj(self, db_name):
@@ -335,6 +326,7 @@ class main(databaseBase, panelPgsql):
         @db_name 数据库名称
         """
         is_cloud_db = False
+        db_find = None
         if db_name:
             db_find = public.M('databases').where("name=? AND LOWER(type)=LOWER('PgSql')", db_name).find()
             if db_find['sid']:
@@ -404,11 +396,14 @@ class main(databaseBase, panelPgsql):
         if re.search(r"\W", db_name):
             return public.fail_v2(public.lang("The database name cannot contain special characters, please reset it."))
 
+        t_path = os.path.join(public.get_panel_path(), "data/postgresAS.json")
+        if not os.path.isfile(t_path):
+            return public.fail_v2(public.lang("Please set the PgSQL Root password first!"))
+
         dtype = "pgsql"
         res = self.add_base_database(args, dtype)
         if not res['status']:
             return public.fail_v2(res.get("msg"))
-
         data_name = res['data_name']
         username = res['username']
         password = res['data_pwd']
@@ -453,7 +448,7 @@ class main(databaseBase, panelPgsql):
         # 添加入SQLITE
         public.M('databases').add('pid,sid,db_type,name,username,password,accept,ps,addtime,type', (
             pid, sid, db_type, data_name, username, password, '127.0.0.1', args['ps'], addTime, dtype))
-        public.WriteLog("TYPE_DATABASE", 'DATABASE_ADD_SUCCESS', (data_name,))
+        public.WriteLog("TYPE_DATABASE", 'Successfully added database [{}]!'.format(data_name))
         # 添加访问权限
         config_file_path = self.get_data_directory(args)['data'] + "/pg_hba.conf"
         public.WriteFile(
@@ -560,10 +555,11 @@ class main(databaseBase, panelPgsql):
         resp = pgsql_obj.execute("""DROP DATABASE "{}";""".format(name))
         if resp is not None:
             return public.fail_v2(public.lang("Failed to delete the database!"))
+        pgsql_obj.execute("""DROP OWNED BY "{}";""".format(username))
         pgsql_obj.execute("""DROP USER "{}";""".format(username))
         # 删除SQLITE
         public.M('databases').where("id=? AND LOWER(type)=LOWER('PgSql')", (id,)).delete()
-        public.WriteLog("TYPE_DATABASE", 'DATABASE_DEL_SUCCESS', (name,))
+        public.WriteLog("TYPE_DATABASE", f'Successfully deleted database [{name}]!')
         return public.return_message(0, 0, public.lang("Delete successfully!"))
 
     def ToBackup(self, args):
@@ -686,7 +682,7 @@ class main(databaseBase, panelPgsql):
             'type,name,pid,filename,size,addtime,ps',
             (1, os.path.basename(backup_path), db_id, backup_path, backup_size, addTime, backup_ps)
         )
-        public.WriteLog("TYPE_DATABASE", "DATABASE_BACKUP_SUCCESS", (db_find['name'],))
+        public.WriteLog("TYPE_DATABASE", f"Backup database [{db_find['name']}] succeed!")
         if backup_size < 2048:
             return public.success_v2(public.lang('Backup execution was successful, '
                                                  'the backup file is smaller than 2Kb, '
@@ -1044,14 +1040,13 @@ class main(databaseBase, panelPgsql):
         # 修改SQLITE
         public.M('databases').where("id=? AND LOWER(type)=LOWER('PgSql')", (id,)).setField('password', newpassword)
 
-        public.WriteLog("TYPE_DATABASE", 'DATABASE_PASS_SUCCESS', (find['name'],))
+        public.WriteLog("TYPE_DATABASE", f'Successfully modified password for database [{find['name']}]!')
         return public.return_message(0, 0, public.lang("Database password success {}", find['name'], ))
 
-    def get_root_pwd(self, args):
+    def get_root_pwd(self, args=None):
         """
         @获取sa密码
         """
-        # check_result = os.system('/www/server/pgsql/bin/psql --version')
         if not os.path.exists("/www/server/pgsql/bin/psql"):
             return public.fail_v2(public.lang("If PgSQL is not installed or started, install or start it first"))
         password = ''
@@ -1180,8 +1175,36 @@ class main(databaseBase, panelPgsql):
         @创建数据库用户
         """
         sql_obj = self.get_sql_obj_by_sid(sid)
+        # 创建用户
         sql_obj.execute("""CREATE USER "{}" WITH PASSWORD '{}';""".format(username, password))
-        sql_obj.execute("""GRANT ALL PRIVILEGES ON DATABASE "{}" TO "{}";""".format(data_name, username))
+        if sid == 0:
+            # 本地数据库
+            conn_config = {
+                "db_host": "127.0.0.1",
+                "db_port": self.get_config_options("port", int, 5432),
+                "db_user": "postgres",
+                "db_password": json.loads(
+                    public.readFile(os.path.join(public.get_panel_path(), "data/postgresAS.json"))
+                )['password'],
+                "db_name": data_name
+            }
+        else:
+            # 远程服务器
+            conn_config = public.M('database_servers').where("id=? AND LOWER(db_type)=LOWER('pgsql')", sid).find()
+            conn_config['db_name'] = data_name
+
+        # 切换数据库
+        sql_obj = self.get_sql_obj_by_sid(sid, conn_config)
+        # 连接权限
+        sql_obj.execute(f'GRANT CONNECT ON DATABASE "{data_name}" TO "{username}";')
+        # 创建使用权限
+        sql_obj.execute(f'GRANT USAGE, CREATE ON SCHEMA public TO "{username}";')
+        # public schema 的权限
+        sql_obj.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "{username}";')
+        sql_obj.execute(f'GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "{username}";')
+        sql_obj.execute(f'GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO "{username}";')
+        # 新建表自动授权
+        sql_obj.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "{username}";')
         return True
 
     def __get_db_list(self, sql_obj):
@@ -1205,10 +1228,12 @@ class main(databaseBase, panelPgsql):
         password = "".join(random.sample(string.ascii_letters + string.digits, 16))
         return password
 
+    # 未使用
     def CheckDatabaseStatus(self, get):
         """
         数据库状态检测
         """
+
         try:
             get.validate([
                 Param('sid').Integer(),
@@ -1237,6 +1262,7 @@ class main(databaseBase, panelPgsql):
         return {"status": True if db_status is True else False,
                 "msg": "normalcy" if db_status is True else "exceptions", "db_status": db_status, "err_msg": err_msg}
 
+    # 未使用
     def check_cloud_database_status(self, conn_config):
         """
         @检测远程数据库是否连接

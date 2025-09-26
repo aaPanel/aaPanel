@@ -217,7 +217,8 @@
 			"index_29": "As senhas em duas entradas são inconsistentes!",
 			"index_30": "Versão php",
 			"index_31": "Selecione a versão php-cli",
-			"index_32": "Conectando -se ao servidor remoto, aguarde ..."
+			"index_32": "Conectando -se ao servidor remoto, aguarde ...",
+			"index_33": "O driver administrador depende do ambiente de versão PHP atualmente em execução. Se você achar que o driver está faltando, vá para extensões PHP para instalar php_mongodb e PDO_PGSQL"
 		},
 		"Api": {
 			"Index_1": "Modificando as informações de conexão do servidor remoto, aguarde ...",
@@ -232,6 +233,22 @@
 			"Index_10": "Salvando dados Redis, por favor, espere ...",
 			"Index_11": "Excluindo o backup, por favor, espere ...",
 			"Index_12": "Excluindo o backup, por favor, espere ..."
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "Status atual: ",
+				"fixed": "Fixo",
+				"install": "Instalar",
+				"uninstall": "Desinstalar",
+				"confirmFixed": "Tem certeza de que deseja consertar?",
+				"confirmInstall": "Tem certeza de que deseja instalar?",
+				"confirmUninstall": "Tem certeza de que deseja desinstalar?",
+				"jumpingToAdminer": "Saltando para o Administrador, por favor, espere ..."
+			},
+			"switchingPhp": "Mudar a versão do PHP, por favor aguarde ...",
+			"installing": "Instalando, por favor, espere ...",
+			"uninstalling": "Desinstalação, por favor espere ...",
+			"switchingPort": "Porta de troca, por favor, espere ..."
 		},
 		"Mysql": {
 			"index_1": "Banco de dados de backup automático",

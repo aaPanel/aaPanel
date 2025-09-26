@@ -7,7 +7,7 @@
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import public,db,os,time,re, json
-from BTPanel import session, cache
+
 class crontab:
     field = 'id,name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sName,sBody,sType,urladdress'
     field += ",save_local,notice,notice_channel"
@@ -148,6 +148,7 @@ class crontab:
     
     #检查环境
     def checkBackup(self):
+        from BTPanel import cache
         if cache.get('check_backup'): return None
 
         # 检查备份表是否正确
@@ -189,7 +190,10 @@ class crontab:
                 return public.return_msg_gettext(False,  public.lang("Unable to write to file, please check if [System hardening] is enabled!"))
         
         public.M('crontab').where('id=?',(id,)).setField('status',status)
-        public.WriteLog('TYPE_CRON',"MODIFY_CRON_STATUS",(cronInfo['name'],str(status_msg[status])))
+        public.WriteLog(
+            'TYPE_CRON',
+            "Modified cron job [{}] status to [{}]".format(cronInfo['name'], str(status_msg[status]))
+        )
         return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     #修改计划任务

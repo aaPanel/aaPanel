@@ -217,7 +217,8 @@
 			"index_29": "Nama pengguna atau kata sandi tidak bisa kurang dari 3 digit!",
 			"index_30": "Kata sandi dalam dua input tidak konsisten!",
 			"index_31": "Versi PHP",
-			"index_32": "Pilih versi php-cli"
+			"index_32": "Pilih versi php-cli",
+			"index_33": "Driver Adminer tergantung pada lingkungan versi PHP yang sedang berjalan. Jika Anda menemukan bahwa pengemudi hilang, silakan buka ekstensi php untuk menginstal php_mongodb dan pdo_pgsql"
 		},
 		"Api": {
 			"Index_1": "Menghubungkan ke server jarak jauh, harap tunggu ...",
@@ -232,6 +233,22 @@
 			"Index_10": "Memulihkan data, harap tunggu ...",
 			"Index_11": "Menyimpan data redis, harap tunggu ...",
 			"Index_12": "Menghapus cadangan, harap tunggu ..."
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "Status Saat Ini: ",
+				"fixed": "Tetap",
+				"install": "Memasang",
+				"uninstall": "Uninstall",
+				"confirmFixed": "Apakah Anda yakin ingin memperbaiki?",
+				"confirmInstall": "Anda yakin ingin menginstal?",
+				"confirmUninstall": "Apakah Anda yakin ingin menghapus instalan?",
+				"jumpingToAdminer": "Melompat ke Administrasi, harap tunggu ..."
+			},
+			"switchingPhp": "Beralih versi php, harap tunggu ...",
+			"installing": "Menginstal, tunggu ...",
+			"uninstalling": "Menghapus instalasi, tolong tunggu ...",
+			"switchingPort": "Beralih port, harap tunggu ..."
 		},
 		"Mysql": {
 			"index_1": "Database Cadangan Otomatis",

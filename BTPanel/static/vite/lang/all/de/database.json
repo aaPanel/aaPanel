@@ -232,5 +232,19 @@
 	"dcfc75a36b7498a34c870230e513cd72": "Die Erlaubnis von [{0}] wird kurz vor dem Entfernen. Willst du weitermachen?",
 	"2dce2897ee1bda606563ea97e058ab4f": "Alarmeinstellung",
 	"943a2abea1cd576ed3ab95fea4d9e168": "Starten Sie nach dem Einstellen die Datenbank manuell neu, um wirksam zu werden",
-	"50c2efb1f4d2a9769b22dace8c66ee86": "Laden Sie das selbstsignierte MySQL SSL-Zertifikat herunter"
+	"50c2efb1f4d2a9769b22dace8c66ee86": "Laden Sie das selbstsignierte MySQL SSL-Zertifikat herunter",
+	"e8d7e0bf456f6474e7d916070bf8ce59": "Die Treiber des Administrators hängen von der aktuell ausgeführten PHP -Version ab. Wenn Sie feststellen, dass die Treiber fehlen, installieren Sie bitte die PHP Mongo- und PHP -PGSQL -Erweiterungen nach Bedarf.",
+	"29ba9315d084c5d8b6acf54af0afc7c7": "Aktueller Status: ",
+	"4457d440870ad6d42bab9082d9bf9b61": "Behoben",
+	"349838fb1d851d3e2014b9fe39203275": "Installieren",
+	"a27dfe771799a09fd55fea73286eb6ab": "Deinstallieren",
+	"c319512b280c8d027b6406a17d760891": "Sind Sie sicher, dass Sie reparieren möchten?",
+	"ad2f5c899dc1ae9b55ffef7aa5aac778": "Sind Sie sicher, dass Sie installieren möchten?",
+	"876f23178c29dc2552c0b48bf23cd9bd": "Sind Sie sicher, dass Sie deinstallieren möchten?",
+	"6731e61bb032534b2d2c73d64fb7e006": "Springen zum Administrator, bitte warte ...",
+	"1ec05514f18775b2952d83f821d3948d": "PHP -Version wechseln, bitte warten ...",
+	"a91f378bf120f4a971b2ad4f7bfdce70": "Installieren, bitte warten ...",
+	"dbded73d898181a0721b5f0973e9ee74": "Deinstallieren, bitte warte ...",
+	"c2fd5a116b9d3bcd0185dbf233365764": "Anschluss wechseln, bitte warten ...",
+	"1fb4173c812ebb31f38c565e1769d090": "Der Adminer -Treiber hängt von der derzeit ausgeführten PHP -Versionsumgebung ab. Wenn Sie feststellen, dass der Treiber fehlt, gehen Sie bitte zu PHP -Erweiterungen, um PHP_MONGODB und PDO_PGSQL zu installieren"
 }
