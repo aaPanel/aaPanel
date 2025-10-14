@@ -152,6 +152,12 @@ class main(panelBase):
         # 判断是否是多服务状态
         data['multi_service'] = public.get_multi_webservice_status()
 
+        #判断免费网站监控是否安装
+        data['site_total_monitor'] = {"is_install":False}
+        site_total_monitor_path = '/etc/systemd/system/site_total.service'
+        if os.path.exists(site_total_monitor_path):
+            data['site_total_monitor'] = {"is_install":True}
+
         return public.return_message(0, 0, data)
 
     #统计面板备份占用空间

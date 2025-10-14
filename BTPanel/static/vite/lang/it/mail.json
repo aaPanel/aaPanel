@@ -27,7 +27,7 @@
 			"index_5": "Cassette postali",
 			"index_6": "Dimensione predefinita della cassetta postale",
 			"index_7": "Cattura tutto",
-			"index_8": "Scadere su: {0}",
+			"index_8": "Scadenza: {0}",
 			"index_9": "Non impostato",
 			"index_10": "{0} record",
 			"index_11": "Cattura e -mail",
@@ -287,7 +287,7 @@
 			"index_5": "Visualizzazione",
 			"index_6": "Spam",
 			"index_7": "Controlla Mail [{0}]",
-			"index_8": "Mark Spam",
+			"index_8": "Segna come Spam",
 			"index_9": "Sei sicuro di voler segnare questo messaggio come spam?",
 			"index_10": "Non marcato",
 			"index_11": "Tema: ",
@@ -330,7 +330,7 @@
 		},
 		"Responder": {
 			"index_1": "Aggiungi il risponditore automatico",
-			"index_2": "Autoesponder",
+			"index_2": "Risponditore automatico",
 			"index_3": "Soggetto",
 			"index_4": "Intervallo",
 			"index_5": "Ora di inizio",
@@ -450,7 +450,7 @@
 			"index_41": "Eliminazione di informazioni di annullamento dell'iscrizione, attendere ...",
 			"index_42": "Modifica, per favore aspetta ...",
 			"index_43": "Impostazione dei tipi, aspetta ...",
-			"index_44": "Creazione, per favore aspetta ..."
+			"index_44": "Creazione in corso, per favore aspetta ..."
 		}
 	}
 }

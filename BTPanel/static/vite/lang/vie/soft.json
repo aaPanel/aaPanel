@@ -52,6 +52,27 @@
 		"index_51": "Phiên bản mới",
 		"index_52": "Cập nhật nhật ký",
 		"index_53": "Xin lưu ý rằng quy trình cập nhật có thể gây gián đoạn dịch vụ",
-		"index_54": "Bạn nên thực hiện cập nhật phần mềm khi tải máy chủ không hoạt động"
+		"index_54": "Bạn nên thực hiện cập nhật phần mềm khi tải máy chủ không hoạt động",
+		"Plugin": {
+			"index_1": "Máy chủ web",
+			"index_2": "Đang chuyển đổi, vui lòng đợi...",
+			"index_3": "Hãy đảm bảo rằng các cổng sau không được sử dụng:",
+			"index_4": "Sau khi chuyển sang kiến ​​trúc dịch vụ Multi-WebServer Hosting, bạn có thể chỉ định WebEngine riêng cho từng website",
+			"index_5": "Trước khi bật Multi-WebServer Hosting, hãy đảm bảo rằng cấu hình chính, cổng và cấu hình trang web riêng lẻ của dịch vụ hiện tại chưa được sửa đổi theo cách thủ công. Vui lòng khôi phục cấu hình ban đầu hoặc gỡ cài đặt và cài đặt lại từ App Store.",
+			"index_6": "Mô tả Multi-WebServer:",
+			"index_7": "Bấm vào để xem",
+			"index_8": "Máy chủ web",
+			"index_9": "Trạng thái",
+			"index_10": "Đang chạy",
+			"index_11": "dừng lại",
+			"index_12": "Sửa",
+			"index_13": "Dịch vụ lưu giữ",
+			"index_14": "Kích hoạt nhiều dịch vụ",
+			"index_15": "Sửa chữa nhiều dịch vụ",
+			"index_16": "Quá trình sửa chữa sẽ khiến trang web không thể truy cập được. Bạn có muốn tiếp tục không?",
+			"index_17": "Lưu trữ nhiều máy chủ web",
+			"index_18": "Vui lòng chọn dịch vụ bạn muốn giữ",
+			"index_19": "Sau khi kích hoạt nhiều dịch vụ, Apache, Nginx và Openlitespeed sẽ được cài đặt"
+		}
 	}
 }

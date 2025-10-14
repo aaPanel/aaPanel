@@ -47,7 +47,16 @@ from .service import (
     record_ensure,
     check_legal,
     sync_site_ssl,
+    make_suer_renew_task,
 )
+
+
+def fix_log(ssl: DnsDomainSSL, log: str) -> None:
+    if not ssl or not log:
+        return
+    if not ssl.log or ssl.log != log:
+        ssl.log = log
+        ssl.save()
 
 
 # noinspection PyUnusedLocal
@@ -598,90 +607,66 @@ class DomainObject:
             return public.fail_v2(f"error: {str(e)}")
         return public.success_v2(f"{output_path}.zip")
 
-    def renew_cert(self, get):
+    def one_cilck_renew(self, get):
         """
-        续签
+        一键全量续签
+        """
+        make_suer_renew_task()  # 确保任务存在
+        echo = public.md5(public.md5("domain_ssl_renew_lets_ssl_bt"))
+        task = public.S("crontab").where("echo=?", echo).find()
+        if not task:
+            raise HintException("Cron Domian Renew task not found, please try again later!")
+        execstr = f"{public.GetConfigValue("setup_path")}/cron/{echo}"
+        public.ExecShell(f"chmod +x {execstr}")
+        public.ExecShell(f"nohup {execstr} start >> {execstr}.log 2>&1 &")
+        return public.success_v2({"id": task["id"]})
+
+    def renew_cert_process(self, get):
+        """
+        续签, 带进度, 带部署
         """
         try:
             get.validate([
-                Param("hash").String(),
+                Param("hash").String().Require(),
             ], [
-                public.validate.trim_filter(),
+                public.validate.trim_filter()
             ])
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        def update_ssl_log(ssl, log):
-            if not ssl.log or ssl.log != log:
-                ssl.log = log
-                ssl.save()
-
-        ts_month = 30 * 24 * 60 * 60 * 1000
+        ts_month = 31 * 24 * 60 * 60 * 1000
         months = int(time.time() * 1000) + ts_month
+        invalid_msg = public.lang(
+            "This Certificate auth info is invalid, cannot renew! Please Apply for a New Certificate."
+            "It will be renewed for you automatically in the future"
+        )
+        ssl_obj = DnsDomainSSL.objects.filter(hash=get.hash).first()
+        if not ssl_obj or not ssl_obj.auth_info:
+            raise HintException(invalid_msg)
 
-        if hasattr(get, "hash"):  # 指定, 单个
-            ssl_obj = DnsDomainSSL.objects.filter(hash=get.hash)
-            for i in ssl_obj:
-                if i and i.not_after_ts > months:  # gt 30 days
-                    return public.fail_v2(public.lang("SSL Certificate is less than 30 days, no need to renew!"))
-                if i and not i.auth_info:  # not verified
-                    return public.fail_v2(public.lang("SSL Certificate does not have any auth info, cannot renew!"))
+        debug = public.readFile("/www/server/panel/data/debug.pl") or "False"
+        if debug.lower() == "false" and ssl_obj.not_after_ts > months:
+            raise HintException(public.lang("SSL Certificate is less than 30 days, no need to renew!"))
 
-        else:  # 30天内的cert
-            ssl_obj = DnsDomainSSL.objects.filter(not_after_ts__lt=months)
+        auth_type = ssl_obj.auth_info.get("auth_type")
+        auth_to = ssl_obj.auth_info.get("auth_to", "").rstrip("/").replace("//", "/")
+        args = public.dict_obj()
+        args.domains = json.dumps(ssl_obj.dns)
 
-        if ssl_obj.count() == 0:
-            raise HintException(
-                "This certificate renewal information not found, please reapply at the domain management center."
-                "To apply for a new certificate to be managed by the management center."
-            )
+        if auth_type == "http" or (auth_type == "dns" and auth_to == "dns"):
+            # 明确的http方式, 或 手动认证申请的dns, 尝试http
+            args.auth_type = "http"
+            args.deploy = 1
+            args.site_id = public.M("sites").where("path=?", (auth_to,)).getField("id") or "-1"
+            return self.apply_new_ssl(args)
 
-        log = None
-        for ssl in ssl_obj:
-            if ssl.auth_info.get("auth_type") == "dns":
-                if ssl.auth_info.get("auth_to") == "dns":
-                    raise HintException(
-                        f"[{ssl.subject}] certificate was applied for by manual DNS verification, "
-                        f"cannot be renewed automatically. please use manual apply ssl."
-                    )
-                provider = DnsDomainProvider.objects.find_one(id=ssl.provider_id)
-                if provider:
-                    _ = provider.dns_obj
-                    log = provider.get_ssl_log(ssl.dns)
-                    update_ssl_log(ssl, log)
-                    dns_renew_task = threading.Thread(
-                        target=provider.model_apply_cert, args=(ssl.dns,)
-                    )
-                    dns_renew_task.start()
-                else:
-                    # 兜底
-                    log = ssl.get_ssl_log()
-                    update_ssl_log(ssl, log)
-                    dns_renew_task = threading.Thread(
-                        target=ssl.try_to_apply_ssl, args=(ssl.dns,)
-                    )
-                    dns_renew_task.start()
-            else:  # http
-                log = ssl.get_ssl_log()
-                update_ssl_log(ssl, log)
-                if any("*." in i for i in ssl.dns):
-                    msg = "Error: The wildcard domain name can only be verified by DNS. \n"
-                    public.AppendFile(log, msg)
-                    continue
-                http_renew_task = threading.Thread(
-                    target=apply_cert, kwargs=({
-                        "domains": ssl.dns,
-                        "auth_to": ssl.auth_info.get("auth_to"),
-                        "auth_type": "http",
-                    })
-                )
-                http_renew_task.start()
+        elif auth_type == "dns":
+            args.auth_type = "dns"
+            return self.apply_new_ssl(args)
 
-        if hasattr(get, "hash") and log:
-            return public.success_v2(log)
-
-        return public.success_v2(public.lang("Successfully Renewed!"))
+        else:
+            raise HintException(invalid_msg)
 
     def manual_apply_vaild(self, get):
         """
@@ -763,8 +748,21 @@ class DomainObject:
     def apply_new_ssl(self, get):
         """
         申请证书
-        get.deploy = 1 sites
-        get.target
+        get.domains = '["www.a.com","a.com"]'
+        get.auth_type = dns/http/dns_manual
+        get.auto_wildcard = 0/1  # 自动组合泛域名
+        get.deploy = -1/0/ 是否需要重新部署ssl
+        get.site_id = 站点id, 匹配具体的站点
+
+        :return:
+        1. dns 自动验证 2. http 文件验证
+        {
+            "result": success_msg,
+            "task_id": task.id,
+            "path": http_task.task_log,
+        }
+        3. dns_manual 手动验证
+        返回订单详情 dict , 或者免认证期间 直接下发ssl成功消息 str
         """
         try:
             get.validate([
@@ -805,7 +803,9 @@ class DomainObject:
                     domains__contains=temp_root
                 ).first()
                 if not provider:
-                    return public.fail_v2(public.lang(f"DNS Provider Not Found! for {temp_root}"))
+                    return public.fail_v2(public.lang(
+                        f"Dns01 Verify Errot, DNS Provider Not Found! for {temp_root}"
+                    ))
             dns_task = generate_sites_task({}, -1)
             threading.Thread(target=provider.model_apply_cert,
                              kwargs=({
@@ -823,11 +823,13 @@ class DomainObject:
         elif get.auth_type == "http":  # file verify
             site = find_site_with_domain(get.domains[0])
             if not site:
-                return public.fail_v2(public.lang("Site Not Found"))
+                return public.fail_v2(public.lang("Http01 Verify Error, but Site Not Found."))
             if site.get("status") != "1":
-                return public.fail_v2(public.lang("Site Not Running"))
+                return public.fail_v2(public.lang("Http01 Verify Error, but Site is Not Running"))
             if any("*." in i for i in get.domains):
-                return public.fail_v2(public.lang("Error: The wildcard domain name can only be verified by DNS."))
+                return public.fail_v2(public.lang(
+                    "Http01 Verify Error: The wildcard domain name can only be verified by DNS."
+                ))
             http_task = generate_sites_task({}, -1)
             threading.Thread(target=apply_cert,
                              kwargs=({
@@ -859,7 +861,7 @@ class DomainObject:
                 auth_type="dns",
                 auto_wildcard=auto_wildcard,
             )
-            if apply_res.get("save_path"):  # 免认证期间将跳过验证, 直接下发ssl
+            if apply_res.get("save_path"):  # 免认证期间将跳过验证, 直接下发ssl, 进行部署覆盖
                 ssl_hash = CertHandler.get_hash(apply_res.get("cert", "") + apply_res.get("root", ""))
                 ssl_obj = DnsDomainSSL.objects.filter(hash=ssl_hash).first()
                 site_name = public.M("sites").where("id=?", get.site_id).getField("name")
@@ -874,12 +876,13 @@ class DomainObject:
                     success_msg.update({"deploy": deploy.get("status")})
                 return public.success_v2(public.lang(success_msg))
 
-            if apply_res.get("index"):  # 新申请
+            if apply_res.get("index"):  # 新申请, 返回订单详情
                 manual_apply.update({domian_index: apply_res.get("index")})
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
                 new_get = public.dict_obj()
                 new_get.index = apply_res.get("index")
                 return acme_v2().get_order_detail(new_get)
+
             if apply_res.get("status") is False:
                 return public.fail_v2(apply_res.get("msg", "Apply Failed!"))
             return public.success_v2(public.lang("Apply Successfully!"))

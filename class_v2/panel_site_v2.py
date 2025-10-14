@@ -2988,12 +2988,12 @@ listener SSL443 {
                 return public.returnMsg(False,
                                         'ssl cert wrong: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
 
-            sql = public.M('firewall')
-            import firewalls
-            get.port = ssl_prot
-            get.ps = 'HTTPS'
-            if 'isBatch' not in get: firewalls.firewalls().AddAcceptPort(get)
-            if 'isBatch' not in get: public.serviceReload()
+            # sql = public.M('firewall')
+            # import firewalls
+            # get.port = ssl_prot
+            # get.ps = 'HTTPS'
+            # if 'isBatch' not in get: firewalls.firewalls().AddAcceptPort(get)
+            # if 'isBatch' not in get: public.serviceReload()
             self.save_cert(get)
             public.WriteLog('TYPE_SITE', 'Site [{}] turned on SSL successfully!'.format(siteName))
 
@@ -3362,7 +3362,7 @@ listener SSL443 {
             from ssl_domainModelV2.service import CertHandler
             from ssl_domainModelV2.model import DnsDomainSSL
             ssl = None
-            for s in DnsDomainSSL.objects.all():
+            for s in DnsDomainSSL.objects.filter(user_for__like=f"%{siteName}%").fields("auto_renew"):
                 if siteName in s.sites_uf:
                     ssl = s
                     break
@@ -4039,7 +4039,6 @@ server
     location / {
         proxy_pass http://127.0.0.1:%s;
 
-        # 保留原始请求信息
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -4596,6 +4595,16 @@ server
                 if os.path.exists(other_file):
                     conf = public.readFile(other_file)
                     data['php_other'] = re.findall(r"fastcgi_pass\s+(.+);", conf)[0]
+
+            # ols PHP检验
+            site_webserver = public.M('sites').where('name=?', (siteName,)).getField('service_type')
+            if (public.get_multi_webservice_status() and site_webserver == 'openlitespeed')  or public.get_webserver() == 'openlitespeed':
+                ols_php_path = os.path.join('/usr/local/lsws','lsphp' + data['phpversion'])
+                if not os.path.exists(ols_php_path):
+                    return public.return_message(-1, 0, public.lang("Warning: {} version has not been installed yet, "
+                                                                    "which may affect website access to the ols service. Please try reinstalling this version or switching to the PHP version!",
+                                                                    'PHP'+data['phpversion']))
+
             return public.return_message(0, 0, data)
         except:
             return public.return_message(-1, 0, public.lang("Apache2.2 does NOT support MultiPHP!,{}", public.get_error_info()))
@@ -8496,10 +8505,10 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             #     data.append({i['name']: False})
 
             # 获取防火墙状态
-            result = public.run_plugin('btwaf', 'get_site_config_byname',
-                                       public.to_dict_obj({'siteName': info.site_name}))
             firewall_status = 0
             try:
+                result = public.run_plugin('btwaf', 'get_site_config_byname',
+                                           public.to_dict_obj({'siteName': info.site_name}))
                 if result['open']:
                     firewall_status = 1
             except:
@@ -11348,7 +11357,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         public.write_log_gettext('Site manager	', 'Successfully shut down the Multi-WebServer Hosting and retain [{}]!',
                                  (reserve,))
-        return True, public.lang('The multi-service mode has been successfully enabled')
+        return True, public.lang('The multi-service mode has been successfully disable')
 
     # ols 修改多服务配置文件
     def ols_update_config(self, status, is_restart=True) -> tuple[bool, str]:
@@ -11420,6 +11429,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                     file = filename.split('.')[0]
                     if file not in ['80', '443', '887', '888']:
                         content = public.readFile(os.path.join(listen_custom_dir,filename))
+                        if not content:
+                            continue
                         content = content.replace(pattern, '*:'+file)
                         content = content.replace(pattern_ANY, '*:'+file)
                         public.writeFile(os.path.join(listen_custom_dir,filename), content)

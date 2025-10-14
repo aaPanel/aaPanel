@@ -52,6 +52,27 @@
 		"index_51": "Nuova versione",
 		"index_52": "Registro di aggiornamento",
 		"index_53": "Si noti che il processo di aggiornamento può causare interruzioni del servizio",
-		"index_54": "Si consiglia di eseguire aggiornamenti software quando il caricamento del server è inattivo"
+		"index_54": "Si consiglia di eseguire aggiornamenti software quando il caricamento del server è inattivo",
+		"Plugin": {
+			"index_1": "Server web",
+			"index_2": "Cambiamento in corso, attendere prego...",
+			"index_3": "Assicurarsi che le seguenti porte non siano utilizzate:",
+			"index_4": "Dopo il passaggio all'architettura del servizio di hosting multi-server web, è possibile specificare il proprio motore web per ogni sito web",
+			"index_5": "Prima di abilitare l'hosting multi-server web, assicurarsi che la configurazione master del servizio corrente, la porta e la configurazione individuale del sito web non siano state modificate manualmente. Ripristinare la configurazione originale o disinstallare e reinstallare dall'App Store.",
+			"index_6": "Descrizione multi-server web:",
+			"index_7": "Clicca per vedere",
+			"index_8": "Server web",
+			"index_9": "Stato",
+			"index_10": "In esecuzione",
+			"index_11": "Fermare",
+			"index_12": "Riparare",
+			"index_13": "Servizio di ritenzione",
+			"index_14": "Abilita più servizi",
+			"index_15": "Ripara più servizi",
+			"index_16": "Il processo di riparazione renderà il sito web inaccessibile. Vuoi continuare?",
+			"index_17": "Hosting multi-server web",
+			"index_18": "Seleziona il servizio che desideri mantenere",
+			"index_19": "Dopo aver abilitato più servizi, Apache, Nginx e Openlitespeed verranno installati"
+		}
 	}
 }

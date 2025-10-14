@@ -52,6 +52,27 @@
 		"index_51": "Nouvelle version",
 		"index_52": "Mettre à jour le journal",
 		"index_53": "Veuillez noter que le processus de mise à jour peut entraîner des interruptions de service",
-		"index_54": "Il est recommandé d'effectuer des mises à jour logicielles lorsque le chargement du serveur est inactif"
+		"index_54": "Il est recommandé d'effectuer des mises à jour logicielles lorsque le chargement du serveur est inactif",
+		"Plugin": {
+			"index_1": "Serveur Web",
+			"index_2": "Changement, veuillez patienter...",
+			"index_3": "Veuillez vous assurer que les ports suivants ne sont pas utilisés :",
+			"index_4": "Après être passé à l'architecture du service d'hébergement multi-WebServer, vous pouvez spécifier son propre WebEngine pour chaque site Web.",
+			"index_5": "Avant d'activer l'hébergement multi-serveur Web, assurez-vous que la configuration actuelle du maître de service, le port et la configuration du site Web individuel n'ont pas été modifiés manuellement. Veuillez restaurer la configuration d'origine ou désinstaller et réinstaller depuis l'App Store.",
+			"index_6": "Description multi-serveur Web :",
+			"index_7": "Cliquez pour voir",
+			"index_8": "Serveur Web",
+			"index_9": "Statut",
+			"index_10": "En cours d'exécution",
+			"index_11": "arrêt",
+			"index_12": "Réparation",
+			"index_13": "Service de rétention",
+			"index_14": "Activer plusieurs services",
+			"index_15": "Réparer plusieurs services",
+			"index_16": "Le processus de réparation rendra le site Web inaccessible. Voulez-vous continuer ?",
+			"index_17": "Hébergement multi-serveur Web",
+			"index_18": "Veuillez sélectionner le service que vous souhaitez conserver",
+			"index_19": "Après avoir activé plusieurs services, Apache, Nginx et Openlitespeed seront installés"
+		}
 	}
 }

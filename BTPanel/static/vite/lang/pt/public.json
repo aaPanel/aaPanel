@@ -74,7 +74,8 @@
 			"Update": "Atualizar",
 			"Select": "Selecione",
 			"Rebuild": "Reconstruir",
-			"Upload": "Carregar"
+			"Upload": "Carregar",
+			"Play": "Jogar"
 		},
 		"Batch": {
 			"Del": "Excluir lote",

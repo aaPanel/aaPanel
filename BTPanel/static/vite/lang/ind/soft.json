@@ -52,6 +52,27 @@
 		"index_51": "Versi baru",
 		"index_52": "Perbarui log",
 		"index_53": "Harap dicatat bahwa proses pembaruan dapat menyebabkan gangguan layanan",
-		"index_54": "Dianjurkan agar Anda melakukan pembaruan perangkat lunak saat beban server menganggur"
+		"index_54": "Dianjurkan agar Anda melakukan pembaruan perangkat lunak saat beban server menganggur",
+		"Plugin": {
+			"index_1": "server web",
+			"index_2": "Beralih, harap tunggu...",
+			"index_3": "Harap pastikan port berikut tidak digunakan:",
+			"index_4": "Setelah beralih ke arsitektur layanan Multi-WebServer Hosting, Anda dapat menentukan WebEngine sendiri untuk setiap website",
+			"index_5": "Sebelum mengaktifkan Multi-WebServer Hosting, pastikan konfigurasi master layanan saat ini, port, dan konfigurasi situs web individual belum diubah secara manual. Harap pulihkan konfigurasi asli atau hapus instalan dan instal ulang dari App Store.",
+			"index_6": "Deskripsi Multi-WebServer:",
+			"index_7": "Klik untuk melihat",
+			"index_8": "server web",
+			"index_9": "Status",
+			"index_10": "Berlari",
+			"index_11": "berhenti",
+			"index_12": "Memperbaiki",
+			"index_13": "Layanan Retensi",
+			"index_14": "Aktifkan beberapa layanan",
+			"index_15": "Perbaiki beberapa layanan",
+			"index_16": "Proses perbaikan akan membuat website tidak dapat diakses. Apakah Anda ingin melanjutkan?",
+			"index_17": "Hosting Multi-WebServer",
+			"index_18": "Silakan pilih layanan yang ingin Anda pertahankan",
+			"index_19": "Setelah mengaktifkan beberapa layanan, Apache, Nginx, dan Openlitespeed akan diinstal"
+		}
 	}
 }

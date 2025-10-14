@@ -74,7 +74,8 @@
 			"Update": "更新",
 			"Select": "選擇",
 			"Rebuild": "重建",
-			"Upload": "上傳"
+			"Upload": "上傳",
+			"Play": "播放"
 		},
 		"Batch": {
 			"Del": "批量刪除",

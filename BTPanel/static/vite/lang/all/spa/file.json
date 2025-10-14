@@ -314,5 +314,11 @@
 	"d29e15e1c95b7669b370b911cd0092bb": "Retrocediendo, por favor espera ...",
 	"99aa6e10102498ca6b95fa60d075d00e": "Arreglando permisos, por favor espere ...",
 	"df5b27593a73d378ad5e8aa3f001cdbe": "Restauración de copia de seguridad, por favor espere ...",
-	"9ff7aedbb97ead6f3840ce4cf984d800": "Reproductor de video"
+	"9ff7aedbb97ead6f3840ce4cf984d800": "Reproductor de video",
+	"4089665c41fc8dc52684baf0cd9ec1a0": "Aviso de archivo importante",
+	"328120e65fd59f9e9220cf06adea33ce": "Tipo de operación",
+	"b06d9a520d3afbaeae334c727c6ade06": "Sobrescribir archivo",
+	"19a39cd0d3139dc678c53f0101138dc5": "Cambiar nombre de archivo",
+	"84ba4cf46c874b0b5951eb3b75298329": "Última modificación",
+	"027f8389b7dbee80b344a7eab80cac44": "Archivo duplicado detectado. ¿Está seguro de que desea sobrescribir el archivo [{0}] actual?"
 }

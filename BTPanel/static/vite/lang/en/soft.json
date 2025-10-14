@@ -52,6 +52,27 @@
 		"index_51": "New version",
 		"index_52": "Update Log",
 		"index_53": "Please note that the update process may cause service interruptions",
-		"index_54": "It is recommended that you perform software updates when the server load is idle"
+		"index_54": "It is recommended that you perform software updates when the server load is idle",
+		"Plugin": {
+			"index_1": "Web server",
+			"index_2": "Switching, please wait...",
+			"index_3": "Please make sure the following ports are not in use:",
+			"index_4": "After switching to Multi-WebServer Hosting service architecture, you can specify its own WebEngine for each website",
+			"index_5": "Before enabling Multi-WebServer Hosting, ensure that the current service master configuration, port, and individual website configuration have not been manually modified. Please restore the original configuration or uninstall and reinstall from the App Store.",
+			"index_6": "Multi-WebServer description:",
+			"index_7": "Click to view",
+			"index_8": "Web server",
+			"index_9": "Status",
+			"index_10": "Running",
+			"index_11": "stop",
+			"index_12": "Repair",
+			"index_13": "Retention Service",
+			"index_14": "Enable multiple services",
+			"index_15": "Repair multiple services",
+			"index_16": "The repair process will make the website inaccessible. Do you want to continue?",
+			"index_17": "Multi-WebServer Hosting",
+			"index_18": "Please select the service you want to keep",
+			"index_19": "After enabling multiple services, Apache, Nginx, and Openlitespeed will be installed"
+		}
 	}
 }

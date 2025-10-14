@@ -588,6 +588,16 @@ class one_key_wp:
                 return False
             return True if res['option_value'] in ['1',1] else False
 
+        # 兼容apache
+        elif get_webserver == "apache":
+            conf_path = os.path.join(public.get_panel_path(), 'vhost', 'nginx', f'{site_name}.conf')
+            if os.path.exists(conf_path):
+                conf = public.readFile(conf_path)
+                if conf.find(f'proxy_cache_path /www/server/fastcgi_cache/{site_name}') != -1 and conf.find('NGINX-CACHE-START') != -1:
+                    return True
+
+            return False
+
         # 获取WP站点绑定的PHP可执行文件
         from public import websitemgr
 
@@ -776,15 +786,25 @@ class one_key_wp:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
+        webserver = public.get_webserver()
+        site = public.M('sites').where('id=?', (get.s_id,)).field('id,name,service_type').find()
+        if not site:
+            return public.fail_v2(public.lang("The specified site does not exist!"))
+        if public.get_multi_webservice_status():
+            webserver = site['service_type'] if site['service_type'] else 'nginx'
+
         # 新增ols缓存清理反馈
-        if public.get_webserver() == "openlitespeed":
-            return public.return_message(-1, 0, public.lang("Please go to the LiteSpeed Toolbox to manually clear the cache"))
+        if webserver == "openlitespeed":
+            self.delete_ols_cache()
 
-        if public.get_webserver() != "nginx":
-            return public.return_message(-1, 0, public.lang("This feature currently only supports Nginx"))
+        # 多服务下的清除apache缓存
+        if webserver == "apache" and site['service_type'] == 'apache':
+            self.delete_apache_cache_conf(site['name'])
 
-        from wp_toolkit import wpmgr
-        wpmgr(get.s_id).purge_cache_with_nginx_helper()
+        # 清除nginx缓存
+        if webserver == 'nginx':
+            from wp_toolkit import wpmgr
+            wpmgr(get.s_id).purge_cache_with_nginx_helper()
 
         # if self.__IS_PRO_MEMBER:
         #     from wp_toolkit import wpmgr
@@ -816,18 +836,89 @@ class one_key_wp:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        # 添加多服务状态
         webserver = public.get_webserver()
-
-        site = public.M('sites').where('name=?', (get.sitename,)).field('id,path,service_type').find()
+        site = public.M('sites').where('name=?', (get.sitename,)).field('id,name,path,service_type').find()
         if not site:
             return public.fail_v2(public.lang("The specified site does not exist!"))
 
-        if webserver not in  ["nginx", "openlitespeed"] or site['service_type'] == 'apache':
-            return public.return_message(-1, 0, public.lang("Cache does not support apache for the time being"))
+        if public.get_multi_webservice_status():
+            webserver = site['service_type'] if site['service_type'] else 'nginx'
 
-        if webserver == "openlitespeed" or site['service_type'] == 'openlitespeed':
+        # 添加apache缓存
+        if site['service_type'] == 'apache':
+            conf_path = os.path.join(public.get_panel_path(), 'vhost', 'nginx', f'{site['name']}.conf')
+            if not os.path.exists(conf_path):
+                return public.return_message(-1,0,public.lang('The Apache cache setting failed. Please check if the website is working properly!'))
 
+            conf = public.readFile(conf_path)
+            cache_dir = f'/www/server/fastcgi_cache/{site['name']}'
+            if get.get('act') == 'enable':
+                if conf.find(f'proxy_cache_path') == -1:
+                    proxy_cache_path = f'proxy_cache_path /www/server/fastcgi_cache/{site['name']} levels=1:2 keys_zone={site['name'].replace(".", "_")}_cache:10m inactive=60m;'
+                    conf = proxy_cache_path + '\n' + conf
+
+                if conf.find('nginx-to-apache-cache') == -1:
+                    cache_conf = f'''
+        # NGINX-CACHE-START
+        proxy_cache {site['name'].replace(".", "_")}_cache;
+        proxy_cache_key "$host$request_uri$args";
+        proxy_cache_valid 200 301 302 10m;  
+        proxy_cache_valid 4041m;
+        proxy_cache_use_stale error timeout http_429 http_500 http_502 http_503 http_504;
+        proxy_cache_background_update on;
+        proxy_cache_revalidate on;
+        proxy_cache_min_uses 1;
+        proxy_cache_lock off;
+        add_header X-Cache-Type "Dynamic"; 
+        add_header X-Cache $upstream_cache_status; 
+        set $skip_cache 0;
+        if ($http_cookie ~* "user_logged_in|admin_session") {{
+            set $skip_cache 1; 
+        }}
+        if ($request_uri ~* "/admin/|/wp-admin/|/dashboard/") {{
+            set $skip_cache 1;
+        }}
+        proxy_no_cache $skip_cache;
+        proxy_cache_bypass $skip_cache;
+        # NGINX-CACHE-END
+'''
+                    if conf.find('add_header Cache-Control no-cache;') != -1:
+                        conf = conf.replace('add_header Cache-Control no-cache;', cache_conf)
+                    else:
+                        location_rep = r'(location\s*\/\s*\{\s*.*?)(\s*\})'
+                        conf = re.sub(location_rep, r'\1\n' + cache_conf + r'\2', conf, flags=re.DOTALL)
+
+                # 创建缓存目录
+                if not os.path.exists(cache_dir):
+                    os.makedirs(cache_dir, 0o755, True)
+                    public.ExecShell(f'chown -R www:www {cache_dir}')
+
+            else:
+                import shutil
+                pattern = r'\s*# NGINX-CACHE-START\n.*?# NGINX-CACHE-END\s*'
+                match = re.search(pattern, conf, flags=re.DOTALL)
+                if match:
+                    conf = conf.replace(match.group(), '\n      ')
+
+                cache_path_pattern = r'^\s*proxy_cache_path\s+/www/server/fastcgi_cache/.*$'
+                cache_path_match = re.search(cache_path_pattern, conf, re.MULTILINE)
+                if cache_path_match:
+                    conf = conf.replace(cache_path_match.group(), '')
+
+                # 删除缓存目录
+                if os.path.exists(cache_dir):
+                    shutil.rmtree(cache_dir)
+
+            public.writeFile(conf_path, conf)
+            public.webservice_operation('nginx')
+            return public.return_message(0,0,public.lang('The Apache cache Settings were successful!'))
+
+        # 单服务下不支持apache缓存
+        if webserver == 'apache':
+            return public.return_message(-1, 0, public.lang("Apache cache is currently only supported under Multi-WebServer Hosting"))
+
+        # 添加ols缓存
+        if webserver == "openlitespeed":
             from wp_toolkit import wpmgr
             wpmgr_obj = wpmgr(site['id'])
 
@@ -882,6 +973,7 @@ class one_key_wp:
             except Exception as e:
                 return public.fail_v2(public.lang("OLS cache configuration failed: {}", e))
 
+        # 添加nginx缓存
         values = self.check_param(get)
         if values['status'] == -1:
             return values
@@ -910,6 +1002,35 @@ class one_key_wp:
         #     return public.success_v2(msg)
         # else:
         #     return fast_cgi().set_website_conf(values['version'], values['sitename'], values['act'])
+
+    # 清除apache缓存
+    def delete_apache_cache_conf(self, site_name):
+        import shutil
+        conf_path = f'/www/server/fastcgi_cache/{site_name}'
+        tmp_conf = f'{conf_path}_temp_{os.getpid()}'
+
+        try:
+            if os.path.exists(conf_path):
+                os.rename(conf_path,tmp_conf)
+
+                os.makedirs(conf_path, 0o755, True)
+                public.ExecShell(f'chown -R www:www {conf_path}')
+
+                shutil.rmtree(tmp_conf)
+            return True
+        except:
+            return False
+
+    # 清除ols缓存
+    def delete_ols_cache(self):
+        import shutil
+        cache_path = '/usr/local/lsws/cachedata/priv/' # 缓存目录
+
+        # 直接删除缓存目录
+        if os.path.exists(cache_path) and os.path.isdir(cache_path):
+            shutil.rmtree(cache_path)
+
+        return True
 
     # 使用网站ID查询WP站点域名
     def get_wp_auth(self, s_id):

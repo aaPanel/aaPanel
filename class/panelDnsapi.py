@@ -480,7 +480,9 @@ class CloudFlareDns(BaseDns):
         for i in result:
             if i["name"] == domain_name:  # 完全匹配
                 setattr(self, "cf_zone_id", i["id"])
-        if isinstance(self.cf_zone_id, type(None)):
+                return
+
+        if self.cf_zone_id is None:
             raise HintException(
                 "Error unable to get DNS zone for domain_name={domain_name} "
                 ", please check your Api Account and Password: status_code={status_code} response={response}".format(

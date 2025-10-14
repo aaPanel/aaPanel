@@ -176,6 +176,17 @@
 				"untitledDirectory": "thư mục không có tiêu đề"
 			}
 		},
+		"pasteConfirm": {
+			"title": "Thông báo tập tin quan trọng",
+			"operationType": "Loại hoạt động",
+			"overwriteFile": "Ghi đè tập tin",
+			"renameFile": "Đổi tên tập tin",
+			"fileName": "Tên tập tin",
+			"size": "Kích cỡ",
+			"lastModified": "Sửa đổi lần cuối",
+			"overwriteTitle": "Ghi đè tập tin",
+			"overwriteMessage": "Đã phát hiện thấy tệp trùng lặp. Bạn có chắc chắn muốn ghi đè lên tệp [{0}] hiện tại không?"
+		},
 		"tableController": {
 			"calculationFailed": "Tính toán không thành công",
 			"processingWait": "Xử lý, vui lòng đợi ...",

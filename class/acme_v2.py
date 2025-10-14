@@ -110,10 +110,10 @@ class acme_v2:
         else:
             # letsencrypt 公共log
             log = 'logs/letsencrypt.log'
-        f = open(log, mode)
+
         log_str += "\n"
-        f.write(log_str.encode('utf-8'))
-        f.close()
+        with open(log, mode) as f:
+            f.write(log_str.encode('utf-8'))
 
         if self._task_obj and self._log_file != self._task_obj.task_log:
             self._task_obj.write_log(log_str)
@@ -576,7 +576,7 @@ class acme_v2:
             s_body['expires'] = self.utc_to_time(s_body['expires'])
             identifier_auth = self.get_identifier_auth(index, auth_url, s_body)
             if not identifier_auth:
-                raise Exception('ACME_V_INFO_ERR')
+                raise Exception("Validation information construction failed!")
 
             acme_keyauthorization, auth_value = self.get_keyauthorization(identifier_auth['token'])
             identifier_auth['acme_keyauthorization'] = acme_keyauthorization
@@ -861,7 +861,7 @@ if ( $well_known != "" ) {
             if provider:
                 # v2
                 self._dns_class = provider.dns_obj
-                self._dns_class.create_dns_record(public.de_punycode(domain), dns_value)
+                self._dns_class.create_dns_record(public.de_punycode(root), dns_value)
             else:
                 # 旧调用方式
                 import panelDnsapi
@@ -869,7 +869,7 @@ if ( $well_known != "" ) {
                 cf_limit_api = "/www/server/panel/data/cf_limit_api.pl"
                 limit = True if os.path.exists(cf_limit_api) else False
                 self._dns_class = getattr(panelDnsapi, dns_name)(key, secret, limit)
-                self._dns_class.create_dns_record(public.de_punycode(domain), dns_value)
+                self._dns_class.create_dns_record(public.de_punycode(root), dns_value)
 
             self._dns_domains.append(
                 {"domain": domain, "dns_value": dns_value}
@@ -1516,41 +1516,6 @@ fullchain.pem       Paste into certificate input box
                     'domain name: {}, type: {} record value: {}'.format(domain, s_type, value))
         time.sleep(10)
         n = 0
-        # public_dns_servers = [
-        #     "8.8.8.8",  # Google DNS
-        #     "1.1.1.1",  # Cloudflare DNS
-        #     "9.9.9.9",  # Quad9
-        #     "208.67.222.222",  # OpenDNS
-        # ]
-        # import dns.resolver
-        # try:
-        #     default_resolver = dns.resolver.Resolver()
-        #     public_dns_servers.extend(default_resolver.nameservers)
-        # except:
-        #     pass
-        # nameservers = list(set(public_dns_servers))
-        # success_count = 0
-        # all_records = []
-        # for nameserver in nameservers:
-        #     self.logger(f"|-Check Dns use NS: {nameserver}, domain: {domain}, type: {s_type}, value: {value}")
-        #     try:
-        #         resolver = dns.resolver.Resolver(configure=False)
-        #         resolver.nameservers = [nameserver]
-        #         resolver.timeout = 5
-        #         resolver.lifetime = 5
-        #         answers = resolver.resolve(domain, s_type)
-        #         for j in answers.response.answer:
-        #             for i in j.items:
-        #                 txt_value = i.to_text().replace('"', '').strip()
-        #                 if txt_value == value:
-        #                     self.logger(f"|-Check Dns use NS: {nameserver}, Result Pass")
-        #                     success_count += 1
-        #     except Exception as e:
-        #         self.logger(str(e))
-        #
-        # if success_count > len(nameservers) / 2:
-        #     self.logger(f"|-Check Result Pass")
-        #     return True
         while n < 20:
             if task_part:  # 进度
                 self._set_task(add_val=round(task_part / 20))
@@ -2985,7 +2950,7 @@ fullchain.pem       Paste into certificate input box
             import traceback
             public.print_log(traceback.format_exc())
 
-    def renew_cert_v3(self, index, cycle=30):
+    def renew_cert_v3(self, index: str = None, cycle: int = 31):
         # ============= import ===============
         import sys
         panel_path = public.get_panel_path()
@@ -2995,7 +2960,7 @@ fullchain.pem       Paste into certificate input box
             sys.path.insert(0, 'class_v2/')
         # =============== end ===========================
         from ssl_domainModelV2.model import DnsDomainSSL, DnsDomainProvider
-        cycle = 30 if not cycle else int(cycle)
+        cycle = 31 if not cycle else int(cycle)
         if index:
             ssl_obj = DnsDomainSSL.objects.filter(hash=index)
         else:
@@ -3008,12 +2973,6 @@ fullchain.pem       Paste into certificate input box
         for ssl in ssl_obj:
             s += 1
             write_log(f"|-Renewing the {s} certificate，There are {count} certificates in total...")
-            # if ssl.info.get("issuer") not in (
-            #         "R3", "R8", "R11", "R10", "R5"
-            # ) and ssl.info.get("issuer_O") != "Let's Encrypt":
-            #     write_log(
-            #         f"|- Domain Subject:【{ssl.subject}】It's not a Let's Encrypt certificate and cannot be renewed!")
-            #     continue
             # 计算 30 天后的日期
             after_ts = round((time.time() + 86400 * cycle) * 1000)
             if ssl.not_after_ts > after_ts:
@@ -3064,6 +3023,14 @@ fullchain.pem       Paste into certificate input box
                         continue
             #  ================   businiess ssl renew end =========================
 
+            # 官网自购商业证书续签后, 不是let's encrypt的证书不续签
+            if ssl.info.get("issuer") not in (
+                    "R3", "R8", "R11", "R10", "R5"
+            ) and ssl.info.get("issuer_O") != "Let's Encrypt":
+                write_log(
+                    f"|- Domain Subject:【{ssl.subject}】It's not a Let's Encrypt certificate and cannot be renewed!")
+                continue
+
             auth_type = ssl.auth_info.get("auth_type")
 
             # 如果上次用的http, 则尝试http, 失败继续进行dns兜底
@@ -3071,10 +3038,16 @@ fullchain.pem       Paste into certificate input box
                 # panel ssl
                 if ssl.user_for.get("panel") == ["panel"]:
                     from ssl_domainModelV2.service import apply_panel_ssl_http
-                    panel_apply = apply_panel_ssl_http(domain=ssl.dns[0])
-                    write_log(f"|- Domain Subject:【{ssl.subject}】 {panel_apply.get('msg')}")
-                    if panel_apply.get("status"):
-                        continue
+                    temp = ""
+                    for d in ssl.dns:
+                        if "*." not in d:
+                            temp = d
+                            break
+                    if temp != "":
+                        panel_apply = apply_panel_ssl_http(domain=temp)
+                        write_log(f"|- Domain Subject:【{ssl.subject}】 {panel_apply.get('msg')}")
+                        if panel_apply.get("status"):
+                            continue
 
                 # other site ssl
                 site_path = ssl.auth_info.get("auth_to").rstrip("/")
@@ -3194,8 +3167,8 @@ fullchain.pem       Paste into certificate input box
         """
         if auth_to != "dns":  # generate own log
             self._generate_own_log(domains, auth_to)
-        self.logger("", "wb+")
         self._task_obj = task_obj
+        self.logger("", "wb+")
         index = ""
         self._auto_wildcard = auto_wildcard
         try:
@@ -3205,6 +3178,7 @@ fullchain.pem       Paste into certificate input box
             if "index" in kwargs:
                 index = kwargs["index"]
             if not index:
+                self.logger(f"|- {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
                 self.logger(public.lang("|-Creating order.."))
                 index = self.create_order(domains, auth_type, auth_to)
                 self._set_task(10)

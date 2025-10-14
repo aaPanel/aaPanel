@@ -176,6 +176,17 @@
 				"untitledDirectory": "diretório sem título"
 			}
 		},
+		"pasteConfirm": {
+			"title": "Aviso importante sobre arquivo",
+			"operationType": "Tipo de operação",
+			"overwriteFile": "Substituir arquivo",
+			"renameFile": "Renomear arquivo",
+			"fileName": "Nome do arquivo",
+			"size": "Tamanho",
+			"lastModified": "Última modificação",
+			"overwriteTitle": "Substituir arquivo",
+			"overwriteMessage": "Arquivo duplicado detectado. Tem certeza de que deseja substituir o arquivo [{0}] atual?"
+		},
 		"tableController": {
 			"calculationFailed": "Cálculo falhou",
 			"processingWait": "Processamento, por favor, espere ...",

@@ -67,7 +67,7 @@
 			"Index_36": "volte in 5 minuti"
 		},
 		"Table": {
-			"index_1": "Casa",
+			"index_1": "Dashboard",
 			"index_2": "SET PATH",
 			"index_3": "Tipo",
 			"index_4": "Registro di accesso",
@@ -130,7 +130,7 @@
 			"Enable_C": "Dopo aver abilitato il servizio di registro FTP, vengono registrati i registri di accesso degli utenti FTP."
 		},
 		"Api": {
-			"Index_1": "Elaborazione, per favore aspetta ..."
+			"Index_1": "In elaborazione, per favore aspetta ..."
 		}
 	}
 }

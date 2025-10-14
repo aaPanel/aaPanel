@@ -52,6 +52,27 @@
 		"index_51": "Nueva versión",
 		"index_52": "Registro de actualizaciones",
 		"index_53": "Tenga en cuenta que el proceso de actualización puede causar interrupciones del servicio",
-		"index_54": "Se recomienda que realice actualizaciones de software cuando la carga del servidor está inactiva"
+		"index_54": "Se recomienda que realice actualizaciones de software cuando la carga del servidor está inactiva",
+		"Plugin": {
+			"index_1": "servidor web",
+			"index_2": "Cambiando, por favor espera...",
+			"index_3": "Asegúrese de que los siguientes puertos no estén en uso:",
+			"index_4": "Después de cambiar a la arquitectura del servicio de alojamiento de servidores web múltiples, puede especificar su propio motor web para cada sitio web.",
+			"index_5": "Antes de habilitar el alojamiento de servidores web múltiples, asegúrese de que la configuración maestra del servicio actual, el puerto y la configuración del sitio web individual no se hayan modificado manualmente. Restaure la configuración original o desinstale y vuelva a instalar desde la App Store.",
+			"index_6": "Descripción de servidor web múltiple:",
+			"index_7": "Haga clic para ver",
+			"index_8": "servidor web",
+			"index_9": "Estado",
+			"index_10": "Correr",
+			"index_11": "detener",
+			"index_12": "Reparar",
+			"index_13": "Servicio de retención",
+			"index_14": "Habilitar múltiples servicios",
+			"index_15": "Reparar múltiples servicios",
+			"index_16": "El proceso de reparación hará que el sitio web sea inaccesible. ¿Quieres continuar?",
+			"index_17": "Alojamiento de múltiples servidores web",
+			"index_18": "Por favor seleccione el servicio que desea conservar",
+			"index_19": "Después de habilitar múltiples servicios, se instalarán Apache, Nginx y Openlitespeed."
+		}
 	}
 }

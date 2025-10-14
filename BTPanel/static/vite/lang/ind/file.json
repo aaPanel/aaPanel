@@ -176,6 +176,17 @@
 				"untitledDirectory": "direktori tanpa judul"
 			}
 		},
+		"pasteConfirm": {
+			"title": "Pemberitahuan File Penting",
+			"operationType": "Jenis Operasi",
+			"overwriteFile": "Timpa File",
+			"renameFile": "Ganti Nama Berkas",
+			"fileName": "Nama file",
+			"size": "Ukuran",
+			"lastModified": "Terakhir Dimodifikasi",
+			"overwriteTitle": "Timpa File",
+			"overwriteMessage": "File duplikat terdeteksi. Apakah Anda yakin ingin menimpa berkas [{0}] saat ini?"
+		},
 		"tableController": {
 			"calculationFailed": "Perhitungan gagal",
 			"processingWait": "Memproses, tunggu ...",

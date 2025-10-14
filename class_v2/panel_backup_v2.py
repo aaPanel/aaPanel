@@ -318,7 +318,7 @@ class backup:
                     res = self._cloud_new.cloud_upload_file(
                         file_name=abs_file, upload_path=upload_path
                     )
-                else: # 兜底, 由云函数路径规则生成路径
+                else:  # 兜底, 由云函数路径规则生成路径
                     res = self._cloud.upload_file(abs_file, data_type)
 
             else:  # AWS S3 & Minio, minio使用S3_Endpoit兼容, 使用upload_path作为绝对路径
@@ -575,31 +575,10 @@ class backup:
 
         self.echo_info(public.lang('Directory size: {}', str(public.to_size(p_size))))
         self.echo_info(public.lang('Exclusion setting: {}', exclude_config))
-        disk_path, disk_free, disk_inode = self.get_disk_free(dfile)
-        self.echo_info(public.lang(
-            'Partition {} available disk space is: {}, available Inode is: {}',
-            disk_path,
-            str(public.to_size(disk_free)),
-            str(disk_inode))
-        )
-        if disk_path:
-            if disk_free < p_size:
-                self.echo_error(public.lang(
-                    'The available disk space of the target partition is less than {},'
-                    ' and the backup cannot be completed. Please increase the disk capacity '
-                    'or change the default backup directory on the settings page!',
-                    str(public.to_size(p_size))
-                ))
-                return False
 
-            if disk_inode < self._inode_min:
-                self.echo_error(public.lang(
-                    'The available Inode of the target partition is less than {},'
-                    ' and the backup cannot be completed. Please increase the disk capacity '
-                    'or change the default backup directory on the settings page!',
-                    str(self._inode_min)
-                ))
-                return False
+        check_status, check_msg = self.avilable_disk(p_size, dfile)
+        if check_status is False:
+            return False
 
         compression_time = ""
         if not for_wp2:
@@ -1016,7 +995,6 @@ class backup:
             database = {"id": 0, "name": "redis", "db_type": 0}
         else:
             database = {}
-
         db_name = database.get("name", "unknown")
         func_dict = {
             "mysql": self.mysql_backup_database,
@@ -1042,7 +1020,6 @@ class backup:
 
         # format
         backup_path = self.__transfer_db_backup_format(org_path=msg)
-
         backup_size = os.path.getsize(backup_path)
         self.echo_info("The database has been backed up to: {}".format(backup_path))
         if not self._backup_all:
@@ -1111,7 +1088,32 @@ class backup:
             self.delete_old(local_backups, save, self.db_data_type, "Local Disk")
 
         self.echo_end()
+        if os.path.exists(self._err_log):
+            try:
+                os.remove(self._err_log)
+            except FileNotFoundError:
+                pass
         return True, backup_path
+
+    def avilable_disk(self, check_size: int, back_dir: str) -> Tuple[bool, str]:
+        disk_path, disk_free, disk_inode = self.get_disk_free(back_dir)
+        self.echo_info(
+            f"The available disk space for partition {disk_path} is: {public.to_size(disk_free)},"
+            f" and the available Inode is: {disk_inode}"
+        )
+        if disk_path:
+            err_tamp = """The available {} space of the target partition is less than {}, 
+            and the backup cannot be completed. Please increase the disk capacity 
+            or change the default backup directory on the settings page!"""
+            if disk_free < check_size:
+                error_msg = err_tamp.format("disk", public.to_size(check_size))
+                self.echo_error(error_msg)
+                return False, error_msg
+            if disk_inode < self._inode_min:
+                error_msg = err_tamp.format("Inode", self._inode_min)
+                self.echo_error(error_msg)
+                return False, error_msg
+        return True, ""
 
     # mysql 备份数据库
     def mysql_backup_database(self, db_find: dict, args: dict) -> Tuple[bool, str]:
@@ -1173,44 +1175,34 @@ class backup:
 
         db_data = mysql_obj.query(
             "select sum(DATA_LENGTH)+sum(INDEX_LENGTH) from information_schema.tables where table_schema='{}'".format(
-                db_name))
+                db_name
+            )
+        )
         db_size = 0
         if isinstance(db_data, list) and len(db_data) != 0:
-            if db_data[0][0] != None:
+            if db_data[0][0] is not None:
                 db_size = db_data[0][0]
 
         if not db_size:
             error_msg = "The specified database '{}' has no data!".format(db_name)
             self.echo_error(error_msg)
             return False, error_msg
+
         self.echo_info('Backup MySQL database: {}'.format(db_name))
         self.echo_info("Database size: {}".format(public.to_size(db_size)))
         self.echo_info("Database Character Set: {}".format(db_charset))
 
-        disk_path, disk_free, disk_inode = self.get_disk_free(self._MYSQL_BACKUP_DIR)
-        self.echo_info(
-            "The available disk space for partition {} is: {}, and the available Inode is: {}".format(disk_path,
-                                                                                                      public.to_size(
-                                                                                                          disk_free),
-                                                                                                      disk_inode))
-        if disk_path:
-            if disk_free < db_size:
-                error_msg = "The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(
-                    public.to_size(db_size))
-                self.echo_error(error_msg)
-                return False, error_msg
-            if disk_inode < self._inode_min:
-                error_msg = "The available Inode for the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(
-                    self._inode_min)
-                self.echo_error(error_msg)
-                return False, error_msg
+        check_status, check_msg = self.avilable_disk(db_size, self._MYSQL_BACKUP_DIR)
+        if check_status is False:
+            return False, check_msg
+
         stime = time.time()
         self.echo_info("Start exporting database:{}".format(public.format_date(times=stime)))
-
         mysql_backup_dir = self.get_backup_dir(db_find, args, "mysql")
         db_backup_dir = os.path.join(mysql_backup_dir, db_name)
         if not os.path.exists(db_backup_dir):
             os.makedirs(db_backup_dir)
+
         file_name = "{db_name}_{backup_time}_mysql_data".format(
             db_name=db_name, backup_time=public.format_date(self._BACKUP_TIME_FORMAT)
         )
@@ -1296,9 +1288,8 @@ class backup:
         conn_data = {}
         auth_enabled = False
         if db_find["db_type"] == 0:  # 本地
-            mg_auth = panelMongoDB.get_config_options("security", "authorization", "disabled")
-            auth_enabled = mg_auth == "enabled"
             db_port = int(panelMongoDB.get_config_options("net", "port", 27017))
+            auth_enabled = panelMongoDB.get_auth_status()
             if auth_enabled:
                 if not db_user or not db_password:
                     err = public.lang("MongoDB has enabled security authentication. "
@@ -1306,7 +1297,9 @@ class backup:
                                       "Please set the password and try again!")
                     self.echo_error(err)
                     return False, err
+
         elif db_find["db_type"] == 1:  # 远程
+            auth_enabled = True
             if not db_password:
                 error_msg = "The database password is empty! Please set the database password first!"
                 self.echo_error(error_msg)
@@ -1320,7 +1313,9 @@ class backup:
             conn_data["port"] = conn_config["db_port"]
             conn_data["username"] = conn_config["db_user"]
             conn_data["password"] = conn_config["db_password"]
+
         elif db_find["db_type"] == 2:  # 服务器
+            auth_enabled = True
             if not db_password:
                 error_msg = "The database password is empty! Please set the database password first!"
                 self.echo_error(error_msg)
@@ -1372,29 +1367,15 @@ class backup:
         self.echo_info("Database size: {}".format(public.to_size(db_storage_size)))
         self.echo_info("Number of database collections: {}".format(db_collections))
 
-        disk_path, disk_free, disk_inode = self.get_disk_free(self._MONGODB_BACKUP_DIR)
-        self.echo_info(
-            "The available disk space for partition {} is: {}, and the available Inode is: {}".format(disk_path,
-                                                                                                      public.to_size(
-                                                                                                          disk_free),
-                                                                                                      disk_inode))
-        if disk_path:
-            if disk_free < db_storage_size:
-                error_msg = "The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(
-                    public.to_size(db_storage_size))
-                self.echo_error(error_msg)
-                return False, error_msg
-            if disk_inode < self._inode_min:
-                error_msg = "The available Inode for the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(
-                    self._inode_min)
-                self.echo_error(error_msg)
-                return False, error_msg
+        check_status, check_msg = self.avilable_disk(db_storage_size, self._MONGODB_BACKUP_DIR)
+        if check_status is False:
+            return check_status, check_msg
+
         stime = time.time()
         self.echo_info("Start exporting database:{}".format(public.format_date(times=stime)))
         mongodb_backup_dir = self.get_backup_dir(db_find, args, "mongodb")
         db_backup_dir = os.path.join(mongodb_backup_dir, db_name)
-        # 按照子集合备份, 使用子目录收集, 暂时只支持整db
-        if not os.path.exists(db_backup_dir) and storage_type != "db":
+        if not os.path.exists(db_backup_dir):
             os.makedirs(db_backup_dir)
 
         file_name = "{db_name}_{file_type}_{backup_time}_mongodb_data".format(
@@ -1404,7 +1385,6 @@ class backup:
         )
 
         export_dir = os.path.join(db_backup_dir, file_name)
-
         mongodump_shell = "'{mongodump_bin}' --host='{db_host}' --port={db_port} --db='{db_name}' --out='{out}' 2> '{err_log}'".format(
             mongodump_bin=self._MONGODBDUMP_BIN,
             db_host=db_host,
@@ -1422,8 +1402,9 @@ class backup:
         )
 
         if auth_enabled:
-            auth_str = f" --username='{db_user}' --password={public.shell_quote(str(db_password))}"
-            auth_str += " --authenticationDatabase=admin"
+            auth_str = (f" --username='{db_user}'"
+                        f" --password={public.shell_quote(str(db_password.strip()))}"
+                        f" --authenticationDatabase='{db_name}'")
             mongodump_shell += auth_str
             mongoexport_shell += auth_str
 
@@ -1432,10 +1413,7 @@ class backup:
                 public.ExecShell(mongodump_shell)
             else:
                 for collection_name in collection_list:
-                    shell = "{mongodump_shell} --collection='{collection}'".format(
-                        mongodump_shell=mongodump_shell,
-                        collection=collection_name
-                    )
+                    shell = f"{mongodump_shell} --collection='{collection_name}'"
                     public.ExecShell(shell)
         else:  # 导出 json csv 格式
             fields = None
@@ -1470,7 +1448,6 @@ class backup:
             self.echo_info(public.readFile(self._err_log))
             return False, error_msg
         zip_size = os.path.getsize(backup_path)
-        # self.check_disk_space(zip_size,self._MONGODB_BACKUP_DIR,type=1)
         self.echo_info(
             "Database backup completed, taking {:.2f} seconds, compressed file size: {}".format(
                 time.time() - stime, public.to_size(zip_size)
@@ -1529,23 +1506,10 @@ class backup:
         self.echo_info("Backup file size: {}".format(public.to_size(db_size)))
         self.echo_info("Backup path: {}".format(src_path))
 
-        disk_path, disk_free, disk_inode = self.get_disk_free(self._REDIS_BACKUP_DIR)
-        self.echo_info(
-            "The available disk space for partition {} is: {}, and the available Inode is: {}".format(disk_path,
-                                                                                                      public.to_size(
-                                                                                                          disk_free),
-                                                                                                      disk_inode))
-        if disk_path:
-            if disk_free < db_size:
-                error_msg = "The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(
-                    public.to_size(db_size))
-                self.echo_error(error_msg)
-                return False, error_msg
-            if disk_inode < self._inode_min:
-                error_msg = "The available Inode for the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(
-                    self._inode_min)
-                self.echo_error(error_msg)
-                return False, error_msg
+        check_status, check_msg = self.avilable_disk(db_size, self._REDIS_BACKUP_DIR)
+        if check_status is False:
+            return check_status, check_msg
+
         stime = time.time()
         self.echo_info("Start backing up the database:{}".format(public.format_date(times=stime)))
 
@@ -1558,7 +1522,6 @@ class backup:
             return False, error_msg
 
         backup_size = os.path.getsize(backup_path)
-        # self.check_disk_space(backup_size,self._REDIS_BACKUP_DIR,type=1)
         self.echo_info("Database backup completed, taking {:.2f} seconds, file size: {}".format(time.time() - stime,
                                                                                                 public.to_size(
                                                                                                     backup_size)))
@@ -1567,8 +1530,7 @@ class backup:
     # pgsql 备份数据库
     def pgsql_backup_database(self, db_find: dict, args: dict) -> Tuple[bool, str]:
         from databaseModelV2.pgsqlModel import panelPgsql
-
-        storage_type = args.get("storage_type", "db")  # 备份的文件数量， 按照数据库 | 按照表, 只支持整db
+        # storage_type = args.get("storage_type", "db")  # 备份的文件数量， 按照数据库 | 按照表, 只支持整db
         table_list = args.get("table_list", [])  # 备份的集合
 
         db_name = db_find["name"]
@@ -1623,7 +1585,6 @@ class backup:
             error_msg = "The specified database '{}' has no data!".format(db_name)
             self.echo_error(error_msg)
             return False, error_msg
-
         if "ALL" in table_list:
             tb_l = pgsql_obj.query("SELECT tablename FROM pg_tables WHERE schemaname = 'public';")
             if isinstance(tb_l, list) and tb_l:
@@ -1632,31 +1593,17 @@ class backup:
         self.echo_info('Backup PgSQL database: {}'.format(db_name))
         self.echo_info("Database size: {}".format(public.to_size(db_size)))
 
-        disk_path, disk_free, disk_inode = self.get_disk_free(self._PGSQL_BACKUP_DIR)
-        self.echo_info(
-            "The available disk space for partition {} is: {}, and the available Inode is: {}".format(disk_path,
-                                                                                                      public.to_size(
-                                                                                                          disk_free),
-                                                                                                      disk_inode))
-        if disk_path:
-            if disk_free < db_size:
-                error_msg = "The available disk space of the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(
-                    public.to_size(db_size))
-                self.echo_error(error_msg)
-                return False, error_msg
-            if disk_inode < self._inode_min:
-                error_msg = "The available Inode for the target partition is less than {}, and the backup cannot be completed. Please increase the disk capacity or change the default backup directory on the settings page!".format(
-                    self._inode_min)
-                self.echo_error(error_msg)
-                return False, error_msg
+        check_status, check_msg = self.avilable_disk(db_size, self._PGSQL_BACKUP_DIR)
+        if check_status is False:
+            return check_status, check_msg
+
         stime = time.time()
         self.echo_info("Start exporting database:{}".format(public.format_date(times=stime)))
         # 调用 get_backup_dir 函数来获取备份目录的路径
         pgsql_backup_dir = self.get_backup_dir(db_find, args, "pgsql")
         # 使用获取的路径来构建备份文件的路径
         db_backup_dir = os.path.join(pgsql_backup_dir, db_name)
-        if not os.path.exists(db_backup_dir) and storage_type != "db":
-            # 按照子表备份, 使用子目录收集, 暂时只支持整db
+        if not os.path.exists(db_backup_dir):
             os.makedirs(db_backup_dir)
 
         file_name = "{db_name}_{backup_time}_pgsql_data".format(
@@ -1679,17 +1626,18 @@ class backup:
             table_shell = "--table='" + "' --table='".join(table_list) + "'"
         shell += " {table_shell} | gzip > '{backup_path}'".format(table_shell=table_shell, backup_path=backup_path)
         public.ExecShell(shell, env={"PGPASSWORD": db_password})
-
         if not os.path.exists(backup_path):
             error_msg = "Database backup failed!"
             self.echo_error(error_msg)
             self.echo_info(public.readFile(self._err_log))
             return False, error_msg
+
         gz_size = os.path.getsize(backup_path)
         self.echo_info(
-            "Database backup completed, taking {:.2f} seconds, compressed file size: {}".format(time.time() - stime,
-                                                                                                public.to_size(
-                                                                                                    gz_size)))
+            "Database backup completed, taking {:.2f} seconds, compressed file size: {}".format(
+                time.time() - stime, public.to_size(gz_size)
+            )
+        )
         return True, backup_path
 
     # =========================== Backup Object End =================================

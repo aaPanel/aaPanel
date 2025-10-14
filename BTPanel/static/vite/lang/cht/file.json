@@ -173,6 +173,17 @@
 				"untitledDirectory": "未命名目錄"
 			}
 		},
+		"pasteConfirm": {
+			"title": "重要文件提示",
+			"operationType": "操作類型",
+			"overwriteFile": "覆蓋文件",
+			"renameFile": "重命名文件",
+			"fileName": "文件名",
+			"size": "大小",
+			"lastModified": "最後修改時間",
+			"overwriteTitle": "覆蓋文件",
+			"overwriteMessage": "檢測到同名文件，您確定要覆蓋當前【{0}】文件？"
+		},
 		"tableController": {
 			"calculationFailed": "計算失敗",
 			"processingWait": "正在執行中，請稍候...",

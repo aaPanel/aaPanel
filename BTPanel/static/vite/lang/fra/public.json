@@ -74,7 +74,8 @@
 			"Update": "Mise à jour",
 			"Select": "Sélectionner",
 			"Rebuild": "Reconstruire",
-			"Upload": "Télécharger"
+			"Upload": "Télécharger",
+			"Play": "Jouer"
 		},
 		"Batch": {
 			"Del": "Suppression par lots",

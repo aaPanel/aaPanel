@@ -101,7 +101,7 @@
 			},
 			"index_27": "CPU/RAM",
 			"index_28": "Tipo di shell",
-			"index_29": "Contenitore non in esecuzione",
+			"index_29": "Contenitore non e in esecuzione",
 			"log": {
 				"index_1": "Taglia di registro",
 				"index_2": "Taglia il file di registro di {0}: {1} al giorno dopo apertura, se è necessario modificarlo, fare clic su",
@@ -137,7 +137,7 @@
 			},
 			"create": {
 				"index_1": "Crea manuale",
-				"index_2": "COMANDE CREAT",
+				"index_2": "COMANDO CREA",
 				"index_3": "Disposizione del contenitore",
 				"index_4": "Nome contenitore",
 				"index_5": "Immettere il nome del contenitore",
@@ -174,7 +174,7 @@
 				"index_36": "Pseudo-tytty (-t)",
 				"index_37": "Input standard (-I)",
 				"index_38": "Modalità di privilegio",
-				"index_39": "Min Memory",
+				"index_39": "Min. Memoria",
 				"index_40": "Limite CPU",
 				"index_41": "Limite di memoria",
 				"index_42": "Etichetta",
@@ -365,7 +365,7 @@
 		},
 		"CloudImage": {
 			"index_1": "Inserisci il nome dell'immagine da cercare",
-			"index_3": "Jump Docker Hub Search",
+			"index_3": "Jump Docker Hub Cerca",
 			"index_4": "Pull l'immagine",
 			"index_5": "Nome immagine",
 			"index_6": "Stella",
@@ -394,7 +394,7 @@
 			"index_15": "Il repository Docker ufficiale non supporta la spinta delle immagini",
 			"index_16": "Push [{0}] al repository",
 			"index_17": "Immagine di esportazione",
-			"index_18": "Export Image [{0}]",
+			"index_18": "Esporta immagine [{0}]",
 			"index_19": "Elimina immagine [{0}]",
 			"index_20": "Pulisci immagini senza nome immagine, continua?",
 			"index_21": "Pulisci immagini che non vengono utilizzate dai contenitori",
@@ -422,7 +422,7 @@
 				"index_4": "Nome immagine",
 				"index_5": "Inserisci il nome dell'immagine e premi Invio per tirare, ad esempio: V1",
 				"index_6": "Tiro",
-				"index_7": "Result Pull: ",
+				"index_7": "Risultato Pull: ",
 				"index_8": "Seleziona il nome del repository",
 				"index_9": "Seleziona il nome dell'immagine",
 				"index_10": "Nessuno registro",
@@ -539,7 +539,7 @@
 		},
 		"Network": {
 			"index_1": "Aggiungi rete",
-			"index_2": "Clera Network",
+			"index_2": "Pulisci Network",
 			"index_3": "Nome della rete",
 			"index_4": "Autista",
 			"index_5": "IPv4",
@@ -691,7 +691,7 @@
 			"index_3": "Impostazione dell'osservazione del contenitore, per favore attendi ...",
 			"index_4": "Aggiunta di contenitore, aspetta ...",
 			"index_5": "Container di modifica, per favore aspetta ...",
-			"index_6": "Fetching, per favore aspetta ...",
+			"index_6": "Recupero, per favore aspetta ...",
 			"index_7": "Eliminazione del contenitore, per favore aspetta ...",
 			"index_8": "Cancella i registri del contenitore, aspetta ...",
 			"index_9": "Impostazione dello stato di rotazione del registro, per favore attendi ...",
@@ -744,13 +744,13 @@
 			"index_56": "Chiusura, per favore aspetta ...",
 			"index_57": "Selezionando il certificato, attendere ...",
 			"App": {
-				"index_1": "Fetching, per favore aspetta ...",
+				"index_1": "Recupero, per favore aspetta ...",
 				"index_2": "Installazione, per favore aspetta ...",
 				"index_3": "Impostazione dello stato, per favore attendi ...",
 				"index_4": "Eliminazione, per favore aspetta ...",
 				"index_5": "Backup, per favore aspetta ...",
 				"index_6": "Ripristino, per favore aspetta ...",
-				"index_7": "Caricamento, per favore aspetta ..."
+				"index_7": "In caricamento, per favore aspetta ..."
 			}
 		}
 	}

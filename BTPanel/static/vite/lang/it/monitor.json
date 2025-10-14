@@ -2,13 +2,13 @@
 	"Monitor": {
 		"System": {
 			"index_1": "Stato di monitoraggio",
-			"index_2": "Numero di giorni per salvare: ",
+			"index_2": "Giorni di salvataggio: ",
 			"index_3": "Modificare",
-			"index_4": "Registri puliti",
-			"index_5": "Inserisci il numero di giorni per salvare",
+			"index_4": "Cancella",
+			"index_5": "Inserisci il numero di giorni da salvare",
 			"index_6": "Il numero di risparmio è illegale!",
-			"index_7": "Sei sicuro di pulire tutti i tronchi del monitorio?",
-			"index_8": "Carica media",
+			"index_7": "Sei sicuro di cancellare tutti i registri del monitor di sistema?",
+			"index_8": "Carico medio del server",
 			"index_9": "1 min",
 			"index_10": "5 min",
 			"index_11": "15 min",
@@ -37,7 +37,7 @@
 		},
 		"API": {
 			"system_1": "Impostazione dello stato di monitoraggio, attendere ...",
-			"system_2": "Cancamento dei record di monitoraggio, aspetta ..."
+			"system_2": "Cancamento dei record di monitoraggio, attendere ..."
 		}
 	}
 }

@@ -176,6 +176,17 @@
 				"untitledDirectory": "directorio sin título"
 			}
 		},
+		"pasteConfirm": {
+			"title": "Aviso de archivo importante",
+			"operationType": "Tipo de operación",
+			"overwriteFile": "Sobrescribir archivo",
+			"renameFile": "Cambiar nombre de archivo",
+			"fileName": "Nombre del archivo",
+			"size": "Tamaño",
+			"lastModified": "Última modificación",
+			"overwriteTitle": "Sobrescribir archivo",
+			"overwriteMessage": "Archivo duplicado detectado. ¿Está seguro de que desea sobrescribir el archivo [{0}] actual?"
+		},
 		"tableController": {
 			"calculationFailed": "Falló el cálculo",
 			"processingWait": "Procesamiento, espere ...",

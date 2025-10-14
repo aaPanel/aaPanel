@@ -52,6 +52,27 @@
 		"index_51": "Nova versão",
 		"index_52": "Atualizar log",
 		"index_53": "Observe que o processo de atualização pode causar interrupções de serviço",
-		"index_54": "Recomenda -se que você execute atualizações de software quando a carga do servidor está ociosa"
+		"index_54": "Recomenda -se que você execute atualizações de software quando a carga do servidor está ociosa",
+		"Plugin": {
+			"index_1": "Servidor web",
+			"index_2": "Trocando, aguarde...",
+			"index_3": "Certifique-se de que as seguintes portas não estejam em uso:",
+			"index_4": "Depois de mudar para a arquitetura de serviço Multi-WebServer Hosting, você pode especificar seu próprio WebEngine para cada site",
+			"index_5": "Antes de ativar a hospedagem multi-WebServer, certifique-se de que a configuração atual do mestre de serviço, a porta e a configuração individual do site não tenham sido modificadas manualmente. Restaure a configuração original ou desinstale e reinstale da App Store.",
+			"index_6": "Descrição de vários servidores Web:",
+			"index_7": "Clique para ver",
+			"index_8": "Servidor web",
+			"index_9": "Status",
+			"index_10": "Correndo",
+			"index_11": "parar",
+			"index_12": "Reparar",
+			"index_13": "Serviço de retenção",
+			"index_14": "Habilite vários serviços",
+			"index_15": "Reparar vários serviços",
+			"index_16": "O processo de reparo tornará o site inacessível. Você quer continuar?",
+			"index_17": "Hospedagem Multi-WebServer",
+			"index_18": "Selecione o serviço que deseja manter",
+			"index_19": "Depois de habilitar vários serviços, Apache, Nginx e Openlitespeed serão instalados"
+		}
 	}
 }

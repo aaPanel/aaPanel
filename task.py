@@ -2072,13 +2072,21 @@ def scan_log_site():
 
 #预安装网站监控报表
 def check_site_monitor():
+    site_total_uninstall = '{}/data/site_total_uninstall.pl'.format(public.get_panel_path())
     while True:
-        install_name = 'Install [site_total_monitor]'
-        if public.GetWebServer() !="openlitespeed" and not os.path.exists("/www/server/site_total") and not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")) and public.M('tasks').where('name=? and status=?',(install_name,'0')).count() < 1:
-            execstr="curl https://node.aapanel.com/site_total/install.sh|bash"
+        install_name = ''
+        if not os.path.exists(site_total_uninstall):
+            if public.GetWebServer() !="openlitespeed" and not os.path.exists("/etc/systemd/system/site_total.service") and not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")) and public.M('tasks').where('name=? and status=?',(install_name,'0')).count() < 1:
+                install_name = 'Install [site_total_monitor]'
+                execstr="curl https://node.aapanel.com/site_total/install.sh|bash"
+        else:
+            if os.path.exists("/etc/systemd/system/site_total.service"):
+                install_name = 'Uninstall [site_total_monitor]'
+                execstr="bash /www/server/site_total/scripts/uninstall.sh"
+        if install_name:
             public.M('tasks').add('id,name,type,status,addtime,execstr',(None, install_name,'execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
             public.writeFile('/tmp/panelTask.pl','True')
-        time.sleep(600)
+        time.sleep(60)
 
 # 检测防爆破计划任务
 def check_breaking_through_cron():

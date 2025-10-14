@@ -2750,6 +2750,43 @@ class config:
             return public.return_message(0, 0, 'Temporary user has been forcibly logged out:{}', (str(id),))
         return public.return_message(-1, 0, 'The specified user is not currently logged in!')
 
+    #设置免费网站监控报表
+    def set_site_total_setup(self, args):
+        '''
+            @name 设置免费网站监控安装状态
+            @author hwliang<2020-09-2>
+            @param args<dict_obj>{
+                is_install: int<安装状态>
+            }
+            @return dict
+        '''
+        site_total_install = '{}/data/site_total_install.pl'.format(public.get_panel_path())
+        site_total_uninstall = '{}/data/site_total_uninstall.pl'.format(public.get_panel_path())
+        if 'tmp_login_expire' in session: return public.return_message(-1, 0, public.lang("Permission denied!"))
+        if public.GetWebServer() =="openlitespeed":
+            return public.return_message(-1, 0, 'Only nginx and apache supports free website monitoring!')
+        is_install=int(args.is_install)
+        if is_install == 1:#安装免费网站监控
+            if os.path.exists("/etc/systemd/system/site_total.service"):
+                return public.return_message(-1, 0, 'Free website monitoring has been installed!')
+            if os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")):
+                return public.return_message(-1, 0, 'website monitoring has been installed!')
+            if os.path.exists(site_total_uninstall):
+                os.remove(site_total_uninstall)
+            public.writeFile(site_total_install, 'true')
+            execstr="curl https://node.aapanel.com/site_total/install.sh|bash"
+            public.ExecShell(execstr)
+        else:#卸载免费网站监控
+            if os.path.exists(site_total_install):
+                os.remove(site_total_install)
+            public.writeFile(site_total_uninstall, 'true')
+            execstr="bash /www/server/site_total/scripts/uninstall.sh"
+            public.ExecShell(execstr)
+            if os.path.exists("/etc/systemd/system/site_total.service"):
+                return public.return_message(-1, 0, "Setup failed, please manually uninstall the site_total_monitor!")
+
+        return public.return_message(0, 0, public.lang("Setup successful!"))
+
     # 查看临时授权操作日志
     def get_temp_login_logs(self, args):
         '''

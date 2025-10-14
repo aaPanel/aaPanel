@@ -314,5 +314,11 @@
 	"d29e15e1c95b7669b370b911cd0092bb": "Sao lưu, vui lòng đợi ...",
 	"99aa6e10102498ca6b95fa60d075d00e": "Sửa chữa quyền, vui lòng đợi ...",
 	"df5b27593a73d378ad5e8aa3f001cdbe": "Khôi phục sao lưu, vui lòng đợi ...",
-	"9ff7aedbb97ead6f3840ce4cf984d800": "Trình phát video"
+	"9ff7aedbb97ead6f3840ce4cf984d800": "Trình phát video",
+	"4089665c41fc8dc52684baf0cd9ec1a0": "Thông báo tập tin quan trọng",
+	"328120e65fd59f9e9220cf06adea33ce": "Loại hoạt động",
+	"b06d9a520d3afbaeae334c727c6ade06": "Ghi đè tập tin",
+	"19a39cd0d3139dc678c53f0101138dc5": "Đổi tên tập tin",
+	"84ba4cf46c874b0b5951eb3b75298329": "Sửa đổi lần cuối",
+	"027f8389b7dbee80b344a7eab80cac44": "Đã phát hiện thấy tệp trùng lặp. Bạn có chắc chắn muốn ghi đè lên tệp [{0}] hiện tại không?"
 }

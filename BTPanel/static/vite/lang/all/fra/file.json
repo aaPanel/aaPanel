@@ -314,5 +314,11 @@
 	"d29e15e1c95b7669b370b911cd0092bb": "Sauvegarde, veuillez attendre ...",
 	"99aa6e10102498ca6b95fa60d075d00e": "Fixation des autorisations, veuillez attendre ...",
 	"df5b27593a73d378ad5e8aa3f001cdbe": "Restauration de sauvegarde, veuillez patienter ...",
-	"9ff7aedbb97ead6f3840ce4cf984d800": "Lecteur vidéo"
+	"9ff7aedbb97ead6f3840ce4cf984d800": "Lecteur vidéo",
+	"4089665c41fc8dc52684baf0cd9ec1a0": "Avis de fichier important",
+	"328120e65fd59f9e9220cf06adea33ce": "Type d'opération",
+	"b06d9a520d3afbaeae334c727c6ade06": "Écraser le fichier",
+	"19a39cd0d3139dc678c53f0101138dc5": "Renommer le fichier",
+	"84ba4cf46c874b0b5951eb3b75298329": "Dernière modification",
+	"027f8389b7dbee80b344a7eab80cac44": "Fichier en double détecté. Êtes-vous sûr de vouloir écraser le fichier [{0}] actuel ?"
 }

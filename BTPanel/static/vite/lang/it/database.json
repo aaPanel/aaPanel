@@ -217,8 +217,7 @@
 			"index_29": "Il nome utente o la password non possono essere inferiori a 3 cifre!",
 			"index_30": "Le password in due input sono incoerenti!",
 			"index_31": "Versione PHP",
-			"index_32": "Seleziona la versione PHP-CLI",
-			"index_33": "Il driver amministratore dipende dall'ambiente di versione PHP attualmente in esecuzione. Se scopri che il driver è mancante, vai su PHP Extensions per installare PHP_MONGODB e PDO_PGSQL"
+			"index_32": "Seleziona la versione PHP-CLI"
 		},
 		"Api": {
 			"Index_1": "Connessione al server remoto, per favore attendi ...",
@@ -233,22 +232,6 @@
 			"Index_10": "Recupero di dati, per favore attendi ...",
 			"Index_11": "Salvare i dati Redis, per favore attendi ...",
 			"Index_12": "Eliminazione del backup, per favore aspetta ..."
-		},
-		"adminerManager": {
-			"service": {
-				"currentStatus": "Stato attuale: ",
-				"fixed": "Fisso",
-				"install": "Installare",
-				"uninstall": "Disinstalla",
-				"confirmFixed": "Sei sicuro di voler correggere?",
-				"confirmInstall": "Sei sicuro di voler installare?",
-				"confirmUninstall": "Sei sicuro di voler disinstallare?",
-				"jumpingToAdminer": "Saltando da amministratore, per favore aspetta ..."
-			},
-			"switchingPhp": "Cambiando la versione PHP, aspetta ...",
-			"installing": "Installazione, per favore aspetta ...",
-			"uninstalling": "Disinstallazione, per favore aspetta ...",
-			"switchingPort": "Porta di commutazione, per favore aspetta ..."
 		},
 		"Mysql": {
 			"index_1": "Database di backup automatico",

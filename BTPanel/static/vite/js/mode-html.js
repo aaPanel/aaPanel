@@ -1294,10 +1294,10 @@ var CssHighlightRules = function () {
                 token: "constant.numeric", // hex3 color
                 regex: "#[a-f0-9]{3}"
             }, {
-                token: ["punctuation", "entity.other.attribute-name.pseudo-element.css?v=1758789124250"],
+                token: ["punctuation", "entity.other.attribute-name.pseudo-element.css?v=1760428868419"],
                 regex: pseudoElements
             }, {
-                token: ["punctuation", "entity.other.attribute-name.pseudo-class.css?v=1758789124250"],
+                token: ["punctuation", "entity.other.attribute-name.pseudo-class.css?v=1760428868419"],
                 regex: pseudoClasses
             }, {
                 include: "url"

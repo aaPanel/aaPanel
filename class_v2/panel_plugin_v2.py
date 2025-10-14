@@ -1479,15 +1479,6 @@ class panelPlugin:
                     softInfo['mail_sys_status'] = self._check_mail_sys(None)["status"]
                 data = self.check_status(softInfo)
 
-                # # 多服务下切换版本，仅支持24以上
-                # if public.get_multi_webservice_status() and sName == 'nginx':
-                #     versions = []
-                #
-                #     for i in data['versions']:
-                #         if i['m_version'] in ['1.24', '1.25', '1.27', '1.26','1.28']:
-                #             versions.append(i)
-                #     data['versions'] = versions
-
                 return public.success_v2(data)
         return public.fail_v2('failed to get soft info')
 

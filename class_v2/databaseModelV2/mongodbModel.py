@@ -23,7 +23,6 @@ import json
 import os
 import re
 import time
-import warnings
 from typing import Tuple, Any, Union
 
 import yaml
@@ -41,12 +40,6 @@ try:
     from BTPanel import session
 except:
     pass
-
-warnings.filterwarnings("ignore", category=SyntaxWarning)
-
-"""
-2025/6/6 同步国内
-"""
 
 
 class panelMongoDB:
@@ -221,7 +214,7 @@ class panelMongoDB:
         conf = public.readFile(cls.CONFIG_PATH)
 
         for opt in config_info.keys():
-            tmp = re.findall(opt + ":\s+(.+)", conf)
+            tmp = re.findall(opt + r":\s+(.+)", conf)
             if not tmp: continue
             config_info[opt] = tmp[0]
 
@@ -246,13 +239,29 @@ class panelMongoDB:
         conf = public.readFile(cls.CONFIG_PATH)
         if conf:
             if status:
-                conf = re.sub('authorization\s*:\s*disabled', 'authorization: enabled', conf)
+                conf = re.sub(r'authorization\s*:\s*disabled', 'authorization: enabled', conf)
             else:
-                conf = re.sub('authorization\s*:\s*enabled', 'authorization: disabled', conf)
+                conf = re.sub(r'authorization\s*:\s*enabled', 'authorization: disabled', conf)
 
         public.writeFile(cls.CONFIG_PATH, conf)
         cls.restart_localhost_services()
         return True
+
+    @classmethod
+    def get_auth_status(cls) -> bool:
+        """获取认证开关状态"""
+        return cls.get_config_options("security", "authorization", "disabled") == "enabled"
+
+    @classmethod
+    def get_root_pwd(cls) -> str:
+        """获取root"""
+        mongodb_root_path = os.path.join(public.get_panel_path(), "data/mongo.root")
+        if not os.path.exists(mongodb_root_path):
+            return ""
+        pwd = public.readFile(mongodb_root_path)
+        if not pwd:
+            return ""
+        return pwd.strip()
 
 
 class main(databaseBase):
@@ -456,7 +465,9 @@ class main(databaseBase):
         if db_find['db_host'] != get['db_host'] or db_find['db_port'] != get['db_port']:
             _modify = True
             if public.M('database_servers').where('db_host=? AND db_port=?', (get['db_host'], get['db_port'])).count():
-                return public.returnMsg(False, 'Specifies that the server already exists: [{}:{}]'.format(get['db_host'], get['db_port']))
+                return public.returnMsg(False,
+                                        'Specifies that the server already exists: [{}:{}]'.format(get['db_host'],
+                                                                                                   get['db_port']))
 
         if db_find['db_user'] != get['db_user'] or db_find['db_password'] != get['db_password']:
             _modify = True
@@ -473,7 +484,10 @@ class main(databaseBase):
 
         result = public.M("database_servers").where('id=?', (id,)).update(pdata)
         if isinstance(result, int):
-            public.WriteLog('Database management', 'Modifying a Remote MySQL Server[{}:{}]'.format(get['db_host'], get['db_port']))
+            public.WriteLog(
+                'Database management',
+                'Modifying a Remote MySQL Server[{}:{}]'.format(get['db_host'], get['db_port'])
+            )
             return public.returnMsg(True, 'Modified successfully!')
         return public.returnMsg(False, 'Modification Failure： {}'.format(result))
 
@@ -494,7 +508,7 @@ class main(databaseBase):
                     return public.return_message(-1, 0, public.lang(
                         "Database password cannot be empty or have special characters!"))
 
-                if re.search('[\u4e00-\u9fa5]', password):
+                if re.search(r'[\u4e00-\u9fa5]', password):
                     return public.return_message(-1, 0, public.lang(
                         "Database password cannot be Chinese, please change the name!"))
             else:
@@ -639,7 +653,6 @@ class main(databaseBase):
 
         db_obj.chat.insert_one({})
         if auth_status:
-            _, db_obj = mongodb_obj.get_db_obj_new()
             db_obj.command(
                 "createUser",
                 username,
@@ -765,20 +778,22 @@ class main(databaseBase):
             return public.fail_v2(public.lang("You need to specify the export fields when exporting to csv format!"))
 
         db_name = db_find["name"]
-
         db_host = "127.0.0.1"
         db_user = db_find["username"]
         db_password = db_find["password"]
         conn_data = {}
         if db_find["db_type"] == 0:
-            if panelMongoDB.get_config_options("security", "authorization", "disabled") == "enabled":
+            db_port = panelMongoDB.get_config_options("net", "port", 27017)
+            auth_enabled = panelMongoDB.get_auth_status()
+            if auth_enabled:
                 if not db_password:
                     return public.fail_v2(
-                        public.lang("The database password is empty!Please set the database password first!"))
+                        public.lang("Local login password is empty, please set the database password first!")
+                    )
             else:
                 db_password = None
-            db_port = panelMongoDB.get_config_options("net", "port", 27017)
         elif db_find["db_type"] == 1:
+            auth_enabled = True
             if not db_password:
                 return public.fail_v2(
                     public.lang("The database password is empty!Please set the database password first!"))
@@ -791,6 +806,7 @@ class main(databaseBase):
             conn_data["username"] = conn_config["db_user"]
             conn_data["password"] = conn_config["db_password"]
         elif db_find["db_type"] == 2:
+            auth_enabled = True
             if not db_password:
                 return public.fail_v2(public.lang("MongoDB has enabled security authentication, "
                                                   "the database password cannot be empty, "
@@ -808,6 +824,7 @@ class main(databaseBase):
             conn_data["password"] = conn_config["db_password"]
         else:
             return public.fail_v2(public.lang("Unknown database type"))
+
         mongodb_obj = panelMongoDB().set_host(**conn_data)
         status, err_msg = mongodb_obj.connect()
         if status is False:
@@ -817,10 +834,10 @@ class main(databaseBase):
         if not os.path.exists(db_backup_dir):
             os.makedirs(db_backup_dir)
 
-        file_name = "{db_name}_{file_type}_{backup_time}_mongodb_data".format(db_name=db_name, file_type=file_type,
-                                                                              backup_time=time.strftime(
-                                                                                  "%Y-%m-%d_%H-%M-%S",
-                                                                                  time.localtime()))
+        file_name = "{db_name}_{file_type}_{backup_time}_mongodb_data".format(
+            db_name=db_name, file_type=file_type,
+            backup_time=time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+        )
         export_dir = os.path.join(db_backup_dir, file_name)
 
         mongodump_shell = "'{mongodump_bin}' --host='{db_host}' --port={db_port} --db='{db_name}' --out='{out}'".format(
@@ -836,14 +853,14 @@ class main(databaseBase):
             db_port=int(db_port),
             db_name=db_name,
         )
-        if db_password is not None:  # 本地未开启安全认证
-            mongodump_shell += " --username='{db_user}' --password={db_password}".format(db_user=db_user,
-                                                                                         db_password=public.shell_quote(
-                                                                                             str(db_password)))
-            mongoexport_shell += " --username='{db_user}' --password={db_password}".format(db_user=db_user,
-                                                                                           db_password=public.shell_quote(
-                                                                                               str(db_password)))
-
+        # 开启认证
+        if auth_enabled:
+            mongodump_shell += " --username='{db_user}' --password={db_password} --authenticationDatabase='{auth_db}'".format(
+                db_user=db_user, db_password=public.shell_quote(str(db_password)), auth_db=db_name
+            )
+            mongoexport_shell += " --username='{db_user}' --password={db_password} --authenticationDatabase='{auth_db}'".format(
+                db_user=db_user, db_password=public.shell_quote(str(db_password)), auth_db=db_name
+            )
         backup_ps = "Manual Backup"
         if file_type == "bson":
             if len(collection_list) == 0:
@@ -851,10 +868,7 @@ class main(databaseBase):
             else:
                 backup_ps += "-bson"
                 for collection_name in collection_list:
-                    shell = "{mongodump_shell} --collection='{collection}'".format(
-                        mongodump_shell=mongodump_shell,
-                        collection=collection_name
-                    )
+                    shell = f"{mongodump_shell} --collection='{collection_name}'"
                     public.ExecShell(shell)
         else:  # 导出 json csv 格式
             backup_ps += "-json"
@@ -879,7 +893,6 @@ class main(databaseBase):
         if not os.path.exists(export_dir):
             return public.fail_v2(public.lang("Database backup failed, export file does not exist!"))
         backup_path = "{export_dir}.zip".format(export_dir=export_dir)
-
         public.ExecShell("cd {backup_dir} && zip -m {backup_path} -r {file_name}".format(
             backup_dir=db_backup_dir, backup_path=backup_path, file_name=file_name)
         )
@@ -1190,7 +1203,6 @@ class main(databaseBase):
             except:
                 pass
             try:
-                _, db_obj = mongodb_obj.get_db_obj_new()
                 db_obj.command(
                     "createUser",
                     find['username'],
@@ -1258,10 +1270,10 @@ class main(databaseBase):
             if not newpassword:
                 return public.fail_v2(
                     public.lang('Modification failed, database [' + username + ']password cannot be empty.'))
-            if len(re.search("^[\w@.]+$", newpassword).groups()) > 0:
+            if len(re.search(r"^[\w@.]+$", newpassword).groups()) > 0:
                 return public.fail_v2(public.lang('The database password cannot be empty or have special characters.'))
 
-            if re.search('[\u4e00-\u9fa5]', newpassword):
+            if re.search(r'[\u4e00-\u9fa5]', newpassword):
                 return public.fail_v2(public.lang('Database password can not be Chinese, please change the name!'))
         except:
             return public.fail_v2(public.lang('The database password cannot be empty or have special characters.'))
@@ -1290,7 +1302,6 @@ class main(databaseBase):
             try:
                 db_obj.command("updateUser", username, pwd=newpassword)
             except:
-                _, db_obj = mongodb_obj.get_db_obj_new(username)
                 db_obj.command("createUser", username, pwd=newpassword, roles=[{'role': 'dbOwner', 'db': find['name']},
                                                                                {'role': 'userAdmin',
                                                                                 'db': find['name']}])

@@ -176,6 +176,17 @@
 				"untitledDirectory": "Untitled Directory"
 			}
 		},
+		"pasteConfirm": {
+			"title": "Wichtiger Dateihinweis",
+			"operationType": "Operationstyp",
+			"overwriteFile": "Datei überschreiben",
+			"renameFile": "Datei umbenennen",
+			"fileName": "Dateiname",
+			"size": "Größe",
+			"lastModified": "Zuletzt geändert",
+			"overwriteTitle": "Datei überschreiben",
+			"overwriteMessage": "Doppelte Datei erkannt. Sind Sie sicher, dass Sie die aktuelle Datei [{0}] überschreiben möchten?"
+		},
 		"tableController": {
 			"calculationFailed": "Berechnung ist fehlgeschlagen",
 			"processingWait": "Verarbeitung, bitte warten ...",

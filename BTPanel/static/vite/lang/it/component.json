@@ -9,7 +9,7 @@
 			"index_1": "GRATUITO",
 			"index_2": "Rinnovo",
 			"index_3": "Acquista ora",
-			"index_4": "Scadere su: ",
+			"index_4": "Scadenza: ",
 			"index_5": "Aggiornamento ora",
 			"index_6": "Tutta la vita"
 		},
@@ -40,7 +40,7 @@
 		"Pay": {
 			"index_1": "Pro",
 			"index_2": "Raccomandato",
-			"index_3": "Funzione Pro",
+			"index_3": "Funzioni Pro",
 			"index_4": "Descrizione plug-in",
 			"index_5": "Contrasto delle caratteristiche",
 			"index_6": "Salva di più",
@@ -109,7 +109,7 @@
 			"index_7": "Seleziona la directory"
 		},
 		"Editor": {
-			"index_1": "Suggerimenti ： Ctrl+F Search Parole chiave ， Ctrl+S Salva ， Ctrl+H Cerca e sostituisci"
+			"index_1": "Suggerimenti ： Ctrl+F Cerca Parole chiave ， Ctrl+S Salva ， Ctrl+H Cerca e sostituisci"
 		},
 		"Quota": {
 			"index_1": "Quota",

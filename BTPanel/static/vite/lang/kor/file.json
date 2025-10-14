@@ -176,6 +176,17 @@
 				"untitledDirectory": "제목없는 디렉토리"
 			}
 		},
+		"pasteConfirm": {
+			"title": "중요한 파일 공지",
+			"operationType": "작업 유형",
+			"overwriteFile": "파일 덮어쓰기",
+			"renameFile": "파일 이름 바꾸기",
+			"fileName": "파일 이름",
+			"size": "크기",
+			"lastModified": "마지막 수정",
+			"overwriteTitle": "파일 덮어쓰기",
+			"overwriteMessage": "중복된 파일이 감지되었습니다. 현재 [{0}] 파일을 덮어쓰시겠습니까?"
+		},
 		"tableController": {
 			"calculationFailed": "계산이 실패했습니다",
 			"processingWait": "처리, 잠깐만 ...",

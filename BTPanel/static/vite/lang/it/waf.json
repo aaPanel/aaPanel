@@ -24,7 +24,7 @@
 			"index_20": "Dettagli",
 			"index_21": "QPS in tempo reale: {0}/s",
 			"index_22": "Tempo: {0}",
-			"index_23": "Interception Map (oggi)",
+			"index_23": "Mappa delle intercettazioni (oggi)",
 			"index_24": "Basso",
 			"index_25": "Alto",
 			"index_26": "Tempi di attacco: {0}",
@@ -264,7 +264,7 @@
 			"index_5": "Tempo di query: {0}",
 			"index_6": "*Nota: vengono registrati solo gli ultimi dati 2000. Ogni IP innesca la stessa regola solo una volta in 30 secondi e il record viene aggiornato ogni 60 secondi",
 			"index_8": "Nome dominio/IP/URL/Utente-Agent/Regione",
-			"index_9": "Clear Log",
+			"index_9": "Pulisci Log",
 			"index_10": "Cancella registro del sito",
 			"index_12": "Ora di inizio",
 			"index_13": "IP utente",
@@ -352,15 +352,15 @@
 			"index_13": "Per altri calcoli del segmento di indirizzi, fare riferimento a",
 			"index_14": "Indirizzo IP Calcolo online",
 			"index_15": "Importa blacklist IP",
-			"index_16": "Lista nera Clear IP",
+			"index_16": "Pulisci la blacklist degli IP",
 			"index_17": "Sei sicuro di voler cancellare i dati della lista nera IP?",
-			"index_18": "Avvio IP - End IP / IPv6 Indirizzo",
+			"index_18": "Avvio IP - Fine IP / IPv6 Indirizzo",
 			"index_19": "Tipo",
 			"index_20": "Osservazioni",
 			"index_21": "Aggiungi i seguenti indirizzi IP alla lista nera",
 			"index_22": "Avvia IP",
 			"index_23": "Inserisci l'indirizzo IP Avvia, ad esempio: 192.168.1.1",
-			"index_24": "End IP",
+			"index_24": "Fine IP",
 			"index_25": "Immettere l'indirizzo IP finale, ad esempio: 192.168.1.24",
 			"index_26": "Indirizzo IPv6",
 			"index_27": "Immettere IP, ad esempio: 2606: 54C0: 19C0: DC02 ::/63",
@@ -385,7 +385,7 @@
 			"index_46": "Clear Ua Blacklist",
 			"index_47": "Sei sicuro di voler cancellare i dati della lista nera UA? ",
 			"index_48": "Una riga per riga, ad esempio: \n user_agent1 \n user_agent2",
-			"index_49": "Import UA Whitelist",
+			"index_49": "Importa UA Whitelist",
 			"index_50": "Cancella whitelist",
 			"index_51": "Sei sicuro di voler cancellare i dati di Whitelist UA? ",
 			"index_52": "Ad esempio: ^/API/AMMIN/AGGIORNAMENTO",
@@ -401,7 +401,7 @@
 			"index_62": "Tutte le regole non sono valide per gli URL nella whitelist, esclusi la lista nera IP. ",
 			"index_63": "L'attuale Whitelist URL non supporta i parametri.",
 			"index_64": "Import URL Whitelist",
-			"index_65": "Clear URL Whitelist",
+			"index_65": "Pulisci URL Whitelist",
 			"index_66": "Sei sicuro di voler cancellare i dati di Whitelist URL? "
 		},
 		"Area": {
@@ -925,7 +925,7 @@
 			"setting_75": "Aggiungendo parole proibite, per favore aspetta ...",
 			"setting_76": "Importazione di parole proibite, per favore aspetta ...",
 			"setting_77": "Eliminazione di parole proibite, per favore aspetta ...",
-			"setting_78": "Cleanning Words Words, per favore aspetta ..."
+			"setting_78": "Pulizia delle parole in corso, attendere prego..."
 		}
 	}
 }

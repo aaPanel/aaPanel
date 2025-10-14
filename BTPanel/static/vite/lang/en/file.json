@@ -176,6 +176,17 @@
 				"untitledDirectory": "untitled directory"
 			}
 		},
+		"pasteConfirm": {
+			"title": "Important File Notice",
+			"operationType": "Operation Type",
+			"overwriteFile": "Overwrite File",
+			"renameFile": "Rename File",
+			"fileName": "File Name",
+			"size": "Size",
+			"lastModified": "Last Modified",
+			"overwriteTitle": "Overwrite File",
+			"overwriteMessage": "Duplicate file detected. Are you sure you want to overwrite the current [{0}] file?"
+		},
 		"tableController": {
 			"calculationFailed": "Calculation Failed",
 			"processingWait": "Processing, please wait...",

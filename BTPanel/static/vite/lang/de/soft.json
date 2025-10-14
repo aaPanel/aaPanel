@@ -52,6 +52,27 @@
 		"index_51": "Neue Version",
 		"index_52": "Aktualisieren Sie das Protokoll",
 		"index_53": "Bitte beachten Sie, dass der Aktualisierungsprozess zu Serviceunterbrechungen führen kann",
-		"index_54": "Es wird empfohlen, dass Sie Software -Updates durchführen, wenn der Serverlast im Leerlauf ist"
+		"index_54": "Es wird empfohlen, dass Sie Software -Updates durchführen, wenn der Serverlast im Leerlauf ist",
+		"Plugin": {
+			"index_1": "Webserver",
+			"index_2": "Wechsel, bitte warten...",
+			"index_3": "Bitte stellen Sie sicher, dass die folgenden Ports nicht verwendet werden:",
+			"index_4": "Nach dem Wechsel zur Multi-WebServer-Hosting-Dienstarchitektur können Sie für jede Website eine eigene WebEngine angeben",
+			"index_5": "Stellen Sie vor der Aktivierung des Multi-WebServer-Hostings sicher, dass die aktuelle Service-Master-Konfiguration, der Port und die individuelle Website-Konfiguration nicht manuell geändert wurden. Bitte stellen Sie die ursprüngliche Konfiguration wieder her oder deinstallieren Sie es und installieren Sie es erneut aus dem App Store.",
+			"index_6": "Beschreibung des Multi-WebServers:",
+			"index_7": "Klicken Sie zum Anzeigen",
+			"index_8": "Webserver",
+			"index_9": "Status",
+			"index_10": "Läuft",
+			"index_11": "stoppen",
+			"index_12": "Reparieren",
+			"index_13": "Aufbewahrungsservice",
+			"index_14": "Aktivieren Sie mehrere Dienste",
+			"index_15": "Reparieren Sie mehrere Dienste",
+			"index_16": "Durch den Reparaturvorgang ist die Website nicht mehr zugänglich. Möchten Sie fortfahren?",
+			"index_17": "Multi-WebServer-Hosting",
+			"index_18": "Bitte wählen Sie den Dienst aus, den Sie behalten möchten",
+			"index_19": "Nach der Aktivierung mehrerer Dienste werden Apache, Nginx und Openlitespeed installiert"
+		}
 	}
 }

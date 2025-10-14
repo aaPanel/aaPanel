@@ -77,7 +77,7 @@ class panel_restore:
         self._progress_rewrite('Start to restore data......')
         public.ExecShell('cd {} && {} {} >> /tmp/restore_site.log'.format(site_info['site_path'], uncompress_comand, local_backup_file_path))
         if len(os.listdir(site_info['site_path'])) == 2:
-            public.ExecShell('cd {s} && mv {s}/{d}/* .'.format(s=site_info['site_path'],d=site_info['site_name']))
+            public.ExecShell('cd {s} && mv {s}/{d}/{{*,.*}} .'.format(s=site_info['site_path'],d=site_info['site_name']))
             public.ExecShell('cd {s} && rmdir {d}'.format(s=site_info['site_path'],d=site_info['site_name']))
         # 将文件全新设置为644，文件夹设置为755
         self._progress_rewrite('Setting site permissions......')

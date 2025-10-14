@@ -176,6 +176,17 @@
 				"untitledDirectory": "répertoire sans titre"
 			}
 		},
+		"pasteConfirm": {
+			"title": "Avis de fichier important",
+			"operationType": "Type d'opération",
+			"overwriteFile": "Écraser le fichier",
+			"renameFile": "Renommer le fichier",
+			"fileName": "Nom de fichier",
+			"size": "Taille",
+			"lastModified": "Dernière modification",
+			"overwriteTitle": "Écraser le fichier",
+			"overwriteMessage": "Fichier en double détecté. Êtes-vous sûr de vouloir écraser le fichier [{0}] actuel ?"
+		},
 		"tableController": {
 			"calculationFailed": "Échec du calcul",
 			"processingWait": "Traitement, veuillez attendre ...",
