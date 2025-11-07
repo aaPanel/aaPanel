@@ -191,10 +191,49 @@ def get_process_count():
     if memory > 30000 and cpu_count > 15: return 4   # 内存大于30G且CPU核心大于15核,则启动4个进程
     return 1
 
+
+def check_system_restarted():
+    '''
+        @name 检测系统是否重启
+    '''
+    try:
+        import json
+        status_file = '{}/data/reboot_notification.json'.format(_PATH)
+        current_boot_time = int(psutil.boot_time())
+
+        if os.path.exists(status_file):
+            try:
+                with open(status_file, 'r') as f:
+                    data = json.load(f)
+                    last_recorded_time = data.get("last_reboot_time", 0)
+                # 如果系统启动时间 > 上次记录时间 → 说明系统重启了
+                if last_recorded_time >0 and current_boot_time > last_recorded_time:
+                    with open(status_file, 'w') as f:
+                        json.dump({
+                            "last_reboot_time": current_boot_time,
+                            "status": 0  # 未读
+                        }, f, indent=2)
+            except:
+                pass
+        else:
+            with open(status_file, 'w') as f:
+                json.dump({
+                    "last_reboot_time": current_boot_time,
+                    "status": 1
+                }, f, indent=2)
+    except Exception as e:
+        pass
+
+
+
 if __name__ == '__main__':
     pid_file = "{}/logs/panel.pid".format(_PATH)
     if os.path.exists(pid_file):
         public.ExecShell("kill -9 {}".format(public.readFile(pid_file)))
+
+    # 重启面板前检查系统是否重启
+    check_system_restarted()
+
     pid = os.fork()
     if pid: sys.exit(0)
 

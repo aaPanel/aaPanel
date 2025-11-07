@@ -302,9 +302,8 @@ class database(datatool.datatools):
             return public.return_msg_gettext(False, public.lang("SSL is not enabled in the database, please open it in the Mysql manager first"))
         data_name = get['name'].strip().lower()
         if not data_name: return public.return_msg_gettext(False, public.lang("The database name cannot be empty"))
-        if self.CheckRecycleBin(data_name): return public.return_msg_gettext(False,
-                                                                             'Database [{}] already at the recycle bin, please recover from the recycle bin!',
-                                                                             (data_name,))
+        if self.CheckRecycleBin(data_name):
+            return public.return_msg_gettext(False,'Database [{}] already at the recycle bin, please recover from the recycle bin!', (data_name,))
         if len(data_name) > 64: return public.return_msg_gettext(False, public.lang("Database name cannot be more than 16 characters!"))
         reg = r"^[\w\.-]+$"
         username = get.db_user.strip()
@@ -340,15 +339,18 @@ class database(datatool.datatools):
         # 添加MYSQL
         self.sid = get.get('sid/d', 0)
         mysql_obj = public.get_mysql_obj_by_sid(self.sid)
-        if not mysql_obj: return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
+        if not mysql_obj:
+            return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
 
         # 从MySQL验证是否存在
-        if self.database_exists_for_mysql(mysql_obj, data_name):  return public.return_msg_gettext(False, public.lang("The specified database already exists in MySQL, please change the name!"))
+        if self.database_exists_for_mysql(mysql_obj, data_name):
+            return public.return_msg_gettext(False, public.lang("The specified database already exists in MySQL, please change the name!"))
 
         result = mysql_obj.execute(
             "create database `" + data_name + "` DEFAULT CHARACTER SET " + codeing + " COLLATE " + codeStr)
         isError = self.IsSqlError(result)
-        if isError is not None: return isError
+        if isError is not None:
+            return isError
         mysql_obj.execute("drop user '" + username + "'@'localhost'")
         for a in address.split(','):
             mysql_obj.execute("drop user '" + username + "'@'" + a + "'")
@@ -694,7 +696,10 @@ SetLink
                 return public.return_msg_gettext(True, public.lang("Successfully deleted"))
         else:
             if os.path.exists(filename):
-                data = json.loads(public.readFile(filename + '/config.json'))
+                try:
+                    data = json.loads(public.readFile(os.path.join(filename, "config.json")))
+                except:
+                    return public.returnMsg(False, public.lang("Recycle Bin does not exist for this database!"))
             else:
                 return public.returnMsg(False, public.lang("Recycle Bin does not exist for this database!"))
 

@@ -403,5 +403,8 @@
 	"20ccc0b936ae721235fbb251882e09af": "총 inodes",
 	"921fd067f5f59d36f697493e0b0e7f97": "Inode 사용",
 	"ea211fd1ca41812bd3e73d8b1bb57504": "사용 가능한 inode",
-	"9dd90affd6244a7fc2f09dc8fb7a0551": "사용 잉오드"
+	"9dd90affd6244a7fc2f09dc8fb7a0551": "사용 잉오드",
+	"018ccdfebb8ff4dc11a799ebe74b0356": "시스템 재시작 알림",
+	"bef91412ee3c10079e58be2bdd757f3a": "귀하의 서버가 {time}에 다시 시작되었습니다.",
+	"c5b1945a4e3808d335bcf6080f87c663": "알아요"
 }

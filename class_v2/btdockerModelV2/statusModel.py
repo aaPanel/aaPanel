@@ -7,6 +7,8 @@
 # Author: wzz <wzz@aapanel.com>
 # -------------------------------------------------------------------
 import gettext
+import json
+
 _ = gettext.gettext
 
 import time
@@ -182,7 +184,7 @@ class main(dockerBase):
             from pygments import highlight, lexers, formatters
             formatted_json = json.dumps(stats, indent=3)
             colorful_json = highlight(formatted_json.encode('utf-8'), lexers.JsonLexer(), formatters.TerminalFormatter())
-            print(colorful_json)
+            # print(colorful_json)
             self.io_stats(stats, write)
             self.net_stats(stats, cache, write)
             self.cpu_stats(stats, write)
@@ -256,3 +258,60 @@ class main(dockerBase):
         return public.return_message(0, 0,  len(self.docker_client(self._url).containers.list()))
 
     # 获取监控容器资源并记录每分钟
+
+    # 获取Docker总览信息
+    def get_docker_system_info(self, get):
+        result = {
+            "containers": {"usage": "-", "total": "-", "size": "-"},
+            "images":     {"usage": "-", "total": "-", "size": "-"},
+            "volumes":    {"usage": "-", "total": "-", "size": "-"},
+            "networks":   {"usage": 0, "total": 0},
+            "composes":   {"usage": 0, "total": 0},
+            "mirrors": 0,
+        }
+
+        try:
+            # 获取 mirrors
+            system_info = self.docker_client(self._url).info()
+            result["mirrors"] = len(system_info.get("RegistryConfig", {}).get("IndexConfigs", {}))
+
+            # 解析 docker system df
+            dfs, err = public.ExecShell("docker system df --format json")
+
+            for line in dfs.strip().split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    df = json.loads(line)
+                    df_type = df.get("Type")
+                    if df_type == "Images":
+                        result["images"]["usage"] = df.get("Active", 0)
+                        result["images"]["total"] = df.get("TotalCount", 0)
+                        result["images"]["size"] = df.get("Size", "0B")
+                    elif df_type == "Containers":
+                        result["containers"]["usage"] = df.get("Active", 0)
+                        result["containers"]["total"] = df.get("TotalCount", 0)
+                        result["containers"]["size"] = df.get("Size", "0B")
+                    elif df_type == "Local Volumes":
+                        result["volumes"]["usage"] = df.get("Active", 0)
+                        result["volumes"]["total"] = df.get("TotalCount", 0)
+                        result["volumes"]["size"] = df.get("Size", "0B")
+                except Exception as e:
+                    public.print_log('Docker', 'Parse docker system df failed: {}, error: {}'.format(line, str(e)))
+                    continue
+
+            # Networks
+            network_info = self.docker_client(self._url).networks.list()
+            result["networks"]["total"] = len(network_info)
+
+            # Compose
+            from mod.project.docker.composeMod import main as Compose
+            dk_compose = Compose()
+            compose_list = dk_compose.ls(get)
+            result["composes"]["total"] = len(compose_list)
+
+        except Exception as e:
+            public.print_log('Docker', 'Get system info failed: {}'.format(str(e)))
+
+        return public.return_message(0, 0, result)

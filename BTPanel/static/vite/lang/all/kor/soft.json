@@ -121,5 +121,6 @@
 	"7ddb4a46bbd21a3c5322f3679ef239bd": "복구 프로세스로 인해 웹사이트에 액세스할 수 없게 됩니다. 계속하시겠습니까?",
 	"f02acf9ce69d78f7502b5ab478645c6a": "다중 웹서버 호스팅",
 	"ada8a81c9d7eb120155c1b33d439886e": "유지하고 싶은 서비스를 선택해주세요",
-	"09dd63272d4e76bf461175487ed9775a": "여러 서비스를 활성화한 후 Apache, Nginx 및 Openlitespeed가 설치됩니다."
+	"09dd63272d4e76bf461175487ed9775a": "여러 서비스를 활성화한 후 Apache, Nginx 및 Openlitespeed가 설치됩니다.",
+	"19cbf2cc98f5c63c5bd8a39d58c76c6e": "설치 대기 중"
 }

@@ -69,7 +69,23 @@
 			"index_5": "Buat di",
 			"index_6": "{0} CPU dan ikhtisar memori",
 			"index_7": "Bersembunyi",
-			"index_8": "Menampilkan"
+			"index_8": "Menampilkan",
+			"overviewTitle": "Ikhtisar Sumber Daya",
+			"containerCount": "Kontainer",
+			"spaceUsed": "Ruang yang digunakan",
+			"composeCount": "Menyusun",
+			"composeProjects": "Proyek Penulisan Docker",
+			"imageCount": "Gambar",
+			"networkCount": "Jaringan",
+			"networksCreated": "Jaringan yang dibuat",
+			"volumeCount": "Volume",
+			"mirrorRepoCount": "Registri",
+			"repositoriesConfigured": "Repositori yang dikonfigurasi",
+			"containerList": "Daftar Kontainer",
+			"filterAll": "Semua",
+			"filterRunning": "Berlari",
+			"filterStopped": "Berhenti",
+			"searchPlaceholder": "Cari nama wadah atau nama gambar"
 		},
 		"Container": {
 			"index_1": "Buat wadah",
@@ -350,7 +366,7 @@
 				"index_2": "Ingatan",
 				"index_3": "Disk IO",
 				"index_4": "Jaringan io",
-				"index_5": "Informasi dasar",
+				"index_5": "Info Dasar",
 				"index_6": "Batas memori: ",
 				"index_7": "Lalu lintas: ",
 				"index_8": "Hulu: ",
@@ -358,9 +374,42 @@
 				"index_10": "Ingatan",
 				"index_11": "Cache",
 				"index_12": "Membaca",
-				"index_13": "menulis",
+				"index_13": "Menulis",
 				"index_14": "Hulu",
 				"index_15": "Hilir"
+			},
+			"search": {
+				"placeholder": "Cari nama kontainer, ID, gambar kontainer"
+			},
+			"batch": {
+				"start": {
+					"title": "Kontainer Mulai Batch",
+					"desc": "Batch memulai kontainer yang dipilih, lanjutkan operasi?"
+				},
+				"restart": {
+					"title": "Kontainer Mulai Ulang Batch",
+					"desc": "Mulai ulang kontainer yang dipilih secara batch, lanjutkan operasi?"
+				},
+				"stop": {
+					"title": "Kontainer Penghentian Batch",
+					"desc": "Hentikan batch kontainer yang dipilih, lanjutkan operasi?"
+				},
+				"kill": {
+					"title": "Kontainer Penghentian Paksa Batch",
+					"desc": "Batch memaksa menghentikan kontainer yang dipilih, melanjutkan operasi?"
+				},
+				"pause": {
+					"title": "Kontainer Jeda Batch",
+					"desc": "Batch menjeda kontainer yang dipilih, melanjutkan operasi?"
+				},
+				"unpause": {
+					"title": "Wadah Resume Batch",
+					"desc": "Batch melanjutkan kontainer yang dipilih, melanjutkan operasi?"
+				},
+				"del": {
+					"title": "Batch Hapus Kontainer",
+					"desc": "Hapus batch kontainer yang dipilih, lanjutkan operasi?"
+				}
 			}
 		},
 		"CloudImage": {
@@ -375,7 +424,25 @@
 			"index_10": "Menarik",
 			"index_11": "Buat wadah",
 			"index_12": "Hapus gambar [{0}]",
-			"index_13": "Anda yakin ingin menghapus gambar [{0}]?"
+			"index_13": "Anda yakin ingin menghapus gambar [{0}]?",
+			"detail": {
+				"lastUpdated": "Terakhir Diperbarui:",
+				"isOfficial": "Gambar Resmi:",
+				"source": "Sumber:",
+				"dockerHub": "Pusat Docker",
+				"pullsCount": "Menarik:",
+				"selectPlaceholder": "Silakan pilih atau cari gambar",
+				"pullButton": "Menarik",
+				"yes": "Ya",
+				"no": "Tidak",
+				"updated": "Diperbarui",
+				"selectImageError": "Silakan pilih gambar",
+				"pullImageTitle": "Tarik Gambar"
+			},
+			"pull": {
+				"success": "Tarik berhasil",
+				"failed": "Tarikan gagal"
+			}
 		},
 		"LocalImage": {
 			"index_1": "Tarik dari repositori",
@@ -401,6 +468,10 @@
 			"index_22": "Jalur",
 			"index_23": "Harap masukkan jalur gambar",
 			"index_24": "Apakah Anda benar -benar ingin menghapus cermin [{0}]?",
+			"searchPlaceholder": "Cari nama gambar, ID, wadah yang digunakan",
+			"batchDelete": "Hapus Batch",
+			"batchDeleteTitle": "Hapus Batch Gambar Proyek",
+			"batchDeleteDesc": "Hapus batch gambar proyek yang dipilih, lanjutkan operasi?",
 			"push_1": "Nama Repositori",
 			"push_2": "Menandai",
 			"push_3": "Harap masukkan tag, mis. Gambar: v1",
@@ -663,6 +734,47 @@
 			"index_31": "Setelah mengatur jangkauan, Docker perlu dimulai ulang. Pastikan Anda dapat memulai kembali Docker sebelum melanjutkan.",
 			"index_32": "Atur rentang IPv6",
 			"index_33": "Setelah pengaturan, Docker perlu dimulai ulang. Pastikan Anda dapat memulai kembali Docker sebelum melanjutkan. Apakah Anda ingin melanjutkan?",
+			"cgroupDriver": "pengemudi cgroup",
+			"setCgroupDriverTitle": "Setel driver cgroup",
+			"setCgroupDriverConfirm": "Setelah mengatur driver cgroup, Docker perlu dimulai ulang. Harap pastikan Anda dapat me-restart Docker sebelum melanjutkan. Apakah Anda ingin melanjutkan?",
+			"logRotation": "Rotasi Log",
+			"logRotationSet": "Atur Rotasi Log",
+			"logRotationSummary": "* Catat ukuran file {size} MB, simpan {num} salinan",
+			"closeLogRotationTitle": "Nonaktifkan Rotasi Log",
+			"closeLogRotationConfirm": "Setelah menonaktifkan rotasi log, Docker perlu memulai ulang. Harap pastikan Anda dapat me-restart Docker sebelum melanjutkan. Apakah Anda ingin melanjutkan?",
+			"logRotationConfig": {
+				"fileSize": "Ukuran Berkas",
+				"retainCount": "Pertahankan Hitungan",
+				"unitMB": "MB",
+				"unitCount": "file",
+				"fileSizeRequired": "Silakan masukkan ukuran file",
+				"retainCountRequired": "Silakan masukkan jumlah simpanan",
+				"configTip1": "Konfigurasi saat ini hanya akan memengaruhi container yang baru dibuat. Kontainer yang ada perlu dibuat ulang agar konfigurasi dapat diterapkan",
+				"configTip2": "Jika kontainer Anda berisi data penting, pastikan untuk membuat cadangan sebelum melakukan operasi pembangunan kembali"
+			},
+			"iptables": {
+				"description": "* Konfigurasi otomatis aturan iptables Docker",
+				"enableTitle": "Aktifkan iptables",
+				"disableTitle": "Nonaktifkan iptables",
+				"enableConfirm": "Setelah mengaktifkan iptables, Docker perlu memulai ulang. Harap pastikan Anda dapat me-restart Docker sebelum melanjutkan. Apakah Anda ingin melanjutkan?",
+				"disableConfirm": "Setelah menonaktifkan iptables, Docker perlu dimulai ulang. Harap pastikan Anda dapat me-restart Docker sebelum melanjutkan. Apakah Anda ingin melanjutkan?"
+			},
+			"liveRestore": {
+				"description": "* Jika diaktifkan, mempertahankan status container yang sedang berjalan ketika daemon Docker berhenti tiba-tiba atau mogok",
+				"enableTitle": "Aktifkan live_restore",
+				"disableTitle": "Nonaktifkan live_restore",
+				"enableConfirm": "Setelah mengaktifkan live_restore, Docker perlu dimulai ulang. Harap pastikan Anda dapat me-restart Docker sebelum melanjutkan. Apakah Anda ingin melanjutkan?",
+				"disableConfirm": "Setelah menonaktifkan live_restore, Docker perlu dimulai ulang. Harap pastikan Anda dapat me-restart Docker sebelum melanjutkan. Apakah Anda ingin melanjutkan?"
+			},
+			"registry": {
+				"label": "Registri Pribadi",
+				"placeholder": "Alamat registri pribadi Docker",
+				"modalTitle": "Setel Registri Pribadi",
+				"configPlaceholder": "Silakan masukkan alamat registri pribadi, satu per baris, misalnya:\n192.168.1.111:8087\n192.168.1.112:8087",
+				"restartTip": "* Docker akan restart setelah pengaturan",
+				"restartTitle": "Mulai ulang Docker",
+				"restartConfirm": "Docker akan dimulai ulang. Apakah Anda ingin melanjutkan?"
+			},
 			"compose": {
 				"index_1": "Jalur",
 				"index_2": "Pilih jalur ke file Compose",
@@ -673,7 +785,35 @@
 				"index_2": "Memprioritaskan penggunaan URL yang dipercepat untuk melakukan operasi, waktu tunggu permintaan akan dilewati menggunakan metode akselerasi default",
 				"index_3": "Anda perlu me -restart docker secara manual setelah menyiapkan akselerasi",
 				"index_4": "Nonaktifkan akselerasi, silakan atur ke kosong",
-				"index_5": "Tidak ada percepatan"
+				"index_5": "Tidak ada percepatan",
+				"confirmTitle": "Tetapkan URL Akselerasi",
+				"confirmContent": "Docker perlu dimulai ulang setelah pengaturan. Harap pastikan Docker dapat dimulai ulang sebelum melanjutkan!"
+			},
+			"path": {
+				"label": "Instal Dir. Sekali Klik",
+				"modifyButton": "Memodifikasi",
+				"disabledTip": "Aplikasi sudah ada, tidak dapat diubah",
+				"validationError": "Silakan masukkan jalur direktori yang valid!",
+				"confirmTitle": "Ubah Direktori App Store",
+				"confirmContent": "Memodifikasi direktori toko aplikasi akan memulai ulang panel. Apakah Anda ingin melanjutkan?"
+			},
+			"systemInfo": {
+				"hostname": "Nama host",
+				"systemVersion": "Versi Sistem",
+				"architecture": "Arsitektur",
+				"kernelVersion": "Versi Kernel",
+				"cpuCore": "Inti CPU",
+				"memorySize": "Ukuran Memori",
+				"dockerVersion": "Versi Docker",
+				"dockerComposeVersion": "Versi Penulisan Docker",
+				"unixAddress": "Alamat Unix",
+				"dataDirectory": "Direktori Data",
+				"updateButton": "Pembaruan",
+				"updateComposeTitle": "Perbarui Versi Penulisan Docker",
+				"updateComposeContent": "Apakah Anda ingin memperbarui versi Docker Compose?",
+				"updateLogsTitle": "Perbarui Log",
+				"updateSuccess": "Pembaruan berhasil",
+				"updateFailed": "Pembaruan gagal"
 			}
 		},
 		"install": {

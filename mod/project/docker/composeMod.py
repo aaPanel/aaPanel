@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -49,7 +49,7 @@ def check_file(func):
 
             func(self, get, *args, **kwargs)
 
-            if get.def_name in ("create", "up", "update", "start", "stop", "restart"):
+            if get.def_name in ("create", "up", "update", "start", "stop", "restart","rebuild"):
                 get._ws.send(
                     json.dumps(self.wsResult(True,  public.lang(" {} completed, if the log no exception to close this window!\r\n",get.option), data=-1, code=-1)))
         except Exception as e:
@@ -249,7 +249,7 @@ class main(Compose):
             @param get
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        self.set_tail("80")
+        self.set_tail("10")
         get.option = "Read the logs"
 
         command = self.set_type(1).set_path(get.path).get_compose_logs()
@@ -280,8 +280,12 @@ class main(Compose):
 
         try:
             config_body = public.readFile(get.path)
-            env_body = public.readFile(
-                get.path.replace("docker-compose.yaml", ".env").replace("docker-compose.yml", ".env"))
+            # env_body = public.readFile(get.path.replace("docker-compose.yaml", ".env").replace("docker-compose.yml", ".env"))
+            # 获取文件路径  有些情况不是用标准文件名进行启动容器的
+            file_path = os.path.dirname(get.path)
+            env_path = os.path.join(file_path, ".env")
+            # 判断路径下.env 文件是否存在
+            env_body = public.readFile(env_path) if os.path.exists(env_path) else ""
             if hasattr(get, '_ws'):
                 get._ws.send(json.dumps(self.wsResult(True, public.lang("Get ahead"), data={
                     "config": config_body if config_body else "",
@@ -350,8 +354,8 @@ class main(Compose):
                 return
 
             public.writeFile(get.path, get.config)
-            public.writeFile(get.path.replace("docker-compose.yaml", ".env").replace("docker-compose.yml", ".env"),
-                             get.env)
+            env_path = os.path.join(os.path.dirname(get.path), ".env")
+            public.writeFile(env_path,get.env)
 
             # self.up(get)
 
@@ -491,18 +495,21 @@ class main(Compose):
                         )))
                     return
 
-            template_path = os.path.join(self.compose_project_path, "templates/{}".format(get.template_name))
+            #添加编排模板 ---------- 可以直接引用composeModel.add_template
+            template_path = os.path.join(self.compose_project_path, "{}".format(get.template_name))
+            compose_path = os.path.join(template_path,"docker-compose.yaml")
+            env_path = os.path.join(template_path,".env")
             pdata = {
                 "name": get.template_name,
                 "remark": "",
-                "path": os.path.join(template_path, "docker-compose.yaml"),
+                "path": template_path,
+                "add_in_path":1
             }
             template_id = dp.sql("templates").insert(pdata)
             if not os.path.exists(template_path):
                 os.makedirs(template_path, 0o755, True)
-            public.writeFile(pdata['path'], get.config)
-            public.writeFile(pdata['path'].replace("docker-compose.yaml", ".env").replace("docker-compose.yml", ".env"),
-                             get.env)
+            public.writeFile(compose_path, get.config)
+            public.writeFile(env_path,get.env)
 
         get.remark = get.get("remark/s", "")
         stacks_info = dp.sql("stacks").where("name=?", (public.xsssec(get.project_name))).find()
@@ -517,13 +524,17 @@ class main(Compose):
             }
             dp.sql("stacks").insert(pdata)
         else:
-            if hasattr(get, '_ws'):
-                get._ws.send(json.dumps(self.wsResult(
-                    False,
-                    public.lang("The project name already exists, please delete it before adding it!"),
-                    code=3,
-                )))
-            return
+            check_status = public.ExecShell("docker-compose ls |grep {}".format(get.path))[0]
+            if not check_status:
+                dp.sql("stacks").where("name=?", (public.xsssec(get.project_name))).delete()
+            else:
+                if hasattr(get, '_ws'):
+                    get._ws.send(json.dumps(self.wsResult(
+                        False,
+                        public.lang("The project name already exists, please delete it before adding it!"),
+                        code=3,
+                    )))
+                return
 
         self.up(get)
 
@@ -559,24 +570,6 @@ class main(Compose):
                 name_map.pop(bt_compose_name)
                 public.writeFile(config_path, json.dumps(name_map))
 
-        if not os.path.exists(get.path):
-            command = self.set_type(0).set_compose_name(get.project_name).get_compose_delete_for_ps()
-        else:
-            command = self.set_type(0).set_path(get.path).get_compose_delete()
-        stdout, stderr = public.ExecShell(command)
-        if "invalid compose project" in stderr:
-            command = self.set_type(0).set_compose_name(get.project_name).get_compose_delete_for_ps()
-            public.ExecShell(command)
-
-        # public.ExecShell("rm -rf {}".format(os.path.dirname(get.path)))
-        if hasattr(get, '_ws'):
-            get._ws.send(json.dumps(self.wsResult(
-                True,
-                public.lang("Delete container orchestration"),
-                data=-1,
-                code=0
-            )))
-
         stacks_list = dp.sql("stacks").select()
         compose_list = self.ls(get)
         for i in stacks_list:
@@ -589,7 +582,33 @@ class main(Compose):
             else:
                 dp.sql("stacks").where("name=?", (i['name'])).delete()
 
-        dp.write_log("Delete container orchestration [{}] succeeded!".format(public.xsssec(get.project_name)))
+        if not os.path.exists(get.path):
+            command = self.set_type(0).set_compose_name(get.project_name).get_compose_delete_for_ps()
+        else:
+            command = self.set_type(0).set_path(get.path).get_compose_delete()
+        stdout, stderr = public.ExecShell(command)
+        if "invalid compose project" in stderr:
+            command = self.set_type(0).set_compose_name(get.project_name).get_compose_delete_for_ps()
+            stdout, stderr = public.ExecShell(command)
+
+        if stderr and "Error" in stderr:
+            if hasattr(get, '_ws'):
+                get._ws.send(json.dumps(self.wsResult(
+                    False,
+                    "Removal fails, check if the compose.yaml file format is correct：\r\n{}".format(stderr.replace("\n", "\r\n")),
+                    data=-1,
+                    code=4,
+                )))
+                return
+
+        if hasattr(get, '_ws'):
+            get._ws.send(json.dumps(self.wsResult(
+                True,
+                public.lang("Delete container orchestration"),
+                data=-1,
+                code=0
+            )))
+
     # 2024/6/27 下午8:39 批量删除指定compose.yaml的docker-compose编排
     def batch_delete(self, get):
         '''

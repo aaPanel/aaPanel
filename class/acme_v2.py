@@ -272,7 +272,7 @@ class acme_v2:
                 self.get_kid()
             account = self._config['account'][k]
             account['email'] = self._config['email']
-            self.set_crond()
+            # self.set_crond()
             self.set_crond_v2()
             return account
         except Exception as ex:
@@ -518,8 +518,9 @@ class acme_v2:
                 except:
                     return False
             else:
-                import panelSite
-                auth_to = find['path'] + '/' + panelSite.panelSite().GetRunPath(public.to_dict_obj({"id": site_id}))
+                from panel_site_v2 import panelSite
+                run_path = panelSite().GetRunPath(public.to_dict_obj({"id": site_id}))["message"].get("result", "")
+                auth_to = find['path'] + '/' + run_path
                 auth_to = auth_to.replace("//", "/")
                 if auth_to[-1] == '/':
                     auth_to = auth_to[:-1]
@@ -851,8 +852,9 @@ if ( $well_known != "" ) {
         if auth_to.find('|') == -1:
             raise Exception('dns_name or account or token is empty')
         dns_name, account, token = auth_to.split('|')
-        if not dns_name or not token:  # account may be empty, cf limit
-            raise Exception('dns_name or account or token is empty')
+        if dns_name != "aaPanelDns":
+            if not dns_name or not token:  # account may be empty, cf limit
+                raise Exception('dns_name or account or token is empty')
         try:
             root, _ = self.extract_zone(domain)
             provider = DnsDomainProvider.objects.filter(
@@ -861,7 +863,7 @@ if ( $well_known != "" ) {
             if provider:
                 # v2
                 self._dns_class = provider.dns_obj
-                self._dns_class.create_dns_record(public.de_punycode(root), dns_value)
+                self._dns_class.create_dns_record(public.de_punycode(domain), dns_value)
             else:
                 # 旧调用方式
                 import panelDnsapi
@@ -869,7 +871,7 @@ if ( $well_known != "" ) {
                 cf_limit_api = "/www/server/panel/data/cf_limit_api.pl"
                 limit = True if os.path.exists(cf_limit_api) else False
                 self._dns_class = getattr(panelDnsapi, dns_name)(key, secret, limit)
-                self._dns_class.create_dns_record(public.de_punycode(root), dns_value)
+                self._dns_class.create_dns_record(public.de_punycode(domain), dns_value)
 
             self._dns_domains.append(
                 {"domain": domain, "dns_value": dns_value}
@@ -952,6 +954,9 @@ if ( $well_known != "" ) {
                         s_type="TXT",
                         task_part=one_part,
                     )
+                elif auth['type'] == 'http':  # 尝试提前验证http
+                    self.check_http(auth=auth)
+
                 self.respond_to_challenge(auth)
 
         # 检查验证结果
@@ -961,6 +966,21 @@ if ( $well_known != "" ) {
                 ['valid', 'invalid']
             )
             self._config['orders'][index]['status'] = 'valid'
+            # auth = self._config['orders'][index]['auths'][i]
+            # self.logger("|-Verifying domain name: {}".format(auth['domain']))
+            # check_res = self.check_auth_status(
+            #     auth['url'], ['valid', 'invalid']
+            # )
+            # s_json = check_res.json()
+            # self._config['orders'][index]['auths'][i]['status'] = s_json['status']
+            # if s_json['status'] != 'valid':
+            #     error = s_json['error']
+            #     e_msg = "Verification failed: {} >>>> {}".format(auth['domain'], self.get_error(json.dumps(error)))
+            #     self.logger(e_msg)
+            #     raise Exception(e_msg)
+            #
+            # self._config['orders'][index]['status'] = 'valid'
+            # self.logger("|-Verification successful!")
 
     # 验证单个域名
     def auth_domain_api(self, get):
@@ -1399,9 +1419,8 @@ fullchain.pem       Paste into certificate input box
                 try:
                     to_issuer_o = to_cert_init.get('issuer_O', '')
                     cert_issuer_o = cert_init.get('issuer_O', '')
-                    is_let_cert = "Let's Encrypt" in cert_issuer_o
-                    is_same_brand = to_issuer_o == cert_issuer_o
-                    if not is_let_cert and not is_same_brand:
+                    # 仅替换同品牌证书
+                    if to_issuer_o != cert_issuer_o:
                         continue
                 except:
                     continue
@@ -1418,10 +1437,8 @@ fullchain.pem       Paste into certificate input box
                 if not is_copy:
                     continue
                 # 替换新的证书文件和基本信息
-                public.writeFile(
-                    to_pem_file, public.readFile(pem_file, 'rb'), 'wb')
-                public.writeFile(
-                    to_key_file, public.readFile(key_file, 'rb'), 'wb')
+                public.writeFile(to_pem_file, public.readFile(pem_file, 'rb'), 'wb')
+                public.writeFile(to_key_file, public.readFile(key_file, 'rb'), 'wb')
                 public.writeFile(to_info, json.dumps(cert_init))
                 self.logger(
                     '|-Detected that the certificate under {} '
@@ -1541,6 +1558,32 @@ fullchain.pem       Paste into certificate input box
             time.sleep(3)
         self.logger("|-Local authentication failed!")
         return True
+
+    # 检查http验证
+    def check_http(self, auth: dict) -> bool:
+        self.logger(f"|-Waiting for web server to reload and self-checking URL: {auth['url']}")
+        n = 0
+        check_url = f"http://{auth['domain']}/.well-known/acme-challenge/{auth['token']}"
+        while n < 5:
+            self.logger("|-Self-check attempt number: {}".format(n + 1))
+            try:
+                response = requests.get(check_url, timeout=10, verify=False)
+                if response.status_code == 200 and response.text.strip() == auth['acme_keyauthorization']:
+                    self.logger(f"|-Self-check successful for {check_url}")
+                    return True
+                else:
+                    time.sleep(3)
+                    self.logger(f"|-Warning: Self-check failed for '{check_url}' "
+                                f"Status: {response.status_code},"
+                                f" Body: '{response.text[:100]}'. Will proceed anyway.")
+            except Exception as e:
+                self.logger(f"|-Http01 self-check failed: {e}")
+
+            n += 1
+            time.sleep(3)
+
+        self.logger(f"|-Self-check failed after {n} attempts for {check_url}.")
+        return False
 
     # 创建CSR
     # noinspection PyUnresolvedReferences

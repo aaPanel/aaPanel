@@ -51,7 +51,8 @@ class apache:
                     self.GetProcessCpuPercent(proc.pid,process_cpu)
             time.sleep(0.5)
 
-
+            if not result:
+                raise Exception("Get Apache Status False, Please Check Apache Status")
             # 计算启动时间
             Uptime = re.search(r"ServerUptimeSeconds:\s+(.*)",result)
             if not Uptime:

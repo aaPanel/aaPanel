@@ -572,6 +572,32 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
+        # git部署，测试连接
+        if get.get('deploy_type') == 'ssh':
+            get.is_create_default_file = False
+            from git_tools import GitTools
+            git = GitTools()
+            # 关闭ssh测试
+            # repo = get.get('repo')
+            # if not git.test_ssh(repo):
+            #     return public.return_message(-1, 0, public.lang('Failed to connect to the remote repository. Please make sure the key is configured correctly!'))
+
+            from panel_plugin_v2 import panelPlugin
+            Plugin = panelPlugin()
+            webhook_status = Plugin.get_soft_find(public.to_dict_obj({'sName': 'webhook'}))
+            if webhook_status['status'] != 0:
+                return public.return_message(-1, 0, public.lang("Please install the webhook plugin first!"))
+
+            # 判断是否安装webhook,没有则自动安装
+            if not webhook_status['message']['status']:
+                Plugin.install_plugin(public.to_dict_obj({'sName': 'webhook', 'version': '1.4', 'type': '1'}))
+                Plugin.input_zip(
+                    public.to_dict_obj({'plugin_name': 'webhook', 'tmp_path': '/www/server/panel/temp/webhook'}))
+                time.sleep(2)  # 等待2秒确保安装成功
+                if not Plugin.get_soft_find(public.to_dict_obj({'sName': 'webhook'}))['message']['status']:
+                    return public.return_message(-1, 0, public.lang(
+                        "Automatic installation of the webhook plugin failed, please install it manually!"))
+
         parse_list = []
         main_domain = {}
         if hasattr(get, "parse_list"):
@@ -858,10 +884,13 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 get.sql = 'false'
             if get.sql == 'true' or get.sql == 'MySQL':
                 import database
-                if len(get.datauser) > 16: get.datauser = get.datauser[:16]
+                # if len(get.datauser) > 16: get.datauser = get.datauser[:16]  # 取消长度限制，由上游控制
 
                 # 生成不重复的数据库用户名
-                db_name = public.ensure_unique_db_name(get.datauser)
+                if get.get('is_clone', False):
+                    db_name = get.datauser
+                else:
+                    db_name = public.ensure_unique_db_name(get.datauser)
 
                 get.name = db_name
                 get.db_user = db_name
@@ -905,6 +934,29 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                     if get.pid is not None:
                         from public import websitemgr
                         websitemgr.remove_site(get.pid)
+
+            # ================ git satrt ======================
+            if data['status'] == 0 and get.get('deploy_type') in ['ssh', 'github']:
+                dict_obj = {
+                    'site_id': data['message']['siteId'],
+                    'site_path': get.path,
+                    'branch': get.get('branch'),
+                    'repo': get.get('repo'),
+                    'coverage_data': True,
+                    'deploy_script': get.get('deploy_script', ''),
+                }
+                if get.get('deploy_type') == 'ssh':
+                    # 校验目录文件
+                    dir_contents = os.listdir(get.path)
+                    if not (len(dir_contents) == 2 and '.user.ini' in dir_contents):
+                        self.DeleteSite(public.to_dict_obj({'id': dict_obj.get('site_id'), 'webname': self.siteName,'database':1,'path':1,'ftp':1}))
+                        return public.return_message(-1,0,'The directory is not empty')
+
+                    data = git.add_key_repository(public.to_dict_obj(dict_obj))
+                    # 删除网站
+                    if data['status'] != 0 and dict_obj.get('site_id'):
+                        self.DeleteSite(public.to_dict_obj({'id': dict_obj.get('site_id'), 'webname': self.siteName,'database':1,'path':1,'ftp':1}))
+            # ================ git end ======================
 
             return data
         except Exception as e:
@@ -1635,6 +1687,11 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         if os.path.exists(vhost_proxy_file):
             public.ExecShell('rm -rf {}*'.format(vhost_proxy_file))
 
+        # 删除免费版监控报表站点配置文件
+        site_total_dir = "/www/server/panel/vhost/nginx/extension/{}".format(siteName)
+        if os.path.exists(site_total_dir):
+            public.ExecShell('rm -rf {}'.format(site_total_dir))
+
         # 删除openlitespeed监听配置
         self._del_ols_listen_conf(siteName)
 
@@ -1680,6 +1737,9 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         public.M('binding').where("pid=?", (id,)).delete()
         public.M('domain').where("pid=?", (id,)).delete()
         public.M('wordpress_onekey').where("s_id=?", (id,)).delete()
+        # 删除git数据
+        from git_tools import GitTools
+        GitTools().del_site_git(public.to_dict_obj({'site_id': id}))
         public.write_log_gettext('Site manager', 'Successfully deleted site {}!', (siteName,))
 
         # 是否删除关联数据库
@@ -2676,7 +2736,7 @@ listener Default%s{
                 prot = '8190'
 
             conf = """
-listener SSL443 {
+listener SSL443 {{
   map                     BTSITENAME BTDOMAIN
   address                 *:{prot}
   secure                  1
@@ -2691,7 +2751,7 @@ listener SSL443 {
   enableSpdy              15
   enableStapling           1
   ocspRespMaxAge           86400
-}
+}}
 """.format(prot=prot)
 
         else:
@@ -3146,9 +3206,14 @@ listener SSL443 {
             get.validate([
                 Param('siteName').String(),
                 Param('updateOf').Integer(),
+                Param('reload').Integer(),
             ], [
                 public.validate.trim_filter(),
             ])
+            if not hasattr(get, "reload"):
+                get.reload = 1
+            else:
+                get.reload = int(get.reload)
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
@@ -3232,8 +3297,8 @@ listener SSL443 {
         if os.path.exists(p_file): public.ExecShell('rm -f ' + p_file)
 
         public.write_log_gettext('Site manager', 'Site [{}] turned off SSL successfully!', (siteName,))
-        public.serviceReload()
-
+        if hasattr(get, "reload") and int(get.reload) == 1:
+            public.serviceReload()
         # ================== domian ssl v2 part =========================
         try:
             from ssl_domainModelV2.model import DnsDomainSSL
@@ -3591,6 +3656,12 @@ listener SSL443 {
             public.writeFile(file, conf)
 
         public.M('sites').where("id=?", (id,)).setField('status', '0')
+
+        # 添加清除站点缓存,仅wp2
+        project_type = public.M('sites').where("id=?", (id,)).getField('project_type')
+        if project_type == 'WP2':
+            self.purge_all_cache(public.to_dict_obj({'s_id': id}))
+
         if not multiple:
             public.serviceReload()
         public.write_log_gettext('Site manager', 'Site [{}] stopped!', (get.name,))
@@ -4562,8 +4633,6 @@ server
                     else:
                         continue
                 data.append(tmp)
-
-        data = sorted(data, key=lambda x: x['version'], reverse=True)
         if is_http:
             return public.return_message(0, 0, data)
         return data
@@ -4600,7 +4669,7 @@ server
             site_webserver = public.M('sites').where('name=?', (siteName,)).getField('service_type')
             if (public.get_multi_webservice_status() and site_webserver == 'openlitespeed')  or public.get_webserver() == 'openlitespeed':
                 ols_php_path = os.path.join('/usr/local/lsws','lsphp' + data['phpversion'])
-                if not os.path.exists(ols_php_path):
+                if not os.path.exists(ols_php_path) and '00' not in data['phpversion']:
                     return public.return_message(-1, 0, public.lang("Warning: {} version has not been installed yet, "
                                                                     "which may affect website access to the ols service. Please try reinstalling this version or switching to the PHP version!",
                                                                     'PHP'+data['phpversion']))
@@ -7459,6 +7528,14 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         data.insert(0, {"id": 0, "name": public.lang("Default category")})
         for i in data:
             i['name'] = public.xss_version(i['name'])
+        return public.return_message(0, 0, data)
+
+    # 取网站列表
+    def get_site_list(self, get):
+        sql = public.M('sites')
+        if hasattr(get, 'search'):
+            sql = sql.where("project_type !='Node' and name like ? ",('%{search}%'.format(search=get.search),))
+        data = sql.field("id,name").order("id asc").select()
         return public.return_message(0, 0, data)
 
     # 添加网站分类
@@ -11487,18 +11564,28 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                 if os.path.exists(bar):
                     shutil.move(bar, bar + '.bar')
 
-        # 修改虚拟主机端口配置
-        site_name = public.M('sites').field('name,project_type').select()
-        for name in site_name:
-            # 判断是否是Node项目
-            if name['project_type'] == 'Node':
-                self.check_node_project(name['name'], status)
-            path = os.path.join(public.get_panel_path(), 'vhost', 'apache', name['name'] + '.conf')
+        # 修改虚拟主机端口配置，匹配所有网站配置文件，避免漏网之鱼
+        site_path_list = self.get_apache_site_conf()
+        for path in site_path_list:
             if os.path.exists(path):
                 content = public.readFile(path)
                 content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
                 content = content.replace(f'*:{port_443}', f'*:{new_port_443}')
+                content = content.replace(f'[::]:{port_80}', f'[::]:{new_port_80}')
+                content = content.replace(f'[::]:{port_443}', f'[::]:{new_port_443}')
                 public.writeFile(path, content)
+
+        # 处理node
+        site_name = public.M('sites').where('project_type = ?','Node').field('name').select()
+        for name in site_name:
+            self.check_node_project(name, status)
+
+            # path = os.path.join(public.get_panel_path(), 'vhost', 'apache', name['name'] + '.conf')
+        #     if os.path.exists(path):
+        #         content = public.readFile(path)
+        #         content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
+        #         content = content.replace(f'*:{port_443}', f'*:{new_port_443}')
+        #         public.writeFile(path, content)
 
         if os.path.exists(main_config):
             content = public.readFile(main_config)
@@ -11512,6 +11599,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             content = content.replace(f'Listen {port_888}', f'Listen {new_port_888}')
             content = content.replace(f'*:{port_888}', f'*:{new_port_888}')
             content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
+            content = content.replace(f'[::]:{port_888}', f'[::]:{new_port_888}')
+            content = content.replace(f'[::]:{port_80}', f'[::]:{new_port_80}')
             public.writeFile(httpd_vhosts, content)
 
         if os.path.exists(httpd_ssl):
@@ -11767,6 +11856,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
             if action == 'delete':
                 new_content = pattern.sub('', content)
+                public.writeFile(file_path, new_content)
 
             elif action == 'add':
                 if pattern.search(content):
@@ -11787,7 +11877,7 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
 """
                     new_content = content[:match.start()] + code_to_add + content[match.start():]
 
-            public.writeFile(file_path,new_content)
+                    public.writeFile(file_path,new_content)
             return  True
         except:
             return  False
@@ -12046,7 +12136,9 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
 
     # 服务安装统计
     def service_install_count(self, get):
-        if get.get('type', '') == 'install':
+        if get.get('type', '') == 'multi':
+            public.set_module_logs('WebServer-install', f'multi_service_install_count')
+        elif get.get('type', '') == 'single':
             public.set_module_logs('WebServer-install', f'service_install_count')
         return public.return_message(0, 0,'')
 
@@ -12178,4 +12270,19 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
                 public.writeFile(config_path, content)
 
         return True
+
+    # 获取apache所有网站配置文件
+    def get_apache_site_conf(self):
+        pata =os.path.join(public.get_panel_path() , 'vhost' ,'apache')
+        if not os.path.exists(pata):
+            return []
+
+        conf_files = []
+        for entry in os.listdir(pata):
+            full_path = os.path.join(pata, entry)
+
+            if os.path.isfile(full_path) and entry.endswith('.conf'):
+                conf_files.append(full_path)
+
+        return conf_files
     # ======================网站多服务 end==============================

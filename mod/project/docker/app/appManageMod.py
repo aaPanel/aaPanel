@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板
+# | aaPanel
 # +-------------------------------------------------------------------
-# | Copyleft (c) 2015-2099 宝塔软件(http://bt.cn) All lefts reserved.
+# | Copyleft (c) 2015-2099 aaPanel(www.aapanel.com) All lefts reserved.
 # +-------------------------------------------------------------------
 # | Author: wzz
 # | email : wzz@bt.cn
@@ -61,7 +61,11 @@ class AppManage(App):
         self.set_app_name(get.app_name)
         self.get_app_json()
         self.set_app_type()
-        self.set_app_template_path(self.app_name)
+
+        if get.get('gpu', 'false') == 'true':
+            self.set_app_template_path("{}_gpu".format(self.app_name))
+        else:
+            self.set_app_template_path(self.app_name)
         self.check_app_template(get)
         from btdockerModelV2 import setupModel as ds
         if not ds.main().get_service_status():
@@ -103,7 +107,6 @@ class AppManage(App):
                             break
 
                 if check_len != depend_len:
-                    # return public.returnResult(False, public.xxxlang("""Please install dependent applications first: {}""",",".join(["{}:{}".format(i["appname"], "/".join(i["appversion"])) for i in self.app_json["depend"]])))
                     return public.return_message(-1, 0, "Please install dependent applications first: {}".format(",".join(["{}:{}".format(i["appname"], "/".join(i["appversion"])) for i in self.app_json["depend"]])))
         else:
             if not self.app_json["depend"] is None:
@@ -135,7 +138,7 @@ class AppManage(App):
         if not self.check_yml():
             return public.return_message(-1, 0, public.lang("Initialization {} failed. It was detected that the docker-compose.yml file does not exist. Please uninstall and reinstall and try again.",self.app_name))
         self.set_compose_file()
-        public.ExecShell("chmod -R 755 {}".format(self.app_path))
+        public.ExecShell("chmod -R 755 {}/{}".format(self.app_path,self.service_name))
         public.ExecShell("echo -n > {}".format(self.app_cmd_log))
 
         self.app_info = [
@@ -168,6 +171,17 @@ class AppManage(App):
             app_cmd_log=self.app_cmd_log,
             compose_file=self.compose_file,
         ))
+        from mod.project.docker.app.gpu.tools import GPUTool
+        if get.get('gpu', 'false') == 'true' and not GPUTool.is_install_ctk():
+            cmd = ("nohup echo 'The name is starting, it may take more than 1-5 minutes...' >> {app_cmd_log};"
+                   "{install_ctk};"
+               "docker-compose -f {compose_file} up -d >> {app_cmd_log} 2>&1 && "
+               "echo 'bt_successful' >> {app_cmd_log} || echo 'bt_failed' >> {app_cmd_log} &"
+        .format(
+            app_cmd_log=self.app_cmd_log,
+            install_ctk=GPUTool.ctk_install_cmd(self.app_cmd_log),
+            compose_file=self.compose_file,
+        ))
         self.set_up_cmd(cmd)
 
         # 2024/8/7 上午11:05 处理复杂一些的应用程序配置
@@ -180,9 +194,17 @@ class AppManage(App):
             "fieldTitle": "installed log",
             "fieldValue": self.app_cmd_log,
         })
+        get.app_info.append({
+            "fieldKey": "gpu",
+            "fieldTitle": "Whether to turn on the GPU",
+            "fieldValue": True if get.get('gpu', 'false') == 'true' else False
+        })
 
         # 2023/12/5 上午 9:48 启动应用
         self.up_app()
+        create_result = {"status": 0}
+        if len(get.site_domains) > 0:
+            create_result = self.create_proxy(get)
 
         self.write_installed_json(get)
         if self.app_name in ("mysql", "mariadb"):
@@ -195,10 +217,8 @@ class AppManage(App):
         public.set_module_logs('dkapp_{}'.format(self.app_name), 'create_app', 1)
         public.set_module_logs('dkapp', 'create_app', 1)
 
-        if len(get.site_domains) > 0:
-            create_result = self.create_proxy(get)
-            if create_result["status"] == -1:
-                return public.return_message(0, 0, public.lang("The application was created successfully, but the reverse proxy creation failed. Error details: {}",create_result["message"]))
+        if create_result["status"] == -1:
+            return public.return_message(0, 0, public.lang("The application was created successfully, but the reverse proxy creation failed. Error details: {}",create_result["message"]))
 
         return public.return_message(0, 0, public.lang("The application is created successfully, waiting for the application to initialize, which may take 1-5 minutes..."))
 
@@ -239,6 +259,13 @@ class AppManage(App):
             get.depdbtype = None
             get.depmidtype = None
             get.cache_db_host = None
+            envs = None
+            if self.app_json["apptype"] == "MCP" :
+                server_path,command,envs = self.update_mcp_conf(get)
+                self.app_json["env"].append({"key": "server_path","type": "string","default": "","desc": "服务路径"})
+                self.app_json["env"].append({"key": "command","type": "string","default": "","desc": "启动命令"})
+                get.server_path = server_path
+                get.command = command
 
             if os.path.isdir("/etc/timezone"): public.ExecShell("rm -rf /etc/timezone")
             if not os.path.isfile("/etc/timezone"): public.writeFile("/etc/timezone", "Asia/Shanghai")
@@ -337,7 +364,10 @@ class AppManage(App):
                 elif ap_json["type"] in ("defaultUserName", "defaultPassWord"):
                     setattr(get, ap_json["key"], ap_json["default"])
                 elif ap_json["type"] == "domain_host":
-                    setattr(get, ap_json["key"], get.site_domains[0])
+                    if len(get.site_domains) > 0:
+                        setattr(get, ap_json["key"], get.site_domains[0])
+                    else:
+                        setattr(get, ap_json["key"], public.GetLocalIp())
                 elif ap_json["type"] == "server_ip":
                     if not hasattr(get, ap_json["key"]) or getattr(get, ap_json["key"]) is None or getattr(get, ap_json["key"]) == "":
                         setattr(get, ap_json["key"], public.GetLocalIp())
@@ -357,9 +387,10 @@ class AppManage(App):
                         get_parm=getattr(get, ap_json["key"]),
                         service_path=self.service_path))
                 else:
+                    get_parm = getattr(get, ap_json["key"]).replace('/', '\\/')
                     public.ExecShell("sed -i 's/^{field_attr}=.*/{field_attr}={get_parm}/' {service_path}/.env".format(
                         field_attr=ap_json["key"].upper(),
-                        get_parm=getattr(get, ap_json["key"]),
+                        get_parm=get_parm,
                         service_path=self.service_path))
 
                 if not ap_json["key"] in ("version", "host_ip"):
@@ -389,6 +420,7 @@ class AppManage(App):
             if self.app_json["appname"] == "mysql":
                 if get.m_version == "5":
                     command = "--character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci --explicit_defaults_for_timestamp=true --lower_case_table_names=1"
+                    if "5" in get.s_version: command = "--character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci --lower_case_table_names=1"
                     if not os.path.exists(os.path.join(self.service_path, "my.cnf")):
                         public.ExecShell("\cp -r {}/my5.cnf {}/my.cnf".format(self.app_template_path, self.service_path))
                 elif get.m_version == "9":
@@ -397,15 +429,142 @@ class AppManage(App):
                         public.ExecShell("\cp -r {}/my9.cnf {}/my.cnf".format(self.app_template_path, self.service_path))
                 else:
                     command = "--default-authentication-plugin=mysql_native_password"
+                    if get.m_version == "8" and "4" in get.s_version: command = ""
                     if not os.path.exists(os.path.join(self.service_path, "my.cnf")):
                         public.ExecShell("\cp -r {}/my8.cnf {}/my.cnf".format(self.app_template_path, self.service_path))
                 public.ExecShell("sed -i 's/^COMMAND=.*/COMMAND={}/' {}/.env".format(command, self.service_path))
-
+            if get.get("editcompose","") != "":
+                public.WriteFile(self.service_path+"/docker-compose.yml",get.editcompose)
             public.ExecShell("sed -i 's/BT_SERVICE_NAME6/{}/g' {}/*.yml".format(self.service_name, self.service_path))
+            if envs is not None:
+                self.append_compose_environment(self.service_path+"/docker-compose.yml",self.service_name,envs)
             return public.return_message(0, 0, public.lang("The updated configuration is successful"))
         except Exception as e:
             return public.return_message(-1, 0, public.lang("Failed to update configuration: {}",str(e)))
 
+    def update_mcp_conf(self,get):
+        """
+        MCP 应用的配置更新
+
+        in: get.mcp_server_config
+            {
+                "mcpServers": {
+                    "amap-maps": {
+                        "command": "npx",
+                        "args": [
+                            "-y",
+                            "@amap/amap-maps-mcp-server"
+                        ],
+                        "env": {
+                            "AMAP_MAPS_API_KEY": "您在高德官网上申请的key",
+                            "XXXX":"XXXX"
+                        }
+                    }
+                }
+            }
+        out:
+            SSE_PATH: "/amap-maps"
+            COMMAND: "npx -y @amap/amap-maps-mcp-server"
+            ENVS: {
+                    "AMAP_MAPS_API_KEY": "您在高德官网上申请的key",
+                    "XXXX":"XXXX"
+                }
+
+        """
+        mcp_server_config = json.loads(get.get("mcp_server_config"))
+        if not mcp_server_config:
+            return public.return_message(-1, 0, public.lang("MCP server misconfiguration"))
+        if not isinstance(mcp_server_config, dict):
+            return public.return_message(-1, 0, public.lang("MCP server misconfiguration"))
+        if "mcpServers" not in mcp_server_config:
+            return public.return_message(-1, 0, public.lang("MCP server misconfiguration"))
+        if not isinstance(mcp_server_config.get("mcpServers"), dict):
+            return public.return_message(-1, 0, public.lang("MCP server misconfiguration"))
+
+        # 获取 mcpServers 中的第一个服务器名称
+        server_name = list(mcp_server_config['mcpServers'].keys())[0]
+
+        # 构建 SSE_PATH
+        server_path = "/{server_path}".format(server_path=server_name)
+
+        # 获取服务器配置
+        server_config = mcp_server_config['mcpServers'][server_name]
+
+        # 构建 COMMAND
+        command = server_config['command']
+        args = " ".join(server_config['args'])
+        command = "{command} {args}".format(command=command, args=args)
+        envs = server_config.get('env',None)
+
+        return server_path, command, envs
+
+    def append_compose_environment(self,file_path, service_name, new_env):
+        """
+        设置compose文件中的env
+        @param file_path compose完整路径
+        @param service_name 要修改env的services
+        @new_env env环境 {'NEW_VAR': 'new_value', 'ANOTHER_VAR': 'another_value'}
+        @reutrn true false
+        """
+        if len(new_env.keys()) == 0:
+            return public.return_message(0, 0, "")
+
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+
+        # 找到服务的起始行
+        service_start = -1
+        for i, line in enumerate(lines):
+            if line.strip().startswith(service_name + ':'):
+                service_start = i
+                break
+        if service_start == -1:
+            return public.return_message(-1, 0, public.lang("No service found [{}] ", service_name))
+
+
+        # 找到服务块的结束行
+        service_end = len(lines)
+        for i in range(service_start + 1, len(lines)):
+            if lines[i].strip() and not lines[i].startswith(' '):
+                service_end = i
+                break
+
+        # 找到 environment: 的位置
+        env_line = -1
+        for i in range(service_start, service_end):
+            if lines[i].strip() == 'environment:':
+                env_line = i
+                break
+
+        # 确定缩进（与服务块对齐，通常为两个空格）
+        indent = '  '  # 默认缩进
+        for i in range(service_start + 1, service_end):
+            if lines[i].strip():
+                indent = lines[i][:lines[i].index(lines[i].strip())]
+                break
+
+        # 准备要插入的环境变量行
+        env_lines = ["{indent}  {key}: {value}\n".format(indent = indent,key=key, value=value) for key, value in new_env.items()]
+
+        # 插入新环境变量
+        if env_line != -1:
+            # 在 environment: 的下一行插入
+            lines[env_line + 1:env_line + 1] = env_lines
+        else:
+            # 在 image: 的上一行插入 environment: 和新环境变量
+            image_line = -1
+            for i in range(service_start, service_end):
+                if lines[i].strip().startswith('image:'):
+                    image_line = i
+                    break
+            if image_line == -1:
+                return public.return_message(-1, 0, public.lang("[{}]  No found image", service_name))
+
+            lines[image_line:image_line] = [f"{indent}environment:\n"] + env_lines
+
+        with open(file_path, 'w') as file:
+            file.writelines(lines)
+        return public.return_message(0, 0, "")
     # 2024/8/7 上午11:08 处理负责的app配置更新
     def set_complex_conf(self, get):
         if self.app_name in ("frps", "frpc"):
@@ -428,6 +587,18 @@ class AppManage(App):
                 return public.return_message(-1, 0, public.lang("Less than 1550 MB of memory prevents deepseek r 1 from being deployed"))
 
             return self.set_deepseek_r1_conf(get)
+        elif self.app_type == "MCP":
+            server_path = self.find_field_value(self.app_info,"server_path")
+            self.app_info.append({
+                "fieldKey": "local_server_url",
+                "fieldTitle": "Intranet URL",
+                "fieldValue": "http://{}:{}{}".format(public.get_local_ip(), get.c_port,server_path),
+            })
+            self.app_info.append({
+                "fieldKey": "public_server_url",
+                "fieldTitle": "Public website URL",
+                "fieldValue": "http://{}:{}{}".format(public.get_server_ip(), get.c_port,server_path),
+            })
 
         return public.return_message(0, 0, public.lang("No processing required"))
 
@@ -436,12 +607,31 @@ class AppManage(App):
         '''
             @name 处理deepseek_r1的配置
         '''
+        from mod.project.docker.app.gpu.tools import GPUTool
         command = self.app_scripts["command"].format(get.version)
-        cmd = ("nohup echo 'It is starting, and it may take more than 1-5 minutes to wait...' >> {app_cmd_log};"
+        if get.get('gpu', 'false') == 'true' and not GPUTool.is_install_ctk():
+            cmd = ("nohup echo 'It is starting, and it may take more than 1-5 minutes to wait...' >> {app_cmd_log};"
+                   "{ctk_install_cmd};"
                "docker-compose -f {compose_file} up -d >> {app_cmd_log} 2>&1 && "
                "echo 'Wait for the Ollama service to start...' >> {app_cmd_log} && "
                "until curl -sSf http://localhost:{ollama_port}/api/tags; do sleep 2; done && "
-               "echo 'Start the model deepseek-r1...' >> {app_cmd_log} && "
+                   "echo 'Start the model deepseek-r1...' >> {app_cmd_log} && "
+                   "docker-compose -f {compose_file} exec -it ollama {command} >> {app_cmd_log} 2>&1 && "
+                   "docker-compose -f {compose_file} restart >> {app_cmd_log} 2>&1 && "
+                   "echo 'bt_successful' >> {app_cmd_log} || echo 'bt_failed' >> {app_cmd_log} &"
+            .format(
+                app_cmd_log=self.app_cmd_log,
+                ctk_install_cmd=GPUTool.ctk_install_cmd(self.app_cmd_log),
+                compose_file=self.compose_file,
+                ollama_port=get.ollama_port,
+                command=command,
+            ))
+        else:
+            cmd = ("nohup echo 'It is starting, and it may take more than 1-5 minutes to wait' >> {app_cmd_log};"
+                   "docker-compose -f {compose_file} up -d >> {app_cmd_log} 2>&1 && "
+                   "echo 'Wait for the Ollama service to start...' >> {app_cmd_log} && "
+                   "until curl -sSf http://localhost:{ollama_port}/api/tags; do sleep 2; done && "
+                   "echo 'Start the model deepseek-r1...' >> {app_cmd_log} && "
                "docker-compose -f {compose_file} exec -it ollama {command} >> {app_cmd_log} 2>&1 && "
                "docker-compose -f {compose_file} restart >> {app_cmd_log} 2>&1 && "
                "echo 'bt_successful' >> {app_cmd_log} || echo 'bt_failed' >> {app_cmd_log} &"
@@ -633,7 +823,38 @@ class AppManage(App):
 
         self.set_up_cmd(cmd)
         return public.return_message(0, 0, public.lang("Updated Openvpn configuration successfully"))
+    def rebuild_mysql_database(self, get):
+        try:
+            get.db_host = get.service_name
+            get.c_port = None
+            get.mysql_root_password = None
+            get.type = "mysql"
+            # 获取已安装的mysql应用信息
+            installed_json = self.read_json(self.installed_json_file)
 
+            # 直接找到符合条件的 MySQL 应用
+            target_app = next(
+                (i for app_list in installed_json.values() for i in app_list
+                 if i["service_name"] == get.service_name and i["appname"] == "mysql"),
+                None
+            )
+
+            if target_app:
+                # 找到 MySQL 应用
+                # 获取端口
+                get.c_port = target_app["port"][0]
+
+                # 直接获取 mysql_root_password
+                get.mysql_root_password = next(
+                    (info["fieldValue"] for info in target_app["appinfo"] if info["fieldKey"] == "mysql_root_password"),
+                    None
+                )
+
+            db_sid = self.get_database_sid(get)
+            if not db_sid:
+                self.apply_database_to_panel(get)
+        except Exception as e:
+            public.print_log(str(e))
     # 2024/8/1 下午10:12 重建指定app
     def rebuild_app(self, get):
         '''
@@ -655,6 +876,9 @@ class AppManage(App):
         public.ExecShell(command)
         command = self.set_type(0).set_path(self.compose_file).get_compose_up_remove_orphans()
         public.ExecShell(command)
+        # 处理数据库容器,点击重建    解决远程数据库不存在的问题
+        if get.app_name == "mysql":
+            self.rebuild_mysql_database(get)
         return public.return_message(0, 0, public.lang("Rebuilt successfully!"))
 
     # 2024/8/2 上午11:40 获取指定app支持升级的版本
@@ -674,10 +898,10 @@ class AppManage(App):
         canupdate_version = []
         for app_type in installed_json.keys():
             for i in installed_json[app_type]:
-                if i["m_version"] in ("main", "latest"):
-                    return public.return_message(0, 0, [])
-
                 if i["id"] == get.id:
+                    if i["m_version"] in ("main", "latest"):
+                        return public.return_message(0, 0, [])
+
                     for app in self.apps_json:
                         if app["appname"] == i["appname"]:
                             for version in app["appversion"]:
@@ -932,6 +1156,8 @@ class AppManage(App):
             return self.pageResult(True, data=page_data["data"], page=page_data["page"])
 
         page_data = self.get_page(backup_json[get.id], get)
+        # 2025/1/6 15:20 时间倒序
+        page_data["data"] = sorted(page_data["data"], key=lambda x: x["backup_time"], reverse=True)
         return self.pageResult(True, data=page_data["data"], page=page_data["page"])
 
     # 2024/8/1 下午6:19 删除备份
@@ -1124,24 +1350,6 @@ class AppManage(App):
         elif get.status == "rebuild":
             return self.rebuild_app(get)
 
-    # 2024/8/1 下午3:29 构造分页数据
-    def get_page(self, data, get):
-        get.row = get.get("row", 20)
-        # get.row = 20000
-        get.p = get.get("p", 1)
-        import page
-        page = page.Page()
-        info = {'count': len(data), 'row': int(get.row), 'p': int(get.p), 'uri': {}, 'return_js': ''}
-
-        result = {'page': page.GetPage(info)}
-        n = 0
-        result['data'] = []
-        for i in range(info['count']):
-            if n >= page.ROW: break
-            if i < page.SHIFT: continue
-            n += 1
-            result['data'].append(data[i])
-        return result
 
     # 2024/8/1 下午3:40 停止指定compose服务
     def down_app(self):
@@ -1186,7 +1394,6 @@ class AppManage(App):
                         public.ExecShell("rm -rf {}".format(os.path.join(i["path"], i["service_name"])))
                         if not i["depDataBase"] is None:
                             if i["depDataBase"]["type"] in ("mysql", "mariadb"):
-                                # public.print_log("卸载传入 ---{}".format(i["depDataBase"]))
                                 self.delete_database_for_app(i["depDataBase"]["db"])
                             elif i["depDataBase"]["type"] in ("postgresql", ):
                                 self.delete_pgsql_database_for_app(i["depDataBase"]["db"])
@@ -1306,56 +1513,67 @@ class AppManage(App):
             public.ExecShell("rm -f {}".format(self.apps_json_file))
             public.ExecShell("rm -f {}".format(self.app_tags_file))
             public.ExecShell("rm -rf {}".format(self.templates_path))
+            public.ExecShell("rm -f {}".format(self.ollama_online_models_file))
             self.download_apps_json()
             self.update_ico()
         self.get_apps_json()
         if self.apps_json is None:
             return public.return_message(-1, 0, public.lang("Failed to obtain the application category, please click [Update Application List] in the upper right corner"))
+        from mod.project.docker.app.base import App
+        cbnet = App().check_baota_net()
+        if cbnet["status"] == -1: return cbnet
 
         get.app_type = get.get("app_type", "all")
-        # if get.app_type != "all" and not get.app_type in self.types:
-        #     return public.return_message(-1, 0, public.lang("Application type error, please pass in:{}!".format(",".join(self.types))))
-        get.query = get.get("query", None)
+
+        get.row = 20000
+        import re
+        query = get.get("query", None)
+        if query:
+            pattern = re.compile(
+                rf'.*{{}}.*'.format(re.escape(query)),
+                flags=re.IGNORECASE
+            )
+        else:
+            # 无查询时直接匹配所有
+            pattern = re.compile(rf'^.*$', flags=re.IGNORECASE)
 
         installed_json = self.read_json(self.installed_json_file)
 
         app_list = []
+        from mod.project.docker.apphub.apphubManage import AppHub
+        apphub_json = AppHub().get_hub_apps()
+        self.apps_json = self.apps_json + apphub_json
         for app in self.apps_json:
             if app["appstatus"] == 0: continue
             app["installedCount"] = 0
-            if get.app_type == "all":
-                if not get.query is None:
-                    if (not get.query in app["appname"] and not get.query in app["apptitle"] and
-                            not get.query in app["appdesc"]):
+            if app["apptype"] == "AI":
+                from mod.project.docker.app.gpu.tools import GPUTool
+                GPUTool.register_app_gpu_option(app)
+
+            if get.app_type in ("all", app["apptype"],"AppHub"):
+                if(get.app_type == "AppHub" and app["appid"] != -1):
                         continue
 
+                # 模糊搜索检查
+                match = False
+                if (pattern.search(app["appname"]) or
+                        pattern.search(app["apptitle"]) or
+                        pattern.search(app["appdesc"])):
+                    match = True
+
+                if not match:
+                    continue  # 不匹配则跳过
+
+                # 计算安装次数
                 if not app["reuse"] and installed_json:
                     for i in installed_json[app["apptype"]]:
-                        if i["appname"] == app["appname"]:
+                        if i["appname"] == app["appname"] and i["appid"] == app["appid"]:
                             app["installedCount"] += 1
                             break
                 elif installed_json:
                     if app["apptype"] in installed_json:
                         for i in installed_json[app["apptype"]]:
-                            if i["appname"] == app["appname"]:
-                                app["installedCount"] += 1
-
-                app_list.append(app)
-            elif app["apptype"] == get.app_type:
-                if not get.query is None:
-                    if (not get.query in app["appname"] and not get.query in app["apptitle"] and
-                            not get.query in app["appdesc"]):
-                        continue
-
-                if not app["reuse"] and installed_json:
-                    for i in installed_json[app["apptype"]]:
-                        if i["appname"] == app["appname"]:
-                            app["installedCount"] += 1
-                            break
-                elif installed_json:
-                    if app["apptype"] in installed_json:
-                        for i in installed_json[app["apptype"]]:
-                            if i["appname"] == app["appname"]:
+                            if i["appname"] == app["appname"] and i["appid"] == app["appid"]:
                                 app["installedCount"] += 1
 
                 app_list.append(app)
@@ -1473,4 +1691,65 @@ class AppManage(App):
             app_tags = self.read_json(self.app_tags_file)
         if not app_tags:
             return public.return_message(0, 0, [])
-        return  public.return_message(0, 0,app_tags)
+        return public.return_message(0, 0, app_tags)
+
+    def client_db_shell(self, get):
+        """
+        容器执行命令
+        :param get:
+        :return:
+        """
+        try:
+            if not hasattr(get, "id"):
+                return public.return_message(-1, 0, public.lang("Missing parameters! id"))
+            if not hasattr(get, "appname"):
+                return public.return_message(-1, 0, public.lang("Missing parameters! appname"))
+
+            if get.appname.strip() not in ["mysql", "redis", "postgresql", "tdengine"]:
+                return public.return_message(-1, 0, public.lang("This app link is not supported!"))
+
+            command = "docker exec -it {}"
+
+            if get.appname == "mysql":
+                command = command.format(get.id) + " mysql -uroot -p{} --socket=/tmp/mysql.sock".format(get.password)
+            elif get.appname == "redis":
+                command = command.format(get.id) + " redis-cli -a {}".format(get.password)
+            elif get.appname == "postgresql":
+                command = command.format(get.id) + " psql -U postgres"
+            elif get.appname == "tdengine":
+                command = command.format(get.id) + " taos"
+
+            return public.return_message(0, 0, command)
+        except Exception as e:
+            return public.return_message(-1, 0, public.lang('Failed to get the container'))
+
+    def get_app_compose(self,get):
+        """
+        获取应用的docker-compose.yml文件内容
+        :param get:
+        :return:
+        """
+        app_name = get.get("app_name", None)
+        appid = get.get("appid", None)
+        if app_name is None:
+            return public.return_message(-1, 0, public.lang("Missing parameters! app_name"))
+        if "." in app_name or "/" in app_name:
+            return public.return_message(-1, 0, public.lang("The app name is not legal, please do not include illegal characters!"))
+        if get.get('gpu', 'false') == 'true':
+            app_name = app_name+"_gpu"
+
+        if appid == '-1':
+            #/www/dk_project/dk_app/apphub/apphub
+            compose_path = os.path.join(self.project_path, "apphub", "apphub",app_name,"latest","docker-compose.yml")
+            self.app_template_path = compose_path
+        else:
+            #/www/dk_project/dk_app/templates
+            compose_path = os.path.join(self.project_path, "templates", app_name, "docker-compose.yml")
+            self.app_template_path = compose_path
+            self.check_app_template(get)
+
+        if not os.path.exists(compose_path):
+            return public.return_message(-1, 0, public.lang("No docker-compose.yml file found for the specified app!"))
+
+        compose_content = public.readFile(compose_path)
+        return public.return_message(0, 0, compose_content)

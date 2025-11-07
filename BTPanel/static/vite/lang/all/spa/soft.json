@@ -69,5 +69,6 @@
 	"7ddb4a46bbd21a3c5322f3679ef239bd": "El proceso de reparación hará que el sitio web sea inaccesible. ¿Quieres continuar?",
 	"f02acf9ce69d78f7502b5ab478645c6a": "Alojamiento de múltiples servidores web",
 	"ada8a81c9d7eb120155c1b33d439886e": "Por favor seleccione el servicio que desea conservar",
-	"09dd63272d4e76bf461175487ed9775a": "Después de habilitar múltiples servicios, se instalarán Apache, Nginx y Openlitespeed."
+	"09dd63272d4e76bf461175487ed9775a": "Después de habilitar múltiples servicios, se instalarán Apache, Nginx y Openlitespeed.",
+	"19cbf2cc98f5c63c5bd8a39d58c76c6e": "Esperando instalación"
 }

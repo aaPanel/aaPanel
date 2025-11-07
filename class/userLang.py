@@ -30,64 +30,7 @@ class userLang:
         settings = '{}/BTPanel/languages/settings.json'.format(public.get_panel_path())
         custom = '{}/BTPanel/static/vite/lang/my-MY'.format(public.get_panel_path())
         if not os.path.exists(settings):
-            data = {
-                "default": "en",
-                "languages": [
-                    {
-                        "name": "cht",
-                        "google": "zh-tw",
-                        "title": "繁體中文",
-                        "cn": "繁體中文"
-                    },
-                    {
-                        "name": "en",
-                        "google": "en",
-                        "title": "English",
-                        "cn": "英语"
-                    },
-                    {
-                        "name": "de",
-                        "google": "de",
-                        "title": "Deutsch",
-                        "cn": "德语"
-                    },
-                    {
-                        "name": "fra",
-                        "google": "fr",
-                        "title": "Français",
-                        "cn": "法语"
-                    },
-                    {
-                        "name": "spa",
-                        "google": "es",
-                        "title": "Español",
-                        "cn": "西班牙语"
-                    },
-                    {
-                        "name": "pt",
-                        "google": "pt",
-                        "title": "Português",
-                        "cn": "葡萄牙语"
-                    },
-                    {
-                        "name": "vie",
-                        "google": "vi",
-                        "title": "Tiếng Việt",
-                        "cn": "越南语"
-                    },
-                    {
-                        "name": "ind",
-                        "google": "id",
-                        "title": "Bahasa Indonesia",
-                        "cn": "印尼语"
-                    }, {
-                        "name": "ru",
-                        "google": "ru",
-                        "title": "Русский",
-                        "cn": "俄语"
-                    }
-                ]
-            }
+            data = public.default_languages_config()
             public.writeFile(settings, json.dumps(data))
 
         settings_content = public.readFile(settings)

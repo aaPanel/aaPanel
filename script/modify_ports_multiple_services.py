@@ -82,9 +82,6 @@ def ols_update_config(status, is_restart=True):
                     content = content.replace(pattern_ANY, '*:' + file)
                     public.writeFile(os.path.join(listen_custom_dir, filename), content)
 
-    # 重启ols
-    public.webservice_operation('openlitespeed')
-
     return True, "The ols configuration modification was successful！"
 
 
@@ -129,18 +126,21 @@ def apache_update_config(status, is_restart=True) -> tuple[bool, str]:
             if os.path.exists(bar):
                 shutil.move(bar, bar + '.bar')
 
-    # 修改虚拟主机端口配置
-    site_name = public.M('sites').field('name,project_type').select()
-    for name in site_name:
-        # 判断是否是Node项目
-        if name['project_type'] == 'Node':
-            check_node_project(name['name'], status)
-        path = os.path.join(public.get_panel_path(), 'vhost', 'apache', name['name'] + '.conf')
-        if os.path.exists(path):
-            content = public.readFile(path)
-            content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
-            content = content.replace(f'*:{port_443}', f'*:{new_port_443}')
-            public.writeFile(path, content)
+        # 修改虚拟主机端口配置，匹配所有网站配置文件
+        site_path_list = get_apache_site_conf()
+        for path in site_path_list:
+            if os.path.exists(path):
+                content = public.readFile(path)
+                content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
+                content = content.replace(f'*:{port_443}', f'*:{new_port_443}')
+                content = content.replace(f'[::]:{port_80}', f'[::]:{new_port_80}')
+                content = content.replace(f'[::]:{port_443}', f'[::]:{new_port_443}')
+                public.writeFile(path, content)
+
+        # 处理node
+        site_name = public.M('sites').where('project_type = ?', 'Node').field('name').select()
+        for name in site_name:
+            check_node_project(name, status)
 
     if os.path.exists(main_config):
         content = public.readFile(main_config)
@@ -154,14 +154,14 @@ def apache_update_config(status, is_restart=True) -> tuple[bool, str]:
         content = content.replace(f'Listen {port_888}', f'Listen {new_port_888}')
         content = content.replace(f'*:{port_888}', f'*:{new_port_888}')
         content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
+        content = content.replace(f'[::]:{port_888}', f'[::]:{new_port_888}')
+        content = content.replace(f'[::]:{port_80}', f'[::]:{new_port_80}')
         public.writeFile(httpd_vhosts, content)
 
     if os.path.exists(httpd_ssl):
         content = public.readFile(httpd_ssl)
         content = content.replace(f'{port_443}', f'{new_port_443}')
         public.writeFile(httpd_ssl, content)
-
-    ok = public.webservice_operation('apache')
 
     return True, ' '
 
@@ -178,12 +178,53 @@ def check_node_project(site_name, is_ = 'enable'):
             shutil.move(conf + '.barduo', conf )
     return True
 
+# 获取apache所有站点配置文件
+def get_apache_site_conf():
+    pata =os.path.join(public.get_panel_path() , 'vhost' ,'apache')
+    if not os.path.exists(pata):
+        return []
+
+    conf_files = []
+    for entry in os.listdir(pata):
+        full_path = os.path.join(pata, entry)
+
+        if os.path.isfile(full_path) and entry.endswith('.conf'):
+            conf_files.append(full_path)
+
+    return conf_files
+
 def multi_service_check_repair():
     try:
         # 尝试重新修改配置
         ols_update_config('enable')
         apache_update_config('enable')
-        public.webservice_operation('nginx')
+
+        # 重载服务
+        setup_path = public.get_setup_path()
+        services = [
+            (
+                f"{setup_path}/nginx/sbin/nginx",
+                "/etc/init.d/nginx reload",
+                "pkill -9 nginx && sleep 1 && /etc/init.d/nginx start"
+            ),
+            (
+                f"{setup_path}/apache/bin/apachectl",
+                "/etc/init.d/httpd reload",
+                None
+            ),
+            (
+                "/usr/local/lsws/bin/lswsctrl",
+                "/usr/local/lsws/bin/lswsctrl reload",
+                None
+            )
+        ]
+
+        for path, cmd, err_cmd in services:
+            if os.path.exists(path):
+                result = public.ExecShell(cmd)
+                if "nginx" in path and result[1].find("nginx.pid") != -1:
+                    public.ExecShell(err_cmd)
+
         public.print_log("The modification of multiple service ports has been completed")
     except Exception as e:
         public.print_log(str(e))

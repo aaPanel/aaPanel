@@ -69,5 +69,6 @@
 	"7ddb4a46bbd21a3c5322f3679ef239bd": "O processo de reparo tornará o site inacessível. Você quer continuar?",
 	"f02acf9ce69d78f7502b5ab478645c6a": "Hospedagem Multi-WebServer",
 	"ada8a81c9d7eb120155c1b33d439886e": "Selecione o serviço que deseja manter",
-	"09dd63272d4e76bf461175487ed9775a": "Depois de habilitar vários serviços, Apache, Nginx e Openlitespeed serão instalados"
+	"09dd63272d4e76bf461175487ed9775a": "Depois de habilitar vários serviços, Apache, Nginx e Openlitespeed serão instalados",
+	"19cbf2cc98f5c63c5bd8a39d58c76c6e": "Aguardando instalação"
 }

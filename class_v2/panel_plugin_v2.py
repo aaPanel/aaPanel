@@ -714,6 +714,10 @@ class panelPlugin:
                 self.set_pyenv(pluginPath + '/install.sh')
                 public.ExecShell('/bin/bash ' + pluginPath + '/install.sh uninstall')
 
+            # 监控报表补丁, 同步删除网站配置
+            if get.sName == 'monitor':
+                self.clear_site_config()
+
             if os.path.exists(pluginPath): public.ExecShell('rm -rf ' + pluginPath)
             public.write_log_gettext('Installer','Successfully uninstalled software [{}]',(pluginInfo['title'],))
             return public.return_message(0, 0, public.lang("Uninstallaton succeeded"))
@@ -3344,3 +3348,106 @@ class panelPlugin:
     def __ensure_plugin_list_obtained(self, force: bool = False):
         if force or not self.__plugin_list:
             self.__plugin_list = public.load_soft_list(force)
+
+###################监控报表补丁 start###############################
+    # 删除监控报表配置
+    def clear_site_config(self, args=None):
+        '''
+            @name 清理网站配置文件(apache,nginx)
+            @return void
+        '''
+        # 清理自定义日志格式配置文件
+        if public.get_webserver() != "nginx":
+            monitor_log_format = "{}/vhost/nginx/0.monitor_log_format.conf".format(public.get_panel_path())
+        else:  # apache的情况
+            monitor_log_format = "{}/vhost/apache/0.monitor_log_format.conf".format(public.get_panel_path())
+        if os.path.exists(monitor_log_format): os.remove(monitor_log_format)
+
+        is_reload = False
+
+        # 获取网站列表
+        site_list = public.M('sites').field('name,project_type').select()
+
+        # 遍历网站列表
+        for i in site_list:
+            SiteName = i['name']
+            project_type = i['project_type']
+            if self.del_site_config(SiteName, False, project_type):
+                is_reload = True
+
+        # 若为apache需要关闭logio模块
+        if public.get_webserver() == "apache":
+            self.close_apache_logio_module()
+            is_reload = True
+
+        if is_reload: public.serviceReload()
+
+        if args: return public.returnMsg(True, 'Configuration cleanup completed!')
+
+    def del_site_config(self, SiteName, is_reload=True, project_type="PHP"):
+        '''
+            @name 删除nginx网站配置
+            @param SiteName 站点名称
+            @return void
+        '''
+        if public.get_webserver() != "nginx":
+            if project_type == "PHP" or project_type == "docker" or project_type == "WP2":
+                config_file = '{}/vhost/nginx/{}.conf'.format(public.get_panel_path(), SiteName)
+            elif project_type == 'proxy':
+                config_file = '{}/vhost/nginx/{}.conf'.format(public.get_panel_path(), SiteName)
+            else:
+                config_file = '{}/vhost/nginx/{}_{}.conf'.format(public.get_panel_path(), project_type.lower(),
+                                                                 SiteName)
+        else:
+            if project_type == "PHP" or project_type == "docker" or project_type == "WP2":
+                config_file = '{}/vhost/apache/{}.conf'.format(public.get_panel_path(), SiteName)
+            elif project_type == 'proxy':
+                config_file = '{}/vhost/apache/{}.conf'.format(public.get_panel_path(), SiteName)
+            else:
+                config_file = '{}/vhost/apache/{}_{}.conf'.format(public.get_panel_path(), project_type.lower(),
+                                                                  SiteName)
+
+        if not os.path.exists(config_file): return False
+        config = public.readFile(config_file)
+        if not config: return False
+        config = config.strip()
+
+        # 检查是否存在配置
+        if config.find('Monitor-Config') == -1: return False
+
+        # 清理配置
+        config = re.sub(r'\s*#\s*Monitor-Config-Start.*?#Monitor-Config-End', '', config, flags=re.S)
+        config = config.strip()
+
+        # 写入配置
+        public.writeFile(config_file, config)
+
+        if is_reload: public.serviceReload()
+        return True
+
+    def close_apache_logio_module(self):
+        '''
+            @name 关闭apache logio模块
+            @return bool 成功True，失败False
+        '''
+        apache_config_file = public.get_setup_path() + "/apache/conf/httpd.conf"
+        mod_logio = "LoadModule logio_module modules/mod_logio.so"
+        # 前提文件存在
+        if os.path.exists(apache_config_file):
+            # 判断logio模块原本是否是关闭的状态
+            if os.path.exists("{}/default_logio.pl".format(public.get_plugin_path('monitor'))):
+                apache_config = public.ReadFile(apache_config_file)
+                # 直接给所有mod_logio加上注释#
+                new_apache_config = apache_config.replace(mod_logio, "#" + mod_logio)
+
+                # 写入新配置
+                public.WriteFile(apache_config_file, new_apache_config)
+                config_err = self.is_config_error()
+                # 错误则恢复旧配置
+                if config_err:
+                    public.writeFile(apache_config_file, apache_config)
+                    return False
+                return True
+        else:
+            return False
+###################监控报表补丁 end###############################

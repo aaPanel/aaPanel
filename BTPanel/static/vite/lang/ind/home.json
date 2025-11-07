@@ -98,6 +98,9 @@
 		"index_94": "Tulis tunggu",
 		"index_95": "Baca byte",
 		"index_96": "Tulis byte",
+		"systemRestartReminder": "Pengingat Mulai Ulang Sistem",
+		"serverRestartedAt": "Server Anda dimulai ulang pada {time}.",
+		"iKnow": "Aku tahu",
 		"Install": {
 			"index_1_1": "Disarankan untuk menggunakan paket satu klik berikut, silakan pilih sesuai permintaan atau {soft_} pilih sendiri, disarankan untuk menginstal LEMP.",
 			"index_1_2": "Toko perangkat lunak",

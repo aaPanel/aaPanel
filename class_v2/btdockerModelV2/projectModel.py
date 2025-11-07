@@ -91,25 +91,7 @@ class main(dockerBase):
         @param get:
         @return:
         '''
-        project_info = []
-        try:
-            if not os.path.exists(self.info_path):
-                down_info = self.__download_info(self.info_path)
-                if not down_info["status"]:
-                    return public.return_message(0, 0, project_info)
-
-            project_info = json.loads(public.readFile(self.info_path))
-            project_info.sort(key=lambda x: x["sort"])
-
-            if not os.path.exists(self.__first_pl):
-                sync_result = self.__first_sync_item(project_info)
-                for result in sync_result:
-                    if result.get("successes") and result["successes"] <= 0:
-                        return public.return_message(0, 0, project_info)
-                public.ExecShell("echo \"first\" > {}".format(self.__first_pl))
-
-        except Exception as e:
-            project_info = []
+        project_info = self._get_project_list(get)
 
         return public.return_message(0, 0, project_info)
 

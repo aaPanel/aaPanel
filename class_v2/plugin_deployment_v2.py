@@ -531,14 +531,14 @@ class plugin_deployment:
         pinfo = {
             "username": "",
             "ps": "Free and Open Source Webmail Software",
-            "php": "56,70,71,72,73,74,80",
+            "php": "72,73,74,80",
             "run": "",
             "name": "roundcube",
             "title": "Roundcube",
             "type": 6,
             "chmod": "",
             "ext": "pathinfo,exif",
-            "version": "1.5.0",
+            "version": "1.6.11",
             "install": "",
             "download": "https://node.aapanel.com/install/package/roundcubemail.zip",
             "password": "",
@@ -548,9 +548,10 @@ class plugin_deployment:
 
         # 检查本地包
         self.WriteLogs(
-            json.dumps({'name': public.GetMsg("VERIFYING_PACKAGE"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+            json.dumps({'name': "Verifying package...", 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
         # 安装包
         packageZip = 'plugin/mail_sys/' + name + '.zip'
+
         isDownload = False
         if os.path.exists(packageZip):
             md5str = self.GetFileMd5(packageZip)
@@ -561,19 +562,21 @@ class plugin_deployment:
 
         # 删除多余文件
         rm_file = path + '/index.html'
-        if os.path.exists(rm_file): os.remove(rm_file)
+        if os.path.exists(rm_file):
+            os.remove(rm_file)
 
         # 下载文件
         if isDownload:
             self.WriteLogs(
-                json.dumps({'name': public.GetMsg("DOWNLOAD"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+                json.dumps({'name': "Download", 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
             self.DownloadFile(pinfo['download'], packageZip)
 
         if not os.path.exists(packageZip):
             return public.returnMsg(False, public.lang("File download failed!"))
 
-        self.WriteLogs(json.dumps({'name': public.GetMsg("UNPACKING"), 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
+        self.WriteLogs(json.dumps({'name': "Unpacking the package...", 'total': 0, 'used': 0, 'pre': 0, 'speed': 0}))
         public.ExecShell('unzip -o ' + packageZip + ' -d ' + path + '/')
+
 
         # 设置权限
         self.WriteLogs(
@@ -614,6 +617,8 @@ class plugin_deployment:
         if os.path.exists(path + '/install.sh'):
             public.ExecShell('cd ' + path + ' && bash ' + 'install.sh')
             public.ExecShell('rm -f ' + path + '/install.sh')
+
+
 
         # 是否执行Composer
         if os.path.exists(path + '/composer.json'):
@@ -660,6 +665,7 @@ class plugin_deployment:
 
         if os.path.exists(path + '/import.sql'):
             databaseInfo = public.M('databases').where('pid=?', (find['id'],)).field('username,password').find()
+
             if databaseInfo:
                 public.ExecShell('/www/server/mysql/bin/mysql -u' + databaseInfo['username'] + ' -p' + databaseInfo[
                     'password'] + ' ' + databaseInfo['username'] + ' < ' + path + '/import.sql')

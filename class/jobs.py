@@ -142,7 +142,7 @@ def acme_crond_reinit():
         if not os.path.exists(lets_config_file): return
 
         import acme_v2
-        acme_v2.acme_v2().set_crond()
+        # acme_v2.acme_v2().set_crond()
         acme_v2.acme_v2().set_crond_v2()
     except:
         pass
@@ -401,6 +401,50 @@ def sql_pacth():
 )'''
         sql.execute(csql,())
 
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'git_sites_auth')).count():
+        csql = r"""
+        CREATE TABLE IF NOT EXISTS `git_sites_auth` (
+      `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+      `site_id` INTEGER,
+      `auth_type` REAL,
+      `oauth_access_token` REAL,
+      `oauth_scope` REAL,
+      `oauth_token_type` REAL,
+      `branch` REAL,
+      `repo` REAL,
+      `number_copies` INTEGER DEFAULT 5
+)"""
+        sql.execute(csql, ())
+
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_deploy_status')).count():
+        csql = r"""
+        CREATE TABLE IF NOT EXISTS `site_deploy_status` (
+        `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+        `site_id` INTEGER,
+        `status` INTEGER,
+        `deploy_status` INTEGER,
+        `script_path` REAL,
+        `log_path` REAL,
+        `deployment_time` REAL,
+        `execut_time` REAL,
+        `commit_hash` REAL,
+        `commit_hash_short` REAL,
+        `msg` REAL,
+        `author_name` REAL,
+        `committed_time` REAL
+    )"""
+        sql.execute(csql, ())
+
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_deploy_script')).count():
+        csql = r"""
+        CREATE TABLE IF NOT EXISTS `site_deploy_script` (
+        `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+        `site_id` INTEGER,
+        `title` REAL,
+        `script_path` REAL,
+        `is_webhook` INTEGER DEFAULT 0
+    )"""
+        sql.execute(csql, ())
 
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'messages')).count():
         csql = '''CREATE TABLE IF NOT EXISTS `messages` (

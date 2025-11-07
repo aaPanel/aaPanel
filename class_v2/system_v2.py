@@ -596,6 +596,8 @@ class system:
         otime = cache.get("otime")
         ntime = time.time()
         networkInfo = {}
+        networkInfo['hostname'] = public.get_hostname()
+        networkInfo['reboot_status'] = self.reboot_status()
         networkInfo['network'] = {}
         networkInfo['upTotal'] = 0
         networkInfo['downTotal'] = 0
@@ -1091,3 +1093,91 @@ class system:
         public.ExecShell("wget --no-check-certificate -O update.sh " + public.get_url() + "/install/update_7.x_en.sh && bash update.sh")
         self.ReWeb(None)
         return True
+
+
+    def mark_reboot_read(self, get):
+        import os
+        status_file = '{}/data/reboot_notification.json'.format(public.get_panel_path())
+
+        if not os.path.exists(status_file):
+            return public.return_message(0, 0, public.lang("No reboot record found."))
+
+
+        try:
+            reboot_notification = public.readFile(status_file)
+            if not reboot_notification.strip():
+                data = {
+                    "last_reboot_time": int(psutil.boot_time()),
+                    "status": 1 }
+            else:
+                data = json.loads(reboot_notification)
+                data['status'] = 1
+            public.writeFile(status_file, json.dumps(data, ensure_ascii=False, indent=2))
+            return public.return_message(0, 0, public.lang("Marked as read."))
+
+        except Exception as e:
+            return public.return_message(-1, 0, str(e))
+
+    def reboot_status(self):
+        """
+        检查系统重启状态
+        1. 如果是首次访问，记录当前 boot time
+        2. 如果 boot time > 记录时间，说明系统重启了，更新状态为未读
+        3. 返回最后重启时间和读取状态
+        """
+        status_file = '{}/data/reboot_notification.json'.format(public.get_panel_path())
+
+        reboot_status = {
+            "last_reboot_time": 0,
+            "status": 1
+        }
+        current_boot_time = int(psutil.boot_time())
+        if not os.path.exists(status_file):
+            initial_data = {
+                "last_reboot_time": current_boot_time,
+                "status": 1
+            }
+            try:
+                public.writeFile(status_file, json.dumps(initial_data))
+            except Exception as e:
+                print(f"Failed to create reboot status file: {e}")
+            return initial_data
+
+        try:
+            reboot_notification = public.readFile(status_file)
+            # 判断文件内容是否为空
+            if not reboot_notification.strip():
+                public.writeFile(status_file, json.dumps({
+                    "last_reboot_time": current_boot_time,
+                    "status": 1
+                }))
+                return {
+                    "last_reboot_time": current_boot_time,
+                    "status": 1
+                }
+            data = json.loads(reboot_notification)
+            last_recorded_time = data.get("last_reboot_time", 0)
+            last_status = data.get("status", 1)
+
+            # 如果系统启动时间 > 上次记录的时间 → 说明系统重启
+            if last_recorded_time > 0 and current_boot_time > last_recorded_time:
+                # 更新记录 标记未读
+                try:
+                    public.writeFile(status_file, json.dumps({
+                            "last_reboot_time": current_boot_time,
+                            "status": 0
+                        }))
+
+                    reboot_status["last_reboot_time"] = current_boot_time
+                    reboot_status["status"] = 0
+                    return reboot_status
+                except Exception as e:
+                    print(f"Failed to update reboot notification: {e}")
+
+            reboot_status["last_reboot_time"] = last_recorded_time
+            reboot_status["status"] = last_status
+
+        except Exception as e:
+            print(f"Error reading reboot status: {e}")
+
+        return reboot_status

@@ -1125,6 +1125,7 @@ class DomainObject:
                 new_get = public.dict_obj()
                 new_get.siteName = remove
                 new_get.updateOf = 1
+                new_get.reload = 0
                 try:
                     # close site's ssl conf
                     remove_res = panelSite().CloseSSLConf(new_get)

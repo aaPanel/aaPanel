@@ -98,6 +98,9 @@
 		"index_94": "Viết chờ",
 		"index_95": "Đọc byte",
 		"index_96": "Viết byte",
+		"systemRestartReminder": "Lời nhắc khởi động lại hệ thống",
+		"serverRestartedAt": "Máy chủ của bạn đã khởi động lại lúc {time}.",
+		"iKnow": "Tôi biết",
 		"Install": {
 			"index_1_1": "Được khuyến nghị sử dụng các gói một nhấp chuột sau, vui lòng chọn theo yêu cầu hoặc trong {soft_} chọn một mình, được khuyến nghị cài đặt LEMP.",
 			"index_1_2": "Cửa hàng phần mềm",

@@ -98,6 +98,9 @@
 		"index_94": "Schreiben Sie warten",
 		"index_95": "Bytes lesen",
 		"index_96": "Schreiben Sie Bytes",
+		"systemRestartReminder": "Erinnerung an den Systemneustart",
+		"serverRestartedAt": "Ihr Server wurde um {time} neu gestartet.",
+		"iKnow": "Ich weiß",
 		"Install": {
 			"index_1_1": "Empfohlen, um die folgenden One-Click-Pakete zu verwenden, wählen Sie bitte bei Bedarf oder in {Soft_} Wählen Sie alleine, empfohlen, LEMP zu installieren.",
 			"index_1_2": "Software Store",

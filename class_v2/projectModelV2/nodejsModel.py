@@ -181,7 +181,18 @@ class main(projectBase):
             return public.return_message(-1,0, return_message)
         package_file = '{}/package.json'.format(project_cwd)
         if not os.path.exists(package_file): return public.return_message(0,0,{})
-        package_info = json.loads(public.readFile(package_file))
+
+        package_content = public.readFile(package_file)
+        if not package_content:
+            return public.return_message(0, 0, {})
+
+        try:
+            package_info = json.loads(package_content)
+        except json.JSONDecodeError:
+            return public.return_message(0, 0, {})
+
+        # package_info = json.loads(public.readFile(package_file))
+
         if not 'scripts' in package_info: return public.return_message(0,0,{})
         if not package_info['scripts']: return public.return_message(0,0,{})
         return public.return_message(0,0,package_info['scripts'])

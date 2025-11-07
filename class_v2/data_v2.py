@@ -1304,145 +1304,179 @@ class data:
 
 
     def find_stored_favicons(self):
-        cur_time = int(time.time())
-        last_find_stored_favicons_time = cache.get('last_find_stored_favicons_time')
+        try:
+            cur_time = int(time.time())
+            last_find_stored_favicons_time = cache.get('last_find_stored_favicons_time')
 
-        if last_find_stored_favicons_time and cur_time - last_find_stored_favicons_time < 3600:
-            return
+            if last_find_stored_favicons_time and cur_time - last_find_stored_favicons_time < 3600:
+                return
 
-        import requests
-        import base64
+            import requests
+            import base64
+            failed_domains = cache.get('favicon_failed_domains') if cache.get('favicon_failed_domains') else {}
+            site_favs_root = os.path.join(public.get_panel_path(), "data/site_favs")
 
-        site_favs_root = os.path.join(public.get_panel_path(), "data/site_favs")
+            if not os.path.exists(site_favs_root):
+                os.makedirs(site_favs_root, 0o755)
 
-        if not os.path.exists(site_favs_root):
-            os.makedirs(site_favs_root, 0o755)
+            sites = public.S('sites').field('id', 'name', 'path').select()
 
-        sites = public.S('sites').field('id', 'name', 'path').select()
+            reg_obj = re.compile(
+                r'<link (?:rel="(?:shortcut|icon| )+" *|type="image/x-icon" *|href="([^"]+)" *)+[^>]*>')
 
-        reg_obj = re.compile(r'<link (?:rel="(?:shortcut|icon| )+" *|type="image/x-icon" *|href="([^"]+)" *)+[^>]*>')
+            for site in sites:
+                site_name = site['name']
+                site_path = site['path']
+                ico_path = os.path.join(site_path, "favicon.ico")
+                stored_ico_path = os.path.join(site_favs_root, site_name + '.ico')
 
-        for site in sites:
-            site_name = site['name']
-            site_path = site['path']
-            ico_path = os.path.join(site_path, "favicon.ico")
-            stored_ico_path = os.path.join(site_favs_root, site_name + '.ico')
+                if not os.path.exists(ico_path) and (not os.path.exists(stored_ico_path) or os.path.getmtime(stored_ico_path) < cur_time - 86400):
+                    # 尝试请求favicon.ico
+                    domains = public.S('domain').where('pid=?', (site['id'],)).field('name', 'port').select()
+                    # 只在前2个域名中查找
+                    if len(domains) > 2:
+                        domains = domains[:2]
 
-            if not os.path.exists(ico_path) and (not os.path.exists(stored_ico_path) or os.path.getmtime(stored_ico_path) < cur_time - 86400):
-                # 尝试请求favicon.ico
-                domains = public.S('domain').where('pid=?', (site['id'],)).field('name', 'port').select()
-                for domain in domains:
-                    domain_name = domain['name']
-                    port = domain['port'] if domain['port'] else 80
-                    protocol = 'https' if port == 443 else 'http'
-                    url = "{}://127.0.0.1{}/".format(protocol, ':{}'.format(port) if port not in [80, 443] else '')
+                    for domain in domains:
+                        domain_name = domain['name']
 
-                   # public.print_log('url: {} {}'.format(domain, url))
+                        # 跳过上次获取失败的域名,2小时内不重试
+                        if domain_name in failed_domains and cur_time - failed_domains[domain_name] < 3600*2:
+                            continue
 
-                    try:
-                        # 首先尝试直接请求favicon.ico
-                        ico_url = "{}/favicon.ico".format(url.strip('/'))
+                        port = domain['port'] if domain['port'] else 80
+                        protocol = 'https' if port == 443 else 'http'
+                        url = "{}://127.0.0.1{}/".format(protocol, ':{}'.format(port) if port not in [80, 443] else '')
 
-                        # public.print_log('ico_url: {}'.format(ico_url))
-
-                        # 等待500ms
-                        time.sleep(0.5)
+                        # public.print_log('url: {} {}'.format(domain, url))
 
                         try:
-                            ico_response = requests.get(ico_url, headers={
-                                'host': domain_name,
-                                'user-agent': 'aaPanel',
-                            }, verify=False, timeout=15)
+                            # 首先尝试直接请求favicon.ico
+                            ico_url = "{}/favicon.ico".format(url.strip('/'))
 
-                            if ico_response.status_code == 200 and ico_response.headers.get('Content-Type', '').lower() == 'image/x-icon':
-                                ico_content = ico_response.content
-                                with open(stored_ico_path, 'wb') as f:
-                                    f.write(ico_content)
-                                # public.print_log('Successfully fetched favicon.ico from {}'.format(ico_url))
-                                break
-                        except:
-                            pass
+                            # public.print_log('ico_url: {}'.format(ico_url))
 
-                        # 等待500ms
-                        time.sleep(0.5)
+                            # 等待1s
+                            time.sleep(1)
 
-                        max_redirects = 5
+                            try:
+                                ico_response = requests.get(ico_url, headers={
+                                    'host': domain_name,
+                                    'user-agent': 'aaPanel',
+                                }, verify=False, timeout=15)
 
-                        for _ in range(max_redirects):
-                            # 无法获取favicon.ico，尝试从首页中获取
-                            response = requests.get(url, headers={
-                                'host': domain_name,
-                                'user-agent': 'aaPanel',
-                            }, verify=False, timeout=15)
+                                if ico_response.status_code == 200 and ico_response.headers.get('Content-Type','').lower() == 'image/x-icon':
+                                    ico_content = ico_response.content
+                                    with open(stored_ico_path, 'wb') as f:
+                                        f.write(ico_content)
+                                    # public.print_log('Successfully fetched favicon.ico from {}'.format(ico_url))
+                                    break
+                            except:
+                                pass
 
-                            # 检查是否重定向
-                            if response.status_code >= 300 and response.status_code < 400:
-                                new_url = response.headers.get('location')
+                            # 等待500ms
+                            time.sleep(1)
 
-                                # 从new_url中提取域名和端口
-                                if new_url:
-                                    # public.print_log('Redirected to: {}'.format(new_url))
-                                    parsed_url = requests.utils.urlparse(new_url)
-                                    domain_name = parsed_url.netloc.split(':')[0]
+                            max_redirects = 2
+
+                            for _ in range(max_redirects):
+                                # 无法获取favicon.ico，尝试从首页中获取
+                                response = requests.get(url, headers={
+                                    'host': domain_name,
+                                    'user-agent': 'aaPanel',
+                                }, verify=False, timeout=15)
+
+                                # 检查是否重定向
+                                if response.status_code >= 300 and response.status_code < 400:
+                                    new_url = response.headers.get('location')
+
+                                    # 从new_url中提取域名和端口
+                                    if new_url:
+                                        # public.print_log('Redirected to: {}'.format(new_url))
+                                        parsed_url = requests.utils.urlparse(new_url)
+                                        domain_name = parsed_url.netloc.split(':')[0]
+                                        continue
+
+                                    # 等待500ms
+                                    time.sleep(0.5)
                                     continue
 
-                                # 等待500ms
-                                time.sleep(0.5)
-                                continue
+                                break
 
-                            break
+                            if response.status_code == 200:
+                                # 尝试从首页中获取favicon.ico
+                                m = reg_obj.search(response.text)
 
-                        if response.status_code == 200:
-                            # 尝试从首页中获取favicon.ico
-                            m = reg_obj.search(response.text)
+                                # public.print_log('matched ico_url: {}'.format(m.group(1) if m else 'None'))
 
-                            # public.print_log('matched ico_url: {}'.format(m.group(1) if m else 'None'))
-
-                            if m:
-                                ico_url = m.group(1)
-                                headers = {
+                                if m:
+                                    ico_url = m.group(1)
+                                    headers = {
                                         'user-agent': 'aaPanel',
                                     }
-                                if not ico_url.startswith('http'):
-                                    headers['host'] = domain_name
-                                    # 如果favicon.ico是相对路径，拼接完整URL
-                                    if ico_url.startswith('//') and ico_url[2:].startswith(domain_name):
-                                        ico_url = url + ico_url[2:].split('/', 2)[-1]
-                                    else:
-                                        ico_url = url + ico_url.lstrip('/')
+                                    if not ico_url.startswith('http'):
+                                        headers['host'] = domain_name
+                                        # 如果favicon.ico是相对路径，拼接完整URL
+                                        if ico_url.startswith('//') and ico_url[2:].startswith(domain_name):
+                                            ico_url = url + ico_url[2:].split('/', 2)[-1]
+                                        else:
+                                            ico_url = url + ico_url.lstrip('/')
 
-                                # 等待500ms
-                                time.sleep(0.5)
+                                    # 等待500ms
+                                    time.sleep(0.5)
 
-                                try:
-                                    ico_response = requests.get(ico_url, headers=headers, verify=False, timeout=15)
-                                    if ico_response.status_code == 200:
-                                        ico_content = ico_response.content
-                                        with open(stored_ico_path, 'wb') as f:
-                                            f.write(ico_content)
-                                        break  # 成功获取favicon.ico后跳出循环
-                                except requests.RequestException as e:
-                                    public.print_log("Error fetching favicon from {}: {}".format(ico_url, str(e)), _level='error')
+                                    try:
+                                        ico_response = requests.get(ico_url, headers=headers, verify=False, timeout=15)
+                                        if ico_response.status_code == 200:
+                                            ico_content = ico_response.content
+                                            # 校验图片格式
+                                            is_valid = False
+                                            # 检查是否为.ico
+                                            if len(ico_content) >= 4 and ico_content[:4] == b'\x00\x00\x01\x00':
+                                                is_valid = True
+                                            # 检查是否为PNG
+                                            elif len(ico_content) >= 8 and ico_content[:8] == b'\x89PNG\r\n\x1a\n':
+                                                is_valid = True
+                                            # 检查是否为JPG
+                                            elif len(ico_content) >= 3 and ico_content[:3] == b'\xff\xd8\xff':
+                                                is_valid = True
+                                            # 检查是否为GIF
+                                            elif len(ico_content) >= 6 and (
+                                                    ico_content[:6] == b'GIF87a' or ico_content[:6] == b'GIF89a'):
+                                                is_valid = True
 
-                                break  # 成功获取favicon.ico后跳出循环
-                    except requests.RequestException as e:
-                        public.print_log("Error fetching favicon for {}: {}".format(domain_name, str(e)), _level='error')
+                                            if is_valid:
+                                                with open(stored_ico_path, 'wb') as f:
+                                                    f.write(ico_content)
+                                                break
+                                    except requests.RequestException as e:
+                                        failed_domains[domain_name] = cur_time
+                                        public.print_log("Error fetching favicon from {}: {}".format(ico_url, str(e)),
+                                                         _level='error')
 
-            if not os.path.exists(ico_path):
-                # 如果仍然没有favicon.ico，尝试从存储的favicon中读取
-                if os.path.exists(stored_ico_path):
-                    ico_path = stored_ico_path
+                                    break  # 成功获取favicon.ico后跳出循环
+                        except requests.RequestException as e:
+                            public.print_log("Error fetching favicon for {}: {}".format(domain_name, str(e)),
+                                             _level='error')
 
-            if os.path.exists(ico_path):
-                try:
-                    with open(ico_path, 'rb') as f:
-                        ico_content = f.read()
-                    base64_ico = "data:image/x-icon;base64," + base64.b64encode(ico_content).decode('utf-8')
-                    public.writeFile(os.path.join(site_favs_root, site_name + '.b64'), base64_ico)
-                except Exception as e:
-                    public.print_log("Error storing favicon for {}: {}".format(site_name, str(e)), _level='error')
+                if not os.path.exists(ico_path):
+                    # 如果仍然没有favicon.ico，尝试从存储的favicon中读取
+                    if os.path.exists(stored_ico_path):
+                        ico_path = stored_ico_path
 
-        cache.set('last_find_stored_favicons_time', cur_time, timeout=3600 * 2)
+                if os.path.exists(ico_path):
+                    try:
+                        with open(ico_path, 'rb') as f:
+                            ico_content = f.read()
+                        base64_ico = "data:image/x-icon;base64," + base64.b64encode(ico_content).decode('utf-8')
+                        public.writeFile(os.path.join(site_favs_root, site_name + '.b64'), base64_ico)
+                    except Exception as e:
+                        public.print_log("Error storing favicon for {}: {}".format(site_name, str(e)), _level='error')
+
+            cache.set('favicon_failed_domains', failed_domains, timeout=3600 * 2)
+            cache.set('last_find_stored_favicons_time', cur_time, timeout=3600 * 2)
+        except Exception as e:
+            public.print_log(str(e))
 
     # 获取wp类型
     def get_wp_classification(self, get=None):

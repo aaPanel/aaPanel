@@ -19,7 +19,6 @@ try:
         g,
         request,
         cache,
-        PANEL_DEFAULT_ASSET,
     )
     import send_mail
 except:
@@ -412,20 +411,31 @@ class config:
         return public.return_message(0, 0,  data)
 
     def setPassword(self, get):
+        if not public.M('users').where("username=?", (session['username'],)).find():
+            return public.return_message(-1, 0, public.lang("Setup fail! Please try logging in again."))
         get.password1 = public.url_decode(public.rsa_decrypt(get.password1))
         get.password2 = public.url_decode(public.rsa_decrypt(get.password2))
-        if get.password1 != get.password2: return public.return_message(-1, 0, public.lang("The passwords entered twice are inconsistent, please try again!"))
-        if len(get.password1) < 5: return public.return_message(-1, 0, public.lang("Password cannot be less than 5 characters!"))
-        if not self.check_password_safe(get.password1): return public.return_message(-1, 0, public.lang("The password must be at least eight characters in length and contain at least three combinations of digits, uppercase letters, lowercase letters, and special characters"))
-        public.M('users').where("username=?", (session['username'],)).setField('password', public.password_salt(
-            public.md5(get.password1.strip()), username=session['username']))
+        if get.password1 != get.password2:
+            return public.return_message(-1, 0, public.lang("The passwords entered twice are inconsistent, please try again!"))
+        if len(get.password1) < 5:
+            return public.return_message(-1, 0, public.lang("Password cannot be less than 5 characters!"))
+        if not self.check_password_safe(get.password1):
+            return public.return_message(-1, 0, public.lang("The password must be at least eight characters in length and contain at least three combinations of digits, uppercase letters, lowercase letters, and special characters"))
+
+        if get.password1:
+            public.M('users').where("username=?", (session['username'],)).setField(
+                'password',
+                public.password_salt(public.md5(get.password1.strip()), username=session['username'])
+            )
         public.write_log_gettext('Panel configuration', 'Successfully modified password for user [{0}]!',
                                  (session['username'],))
+
         self.reload_session()
 
         # 密码过期时间
         expire_time_file = public.get_panel_path() + '/data/password_expire_time.pl'
-        if os.path.exists(expire_time_file): os.remove(expire_time_file)
+        if os.path.exists(expire_time_file):
+            os.remove(expire_time_file)
         self.get_password_config(None)
         if session.get('password_expire', False):
             session['password_expire'] = False
@@ -916,31 +926,35 @@ class config:
     def getFpmConfig(self, get):
         version = get.version
         file = public.GetConfigValue('setup_path') + "/php/" + version + "/etc/php-fpm.conf"
+        if not os.path.exists(file):
+            return public.fail_v2("The PHP-FPM configuration file does not exist.")
         conf = public.readFile(file)
+        if not conf:
+            return public.fail_v2("Failed to read the PHP-FPM configuration file.")
         data = {}
         rep = r"\s*pm.max_children\s*=\s*([0-9]+)\s*"
-        tmp = re.search(rep, conf).groups()
-        data['max_children'] = tmp[0]
+        tmp = re.search(rep, conf)
+        data['max_children'] = tmp.groups()[0] if tmp else ''
 
         rep = r"\s*pm.start_servers\s*=\s*([0-9]+)\s*"
-        tmp = re.search(rep, conf).groups()
-        data['start_servers'] = tmp[0]
+        tmp = re.search(rep, conf)
+        data['start_servers'] = tmp.groups()[0] if tmp else ''
 
         rep = r"\s*pm.min_spare_servers\s*=\s*([0-9]+)\s*"
-        tmp = re.search(rep, conf).groups()
-        data['min_spare_servers'] = tmp[0]
+        tmp = re.search(rep, conf)
+        data['min_spare_servers'] = tmp.groups()[0] if tmp else ''
 
         rep = r"\s*pm.max_spare_servers \s*=\s*([0-9]+)\s*"
-        tmp = re.search(rep, conf).groups()
-        data['max_spare_servers'] = tmp[0]
+        tmp = re.search(rep, conf)
+        data['max_spare_servers'] = tmp.groups()[0] if tmp else ''
 
         rep = r"\s*pm\s*=\s*(\w+)\s*"
-        tmp = re.search(rep, conf).groups()
-        data['pm'] = tmp[0]
+        tmp = re.search(rep, conf)
+        data['pm'] = tmp.groups()[0] if tmp else 'static'
 
         rep = r"\s*listen.allowed_clients\s*=\s*([\w\.,/]+)\s*"
-        tmp = re.search(rep, conf).groups()
-        data['allowed'] = tmp[0]
+        tmp = re.search(rep, conf)
+        data['allowed'] = tmp.groups()[0] if tmp else ''
 
         data['unix'] = 'unix'
         data['port'] = ''
@@ -2776,12 +2790,19 @@ class config:
             public.writeFile(site_total_install, 'true')
             execstr="curl https://node.aapanel.com/site_total/install.sh|bash"
             public.ExecShell(execstr)
+            if not os.path.exists("/etc/systemd/system/site_total.service"):
+                return public.return_message(-1, 0, 'Free website monitoring installation failed!')
         else:#卸载免费网站监控
             if os.path.exists(site_total_install):
                 os.remove(site_total_install)
             public.writeFile(site_total_uninstall, 'true')
             execstr="bash /www/server/site_total/scripts/uninstall.sh"
             public.ExecShell(execstr)
+            if os.path.exists("/www/server/apache/bin/httpd"):
+                public.ExecShell("rm -f /www/server/panel/vhost/apache/extension/*/site_total.conf")
+                public.ExecShell('pkill -9 httpd')
+                public.ExecShell('/etc/init.d/httpd start')
+                time.sleep(0.5)
             if os.path.exists("/etc/systemd/system/site_total.service"):
                 return public.return_message(-1, 0, "Setup failed, please manually uninstall the site_total_monitor!")
 
@@ -3717,64 +3738,19 @@ class config:
 
         settings = '{}/BTPanel/languages/settings.json'.format(public.get_panel_path())
         custom = '{}/BTPanel/static/vite/lang/my-MY'.format(public.get_panel_path())
-        data = {
-            "default": "en",
-            "languages": [
-                {
-                    "name": "cht",
-                    "google": "zh-tw",
-                    "title": "繁體中文",
-                    "cn": "繁體中文"
-                },
-                {
-                    "name": "en",
-                    "google": "en",
-                    "title": "English",
-                    "cn": "英语"
-                },
-                {
-                    "name": "de",
-                    "google": "de",
-                    "title": "Deutsch",
-                    "cn": "德语"
-                },
-                {
-                    "name": "fra",
-                    "google": "fr",
-                    "title": "Français",
-                    "cn": "法语"
-                },
-                {
-                    "name": "spa",
-                    "google": "es",
-                    "title": "Español",
-                    "cn": "西班牙语"
-                },
-                {
-                    "name": "pt",
-                    "google": "pt",
-                    "title": "Português",
-                    "cn": "葡萄牙语"
-                },
-                {
-                    "name": "vie",
-                    "google": "vi",
-                    "title": "Tiếng Việt",
-                    "cn": "越南语"
-                },
-                {
-                    "name": "ind",
-                    "google": "id",
-                    "title": "Bahasa Indonesia",
-                    "cn": "印尼语"
-                }, {
-                    "name": "ru",
-                    "google": "ru",
-                    "title": "Русский",
-                    "cn": "俄语"
-                }
-            ]
-        }
+        default_data = public.default_languages_config()
+
+        file_content = public.readFile(settings)
+        if not file_content:
+            public.writeFile(settings, json.dumps(default_data))
+            data = default_data
+        else:
+            try:
+                data = json.loads(file_content)
+            except json.JSONDecodeError:
+                public.writeFile(settings, json.dumps(default_data))
+                data = default_data
+
         setlang = "/www/server/panel/BTPanel/languages/language.pl"
 
         if os.path.exists(setlang):
@@ -3782,13 +3758,6 @@ class config:
             if olang:
                 data['default'] = olang
 
-        if not os.path.exists(settings):
-            public.writeFile(settings, json.dumps(data))
-        else:
-            if not public.readFile(settings):
-                public.writeFile(settings, json.dumps(data))
-
-        data = json.loads(public.readFile(settings))
         if os.path.exists(custom):
             data['languages'].append({
                 "name": "my",
@@ -3957,6 +3926,7 @@ class config:
         if cache:
             cache.delete("panel_asset_config")
 
+        from BTPanel import PANEL_DEFAULT_ASSET
         # 定义允许的配置字段映射
         allowed_fields = set(PANEL_DEFAULT_ASSET.keys())
         try:
@@ -3988,10 +3958,33 @@ class config:
         except Exception as e:
             public.print_log(f"get_panel_asset cache error: {e}")
 
-        # 合法的字段和默认值
-        default_values = {
-            k: v for k, v in PANEL_DEFAULT_ASSET.items()
-        }
+        try:
+            from BTPanel import PANEL_DEFAULT_ASSET
+            # 合法的字段和默认值
+            default_values = {
+                k: v for k, v in PANEL_DEFAULT_ASSET.items()
+            }
+        except:
+            default_values = {
+                'favicon': '/static/favicon.ico',  # 默认网站favicon图标
+                'show_login_logo': True,  # 默认不显示登录logo
+                'show_login_bg_images': False,  # 默认不显示登录背景图片
+                'login_logo': '/static/icons/logo-green.svg',  # 默认登录logo图片
+                'login_bg_images': '',  # 默认登录背景图片
+                'login_bg_images_opacity': 100,  # 默认登录背景图片透明度
+                'show_main_bg_images': True,  # 默认不显示主界面背景图
+                'main_bg_images': '/static/icons/main_bg.png',  # 主界面背景图
+                'main_bg_images_opacity': 100,  # 主界面背景图透明度
+                'main_content_opacity': 100,  # 主界面内容透明度
+                'main_shadow_color': '#000000',  # 主界面阴影颜色
+                'main_shadow_opacity': 5,  # 主界面阴影透明度
+                'menu_logo': '/static/icons/menu_logo.png',  # 菜单栏顶部logo图标
+                'menu_bg_opacity': 100,  # 默认侧边栏背景透明度
+                'theme_color': '#3c444d',  # 默认主色
+                'theme_name': 'default',  # 默认主题名称
+                'home_state_font_size': 24,  # 首页概览字体大小
+                'main_bg_images_dark': '/static/icons/main_bg_dark.png',  # 这个是用来搞黑暗模式的
+            }
         # 旧字段与新字段的映射
         old_to_new = {
             'bg_images': 'login_bg_images',

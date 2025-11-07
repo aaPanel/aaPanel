@@ -69,7 +69,23 @@
 			"index_5": "Criar em",
 			"index_6": "{0} CPU e visão geral da memória",
 			"index_7": "Esconder",
-			"index_8": "Mostrar"
+			"index_8": "Mostrar",
+			"overviewTitle": "Visão geral dos recursos",
+			"containerCount": "Recipientes",
+			"spaceUsed": "Espaço utilizado",
+			"composeCount": "Compor",
+			"composeProjects": "Projetos Docker Compose",
+			"imageCount": "Imagens",
+			"networkCount": "Redes",
+			"networksCreated": "Redes criadas",
+			"volumeCount": "Volumes",
+			"mirrorRepoCount": "Registros",
+			"repositoriesConfigured": "Repositórios configurados",
+			"containerList": "Lista de contêineres",
+			"filterAll": "Todos",
+			"filterRunning": "Correndo",
+			"filterStopped": "Parou",
+			"searchPlaceholder": "Pesquise o nome do contêiner ou o nome da imagem"
 		},
 		"Container": {
 			"index_1": "Criar contêiner",
@@ -358,9 +374,42 @@
 				"index_10": "Memória",
 				"index_11": "Cache",
 				"index_12": "Ler",
-				"index_13": "escrever",
+				"index_13": "Escrever",
 				"index_14": "A montante",
 				"index_15": "A jusante"
+			},
+			"search": {
+				"placeholder": "Pesquisar nome do contêiner, ID, imagem do contêiner"
+			},
+			"batch": {
+				"start": {
+					"title": "Contêineres de início em lote",
+					"desc": "Iniciar em lote os contêineres selecionados, continuar a operação?"
+				},
+				"restart": {
+					"title": "Contêineres de reinicialização em lote",
+					"desc": "Reiniciar em lote os contêineres selecionados, continuar a operação?"
+				},
+				"stop": {
+					"title": "Contêineres de parada de lote",
+					"desc": "Parar em lote os contêineres selecionados, continuar a operação?"
+				},
+				"kill": {
+					"title": "Contêineres de parada forçada em lote",
+					"desc": "Bater forçar a parada de contêineres selecionados, continuar a operação?"
+				},
+				"pause": {
+					"title": "Contêineres de pausa em lote",
+					"desc": "Pausar contêineres selecionados em lote, continuar operação?"
+				},
+				"unpause": {
+					"title": "Contêineres de currículo em lote",
+					"desc": "O lote retoma os contêineres selecionados, continua a operação?"
+				},
+				"del": {
+					"title": "Excluir contêineres em lote",
+					"desc": "Excluir em lote os contêineres selecionados, continuar a operação?"
+				}
 			}
 		},
 		"CloudImage": {
@@ -375,7 +424,25 @@
 			"index_10": "Puxar",
 			"index_11": "Criar contêiner",
 			"index_12": "Excluir imagem [{0}]",
-			"index_13": "Tem certeza de que deseja excluir a imagem [{0}]?"
+			"index_13": "Tem certeza de que deseja excluir a imagem [{0}]?",
+			"detail": {
+				"lastUpdated": "Última atualização:",
+				"isOfficial": "Imagem Oficial:",
+				"source": "Fonte:",
+				"dockerHub": "DockerHub",
+				"pullsCount": "Puxa:",
+				"selectPlaceholder": "Selecione ou pesquise a imagem",
+				"pullButton": "Puxar",
+				"yes": "Sim",
+				"no": "Não",
+				"updated": "Atualizado",
+				"selectImageError": "Selecione uma imagem",
+				"pullImageTitle": "Puxar imagem"
+			},
+			"pull": {
+				"success": "Extração bem-sucedida",
+				"failed": "Falha ao puxar"
+			}
 		},
 		"LocalImage": {
 			"index_1": "Puxe do repositório",
@@ -401,6 +468,10 @@
 			"index_22": "Caminho",
 			"index_23": "Por favor, insira o caminho da imagem",
 			"index_24": "Você realmente quer excluir o espelho [{0}]?",
+			"searchPlaceholder": "Pesquise nome da imagem, ID, contêineres em uso",
+			"batchDelete": "Excluir lote",
+			"batchDeleteTitle": "Excluir imagens do projeto em lote",
+			"batchDeleteDesc": "Excluir em lote as imagens do projeto selecionadas, continuar a operação?",
 			"push_1": "Nome do repositório",
 			"push_2": "Marcação",
 			"push_3": "Por favor, insira a tag, por exemplo: Imagem: V1",
@@ -663,6 +734,47 @@
 			"index_31": "Depois de definir o intervalo, o Docker precisa ser reiniciado. Certifique -se de reiniciar o Docker antes de prosseguir.",
 			"index_32": "Defina o intervalo IPv6",
 			"index_33": "Após a configuração, o Docker precisa ser reiniciado. Certifique -se de reiniciar o Docker antes de prosseguir. Você quer continuar?",
+			"cgroupDriver": "driver cgroup",
+			"setCgroupDriverTitle": "Definir driver cgroup",
+			"setCgroupDriverConfirm": "Após configurar o driver cgroup, o Docker precisa ser reiniciado. Certifique-se de reiniciar o Docker antes de continuar. Você quer continuar?",
+			"logRotation": "Rotação de registro",
+			"logRotationSet": "Definir rotação de log",
+			"logRotationSummary": "* Tamanho do arquivo de registro {size}MB, retém {num} cópias",
+			"closeLogRotationTitle": "Desativar rotação de log",
+			"closeLogRotationConfirm": "Depois de desabilitar a rotação de log, o Docker precisa ser reiniciado. Certifique-se de reiniciar o Docker antes de continuar. Você quer continuar?",
+			"logRotationConfig": {
+				"fileSize": "Tamanho do arquivo",
+				"retainCount": "Reter contagem",
+				"unitMB": "MB",
+				"unitCount": "arquivos",
+				"fileSizeRequired": "Por favor insira o tamanho do arquivo",
+				"retainCountRequired": "Insira a contagem retida",
+				"configTip1": "A configuração atual afetará apenas os contêineres recém-criados. Os contêineres existentes precisam ser recriados para que a configuração entre em vigor",
+				"configTip2": "Se o seu contêiner contiver dados importantes, faça backup antes de executar operações de reconstrução"
+			},
+			"iptables": {
+				"description": "* Configuração automática de regras de iptables do Docker",
+				"enableTitle": "Habilitar tabelas de ip",
+				"disableTitle": "Desativar tabelas de ip",
+				"enableConfirm": "Depois de habilitar o iptables, o Docker precisa ser reiniciado. Certifique-se de reiniciar o Docker antes de continuar. Você quer continuar?",
+				"disableConfirm": "Depois de desabilitar o iptables, o Docker precisa ser reiniciado. Certifique-se de reiniciar o Docker antes de continuar. Você quer continuar?"
+			},
+			"liveRestore": {
+				"description": "* Quando ativado, preserva o estado dos contêineres em execução quando o daemon do Docker para inesperadamente ou trava",
+				"enableTitle": "Habilitar live_restore",
+				"disableTitle": "Desativar live_restore",
+				"enableConfirm": "Depois de ativar o live_restore, o Docker precisa ser reiniciado. Certifique-se de reiniciar o Docker antes de continuar. Você quer continuar?",
+				"disableConfirm": "Após desabilitar o live_restore, o Docker precisa ser reiniciado. Certifique-se de reiniciar o Docker antes de continuar. Você quer continuar?"
+			},
+			"registry": {
+				"label": "Registro Privado",
+				"placeholder": "Endereço de registro privado do Docker",
+				"modalTitle": "Definir registro privado",
+				"configPlaceholder": "Insira endereços de registro privados, um por linha, por exemplo:\n192.168.1.111:8087\n192.168.1.112:8087",
+				"restartTip": "* Docker será reiniciado após configuração",
+				"restartTitle": "Reinicie o Docker",
+				"restartConfirm": "O Docker será reiniciado. Você quer continuar?"
+			},
 			"compose": {
 				"index_1": "Caminho",
 				"index_2": "Selecione o caminho para o arquivo de composição",
@@ -673,7 +785,35 @@
 				"index_2": "Priorize o uso de URLs acelerados para executar operações, o tempo limite de solicitação será ignorado usando o método de aceleração padrão",
 				"index_3": "Você precisa reiniciar manualmente o Docker depois de configurar a aceleração",
 				"index_4": "Desative a aceleração, por favor, defina -se para esvaziar",
-				"index_5": "Sem aceleração"
+				"index_5": "Sem aceleração",
+				"confirmTitle": "Definir URL de aceleração",
+				"confirmContent": "O Docker precisa ser reiniciado após a configuração. Certifique-se de que o Docker possa ser reiniciado antes de continuar!"
+			},
+			"path": {
+				"label": "Diretório de instalação com um clique",
+				"modifyButton": "Modificar",
+				"disabledTip": "Os aplicativos já existem, não podem ser modificados",
+				"validationError": "Por favor insira um caminho de diretório válido!",
+				"confirmTitle": "Modificar diretório da App Store",
+				"confirmContent": "Modificar o diretório da app store reiniciará o painel. Você quer continuar?"
+			},
+			"systemInfo": {
+				"hostname": "Nome do host",
+				"systemVersion": "Versão do sistema",
+				"architecture": "Arquitetura",
+				"kernelVersion": "Versão do kernel",
+				"cpuCore": "Núcleo da CPU",
+				"memorySize": "Tamanho da memória",
+				"dockerVersion": "Versão do Docker",
+				"dockerComposeVersion": "Versão do Docker Compose",
+				"unixAddress": "Endereço Unix",
+				"dataDirectory": "Diretório de dados",
+				"updateButton": "Atualizar",
+				"updateComposeTitle": "Atualizar versão do Docker Compose",
+				"updateComposeContent": "Você deseja atualizar a versão do Docker Compose?",
+				"updateLogsTitle": "Atualizar registros",
+				"updateSuccess": "Atualização bem-sucedida",
+				"updateFailed": "Falha na atualização"
 			}
 		},
 		"install": {

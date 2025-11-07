@@ -98,6 +98,9 @@
 		"index_94": "寫入延遲",
 		"index_95": "讀取字節數",
 		"index_96": "寫入字節數",
+		"systemRestartReminder": "系統重啟提醒",
+		"serverRestartedAt": "您的服務器在 {time} 發生了重新啟動。",
+		"iKnow": "我知道了",
 		"Install": {
 			"index_1_1": "我們為您推薦以下一鍵套件，請按需選擇或在{soft_}頁面中自動選擇，推薦安裝LNMP。",
 			"index_1_2": "軟件商店",

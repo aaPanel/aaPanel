@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -81,6 +81,18 @@ class Compose():
         else:
             return [self.cmd, '-f', self.path, 'down']
 
+    def kill_compose(self) -> List[str] or str:
+        if self.type == 0:
+            return self.cmd + ' -f {} kill'.format(self.path)
+        else:
+            return [self.cmd, '-f', self.path, 'kill']
+
+    def rm_compose(self) -> List[str] or str:
+        if self.type == 0:
+            return self.cmd + ' -f {} rm -f'.format(self.path)
+        else:
+            return [self.cmd, '-f', self.path, 'rm', '-f']
+
     def get_compose_delete(self) -> List[str] or str:
         if self.type == 0:
             return self.cmd + ' -f {} down --volumes --remove-orphans'.format(self.path)
@@ -158,6 +170,50 @@ class Compose():
         # public.print_log("wsResult rs -- {}  ".format(rs))
         return rs
 
+    # 2024/8/1 下午3:29 构造分页数据
+    def get_page(self, data, get):
+        get.row = get.get("row", 20)
+        # get.row = 20000
+        get.p = get.get("p", 1)
+        import page
+        page = page.Page()
+        info = {'count': len(data), 'row': int(get.row), 'p': int(get.p), 'uri': {}, 'return_js': ''}
+
+        result = {'page': page.GetPage(info)}
+        n = 0
+        result['data'] = []
+        for i in range(info['count']):
+            if n >= page.ROW: break
+            if i < page.SHIFT: continue
+            n += 1
+            result['data'].append(data[i])
+        return result
+
+    # 2024/7/29 下午4:22 检查web服务是否正常
+    def check_web_status(self):
+        '''
+            @name 检查web服务是否正常
+            @param "data":{"参数名":""} <数据类型> 参数描述
+            @return dict{"status":True/False,"msg":"提示信息"}
+        '''
+        from mod.base.web_conf import util
+        webserver = util.webserver()
+        if webserver != "nginx" or webserver is None:
+            return public.returnResult(status=False, msg="Domain name access only supports Nginx. Please go to the software store to install Nginx or choose not to use domain name access!")
+
+        from panelSite import panelSite
+        site_obj = panelSite()
+        site_obj.check_default()
+
+        wc_err = public.checkWebConfig()
+        if not wc_err:
+            return public.returnResult(
+                status=False,
+                msg='ERROR: An error in the configuration file has been detected. Please eliminate it before proceeding. <br><br><a style="color:red;">' +
+                    wc_err.replace("\n", '<br>') + '</a>'
+            )
+
+        return public.return_message(0, 0, '')
     def pageResult(self, status: bool = True,
                    msg: str = "",
                    data: any = None,

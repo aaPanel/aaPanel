@@ -1206,7 +1206,6 @@ class panelSSL:
             public.writeFile(csrpath, result['fullchain'])
             import panel_site_v2 as panelSite
             panelSite.panelSite().SetSSLConf(get)
-            public.serviceReload()
             return public.return_message(0, 0, public.lang("Setup successfully!"))
         except Exception as ex:
             import traceback

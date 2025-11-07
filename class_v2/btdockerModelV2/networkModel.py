@@ -303,3 +303,82 @@ class main(dockerBase):
             if "network" in str(e) and "Not Found" in str(e):
                 return public.return_message(-1, 0, public.lang("Network ID: {}, does not exist!", get.id))
             return public.return_message(-1, 0, public.lang("Failed to connect to network! {}", str(e)))
+    # 2024/11/27 14:37 创建网络
+    def create_network(self, get):
+        '''
+            @name 创建网络
+        '''
+        get.subnet = get.get("subnet", "")
+        get.gateway = get.get("gateway", "")
+        get.iprange = get.get("iprange", "")
+        get.subnet_v6 = get.get("subnet_v6", "")
+        get.gateway_v6 = get.get("gateway_v6", "")
+        get.v6_status = get.get("status", 0)
+
+        get.name = get.get("name", None)
+        if get.name is None: return public.return_message(-1, 0, public.lang("The network name cannot be empty!"))
+
+        get.driver = get.get("driver", "bridge")
+        get.options = get.get("options", "")
+
+        ipam_pool4 = {}
+        ipam_pool6 = {}
+        if get.subnet != "":
+            if get.gateway == "": return public.return_message(-1, 0, public.lang("Gateways can't be empty!"))
+            if get.iprange == "": return public.return_message(-1, 0, public.lang("IP ranges cannot be empty!"))
+
+            ipam_pool4 = {
+                "subnet": get.subnet,
+                "gateway": get.gateway,
+                "iprange": get.iprange
+            }
+
+        if get.v6_status != 0:
+            ipam_pool6 = {
+                "subnet": get.subnet_v6,
+                "gateway": get.gateway_v6,
+            }
+
+        if not ipam_pool4 and not ipam_pool6:
+            get.ipam = None
+        elif not ipam_pool6:
+            get.ipam = {
+                "Driver": "default",
+                "Config": [{
+                    "Subnet": get.subnet,
+                    "Gateway": get.gateway,
+                    "IPRange": get.iprange
+                }]
+            }
+        else:
+            get.ipam = {
+                "Driver": "default",
+                "Config": [{
+                    "Subnet": get.subnet,
+                    "Gateway": get.gateway,
+                    "IPRange": get.iprange
+                }, {
+                    "Subnet": get.subnet_v6,
+                    "Gateway": get.gateway_v6,
+                }]
+            }
+
+        get.post_data = {
+            "name": get.name,
+            "options": None,
+            "driver": get.driver,
+            "ipam": get.ipam,
+            "enable_ipv6": bool(get.v6_status),
+        }
+
+        from btdockerModelV2.dockerSock import network
+        sk_network = network.dockerNetWork()
+        create_network = sk_network.create_network(get)
+
+        if not create_network:
+            return public.return_message(-1, 0, public.lang("Creating a network failed!"))
+        if "message" in create_network:
+            if "already exists" in create_network["message"]:
+                return public.return_message(-1, 0, public.lang("Network name: [{}] already exists!".format(get.name)))
+            return public.return_message(-1, 0,  create_network["message"])
+        return public.return_message(0, 0, public.lang("Create a network successfully!"))

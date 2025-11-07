@@ -98,6 +98,9 @@
 		"index_94": "대기를 작성하십시오",
 		"index_95": "바이트를 읽으십시오",
 		"index_96": "바이트를 작성하십시오",
+		"systemRestartReminder": "시스템 재시작 알림",
+		"serverRestartedAt": "귀하의 서버가 {time}에 다시 시작되었습니다.",
+		"iKnow": "알아요",
 		"Install": {
 			"index_1_1": "다음 1 클릭 패키지를 사용하는 것이 좋습니다. 주문시 또는 {soft_}에서 직접 선택하여 LEMP를 설치하는 것이 좋습니다.",
 			"index_1_2": "소프트웨어 스토어",

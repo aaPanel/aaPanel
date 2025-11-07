@@ -1,8 +1,8 @@
 # coding: utf-8
 # -------------------------------------------------------------------
-# 宝塔Linux面板
+# aaPanel
 # -------------------------------------------------------------------
-# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
 # -------------------------------------------------------------------
 # Author: wzz <wzz@bt.cn>
 # -------------------------------------------------------------------
@@ -21,8 +21,14 @@ if "/www/server/panel/class" not in sys.path:
 import public
 from mod.project.docker.composeMod import main as composeMod
 
-
+dk_project_path="/www/dk_project"
+project_path_file = "{}/class_v2/btdockerModelV2/config/project_path.pl".format(public.get_panel_path())
+if os.path.exists(project_path_file):
+    path = public.readFile(project_path_file)
+    if path:
+        dk_project_path = path.strip()
 class App(composeMod):
+    dk_project_path = dk_project_path
 
     def __init__(self):
         super(App, self).__init__()
@@ -48,12 +54,12 @@ class App(composeMod):
         self.app_path = None
         self.service_path = None
         self.plugin_path = None
-        self.project_path = "/www/dk_project/dk_app"
+        self.project_path = os.path.join(self.dk_project_path, "dk_app")
         if not os.path.exists(self.project_path):
             public.ExecShell("mkdir -p {}".format(self.project_path))
+        self.ollama_online_models_file = "{}/ollama_online_models.json".format(self.project_path)
         self.templates_path = os.path.join(self.project_path, "templates")
         self.app_template_path = None
-        self.add_proxy = False
         self.delete_pl = False
         self.r_id = False
         self.user_conf_file = None
@@ -108,7 +114,7 @@ class App(composeMod):
         self.app_version = None
         self.plugin_version = None
         self.app_type = None
-        self.backup_path = "/www/dk_project/backup"
+        self.backup_path = os.path.join(self.dk_project_path, "backup")
         self.apps_backup_path = os.path.join(self.backup_path, "apps")
         self.service_backup_path = None
         self.backup_conf = {
@@ -285,7 +291,7 @@ class App(composeMod):
                     self.r_id = result['id']
                     break
 
-        self.add_proxy = True
+
         return public.return_message(0, 0, '')
 
     # 2024/7/2 上午10:40 检查wordpress的compose.yml文件是否存在
@@ -351,31 +357,6 @@ class App(composeMod):
                 return public.return_message(-1, 0, public.lang("Failed to create a baota net network. err: {}",stderr))
         return public.return_message(0, 0, '')
 
-    # 2024/7/29 下午4:22 检查web服务是否正常
-    def check_web_status(self):
-        '''
-            @name 检查web服务是否正常
-            @param "data":{"参数名":""} <数据类型> 参数描述
-            @return dict{"status":True/False,"msg":"提示信息"}
-        '''
-        from mod.base.web_conf import util
-        webserver = util.webserver()
-        if webserver != "nginx" or webserver is None:
-            return public.returnResult(status=False, msg="Domain name access only supports Nginx. Please go to the software store to install Nginx or choose not to use domain name access!")
-
-        from panelSite import panelSite
-        site_obj = panelSite()
-        site_obj.check_default()
-
-        wc_err = public.checkWebConfig()
-        if not wc_err:
-            return public.returnResult(
-                status=False,
-                msg='ERROR: An error in the configuration file has been detected. Please eliminate it before proceeding. <br><br><a style="color:red;">' +
-                    wc_err.replace("\n", '<br>') + '</a>'
-            )
-
-        return public.return_message(0, 0, '')
 
     # 2024/7/29 下午4:32 检查端口是否被其他进程占用而非本应用
     def check_port(self, get):
@@ -410,7 +391,7 @@ class App(composeMod):
                 from safeModel.firewallModel import main as firewall_main
                 get.port = str(get.c_port)
                 res_dict = firewall_main().get_listening_processes(get)
-                return public.return_message(-1, 0, public.lang("The {} port has been occupied by [{}], please change the port!",self.app_name.replace("dk_", ""), res_dict.get("process_name")))
+                return public.return_message(-1, 0, public.lang("The {} port has been occupied by [{}], please change the port!", get.port, res_dict.get("process_name")))
 
         return public.return_message(0, 0, '') 
 
@@ -641,6 +622,8 @@ class App(composeMod):
         from database import database
         db_list = database().GetCloudServer(get)
         for db in db_list:
+            if "db_type" not in db:
+                continue
             if db["ps"] == self.service_name:
                 get.id = db['id']
                 database().RemoveCloudServer(get)
@@ -681,7 +664,6 @@ class App(composeMod):
         args.db_type = "mysql"
         try:
             db_list = dataModel().get_data_list(args)
-            # public.print_log("卸载传入222 db_list---{}".format(db_list))
         except:
             public.print_log(public.get_error_info())
 
@@ -750,7 +732,39 @@ class App(composeMod):
         '''
         installed_apps = []
         current_timestamp = int(time.time())
+        # from btdockerModelV2 import dk_public as dp
+        server_ip = public.GetLocalIp()
         for i in installed_json[app_type]:
+            i["server_ip"] = server_ip
+            # if not "site_id" in i.keys():
+            #     i["site_id"] = None
+            #     i["site_name"] = None
+            #     i["site_addtime"] = None
+
+            # if not i["domain"] is None and i["site_id"] is None:
+            #     find_result = dp.sql("docker_sites").where("name=?", (i["domain"],)).find()
+            #     if find_result:
+            #         i["site_id"] = find_result["id"]
+            #         i["site_name"] = i["domain"]
+            #         i["site_addtime"] = find_result["addtime"]
+            #     else:
+            #         # 2024/11/21 15:18 如果网站没了则不显示域名
+            #         i["domain"] = None
+            #         # 2024/11/21 15:08 如果id查询异常则尝试重新添加一个网站；先不使用，用上面的逻辑
+            #         # from mod.project.docker.sites.sitesManage import SitesManage
+            #         # site_manage = SitesManage()
+            #         #
+            #         # args = public.to_dict_obj({
+            #         #     "name": i["service_name"],
+            #         #     "type": "app",
+            #         #     "domains": i["domain"],
+            #         #     "port": i["port"][0],
+            #         #     "remark": i["domain"],
+            #         # })
+            #         # create_result = site_manage.create_site(args)
+            #         # # 2024/11/21 15:14 如果网站无法创建就不显示域名了
+            #         # if not create_result['status']: i["domain"] = None
+
             i["createTime"] = i["createat"]
             time_diff = current_timestamp - i["createat"]
             time_diff_delta = timedelta(seconds=time_diff)
@@ -780,6 +794,7 @@ class App(composeMod):
                 continue
 
             for j in sk_container_list:
+                i["container_id"] = j["Id"]
                 if not "createdBy" in j["Labels"].keys():
                     continue
                 if j["Labels"]["createdBy"] != "bt_apps":
@@ -796,16 +811,19 @@ class App(composeMod):
                     break
             else:
                 if os.path.exists("/tmp/{}.log".format(i["service_name"])):
-                    check_bt_successful = public.ExecShell("cat /tmp/{}.log | grep bt_successful".format(i["service_name"]))[0]
+                    check_bt_successful = \
+                    public.ExecShell("cat /tmp/{}.log | grep bt_successful".format(i["service_name"]))[0]
                     if check_bt_successful == "":
-                        check_bt_failed = public.ExecShell("cat /tmp/{}.log | grep bt_failed".format(i["service_name"]))[0]
+                        check_bt_failed = \
+                        public.ExecShell("cat /tmp/{}.log | grep bt_failed".format(i["service_name"]))[0]
                         if check_bt_failed != "":
                             i["status"] = "exited"
                         else:
                             i["status"] = "initializing"
                     else:
                         if i["appname"] == "sftpgo":
-                            check_started = public.ExecShell("cat /tmp/{}.log | grep Started".format(i["service_name"]))[0]
+                            check_started = \
+                            public.ExecShell("cat /tmp/{}.log | grep Started".format(i["service_name"]))[0]
                             if check_started =="":
                                 i["status"] = "initializing"
                         else:
@@ -831,20 +849,22 @@ class App(composeMod):
             elif i["appname"] == "nginx_proxy_manager":
                 i["appinfo"].append({"fieldKey": "allow_access", "fieldTitle": "Default mailbox", "fieldValue": "admin@example.com"})
                 i["appinfo"].append({"fieldKey": "allow_access", "fieldTitle": "Default password", "fieldValue": "changeme"})
-            elif i["appname"] == "alist":
+            elif i["appname"] =="openlist" or i["appname"] == "openlist":
+                appname = i["appname"]
                 compose_file = "{}/{}/docker-compose.yml".format(i["path"], i["service_name"])
                 pass_file = "{}/{}/alist_pass.pl".format(i["path"], i["service_name"])
                 i["appinfo"].append({
-                    "fieldKey": "alist_user",
-                    "fieldTitle": "Alist account",
+                    "fieldKey": "{}_user".format(appname),
+                    "fieldTitle": "{} account".format(appname),
                     "fieldValue": "admin",
                 })
                 if not os.path.exists(pass_file):
                     alist_password = public.GetRandomString(10)
                     i["appinfo"].append({
-                        "fieldKey": "alist_password",
-                        "fieldTitle": "Set Alist password (copy to terminal)",
-                        "fieldValue": "docker-compose -f {compose_file} exec -it {service_name} ./alist admin set {alist_password}".format(
+                        "fieldKey": "{}_password".format(appname),
+                        "fieldTitle": "Set {} password (copy to terminal)".format(appname),
+                        "fieldValue": "docker-compose -f {compose_file} exec -it {service_name} ./{bin} admin set {alist_password}".format(
+                            bin=appname,
                             compose_file=compose_file,
                             service_name=i["service_name"],
                             alist_password=alist_password,
@@ -854,14 +874,15 @@ class App(composeMod):
                 else:
                     alist_password = public.readFile(pass_file)
                     i["appinfo"].append({
-                        "fieldKey": "alist_password",
-                        "fieldTitle": "Alist password",
+                        "fieldKey": "{}_password".format(appname),
+                        "fieldTitle": "{} password".format(appname),
                         "fieldValue": alist_password,
                     })
                     i["appinfo"].append({
-                        "fieldKey": "alist_password",
-                        "fieldTitle": "Reset Alist password (copy to terminal)",
-                        "fieldValue": "docker-compose -f {compose_file} exec -it {service_name} ./alist admin set {alist_password}".format(
+                        "fieldKey": "{}_password".format(appname),
+                        "fieldTitle": "Reset {} password (copy to terminal)".format(appname),
+                        "fieldValue": "docker-compose -f {compose_file} exec -it {service_name} ./{bin} admin set {alist_password}".format(
+                            bin=appname,
                             compose_file=compose_file,
                             service_name=i["service_name"],
                             alist_password=alist_password,
@@ -869,7 +890,10 @@ class App(composeMod):
                     })
             elif i["appname"] == "openvpn":
                 i["appinfo"].append({"fieldKey": "ovpnfile", "fieldTitle": "ovpn file (import client)", "fieldValue": "{}/{}/{}.ovpn".format(i["path"], i["service_name"], i["service_name"])})
-
+            elif i["appname"] == "rustdesk":
+                secret_key = public.readFile("{}/{}/data/id_ed25519.pub".format(i["path"], i["service_name"]))
+                i["appinfo"].append(
+                    {"fieldKey": "secret_key", "fieldTitle": "密钥(key)", "fieldValue": "{}".format(secret_key)})
             allow_access = "yes" if i["host_ip"] == "0.0.0.0" else "no" if i["domain"] is None else "yes"
             i["appinfo"].append({"fieldKey": "allow_access", "fieldTitle": "Allow external access", "fieldValue": allow_access})
             # if i["status"] == "created":
@@ -1025,6 +1049,9 @@ class App(composeMod):
             public.ExecShell("rm -rf {}".format(self.app_template_path))
 
         app_url = "{}/src/dk_app/aapanel/apps/templates/{}.zip".format(public.get_url(), get.app_name)
+        # 检查GPU参数，重定向templates路径
+        if get.get('gpu', 'false') == 'true':
+            app_url = "{}/src/dk_app/aapanel/apps/templates/{}_gpu.zip".format(public.get_url(), get.app_name)
         to_file = '/tmp/{}.zip'.format(get.app_name)
         if os.path.exists(to_file):
             public.ExecShell("rm -f {}".format(to_file))
@@ -1110,3 +1137,21 @@ class App(composeMod):
             return public.return_message(-1, 0, create_res["message"])
         return public.return_message(0, 0, public.lang("The creation is successful!"))
 
+    def find_field_value(self,data, target_key):
+        """
+        用于从env中 找出某个env的值
+        eg:
+            [{host:0.0.0.0},{port:2222}]  port -> 2222
+
+        参数:
+        - data: JSON 列表
+        - target_key: 要查找的 fieldKey
+
+        返回:
+        - 匹配的 fieldValue，如果未找到则返回 None
+
+        """
+        for item in data:
+            if item.get("fieldKey") == target_key:
+                return item.get("fieldValue")
+        return None

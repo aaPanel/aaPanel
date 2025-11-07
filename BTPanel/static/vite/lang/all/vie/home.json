@@ -403,5 +403,8 @@
 	"20ccc0b936ae721235fbb251882e09af": "Tổng số inodes",
 	"921fd067f5f59d36f697493e0b0e7f97": "Được sử dụng inode",
 	"ea211fd1ca41812bd3e73d8b1bb57504": "Có sẵn inode",
-	"9dd90affd6244a7fc2f09dc8fb7a0551": "Sử dụng inode"
+	"9dd90affd6244a7fc2f09dc8fb7a0551": "Sử dụng inode",
+	"018ccdfebb8ff4dc11a799ebe74b0356": "Lời nhắc khởi động lại hệ thống",
+	"bef91412ee3c10079e58be2bdd757f3a": "Máy chủ của bạn đã khởi động lại lúc {time}.",
+	"c5b1945a4e3808d335bcf6080f87c663": "Tôi biết"
 }

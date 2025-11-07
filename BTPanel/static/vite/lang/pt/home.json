@@ -98,6 +98,9 @@
 		"index_94": "Escreva espera",
 		"index_95": "Leia bytes",
 		"index_96": "Escreva bytes",
+		"systemRestartReminder": "Lembrete de reinicialização do sistema",
+		"serverRestartedAt": "Seu servidor foi reiniciado às {time}.",
+		"iKnow": "Eu sei",
 		"Install": {
 			"index_1_1": "Recomendado para usar os pacotes seguintes com um clique, escolha sob demanda ou em {soft_} Escolha por si mesmo, recomendado para instalar o Lemp.",
 			"index_1_2": "Loja de software",

@@ -69,7 +69,23 @@
 			"index_5": "제작",
 			"index_6": "{0} CPU 및 메모리 개요",
 			"index_7": "숨다",
-			"index_8": "표시하다"
+			"index_8": "표시하다",
+			"overviewTitle": "리소스 개요",
+			"containerCount": "컨테이너",
+			"spaceUsed": "사용된 공간",
+			"composeCount": "구성하다",
+			"composeProjects": "Docker 작성 프로젝트",
+			"imageCount": "이미지",
+			"networkCount": "네트워크",
+			"networksCreated": "생성된 네트워크",
+			"volumeCount": "볼륨",
+			"mirrorRepoCount": "레지스트리",
+			"repositoriesConfigured": "구성된 저장소",
+			"containerList": "컨테이너 목록",
+			"filterAll": "모두",
+			"filterRunning": "달리기",
+			"filterStopped": "중지됨",
+			"searchPlaceholder": "컨테이너 이름 또는 이미지 이름 검색"
 		},
 		"Container": {
 			"index_1": "컨테이너를 만듭니다",
@@ -361,6 +377,39 @@
 				"index_13": "쓰다",
 				"index_14": "상류",
 				"index_15": "하류"
+			},
+			"search": {
+				"placeholder": "컨테이너 이름, ID, 컨테이너 이미지 검색"
+			},
+			"batch": {
+				"start": {
+					"title": "배치 시작 컨테이너",
+					"desc": "선택한 컨테이너를 일괄 시작하고 작업을 계속하시겠습니까?"
+				},
+				"restart": {
+					"title": "일괄 재시작 컨테이너",
+					"desc": "선택한 컨테이너를 일괄 다시 시작하고 작업을 계속하시겠습니까?"
+				},
+				"stop": {
+					"title": "일괄 중지 컨테이너",
+					"desc": "선택한 컨테이너를 일괄 중지하고 작업을 계속하시겠습니까?"
+				},
+				"kill": {
+					"title": "일괄 강제 중지 컨테이너",
+					"desc": "선택한 컨테이너를 일괄 강제 중지하고 작업을 계속하시겠습니까?"
+				},
+				"pause": {
+					"title": "일괄 일시 중지 컨테이너",
+					"desc": "선택한 컨테이너를 일괄 일시중지하고 작업을 계속하시겠습니까?"
+				},
+				"unpause": {
+					"title": "일괄 이력서 컨테이너",
+					"desc": "선택한 컨테이너를 일괄 재개하고 작업을 계속하시겠습니까?"
+				},
+				"del": {
+					"title": "컨테이너 일괄 삭제",
+					"desc": "선택한 컨테이너를 일괄 삭제하고 작업을 계속하시겠습니까?"
+				}
 			}
 		},
 		"CloudImage": {
@@ -375,7 +424,25 @@
 			"index_10": "당기다",
 			"index_11": "컨테이너를 만듭니다",
 			"index_12": "이미지 삭제 [{0}]",
-			"index_13": "이미지 [{0}]를 삭제 하시겠습니까?"
+			"index_13": "이미지 [{0}]를 삭제 하시겠습니까?",
+			"detail": {
+				"lastUpdated": "마지막 업데이트:",
+				"isOfficial": "공식 이미지:",
+				"source": "출처:",
+				"dockerHub": "도커 허브",
+				"pullsCount": "당기기:",
+				"selectPlaceholder": "이미지를 선택하거나 검색해 주세요",
+				"pullButton": "당기다",
+				"yes": "예",
+				"no": "아니요",
+				"updated": "업데이트됨",
+				"selectImageError": "이미지를 선택하세요",
+				"pullImageTitle": "이미지 가져오기"
+			},
+			"pull": {
+				"success": "끌어오기 성공",
+				"failed": "풀 실패"
+			}
 		},
 		"LocalImage": {
 			"index_1": "저장소에서 당기십시오",
@@ -401,6 +468,10 @@
 			"index_22": "길",
 			"index_23": "이미지 경로를 입력하십시오",
 			"index_24": "정말로 미러를 삭제하고 싶습니까 [{0}].",
+			"searchPlaceholder": "이미지 이름, ID, 사용 중인 컨테이너 검색",
+			"batchDelete": "배치 삭제",
+			"batchDeleteTitle": "프로젝트 이미지 일괄 삭제",
+			"batchDeleteDesc": "선택한 프로젝트 이미지를 일괄 삭제하고 작업을 계속하시겠습니까?",
 			"push_1": "저장소 이름",
 			"push_2": "꼬리표",
 			"push_3": "태그를 입력하십시오 (예 : 이미지 : v1)",
@@ -663,6 +734,47 @@
 			"index_31": "범위를 설정 한 후 Docker를 다시 시작해야합니다. 진행하기 전에 Docker를 다시 시작할 수 있는지 확인하십시오.",
 			"index_32": "IPv6 범위를 설정합니다",
 			"index_33": "설정 후 Docker를 다시 시작해야합니다. 진행하기 전에 Docker를 다시 시작할 수 있는지 확인하십시오. 계속 하시겠습니까?",
+			"cgroupDriver": "cgroup 드라이버",
+			"setCgroupDriverTitle": "cgroup 드라이버 설정",
+			"setCgroupDriverConfirm": "cgroup 드라이버를 설정한 후 Docker를 다시 시작해야 합니다. 계속하기 전에 Docker를 다시 시작할 수 있는지 확인하세요. 계속하시겠습니까?",
+			"logRotation": "로그 회전",
+			"logRotationSet": "로그 회전 설정",
+			"logRotationSummary": "* 로그 파일 크기 {size}MB, {num}개 사본 보관",
+			"closeLogRotationTitle": "로그 회전 비활성화",
+			"closeLogRotationConfirm": "로그 회전을 비활성화한 후에는 Docker를 다시 시작해야 합니다. 계속하기 전에 Docker를 다시 시작할 수 있는지 확인하세요. 계속하시겠습니까?",
+			"logRotationConfig": {
+				"fileSize": "파일 크기",
+				"retainCount": "유지 개수",
+				"unitMB": "MB",
+				"unitCount": "파일",
+				"fileSizeRequired": "파일 크기를 입력하세요",
+				"retainCountRequired": "보유 횟수를 입력하세요.",
+				"configTip1": "현재 구성은 새로 생성된 컨테이너에만 영향을 미칩니다. 구성을 적용하려면 기존 컨테이너를 다시 생성해야 합니다.",
+				"configTip2": "컨테이너에 중요한 데이터가 포함되어 있는 경우 재구축 작업을 수행하기 전에 반드시 백업하세요."
+			},
+			"iptables": {
+				"description": "* Docker의 iptables 규칙 자동 구성",
+				"enableTitle": "iptable 활성화",
+				"disableTitle": "iptable 비활성화",
+				"enableConfirm": "iptables를 활성화한 후 Docker를 다시 시작해야 합니다. 계속하기 전에 Docker를 다시 시작할 수 있는지 확인하세요. 계속하시겠습니까?",
+				"disableConfirm": "iptables를 비활성화한 후 Docker를 다시 시작해야 합니다. 계속하기 전에 Docker를 다시 시작할 수 있는지 확인하세요. 계속하시겠습니까?"
+			},
+			"liveRestore": {
+				"description": "* 활성화되면 Docker 데몬이 예기치 않게 중지되거나 충돌할 때 실행 중인 컨테이너의 상태를 보존합니다.",
+				"enableTitle": "live_restore 활성화",
+				"disableTitle": "live_restore 비활성화",
+				"enableConfirm": "live_restore를 활성화한 후 Docker를 다시 시작해야 합니다. 계속하기 전에 Docker를 다시 시작할 수 있는지 확인하세요. 계속하시겠습니까?",
+				"disableConfirm": "live_restore를 비활성화한 후 Docker를 다시 시작해야 합니다. 계속하기 전에 Docker를 다시 시작할 수 있는지 확인하세요. 계속하시겠습니까?"
+			},
+			"registry": {
+				"label": "개인 레지스트리",
+				"placeholder": "Docker 개인 레지스트리 주소",
+				"modalTitle": "개인 레지스트리 설정",
+				"configPlaceholder": "개인 레지스트리 주소를 한 줄에 하나씩 입력하십시오(예:\n192.168.1.111:8087\n192.168.1.112:8087).",
+				"restartTip": "* 설정 후 Docker가 다시 시작됩니다.",
+				"restartTitle": "도커 다시 시작",
+				"restartConfirm": "Docker가 다시 시작됩니다. 계속하시겠습니까?"
+			},
 			"compose": {
 				"index_1": "길",
 				"index_2": "Compose 파일의 경로를 선택하십시오",
@@ -673,7 +785,35 @@
 				"index_2": "가속화 된 URL의 사용 우선 순위를 정하기 위해 작업을 수행하면 기본 가속 메소드를 사용하여 요청 시간 초과가 건너 뜁니다.",
 				"index_3": "가속을 설정 한 후 Docker를 수동으로 다시 시작해야합니다.",
 				"index_4": "가속 비활성화 비활성화하십시오",
-				"index_5": "가속이 없습니다"
+				"index_5": "가속이 없습니다",
+				"confirmTitle": "가속 URL 설정",
+				"confirmContent": "설정 후 Docker를 다시 시작해야 합니다. 계속하기 전에 Docker를 다시 시작할 수 있는지 확인하세요!"
+			},
+			"path": {
+				"label": "원클릭 설치 디렉토리",
+				"modifyButton": "수정",
+				"disabledTip": "애플리케이션이 이미 존재하므로 수정할 수 없습니다.",
+				"validationError": "올바른 디렉터리 경로를 입력하세요!",
+				"confirmTitle": "App Store 디렉토리 수정",
+				"confirmContent": "앱 스토어 디렉터리를 수정하면 패널이 다시 시작됩니다. 계속하시겠습니까?"
+			},
+			"systemInfo": {
+				"hostname": "호스트 이름",
+				"systemVersion": "시스템 버전",
+				"architecture": "건축",
+				"kernelVersion": "커널 버전",
+				"cpuCore": "CPU 코어",
+				"memorySize": "메모리 크기",
+				"dockerVersion": "도커 버전",
+				"dockerComposeVersion": "Docker Compose 버전",
+				"unixAddress": "유닉스 주소",
+				"dataDirectory": "데이터 디렉토리",
+				"updateButton": "업데이트",
+				"updateComposeTitle": "Docker Compose 버전 업데이트",
+				"updateComposeContent": "Docker Compose 버전을 업데이트하시겠습니까?",
+				"updateLogsTitle": "업데이트 로그",
+				"updateSuccess": "업데이트 성공",
+				"updateFailed": "업데이트 실패"
 			}
 		},
 		"install": {

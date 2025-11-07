@@ -821,6 +821,7 @@ class one_key_wp:
         version php版本
         sitename 完整名
         act disable/enable 开启关闭缓存
+        is_cache 附加字段：指定开启的缓存类型，nginx，ols
         """
         # 校验参数
         try:
@@ -918,7 +919,7 @@ class one_key_wp:
             return public.return_message(-1, 0, public.lang("Apache cache is currently only supported under Multi-WebServer Hosting"))
 
         # 添加ols缓存
-        if webserver == "openlitespeed":
+        if webserver == "openlitespeed" or get.get('is_cache','') == 'ols':
             from wp_toolkit import wpmgr
             wpmgr_obj = wpmgr(site['id'])
 
@@ -1437,35 +1438,42 @@ class one_key_wp:
             optimize_db().self_db_cache(get)
 
             # 设置fastcgi缓存
-            if int(get.enable_cache) == 1 and public.get_webserver() == 'nginx':
-                from wp_toolkit import wpmgr, wpfastcgi_cache
+            if int(get.enable_cache) == 1:
+                # 多服务下，开启ols缓存
+                if public.get_multi_webservice_status() or  public.get_webserver() == 'openlitespeed':
+                    self.set_fastcgi_cache(public.to_dict_obj(
+                        {"version": values['php_version'], "sitename": values['site_name'], "act": "enable","is_cache":"ols"}))
 
-                self.write_logs('|-WP Plugin nginx-helper installing...')
-                wpmgr(s_id).init_plugin_nginx_helper()
-                self.write_logs('|-WP Plugin nginx-helper installation succeeded')
+                # 单服务下，支持nginx与ols缓存
+                elif public.get_webserver() == 'nginx':
+                    from wp_toolkit import wpmgr, wpfastcgi_cache
 
-                # 配置Nginx-fastcgi-cache
-                wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
+                    self.write_logs('|-WP Plugin nginx-helper installing...')
+                    wpmgr(s_id).init_plugin_nginx_helper()
+                    self.write_logs('|-WP Plugin nginx-helper installation succeeded')
 
-                # if self.__IS_PRO_MEMBER:
-                #     from wp_toolkit import wpmgr, wpfastcgi_cache
-                #
-                #     # 配置Nginx-fastcgi-cache
-                #     wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
-                #
-                #     self.write_logs('|-WP Plugin nginx-helper installing...')
-                #     wpmgr(s_id).init_plugin_nginx_helper()
-                #     self.write_logs('|-WP Plugin nginx-helper installation succeeded')
-                # else:
-                #     # 安装nginxHelper
-                #     #  slug nginx-helper
-                #     values['slug'] = "nginx-helper"
-                #     values['wp_action'] = "install-plugin"
-                #     self.install_plugin(values)
-                #     self.act_nginx_helper_active(values)
-                #
-                #     # 安装并启用nginx-helper插件
-                #     self.set_nginx_helper(get)
+                    # 配置Nginx-fastcgi-cache
+                    wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
+
+                    # if self.__IS_PRO_MEMBER:
+                    #     from wp_toolkit import wpmgr, wpfastcgi_cache
+                    #
+                    #     # 配置Nginx-fastcgi-cache
+                    #     wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
+                    #
+                    #     self.write_logs('|-WP Plugin nginx-helper installing...')
+                    #     wpmgr(s_id).init_plugin_nginx_helper()
+                    #     self.write_logs('|-WP Plugin nginx-helper installation succeeded')
+                    # else:
+                    #     # 安装nginxHelper
+                    #     #  slug nginx-helper
+                    #     values['slug'] = "nginx-helper"
+                    #     values['wp_action'] = "install-plugin"
+                    #     self.install_plugin(values)
+                    #     self.act_nginx_helper_active(values)
+                    #
+                    #     # 安装并启用nginx-helper插件
+                    #     self.set_nginx_helper(get)
 
             # 设置登录入口保护
             if int(get.get('enable_whl', 0)) == 1:

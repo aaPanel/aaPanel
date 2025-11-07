@@ -158,6 +158,22 @@ class main(panelBase):
         if os.path.exists(site_total_monitor_path):
             data['site_total_monitor'] = {"is_install":True}
 
+        #获取多用户授权状态
+        data['account_limit'] = 0
+        #处理多用户授权
+        try:
+            import base64
+            from Crypto.Cipher import AES
+            from Crypto.Util.Padding import unpad
+            aes_key = b'FB8upo8XMgP5by54'
+            aes_iv = b'lOrrq3lNEURZNdK7'
+            ciphertext = base64.b64decode(public.load_soft_list(False,3).get('aln', "0"))
+            cipher = AES.new(aes_key, AES.MODE_CBC, aes_iv)
+            plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
+            data['account_limit']=int(plaintext.decode('utf-8'))
+        except Exception as e:
+            public.print_log(str(e))
+
         return public.return_message(0, 0, data)
 
     #统计面板备份占用空间

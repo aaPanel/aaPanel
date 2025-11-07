@@ -11,7 +11,7 @@ from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
 from public.sqlite_easy import Db
 
-__all__ = ["aaManager", "Q", "QueryProperty"]
+__all__ = ["aaManager", "Q"]
 
 M = TypeVar("M", bound="aaModel")
 
@@ -59,16 +59,14 @@ else:
 
 # ==================== Patch End ==================
 
-
-class QueryProperty:
-    def __init__(self, func):
-        self.func = func
-
-    def __get__(self, instance, owner):
-        return self.func(owner)
-
-
 class Operator:
+    SIMPLE_OP = {
+        "gt": ">", "lt": "<", "gte": ">=", "lte": "<=", "ne": "!=",
+    }
+    LIKE_OP = {
+        "like": "%{}%", "startswith": "{}%", "endswith": "%{}",
+    }
+
     def __init__(self, model_class: M, query: Db.query):
         self._model_class: M = model_class
         self._query = query
@@ -153,15 +151,6 @@ class Operator:
             return False
         return False
 
-    def __check_js_type(self, key: str, val: Any) -> None:
-        for t in [str, int]:
-            if isinstance(val, t):
-                break
-        else:
-            raise HintException(
-                "%s's fields %s is not support compare value type: %s" % (self._model_class.__name__, key, val)
-            )
-
     def __generate_road(self, road):
         path = "$"
         for r in road:
@@ -172,9 +161,6 @@ class Operator:
         return path
 
     def __is_json(self, val: Any):
-        if isinstance(val, (dict, list)):
-            return True, json.dumps(val)
-
         if isinstance(val, str):
             val_str = val.strip()
             if val_str.startswith(("{", "[")) and val_str.endswith(("}", "]")):
@@ -183,6 +169,8 @@ class Operator:
                     return True, val
                 except json.JSONDecodeError:
                     pass
+        if isinstance(val, (dict, list)):
+            return True, json.dumps(val)
         return False, val
 
     def __navigate_path(self, json_data: Any, road: List[str]) -> tuple[Any, bool]:
@@ -220,20 +208,13 @@ class Operator:
                     params.append(json.dumps(item))
             return f" {connector} ".join(conditions), params
 
-        operators = {
-            "gt": (f"{key} > ?", [val]),
-            "lt": (f"{key} < ?", [val]),
-            "gte": (f"{key} >= ?", [val]),
-            "lte": (f"{key} <= ?", [val]),
-            "ne": (f"{key} != ?", [val]),
-            "like": (f"{key} LIKE ?", [f"%{val}%"]),
-            "startswith": (f"{key} LIKE ?", [f"{val}%"]),
-            "endswith": (f"{key} LIKE ?", [f"%{val}"]),
-        }
-        if compare in operators:
+        if compare in self.SIMPLE_OP:
             if compare == "ne" and self._flag and is_json:
                 return f"NOT (json({key}) = json(?))", [val]
-            return operators[compare]
+            return f"{key} {self.SIMPLE_OP[compare]} ?", [val]
+
+        elif compare in self.LIKE_OP:
+            return f"{key} LIKE ?", [self.LIKE_OP[compare].format(val)]
 
         elif compare in ("contains", "any_contains"):
             if is_json:
@@ -243,21 +224,10 @@ class Operator:
                     pass
             if not isinstance(val, list):
                 val = [val]
-            # list
-            if isinstance(val, list):
-                if compare == "contains":
-                    return __contains_and_or(val, "AND")
-                else:
-                    return __contains_and_or(val, "OR")
-
-            # single
-            elif self._flag is True and not isinstance(val, (dict, list)):
-                # simple val
-                return f"EXISTS(SELECT 1 FROM json_each({key}) WHERE value = ?)", [val]
-
+            if compare == "contains":
+                return __contains_and_or(val, "AND")
             else:
-                # other | complicated val
-                return f"instr({key}, ?) > 0", [json.dumps(val)]
+                return __contains_and_or(val, "OR")
 
         elif compare in ("in", "not_in"):
             if is_json:
@@ -290,17 +260,25 @@ class Operator:
         is_json, val = self.__is_json(val)
         if not road:
             sql, params = self.__compare_operator(
-                f"{self._tb}.{key}", compare, val, is_json, sp_compare
+                key=f"{self._tb}.{key}",
+                compare=compare,
+                val=val,
+                is_json=is_json,
+                sp_compare=sp_compare
             )
             return sql, params
         else:
             if self._flag:
-                path = self.__generate_road(road)
                 sql, params = self.__compare_operator(
-                    f"json_extract({self._tb}.{key}, '{path}')", compare, val, is_json, sp_compare
+                    key=f"json_extract({self._tb}.{key}, '{self.__generate_road(road)}')",
+                    compare=compare,
+                    val=val,
+                    is_json=is_json,
+                    sp_compare=sp_compare
                 )
                 return sql, params
 
+            # 退化分支
             if is_json:
                 try:
                     val = json.loads(val)
@@ -360,6 +338,8 @@ class Operator:
                 return f"json_extract({self._tb}.{key}, ?) = ?", [path, val]
 
             return f"json_extract({self._tb}.{key}, ?) IS NULL", [path]
+
+        # 退化分支
         pk_name = self._model_class.__primary_key__
         q_fork = self._query.fork()
         q_fork._SqliteEasy__OPT_LIMIT.clear()
@@ -750,6 +730,7 @@ class aaObjects(Generic[M]):
     """
     管理器
     """
+    _queryset_class = QuerySet
     __m_map__ = {}
 
     def __new__(cls, args):
@@ -760,6 +741,15 @@ class aaObjects(Generic[M]):
     def __init__(self, model: M):
         self._model = model
         self.__q = None
+
+    # @classmethod
+    # def _as_manager(cls):
+    #     """自定义管理器"""
+    #     return aaManager(obj_cls=cls)
+
+    def _get_queryset(self) -> "QuerySet[M]":
+        """获取管理器关联的QuerySet"""
+        return self._queryset_class(self._model, self._query.fork())
 
     @property
     def _query(self) -> Db.query:
@@ -818,7 +808,7 @@ class aaObjects(Generic[M]):
         :kwargs dict
         :return: QuerySet | None
         """
-        return QuerySet(self._model, self._query.fork()).filter(**kwargs).first()
+        return self._get_queryset().filter(**kwargs).first()
 
     def filter(self, *args, **kwargs) -> "QuerySet[M]":
         """
@@ -826,14 +816,14 @@ class aaObjects(Generic[M]):
         :kwargs dict
         :return: QuerySet
         """
-        return QuerySet(self._model, self._query.fork()).filter(*args, **kwargs)
+        return self._get_queryset().filter(*args, **kwargs)
 
     def all(self) -> "QuerySet[M]":
         """
         所有数据
         return: QuerySet
         """
-        return QuerySet(self._model, self._query.fork())
+        return self._get_queryset()
 
 
 class aaMigrate:
@@ -1017,13 +1007,23 @@ class aaMigrate:
 
 
 class aaManager:
+    def __init__(self, obj_cls=aaObjects, qs_cls=QuerySet):
+        self._objects_class = obj_cls
+        self._queryset_class = qs_cls
+        self._cache = {}
+
     def __get__(self, instance, cls: M):
-        if instance is None:
-            try:
-                return aaObjects(cls)
-            except Exception:
-                import traceback
-                raise PanelError(traceback.format_exc())
-        raise RuntimeError(
-            f"object manager can't accessible from '{cls.__name__}' instances"
-        )
+        if instance is not None:
+            raise RuntimeError(
+                f"object manager can't accessible from '{cls.__name__}' instances"
+            )
+        try:
+            manager = self._cache.get(cls)
+            if manager is None:
+                manager = self._objects_class(cls)
+                setattr(manager, "_queryset_class", self._queryset_class)
+                self._cache[cls] = manager
+            return manager
+        except Exception:
+            import traceback
+            raise PanelError(traceback.format_exc())

@@ -69,7 +69,23 @@
 			"index_5": "Tạo tại",
 			"index_6": "{0} CPU và tổng quan về bộ nhớ",
 			"index_7": "Trốn",
-			"index_8": "Trưng bày"
+			"index_8": "Trưng bày",
+			"overviewTitle": "Tổng quan về tài nguyên",
+			"containerCount": "Thùng chứa",
+			"spaceUsed": "Không gian sử dụng",
+			"composeCount": "Soạn",
+			"composeProjects": "Dự án soạn thảo Docker",
+			"imageCount": "Hình ảnh",
+			"networkCount": "Mạng",
+			"networksCreated": "Mạng đã tạo",
+			"volumeCount": "tập",
+			"mirrorRepoCount": "Đăng ký",
+			"repositoriesConfigured": "Kho lưu trữ được cấu hình",
+			"containerList": "Danh sách container",
+			"filterAll": "Tất cả",
+			"filterRunning": "Đang chạy",
+			"filterStopped": "Đã dừng",
+			"searchPlaceholder": "Tìm kiếm tên vùng chứa hoặc tên hình ảnh"
 		},
 		"Container": {
 			"index_1": "Tạo container",
@@ -358,9 +374,42 @@
 				"index_10": "Ký ức",
 				"index_11": "Bộ đệm",
 				"index_12": "Đọc",
-				"index_13": "viết",
+				"index_13": "Viết",
 				"index_14": "Thượng nguồn",
 				"index_15": "Hạ nguồn"
+			},
+			"search": {
+				"placeholder": "Tìm kiếm tên container, ID, hình ảnh container"
+			},
+			"batch": {
+				"start": {
+					"title": "Các thùng chứa bắt đầu hàng loạt",
+					"desc": "Bắt đầu hàng loạt container đã chọn, tiếp tục hoạt động?"
+				},
+				"restart": {
+					"title": "Vùng chứa khởi động lại hàng loạt",
+					"desc": "Khởi động lại hàng loạt các container đã chọn, tiếp tục hoạt động?"
+				},
+				"stop": {
+					"title": "Container dừng hàng loạt",
+					"desc": "Dừng hàng loạt container đã chọn, tiếp tục hoạt động?"
+				},
+				"kill": {
+					"title": "Lực lượng dừng hàng loạt container",
+					"desc": "Buộc dừng hàng loạt container đã chọn, tiếp tục hoạt động?"
+				},
+				"pause": {
+					"title": "Vùng chứa tạm dừng hàng loạt",
+					"desc": "Tạm dừng hàng loạt container đã chọn, tiếp tục hoạt động?"
+				},
+				"unpause": {
+					"title": "Hộp đựng sơ yếu lý lịch hàng loạt",
+					"desc": "Tiếp tục hàng loạt container đã chọn, tiếp tục hoạt động?"
+				},
+				"del": {
+					"title": "Xóa hàng loạt vùng chứa",
+					"desc": "Xóa hàng loạt container đã chọn, tiếp tục hoạt động?"
+				}
 			}
 		},
 		"CloudImage": {
@@ -375,7 +424,25 @@
 			"index_10": "Sự lôi kéo",
 			"index_11": "Tạo container",
 			"index_12": "Xóa hình ảnh [{0}]",
-			"index_13": "Bạn có chắc là bạn muốn xóa hình ảnh [{0}]?"
+			"index_13": "Bạn có chắc là bạn muốn xóa hình ảnh [{0}]?",
+			"detail": {
+				"lastUpdated": "Cập nhật lần cuối:",
+				"isOfficial": "Hình ảnh chính thức:",
+				"source": "Nguồn:",
+				"dockerHub": "Trung tâm Docker",
+				"pullsCount": "Kéo:",
+				"selectPlaceholder": "Vui lòng chọn hoặc tìm kiếm hình ảnh",
+				"pullButton": "Sự lôi kéo",
+				"yes": "Có",
+				"no": "Không",
+				"updated": "Đã cập nhật",
+				"selectImageError": "Vui lòng chọn một hình ảnh",
+				"pullImageTitle": "Kéo hình ảnh"
+			},
+			"pull": {
+				"success": "Kéo thành công",
+				"failed": "Kéo không thành công"
+			}
 		},
 		"LocalImage": {
 			"index_1": "Kéo từ kho lưu trữ",
@@ -401,6 +468,10 @@
 			"index_22": "Con đường",
 			"index_23": "Vui lòng nhập đường dẫn hình ảnh",
 			"index_24": "Bạn có thực sự muốn xóa gương [{0}] không?",
+			"searchPlaceholder": "Tìm kiếm tên image, ID, container đang sử dụng",
+			"batchDelete": "Xóa hàng loạt",
+			"batchDeleteTitle": "Xóa hàng loạt hình ảnh dự án",
+			"batchDeleteDesc": "Xóa hàng loạt hình ảnh dự án đã chọn, tiếp tục hoạt động?",
 			"push_1": "Tên kho lưu trữ",
 			"push_2": "Nhãn",
 			"push_3": "Vui lòng nhập thẻ, ví dụ: hình ảnh: V1",
@@ -663,6 +734,47 @@
 			"index_31": "Sau khi thiết lập phạm vi, Docker cần phải được khởi động lại. Vui lòng đảm bảo bạn có thể khởi động lại Docker trước khi tiến hành.",
 			"index_32": "Đặt phạm vi IPv6",
 			"index_33": "Sau khi thiết lập, Docker cần được khởi động lại. Vui lòng đảm bảo bạn có thể khởi động lại Docker trước khi tiến hành. Bạn có muốn tiếp tục?",
+			"cgroupDriver": "tài xế cgroup",
+			"setCgroupDriverTitle": "Đặt trình điều khiển cgroup",
+			"setCgroupDriverConfirm": "Sau khi cài đặt trình điều khiển cgroup, Docker cần khởi động lại. Hãy đảm bảo bạn có thể khởi động lại Docker trước khi tiếp tục. Bạn có muốn tiếp tục không?",
+			"logRotation": "Xoay vòng nhật ký",
+			"logRotationSet": "Đặt xoay vòng nhật ký",
+			"logRotationSummary": "* Kích thước tệp nhật ký {size}MB, giữ lại {num} bản sao",
+			"closeLogRotationTitle": "Vô hiệu hóa xoay vòng nhật ký",
+			"closeLogRotationConfirm": "Sau khi tắt tính năng xoay vòng nhật ký, Docker cần khởi động lại. Hãy đảm bảo bạn có thể khởi động lại Docker trước khi tiếp tục. Bạn có muốn tiếp tục không?",
+			"logRotationConfig": {
+				"fileSize": "Kích thước tệp",
+				"retainCount": "Giữ lại số lượng",
+				"unitMB": "MB",
+				"unitCount": "tập tin",
+				"fileSizeRequired": "Vui lòng nhập kích thước tập tin",
+				"retainCountRequired": "Vui lòng nhập số lượng giữ lại",
+				"configTip1": "Cấu hình hiện tại sẽ chỉ ảnh hưởng đến các vùng chứa mới được tạo. Các vùng chứa hiện tại cần được tạo lại để cấu hình có hiệu lực",
+				"configTip2": "Nếu vùng chứa của bạn chứa dữ liệu quan trọng, hãy đảm bảo sao lưu trước khi thực hiện các thao tác xây dựng lại"
+			},
+			"iptables": {
+				"description": "* Cấu hình tự động của các quy tắc iptables của Docker",
+				"enableTitle": "Kích hoạt iptables",
+				"disableTitle": "Tắt iptables",
+				"enableConfirm": "Sau khi kích hoạt iptables, Docker cần khởi động lại. Hãy đảm bảo bạn có thể khởi động lại Docker trước khi tiếp tục. Bạn có muốn tiếp tục không?",
+				"disableConfirm": "Sau khi tắt iptables, Docker cần khởi động lại. Hãy đảm bảo bạn có thể khởi động lại Docker trước khi tiếp tục. Bạn có muốn tiếp tục không?"
+			},
+			"liveRestore": {
+				"description": "* Khi được bật, sẽ duy trì trạng thái của các container đang chạy khi trình nền Docker dừng đột ngột hoặc gặp sự cố",
+				"enableTitle": "Bật live_restore",
+				"disableTitle": "Tắt live_restore",
+				"enableConfirm": "Sau khi kích hoạt live_restore, Docker cần khởi động lại. Hãy đảm bảo bạn có thể khởi động lại Docker trước khi tiếp tục. Bạn có muốn tiếp tục không?",
+				"disableConfirm": "Sau khi tắt live_restore, Docker cần khởi động lại. Hãy đảm bảo bạn có thể khởi động lại Docker trước khi tiếp tục. Bạn có muốn tiếp tục không?"
+			},
+			"registry": {
+				"label": "Sổ đăng ký riêng",
+				"placeholder": "Địa chỉ đăng ký riêng của Docker",
+				"modalTitle": "Đặt sổ đăng ký riêng tư",
+				"configPlaceholder": "Vui lòng nhập các địa chỉ đăng ký riêng, mỗi địa chỉ một dòng, ví dụ:\n192.168.1.111:8087\n192.168.1.112:8087",
+				"restartTip": "* Docker sẽ khởi động lại sau khi cài đặt",
+				"restartTitle": "Khởi động lại Docker",
+				"restartConfirm": "Docker sẽ khởi động lại. Bạn có muốn tiếp tục không?"
+			},
 			"compose": {
 				"index_1": "Con đường",
 				"index_2": "Vui lòng chọn đường dẫn đến tệp soạn thảo",
@@ -673,7 +785,35 @@
 				"index_2": "Ưu tiên việc sử dụng các URL được tăng tốc để thực hiện các hoạt động, thời gian chờ yêu cầu sẽ được bỏ qua bằng phương pháp gia tốc mặc định",
 				"index_3": "Bạn cần khởi động lại Docker theo cách thủ công sau khi thiết lập gia tốc",
 				"index_4": "Tắt tăng tốc, vui lòng đặt thành trống",
-				"index_5": "Không có gia tốc"
+				"index_5": "Không có gia tốc",
+				"confirmTitle": "Đặt URL tăng tốc",
+				"confirmContent": "Docker cần được khởi động lại sau khi cài đặt. Hãy đảm bảo Docker có thể được khởi động lại trước khi tiếp tục!"
+			},
+			"path": {
+				"label": "Hướng dẫn cài đặt bằng một cú nhấp chuột",
+				"modifyButton": "sửa đổi",
+				"disabledTip": "Ứng dụng đã tồn tại, không thể sửa đổi",
+				"validationError": "Vui lòng nhập đường dẫn thư mục hợp lệ!",
+				"confirmTitle": "Sửa đổi thư mục App Store",
+				"confirmContent": "Việc sửa đổi thư mục cửa hàng ứng dụng sẽ khởi động lại bảng điều khiển. Bạn có muốn tiếp tục không?"
+			},
+			"systemInfo": {
+				"hostname": "Tên máy chủ",
+				"systemVersion": "Phiên bản hệ thống",
+				"architecture": "Kiến trúc",
+				"kernelVersion": "Phiên bản hạt nhân",
+				"cpuCore": "lõi CPU",
+				"memorySize": "Kích thước bộ nhớ",
+				"dockerVersion": "Phiên bản Docker",
+				"dockerComposeVersion": "Phiên bản soạn thảo Docker",
+				"unixAddress": "Địa chỉ Unix",
+				"dataDirectory": "Thư mục dữ liệu",
+				"updateButton": "cập nhật",
+				"updateComposeTitle": "Cập nhật phiên bản soạn thảo Docker",
+				"updateComposeContent": "Bạn có muốn cập nhật phiên bản Docker Compose không?",
+				"updateLogsTitle": "Cập nhật nhật ký",
+				"updateSuccess": "Cập nhật thành công",
+				"updateFailed": "Cập nhật không thành công"
 			}
 		},
 		"install": {

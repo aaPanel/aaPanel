@@ -51,12 +51,6 @@ class main(dockerBase):
             return public.return_message(-1, 0, str(ex))
 
         try:
-            # if "name" not in get or get.name == "":
-            #     return public.return_message(-1, 0, public.lang("Image name cannot be empty"))
-            # if "path" not in get or get.path == "":
-            #     return public.return_message(-1, 0, public.lang("Mirror path cannot be empty"))
-            # if "id" not in get or get.id == "":
-            #     return public.return_message(-1, 0, public.lang("Image ID cannot be empty"))
 
             if "/" in get.name:
                 return public.return_message(-1, 0, public.lang("The image name cannot contain /"))
@@ -115,7 +109,12 @@ class main(dockerBase):
 
             from btdockerModelV2.dockerSock import image
             sk_image = image.dockerImage()
-            sk_image.load_image(get.path)
+            result = sk_image.load_image(get.path)
+            if "error" in result:
+                if "Read timed out" in result["error"]:
+                    return public.return_message(-1, 0, public.lang("Failed to import the image, the connection to docker timed out, please try to restart docker and try again!"))
+                if "no such file or directory" in result["error"]:
+                    return public.return_message(-1, 0, public.lang("If the image import fails and the temporary container directory is not created, check whether the protection software has an interception record."))
 
             dp.write_log("Image [{}] imported successfully!".format(get.path))
             return public.return_message(0, 0, public.lang("Image import was successful!{}", get.path))
@@ -141,25 +140,13 @@ class main(dockerBase):
             from btdockerModelV2.dockerSock import container
             sk_container = container.dockerContainer()
             container_list = sk_container.get_container()
-            # if not container_list:
-            #     return public.return_message(0, 0, data)
-
 
             data = list()
-            # public.print_log("data000  : {}".format(data))
-            # public.print_log("sk_images_镜像列表 sk_images_list: {}".format(sk_images_list))
             for image in sk_images_list:
-                # public.print_log("image if111111: {}".format(image))
-                # {'Containers': -1, 'Created': 1717026901,
-                #  'Id': 'sha256:4f67c83422ec747235357c04556616234e66fc3fa39cb4f40b2d4441ddd8f100',
-                #  'Labels': {'maintainer': 'NGINX Docker Maintainers <docker-maint@nginx.com>'}, 'ParentId': '',
-                #  'RepoDigests': ['nginx@sha256:0f04e4f646a3f14bf31d8bc8d885b6c951fdcf42589d06845f64d18aec6a3c4d'],
-                #  'RepoTags': ['nginx:latest'], 'SharedSize': -1, 'Size': 187667860}
                 if image is None:
                     continue
 
                 if image['RepoTags'] is not None and len(image['RepoTags']) != 0:
-                    # public.print_log("data2 if111111: {}".format(data))
                     for tag in image['RepoTags']:
                         tmp = {
                             "id": image['Id'],
@@ -172,18 +159,13 @@ class main(dockerBase):
                             "used": 0,
                             "containers": [],
                         }
-                        # public.print_log("tmp tmp tmp: {}".format(tmp))
-                        # {'id': 'sha256:4f67c83422ec747235357c04556616234e66fc3fa39cb4f40b2d4441ddd8f100',
-                        #  'tags': 'nginx:latest', 'name': 'nginx:latest',
-                        #  'digest': 'sha256:0f04e4f646a3f14bf31d8bc8d885b6c951fdcf42589d06845f64d18aec6a3c4d',
-                        #  'time': 1717026901, 'size': 187667860, 'created_at': 1717026901, 'used': 0, 'containers': []}
-                        # public.print_log("container_list   if: {}".format(container_list))
+
                         self.structure_images_list(container_list, tmp)
-                        # public.print_log("data jhshs哈666666 if: {}".format(data))
+
                         data.append(tmp)
-                        # public.print_log("data2 if: {}".format(data))
+
                 else:
-                    # public.print_log("data2 if: {}".format(data))
+
                     tmp = {
                         "id": image['Id'],
                         "tags": "<none>",
@@ -197,16 +179,15 @@ class main(dockerBase):
                     }
 
                     self.structure_images_list(container_list, tmp)
-                    # public.print_log("data2333 if: {}".format(data))
+
                     data.append(tmp)
-                    # public.print_log("data2 else : {}".format(data))
 
 
-            # public.print_log("data2kjefa : {}".format(type(data)))
+
+
             return public.return_message(0, 0, data)
         except Exception as ex:
             import traceback
-            # public.print_log("尺码个| info: {}".format(ex))
             public.print_log(traceback.format_exc())
             return public.return_message(0, 0, data)
 
@@ -259,17 +240,6 @@ class main(dockerBase):
         :param get:
         :return:
         """
-
-        # # 校验参数
-        # try:
-        #     get.validate([
-        #         Param('path').Require().SafePath(),
-        #     ], [
-        #         public.validate.trim_filter(),
-        #     ])
-        # except Exception as ex:
-        #     public.print_log("error info: {}".format(ex))
-        #     return public.return_message(-1, 0, str(ex))
 
         public.writeFile(self._log_path, "Start building the image!")
         if not hasattr(get, "pull"):
@@ -440,13 +410,13 @@ class main(dockerBase):
 
         if "/" in get.tag:
             return public.return_message(-1, 0, public.lang("The pushed image cannot contain [/], please use the following  format: image:v1 (image name: version)"))
-        if ":" not in get.tag:
-            get.tag = "{}:latest".format(get.tag)
+        # if ":" not in get.tag:
+        #     get.tag = "{}:latest".format(get.tag)
 
         public.writeFile(self._log_path, "Start pushing the image!\n")
 
         from btdockerModelV2 import registryModel as dr
-        r_info = dr.main().registry_info(get.name)
+        r_info = dr.main().registry_info(get)
         r_info['username'] = public.aes_decrypt(r_info['username'], self.aes_key)
         r_info['password'] = public.aes_decrypt(r_info['password'], self.aes_key)
 
@@ -464,7 +434,6 @@ class main(dockerBase):
                 "password": r_info['password'],
                 "registry": r_info['url']
             }
-            # repository       namespace/image
 
             repository = r_info['url']
             reg_name = r_info['reg_name'] if "reg_name" in r_info and r_info["reg_name"] != "" else r_info["name"]
@@ -508,13 +477,61 @@ class main(dockerBase):
             tag=tag_ver
         )
         return public.return_message(0, 0, public.lang("Successfully set!"))
+    def __parse_progress(self, progress_detail, progress_str):
+        """
+        解析 progressDetail 字典和 progress 字符串，返回当前值和总值（均以字节为单位）。
+        """
+        current = progress_detail.get('current', 0)
+        try:
+            current = float(current)
+        except (ValueError, TypeError):
+            current = 0
 
-    def pull(self, get):
+        import re
+        # 使用正则表达式提取数值和单位
+        match = re.match(r'(\d+(?:\.\d+)?)\s*([kBMGT]?B)', progress_str.strip(), re.IGNORECASE)
+        if match:
+            total = float(match.group(1))
+            unit = match.group(2).upper()
+        else:
+            # 如果无法匹配，使用 current 作为总值，并假设单位为 B
+            total = current
+            unit = 'B'
+        return current, total, unit
+
+    def __convert_to_bytes(self, value, unit):
+        """
+        将值转换为字节。
+        支持的单位: B, kB, MB, GB, TB
+        """
+        units = {'B': 1, 'KB': 1024, 'MB': 1024 ** 2, 'GB': 1024 ** 3, 'TB': 1024 ** 4}
+        return value * units.get(unit, 1)
+
+    def __display_progress_bar(self, current, total, last_progress, bar_length=50):
+        """
+        在终端中显示进度条。
+        """
+        try:
+            if total == 0:
+                percent = 0
+            else:
+                percent = current / total
+            if last_progress[0] == 1.0: last_progress[0] = 0.0
+            if percent > last_progress[0]:
+                filled_length = int(bar_length * percent)
+                content = '=' * filled_length + '>' + ' ' * (bar_length - filled_length - 1)
+                last_progress[0] = percent  # 更新上一次的百分比
+                return "[{}] {:.2f}%".format(content, percent * 100)
+            else:
+                return ""
+        except:
+            return ""
+    def pull_11(self, get):
         """
         :param image
         :param url
         :param registry
-        :param username 拉取私有镜像时填写 1
+        :param username 拉取私有镜像时填写
         :param password 拉取私有镜像时填写
         :param get:
         :return:
@@ -522,26 +539,36 @@ class main(dockerBase):
 
         # try:
         get._ws.send(public.lang("Pulling the image, please wait...\r\n"))
-        import docker.errors
         import time
         time.sleep(0.1)
         # get._ws.send(public.lang("Pull or search for images...\r\n"))
+
+        auth_data = {
+            "username": get.username,
+            "password": get.password,
+            "registry": get.registry if get.registry else None
+        }
+        auth_conf = auth_data if get.username else None
+
+        if get.registry == "docker.io":
+            get.image = '{}:latest'.format(get.image) if ':' not in get.image else get.image
+
+        if not hasattr(get, "tag"): get.tag = get.image.split(":")[-1]
+
+        if get.registry != "docker.io":
+            get.image = "{}/{}/{}:{}".format(get.registry, get.namespace, get.name, get.image)
+
+        if get.get("registry_mirrors","") != "":
+            if "//" in get.registry_mirrors or "/" in get.registry_mirrors:
+                get.registry_mirrors = get.registry_mirrors.replace("https://", "").replace("http://", "").replace("/","")
+
+            if not "/" in get.image:
+                get.image = "{}/library/{}".format(get.registry_mirrors, get.image)
+            else:
+                get.image = "{}/{}".format(get.registry_mirrors, get.image)
+
+        get._ws.send("Pulling: {}\r\n".format(get.image))
         try:
-            auth_data = {
-                "username": get.username,
-                "password": get.password,
-                "registry": get.registry if get.registry else None
-            }
-            auth_conf = auth_data if get.username else None
-
-            if get.registry == "docker.io":
-                get.image = '{}:latest'.format(get.image) if ':' not in get.image else get.image
-
-            if not hasattr(get, "tag"): get.tag = get.image.split(":")[-1]
-
-            if get.registry != "docker.io":
-                get.image = "{}/{}/{}:{}".format(get.registry, get.namespace, get.name, get.image)
-
             ret = dp.docker_client_low(self._url).pull(
                 repository=get.image.split(":")[0],
                 auth_config=auth_conf,
@@ -550,10 +577,11 @@ class main(dockerBase):
             )
 
             if not ret:
-                get._ws.send("failed," + public.lang("pull failed!\r\n"))
+                get._ws.send("failed, pull failed!\r\n")
                 return
             last_result = None
-            last_progress_str = None
+            output_str = None
+            last_progress = [0.0]
             while True:
                 try:
                     output = next(ret)
@@ -646,10 +674,112 @@ class main(dockerBase):
                 return
             get._ws.send("failed," + public.lang("pull failed!{}\r\n",e))
             return
+    def pull(self, get):
+        """
+        :param image
+        :param url
+        :param registry
+        :param username 拉取私有镜像时填写
+        :param password 拉取私有镜像时填写
+        :param get:
+        :return:
+        """
+        get._ws.send("Pulling the image, please wait...\r\n")
 
-        # except Exception as e:
-        #    # public.print_log("拉取镜像  -- {}".format(e))
-        #    public.print_log(traceback.format_exc())
+        import time
+        time.sleep(0.1)
+        get._ws.send("Pull or search for the image...\r\n")
+        auth_data = {
+            "username": get.username,
+            "password": get.password,
+            "registry": get.registry if get.registry else None
+        }
+        auth_conf = auth_data if get.username else None
+
+        if get.registry == "docker.io":
+            get.image = '{}:latest'.format(get.image) if ':' not in get.image else get.image
+
+        if not hasattr(get, "tag"): get.tag = get.image.split(":")[-1]
+
+        if get.registry != "docker.io":
+            get.image = "{}/{}/{}:{}".format(get.registry, get.namespace, get.name, get.image)
+
+        if get.get("registry_mirrors","") != "":
+            if "//" in get.registry_mirrors or "/" in get.registry_mirrors:
+                get.registry_mirrors = get.registry_mirrors.replace("https://", "").replace("http://", "").replace("/","")
+
+            if not "/" in get.image:
+                get.image = "{}/library/{}".format(get.registry_mirrors, get.image)
+            else:
+                get.image = "{}/{}".format(get.registry_mirrors, get.image)
+
+        get._ws.send("Pulling:{}\r\n".format(get.image))
+        try:
+            ret = dp.docker_client_low(self._url).pull(
+                repository=get.image.split(":")[0],
+                auth_config=auth_conf,
+                tag=get.tag,
+                stream=True
+            )
+
+            if not ret:
+                get._ws.send("Failed,The pull failed!\r\n")
+                return
+            last_result = None
+            output_str = None
+            last_progress = [0.0]
+            while True:
+                try:
+                    output = next(ret)
+                    output = json.loads(output)
+                    try:
+                        # 状态
+                        output_status = output.get('status', "")
+                        progress_detail = output.get('progressDetail', {})
+
+                        if output_status in ["Downloading", "Extracting"] and progress_detail:
+                            progress = output.get('progress', "")
+                            current, total, unit = self.__parse_progress(progress_detail, progress)
+
+                            if total == 0:
+                                continue
+                            total_bytes = self.__convert_to_bytes(total, unit)
+                            output_str = self.__display_progress_bar(current, total_bytes, last_progress)
+                        else:
+                            output_str = output_status
+                    except:
+                        continue
+
+                    if output_str != last_result and output_str:
+                        get._ws.send(output_str + "\r\n")
+                    last_result = output_str
+                    time.sleep(0.1)
+                except StopIteration:
+                    get._ws.send("successful, The mirror pull [{}] succeeded\r\n".format(get.image))
+                    return public.returnMsg(True, "The pull image succeeds!")
+                except ValueError:
+                    get._ws.send("failed, The pull failed!\r\n")
+                    return public.returnMsg(False, "The pull failed!")
+        except docker.errors.ImageNotFound as e:
+            if "pull access denied for" in str(e):
+                get._ws.send("failed, The pull failed，The image does not exist, or the image may be private, and you need to enter the dockerhub account password!\r\n")
+                return
+            get._ws.send("failed, The pull failed!{}\r\n".format(e))
+            return
+
+        except docker.errors.NotFound as e:
+            if "not found: manifest unknown" in str(e):
+                get._ws.send("failed, The pull failed, there is no mirror image in the warehouse!\r\n")
+                return
+            get._ws.send("failed, The pull failed!{}\r\n".format(e))
+            return
+
+        except docker.errors.APIError as e:
+            if "invalid tag format" in str(e):
+                get._ws.send("failed, The pull failed,Image format errors, such as: nginx:v 1!\r\n")
+                return
+            get._ws.send("failed, The pull failed!{}\r\n".format(e))
+            return
 
     # 拉取镜像
     def pull_high_api(self, get):
@@ -738,7 +868,6 @@ class main(dockerBase):
         '''
 
         for r in results:
-            # public.print_log("is_pullvis_pull    {}".format(r))
             r["is_pull"] = 0
             r['id'] = ""
             for image in sk_images_list:
@@ -752,7 +881,7 @@ class main(dockerBase):
 
         return sorted(results, key=lambda x: x['star_count'], reverse=True)
 
-    # 2023/12/13 上午 11:08 镜像搜索 todo 关键字查询调用ws接口 暂时没查到
+    # 2023/12/13 上午 11:08 镜像搜索
     def search(self, get):
         '''
             @name 镜像搜索,docker hub官方镜像列表
@@ -766,6 +895,9 @@ class main(dockerBase):
         '''
         try:
             get.name = get.get("name/s", "")
+            keywords_to_exclude = ["开心版", "习近平", "xijinping", "xijinping615"]
+            if get.name in keywords_to_exclude: return []
+
             from btdockerModelV2.dockerSock import image
             sk_image = image.dockerImage()
             sk_images_list = sk_image.get_images()
@@ -773,7 +905,6 @@ class main(dockerBase):
             if get.name == "":
                 # 2024/3/20 上午 10:10 如果get.name是空,则返回docker_hub_repos.db中results表的所有镜像
                 import db, os
-
                 sql = db.Sql()
                 sql.dbfile('{}/class_v2/btdockerModelV2/config/docker_hub_repos.db'.format(public.get_panel_path()))
                 # 2024/3/20 上午 10:24 按照star_count排序
@@ -804,3 +935,145 @@ class main(dockerBase):
         get.wsLogTitle = "Start executing the command, please wait..."
         get._log_path = self._rCmd_log
         return self.get_ws_log(get)
+
+    def format_time(self,timestr):
+        """
+        格式化时间字符串为xxx天前、xxx小时前、xxx分钟前或xxx秒前
+        :param timestr: ISO格式的时间字符串
+        """
+        from datetime import datetime, timezone
+        dt = datetime.fromisoformat(timestr).astimezone(timezone.utc)
+        now = datetime.now(timezone.utc)
+        delta = now - dt
+        total_seconds = delta.total_seconds()
+
+        if total_seconds < 60:
+            str_t = public.lang("seconds ago")
+            return f"{int(total_seconds)} {str_t}"
+        elif total_seconds < 3600:
+            str_t = public.lang("minutes ago")
+            return f"{int(total_seconds // 60)} {str_t}"
+        elif total_seconds < 86400:
+            str_t = public.lang("hours ago")
+            return f"{int(total_seconds // 3600)} {str_t}"
+        else:
+            str_t = public.lang("days ago")
+            return f"{int(total_seconds // 86400)} {str_t}"
+
+    def get_image_detail(self, get):
+        """
+        获取镜像详情
+        :param get:
+        :return:
+        """
+
+        if not hasattr(get, "image") or not get.image:
+            return public.return_message(-1, 0, public.lang("The mirror name cannot be empty!"))
+
+        import requests
+        if "/" not in get.image:
+            get.image = "library/{}".format(get.image)
+
+        params = {
+            'repositories': get.image,
+        }
+
+        response = requests.get('https://1ms.run/api/v1/registry/get_detail', params=params).json()
+        public.set_module_logs('docker', 'get_image_detail', 1)
+        if response["code"] != 0:
+            return public.return_message(-1, 0, [])
+        from datetime import datetime
+        dt = datetime.fromisoformat(response["data"]["last_updated"].split("T")[0])
+        response["data"]["last_updated"] = dt.strftime('%Y/%m/%d')
+        return public.return_message(0, 0, response["data"])
+
+
+
+    def get_image_detail_official(self, get):
+        """
+        获取镜像详情（使用 Docker Hub 官方 API）
+        :param get: 必须包含 get.image 镜像名
+        :return: 镜像详情或错误信息
+        """
+
+        # 检查镜像名是否为空
+        if not hasattr(get, "image") or not get.image:
+            return public.return_message(-1, 0, public.lang("The mirror name cannot be empty!"))
+        import requests
+
+        image_name = get.image.strip()
+
+        # 处理官方镜像（library/xxx）
+        if "/" not in image_name:
+            image_name = "library/{}".format(image_name)
+
+        # 分割仓库名和镜像名，例如: library/nginx -> name=library, image=nginx
+        parts = image_name.split("/", 1)
+        if len(parts) == 1:
+            namespace = "library"
+            repo_name = parts[0]
+        else:
+            namespace, repo_name = parts
+
+        # Docker Hub Registry API v2 Endpoint
+        url = f"https://hub.docker.com/v2/repositories/{namespace}/{repo_name}/"
+
+        try:
+            response = requests.get(url, timeout=10)
+            if response.status_code == 404:
+                return public.return_message(-1, 0, "镜像不存在或仓库未公开")
+            elif response.status_code != 200:
+                return public.return_message(-1, 0, f"请求失败，状态码: {response.status_code}")
+
+            result = response.json()
+
+            # 记录日志
+            public.set_module_logs('docker', 'get_image_detail', 1)
+
+            return public.return_message(0, 0, result)
+
+        except requests.exceptions.RequestException as e:
+            return public.return_message(-1, 0, f"网络请求失败: {str(e)}")
+        except Exception as e:
+            return public.return_message(-1, 0, f"解析数据失败: {str(e)}")
+
+
+
+    def get_image_tags(self, get):
+        """
+        获取镜像标签
+        :param get: 包含镜像名称和其他参数的对象
+        :return: 返回镜像标签列表或错误信息
+        """
+
+        if not hasattr(get, "image") or not get.image:
+            return public.return_message(-1, 0, public.lang("The mirror name cannot be empty!"))
+
+        import requests
+        url = "https://1ms.run/api/v1/registry/get_tags"
+        public.set_module_logs('docker', 'get_image_tags', 1)
+        query = {
+            "id":get.get("id",""),
+            "repositories": public.xssencode2(get.image),
+            "page_size": 50,
+            "search": get.get("search",""),
+            "page": 1
+        }
+        response = requests.get(url, params=query, timeout=5).json()
+
+        if response["code"] != 0:
+            return public.return_message(-1, 0, [])
+
+        tags = []
+        for item in response["data"]["list"]:
+            tag_name = item["tag_name"]
+            last_update = item["last_updated"]
+            last_updated = self.format_time(last_update)
+            digest = item["digest"]
+            tags.append({
+                "tag_name": tag_name,
+                "last_update": last_update,
+                "last_updated": last_updated,
+                "digest": digest
+            })
+        return public.return_message(0, 0, tags)

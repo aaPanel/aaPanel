@@ -36,6 +36,74 @@ from .validate import Param, trim_filter
 aap_t_simple_result = aap_t_simple_result
 aap_t_mysql_dump_info = aap_t_mysql_dump_info
 
+# 默认语言配置 新增语言时请同步更新
+def default_languages_config():
+    return {
+            "default": "en",
+            "languages": [
+                {
+                    "name": "en",
+                    "google": "en",
+                    "title": "English",
+                    "cn": "英语"
+                },
+                {
+                    "name": "de",
+                    "google": "de",
+                    "title": "Deutsch",
+                    "cn": "德语"
+                },
+                {
+                    "name": "fra",
+                    "google": "fr",
+                    "title": "Français",
+                    "cn": "法语"
+                },
+                {
+                    "name": "spa",
+                    "google": "es",
+                    "title": "Español",
+                    "cn": "西班牙语"
+                },
+                {
+                    "name": "pt",
+                    "google": "pt",
+                    "title": "Português",
+                    "cn": "葡萄牙语"
+                },
+                {
+                    "name": "vie",
+                    "google": "vi",
+                    "title": "Tiếng Việt",
+                    "cn": "越南语"
+                },
+                {
+                    "name": "ind",
+                    "google": "id",
+                    "title": "Bahasa Indonesia",
+                    "cn": "印尼语"
+                }, {
+                    "name": "ru",
+                    "google": "ru",
+                    "title": "Русский",
+                    "cn": "俄语"
+                },
+                {
+                    "name": "zh",
+                    "google": "zh-cn",
+                    "title": "简体中文",
+                    "cn": "简体中文"
+                },
+                {
+                    "name": "cht",
+                    "google": "zh-tw",
+                    "title": "繁體中文",
+                    "cn": "繁體中文"
+                }
+            ]
+        }
+
+
 path = "/www/server/panel/BTPanel/languages/language.pl"
 if os.path.exists(path):
     with open(path, 'r', encoding='utf-8') as data:
@@ -49,65 +117,70 @@ if os.path.exists(path):
                 settings = json.loads(file.read())
                 # 修复空文件
                 if not settings.get('languages', None):
-                    settings = {
-    "default": "en",
-    "languages": [
-        {
-            "name": "cht",
-            "google": "zh-tw",
-            "title": "繁體中文",
-            "cn": "繁體中文"
-        },
-        {
-            "name": "en",
-            "google": "en",
-            "title": "English",
-            "cn": "英语"
-        },
-        {
-            "name": "de",
-            "google": "de",
-            "title": "Deutsch",
-            "cn": "德语"
-        },
-        {
-            "name": "fra",
-            "google": "fr",
-            "title": "Français",
-            "cn": "法语"
-        },
-        {
-            "name": "spa",
-            "google": "es",
-            "title": "Español",
-            "cn": "西班牙语"
-        },
-        {
-            "name": "pt",
-            "google": "pt",
-            "title": "Português",
-            "cn": "葡萄牙语"
-        },
-        {
-            "name": "vie",
-            "google": "vi",
-            "title": "Tiếng Việt",
-            "cn": "越南语"
-        },
-        {
-            "name": "ind",
-            "google": "id",
-            "title": "Bahasa Indonesia",
-            "cn": "印尼语"
-        }, {
-            "name": "ru",
-            "google": "ru",
-            "title": "Русский",
-            "cn": "俄语"
-        }
-    ]
-}
-
+#                     settings = {
+#     "default": "en",
+#     "languages": [
+#         {
+#             "name": "en",
+#             "google": "en",
+#             "title": "English",
+#             "cn": "英语"
+#         },
+#         {
+#             "name": "de",
+#             "google": "de",
+#             "title": "Deutsch",
+#             "cn": "德语"
+#         },
+#         {
+#             "name": "fra",
+#             "google": "fr",
+#             "title": "Français",
+#             "cn": "法语"
+#         },
+#         {
+#             "name": "spa",
+#             "google": "es",
+#             "title": "Español",
+#             "cn": "西班牙语"
+#         },
+#         {
+#             "name": "pt",
+#             "google": "pt",
+#             "title": "Português",
+#             "cn": "葡萄牙语"
+#         },
+#         {
+#             "name": "vie",
+#             "google": "vi",
+#             "title": "Tiếng Việt",
+#             "cn": "越南语"
+#         },
+#         {
+#             "name": "ind",
+#             "google": "id",
+#             "title": "Bahasa Indonesia",
+#             "cn": "印尼语"
+#         }, {
+#             "name": "ru",
+#             "google": "ru",
+#             "title": "Русский",
+#             "cn": "俄语"
+#         },{
+#             "name": "zh",
+#             "google": "zh-cn",
+#             "title": "简体中文",
+#             "cn": "简体中文"
+#         },
+#         {
+#             "name": "cht",
+#             "google": "zh-tw",
+#             "title": "繁體中文",
+#             "cn": "繁體中文"
+#         }
+#     ]
+# }
+                    settings = default_languages_config()
             settings['default'] = lang
             with open(settings_file, 'w', encoding='utf-8') as file:
                 file.write(json.dumps(settings, indent=4))
@@ -414,7 +487,17 @@ def return_message(status, types, message, args=(), play="", requests=()):
         @return dict  {"status":0/-1,"message":any}/下载对象
     """
     from flask import g
-    g.return_message = True
+    # g.return_message = True
+
+    # 只有在应用上下文中才操作 g，否则跳过
+    try:
+        if hasattr(g, 'return_message'):  # 检查是否存在
+            g.return_message = True
+    except Exception:
+        # 不在上下文中，忽略即可
+        pass
+
+
     # 非文件下载
     if types == 0:
         return_message = {'status': status, "timestamp": int(time.time()), "message": {}}
@@ -798,7 +881,8 @@ def ServiceReload():
         ),
         (
             "/usr/local/lsws/bin/lswsctrl",
-            "rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart",
+            # "rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart",
+            "/usr/local/lsws/bin/lswsctrl reload",
             None
         )
     ]
@@ -1864,10 +1948,10 @@ def checkPort(port):
     intport = int(port)
     if intport < 1 or intport > 65535: return False
 
-    # 判断端口占用，避免多服务崩溃
-    res = ExecShell(f'lsof -i :{port} -P -n -l -F pnc')
-    if res[0] and port != '80':
-        return False
+    # # 判断端口占用，避免多服务崩溃
+    # res = ExecShell(f'lsof -i :{port} -P -n -l -F pnc')
+    # if res[0] and port != '80':
+    #     return False
 
     return True
 
@@ -9250,6 +9334,16 @@ def ensure_unique_db_name(db_name: str) -> str:
 
     return db_name
 
+# 优先使用新名称
+def ensure_unique_db_name2(db_name: str) -> str:
+    while True:
+        new_db_name = '{}_{}'.format(
+            db_name[:9],
+            GetRandomString(6)
+        )
+
+        if not S('databases').where('name', new_db_name).exists():
+            return new_db_name
 
 def pkcs7_padding(data: bytes, block_size: int = 16) -> bytes:
     length = len(data)
@@ -9564,7 +9658,7 @@ def webservice_operation(service: str, type = 'restart') -> bool:
         type 类型：关闭，重启，开启
     """
     try:
-        import system_v2
+        from class_v2 import system_v2
         server_restart = system_v2.system()
         get = public.to_dict_obj({
             'name': service,

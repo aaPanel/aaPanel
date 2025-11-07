@@ -17,6 +17,7 @@ import pwd
 import cgi
 import shutil
 import re
+import html
 import sqlite3
 from BTPanel import session, request
 from public.validate import Param
@@ -235,6 +236,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             @return dict
         '''
         filename = args.filename.strip()
+        try:
+            filename = filename.encode('utf-8').decode('latin-1')
+        except UnicodeEncodeError:
+            return public.return_message(0, 0, public.lang("The filename contains illegal characters"))
+
         if not os.path.exists(filename):
             return public.return_message(-1, 0, public.lang("File does not exist!"))
         file_info = {}
@@ -242,7 +248,34 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         file_info['size'] = _stat.st_size
         file_info['mtime'] = int(_stat.st_mtime)
         file_info['isfile'] = os.path.isfile(filename)
-        return public.return_message(0, 0,file_info)
+        return public.return_message(0, 0, file_info)
+    # 上传前批量检查文件是否存在
+    def upload_files_exists(self, args):
+        '''
+            @name 上传前批量检查文件是否存在
+            @param files<string> 文件列表,多个用\n分隔
+            @return dict
+        '''
+        check_files = []
+        if hasattr(args, 'files'):
+            check_files = args.files.split('\n')
+        file_list = []
+        for filename in check_files:
+            try:
+                if not os.path.exists(filename):
+                    file_list.append({'filename': filename, 'exists': False, 'size': 0, 'mtime': 0, 'isfile': False})
+                    continue
+                _stat = os.stat(filename)
+                file_list.append({
+                    'filename': filename,
+                    'exists': True,
+                    'size': _stat.st_size,
+                    'mtime': int(_stat.st_mtime),
+                    'isfile': os.path.isfile(filename)
+                })
+            except:
+                file_list.append({'filename': filename, 'exists': False, 'size': 0, 'mtime': 0, 'isfile': False})
+        return public.return_message(0, 0,  file_list)
 
     def get_real_len(self, string):
         '''
@@ -257,120 +290,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 real_len += 1
         return real_len
 
-    # 上传文件2  最新 暂未使用
-    def upload_new(self, args):
-        from BTPanel import request
-        if not 'f_name' in args:
-            args.f_name = request.form.get('f_name').strip()
-            args.f_path = request.form.get('f_path').strip()
-            args.f_size = request.form.get('f_size')
-            args.f_start = request.form.get('f_start')
 
-        if sys.version_info[0] == 2:
-            args.f_name = args.f_name.encode('utf-8')
-            args.f_path = args.f_path.encode('utf-8')
-
-        try:
-            save_path = os.path.join(args.f_name + '.' + str(int(args.f_size)) + '.upload.tmp')
-            max_filename_length = os.pathconf(args.f_path, "PC_NAME_MAX")
-            # if self.get_real_len(save_path) > max_filename_length: return public.returnMsg(False, '文件名长度超过{}字节'.format(max_filename_length))
-            if len(save_path.encode('utf-8')) > max_filename_length: return public.return_message(-1, 0, public.lang("The file name contains more than 256 bytes"))
-        except:
-            pass
-
-        if not self.f_name_check(args.f_name): return public.return_message(-1, 0, public.lang("No special characters can be included in the file name!"))
-
-        if args.f_path == '/':
-            return public.return_message(-1, 0, public.lang("Cannot upload files to the system document root!"))
-
-        if args.f_name.find('./') != -1 or args.f_path.find('./') != -1:
-            return public.return_message(-1, 0, public.lang("Wrong parameter"))
-        # 判断是否存在同名文件
-        # if pathlib.Path(args.f_path).is_file():
-        #     return public.return_message(-1, 0, public.lang("There is a file with the same name as the uploaded folder. Please check and try again"))
-
-        if not os.path.exists(args.f_path):
-            try:
-                os.makedirs(args.f_path, 493)
-            except PermissionError:
-                return public.fail_v2( public.lang("当前用户没有足够的权限去访问或者修改{}".format(args.f_path)))
-            except OSError as e:
-                if 'Read-only' in str(e):
-                    return public.fail_v2( public.lang("当前目录为只读权限"))
-                else:
-                    return public.fail_v2(public.lang("上传失败:{}",str(e)))
-            if not 'dir_mode' in args or not 'file_mode' in args:
-                self.set_mode(args.f_path)
-
-        save_path = os.path.join(
-            args.f_path, args.f_name + '.' + str(int(args.f_size)) + '.upload.tmp')
-        d_size = 0
-        if os.path.exists(save_path):
-            d_size = os.path.getsize(save_path)
-
-        if d_size != int(args.f_start):
-            return d_size
-
-        try:
-            f = open(save_path, 'ab')
-            if 'b64_data' in args:
-                import base64
-                b64_data = base64.b64decode(args.b64_data)
-                f.write(b64_data)
-            else:
-                upload_files = request.files.getlist("blob")
-                for tmp_f in upload_files:
-                    f.write(tmp_f.read())
-            f.close()
-        except Exception as ex:
-            ex = str(ex)
-            if ex.find('No space left on device') != -1:
-                return public.fail_v2(public.lang('磁盘空间不足'))
-        if os.path.exists(save_path):
-            f_size = os.path.getsize(save_path)
-        else:
-            f_size = 0
-        if f_size is not None and f_size != int(args.f_size):
-            if f_size > int(args.f_size):
-                return public.fail_v2(public.lang("文件上传发生错误请删除临时文件【{}】后重试",save_path))
-            return f_size
-
-        new_name = os.path.join(args.f_path, args.f_name)
-        if os.path.exists(new_name):
-            if new_name.find('.user.ini') != -1:
-                public.ExecShell("chattr -i " + new_name)
-            # try:
-            #     os.remove(new_name)
-            # except:
-            #     public.ExecShell("rm -f %s" % new_name)
-        # 判断是否存在同名目录
-        # if pathlib.Path(new_name).is_dir():
-        #     return public.fail_v2( public.lang("存在与上传文件同名的文件夹请检查后重试"))
-        try:
-            os.renames(save_path, new_name)
-        except PermissionError:
-            os.remove(save_path)
-            return public.fail_v2(public.lang('当前用户没有足够的权限去访问或者修改'))
-
-        if 'dir_mode' in args and 'file_mode' in args:
-            mode_tmp1 = args.dir_mode.split(',')
-            public.set_mode(args.f_path, mode_tmp1[0])
-            public.set_own(args.f_path, mode_tmp1[1])
-            mode_tmp2 = args.file_mode.split(',')
-            public.set_mode(new_name, mode_tmp2[0])
-            public.set_own(new_name, mode_tmp2[1])
-
-        else:
-            if os.path.exists(new_name):
-                self.set_mode(new_name)
-
-        if new_name.find('.user.ini') != -1:
-            public.ExecShell("chattr +i " + new_name)
-
-        public.WriteLog('TYPE_FILE', 'FILE_UPLOAD_SUCCESS',
-                                 (args.f_name, args.f_path))
-
-        return public.success_v2(public.lang('Successfully uploaded!'))
     def upload(self, args):
         if not 'f_name' in args:
             args.f_name = request.form.get('f_name').strip()
@@ -383,9 +303,20 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             args.f_path = args.f_path.encode('utf-8')
 
         try:
-            if self.get_real_len(args.f_name) > 256: return public.return_message(-1, 0, public.lang("The file name contains more than 256 bytes"))
+            if self.get_real_len(args.f_name) > 256:
+                return public.return_message(-1, 0, public.lang("The file name contains more than 256 bytes"))
         except:
             pass
+
+        try:
+            temp_filename = args.f_name + '.' + str(int(args.f_size)) + '.upload.tmp'
+            if len(temp_filename.encode('utf-8')) > 255:
+                return public.return_message(-1, 0, public.lang("The file name is too long (over 255 bytes)."))
+            save_path = os.path.join(args.f_path, temp_filename)
+            if len(save_path.encode('utf-8')) > 4096:
+                return public.return_message(-1, 0, public.lang("The full path is too long (over 4096 bytes)."))
+        except Exception as e:
+            return public.fail_v2(public.lang("Failed to check file path: {}", str(e)))
 
         if not self.f_name_check(args.f_name): return public.return_message(-1, 0, public.lang("No special characters can be included in the file name!"))
 
@@ -401,7 +332,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 self.set_mode(args.f_path)
 
         save_path = os.path.join(
-            args.f_path, args.f_name + '.' + str(int(args.f_size)) + '.upload.tmp')
+            args.f_path, args.f_name + '.' + str(int(args.f_size)) + '.upload.tmp'
+        )
         d_size = 0
         if os.path.exists(save_path):
             d_size = os.path.getsize(save_path)
@@ -580,7 +512,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                         except:
                             pass
 
-                    nlist.append((entry.name, sort_val))
+                    nlist.append((entry.name, sort_val, entry.is_dir()))
 
                     # 计数
                     count += 1
@@ -589,14 +521,18 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
         if sort_key == 0:
             # 按文件名排序
-            nlist = sorted(nlist, key=lambda x: x[0], reverse=reverse)
+            nlist = sorted(nlist, key=lambda x: [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', x[0])], reverse=reverse)
         elif sort_key > 0:
             # 按指定字段排序
             nlist = sorted(nlist, key=lambda x: x[1], reverse=reverse)
         else:
             # 否则文件数量小于10000时，按文件名排序
             if count < 10000:
-                nlist = sorted(nlist, key=lambda x: x[0], reverse=reverse)
+                nlist = sorted(nlist, key=lambda x: [int(text) if text.isdigit() else text.lower() for text in
+                                                     re.split(r'(\d+)', x[0])], reverse=False)
+            else:
+                nlist = sorted(nlist, key=lambda x: x[0], reverse=False)
+        nlist = sorted(nlist, key=lambda x: x[2], reverse=True)
 
         return count, nlist
 
@@ -753,8 +689,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if hasattr(get, 'tojs'):
             info['return_js'] = get.tojs
         if hasattr(get, 'showRow'):
-            info['row'] = int(get.showRow)
-
+            try:
+                info['row'] = int(get.showRow)
+            except:
+                info['row'] = 500
         # 获取分页数据
         data = {}
         data['PAGE'] = page.GetPage(info, '1,2,3,4,5,6,7,8')
@@ -1365,8 +1303,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             public.write_log_gettext('File manager', 'Set the file name [{}], notes: {}', (f_name, ps_body))
         else:
             if os.path.exists(f_key):
-                os.remove(f_key)
                 public.write_log_gettext('File manager', 'Clear file notes [{}]', (f_name))
+                os.remove(f_key)
         return public.return_message(0, 0, public.lang("Setup successfully!"))
 
     def check_file_sort(self, sort):
@@ -1592,11 +1530,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if not os.path.exists(path):
             return 0
         i = 0
-        for name in os.listdir(path):
-            if search:
-                if name.lower().find(search) == -1:
-                    continue
-            i += 1
+        try:
+            for name in os.listdir(path):
+                if search:
+                    if name.lower().find(search) == -1:
+                        continue
+                i += 1
+        except:
+            return 0
         return i
 
     # 创建文件
@@ -1746,7 +1687,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.path = get.path.encode('utf-8')
         if os.path.basename(get.path) in ['Recycle_bin', '.Recycle_bin']:
             return public.return_message(-1, 0, public.lang("Recovery failed!"))
-        if not os.path.exists(get.path):
+        if not os.path.exists(get.path) and not os.path.islink(get.path):
             return public.return_message(-1, 0, public.lang("Requested directory does not exist"))
 
         # 检查是否敏感目录
@@ -1771,11 +1712,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     self.remove_file_ps(get)
                     public.add_security_logs("Del dir", "Delete directory: " + get.path)
                     return public.return_message(0, 0, public.lang("Directory moved to recycle bin!"))
-
-            import shutil
-            shutil.rmtree(get.path)
-            self.site_path_safe(get)
             public.add_security_logs("Del dir", "Delete directory: " + get.path)
+            if os.path.islink(get.path):
+                os.remove(get.path)
+            else:
+                import shutil
+                shutil.rmtree(get.path)
+            self.site_path_safe(get)
+
             public.write_log_gettext('File manager', 'Successfully deleted directory [{}]!', (get.path,))
             self.remove_file_ps(get)
             return public.return_message(0, 0, public.lang(" Successfully deleted directory!"))
@@ -1831,9 +1775,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                         pass
                     public.add_security_logs("Del file", "Delete file: " + get.path)
                     return public.return_message(0, 0, public.lang("File moved to recycle bin"))
+
+            public.WriteLog('File manager', 'Successfully permanent deleted file: [{}]!'.format(get.path))
             os.remove(get.path)
             self.site_path_safe(get)
-            public.write_log_gettext('File manager', 'Successfully permanent deleted file: [{}]!', (get.path,))
             public.add_security_logs("Del file", "Delete file: " + get.path)
             self.remove_file_ps(get)
             return public.return_message(0, 0, public.lang("Successfully deleted file"))
@@ -1851,6 +1796,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     # 移动到回收站
     def Mv_Recycle_bin(self, get):
+        if not os.path.islink(get.path):
+            get.path = os.path.realpath(get.path)
         rPath = public.get_recycle_bin_path(get.path)
         rFile = os.path.join(rPath, get.path.replace('/', '_bt_') + '_t_' + str(time.time()))
         try:
@@ -1990,7 +1937,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 os.remove(filename)
             except:
                 public.ExecShell("rm -f " + filename)
-
+        public.WriteLog('File manager', 'Delete the files {} in the Recycle Bin.'.format(tfile))
         return public.return_message(0, 0, public.lang('Parmanently deleted {} from recycle bin!', tfile))
 
     # 清空回收站
@@ -2067,6 +2014,15 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             os.chmod(get.dfile, stat.st_mode)
             os.chown(get.dfile, stat.st_uid, stat.st_gid)
             return public.return_message(0, 0, public.lang("Successfully copied file!"))
+        except shutil.SameFileError:
+            return public.return_message(0, 0, public.lang("Successfully copied file!"))
+        except PermissionError:
+            return public.return_message(-1, 0, public.lang("If the folder fails to be copied, check whether the directory is locked or tamper-proof is turned on"))
+        except OSError as e:
+            if 'Read-only' in str(e):
+                return public.return_message(-1, 0, public.lang("The current directory is read-only"))
+            else:
+                return public.return_message(-1, 0, public.lang("Folder copy failed:{}", str(e)))
         except:
             return public.return_message(-1, 0, public.lang("Failed to copy file!"))
 
@@ -2094,6 +2050,13 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             public.write_log_gettext('File manager', 'Successfully copied directory!',
                                      (get.sfile, get.dfile))
             return public.return_message(0, 0, public.lang("Successfully copied directory!"))
+        except PermissionError:
+            return public.return_message(-1, 0, public.lang("If the folder fails to be copied, check whether the directory is locked or tamper-proof is turned on"))
+        except OSError as e:
+            if 'Read-only' in str(e):
+                return public.return_message(-1, 0, public.lang("The current directory is read-only"))
+            else:
+                return public.return_message(-1, 0, public.lang("Folder copy failed:{}", str(e)))
         except:
             return public.return_message(-1, 0, public.lang("Failed to copy directory!"))
 
@@ -2159,6 +2122,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 tmp['filename'] = fn
                 tmp['size'] = os.path.getsize(filename)
                 tmp['mtime'] = str(int(stat.st_mtime))
+                tmp['is_dir'] = os.path.isdir(filename)
                 data.append(tmp)
         return data
 
@@ -2169,9 +2133,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     # 获取文件内容
     def GetFileBody(self, get):
+        if not hasattr(get, "path"):
+            return public.return_message(-1, 0, public.lang("Parameters are missing! path"))
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
-
         get.path = self.xssdecode(get.path)
 
         if get.path.find('/rewrite/null/') != -1:
@@ -2238,6 +2203,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 return public.return_message(-1, 0, public.lang("Failed to open file, file may be occupied by other processes!"))
             if hasattr(get, 'filename'):
                 get.path = get.filename
+
+            if not os.path.exists(get.path):
+                return public.return_message(-1, 0, public.lang("The file does not exist"))
+
             data['historys'] = self.get_history(get.path)
             data['auto_save'] = self.get_auto_save(get.path)
             data['st_mtime'] = str(int(os.stat(get.path).st_mtime))
@@ -2248,29 +2217,21 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return public.return_message(return_status, 0, data)
 
     def last_lines(self, filename, lines=1):
-        block_size = 3145928
-        block = ''
-        nl_count = 0
-        start = 0
-        fsock = open(filename, 'rU')
-        try:
-            fsock.seek(0, 2)
-            curpos = fsock.tell()
-            while (curpos > 0):
-                curpos -= (block_size + len(block))
-                if curpos < 0: curpos = 0
-                fsock.seek(curpos)
-                try:
-                    block = fsock.read()
-                except:
-                    continue
-                nl_count = block.count('\n')
-                if nl_count >= lines: break
-            for n in range(nl_count - lines + 1):
-                start = block.find('\n', start) + 1
-        finally:
-            fsock.close()
-        return block[start:]
+        '''
+            @name 获取文件最后几行
+            @param filename str 文件名
+            @param lines int 行数
+            @return str
+        '''
+        max_len = 512 * lines
+        with open(filename, 'rb') as f:
+            f.seek(0, 2)
+            pos = f.tell()
+            max_size = min(pos, max_len)
+            f.seek(-max_size,1)
+            data = f.read(max_size)
+
+        return data.decode('utf-8', errors='ignore')
 
     # 保存文件
     def SaveFileBody(self, get):
@@ -2300,15 +2261,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     str3 = public.lang('To modify the 404 config, find the following config location')
 
                     # return public.return_message(-1, 0, public.lang("Failed to save the configuration file:<p style="color:red;">Do not modify the 404 rule commented in the SSL config</p><p>To modify the 404 config, find the following config location:</p><pre>#ERROR-PAGE-START  Error page configuration, allowed to be commented</pre>"))
-                    return public.return_message(-1, 0,
-                                                 '{}:<p style="color:red;">{}</p><p>:</p><pre>#ERROR-PAGE-START  Error page configuration, allowed to be commented</pre>'.format(
+                    return public.return_message(-1, 0,'{}:<p style="color:red;">{}</p><p>:</p><pre>#ERROR-PAGE-START  Error page configuration, allowed to be commented</pre>'.format(
                                                      str1, str2, str3))
 
         if 'st_mtime' in get:
-            st_mtime = str(int(os.stat(get.path).st_mtime))
-            if st_mtime != get['st_mtime']: return public.return_message(-1, 0,
-                                                                         'Failed to save, {} file has been changed, please refresh the content and modify it again.'.format(
-                                                                             get.path))
+            if not 'force' in get or get['force'] != '1':
+                st_mtime = str(int(os.stat(get.path).st_mtime))
+                if st_mtime != get['st_mtime']:
+                    return public.return_message(-1, 0,'Failed to save, {} file has been changed, please refresh the content and modify it again.'.format(get.path))
 
         his_path = '/www/backup/file_history/'
         if get.path.find(his_path) != -1:
@@ -2318,7 +2278,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 import base64
                 get.data = base64.b64decode(get.data)
             isConf = -1
-            if os.path.exists('/etc/init.d/nginx') or os.path.exists('/etc/init.d/httpd'):
+            skip_conf_check = False
+            if "skip_conf_check" in get and get.skip_conf_check in ("1", 1, "true", "True", True):
+                skip_conf_check = True
+            if not skip_conf_check and (os.path.exists('/etc/init.d/nginx') or os.path.exists('/etc/init.d/httpd')):
                 isConf = get.path.find('nginx')
                 if isConf == -1:
                     isConf = get.path.find('apache')
@@ -2341,7 +2304,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 except:
                     pass
 
-            if get.encoding == 'ascii':
+            if get.encoding == 'ascii' or get.encoding == 'ansi':
                 get.encoding = 'utf-8'
             self.save_history(get.path)
             try:
@@ -2466,6 +2429,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     # 读取指定历史副本
     def read_history(self, args):
+        if not hasattr(args, "filename"):
+            return public.return_message(-1, 0, public.lang("The parameter filename is missing"))
+
+        if not hasattr(args, "history"):
+            return public.return_message(-1, 0, public.lang("Missing parameter history"))
+
+        if not os.path.exists(args.filename):
+            return public.return_message(-1, 0, public.lang('The file does not exist!'))
         save_path = ('/www/backup/file_history/' +
                      args.filename).replace('//', '/')
         args.path = save_path + '/' + args.history
@@ -2479,7 +2450,15 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if not os.path.exists(args.path):
             return public.return_message(-1, 0, public.lang("The specified historical copy does not exist!"))
         import shutil
-        shutil.copyfile(args.path, args.filename)
+        if not os.path.exists(args.filename):
+            return public.return_message(-1, 0, public.lang("The specified file does not exist!"))
+        try:
+            shutil.copyfile(args.path, args.filename)
+        except PermissionError as e:
+            if e.errno == 13:
+                return public.return_message(-1, 0, public.lang("Not having enough permissions to manipulate files or directories!"))
+        except:
+            return public.return_message(-1, 0, public.lang("Restore historical copy failed!"))
         return self.GetFileBody(args)
 
     # 自动保存配置
@@ -2654,6 +2633,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     # 取目录大小
 
     def GetDirSize(self, get):
+        if not hasattr(get, "path"):
+            return public.return_message(-1, 0, public.lang("Parameters are missing! path"))
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
         return public.to_size(public.get_path_size(get.path))
@@ -2664,13 +2645,19 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.path = get.path.encode('utf-8')
         data = {}
         data['path'] = get.path
-        data['size'] = public.get_path_size(get.path)
+
+        if os.path.exists(get.path):
+            size = public.get_path_size(get.path)
+        else:
+            size = 0
+        data['size'] = size
         return data
 
     def CloseLogs(self, get):
         get.path = public.GetConfigValue('root_path')
         public.ExecShell('rm -f ' + public.GetConfigValue('logs_path') + '/*')
         public.ExecShell('rm -rf ' + public.GetConfigValue('logs_path') + '/history_backups/*')
+        public.ExecShell('rm -rf ' + public.GetConfigValue('logs_path') + '/request/*')
         public.ExecShell('rm -f ' + public.GetConfigValue('logs_path') + '/pm2/*.log')
         if public.get_webserver() == 'nginx':
             public.ExecShell(
@@ -2691,6 +2678,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return public.return_message(0, 0, public.lang("Successfully marked, please click Paste All button in the target directory!"))
         elif get.type == '3':
             for key in json.loads(get.data):
+                key = html.unescape(key)
                 try:
                     if sys.version_info[0] == 2:
                         key = key.encode('utf-8')
@@ -2716,12 +2704,15 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             i = 0
             args = public.dict_obj()
             for key in get.data:
+                key = html.unescape(key)
                 try:
                     if sys.version_info[0] == 2:
                         key = key.encode('utf-8')
                     filename = path + '/' + key
                     get.path = filename
                     if not os.path.exists(filename):
+                        # 软连接目标文件丢失会检测不到
+                        os.remove(filename)
                         continue
                     i += 1
                     public.writeSpeed(key, i, l)
@@ -2731,8 +2722,16 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                         public.ExecShell("chattr -R -i " + filename)
                         if isRecyle:
                             self.Mv_Recycle_bin(get)
+                        elif os.path.islink(filename):
+                            os.remove(filename)
                         else:
                             shutil.rmtree(filename)
+                    elif os.path.islink(filename):
+                        public.ExecShell('chattr -i ' + filename)
+                        if isRecyle:
+                            self.Mv_Recycle_bin(get)
+                        else:
+                            os.remove(filename)
                     else:
                         if key == '.user.ini':
                             if l > 1:
@@ -2884,6 +2883,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def DownloadFile(self, get):
         import panelTask
         task_obj = panelTask.bt_task()
+        get.filename = public.xsssec2(get.filename)
         task_obj.create_task(public.get_msg_gettext('Download file'), 1, get.url, get.path + '/' + get.filename)
         # if sys.version_info[0] == 2: get.path = get.path.encode('utf-8');
         # import db,time
@@ -2923,6 +2923,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             id = get.id
         else:
             id = None
+
         sql.table('tasks').add('id,name,type,status,addtime,execstr', (None,
                                                                        'Install [' + get.name + '-' + get.version + ']',
                                                                        'execshell', '0',
@@ -3261,9 +3262,11 @@ cd %s
 
         if not 'p' in get:
             get.p = 1
+        if not 'limit' in get:
+            get.limit = 12
         if not 'collback' in get:
             get.collback = ''
-        data = public.get_page(count, int(get.p), 12, get.collback)
+        data = public.get_page(count, int(get.p), get.limit, get.collback)
         data['data'] = public.M(my_table).order('id desc').field(
             'id,filename,token,expire,ps,total,password,addtime').limit(data['shift'] + ',' + data['row']).select()
         return public.return_message(0, 0, data)
@@ -3339,14 +3342,17 @@ cd %s
             "filename": get.filename,  # 文件名
             "token": public.GetRandomString(12),  # 12位随机密钥，用于URL
             "expire": mtime + (int(get.expire) * 3600),  # 过期时间
-            "ps": get.ps,  # 备注
+            "ps": "ps:{}".format(get.ps),  # 备注
             "total": 0,  # 下载计数
             "password": str(get.password),  # 提取密码
             "addtime": mtime  # 添加时间
         }
         exts = os.path.basename(get.filename).split('.')
         if len(exts) > 1:
-            pdata['token'] += "." + exts[-1]
+            if str(get.filename).lower().endswith(".tar.gz"):
+                pdata['token'] += ".tar.gz"
+            else:
+                pdata['token'] += "." + exts[-1]
         if len(pdata['password']) < 4 and len(pdata['password']) > 0:
             return public.return_message(-1, 0, public.lang(" Please do not enter the following special characters [ ~ ` / =  ]"))
         if not re.match(r'^\w+$', pdata['password']) and pdata['password']:
@@ -3361,7 +3367,10 @@ cd %s
         else:
             id = public.M(my_table).insert(pdata)
             pdata['id'] = id
-
+        # 添加关键数据统计
+        public.set_module_logs('linux_down', 'create_download_url', 1)
+        pdata["is_file"] = os.path.isfile(get.filename)
+        pdata['expire'] = public.format_date(times=pdata['expire'])
         return public.return_message(0, 0, pdata)
 
     # 取PHP-CLI执行命令
@@ -3387,15 +3396,13 @@ cd %s
         if not php_v: return ''
         # 处理PHP-CLI-INI配置文件
         php_ini = '/www/server/panel/tmp/composer_php_cli_' + php_v + '.ini'
-        if not os.path.exists(php_ini):
-            # 如果不存在，则从PHP安装目录下复制一份
-            src_php_ini = php_path + php_v + '/etc/php.ini'
-            import shutil
-            shutil.copy(src_php_ini, php_ini)
-            # 解除所有禁用函数
-            php_ini_body = public.readFile(php_ini)
-            php_ini_body = re.sub(r"disable_functions\s*=.*", "disable_functions = ", php_ini_body)
-            public.writeFile(php_ini, php_ini_body)
+        src_php_ini = php_path + php_v + '/etc/php.ini'
+        import shutil
+        shutil.copy(src_php_ini, php_ini)
+        # 解除所有禁用函数
+        php_ini_body = public.readFile(php_ini)
+        php_ini_body = re.sub(r"disable_functions\s*=.*", "disable_functions = ", php_ini_body)
+        public.writeFile(php_ini, php_ini_body)
         return php_path + php_v + '/bin/php -c ' + php_ini
 
     # 执行git
@@ -3523,6 +3530,9 @@ cd %s
             if not os.path.exists(get.path + '/composer.json'):
                 data['message']['comp_json'] = public.lang(
                     '[Composer.json] configuration file is not found in the specified directory!')
+                data['message']['file_path'] = ""
+            else:
+                data['message']['file_path'] = get.path+"/composer.json"
             if os.path.exists(get.path + '/composer.lock'):
                 data['message']['comp_lock'] = public.lang(
                     '[Composer.lock] file exists in the specified directory, please delete it before executing')
@@ -4370,30 +4380,3 @@ CREATE TABLE index_tb(
         })
 
 
-    # 上传前批量检查文件是否存在
-    def upload_files_exists(self, args):
-        '''
-            @name 上传前批量检查文件是否存在
-            @param files<string> 文件列表,多个用\n分隔
-            @return dict
-        '''
-        check_files = []
-        if hasattr(args, 'files'):
-            check_files = args.files.split('\n')
-        file_list = []
-        for filename in check_files:
-            try:
-                if not os.path.exists(filename):
-                    file_list.append({'filename': filename, 'exists': False, 'size': 0, 'mtime': 0, 'isfile': False})
-                    continue
-                _stat = os.stat(filename)
-                file_list.append({
-                    'filename': filename,
-                    'exists': True,
-                    'size': _stat.st_size,
-                    'mtime': int(_stat.st_mtime),
-                    'isfile': os.path.isfile(filename)
-                })
-            except:
-                file_list.append({'filename': filename, 'exists': False, 'size': 0, 'mtime': 0, 'isfile': False})
-        return  public.return_message(0, 0,  file_list)

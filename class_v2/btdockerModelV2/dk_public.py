@@ -67,7 +67,7 @@ def docker_client_low(url="unix:///var/run/docker.sock"):
     try:
         import docker
     except:
-        public.ExecShell("btpip install docker")
+        public.ExecShell("btpip install --upgrade docker")
         import docker
 
     try:
@@ -126,12 +126,16 @@ def get_mem_info():
 
 def byte_conversion(data):
     data = data.lower()  # 将数据转换为小写字母形式
+    if "tib" in data:
+        return float(data.replace('tib', '')) * 1024 * 1024 * 1024 *1024
     if "gib" in data:
         return float(data.replace('gib', '')) * 1024 * 1024 * 1024
     elif "mib" in data:
         return float(data.replace('mib', '')) * 1024 * 1024
     elif "kib" in data:
         return float(data.replace('kib', '')) * 1024
+    elif "tb" in data:
+        return float(data.replace('tb', '')) * 1024 * 1024 * 1024 *1024
     elif "gb" in data:
         return float(data.replace('gb', '')) * 1024 * 1024 * 1024
     elif "mb" in data:
@@ -218,7 +222,7 @@ def get_process_id(pname, cmd_line):
 
 
 def write_log(log_data):
-    public.WriteLog("Docker module", log_data)
+    public.WriteLog("Docker", log_data)
 
 
 def check_socket(port):

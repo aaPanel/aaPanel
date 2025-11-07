@@ -69,7 +69,23 @@
 			"index_5": "Erstellen bei",
 			"index_6": "{0} CPU und Speicherübersicht",
 			"index_7": "Verstecken",
-			"index_8": "Anzeige"
+			"index_8": "Anzeige",
+			"overviewTitle": "Ressourcenübersicht",
+			"containerCount": "Container",
+			"spaceUsed": "Platz genutzt",
+			"composeCount": "Komponieren",
+			"composeProjects": "Docker Compose-Projekte",
+			"imageCount": "Bilder",
+			"networkCount": "Netzwerke",
+			"networksCreated": "Netzwerke geschaffen",
+			"volumeCount": "Bände",
+			"mirrorRepoCount": "Register",
+			"repositoriesConfigured": "Konfigurierte Repositorys",
+			"containerList": "Containerliste",
+			"filterAll": "Alle",
+			"filterRunning": "Läuft",
+			"filterStopped": "Angehalten",
+			"searchPlaceholder": "Suchen Sie nach Containernamen oder Bildnamen"
 		},
 		"Container": {
 			"index_1": "Container erstellen",
@@ -350,7 +366,7 @@
 				"index_2": "Erinnerung",
 				"index_3": "Festplatte IO",
 				"index_4": "Netzwerk IO",
-				"index_5": "Grundinformationen",
+				"index_5": "Grundlegende Informationen",
 				"index_6": "Speichergrenze: ",
 				"index_7": "Verkehr: ",
 				"index_8": "Stromaufwärts: ",
@@ -358,9 +374,42 @@
 				"index_10": "Erinnerung",
 				"index_11": "Cache",
 				"index_12": "Lesen",
-				"index_13": "schreiben",
+				"index_13": "Schreiben",
 				"index_14": "Stromaufwärts",
 				"index_15": "Stromabwärts"
+			},
+			"search": {
+				"placeholder": "Suchen Sie nach Containernamen, ID und Containerbild"
+			},
+			"batch": {
+				"start": {
+					"title": "Batch-Startcontainer",
+					"desc": "Ausgewählte Behälter stapelweise starten, Betrieb fortsetzen?"
+				},
+				"restart": {
+					"title": "Batch-Neustart-Container",
+					"desc": "Ausgewählte Container stapelweise neu starten, Betrieb fortsetzen?"
+				},
+				"stop": {
+					"title": "Batch-Stopp-Behälter",
+					"desc": "Ausgewählte Behälter anhalten, Betrieb fortsetzen?"
+				},
+				"kill": {
+					"title": "Batch-Force-Stopp-Container",
+					"desc": "Batch erzwingen Stopp ausgewählter Container, Betrieb fortsetzen?"
+				},
+				"pause": {
+					"title": "Batch-Pause-Container",
+					"desc": "Charge ausgewählte Behälter pausieren, Betrieb fortsetzen?"
+				},
+				"unpause": {
+					"title": "Batch-Lebenslauf-Container",
+					"desc": "Ausgewählte Behälter stapelweise wieder aufnehmen, Betrieb fortsetzen?"
+				},
+				"del": {
+					"title": "Container stapelweise löschen",
+					"desc": "Ausgewählte Container stapelweise löschen, Betrieb fortsetzen?"
+				}
 			}
 		},
 		"CloudImage": {
@@ -375,7 +424,25 @@
 			"index_10": "Ziehen",
 			"index_11": "Container erstellen",
 			"index_12": "Bild löschen [{0}]",
-			"index_13": "Sind Sie sicher, dass Sie das Bild [{0}] löschen möchten?"
+			"index_13": "Sind Sie sicher, dass Sie das Bild [{0}] löschen möchten?",
+			"detail": {
+				"lastUpdated": "Letzte Aktualisierung:",
+				"isOfficial": "Offizielles Bild:",
+				"source": "Quelle:",
+				"dockerHub": "Docker-Hub",
+				"pullsCount": "Zieht:",
+				"selectPlaceholder": "Bitte Bild auswählen oder suchen",
+				"pullButton": "Ziehen",
+				"yes": "Ja",
+				"no": "Nein",
+				"updated": "Aktualisiert",
+				"selectImageError": "Bitte wählen Sie ein Bild aus",
+				"pullImageTitle": "Bild ziehen"
+			},
+			"pull": {
+				"success": "Pull erfolgreich",
+				"failed": "Das Ziehen ist fehlgeschlagen"
+			}
 		},
 		"LocalImage": {
 			"index_1": "Ziehen Sie aus dem Repository",
@@ -401,6 +468,10 @@
 			"index_22": "Weg",
 			"index_23": "Bitte geben Sie den Bildpfad ein",
 			"index_24": "Möchten Sie den Mirror [{0}] wirklich löschen?",
+			"searchPlaceholder": "Suchen Sie nach Bildnamen, ID und verwendeten Containern",
+			"batchDelete": "Stapel löschen",
+			"batchDeleteTitle": "Projektbilder stapelweise löschen",
+			"batchDeleteDesc": "Ausgewählte Projektbilder stapelweise löschen, Betrieb fortsetzen?",
 			"push_1": "Repository -Name",
 			"push_2": "Etikett",
 			"push_3": "Bitte geben Sie Tag ein, z. B.: Bild: v1",
@@ -663,6 +734,47 @@
 			"index_31": "Nach der Einstellung des Bereichs muss Docker neu gestartet werden. Bitte stellen Sie sicher, dass Sie Docker neu starten können, bevor Sie fortfahren.",
 			"index_32": "Setzen Sie den IPv6 -Bereich",
 			"index_33": "Nach der Einstellung muss Docker neu gestartet werden. Bitte stellen Sie sicher, dass Sie Docker neu starten können, bevor Sie fortfahren. Willst du weitermachen?",
+			"cgroupDriver": "cgroup-Treiber",
+			"setCgroupDriverTitle": "Legen Sie den Cgroup-Treiber fest",
+			"setCgroupDriverConfirm": "Nach dem Festlegen des cgroup-Treibers muss Docker neu gestartet werden. Bitte stellen Sie sicher, dass Sie Docker neu starten können, bevor Sie fortfahren. Möchten Sie fortfahren?",
+			"logRotation": "Protokollrotation",
+			"logRotationSet": "Legen Sie die Protokollrotation fest",
+			"logRotationSummary": "* Größe der Protokolldatei: {size} MB, Aufbewahrung von {num} Kopien",
+			"closeLogRotationTitle": "Deaktivieren Sie die Protokollrotation",
+			"closeLogRotationConfirm": "Nach dem Deaktivieren der Protokollrotation muss Docker neu gestartet werden. Bitte stellen Sie sicher, dass Sie Docker neu starten können, bevor Sie fortfahren. Möchten Sie fortfahren?",
+			"logRotationConfig": {
+				"fileSize": "Dateigröße",
+				"retainCount": "Anzahl beibehalten",
+				"unitMB": "MB",
+				"unitCount": "Dateien",
+				"fileSizeRequired": "Bitte geben Sie die Dateigröße ein",
+				"retainCountRequired": "Bitte geben Sie die Anzahl der Retains ein",
+				"configTip1": "Die aktuelle Konfiguration wirkt sich nur auf neu erstellte Container aus. Vorhandene Container müssen neu erstellt werden, damit die Konfiguration wirksam wird",
+				"configTip2": "Wenn Ihr Container wichtige Daten enthält, stellen Sie sicher, dass Sie eine Sicherungskopie erstellen, bevor Sie Neuerstellungsvorgänge durchführen"
+			},
+			"iptables": {
+				"description": "* Automatische Konfiguration der Iptables-Regeln durch Docker",
+				"enableTitle": "Aktivieren Sie iptables",
+				"disableTitle": "Deaktivieren Sie iptables",
+				"enableConfirm": "Nach der Aktivierung von iptables muss Docker neu gestartet werden. Bitte stellen Sie sicher, dass Sie Docker neu starten können, bevor Sie fortfahren. Möchten Sie fortfahren?",
+				"disableConfirm": "Nach dem Deaktivieren von iptables muss Docker neu gestartet werden. Bitte stellen Sie sicher, dass Sie Docker neu starten können, bevor Sie fortfahren. Möchten Sie fortfahren?"
+			},
+			"liveRestore": {
+				"description": "* Wenn diese Option aktiviert ist, bleibt der Status laufender Container erhalten, wenn der Docker-Daemon unerwartet stoppt oder abstürzt",
+				"enableTitle": "Live_restore aktivieren",
+				"disableTitle": "Deaktivieren Sie live_restore",
+				"enableConfirm": "Nach der Aktivierung von live_restore muss Docker neu starten. Bitte stellen Sie sicher, dass Sie Docker neu starten können, bevor Sie fortfahren. Möchten Sie fortfahren?",
+				"disableConfirm": "Nach dem Deaktivieren von live_restore muss Docker neu starten. Bitte stellen Sie sicher, dass Sie Docker neu starten können, bevor Sie fortfahren. Möchten Sie fortfahren?"
+			},
+			"registry": {
+				"label": "Privates Register",
+				"placeholder": "Private Docker-Registrierungsadresse",
+				"modalTitle": "Legen Sie eine private Registrierung fest",
+				"configPlaceholder": "Bitte geben Sie private Registrierungsadressen ein, eine pro Zeile, z. B.:\n192.168.1.111:8087\n192.168.1.112:8087",
+				"restartTip": "* Docker wird nach der Einstellung neu gestartet",
+				"restartTitle": "Starten Sie Docker neu",
+				"restartConfirm": "Docker wird neu gestartet. Möchten Sie fortfahren?"
+			},
 			"compose": {
 				"index_1": "Weg",
 				"index_2": "Bitte wählen Sie den Pfad zur Komponierungsdatei aus",
@@ -673,7 +785,35 @@
 				"index_2": "Priorisieren Sie die Verwendung beschleunigter URLs zur Durchführung von Vorgängen. Anforderungszeitüberschreitungen werden mit der Standardbeschleunigungsmethode übersprungen",
 				"index_3": "Sie müssen Docker nach der Einrichtung der Beschleunigung manuell neu starten",
 				"index_4": "Beschleunigung deaktivieren Bitte auf leer einstellen",
-				"index_5": "Keine Beschleunigung"
+				"index_5": "Keine Beschleunigung",
+				"confirmTitle": "Beschleunigungs-URL festlegen",
+				"confirmContent": "Docker muss nach der Einstellung neu gestartet werden. Bitte stellen Sie sicher, dass Docker neu gestartet werden kann, bevor Sie fortfahren!"
+			},
+			"path": {
+				"label": "One-Click-Installationsverzeichnis",
+				"modifyButton": "Ändern",
+				"disabledTip": "Anwendungen sind bereits vorhanden und können nicht geändert werden",
+				"validationError": "Bitte geben Sie einen gültigen Verzeichnispfad ein!",
+				"confirmTitle": "Ändern Sie das App Store-Verzeichnis",
+				"confirmContent": "Durch Ändern des App-Store-Verzeichnisses wird das Panel neu gestartet. Möchten Sie fortfahren?"
+			},
+			"systemInfo": {
+				"hostname": "Hostname",
+				"systemVersion": "Systemversion",
+				"architecture": "Architektur",
+				"kernelVersion": "Kernel-Version",
+				"cpuCore": "CPU-Kern",
+				"memorySize": "Speichergröße",
+				"dockerVersion": "Docker-Version",
+				"dockerComposeVersion": "Docker Compose-Version",
+				"unixAddress": "Unix-Adresse",
+				"dataDirectory": "Datenverzeichnis",
+				"updateButton": "Aktualisieren",
+				"updateComposeTitle": "Aktualisieren Sie die Docker Compose-Version",
+				"updateComposeContent": "Möchten Sie die Docker Compose-Version aktualisieren?",
+				"updateLogsTitle": "Protokolle aktualisieren",
+				"updateSuccess": "Update erfolgreich",
+				"updateFailed": "Update fehlgeschlagen"
 			}
 		},
 		"install": {

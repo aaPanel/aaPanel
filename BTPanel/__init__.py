@@ -3579,6 +3579,7 @@ def site_v2(pdata=None):
         'set_site_php_version_multiple',
         'delete_website_multiple',
         'set_site_status_multiple',
+        'get_site_list',
         'get_site_err_log',
         'get_site_domains',
         'GetRedirectFile',
@@ -3765,6 +3766,34 @@ def site_v2(pdata=None):
     )
     return publicObject(siteObject, defs, None, pdata)
 
+@app.route(route_v2 + '/git', methods=method_all)
+def git_tools(pdata=None):
+    # git管理
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    import git_tools
+    gitObject = git_tools.GitTools()
+    defs = (
+        'get_git_version',
+        'get_ssh_key',
+        'add_key_repository',
+        'get_deploy_sh',
+        'save_deploy_sh',
+        'get_deploy_records',
+        'manual_deploy_site',
+        'get_site_deploy_log',
+        'get_deploy_script',
+        'git_rollback',
+        'get_site_git_conf',
+        'save_site_git_conf',
+        'del_site_git',
+        'auto_deploy',
+        'refresh_webhook_url',
+        'update_deploy_sh',
+        'del_script',
+        'get_webhook_log'
+    )
+    return publicObject(gitObject, defs, None, pdata)
 
 @app.route(route_v2 + '/ftp', methods=method_all)
 def ftp_v2(pdata=None):
@@ -4556,7 +4585,7 @@ def system_v2(pdata=None):
             'GetLoadAverage', 'ClearSystem', 'GetNetWorkOld', 'GetNetWork',
             'GetDiskInfo', 'GetCpuInfo', 'GetBootTime', 'GetSystemVersion',
             'GetMemInfo', 'GetSystemTotal', 'GetConcifInfo', 'ServiceAdmin',
-            'ReWeb', 'RestartServer', 'ReMemory', 'RepPanel')
+            'ReWeb', 'RestartServer', 'ReMemory', 'RepPanel', 'mark_reboot_read')
     return publicObject(sysObject, defs, None, pdata)
 
 

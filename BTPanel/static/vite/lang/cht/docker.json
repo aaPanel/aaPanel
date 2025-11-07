@@ -69,7 +69,23 @@
 			"index_5": "創建",
 			"index_6": "{0} CPU 、內存總覽",
 			"index_7": "隱藏",
-			"index_8": "顯示"
+			"index_8": "顯示",
+			"overviewTitle": "資源概覽",
+			"containerCount": "容器數量",
+			"spaceUsed": "佔用空間",
+			"composeCount": "編排數量",
+			"composeProjects": "Docker Compose 項目",
+			"imageCount": "旋轉數量",
+			"networkCount": "網絡數量",
+			"networksCreated": "已創建的網絡",
+			"volumeCount": "存儲卷數量",
+			"mirrorRepoCount": "鏡像倉庫數量",
+			"repositoriesConfigured": "已配置的倉庫",
+			"containerList": "容器列表",
+			"filterAll": "全部",
+			"filterRunning": "運行中",
+			"filterStopped": "已停止",
+			"searchPlaceholder": "搜索容器名稱或鏡像名稱"
 		},
 		"Container": {
 			"index_1": "創建容器",
@@ -361,6 +377,39 @@
 				"index_13": "寫",
 				"index_14": "上游",
 				"index_15": "下游"
+			},
+			"search": {
+				"placeholder": "搜索容器名、ID、容器鏡像"
+			},
+			"batch": {
+				"start": {
+					"title": "批量啟動容器",
+					"desc": "批量啟動已選的容器，是否繼續操作！"
+				},
+				"restart": {
+					"title": "批量重啟容器",
+					"desc": "批量重啟已選的容器，是否繼續操作！"
+				},
+				"stop": {
+					"title": "批量停止容器",
+					"desc": "批量停止已選的容器，是否繼續操作！"
+				},
+				"kill": {
+					"title": "批量強制停止容器",
+					"desc": "批量強制停止已選的容器，是否繼續操作！"
+				},
+				"pause": {
+					"title": "批量暫停容器",
+					"desc": "批量暫停已選擇的容器，是否繼續操作！"
+				},
+				"unpause": {
+					"title": "批量恢復容器",
+					"desc": "批量恢復已選的容器，是否繼續操作！"
+				},
+				"del": {
+					"title": "批量銷售容器",
+					"desc": "批量刪除已選的容器，是否繼續操作！"
+				}
 			}
 		},
 		"CloudImage": {
@@ -375,7 +424,25 @@
 			"index_10": "拉取",
 			"index_11": "創建容器",
 			"index_12": "刪除鏡像【{0}】",
-			"index_13": "您真的要刪除鏡像【{0} 】嗎？"
+			"index_13": "您真的要刪除鏡像【{0} 】嗎？",
+			"detail": {
+				"lastUpdated": "最近一次更新時間：",
+				"isOfficial": "是否為官方鏡像：",
+				"source": "來源：",
+				"dockerHub": "碼頭工人中心",
+				"pullsCount": "拉量：",
+				"selectPlaceholder": "請選擇或搜索鏡像",
+				"pullButton": "拉取",
+				"yes": "是",
+				"no": "否",
+				"updated": "更新",
+				"selectImageError": "請選擇一個鏡像",
+				"pullImageTitle": "拉取鏡像"
+			},
+			"pull": {
+				"success": "拉取成功",
+				"failed": "拉取失敗"
+			}
 		},
 		"LocalImage": {
 			"index_1": "從倉庫中拉取",
@@ -401,6 +468,10 @@
 			"index_22": "路徑",
 			"index_23": "請輸入鏡像路徑",
 			"index_24": "您真的想刪除鏡像【{0}】？",
+			"searchPlaceholder": "搜索鏡像名稱、ID、使用的容器",
+			"batchDelete": "批量刪除",
+			"batchDeleteTitle": "批量刪除項目",
+			"batchDeleteDesc": "批量出售項目已選案，是否繼續運營！",
 			"push_1": "存儲庫名稱",
 			"push_2": "標籤",
 			"push_3": "請輸入標籤，例如：鏡像：V1",
@@ -663,6 +734,47 @@
 			"index_31": "設置範圍後需要重啟Docker，請確保可以重啟Docker再操作。",
 			"index_32": "IPv6範圍",
 			"index_33": "設置後需要重啟碼頭，請確保可以重啟碼頭再操作。是否繼續？",
+			"cgroupDriver": "cgroup驅動",
+			"setCgroupDriverTitle": "設置cgroup驅動程序",
+			"setCgroupDriverConfirm": "設置cgroup驅動後需要重啟docker，請確保可以重啟docker再操作。是否繼續？",
+			"logRotation": "日誌切割",
+			"logRotationSet": "設置日誌 切割",
+			"logRotationSummary": "* 切割文件大小{size}MB，保留份數{num}份",
+			"closeLogRotationTitle": "關閉日誌 切割",
+			"closeLogRotationConfirm": "關閉日誌切割後需要重啟docker，請確保可以重啟docker再操作。是否繼續？",
+			"logRotationConfig": {
+				"fileSize": "文件大小",
+				"retainCount": "保留份數",
+				"unitMB": "MB",
+				"unitCount": "份",
+				"fileSizeRequired": "請輸入文件大小",
+				"retainCountRequired": "請輸入保留份數",
+				"configTip1": "當前配置只會影響新創建的容器，已經創建的容器需要重新創建使配置生效",
+				"configTip2": "如果你的容器中有重要數據，確保在執行重建操作之前進行備份"
+			},
+			"iptables": {
+				"description": "* Docker 對 iptables 規則的自動配置",
+				"enableTitle": "開啟iptables",
+				"disableTitle": "關閉iptables",
+				"enableConfirm": "開啟iptables後需要重啟docker，請確保可以重啟docker再操作。是否繼續？",
+				"disableConfirm": "關閉iptables後需要重啟docker，請確保可以重啟docker再操作。是否繼續？"
+			},
+			"liveRestore": {
+				"description": "* 開啟後Docker守護進程發生意外停機或崩潰時保留正在運行的容器狀態",
+				"enableTitle": "開啟live_restore",
+				"disableTitle": "關閉live_restore",
+				"enableConfirm": "開啟live_restore後需要重啟docker，請確保可以重啟docker再操作。是否繼續？",
+				"disableConfirm": "關閉live_restore後需要重啟docker，請確保可以重啟docker再操作。是否繼續？"
+			},
+			"registry": {
+				"label": "私有倉庫",
+				"placeholder": "Docker私有倉庫地址",
+				"modalTitle": "設置私有倉庫",
+				"configPlaceholder": "請輸入私有倉庫地址,一行一個,如:\n192.168.1.111:8087\n192.168.1.112:8087",
+				"restartTip": "* 設置後將重啟Docker",
+				"restartTitle": "重啟Docker",
+				"restartConfirm": "即將重啟Docker，是否繼續？"
+			},
 			"compose": {
 				"index_1": "路徑",
 				"index_2": "請選擇Compose文件的路徑",
@@ -673,7 +785,35 @@
 				"index_2": "優先使用加速URL執行操作，將使用默認加速方法跳過請求超時",
 				"index_3": "設置加速後，您需要手動重新啟動Docker",
 				"index_4": "禁用加速請設置為空",
-				"index_5": "沒有加速"
+				"index_5": "沒有加速",
+				"confirmTitle": "設置加速URL",
+				"confirmContent": "設置後需要重啟docker，請確保可以重啟docker再操作！"
+			},
+			"path": {
+				"label": "應用商店目錄",
+				"modifyButton": "修改",
+				"disabledTip": "當前已有應用存在，無法修改",
+				"validationError": "請輸入有效的目錄路徑！",
+				"confirmTitle": "修改應用商店目錄",
+				"confirmContent": "修改應用商店目錄將會重啟面板，是否繼續？"
+			},
+			"systemInfo": {
+				"hostname": "主機名",
+				"systemVersion": "系統版本",
+				"architecture": "架構",
+				"kernelVersion": "內核版本",
+				"cpuCore": "CPU核心",
+				"memorySize": "內存大小",
+				"dockerVersion": "Docker版本",
+				"dockerComposeVersion": "Docker Compose 版本",
+				"unixAddress": "Unix地址",
+				"dataDirectory": "數據目錄",
+				"updateButton": "更新",
+				"updateComposeTitle": "更新Docker Compose版本",
+				"updateComposeContent": "是否更新Docker Compose版本？",
+				"updateLogsTitle": "添加日誌",
+				"updateSuccess": "更新成功",
+				"updateFailed": "更新失敗"
 			}
 		},
 		"install": {

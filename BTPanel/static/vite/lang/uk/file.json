@@ -176,6 +176,17 @@
 				"untitledDirectory": "новий каталог"
 			}
 		},
+		"pasteConfirm": {
+			"title": "Примітка про Важливий файл",
+			"operationType": "Тип операції",
+			"overwriteFile": "Перезаписати файл",
+			"renameFile": "Перейменувати файл",
+			"fileName": "Назва файлу",
+			"size": "Розмір",
+			"lastModified": "Остання зміна",
+			"overwriteTitle": "Перезаписати файл",
+			"overwriteMessage": "Виявлено дублікат файлу. Ви впевнені, що хочете перезаписати поточний файл [{0}]?"
+		},
 		"tableController": {
 			"calculationFailed": "Помилка підрахунку",
 			"processingWait": "Обробка, зачекайте...",

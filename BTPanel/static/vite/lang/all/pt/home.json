@@ -265,5 +265,8 @@
 	"20ccc0b936ae721235fbb251882e09af": "Inodes totais",
 	"921fd067f5f59d36f697493e0b0e7f97": "Usou inode",
 	"ea211fd1ca41812bd3e73d8b1bb57504": "Inode disponível",
-	"9dd90affd6244a7fc2f09dc8fb7a0551": "Uso inode"
+	"9dd90affd6244a7fc2f09dc8fb7a0551": "Uso inode",
+	"018ccdfebb8ff4dc11a799ebe74b0356": "Lembrete de reinicialização do sistema",
+	"bef91412ee3c10079e58be2bdd757f3a": "Seu servidor foi reiniciado às {time}.",
+	"c5b1945a4e3808d335bcf6080f87c663": "Eu sei"
 }

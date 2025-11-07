@@ -5020,11 +5020,11 @@ location %s
         siteName = site['name']
         sitePath = site['path']
         if not siteName or os.path.isfile(sitePath): return {"runPath":"/",'dirs':[]}
+        path = sitePath
         # 兼容多服务
         webserver = public.get_webserver()
         if public.get_multi_webservice_status():
             webserver = site['service_type']  if site['service_type'] else 'nginx'
-
         if webserver == 'nginx':
             filename = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
             if os.path.exists(filename):

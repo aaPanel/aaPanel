@@ -56,6 +56,7 @@ class main(dockerBase):
         if not args.registry:
             args.registry = "docker.io"
         res = self.login(self._url, args.registry, args.username, args.password)
+
         if not res['status']:
             return public.return_message(-1, 0, res['msg'])
         r_list = self.registry_list(args)
@@ -75,7 +76,8 @@ class main(dockerBase):
             "password": public.aes_encrypt(args.password, self.aes_key),
             "remark": public.xsssec(args.remark)
         }
-        dp.sql("registry").insert(pdata)
+        aa = dp.sql("registry").insert(pdata)
+
         dp.write_log("Added repository [{}] [{}] success!".format(args.name, args.registry))
         return public.return_message(0, 0, public.lang("successfully added!"))
 
@@ -211,6 +213,7 @@ class main(dockerBase):
             res = []
 
         for r in res:
+            if "reg_name" not in r: continue
             if r["name"] == "" or not r["name"] or r["name"] is None:
                 r["name"] = r["reg_name"]
 
@@ -221,35 +224,7 @@ class main(dockerBase):
         获取仓库列表
         :return:
         """
-        db_obj = dp.sql("registry")
-        # 2024/1/3 下午 6:00 检测数据库是否存在并且表健康
-        search_result = db_obj.where('id=? or name=?', (1, "Docker public repository")).select()
-        # search_result = db_obj.where('id=? ', (1)).select()
-        # if db_obj.ERR_INFO:
-        #     return public.return_message(0, 0,  [])
-
-
-        if len(search_result) == 0:
-            dp.sql("registry").insert({
-                "name": "Docker public repository",
-                "url": "docker.io",
-                "username": "",
-                "password": "",
-                "namespace": "",
-                "remark": "Docker public repository"
-            })
-        if "error: no such table: registry" in search_result or len(search_result) == 0:
-            # public.ExecShell("mv -f /www/server/panel/data/docker.db /www/server/panel/data/db/docker.db")
-            public.ExecShell("mv -f /www/server/panel/data/db/docker.db /www/server/panel/data/docker.db")
-            dp.check_db()
-
-        res = dp.sql("registry").select()
-        if not isinstance(res, list):
-            res = []
-
-        for r in res:
-            if r["name"] == "" or not r["name"] or r["name"] is None:
-                r["name"] = r["reg_name"]
+        res = self.registry_list(get)
         return public.return_message(0, 0,  res)
     # 2024/5/24 下午6:09 设置备注
     def set_remark(self, get):
@@ -285,15 +260,6 @@ class main(dockerBase):
                 "registry.cn-hangzhou.aliyuncs.com": "Alibaba Cloud Mirror Station (Hangzhou)"
             }
 
-            # # https://node.aapanel.com/src/com_registry.json
-            # public.ExecShell("rm -f {}".format(com_registry_file))
-            # public.downloadFile("{}/src/com_registry.json".format(public.get_url()), com_registry_file)
-            # try:
-            #     com_registry = json.loads(public.readFile(com_registry_file))
-            # except:
-            #     com_registry = {
-            #         "https://mirror.ccs.tencentyun.com": "腾讯云镜像加速站",
-            #     }
         return public.return_message(0, 0, com_registry)
     # todo  检查字段新增reg_name
     def registry_info(self, get):
@@ -315,7 +281,7 @@ class main(dockerBase):
         :param args:
         :return:
         """
-        import docker.errors
+
         try:
             res = self.docker_client(url).login(
                 registry=registry,
@@ -323,7 +289,7 @@ class main(dockerBase):
                 password=password,
                 reauth=False
             )
-            # public.print_log(" 仓库登录测试 -- {}".format(res))
+
             return public.returnMsg(True, str(res))
         except:
             public.print_log(public.get_error_info())
@@ -340,14 +306,17 @@ class main(dockerBase):
             @name 检查表registry 字段 reg_name  remark是否存在
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        # if not dp.sql('sqlite_master').where('type=? AND name=?', ('table', 'dk_backup')).count():
-        #     dp.sql('dk_backup').execute(
-        #         "CREATE TABLE `dk_backup` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `type` INTEGER, `name` TEXT, `container_id` TEXT, `container_name` TEXT, `filename` TEXT, `size` INTEGER, `addtime` TEXT, `ps` STRING DEFAULT 'none', `cron_id` INTEGER DEFAULT 0 )",
-        #         ())
 
-        create_table_str = public.M('sqlite_master').where('type=? AND name=?', ('table', 'registry')).getField('sql')
+        # if public.M('sqlite_master').where('type=? AND name=?', ('table', 'docker_log_split')).count():
+        #     create_table_str = public.M('sqlite_master').where('type=? AND name=?', ('table', 'docker_log_split')).getField('sql')
+        #
+        # if dp.sql('sqlite_master').where('type=? AND name=?', ('table', 'docker_log_split')).count():
+        #     create_table_str = dp.sql('sqlite_master').where('type=? AND name=?', ('table', 'docker_log_split')).getField('sql')
+
+
+        create_table_str = dp.sql('sqlite_master').where('type=? AND name=?', ('table', 'registry')).getField('sql')
         if create_table_str and 'reg_name' not in create_table_str:
-            public.M('registry').execute('ALTER TABLE `registry` ADD COLUMN `reg_name` VARCHAR default "";')
+            dp.sql('registry').execute('ALTER TABLE `registry` ADD COLUMN `reg_name` VARCHAR default "";')
 
         if create_table_str and 'remark' not in create_table_str:
-            public.M('registry').execute('ALTER TABLE `registry` ADD COLUMN `remark` VARCHAR default "";')
+            dp.sql('registry').execute('ALTER TABLE `registry` ADD COLUMN `remark` VARCHAR default "";')

@@ -69,7 +69,23 @@
 			"index_5": "Créer",
 			"index_6": "{0} CPU et aperçu de la mémoire",
 			"index_7": "Cacher",
-			"index_8": "Afficher"
+			"index_8": "Afficher",
+			"overviewTitle": "Aperçu des ressources",
+			"containerCount": "Conteneurs",
+			"spaceUsed": "Espace utilisé",
+			"composeCount": "Composer",
+			"composeProjects": "Projets Docker Compose",
+			"imageCount": "Images",
+			"networkCount": "Réseaux",
+			"networksCreated": "Réseaux créés",
+			"volumeCount": "Volumes",
+			"mirrorRepoCount": "Registres",
+			"repositoriesConfigured": "Dépôts configurés",
+			"containerList": "Liste de conteneurs",
+			"filterAll": "Tous",
+			"filterRunning": "En cours d'exécution",
+			"filterStopped": "Arrêté",
+			"searchPlaceholder": "Rechercher le nom du conteneur ou le nom de l'image"
 		},
 		"Container": {
 			"index_1": "Créer un conteneur",
@@ -358,9 +374,42 @@
 				"index_10": "Mémoire",
 				"index_11": "Cache",
 				"index_12": "Lire",
-				"index_13": "écrire",
+				"index_13": "Écrire",
 				"index_14": "En amont",
 				"index_15": "En aval"
+			},
+			"search": {
+				"placeholder": "Rechercher le nom, l'ID et l'image du conteneur"
+			},
+			"batch": {
+				"start": {
+					"title": "Conteneurs de démarrage par lots",
+					"desc": "Démarrer par lots les conteneurs sélectionnés, continuer l'opération ?"
+				},
+				"restart": {
+					"title": "Conteneurs de redémarrage par lots",
+					"desc": "Redémarrer par lots les conteneurs sélectionnés, continuer l'opération ?"
+				},
+				"stop": {
+					"title": "Conteneurs d'arrêt de lots",
+					"desc": "Arrêter par lots les conteneurs sélectionnés, continuer l'opération ?"
+				},
+				"kill": {
+					"title": "Conteneurs d'arrêt forcé par lots",
+					"desc": "Arrêt forcé par lots des conteneurs sélectionnés, continuer l'opération ?"
+				},
+				"pause": {
+					"title": "Conteneurs de pause par lots",
+					"desc": "Mettre en pause par lots les conteneurs sélectionnés, continuer l'opération ?"
+				},
+				"unpause": {
+					"title": "Conteneurs de CV par lots",
+					"desc": "Reprendre par lots les conteneurs sélectionnés, continuer l'opération ?"
+				},
+				"del": {
+					"title": "Conteneurs de suppression par lots",
+					"desc": "Supprimer par lots les conteneurs sélectionnés, continuer l'opération ?"
+				}
 			}
 		},
 		"CloudImage": {
@@ -375,7 +424,25 @@
 			"index_10": "Tirer",
 			"index_11": "Créer un conteneur",
 			"index_12": "Supprimer l'image [{0}]",
-			"index_13": "Êtes-vous sûr de vouloir supprimer l'image [{0}]?"
+			"index_13": "Êtes-vous sûr de vouloir supprimer l'image [{0}]?",
+			"detail": {
+				"lastUpdated": "Dernière mise à jour :",
+				"isOfficial": "Image officielle :",
+				"source": "Source :",
+				"dockerHub": "Centre Docker",
+				"pullsCount": "Tire :",
+				"selectPlaceholder": "Veuillez sélectionner ou rechercher une image",
+				"pullButton": "Tirer",
+				"yes": "Oui",
+				"no": "Non",
+				"updated": "Mis à jour",
+				"selectImageError": "Veuillez sélectionner une image",
+				"pullImageTitle": "Extraire l'image"
+			},
+			"pull": {
+				"success": "Tirer avec succès",
+				"failed": "L'extraction a échoué"
+			}
 		},
 		"LocalImage": {
 			"index_1": "Tirer du référentiel",
@@ -401,6 +468,10 @@
 			"index_22": "Chemin",
 			"index_23": "Veuillez saisir le chemin d'image",
 			"index_24": "Voulez-vous vraiment supprimer le miroir [{0}]?",
+			"searchPlaceholder": "Rechercher le nom de l'image, l'ID, les conteneurs utilisés",
+			"batchDelete": "Suppression par lots",
+			"batchDeleteTitle": "Supprimer par lots des images de projet",
+			"batchDeleteDesc": "Supprimer par lots les images du projet sélectionnées, continuer l'opération ?",
 			"push_1": "Nom de référentiel",
 			"push_2": "Étiqueter",
 			"push_3": "Veuillez saisir la balise, par exemple: image: v1",
@@ -663,6 +734,47 @@
 			"index_31": "Après avoir réglé la plage, Docker doit être redémarré. Veuillez vous assurer que vous pouvez redémarrer Docker avant de continuer.",
 			"index_32": "Définir la gamme IPv6",
 			"index_33": "Après le réglage, Docker doit être redémarré. Veuillez vous assurer que vous pouvez redémarrer Docker avant de continuer. Voulez-vous continuer?",
+			"cgroupDriver": "pilote de groupe de contrôle",
+			"setCgroupDriverTitle": "Définir le pilote de groupe de contrôle",
+			"setCgroupDriverConfirm": "Après avoir configuré le pilote de groupe de contrôle, Docker doit redémarrer. Veuillez vous assurer que vous pouvez redémarrer Docker avant de continuer. Voulez-vous continuer ?",
+			"logRotation": "Rotation des journaux",
+			"logRotationSet": "Définir la rotation des journaux",
+			"logRotationSummary": "* Taille du fichier journal : {size} Mo, conserver {num} copies.",
+			"closeLogRotationTitle": "Désactiver la rotation des journaux",
+			"closeLogRotationConfirm": "Après avoir désactivé la rotation des journaux, Docker doit redémarrer. Veuillez vous assurer que vous pouvez redémarrer Docker avant de continuer. Voulez-vous continuer ?",
+			"logRotationConfig": {
+				"fileSize": "Taille du fichier",
+				"retainCount": "Conserver le nombre",
+				"unitMB": "Mo",
+				"unitCount": "fichiers",
+				"fileSizeRequired": "Veuillez entrer la taille du fichier",
+				"retainCountRequired": "Veuillez saisir le nombre de conservations",
+				"configTip1": "La configuration actuelle n'affectera que les conteneurs nouvellement créés. Les conteneurs existants doivent être recréés pour que la configuration prenne effet",
+				"configTip2": "Si votre conteneur contient des données importantes, assurez-vous de sauvegarder avant d'effectuer des opérations de reconstruction"
+			},
+			"iptables": {
+				"description": "* Configuration automatique des règles iptables par Docker",
+				"enableTitle": "Activer iptables",
+				"disableTitle": "Désactiver iptables",
+				"enableConfirm": "Après avoir activé iptables, Docker doit redémarrer. Veuillez vous assurer que vous pouvez redémarrer Docker avant de continuer. Voulez-vous continuer ?",
+				"disableConfirm": "Après avoir désactivé iptables, Docker doit redémarrer. Veuillez vous assurer que vous pouvez redémarrer Docker avant de continuer. Voulez-vous continuer ?"
+			},
+			"liveRestore": {
+				"description": "* Lorsqu'il est activé, préserve l'état des conteneurs en cours d'exécution lorsque le démon Docker s'arrête de manière inattendue ou plante.",
+				"enableTitle": "Activer live_restore",
+				"disableTitle": "Désactiver live_restore",
+				"enableConfirm": "Après avoir activé live_restore, Docker doit redémarrer. Veuillez vous assurer que vous pouvez redémarrer Docker avant de continuer. Voulez-vous continuer ?",
+				"disableConfirm": "Après avoir désactivé live_restore, Docker doit redémarrer. Veuillez vous assurer que vous pouvez redémarrer Docker avant de continuer. Voulez-vous continuer ?"
+			},
+			"registry": {
+				"label": "Registre privé",
+				"placeholder": "Adresse du registre privé Docker",
+				"modalTitle": "Définir un registre privé",
+				"configPlaceholder": "Veuillez saisir des adresses de registre privées, une par ligne, par exemple :\n192.168.1.111:8087\n192.168.1.112:8087",
+				"restartTip": "* Docker redémarrera après la configuration",
+				"restartTitle": "Redémarrer Docker",
+				"restartConfirm": "Docker va redémarrer. Voulez-vous continuer ?"
+			},
 			"compose": {
 				"index_1": "Chemin",
 				"index_2": "Veuillez sélectionner le chemin du fichier Compose",
@@ -673,7 +785,35 @@
 				"index_2": "Prioriser l'utilisation des URL accélérées pour effectuer des opérations, les délais de demande seront ignorés en utilisant la méthode d'accélération par défaut",
 				"index_3": "Vous devez redémarrer manuellement Docker après avoir mis en place l'accélération",
 				"index_4": "Désactiver l'accélération s'il vous plaît régler sur vide",
-				"index_5": "Aucune accélération"
+				"index_5": "Aucune accélération",
+				"confirmTitle": "Définir l'URL d'accélération",
+				"confirmContent": "Docker doit être redémarré après la configuration. Veuillez vous assurer que Docker peut être redémarré avant de continuer !"
+			},
+			"path": {
+				"label": "Répertoire d'installation en un clic",
+				"modifyButton": "Modifier",
+				"disabledTip": "Les applications existent déjà, ne peuvent pas être modifiées",
+				"validationError": "Veuillez entrer un chemin de répertoire valide !",
+				"confirmTitle": "Modifier le répertoire de l'App Store",
+				"confirmContent": "La modification du répertoire de l'App Store redémarrera le panneau. Voulez-vous continuer ?"
+			},
+			"systemInfo": {
+				"hostname": "Nom d'hôte",
+				"systemVersion": "Version du système",
+				"architecture": "Architecture",
+				"kernelVersion": "Version du noyau",
+				"cpuCore": "Cœur du processeur",
+				"memorySize": "Taille de la mémoire",
+				"dockerVersion": "Version Docker",
+				"dockerComposeVersion": "Version de composition de Docker",
+				"unixAddress": "Adresse Unix",
+				"dataDirectory": "Répertoire de données",
+				"updateButton": "Mise à jour",
+				"updateComposeTitle": "Mettre à jour la version de Docker Compose",
+				"updateComposeContent": "Voulez-vous mettre à jour la version de Docker Compose ?",
+				"updateLogsTitle": "Journaux de mise à jour",
+				"updateSuccess": "Mise à jour réussie",
+				"updateFailed": "La mise à jour a échoué"
 			}
 		},
 		"install": {

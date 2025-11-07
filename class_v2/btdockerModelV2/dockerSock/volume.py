@@ -30,5 +30,12 @@ class dockerVolume(base):
             return json.loads(public.ExecShell("curl -s --unix-socket {} http:/{}/volumes"
             .format(self._sock, self.get_api_version()))[0])
         except Exception as e:
-            print(public.get_error_info())
-            return []
+            try:
+                c_list = public.ExecShell("whereis curl | awk 'print {$1}'")[0].split(" ")
+                for c in c_list:
+                    if not c.endswith("/curl"): continue
+                    res, err = public.ExecShell("{} -s --unix-socket {} http:/{}/volumes".format(c, self._sock, self.get_api_version()))
+                    if not err: return json.loads(res)
+                return []
+            except:
+                return []

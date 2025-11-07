@@ -1960,6 +1960,53 @@ def malicious_file_scanning():
         time.sleep(60*60*6)
 
 
+# 多服务守护任务，仅在多服务下执行，每5分钟检查一次
+def multi_web_server_daemon():
+    while True:
+        try:
+            if public.get_multi_webservice_status():
+                import psutil
+                from panel_site_v2 import panelSite
+                from script.restart_services import DaemonManager
+
+                obj = panelSite()
+                pid_paths = {
+                    'nginx': "/www/server/nginx/logs/nginx.pid",
+                    'apache': "/www/server/apache/logs/httpd.pid",
+                    'openlitespeed': "/tmp/lshttpd/lshttpd.pid"
+                }
+
+                for service_name, pid_path in pid_paths.items():
+                    sys.path.append("..")
+                    daemon_info = DaemonManager.safe_read()
+                    if service_name not in daemon_info:
+                        continue
+
+                    is_running = False
+                    if os.path.exists(pid_path):
+                        pid = public.readFile(pid_path)
+
+                        if pid:
+                            try:
+                                psutil.Process(int(pid))
+                                is_running = True
+                            except:
+                                pass
+
+                    if not is_running:
+                        public.WriteLog("Service Daemon", f"Multi-WebServer: An error occurred in {service_name}. Initiate the repair")
+                        obj.cheak_port_conflict('enable')
+                        obj.ols_update_config('enable')
+                        obj.apache_update_config('enable')
+                        public.webservice_operation('nginx')
+                        public.WriteLog("Service Daemon", f"Multi-WebServer: The {service_name} repair was successful")
+                        break
+        except Exception as e:
+            public.print_log(f"Multi-WebServer: {e}")
+
+        time.sleep(300)
+
+
 def run_thread():
     global thread_dict,task_obj
     thread_keys = thread_dict.keys()
@@ -1988,7 +2035,7 @@ def run_thread():
         "update_software_list": update_software_list,  # 每5小时更新软件列表
         "malicious_file_scanning": malicious_file_scanning, # 每6小时进行恶意文件扫描
         "domain_ssl_service": domain_ssl_service, # 每6小时进行域名SSL服务
-
+        "multi_web_server_daemon": multi_web_server_daemon, # 多服务守护每5分钟检测一次
         "maillog_event": maillog_event,  # 邮局日志事件监控 event loop
         "aggregate_maillogs": aggregate_maillogs_task,  # 每分钟聚合邮局日志
         "mail_automations": schedule_automations_forever,  # 每分钟邮局自动化任务
@@ -2073,12 +2120,14 @@ def scan_log_site():
 #预安装网站监控报表
 def check_site_monitor():
     site_total_uninstall = '{}/data/site_total_uninstall.pl'.format(public.get_panel_path())
+    sleep_time = 60
     while True:
         install_name = ''
         if not os.path.exists(site_total_uninstall):
-            if public.GetWebServer() !="openlitespeed" and not os.path.exists("/etc/systemd/system/site_total.service") and not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")) and public.M('tasks').where('name=? and status=?',(install_name,'0')).count() < 1:
-                install_name = 'Install [site_total_monitor]'
+            if public.GetWebServer() !="openlitespeed" and not os.path.exists("/etc/systemd/system/site_total.service") and not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")) and public.M('tasks').where('name=? and status=?',('Install [site_total_monitor]','0')).count() < 1:
                 execstr="curl https://node.aapanel.com/site_total/install.sh|bash"
+                install_name = 'Install [site_total_monitor]'
+                sleep_time=86400
         else:
             if os.path.exists("/etc/systemd/system/site_total.service"):
                 install_name = 'Uninstall [site_total_monitor]'
@@ -2086,7 +2135,7 @@ def check_site_monitor():
         if install_name:
             public.M('tasks').add('id,name,type,status,addtime,execstr',(None, install_name,'execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
             public.writeFile('/tmp/panelTask.pl','True')
-        time.sleep(60)
+        time.sleep(sleep_time)
 
 # 检测防爆破计划任务
 def check_breaking_through_cron():

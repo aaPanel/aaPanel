@@ -50,7 +50,8 @@ class apache:
         time.sleep(0.5)
 
         data = {}
-
+        if not result:
+            raise public.exceptions.HintException("Get Apache Status False, Please Check Apache Status")
         # 计算启动时间
         Uptime = re.search(r"ServerUptimeSeconds:\s+(.*)",result)
         if not Uptime:

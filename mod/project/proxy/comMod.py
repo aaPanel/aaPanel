@@ -208,6 +208,7 @@ server {{
       proxy_set_header X-Real-Port $remote_port;
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       proxy_set_header REMOTE-HOST $remote_addr;
+      {SNI}
       {timeout_conf}
       {websocket_support}
       {custom_conf}
@@ -224,6 +225,9 @@ server {{
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
+        sni_conf = ""
+        if get.proxy_pass.startswith("https://"):
+            sni_conf = "proxy_ssl_server_name on;"
         get.proxy_conf = self._template_proxy_conf.format(
             ip_limit="",
             gzip="",
@@ -234,6 +238,7 @@ server {{
             proxy_pass=get.proxy_pass,
             proxy_host=get.proxy_host,
             proxy_path=get.proxy_path,
+            SNI=sni_conf,
             custom_conf="",
             timeout_conf=get.proxy_timeout,
             websocket_support=self._init_proxy_conf["websocket"]["websocket_conf"],
@@ -1274,6 +1279,9 @@ server {{
                     return public.return_message(-1, 0,"[{}] already exists in Basicauth, please delete it before adding a reverse proxy!".format(
                         get.proxy_path))
 
+        sni_conf = ""
+        if get.proxy_pass.startswith("https://"):
+            sni_conf = "proxy_ssl_server_name on;"
         get.proxy_conf = self._template_proxy_conf.format(
             ip_limit="",
             gzip="",
@@ -1284,6 +1292,7 @@ server {{
             proxy_pass=get.proxy_pass,
             proxy_host=get.proxy_host,
             proxy_path=get.proxy_path,
+            SNI=sni_conf,
             custom_conf="",
             timeout_conf=get.proxy_timeout,
             websocket_support=get.proxy_json_conf["websocket"]["websocket_conf"],
@@ -2058,7 +2067,9 @@ server {{
                 proxy_pass_target=info["proxy_pass"]
                 if int(get.get("keepuri", 1)) ==0:
                     proxy_pass_target+="/"
-
+                sni_conf = ""
+                if info["proxy_pass"].startswith("https://"):
+                    sni_conf = "proxy_ssl_server_name on;"
                 tmp_conf = info["template_proxy_conf"].format(
                     basic_auth=proxy_auth_conf,
                     ip_limit=p_ip_limit_conf,
@@ -2073,6 +2084,7 @@ server {{
                     timeout_conf=timeout_conf,
                     websocket_support=p_websocket_support,
                     rewrite_direct=rewriteconf,
+                    SNI=sni_conf,
                 )
                 if tmp_conf.find("rewrite_direct") == -1 and tmp_conf.find("rewrite ") == -1 and rewriteconf != "":
                     rewrite_conf="{}\n\tproxy_pass".format(rewriteconf)

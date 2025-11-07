@@ -69,5 +69,6 @@
 	"7ddb4a46bbd21a3c5322f3679ef239bd": "Durch den Reparaturvorgang ist die Website nicht mehr zugänglich. Möchten Sie fortfahren?",
 	"f02acf9ce69d78f7502b5ab478645c6a": "Multi-WebServer-Hosting",
 	"ada8a81c9d7eb120155c1b33d439886e": "Bitte wählen Sie den Dienst aus, den Sie behalten möchten",
-	"09dd63272d4e76bf461175487ed9775a": "Nach der Aktivierung mehrerer Dienste werden Apache, Nginx und Openlitespeed installiert"
+	"09dd63272d4e76bf461175487ed9775a": "Nach der Aktivierung mehrerer Dienste werden Apache, Nginx und Openlitespeed installiert",
+	"19cbf2cc98f5c63c5bd8a39d58c76c6e": "Warten auf Installation"
 }

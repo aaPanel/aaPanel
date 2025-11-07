@@ -189,7 +189,6 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     # 上传文件
     def UploadFile(self, get):
-        from werkzeug.utils import secure_filename
         from BTPanel import request
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
@@ -267,9 +266,20 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             args.f_name = args.f_name.encode('utf-8')
             args.f_path = args.f_path.encode('utf-8')
         try:
-            if self.get_real_len(args.f_name) > 256: return public.return_msg_gettext(False, public.lang("The file name contains more than 256 bytes"))
+            if self.get_real_len(args.f_name) > 256:
+                return public.return_msg_gettext(False, public.lang("The file name contains more than 256 bytes"))
         except:
             pass
+        try:
+            temp_filename = args.f_name + '.' + str(int(args.f_size)) + '.upload.tmp'
+            if len(temp_filename.encode('utf-8')) > 255:
+                return public.return_message(-1, 0, public.lang("The file name is too long (over 255 bytes)."))
+            save_path = os.path.join(args.f_path, temp_filename)
+            if len(save_path.encode('utf-8')) > 4096:
+                return public.return_message(-1, 0, public.lang("The full path is too long (over 4096 bytes)."))
+        except Exception as e:
+            return public.fail_v2(public.lang("Failed to check file path: {}", str(e)))
+
         if not self.f_name_check(args.f_name): return public.return_msg_gettext(False, public.lang("No special characters can be included in the file name!"))
 
         if args.f_path == '/':
@@ -1607,9 +1617,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     self.remove_file_ps(get)
                     public.add_security_logs("Del file", "Delete file: " + get.path)
                     return public.return_msg_gettext(True, public.lang('File moved to recycle bin!'))
+            public.write_log_gettext('File manager', 'Successfully permanent deleted file: [{}]!', (get.path,))
             os.remove(get.path)
             self.site_path_safe(get)
-            public.write_log_gettext('File manager', 'Successfully permanent deleted file: [{}]!', (get.path,))
             public.add_security_logs("Del file", "Delete file: " + get.path)
             self.remove_file_ps(get)
             return public.return_msg_gettext(True, public.lang('Successfully deleted file!'))

@@ -98,6 +98,9 @@
 		"index_94": "Écrire l'attente",
 		"index_95": "Lire les octets",
 		"index_96": "Écrire des octets",
+		"systemRestartReminder": "Rappel de redémarrage du système",
+		"serverRestartedAt": "Votre serveur a redémarré à {time}.",
+		"iKnow": "Je sais",
 		"Install": {
 			"index_1_1": "Recommandé d'utiliser les packages en un clic suivants, veuillez choisir à la demande ou dans {soft_} Choisissez par vous-même, recommandé d'installer LEMP.",
 			"index_1_2": "Magasin de logiciels",

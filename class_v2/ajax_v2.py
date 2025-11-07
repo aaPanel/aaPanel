@@ -1772,10 +1772,25 @@ class ajax:
         php_ini = php_path + php_version + '/etc/php.ini'
         if not os.path.exists('/etc/redhat-release') and public.get_webserver() == 'openlitespeed':
             php_ini = php_path + php_version + '/etc/php/'+args.php_version+'/litespeed/php.ini'
+        if not os.path.exists(php_ini) and not os.path.exists(php_bin):
+            return public.return_message(-1, 0, public.lang("Requested PHP version does NOT exist!"))
         tmp = public.ExecShell(php_bin + ' -c {} /www/server/panel/class/php_info.php'.format(php_ini))[0]
         if tmp.find('Warning: JIT is incompatible') != -1:
             tmp = tmp.strip().split('\n')[-1]
-        result = json.loads(tmp)
+        try:
+            result = json.loads(tmp)
+            result['phpinfo'] = {}
+            if "modules" not in result:
+                result['modules'] = []
+            if 'php_version' in result:
+                result['phpinfo']['php_version'] = result['php_version']
+        except Exception:
+            result = {
+                'php_version': php_version,
+                'phpinfo': {},
+                'modules': [],
+                'ini': ''
+            }
         result['phpinfo'] = {}
         result['phpinfo']['php_version'] = result['php_version']
         result['phpinfo']['php_path'] = php_path

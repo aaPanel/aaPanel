@@ -835,7 +835,7 @@ class panelAuth:
         resp = self.send_cloud('{}/api/order/{}/status'.format(public.OfficialApiBase(), args.order_id), {})
 
         # 订单支付成功时，刷新授权信息
-        if int(resp.get('message', {}).get('res', 0)) == 1:
+        if int((resp.get('message', {}) if isinstance(resp.get('message', {}), dict) else {}).get('res', 0)) == 1:
             # 刷新授权状态
             public.load_soft_list()
             public.refresh_pd()

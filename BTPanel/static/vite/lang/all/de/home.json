@@ -265,5 +265,8 @@
 	"20ccc0b936ae721235fbb251882e09af": "Gesamtinoden",
 	"921fd067f5f59d36f697493e0b0e7f97": "Gebrauchter Inode",
 	"ea211fd1ca41812bd3e73d8b1bb57504": "Verfügbarer Inode",
-	"9dd90affd6244a7fc2f09dc8fb7a0551": "Nutzungsinode"
+	"9dd90affd6244a7fc2f09dc8fb7a0551": "Nutzungsinode",
+	"018ccdfebb8ff4dc11a799ebe74b0356": "Erinnerung an den Systemneustart",
+	"bef91412ee3c10079e58be2bdd757f3a": "Ihr Server wurde um {time} neu gestartet.",
+	"c5b1945a4e3808d335bcf6080f87c663": "Ich weiß"
 }

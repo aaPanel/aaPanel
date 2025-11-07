@@ -800,7 +800,7 @@ class main(Base):
                 args1.address = address
                 result = self.more_prot_rule(args1)
                 if not result['status']:
-                    return public.fail_v2(result['msg'])
+                    return public.fail_v2(result.get("msg", "Failed, please check and try again"))
         elif get.address != "all" and "\n" in get.address:
             args2 = public.to_dict_obj(deepcopy(get.get_items()))
             address_list = get.address.split("\n")
@@ -808,11 +808,11 @@ class main(Base):
                 args2.address = address
                 result = self.more_prot_rule(args2)
                 if not result['status']:
-                    return public.fail_v2(result['msg'])
+                    return public.fail_v2(result.get("msg", "Failed, please check and try again"))
         else:
             result = self.more_prot_rule(get)
             if not result['status']:
-                return public.fail_v2(result['msg'])
+                return public.fail_v2(result.get("msg", "Failed, please check and try again"))
 
         if self._isFirewalld and get.reload == "1":
             self.firewall.reload()

@@ -2,12 +2,6 @@
     "default": "en",
     "languages": [
         {
-            "name": "cht",
-            "google": "zh-tw",
-            "title": "繁體中文",
-            "cn": "繁體中文"
-        },
-        {
             "name": "en",
             "google": "en",
             "title": "English",
@@ -74,6 +68,19 @@
             "google": "tr",
             "title": "Türkçe",
             "cn": "土耳其语"
+        },
+        {
+            "name": "zh",
+            "google": "zh-cn",
+            "title": "简体中文",
+            "cn": "简体中文"
+        },
+        {
+            "name": "cht",
+            "google": "zh-tw",
+            "title": "繁體中文",
+            "cn": "繁體中文"
         }
+
     ]
 }

@@ -29,6 +29,7 @@ class main(dockerBase):
         self.alter_table()
         if public.M('sqlite_master').db('docker_log_split').where('type=? AND name=?', ('table', 'docker_log_split')).count():
         # if public.M('sqlite_master').where('type=? AND name=?',('table', 'docker_log_split')).count():
+        #if dp.sql('sqlite_master').where('type=? AND name=?',('table', 'docker_log_split')).count():
             p = crontab.crontab()
             llist = p.GetCrontab(None)
 
@@ -115,6 +116,7 @@ class main(dockerBase):
             if d in get.cmd:
                 return public.return_message(-1, 0,  public.lang('There are danger symbols: [{}],Execution is not allowed!',d))
 
+        get.cmd = get.cmd.replace("\n", "").replace("\r", "").replace("\\", " ")
         os.system("echo -n > {}".format(self._rCmd_log))
         os.system("nohup {} >> {} 2>&1 && echo 'bt_successful' >> {} || echo 'bt_failed' >> {} &".format(
             get.cmd,
@@ -140,10 +142,6 @@ class main(dockerBase):
         :param get:
         :return:
         """
-        # {"name": "cgroupg1", "image": "nginx:1.19.6", "publish_all_ports": "0", "ports": "", "network": "",
-        #  "ip_address": "", "command": "", "entrypoint": "", "auto_remove": "0", "privileged": "0",
-        #  "restart_policy": {"Name": ""}, "mem_reservation": "8855MB", "cpu_quota": 6, "mem_limit": "15555MB",
-        #  "labels": "", "environment": ""}
 
         # 校验参数
         try:
@@ -266,6 +264,18 @@ class main(dockerBase):
 
         network_info = get.network_info if hasattr(get, "network_info") and get.network_info != "" else []
 
+        device_request = []
+        gpus = str(get.get("gpus", "0"))
+        if gpus != "0":
+            count = 0
+            if gpus == "all":
+                count = -1
+            else:
+                count = int(gpus)
+
+            from docker.types import DeviceRequest
+            device_request.append(DeviceRequest(driver="nvidia",count=count,capabilities=[["gpu"]]))
+
         try:
             res = self.docker_client(self._url).containers.create(
                 name=get.name,
@@ -287,6 +297,7 @@ class main(dockerBase):
                 privileged=True if "privileged" in get and get.privileged != "0" else False,
                 environment=dp.set_kv(get.environment),  # "HOME=/value\nHOME11=value1"
                 labels=dp.set_kv(get.labels),  # "key=value\nkey1=value1"
+                device_requests=device_request
             )
 
         except docker.errors.APIError as e:
@@ -329,10 +340,6 @@ class main(dockerBase):
             return public.return_message(-1, 0,  public.lang("Container failed to run! {}", str(a)))
 
         if res:
-            # print(res.status)
-            # print(res.id)
-            # dk_config = self.docker_client(self._url).containers.get(res.id)
-            # print(dk_config.attrs['NetworkSettings']['Networks'][network]['IPAddress'])
             # 将容器的ip改成用户指定的ip
             pdata = {
                 "cpu_limit": str(get.cpu_quota),
@@ -359,10 +366,10 @@ class main(dockerBase):
                     get.tmp_ip_address = network["ip_address"]
                     get.tmp_ip_addressv6 = network["ip_addressv6"]
                     net_result = self.connent_network(get)
-                    if not net_result["status"]:
+                    if net_result["status"] == -1:
                         return net_result
 
-            # 返回包含容器的id和name
+            res.start()
             return public.return_message(0, 0, {
                 "status": True,
                 "result": "Successfully created!",
@@ -370,15 +377,74 @@ class main(dockerBase):
                 "name": dp.rename(res.name),
             })
 
-            # return public.return_message(0, 0, public.lang("容器创建成功!"))
         return public.return_message(-1, 0, public.lang("Creation failure!"))
+    # 2024/11/12 17:15 创建并启动容器
+    def create_some_container(self, get, new_name=None):
+        '''
+            @name 创建并启动容器
+        '''
+        container = new_name if not new_name is None else get.new_container_config["name"]
+        network_info = get.network_info if "network_info" in get and get.network_info != "" else []
+        try:
+            get.new_container = self.docker_client(self._url).containers.create(
+                name=container,
+                image=get.new_container_config["image"],
+                detach=get.new_container_config["detach"],
+                cpu_quota=get.new_container_config["cpu_quota"],
+                mem_limit=get.new_container_config["mem_limit"],
+                tty=get.new_container_config["tty"],
+                stdin_open=get.new_container_config["stdin_open"],
+                publish_all_ports=True if get.new_container_config["publish_all_ports"] == "1" else False,
+                ports=get.new_container_config["ports"],
+                command=get.new_container_config["command"],
+                entrypoint=get.new_container_config["entrypoint"],
+                environment=get.new_container_config["environment"],
+                labels=get.new_container_config["labels"],
+                auto_remove=get.new_container_config["auto_remove"],
+                privileged=get.new_container_config["privileged"],
+                volumes=get.new_container_config["volumes"],
+                volume_driver=get.new_container_config["volume_driver"],
+                mem_reservation=get.new_container_config["mem_reservation"],
+                restart_policy=get.new_container_config["restart_policy"],
+                device_requests=get.new_container_config["device_requests"]
+            )
+        except Exception as e:
+            if "Read timed out" in str(e):
+                return public.return_message(-1, 0, public.lang("Editing failed, connection to docker timed out, please restart docker and try again!"))
+            return public.return_message(-1, 0, public.lang("Update failed!{}",str(e)))
 
+        if not "upgrade" in get or get.upgrade != "1":
+            if len(network_info) > 0:
+                self.docker_client(self._url).networks.get("bridge").disconnect(get.new_container.id)
+                for temp in network_info:
+                    get.net_name = temp["network"]
+                    get.new_container_id = get.new_container.id
+                    get.tmp_ip_address = temp["ip_address"]
+                    get.tmp_ip_addressv6 = temp["ip_addressv6"]
+                    net_result = self.connent_network(get)
+                    if net_result["status"] == -1:
+                        get.new_container.remove()
+                        return net_result
+        else:
+            self.docker_client(self._url).networks.get("bridge").disconnect(get.new_container.id)
+            for net_name, net_settings in get.old_container_config["networking_config"].items():
+                get.net_name = net_name
+                get.new_container_id = get.new_container.id
+                get.tmp_ip_address = net_settings["IPAddress"]
+                get.tmp_ip_addressv6 = net_settings["GlobalIPv6Address"]
+                net_result = self.connent_network(get)
+                if net_result["status"] == -1:
+                    get.new_container.remove()
+                    return net_result
+
+        get.new_container.start()
     def upgrade_container(self, get):
         """
         更新正在运行的容器镜像（重建）
         @param get:
         @return:
         """
+        public.set_module_logs('docker', 'upgrade_container', 1)
         try:
             if "id" not in get:
                 return public.return_message(-1, 0, public.lang("Container ID is abnormal"))
@@ -409,64 +475,68 @@ class main(dockerBase):
             new_container_config = self.structure_new_container_conf(get)
             if new_container_config['status']==-1:
                 return public.return_message(-1, 0,  public.lang( new_container_config['message']))
-            network_info = get.network_info if "network_info" in get and get.network_info != "" else []
 
+            get.new_container_config = new_container_config
+
+            # 2024/11/12 17:05 旧的容器停止掉，以便后面创建新的容器
             container.stop()
-            container.remove()
+
+            # 2024/11/12 17:04 创建一个当前时间戳的新容器，测试是否可以正常运行
+            new_name_time = int(time.time())
+            new_name = "{}_{}".format(new_container_config["name"], new_name_time)
+            result = self.create_some_container(get, new_name=new_name)
+            if result:
+                container = self.docker_client(self._url).containers.get(get.id)
+                container.start()
+
+                if "No such image" in result["msg"]:
+                    return public.return_message(-1, 0, public.lang("The image [{}] does not exist, please try to check [Force pull image] and try again!", get.new_container_config["image"]))
+                return public.return_message(-1, 0, public.lang("The new container was not created successfully, and the old container has been restored.  {}", str(result["msg"])))
+
+
+            from btdockerModelV2.dockerSock import container
+            sk_container = container.dockerContainer()
+
+            # 2024/11/12 17:05 循环检测10次，每次1秒，看是否能获取到新容器的状态，并且必须是running运行中，否则判定为新容器创建失败，然后回滚旧容器
+            is_break = False
+            for i in range(10):
+                sk_container_info = sk_container.get_container_inspect(get.new_container.attrs["Id"])
+                state_n = sk_container_info["State"]
+                if "running" in state_n["Status"] and state_n["Running"]:
+                    is_break = True
+                    get.new_container.stop()
+                    get.new_container.remove()
+                    time.sleep(1)
+
+                    # 2024/11/12 17:06 验证了新的配置文件没有问题，可以正常启动，删掉旧容器，开始创建新的容器
+                    container = self.docker_client(self._url).containers.get(get.id)
+                    container.remove()
+                    result = self.create_some_container(get)
+                    if result: return result
+
+                    # 2024/11/12 17:07 再次检查新的容器状态，如果已经是运行中，则返回编辑成功，否则失败
+                    for i in range(10):
+                        new_sk_container_info = sk_container.get_container_inspect(get.new_container.attrs["Id"])
+                        if "message" in new_sk_container_info:
+                            time.sleep(1)
+                            continue
+
+                        state_n = new_sk_container_info["State"]
+                        if "running" in state_n["Status"] and state_n["Running"]:
+                            return public.return_message(0, 0, public.lang("Update successful!"))
+
+                        time.sleep(1)
+
+                if is_break: break
+                time.sleep(1)
+
             try:
-                new_container = self.docker_client(self._url).containers.create(
-                    name=new_container_config["name"],
-                    image=new_container_config["image"],
-                    detach=new_container_config["detach"],
-                    cpu_quota=new_container_config["cpu_quota"],
-                    mem_limit=new_container_config["mem_limit"],
-                    tty=new_container_config["tty"],
-                    stdin_open=new_container_config["stdin_open"],
-                    publish_all_ports=True if new_container_config["publish_all_ports"] == "1" else False,
-                    ports=new_container_config["ports"],
-                    command=new_container_config["command"],
-                    entrypoint=new_container_config["entrypoint"],
-                    environment=new_container_config["environment"],
-                    labels=new_container_config["labels"],
-                    auto_remove=new_container_config["auto_remove"],
-                    privileged=new_container_config["privileged"],
-                    volumes=new_container_config["volumes"],
-                    volume_driver=new_container_config["volume_driver"],
-                    mem_reservation=new_container_config["mem_reservation"],
-                    restart_policy=new_container_config["restart_policy"],
-                )
-            except Exception as e:
-                public.print_log(traceback.format_exc())
-                public.print_log("修改 创建新容器报错--")
-
-                if "Read timed out" in str(e):
-                    return public.return_message(-1, 0, public.lang("Container editing failed and the connection to docker timed out."))
-                # print(traceback.format_exc())
+                container = self.docker_client(self._url).containers.get(get.id)
+                container.start()
+            except:
                 return public.return_message(-1, 0,  public.lang("Update failed!{}", str(e)))
-            if not "upgrade" in get or get.upgrade != "1":
-                if len(network_info) > 0:
-                    self.docker_client(self._url).networks.get("bridge").disconnect(new_container.id)
-                    for temp in network_info:
-                        get.net_name = temp["network"]
-                        get.new_container_id = new_container.id
-                        get.tmp_ip_address = temp["ip_address"]
-                        get.tmp_ip_addressv6 = temp["ip_addressv6"]
-                        net_result = self.connent_network(get)
-                        if not net_result["status"]:
-                            return net_result
-            else:
-                self.docker_client(self._url).networks.get("bridge").disconnect(new_container.id)
-                for net_name, net_settings in get.old_container_config["networking_config"].items():
-                    get.net_name = net_name
-                    get.new_container_id = new_container.id
-                    get.tmp_ip_address = net_settings["IPAddress"]
-                    get.tmp_ip_addressv6 = net_settings["GlobalIPv6Address"]
-                    net_result = self.connent_network(get)
-                    if not net_result["status"]:
-                        return net_result
 
-            new_container.start()
-            return public.return_message(0, 0, public.lang("Update successfully!"))
+            return public.return_message(0, 0,  public.lang("Update failed! The container state has been restored"))
         except docker.errors.NotFound as e:
             if "No such container" in str(e):
                 return public.return_message(-1, 0, public.lang("Container does not exist!"))
@@ -527,8 +597,8 @@ class main(dockerBase):
                 "GlobalIPv6Address": net_settings["GlobalIPv6Address"],
                 "GlobalIPv6PrefixLen": net_settings["GlobalIPv6PrefixLen"],
                 "DriverOpts": net_settings["DriverOpts"],
-                "DNSNames": net_settings["DNSNames"],
             }
+            if "DNSNames" in net_settings: network_config[net_name]["DNSNames"] = net_settings["DNSNames"]
 
         return public.return_message(0, 0,{
             "image": container.attrs['Config']['Image'],
@@ -606,6 +676,18 @@ class main(dockerBase):
         new_restart_policy = get.new_restart_policy if hasattr(get, "new_restart_policy") and get.new_restart_policy else get.old_container_config["restart_policy"]
         new_network = get.new_network if hasattr(get, "new_network") and get.new_network else get.old_container_config["network"]
 
+        device_request = []
+        gpus = str(get.get("gpus", "0"))
+        if gpus != "0":
+            count = 0
+            if gpus == "all":
+                count = -1
+            else:
+                count = int(gpus)
+
+            from docker.types import DeviceRequest
+            device_request.append(DeviceRequest(driver="nvidia", count=count, capabilities=[["gpu"]]))
+
         return public.return_message(0, 0, {
             "image": new_image,
             "name": new_name,
@@ -626,6 +708,7 @@ class main(dockerBase):
             "volume_driver": new_volume_driver,
             "mem_reservation": new_mem_reservation,
             "restart_policy": new_restart_policy,
+            "device_requests":device_request
         })
 
     def commit(self, get):
@@ -678,7 +761,6 @@ class main(dockerBase):
         :param get:
         :return:
         """
-        # {"id": "b414fd6b5d5a1e36e3246dc8bb4b4518bd0adbcd62180abc0e146ccc4b8731db", "shell": "bash", "sudo_i": 1}
         try:
             get.validate([
                 Param('id').Require().String(),
@@ -691,15 +773,6 @@ class main(dockerBase):
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, ex)
         try:
-            # if "id" not in get:
-            #     return public.return_message(-1, 0, public.lang("The container ID is abnormal, please refresh the page and try again!"))
-
-            # shell_list = ('bash', 'sh')
-            # if "shell" not in get:
-            #     return public.return_message(-1, 0, public.lang("Select the shell type!"))
-
-            # if get.shell not in shell_list:
-            #     return public.return_message(-1, 0, public.lang("This shell is not supported-choose bash or sh!"))
 
             user_root = "-u root" if hasattr(get, "sudo_i") else ""
 
@@ -740,21 +813,6 @@ class main(dockerBase):
         @param get:
         @return:
         """
-        # try:
-        #     # 删除站点
-        #     a = public.M('sites').find()
-        #     b = public.M('domain').find()
-        #
-        #     # 删除数据库记录
-        #     c = dp.sql('dk_domain').find()
-        #     d = dp.sql('dk_sites').find()
-        # except Exception as e:
-        #     public.print_log(traceback.format_exc())
-        #
-        # public.print_log("a|  {}".format(a))
-        # public.print_log("b|  {}".format(b))
-        # public.print_log("c|  {}".format(c))
-        # public.print_log("d|  {}".format(d))
 
         try:
             get.validate([
@@ -792,8 +850,6 @@ class main(dockerBase):
             # todo 此处导入注意适配  info返回已改
             info = main().get_proxy_info(get)['message']
             if info and 'name' in info and 'id' in info:
-                print(info['name'])
-                print(info['id'])
                 args = public.to_dict_obj({
                     'id': info['id'],
                     'webname': info['name']
@@ -820,7 +876,7 @@ class main(dockerBase):
                 if not all_data:
                     public.M("docker_log_split").execute('drop table if exists docker_log_split')
 
-                containers_list = self.get_list(get)['message']
+                containers_list = self._get_list(get)
                 if not containers_list["container_list"]:
                     public.M("docker_log_split").execute('drop table if exists docker_log_split')
 
@@ -843,6 +899,8 @@ class main(dockerBase):
 
             return public.return_message(0, 0, public.lang("Successfully deleted!"))
         except Exception as e:
+            if "operation not permitted" in str(e):
+                return public.return_message(-1, 0,  public.lang("Please turn off the [Tamper-proof for Enterprise] before trying!"))
             return public.return_message(-1, 0,  public.lang("Delete failed! {}", str(e)))
 
     # 设置容器状态
@@ -1118,9 +1176,17 @@ class main(dockerBase):
             if "No such container" in str(sk_container_info):
                 return public.return_message(-1, 0, public.lang("The container doesn't exist!"))
 
-            info_path = "/var/lib/docker/containers/{}/container_info.json".format(get.id)
+            info_path = "/var/lib/docker/containers/{}/container_info.json".format(sk_container_info["Id"])
             public.writeFile(info_path, json.dumps(sk_container_info, indent=3))
             sk_container_info['container_info'] = info_path
+            # 计算GPU数量
+            device_requests = sk_container_info["HostConfig"].get('DeviceRequests', [])
+            sk_container_info["gpu_count"] = 0
+            if device_requests is not None and len(device_requests) != 0:
+                for item in device_requests:
+                    if item["Driver"] == "nvidia":
+                        sk_container_info["gpu_count"] = item["Count"]
+                        break
             return public.return_message(0, 0, sk_container_info)
         except Exception as e:
             if "No such container" in str(e):
@@ -1240,37 +1306,7 @@ class main(dockerBase):
         :param get
         :return:
         """
-        from btdockerModelV2.dockerSock import container
-        sk_container = container.dockerContainer()
-        sk_container_list = sk_container.get_container()
-
-        container_to_top = self._get_container_to_top()
-
-        data = {
-            "online_cpus": dp.get_cpu_count(),
-            "mem_total": dp.get_mem_info(),
-            "container_list": [],
-        }
-
-        container_detail = list()
-        grouped_by_status = dict()
-        for sk_c in sk_container_list:
-            struct_container = self.struct_container_list(sk_c, container_to_top)
-            status = struct_container['status']
-            grouped_by_status.setdefault(status, []).append(struct_container)
-            container_detail.append(struct_container)
-
-        if container_to_top:
-            container_detail = sorted(container_detail, key=lambda x: (x['is_top'], x['created_time']), reverse=True)
-            for key in grouped_by_status:
-                grouped_by_status[key] = sorted(grouped_by_status[key], key=lambda x: (x['is_top'], x['created_time']), reverse=True)
-        else:
-            container_detail = sorted(container_detail, key=lambda x: x['created_time'], reverse=True)
-            for key in grouped_by_status:
-                grouped_by_status[key] = sorted(grouped_by_status[key], key=lambda x: x['created_time'], reverse=True)
-
-        data['grouped_by_status'] = grouped_by_status
-        data['container_list'] = container_detail
+        data = self._get_list(get)
         return public.return_message(0, 0, data)
 
     def _get_list(self, get):
@@ -1284,11 +1320,17 @@ class main(dockerBase):
         sk_container_list = sk_container.get_container()
 
         container_to_top = self._get_container_to_top()
-
+        #获取gpu数量
+        try:
+            from mod.project.docker.app.gpu.nvidia import NVIDIA
+            gpu_count = NVIDIA().device_count
+        except:
+            gpu_count = 0
         data = {
             "online_cpus": dp.get_cpu_count(),
             "mem_total": dp.get_mem_info(),
             "container_list": [],
+            "gpu": gpu_count
         }
 
         container_detail = list()
@@ -1318,7 +1360,7 @@ class main(dockerBase):
         return [container_info.attrs for container_info in c_list]
 
     # 获取容器日志
-    def get_logs(self, get):
+    def get_logs11(self, get):
         """
         获取指定容器日志
         :param get:
@@ -1386,6 +1428,61 @@ class main(dockerBase):
                     res['split_hour'] = 2
                     res['split_minute'] = 0
                     res['save'] = '180'
+
+            return public.return_message(0, 0, res)
+
+        except Exception:
+            return public.return_message(0, 0, res)
+
+
+    def get_logs(self, get):
+        """
+        获取指定容器日志
+        :param get:
+        :return:
+        """
+        res = {
+            "logs": "",
+        }
+
+        try:
+            # 获取容器信息   名称 日志路径  大小
+            container_info = self.docker_client(self._url).containers.get(get.id)
+
+            if not os.path.exists(container_info.attrs['LogPath']):
+                return public.return_message(0, 0, "")
+
+            since = ""
+            until = ""
+            tail = ""
+            if hasattr(get, 'time_search') and get.time_search != '':
+                time_search = json.loads(str(get.time_search))
+                since = int(time_search[0])
+                until = int(time_search[1])
+                size = os.stat(container_info.attrs['LogPath']).st_size
+                if size > 1048576:
+                    tail = int(get.tail) if "tail" in get else 10000
+
+            options = {
+                "since": since,
+                "until": until,
+                "tail": tail
+              }
+            from btdockerModelV2.dockerSock import container
+
+            sk_container = container.dockerContainer()
+            sk_container_logs = sk_container.get_container_logs(get.id,options)
+            if hasattr(get, 'search') and get.search != '':
+                if get.search:
+                    sk_container_logs = sk_container_logs.split("\n")
+                    sk_container_logs = [i for i in sk_container_logs if get.search in i]
+                    sk_container_logs = "\n".join(sk_container_logs)
+
+            res["logs"] = sk_container_logs
+            res['id'] = get.id
+            res['name'] = dp.rename(container_info.attrs['Name'][1:])
+            res['logs_path'] = container_info.attrs['LogPath']
+            res['size'] = os.stat(container_info.attrs['LogPath']).st_size
 
             return public.return_message(0, 0, res)
 
@@ -1719,115 +1816,92 @@ class main(dockerBase):
         @return:
         """
         if not hasattr(get, 'ws_callback'):
-            return public.return_message(-1, 0, public.lang( 'Parameter error, Please pass in: ws_callback!'))
+            return public.return_message(-1, 0, public.lang('Parameter error, Please pass in: ws_callback!'))
         if not hasattr(get, '_ws'):
-            return public.return_message(-1, 0, public.lang( 'Parameter error, Please pass in: _ws!'))
-
-        from system import system
-        syst = system()
-        data = dict()
-        data["cpu_info"] = syst.GetCpuInfo()
-        data["mem_info"] = syst.GetMemInfo()
-
-        get._ws.send(public.getJson(
-            {
-                "data": data,
-                "ws_callback": get.ws_callback,
-                "msg": "Start getting the cpu and memory usage of all containers!",
-                "status": True,
-                "end": False,
-            }))
+            return public.return_message(-1, 0, public.lang('Parameter error, Please pass in: _ws!'))
 
         try:
+            result = {
+                "container_list": {},
+            }
             # 获取所有容器列表
             container_list = self._get_list(get)["container_list"]
+            for container in container_list:
+                result["container_list"][container["name"]] = {
+                    "id": container["id"],
+                    "name": container["name"],
+                    "image": container["image"],
+                    "created_time": container["created_time"],
+                    "status": container["status"],
+                    "memory_usage": "",
+                    "cpu_usage": "",
+                    "pids": "",
+                }
+
+            get._ws.send(public.getJson(
+                {
+                    "data": result,
+                    "ws_callback": get.ws_callback,
+                    "msg": "Start getting CPU and memory usage for all containers!",
+                    "status": True,
+                    "end": False,
+                }))
 
             while True:
                 docker_stats_result = public.ExecShell(
-                    "docker stats --no-stream --format "
+                    "docker stats --all --no-stream --format "
                     "'{{.ID}},{{.Name}},{{.CPUPerc}},{{.MemUsage}},{{.MemPerc}},{{.NetIO}},{{.BlockIO}},{{.PIDs}};'"
                 )[0]
-
-                data["cpu_info"] = syst.GetCpuInfo()
-                data["mem_info"] = syst.GetMemInfo()
 
                 if not docker_stats_result:
                     get._ws.send(public.getJson(
                         {
                             "data": {},
                             "ws_callback": get.ws_callback,
-                            "msg": "No running container resource information has been obtained yet!",
+                            "msg": "I haven't received any information about the running container resources!",
                             "status": True,
                             "end": True,
                         }))
                     return
-
-                container_stats_data = list()
 
                 for i in docker_stats_result.split(";"):
                     if not i: continue
                     tmp = i.strip().split(",")
                     if len(tmp) == 0: continue
                     if len(tmp) == 1 and not tmp[0]: continue
+                    container_name = dp.rename(tmp[1])
+                    if container_name not in result["container_list"]:
+                        continue
 
-                    # 获取容器使用的image
-                    id = image = create_time = ""
-
-                    for cl in container_list:
-                        if cl["name"] in dp.rename(tmp[1]):
-                            id = cl["id"]
-                            image = cl["image"]
-                            create_time = cl["created_time"]
-                            break
-
-                    container_stats_data.append({
-                        "id": id,
-                        "name": dp.rename(tmp[1]),
-                        "image": image,
-                        "create_time": create_time,
-                        "cpu_usage": tmp[2].strip("%"),
-                        "mem_percent": tmp[4].strip("%"),
-                        "mem_usage": {
-                            "mem_usage": dp.byte_conversion(tmp[3].split("/")[0]),
-                            "mem_limit": dp.byte_conversion(tmp[3].split("/")[1]),
-                        },
-                        "net_io": {
-                            "net_in": dp.byte_conversion(tmp[5].split("/")[0]),
-                            "net_out": dp.byte_conversion(tmp[5].split("/")[1]),
-                        },
-                        "block_io": {
-                            "block_in": dp.byte_conversion(tmp[6].split("/")[0]),
-                            "block_out": dp.byte_conversion(tmp[6].split("/")[1]),
-                        },
-                        "pids": tmp[7],
-                    })
-
-                data["container_stats_data"] = container_stats_data
-                data["container_count"] = len(container_stats_data)
-                end = False
-                msg = "Obtaining the cpu and memory usage of all containers was successful!"
-                if len(container_stats_data) == 0:
-                    end = True
-                    msg = "No running container resource information has been obtained yet!"
+                    result["container_list"][container_name]["cpu_usage"] = tmp[2].strip("%")
+                    result["container_list"][container_name]["mem_percent"] = tmp[4].strip("%")
+                    result["container_list"][container_name]["memory_usage"] = {
+                        "mem_usage": dp.byte_conversion(tmp[3].split("/")[0]),
+                        "mem_limit": dp.byte_conversion(tmp[3].split("/")[1]),
+                    }
+                    result["container_list"][container_name]["pids"] = tmp[7]
 
                 get._ws.send(public.getJson(
                     {
-                        "data": data,
+                        "data": result,
                         "ws_callback": get.ws_callback,
-                        "msg": msg,
+                        "msg": "Get CPU and memory usage for all containers successfully!",
                         "status": True,
-                        "end": end,
+                        "end": False,
                     }))
 
                 time.sleep(0.1)
 
-        except:
-            public.print_log(traceback.format_exc())
+
+        except Exception as ex:
+            # import traceback
+            # public.print_log(traceback.format_exc())
+            # public.print_log("error info: {}".format(ex))
             get._ws.send(public.getJson(
                 {
                     "data": {},
                     "ws_callback": get.ws_callback,
-                    "msg": "Failed to get cpu and memory usage of all containers!",
+                    "msg": "Failed to get CPU and memory usage for all containers!",
                     "status": True,
                     "end": True,
                 }))
