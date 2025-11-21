@@ -76,7 +76,11 @@ class panelPlugin:
                 self.__tasks = []
 
         if not os.path.exists(self.__tmp_path):
-            os.makedirs(self.__tmp_path, 0o755)
+            try:
+                os.makedirs(self.__tmp_path, 0o755)
+            except OSError as e:
+                # 当文件系统为只读时
+                public.print_log("Failed to create temporary directory: {}".format(e))
 
     def input_package(self, get):
         """
@@ -466,8 +470,11 @@ class panelPlugin:
         if pluginInfo.get('message', ''):
             pluginInfo = pluginInfo['message']
 
-        self.mutex_title = pluginInfo['mutex']
-        if not self.check_mutex(pluginInfo['mutex']): return public.return_message(-1, 0, public.lang('Please uninstall [{}] first',self.mutex_title))
+        mutex = pluginInfo.get('mutex', '')
+        self.mutex_title = mutex
+        if mutex:
+            if not self.check_mutex(mutex):
+                return public.return_message(-1, 0, public.lang('Please uninstall [{}] first',self.mutex_title))
         if not hasattr(get, 'id'):
             if not self.check_dependent(pluginInfo['dependent']): return public.return_message(-1, 0, public.lang('Depends on the following software, please install [{}] first',pluginInfo['dependent']))
         if 'version' in get:
@@ -572,11 +579,10 @@ class panelPlugin:
             pass
 
         sts = 0
-        if result.get('status', None):
+        if isinstance(result, dict) and result.get('status', None):
             sts = 0 if result['status'] else -1
-            # public.print_log("0000 5555555555  {}".format(result))
             result = result['msg']
-        # public.print_log("hdfh44444  {}".format(result))
+
         return public.return_message(sts, 0,  result)
 
     #同步安装
@@ -617,7 +623,7 @@ class panelPlugin:
             if hasattr(get, 'min_version'):
                 get.version += '.' + get.min_version
 
-            return self.__install_plugin(pluginInfo['name'], get.version)
+            return self.__install_plugin(pluginInfo['name'], get.get('version', ''))
 
     # 设置Python环境变量
     def set_pyenv(self, filename):
@@ -971,14 +977,19 @@ class panelPlugin:
 
     #取本地插件
     def get_local_plugin(self,sList):
-        for name in os.listdir('plugin/'):
+        plugin_path = 'plugin/'
+        # 避免全新安装时目录不存在报错
+        if not os.path.exists(plugin_path):
+            return sList
+
+        for name in os.listdir(plugin_path):
             isExists = False
             for softInfo in sList:
                 if name == softInfo['name']:
                     isExists = True
                     break
             if isExists: continue
-            filename = 'plugin/' + name + '/info.json'
+            filename = plugin_path + name + '/info.json'
             if not os.path.exists(filename): continue
             tmpInfo = public.ReadFile(filename).strip()
             if not tmpInfo: continue
@@ -994,12 +1005,16 @@ class panelPlugin:
     def check_setup_task(self,sName):
         if not self.__tasks:
             self.__tasks = public.M('tasks').where("status!=?",('1',)).field('status,name').select()
+        if not isinstance(self.__tasks, list):
+            return '1'
         if sName.find('php-') != -1:
             tmp = sName.split('-')
             sName = tmp[0]
             version = tmp[1]
         isTask = '1'
         for task in self.__tasks:
+            if not isinstance(task, dict):
+                continue
             tmpt = public.getStrBetween('[',']',task['name'])
             if not tmpt:continue
             tmp1 = tmpt.split('-')
@@ -1020,6 +1035,8 @@ class panelPlugin:
 
     #构造本地插件信息
     def get_local_plugin_info(self,info):
+        if 'versions' not in info:
+            return None
         m_version = info['versions'].split(".")
         if len(m_version) < 2: return None
         if len(m_version) > 2:
@@ -2106,8 +2123,13 @@ class panelPlugin:
                 self.__tasks = public.M('tasks').where("status!=?",('1',)).field('status,name').select()
             isTask = '1'
             for task in self.__tasks:
+                if not isinstance(task, dict):
+                    continue
+                if 'name' not in task:
+                    continue
                 tmpt = public.getStrBetween('[',']',task['name'])
-                if not tmpt:continue
+                if not tmpt:
+                    continue
                 tmp1 = tmpt.split('-')
                 name1 = tmp1[0].lower()
                 if name == 'php':
@@ -2729,7 +2751,11 @@ class panelPlugin:
 
         import panelTask
         panelTask.bt_task()._unzip(tmp_file,tmp_path,'','/dev/null')
-        os.remove(tmp_file)
+        if os.path.exists(tmp_file):
+            try:
+                os.remove(tmp_file)
+            except:
+                pass
         p_info = tmp_path + '/info.json'
         if not os.path.exists(p_info):
             d_path = None
@@ -2788,7 +2814,11 @@ class panelPlugin:
 
         import panelTask
         panelTask.bt_task()._unzip(tmp_file,tmp_path,'','/dev/null')
-        os.remove(tmp_file)
+        if os.path.exists(tmp_file):
+            try:
+                os.remove(tmp_file)
+            except:
+                pass
         p_info = tmp_path + '/info.json'
         if not os.path.exists(p_info):
             d_path = None
@@ -2826,7 +2856,8 @@ class panelPlugin:
         return public.return_message(0, 0, data)
     #导入插件包
     def input_zip(self,get):
-        if not os.path.exists(get.tmp_path): return public.return_message(-1, 0, public.lang("Temporary file does NOT exist, please re-upload!"))
+        if not hasattr(get, 'tmp_path') or not os.path.exists(get.tmp_path):
+            return public.return_message(-1, 0, public.lang("Temporary file does NOT exist, please re-upload!"))
         plugin_path = '/www/server/panel/plugin/' + get.plugin_name
         if not os.path.exists(plugin_path): os.makedirs(plugin_path)
         public.ExecShell(r"\cp -a -r " + get.tmp_path + '/* ' + plugin_path + '/')
@@ -3129,7 +3160,11 @@ class panelPlugin:
             plu_panelTask.bt_task()._unzip(tmp_file, s_tmp_path, '',
                                            '/dev/null')
             if os.path.exists(tmp_file):
-                os.remove(tmp_file)
+                try:
+                    os.remove(tmp_file)
+                except:
+                    pass
+
 
         s_tmp_path = os.path.join(s_tmp_path, self.__plugin_name)
 

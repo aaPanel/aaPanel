@@ -246,5 +246,18 @@
 	"a91f378bf120f4a971b2ad4f7bfdce70": "Installieren, bitte warten ...",
 	"dbded73d898181a0721b5f0973e9ee74": "Deinstallieren, bitte warte ...",
 	"c2fd5a116b9d3bcd0185dbf233365764": "Anschluss wechseln, bitte warten ...",
-	"1fb4173c812ebb31f38c565e1769d090": "Der Adminer -Treiber hängt von der derzeit ausgeführten PHP -Versionsumgebung ab. Wenn Sie feststellen, dass der Treiber fehlt, gehen Sie bitte zu PHP -Erweiterungen, um PHP_MONGODB und PDO_PGSQL zu installieren"
+	"1fb4173c812ebb31f38c565e1769d090": "Der Adminer -Treiber hängt von der derzeit ausgeführten PHP -Versionsumgebung ab. Wenn Sie feststellen, dass der Treiber fehlt, gehen Sie bitte zu PHP -Erweiterungen, um PHP_MONGODB und PDO_PGSQL zu installieren",
+	"810bb038ff6f1e9d2a6e578c501fc22c": "Protokolle anzeigen",
+	"72d6d7a1885885bb55a565fd1070581a": "Importieren",
+	"556b050ce914d18480d6ea30308c7790": "Erholen",
+	"fcd071a71d6bb7d003972e54f88dd553": "{0} Datenbankdatei wird importiert, bitte warten...",
+	"2f01adab1406a6e3deaca02f04a67c43": "Die aktuelle {0}-Aufgabe wird im Hintergrund ausgeführt. Sie können diese Seite schließen, um andere Vorgänge auszuführen",
+	"8cc925eb55597a41d11fc8d6aea35910": "{0} Datenbank:",
+	"5f6f842cb231e86cd367fcaff5896f93": "{0} Größe:",
+	"2e8274f870fdd2c7138262e3300cb108": "{0} Geschwindigkeit:",
+	"2b005dc108bef790c8d3511592bd2c2d": "Nachdem der Import abgeschlossen ist, können Sie die Importergebnisse im Importprotokoll einsehen",
+	"6aea058d3dc97cb1ddbd873fac3dcfa4": "{0} Datenbankdatei, bitte warten...",
+	"da561ddb957ee1dfa466f8e8a757b237": "{0} Datenbank: ",
+	"4308f628f9d925687737f2d4e843c47f": "{0} Größe: ",
+	"94103f11ea70a356fd537493adc58f7f": "{0} Geschwindigkeit:"
 }

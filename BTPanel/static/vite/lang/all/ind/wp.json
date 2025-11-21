@@ -218,5 +218,22 @@
 	"bf0c29411206e89e3ec8cfadd32127c5": "Harap tutup dan kosongkan cache sebelum mengaktifkan mode pemeliharaan.",
 	"c9f96845a9be884034d544e8b2c0928f": "Catatan: Untuk menghindari penurunan peringkat situs web oleh mesin pengindeksan, mohon jangan mengaktifkan mode pemeliharaan dalam waktu lama.",
 	"3014168da15aa5d8dc2834826c046d6b": "Merekomendasikan untuk mengunggah file HTML untuk templat, dan menggunakan URL data untuk file templat statis.",
-	"4d3829e30ef6cf2efd77087752261d0a": "Jika Anda ingin templat Anda menggunakan fungsi konfigurasi templat aapanel, Anda bisa memulai mode pemeliharaan satu kali dan memodifikasi file /wp-content/mintensionce/mintensione-template.html, dengan tetap mempertahankan placeholder '{{}}'."
+	"4d3829e30ef6cf2efd77087752261d0a": "Jika Anda ingin templat Anda menggunakan fungsi konfigurasi templat aapanel, Anda bisa memulai mode pemeliharaan satu kali dan memodifikasi file /wp-content/mintensionce/mintensione-template.html, dengan tetap mempertahankan placeholder '{{}}'.",
+	"550f99d102cfc5182aea66b62b3ef90f": "Pengaturan manual",
+	"4bc9a5fa425406a6e190c445fcfda536": "Siput (Domain Teks)",
+	"59a62c07c8312215a0e12edb30b5b0b7": "Siput khusus",
+	"b78a3223503896721cca1303f776159b": "Judul",
+	"f561ae146f9c67fe049611b9b0651e77": "Judul plugin",
+	"dc3de0994cb345bbb0fa4db5418fbb75": "Judul tema",
+	"980ba2d2915afeeb921f1fd8a25e97d6": "Anda dapat mengunggah plugin dari komputer lokal Anda,",
+	"c5a759ebcea830b268d52ee44455aa63": "Mencakup mereka yang berada di luar direktori wordpress.org",
+	"33a69c66d5953057cc75dd36009e7f97": "Pilih plugin(*.zip)",
+	"675a4ffa8aad3e96396db0f74caf60d6": "Pilih tema(*.zip)",
+	"b3d4e2bcdbf72f5828b3ef09b238c072": "Silakan pilih file",
+	"1b9abf135ccb7ed2f2cd9c155137c351": "Jelajahi",
+	"f787618e514c038851726224d7e4421e": "Tidak ada berkas yang dipilih",
+	"a7c3c998c562b3c1a03b55a45885d89f": "Berkas yang dipilih: {0}",
+	"9162fca50a90dd9ede7b004903e8d5f5": "Unggah Plugin",
+	"f6e4b551382f9dbe4413c43de5f80873": "Unggah Tema",
+	"4e4b1e639a36d24d7cc6865089a975b6": "Untuk menambahkan plugin atau tema khusus ke koleksi ini, klik tombol Unggah, lalu unggah file dari komputer lokal Anda"
 }

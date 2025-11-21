@@ -945,5 +945,10 @@
 	"f87f234298aeb5129faf884ee71e5663": "Nền chính",
 	"240d99a5c9d622b2ba78b0a0aae42f62": "Nền chính (tối)",
 	"a14a3ca7c4dff4768e256487ccfa2a0e": "Logo đăng nhập",
-	"e1786c971956612f9302af21d04d40f9": "Độ mờ nền chính"
+	"e1786c971956612f9302af21d04d40f9": "Độ mờ nền chính",
+	"f9edd335572306d881c071965dc2fb92": "Tự động tìm nạp favicon",
+	"2a3fa5ff7862bc3ddc52d0a859093100": "Cố gắng tìm nạp favicon cứ sau 12 giờ khi được bật",
+	"c6c4a0136700c98f20163d7792bb76a2": "Đang thiết lập sao lưu tự động, vui lòng đợi...",
+	"575794e2116d5714e60c60f158382e74": "Đang xóa bản sao lưu tự động, vui lòng đợi...",
+	"05607004b1504161bb5c3319a85de377": "Cài đặt, vui lòng đợi..."
 }

@@ -1372,7 +1372,20 @@ listener Default%s{
         sql = public.M('domain')
         id = get['id']
         port = get.port
-        find = sql.where("pid=? AND name=?", (get.id, get.domain)).field('id,name').find()
+        domain_data = sql.where("pid=? AND name=?", (get.id, get.domain)).field('id,name').find()
+
+        if isinstance(domain_data, list):
+            if not domain_data:
+                return public.return_message(-1, 0, public.lang("Domain record not found"))
+            domain_data = domain_data[0]
+        if not isinstance(domain_data, dict) or not domain_data.get('id'):
+            return public.return_message(-1, 0, public.lang("Domain record not found"))
+        domain_count = sql.table('domain').where("pid=?", (id,)).count()
+
+        if domain_count <= 1: return public.return_message(-1, 0, public.lang("Last domain cannot be deleted!"))
+
+
+
         domain_count = sql.table('domain').where("pid=?", (id,)).count()
         if domain_count == 1: return public.return_msg_gettext(False, public.lang("Last domain cannot be deleted!"))
 
@@ -1382,10 +1395,14 @@ listener Default%s{
         if conf:
             # 删除域名
             rep = r"server_name\s+(.+);"
-            tmp = re.search(rep, conf).group()
-            newServerName = tmp.replace(' ' + get['domain'] + ';', ';')
-            newServerName = newServerName.replace(' ' + get['domain'] + ' ', ' ')
-            conf = conf.replace(tmp, newServerName)
+            match = re.search(rep, conf)
+            if match:
+                tmp = match.group()
+                newServerName = tmp.replace(' ' + get['domain'] + ';', ';')
+                newServerName = newServerName.replace(' ' + get['domain'] + ' ', ' ')
+                conf = conf.replace(tmp, newServerName)
+            else:
+                public.WriteLog("Site manager", f"No server_name found in the Nginx configuration, the domain {get.domain} is only removed from the database")
 
             # 删除端口
             rep = r"listen.*[\s:]+(\d+).*;"
@@ -1425,7 +1442,7 @@ listener Default%s{
         # openlitespeed
         self._del_ols_domain(get)
 
-        sql.table('domain').where("id=?", (find['id'],)).delete()
+        sql.table('domain').where("id=?", (domain_data['id'],)).delete()
         public.write_log_gettext('Site manager', 'Site [{}] deleted domain [{}] successfully!', (get.webname, get.domain))
         if not multiple:
             public.serviceReload()
@@ -5290,8 +5307,12 @@ location %s
     def GetSecurity(self, get):
         file = '/www/server/panel/vhost/nginx/' + get.name + '.conf'
         conf = public.readFile(file)
-        data = {}
+
         if type(conf) == bool: return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
+        if not isinstance(conf, str) or not conf.strip():
+            return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
+
+        data = {}
         if conf.find('SECURITY-START') != -1:
             rep = "#SECURITY-START(\n|.)+#SECURITY-END"
             tmp = re.search(rep, conf).group()
@@ -5474,6 +5495,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     # 取网站分类
     def get_site_types(self, get):
         data = public.M("site_types").field("id,name").order("id asc").select()
+        if not isinstance(data, list):
+            data = []
         data.insert(0, {"id": 0, "name": public.lang("Default category")})
         for i in data:
             i['name']=public.xss_version(i['name'])

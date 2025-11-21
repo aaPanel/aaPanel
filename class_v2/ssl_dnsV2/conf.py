@@ -6,12 +6,16 @@
 # -------------------------------------------------------------------
 # Author: aapanel
 # -------------------------------------------------------------------
-
-# ------------------------------
 # aaDNS config
 # ------------------------------
+import json
+
 import os
 import re
+import sys
+
+if not "class_v2" in sys.path:
+    sys.path.append("class_v2")
 
 __all__ = [
     "aaDnsConfig",
@@ -21,8 +25,10 @@ __all__ = [
     "ZONES_DIR",
     "ZONES",
     "APP_DIR",
-    "APP_LOG",
     "SERVICE_INSTALL_NAME",
+    "PUBLIC_SERVER",
+    "DNS_AUTH_LOCK",
+    "aaDNS_CONF",
 ]
 
 zone_pattern = re.compile(r'zone\s+"[^"]+"\s*(?:IN)?\s*\{[\s\S]*?};', re.MULTILINE)
@@ -31,31 +37,46 @@ record_pattern = re.compile(r'^(\S+)\s+(?:(\d+)\s+)?(?:(IN)\s+)?(\S+)\s+(.*)$')
 
 ZONES_DIR = "/var/named/chroot/var/named/"
 ZONES = "/var/named/chroot/etc/named.rfc1912.zones"
+
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 SERVICE_INSTALL_NAME = f"{APP_DIR}/aadns.pl"
-APP_LOG = f"{APP_DIR}/aadns.log"
+aaDNS_CONF = os.path.join(APP_DIR, "aaDns_conf.json")
+DNS_AUTH_LOCK = f"{APP_DIR}/dns_auth.pl"
+
+PUBLIC_SERVER = [
+    ("Google", ["8.8.8.8"]),
+    ("Cloudflare", ["1.1.1.1"]),
+    ("Quad9", ["9.9.9.9"]),
+    ("OpenDNS", ["208.67.222.222"]),
+    ("DNS.Watch", ["84.200.69.80"]),
+    ("Comodo Secure DNS", ["8.26.56.26"]),
+    ("AdGuard DNS", ["94.140.14.14"]),
+    ("CleanBrowsing", ["185.228.168.9"]),
+    ("Neustar DNS", ["207.177.68.4"]),
+    ("Freenom World", ["83.145.86.7"]),
+]
+
 
 
 class aaDnsConfig:
+    if os.path.exists("/etc/redhat-release"):
+        os_type = "redhat"
+        package = "yum"
+    else:
+        os_type = "ubuntu"
+        package = "apt"
+
     def __init__(self):
-        self.os_type = None
-        self.package = None
         self.install_service = None
+        self.ns_server = None
         self.bind_service_name = "named"
         self.pnds_service_name = "pdns"
-        self._check_env()
+        self._init_env()
 
-    def _check_env(self):
-        if os.path.exists("/etc/redhat-release"):
-            self.os_type = "redhat"  # centos
-            self.package = "yum"
-            # RHEL/CentOS，检查 bind-chroot 服务具体名称
-            if os.path.exists("/usr/lib/systemd/system/named-chroot.service"):
-                self.bind_service_name = "named-chroot"
-        else:
-            self.os_type = "ubuntu"  # debian
-            self.package = "apt"
-            self.bind_service_name = "named"
+    def _init_env(self):
+        # RHEL/CentOS，检查 bind-chroot 服务具体名称
+        if os.path.exists("/usr/lib/systemd/system/named-chroot.service"):
+            self.bind_service_name = "named-chroot"
 
         if os.path.exists(SERVICE_INSTALL_NAME):
             with open(SERVICE_INSTALL_NAME, "r") as f:
@@ -66,6 +87,14 @@ class aaDnsConfig:
                 except:
                     pass
                 self.install_service = None
+
+        if os.path.exists(aaDNS_CONF):
+            try:
+                with open(aaDNS_CONF, "r") as f:
+                    content = f.read().strip()
+                    self.ns_server = json.loads(content) if content else None
+            except:
+                pass
 
     @property
     def pdns_paths(self):

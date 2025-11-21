@@ -9,7 +9,7 @@
 
 import os
 import re
-from typing import Optional, Generator
+from typing import Optional
 
 import public
 from .conf import *
@@ -87,8 +87,8 @@ class DnsParser:
             soa_parts = value.split()
             if len(soa_parts) >= 7:
                 parsed_value = {
-                    "mname": soa_parts[0],
-                    "rname": soa_parts[1],
+                    "nameserver": soa_parts[0],
+                    "admin_mail": soa_parts[1],
                     "serial": int(soa_parts[2]),
                     "refresh": int(soa_parts[3]),
                     "retry": int(soa_parts[4]),
@@ -125,7 +125,15 @@ class DnsParser:
             return None
 
         name, ttl, r_class, r_type, value = match.groups()
-        value = value.split(';', 1)[0].strip()
+        if r_type.upper() == "TXT":
+            value = value.strip()
+            if not (value.startswith('"') and value.endswith('"')):
+                # 对于没有引号的 TXT 记录或其它记录，移除注释
+                value = value.split(';', 1)[0].strip()
+        else:
+            # 对于非 TXT 记录，保持原有的注释移除逻辑
+            value = value.split(';', 1)[0].strip()
+
         record = {
             "name": name,
             "ttl": int(ttl) if ttl is not None else default_ttl,
@@ -154,7 +162,7 @@ class DnsParser:
                 pass
         return record
 
-    def parser_zone_record(self, zone_file: str, withoutSOA: bool = True):
+    def parser_zone_record(self, zone_file: str, witSOA: bool = False):
         """解析zone记录"""
         zone_content = public.readFile(zone_file) or ""
         if not zone_content:
@@ -177,11 +185,18 @@ class DnsParser:
             except Exception as e:
                 public.print_log("Error handling multiline SOA: {}".format(e))
                 continue
+
             record = self._parse_record(line, default_ttl)
-            if withoutSOA and record and record.get("type") == "SOA":
+            if not record:
                 continue
-            if record:
+
+            if not witSOA and record.get("type") == "SOA":
+                continue
+            elif witSOA and record.get("type") == "SOA":
                 yield record
+                return
+
+            yield record
 
     def get_config(self, service_name: str = None) -> dict:
         """"获取服务的所有配置, 默认获取当前安装的服务配置"""
@@ -221,13 +236,8 @@ class DnsParser:
                 domains.append(domain_match.group(1))
         return domains
 
-    def get_zones_records(self, domain: str = None, withoutSOA: bool = True) -> dict:
-        """获取zones信息记录列表"""
-        zones_record = {}
-        if domain:
-            domains = [domain]
-        else:
-            domains = self.get_zones()
+    def get_zones_records(self, domain: str = None, witSOA: bool = False) -> list:
+        """获取domain zones信息记录列表"""
         for root, dirs, files in os.walk(self.config.pdns_paths["zone_dir"]):
             files.sort()
             for file in files:
@@ -235,13 +245,16 @@ class DnsParser:
                     if file.startswith("db.") or file.endswith(".zone"):
                         temp_domain = re.sub(r'^(db\.|zone\.)', '', str(file))
                         temp_domain = re.sub(r'\.(db|zone)$', '', temp_domain)
-                        if temp_domain not in domains:
+                        if temp_domain != domain:
                             continue
-                        zones_record[temp_domain] = []
                         zone_file_path = os.path.join(root, file)
-                        zones_record[temp_domain] = list(self.parser_zone_record(str(zone_file_path), withoutSOA))
+                        res = list(
+                            self.parser_zone_record(
+                                zone_file=str(zone_file_path), witSOA=witSOA
+                            )
+                        )
+                        return res
                 except Exception as e:
                     public.print_log("Error parsing zone file {}: {}".format(file, e))
                     continue
-
-        return zones_record
+        return []

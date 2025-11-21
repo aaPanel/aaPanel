@@ -183,7 +183,8 @@
       "index_74": "Change the database password",
       "index_75": "Root password",
       "index_76": "Position",
-      "index_77": "Addtime"
+      "index_77": "Addtime",
+      "index_78": "Show Logs"
     },
     "PhpAdmin": {
       "index_1": "Service",
@@ -278,7 +279,20 @@
       "index_25": "The permission of [{0}] is about to be removed. Do you want to continue?",
       "index_26": "Alarm Setting",
       "index_27": "After setting, manually restart the database to take effect",
-      "index_28": "Download Mysql SSL self-signed certificate"
+      "index_28": "Download Mysql SSL self-signed certificate",
+      "type": {
+        "import": "Import",
+        "recover": "Recover",
+        "backup": "Backup"
+      },
+      "logs": {
+        "index_1": "{0} database file, please wait...",
+        "index_2": "Current {0} task is running in the background, you can close this page to perform other operations",
+        "index_3": "{0} Database: ",
+        "index_4": "{0} Size: ",
+        "index_5": "{0} Speed: ",
+        "index_6": "After the import is completed, you can view the import results in the import log"
+      }
     }
   }
 }

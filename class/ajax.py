@@ -1481,7 +1481,23 @@ class ajax:
         tmp = public.ExecShell(php_bin + ' -c {} /www/server/panel/class/php_info.php'.format(php_ini))[0]
         if tmp.find('Warning: JIT is incompatible') != -1:
             tmp = tmp.strip().split('\n')[-1]
-        result = json.loads(tmp)
+
+        try:
+            result = json.loads(tmp)
+            result['phpinfo'] = {}
+            if "modules" not in result:
+                result['modules'] = []
+            if 'php_version' in result:
+                result['phpinfo']['php_version'] = result['php_version']
+        except Exception:
+            result = {
+                'php_version': php_version,
+                'phpinfo': {},
+                'modules': [],
+                'ini': ''
+            }
+        # result = json.loads(tmp)
+
         result['phpinfo'] = {}
         result['phpinfo']['php_version'] = result['php_version']
         result['phpinfo']['php_path'] = php_path

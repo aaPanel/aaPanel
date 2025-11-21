@@ -97,7 +97,9 @@
 			"index_96": "Desactivar la copia de seguridad del panel",
 			"index_97": "La copia de seguridad automática no incluye datos del sitio web y datos de MySQL",
 			"index_98": "Proxy CDN",
-			"index_99": "Recupere la IP real de la solicitud del proxy CDN"
+			"index_99": "Recupere la IP real de la solicitud del proxy CDN",
+			"iconAuto": "Recuperar favicon automáticamente",
+			"iconAutoDesc": "Intenta recuperar el favicon cada 12 horas cuando está habilitado"
 		},
 		"Safe": {
 			"index_1": "Seguridad",
@@ -423,6 +425,9 @@
 			"global_31": "Agregar agente de usuario, por favor espere ...",
 			"global_32": "Modificación del agente de usuario, espere ...",
 			"global_33": "Eliminar el agente de usuario, espere ...",
+			"global_34": "Configurando la copia de seguridad automática, espere...",
+			"global_35": "Borrando la copia de seguridad automática, espere...",
+			"global_36": "Configuración, por favor espera...",
 			"alarm_1": "Agregar tarea de alerta, espere ...",
 			"alarm_2": "Edición de la tarea de alerta, por favor espere ...",
 			"alarm_3": "Configuración del estado de la tarea de alerta, espere ...",

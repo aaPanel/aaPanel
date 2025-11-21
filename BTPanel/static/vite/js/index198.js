@@ -1,1 +1,1 @@
-function r(r=12){const t=new Uint8Array(r);return crypto.getRandomValues(t),Array.from(t,r=>r.toString(16).padStart(2,"0")).join("").slice(0,r)}export{r as g};
+import{k as t,X as r,j as a}from"./vue.js?v=1763625242172";import{dh as e}from"./naive.js?v=1763625242172";const o=t({functional:!0,render(){return r(e,{placement:"top","arrow-point-to-center":!0},{trigger:()=>r("a",{class:"bt-ask-ico"},[a("?")]),default:()=>{var t,r;return null==(r=(t=this.$slots).default)?void 0:r.call(t)}})}});export{o as _};

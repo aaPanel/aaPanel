@@ -781,14 +781,13 @@ class data:
         id = get.id
         SQL = db.Sql().table(tableName)
         where = "id=?"
-        retuls = SQL.where(where,(id,)).getField(keyName)
-        res = public.xsssec(retuls)
-        if type(res)==dict:
-            if res.get("message", None):
-                res = res.get("message")
-            if res.get("msg", None):
-                res = res.get("msg")
-        # return public.xsssec(retuls)
+        result = SQL.where(where,(id,)).getField(keyName)
+        if result is None:
+            return public.return_message(-1, 0, None)
+        res = result
+        if isinstance(result, str):
+            res = public.xsssec(result)
+
         return public.return_message(0, 0, res)
 
 
@@ -1305,15 +1304,19 @@ class data:
 
     def find_stored_favicons(self):
         try:
+            # 检查是否开关是否开启
+            icon_path = '/www/server/panel/config/auto_favicon.conf'
+            if os.path.exists(icon_path):
+                return
+
             cur_time = int(time.time())
             last_find_stored_favicons_time = cache.get('last_find_stored_favicons_time')
 
-            if last_find_stored_favicons_time and cur_time - last_find_stored_favicons_time < 3600:
+            if last_find_stored_favicons_time and cur_time - last_find_stored_favicons_time < 3600 * 12:
                 return
 
             import requests
             import base64
-            failed_domains = cache.get('favicon_failed_domains') if cache.get('favicon_failed_domains') else {}
             site_favs_root = os.path.join(public.get_panel_path(), "data/site_favs")
 
             if not os.path.exists(site_favs_root):
@@ -1339,10 +1342,6 @@ class data:
 
                     for domain in domains:
                         domain_name = domain['name']
-
-                        # 跳过上次获取失败的域名,2小时内不重试
-                        if domain_name in failed_domains and cur_time - failed_domains[domain_name] < 3600*2:
-                            continue
 
                         port = domain['port'] if domain['port'] else 80
                         protocol = 'https' if port == 443 else 'http'
@@ -1450,7 +1449,6 @@ class data:
                                                     f.write(ico_content)
                                                 break
                                     except requests.RequestException as e:
-                                        failed_domains[domain_name] = cur_time
                                         public.print_log("Error fetching favicon from {}: {}".format(ico_url, str(e)),
                                                          _level='error')
 
@@ -1473,8 +1471,7 @@ class data:
                     except Exception as e:
                         public.print_log("Error storing favicon for {}: {}".format(site_name, str(e)), _level='error')
 
-            cache.set('favicon_failed_domains', failed_domains, timeout=3600 * 2)
-            cache.set('last_find_stored_favicons_time', cur_time, timeout=3600 * 2)
+            cache.set('last_find_stored_favicons_time', cur_time, timeout=3600 * 12)
         except Exception as e:
             public.print_log(str(e))
 

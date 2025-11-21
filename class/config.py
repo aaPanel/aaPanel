@@ -1285,6 +1285,10 @@ class config:
             if os.path.exists('/etc/redhat-release'):
                 filename = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
         phpini = public.readFile(filename)
+
+        if not isinstance(phpini, str):
+            return public.return_msg_gettext(False, 'Failed to read PHP configuration file, it may not exist: {}'.format(filename))
+
         rep = r'session.save_handler\s*=\s*([0-9A-Za-z_& ~]+)(\s*;?|\r?\n)'
         save_handler = re.search(rep, phpini)
         if save_handler:
@@ -1860,7 +1864,11 @@ class config:
         if not os.path.exists(session_path):
             os.makedirs(session_path)
             public.ExecShell('chown www.www {}'.format(session_path))
-        run_path = panelSite.panelSite().GetSiteRunPath(get)["runPath"]
+        run_path_data = panelSite.panelSite().GetSiteRunPath(get)
+        if not run_path_data:
+            return public.return_msg_gettext(False, 'Failed to get site runtime path!')
+        run_path = run_path_data.get('runPath')
+
         user_ini_file = "{site_path}{run_path}/.user.ini".format(site_path=site_info["path"], run_path=run_path)
         conf = "session.save_path={}/\nsession.save_handler = files".format(session_path)
         if get.act == "1":
@@ -3015,11 +3023,26 @@ class config:
 
         settings = '{}/BTPanel/languages/settings.json'.format(public.get_panel_path())
         custom = '{}/BTPanel/static/vite/lang/my-MY'.format(public.get_panel_path())
-        if not os.path.exists(settings):
-            data = public.default_languages_config()
-            public.writeFile(settings, json.dumps(data))
+        default_data = public.default_languages_config()
 
-        data = json.loads(public.readFile(settings))
+        file_content = public.readFile(settings)
+        if not file_content:
+            public.writeFile(settings, json.dumps(default_data))
+            data = default_data
+        else:
+            try:
+                data = json.loads(file_content)
+            except json.JSONDecodeError:
+                public.writeFile(settings, json.dumps(default_data))
+                data = default_data
+
+        setlang = "/www/server/panel/BTPanel/languages/language.pl"
+
+        if os.path.exists(setlang):
+            olang = public.ReadFile(setlang)
+            if olang:
+                data['default'] = olang
+
         if os.path.exists(custom):
             data['languages'].append({
                 "name": "my",
@@ -3028,10 +3051,7 @@ class config:
                 "cn": "自定义"
             })
 
-        # public.print_log(data)
-
         return data
-
     # 设置语言偏好
     def set_language(self, args):
 

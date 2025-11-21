@@ -5,9 +5,7 @@ from enum import StrEnum, IntEnum
 import public
 from panelDnsapi import *
 
-APP_PATH = "class_v2/ssl_domainModelV2"
-
-RUNNING = os.path.join(public.get_panel_path(), APP_PATH, "sync_running.pl")
+APP_PATH = os.path.dirname(__file__)
 
 # 旧的, 限制域名面板登录
 PANEL_LIMIT_DOMAIN = os.path.join(public.get_panel_path(), "data/domain.conf")
@@ -15,11 +13,22 @@ PANEL_LIMIT_DOMAIN = os.path.join(public.get_panel_path(), "data/domain.conf")
 # 新的, real 面板域名
 PANEL_DOMAIN = os.path.join(public.get_panel_path(), "data/panel_domain.conf")
 
+# 源任务脚本
+ORG_TASK_PL = os.path.join(APP_PATH, "org_domain_ssl.pl")
+# 同步更新锁
+# RUNNING = os.path.join(APP_PATH, "sync_running.pl")
+# 订单锁
+MANUAL_APPLY_PL = os.path.join(APP_PATH, "manual_apply.pl")
+
+# old dns配置迁移
+OLD_DNS_CONF = os.path.join(public.get_panel_path(), "class_v2/ssl_dnsV2", "aaDns_conf.json")
+
 DNS_MAP = {
     "CloudFlareDns": CloudFlareDns,
     "NameCheapDns": NameCheapDns,
     "PorkBunDns": PorkBunDns,
     "NameSiloDns": NameSiloDns,
+    "aaPanelDns": aaPanelDns,
 }
 
 

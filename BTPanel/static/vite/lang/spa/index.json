@@ -1,0 +1,66 @@
+{
+	"Accept all emails": "Aceptar todos los correos electrónicos",
+	"Add Domain": "Agregar dominio",
+	"Admin Email": "Correo electrónico del administrador",
+	"After enabling this feature, the system will create DKIM and SPF DNS records for the selected domain": {
+		" If an SPF record already exists for a domain, the system will appropriately append the servers IP address to the existing record": {
+			" However, the system will not modify any existing DKIM records": {
+				" During this process, please do not edit any nameserver configuration files": {
+					"": "Después de habilitar esta función, el sistema creará registros DNS DKIM y SPF para el dominio seleccionado. Si ya existe un registro SPF para un dominio, el sistema agregará adecuadamente la dirección IP del servidor al registro existente. Sin embargo, el sistema no modificará ningún registro DKIM existente. Durante este proceso, no edite ningún archivo de configuración del servidor de nombres."
+				}
+			}
+		}
+	},
+	"Apply DMARC Policy": "Aplicar la política DMARC",
+	"Are you sure you want to {0} a self-built DNS server?": "¿Está seguro de que desea crear {0} un servidor DNS propio?",
+	"Build your own dns server based on pdns": "Construya su propio servidor DNS basado en pdns",
+	"Configure DNS": "Configurar DNS",
+	"Confirm Applying DMARC Policy?": "¿Confirmar la aplicación de la política DMARC?",
+	"Confirm DKIM/SPF Enabled?": "¿Confirmar que DKIM/SPF está habilitado?",
+	"DNS Manager": "Administrador de DNS",
+	"Default DNS": "DNS predeterminado",
+	"Enable DKIM/SPF": "Habilitar DKIM/SPF",
+	"Enabling this feature will create DMARCDNS records for all domains": {
+		" If a domain already has a DMARC record, the system will not modify the existing record": {
+			"": "Al habilitar esta función se crearán registros DMARCDNS para todos los dominios. Si un dominio ya tiene un registro DMARC, el sistema no modificará el registro existente."
+		}
+	},
+	"Enter your expire,eg: 604800": "Ingrese su vencimiento, por ejemplo: 604800",
+	"Enter your minimum,eg: 3600": "Ingrese su mínimo, por ejemplo: 3600",
+	"Enter your nameserver,eg: ns1": {
+		"domain": {
+			"com": "Ingrese su servidor de nombres, por ejemplo: ns1.domain.com"
+		}
+	},
+	"Enter your refresh,eg: 3600": "Ingrese su actualización, por ejemplo: 3600",
+	"Enter your retry,eg: 3600": "Ingrese su reintento, por ejemplo: 3600",
+	"Enter your serial number,eg: 2023080101": "Ingrese su número de serie, por ejemplo: 2023080101",
+	"Expire": "Caducar",
+	"How often to check the serial number on the master server": "Con qué frecuencia verificar el número de serie en el servidor maestro",
+	"Install Self-built DNS": "Instalar DNS autoconstruido",
+	"Minimum": "Mínimo",
+	"Nameserver": "servidor de nombres",
+	"Please enter SOA": "Por favor ingrese SOA",
+	"Please enter your domain IP": "Por favor ingrese la IP de su dominio",
+	"Please enter your domain name": "Por favor ingrese su nombre de dominio",
+	"Policy:": "Política:",
+	"Preserve": "preservar",
+	"Preserve config": "Preservar configuración",
+	"Refresh": "Actualizar",
+	"Reject all emails": "Rechazar todos los correos electrónicos",
+	"Represents the default TTL value of all records in this zone file": "Representa el valor TTL predeterminado de todos los registros en este archivo de zona.",
+	"Retry": "Reintentar",
+	"Select DMARC Policy": "Seleccione la política DMARC",
+	"Self-Built DNS": "DNS autoconstruido",
+	"Serial Number": "Número de serie",
+	"Service": "Servicio",
+	"Set & Manage": "Configurar y administrar",
+	"The dns server is stopped, please start it first": "El servidor DNS está detenido, inícielo primero",
+	"The interval time when the slaveserver reconnects to the masterserver": "El intervalo de tiempo en el que el servidor esclavo se vuelve a conectar al servidor maestro.",
+	"When the time exceeds the number of seconds set by Expire and the slave server cannot get in touch with the master, the slave will delete its copy": "Cuando el tiempo excede la cantidad de segundos establecidos por Expire y el servidor esclavo no puede ponerse en contacto con el maestro, el esclavo eliminará su copia.",
+	"model admin email": "correo electrónico del administrador del modelo",
+	"name server": "servidor de nombres",
+	"zone file version,Modification is prohibited": {
+		"": "Versión del archivo de zona, la modificación está prohibida."
+	}
+}

@@ -11,6 +11,8 @@
 # node.js模型
 #------------------------------
 import os,sys,re,json,shutil,psutil,time
+from urllib.parse import urlparse
+
 from projectModelV2.base import projectBase
 import public
 from public.validate import Param
@@ -900,24 +902,12 @@ export PATH
             }
             @return dict
         '''
-        project_id = public.M('sites').where('name=?',(get.project_name,)).getField('id')
-        domains = public.M('domain').where('pid=?',(project_id,)).order('id desc').select()
-        project_find = self.get_project_find(get.project_name)
-        if len(domains) != len(project_find['project_config']['domains']):
-            public.M('domain').where('pid=?',(project_id,)).delete()
-            if not project_find: return public.return_message(0,0,[])
-            for d in project_find['project_config']['domains']:
-                domain = {}
-                arr = d.split(':')
-                if len(arr) < 2: arr.append(80)
-                domain['name'] = arr[0]
-                domain['port'] = int(arr[1])
-                domain['pid'] = project_id
-                domain['addtime'] = public.getDate()
-                public.M('domain').insert(domain)
-            if project_find['project_config']['domains']:
-                domains = public.M('domain').where('pid=?',(project_id,)).select()
-        return public.return_message(0,0,domains)
+
+        project_id = public.M('sites').where('name=?', (get.project_name,)).getField('id')
+        if not project_id:
+            return public.return_message(0, 0, [])
+        domains = public.M('domain').where('pid=?', (project_id,)).order('id desc').select()
+        return public.return_message(0, 0, domains)
 
 
     def project_add_domain(self,get):
@@ -1472,6 +1462,9 @@ export PATH
             #s_pid = int(public.readFile(pid_file))
             data = public.readFile(pid_file)
             if isinstance(data,str) and data:
+                data = data.strip()
+                if not data.isdigit():
+                    return public.return_message(0,0,[])
                 s_pid = int(data)
             else:
                 return public.return_message(0,0,[])

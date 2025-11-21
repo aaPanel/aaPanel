@@ -1205,12 +1205,12 @@ class main(dockerBase):
             if key not in data.keys():
                 data[str(port["PrivatePort"]) + "/" + port["Type"]] = [{
                     "HostIp": port["IP"],
-                    "HostPort": str(port["PublicPort"])
+                    "HostPort": str(port.get("PublicPort", ""))
                 }] if "IP" in port else None
             else:
                 data[str(port["PrivatePort"]) + "/" + port["Type"]].append({
                     "HostIp": port["IP"],
-                    "HostPort": str(port["PublicPort"])
+                    "HostPort": str(port.get("PublicPort", ""))
                 })
         return data
 

@@ -227,5 +227,22 @@
 	"bf0c29411206e89e3ec8cfadd32127c5": "Bitte schließen und leeren Sie den Cache, bevor Sie den Wartungsmodus aktivieren.",
 	"c9f96845a9be884034d544e8b2c0928f": "Hinweis: Um zu verhindern, dass die Website durch Indexierungs-Engines herabgestuft wird, aktivieren Sie den Wartungsmodus bitte nicht für längere Zeit.",
 	"3014168da15aa5d8dc2834826c046d6b": "Empfehlen Sie das Hochladen von HTML-Dateien für Vorlagen und die Verwendung von Daten-URLs für statische Vorlagendateien.",
-	"4d3829e30ef6cf2efd77087752261d0a": "Wenn Sie möchten, dass Ihre Vorlage die Vorlagenkonfigurationsfunktion von aapanel verwendet, können Sie den Wartungsmodus einmal starten und die Datei /wp-content/mintensionce/mintensione-template.html ändern und dabei den Platzhalter „{{}}“ beibehalten."
+	"4d3829e30ef6cf2efd77087752261d0a": "Wenn Sie möchten, dass Ihre Vorlage die Vorlagenkonfigurationsfunktion von aapanel verwendet, können Sie den Wartungsmodus einmal starten und die Datei /wp-content/mintensionce/mintensione-template.html ändern und dabei den Platzhalter „{{}}“ beibehalten.",
+	"550f99d102cfc5182aea66b62b3ef90f": "Manuelle Einstellungen",
+	"4bc9a5fa425406a6e190c445fcfda536": "Slug (Textdomäne)",
+	"59a62c07c8312215a0e12edb30b5b0b7": "Benutzerdefinierte Schnecke",
+	"b78a3223503896721cca1303f776159b": "Titel",
+	"f561ae146f9c67fe049611b9b0651e77": "Plugin-Titel",
+	"dc3de0994cb345bbb0fa4db5418fbb75": "Thementitel",
+	"980ba2d2915afeeb921f1fd8a25e97d6": "Sie können Plugins von Ihrem lokalen Computer hochladen,",
+	"c5a759ebcea830b268d52ee44455aa63": "Einschließlich derjenigen außerhalb des Verzeichnisses wordpress.org",
+	"33a69c66d5953057cc75dd36009e7f97": "Plugin auswählen (*.zip)",
+	"675a4ffa8aad3e96396db0f74caf60d6": "Thema auswählen (*.zip)",
+	"b3d4e2bcdbf72f5828b3ef09b238c072": "Bitte wählen Sie eine Datei aus",
+	"1b9abf135ccb7ed2f2cd9c155137c351": "Durchsuchen",
+	"f787618e514c038851726224d7e4421e": "Keine Datei ausgewählt",
+	"a7c3c998c562b3c1a03b55a45885d89f": "Ausgewählte Datei: {0}",
+	"9162fca50a90dd9ede7b004903e8d5f5": "Plugin hochladen",
+	"f6e4b551382f9dbe4413c43de5f80873": "Theme hochladen",
+	"4e4b1e639a36d24d7cc6865089a975b6": "Um dieser Sammlung ein benutzerdefiniertes Plugin oder Theme hinzuzufügen, klicken Sie auf die Schaltfläche „Hochladen“ und laden Sie dann die Datei von Ihrem lokalen Computer hoch"
 }

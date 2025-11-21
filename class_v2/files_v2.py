@@ -293,8 +293,16 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     def upload(self, args):
         if not 'f_name' in args:
-            args.f_name = request.form.get('f_name').strip()
-            args.f_path = request.form.get('f_path').strip()
+            f_name = request.form.get('f_name')
+            if not f_name:
+                return public.return_message(-1, 0, public.lang("File name cannot be empty"))
+
+            f_path = request.form.get('f_path')
+            if not f_path:
+                return public.return_message(-1, 0, public.lang("File path cannot be empty"))
+
+            args.f_name = f_name.strip()
+            args.f_path = f_path.strip()
             args.f_size = request.form.get('f_size')
             args.f_start = request.form.get('f_start')
 
@@ -327,7 +335,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return public.return_message(-1, 0, public.lang("Wrong parameter"))
 
         if not os.path.exists(args.f_path):
-            os.makedirs(args.f_path, 493)
+            os.makedirs(args.f_path, 493, True)
             if not 'dir_mode' in args or not 'file_mode' in args:
                 self.set_mode(args.f_path)
 
@@ -370,6 +378,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             except:
                 public.ExecShell("rm -f %s" % new_name)
 
+        if os.path.isdir(new_name):
+            return public.fail_v2(public.lang("If the destination path already has a directory with the same name, change the file name"))
         os.renames(save_path, new_name)
         if 'dir_mode' in args and 'file_mode' in args:
             mode_tmp1 = args.dir_mode.split(',')
@@ -1290,7 +1300,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         ps_body = public.xssencode2(args.ps_body)
         ps_path = public.get_panel_path() + '/data/files_ps'
         if not os.path.exists(ps_path):
-            os.makedirs(ps_path, 384)
+            os.makedirs(ps_path, 384, True)
         if ps_type == 1:
             f_name = os.path.basename(filename)
         else:
@@ -2152,7 +2162,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             public.writeFile(get.path, '')
         if self.__get_ext(get.path) in ['gz', 'zip', 'rar', 'exe', 'db', 'pdf', 'doc', 'xls', 'docx', 'xlsx', 'ppt',
                                         'pptx', '7z', 'bz2', 'png', 'gif', 'jpg', 'jpeg', 'bmp', 'icon', 'ico', 'pyc',
-                                        'class', 'so', 'pyd']:
+                                        'class', 'so', 'pyd','sock']:
             return public.return_message(-1, 0, public.lang("The file format does not support online editing!"))
         # if os.path.getsize(get.path) > 3145928:
         #     return public.return_message(-1, 0, public.lang("Cannot edit files larger than 2MB online!"))
@@ -2533,6 +2543,12 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     # 文件压缩
     def Zip(self, get):
+        if not hasattr(get, 'dfile') or not get.dfile.strip():
+            return public.return_message(-1, 0, public.lang("The target compressed file cannot be empty!"))
+        dir_name = os.path.dirname(get.dfile)
+        if dir_name and not os.path.exists(dir_name):
+            os.makedirs(dir_name, exist_ok=True)
+
         if not 'z_type' in get:
             get.z_type = 'rar'
 
@@ -3279,9 +3295,16 @@ cd %s
         if self.download_token_list == None: self.download_token_list = {}
         m_time = time.time()
         for d in self.download_list:
-            # 清理过期和无效
+            if not isinstance(d, dict):
+                continue
+                # 清理过期和无效
             if self.download_is_rm: continue
-            if not os.path.exists(d['filename']) or m_time > d['expire']:
+
+            filename = d.get('filename')
+            expire = d.get('expire')
+            if not filename or not isinstance(expire, (int, float)):
+                continue
+            if not os.path.exists(filename) or m_time > expire:
                 public.M(my_table).where('id=?', (d['id'],)).delete()
                 continue
             self.download_token_list[d['filename']] = d['id']

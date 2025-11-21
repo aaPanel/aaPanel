@@ -792,7 +792,7 @@ fi
 
         return public.return_message(0, 0, public.lang("The installation task has been added to the queue!"))
 
-    @staticmethod
+
     def uninstall_status(self, get):
         """
         检测docker是否可以卸载

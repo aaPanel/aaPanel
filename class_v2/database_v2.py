@@ -732,7 +732,7 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
                         try:
                             matched_dir = dir_match.group(1).strip('.')
                             mycnf = public.readFile("/etc/my.cnf")
-                            rep = "datadir\s*=\s*(.+)\n"
+                            rep = r"datadir\s*=\s*(.+)\n"
                             data_path = re.search(rep, mycnf).groups()[0]
                             return ("Abnormal database file permissions!"
                                     " Please check the storage directory:"
@@ -1581,56 +1581,57 @@ SetLink
         data = {}
         try:
             log_path = "/tmp/backup_sql_{}.log".format(db_id)
-            if os.path.exists(log_path):
-                log_data = public.ReadFile(log_path)
-                export_match = re.search(r'\|-Start exporting SQL file: ([^ ]+)', log_data)
-                com_match = re.search(r'\|-Start compressing SQL file: ([^ ]+)', log_data)
-                run_type = ""
-                path_size = ""
-                if export_match and com_match:
-                    run_type = "compress"
-                    path_match = re.search(r'\|-backup path: ([^ ]+)', log_data)
-                    result = path_match.group(0)
-                    backup_path = result.split("：")[-1].strip()
+            if not os.path.exists(log_path):
+                return public.return_message(-1, 0, public.lang("There are no backup tasks for the time being !"))
 
-                    get_path_size = public.ExecShell("grep 'falg info' /tmp/backup_sql_{}.log |grep -oE '[0-9]+'".format(db_id))
-                    path_size = get_path_size[0].replace("\n", "")
+            log_data = public.ReadFile(log_path)
+            export_match = re.search(r'\|-Start exporting SQL file: ([^ ]+)', log_data)
+            com_match = re.search(r'\|-Start compressing SQL file: ([^ ]+)', log_data)
+            run_type = ""
+            path_size = ""
+            if export_match and com_match:
+                run_type = "compress"
+                path_match = re.search(r'\|-backup path: ([^ ]+)', log_data)
+                result = path_match.group(0)
+                backup_path = result.split(":")[-1].strip()
 
-                elif export_match:
-                    run_type = "export"
-                    result = export_match.group(0)
-                    backup_path = result.split("：")[-1].strip()
+                get_path_size = public.ExecShell("grep 'falg info' /tmp/backup_sql_{}.log |grep -oE '[0-9]+'".format(db_id))
+                path_size = get_path_size[0].replace("\n", "")
+            elif export_match:
+                run_type = "export"
+                result = export_match.group(0)
+                backup_path = result.split(":")[-1].strip()
 
-                if not run_type:
-                    total = "0kb"
-                    speed = 0
+            if not run_type:
+                total = "0kb"
+                speed = 0
+            else:
+                backup_path_size_1 = public.ExecShell("du {}".format(backup_path))[0].split("\t")
+                time.sleep(2)
+                backup_path_size_2 = public.ExecShell("du {}".format(backup_path))[0].split("\t")
+                speed = int(int(backup_path_size_2[0]) - int(backup_path_size_1[0]))
+                if path_size:
+                    total = int(backup_path_size_2[0]) - int(path_size)
+                    if total < 0:
+                        total = int(path_size) - int(backup_path_size_2[0])
                 else:
-                    backup_path_size_1 = public.ExecShell("du {}".format(backup_path))[0].split("\t")
-                    time.sleep(2)
-                    backup_path_size_2 = public.ExecShell("du {}".format(backup_path))[0].split("\t")
-                    speed = int(int(backup_path_size_2[0]) - int(backup_path_size_1[0]))
-                    if path_size:
-                        total = int(backup_path_size_2[0]) - int(path_size)
-                        if total < 0:
-                            total = int(path_size) - int(backup_path_size_2[0])
-                    else:
-                        total = int(backup_path_size_2[0])
-                    total = public.to_size(total * 1024)
+                    total = int(backup_path_size_2[0])
+                total = public.to_size(total * 1024)
 
-                if speed <= 0:
-                    speed = "0kb"
-                else:
-                    speed = public.to_size(speed * 1024)
+            if speed <= 0:
+                speed = "0kb"
+            else:
+                speed = public.to_size(speed * 1024)
 
-                data['total'] = total
-                data['speed'] = "{}/s".format(speed)
-                data['msg'] = public.GetNumLines(log_path, 20)
-                data['type'] = run_type
-                data['status'] = True
+            data['total'] = total
+            data['speed'] = "{}/s".format(speed)
+            data['msg'] = public.GetNumLines(log_path, 20)
+            data['type'] = run_type
+            data['status'] = True
 
-                return data
-        except:
-            return data
+            return public.return_message(0, 0, data)
+        except Exception as e:
+            return public.return_message(-1, 0, data)
 
     def convert_time(slef,seconds):
         if seconds < 60:
@@ -1922,7 +1923,8 @@ SetLink
         log_path = "/tmp/import_sql.log"
         data = {}
         db_name = get.name
-        db_path = self.GetMySQLInfo(get)['datadir']["message"]
+        db_info = self.GetMySQLInfo(get)
+        db_path = db_info["message"]['datadir']
         if not os.path.exists("{}/{}".format(db_path, db_name)):
             return public.return_message(-1, 0, "The current imported database is a remote database, "
                            "you can not get the database size, "
@@ -1930,35 +1932,34 @@ SetLink
                            "if the page is stuck, you can check the import status "
                            "in the display log!")
         try:
-            if os.path.exists(log_path):
-                log_data = public.ReadFile(log_path)
-                done_rep = r"Database recovery successful"
-                err_rep = r"Database recovery error"
-                done_res = re.search(done_rep, log_data)
-                err_res = re.search(err_rep, log_data)
-                if done_res:
-                    return public.return_message(0, 0, "DATABASE_INPUT_SUCCESS")
-                elif err_res:
-                    return public.return_message(-1, 0, "Database import failed!For details, click Import Log to view the error log!")
+            if not os.path.exists(log_path):
+                return public.return_message(-1, 0, public.lang("There are no backup tasks for the time being !"))
 
-                db_name = get.name
-                db_path = self.GetMySQLInfo(get)['datadir']["message"]
+            log_data = public.ReadFile(log_path)
+            done_rep = r"Database recovery successful"
+            err_rep = r"Database recovery error"
+            done_res = re.search(done_rep, log_data)
+            err_res = re.search(err_rep, log_data)
+            if done_res:
+                return public.return_message(0, 0, {"msg" : "Successfully imported database!", "status":True})
+            elif err_res:
+                return public.return_message(-1, 0, "Database import failed!For details, click Import Log to view the error log!")
 
-                db_size_1 = public.ExecShell("du {}/{}".format(db_path, db_name))[0].split("\t")
-                time.sleep(1)
-                db_size_2 = public.ExecShell("du {}/{}".format(db_path, db_name))[0].split("\t")
-                speed = int(int(db_size_2[0]) - int(db_size_1[0]))
-                if speed <= 0:
-                    speed = "0kb"
-                else:
-                    speed = public.to_size(speed * 1024)
-                total = int(db_size_2[0])
-                total = public.to_size(total * 1024)
-                data['total'] = total
-                data['speed'] = "{}/s".format(speed)
-                data['msg'] = public.GetNumLines(log_path, 20)
-                data['status'] = True
-                return public.return_message(0, 0, data)
+            db_size_1 = public.ExecShell("du {}/{}".format(db_path, db_name))[0].split("\t")
+            time.sleep(1)
+            db_size_2 = public.ExecShell("du {}/{}".format(db_path, db_name))[0].split("\t")
+            speed = int(int(db_size_2[0]) - int(db_size_1[0]))
+            if speed <= 0:
+                speed = "0kb"
+            else:
+                speed = public.to_size(speed * 1024)
+            total = int(db_size_2[0])
+            total = public.to_size(total * 1024)
+            data['total'] = total
+            data['speed'] = "{}/s".format(speed)
+            data['msg'] = public.GetNumLines(log_path, 20)
+            data['status'] = True
+            return public.return_message(0, 0, data)
         except:
             return public.return_message(-1, 0, data)
 

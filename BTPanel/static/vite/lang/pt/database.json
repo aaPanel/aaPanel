@@ -183,7 +183,8 @@
 			"index_74": "Altere a senha do banco de dados",
 			"index_75": "Senha raiz",
 			"index_76": "Posição",
-			"index_77": "Adicione tempo"
+			"index_77": "Adicione tempo",
+			"index_78": "Mostrar registros"
 		},
 		"PhpAdmin": {
 			"index_1": "Versão php",
@@ -278,7 +279,20 @@
 			"index_25": "A permissão de [{0}] está prestes a ser removida. Você quer continuar?",
 			"index_26": "Configuração de alarme",
 			"index_27": "Após a definição, reinicie manualmente o banco de dados para entrar em vigor",
-			"index_28": "Baixe o certificado MySQL SSL Auto-si mesmo"
+			"index_28": "Baixe o certificado MySQL SSL Auto-si mesmo",
+			"type": {
+				"import": "Importar",
+				"recover": "Recuperar",
+				"backup": "Backup"
+			},
+			"logs": {
+				"index_1": "{0} arquivo de banco de dados, aguarde...",
+				"index_2": "A tarefa {0} atual está sendo executada em segundo plano. Você pode fechar esta página para realizar outras operações",
+				"index_3": "{0} Banco de dados: ",
+				"index_4": "{0} Tamanho: ",
+				"index_5": "{0} Velocidade:",
+				"index_6": "Após a conclusão da importação, você poderá visualizar os resultados da importação no log de importação"
+			}
 		}
 	}
 }

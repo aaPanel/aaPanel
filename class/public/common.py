@@ -1006,6 +1006,8 @@ def GetLocalIp():
             else:
                 ipaddress = match_ipv4.match(m_str).group(0)
             WriteFile(filename, ipaddress)
+        if isinstance(ipaddress, str):
+            ipaddress = ipaddress.strip()
         c_ip = check_ip(ipaddress)
         if not c_ip: return GetHost()
         return ipaddress
@@ -9336,11 +9338,12 @@ def ensure_unique_db_name(db_name: str) -> str:
 
 # 优先使用新名称
 def ensure_unique_db_name2(db_name: str) -> str:
+    import random
+    chars = string.ascii_lowercase + string.digits
     while True:
-        new_db_name = '{}_{}'.format(
-            db_name[:9],
-            GetRandomString(6)
-        )
+        prefix = db_name[:9].lower()
+        suffix = ''.join(random.choices(chars, k=6))
+        new_db_name = f'{prefix}_{suffix}'
 
         if not S('databases').where('name', new_db_name).exists():
             return new_db_name
@@ -9629,7 +9632,7 @@ def get_multi_webservice_status():
     apacheBin = '{}/apache/bin/apachectl'.format(get_setup_path())
     olsBin = '/usr/local/lsws/bin/lswsctrl'
 
-    if os.path.exists(nginxSbin) and (os.path.exists(apacheBin) or os.path.exists(olsBin)):
+    if os.path.exists(nginxSbin) and os.path.exists(apacheBin) and os.path.exists(olsBin):
         return True
     return False
 
@@ -9737,3 +9740,93 @@ def cp_dir(src: str, dst: str, ignores: List[str] | Set[str] = None, overwrite: 
             cp_dir(src_item, dst_item, ignores, overwrite)
         else:
             _copy2(src_item, dst_item)
+
+# 解压到指定目录下
+def extract_archive_to_target(archive_path, target_dir):
+    """
+    解压压缩包到指定目标目录，支持多种格式并自动处理目录结构
+    :param archive_path: 压缩包文件路径（如 /path/to/file.zip）
+    :param target_dir: 目标解压目录（如 /path/to/target）
+    :return: (bool, str) 成功返回 (True, '')，失败返回 (False, 错误信息)
+    """
+    import tempfile
+    import zipfile
+    import tarfile
+
+    # 校验输入
+    if not os.path.exists(archive_path):
+        return False, f"The compressed package does not exist: {archive_path}"
+    if not os.path.isfile(archive_path):
+        return False, f"Not a valid file: {archive_path}"
+
+    # 确保目标目录存在
+    os.makedirs(target_dir, exist_ok=True)
+
+    # 获取文件后缀
+    file_ext = os.path.splitext(archive_path)[1].lower()
+    supported_ext = ['.zip', '.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.gz']
+    if file_ext not in supported_ext:
+        return False, f"Unsupported formats are supported: {', '.join(supported_ext)}"
+
+    # 创建临时目录处理目录结构
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # 解压到临时目录
+        try:
+            if file_ext == '.zip':
+                with zipfile.ZipFile(archive_path, 'r') as zf:
+                    zf.extractall(temp_dir)
+            else:
+                mode = 'r'
+                if file_ext in ['.tar.gz', '.tgz', '.gz']:
+                    mode = 'r:gz'
+                elif file_ext in ['.tar.bz2', '.tbz2']:
+                    mode = 'r:bz2'
+                with tarfile.open(archive_path, mode) as tf:
+                    tf.extractall(temp_dir)
+        except Exception as e:
+            return False, f"Decompression failed: {str(e)}"
+
+        # 检查临时目录是否为空
+        temp_items = os.listdir(temp_dir)
+        if not temp_items:
+            return False, 'The content of the compressed package is empty.'
+
+        # 统计临时目录内的目录和文件数量，判断结构
+        dir_count = 0
+        file_count = 0
+        first_dir = None
+        for item in temp_items:
+            item_path = os.path.join(temp_dir, item)
+            if os.path.isdir(item_path):
+                dir_count += 1
+                if first_dir is None:
+                    first_dir = item_path
+            else:
+                file_count += 1
+
+        # 处理单层根目录结构
+        if dir_count == 1 and file_count == 0:
+            # 只有一个目录 取该目录内容
+            content_dir = first_dir
+        else:
+            # 取临时目录全部内容
+            content_dir = temp_dir
+
+        # 复制内容到目标目录
+        for item in os.listdir(content_dir):
+            src = os.path.join(content_dir, item)
+            dst = os.path.join(target_dir, item)
+            try:
+                if os.path.isdir(src):
+                    shutil.copytree(src, dst, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(src, dst)
+            except Exception as e:
+                return False, f"The file copy failed: {str(e)}"
+
+        return True, ""
+
+    finally:
+        # 清理临时目录
+        shutil.rmtree(temp_dir, ignore_errors=True)

@@ -244,5 +244,18 @@
 	"a91f378bf120f4a971b2ad4f7bfdce70": "Menginstal, tunggu ...",
 	"dbded73d898181a0721b5f0973e9ee74": "Menghapus instalasi, tolong tunggu ...",
 	"c2fd5a116b9d3bcd0185dbf233365764": "Beralih port, harap tunggu ...",
-	"1fb4173c812ebb31f38c565e1769d090": "Driver Adminer tergantung pada lingkungan versi PHP yang sedang berjalan. Jika Anda menemukan bahwa pengemudi hilang, silakan buka ekstensi php untuk menginstal php_mongodb dan pdo_pgsql"
+	"1fb4173c812ebb31f38c565e1769d090": "Driver Adminer tergantung pada lingkungan versi PHP yang sedang berjalan. Jika Anda menemukan bahwa pengemudi hilang, silakan buka ekstensi php untuk menginstal php_mongodb dan pdo_pgsql",
+	"810bb038ff6f1e9d2a6e578c501fc22c": "Tampilkan Log",
+	"72d6d7a1885885bb55a565fd1070581a": "Impor",
+	"556b050ce914d18480d6ea30308c7790": "Pulihkan",
+	"fcd071a71d6bb7d003972e54f88dd553": "Mengimpor {0} file database, harap tunggu...",
+	"2f01adab1406a6e3deaca02f04a67c43": "Tugas {0} saat ini berjalan di latar belakang, Anda dapat menutup laman ini untuk melakukan operasi lainnya",
+	"8cc925eb55597a41d11fc8d6aea35910": "{0} Basis data:",
+	"5f6f842cb231e86cd367fcaff5896f93": "{0} Ukuran:",
+	"2e8274f870fdd2c7138262e3300cb108": "{0} Kecepatan:",
+	"2b005dc108bef790c8d3511592bd2c2d": "Setelah impor selesai, Anda dapat melihat hasil impor di log impor",
+	"6aea058d3dc97cb1ddbd873fac3dcfa4": "{0} file basis data, harap tunggu...",
+	"da561ddb957ee1dfa466f8e8a757b237": "{0} Basis data: ",
+	"4308f628f9d925687737f2d4e843c47f": "{0} Ukuran: ",
+	"94103f11ea70a356fd537493adc58f7f": "{0} Kecepatan:"
 }

@@ -1576,6 +1576,18 @@ create index if not exists `recipient_isSent` on `recipient_info` (`recipient`, 
     def schedule(self, automation_id: int, subscriber: typing.Optional[str] = None):
         Scheduler(automation_id).schedule(subscriber)
 
+    def schedule_once(self):
+        if self.__automation.is_init():
+            try:
+                for automation_id, _ in self.walk_running_tasks():
+                    logging.debug('schedule mail automation -- {}'.format(automation_id))
+                    scheduler = Scheduler(automation_id)
+                    scheduler.schedule()
+                    scheduler.schedule_email_sending()
+                    scheduler.sync_maillog_stat()
+            except:
+                public.print_error()
+
     def schedule_forever(self):
         while True:
             time.sleep(self.__interval)

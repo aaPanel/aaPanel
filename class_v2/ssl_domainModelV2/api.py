@@ -12,6 +12,16 @@ from datetime import datetime
 from typing import Tuple, Dict
 
 import public
+
+try:
+    import dns.resolver
+except ImportError:
+    try:
+        public.ExecShell("btpip install dnspython")
+        import dns.resolver
+    except ImportError:
+        public.print_log("install dnspython fail.")
+
 from acme_v2 import acme_v2
 from config_v2 import config
 from panelDnsapi import extract_zone
@@ -25,6 +35,7 @@ from .config import (
     UserFor,
     PANEL_DOMAIN,
     PANEL_LIMIT_DOMAIN,
+    MANUAL_APPLY_PL,
 )
 from .model import (
     DnsDomainProvider,
@@ -33,8 +44,8 @@ from .model import (
     DnsDomainTask,
     apply_cert,
 )
+from ssl_dnsV2.model import DnsResolve
 from .service import (
-    init_dns_process,
     init_panel_http,
     init_panel_dns,
     generate_panel_task,
@@ -44,10 +55,11 @@ from .service import (
     generate_sites_task,
     find_site_with_domain,
     CertHandler,
-    record_ensure,
+    RecordCache,
     check_legal,
-    sync_site_ssl,
+    init_aaDns,
     make_suer_renew_task,
+    get_mail_record,
 )
 
 
@@ -64,7 +76,7 @@ class DomainObject:
     date_format = "%Y-%m-%d"
     vhost = os.path.join(public.get_panel_path(), "vhost")
     mail_db_file = "/www/vmail/postfixadmin.db"
-    manual_apply = os.path.join(os.path.dirname(__file__), "manual_apply.pl")
+    manual_apply = MANUAL_APPLY_PL
     deploy_map = {
         1: UserFor.sites,
         2: UserFor.panel,
@@ -164,10 +176,9 @@ class DomainObject:
         对账号立即同步域名信息
         """
         target_id = get.id if hasattr(get, "id") else None
-        running = SyncService().get_lock()
-        if running is False:
-            task = threading.Thread(target=SyncService(target_id).process)
-            task.start()
+        instance = SyncService(target_id)
+        task = threading.Thread(target=instance.process)
+        task.start()
         return public.success_v2(public.lang("success"))
 
     def list_dns_api(self, get):
@@ -190,6 +201,7 @@ class DomainObject:
         # clear task
         self._clear_task_force()
         check_legal()
+        init_aaDns()
         page = int(getattr(get, "p", 1))
         limit = int(getattr(get, "limit", 100))
         obj = DnsDomainProvider.objects.all()
@@ -243,11 +255,8 @@ class DomainObject:
             if not dns.is_pro():
                 return public.fail_v2(public.lang("Please Upgrade PRO Version!"))
             dns.dns_obj.verify()
-            dns_save = dns.save()
-            init_task = threading.Thread(
-                target=init_dns_process, args=(dns_save.as_dict(),)
-            )
-            init_task.start()
+            dns.save()
+            dns.init_ssl_myself_thread()
             public.set_module_logs("sys_domain", "Add_Dns_Api", 1)
             return public.success_v2(public.lang("Save Successfully!"))
         except Exception as ex:
@@ -292,7 +301,12 @@ class DomainObject:
             # 仅当开启时候校验
             if dns.status == 1:
                 dns.dns_obj.verify()
-            DnsDomainProvider.objects.filter(id=get.id).update(dns.as_dict())
+            if dns.name != "aaPanelDns":
+                DnsDomainProvider.objects.filter(id=get.id).update(dns.as_dict())
+            else:  # 兼容 aaDNS 服务状态变更
+                from ssl_dnsV2.dns_manager import DnsManager
+                status_map = {1: "restart", 0: "stop"}
+                DnsManager().change_service_status(status=status_map.get(get.status))
         except Exception as ex:
             return public.fail_v2(str(ex))
         return public.success_v2(public.lang("Save Successfully!"))
@@ -319,12 +333,11 @@ class DomainObject:
         provider = DnsDomainProvider.objects.find_one(id=pid)
         if not provider:
             return public.fail_v2(public.lang("Provider not found!"))
-        if hasattr(get, "domain"):
+        if hasattr(get, "domain") and get.domain:
             domain_name = get.domain
         else:
             domain_name = provider.domains[0] if provider.domains else ""
-
-        record_ensure(provider, domain_name)
+        RecordCache.record_ensure(domain_name)
 
         # search_and
         if hasattr(get, "search_and"):
@@ -487,7 +500,7 @@ class DomainObject:
             if update.get("status"):
                 return public.success_v2(public.lang("Update Successfully!"))
             else:
-                return public.fail_v2(public.lang("Update Failed..."))
+                return public.fail_v2(update.get("msg", "Update Failed..."))
         except Exception as ex:
             return public.fail_v2(str(ex))
 
@@ -511,15 +524,26 @@ class DomainObject:
         provider = DnsDomainProvider.objects.find_one(id=get.id)
         if not provider:
             return public.fail_v2(public.lang("DNS Provider Not Found!"))
+
         data = self._add_ssl_info(provider.as_dict())
         data = data.get("domains", [])
         if hasattr(get, "domain"):  # filter domain
             data = [x for x in data if get.domain in x.get("name", "")]
 
+        bulitin = True if provider.name == "aaPanelDns" else False
         for d in data:
             d["records"] = DnsDomainRecord.objects.filter(
                 domain=d.get("name", ""), provider_id=int(get.id)
             ).count()
+            if bulitin:
+                resolve = DnsResolve.objects.filter(domain=d.get("name", "")).fields(
+                    "ns_resolve", "a_resolve", "tips"
+                ).first()
+                if not resolve:
+                    d["dns_resolve"] = {"ns_resolve": 0, "a_resolve": 0, "tips": "Not Found Msg"}
+                else:
+                    d["dns_resolve"] = resolve.as_dict()
+
         total = len(data)
         start = (page - 1) * limit
         end = start + limit
@@ -545,7 +569,6 @@ class DomainObject:
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
-        sync_site_ssl()
         page = int(getattr(get, "p", 1))
         limit = int(getattr(get, "limit", 100))
         ssl_obj = DnsDomainSSL.objects.filter(
@@ -1244,12 +1267,12 @@ class DomainObject:
         result = {
             "hash": "",
             "domain": get.domain,
-            "support": [],
         }
+        support = list()
         root, _, _ = extract_zone(get.domain)
         if DnsDomainProvider.objects.filter(domains__contains=root).first():
-            result["support"].append("auto")  # 自动解析功能
-            result["support"].append("ssl_cert")  # 自动部署证书
+            support.append("auto")  # 自动解析功能
+            support.append("ssl_cert")  # 自动部署证书
 
         exist = None
         for ssl in DomainValid.get_best_ssl(get.domain):
@@ -1268,8 +1291,8 @@ class DomainObject:
                     provate = True
                 if not provate:
                     # 是否支持 CF 代理
-                    result["support"].append("cf_proxy")
-
+                    support.append("cf_proxy")
+        result["support"] = support
         return public.success_v2(result)
 
     def ssl_tasks_status(self, get):
@@ -1373,6 +1396,33 @@ class DomainObject:
                 "task_id": task_obj.id
             }
         )
+
+    # ========== Mail check ===========
+    def mail_record_check(self, get):
+        """
+        邮箱域名解析检查
+        get.domain = "example.com"
+        """
+        try:
+            get.validate([
+                Param("domain").String().Require(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+        domain = get.domain.strip()
+        if not DomainValid.is_valid_domain(domain):
+            return public.fail_v2(public.lang("Domain Not Valid!"))
+        domain_info = {
+            'hash': '',
+            'domain': domain
+        }
+        records = get_mail_record(domain_info)
+        if isinstance(records, str):
+            return public.fail_v2(public.lang(records))
+        return public.success_v2(records)
 
 
 def move_old_account():

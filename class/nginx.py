@@ -94,7 +94,7 @@ class nginx:
             try:
                 v = int(v)
             except ValueError:
-                pass
+                v = 0
 
             kv = {"name":k, "value": int(v), "unit":u,"ps":psstr}
             conflist.append(kv)

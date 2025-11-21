@@ -112,9 +112,13 @@ class Base(object):
             @param
             @return dict{"status":True/False,"msg":"提示信息"}
         """
-        aa = public.to_size(public.get_path_size("/www/wwwlogs"))
-        size = aa if aa else "0B"
-        return public.return_message(0, 0, {"log_path": "/www/wwwlogs", "size": size})
+        log_path = "/www/wwwlogs"
+        if not os.path.exists(log_path):
+            return public.return_message(0, 0, {"log_path": log_path, "size": "0B"})
+
+        path_size = public.to_size(public.get_path_size(log_path))
+        size = path_size if path_size else "0B"
+        return public.return_message(0, 0, {"log_path": log_path, "size": size})
 
     # 2024/3/25 上午 10:50 获取防火墙类型，firewall或ufw
     def _get_firewall_type(self) -> str:

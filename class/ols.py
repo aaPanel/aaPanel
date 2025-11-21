@@ -24,6 +24,8 @@ class ols:
         """
         keys = ["enableGzipCompress","gzipCompressLevel","rollingSize","maxConnections","maxSSLConnections","connTimeout","maxKeepAliveReq"]
         conf = public.readFile(self._main_conf_path)
+        if not conf:
+            return {}
         data = {}
         for k in keys:
             rep = r'{}\s+(\w+)'.format(k)

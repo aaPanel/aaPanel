@@ -246,5 +246,18 @@
 	"a91f378bf120f4a971b2ad4f7bfdce70": "Installation, veuillez patienter ...",
 	"dbded73d898181a0721b5f0973e9ee74": "Désinstallé, veuillez attendre ...",
 	"c2fd5a116b9d3bcd0185dbf233365764": "Port de commutation, veuillez patienter ...",
-	"1fb4173c812ebb31f38c565e1769d090": "Le pilote d'administration dépend de l'environnement de version PHP en cours d'exécution. Si vous constatez que le pilote est manquant, veuillez consulter les extensions PHP pour installer PHP_MONGODB et PDO_PGSQL"
+	"1fb4173c812ebb31f38c565e1769d090": "Le pilote d'administration dépend de l'environnement de version PHP en cours d'exécution. Si vous constatez que le pilote est manquant, veuillez consulter les extensions PHP pour installer PHP_MONGODB et PDO_PGSQL",
+	"810bb038ff6f1e9d2a6e578c501fc22c": "Afficher les journaux",
+	"72d6d7a1885885bb55a565fd1070581a": "Importer",
+	"556b050ce914d18480d6ea30308c7790": "Récupérer",
+	"fcd071a71d6bb7d003972e54f88dd553": "Importation du fichier de base de données {0}, veuillez patienter...",
+	"2f01adab1406a6e3deaca02f04a67c43": "La tâche {0} actuelle s'exécute en arrière-plan. Vous pouvez fermer cette page pour effectuer d'autres opérations.",
+	"8cc925eb55597a41d11fc8d6aea35910": "{0} Base de données :",
+	"5f6f842cb231e86cd367fcaff5896f93": "{0} Taille :",
+	"2e8274f870fdd2c7138262e3300cb108": "{0} Vitesse :",
+	"2b005dc108bef790c8d3511592bd2c2d": "Une fois l'importation terminée, vous pouvez afficher les résultats de l'importation dans le journal d'importation",
+	"6aea058d3dc97cb1ddbd873fac3dcfa4": "{0} fichier de base de données, veuillez patienter...",
+	"da561ddb957ee1dfa466f8e8a757b237": "{0} Base de données : ",
+	"4308f628f9d925687737f2d4e843c47f": "{0} Taille : ",
+	"94103f11ea70a356fd537493adc58f7f": "{0} Vitesse :"
 }

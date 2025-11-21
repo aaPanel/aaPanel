@@ -314,7 +314,11 @@ class main(dockerBase):
         if not data:
             return public.return_message(-1, 0, public.lang("This template was not found!"))
         if os.path.exists(data['path']):
-            os.remove(data['path'])
+            # 删除模板文件 目录不处理
+            try:
+                os.remove(data['path'])
+            except:
+                pass
 
         get.id = get.template_id
 

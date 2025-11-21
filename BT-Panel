@@ -192,9 +192,13 @@ def get_process_count():
     return 1
 
 
+
 def check_system_restarted():
     '''
-        @name 检测系统是否重启
+    @name 检测系统是否重启
+    1. 若与上次记录时间差异 > 3分钟 → 视为真实重启，标记 status=0（未读）
+    2. 若差异 ≤ 3分钟 → 视为时间微调，更新 last_reboot_time，保持/设置 status=1（已读）
+    3. 首次运行则初始化记录
     '''
     try:
         import json
@@ -205,26 +209,45 @@ def check_system_restarted():
             try:
                 with open(status_file, 'r') as f:
                     data = json.load(f)
-                    last_recorded_time = data.get("last_reboot_time", 0)
-                # 如果系统启动时间 > 上次记录时间 → 说明系统重启了
-                if last_recorded_time >0 and current_boot_time > last_recorded_time:
-                    with open(status_file, 'w') as f:
-                        json.dump({
+                last_recorded_time = data.get("last_reboot_time", 0)
+                last_status = data.get("status", 1)
+
+                if last_recorded_time > 0:
+                    diff = abs(current_boot_time - last_recorded_time)
+                    if diff > 60 * 3:
+                        new_data = {
                             "last_reboot_time": current_boot_time,
-                            "status": 0  # 未读
-                        }, f, indent=2)
-            except:
-                pass
+                            "status": 0
+                        }
+                        with open(status_file, 'w') as f:
+                            json.dump(new_data, f, indent=2)
+                        return True
+                    elif diff > 0:  # 有变化才写入
+                        new_data = {
+                            "last_reboot_time": current_boot_time,
+                            "status": last_status if last_status == 0 else 1
+                        }
+                        try:
+                            with open(status_file, 'w') as f:
+                                json.dump(new_data, f, indent=2)
+                        except Exception as e:
+                            print(f"Failed to update boot time (drift): {e}")
+
+            except Exception as e:
+                print(f"Error reading/parsing status file: {e}")
+
         else:
+            # 首次运行，保存当前启动时间
             with open(status_file, 'w') as f:
                 json.dump({
                     "last_reboot_time": current_boot_time,
                     "status": 1
                 }, f, indent=2)
+
     except Exception as e:
         pass
 
-
+    return False  # 默认没有重启
 
 if __name__ == '__main__':
     pid_file = "{}/logs/panel.pid".format(_PATH)

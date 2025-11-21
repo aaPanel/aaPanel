@@ -227,5 +227,22 @@
 	"bf0c29411206e89e3ec8cfadd32127c5": "Veuillez fermer et vider le cache avant d'activer le mode maintenance.",
 	"c9f96845a9be884034d544e8b2c0928f": "Remarque : Pour éviter que le site Web ne soit dégradé par les moteurs d'indexation, veuillez ne pas activer le mode maintenance pendant une longue période.",
 	"3014168da15aa5d8dc2834826c046d6b": "Il est recommandé de télécharger des fichiers HTML pour les modèles et d'utiliser des URL de données pour les fichiers statiques des modèles.",
-	"4d3829e30ef6cf2efd77087752261d0a": "Si vous souhaitez que votre modèle utilise la fonction de configuration de modèle d'aapanel, vous pouvez démarrer le mode maintenance une fois et modifier le fichier /wp-content/mintensionce/mintensione-template.html, en conservant l'espace réservé '{{}}'."
+	"4d3829e30ef6cf2efd77087752261d0a": "Si vous souhaitez que votre modèle utilise la fonction de configuration de modèle d'aapanel, vous pouvez démarrer le mode maintenance une fois et modifier le fichier /wp-content/mintensionce/mintensione-template.html, en conservant l'espace réservé '{{}}'.",
+	"550f99d102cfc5182aea66b62b3ef90f": "Paramètres manuels",
+	"4bc9a5fa425406a6e190c445fcfda536": "Slug (domaine de texte)",
+	"59a62c07c8312215a0e12edb30b5b0b7": "Limace personnalisée",
+	"b78a3223503896721cca1303f776159b": "Titre",
+	"f561ae146f9c67fe049611b9b0651e77": "Titre du plugin",
+	"dc3de0994cb345bbb0fa4db5418fbb75": "Titre du thème",
+	"980ba2d2915afeeb921f1fd8a25e97d6": "Vous pouvez télécharger des plugins depuis votre ordinateur local,",
+	"c5a759ebcea830b268d52ee44455aa63": "Englobant ceux en dehors du répertoire wordpress.org",
+	"33a69c66d5953057cc75dd36009e7f97": "Sélectionnez le plugin (*.zip)",
+	"675a4ffa8aad3e96396db0f74caf60d6": "Sélectionnez un thème (*.zip)",
+	"b3d4e2bcdbf72f5828b3ef09b238c072": "Veuillez sélectionner un fichier",
+	"1b9abf135ccb7ed2f2cd9c155137c351": "Parcourir",
+	"f787618e514c038851726224d7e4421e": "Aucun fichier sélectionné",
+	"a7c3c998c562b3c1a03b55a45885d89f": "Fichier sélectionné : {0}",
+	"9162fca50a90dd9ede7b004903e8d5f5": "Télécharger le plugin",
+	"f6e4b551382f9dbe4413c43de5f80873": "Télécharger le thème",
+	"4e4b1e639a36d24d7cc6865089a975b6": "Pour ajouter un plugin ou un thème personnalisé à cette collection, cliquez sur le bouton Télécharger, puis téléchargez le fichier depuis votre ordinateur local."
 }

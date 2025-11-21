@@ -183,7 +183,8 @@
 			"index_74": "Cambiar la contraseña de la base de datos",
 			"index_75": "Contraseña de raíz",
 			"index_76": "Posición",
-			"index_77": "Addtime"
+			"index_77": "Addtime",
+			"index_78": "Mostrar registros"
 		},
 		"PhpAdmin": {
 			"index_1": "Versión php",
@@ -278,7 +279,20 @@
 			"index_25": "El permiso de [{0}] está a punto de eliminarse. ¿Quieres continuar?",
 			"index_26": "Configuración de alarma",
 			"index_27": "Después de la configuración, reinicie manualmente la base de datos para entrar en vigencia",
-			"index_28": "Descargar certificado autofirmado MySQL SSL"
+			"index_28": "Descargar certificado autofirmado MySQL SSL",
+			"type": {
+				"import": "Importar",
+				"recover": "recuperar",
+				"backup": "Respaldo"
+			},
+			"logs": {
+				"index_1": "{0} archivo de base de datos, espere...",
+				"index_2": "La tarea {0} actual se está ejecutando en segundo plano; puede cerrar esta página para realizar otras operaciones",
+				"index_3": "{0} Base de datos: ",
+				"index_4": "{0} Tamaño: ",
+				"index_5": "{0} Velocidad:",
+				"index_6": "Una vez completada la importación, puede ver los resultados de la importación en el registro de importación."
+			}
 		}
 	}
 }

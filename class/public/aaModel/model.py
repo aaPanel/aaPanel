@@ -86,10 +86,10 @@ class aaMetaClass(type):
 class aaCusModel(metaclass=aaMetaClass):
     __abstract__ = True
     objects = aaManager()
-    _dirty_fields: set = None
+    _dirty_fields: Optional[set] = None
 
     def __init__(self, **kwargs):
-        if self.__abstract__ is True:
+        if self.__abstract__:
             raise RuntimeError(f'{self.__class__.__name__} class can not be init')
         self._field_filter = kwargs.pop("_field_filter", None)
         for f, v in self._generate_init(kwargs, all_flag=True):
@@ -98,15 +98,15 @@ class aaCusModel(metaclass=aaMetaClass):
         self._dirty_fields = set()
 
     def _mark_dirty(self, field_name: str):
-        if self._dirty_fields is not None:
-            self._dirty_fields.add(field_name)
+        if self._dirty_fields is None:
+            return
+        self._dirty_fields.add(field_name)
 
     def _generate_init(self, val_data: dict, all_flag: bool = False) -> Generator:
         fields_map = self._get_fields() if all_flag else {
             k: v for k, v in self._get_fields().items()
             if k in val_data or (hasattr(v, "dynamic") and v.auto_now is True)
         }
-
         for name, field in fields_map.items():
             default_val = field.get_default_val()
             val = val_data.get(name, default_val)
@@ -158,6 +158,13 @@ class aaModel(aaCusModel):
             index = ["status"]  索引
 
     """
+    __db_name__: str
+    __table_name__: str
+    __fields__: dict
+    __primary_key__: str
+    __serializes__: dict
+    __index_keys__: list
+
     __abstract__: bool = True
     __destroyed: bool = False
     id: int = None
@@ -242,40 +249,61 @@ class aaModel(aaCusModel):
     @check_destroyed
     def save(self, raise_exp: bool = True) -> Optional[Self]:
         """
-        模型数据, 不存在则 保存 , 存在则 更新
+        模型数据, 不存在则 保存 , 存在则 更新, 仅更新变动字段
         :raise_exp 抛异常
         :return: model object 字段类型异常等问题返回 None
         """
-        if self.__class__.__abstract__ is True:
+        if self.__class__.__abstract__:
             raise RuntimeError(f'{self.__class__.__name__} class can not be save')
         try:
             cls = self.__class__
             primary_key = cls.__primary_key__
             pk = int(self.__dict__.get(primary_key, 0))
-            dirtys = {f: self.__dict__[f] for f in self._dirty_fields}
-            if dirtys:
-                validate = self._validate(target=dirtys, raise_exp=raise_exp)
-            else:
+
+            # not changed & not insert.
+            if not self._dirty_fields and pk != 0:
+                return self
+
+            dirtys = {
+                k: v for k, v in self.__dict__.items() if k in self._dirty_fields
+            }
+
+            if pk == 0:
+                # insert, all fields default
                 validate = self._validate(raise_exp=raise_exp)
+            else:
+                if "update_time" in cls._get_fields() and "update_time" not in dirtys:
+                    dirtys["update_time"] = None
+                # for field_name, field_obj in cls._get_fields().items():
+                #     if hasattr(field_obj, "auto_now") and field_obj.auto_now:
+                #         dirtys[field_name] = None
+                # update, olnly validate dirty fields
+                validate = self._validate(target=dirtys, raise_exp=raise_exp)
 
             if not validate:
+                if raise_exp:
+                    raise HintException("validate error")
                 return None
 
-            q = cls.objects._query
-            if pk != 0:  # update
+            if pk == 0:  # insert
+                self._before_save()
+                new_id = cls.objects._insert(validate)
+                if not new_id:
+                    if raise_exp:
+                        raise HintException("insert failed")
+                    return None
+                self.__dict__[primary_key] = new_id
+                self._after_save()
+            else:  # update
                 self._before_update()
-                if q.where(f"{primary_key}=?", (pk,)).update(validate) == 1:
+                if cls.objects._update({primary_key: pk}, validate) == 1:
                     self._after_update()
                 else:  # update failed
+                    if raise_exp:
+                        raise HintException("update failed")
                     return None
-            else:  # save
-                self._before_save()
-                new_id = q.insert(validate)
-                if new_id:
-                    setattr(self, primary_key, new_id)
-                    self._after_save()
+            # reset in finally block
             return self
-            # return self if not new_id else cls(**{primary_key: new_id, **self.__dict__})
         except (TypeError, AttributeError) as t:
             if raise_exp:
                 raise t

@@ -97,7 +97,9 @@
 			"index_96": "Turn off panel backup",
 			"index_97": "Automatic backup does not include website data and MySQL data",
 			"index_98": "CDN Proxy",
-			"index_99": "Retrieve the real IP of the request from the CDN proxy"
+			"index_99": "Retrieve the real IP of the request from the CDN proxy",
+			"iconAuto": "Auto-fetch favicon",
+			"iconAutoDesc": "Attempts to fetch favicon every 12 hours when enabled"
 		},
 		"Safe": {
 			"index_1": "Security",
@@ -423,6 +425,9 @@
 			"global_31": "Adding User-Agent, please wait...",
 			"global_32": "Modifying User-Agent, please wait...",
 			"global_33": "Deleting User-Agent, please wait...",
+			"global_34": "Setting automatic backup, please wait...",
+			"global_35": "Clearing automatic backup, please wait...",
+			"global_36": "Settings, please wait...",
 			"alarm_1": "Adding alert task, please wait...",
 			"alarm_2": "Editing alert task, please wait...",
 			"alarm_3": "Setting alert task status, please wait...",

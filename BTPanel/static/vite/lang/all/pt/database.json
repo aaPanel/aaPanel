@@ -246,5 +246,18 @@
 	"a91f378bf120f4a971b2ad4f7bfdce70": "Instalando, por favor, espere ...",
 	"dbded73d898181a0721b5f0973e9ee74": "Desinstalação, por favor espere ...",
 	"c2fd5a116b9d3bcd0185dbf233365764": "Porta de troca, por favor, espere ...",
-	"1fb4173c812ebb31f38c565e1769d090": "O driver administrador depende do ambiente de versão PHP atualmente em execução. Se você achar que o driver está faltando, vá para extensões PHP para instalar php_mongodb e PDO_PGSQL"
+	"1fb4173c812ebb31f38c565e1769d090": "O driver administrador depende do ambiente de versão PHP atualmente em execução. Se você achar que o driver está faltando, vá para extensões PHP para instalar php_mongodb e PDO_PGSQL",
+	"810bb038ff6f1e9d2a6e578c501fc22c": "Mostrar registros",
+	"72d6d7a1885885bb55a565fd1070581a": "Importar",
+	"556b050ce914d18480d6ea30308c7790": "Recuperar",
+	"fcd071a71d6bb7d003972e54f88dd553": "Importando arquivo de banco de dados {0}, aguarde...",
+	"2f01adab1406a6e3deaca02f04a67c43": "A tarefa {0} atual está sendo executada em segundo plano. Você pode fechar esta página para realizar outras operações",
+	"8cc925eb55597a41d11fc8d6aea35910": "{0} Banco de dados:",
+	"5f6f842cb231e86cd367fcaff5896f93": "{0} Tamanho:",
+	"2e8274f870fdd2c7138262e3300cb108": "{0} Velocidade:",
+	"2b005dc108bef790c8d3511592bd2c2d": "Após a conclusão da importação, você poderá visualizar os resultados da importação no log de importação",
+	"6aea058d3dc97cb1ddbd873fac3dcfa4": "{0} arquivo de banco de dados, aguarde...",
+	"da561ddb957ee1dfa466f8e8a757b237": "{0} Banco de dados: ",
+	"4308f628f9d925687737f2d4e843c47f": "{0} Tamanho: ",
+	"94103f11ea70a356fd537493adc58f7f": "{0} Velocidade:"
 }

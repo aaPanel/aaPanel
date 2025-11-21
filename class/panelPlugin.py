@@ -74,7 +74,11 @@ class panelPlugin:
                 self.__tasks = []
 
         if not os.path.exists(self.__tmp_path):
-            os.makedirs(self.__tmp_path, 0o755)
+            try:
+                os.makedirs(self.__tmp_path, 0o755)
+            except OSError as e:
+                # 当文件系统为只读时
+                public.print_log("Failed to create temporary directory: {}".format(e))
 
     # 检查依赖
     def check_deps(self,get):
@@ -662,12 +666,16 @@ class panelPlugin:
     def check_setup_task(self,sName):
         if not self.__tasks:
             self.__tasks = public.M('tasks').where("status!=?",('1',)).field('status,name').select()
+
+        if not isinstance(self.__tasks, list):
+            return '1'
         if sName.find('php-') != -1:
             tmp = sName.split('-')
             sName = tmp[0]
             version = tmp[1]
         isTask = '1'
         for task in self.__tasks:
+            if not isinstance(task, dict): continue
             tmpt = public.getStrBetween('[',']',task['name'])
             if not tmpt:continue
             tmp1 = tmpt.split('-')
@@ -688,6 +696,8 @@ class panelPlugin:
 
     #构造本地插件信息
     def get_local_plugin_info(self,info):
+        if 'versions' not in info:
+            return None
         m_version = info['versions'].split(".")
         if len(m_version) < 2: return None
         if len(m_version) > 2:
@@ -1673,6 +1683,13 @@ class panelPlugin:
                 self.__tasks = public.M('tasks').where("status!=?",('1',)).field('status,name').select()
             isTask = '1'
             for task in self.__tasks:
+                if not isinstance(task, dict):
+                    continue
+                if 'name' not in task:
+                    continue
+                tmpt = public.getStrBetween('[',']',task['name'])
+                if not tmpt:
+                    continue
                 tmpt = public.getStrBetween('[',']',task['name'])
                 if not tmpt:continue
                 tmp1 = tmpt.split('-')
@@ -2319,7 +2336,8 @@ class panelPlugin:
 
     #导入插件包
     def input_zip(self,get):
-        if not os.path.exists(get.tmp_path): return public.return_msg_gettext(False, public.lang("Temporary file does NOT exist, please re-upload!"))
+        if not hasattr(get, 'tmp_path') or not os.path.exists(get.tmp_path):
+            return public.return_msg_gettext(False, public.lang("Temporary file does NOT exist, please re-upload!"))
         plugin_path = '/www/server/panel/plugin/' + get.plugin_name
         if not os.path.exists(plugin_path): os.makedirs(plugin_path)
         public.ExecShell(r"\cp -a -r " + get.tmp_path + '/* ' + plugin_path + '/')

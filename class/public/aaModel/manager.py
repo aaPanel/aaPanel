@@ -5,11 +5,14 @@ import sqlite3 as Engine
 import uuid
 from functools import reduce
 from itertools import chain
-from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable
+from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable, TYPE_CHECKING, Type
 
 from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
 from public.sqlite_easy import Db
+
+if TYPE_CHECKING:
+    from .model import aaModel
 
 __all__ = ["aaManager", "Q"]
 
@@ -17,7 +20,7 @@ M = TypeVar("M", bound="aaModel")
 
 
 # ==================== Patch ==================
-def _builtin(check_engine: Engine = None) -> bool:
+def _builtin(check_engine: Any = None) -> bool:
     if not check_engine:
         check_engine = Engine
     try:
@@ -31,7 +34,7 @@ def _builtin(check_engine: Engine = None) -> bool:
         return False
 
 
-def _get_engine() -> tuple[bool, Engine]:
+def _get_engine() -> tuple[bool, Any]:
     try:
         import pysqlite3 as engine
         flag = True
@@ -67,7 +70,7 @@ class Operator:
         "like": "%{}%", "startswith": "{}%", "endswith": "%{}",
     }
 
-    def __init__(self, model_class: M, query: Db.query):
+    def __init__(self, model_class: M, query: "Db.query"):
         self._model_class: M = model_class
         self._query = query
         self._tb = self._model_class.__table_name__
@@ -245,6 +248,7 @@ class Operator:
             return f"{key} {op} ({placeholders})", val
 
         self._q_error(key, compare, val, sp_compare)
+        return None, None
 
     def __compare_reducer(self, key: str, compare: str, road: list, val: Any):
         sp_compare = getattr(self._fields.get(key), "compare")
@@ -330,7 +334,7 @@ class Operator:
                 return f"{self._tb}.{key} = ?", [val]
 
             return f"{self._tb}.{key} IS NULL", []
-        if self._flag is True:
+        if self._flag:
             path = self.__generate_road(road)
             if val is not None:
                 if is_json:
@@ -472,8 +476,8 @@ class QuerySet(Generic[M]):
     查询集
     """
 
-    def __init__(self, model_class: M, query: Db.query):
-        self._model_class: M = model_class
+    def __init__(self, model_class: Type[M], query: "Db.query"):
+        self._model_class: Type[M] = model_class
         self._tb = self._model_class.__table_name__
         self._query = query
         self._cache = None
@@ -536,7 +540,7 @@ class QuerySet(Generic[M]):
         return chain(self.__execute() or [], other.__execute() or [])
 
     @property
-    def _clone_q(self) -> Db.query:
+    def _clone_q(self) -> "Db.query":
         return self._query.fork()
 
     def _gen_M(self, data) -> M:
@@ -738,7 +742,7 @@ class aaObjects(Generic[M]):
             cls.__m_map__[args.__table_name__] = aaMigrate(args).run_migrate()
         return super(aaObjects, cls).__new__(cls)
 
-    def __init__(self, model: M):
+    def __init__(self, model: Type[M]):
         self._model = model
         self.__q = None
 
@@ -752,7 +756,7 @@ class aaObjects(Generic[M]):
         return self._queryset_class(self._model, self._query.fork())
 
     @property
-    def _query(self) -> Db.query:
+    def _query(self) -> "Db.query":
         if not self.__q:
             q = Db(
                 db_name=self._model.__db_name__,
@@ -763,6 +767,20 @@ class aaObjects(Generic[M]):
 
     def _insert(self, val_data) -> int:
         return self._query.insert(val_data)
+
+    def _update(self, cdt: dict, val_data: dict) -> int:
+        if not cdt or not val_data:
+            return 0
+
+        q = self._query.fork()
+        conditions = []
+        params = []
+        for k, v in cdt.items():
+            conditions.append(f"`{k}` = ?")
+            params.append(v)
+
+        q.where(" AND ".join(conditions), params)
+        return q.update(val_data)
 
     def insert(self, data: Dict[str, Any], raise_exp: bool = True) -> dict:
         """
@@ -1012,7 +1030,7 @@ class aaManager:
         self._queryset_class = qs_cls
         self._cache = {}
 
-    def __get__(self, instance, cls: M):
+    def __get__(self, instance, cls: Type[M]):
         if instance is not None:
             raise RuntimeError(
                 f"object manager can't accessible from '{cls.__name__}' instances"

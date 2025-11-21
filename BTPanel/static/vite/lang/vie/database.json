@@ -183,7 +183,8 @@
 			"index_74": "Thay đổi mật khẩu cơ sở dữ liệu",
 			"index_75": "Mật khẩu gốc",
 			"index_76": "Chức vụ",
-			"index_77": "Bổ sung thời gian"
+			"index_77": "Bổ sung thời gian",
+			"index_78": "Hiển thị nhật ký"
 		},
 		"PhpAdmin": {
 			"index_1": "Dịch vụ",
@@ -278,7 +279,20 @@
 			"index_25": "Sự cho phép của [{0}] sắp được gỡ bỏ. Bạn có muốn tiếp tục?",
 			"index_26": "Cài đặt báo động",
 			"index_27": "Sau khi cài đặt, khởi động lại cơ sở dữ liệu để có hiệu lực theo cách thủ công",
-			"index_28": "Tải xuống chứng chỉ tự ký MySQL SSL"
+			"index_28": "Tải xuống chứng chỉ tự ký MySQL SSL",
+			"type": {
+				"import": "Nhập khẩu",
+				"recover": "Khôi phục",
+				"backup": "Hỗ trợ"
+			},
+			"logs": {
+				"index_1": "Tệp cơ sở dữ liệu {0}, vui lòng đợi...",
+				"index_2": "Tác vụ {0} hiện tại đang chạy ẩn, bạn có thể đóng trang này để thực hiện các thao tác khác",
+				"index_3": "{0} Cơ sở dữ liệu: ",
+				"index_4": "{0} Kích thước: ",
+				"index_5": "{0} Tốc độ:",
+				"index_6": "Sau khi quá trình nhập hoàn tất, bạn có thể xem kết quả nhập trong nhật ký nhập"
+			}
 		}
 	}
 }

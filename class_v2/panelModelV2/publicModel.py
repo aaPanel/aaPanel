@@ -1,388 +1,402 @@
-# coding: utf-8
-# -------------------------------------------------------------------
-# aaPanel
-# -------------------------------------------------------------------
-# Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
-# -------------------------------------------------------------------
-# Author: cjxin <cjxin@aapanel.com>
-# -------------------------------------------------------------------
-
-# 备份
-# ------------------------------
-import os, sys, re, json, shutil, psutil, time
-from panelModelV2.base import panelBase
-import public, panelTask
-import config_v2 as config
-from script.restart_services import first_time_installed
-
-try:
-    from BTPanel import cache,session
-except:pass
-
-class main(panelBase):
-    __table = 'task_list'
-    # public.check_database_field("ssl_data.db","ssl_info")
-    task_obj = panelTask.bt_task()
-
-    def __init__(self):
-        pass
-
-
-    """
-    @name 获取面板日志 
-    """
-    def get_update_logs(self,get):
-        try:
-
-            skey = 'panel_update_logs'
-            res = cache.get(skey)
-            if res:
-                return public.return_message(0, 0, res)
-
-            # res = public.httpPost('https://wafapi2.aapanel.com/api/getUpdateLogs?type=Linux',{})
-            res = public.httpPost('https://wafapi2.aapanel.com/Api/getUpdateLogs?type=Linux',{})
-
-            start_index = res.find('(') + 1
-            end_index = res.rfind(')')
-            json_data = res[start_index:end_index]
-
-            res = json.loads(json_data)
-            cache.set(skey,res,60)
-        except:
-            res = []
-
-        return public.return_message(0, 0, res)
-
-    def get_public_config(self, args):
-        """
-        @name 获取公共配置
-        """
-        _config_obj = config.config()
-        data = _config_obj.get_config(args)
-
-        data['task_list'] = self.task_obj.get_task_lists(args)
-        data['task_count'] = public.M('tasks').where("status!=?", ('1',)).count()
-        data['get_pd'] = self.get_pd(args)
-        data['ipv6'] = ''
-        if _config_obj.get_ipv6_listen(None): data['ipv6'] = 'checked'
-        data['is_local'] = ''
-        if public.is_local(): data['is_local'] = 'checked'
-
-        if data['get_pd'] and data['get_pd'][2] != -1:
-            time_diff = (data['get_pd'][2]-int(time.time())) % (365*86400)
-            data['active_pro_time'] = int(time.time()) - (365*86400 - time_diff)
-        else:
-            data['active_pro_time'] = 0
-        data['status_code'] = _config_obj.get_not_auth_status()
-        if os.path.exists('/www/server/panel/config/api.json'):
-            try:
-                res = json.loads(public.readFile('/www/server/panel/config/api.json'))
-                data['api'] = 'checked' if res['open'] else ''
-            except:
-                public.ExecShell('rm -f /www/server/panel/config/api.json')
-                data['api'] = ''
-        else:
-            data['api'] = ''
-
-
-        data['total'] = os.path.exists('/www/server/panel/plugin/total') or os.path.exists('/www/server/panel/plugin/monitor')
-        data['disk_usage'] = public.get_disk_usage(public.get_panel_path())
-        data['uid'] = ''
-        if os.path.exists('/www/server/panel/data/userInfo.json'):
-            res = public.readFile('/www/server/panel/data/userInfo.json')
-            if res:
-                try:
-                    res = json.loads(res)
-                    data['uid'] = res['uid']
-                except:
-                    pass
-        data['panel']['backup_info'] = self.get_panel_backup_info()
-
-        # 获取CDN代理状态
-        try:
-            data['cdn_status'] = self.get_cdn_status()
-        except:
-            data['cdn_status'] = False
-
-        # install check for first time
-        first_time_installed(data)
-        return public.return_message(0, 0, data)
-
-
-    # 获取公共配置（精简版）
-    def get_public_config_simple(self, args):
-        """
-            @name 获取公共配置（精简版）
-            @param args<dict_obj> 请求参数
-            @return dict
-        """
-        data = {}
-        data['task_count'] = public.M('tasks').where("status!=?", ('1',)).count()
-        data['get_pd'] = self.get_pd(args)
-
-        import panelSSL
-        data['user_info'] = panelSSL.panelSSL().GetUserInfo(None)
-
-        import system_v2 as system
-        data['panel'] = system.system().GetPanelInfo()
-
-        data["webname"] = public.GetConfigValue("title")
-
-        data['menu_list'] = config.config().get_menu_list()['message']
-
-        data['install_finished'] = os.path.exists('{}/data/install_finished.mark'.format(public.get_panel_path()))
-        import breaking_through as breaking_through
-        _breaking_through_obj = breaking_through.main()
-        data['limit_login'] = _breaking_through_obj.get_login_limit()
-        # 增加语言设置数据
-        lang = config.config().get_language()
-        data['language'] = lang['default']
-        data['language_list'] = lang['languages']
-
-        data['isPro'] = True if os.path.exists("/www/server/panel/data/panel_pro.pl") else False
-        theme_mark_path = "/www/server/panel/data/theme.pl"
-        data['theme'] = public.readFile(theme_mark_path) if os.path.exists(theme_mark_path) else 'fresh'
-
-        # 判断是否进行多服务安装
-        data['multi_service_install'] = False
-        multi_service_path = '/tmp/multi_service_install.log'
-        if os.path.exists(multi_service_path):
-            data['multi_service_install'] = True
-
-        # 判断是否是多服务状态
-        data['multi_service'] = public.get_multi_webservice_status()
-
-        #判断免费网站监控是否安装
-        data['site_total_monitor'] = {"is_install":False}
-        site_total_monitor_path = '/etc/systemd/system/site_total.service'
-        if os.path.exists(site_total_monitor_path):
-            data['site_total_monitor'] = {"is_install":True}
-
-        #获取多用户授权状态
-        data['account_limit'] = 0
-        #处理多用户授权
-        try:
-            import base64
-            from Crypto.Cipher import AES
-            from Crypto.Util.Padding import unpad
-            aes_key = b'FB8upo8XMgP5by54'
-            aes_iv = b'lOrrq3lNEURZNdK7'
-            ciphertext = base64.b64decode(public.load_soft_list(False,3).get('aln', "0"))
-            cipher = AES.new(aes_key, AES.MODE_CBC, aes_iv)
-            plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
-            data['account_limit']=int(plaintext.decode('utf-8'))
-        except Exception as e:
-            public.print_log(str(e))
-
-        return public.return_message(0, 0, data)
-
-    #统计面板备份占用空间
-    def get_panel_backup_info(self):
-        auto_backup=0 if os.path.exists('{}/data/not_auto_backup.pl'.format(public.get_panel_path())) else 1
-        backup_number=30
-        result={"total_size":0,"auto_backup":auto_backup,"backup_number":backup_number}
-        backup_number_file='{}/data/panel_backup_number.pl'.format(public.get_panel_path())
-        if os.path.exists(backup_number_file):
-            try:
-                result["backup_number"]=int(open(backup_number_file, 'r').read())
-            except:pass
-        b_path = '{}/panel'.format(public.get_backup_path())
-        if not os.path.exists(b_path): return result
-        for f in os.listdir(b_path):
-            f_path=b_path + '/' +f
-            try:
-                zip_string=""
-                if f.endswith('.zip'):zip_string=".zip"
-                mktime=time.mktime(time.strptime(f,"%Y-%m-%d"+zip_string))
-                day_date=public.format_date("%Y-%m-%d",times=mktime)
-                backup_path = b_path + '/' + day_date
-                backup_file = backup_path + '.zip'
-                if f_path==backup_file or (f_path==backup_path and os.path.isdir(f_path)):
-                    result["total_size"] += public.get_path_size(f_path)
-            except:
-                pass
-        return result
-
-    # 获取常用软件安装状态
-    def get_public_config_setup(self, args):
-        from BTPanel import session
-        if 'config' not in session:
-            session['config'] = public.M('config').where("id=?", ('1',)).field(
-                'webserver,sites_path,backup_path,status,mysql_root').find()
-        data = session['config']
-
-        import system_v2 as system
-        data.update(system.system().GetConcifInfo())
-
-        if 'ftpPort' not in data:
-            # 获取FTP端口
-            if 'port' not in session:
-                import re
-                try:
-                    file = public.GetConfigValue('setup_path') + '/pure-ftpd/etc/pure-ftpd.conf'
-                    conf = public.readFile(file)
-                    rep = r"\n#?\s*Bind\s+[0-9]+\.[0-9]+\.[0-9]+\.+[0-9]+,([0-9]+)"
-                    port = re.search(rep, conf).groups()[0]
-                except:
-                    port = '21'
-                session['port'] = port
-
-            data['ftpPort'] = session['port']
-
-        return public.return_message(0, 0, data)
-
-    # 获取授权信息
-    def get_pd(self, get):
-        return public.get_pd(get)
-
-    @staticmethod
-    def set_backup_path(get):
-        try:
-            backup_path = get.backup_path.strip().rstrip("/")
-        except AttributeError:
-            return public.return_message(-1, 0, public.lang("The parameter is incorrect"))
-
-        if not os.path.exists(backup_path):
-            return public.return_message(-1, 0, public.lang("The specified directory does not exist"))
-
-        if backup_path[-1] == "/":
-            backup_path = backup_path[:-1]
-
-        import files
-        try:
-            from BTPanel import session
-        except:
-            session = None
-        fs = files.files()
-
-        if not fs.CheckDir(get.backup_path):
-            return public.return_message(-1, 0, public.lang("You cannot use the system critical directory as the default backup directory"))
-        if session is not None:
-            session['config']['backup_path'] = os.path.join('/', backup_path)
-        db_backup = backup_path + '/database'
-        site_backup = backup_path + '/site'
-
-        if not os.path.exists(db_backup):
-            try:
-                os.makedirs(db_backup, 384)
-            except:
-                public.ExecShell('mkdir -p ' + db_backup)
-
-        if not os.path.exists(site_backup):
-            try:
-                os.makedirs(site_backup, 384)
-            except:
-                public.ExecShell('mkdir -p ' + site_backup)
-
-        public.M('config').where("id=?", ('1',)).save('backup_path', (get.backup_path,))
-        public.WriteLog('TYPE_PANEL', 'PANEL_SET_SUCCESS', (get.backup_path,))
-
-        public.restart_panel()
-        return public.return_message(0, 0, public.lang("The setup was successful"))
-
-
-    def get_soft_status(self, get):
-        if not hasattr(get, 'name'): return public.return_message(-1, 0, public.lang("Parameter error"))
-        s_status = False
-        status = False
-        setup = False
-        name = get.name.strip()
-        if name == 'web': name = public.get_webserver()
-        version = ''
-        if name == 'sqlite':
-            status = True
-        if name in ['mysql', 'pgsql', 'sqlserver', 'mongodb', 'redis']:
-            count = public.M('database_servers').where("LOWER(db_type)=LOWER(?)", (name,)).count()
-            if count > 0: status = True
-        if os.path.exists('/www/server/{}'.format(name)) and len(os.listdir('/www/server/{}'.format(name))) > 2:
-            if not public.M('tasks').where("name like ? and status == -1",
-                                           ('安装%{}%'.format(name.replace('-', '')),)).count() > 0:
-                status = True
-                setup = True
-        if name == 'openlitespeed':
-            status = os.path.exists('/usr/local/lsws/bin/lswsctrl')
-            setup = status
-        if status:
-            path_data = {
-                "nginx": "/www/server/nginx/logs/nginx.pid",
-                "mysql": "/www/server/data/localhost.localdomain.pid",
-                "apache": "/www/server/apache/logs/httpd.pid",
-                "pure-ftpd": "/var/run/pure-ftpd.pid",
-                "redis": "/www/server/redis/redis.pid",
-                "pgsql": "/www/server/pgsql/data_directory/postmaster.pid",
-                "openlitespeed": "/tmp/lshttpd/lshttpd.pid",
-                "mongodb": "/www/server/mongodb/log/configsvr.pid",
-            }
-            if name == 'mysql':
-                datadir = public.get_datadir()
-                if datadir:
-                    path_data["mysql"] = "{}/{}.pid".format(datadir, public.get_hostname())
-
-            if name in path_data.keys():
-                if os.path.exists(path_data[name]):
-                    pid = public.readFile(path_data[name])
-                    if pid:
-                        try:
-                            psutil.Process(int(pid))
-                            s_status = True
-                        except:
-                            pass
-                else:
-                    # 可能会存在用户修改主机名后 找不到pid文件的情况
-                    if name == 'mysql' and not s_status:
-                        for proc in psutil.process_iter():
-                            if proc.name() == 'mysqld':
-                                s_status = True
-                                public.writeFile(path_data['mysql'], str(proc.pid))
-                                break
-        version_data = {
-            "nginx": '/www/server/nginx/version.pl',
-            "mysql": "/www/server/mysql/version.pl",
-            "pgsql": "/www/server/pgsql/data/PG_VERSION",
-            "apache": "/www/server/apache/version.pl",
-            "pure-ftpd": "/www/server/pure-ftpd/version.pl",
-            "openlitespeed": "/usr/local/lsws/VERSION",
-            "redis": "/www/server/redis/version.pl",
-            "mongodb": "/www/server/mongodb/version.pl",
-            "memcached": "/usr/local/memcached/version_check.pl",
-        }
-        if name in version_data.keys():
-            if os.path.exists(version_data[name]):
-                version = public.readFile(version_data[name]).strip()
-        title_data = {
-            "nginx": "Nginx",
-            "mysql": "MySQL",
-            "pgsql": "PostgreSQL",
-            "mongodb": "MongoDB",
-            "redis": "Redis",
-            "apache": "Apache",
-            "openlitespeed": "OpenLiteSpeed",
-            "pure-ftpd": "Pure-FTPd",
-            "memcached": "Memcached",
-        }
-        s_version_data = {
-            'mysql': 'mysqld',
-            'apache': 'httpd',
-        }
-
-        data = {
-            "status": status,
-            "s_status": s_status,
-            "msg": '',
-            "version": version,
-            "name": name.replace('-', ''),
-            "title": title_data.get(name, name),
-            "admin": os.path.exists('/www/server/panel/plugin/' + name),
-            "s_version": s_version_data.get(name, name),
-            "setup": setup
-        }
-
-        # install check for first time
-        first_time_installed({name: {"setup": setup}})
-        return public.return_message(0, 0,data)
-
-    # 获取CDN代理状态
-    def get_cdn_status(self):
-        from flask import current_app
-        return current_app.config['CDN_PROXY']
-
+4wZIF38E5nxrLYkW2uUR7d3iaGQLSTjR4DuJynwT7k0=
+XqBLRXNa/0V7439P+rc6hEwNOx43wLjN61FZ6E2obAa23LCoGr2YlDYZYC1tcZk6mnFUnSSAMkOAkjmcftNoKhCg3JPMIJRBsMXbngZMA3Q=
+dBZyCsfrbwqvA0sbdGrIGg==
+XqBLRXNa/0V7439P+rc6hEwNOx43wLjN61FZ6E2obAa23LCoGr2YlDYZYC1tcZk6mnFUnSSAMkOAkjmcftNoKhCg3JPMIJRBsMXbngZMA3Q=
+n+0ptngHIPIjFuMNQ53bfj+Na/fdhk6k1yTpAwW7j353Dw920mEqQQZjykAHeRmp0ZD/P3ftGifsmPOMf2b7XdEqyZH0yl9kjaUugj3dYPI=
+XqBLRXNa/0V7439P+rc6hEwNOx43wLjN61FZ6E2obAa23LCoGr2YlDYZYC1tcZk6mnFUnSSAMkOAkjmcftNoKhCg3JPMIJRBsMXbngZMA3Q=
+jh3cxzkA2htccqfZRKAUdI8r17q57nOGP4OxbJlL1NAnrF4weHnS0MpT6C6jbrX5
+XqBLRXNa/0V7439P+rc6hEwNOx43wLjN61FZ6E2obAa23LCoGr2YlDYZYC1tcZk6mnFUnSSAMkOAkjmcftNoKhCg3JPMIJRBsMXbngZMA3Q=
+1u+XjG/2+GSQRv6EzCaWRQ==
+MlcUD26fSrrheKG8CYCsRQ==
+XqBLRXNa/0V7439P+rc6hEwNOx43wLjN61FZ6E2obAbFx1CPChpgx6xlsqPUrTBV
+iqJYmVbzdNn5x37gLSDBIf8UnXLlTx6HCN/pqN0Rq5a3Zr7iWYwoTzFt8bBFxkAW
+dToUEVlHlu+kHqbh19i7U6M2sbYdoDaiFenbFKp7Xr0i242FpBsExhWhanwNaSmr
+eNqC7THw6MwL067mEEjzH1uIw5rs7OPGXYn4CSGPL5s=
+A1O7sKaCYUfkhWy4F6GJja7wR3o4HltAVWAfTpIAj5M=
+hPdcbqLeEAjmdvt8H6OKT5mx+AdotFAjhNZxzmhqZHJdd3oFQIaTI4uuIinVghZ51x6NH2I7ZvFQQFYtsnpE0g==
+1u+XjG/2+GSQRv6EzCaWRQ==
+f3AsbhS4PaN1B4cUkY9T+A==
+vlNl0s/hLJ4MLdvF5a1XARabB56KXuJTzFht6r58AR/pHyw5TAC8Q/XH0vVd7Sw2
+ykdJnotO7hKJBksx+NTqTg==
+1u+XjG/2+GSQRv6EzCaWRQ==
+VkUHH+1e2ZH4eqTYLsomVuLet1UKE5t3lzGCByNWiU4=
+ija2hkIUSaVYOi7ojhFrBIJKv6vUxcs88F0XMpFOgXI=
+QmFoYWOohcg+5EW5/cXnx4KB7DmnnX/3EQvI6Y19Ey78iCvIJR9HuOJ3I06xyU7kekO+WJRJw4qCVHdEgh3EyA==
+mQ25ajyINgnHhbV5kR2ATlhViRi7de2FNV5mJ/6fgch88Jd4DbXkIRA6mcJd3Uq4
+1u+XjG/2+GSQRv6EzCaWRQ==
+9GxZpCRwMRDPejWR2Vvf+LKn0tNtFKp8Eh2tnr4Da9U=
+6c3cWGGlsEf4q4E+EjPFyg==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+MsacHy0ZakPCVoHa83a26A==
+fHnscUXri8KvX75DMrJk+33Zm820u9uMwxn4ayVOkSI=
+MsacHy0ZakPCVoHa83a26A==
+lJrTBYHSLYUXRd3vvJAyG5y6IchH6/PLUwfNDlZq72P6XYtwcglgQHgyt8tkLY87
+b4OJVZe8QyIpjuTpKXDL9A==
+1u+XjG/2+GSQRv6EzCaWRQ==
+eqO/uFb0Kf++TkGzRYcVDtsD0rsde/52OnHhPfMY6c5tx4leZYSkl5V8EOqcA7yI
+lOh2GtzHjjMM8E9J40AuOX22VH2XxY/7zIkAbZVoVQqgkcnPlm4w6YbpD5CSrevk
+UbJuac0dxLiN+5ocS3w2vRp92UK1M7Voei4ApHZyTgY=
+VmVrGQo2zRokW/ZuO9bN6zM/X2hHBCd+n2OGnnATmrTtYOgvvgMETdI2RzUBkb1VpwpXlQvXPrRsOyk/7zmtMA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+UGSctzorKMmnxEYKNtDxBsMiRa+LzvFu7RsagwDRjHDjiVYn4zDsZyr78hpjoOnsS9Yzsz+GIvg2uKsO373vP+U5Foxl6JcUXsfPPOhES6ScQupS/DzJEmRqkxCjZVhnSRt2U6LF2Xe/5QVbuTywBA==
+lOh2GtzHjjMM8E9J40AuOVVeyoh6rSy98QMdDBotkjUYMcj06/T1f5ZVZDqV5ETN9fH0sFHn7LUQ9W51t948+a7EyWrgmewdcchuGhs24PQ1I+nKE2WluOZQf8aR6nT918fFVe+RFJnmLIfg+mC9/g==
+1u+XjG/2+GSQRv6EzCaWRQ==
+UiubnxD7y7+jD/CLXy/lI/5MfF0ORTZgr4AMpxiqp64Y6KpUyYJ9ieOw5ubULTmB
+iS2zG+G7QN2i2/iPrYYX8KBnzcPAHWUv0HOpD8R7ROPAUOyyX7+J4CnkiEHx6eQ2
+dCVi/ce+0JrsJ/e2rvj7tsTfmt7ks0H+UkxQdxoGhvnxM3N52m4IZrXIigcOnEO7DM/Egj3v3sMwnqLQkKu5aQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+lOh2GtzHjjMM8E9J40AuOalMtj7iSw41ds772VZlx3FbmBqVmgWegJA1mUrSMN/+
+7jSw4GB3eBRbmC1MzdtYH2veY+6VCDMez4YHBXiCcDJovmbty9X8I+mSx7wu2yUq
+mfT8DrNbUmxQ2BnZ1bZFTLh9MEuZKOpmAfF70OnZ9TU=
+lOh2GtzHjjMM8E9J40AuObeRkfOu1L8gEIjFWvZ5VWA=
+1u+XjG/2+GSQRv6EzCaWRQ==
+96orka/uERLyRst14azQwnND1LaAMeJ6hPF2g6RNEz6hPfkxrKXEvAkeqm+3F99xAUKmCh7g85F6qKhGtmzo/w==
+1u+XjG/2+GSQRv6EzCaWRQ==
+OLnefDJnL4ie2DQ3b/86bxd/jOeoBPx8htzmXCfUiIUJTVBjn1LK5acSqZ1bi9sG
+Z8UsPk1Q7HtwjRd4g01ryw==
+NNh1PlSD8WUnUEbz+BU/P1pRy5BgEtwZGSitPy/206e7jU+bzvXY4QoexqnPPHfI
+Z8UsPk1Q7HtwjRd4g01ryw==
+j1PGlr9UbQk8SkkOcsDJJM21s4Fsvz8pEzKAXOxPJs+0B4WzyYpeMIjoyVPVv8vV
+9NcWnEb+4jQwFG+5pzNfCI43uLdnvhXruxo8Xlha34Vd7eY5phSM+/m1RO8r1X0Z
+1u+XjG/2+GSQRv6EzCaWRQ==
+b3Z2Io95Vj8xUxWOHgYNpNbAgZrDCjesnGgQzPvRuWi7zQjfB+Js3lSGYewauWyK2A+1mVpjDIYlCevO1APJdQ==
+b3Z2Io95Vj8xUxWOHgYNpOBTbsgGmSARj0BOOQs9xPvLSpZY/DN4fqN3su1Gfsl+Mzz2VZejG8iOkCW7qzo+Aup7B0IVtv7DD0anOHwDdW6qnuUzrgjp1Xr5q2IDfMzT
+TmSl0ltBTCdGTi+Yf5OqpZaYHd9/xyRoWNC5MQzVkDTlUos/5Ll2ssxfx8vM1oTc
+wzmy77zlEn1GfzGYQKq717aznmclYkQKLSttdlht10U=
+VY72sXGr4vYuSPaIh2AC86EKiuuE7sRqkNDVxmgf3SruISsGn0zvSUqvwOTA1/tU+zlTTodD3rgY7PnfetiOLuotP8bWmuYFE8Jrd+6dSIU=
+1zXpiGOddO9f/7P9ia16hM2xB+zKeHhP+geGF281q98=
+TQRmC0vOvJ1P+lfyS3Os4UeEpSCU09I3UwrxfZbz1ySxJDfw+hiLF/6mLiXBhf+Jmm8TlB0Idds1Iechnl5YNg==
+1u+XjG/2+GSQRv6EzCaWRQ==
+YnTm35bKM0nCqx/b5rAkUnJH7eL9uT2gGMS/1CV18arhR3BAYu2Qq1wUDuCLP2LDA2J1yL+MfYUzpBpfJHWK3w==
+R65WfMhum3uW9cFR5COFLKY0rTRpMNMGY8vrkW+E+dvGm7shpcqGq2bYG0JZPC8EIzO/waQm+Q2a9CzH/2DzJFf8MFa8C7Eb8tmH7FGRVOw=
+NhnIR3Ilo4H2su9/cTNo/CuwssiV1Qn8zy9Ipa87aMm8Wbn5D1X22JNS8nCw/AoUTC0WYKnKVXYM5qLWI9ppRkrUuyFMPgMK6P5/TV827KHK6kHo9+cGagDn2e8DsEJO
+l2FJPs4YkAmmok1ulDRuSA==
+NhnIR3Ilo4H2su9/cTNo/CuwssiV1Qn8zy9Ipa87aMmjmGxlwfhyPKzrB5HWjBIo
+eDDKQ1PxEOXD40WdPkjAt7d/F/zXTLrMOKpGIlSpafYcbAWXj/VsLGmsRI1pzXP4iXZSo2Og1Skl0nlLlYifzmpuwZc+R5pGVmJxxrYl39c=
+WHkOzVx7seuLmxs5Hu+l/q7o3Ubc1JswUjeTnfo0eq8Ub8xoRo85RISFCsMCRDDf33rig+7TSv7viHzqt/MKasF1ZtAFqbwhYPfbbqXBAAI=
+vQwaisdUFOt9b0SJYuH/nrHigrTUtycF35lf58xGUQo=
+VmVrGQo2zRokW/ZuO9bN60jpUOdsgUBz9RC8Sun6+FZ8VAaPEzsggAcncaZASQyCWz/bg9SptgRElaVU59KjYqOTRh4UwqzRQf/A9uKGXwpE4GdNYTZLJIHIfr6xvRDH
+VmVrGQo2zRokW/ZuO9bN6/jNXKz27NCC9rL/Bk1BsHEZdo9n2ji4lb8AJVsbs+YjcMb2GskmyJhk+jCn8MuNcA==
+M0ZySqkmhuHCw6olbCKv9zQJzSQJo4Zslq06bXS41SQ=
+VmVrGQo2zRokW/ZuO9bN6+8Z7TpabL3QP28zOzKbdjYhCs0mOZlYUIpbyERlDN4OfeE1Alt2ZPRx2ECBhHG2zLRQjXFrq/CVAV39DKIlfpo=
+VmVrGQo2zRokW/ZuO9bN6/46jXnsKFdLuV9RZV62vDH2ZH98v6RK7aJN/ry2o1u+
+l2FJPs4YkAmmok1ulDRuSA==
+NhnIR3Ilo4H2su9/cTNo/LdLASEy0dZFnuPCLhz535g=
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+oVALHdX2E7l0JCUkkPakTa0cW54zzHhBpaEDB7sOIyhuzOmEHGkA4DeFicsQ4KHdb4KFd0jOZnzBuGUg5Ieods2c3vJ7IJa/wIYA3AbOLtvt5RE9RBMSswULIAiXyOp3t0/vNdkt7ctvLgLCPWazZamrKTg3I2RgpDstHwqx5To=
+tRKIFLgfRpNCVJDi08qHPPcd+8hHdycBLQBAt41dA7t0BExngYysGlpwYugzgZEjgh1eN9ttJvidZwH7vpLlfAE4EZ3jRn6HnXzpjBLrUkQ=
+sLTBvhdKtoL04tA7uQfd90zJV+QdMQJ5+SuDL0ptu0A=
+WHkOzVx7seuLmxs5Hu+l/q7o3Ubc1JswUjeTnfo0eq9JD+45UgZkwuaSshtQPIuR4OHLK01RbiD5z6vAg7UJhovQur1kXuJKggu1yy+e7qM=
+lOh2GtzHjjMM8E9J40AuOVxaRZw97PoD7FrVzPlfn7VffCkAjopfmyu1Wrfl699ucrmF+79kZOcTOZVhs285Kc4Jgt7eUsdmYi/dXfkoNrA=
+UbJuac0dxLiN+5ocS3w2vRp92UK1M7Voei4ApHZyTgY=
+VmVrGQo2zRokW/ZuO9bN63zFN5O/w1krXKBn8bzERXc=
+VmVrGQo2zRokW/ZuO9bN692TLEiEhZrFwXu0yoJ/aL781egzFPRS7CyVVuvhAkG5
+VmVrGQo2zRokW/ZuO9bN64fVJSMyUvmQ2WB6MRbaqU/3M0BPh6AifSFcDS4ppYty
+VmVrGQo2zRokW/ZuO9bN6xoaa3pLsxXyLdB8GbtG2YY=
+VmVrGQo2zRokW/ZuO9bN6/VW4n84N+xmKyiHoJANXzc=
+GUaIxaPnjSvC7pOV3KM6wNoU9+eN4Ff/juBU5UqlHzWYHQ0EVXBVSnotHjoLUqtW8Lxutlq+X4mSOp+FLfZlPWNHc/7ezcl4eosBCtQfPJI=
+1u+XjG/2+GSQRv6EzCaWRQ==
+ojcUvW+Z2ehEJ6yMJpmY+1tNAGzjVsW6llLEC1butsLkHeck7W4EakdZiJMiG7x+
+b4OJVZe8QyIpjuTpKXDL9A==
+NhnIR3Ilo4H2su9/cTNo/OujsQ/kD6w9RsTj7rrqI8F4+Pb5Q2+VVinO4LXXpYdJasOHBhZpA2+JnX/ABPy51Q==
+mfT8DrNbUmxQ2BnZ1bZFTLh9MEuZKOpmAfF70OnZ9TU=
+NhnIR3Ilo4H2su9/cTNo/OujsQ/kD6w9RsTj7rrqI8GEezJo2RBxgbIDG//wTNXp
+1u+XjG/2+GSQRv6EzCaWRQ==
+KGjV7UYXFcPmPT876BXp8mea38SAbX4lQ4j611symgCiM7/j6P0PTI70MliCdLWC
+n9fsIEzo9R+RJKf7RpbDvoYDfhqAYCEU9MtKQeFLhi9wc8q0rcnU8ibTLUJqCaQBRYyG0DRP7FWfS2wvM6pq1w==
+1u+XjG/2+GSQRv6EzCaWRQ==
+GgicbDXVIJxHXyJjYdM1WjSefpYrMnW9T+oqsJ2bBgF61l1qA1ZQcVVwgMgcZVSK
+Dv+0BXI1XxqLVhkyjNVfZMGGcHEVaOmp/83JkuWClZQx/+ldje1rWQObQYYqiDVS
+96orka/uERLyRst14azQwnND1LaAMeJ6hPF2g6RNEz6x4y5uDwnoEfBsnRfu8TP3MPNJhTbrFC66nkWzxHLTYw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+U7DNTiE0u8Tsr3f4TxLTmqzX5YzDsMpZ97K8FV8KoZBkytv2foFqzbOfu7P4/oYF
+OLnefDJnL4ie2DQ3b/86bwm3Flsuj6QspKJRXX5JMJr6wcwqRrerdS10ikLxfj7w
+Z8UsPk1Q7HtwjRd4g01ryw==
+hpr9H7QXrORqNT7P49jOY2HhlYcnxoDbQilQlPgiJ4QDgSTyFIJBoyQ324hG2k5e7F1JYVr+HcsWB1i2zvBp7A==
+7JQQDTi0T2idhFjao4jEpVP9QZS4fpBFMaHA9S4/JkEB1/V7obmIADV2T6w3e1iq
+h2Amc56dmaRo3inGZxN9N7YmSnVOnKHgSbLiS1QjeYg=
+Z8UsPk1Q7HtwjRd4g01ryw==
+JbnXIK/axHVmA2plDNFCpPYlXWvPB/7lIz9ynMkifTY=
+b3Z2Io95Vj8xUxWOHgYNpOBTbsgGmSARj0BOOQs9xPvLSpZY/DN4fqN3su1Gfsl+Mzz2VZejG8iOkCW7qzo+Aup7B0IVtv7DD0anOHwDdW6qnuUzrgjp1Xr5q2IDfMzT
+TmSl0ltBTCdGTi+Yf5OqpZaYHd9/xyRoWNC5MQzVkDTlUos/5Ll2ssxfx8vM1oTc
+1u+XjG/2+GSQRv6EzCaWRQ==
+q4nc/jwATOMUyfSjLibfER1HfDn1XlVmUVaQrY7R07Q=
+8tPn9sAkvkCIsbzZpguPSwuDAuyPpVE7l98w0VKK7nFwE7mCYOfm9w49PZukbe6YMOeaZWDiGGvszO0SMgnP3XsMSDrKy/Q80Z41DmtNymE=
+1u+XjG/2+GSQRv6EzCaWRQ==
+yXqkSqtRGSEMRZqQHZ1+mrpvh3dm/Gncx1pE/J7e9QqSeDxul87AkEEU1H32AJep
+GUaIxaPnjSvC7pOV3KM6wLVt0FEQPnj0C73n+sfbzQTKaJ7mPMpQY5fFYtG2YYDkshQW1/Fi8qy8y9J1tA1PRA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+qMe87zlgen9OIMCcB6QlQup2C35/ZOQT5YW5AVzNnyFKZpH7XAky/1LTgtGFcUoNlcd3p0uFBuGPx5qIvCwInw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+BOCvwU5tQIBWp9dhjgXVqVwoUIsFp/G0ifdFO/7O6gcv/0pg16yI+3V3ZfhrpYEqSOOy/sCKCFttJVtQGxuiqi9ZlyFjMca/c3BF7R8pgTE=
+1u+XjG/2+GSQRv6EzCaWRQ==
+XisXz5DCD82wMRFAyU2YnCksjqmFrmCOxTpCgk1SGRrDmXzqB9tfgj8ikdAILAKBWcGQGmnrFuonYwSRzO3b3g4iczhLlBvkUFmOyrgNOGrRWqunZNEpdqlLQ7omG+9nu6Y4/psb1DqKsItsoEHrx4NKHAvGF1dDByvvDzvOkas=
+6HPnTz8Rz2F2SrBbGdHtnKuqUqQXdJlYJFojeDNYptnm7bFYX3V0jYO7Mz5VkXHFTjEYZtV9vvG1wXurATzpIg==
+Fd0f+UdP9zKGbn/EuyFpMCEjl5JVpwnbq7IPixpVudi6+h/jnoNGmPyrVduXH3nQxjYwTuDK2RL89t3Yqn6seQ==
+m8Ow2B/s6L8UfiTkEu9Vx8bCfbAo7/+gNruQpZJLSQRbvZEThlNk1VZmHpNHS0Tk4ceWjfiaaKsJXTyuEou9VwelRG0nR7V3pTeXu6YdaIU=
+bjZj6OKTweM5OZURBrTjsPTZ/hweC2/VdEFP5miAZADTggMJF0g2E8hIepvdg9K9
+VLtBuocbWlYw7pjaD1xq1yCOvgICA6EjTDAszibejPfBocKpKuVRap5o/2sJQKcU
+XiKcshPi/4oq9fOSinM69ZxAV4ko7pQIB07BIspQK+roFoHU5MfUKTe79xJ9l1nm
+XiKcshPi/4oq9fOSinM69WRScJZ9c2qGPlIdIBSNHz9LmII8xkoJ5N4eqhbXHS8fNAVUx3/PWAuIatmhDilx2g==
+1u+XjG/2+GSQRv6EzCaWRQ==
+1zXpiGOddO9f/7P9ia16hHujxWTEN+Y6waseOo9bRX7XOG72wA88ilhaB7E1JncTRebfa4u2cr35WsucZjh8qY2HBAN+QdzGjMwvKSjXQNCSfb1em213eMwmHLofGmdPX3cLz9jLfNd7d5beyp2Z5w==
+4qd/tPdNzcnshJt+m02V1xpsit2h1dUlO9VXA5nOdI2JCvo94LIH/6xvKc4T+0rE61NjF6n0cFT1N2G3JqF2qw==
+ie3A3hlmb2QbApABPh4pN3YAA2+7PANsSSf0XPb7rKI3BIb3KvrwbdbCK4am9/y/5hX6dP/gMMwlikGfYuZ/RxWZ7ZJO+sbS3R9AWSVm72gNcFnEB652oqOMgYND18tmMHao9Vju+shxydiZ2vMm9A==
+1u+XjG/2+GSQRv6EzCaWRQ==
+pL0fy2Pm7iZLBV6YOaFzdmoFgjd8PasdogfkOLcl2dA+AxZn+X0rGRxZ6KrMC89W
+kuJHZzJBv3Kib2+QnKOQ1o45YPD+sQu2PaTTeM496aV0wM78FHnLv0Aojhhk1ycV
+wjBQJ/BVmDXnUWAJG1uzkOwAQxXeMlBw+YFn6S5zQWTy6SL2SD6L5zBjYgNIoplJTykQOv+P0JTpwS7mes1Q0A==
+WHkOzVx7seuLmxs5Hu+l/gPDqHLDmGVpuFunxseOPGQxng9/FmEp8KmorNKEbcne
+NhnIR3Ilo4H2su9/cTNo/Ba7LJ3AAB1/7cHIJzve9w1Uh/AX1VwNwq4V/iwyIkZdOdRSX7i/4gUk2IEKC1u4WA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+pL0fy2Pm7iZLBV6YOaFzdoGrs9d1Nd+RV3SszPBWF12sHsJXiWQpDBOAnJoOUolH
+kuJHZzJBv3Kib2+QnKOQ1j8T6ZZed2FElaDMmqgnt61++pbDvLALKme305rDBnfmvZJEpHtoGcZzHEYNXmgR8z/L+M8FAZwqNaIWE2aH3XA=
+1u+XjG/2+GSQRv6EzCaWRQ==
+QyJUh5mRZWFkknWrNfqHWjHsrDE+MUjF6nKkyNjYEgW/wDKJ56rG0E3lb0fHYETv
+pFg4Zp+YPGJXKgdAyL1zkI7hNf5vh6StzdUMuWhIbi0AD8Z96z3aChjaHxfuUSGARNu2enecDJDVjvw4QVFbKQ==
+03YdMdkCDTzlbVMDAlvfDjncwvB3dUWtPDH/CMBLLKShicWn/v0zPJauHvm/+xrCbCvCxXRn8zD4AkxZKh+qDbVMJePfQvM0R9mpjcUFU48=
+WHkOzVx7seuLmxs5Hu+l/hqQ42Rdao9KsJalFc3Uy3PPYvM+rpo7PCjI0oSCScNPbWurlpyqH75wxHzNu07uwg==
+NhnIR3Ilo4H2su9/cTNo/ICZTGzhWDfqRxvJsiO+SFp3raTQcMRn2bn8JTBNQQrbkW7yaHo1jZQBWfanlPEa8A==
+1u+XjG/2+GSQRv6EzCaWRQ==
+3hCm6yDF8QSQ/yEbAtwtdq0rzuiteh3WYSTLRsG5O0dX/VhvBj4ApO5dsRhgEcZX
+ZJEoitRQAm7dKGJdUfxbFmDrY4YEgtXVG1lhlAaCc/x9n+3FgPGICDlC6/txNl7k
+AQ0EFiUuMT5/f86kH+tPcHrF4D7dxNUTwbkZLq5cMlg=
+b4OJVZe8QyIpjuTpKXDL9A==
+p9oVsBgcyiBMjDb8CcPOqNtRkrvNJ9gK/BmfRAkTEtM=
+I5csN8e3J/KIFkMa5t+SJBS47aW+KCShWPkT5+mP85zJzcbhJqhQXQgceM9B76jF
+I5csN8e3J/KIFkMa5t+SJHRmGYAEVIkX97ztKGmOMxXsa2Xk4fnUt36k9St1NH99Qujt0TARqRSMbyg8LCx95g==
+enyiKhzmpOLLJvgiceailU3K4xkHh2uN6q/HTKU5PnborypuO50s9Y9urqZj276y
+enyiKhzmpOLLJvgiceailZ2w0s1UqSc8V16mafebqcugWIMUedgRPIyx6uZNCmno
+l2mCKN+S07Wf8uatKewoEm4NWt0R53Z+lPySeX/PdQVbMVyR7MeDnsIV1D6s+8H5s+84HTg7wuV6nDTw8MlUQtUvv14hYWJRi1W6N6xWDJaIm+DRcybamZq+9nLNA3FU
+l2mCKN+S07Wf8uatKewoEvkUzhvm1IQG24pOt1L/PBslhyF1tWYOV8JqBKIa3QEAOGXQ8R2TOyVH9pGcHzSf+g==
+3MdrRuxS3+8KsYogI5mRy8lv+0pAyZcl3+dEb8b+hla+BD8l8jZv6pXaplBRsKQ9mTjRkl93pAQO1zCJP2os8+Juq8gACWgCuvQARxrQGsg=
+NhnIR3Ilo4H2su9/cTNo/KBvQSeseizp/ACKDcaARu3U+585pBw8UF1Ys59YNvA8OWgeaGt7NK0R9owqulIGB0mpAL44C28TK2xXknMXrN0=
+A50UO/kAI17YP7MCbTvBkFQ/jf5eMs11PzZj1m3IBsQ=
+xWoGNWjKGPfI4gq8aHoTfCcTitmxMkevrXYWd5nougFGuyAOJ2y+9BhCHp2qnsQq
+1u+XjG/2+GSQRv6EzCaWRQ==
+96orka/uERLyRst14azQwnND1LaAMeJ6hPF2g6RNEz6x4y5uDwnoEfBsnRfu8TP3MPNJhTbrFC66nkWzxHLTYw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+BMs7u+uemJZobV7GzL0uPJbpMWQBI77FRZLMSBey9unVgX3byH0UO4iTzUnwYsnf
+VjOdY39fyTs10R2jlQddWyOKZvBQpECjWIAhqT1ajmECZ71v2PcHaVwbR3tJRkv4
+YV4aqANgHFxABb8vJtxGDjypNcHNZBRrQkNDF5upLvqHq4P4B3541QDvdHljiKNCvVaRgquVAPxfFpOMfuBajCaVEQBZwIrYGDvPzh8ETZXscZDURR+HQ6wsdatmasQDJ05PHOQG5ZNsN3xAx9uIQQ==
+kgkoHGr1pgw7bj5zxrlJAe9GwKLeHswo6kKyX27sMlY=
+euq3jwRdxnFM8ISrR53/9KbtFsvMMJeQYw9kWGwsMJqiR/yIQItr64EYHy5z1V1ZXQJQ3OEPdHoNRYeV+6blQ0VyLJtlwaizU0a/tmTvhhKTTv3a/9svH2L5YFlxOuxT
+kgkoHGr1pgw7bj5zxrlJATdHZdQn5W8LoZOBO5AFTU+Z0uWb95BqbCi82tAy69SibtRqYHyea+3URjg4obilMW7/R+/H8TdNhQqRbN73gMYHqhneIkjYiVDtOwaTdgSX
+WHkOzVx7seuLmxs5Hu+l/pkalpTe2o1pDdxpUb/AkWBcU+CMjmmMHUm3T3VcNxLd
+vQwaisdUFOt9b0SJYuH/nrHigrTUtycF35lf58xGUQo=
+VmVrGQo2zRokW/ZuO9bN68DSlZ55fX3gH1DLqQdc5sl+vMhhrHUh/Eg1YV6xAzGur/Fx2dNk6kBxalVR+uv1JKL4K8I7B/KkJy7fj0zWglEUFmNNHjBRwiv9xgbCaQTr
+M0ZySqkmhuHCw6olbCKv992x+E1VMoPx+GJL+VjXXxc=
+u49eXqbXMrBpB3n4FPnGQtIvcqw5BN8uMTY75Heb0MLthiYfPf+Ea4yLB8sWe/j0J7xwykN2ny1hDkdBa8n1VA==
+wgR07xfoapmx6eEnFHXXYseqZb0gQNAmgYbkce1gruZ4wvY09vFZ/ghNvgp+t4nXdbQ8fc7tIYcYID+kaKm8eQ==
+QOiTGJqcvhOfGILFspJCgKxfrAHkGF76np+2b6uFXYTlS/okT3l3vxp5yU1iDRFS
+g0nte0X3GJ5SaCodVZLhMrHfZFbzE84XuFrE4b2uSlTCcyoh+7H7SW0HHI0tkyHt
+vQwaisdUFOt9b0SJYuH/nrHigrTUtycF35lf58xGUQo=
+VmVrGQo2zRokW/ZuO9bN62XvZRNfyWGGbVwuyZ52tCA=
+VmVrGQo2zRokW/ZuO9bN65tk4cz+crrsbTvGkmugd71IJqwibKYYUa8z/IZv0fsVjVF93FzzHZaQjpmaWqZ2nw==
+VmVrGQo2zRokW/ZuO9bN6667wVA3WdmbAVodyxmwwS0T7G3Oao1U0YvwIhepfCpFlpvrVUhVujvERZaHQEUDiPyHXX6A8RC87EdsMKwP6Ck=
+VmVrGQo2zRokW/ZuO9bN6+qSYDkukidF8Y7dmaLrb9gLfc8weaEUrwntzso4oW0bEN+ZJbpopCP82TtA0vXi5h20PMExLVsWN0itifMREnM=
+VmVrGQo2zRokW/ZuO9bN67nUg4B3Vu6EPlf3UBp2ynJMQ6i6dNan02imPG6BLMJSsjLYUq1sBxZi4RJ704ILfQ==
+VmVrGQo2zRokW/ZuO9bN67/uGDK4GYD6vw0JiQHY7TFxXrhPO6TVVdMuD/cnrY3iGjtzYk6RJBT7OIBKs1lV5Q==
+VmVrGQo2zRokW/ZuO9bN6yedItKRyZWIeClXYIV7sVVtfOsfaRLtYjlj1zgvVy3FOKLE5RCpmFiz3kCafJnbvURzroNZpuz68Bo2xrgwd7ZwKMNOd2uu3uZFr3Qj/QQk
+VmVrGQo2zRokW/ZuO9bN66ntdZbsLu/H9jq5sH9DN/ENWB4pGaFx9hVxZtaq2W4RqUnlnaOtG7KQyRU2VgnUmM97ZIikPSLh+m7Fu61oYAc=
+M0ZySqkmhuHCw6olbCKv9zQJzSQJo4Zslq06bXS41SQ=
+VmVrGQo2zRokW/ZuO9bN64/n5EL8V7CIqhp9FPzHEuQ=
+ruTTNFTdswRs4Mc+srnRk818d9d/TGGXzgPjSrVtMi8=
+1u+XjG/2+GSQRv6EzCaWRQ==
+jJP4zWIMa+cyZkmNUX3GtHB8fOXX3sLxTeFWdHJDVPhEBQ5rcQOQ5Pe6JKteYOMt
+OLnefDJnL4ie2DQ3b/86b1qrhMolmS1ZXDzNdlEinMHuW8E49c4D8Z5Y2CjuYsR+
+//gmg6HNKXG2ZU1oCGmcqX9ST4Gi/JIrzkNbhBaLgKP2ECGBYPIIORCVhqYaB950
+ZJ1yumDjn9W+y4HtnUfFGgJGDI8kaBVRx/V5UbMxevc69t/mtK4fITCXjGdId0ZH
+gES5+a4h1mvQMBAoZbICDqdrQ9911cgpo+SsnW19LtXSm03BObvY6Om8bmzCyPmztpIoOmgC8pPCmIWzJGX6y3yKFQS/So0a1Z7pP9UEkJ7sMTPf496czRm0dQqLlxD/
+VmVrGQo2zRokW/ZuO9bN6720Yr3F2cMS/HRKnepLF+prYWwc3LHnLLAtbBDW5Tsts3op38ODZsQAsWYI/nM3zr9Z9fjfDxnsHp1rH8AS1II=
+YabJCT93a3/IohXaIkr3oQF5gDLdXFa3hzwXbMknW3mbLMhvDOSJnIh0MfP78vxi
+1u+XjG/2+GSQRv6EzCaWRQ==
+yXqkSqtRGSEMRZqQHZ1+mrpvh3dm/Gncx1pE/J7e9QqSeDxul87AkEEU1H32AJep
+kRGUAalcqvce7yMd7pwnsA5R8uuOwE3KR78QaL8mpTJe5FEsy39rN2QBAs+CNUvZm8p6XAHmrznTmNplnlntLA==
+1u+XjG/2+GSQRv6EzCaWRQ==
+r4Qn/MLakjsEbIpWiBKI/0uS5wqwsD2cY76SIaaTI8PhSg6o73klUfVw6KUGApwb
+6NhFwX8gQzuQfkiLZq050uez+mUqBTe4lEIbLLJFmdc=
+84Vymj90Wzn5yYuvz1pUuLgS96zLyZziF3CA0vK5cRMSCcqHXPGeA1O9UYLaEbiN
+VmVrGQo2zRokW/ZuO9bN67UJkipsg03EUh7Nda2hcJk=
+VmVrGQo2zRokW/ZuO9bN63zFN5O/w1krXKBn8bzERXc=
+VmVrGQo2zRokW/ZuO9bN65dNwhFXB07FtwXY1OvOvT92UROlOJOd5lZO7pKNajClBM+OszjgKbu0Fo9pRgRjRgcmcXEQlrhmKyg3J0/8qq5bmmTAE7jD/mt/5ZQDSV6JrwsmWXZ4MBH/bQSEKur6zA==
+VmVrGQo2zRokW/ZuO9bN61S44hR6AKUobovVufqsNmjXfKTjX0sWapDO7wQjzhb9cqNZAKXRcHOX8pvsJPVV+w==
+VmVrGQo2zRokW/ZuO9bN64oLStjcKBOSwoGTMXEZdKYIvZo/De7pnH3QPyaKIFdn5NC86K2ARGyaCeFDupKZOd1zGdfOuqeEHKDriMSEHOtcXcHZMvMW+BlolY8Z6wxU
+VmVrGQo2zRokW/ZuO9bN6+il2gJYaOyOzo7NplGK2wx/iY7V/2o0WtseJoFiz5kscWo6IoCoDK9KIdAp0uGjag==
+VmVrGQo2zRokW/ZuO9bN6xoaa3pLsxXyLdB8GbtG2YY=
+VmVrGQo2zRokW/ZuO9bN6ynklgXGdtOHvEmZ/cGV5BeGZEFyC9gVQwaDGhrZfd+Z
+VmVrGQo2zRokW/ZuO9bN63zigRMC6JvyXoc/1ldVNtMD86TrppjIjd3GjFUP3HVV
+1u+XjG/2+GSQRv6EzCaWRQ==
+NhnIR3Ilo4H2su9/cTNo/MXlAnZGo1kCGYntVE6TA+Qst5hWurvM+A4YoRDdNK5f
+1u+XjG/2+GSQRv6EzCaWRQ==
+96orka/uERLyRst14azQwnND1LaAMeJ6hPF2g6RNEz6x4y5uDwnoEfBsnRfu8TP3MPNJhTbrFC66nkWzxHLTYw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+cajBw1NSePWsAQLhozTP0mTA0fyTBET3uokepT0nvPo=
+TCVMfcztC0GhSQhJZz8fawiCTvt2dPdDN+tVR6lRlZA=
+96orka/uERLyRst14azQwnaa35lCLYCbCJ0IYuwgHvMM1mSH1ZNzOTqqfveueqKE
+1u+XjG/2+GSQRv6EzCaWRQ==
+bH9iS7BmfKTTQ5e5cIHrV+NToa+Qu0Q6miLpIDPC7OQ=
+zG9v6657DcDy02qB/18l13MK3KLSsxnnW4zfwNpEkzo=
+b4OJVZe8QyIpjuTpKXDL9A==
+T2W5rTCbiWiaL1Usmtw6R+OYpeymxKYCBEdFurcwI334i1ojGJ10Kl7X15BvMGGkk79gFUI8rgGAH3lLsIC3gQ==
+YZOARIHIYwtmJM+h6RICZD7zP6cQ85k+2VR9Nq2+eCs=
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmWghjKa4Bx/9hwfBJOgnWLqfB+ZOQdqyS9a1Ya5tRojZuq32MvHkNm9dU/IcxGzV2V+6sJEMqeqiGmUZ2nvyMFC
+1u+XjG/2+GSQRv6EzCaWRQ==
+wgR07xfoapmx6eEnFHXXYmVJ5v0pwDT3iCzPtUJe5ebJUHQ1XkGOEr0RX42i1A0P
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmWghjKa4Bx/9hwfBJOgnWLqfB+ZOQdqyS9a1Ya5tRojZivRohXM1in/b3AYQifqxYrbU+LDRKNUjkeyiTcNLBpZkZXgPyuwhUi3vIZjhrteaw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+vvOnA/o4AnEOZ8A2Uv6HRr38b8baKvL7o0Jx3WxemY+YwF/ZVpGS8wbmODQeLgCy
+T2W5rTCbiWiaL1Usmtw6R+FYFx2qmgi1VKQSlwifTrOoq+w4ZC9baWXRhoQ0Ao5W
+1u+XjG/2+GSQRv6EzCaWRQ==
+CGMG5LRrLyjmr66XNRnXQCDYUBWZLEGZ0NSotn5gZTQ=
+b4OJVZe8QyIpjuTpKXDL9A==
+I5csN8e3J/KIFkMa5t+SJDeqDKlPRRY/FSBBPJ6csdR/Z2VJJzOjeWcJJW2HiX68
+mfT8DrNbUmxQ2BnZ1bZFTLh9MEuZKOpmAfF70OnZ9TU=
+gES5+a4h1mvQMBAoZbICDsVfcUJA17lUDZsNKt4JR5w=
+DImRiZL7J2yKqinwn6d5gX9fq+7oUTGJ2KHtbB1Xr8g=
+1u+XjG/2+GSQRv6EzCaWRQ==
+tEuQ8WQCn4wUYOYYdMt3NeB4voQyfEt6cwTmX6AuGnkGuShESfwgLHRpI7rQ4LAA
+L0eUthVnpkGsmKFAX6d+uDz5ZRBys3d0SQKK5GYgSmWghjKa4Bx/9hwfBJOgnWLq8LjAKKGv18RsqHx4K5LH21FHVRRKtSj6h02679uJ05mdND4KFxTrFBgEig+NjWqZO3KHOz1x9/20gUVxNsF8Jr754yd6ZKOyxZjKx1JKHKvHJMpyUn8FCOCSRBV9LjJ8
+T1ai07G7tWJgK5vaZJ/LxtSPrp465gtKxu0DW36//t2d+64NPcnn8SkntYMlItO0
+gES5+a4h1mvQMBAoZbICDqRAEiHJ+gIZq1fhHtpb5zZUtYzvZHZmeTzZRn8ypAXGG8Irfh7cSZ4waABjXokziOH8NCSaDGuVumBgxn96PAc=
+tEgpJqXc7SAOhv/3GbWGZGaafAZKKwUzDUEVkJIPQCBrvrhyKeM+lbKiKH9rjag7
+ew4vTFMb89VLIKJmS7QZgHqogLxTsBLbBSkF2yGEx98d1N54MIK6ssRydFW3u37s
+1u+XjG/2+GSQRv6EzCaWRQ==
+wgR07xfoapmx6eEnFHXXYhx8u27be6FTqpRMEKSdDxGqU48orXizrlKh94WjL9mr
+vQwaisdUFOt9b0SJYuH/nrHigrTUtycF35lf58xGUQo=
+VmVrGQo2zRokW/ZuO9bN69yixr2YgIailbxF1f5m+ehkjk+K5+K06OwFw6t5JlTs
+M0ZySqkmhuHCw6olbCKv9zQJzSQJo4Zslq06bXS41SQ=
+VmVrGQo2zRokW/ZuO9bN6+8Z7TpabL3QP28zOzKbdjYTGO1PqUCteRNbJ0zTCuN2et6XC5WRRwANHVCrfatz+Q==
+1u+XjG/2+GSQRv6EzCaWRQ==
+wgR07xfoapmx6eEnFHXXYp8QPW/Rny7GxLHpvcjeLGwcfFZYsKLz21tMrxSn9p14
+vQwaisdUFOt9b0SJYuH/nrHigrTUtycF35lf58xGUQo=
+VmVrGQo2zRokW/ZuO9bN60XJG/ij6F7f73fbG5nTmlP2lw1NzmXeYyR6Ka0VBrCg
+M0ZySqkmhuHCw6olbCKv9zQJzSQJo4Zslq06bXS41SQ=
+VmVrGQo2zRokW/ZuO9bN6+8Z7TpabL3QP28zOzKbdjatUqOEywdEgdZHLoq4Jti5oU1ZaN/KrgrKWCcUBwKK/g==
+1u+XjG/2+GSQRv6EzCaWRQ==
+ia8+eC8+w4kAKqFUfldoNLzUPzuJ7x8zfIwIuuvmBxk7ulxiPIdhPCZTJQEv1mb/v6LRkcJF97zIYiHG2HRSveNVaCHtEKqUhkv+tVgNF26zvLW5+thLWsgwchxPp/HR
+2+RceSNjD2iq0sRzepMysV9fnEoc/oi4eFK9GayvwWLJi0/MT1m94LmIawSoWOsVpJD/UtlaSKKlzZcHHiYiDiTjo+o7yU00GzSrlwt4bwc=
+1u+XjG/2+GSQRv6EzCaWRQ==
+HvwyOf058sDx61QrLcmwqkDStwS9q5tRRJtsARMJ6Rk=
+96orka/uERLyRst14azQwnND1LaAMeJ6hPF2g6RNEz4KpSABaS2TFB4Zv5Vx7JdyKCwH2UrD4SPVFtLs4tCKmFQg1X8Of81YzWGkmytzZuJMjfUhNp1+KtZ2oTnth/8Z
+1u+XjG/2+GSQRv6EzCaWRQ==
+1u+XjG/2+GSQRv6EzCaWRQ==
+zGE/mJ0JS89UwdICUeMECv78HK8gGY9ono/OcERAo2Q4OuWrC1bUM5rk1P7zCBAv
+c0jePRxtTVZYop75Q5JCFqNj+MYB8+bdACIa+0jt5kRXiv1g2nbr4A108AK9uubo2+5t9MCTC9gimhO+2pLg8KRXdDY/bPBtI4Xl43bBPX/WKonbPKdrc3AyXULA74rmZTk/H7vtpB1u5vU5fvarpw==
+jfS7SFS/n+ooTSGkR415iMsIYOW51trAniLvmWb/hak=
+2qQ1+UjgiO2OZgsc3LuuhqXlScodgUPR+lMhOg8MAoY=
+xazJePAl7+EX8oijwnMNlad6UUrdvrfb1wygaYN8sFM=
+Fvcd2dotGhp/dFi2RP1kYHXWOdTYQP4CkoRAzOrjcJjkG9gp7Fpjh1UcM9gmn+5T
+mOVDVEmzgX6HnqY4rlOl8USbe+TbGWc0yfHmZoNk4k3iBDnffchcePc+G7nVcLrkFgSNj92tX625nWJm804xiw==
+t81nNLGAtCoU1k5h+N8DgGJRKSa+Kw3TPuGPadPEWew=
+mOVDVEmzgX6HnqY4rlOl8e+YSMJxeguubSsFcgDE5Ok=
+kgVyqIIC9nAzezbKoMMO/m56GdPN+aTUfhi2Vk1Kgm0=
+mOVDVEmzgX6HnqY4rlOl8RtUosS8lWLqKhYPR9f9rMurwLEfJhnaoC0EVV5RiXYdqNHcZyjgIYCfQSTfsxPtMzkFeObAPyr5NCyVvDpRk1A=
+wI4EEWzdSnynhqFxMCzFmm5K3toX2pgze0TOVHzk2GXwCAQaMmit1fRz4Hb41UIxgnpp/+EKHbeQyR66NnNjZYK6By6mXqdxzIH6T6sqrFAIObPgjBHFG2Cry1RFfh7848ucYgBxoaBeeoutdOUCaw==
+ltIZHHUgft++nMUXBsBkiwm59kUWFh+VHZhvrBz2KbUK6fc06Sx4xlSyfvVXyrgx
+WHkOzVx7seuLmxs5Hu+l/q7o3Ubc1JswUjeTnfo0eq88+Ch8UMJiYPr8fV7eqyzGsvp4ZZv+ImiLhFcyzaA7WJJ9/I8zZ6zHv46GVCenDsUFA1ICyqncT4uNXpxGg7pMgv099Japf36EDdbhPUlFxXVBbAdxAkHWowTVc0YxtIA=
+1V2v8QerKOmubvSxgB4eTIgAF5MYjjSQpDkNVO/gei/fuBGJSWH/5QnRYHNHx3ipgu1vmxmOkfdcTXRd/JDX/OyrHNSsGzVOyg+lhy8up+E=
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6HkkGfHdEP+p5BcxiIwnjxTRAwKtyoKEQoHutuZXTHdHqaWKIi5ulC0JIPqJ0dA2pB5IZ5s9UnnXFI8LT0ij7CsnrCxf4s7UTjESmgcjenypKUA==
+VmVrGQo2zRokW/ZuO9bN6+q3K+uFcvEWVPVEnu2W9j0=
+VmVrGQo2zRokW/ZuO9bN6z1UXbyEEgg7zH2u1vQdcd8=
+mOVDVEmzgX6HnqY4rlOl8ZHiNv54JPXM8AQOsN/CalaJr5oLBC1R39Qtng8H5+3M
+kgVyqIIC9nAzezbKoMMO/rtNrwHELZG5KNloCh/c86RmGOEBUSPYA5TnXzsCPx7IGAnsUipMOz7hl2/qGaUkWS5rzfWzOIhoSBT6n6m94tE=
+MehrqbDHPhwXNY3FGnyrJ3ey7zCEN5u2A4+8gM2mAjo=
+UkQQaGHg2Aow1Gtc9bKBau0euapoYTSumuYNb1Ly8sk=
+9uZN8r0CKVAbfzGtFDuvLz3X3QJ1ItQYPzOkoV4LJdk=
+VmVrGQo2zRokW/ZuO9bN61kxtM/A/xhjpzjzORrZDswANqfD1M0BmFJ9MuqCmpyXuo2CVi/uqM30sy4I5Qm89Q==
+VmVrGQo2zRokW/ZuO9bN60YNhaukjprsWLBGKrymYjf7Wv7u4hApVayYdmyw7rq6WjgnZdea+wTUjXgrt2P/ClCNQk3xcoT8MgHfryfcvtU=
+VmVrGQo2zRokW/ZuO9bN61Rfce0ef05dtvigqC2xgxuR4b2esZn2iYKRikpcNcZsKldYF2lSEz+UefVVZUEfLw==
+VmVrGQo2zRokW/ZuO9bN65zZuRWsym0pY8xkNRQw5e79VJtfnztvllmIKKDLBf0gy0nf02shjpvszvG8oc3yXw==
+VmVrGQo2zRokW/ZuO9bN635eTPn5A+YVMKu/UwSxKmJ8mtKXeUWK8OOS4SIalWx+oKNvgMU0WypxhxNtQTOpEA==
+VmVrGQo2zRokW/ZuO9bN6zM5ilrJFwcLmUPDluWdGOC9Z/jDOOW7knUx3IV91SJUiiZ7NZvjoW52tR+HmM4vnIqcbsLmvHAuSqhsyekr7gM=
+VmVrGQo2zRokW/ZuO9bN6yhEfLIEseEONmqrFcKxMLmRRTDPzaJRSdc0JhUeCv6A8fSTpEpOS6+iEMohIz1k4w==
+VmVrGQo2zRokW/ZuO9bN67sHm/N8+1gaHz7Fk8/8/gwTo4ZmE5RsUB1knd4N/on12SXi6w5jJkRmMmp7uU+boNXF9wSQR9oOgBAdIxZfWvM=
+YH231WTDnzQG3bFilBiqIg==
+1V2v8QerKOmubvSxgB4eTGzA+7LPtJFrEwL6r2V7xRJ6hR8ByR8prVAoVnWbVSdr
+VmVrGQo2zRokW/ZuO9bN67IKDOTqOcsW3gONXkn2aZ2pFXG+DSFs7K/eyeGb3UjU
+VmVrGQo2zRokW/ZuO9bN6+Xy7iaAtB6gAwub/Ca4264=
+VmVrGQo2zRokW/ZuO9bN6wW1ZfNo5VomBbQ/6wB1QMa+Pgli4MWQ/B0+8Qh2u7tiFAY9mj0u2WdmFeDcmIUvMDc6Pa57001+nHf02V/3nmDex2/v+2FM1tmCfqXG3YVB
+1u+XjG/2+GSQRv6EzCaWRQ==
+1V2v8QerKOmubvSxgB4eTCW+rGjjDzQ+ugWFRLpc/UTDKZgr4nuXID5TDYHFRsqu
+VmVrGQo2zRokW/ZuO9bN6xF1SJaAm3VttartJvhccJnaK1khC+Fj4x9Fl+U3HPrBp5i1pBrDMZVvFz/p7/KXFQ==
+VmVrGQo2zRokW/ZuO9bN68adHg3IrLO0DrV2du52PkBiaWxeN9tJZ3J27IV7TOPjYWJqlCRIQpGiKmKEka9ORQ==
+VmVrGQo2zRokW/ZuO9bN64zcYBv/sbVxAlw9o1J7QrA=
+VmVrGQo2zRokW/ZuO9bN63dmCpjIL5eXfo4Q6ki7uwQ=
+VmVrGQo2zRokW/ZuO9bN68Oct4uahUA/N5aQbQ7tGPCwhA6EqxnCWCuOWvoVC2RXkwXdLyEkmxxwqAQKHN3t3A==
+VmVrGQo2zRokW/ZuO9bN68+QnzLfx5QzcNIobmcX5JCsgGrW5fETRQ/A92RhcDGj
+VmVrGQo2zRokW/ZuO9bN6yF5reIxpcu48tpbw13FzleydoSUQmf9uiRktoHrECHC
+VmVrGQo2zRokW/ZuO9bN6zP/DB6XcJXCO4xhckKf+4JVyvEO7BMF9SuwAgoChyVd
+VmVrGQo2zRokW/ZuO9bN65hAGaICagbU0z0X3nArVjY=
+VmVrGQo2zRokW/ZuO9bN698GcEfB0kqYuv1TBoC38wAw6RlioAjYVdB6eg0MMr03TZqpQnwhfzg6vPoVtnXZCt3Rfa23vPXWoDQIabMC3oXSpz3BNcakCrsdUB8pAaN9
+VmVrGQo2zRokW/ZuO9bN6xTAvNLzn8DbkL8oBJvH5xoIMHyNAvOaLkTxZFPM/SJIrxS20d6C9TD4lsrnTIIrWg==
+VmVrGQo2zRokW/ZuO9bN6woPJ3Nu4NuCaOgJX1Oji8p2GHu4xj3M+d8TDBS7VgwAjhhX9jNjLHqr0eD8RO2SAQ==
+VmVrGQo2zRokW/ZuO9bN62i9bsSVIvARJmHSP7/WrsijemdrG98R88LAZ79U88XG+6yFiO2e/dU4875Gt9bECA==
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6HknHN3yQVo73NBfvUnWkcIHoqMuQhAD2nCH4xZOPRcJhwg==
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6Hkmi60cDp2TxrMvVedfpglvaXNdqcqfCfRn3zfm1UObqmJFjZiqDOorHEiwYHEmi/PsMTXxwh1hwKIFOSS7i8UMZ
+VmVrGQo2zRokW/ZuO9bN64ZTCtjiSIe1Vj/8GYr6HklzREPECe+UKwV56rejoQ6v
+O9JEKnpiGgs6xMoNW2QKlXMXlMQG4NEf7TAmmIRPp24=
+HUnDCtIauYH2sUHDpVhSwlEYOahxe6uvh1cobZpDlL2l0D71fooBMIQLhJlsFNcpMZ9ndxZ7DejCCoOsYPr46A==
+LF21IjijjAyROmqhOf3F7qerHlLT9AEWQg5mI+jMaR/u44Xlhd08n4Fe1Badec4xTVQ++A8uDEOBu0tG7Wjx7A==
+qGysLgPiyOjs9IUQEYe9KCLVuO6MDO/LrJ5+sW3Cj0Mos/MWCsCSUrqA2vvBRQrNEifRDGb2LWnMhvZ25GAhYg==
+hMvfyKBM5GOTGDsUxD3eFLQEO/lO25zAJdxbtfXAoGa9ODl5jqh5JiHXVWgdo+hNj+MDApSkSFdbgbjxUiWkZw==
+KpW0yCdhsPDFPR++wkh8CQC3k3ncbXqSGSZ8euDRfEaDt0xiauRiDup747G7sTcMuCKpyBP7y08cBMMwnCR1Ew==
+drtTvj4J4czfbAhDcS/+RkzvZpdqxwVLC4xhkHGx1xcGnoCzG09cDjjmZPAhebf0sbpH51octRnKJacv9OcV3A==
+NB8ekj5CqufycRoo1AA1WmaAVdSceWCLU3/kXdWSsZg4Jj6mFxUWC0JpjtGGHqpomDl1a3zEwUR9jvGUMee3Jg==
+cSVqOx8Hu2ID/BxrBMi6qgygtJ1iINs3EifCixtzXNFBamGNCon7X+VUkBq6HmqPaofTnQt2KgYabreXUAMF3Q==
+9jWjcunpr+StBlY4jy2jPuIQJqa14VwAZYIu5GkHfA0jPtHlpbAOKYN+DlyIPivGu1RlQ3QfJ86JsyswEiRC1dG10N0LKQ8UahwWTvB6P90=
+661hZf7vhUQ+50okfwfTXw==
+mOVDVEmzgX6HnqY4rlOl8Xwqq39MFgw4aHpPZGZpmZ/woUf31BXEyf77QQ85tP5y
+O3CUgrw2GJfB+mDjH5+NdhKNxwYqM/PsyG8nZNUUVgJqvdX7plPcDqUj9Dx/lBzw3JlDSzshhvxUtm0A7iIDDA==
+VmVrGQo2zRokW/ZuO9bN69BX+0vGduvj1kmy4JFsayGw4a0Rses/wIQWHh2zxDyNOumu+bDeZLa/7mnl9gYX2A1tMBGuCFO8npNMVf95xOQ=
+C0HtQH9rbXowimxmhcemaUG+ijuOOm99cvXDTDdKFDc=
+HUnDCtIauYH2sUHDpVhSwnserogh5vJSza3WmeqIkqg=
+LF21IjijjAyROmqhOf3F7owknq0BlXdObtfCpDAILQ0=
+qGysLgPiyOjs9IUQEYe9KDMqCLuijFY5pshEZBd7wrBwqrmUv4YHSS3hna8ksqIe
+cSVqOx8Hu2ID/BxrBMi6qkW/dEqvCJw/I9f1dc1ezxhz35bOhbPRAvT3hYQeEUzS
+NB8ekj5CqufycRoo1AA1Wvv7okzU9N84ejzfdyaEU54=
+hMvfyKBM5GOTGDsUxD3eFENVD10y/3dm7WdO8dcSNljQ9UDkSqCf4R6h48YpG8eA
+drtTvj4J4czfbAhDcS/+RtJUpFWaYf3RQVkjONK9rB08VgSwH87PKyHgFFTwwd5b
+KpW0yCdhsPDFPR++wkh8CY+RGwPasU9ng+l4PrkhrhCwUqBgZwPJ+5YVX4SGj2xD
+9jWjcunpr+StBlY4jy2jPmuLn82r7EaYXHdYWNFdk2jrz9LL+K7eErbjBqr0XTj8
+661hZf7vhUQ+50okfwfTXw==
+bluxIb5fn19DcOF0ioD1Q+3a1HRHjKEn5f5ZoQ9QOGE=
+StWZBKPSa57dF00ekSK5bZIiw3JA8HyDYrPS8VOpsGI=
+UaLl6QMWdW/S0g452dXV7L2pYbEkVgYhy+w1IbCw4oU=
+661hZf7vhUQ+50okfwfTXw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+JbnXIK/axHVmA2plDNFCpEofHtK6A0JApZ48oEIOmf0=
+UqaKSIk9RYYWXSK0cIFfXpyQvUzUMhrijzJa47C06pM=
+5H0lpO41jA4+geJVp+zt6lu2ZiRoqOcCwBQ1+20I+bvDxT66GdyGaWte+FUKQ0h8
+GXSyC139Y6nslukFQTeSxqahl/XyVdOVEf4LYwSSmW4=
+LzoxkXnM2c+e4qwrn61NUT8JvMXLluLUVZQahqhZrkZh/gmsXq43Jzf+WkgZt9hZ
+YnAdY30Lg/9fjxdn+Sc57F4ISPCC8hZ9jFxFdhYwzgFbTFqv2ofSYiFVy78FRrJQ
+r2nIkDwgk0rK6o8yslYoCBX5aF235XgghGmfdtP2dHdterK9tU8Y1bjMLsDp57rk6+FwuZVF1OPfalDsYLzQgg==
+u1P7GfCxrlbf+oM9qK0PS3WoTgUufXlj2ENtRTehP7DJ98onXDIDyd9O99tmY0D4vynWS5OOTxNG+RRAp3ze+YnH+5iunFbWiKxiEZHe5jo=
+eaxRIuWXaPrQAuPIhs7GXd5WG91nm513+tAAuSuH5lYnQWBHw9xxh6oOfWvFR8IH/5FBdTG/v8dMHz7yDFeUeA==
+LUyc0dkTAKzugKnygsDP/0EOKQreA5A0ZcKnil1RhgQ=
+661hZf7vhUQ+50okfwfTXw==
+1u+XjG/2+GSQRv6EzCaWRQ==
+GgicbDXVIJxHXyJjYdM1WjSefpYrMnW9T+oqsJ2bBgF61l1qA1ZQcVVwgMgcZVSK
+Dv+0BXI1XxqLVhkyjNVfZD3UZFWhZuC7EmUM+ECbh7TGhq1/83Ku8S2fyz2loLSXLU5VBh/yZ6AInrT/yepzmQ==
+96orka/uERLyRst14azQwnND1LaAMeJ6hPF2g6RNEz4YNcK1BTFlC1T45t+IjXVYARRjFERHXePmau5gIsXJ8g==
+1u+XjG/2+GSQRv6EzCaWRQ==
+jTzrzAZhaWYKaWUVEWckOmyuZ0u5yUr2vVhEAsrXLl0=
+qrBZwYwyABqKtK4y85PNpMzzgb0tmyVdDnJwu2leXec=
+9bfI4jRFJKa7F3G9dromI0Q7KbE+Fzy3PkpJJRl4K4xO3tRaD6zDj15ErS1jduxi
+auZi0vV8Th1M5xUz1rxru2qSbx6vrAJT7ygWszPd+UkG75Dfw76VkORhGunJ5OcF
+1u+XjG/2+GSQRv6EzCaWRQ==
+r4H+8Po5vfX+mQNpyyNfqepcd0k7mrY8qoyom8Ynx40=
+FXzl9U1HpKgjVOrGlL31Ehng86sx1Fd1GKLVeBZXEb8/8v68+m3aI56EL6sWVaDr
+Z8UsPk1Q7HtwjRd4g01ryw==
+hpr9H7QXrORqNT7P49jOY+Ymbvw950aUMEN2LuA0f4wHFj4ycqfiMLEZLVPL6qjP
+UYiUUSKpUYKLL5elBocwLzd03sOn2hw/a0pb0j1XVaFwNdplxiCDAksDB/b13utRjTwldy1GbEKhZo4bu/E8FQ==
+dZXcYt/Kql1SsEcru2LOIx0FXIqFZ4JtA5CtgMoVPcZRrXBsv75iQnSo51TX803d
+Z8UsPk1Q7HtwjRd4g01ryw==
+Moa9cLoobutncD/I3es1AatmDMqXu7R+nU2icy7/OVe7VNBpE+DDd68Ee837VNZFoELEwVi+jbfqNTXQDv2lyJ2Ru1LYDM23rkocVg5/ZIM=
+wgR07xfoapmx6eEnFHXXYm6dil6oyrCSyw1wgluoyly2EvTTnRSP53AekJCIpaqE
+L0eUthVnpkGsmKFAX6d+uMfCKxbeZE5XF/T3qfhxdVg=
+VMfVrQporTLzVAs+KagENs0jVofd/mPyGKFNcwoEK/8=

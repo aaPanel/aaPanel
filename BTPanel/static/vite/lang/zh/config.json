@@ -97,7 +97,9 @@
 			"index_96": "关闭面板备份",
 			"index_97": "自动备份不包括网站数据和 MySQL 数据",
 			"index_98": "CDN代理",
-			"index_99": "从CDN代理中获取请求的真实IP"
+			"index_99": "从CDN代理中获取请求的真实IP",
+			"iconAuto": "自动获取网站图标",
+			"iconAutoDesc": "开启后每12小时会尝试获取网站图标"
 		},
 		"Safe": {
 			"index_1": "安全设置",

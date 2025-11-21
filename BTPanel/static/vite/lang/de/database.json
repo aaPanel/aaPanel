@@ -183,7 +183,8 @@
 			"index_74": "Ändern Sie das Datenbankkennwort",
 			"index_75": "Root Passwort",
 			"index_76": "Position",
-			"index_77": "Addtime"
+			"index_77": "Addtime",
+			"index_78": "Protokolle anzeigen"
 		},
 		"PhpAdmin": {
 			"index_1": "PHP -Version",
@@ -278,7 +279,20 @@
 			"index_25": "Die Erlaubnis von [{0}] wird kurz vor dem Entfernen. Willst du weitermachen?",
 			"index_26": "Alarmeinstellung",
 			"index_27": "Starten Sie nach dem Einstellen die Datenbank manuell neu, um wirksam zu werden",
-			"index_28": "Laden Sie das selbstsignierte MySQL SSL-Zertifikat herunter"
+			"index_28": "Laden Sie das selbstsignierte MySQL SSL-Zertifikat herunter",
+			"type": {
+				"import": "Importieren",
+				"recover": "Erholen",
+				"backup": "Backup"
+			},
+			"logs": {
+				"index_1": "{0} Datenbankdatei, bitte warten...",
+				"index_2": "Die aktuelle {0}-Aufgabe wird im Hintergrund ausgeführt. Sie können diese Seite schließen, um andere Vorgänge auszuführen",
+				"index_3": "{0} Datenbank: ",
+				"index_4": "{0} Größe: ",
+				"index_5": "{0} Geschwindigkeit:",
+				"index_6": "Nachdem der Import abgeschlossen ist, können Sie die Importergebnisse im Importprotokoll einsehen"
+			}
 		}
 	}
 }

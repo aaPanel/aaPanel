@@ -292,7 +292,8 @@ class main(dockerBase):
 
             return public.returnMsg(True, str(res))
         except:
-            public.print_log(public.get_error_info())
+            error_info = public.get_error_info()
+            return public.returnMsg(False, public.lang("Login test failed! Reason: {}", error_info))
         # except docker.errors.APIError as e:
         #     if "authentication required" in str(e):
         #         return public.returnMsg(False, public.lang("Login test failed! Reason: May be account password error, please check!"))

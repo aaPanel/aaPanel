@@ -1,0 +1,66 @@
+{
+	"Accept all emails": "Terima semua email",
+	"Add Domain": "Tambahkan Domain",
+	"Admin Email": "Email Admin",
+	"After enabling this feature, the system will create DKIM and SPF DNS records for the selected domain": {
+		" If an SPF record already exists for a domain, the system will appropriately append the servers IP address to the existing record": {
+			" However, the system will not modify any existing DKIM records": {
+				" During this process, please do not edit any nameserver configuration files": {
+					"": "Setelah mengaktifkan fitur ini, sistem akan membuat data DNS DKIM dan SPF untuk domain yang dipilih. Jika data SPF sudah ada untuk suatu domain, sistem akan menambahkan alamat IP server ke data yang ada. Namun, sistem tidak akan mengubah data DKIM yang ada. Selama proses ini, mohon jangan mengedit file konfigurasi server nama apa pun."
+				}
+			}
+		}
+	},
+	"Apply DMARC Policy": "Terapkan Kebijakan DMARC",
+	"Are you sure you want to {0} a self-built DNS server?": "Apakah Anda yakin ingin {0} membuat server DNS sendiri?",
+	"Build your own dns server based on pdns": "Bangun server dns Anda sendiri berdasarkan pdns",
+	"Configure DNS": "Konfigurasikan DNS",
+	"Confirm Applying DMARC Policy?": "Konfirmasikan Penerapan Kebijakan DMARC?",
+	"Confirm DKIM/SPF Enabled?": "Konfirmasikan DKIM/SPF Diaktifkan?",
+	"DNS Manager": "Manajer DNS",
+	"Default DNS": "DNS bawaan",
+	"Enable DKIM/SPF": "Aktifkan DKIM/SPF",
+	"Enabling this feature will create DMARCDNS records for all domains": {
+		" If a domain already has a DMARC record, the system will not modify the existing record": {
+			"": "Mengaktifkan fitur ini akan membuat data DMARCDNS untuk semua domain. Jika domain sudah memiliki data DMARC, sistem tidak akan mengubah data yang ada."
+		}
+	},
+	"Enter your expire,eg: 604800": "Masukkan masa berlaku Anda, misal: 604800",
+	"Enter your minimum,eg: 3600": "Masukkan minimum Anda, misalnya: 3600",
+	"Enter your nameserver,eg: ns1": {
+		"domain": {
+			"com": "Masukkan server nama Anda, misalnya: ns1.domain.com"
+		}
+	},
+	"Enter your refresh,eg: 3600": "Masukkan refresh Anda, misalnya: 3600",
+	"Enter your retry,eg: 3600": "Masukkan percobaan ulang Anda, misalnya: 3600",
+	"Enter your serial number,eg: 2023080101": "Masukkan nomor seri Anda, misalnya: 2023080101",
+	"Expire": "Kedaluwarsa",
+	"How often to check the serial number on the master server": "Seberapa sering memeriksa nomor seri di server master",
+	"Install Self-built DNS": "Instal DNS yang dibuat sendiri",
+	"Minimum": "Minimal",
+	"Nameserver": "Server nama",
+	"Please enter SOA": "Silakan masukkan SOA",
+	"Please enter your domain IP": "Silakan masukkan IP domain Anda",
+	"Please enter your domain name": "Silakan masukkan nama domain Anda",
+	"Policy:": "Kebijakan:",
+	"Preserve": "Pertahankan",
+	"Preserve config": "Pertahankan konfigurasi",
+	"Refresh": "Segarkan",
+	"Reject all emails": "Tolak semua email",
+	"Represents the default TTL value of all records in this zone file": "Mewakili nilai TTL default dari semua catatan dalam file zona ini",
+	"Retry": "Coba lagi",
+	"Select DMARC Policy": "Pilih Kebijakan DMARC",
+	"Self-Built DNS": "DNS yang Dibuat Sendiri",
+	"Serial Number": "Nomor Seri",
+	"Service": "Layanan",
+	"Set & Manage": "Atur & Kelola",
+	"The dns server is stopped, please start it first": "Server dns terhenti, silakan mulai terlebih dahulu",
+	"The interval time when the slaveserver reconnects to the masterserver": "Interval waktu ketika server budak terhubung kembali ke server master",
+	"When the time exceeds the number of seconds set by Expire and the slave server cannot get in touch with the master, the slave will delete its copy": "Ketika waktu melebihi jumlah detik yang ditetapkan oleh Expire dan server budak tidak dapat menghubungi master, budak akan menghapus salinannya",
+	"model admin email": "email admin model",
+	"name server": "server nama",
+	"zone file version,Modification is prohibited": {
+		"": "versi file zona, Modifikasi dilarang."
+	}
+}

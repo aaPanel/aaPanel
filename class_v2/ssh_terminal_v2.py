@@ -876,6 +876,7 @@ class ssh_terminal:
         try:
             result = self.connect()
         except Exception as ex:
+            result = public.return_message(-1, 0, public.lang('unknown error: {}',str(public.get_error_info())))
             if str(ex).find("NoneType") == -1:
                 raise public.PanelError(ex)
         return result

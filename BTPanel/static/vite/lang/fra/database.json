@@ -183,7 +183,8 @@
 			"index_74": "Modifier le mot de passe de la base de données",
 			"index_75": "Mot de passe racine",
 			"index_76": "Position",
-			"index_77": "Addtime"
+			"index_77": "Addtime",
+			"index_78": "Afficher les journaux"
 		},
 		"PhpAdmin": {
 			"index_1": "Version PHP",
@@ -278,7 +279,20 @@
 			"index_25": "L'autorisation de [{0}] est sur le point d'être supprimée. Voulez-vous continuer?",
 			"index_26": "Réglage d'alarme",
 			"index_27": "Après le réglage, redémarrez manuellement la base de données pour prendre effet",
-			"index_28": "Télécharger le certificat auto-signé MySQL SSL"
+			"index_28": "Télécharger le certificat auto-signé MySQL SSL",
+			"type": {
+				"import": "Importer",
+				"recover": "Récupérer",
+				"backup": "Sauvegarde"
+			},
+			"logs": {
+				"index_1": "{0} fichier de base de données, veuillez patienter...",
+				"index_2": "La tâche {0} actuelle s'exécute en arrière-plan. Vous pouvez fermer cette page pour effectuer d'autres opérations.",
+				"index_3": "{0} Base de données : ",
+				"index_4": "{0} Taille : ",
+				"index_5": "{0} Vitesse :",
+				"index_6": "Une fois l'importation terminée, vous pouvez afficher les résultats de l'importation dans le journal d'importation"
+			}
 		}
 	}
 }

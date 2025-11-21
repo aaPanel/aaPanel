@@ -62,7 +62,12 @@ class panelApi:
             public.WriteFile(self.save_path,json.dumps(data))
             public.ExecShell("chmod 600 " + self.save_path)
             tmp = public.ReadFile(self.save_path)
-        data = json.loads(tmp)
+
+        try:
+            data = json.loads(tmp)
+        except json.JSONDecodeError:
+            default_config = {"open": False, "token": "", "limit_addr": []}
+            return default_config
 
         is_save = False
         if not 'binds' in data:

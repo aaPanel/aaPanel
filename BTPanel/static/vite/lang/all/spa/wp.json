@@ -227,5 +227,22 @@
 	"bf0c29411206e89e3ec8cfadd32127c5": "Cierre y borre el caché antes de activar el modo de mantenimiento.",
 	"c9f96845a9be884034d544e8b2c0928f": "Nota: Para evitar que los motores de indexación degraden el sitio web, no habilite el modo de mantenimiento durante un período prolongado.",
 	"3014168da15aa5d8dc2834826c046d6b": "Se recomienda cargar archivos HTML para plantillas y utilizar URL de datos para archivos estáticos de plantillas.",
-	"4d3829e30ef6cf2efd77087752261d0a": "Si desea que su plantilla utilice la función de configuración de plantilla de aapanel, puede iniciar el modo de mantenimiento una vez y modificar el archivo /wp-content/mintensionce/mintensione-template.html, manteniendo el marcador de posición '{{}}'."
+	"4d3829e30ef6cf2efd77087752261d0a": "Si desea que su plantilla utilice la función de configuración de plantilla de aapanel, puede iniciar el modo de mantenimiento una vez y modificar el archivo /wp-content/mintensionce/mintensione-template.html, manteniendo el marcador de posición '{{}}'.",
+	"550f99d102cfc5182aea66b62b3ef90f": "Configuraciones manuales",
+	"4bc9a5fa425406a6e190c445fcfda536": "Slug (dominio de texto)",
+	"59a62c07c8312215a0e12edb30b5b0b7": "babosa personalizada",
+	"b78a3223503896721cca1303f776159b": "Título",
+	"f561ae146f9c67fe049611b9b0651e77": "Título del complemento",
+	"dc3de0994cb345bbb0fa4db5418fbb75": "Título del tema",
+	"980ba2d2915afeeb921f1fd8a25e97d6": "Puede cargar complementos desde su computadora local,",
+	"c5a759ebcea830b268d52ee44455aa63": "Abarcando aquellos fuera del directorio wordpress.org",
+	"33a69c66d5953057cc75dd36009e7f97": "Seleccione el complemento (*.zip)",
+	"675a4ffa8aad3e96396db0f74caf60d6": "Seleccionar tema(*.zip)",
+	"b3d4e2bcdbf72f5828b3ef09b238c072": "Por favor seleccione un archivo",
+	"1b9abf135ccb7ed2f2cd9c155137c351": "Navegar",
+	"f787618e514c038851726224d7e4421e": "Ningún archivo seleccionado",
+	"a7c3c998c562b3c1a03b55a45885d89f": "Archivo seleccionado: {0}",
+	"9162fca50a90dd9ede7b004903e8d5f5": "Subir complemento",
+	"f6e4b551382f9dbe4413c43de5f80873": "Subir tema",
+	"4e4b1e639a36d24d7cc6865089a975b6": "Para agregar un complemento o tema personalizado a esta colección, haga clic en el botón Cargar y luego cargue el archivo desde su computadora local."
 }

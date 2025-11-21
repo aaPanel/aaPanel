@@ -97,7 +97,9 @@
 			"index_96": "Désactiver la sauvegarde du panneau",
 			"index_97": "La sauvegarde automatique n'inclut pas les données du site Web et les données MySQL",
 			"index_98": "Proxy CDN",
-			"index_99": "Récupérez la vraie propriété intellectuelle de la demande du proxy CDN"
+			"index_99": "Récupérez la vraie propriété intellectuelle de la demande du proxy CDN",
+			"iconAuto": "Icône de favori de récupération automatique",
+			"iconAutoDesc": "Tente de récupérer un favicon toutes les 12 heures lorsqu'il est activé"
 		},
 		"Safe": {
 			"index_1": "Sécurité",
@@ -423,6 +425,9 @@
 			"global_31": "Ajouter un agent utilisateur, veuillez patienter ...",
 			"global_32": "Modification de l'agent utilisateur, veuillez patienter ...",
 			"global_33": "Suppression d'un agent utilisateur, veuillez patienter ...",
+			"global_34": "Configuration de la sauvegarde automatique, veuillez patienter...",
+			"global_35": "Effacement de la sauvegarde automatique, veuillez patienter...",
+			"global_36": "Paramètres, veuillez patienter...",
 			"alarm_1": "Ajoutant de la tâche d'alerte, veuillez patienter ...",
 			"alarm_2": "Édition de tâche d'alerte, veuillez patienter ...",
 			"alarm_3": "Définition de l'état de la tâche d'alerte, veuillez patienter ...",

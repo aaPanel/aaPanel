@@ -97,7 +97,9 @@
 			"index_96": "Desligue o backup do painel",
 			"index_97": "O backup automático não inclui dados do site e dados MySQL",
 			"index_98": "Proxy de CDN",
-			"index_99": "Recuperar o IP real da solicitação do proxy CDN"
+			"index_99": "Recuperar o IP real da solicitação do proxy CDN",
+			"iconAuto": "Favicon de busca automática",
+			"iconAutoDesc": "Tenta buscar o favicon a cada 12 horas quando ativado"
 		},
 		"Safe": {
 			"index_1": "Segurança",
@@ -423,6 +425,9 @@
 			"global_31": "Adicionando agente de usuário, aguarde ...",
 			"global_32": "Modificando o agente do usuário, por favor, espere ...",
 			"global_33": "Excluindo o agente do usuário, por favor, espere ...",
+			"global_34": "Configurando backup automático, aguarde...",
+			"global_35": "Limpando o backup automático, aguarde...",
+			"global_36": "Configurações, aguarde...",
 			"alarm_1": "Adicionando tarefa de alerta, por favor, espere ...",
 			"alarm_2": "Editando Tarefa de Alerta, por favor, espere ...",
 			"alarm_3": "Definindo o status da tarefa de alerta, aguarde ...",

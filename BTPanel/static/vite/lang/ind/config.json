@@ -97,7 +97,9 @@
 			"index_96": "Matikan Cadangan Panel",
 			"index_97": "Cadangan Otomatis Tidak Termasuk Data Situs Web dan Data MySQL",
 			"index_98": "Proxy CDN",
-			"index_99": "Ambil IP nyata dari permintaan dari proxy CDN"
+			"index_99": "Ambil IP nyata dari permintaan dari proxy CDN",
+			"iconAuto": "Favicon ambil otomatis",
+			"iconAutoDesc": "Mencoba mengambil favicon setiap 12 jam saat diaktifkan"
 		},
 		"Safe": {
 			"index_1": "Keamanan",
@@ -423,6 +425,9 @@
 			"global_31": "Menambahkan agen pengguna, harap tunggu ...",
 			"global_32": "Memodifikasi agen pengguna, harap tunggu ...",
 			"global_33": "Menghapus agen pengguna, harap tunggu ...",
+			"global_34": "Menyetel pencadangan otomatis, harap tunggu...",
+			"global_35": "Menghapus cadangan otomatis, harap tunggu...",
+			"global_36": "Pengaturan, harap tunggu...",
 			"alarm_1": "Menambahkan tugas peringatan, harap tunggu ...",
 			"alarm_2": "Mengedit tugas peringatan, harap tunggu ...",
 			"alarm_3": "Mengatur status tugas peringatan, harap tunggu ...",

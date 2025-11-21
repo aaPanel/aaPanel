@@ -196,6 +196,26 @@ class bt_task:
         self.modify_task(id, 'status', 1)
         self.modify_task(id, 'endtime', int(time.time()))
 
+    # 执行任务
+    def start_task_new(self):
+        tip_file = '/dev/shm/.start_task.pl'
+        try:
+            public.writeFile(tip_file, str(int(time.time())))
+            if not os.path.exists(self.__task_tips):
+                return
+            if os.path.exists(self.__task_tips):
+                os.remove(self.__task_tips)
+            public.M(self.__table).where(
+                'status=?', ('-1',)
+            ).setField('status', 0)
+            task_list = self.get_task_list(0)
+            for task_info in task_list:
+                self.execute_task(
+                    task_info['id'], task_info['type'], task_info['shell'], task_info['other']
+                )
+        except Exception as e:
+            raise e
+
     # 开始检测任务
     def start_task(self):
         noe = False
@@ -343,6 +363,8 @@ class bt_task:
         else:
             return public.return_msg_gettext(False, public.lang("Specified compression format is not supported!"))
 
+        if not os.path.exists(dfile):
+            return public.return_msg_gettext(False, public.lang("Compression failed: The target file {} is not generated", dfile))
         self.set_file_accept(dfile)
         #public.WriteLog("TYPE_FILE", 'Compression succeeded!', (sfiles, dfile),not_web = self.not_web)
         public.write_log_gettext("File manager", 'Compressed file [ {} ] to [ {} ] success', (sfiles, dfile))

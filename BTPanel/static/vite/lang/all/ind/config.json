@@ -560,5 +560,10 @@
 	"f87f234298aeb5129faf884ee71e5663": "Latar belakang utama",
 	"240d99a5c9d622b2ba78b0a0aae42f62": "Latar belakang utama (gelap)",
 	"a14a3ca7c4dff4768e256487ccfa2a0e": "Logo login",
-	"e1786c971956612f9302af21d04d40f9": "Opacity latar belakang utama"
+	"e1786c971956612f9302af21d04d40f9": "Opacity latar belakang utama",
+	"f9edd335572306d881c071965dc2fb92": "Favicon ambil otomatis",
+	"2a3fa5ff7862bc3ddc52d0a859093100": "Mencoba mengambil favicon setiap 12 jam saat diaktifkan",
+	"c6c4a0136700c98f20163d7792bb76a2": "Menyetel pencadangan otomatis, harap tunggu...",
+	"575794e2116d5714e60c60f158382e74": "Menghapus cadangan otomatis, harap tunggu...",
+	"05607004b1504161bb5c3319a85de377": "Pengaturan, harap tunggu..."
 }

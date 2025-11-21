@@ -889,6 +889,8 @@ class config:
         version = get.version
         if int(time) < 30 or int(time) > 86400: return public.return_message(-1, 0, public.lang("Please fill in the value between 30 and 86400!"))
         file = public.GetConfigValue('setup_path') + '/php/' + version + '/etc/php-fpm.conf'
+        if not os.path.exists(file):
+            return public.return_message(-1, 0, public.lang("The PHP-FPM configuration file does not exist. {}", file))
         conf = public.readFile(file)
         rep = r"request_terminate_timeout\s*=\s*([0-9]+)\n"
         conf = re.sub(rep, "request_terminate_timeout = " + time + "\n", conf)
@@ -905,16 +907,25 @@ class config:
         if public.get_webserver() == 'nginx':
             # 设置Nginx
             path = public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf'
+            if not os.path.exists(path):
+                return public.return_message(-1, 0, public.lang("Nginx configuration file {} does not exist!",path))
             conf = public.readFile(path)
+            if not conf:
+                return public.return_message(-1, 0, public.lang("Failed to read Nginx configuration file {}",path))
             rep = r"fastcgi_connect_timeout\s+([0-9]+);"
-            tmp = re.search(rep, conf).groups()
-            if int(tmp[0]) < int(time):
-                conf = re.sub(rep, 'fastcgi_connect_timeout ' + time + ';', conf)
-                rep = r"fastcgi_send_timeout\s+([0-9]+);"
-                conf = re.sub(rep, 'fastcgi_send_timeout ' + time + ';', conf)
-                rep = r"fastcgi_read_timeout\s+([0-9]+);"
-                conf = re.sub(rep, 'fastcgi_read_timeout ' + time + ';', conf)
-                public.writeFile(path, conf)
+
+            search_result = re.search(rep, conf)
+            if search_result:
+                tmp = search_result.groups()
+                if int(tmp[0]) < int(time):
+                    conf = re.sub(rep, 'fastcgi_connect_timeout ' + time + ';', conf)
+                    rep = r"fastcgi_send_timeout\s+([0-9]+);"
+                    conf = re.sub(rep, 'fastcgi_send_timeout ' + time + ';', conf)
+                    rep = r"fastcgi_read_timeout\s+([0-9]+);"
+                    conf = re.sub(rep, 'fastcgi_read_timeout ' + time + ';', conf)
+                    public.writeFile(path, conf)
+            else:
+                return public.return_message(-1, 0, public.lang("Nginx configuration file {} is missing FastCGI timeout settings, please check!",path))
 
         public.write_log_gettext("PHP configuration", "Set maximum time of script to [{} second] for PHP-{}!",
                                  (version, time))
@@ -1596,6 +1607,10 @@ class config:
             if os.path.exists('/etc/redhat-release'):
                 filename = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
         phpini = public.readFile(filename)
+        if not isinstance(phpini, str):
+            return public.return_message(-1, 0, public.lang('Failed to read PHP configuration file, it may not exist: {}',filename))
+
+
         rep = r'session.save_handler\s*=\s*([0-9A-Za-z_& ~]+)(\s*;?|\r?\n)'
         save_handler = re.search(rep, phpini)
         if save_handler:
@@ -2221,6 +2236,8 @@ class config:
     def auto_cli_php_version(self, get):
         import panel_site_v2 as panelSite
         php_versions = panelSite.panelSite().GetPHPVersion(get, False)
+        if not php_versions or len(php_versions) == 0:
+            return public.return_message(-1, 0, public.lang('No PHP version is installed, cannot set it automatically'))
         php_bin_src = "/www/server/php/%s/bin/php" % php_versions[-1]['version']
         if not os.path.exists(php_bin_src): return public.return_message(-1, 0, public.lang("PHP is not installed"))
         get.php_version = php_versions[-1]['version']
@@ -2426,7 +2443,17 @@ class config:
             os.makedirs(session_path)
             public.ExecShell('chown www.www {}'.format(session_path))
         import panel_site_v2
+        site_run_info = panel_site_v2.panelSite().GetSiteRunPath(get)
+        if not site_run_info.get('status', False) or 'message' not in site_run_info:
+            return public.return_message(-1, 0, "Site operation directory information cannot be obtained")
+        run_path = site_run_info['message'].get('runPath', '')
+        if not run_path:
+            return public.return_message(-1, 0, "The site run directory is not set")
+
+
         run_path = panel_site_v2.panelSite().GetSiteRunPath(get)['message']["runPath"]
+
+
         user_ini_file = "{site_path}{run_path}/.user.ini".format(site_path=site_info["path"], run_path=run_path)
         conf = "session.save_path={}/\nsession.save_handler = files".format(session_path)
         if get.act == "1":
@@ -3910,6 +3937,36 @@ class config:
             return public.success_v2(f"CDN proxy status updated successfully")
         except Exception as e:
             return public.fail_v2(str(e))
+
+    # 设置自动获取图标状态
+    def set_auto_favicon(self, get):
+        """
+            @name 设置自动获取图标状态
+            1为开启，0为关闭
+            关闭创建状态文件，开启删除状态文件
+        """
+        status = get.get('status', '1') # 默认开
+        config_path = '/www/server/panel/config/auto_favicon.conf'
+
+        if status == '1':
+            if os.path.exists(config_path):
+                os.remove(config_path)
+        elif status == '0':
+            if not os.path.exists(config_path):
+                public.writeFile(config_path, '0')
+
+                # 尝试清除已有的图标缓存
+                favicon_cache_dir = '/www/server/panel/data/site_favs'
+                if os.path.exists(favicon_cache_dir):
+                    for file in os.listdir(favicon_cache_dir):
+                        file_path = os.path.join(favicon_cache_dir, file)
+                        if os.path.isfile(file_path) and file.endswith(('.ico', '.b64')):
+                            try:
+                                os.remove(file_path)
+                            except:
+                                pass
+
+        return public.success_v2(f"Auto favicon status updated successfully")
 
     # 设置主题切换
     def set_theme(self, args):

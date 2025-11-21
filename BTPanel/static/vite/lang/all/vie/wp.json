@@ -372,5 +372,22 @@
 	"bf0c29411206e89e3ec8cfadd32127c5": "Vui lòng đóng và xóa bộ nhớ đệm trước khi bật chế độ bảo trì.",
 	"c9f96845a9be884034d544e8b2c0928f": "Lưu ý: Để tránh website bị hạ cấp bởi các công cụ lập chỉ mục, vui lòng không bật chế độ bảo trì trong thời gian dài.",
 	"3014168da15aa5d8dc2834826c046d6b": "Đề xuất tải lên tệp HTML cho mẫu và sử dụng URL dữ liệu cho tệp tĩnh của mẫu.",
-	"4d3829e30ef6cf2efd77087752261d0a": "Nếu bạn muốn mẫu của mình sử dụng chức năng cấu hình mẫu của aapanel, bạn có thể bắt đầu chế độ bảo trì một lần và sửa đổi tệp /wp-content/mintensionce/mintensione-template.html, giữ nguyên phần giữ chỗ '{{}}'."
+	"4d3829e30ef6cf2efd77087752261d0a": "Nếu bạn muốn mẫu của mình sử dụng chức năng cấu hình mẫu của aapanel, bạn có thể bắt đầu chế độ bảo trì một lần và sửa đổi tệp /wp-content/mintensionce/mintensione-template.html, giữ nguyên phần giữ chỗ '{{}}'.",
+	"550f99d102cfc5182aea66b62b3ef90f": "Cài đặt thủ công",
+	"4bc9a5fa425406a6e190c445fcfda536": "Slug (Miền văn bản)",
+	"59a62c07c8312215a0e12edb30b5b0b7": "Sên tùy chỉnh",
+	"b78a3223503896721cca1303f776159b": "Tiêu đề",
+	"f561ae146f9c67fe049611b9b0651e77": "Tiêu đề plugin",
+	"dc3de0994cb345bbb0fa4db5418fbb75": "Tiêu đề chủ đề",
+	"980ba2d2915afeeb921f1fd8a25e97d6": "Bạn có thể tải plugin lên từ máy tính cục bộ của mình,",
+	"c5a759ebcea830b268d52ee44455aa63": "Bao gồm những thứ bên ngoài thư mục wordpress.org",
+	"33a69c66d5953057cc75dd36009e7f97": "Chọn plugin(*.Zip)",
+	"675a4ffa8aad3e96396db0f74caf60d6": "Chọn chủ đề(*.zip)",
+	"b3d4e2bcdbf72f5828b3ef09b238c072": "Vui lòng chọn một tập tin",
+	"1b9abf135ccb7ed2f2cd9c155137c351": "Duyệt qua",
+	"f787618e514c038851726224d7e4421e": "Không có tập tin nào được chọn",
+	"a7c3c998c562b3c1a03b55a45885d89f": "Tệp đã chọn: {0}",
+	"9162fca50a90dd9ede7b004903e8d5f5": "Tải lên plugin",
+	"f6e4b551382f9dbe4413c43de5f80873": "Tải chủ đề lên",
+	"4e4b1e639a36d24d7cc6865089a975b6": "Để thêm plugin hoặc chủ đề tùy chỉnh vào bộ sưu tập này, hãy nhấp vào nút Tải lên, sau đó tải tệp lên từ máy tính cục bộ của bạn"
 }

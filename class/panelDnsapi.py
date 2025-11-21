@@ -19,11 +19,13 @@ import requests
 
 os.chdir("/www/server/panel")
 sys.path.insert(0, "class/")
+sys.path.insert(0, "class_v2/")
 
 import public
 from public.exceptions import HintException
 
 __all__ = [
+    "aaPanelDns",
     "NameSiloDns",
     "NameCheapDns",
     "CloudFlareDns",
@@ -94,7 +96,7 @@ class BaseDns(object):
     ) -> Optional[dict]:
         raise NotImplementedError("create_org_record method must be implemented.")
 
-    def remove_record(self, domain_name: str, record: str, record_type: str) -> Optional[dict]:
+    def remove_record(self, domain_name: str, record: str, record_type: str, **kwargs) -> Optional[dict]:
         raise NotImplementedError("remove_record method must be implemented.")
 
     def update_record(self, domain_name: str, record: dict, new_record: dict, **kwargs) -> Optional[dict]:
@@ -115,6 +117,138 @@ class BaseDns(object):
         except Exception:
             raise HintException("Verify fail, please check your Api Account and Password")
         return True
+
+
+class aaPanelDns(BaseDns):
+    """
+    遵循 ssl v2入参, 转发dnsmanager
+    """
+    dns_provider_name = "aapanel"
+    kw_prefix = {
+        "priority": "priority"
+    }
+
+    def __init__(self, api_user: str = None, api_key: str = None, **kwargs):
+        super().__init__()
+        self.api_user = api_user
+        self.api_key = api_key
+        from ssl_dnsV2.dns_manager import DnsManager
+        self.manager = DnsManager()
+
+    # ============== acme ======================
+    def create_dns_record(self, domain_name, domain_dns_value):
+        domain_name = domain_name.lstrip("*.")
+        _, _, acme_txt = extract_zone(domain_name)
+        self.create_org_record(
+            domain_name=domain_name,
+            record=acme_txt,
+            record_value=domain_dns_value,
+            record_type="TXT",
+            ttl=600,
+        )
+
+    def delete_dns_record(self, domain_name, domain_dns_value) -> None:
+        domain_name = domain_name.lstrip("*.")
+        root, _, acme_txt = extract_zone(domain_name)
+        self.remove_record(root, acme_txt, "TXT", record_value=domain_dns_value)
+
+    # =============== 域名管理 ====================
+    def get_domains(self) -> list:
+        return self.manager.get_domains()
+
+    def get_dns_record(self, domain_name: str) -> list:
+        records = []
+        for x in self.manager.parser.get_zones_records(domain_name):
+            try:
+                # todo 更多类型特俗处理
+                if x.get("type") == "SOA":
+                    continue
+                if x.get("type") == "MX":
+                    priority = re.findall(r"^\s*(\d+)\s+", x.get("value"))
+                    if priority:
+                        x["priority"] = int(priority[0])
+                record = {
+                    "record": x.get("name"),
+                    "record_type": x.get("type"),
+                    "record_value": x.get("value"),
+                    "ttl": x.get("ttl"),
+                    "proxy": x.get("proxy", -1),
+                    "priority": x.get("priority", -1),
+                }
+                records.append(record)
+            except Exception as e:
+                public.print_log(f"aaPanelDns get_dns_record error: {e}")
+                continue
+        return records
+
+    def create_org_record(self, domain_name, record, record_value, record_type, ttl=600, **kwargs):
+        root, _, _ = extract_zone(domain_name)
+        body = {
+            "name": record,
+            "type": record_type.upper(),
+            "value": record_value,
+            "ttl": ttl,
+            "proxy": kwargs.get("proxy", -1),
+            "priority": kwargs.get("priority", -1),
+        }
+        body = white_kwargs(body, self.kw_prefix, kwargs)
+        try:
+            self.manager.add_record(
+                domain=root, **body
+            )
+            return {"status": True, "msg": "Success"}
+        except HintException as he:
+            return {"status": False, "msg": str(he)}
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def remove_record(self, domain_name, record, record_type="TXT", **kwargs) -> dict:
+        root, _, _ = extract_zone(domain_name)
+        body = {
+            "name": record,
+            "type": record_type.upper(),
+        }
+        if kwargs.get("record_value"):
+            body["value"] = kwargs.get("record_value")
+        try:
+            self.manager.delete_record(
+                domain=root, **body
+            )
+            return {"status": True, "msg": "Success"}
+        except HintException as he:
+            return {"status": False, "msg": str(he)}
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def update_record(self, domain_name: str, record: dict, new_record: dict, **kwargs):
+        domain, _, _ = extract_zone(domain_name)
+        body = {
+            "name": record.get("record"),
+            "type": record.get("record_type").upper(),
+            "value": record.get("record_value"),
+            "new_record": {
+                "name": new_record.get("record"),
+                "type": new_record.get("record_type").upper(),
+                "value": new_record.get("record_value"),
+                "ttl": new_record.get("ttl", 600),
+                "proxy": new_record.get("proxy", -1),
+                "priority": new_record.get("priority", -1),
+            }
+        }
+        try:
+            self.manager.update_record(
+                domain=domain, **body
+            )
+            return {"status": True, "msg": "Success"}
+        except HintException as he:
+            return {"status": False, "msg": str(he)}
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def verify(self) -> bool:
+        if os.path.exists(public.get_panel_path() + "/class_v2/ssl_dnsV2/aadns.pl"):
+            return True
+        return False
 
 
 # noinspection PyUnusedLocal
@@ -369,7 +503,7 @@ class NameCheapDns(BaseDns):
         return self.__set_hosts_with_params(domain_name, params)
 
     # 删除record
-    def remove_record(self, domain_name, record, record_type="TXT") -> dict:
+    def remove_record(self, domain_name, record, record_type="TXT", **kwargs) -> dict:
         domain_name, _, _ = extract_zone(domain_name)
         hosts_info = self._get_hosts(domain_name)
         new_hosts = [
@@ -626,7 +760,7 @@ class CloudFlareDns(BaseDns):
             return {"status": False, "msg": str(e)}
 
     # 删除record
-    def remove_record(self, domain_name, record, record_type="TXT") -> dict:
+    def remove_record(self, domain_name, record, record_type="TXT", **kwargs) -> dict:
         domain_name, _, _ = extract_zone(domain_name)
         self.find_dns_zone(domain_name)
         headers = self._get_auth_headers()
@@ -819,7 +953,7 @@ class PorkBunDns(BaseDns):
         except Exception as err:
             return {"status": False, "msg": err}
 
-    def remove_record(self, domain_name, record, record_type="TXT") -> dict:
+    def remove_record(self, domain_name, record, record_type="TXT", **kwargs) -> dict:
         # record 跟cf一样, 需要带上域名
         try:
             domain, _, _ = extract_zone(domain_name)
@@ -1043,7 +1177,7 @@ class NameSiloDns(BaseDns):
         except Exception as e:
             return {"status": False, "msg": str(e)}
 
-    def remove_record(self, domain_name: str, record: str, record_type: str) -> dict:
+    def remove_record(self, domain_name: str, record: str, record_type: str, **kwargs) -> dict:
         domain_name, _, _ = extract_zone(domain_name)
         try:
             rrid = self._find_rrid(domain_name, {"record": record, "record_type": record_type})

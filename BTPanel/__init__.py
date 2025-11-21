@@ -3755,6 +3755,7 @@ def site_v2(pdata=None):
         'get_site_maintenance',
         'set_site_maintenance',
         'get_wp_security_status',
+        'wp_manual_upload',
         # 新增多服务
         'get_multi_webservice_status',
         'switch_multi_webservice_status',
@@ -3791,7 +3792,8 @@ def git_tools(pdata=None):
         'refresh_webhook_url',
         'update_deploy_sh',
         'del_script',
-        'get_webhook_log'
+        'get_webhook_log',
+        'clear_webhook_log'
     )
     return publicObject(gitObject, defs, None, pdata)
 
@@ -3868,6 +3870,9 @@ def database_v2(pdata=None):
         'SetupPassword',
         'ResDatabasePassword',
         'ToBackup',
+        'GetBackupSize',
+        'GetImportSize',
+        'GetImportLog',
         'DelBackup',
         'AddCloudServer',
         'GetCloudServer',
@@ -4540,6 +4545,8 @@ def config_v2(pdata=None):
         'modify_ua',
         'delete_ua',
         'set_cdn_status',
+        'get_cdn_ip',
+        'set_auto_favicon',
         'set_theme',
         'set_panel_asset',
         'get_panel_asset',
@@ -4765,9 +4772,33 @@ def domain_v2(pdata=None):
         "ssl_tasks_status",
         "get_panel_domain",
         "set_panel_domain_ssl",
+        "mail_record_check",
     )
     return publicObject(DomainObject(), defs, None, pdata)
 
+@app.route(route_v2 + '/ssl_dns', methods=method_all)
+def ssl_dns_v2(pdata=None):
+    # aaDns管理
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from ssl_dnsV2.api import DnsApiObject
+    defs = (
+        "install_pdns",
+        "get_status",
+        "change_status",
+        "add_zone",
+        "del_zone",
+        "set_nameserver",
+        "get_nameserver",
+        "get_soa",
+        "set_soa",
+        "get_logger",
+        "clear_logger",
+        "add_dmarc",
+        "add_dkim_spf",
+        "dns_checker",
+    )
+    return publicObject(DnsApiObject(), defs, None, pdata)
 
 @app.route(route_v2 + '/dns_api', methods=method_all)
 def dns_api_v2(pdata=None):

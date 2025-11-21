@@ -440,5 +440,18 @@
 	"a91f378bf120f4a971b2ad4f7bfdce70": "Cài đặt, vui lòng đợi ...",
 	"dbded73d898181a0721b5f0973e9ee74": "Gỡ cài đặt, vui lòng đợi ...",
 	"c2fd5a116b9d3bcd0185dbf233365764": "Chuyển đổi cổng, vui lòng đợi ...",
-	"1fb4173c812ebb31f38c565e1769d090": "Trình điều khiển quản trị viên phụ thuộc vào môi trường phiên bản PHP hiện đang chạy. Nếu bạn thấy rằng trình điều khiển bị thiếu, vui lòng chuyển đến các tiện ích mở rộng PHP để cài đặt php_mongodb và pdo_pgsql"
+	"1fb4173c812ebb31f38c565e1769d090": "Trình điều khiển quản trị viên phụ thuộc vào môi trường phiên bản PHP hiện đang chạy. Nếu bạn thấy rằng trình điều khiển bị thiếu, vui lòng chuyển đến các tiện ích mở rộng PHP để cài đặt php_mongodb và pdo_pgsql",
+	"810bb038ff6f1e9d2a6e578c501fc22c": "Hiển thị nhật ký",
+	"72d6d7a1885885bb55a565fd1070581a": "Nhập khẩu",
+	"556b050ce914d18480d6ea30308c7790": "Khôi phục",
+	"fcd071a71d6bb7d003972e54f88dd553": "Đang nhập tệp cơ sở dữ liệu {0}, vui lòng đợi...",
+	"2f01adab1406a6e3deaca02f04a67c43": "Tác vụ {0} hiện tại đang chạy ẩn, bạn có thể đóng trang này để thực hiện các thao tác khác",
+	"8cc925eb55597a41d11fc8d6aea35910": "{0} Cơ sở dữ liệu:",
+	"5f6f842cb231e86cd367fcaff5896f93": "{0} Kích thước:",
+	"2e8274f870fdd2c7138262e3300cb108": "{0} Tốc độ:",
+	"2b005dc108bef790c8d3511592bd2c2d": "Sau khi quá trình nhập hoàn tất, bạn có thể xem kết quả nhập trong nhật ký nhập",
+	"6aea058d3dc97cb1ddbd873fac3dcfa4": "Tệp cơ sở dữ liệu {0}, vui lòng đợi...",
+	"da561ddb957ee1dfa466f8e8a757b237": "{0} Cơ sở dữ liệu: ",
+	"4308f628f9d925687737f2d4e843c47f": "{0} Kích thước: ",
+	"94103f11ea70a356fd537493adc58f7f": "{0} Tốc độ:"
 }

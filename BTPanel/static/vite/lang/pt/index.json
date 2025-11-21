@@ -1,0 +1,66 @@
+{
+	"Accept all emails": "Aceitar todos os e-mails",
+	"Add Domain": "Adicionar domínio",
+	"Admin Email": "E-mail do administrador",
+	"After enabling this feature, the system will create DKIM and SPF DNS records for the selected domain": {
+		" If an SPF record already exists for a domain, the system will appropriately append the servers IP address to the existing record": {
+			" However, the system will not modify any existing DKIM records": {
+				" During this process, please do not edit any nameserver configuration files": {
+					"": "Após habilitar este recurso, o sistema criará registros DNS DKIM e SPF para o domínio selecionado. Se já existir um registro SPF para um domínio, o sistema anexará adequadamente o endereço IP do servidor ao registro existente. No entanto, o sistema não modificará nenhum registro DKIM existente. Durante este processo, não edite nenhum arquivo de configuração do servidor de nomes."
+				}
+			}
+		}
+	},
+	"Apply DMARC Policy": "Aplicar Política DMARC",
+	"Are you sure you want to {0} a self-built DNS server?": "Tem certeza de que deseja {0} criar um servidor DNS próprio?",
+	"Build your own dns server based on pdns": "Construa seu próprio servidor DNS baseado em pdns",
+	"Configure DNS": "Configurar DNS",
+	"Confirm Applying DMARC Policy?": "Confirmar a aplicação da política DMARC?",
+	"Confirm DKIM/SPF Enabled?": "Confirmar que DKIM/SPF está ativado?",
+	"DNS Manager": "Gerenciador DNS",
+	"Default DNS": "DNS padrão",
+	"Enable DKIM/SPF": "Habilitar DKIM/SPF",
+	"Enabling this feature will create DMARCDNS records for all domains": {
+		" If a domain already has a DMARC record, the system will not modify the existing record": {
+			"": "A ativação deste recurso criará registros DMARCDNS para todos os domínios. Se um domínio já possuir um registro DMARC, o sistema não modificará o registro existente."
+		}
+	},
+	"Enter your expire,eg: 604800": "Digite sua expiração, por exemplo: 604800",
+	"Enter your minimum,eg: 3600": "Insira seu mínimo, por exemplo: 3600",
+	"Enter your nameserver,eg: ns1": {
+		"domain": {
+			"com": "Digite seu servidor de nomes, por exemplo: ns1.domain.com"
+		}
+	},
+	"Enter your refresh,eg: 3600": "Insira sua atualização, por exemplo: 3600",
+	"Enter your retry,eg: 3600": "Digite sua nova tentativa, por exemplo: 3600",
+	"Enter your serial number,eg: 2023080101": "Digite seu número de série, por exemplo: 2023080101",
+	"Expire": "Expirar",
+	"How often to check the serial number on the master server": "Com que frequência verificar o número de série no servidor mestre",
+	"Install Self-built DNS": "Instale DNS autoconstruído",
+	"Minimum": "Mínimo",
+	"Nameserver": "Servidor de nomes",
+	"Please enter SOA": "Por favor insira SOA",
+	"Please enter your domain IP": "Por favor insira o IP do seu domínio",
+	"Please enter your domain name": "Por favor insira seu nome de domínio",
+	"Policy:": "Política:",
+	"Preserve": "Preservar",
+	"Preserve config": "Preservar configuração",
+	"Refresh": "Atualizar",
+	"Reject all emails": "Rejeitar todos os e-mails",
+	"Represents the default TTL value of all records in this zone file": "Representa o valor TTL padrão de todos os registros neste arquivo de zona",
+	"Retry": "Tentar novamente",
+	"Select DMARC Policy": "Selecione a política DMARC",
+	"Self-Built DNS": "DNS autoconstruído",
+	"Serial Number": "Número de série",
+	"Service": "Serviço",
+	"Set & Manage": "Definir e gerenciar",
+	"The dns server is stopped, please start it first": "O servidor DNS está parado, inicie-o primeiro",
+	"The interval time when the slaveserver reconnects to the masterserver": "O intervalo de tempo quando o servidor escravo se reconecta ao servidor mestre",
+	"When the time exceeds the number of seconds set by Expire and the slave server cannot get in touch with the master, the slave will delete its copy": "Quando o tempo ultrapassar o número de segundos definido em Expire e o servidor escravo não conseguir entrar em contato com o mestre, o escravo apagará sua cópia",
+	"model admin email": "e-mail do administrador do modelo",
+	"name server": "servidor de nomes",
+	"zone file version,Modification is prohibited": {
+		"": "versão do arquivo de zona, a modificação é proibida."
+	}
+}

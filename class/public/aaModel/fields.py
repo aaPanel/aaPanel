@@ -1,11 +1,12 @@
 # coding: utf-8
+import copy
 import itertools
 import json
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field as dataclass_field
 from datetime import datetime
-from typing import Any, TypeVar, List, Optional
+from typing import Any, TypeVar, List, Optional, Iterable
 
 from public.exceptions import HintException
 
@@ -39,99 +40,145 @@ def json_func(v_type: type, value: Any, forward: bool = True):
         raise e
 
 
-def marks_dirty(func: Callable) -> Callable:
-    """脏 wrapper"""
-
-    def wrapper(self, *args, **kwargs):
-        result = func(self, *args, **kwargs)
-        if hasattr(self, "_mark_dirty"):
-            self._mark_dirty()
-        return result
-
-    return wrapper
+def _wrap_value(value, on_change_callback, field_name):
+    """wrap Tracked"""
+    if isinstance(value, list) and not isinstance(value, TrackedList):
+        return TrackedList(value, on_change=on_change_callback, field_name=field_name)
+    if isinstance(value, dict) and not isinstance(value, TrackedDict):
+        return TrackedDict(value, on_change=on_change_callback, field_name=field_name)
+    return value
 
 
 class TrackedList(list):
     """override list, track fields dirty"""
-    __slots__ = ("_tracker", "_field_name", "_batch")
+    __slots__ = ("_on_change", "_field_name")
 
-    def __init__(self, *args, tracker=None, field_name=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._tracker = tracker
+    def __init__(self, iterable: Iterable = (), *, on_change: Callable = None, field_name: str | None = None):
+        self._on_change = on_change
         self._field_name = field_name
-        self._batch = False
+        wrapped = [
+            _wrap_value(v, on_change, field_name) for v in (iterable or [])
+        ]
+        super().__init__(wrapped)
 
-    def _mark_dirty(self):
-        if self._tracker and self._field_name and self._batch is False:
-            self._tracker._mark_dirty(self._field_name)
+    def _notify_change(self):
+        """call back"""
+        if self._on_change and self._field_name:
+            self._on_change(self._field_name)
 
-    @marks_dirty
+    def __deepcopy__(self, memo):
+        return list(copy.deepcopy(item, memo) for item in self)
+
+    def __setitem__(self, key, value):
+        if isinstance(key, slice):
+            value = [_wrap_value(v, self._on_change, self._field_name) for v in value]
+        else:
+            value = _wrap_value(value, self._on_change, self._field_name)
+        super().__setitem__(key, value)
+        self._notify_change()
+
     def append(self, item):
-        super().append(item)
+        super().append(_wrap_value(item, self._on_change, self._field_name))
+        self._notify_change()
 
-    @marks_dirty
+    def insert(self, index: int, item: Any):
+        super().insert(index, _wrap_value(item, self._on_change, self._field_name))
+        self._notify_change()
+
     def remove(self, item):
         super().remove(item)
+        self._notify_change()
 
-    @marks_dirty
-    def __setitem__(self, key, value):
-        super().__setitem__(key, value)
-
-    @marks_dirty
     def pop(self, *args, **kwargs):
-        return super().pop(*args, **kwargs)
+        result = super().pop(*args, **kwargs)
+        self._notify_change()
+        return result
 
-    @marks_dirty
     def clear(self):
         super().clear()
+        self._notify_change()
 
     def extend(self, iterable):
-        self._batch = True
-        try:
-            super().extend(iterable)
-        finally:
-            self._batch = False
-            self._mark_dirty()
+        if not iterable:
+            return
+        wrapped_iterable = [
+            _wrap_value(v, self._on_change, self._field_name) for v in iterable
+        ]
+        super().extend(wrapped_iterable)
+        self._notify_change()
+
+    def sort(self, *args, **kwargs):
+        super().sort(*args, **kwargs)
+        self._notify_change()
+
+    def reverse(self):
+        super().reverse()
+        self._notify_change()
 
 
 class TrackedDict(dict):
     """override dict, track fields dirty"""
-    __slots__ = ("_tracker", "_field_name", "_batch")
+    __slots__ = ("_on_change", "_field_name")
 
-    def __init__(self, *args, tracker=None, field_name=None, **kwargs):
+    def __init__(self, *args, on_change: Callable = None, field_name: str | None = None, **kwargs):
         super().__init__(*args, **kwargs)
-        self._tracker = tracker
+        self._on_change = on_change
         self._field_name = field_name
-        self._batch = False
+        items_to_update = {}
+        for key, value in list(self.items()):
+            # list() to avoid "dictionary changed size during iteration"
+            items_to_update[key] = _wrap_value(value, self._on_change, self._field_name)
+        super().update(items_to_update)
 
-    def _mark_dirty(self):
-        if self._tracker and self._field_name and self._batch is False:
-            self._tracker._mark_dirty(self._field_name)
+    def _notify_change(self):
+        """call back"""
+        if self._on_change and self._field_name:
+            self._on_change(self._field_name)
 
-    @marks_dirty
+    def __deepcopy__(self, memo):
+        return {k: copy.deepcopy(v, memo) for k, v in self.items()}
+
     def __setitem__(self, key, value):
-        super().__setitem__(key, value)
+        wrapped_value = _wrap_value(value, self._on_change, self._field_name)
+        super().__setitem__(key, wrapped_value)
+        self._notify_change()
 
-    @marks_dirty
     def __delitem__(self, key):
         super().__delitem__(key)
+        self._notify_change()
 
-    @marks_dirty
-    def pop(self, key, *args, **kwargs):
-        return super().pop(key, *args, **kwargs)
+    def pop(self, *args, **kwargs):
+        result = super().pop(*args, **kwargs)
+        self._notify_change()
+        return result
 
-    @marks_dirty
+    def popitem(self):
+        result = super().popitem()
+        self._notify_change()
+        return result
+
     def clear(self):
         super().clear()
+        self._notify_change()
 
     def update(self, *args, **kwargs):
-        self._batch = True
-        try:
-            # noinspection PyArgumentList
-            super().update(*args, **kwargs)
-        finally:
-            self._batch = False
-            self._mark_dirty()
+        other = dict(*args, **kwargs)
+        if not other:
+            return
+        wrapped_other = {}
+        for key, value in other.items():
+            wrapped_other[key] = _wrap_value(value, self._on_change, self._field_name)
+        super().update(wrapped_other)
+        self._notify_change()
+
+    def setdefault(self, key, default=None):
+        if key not in self:
+            wrapped_default = _wrap_value(default, self._on_change, self._field_name)
+            result = super().setdefault(key, wrapped_default)
+            self._notify_change()
+        else:
+            result = super().get(key)
+        return result
 
 
 @dataclass
@@ -166,17 +213,19 @@ class aaField(object):
     def __get__(self, instance: object, owner):
         if instance is None:
             return self
-        try:
-            return instance.__dict__[self.field_name]
-        except KeyError:
-            raise AttributeError(f'{self.field_name} is not set')
+        return instance.__dict__.get(self.field_name, self.get_default_val())
 
     def __set__(self, instance: M, value: Any):
         # base type field, check new set value
-        if self.field_name not in instance.__dict__ or instance.__dict__[self.field_name] != value:
-            instance.__dict__[self.field_name] = value
-            if hasattr(instance, "_mark_dirty"):
-                instance._mark_dirty(self.field_name)
+        current_value = instance.__dict__.get(self.field_name)
+        if current_value is value:
+            # base type field, not Tracker
+            return
+
+        if hasattr(instance, "_mark_dirty"):
+            instance._mark_dirty(self.field_name)
+
+        instance.__dict__[self.field_name] = value
 
     def __delete__(self, instance):
         try:
@@ -325,7 +374,6 @@ class BlobField(aaField):
     py_type: type = bytes
 
 
-
 @dataclass
 class ListField(aaField):
     """
@@ -336,12 +384,36 @@ class ListField(aaField):
     def __get__(self, instance: M, owner):
         if instance is None:
             return self
-        value = instance.__dict__.get(self.field_name, self.default or [])
+
+        value: Iterable[Any] = instance.__dict__.get(self.field_name)
+        if value is None:
+            value = self.get_default_val()
+            # init default val for the first time
+            instance.__dict__[self.field_name] = value
+
         if not isinstance(value, TrackedList):
-            # generate tracker
-            value = TrackedList(value, tracker=instance, field_name=self.field_name)
+            # generate call back
+            value = TrackedList(
+                value,
+                on_change=instance._mark_dirty,
+                field_name=self.field_name,
+            )
             instance.__dict__[self.field_name] = value  # update instance's attr
+
         return value
+
+    def __set__(self, instance: M, value: Any):
+        """override, other update handled by TrackedList"""
+        if not isinstance(value, list):
+            raise TypeError(f"Field '{self.field_name}' expects a list, but got {type(value).__name__}")
+
+        tracked_value = TrackedList(
+            value,
+            on_change=instance._mark_dirty,
+            field_name=self.field_name,
+        )
+        instance._mark_dirty(self.field_name)
+        super().__set__(instance, tracked_value)
 
     @staticmethod
     def _serialized(value: list | str, forward: bool = True) -> list | Any:
@@ -367,15 +439,38 @@ class DictField(aaField):
     Dict field
     """
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: M, owner):
         if instance is None:
             return self
-        value = instance.__dict__.get(self.field_name, self.default or {})
+
+        value: dict = instance.__dict__.get(self.field_name)
+        if value is None:
+            value = self.get_default_val()
+            instance.__dict__[self.field_name] = value
+
         if not isinstance(value, TrackedDict):
-            # generate tracker
-            value = TrackedDict(value, tracker=instance, field_name=self.field_name)
+            # generate tracker call back
+            value = TrackedDict(
+                value,
+                on_change=instance._mark_dirty,
+                field_name=self.field_name,
+            )
             instance.__dict__[self.field_name] = value  # update instance's attr
+
         return value
+
+    def __set__(self, instance: M, value: Any):
+        """override, other update handled by TrackedDict"""
+        if not isinstance(value, dict):
+            raise TypeError(f"Field '{self.field_name}' expects a dict, but got {type(value).__name__}")
+
+        tracked_value = TrackedDict(
+            value,
+            on_change=instance._mark_dirty,
+            field_name=self.field_name,
+        )
+        instance._mark_dirty(self.field_name)
+        super().__set__(instance, tracked_value)
 
     @staticmethod
     def _serialized(value: dict | str, forward: bool = True) -> dict | Any:

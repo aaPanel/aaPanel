@@ -1,0 +1,66 @@
+{
+	"Accept all emails": "接受所有電子郵件",
+	"Add Domain": "註冊域名",
+	"Admin Email": "管理員電子郵件",
+	"After enabling this feature, the system will create DKIM and SPF DNS records for the selected domain": {
+		" If an SPF record already exists for a domain, the system will appropriately append the servers IP address to the existing record": {
+			" However, the system will not modify any existing DKIM records": {
+				" During this process, please do not edit any nameserver configuration files": {
+					"": "啟用此功能後，系統將為所選域創建DKIM和SPF DNS記錄。如果域的SPF記錄已經存在，系統將適當地將服務器IP地址附加到現有記錄中。但是，系統不會修改任何現有的DKIM記錄。在此過程中，請不要編輯任何名稱服務器配置文件。"
+				}
+			}
+		}
+	},
+	"Apply DMARC Policy": "應用DMARC政策",
+	"Are you sure you want to {0} a self-built DNS server?": "您確定要{0}自建DNS服務器嗎？",
+	"Build your own dns server based on pdns": "基於pdns構建自己的dns服務器",
+	"Configure DNS": "配置DNS",
+	"Confirm Applying DMARC Policy?": "確認應用DMARC政策？",
+	"Confirm DKIM/SPF Enabled?": "確認DKIM/SPF已啟用？",
+	"DNS Manager": "域名管理中心",
+	"Default DNS": "默認DNS",
+	"Enable DKIM/SPF": "啟用DKIM/SPF",
+	"Enabling this feature will create DMARCDNS records for all domains": {
+		" If a domain already has a DMARC record, the system will not modify the existing record": {
+			"": "啟用此功能將為所有域創建DMARCDNS記錄。如果域已經有DMARC記錄，系統將不會修改現有記錄。"
+		}
+	},
+	"Enter your expire,eg: 604800": "輸入您的到期日期，例如：604800",
+	"Enter your minimum,eg: 3600": "輸入您的最小值，例如：3600",
+	"Enter your nameserver,eg: ns1": {
+		"domain": {
+			"com": "輸入您的名稱服務器，例如：ns1.domain.com"
+		}
+	},
+	"Enter your refresh,eg: 3600": "輸入刷新次數，例如：3600",
+	"Enter your retry,eg: 3600": "輸入重試次數，例如：3600",
+	"Enter your serial number,eg: 2023080101": "輸入您的序列號，例如：2023080101",
+	"Expire": "過期",
+	"How often to check the serial number on the master server": "多久檢查一次主服務器上的序列號",
+	"Install Self-built DNS": "安裝自建DNS",
+	"Minimum": "最小",
+	"Nameserver": "域名服務器",
+	"Please enter SOA": "請輸入SOA",
+	"Please enter your domain IP": "請輸入您的域名IP",
+	"Please enter your domain name": "請輸入您的域名",
+	"Policy:": "政策：",
+	"Preserve": "保存",
+	"Preserve config": "保留配置",
+	"Refresh": "刷新",
+	"Reject all emails": "拒絕所有電子郵件",
+	"Represents the default TTL value of all records in this zone file": "表示此區域文件中所有記錄的默認TTL值",
+	"Retry": "重試",
+	"Select DMARC Policy": "選擇DMARC策略",
+	"Self-Built DNS": "自建DNS",
+	"Serial Number": "序列號",
+	"Service": "服務",
+	"Set & Manage": "設置和管理",
+	"The dns server is stopped, please start it first": "dns服務器已停止，請先啟動",
+	"The interval time when the slaveserver reconnects to the masterserver": "從服務器重新連接到主服務器的間隔時間",
+	"When the time exceeds the number of seconds set by Expire and the slave server cannot get in touch with the master, the slave will delete its copy": "當時間超過Expire設置的秒數並且從屬服務器無法與主服務器聯繫時，從屬服務器將刪除其副本",
+	"model admin email": "模型管理員電子郵件",
+	"name server": "名稱服務器",
+	"zone file version,Modification is prohibited": {
+		"": "區域文件版本，禁止修改。"
+	}
+}

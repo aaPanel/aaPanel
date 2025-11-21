@@ -97,7 +97,9 @@
 			"index_96": "Tắt bản sao lưu bảng điều khiển",
 			"index_97": "Sao lưu tự động không bao gồm dữ liệu trang web và dữ liệu MySQL",
 			"index_98": "Proxy CDN",
-			"index_99": "Lấy IP thực của yêu cầu từ proxy CDN"
+			"index_99": "Lấy IP thực của yêu cầu từ proxy CDN",
+			"iconAuto": "Tự động tìm nạp favicon",
+			"iconAutoDesc": "Cố gắng tìm nạp favicon cứ sau 12 giờ khi được bật"
 		},
 		"Safe": {
 			"index_1": "Bảo vệ",
@@ -423,6 +425,9 @@
 			"global_31": "Thêm tác nhân người dùng, vui lòng đợi ...",
 			"global_32": "Sửa đổi tác nhân người dùng, vui lòng đợi ...",
 			"global_33": "Xóa tác nhân người dùng, vui lòng đợi ...",
+			"global_34": "Đang thiết lập sao lưu tự động, vui lòng đợi...",
+			"global_35": "Đang xóa bản sao lưu tự động, vui lòng đợi...",
+			"global_36": "Cài đặt, vui lòng đợi...",
 			"alarm_1": "Thêm tác vụ cảnh báo, vui lòng đợi ...",
 			"alarm_2": "Chỉnh sửa nhiệm vụ cảnh báo, vui lòng đợi ...",
 			"alarm_3": "Đặt trạng thái tác vụ cảnh báo, vui lòng đợi ...",

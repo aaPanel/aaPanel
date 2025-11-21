@@ -563,5 +563,10 @@
 	"f87f234298aeb5129faf884ee71e5663": "Fondo principal",
 	"240d99a5c9d622b2ba78b0a0aae42f62": "Fondo principal (oscuro)",
 	"a14a3ca7c4dff4768e256487ccfa2a0e": "Logotipo de inicio de sesión",
-	"e1786c971956612f9302af21d04d40f9": "Opacidad de fondo principal"
+	"e1786c971956612f9302af21d04d40f9": "Opacidad de fondo principal",
+	"f9edd335572306d881c071965dc2fb92": "Recuperar favicon automáticamente",
+	"2a3fa5ff7862bc3ddc52d0a859093100": "Intenta recuperar el favicon cada 12 horas cuando está habilitado",
+	"c6c4a0136700c98f20163d7792bb76a2": "Configurando la copia de seguridad automática, espere...",
+	"575794e2116d5714e60c60f158382e74": "Borrando la copia de seguridad automática, espere...",
+	"05607004b1504161bb5c3319a85de377": "Configuración, por favor espera..."
 }

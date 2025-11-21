@@ -288,7 +288,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if args.f_name.find('./') != -1 or args.f_path.find('./') != -1:
             return public.return_msg_gettext(False, public.lang("Wrong parameter"))
         if not os.path.exists(args.f_path):
-            os.makedirs(args.f_path, 493)
+            os.makedirs(args.f_path, 493, True)
             if not 'dir_mode' in args or not 'file_mode' in args:
                 self.set_mode(args.f_path)
 
@@ -325,6 +325,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 os.remove(new_name)
             except:
                 public.ExecShell("rm -f %s" % new_name)
+        if os.path.isdir(new_name):
+            return public.returnMsg(False, "If the destination path already has a directory with the same name, change the file name")
         os.renames(save_path, new_name)
         if 'dir_mode' in args and 'file_mode' in args:
             mode_tmp1 = args.dir_mode.split(',')
@@ -1150,7 +1152,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         ps_body = public.xssencode2(args.ps_body)
         ps_path = public.get_panel_path() + '/data/files_ps'
         if not os.path.exists(ps_path):
-            os.makedirs(ps_path,384)
+            os.makedirs(ps_path,384, True)
         if ps_type == 1:
             f_name = os.path.basename(filename)
         else:
@@ -1969,7 +1971,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if get.path.find('rewrite') == -1:
                 return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
             public.writeFile(get.path,'')
-        if self.__get_ext(get.path) in ['gz','zip','rar','exe','db','pdf','doc','xls','docx','xlsx','ppt','pptx','7z','bz2','png','gif','jpg','jpeg','bmp','icon','ico','pyc','class','so','pyd']:
+        if self.__get_ext(get.path) in ['gz','zip','rar','exe','db','pdf','doc','xls','docx','xlsx','ppt','pptx','7z','bz2','png','gif','jpg','jpeg','bmp','icon','ico','pyc','class','so','pyd','sock']:
             return public.return_msg_gettext(False, public.lang("The file format does not support online editing!"))
         # if os.path.getsize(get.path) > 3145928:
         #     return public.return_msg_gettext(False, public.lang("Cannot edit files larger than 2MB online!"))
@@ -2328,6 +2330,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     # 文件压缩
     def Zip(self, get):
+        if not hasattr(get, 'dfile') or not get.dfile.strip():
+            return public.return_msg_gettext(False, public.lang("The target compressed file cannot be empty!"))
+        dir_name = os.path.dirname(get.dfile)
+        if dir_name and not os.path.exists(dir_name):
+            os.makedirs(dir_name, exist_ok=True)
         if not 'z_type' in get:
             get.z_type = 'rar'
 

@@ -545,8 +545,10 @@ class data:
         id = get.id
         SQL = db.Sql().table(tableName)
         where = "id=?"
-        retuls = SQL.where(where,(id,)).getField(keyName)
-        return public.xsssec(retuls)
+        result = SQL.where(where,(id,)).getField(keyName)
+        if type(result) == str:
+            result = public.xsssec(result)
+        return result
 
     '''
      * 获取数据与分页

@@ -183,7 +183,8 @@
 			"index_74": "Ubah kata sandi basis data",
 			"index_75": "Kata sandi root",
 			"index_76": "Posisi",
-			"index_77": "Tambah waktu"
+			"index_77": "Tambah waktu",
+			"index_78": "Tampilkan Log"
 		},
 		"PhpAdmin": {
 			"index_1": "Melayani",
@@ -278,7 +279,20 @@
 			"index_25": "Izin [{0}] akan dihapus. Apakah Anda ingin melanjutkan?",
 			"index_26": "Pengaturan alarm",
 			"index_27": "Setelah pengaturan, restart secara manual database agar berlaku",
-			"index_28": "Unduh sertifikat mandiri mysql ssl"
+			"index_28": "Unduh sertifikat mandiri mysql ssl",
+			"type": {
+				"import": "Impor",
+				"recover": "Pulihkan",
+				"backup": "Cadangan"
+			},
+			"logs": {
+				"index_1": "{0} file basis data, harap tunggu...",
+				"index_2": "Tugas {0} saat ini berjalan di latar belakang, Anda dapat menutup laman ini untuk melakukan operasi lainnya",
+				"index_3": "{0} Basis data: ",
+				"index_4": "{0} Ukuran: ",
+				"index_5": "{0} Kecepatan:",
+				"index_6": "Setelah impor selesai, Anda dapat melihat hasil impor di log impor"
+			}
 		}
 	}
 }

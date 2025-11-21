@@ -1536,6 +1536,9 @@ class one_key_wp:
         can_upgrade = wp_latest_version > wp_local_version
 
         wp_toolkit_config_data = wpmgr_obj.get_wp_toolkit_config_data()
+        if not wp_toolkit_config_data.get('status', True):
+            return public.fail_v2(public.lang('Failed to obtain the configuration information of WP Toolkit'))
+
         type_ = query_wpsite_type(args.s_id)[0]
 
         # 添加维护模式状态
@@ -1596,85 +1599,88 @@ class one_key_wp:
             os.rename(maintenance_file, maintenance_file + '.bak.bak')
             is_maintenance = True
 
-        # 获取当前网站的配置信息
-        wp_title, wp_home, wp_site_url = wpmgr_obj.get_db_info()
+        try:
+            # 获取当前网站的配置信息
+            wp_title, wp_home, wp_site_url = wpmgr_obj.get_db_info()
 
-        configs = {}
+            configs = {}
 
-        # 更新网站标题
-        if 'wp_title' in args and args.get('wp_title', '') and args.get('wp_title', '') != wp_title:
-            configs['blogname'] = args.wp_title
+            # 更新网站标题
+            if 'wp_title' in args and args.get('wp_title', '') and args.get('wp_title', '') != wp_title:
+                configs['blogname'] = args.wp_title
 
-        # 更新网站首页
-        if 'wp_home' in args and args.get('wp_home', '') and args.get('wp_home', '') != wp_home:
-            if wpmgr_obj.validate_url(args.wp_home):
-                configs['home'] = args.wp_home
-            else:
-                return public.return_message(-1,0, 'The homepage URL format is not supported!')
+            # 更新网站首页
+            if 'wp_home' in args and args.get('wp_home', '') and args.get('wp_home', '') != wp_home:
+                if wpmgr_obj.validate_url(args.wp_home):
+                    configs['home'] = args.wp_home
+                else:
+                    raise ValueError('The homepage URL format is not supported!')
 
-        # 更新网站URL
-        if 'site_url' in args and args.get('site_url', '') and args.get('site_url', '') != wp_site_url:
-            if wpmgr_obj.validate_url(args.site_url):
-                configs['siteurl'] = args.site_url
-            else:
-                return public.return_message(-1,0, 'The website URL format is not supported')
+            # 更新网站URL
+            if 'site_url' in args and args.get('site_url', '') and args.get('site_url', '') != wp_site_url:
+                if wpmgr_obj.validate_url(args.site_url):
+                    configs['siteurl'] = args.site_url
+                else:
+                    raise ValueError('The website URL format is not supported')
 
-        # 更新数据库信息
-        if configs:
-            ok , msg = wpmgr_obj.update_db_info(configs)
+            # 更新数据库信息
+            if configs:
+                ok , msg = wpmgr_obj.update_db_info(configs)
 
-            if not ok:
-                return public.return_message(-1,0, msg)
-
-            # 写操作日志
-            for key, value in configs.items():
-                wpmgr.log_opt('Update {} from [{}] to [{}] successfully', (key, locals().get(key, ''), value))
-
-        # 更新语言
-        if 'language' in args:
-            locale = wpmgr_obj.get_local_language()
-            if args.language != locale:
-                wpmgr_obj.update_language(args.language)
+                if not ok:
+                    raise ValueError(msg)
 
                 # 写操作日志
-                wpmgr.log_opt('Change language from [{}] to [{}] successfully', (locale, args.language))
+                for key, value in configs.items():
+                    wpmgr.log_opt('Update {} from [{}] to [{}] successfully', (key, locals().get(key, ''), value))
 
-        # 更新管理员密码
-        if 'admin_password' in args:
-            wpmgr_obj.set_admin_password(args.admin_password)
+            # 更新语言
+            if 'language' in args:
+                locale = wpmgr_obj.get_local_language()
+                if args.language != locale:
+                    wpmgr_obj.update_language(args.language)
 
-            # 写操作日志
-            wpmgr.log_opt('Reset admin password successfully')
+                    # 写操作日志
+                    wpmgr.log_opt('Change language from [{}] to [{}] successfully', (locale, args.language))
 
-        # 更新管理员邮箱
-        if 'admin_email' in args:
-            wpmgr_obj.set_admin_email(args.admin_email)
-
-            # 写操作日志
-            wpmgr.log_opt('Reset admin email to [{}] successfully', (args.admin_email,))
-
-        # 更新WPS-Hide-Login插件配置
-        if 'whl_enabled' in args:
-            # 停用插件
-            if int(args.whl_enabled) == 0:
-                wpmgr_obj.deactivate_plugins('wps-hide-login/wps-hide-login.php')
+            # 更新管理员密码
+            if 'admin_password' in args:
+                wpmgr_obj.set_admin_password(args.admin_password)
 
                 # 写操作日志
-                wpmgr.log_opt('Deactivate plugin [{}] successfully', ('WPS Hide Login',))
+                wpmgr.log_opt('Reset admin password successfully')
 
-            # 启用插件
-            else:
-                wpmgr_obj.config_plugin_wps_hide_login(args.get('whl_page', 'login'),
-                                                       args.get('whl_redirect_admin', '404'))
+            # 更新管理员邮箱
+            if 'admin_email' in args:
+                wpmgr_obj.set_admin_email(args.admin_email)
 
                 # 写操作日志
-                wpmgr.log_opt('Activate plugin [{}] successfully', ('WPS Hide Login',))
+                wpmgr.log_opt('Reset admin email to [{}] successfully', (args.admin_email,))
 
-        if is_maintenance:
-            if os.path.exists(maintenance_file + '.bak.bak'):
-                os.rename(maintenance_file + '.bak.bak', maintenance_file)
+            # 更新WPS-Hide-Login插件配置
+            if 'whl_enabled' in args:
+                # 停用插件
+                if int(args.whl_enabled) == 0:
+                    wpmgr_obj.deactivate_plugins('wps-hide-login/wps-hide-login.php')
 
-        return public.success_v2('Update successfully')
+                    # 写操作日志
+                    wpmgr.log_opt('Deactivate plugin [{}] successfully', ('WPS Hide Login',))
+
+                # 启用插件
+                else:
+                    wpmgr_obj.config_plugin_wps_hide_login(args.get('whl_page', 'login'),args.get('whl_redirect_admin', '404'))
+
+                    # 写操作日志
+                    wpmgr.log_opt('Activate plugin [{}] successfully', ('WPS Hide Login',))
+
+            return public.success_v2('Update successfully')
+        except Exception as e:
+            return public.return_message(-1, 0, public.lang('Failed to save configuration: {}', str(e)))
+
+        finally:
+            if is_maintenance:
+                if os.path.exists(maintenance_file + '.bak.bak'):
+                    os.rename(maintenance_file + '.bak.bak', maintenance_file)
 
 
 ##############################对外接口-END##############################

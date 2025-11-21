@@ -1,0 +1,66 @@
+{
+	"Accept all emails": "모든 이메일 수락",
+	"Add Domain": "도메인 추가",
+	"Admin Email": "관리자 이메일",
+	"After enabling this feature, the system will create DKIM and SPF DNS records for the selected domain": {
+		" If an SPF record already exists for a domain, the system will appropriately append the servers IP address to the existing record": {
+			" However, the system will not modify any existing DKIM records": {
+				" During this process, please do not edit any nameserver configuration files": {
+					"": "이 기능을 활성화하면 시스템은 선택한 도메인에 대한 DKIM 및 SPF DNS 레코드를 생성합니다. 도메인에 대한 SPF 레코드가 이미 존재하는 경우 시스템은 서버 IP 주소를 기존 레코드에 적절하게 추가합니다. 그러나 시스템은 기존 DKIM 기록을 수정하지 않습니다. 이 과정에서 네임서버 구성 파일을 편집하지 마십시오."
+				}
+			}
+		}
+	},
+	"Apply DMARC Policy": "DMARC 정책 적용",
+	"Are you sure you want to {0} a self-built DNS server?": "자체 구축된 DNS 서버를 {0}하시겠습니까?",
+	"Build your own dns server based on pdns": "pdns를 기반으로 나만의 DNS 서버 구축",
+	"Configure DNS": "DNS 구성",
+	"Confirm Applying DMARC Policy?": "DMARC 정책 적용을 확인하시겠습니까?",
+	"Confirm DKIM/SPF Enabled?": "DKIM/SPF가 활성화되어 있는지 확인하세요.",
+	"DNS Manager": "DNS 관리자",
+	"Default DNS": "기본 DNS",
+	"Enable DKIM/SPF": "DKIM/SPF 활성화",
+	"Enabling this feature will create DMARCDNS records for all domains": {
+		" If a domain already has a DMARC record, the system will not modify the existing record": {
+			"": "이 기능을 활성화하면 모든 도메인에 대한 DMARCDNS 레코드가 생성됩니다. 도메인에 이미 DMARC 레코드가 있는 경우 시스템은 기존 레코드를 수정하지 않습니다."
+		}
+	},
+	"Enter your expire,eg: 604800": "만료일을 입력하세요. 예: 604800",
+	"Enter your minimum,eg: 3600": "최소값을 입력하세요. 예: 3600",
+	"Enter your nameserver,eg: ns1": {
+		"domain": {
+			"com": "네임서버를 입력하세요. 예: ns1.domain.com"
+		}
+	},
+	"Enter your refresh,eg: 3600": "새로고침을 입력하세요. 예: 3600",
+	"Enter your retry,eg: 3600": "재시도 횟수를 입력하세요. 예: 3600",
+	"Enter your serial number,eg: 2023080101": "일련번호를 입력하세요(예: 2023080101).",
+	"Expire": "만료",
+	"How often to check the serial number on the master server": "마스터 서버의 일련번호를 확인하는 빈도",
+	"Install Self-built DNS": "자체 구축 DNS 설치",
+	"Minimum": "최소",
+	"Nameserver": "네임서버",
+	"Please enter SOA": "SOA를 입력하세요.",
+	"Please enter your domain IP": "도메인 IP를 입력하세요.",
+	"Please enter your domain name": "도메인 이름을 입력하세요.",
+	"Policy:": "정책:",
+	"Preserve": "보존하다",
+	"Preserve config": "구성 유지",
+	"Refresh": "새로고침",
+	"Reject all emails": "모든 이메일 거부",
+	"Represents the default TTL value of all records in this zone file": "이 영역 파일에 있는 모든 레코드의 기본 TTL 값을 나타냅니다.",
+	"Retry": "재시도",
+	"Select DMARC Policy": "DMARC 정책 선택",
+	"Self-Built DNS": "자체 구축 DNS",
+	"Serial Number": "일련번호",
+	"Service": "서비스",
+	"Set & Manage": "설정 및 관리",
+	"The dns server is stopped, please start it first": "DNS 서버가 중지되었습니다. 먼저 시작하세요.",
+	"The interval time when the slaveserver reconnects to the masterserver": "슬레이브 서버가 마스터 서버에 다시 연결되는 간격 시간",
+	"When the time exceeds the number of seconds set by Expire and the slave server cannot get in touch with the master, the slave will delete its copy": "시간이 Expire에 설정된 초 수를 초과하고 슬레이브 서버가 마스터와 연락할 수 없으면 슬레이브는 해당 복사본을 삭제합니다.",
+	"model admin email": "모델 관리자 이메일",
+	"name server": "네임서버",
+	"zone file version,Modification is prohibited": {
+		"": "zone 파일 버전, 수정이 금지되어 있습니다."
+	}
+}

@@ -17,6 +17,7 @@ import os
 import public
 from firewallModelV2.firewallBase import Base
 from firewallModelV2.iptablesServices import IptablesServices
+from public.validate import Param
 
 
 # noinspection PyUnusedLocal
@@ -27,6 +28,44 @@ class main(Base):
         self.check_table_firewall_forward()
         self.iptables = IptablesServices()
         self._add_sid = None
+
+    def get_fail2ban_ip_count(self):
+        """
+        @name 获取 fail2ban 相关的 IP 总数（黑名单 + 白名单）
+        @return int 总数量
+        """
+        total = 0
+
+        # --- 统计黑名单（black_list.json 中的封禁 IP）---
+        fail2ban_black_file = '/www/server/panel/plugin/fail2ban/black_list.json'
+        try:
+            if os.path.exists(fail2ban_black_file):
+                content = public.readFile(fail2ban_black_file)
+                if content:
+                    ip_list = []
+                    try:
+                        ip_list = json.loads(content)
+                    except Exception:
+                        ip_list = [x.strip() for x in content.split() if x.strip()]
+                    total += len([ip for ip in ip_list if ip.strip()])
+        except Exception:
+            pass
+
+        # --- 统计白名单（jail.local ignoreip 中的放行 IP）---
+        jail_local_file = '/etc/fail2ban/jail.local'
+        try:
+            if os.path.exists(jail_local_file):
+                conf = public.readFile(jail_local_file)
+                rep = r'\nignoreip\s*=\s*(.*)'
+                match = re.search(rep, conf)
+                if match:
+                    ip_data = match.group(1)
+                    white_ips = [x.strip() for x in ip_data.split(',') if x.strip()]
+                    total += len(white_ips)
+        except Exception:
+            pass
+
+        return total
 
     # 2024/3/14 下午 12:01 获取防火墙状态信息
     def get_firewall_info(self, get):
@@ -41,7 +80,7 @@ class main(Base):
 
         data = {
             'port': len(self.firewall.list_port()),
-            'ip': len(self.iptables.list_address()) + len(self.firewall.list_address()),
+            'ip': len(self.iptables.list_address()) + len(self.firewall.list_address()) + self.get_fail2ban_ip_count(),
             'trans': len(self.iptables.list_port_forward()),
             'country': public.M('firewall_country').count(),
             'banned': public.M('firewall_malicious_ip').count(),
@@ -406,28 +445,33 @@ class main(Base):
                 import random
                 list_ip[j]['id'] = random.randint(-100, -1)
                 list_ip[j]['sid'] = 0
-                list_ip[j]['brief'] = ""
                 list_ip[j]['domain'] = ""
                 list_ip[j]['addtime'] = "--"
                 list_ip[j]["expiry_date"] = ''
-                # BT-Services托管的IP规则
 
-                if "Timeout" in list_ip[j]:
-                    # BT-Services托管的IP规则
-                    if int(list_ip[j]["Timeout"]) > 0:
-                        from datetime import datetime
-                        timeout = int(time.time()) + int(list_ip[j]['Timeout'])
-                        timeout_str = datetime.fromtimestamp(timeout).strftime('%Y-%m-%d %H:%M:%S')
-                        list_ip[j]["expiry_date"] = timeout_str
-                    list_ip[j]["stype"] = '1'
-                else:
-                    # 系统防火墙的IP规则
-                    list_ip[j]["stype"] = '0'
+                # fail2ban 添加的ip规则
+                if "brief" not in list_ip[j]:
+                    list_ip[j]['brief'] = ""
+                is_from_fail2ban = list_ip[j].get('brief', '').startswith('fail2ban')
+
+                # BT-Services托管的IP规则
+                if not is_from_fail2ban:
+                    if "Timeout" in list_ip[j]:
+                        # BT-Services托管的IP规则
+                        if int(list_ip[j]["Timeout"]) > 0:
+                            from datetime import datetime
+                            timeout = int(time.time()) + int(list_ip[j]['Timeout'])
+                            timeout_str = datetime.fromtimestamp(timeout).strftime('%Y-%m-%d %H:%M:%S')
+                            list_ip[j]["expiry_date"] = timeout_str
+                        list_ip[j]["stype"] = '1'
+                    else:
+                        # 系统防火墙的IP规则
+                        list_ip[j]["stype"] = '0'
 
                 for i in range(len(rule_db)):
                     if (rule_db[i]['address'] == list_ip[j]['Address'] and
                             rule_db[i]['types'] == list_ip[j]['Strategy'] and
-                            rule_db[i]['chain'] == list_ip[j]['Chain']):
+                            rule_db[i]['chain'] == list_ip[j]['Chain']) and not is_from_fail2ban:
                         list_ip[j]['id'] = rule_db[i]['id']
                         list_ip[j]['sid'] = rule_db[i]['sid']
                         list_ip[j]['brief'] = rule_db[i]['brief']
@@ -922,13 +966,31 @@ class main(Base):
         get.new_data = get.get('new_data/s', '')
 
         if get.old_data == "":
-             return public.fail_v2("Please pass in old_data")
+             return public.fail_v2(public.lang("Please pass in old_data"))
 
         if get.new_data == "":
-             return public.fail_v2("Please pass in new_data")
+             return public.fail_v2(public.lang("Please pass in new_data"))
 
         get.old_data = json.loads(get.old_data)
         get.new_data = json.loads(get.new_data)
+
+        # 判断参数是否存在
+        required_fields = {
+            'old': ['Port', 'Protocol', 'Address', 'Strategy', 'Chain', 'id', 'sid'],
+            'new': ['port', 'protocol', 'strategy', 'chain']
+        }
+        for field in required_fields['old']:
+            if field not in get.old_data:
+                return public.fail_v2(public.lang("Missing required field in old_data: {}",field))
+            if get.old_data[field] is None or get.old_data[field] == "":
+                return public.fail_v2(public.lang("Field cannot be empty in old_data: {}",field))
+
+        for field in required_fields['new']:
+            if field not in get.new_data:
+                return public.fail_v2(public.lang("Missing required field in new_data: {}",field))
+            if get.new_data[field] is None or get.new_data[field] == "":
+                return public.fail_v2(public.lang("Field cannot be empty in new_data: {}",field))
+
 
         args1 = public.dict_obj()
         args1.operation = 'remove'
@@ -953,7 +1015,7 @@ class main(Base):
         args2.reload = "1"
         self.set_port_rule(args2)
 
-        return public.success_v2("The modification was successful")
+        return public.success_v2(public.lang("The modification was successful"))
 
     # 2024/3/27 下午 4:03 修改域名端口规则
     def modify_domain_port_rule(self, get):
@@ -1128,7 +1190,7 @@ class main(Base):
                 'ports=? and address=? and protocol=? and types=? and chain=?',
                 (get.port, get.address, get.protocol, get.strategy, get.chain)
             ).find()
-            if query_result:
+            if query_result and isinstance(query_result, dict):
                 if get.protocol == "tcp/udp" and self._isFirewalld:
                     self.remove_port_db(get, "tcp", query_result['addtime'], query_result['domain'])
                     self.remove_port_db(get, "udp", query_result['addtime'], query_result['domain'])
@@ -1646,6 +1708,90 @@ class main(Base):
 
         return public.return_message(0 if result.get("status") else -1, 0, result['msg'])
 
+    def add_fail2ban_rules_to_list(self, ip_list):
+        """
+        @name 添加 fail2ban 的黑白名单规则到 IP 列表中（去重后追加）
+        @param ip_list list 当前已有的 IP 规则列表
+        @return list 修改后的 IP 规则列表
+        """
+        try:
+            # 使用集合记录已存在的 (Address, Strategy, Chain) 组合，用于去重
+            existing_keys = set()
+            for item in ip_list:
+                addr = item.get('Address')
+                strategy = item.get('Strategy')
+                chain = item.get('Chain')
+                if addr and strategy and chain:
+                    existing_keys.add((addr, strategy, chain))
+
+            # ---- 处理 fail2ban 黑名单 ----
+            fail2ban_black_file = '/www/server/panel/plugin/fail2ban/black_list.json'
+            if os.path.exists(fail2ban_black_file):
+                try:
+                    content = public.readFile(fail2ban_black_file)
+                    black_ips = []
+                    if content:
+                        try:
+                            black_ips = json.loads(content)
+                        except Exception:
+                            # 兼容纯文本格式（换行或空格分隔）
+                            black_ips = [x.strip() for x in content.split() if x.strip()]
+
+                    for ip in black_ips:
+                        if not ip:
+                            continue
+                        family = 'ipv6' if public.is_ipv6(ip) else 'ipv4'
+                        key = (ip, 'drop', 'INPUT')
+                        if key in existing_keys:
+                            continue
+                        existing_keys.add(key)
+                        ip_list.append({
+                            'Family': family,
+                            'Address': ip,
+                            'Strategy': 'drop',
+                            'Chain': 'INPUT',
+                            'brief': 'fail2ban_black',
+                            'stype': '2'
+                        })
+                except Exception as e:
+                    pass
+
+            # ---- 处理 fail2ban 白名单 (ignoreip) ----
+            jail_local_file = '/etc/fail2ban/jail.local'
+            if os.path.exists(jail_local_file):
+                try:
+                    conf = public.readFile(jail_local_file)
+                    # 匹配 ignoreip = xxx.xxx.xxx.xxx ...
+                    rep = r'\nignoreip\s*=\s*(.*)'
+                    match = re.search(rep, conf)
+                    if match:
+                        ip_data = match.group(1).strip()
+                        white_ips = [x.strip() for x in ip_data.split(',') if x.strip()]
+                        for ip in white_ips:
+                            if not ip:
+                                continue
+                            family = 'ipv6' if public.is_ipv6(ip) else 'ipv4'
+                            key = (ip, 'accept', 'INPUT')
+                            if key in existing_keys:
+                                continue
+                            existing_keys.add(key)
+                            ip_list.append({
+                                'Family': family,
+                                'Address': ip,
+                                'Strategy': 'accept',
+                                'Chain': 'INPUT',
+                                'brief': 'fail2ban_white',
+                                'stype': '2'
+                            })
+                except Exception as e:
+                    # public.write_log("Fail2ban", "解析白名单失败: %s" % str(e))
+                    pass
+
+        except Exception as e:
+
+            pass
+
+        return ip_list
     # 2024/3/25 上午 11:18 获取所有ip规则列表
     def ip_rules_list(self, get):
         """
@@ -1670,6 +1816,10 @@ class main(Base):
             list_address = self.iptables.list_address(["INPUT", "OUTPUT"])
             system_list_address = self.firewall.list_address()
             list_address += system_list_address
+
+        # 从 fail2ban 插件合并黑白名单
+        list_address = self.add_fail2ban_rules_to_list(list_address)
+
         data = self.structure_ip_return_data(list_address, ip_db, get)
         return public.success_v2(data)
 
@@ -1953,6 +2103,9 @@ class main(Base):
     def check_table_column(self, ):
         create_table_str = public.M('firewall_new').table('sqlite_master').where(
             'type=? AND name=?', ('table', 'firewall_new')).getField('sql')
+        if not create_table_str:
+            public.WriteLog("system firewall", "Unable to get the firewall_new table structure, skip the field check")
+            return
         if 'sid' not in create_table_str:
             public.M('firewall_new').execute('ALTER TABLE "firewall_new" ADD "sid"  int DEFAULT 0')
         if 'domain' not in create_table_str:
@@ -1962,6 +2115,9 @@ class main(Base):
 
         create_table_str = public.M('firewall_ip').table('sqlite_master').where(
             'type=? AND name=?', ('table', 'firewall_ip')).getField('sql')
+        if not create_table_str:
+            public.WriteLog("system firewall", "Unable to get the firewall_ip table structure, skip the field check")
+            return
         if 'sid' not in create_table_str:
             public.M('firewall_ip').execute('ALTER TABLE "firewall_ip" ADD "sid"  int DEFAULT 0')
         if 'domain' not in create_table_str:

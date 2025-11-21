@@ -622,14 +622,17 @@ class system:
             networkInfo['network'][net_key] = {}
             up = cache.get(up_key)
             down = cache.get(down_key)
+            time_diff = ntime - otime
+            if time_diff <= 0:
+                time_diff = 1
             if not up:
                 up = networkIo[0]
             if not down:
                 down = networkIo[1]
             networkInfo['network'][net_key]['upTotal']   = networkIo[0]
             networkInfo['network'][net_key]['downTotal'] = networkIo[1]
-            networkInfo['network'][net_key]['up']        = round(float(networkIo[0] -  up) / 1024 / (ntime - otime),2)
-            networkInfo['network'][net_key]['down']      = round(float(networkIo[1] - down) / 1024 / (ntime -  otime),2)
+            networkInfo['network'][net_key]['up']        = round(float(networkIo[0] -  up) / 1024 / time_diff,2)
+            networkInfo['network'][net_key]['down']      = round(float(networkIo[1] - down) / 1024 / time_diff,2)
             networkInfo['network'][net_key]['downPackets'] =networkIo[3]
             networkInfo['network'][net_key]['upPackets']   =networkIo[2]
 
@@ -751,10 +754,14 @@ class system:
             cache.set('otime',otime ,cache_timeout)
 
         ntime = time.time()
+        time_diff = ntime - otime
+        if time_diff <= 0:
+            time_diff = 1
+
         tmpDown = networkInfo['downTotal'] - cache.get("down")
         tmpUp = networkInfo['upTotal'] - cache.get("up")
-        networkInfo['down'] = str(round(float(tmpDown) / 1024 / (ntime - otime),2))
-        networkInfo['up']   = str(round(float(tmpUp) / 1024 / (ntime - otime),2))
+        networkInfo['down'] = str(round(float(tmpDown) / 1024 / time_diff,2))
+        networkInfo['up']   = str(round(float(tmpUp) / 1024 / time_diff,2))
         if networkInfo['down'] < 0: networkInfo['down'] = 0
         if networkInfo['up'] < 0: networkInfo['up'] = 0
 
@@ -1122,7 +1129,7 @@ class system:
         """
         检查系统重启状态
         1. 如果是首次访问，记录当前 boot time
-        2. 如果 boot time > 记录时间，说明系统重启了，更新状态为未读
+        2. 如果 boot time 发生显著变化（>3分钟），说明系统可能重启了，更新状态为未读
         3. 返回最后重启时间和读取状态
         """
         status_file = '{}/data/reboot_notification.json'.format(public.get_panel_path())
@@ -1145,34 +1152,40 @@ class system:
 
         try:
             reboot_notification = public.readFile(status_file)
-            # 判断文件内容是否为空
-            if not reboot_notification.strip():
-                public.writeFile(status_file, json.dumps({
-                    "last_reboot_time": current_boot_time,
-                    "status": 1
-                }))
-                return {
-                    "last_reboot_time": current_boot_time,
-                    "status": 1
-                }
+            if not reboot_notification or not str(reboot_notification).strip():
+                data = {"last_reboot_time": current_boot_time, "status": 1}
+                public.writeFile(status_file, json.dumps(data))
+                return data
             data = json.loads(reboot_notification)
             last_recorded_time = data.get("last_reboot_time", 0)
             last_status = data.get("status", 1)
 
-            # 如果系统启动时间 > 上次记录的时间 → 说明系统重启
-            if last_recorded_time > 0 and current_boot_time > last_recorded_time:
-                # 更新记录 标记未读
-                try:
-                    public.writeFile(status_file, json.dumps({
-                            "last_reboot_time": current_boot_time,
-                            "status": 0
-                        }))
 
-                    reboot_status["last_reboot_time"] = current_boot_time
-                    reboot_status["status"] = 0
-                    return reboot_status
-                except Exception as e:
-                    print(f"Failed to update reboot notification: {e}")
+            if last_recorded_time > 0:
+                diff = abs(current_boot_time - last_recorded_time)
+                if diff > 60 * 3:
+                    # 认定为系统重启 标记为未读
+                    new_data = {
+                        "last_reboot_time": current_boot_time,
+                        "status": 0
+                    }
+                    try:
+                        public.writeFile(status_file, json.dumps(new_data))
+                        reboot_status.update(new_data)
+                        return reboot_status
+                    except Exception as e:
+                        print(f"Failed to update reboot notification: {e}")
+                elif diff > 0:  # 有变化才写入
+                    new_data = {
+                        "last_reboot_time": current_boot_time,
+                        "status": last_status if last_status == 0 else 1
+                    }
+                    try:
+                        public.writeFile(status_file, json.dumps(new_data))
+                        reboot_status.update(new_data)
+                        return reboot_status
+                    except Exception as e:
+                        print(f"Failed to update boot time (drift): {e}")
 
             reboot_status["last_reboot_time"] = last_recorded_time
             reboot_status["status"] = last_status

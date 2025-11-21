@@ -80,6 +80,10 @@ class panelAuth:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
+        product_id = get.get('product_id/d', 0)
+        if product_id == 0:
+            return public.return_message(0, 0, [])
+
         try:
             userPath = 'data/userInfo.json'
             if not 'pluginName' in get and not 'product_id' in get: return public.return_message(-1, 0, public.lang("Parameter ERROR!"))
@@ -102,7 +106,8 @@ class panelAuth:
             return public.return_message(0, 0,data['res'])
         except:
             public.print_log(public.get_error_info())
-            del(session['get_product_list'])
+            if 'get_product_list' in session:
+                del(session['get_product_list'])
             return public.return_message(-1, 0,'Syncing information, please try again!\n {}',(public.get_error_info(),))
 
     def get_plugin_info(self, pluginName):
@@ -876,6 +881,7 @@ class panelAuth:
             return public.return_message(0, 0, dat)
         except:
             public.print_log(public.get_error_info())
-            del(session['get_product_list'])
+            if 'get_product_list' in session:
+                del (session['get_product_list'])
             return public.return_message(-1, 0,'Syncing information, please try again!\n {}',(public.get_error_info(),))
 

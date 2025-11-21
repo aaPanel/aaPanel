@@ -1144,6 +1144,16 @@ def aggregate_maillogs():
 
         logging.debug('aggregating maillogs >>> Done -- latest_time: {}'.format(latest_time))
 
+# aggregate maillogs task once
+def aggregate_maillogs_task_once():
+    try:
+        if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists('/www/vmail'):
+            return  # 未初始化 跳过本次执行
+        aggregate_maillogs()
+    except Exception as e:
+        logging.debug('aggregate maillogs failed: {}'.format(str(e)))
+        public.print_error()
+        pass
 
 # aggregate maillogs task
 def aggregate_maillogs_task(interval: int = 60):
@@ -1151,6 +1161,8 @@ def aggregate_maillogs_task(interval: int = 60):
         time.sleep(interval)
 
         try:
+            if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists('/www/vmail'):
+                continue  # 未初始化 跳过本次执行
             aggregate_maillogs()
         except Exception as e:
             logging.debug('aggregate maillogs failed: {}'.format(str(e)))

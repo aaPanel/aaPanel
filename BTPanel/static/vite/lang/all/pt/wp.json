@@ -227,5 +227,22 @@
 	"bf0c29411206e89e3ec8cfadd32127c5": "Feche e limpe o cache antes de ativar o modo de manutenção.",
 	"c9f96845a9be884034d544e8b2c0928f": "Nota: Para evitar que o site seja rebaixado pelos mecanismos de indexação, não ative o modo de manutenção por um longo período.",
 	"3014168da15aa5d8dc2834826c046d6b": "Recomendamos o upload de arquivos HTML para modelos e use URLs de dados para arquivos estáticos de modelos.",
-	"4d3829e30ef6cf2efd77087752261d0a": "Se quiser que seu modelo use a função de configuração de modelo do aapanel, você pode iniciar o modo de manutenção uma vez e modificar o arquivo /wp-content/mintensionce/mintensione-template.html, mantendo o espaço reservado '{{}}'."
+	"4d3829e30ef6cf2efd77087752261d0a": "Se quiser que seu modelo use a função de configuração de modelo do aapanel, você pode iniciar o modo de manutenção uma vez e modificar o arquivo /wp-content/mintensionce/mintensione-template.html, mantendo o espaço reservado '{{}}'.",
+	"550f99d102cfc5182aea66b62b3ef90f": "Configurações manuais",
+	"4bc9a5fa425406a6e190c445fcfda536": "Slug (domínio de texto)",
+	"59a62c07c8312215a0e12edb30b5b0b7": "Slug personalizado",
+	"b78a3223503896721cca1303f776159b": "Título",
+	"f561ae146f9c67fe049611b9b0651e77": "Título do plug-in",
+	"dc3de0994cb345bbb0fa4db5418fbb75": "Título do tema",
+	"980ba2d2915afeeb921f1fd8a25e97d6": "Você pode fazer upload de plug-ins do seu computador local,",
+	"c5a759ebcea830b268d52ee44455aa63": "Abrangendo aqueles fora do diretório wordpress.org",
+	"33a69c66d5953057cc75dd36009e7f97": "Selecione o plug-in (*.zip)",
+	"675a4ffa8aad3e96396db0f74caf60d6": "Selecione o tema (*.zip)",
+	"b3d4e2bcdbf72f5828b3ef09b238c072": "Selecione um arquivo",
+	"1b9abf135ccb7ed2f2cd9c155137c351": "Navegar",
+	"f787618e514c038851726224d7e4421e": "Nenhum arquivo selecionado",
+	"a7c3c998c562b3c1a03b55a45885d89f": "Arquivo selecionado: {0}",
+	"9162fca50a90dd9ede7b004903e8d5f5": "Carregar plug-in",
+	"f6e4b551382f9dbe4413c43de5f80873": "Carregar tema",
+	"4e4b1e639a36d24d7cc6865089a975b6": "Para adicionar um plugin ou tema personalizado a esta coleção, clique no botão Upload e, em seguida, carregue o arquivo do seu computador local"
 }

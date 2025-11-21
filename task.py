@@ -1091,6 +1091,8 @@ def count_ssh_logs():
         @name 统计SSH登录日志
         @return None
     '''
+    # 重启后延迟执行 避开cpu高峰期
+    time.sleep(1800)
     if os.path.exists("/etc/debian_version"):
         version = public.readFile('/etc/debian_version')
         if not version:
@@ -1913,11 +1915,18 @@ def refresh_dockerapps():
 def domain_ssl_service():
     while 1:
         try:
+            # check 6h, inside
             from ssl_domainModelV2.service import make_suer_ssl_task
             make_suer_ssl_task()
         except Exception as e:
-            public.print_log("domain_ssl_service error , %s" % e)
-        time.sleep(3600 * 6)
+            public.print_log("domain_ssl_service make_suer_ssl_task error , %s" % e)
+        time.sleep(3600)
+        # 1h
+        try:
+            from ssl_dnsV2.dns_manager import DnsManager
+            DnsManager().builtin_dns_checker()
+        except Exception as e:
+            public.print_log("builtin_dns_auth error , %s" % e)
 
 #每隔20分钟更新一次网站报表数据
 def update_monitor_requests():
@@ -2120,16 +2129,19 @@ def scan_log_site():
 #预安装网站监控报表
 def check_site_monitor():
     site_total_uninstall = '{}/data/site_total_uninstall.pl'.format(public.get_panel_path())
+    site_total_install_path = '{}/site_total'.format(public.get_setup_path())
+    site_total_service='/etc/systemd/system/site_total.service'
     sleep_time = 60
     while True:
         install_name = ''
         if not os.path.exists(site_total_uninstall):
-            if public.GetWebServer() !="openlitespeed" and not os.path.exists("/etc/systemd/system/site_total.service") and not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")) and public.M('tasks').where('name=? and status=?',('Install [site_total_monitor]','0')).count() < 1:
+            if not os.path.exists(site_total_install_path):public.ExecShell("rm -f {}".format(site_total_service))
+            if public.GetWebServer() !="openlitespeed" and not os.path.exists(site_total_service) and not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")) and public.M('tasks').where('name=? and status=?',('Install [site_total_monitor]','0')).count() < 1:
                 execstr="curl https://node.aapanel.com/site_total/install.sh|bash"
                 install_name = 'Install [site_total_monitor]'
                 sleep_time=86400
         else:
-            if os.path.exists("/etc/systemd/system/site_total.service"):
+            if os.path.exists(site_total_service):
                 install_name = 'Uninstall [site_total_monitor]'
                 execstr="bash /www/server/site_total/scripts/uninstall.sh"
         if install_name:

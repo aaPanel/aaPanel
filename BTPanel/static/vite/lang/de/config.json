@@ -97,7 +97,9 @@
 			"index_96": "Schalten Sie die Backup -Tafel aus",
 			"index_97": "Die automatische Sicherung enthält keine Website -Daten und MySQL -Daten",
 			"index_98": "CDN Proxy",
-			"index_99": "Rufen Sie die reale IP der Anforderung vom CDN -Proxy ab"
+			"index_99": "Rufen Sie die reale IP der Anforderung vom CDN -Proxy ab",
+			"iconAuto": "Favicon automatisch abrufen",
+			"iconAutoDesc": "Versucht alle 12 Stunden, das Favicon abzurufen, wenn es aktiviert ist"
 		},
 		"Safe": {
 			"index_1": "Sicherheit",
@@ -423,6 +425,9 @@
 			"global_31": "Wenn Sie Benutzer-Agent hinzufügen, warten Sie bitte ...",
 			"global_32": "Ändern von Benutzer-Agent, bitte warten ...",
 			"global_33": "Benutzer-Agent löschen, bitte warten ...",
+			"global_34": "Automatisches Backup wird eingestellt, bitte warten...",
+			"global_35": "Automatische Sicherung wird gelöscht, bitte warten...",
+			"global_36": "Einstellungen, bitte warten...",
 			"alarm_1": "Hinzufügen von Alarmaufgaben, bitte warten Sie ...",
 			"alarm_2": "Aufgabe der Alarmbearbeitung, bitte warten ...",
 			"alarm_3": "Setzen Sie den Status \"Warnungsaufgabe ein, bitte warten Sie ...",

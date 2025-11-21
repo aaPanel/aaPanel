@@ -7,9 +7,17 @@
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 from public.hook_import import hook_import
+
 hook_import()
 
-import time,public,db,os,sys,json,re,shutil
+import os
+import re
+import sys
+import json
+import time
+import public
+import db
+
 os.chdir('/www/server/panel')
 
 if not 'class/' in sys.path:
@@ -30,6 +38,7 @@ def control_init_now():
 
 def control_init_delay():
     delay_list = [
+        (install_packages,),
         (rep_websocket_conf,),
         (clear_other_files,),
         (remove_tty1,),
@@ -43,8 +52,6 @@ def control_init_delay():
         (remove_other,),
         (upgrade_polkit,),
         (deb_bashrc,),
-        (install_pycountry,),
-        (install_pyroute2,),
         (update_pubsuffix_dat,),
         (upgrade_fastcgi_cache_conf_format,),
         (clean_max_log, '/www/server/panel/plugin/rsync/lsyncd.log'),
@@ -56,6 +63,7 @@ def control_init_delay():
     for task in delay_list:
         try:
             if len(task) >= 2:
+                # noinspection PyArgumentList
                 task[0](*task[1:])
             else:
                 task[0]()
@@ -110,6 +118,41 @@ def control_init():
     uninstall_pip_lxml()
     install_pyroute2()
     upgrade_fastcgi_cache_conf_format()
+
+
+def install_packages():
+    try:
+        import dns.resolver
+    except ImportError:
+        public.ExecShell(f"{public.get_panel_path()}/pyenv/bin/pip3 install dnspython")
+    except Exception as e:
+        public.print_log("install pysqlite3 error:", str(e))
+
+    try:
+        import pysqlite3
+    except ImportError:
+        public.ExecShell(f"{public.get_panel_path()}/pyenv/bin/pip3 install pysqlite3-binary")
+    except Exception as e:
+        public.print_log("install pysqlite3 error:", str(e))
+
+    try:
+        import jsonpath
+    except ImportError:
+        public.ExecShell(f"{public.get_panel_path()}/pyenv/bin/pip3 install jsonpath")
+    except Exception as e:
+        public.print_log("install_packages error:", str(e))
+
+    try:
+        install_pycountry()
+    except Exception as e:
+        public.print_log("install pycountry error:", str(e))
+
+    try:
+        install_pyroute2()
+    except Exception as e:
+        public.print_log("install pyroute2 error:", str(e))
+
+
 
 def rm_apache_cgi_test():
     '''
@@ -923,6 +966,7 @@ def test_ping():
     if os.path.exists(_f): os.remove(_f)
     try:
         import panelPing
+        # noinspection PyUnresolvedReferences
         panelPing.Test().create_token()
     except:
         pass

@@ -1106,6 +1106,9 @@ export PATH
             #s_pid = int(public.readFile(pid_file))
             data = public.readFile(pid_file)
             if isinstance(data,str) and data:
+                data = data.strip()
+                if not data.isdigit():
+                    return public.return_message(0,0,[])
                 s_pid = int(data)
             else:
                 return []
@@ -1661,7 +1664,13 @@ cd {}
             @param project_info<dict> 项目信息
             @return list
         '''
-        project_info['project_config'] = json.loads(project_info['project_config'])
+        project_info['project_config'] = {}
+        if isinstance(project_info, dict) and 'project_config' in project_info:
+            config_str = project_info['project_config']
+            if isinstance(config_str, str):
+                project_info['project_config'] = json.loads(config_str)
+
+        # project_info['project_config'] = json.loads(project_info['project_config'])
         project_info['run'] = self.get_project_run_state(project_name = project_info['name'])
         # project_info['run'] = True
         project_info['load_info'] = {}

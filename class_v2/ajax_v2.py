@@ -894,6 +894,11 @@ class ajax:
 
     #取PHP配置
     def GetPHPConfig(self,get):
+        if not hasattr(get,'version'):
+            return public.return_message(-1, 0, public.lang("Parameter error!"))
+        if get.version == '':
+            return public.return_message(-1, 0, public.lang("Parameter error!"))
+
         import re,json
         filename = public.GetConfigValue('setup_path') + '/php/' + get.version + '/etc/php.ini'
         if public.get_webserver() == 'openlitespeed':
@@ -1869,45 +1874,25 @@ class ajax:
         """
             @name 获取推荐列表
         """
-        #未传参，无需统一参数校验
-
-
-        # spath = '{}/data/pay_type.json'.format(public.get_panel_path())
-        # if not os.path.exists(spath):
-        #     public.run_thread(self.download_pay_type,(spath,))
-        # try:
-        #     data = json.loads(public.readFile("data/pay_type.json"))
-        # except:
-        #     public.run_thread(self.download_pay_type, (spath,))
-        #     data = {}
-        #
-        # import panelPlugin
-        # plu_panel = panelPlugin.panelPlugin()
-        # plugin_list = plu_panel.get_cloud_list()
-        # if not 'pro' in plugin_list: plugin_list['pro'] = -1
-        #
-        # for item in data:
-        #     if 'list' in item:
-        #         item['list'] = self.__get_home_list(item['list'], item['type'], plugin_list, plu_panel)
-        #         if item['type'] == 1:
-        #             if len(item['list']) > 4: item['list'] = item['list'][:4]
-        #     # if item['type'] == 0 and plugin_list['pro'] >= 0:
-        #     #     item['show'] = False
-        #
-        # return data
-
         spath = '{}/data/pay_type.json'.format(public.get_panel_path())
         if os.path.exists(spath) and os.path.getsize(spath) <= 0:
             os.remove(spath)
 
         if not os.path.exists(spath):
             public.run_thread(self.download_pay_type, (spath,))
+        file_content = public.readFile("data/pay_type.json")
+        if not file_content:
+            return public.return_message(0,0,self.get_default_pay_type())
         try:
-            data = json.loads(public.readFile("data/pay_type.json"))
+            data = json.loads(file_content)
         except json.decoder.JSONDecodeError:
             os.remove(spath)
             public.run_thread(self.download_pay_type, (spath,))
-            data = json.loads(public.readFile("data/pay_type.json"))
+            file_content = public.readFile("data/pay_type.json")
+            if not file_content:
+                data = self.get_default_pay_type()
+            else:
+                data = json.loads(file_content)
         except Exception:
             data = self.get_default_pay_type()
 

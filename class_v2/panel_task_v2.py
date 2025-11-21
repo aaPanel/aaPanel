@@ -354,6 +354,8 @@ class bt_task:
             public.ExecShell("cd {} && {} a -t7z {} {} -y &> {}".format(path, _7z_bin, dfile, sfiles, log_file))
         else:
             return public.return_message(-1, 0, public.lang("Specified compression format is not supported!"))
+        if not os.path.exists(dfile):
+            return public.return_message(-1, 0, public.lang("Compression failed: The target file {} is not generated", dfile))
 
         self.set_file_accept(dfile)
         #public.WriteLog("TYPE_FILE", 'Compression succeeded!', (sfiles, dfile),not_web = self.not_web)

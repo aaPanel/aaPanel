@@ -939,7 +939,7 @@ class main(Base):
                 'ports=? and address=? and protocol=? and types=? and chain=?',
                 (get.port, get.address, get.protocol, get.strategy, get.chain)
             ).find()
-            if query_result:
+            if query_result and isinstance(query_result, dict):
                 if get.protocol == "tcp/udp" and self._isFirewalld:
                     self.remove_port_db(get, "tcp", query_result['addtime'], query_result['domain'])
                     self.remove_port_db(get, "udp", query_result['addtime'], query_result['domain'])

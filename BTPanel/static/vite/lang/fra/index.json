@@ -1,0 +1,66 @@
+{
+	"Accept all emails": "Acceptez tous les e-mails",
+	"Add Domain": "Ajouter un domaine",
+	"Admin Email": "E-mail de l'administrateur",
+	"After enabling this feature, the system will create DKIM and SPF DNS records for the selected domain": {
+		" If an SPF record already exists for a domain, the system will appropriately append the servers IP address to the existing record": {
+			" However, the system will not modify any existing DKIM records": {
+				" During this process, please do not edit any nameserver configuration files": {
+					"": "Après avoir activé cette fonctionnalité, le système créera des enregistrements DNS DKIM et SPF pour le domaine sélectionné. Si un enregistrement SPF existe déjà pour un domaine, le système ajoutera de manière appropriée l'adresse IP du serveur à l'enregistrement existant. Cependant, le système ne modifiera aucun enregistrement DKIM existant. Pendant ce processus, veuillez ne modifier aucun fichier de configuration du serveur de noms."
+				}
+			}
+		}
+	},
+	"Apply DMARC Policy": "Appliquer la politique DMARC",
+	"Are you sure you want to {0} a self-built DNS server?": "Êtes-vous sûr de vouloir {0} un serveur DNS auto-construit ?",
+	"Build your own dns server based on pdns": "Construisez votre propre serveur DNS basé sur pdns",
+	"Configure DNS": "Configurer le DNS",
+	"Confirm Applying DMARC Policy?": "Confirmer l'application de la politique DMARC ?",
+	"Confirm DKIM/SPF Enabled?": "Confirmer que DKIM/SPF est activé ?",
+	"DNS Manager": "Gestionnaire DNS",
+	"Default DNS": "DNS par défaut",
+	"Enable DKIM/SPF": "Activer DKIM/SPF",
+	"Enabling this feature will create DMARCDNS records for all domains": {
+		" If a domain already has a DMARC record, the system will not modify the existing record": {
+			"": "L'activation de cette fonctionnalité créera des enregistrements DMARCDNS pour tous les domaines. Si un domaine possède déjà un enregistrement DMARC, le système ne modifiera pas l'enregistrement existant."
+		}
+	},
+	"Enter your expire,eg: 604800": "Entrez votre date d'expiration, par exemple : 604800",
+	"Enter your minimum,eg: 3600": "Entrez votre minimum, par exemple : 3600",
+	"Enter your nameserver,eg: ns1": {
+		"domain": {
+			"com": "Entrez votre serveur de noms, par exemple : ns1.domain.com"
+		}
+	},
+	"Enter your refresh,eg: 3600": "Entrez votre actualisation, par exemple : 3600",
+	"Enter your retry,eg: 3600": "Entrez votre nouvelle tentative, par exemple : 3600",
+	"Enter your serial number,eg: 2023080101": "Entrez votre numéro de série, par exemple : 2023080101",
+	"Expire": "Expirer",
+	"How often to check the serial number on the master server": "À quelle fréquence vérifier le numéro de série sur le serveur maître",
+	"Install Self-built DNS": "Installer un DNS auto-construit",
+	"Minimum": "Minimum",
+	"Nameserver": "Serveur de noms",
+	"Please enter SOA": "Veuillez entrer SOA",
+	"Please enter your domain IP": "Veuillez entrer l'adresse IP de votre domaine",
+	"Please enter your domain name": "Veuillez entrer votre nom de domaine",
+	"Policy:": "Politique :",
+	"Preserve": "Préserver",
+	"Preserve config": "Conserver la configuration",
+	"Refresh": "Actualiser",
+	"Reject all emails": "Rejeter tous les e-mails",
+	"Represents the default TTL value of all records in this zone file": "Représente la valeur TTL par défaut de tous les enregistrements de ce fichier de zone",
+	"Retry": "Réessayer",
+	"Select DMARC Policy": "Sélectionnez la politique DMARC",
+	"Self-Built DNS": "DNS auto-construit",
+	"Serial Number": "Numéro de série",
+	"Service": "Service",
+	"Set & Manage": "Définir et gérer",
+	"The dns server is stopped, please start it first": "Le serveur DNS est arrêté, veuillez d'abord le démarrer",
+	"The interval time when the slaveserver reconnects to the masterserver": "L'intervalle de temps pendant lequel le serveur esclave se reconnecte au serveur maître",
+	"When the time exceeds the number of seconds set by Expire and the slave server cannot get in touch with the master, the slave will delete its copy": "Lorsque le temps dépasse le nombre de secondes défini par Expire et que le serveur esclave ne peut pas entrer en contact avec le maître, l'esclave supprimera sa copie.",
+	"model admin email": "e-mail de l'administrateur du modèle",
+	"name server": "serveur de noms",
+	"zone file version,Modification is prohibited": {
+		"": "version du fichier de zone,La modification est interdite."
+	}
+}

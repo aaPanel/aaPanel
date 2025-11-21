@@ -177,7 +177,7 @@ class main(safeBase):
             get.status = '1'
         filename = '/etc/sysctl.conf'
         conf = public.readFile(filename)
-        if not conf:
+        if not conf or not isinstance(conf, str):
             return public.return_message(-1, 0, '/etc/sysctl.conf File Read Exception，Unable to set ping ban')
 
         if conf.find('net.ipv4.icmp_echo') != -1:
