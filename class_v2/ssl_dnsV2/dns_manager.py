@@ -15,11 +15,19 @@ import random
 import sys
 import time
 from dataclasses import dataclass, fields
+from functools import wraps
 from typing import Optional, Type, TypeVar, List
 
 sys.path.insert(0, '/www/server/panel/class')
 sys.path.insert(0, '/www/server/panel/class_v2')
 import public
+from public.hook_import import hook_import
+
+hook_import()
+try:
+    from BTPanel import cache
+except:
+    pass
 from ssl_dnsV2.model import DnsResolve
 from ssl_dnsV2.helper import DnsParser
 from ssl_dnsV2.conf import *
@@ -32,7 +40,6 @@ PANEL_PATH = public.get_panel_path()
 S = TypeVar("S", bound="Soa")
 
 TIMEOUT = 1  # 用于验证ns超时
-
 
 
 def backup_file(path: str, suffix: str = None) -> None:
@@ -59,6 +66,25 @@ def pdns_rollback(path: str) -> None:
     backup_path = f"{path}_{suffix}"
     if os.path.exists(backup_path):
         public.ExecShell(f"cp -a {backup_path} {path}")
+
+
+def clean_record_cache(func):
+    # 对记录操作后强清缓存
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        result = func(self, *args, **kwargs)
+        try:
+            domain = kwargs.get("domain")
+            if not domain and args:
+                domain = args[0]
+            if domain and self.aapanel_dns_obj and cache:
+                key = f"aaDomain_{self.aapanel_dns_obj.id}_{domain}"
+                cache.delete(key)
+        except Exception:
+            pass
+        return result
+
+    return wrapper
 
 
 @dataclass(slots=True)
@@ -298,24 +324,31 @@ class DnsManager:
         return shuffled_servers
 
     def makesuer_port(self) -> None:
-        if not public.S("firewall_new").where(
-                "ports = ? AND protocol = ?", ("53", "tcp/udp")
-        ).count():
+        try:
+            if not public.S("firewall_new").where(
+                    "ports = ? AND protocol = ?", ("53", "tcp/udp")
+            ).count():
+                try:
+                    from firewallModelV2.comModel import main as firewall_main
+                    get = public.dict_obj()
+                    get.protocol = "all"
+                    get.port = "53"
+                    get.choose = "all"
+                    get.types = "accept"
+                    get.strategy = "accept"
+                    get.chain = "INPUT"
+                    get.brief = "DNS Service Port"
+                    get.operation = "add"
+                    firewall_main().set_port_rule(get)
+                except Exception as e:
+                    dns_logger("Add Firewall Port 53 Error: {}".format(e))
+                    public.print_log("add firewall port 53 error: {}".format(e))
+        except Exception:
             try:
-                from firewallModelV2.comModel import main as firewall_main
-                get = public.dict_obj()
-                get.protocol = "all"
-                get.port = "53"
-                get.choose = "all"
-                get.types = "accept"
-                get.strategy = "accept"
-                get.chain = "INPUT"
-                get.brief = "DNS Service Port"
-                get.operation = "add"
-                firewall_main().set_port_rule(get)
-            except Exception as e:
-                dns_logger("Add Firewall Port 53 Error: {}".format(e))
-                public.print_log("add firewall port 53 error: {}".format(e))
+                from firewalld_v2 import firewalld
+                firewalld().AddAcceptPort(53, "tcp")
+            except Exception:
+                pass
 
     def query_dns(self, q_name: str, record_type: str, ns_server: Optional[list] = None, time_out: int = None) -> list:
         """
@@ -718,8 +751,7 @@ class DnsManager:
             line_index = self._find_record_line_index(lines, **kwargs)
             if action.lower() == "create":
                 if line_index is not None:
-                    public.print_log("Record already exists, skipping creation.")
-                    return True
+                    raise HintException("Record already exists, skipping creation.")
 
                 new_record_line = self._build_record_line(domain, **kwargs)
                 lines.append(new_record_line)
@@ -765,7 +797,7 @@ class DnsManager:
             public.print_log(traceback.format_exc())
             pdns_rollback(zone_file)
             self.reload_service()
-            raise HintException(f"Record {action} failed and was rolled back: {e}")
+            raise HintException(f"Record {action} failed: {e}")
 
     # ================= script ====================
 
@@ -995,14 +1027,17 @@ class DnsManager:
                 sync.force = True
                 sync.sync_dns_domains()
 
+    @clean_record_cache
     def add_record(self, domain: str, **kwargs) -> bool:
         self.__apply_and_validate_change("create", domain, **kwargs)
         return True
 
+    @clean_record_cache
     def delete_record(self, domain: str, **kwargs) -> bool:
         self.__apply_and_validate_change("delete", domain, **kwargs)
         return True
 
+    @clean_record_cache
     def update_record(self, domain: str, **kwargs) -> bool:
         if not kwargs.get("new_record"):
             raise HintException("update record is required for update operation.")
@@ -1091,6 +1126,136 @@ class DnsManager:
     def clear_logger(self) -> bool:
         public.S("logs").where("type = ?", ("DnsSSLManager",)).delete()
         return True
+
+    @clean_record_cache
+    def fix_zone(self, domain: str) -> str:
+        # 记录去重修复
+        domain = domain.strip().rstrip(".")
+        if domain not in self.parser.get_zones():
+            dns_logger(f"Fix Zone Failed: zone [{domain}] Not Found!")
+            raise HintException("Zone Not Found!")
+
+        zone_file = os.path.join(ZONES_DIR, f"{domain}.zone")
+        if not os.path.exists(zone_file):
+            raise HintException("Zone file not found!")
+
+        # 备份
+        backup_file(zone_file)
+        try:
+            lines = self.__read_zone_lines(zone_file)
+            org_lines_counts = len(lines)
+            soa_lines = []
+            record_lines = []
+            soa_block = False
+            find_block = 0
+            # SOA块
+            for line in lines:
+                if "IN SOA" in line:
+                    soa_block = True
+                if soa_block:
+                    soa_lines.append(line)
+                    find_block += line.count("(")
+                    find_block -= line.count(")")
+                    if find_block <= 0:
+                        soa_block = False
+                elif line.strip() and not line.strip().startswith(('$', ';')):
+                    record_lines.append(line)
+            # 去重
+            cleaned_records = []
+            seen_records = set()
+            spf_record_found = False  # spf 修复
+            for line in record_lines:
+                match = record_pattern.match(line)
+                if match:
+                    # (name, type, value) 唯一标识
+                    r_name, _, _, r_type, r_value_raw = match.groups()
+                    r_type = r_type.upper()
+                    r_value = r_value_raw.strip().split(";", 1)[0].strip()
+
+                    # spf 唯一性处理
+                    is_spf = (
+                            r_type == "TXT" and
+                            (r_value.startswith('"v=spf1') or r_value.startswith('v=spf1'))
+                    )
+                    if is_spf:
+                        # 首次次标记
+                        if not spf_record_found:
+                            spf_record_found = True
+                        else:  # 后续丢弃
+                            dns_logger(f"Fix Zone [{domain}]: Removed duplicate SPF record: {line.strip()}")
+                            continue
+
+                    record_tuple = (r_name.lower(), r_type, r_value.lower())
+                    if record_tuple not in seen_records:
+                        seen_records.add(record_tuple)
+                        cleaned_records.append(line)
+                    else:
+                        dns_logger(f"Fix Zone [{domain}]: Removed duplicate record: {line.strip()}")
+
+            if len(cleaned_records) + len(soa_lines) == org_lines_counts:
+                msg = f"Zone [{domain}] is already clean. No changes made."
+                dns_logger(msg)
+                return msg
+
+            # 更新
+            new_lines = soa_lines + cleaned_records
+            if not self._update_soa(new_lines):
+                raise HintException("Failed to update SOA serial number.")
+
+            public.writeFile(zone_file, "\n".join(new_lines) + "\n")
+            self.reload_service()
+            backup_file(zone_file)
+            msg = f"Zone [{domain}] has been fixed successfully."
+            dns_logger(msg)
+            return msg
+        except Exception as e:
+            pdns_rollback(zone_file)
+            import traceback
+            public.print_log(traceback.format_exc())
+            raise HintException(f"Fix Zone Failed: {e}")
+
+    @clean_record_cache
+    def domian_record_type_ttl_batch_set(self, domain: str, record_type: str, ttl: int) -> bool:
+        # 批量设置单个域名的指定类型TTL
+        zone_file = os.path.join(ZONES_DIR, f"{domain}.zone")
+        if not os.path.exists(zone_file):
+            return False
+        backup_file(zone_file)
+        try:
+            lines = self.__read_zone_lines(zone_file)
+            if not lines:
+                return False
+            # 批量更新
+            updated = False
+            for i, line in enumerate(lines):
+                match = record_pattern.match(line)
+                if match:
+                    r_name, _, _, r_type, r_value_raw = match.groups()
+                    r_type = r_type.upper()
+                    public.print_log(f"r_name={r_name}, r_type={r_type}, r_value_raw={r_value_raw}")
+                    if r_type == record_type.upper():
+                        parts = line.split()
+                        public.print_log(f"parts = {parts}")
+                        if len(parts) >= 4:
+                            parts[1] = str(ttl)  # 更新TTL
+                            lines[i] = "\t".join(parts)
+                            updated = True
+            public.print_log(f"domian = {domain}, update = {updated} ")
+            if not updated:
+                return True
+            # 更新SOA序列号
+            if not self._update_soa(lines):
+                raise HintException("Failed to update SOA serial number.")
+
+            public.writeFile(zone_file, "\n".join(lines) + "\n")
+            self.reload_service()
+            backup_file(zone_file)
+            return True
+        except Exception as e:
+            pdns_rollback(zone_file)
+            import traceback
+            public.print_log(traceback.format_exc())
+            raise HintException(f"Set TTL Batch Failed: {e}")
 
 
 if __name__ == '__main__':

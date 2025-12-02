@@ -493,7 +493,7 @@ class main(safeBase):
                     args.ips = ip
                     args.cron = 'true'
                     args.black_reason = 1
-                    self.add_black_white(args)
+                    self.add_black_white(args,False)
                 command = self._config['based_on_ip']['command']
                 if command != '':
                     public.ExecShell('nohup ' + str(command) + ' &')
@@ -908,7 +908,7 @@ class main(safeBase):
         result=public.M('black_white').where('add_type=? and black_reason=?', (get.types,0)).select()
         return public.return_message(0,0,result)
         
-    def add_black_white(self,get):
+    def add_black_white(self,get,write_log=True):
         """
         @name 添加、编辑、删除黑/白名单
         """
@@ -936,7 +936,7 @@ class main(safeBase):
             public.ExecShell('ipset flush '+self._types[get.types])
             public.M('black_white').where('add_type=? and black_reason =?', (get.types,0)).delete()
             self.writeListFile()
-            if self.__write_log:
+            if write_log:
                 public.write_log_gettext(self.__log_type,  'The black and white list operation settings have been executed')
             return public.return_message(0, 0, public.lang("The operation has been executed"))
         if 'ps' not in get and 'cron' not in get:       
@@ -977,7 +977,7 @@ class main(safeBase):
                     public.M('black_white').add('ip,add_type,ps,add_time,timeout,black_reason',(ip, get.types,ps,time.strftime('%Y-%m-%d %X',time.localtime()),timeout,get.black_reason))
                     if public.M('black_white').where('ip=? and add_type=?', (ip, get.types)).count():
                         #写日志
-                        if self.__write_log:
+                        if write_log:
                             public.write_log_gettext(self.__log_type,  'Successfully added IP [{}] to the interception system [{}]', (ip,self._types_system[get.types]))
                 
                 result=public.ExecShell('ipset add '+self._types[get.types]+' '+ip+' timeout '+str(timeout))

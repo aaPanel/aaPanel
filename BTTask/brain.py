@@ -55,17 +55,18 @@ class SimpleBrain:
     def __init__(self, cpu_max: float = 30.0, max_workers: int = None):
         self.cpu_max = cpu_max
         self.max_workers = max_workers or max(2, psutil.cpu_count() * 2)
-        logger.info(f"max_workers = {self.max_workers}")
+        logger.debug(f"max_workers = {self.max_workers}")
         self.task_queue: List[TaskInfo] = []
         self.task_status = {}
         self.queue_lock = threading.RLock()
         self.status_lock = threading.RLock()
-        self.core_tasks = set()
+        self.core_tasks = {}
         self.shutdown_flag = False
         self.delay_factor = 0.0
         self._start_time = time.monotonic()
         self.executor = ThreadPoolExecutor(max_workers=self.max_workers)
         self._start_checker()
+        logger.debug("SimpleBrain initialized")
 
     @property
     def queue_size(self) -> int:
@@ -85,23 +86,46 @@ class SimpleBrain:
             pass
         return {"rss_mb": rss_mb, "uss_mb": uss_mb}
 
+    def __mem_limit(self, rss: int):
+        if rss >= 100:
+            logger.warning("Memory exceed limit...Restart brain task")
+            self.shutdown()
+            # ps: mian has been checked Task process
+            os.system(
+                "nohup /www/server/panel/BT-Task >> /www/server/panel/logs/task.log 2>&1 &"
+            )
+
+    def __core_alive(self):
+        with self.status_lock:
+            dead_tasks = [
+                task_id for task_id, task_info in self.core_tasks.items()
+                if not task_info["thread"].is_alive()
+            ]
+            for task_id in dead_tasks:
+                logger.warning(f"Core task [{task_id}] is dead. Restarting...")
+                task_info = self.core_tasks[task_id]
+                args = task_info["args"]
+                thread = threading.Thread(
+                    target=self._core_task_runner,
+                    args=args,
+                    daemon=True,
+                    name=f"CoreTask-{task_id}"
+                )
+                thread.start()
+                self.core_tasks[task_id]["thread"] = thread
+
     def __checker(self):
         count = 0
         while not self.shutdown_flag:
             try:
                 cpu = psutil.cpu_percent(interval=0.5)
                 if count >= 5:
-                    mem = self.get_current_process_memory
-                    if int(mem.get("rss_mb", 0)) >= 100:
-                        logger.warning("Memory exceed limit...Restart brain task")
-                        self.shutdown()
-                        os.system(
-                            "nohup /www/server/panel/BT-Task >> /www/server/panel/logs/task.log 2>&1 &"
-                        )
-                        # ps: mian has been checked Task process
-                    # debug
-                    # logger.info("Mem: {} MB, CPU: {}%".format(mem["rss_mb"], cpu))
                     count = 0
+                    self.__core_alive()
+                    mem = self.get_current_process_memory
+                    logger.debug("Mem: {} MB, CPU: {}%".format(mem["rss_mb"], cpu))
+                    self.__mem_limit(int(mem.get("rss_mb", 0)))
+
                 if cpu <= self.cpu_max:
                     target = 0.0
                 else:
@@ -125,10 +149,10 @@ class SimpleBrain:
             logger.error(f"task error [{task_id}]: {str(e)}")
         finally:
             with self.status_lock:
-                t = self.task_status.pop(task_id)
                 try:
-                    logger.info(
-                        f"task done [{task_id}] use time: {round(time.time() - t, 2)}s"
+                    status = self.task_status.pop(task_id)
+                    logger.debug(
+                        f"task done [{task_id}] use time: {round(time.time() - status['start_time'], 2)}s"
                     )
                 except Exception:
                     logger.info(f"task done [{task_id}]")
@@ -137,7 +161,11 @@ class SimpleBrain:
         try:
             while 1:
                 if not isinstance(funcs, list):
-                    funcs()
+                    try:
+                        funcs()
+                    except Exception:
+                        import traceback
+                        logger.error(traceback.format_exc())
                 else:
                     for f in funcs:
                         try:
@@ -155,7 +183,10 @@ class SimpleBrain:
         for task_id, func in tasks:
             future: Future = self.executor.submit(func)
             with self.status_lock:
-                self.task_status[task_id] = time.time()
+                self.task_status[task_id] = {
+                    "start_time": time.time(),
+                    "future": future
+                }
             future.add_done_callback(
                 lambda f, tid=task_id: self._callback(tid, f)
             )
@@ -167,15 +198,21 @@ class SimpleBrain:
             # core task, daemon thread
             if task_id in self.core_tasks:
                 return
-            self.core_tasks.add(task_id)
-            threading.Thread(
+
+            args = (kwargs["func"], kwargs["interval"])
+            core_thread = threading.Thread(
                 target=self._core_task_runner,
-                args=(kwargs["func"], kwargs["interval"]),
+                args=args,
                 daemon=True,
-            ).start()
-            logger.info(
+                name=f"CoreTask-{task_id}"
+            )
+            core_thread.start()
+            logger.debug(
                 f"registe core task [{task_id}], interval [{kwargs['interval']}]"
             )
+            with self.status_lock:
+                self.core_tasks[task_id] = {"thread": core_thread, "args": args}
+
         else:  # not core task, heapq, pool
             with self.queue_lock:
                 if not any(t.task_id == kwargs.get("task_id", "") for t in self.task_queue):
@@ -183,7 +220,7 @@ class SimpleBrain:
                         kwargs, next_run=time.monotonic()
                     )
                     heapq.heappush(self.task_queue, task)
-                    logger.info(
+                    logger.debug(
                         f"register normal task [{task_id}], interval [{task.interval}s]"
                     )
 
@@ -254,7 +291,7 @@ class SimpleBrain:
             self.task_queue.clear()
 
         with self.status_lock:
-            futures = list(self.task_status.values())
+            futures = [s["future"] for s in self.task_status.values()]
             self.task_status.clear()
 
         if futures:

@@ -724,6 +724,10 @@ class panelPlugin:
             if get.sName == 'monitor':
                 self.clear_site_config()
 
+            # 删除clamav 定时任务
+            if get.sName == 'clamav':
+                self.clear_clamav()
+
             if os.path.exists(pluginPath): public.ExecShell('rm -rf ' + pluginPath)
             public.write_log_gettext('Installer','Successfully uninstalled software [{}]',(pluginInfo['title'],))
             return public.return_message(0, 0, public.lang("Uninstallaton succeeded"))
@@ -2516,12 +2520,15 @@ class panelPlugin:
         sql = db.Sql().dbfile('plugin_total')
         self.creatab_open_total_table(sql)
         plugin_list =  sql.table('open_total').order('num desc').limit(10).select()
+        if isinstance(plugin_list, str) or len(plugin_list) == 0:
+            return public.return_message(0, 0, [])
         usually_list = []
         for p in plugin_list:
+            if not isinstance(p, dict) or 'plugin_name' not in p:
+                continue
             plugin_info = self.get_soft_find(p['plugin_name'])
             if plugin_info['status'] == 0:
                 plugin_info = plugin_info['message']
-                # public.print_log("获取常用插件   ---{}".format(plugin_info))
                 if plugin_info.get('setup', False):
                     usually_list.append(plugin_info)
             if len(usually_list) >= 5: break
@@ -3483,6 +3490,19 @@ class panelPlugin:
                     public.writeFile(apache_config_file, apache_config)
                     return False
                 return True
-        else:
-            return False
+        return False
 ###################监控报表补丁 end###############################
+
+    # 清除clamav插件定时任务
+    def clear_clamav(self):
+        try:
+            task = public.M('crontab').where('name=?', ('[Do not delete] clamav_update_task',)).find()
+            if task:
+                import crontab_v2 as crontab
+                obj = public.to_dict_obj({'id': task['id']})
+                crontab.crontab().DelCrontab(obj)
+
+            return
+        except:
+            pass
+

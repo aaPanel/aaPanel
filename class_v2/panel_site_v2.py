@@ -880,8 +880,8 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 else:
                     db_name = public.ensure_unique_db_name(get.datauser)
 
-                get.name = db_name.lower()
-                get.db_user = db_name.lower()
+                get.name = db_name
+                get.db_user = db_name
                 get.password = get.datapassword
                 get.address = '127.0.0.1'
                 get.ps = self.siteName
@@ -1669,6 +1669,10 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         # 删除配置文件
         confPath = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
         if os.path.exists(confPath): os.remove(confPath)
+
+        # 删除多服务切换备份文件
+        conf_bar= self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf.bar.bar'
+        if os.path.exists(conf_bar): os.remove(conf_bar)
 
         confPath = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
         if os.path.exists(confPath): os.remove(confPath)
@@ -3989,21 +3993,22 @@ listener SSL443 {{
             return public.return_message(-1, 0, str(ex))
 
         path = public.M('sites').where('id=?', (get.id,)).getField('path')
-        if not os.path.exists(path):
-            checks = ['/', '/usr', '/etc']
-            if path in checks:
-                data = {}
-                data['dirs'] = []
-                data['binding'] = []
-                return data
-            public.ExecShell('mkdir -p ' + path)
-            public.ExecShell('chmod 755 ' + path)
-            public.ExecShell('chown www:www ' + path)
-            get.path = path
-            self.SetDirUserINI(get)
-            siteName = public.M('sites').where('id=?', (get.id,)).getField('name')
-            public.write_log_gettext('Site manager', "Site [{}], document root [{}] does NOT exist, recreated!",
-                                     (siteName, path))
+        if isinstance(path, str) and path.startswith('/'):
+            if not os.path.exists(path):
+                checks = ['/', '/usr', '/etc']
+                if path in checks:
+                    data = {}
+                    data['dirs'] = []
+                    data['binding'] = []
+                    return data
+                public.ExecShell('mkdir -p ' + path)
+                public.ExecShell('chmod 755 ' + path)
+                public.ExecShell('chown www:www ' + path)
+                get.path = path
+                self.SetDirUserINI(get)
+                siteName = public.M('sites').where('id=?', (get.id,)).getField('name')
+                public.write_log_gettext('Site manager', "Site [{}], document root [{}] does NOT exist, recreated!",
+                                         (siteName, path))
         dirnames = []
         # 取运行目录
         run_path = self.GetRunPath(get)['message']['result']
@@ -4416,11 +4421,17 @@ server
                 conf = public.readFile(file)
                 domain = find['domain']
                 rep = "\n#BINDING-" + domain + "-START(.|\n)+BINDING-" + domain + "-END"
-                tmp = re.search(rep, conf).group()
-                dirConf = tmp.replace('rewrite/' + site['name'] + '.conf;',
-                                      'rewrite/' + site['name'] + '_' + find['path'] + '.conf;')
-                conf = conf.replace(tmp, dirConf)
-                public.writeFile(file, conf)
+                match = re.search(rep, conf)
+                if match:
+                    tmp = match.group()
+                    dirConf = tmp.replace(
+                        'rewrite/' + site['name'] + '.conf;',
+                        'rewrite/' + site['name'] + '_' + find['path'] + '.conf;'
+                    )
+                    conf = conf.replace(tmp, dirConf)
+                    public.writeFile(file, conf)
+                else:
+                    public.WriteLog('Site manager', f"Subdirectory binding tag missing: {domain}, unable to automatically update rewrite references")
         data = {}
         return_status = -1
         if os.path.exists(filename):
@@ -5573,6 +5584,8 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
             "rewritedir": json.loads(get.rewritedir),
 
         })
+        self.__write_config(self.__proxyfile, proxyUrl)
+
         # 多服务下
         if public.get_multi_webservice_status():
             if not site['service_type'] or site['service_type'] == 'nginx':
@@ -5597,7 +5610,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
             if status["status"] == -1:
                 return status
 
-        self.__write_config(self.__proxyfile, proxyUrl)
+
         if get.proxydir == '/':
             get.version = '00'
             get.siteName = get.sitename
@@ -6631,8 +6644,16 @@ location %s
 
     # 取日志状态
     def GetLogsStatus(self, get):
-        site_name = getattr(get, 'name', None)
-        if not site_name or not isinstance(site_name, str):
+        if not hasattr(get, 'name') or not get.name:
+            return public.return_message(-1, 0, "Missing site name")
+        if isinstance(get.name, list):
+            site_name = get.name[0] if get.name else ''
+        elif isinstance(get.name, str):
+            site_name = get.name
+        else:
+            site_name = str(get.name)
+        site_name = site_name.strip()
+        if not site_name:
             return public.return_message(0, 0, True)
         filename = public.GetConfigValue('setup_path') + '/panel/vhost/' + public.get_webserver() + '/' + get.name + '.conf'
         if public.get_webserver() == 'openlitespeed':
@@ -6986,7 +7007,8 @@ location %s
 
         dirnames = []
         dirnames.append('/')
-        if not os.path.exists(sitePath): os.makedirs(sitePath)
+        if not os.path.exists(sitePath):
+            os.makedirs(sitePath, exist_ok=True)
         for filename in os.listdir(sitePath):
             try:
                 json.dumps(filename)
@@ -12393,3 +12415,163 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
 
         return conf_files
     # ======================网站多服务 end==============================
+
+    # ========================网站全局设置 start=========================
+    # 获取网站全局设置
+    def get_site_global(self, get):
+        status = {}
+        cdn_ip_conf_file = "{}/vhost/nginx/real_cdn_ip.conf".format(public.get_panel_path())
+
+
+        # 获取cdn状态, 非nginx或多服务下默认为false
+        if public.get_webserver() in ['apache', 'openlitespeed']:
+            status = {"cdn_status": False, "white_ips": "", "header_cdn": "", "cdn_recursive": False}
+        else:
+            cdn_conf = public.readFile(cdn_ip_conf_file)
+            if not cdn_conf:
+                # 判断主配置中存在自定义
+                cdn_status = False
+                nginx_path = public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf'
+                config = public.readFile(nginx_path)
+                if config:
+                    if 'real_ip_header' in config and 'set_real_ip_from' in config:
+                        cdn_status = True
+
+                status = {"cdn_status": cdn_status, "white_ips": "", "header_cdn": "", "cdn_recursive": False}
+            else:
+                status['cdn_status'] = True
+                status['cdn_recursive'] = False
+                status['header_cdn'] = ""
+                status['white_ips'] = ""
+                try:
+                    if cdn_conf:
+                        white_ips = ""
+                        for line in cdn_conf.split('\n'):
+                            dat = line.strip().strip(";")
+                            if dat.startswith("set_real_ip_from"):
+                                white_ips += dat.split()[1] + "\n"
+                            elif dat.startswith("real_ip_header"):
+                                status['header_cdn'] = dat.split()[1]
+                            elif dat.startswith("real_ip_recursive"):
+                                status['cdn_recursive'] = True
+                        if white_ips:
+                            status['white_ips'] = white_ips.strip("\n")
+                except:
+                    return public.return_message(-1, 0, public.lang("An error occurred when parsing the {} configuration file. Please check if the format is normal.",cdn_ip_conf_file))
+
+        # ===
+
+        return public.return_message(0, 0,status)
+
+    # 设置全局配置
+    def set_site_global(self, get):
+        # 设置CDN
+        if public.get_webserver() in ['apache', 'openlitespeed'] and get.get('cdn_switch', 0) in [1,'1']:
+            return public.return_message(-1,0,public.lang("CDN Settings only support nginx mode!") )
+
+        ok, msg = self. set_cdn_status(get)
+        if not ok:
+            return public.return_message(-1,0, f"CDN setup failed: {msg}" )
+
+        return public.return_message(0, 0 ,public.lang("The overall success of the website"))
+
+    # 设置CDN代理状态
+    def set_cdn_status(self, get):
+        try:
+            cdn_switch = int(get.get('cdn_switch', 0))
+            header_cdn = get.get("header_cdn").strip()
+            if not header_cdn and cdn_switch == 1:
+                return False,public.lang("CDN header cannot be empty！")
+
+            white_ips = get.get("white_ips", "")
+            recursive = get.get("recursive", True)
+
+            # 处理nginx访问日志ip
+            white_ip_list = []
+            if white_ips:
+                import ipaddress
+                for ip in white_ips.split("\n"):
+                    ip = ip.strip()
+                    try:
+                        ipaddress.ip_address(ip)
+                        white_ip_list.append(ip)
+                    except:
+                        try:
+                            ipaddress.ip_network(ip)
+                            white_ip_list.append(ip)
+                        except:
+                            continue
+            white_ip_list = ["0.0.0.0/0", "::/0"] if not white_ip_list else white_ip_list
+
+            if re.search(r"\s+", header_cdn):
+                return False, public.lang("The request header cannot contain Spaces")
+
+            cdn_ip_conf_file = "{}/vhost/nginx/real_cdn_ip.conf".format(public.get_panel_path())
+            if not os.path.isfile(cdn_ip_conf_file):
+                public.writeFile(cdn_ip_conf_file, '')
+                nginx_conf_file = public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf'
+                config = public.readFile(nginx_conf_file)
+                if not config:
+                    return False, public.lang('The nginx configuration file does not exist')
+
+                data_list = []
+                for line in config.split('\n'):
+                    if 'real_ip_header' in line or 'set_real_ip_from' in line:
+                        continue
+                    data_list.append(line)
+                public.writeFile(nginx_conf_file, '\n'.join(data_list))
+                if public.checkWebConfig() is not True:
+                    return False, public.lang('There is an error in the configuration file. Please check it!')
+                else:
+                    public.webservice_operation('nginx', 'reload')
+            if cdn_switch in (1, '1'):
+                real_ip_from = ""
+                for white_ip in white_ip_list:
+                    real_ip_from += "set_real_ip_from {};\n".format(white_ip)
+                public.WriteFile(cdn_ip_conf_file, """
+            {}real_ip_header {};{}
+            """.format(real_ip_from, header_cdn, "" if recursive not in ['true', True] else "\nreal_ip_recursive on;"))
+                public.webservice_operation('nginx','reload')
+
+            else:
+                public.writeFile(cdn_ip_conf_file, '')
+                public.webservice_operation('nginx','reload')
+            return True, ''
+        except Exception as e:
+            return False, str(e)
+
+    # 获取常用CDN 预设模板
+    def get_cdn_ip(self, get):
+        import requests
+        header_cdn = get.get("header_cdn", "")
+
+        if not header_cdn:
+            return public.return_message(-1, 0, "The request header cannot be empty")
+
+        all_ips = []
+
+        # 获取cloudflare IP 段
+        if header_cdn == 'Cf-Connecting-IP':
+            url_v4 = "https://www.cloudflare.com/ips-v4"
+            url_v6 = "https://www.cloudflare.com/ips-v6"
+            try:
+                # 获取 IPv4 地址段
+                response_v4 = requests.get(url_v4, timeout=10)
+                if response_v4.status_code == 200:
+                    ips_v4 = [ip.strip() for ip in response_v4.text.splitlines() if ip.strip()]
+                    all_ips.extend(ips_v4)
+
+                # 获取 IPv6 地址段
+                response_v6 = requests.get(url_v6, timeout=10)
+                if response_v6.status_code == 200:
+                    ips_v6 = [ip.strip() for ip in response_v6.text.splitlines() if ip.strip()]
+                    all_ips.extend(ips_v6)
+
+            except Exception as e:
+                pass
+        # 默认返回
+        if not all_ips:
+            all_ips = ["0.0.0.0/0", "::/0"]
+
+        return public.return_message(0, 0, "\n".join(all_ips))
+    # ========================网站全局设置 end=========================

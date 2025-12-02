@@ -322,12 +322,6 @@ rm -f /tmp/install_yara.lock
 
                         return True, "yara_{}_{}".format(category, rule_name)
 
-                except yara.TimeoutError:
-                    # public.print_log("Yara scan timeout for {} in {}".format(file_path, category))
-                    pass
-                except yara.Error as e:
-                    # public.print_log("Yara scan error for {} in {}: {}".format(file_path, category, str(e)))
-                    pass
                 except Exception as e:
                     # public.print_log("Unexpected error scanning {} in {}: {}".format(file_path, category, str(e)))
                     pass
@@ -983,10 +977,6 @@ class main(projectBase):
         if not os.path.exists(self.__path):
             os.makedirs(self.__path, mode=0o755)
         self.__config = Config(os.path.join(self.__path, 'config.json'))
-
-        # 删除原定时任务。此任务移动至task.py中
-        if self.__config.config['dynamic_detection']:
-            self._remove_webshell_detection_task()
 
         # 创建日志目录
         self.__log_dir = os.path.join(self.__path, 'log')
@@ -4251,20 +4241,6 @@ class main(projectBase):
         except Exception as e:
             # public.print_log("获取安全动态失败: {}".format(str(e)))
             return public.return_message(-1,0,{'events': []})
-
-    # 两个版本后删除，7/14
-    def _remove_webshell_detection_task(self):
-        """移除 原 Webshell 检测定时任务"""
-        task_list = public.M('crontab').where('name=?', ('[Do not delete] Malicious file scanning task',)).field('id').select()
-        if not task_list:
-            return True
-
-        import crontab_v2 as crontab
-        crontab_main = crontab.crontab()
-
-        for i in task_list:
-            crontab_main.DelCrontab({'id': i['id']})
-        return True
 
     # 此处重构原宝塔忽略文件：取消误报上传，支持批量忽略
     def ignore_file(self, get):

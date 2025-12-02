@@ -8,8 +8,14 @@ import os.path
 import shutil
 import threading
 import time
+import sys
 from datetime import datetime
 from typing import Tuple, Dict
+
+if not "class/" in sys.path:
+    sys.path.insert(0, "class/")
+if not "class_v2/" in sys.path:
+    sys.path.insert(0, "class_v2/")
 
 import public
 

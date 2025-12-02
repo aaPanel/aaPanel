@@ -1280,7 +1280,7 @@ class config:
  # 取Session缓存方式
     def GetSessionConf(self,get):
         filename = '/www/server/php/' + get.version + '/etc/php.ini'
-        if public.get_webserver() == 'openlitespeed':
+        if public.get_webserver() == 'openlitespeed' and not public.get_multi_webservice_status():
             filename = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version,get.version[0],get.version[1])
             if os.path.exists('/etc/redhat-release'):
                 filename = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
@@ -1341,7 +1341,7 @@ class config:
         filename = '/www/server/php/' + get.version + '/etc/php.ini'
         filename_ols = None
         ols_exist = os.path.exists("/usr/local/lsws/bin/lswsctrl")
-        if ols_exist:
+        if ols_exist and not public.get_multi_webservice_status():
             filename_ols = '/usr/local/lsws/lsphp{}/etc/php/{}.{}/litespeed/php.ini'.format(get.version, get.version[0],
                                                                                         get.version[1])
             if os.path.exists('/etc/redhat-release'):
@@ -1362,7 +1362,7 @@ class config:
             rep = r'session.save_handler\s*=\s*(.+)\r?\n'
             val = r'session.save_handler = ' + g + '\n'
             phpini = re.sub(rep, val, phpini)
-            if not ols_exist:
+            if not ols_exist or public.get_multi_webservice_status():
                 if g == "memcached":
                     if not re.search("memcached.so", phpini):
                         return public.return_msg_gettext(False, 'Please install the {} extension first.', (g,))

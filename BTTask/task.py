@@ -54,12 +54,27 @@ task_obj.not_web = True
 bt_box_task = task_obj.start_task_new
 
 
-def task_ExecShell(fucn_name: str):
+def task_ExecShell(fucn_name: str, **kw):
     """
     仅运行 /www/server/panel/BTTask/task_script.py 下的包装函数
+    可通过 kw 参数扩展前置检查，例如:
+      - kw['paths_exists']: List [str]
+      (例如, 检查邮局插件是否存在
+      paths_exists=['/www/server/panel/plugin/mail_sys/mail_sys_main.py', '/www/vmail'])
+
     """
     if PYTHON_BIN in fucn_name:
         raise ValueError("valid function name required")
+
+    if kw.get("paths_exists") and isinstance(kw["paths_exists"], list):
+        for p in kw["paths_exists"]:
+            try:
+                if not os.path.exists(str(p)):
+                    logger.debug(f"Skip task [{fucn_name}]: path exists check failed - '{p}' not found")
+                    return
+            except Exception as e:
+                raise ValueError(f"Invalid path in paths_exists: '{p}', error: {e}")
+
     cmd = f"{PYTHON_BIN} /www/server/panel/BTTask/task_script.py {fucn_name}"
     _, err = public.ExecShell(cmd)
     if err:
@@ -70,7 +85,6 @@ def task_ExecShell(fucn_name: str):
 # 系统监控任务
 # noinspection PyUnusedLocal
 def systemTask():
-    # 取内存使用率
     def GetMemUsed():
         try:
             mem = psutil.virtual_memory()
@@ -95,8 +109,7 @@ def systemTask():
         data['safe'] = data['max'] * 0.75
         return data
 
-    import process_task
-
+    cycle = 60
     try:
         filename = '{}/data/control.conf'.format(BASE_PATH)
         with db.Sql() as sql:
@@ -189,383 +202,143 @@ def systemTask():
 
             sql.close()
 
+        count = 0
         reloadNum = 0
-        diskio_1 = None
-        diskio_2 = None
-        networkInfo = None
-        cpuInfo = None
-        diskInfo = None
+        diskio_1 = diskio_2 = networkInfo = cpuInfo = diskInfo = None
         network_up = {}
         network_down = {}
-        cycle = 60
+        import process_task
         proc_task_obj = process_task.process_task()
 
-        if not os.path.exists(filename):
-            return
+        while True:
+            if not os.path.exists(filename):
+                time.sleep(10)
+                continue
 
-        try:
-            day = int(public.ReadFile(filename))
-            if day < 1:
-                return
-        except:
             day = 30
+            try:
+                day = int(public.readFile(filename))
+                if day < 1:
+                    time.sleep(10)
+                    continue
+            except:
+                day = 30
 
-        addtime = int(time.time())
-        deltime = addtime - (day * 86400)
-        # 取当前CPU Io
-        tmp = {'used': proc_task_obj.get_monitor_list(addtime), 'mem': GetMemUsed()}
-        cpuInfo = tmp
+            addtime = int(time.time())
+            deltime = addtime - (day * 86400)
+            # 取当前CPU Io
+            tmp = {'used': proc_task_obj.get_monitor_list(addtime), 'mem': GetMemUsed()}
+            cpuInfo = tmp
 
-        # 取当前网络Io
-        networkIo_list = psutil.net_io_counters(pernic=True)
-        tmp = {'upTotal': 0, 'downTotal': 0, 'up': 0, 'down': 0, 'downPackets': {}, 'upPackets': {}}
+            # 取当前网络Io
+            networkIo_list = psutil.net_io_counters(pernic=True)
+            tmp = {'upTotal': 0, 'downTotal': 0, 'up': 0, 'down': 0, 'downPackets': {}, 'upPackets': {}}
 
-        for k in networkIo_list.keys():
-            networkIo = networkIo_list[k][:4]
-            if not k in network_up.keys():
+            for k in networkIo_list.keys():
+                networkIo = networkIo_list[k][:4]
+                if not k in network_up.keys():
+                    network_up[k] = networkIo[0]
+                    network_down[k] = networkIo[1]
+
+                tmp['upTotal'] += networkIo[0]
+                tmp['downTotal'] += networkIo[1]
+                tmp['downPackets'][k] = round(
+                    float((networkIo[1] - network_down[k]) / 1024) / cycle, 2)
+                tmp['upPackets'][k] = round(
+                    float((networkIo[0] - network_up[k]) / 1024) / cycle, 2)
+                tmp['up'] += tmp['upPackets'][k]
+                tmp['down'] += tmp['downPackets'][k]
+
                 network_up[k] = networkIo[0]
                 network_down[k] = networkIo[1]
 
-            tmp['upTotal'] += networkIo[0]
-            tmp['downTotal'] += networkIo[1]
-            tmp['downPackets'][k] = round(
-                float((networkIo[1] - network_down[k]) / 1024) / cycle, 2)
-            tmp['upPackets'][k] = round(
-                float((networkIo[0] - network_up[k]) / 1024) / cycle, 2)
-            tmp['up'] += tmp['upPackets'][k]
-            tmp['down'] += tmp['downPackets'][k]
+            networkInfo = tmp
 
-            network_up[k] = networkIo[0]
-            network_down[k] = networkIo[1]
-
-        networkInfo = tmp
-
-        # 取磁盘Io
-        disk_ios = True
-        try:
-            if os.path.exists('/proc/diskstats'):
-                diskio_2 = psutil.disk_io_counters()
-
-                if not diskio_1:
-                    diskio_1 = diskio_2
-                tmp = {'read_count': int((diskio_2.read_count - diskio_1.read_count) / cycle),
-                       'write_count': int((diskio_2.write_count - diskio_1.write_count) / cycle),
-                       'read_bytes': int((diskio_2.read_bytes - diskio_1.read_bytes) / cycle),
-                       'write_bytes': int((diskio_2.write_bytes - diskio_1.write_bytes) / cycle),
-                       'read_time': int((diskio_2.read_time - diskio_1.read_time) / cycle),
-                       'write_time': int((diskio_2.write_time - diskio_1.write_time) / cycle)}
-
-                if not diskInfo:
-                    diskInfo = tmp
-
-                diskInfo['read_count'] = tmp['read_count']
-                diskInfo['write_count'] = tmp['write_count']
-                diskInfo['read_bytes'] = tmp['read_bytes']
-                diskInfo['write_bytes'] = tmp['write_bytes']
-                diskInfo['read_time'] = tmp['read_time']
-                diskInfo['write_time'] = tmp['write_time']
-
-                diskio_1 = diskio_2
-        except:
-            logger.info(public.get_error_info())
-            disk_ios = False
-
-        try:
-            sql = db.Sql().dbfile('system')
-            data = (cpuInfo['used'], cpuInfo['mem'], addtime)
-            sql.table('cpuio').add('pro,mem,addtime', data)
-            sql.table('cpuio').where("addtime<?", (deltime,)).delete()
-            data = (networkInfo['up'], networkInfo['down'], networkInfo['upTotal'], networkInfo['downTotal'],
-                    json.dumps(networkInfo['downPackets']), json.dumps(networkInfo['upPackets']), addtime)
-            sql.table('network').add('up,down,total_up,total_down,down_packets,up_packets,addtime', data)
-            sql.table('network').where("addtime<?", (deltime,)).delete()
-            if os.path.exists('/proc/diskstats') and disk_ios:
-                data = (diskInfo['read_count'], diskInfo['write_count'], diskInfo['read_bytes'],
-                        diskInfo['write_bytes'], diskInfo['read_time'], diskInfo['write_time'], addtime)
-                sql.table('diskio').add(
-                    'read_count,write_count,read_bytes,write_bytes,read_time,write_time,addtime', data)
-                sql.table('diskio').where("addtime<?", (deltime,)).delete()
-
-            # LoadAverage
-            load_average = GetLoadAverage()
-            lpro = round(
-                (load_average['one'] / load_average['max']) * 100, 2)
-            if lpro > 100:
-                lpro = 100
-            sql.table('load_average').add('pro,one,five,fifteen,addtime',
-                                          (lpro, load_average['one'], load_average['five'], load_average['fifteen'],
-                                           addtime))
-            sql.table('load_average').where("addtime<?", (deltime,)).delete()
-            sql.close()
-
-            lpro = None
-            load_average = None
-            cpuInfo = None
-            networkInfo = None
-            diskInfo = None
-            data = None
-            reloadNum += 1
-            if reloadNum > 1440:
-                reloadNum = 0
-
-        except Exception as ex:
-            logger.error(str(ex))
-    except Exception as e:
-        logger.error(e)
-    finally:
-        import gc
-        gc.collect()
-
-
-# 处理指定PHP版本
-def startPHPVersion(version):
-    try:
-        fpm = '/etc/init.d/php-fpm-' + version
-        php_path = '/www/server/php/' + version + '/sbin/php-fpm'
-        if not os.path.exists(php_path):
-            if os.path.exists(fpm): os.remove(fpm)
-            return False
-
-        # 尝试重载服务
-        os.system(fpm + ' start')
-        os.system(fpm + ' reload')
-        if checkPHPVersion(version): return True
-
-        # 尝试重启服务
-        cgi = '/tmp/php-cgi-' + version + '.sock'
-        pid = '/www/server/php/' + version + '/var/run/php-fpm.pid'
-        os.system('pkill -9 php-fpm-' + version)
-        time.sleep(0.5)
-        if os.path.exists(cgi):
-            os.remove(cgi)
-        if os.path.exists(pid):
-            os.remove(pid)
-        os.system(fpm + ' start')
-        if checkPHPVersion(version):
-            return True
-        # 检查是否正确启动
-        if os.path.exists(cgi):
-            return True
-        return False
-    except Exception as ex:
-        logger.info(ex)
-        return True
-
-
-# 检查指定PHP版本
-def checkPHPVersion(version):
-    try:
-        cgi_file = '/tmp/php-cgi-{}.sock'.format(version)
-        if os.path.exists(cgi_file):
-            init_file = '/etc/init.d/php-fpm-{}'.format(version)
-            if os.path.exists(init_file):
-                init_body = public.ReadFile(init_file)
-                if not init_body: return True
-            uri = "/phpfpm_" + version + "_status?json"
-            result = public.request_php(version, uri, '')
-            json.loads(result)
-        return True
-    except:
-        logger.info("PHP-{} unreachable detected".format(version))
-        return False
-
-
-class Check502Task:
-    @staticmethod
-    def siteEdate():
-        mEdate = time.strftime('%Y-%m-%d', time.localtime())
-        edate_pl = '/www/server/panel/data/edate.pl'
-        try:
-            oldEdate = public.ReadFile(edate_pl)
-            if not oldEdate:
-                oldEdate = '0000-00-00'
-            mEdate = time.strftime('%Y-%m-%d', time.localtime())
-            if oldEdate == mEdate:
-                return False
-            os.system("nohup " + PYTHON_BIN + " /www/server/panel/script/site_task.py > /dev/null 2>&1 &")
-        except Exception:
-            logger.info(public.get_error_info())
-        finally:
-            del oldEdate
-            public.writeFile(edate_pl, mEdate)
-
-    @staticmethod
-    def sess_expire():
-        # session过期处理
-        try:
-            sess_path = '{}/data/session'.format(BASE_PATH)
-            if not os.path.exists(sess_path):
-                return
-            s_time = time.time()
-            f_list = os.listdir(sess_path)
-            f_num = len(f_list)
-            for fname in f_list:
-                filename = '/'.join((sess_path, fname))
-                fstat = os.stat(filename)
-                f_time = s_time - fstat.st_mtime
-                if f_time > 3600:
-                    os.remove(filename)
-                    continue
-                if fstat.st_size < 256 and len(fname) == 32:
-                    if f_time > 60 or f_num > 30:
-                        os.remove(filename)
-                        continue
-            del f_list
-        except Exception as ex:
-            logger.info(str(ex))
-
-    @staticmethod
-    # MySQL配额检查
-    def mysql_quota_check():
-        os.system("nohup " + PYTHON_BIN + " /www/server/panel/script/mysql_quota.py > /dev/null 2>&1 &")
-
-    @staticmethod
-    # 检查502错误
-    def check502():
-        try:
-            phpversions = public.get_php_versions()
-            for version in phpversions:
-                if version in ['52', '5.2']: continue
-                php_path = '/www/server/php/' + version + '/sbin/php-fpm'
-                if not os.path.exists(php_path):
-                    continue
-                if checkPHPVersion(version):
-                    continue
-                if startPHPVersion(version):
-                    public.WriteLog('PHP daemon',
-                                    'PHP-' + version + 'processing exception was detected and has been automatically fixed!',
-                                    not_web=True)
-            del phpversions
-        except Exception as ex:
-            logger.info(ex)
-
-    @staticmethod
-    def auto_backup_panel():
-        public.auto_backup_panel()
-
-    @staticmethod
-    # 更新 GeoLite2-Country.json
-    def flush_geoip():
-        """
-            @name 检测如果大小小于3M或大于1个月则更新
-            @author wzz <2024/5/21 下午5:33>
-            @param "data":{"参数名":""} <数据类型> 参数描述
-            @return dict{"status":True/False,"msg":"提示信息"}
-        """
-        import gc
-        _ips_path = "/www/server/panel/data/firewall/GeoLite2-Country.json"
-        m_time_file = "/www/server/panel/data/firewall/geoip_mtime.pl"
-        if not os.path.exists(_ips_path):
-            os.system("mkdir -p /www/server/panel/data/firewall")
-            os.system("touch {}".format(_ips_path))
-
-        try:
-            if not os.path.exists(_ips_path):
-                public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)),
-                                    _ips_path)
-                public.writeFile(m_time_file, str(int(time.time())))
-                return
-
-            _ips_size = os.path.getsize(_ips_path)
-            if os.path.exists(m_time_file):
-                _ips_mtime = int(public.readFile(m_time_file))
-            else:
-                _ips_mtime = 0
-
-            if _ips_size < 3145728 or time.time() - _ips_mtime > 2592000:
-                core = psutil.cpu_count()
-                delay = round(1 / (core if core > 0 else 1), 2)
-                os.system("rm -f {}".format(_ips_path))
-                os.system("rm -f {}".format(m_time_file))
-                public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)),
-                                    _ips_path)
-                public.writeFile(m_time_file, str(int(time.time())))
-                if os.path.exists(_ips_path):
-                    try:
-                        import json
-                        from xml.etree.ElementTree import ElementTree, Element
-                        from safeModelV2.firewallModel import main as firewall
-
-                        firewallobj = firewall()
-                        ips_list = json.loads(public.readFile(_ips_path))
-                        if ips_list:
-                            bash = os.path.exists('/usr/bin/apt-get') and not os.path.exists("/etc/redhat-release")
-                            if bash:
-                                btsh_path = "/etc/ufw/btsh"
-                                if not os.path.exists(btsh_path):
-                                    os.makedirs(btsh_path)
-
-                                write_map = {}
-                                for ip_dict in ips_list:
-                                    tmp_path = '{}/{}.sh'.format(btsh_path, ip_dict['brief'])
-                                    commands = [
-                                        f'ipset add {ip_dict["brief"]} {ip}'
-                                        for ip in ip_dict.get("ips", [])
-                                        if firewallobj.verify_ip(ip)
-                                    ]
-                                    if commands:
-                                        script_content = "#!/bin/bash\n" + "\n".join(commands) + "\n"
-                                        write_map[tmp_path] = script_content
-                                    time.sleep(delay)
-
-                                for path, content in write_map.items():
-                                    public.writeFile(path, content)
-                                    time.sleep(0.05)
-                            else:
-                                for ip_dict in ips_list:
-                                    xml_path = "/etc/firewalld/ipsets/{}.xml.old".format(ip_dict['brief'])
-                                    xml_body = """<?xml version="1.0" encoding="utf-8"?>
-    <ipset type="hash:net">
-    <option name="maxelem" value="1000000"/>
-    </ipset>
-    """
-                                    if os.path.exists(xml_path):
-                                        public.writeFile(xml_path, xml_body)
-                                    else:
-                                        os.makedirs(os.path.dirname(xml_path), exist_ok=True)
-                                        public.writeFile(xml_path, xml_body)
-
-                                    tree = ElementTree()
-                                    tree.parse(xml_path)
-                                    root = tree.getroot()
-                                    for ip in ip_dict['ips']:
-                                        if firewallobj.verify_ip(ip):
-                                            entry = Element("entry")
-                                            entry.text = ip
-                                            root.append(entry)
-
-                                    firewallobj.format(root)
-                                    tree.write(xml_path, 'utf-8', xml_declaration=True)
-                                    time.sleep(delay)
-                    except:
-                        pass
-        except:
+            # 取磁盘Io
+            disk_ios = True
             try:
-                public.downloadFile(
-                    '{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)), _ips_path
-                )
-                public.writeFile(m_time_file, str(int(time.time())))
+                if os.path.exists('/proc/diskstats'):
+                    diskio_2 = psutil.disk_io_counters()
+
+                    if not diskio_1:
+                        diskio_1 = diskio_2
+                    tmp = {'read_count': int((diskio_2.read_count - diskio_1.read_count) / cycle),
+                           'write_count': int((diskio_2.write_count - diskio_1.write_count) / cycle),
+                           'read_bytes': int((diskio_2.read_bytes - diskio_1.read_bytes) / cycle),
+                           'write_bytes': int((diskio_2.write_bytes - diskio_1.write_bytes) / cycle),
+                           'read_time': int((diskio_2.read_time - diskio_1.read_time) / cycle),
+                           'write_time': int((diskio_2.write_time - diskio_1.write_time) / cycle)}
+
+                    if not diskInfo:
+                        diskInfo = tmp
+
+                    diskInfo['read_count'] = tmp['read_count']
+                    diskInfo['write_count'] = tmp['write_count']
+                    diskInfo['read_bytes'] = tmp['read_bytes']
+                    diskInfo['write_bytes'] = tmp['write_bytes']
+                    diskInfo['read_time'] = tmp['read_time']
+                    diskInfo['write_time'] = tmp['write_time']
+
+                    diskio_1 = diskio_2
             except:
-                pass
-        finally:
-            gc.collect()
+                logger.info(public.get_error_info())
+                disk_ios = False
 
+            try:
+                with db.Sql().dbfile("system") as sql:
+                    data = (cpuInfo['used'], cpuInfo['mem'], addtime)
+                    sql.table('cpuio').add('pro,mem,addtime', data)
+                    sql.table('cpuio').where("addtime<?", (deltime,)).delete()
+                    data = (networkInfo['up'], networkInfo['down'], networkInfo['upTotal'], networkInfo['downTotal'],
+                            json.dumps(networkInfo['downPackets']), json.dumps(networkInfo['upPackets']), addtime)
+                    sql.table('network').add('up,down,total_up,total_down,down_packets,up_packets,addtime', data)
+                    sql.table('network').where("addtime<?", (deltime,)).delete()
+                    if os.path.exists('/proc/diskstats') and disk_ios:
+                        data = (diskInfo['read_count'], diskInfo['write_count'], diskInfo['read_bytes'],
+                                diskInfo['write_bytes'], diskInfo['read_time'], diskInfo['write_time'], addtime)
+                        sql.table('diskio').add(
+                            'read_count,write_count,read_bytes,write_bytes,read_time,write_time,addtime', data)
+                        sql.table('diskio').where("addtime<?", (deltime,)).delete()
 
-# 每10分钟, 502错误检查线程 (夹杂其他任务)
-def check502Task():
-    try:
-        check_task = Check502Task()
-        check_task.auto_backup_panel()
-        check_task.check502()
-        check_task.mysql_quota_check()
-        check_task.siteEdate()
-        check_task.sess_expire()
-        check_task.flush_geoip()
-    except Exception as ex:
-        logger.info(ex)
+                    # LoadAverage
+                    load_average = GetLoadAverage()
+                    lpro = round(
+                        (load_average['one'] / load_average['max']) * 100, 2)
+                    if lpro > 100:
+                        lpro = 100
+                    sql.table('load_average').add('pro,one,five,fifteen,addtime',
+                                                  (lpro, load_average['one'], load_average['five'],
+                                                   load_average['fifteen'],
+                                                   addtime))
+                    sql.table('load_average').where("addtime<?", (deltime,)).delete()
+
+                lpro = None
+                load_average = None
+                cpuInfo = None
+                networkInfo = None
+                diskInfo = None
+                data = None
+                count = 0
+                reloadNum += 1
+                if reloadNum > 1440:
+                    reloadNum = 0
+            except Exception:
+                import traceback
+                logger.error(traceback.format_exc())
+            del tmp
+            time.sleep(cycle)
+            count += 1
+    except Exception:
+        import traceback
+        logger.error(traceback.format_exc())
     finally:
         import gc
         gc.collect()
+
+
+# 每10分钟, 原来旧的502错误检查线程 (夹杂其他任务)
+def check502Task():
+    task_ExecShell("check502task")
 
 
 # 每1小时检查面板证书是否有更新
@@ -595,6 +368,7 @@ def update_pid_file(pid):
 
 
 # 面板守护
+# todo
 def daemon_panel():
     def find_panel_pid():
         for pid in psutil.pids():
@@ -706,6 +480,8 @@ def get_panel_pid():
 
 # 定时任务去检测邮件信息
 def send_mail_time():
+    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists('/www/vmail'):
+        return
     os.system("nohup " + PYTHON_BIN + " /www/server/panel/script/mail_task.py > /dev/null 2>&1 &")
 
 
@@ -882,12 +658,17 @@ def count_ssh_logs():
 
 # 每天提交一次昨天的邮局发送总数
 def submit_email_statistics():
-    task_ExecShell("submit_email_statistics")
+    task_ExecShell(
+        "submit_email_statistics",
+        paths_exists=[
+            "/www/server/panel/plugin/mail_sys/mail_sys_main.py",
+            "/www/vmail",
+        ])
 
 
 # 每天一次 提交今天之前的统计数据
 def submit_module_call_statistics():
-    task_ExecShell("submit_email_statistics")
+    task_ExecShell("submit_module_call_statistics")
 
 
 def mailsys_domain_restrictions():
@@ -932,44 +713,17 @@ def mailsys_domain_restrictions():
 
 
 def mailsys_domain_blecklisted_alarm():
-    task_ExecShell("mailsys_domain_blecklisted_alarm")
+    task_ExecShell(
+        "mailsys_domain_blecklisted_alarm",
+        paths_exists=[
+            "/www/server/panel/plugin/mail_sys/mail_sys_main.py",
+            "/www/vmail",
+        ]
+    )
 
 
 def update_vulnerabilities():
     task_ExecShell("update_vulnerabilities")
-
-
-# 邮件域名邮箱使用限额告警
-def mailsys_quota_alarm1():
-    if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists('/www/vmail'):
-        return
-
-    yesterday = datetime.now() - timedelta(days=1)
-    yesterday = yesterday.strftime('%Y-%m-%d')
-    cloud_yesterday_submit = '{}/data/{}_mailsys_quota_alarm.pl'.format(public.get_panel_path(), yesterday)
-    if os.path.exists(cloud_yesterday_submit):
-        return
-
-    script = '/www/server/panel/plugin/mail_sys/script/check_quota_alerts.py'
-    if not os.path.exists(script):
-        return
-
-    if os.path.exists("/www/server/panel/plugin/mail_sys"):
-        sys.path.insert(1, "/www/server/panel/plugin/mail_sys")
-
-    cmd = f"btpython {script}"
-    public.ExecShell(cmd)
-
-    # 添加标记
-    public.writeFile(cloud_yesterday_submit, '1')
-    # 删除前天标记
-    before_yesterday = datetime.now() - timedelta(days=2)
-    before_yesterday = before_yesterday.strftime('%Y-%m-%d')
-    cloud_before_yesterday_submit = '{}/data/{}_mailsys_quota_alarm.pl'.format(public.get_panel_path(),
-                                                                               before_yesterday)
-    if os.path.exists(cloud_before_yesterday_submit):
-        os.remove(cloud_before_yesterday_submit)
-    return
 
 
 # 邮件域名邮箱使用限额告警
@@ -982,7 +736,7 @@ def mailsys_quota_alarm():
         script = '/www/server/panel/plugin/mail_sys/script/check_quota_alerts.py'
         if not os.path.exists(script):
             return
-        # todo ???
+
         time.sleep(3600)  # 进入脚本前等待 和更新配额错开时间
         cmd = f"btpython {script}"
         public.ExecShell(cmd)
@@ -1008,12 +762,24 @@ def mailsys_update_usage():
 
 # 邮局自动回复
 def auto_reply_tasks():
-    task_ExecShell("auto_reply_tasks")
+    task_ExecShell(
+        "auto_reply_tasks",
+        paths_exists=[
+            "/www/server/panel/plugin/mail_sys/mail_sys_main.py",
+            "/www/vmail",
+        ]
+    )
 
 
 # 邮局自动扫描异常邮箱
 def auto_scan_abnormal_mail():
-    task_ExecShell("auto_scan_abnormal_mail")
+    task_ExecShell(
+        "auto_scan_abnormal_mail",
+        paths_exists=[
+            "/www/server/panel/plugin/mail_sys/mail_sys_main.py",
+            "/www/vmail",
+        ]
+    )
 
 
 # 每6小时aa默认ssl检查
@@ -1022,7 +788,7 @@ def domain_ssl_service():
     task_ExecShell("make_suer_ssl_task")
 
 
-# 每1小时一次检查DNS解析状态
+# 3小时一次检查DNS解析状态
 def dns_checker():
     os.system(
         f"{PYTHON_BIN} /www/server/panel/class_v2/ssl_dnsV2/dns_manager.py"
@@ -1051,6 +817,7 @@ def multi_web_server_daemon():
 
 def soft_task():
     # 执行面板soft corn之类的安装执行任务, from task.py -> def startTask():
+    global pre
 
     # 下载文件
     def DownloadFile(url, filename):
@@ -1076,6 +843,24 @@ def soft_task():
         public.writeFile(exlogPath, json.dumps(speed))
         pre = pre1
 
+    def ExecShell(cmdstring, cwd=None, shell=True, symbol='&>'):
+        try:
+            import shlex
+            import subprocess
+            import time
+            sub = subprocess.Popen(
+                cmdstring + symbol + exlogPath,
+                cwd=cwd,
+                stdin=subprocess.PIPE,
+                shell=shell,
+                bufsize=4096
+            )
+            while sub.poll() is None:
+                time.sleep(0.1)
+            return sub.returncode
+        except:
+            return None
+
     tip_file = "/dev/shm/.panelTask.pl"
     try:
         if os.path.exists(isTask):
@@ -1093,17 +878,15 @@ def soft_task():
                         argv = value['execstr'].split('|bt|')
                         DownloadFile(argv[0], argv[1])
                     elif value['type'] == 'execshell':
-                        public.ExecShell(value['execstr'])
+                        ExecShell(value['execstr'])
                     end = int(time.time())
                     sql.table('tasks').where("id=?", (value['id'],)).save('status,end', ('1', end))
                     if sql.table('tasks').where("status=?", ('0',)).count() < 1:
                         if os.path.exists(isTask):
                             os.remove(isTask)
-                sql.close()
+        public.writeFile(tip_file, str(int(time.time())))
     except Exception as e:
         logger.error(f"start_bt_task error: {e}")
-    finally:
-        public.writeFile(tip_file, str(int(time.time())))
 
 
 # 预安装网站监控报表
@@ -1123,17 +906,35 @@ def find_favicons():
 
 # 邮件日志
 def maillog_event():
-    task_ExecShell("maillog_event")
+    task_ExecShell(
+        "maillog_event",
+        paths_exists=[
+            "/www/server/panel/plugin/mail_sys/mail_sys_main.py",
+            "/www/vmail",
+        ]
+    )
 
 
 # 邮件处理日志聚合
 def aggregate_maillogs_task():
-    task_ExecShell("aggregate_maillogs_task")
+    task_ExecShell(
+        "aggregate_maillogs_task",
+        paths_exists=[
+            "/www/server/panel/plugin/mail_sys/mail_sys_main.py",
+            "/www/vmail",
+        ]
+    )
 
 
 # 邮件自动化发件任务
 def schedule_automations():
-    task_ExecShell("schedule_automations")
+    task_ExecShell(
+        "schedule_automations",
+        paths_exists=[
+            "/www/server/panel/plugin/mail_sys/mail_sys_main.py",
+            "/www/vmail",
+        ]
+    )
 
 
 # 刷新docker app 列表
@@ -1212,13 +1013,15 @@ def task_version_part():
 TASKS = [
     # <核心任务> 面板重启检查, 面板任务2个, 面板授权检查
     {"func": [restart_panel, bt_box_task, soft_task, panel_auth], "interval": 2, "is_core": True},
-    # <核心任务> 面板守护 , 服务守护
-    {"func": [daemon_panel, daemon_service], "interval": 10, "is_core": True},
+    # <核心任务> 服务守护
+    {"func": daemon_service, "interval": 10, "is_core": True},
+    # <核心任务> 系统监控
+    {"func": systemTask, "is_core": True},  # 每1分钟系统监控任务, 常驻, 内置间隔
 
+    # ================================ 分割线 ===============================
     # <普通任务>
-    # func 函数, interval 间隔时间秒s  is_core用常驻线程, 否则排队复用线程
+    # func 函数, interval 间隔时间秒s, 排队复用线程 (打印请用logger, 日志路径 .../logs/task.log)
     {"func": push_msg, "interval": 60},  # 每1分钟面板推送消息
-    {"func": systemTask, "interval": 60},  # 每1分钟系统监控
     {"func": breaking_through, "interval": 60},  # 每分钟防爆破计划任务
 
     {"func": multi_web_server_daemon, "interval": 300},  # 每5分钟多服务守护任务
@@ -1229,11 +1032,12 @@ TASKS = [
 
     {"func": check_panel_msg, "interval": 3600},  # 每1小时面板消息提醒
     {"func": check_panel_ssl, "interval": 3600},  # 每1小时面板证书是否有更新
-    {"func": dns_checker, "interval": 3600},  # 每1小时dns解析验证
-    {"func": find_favicons, "interval": 3600},  # 每1小时找favicons
+    {"func": dns_checker, "interval": 3600 * 3},  # 每3小时dns解析验证
+    {"func": find_favicons, "interval": 43200},  # 每12小时找favicons
     {"func": domain_ssl_service, "interval": 3600},  # 每6小时进行域名SSL服务(内置时间标记, 可提前检查)
     {"func": malicious_file_scanning, "interval": 60 * 60 * 6},  # 每每6小时进行恶意文件扫描
     {"func": count_ssh_logs, "interval": 3600 * 24},  # 每天统计SSH登录日志
+    {"func": submit_module_call_statistics, "interval": 3600},  # 每天一次 提交今天之前的统计数据(内置时间标记, 可提前检查)
 
     {"func": maillog_event, "interval": 60},  # 邮局日志事件监控 event loop事件, 每60秒一次, 起守护作用
     {"func": send_mail_time, "interval": 60 * 3},  # 每3分钟检测邮件信息
@@ -1244,8 +1048,8 @@ TASKS = [
     {"func": auto_scan_abnormal_mail, "interval": 3600 * 2},  # 每2小时自动扫描异常邮箱
     {"func": mailsys_update_usage, "interval": 3600 * 12},  # 每12小时邮局更新域名邮箱使用量
     {"func": submit_email_statistics, "interval": 3600 * 24},  # 每天一次 昨日邮件发送统计
-    {"func": submit_module_call_statistics, "interval": 3600},  # 每天一次 提交今天之前的统计数据(内置时间标记, 可提前检查)
     {"func": mailsys_domain_blecklisted_alarm, "interval": 3600 * 24},  # # 每天一次 邮局黑名单检测
+
     {"func": update_vulnerabilities, "interval": 3600 * 24},  # # 每天一次 更新漏洞信息
     {"func": refresh_dockerapps, "interval": 3600 * 24},  # # 每天一次 更新docker app 列表
 ]
@@ -1253,8 +1057,8 @@ TASKS = [
 
 def thread_register(brain: SimpleBrain, is_core: bool = True):
     if not is_core:  # delay normal tasks
-        logger.info("Normal Task will be jion active after 10s")
-        time.sleep(10)
+        logger.info("Normal Task will be join active after 30s")
+        time.sleep(30)
 
     for index, task in enumerate(TASKS):
         try:

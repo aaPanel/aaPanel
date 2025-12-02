@@ -3756,6 +3756,9 @@ def site_v2(pdata=None):
         'set_site_maintenance',
         'get_wp_security_status',
         'wp_manual_upload',
+        'get_cdn_ip',
+        'set_site_global',
+        'get_site_global',
         # 新增多服务
         'get_multi_webservice_status',
         'switch_multi_webservice_status',
@@ -4545,7 +4548,6 @@ def config_v2(pdata=None):
         'modify_ua',
         'delete_ua',
         'set_cdn_status',
-        'get_cdn_ip',
         'set_auto_favicon',
         'set_theme',
         'set_panel_asset',
@@ -4797,6 +4799,8 @@ def ssl_dns_v2(pdata=None):
         "add_dmarc",
         "add_dkim_spf",
         "dns_checker",
+        "fix_zone",
+        "set_ttl_batch",
     )
     return publicObject(DnsApiObject(), defs, None, pdata)
 

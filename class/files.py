@@ -1967,11 +1967,23 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             webserver = public.get_webserver()
             get.path = get.path.replace("/vhost/null/", "/vhost/{}/".format(webserver))
 
+        # 普通文件才能访问编辑
+        try:
+            import stat
+            file_stat = os.lstat(get.path)
+            if not stat.S_ISREG(file_stat.st_mode):
+                return public.return_msg_gettext(False, public.lang(
+                    "Access to non-regular files (e.g., sockets, devices, directories) is not allowed."))
+        except (OSError, IOError):
+            # 文件不存在或无权限
+            pass
+
+
         if not os.path.exists(get.path):
             if get.path.find('rewrite') == -1:
                 return public.return_msg_gettext(False, public.lang("Configuration file not exist"))
             public.writeFile(get.path,'')
-        if self.__get_ext(get.path) in ['gz','zip','rar','exe','db','pdf','doc','xls','docx','xlsx','ppt','pptx','7z','bz2','png','gif','jpg','jpeg','bmp','icon','ico','pyc','class','so','pyd','sock']:
+        if self.__get_ext(get.path) in ['gz','zip','rar','exe','db','pdf','doc','xls','docx','xlsx','ppt','pptx','7z','bz2','png','gif','jpg','jpeg','bmp','icon','ico','pyc','class','so','pyd']:
             return public.return_msg_gettext(False, public.lang("The file format does not support online editing!"))
         # if os.path.getsize(get.path) > 3145928:
         #     return public.return_msg_gettext(False, public.lang("Cannot edit files larger than 2MB online!"))

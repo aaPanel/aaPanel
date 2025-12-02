@@ -910,6 +910,8 @@ class App(composeMod):
         '''
         if installed_app["m_version"] in ("main", "latest"):
             return False
+        if not self.apps_json or not isinstance(self.apps_json, (list, dict)):
+            return False
 
         for app in self.apps_json:
             if app["appname"] == installed_app["appname"]:

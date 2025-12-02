@@ -4809,6 +4809,17 @@ location %s
 
     # 取日志状态
     def GetLogsStatus(self, get):
+        if not hasattr(get, 'name') or not get.name:
+            return True
+        if isinstance(get.name, list):
+            site_name = get.name[0] if get.name else ''
+        elif isinstance(get.name, str):
+            site_name = get.name
+        else:
+            site_name = str(get.name)
+        site_name = site_name.strip()
+        if not site_name:
+            return True
         filename = public.GetConfigValue(
             'setup_path') + '/panel/vhost/' + public.get_webserver() + '/' + get.name + '.conf'
         if public.get_webserver() == 'openlitespeed':

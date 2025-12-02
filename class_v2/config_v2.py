@@ -536,8 +536,9 @@ class config:
                 public.writeFile('data/panel_backup_number.pl', str(backup_number))
                 time_now = time.time() - (86400 * backup_number)
                 b_path = '{}/panel'.format(public.get_backup_path())
-                public.clear_panel_backup(b_path,backup_number)
-                public.WriteLog('TYPE_PANEL', 'Set the panel backup retention quantity to {} copies'.format(backup_number))
+                if os.path.isdir(b_path):
+                    public.clear_panel_backup(b_path,backup_number)
+                    public.WriteLog('TYPE_PANEL', 'Set the panel backup retention quantity to {} copies'.format(backup_number))
 
             if "auto_backup" in get:
                 not_auto_path = 'data/not_auto_backup.pl'
@@ -650,10 +651,12 @@ class config:
                                      (newPort, get.domain, get.backup_path, get.sites_path, get.address, get.limitip))
             if isReWeb: public.restart_panel()
             return public.return_message(0, 0,  public.lang("Configuration saved"))
-        except:
+        except Exception as ex:
             public.print_log(public.get_error_info())
+            return public.return_message(-1, 0, public.lang("An exception occurred during execution {}", str(ex)))
 
-    # 新方法 9.3 2024.9.26
+
+            # 新方法 9.3 2024.9.26
     def setPanel_bt_new(self, get):
         if not public.IsRestart(): return public.return_message(-1, 0, public.lang("Please run the program when all install tasks finished!"))
         limitip_path = "{}/data/limitip.conf".format(self._setup_path)
@@ -1285,7 +1288,6 @@ class config:
             status = 0 if sps['status'] else -1
             return public.return_message(status, 0, sps['msg'])
         else:
-
             sslConf = self._setup_path + '/data/ssl.pl'
             if os.path.exists(sslConf) and not 'cert_type' in get:
                 # 关闭ssl

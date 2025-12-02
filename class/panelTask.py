@@ -213,6 +213,7 @@ class bt_task:
                 self.execute_task(
                     task_info['id'], task_info['type'], task_info['shell'], task_info['other']
                 )
+            del task_list
         except Exception as e:
             raise e
 

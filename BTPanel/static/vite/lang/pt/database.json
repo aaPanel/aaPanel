@@ -111,7 +111,7 @@
 		"tools": {
 			"index_1": "Nome do banco de dados: ",
 			"index_2": "Tamanho: ",
-			"index_3": "Reparar",
+			"index_3": "Recuperar",
 			"index_4": "Otimizar",
 			"index_5": "Converter em innodb",
 			"index_6": "Converter para Myisam",

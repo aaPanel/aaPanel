@@ -9,7 +9,14 @@
 # ------------------------------
 # aaDNS api
 # ------------------------------
+import json
+import sys
 import threading
+
+if not "class/" in sys.path:
+    sys.path.insert(0, "class/")
+if not "class_v2/" in sys.path:
+    sys.path.insert(0, "class_v2/")
 
 from public.exceptions import HintException
 from public.validate import Param
@@ -365,7 +372,6 @@ class DnsApiObject:
             if status:
                 msg = public.lang("DNS Checker is Already Running. Please Wait.")
             else:
-                public.writeFile(DNS_AUTH_LOCK, "")
                 task = threading.Thread(
                     target=DnsManager().builtin_dns_checker, args=(provider,)
                 )
@@ -379,3 +385,52 @@ class DnsApiObject:
             "checker_status": status,
             "msg": msg
         })
+
+    @check_base_params
+    @init_provider
+    def fix_zone(self, get, provider: DnsDomainProvider):
+        manager = DnsManager()
+        try:
+            for i in provider.domains:
+                manager.fix_zone(i)
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.fail_v2(str(ex))
+        return public.success_v2(public.lang("Successfully fixed all zones."))
+
+    @check_base_params
+    @init_provider
+    def set_ttl_batch(self, get, provider: DnsDomainProvider):
+        try:
+            get.validate([
+                Param("ttl").String().Require(),
+                Param("domains").String().Require(),
+                Param("record_type").String().Require(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+            get.domains = json.loads(get.domains)
+            if not get.record_type:
+                raise HintException(public.lang("Record type is required."))
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.fail_v2(str(ex))
+
+        fails = []
+        manager = DnsManager()
+        for d in get.domains:
+            if d not in provider.domains:
+                fails.append(f"domain: {d} error: not found in provider domains.")
+                continue
+            try:
+                if not manager.domian_record_type_ttl_batch_set(
+                        domain=d, record_type=get.record_type, ttl=get.ttl
+                ):
+                    fails.append(f"domain: {d} error: failed to set ttl.")
+            except Exception as ex:
+                public.print_log("error info: {}".format(ex))
+                fails.append(f"domain: {d} error: {ex}")
+                continue
+        if fails:
+            return public.fail_v2(", ".join(fails))
+        return public.success_v2(public.lang("Successfully set TTL for all domains."))

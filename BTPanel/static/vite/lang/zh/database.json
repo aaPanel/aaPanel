@@ -111,7 +111,7 @@
     "tools": {
       "index_1": "数据库名称： ",
       "index_2": "大小： ",
-      "index_3": "修复",
+      "index_3": "恢复",
       "index_4": "优化",
       "index_5": "转换为InnoDB",
       "index_6": "转换为Myisam",

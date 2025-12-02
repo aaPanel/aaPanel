@@ -52,11 +52,16 @@ if os.path.getsize(TASK_LOG_FILE) > 50 * 1024 * 1024:
     except Exception:
         pass
 
+if os.path.exists("{}/data/debug.pl".format(BASE_PATH)):
+    is_debug = True
+else:
+    is_debug = False
+
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s]: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
+    level=logging.NOTSET if is_debug else logging.INFO,
+    format="%(asctime)s [%(levelname)s]: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
     filename=TASK_LOG_FILE,
-    filemode='a+',
+    filemode="a+",
 )
 logger = logging.getLogger()

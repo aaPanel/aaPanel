@@ -41,7 +41,11 @@ class apache:
                 confcontent = re.sub(rep,"Include conf/extra/httpd-info.conf",confcontent)
                 public.writeFile(apacheconf,confcontent)
                 public.serviceReload()
-            result = public.HttpGet('http://127.0.0.1/server-status?auto')
+            # 多服务修改获取端口
+            if public.get_multi_webservice_status():
+                result = public.HttpGet('http://127.0.0.1:8288/server-status?auto')
+            else:
+                result = public.HttpGet('http://127.0.0.1/server-status?auto')
             try:
                 workermen = int(public.ExecShell("ps aux|grep httpd|grep 'start'|awk '{memsum+=$6};END {print memsum}'")[0]) / 1024
             except:
@@ -121,7 +125,7 @@ class apache:
     def GetApacheValue(self):
         apachedefaultcontent = public.readFile(self.apachedefaultfile)
         apachempmcontent = public.readFile(self.apachempmfile)
-        if not "mpm_event_module" in apachempmcontent:
+        if not isinstance(apachempmcontent, str) or "mpm_event_module" not in apachempmcontent:
             return public.returnMsg(False, public.lang("mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty"))
         apachempmcontent = re.search(r"\<IfModule mpm_event_module\>(\n|.)+?\</IfModule\>",apachempmcontent).group()
         ps = ["%s，%s" % (public.lang("Second"),public.lang("Request timeout")),

@@ -111,7 +111,7 @@
 		"tools": {
 			"index_1": "數據庫名稱： ",
 			"index_2": "大小： ",
-			"index_3": "修復",
+			"index_3": "恢復",
 			"index_4": "最佳化",
 			"index_5": "轉換為InnoDB",
 			"index_6": "轉換為Myisam",

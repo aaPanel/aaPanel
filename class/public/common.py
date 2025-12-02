@@ -406,6 +406,16 @@ def GetRandomString(length):
         strings += chars[random.randint(0, chrlen)]
     return strings
 
+def GetRandomAlnumLower(length):
+    """
+       @name 取随机字符串(仅小写字母和数字)
+       @author hwliang<hwl@aapanel.com>
+       @param length 要获取的长度
+       @return string(length)
+    """
+    import random
+    chars = string.ascii_lowercase + string.digits  # 'abcdefghijklmnopqrstuvwxyz0123456789'
+    return ''.join(random.choices(chars, k=length))
 
 def ReturnJson(status, msg, args=()):
     """
@@ -3224,33 +3234,83 @@ def get_limit_ip():
     return iplong_list
 
 
+# def is_api_limit_ip(ip_list, client_ip):
+#     '''
+#         @name 判断IP是否在限制列表中
+#         @author hwliang<2022-02-10>
+#         @param ip_list<list> 限制IP列表
+#         @param client_ip<string> 客户端IP
+#         @return bool
+#     '''
+#     iplong_list = []
+#     for limit_ip in ip_list:
+#         if not limit_ip: continue
+#         if limit_ip in ['*', 'all', '0.0.0.0', '0.0.0.0/0', '0.0.0.0/24', '0.0.0.0/32']: return True
+#         limit_ip = limit_ip.split('-')
+#         iplong = {}
+#         iplong['min'] = ip2long(limit_ip[0])
+#         if len(limit_ip) > 1:
+#             iplong['max'] = ip2long(limit_ip[1])
+#         else:
+#             iplong['max'] = iplong['min']
+#         iplong_list.append(iplong)
+#
+#     client_ip_long = ip2long(client_ip)
+#     for limit_ip in iplong_list:
+#         if client_ip_long >= limit_ip['min'] and client_ip_long <= limit_ip['max']:
+#             return True
+#     return False
+
+
 def is_api_limit_ip(ip_list, client_ip):
     '''
-        @name 判断IP是否在限制列表中
-        @author hwliang<2022-02-10>
-        @param ip_list<list> 限制IP列表
+        @name 判断IP是否在限制列表中 (支持 IPv4, IPv6, CIDR, IP范围)
+        @param ip_list<list> 限制IP列表 (支持 '192.168.1.1', '192.168.1.0/24', '1.1.1.1-1.1.1.5', '::1')
         @param client_ip<string> 客户端IP
         @return bool
     '''
-    iplong_list = []
-    for limit_ip in ip_list:
-        if not limit_ip: continue
-        if limit_ip in ['*', 'all', '0.0.0.0', '0.0.0.0/0', '0.0.0.0/24', '0.0.0.0/32']: return True
-        limit_ip = limit_ip.split('-')
-        iplong = {}
-        iplong['min'] = ip2long(limit_ip[0])
-        if len(limit_ip) > 1:
-            iplong['max'] = ip2long(limit_ip[1])
-        else:
-            iplong['max'] = iplong['min']
-        iplong_list.append(iplong)
+    import ipaddress
+    try:
+        client_obj = ipaddress.ip_address(client_ip)
+        client_version = client_obj.version # 记录客户端IP版本
+    except ValueError:
+        return False
 
-    client_ip_long = ip2long(client_ip)
-    for limit_ip in iplong_list:
-        if client_ip_long >= limit_ip['min'] and client_ip_long <= limit_ip['max']:
+    # 保留原有ip段
+    wildcards = {
+        4 : {'*', 'all', '0.0.0.0', '0.0.0.0/0'},
+        6 : {'*', 'all', '::', '::/0'}
+    }
+
+    for rule in ip_list:
+        if not rule:
+            continue
+
+        rule = rule.strip()
+
+        if rule in wildcards[client_version]:
             return True
-    return False
 
+        try:
+            if '-' in rule:
+                parts = rule.split('-')
+                if len(parts) == 2:
+                    start_ip = ipaddress.ip_address(parts[0])
+                    end_ip = ipaddress.ip_address(parts[1])
+
+                    if (start_ip.version == client_obj.version and
+                            start_ip <= client_obj <= end_ip):
+                        return True
+
+            else:
+                network = ipaddress.ip_network(rule, strict=False)
+                if client_obj in network:
+                    return True
+
+        except (ValueError, TypeError):
+            continue
+
+    return False
 
 # 检查IP白名单
 def check_ip_panel():
@@ -3321,6 +3381,7 @@ def auto_backup_panel():
         paths = panel_paeh + '/data/not_auto_backup.pl'
         if os.path.exists(paths): return False
         b_path = '{}/panel'.format(get_backup_path())
+        os.makedirs(b_path, exist_ok=True)
         day_date = format_date('%Y-%m-%d')
         backup_path = b_path + '/' + day_date
         backup_file = backup_path + '.zip'
@@ -3367,6 +3428,8 @@ def auto_backup_panel():
 #清理面板备份
 def clear_panel_backup(backup_path,backup_number):
     backup_time_list = []
+    if not os.path.exists(backup_path):
+        return
     for f in os.listdir(backup_path):
         f_path=backup_path + '/' +f
         try:
@@ -9330,19 +9393,18 @@ def ensure_unique_db_name(db_name: str) -> str:
     # 生成不重复的数据库用户名
     while 1:
         if S('databases').where('name', db_name).exists():
-            db_name = '{}_{}'.format(db_name[:9], GetRandomString(6))
+            db_name = '{}_{}'.format(db_name[:9], GetRandomAlnumLower(6))
             continue
         break
 
     return db_name
 
+
 # 优先使用新名称
 def ensure_unique_db_name2(db_name: str) -> str:
-    import random
-    chars = string.ascii_lowercase + string.digits
     while True:
         prefix = db_name[:9].lower()
-        suffix = ''.join(random.choices(chars, k=6))
+        suffix = GetRandomAlnumLower(6)
         new_db_name = f'{prefix}_{suffix}'
 
         if not S('databases').where('name', new_db_name).exists():

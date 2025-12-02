@@ -12,16 +12,27 @@ import fcntl
 os.chdir("/www/server/panel")
 sys.path.insert(0, "class/")
 sys.path.insert(0, "class_v2/")
-import public
+from public import (
+    WriteLog,
+    get_setup_path,
+    get_panel_path,
+    readFile,
+    writeFile,
+    get_url,
+)
 
-SETUP_PATH = public.get_setup_path()
+SETUP_PATH = get_setup_path()
 DATA_PATH = os.path.join(SETUP_PATH, "panel/data")
 
 DAEMON_SERVICE = os.path.join(DATA_PATH, "daemon_service.pl")
 DAEMON_SERVICE_LOCK = os.path.join(DATA_PATH, "daemon_service_lock.pl")
-MANUAL_FLAG = os.path.join(public.get_panel_path(), "data/mod_push_data", "manual_flag.pl")
+DAEMON_RESTART_RECORD = os.path.join(DATA_PATH, "daemon_restart_record.pl")
+MANUAL_FLAG = os.path.join(get_panel_path(), "data/mod_push_data", "manual_flag.pl")
 
 SERVICES_MAP = {
+    "panel": (
+        "BT-Panel", f"{SETUP_PATH}/panel/logs/panel.pid", f"{SETUP_PATH}/panel/init.sh"
+    ),
     "apache": (
         "httpd", f"{SETUP_PATH}/apache/logs/httpd.pid", "/etc/init.d/httpd"
     ),
@@ -29,7 +40,7 @@ SERVICES_MAP = {
         "nginx", f"{SETUP_PATH}/nginx/logs/nginx.pid", "/etc/init.d/nginx"
     ),
     "redis": (
-        "redis", f"{SETUP_PATH}/redis/redis.pid", "/etc/init.d/redis"
+        "redis-server", f"{SETUP_PATH}/redis/redis.pid", "/etc/init.d/redis"
     ),
     "mysql": (
         "mysqld", "/tmp/mysql.sock", "/etc/init.d/mysqld"
@@ -66,6 +77,9 @@ class DaemonManager:
         if not os.path.exists(DAEMON_SERVICE_LOCK):
             with open(DAEMON_SERVICE_LOCK, "w") as _:
                 pass
+        if not os.path.exists(DAEMON_RESTART_RECORD):
+            with open(DAEMON_RESTART_RECORD, "w") as fm:
+                fm.write(json.dumps({}))
         os.makedirs(os.path.dirname(MANUAL_FLAG), exist_ok=True)
         if not os.path.exists(MANUAL_FLAG):
             with open(MANUAL_FLAG, "w") as fm:
@@ -169,7 +183,7 @@ class DaemonManager:
     def safe_read():
         """服务守护进程服务列表"""
         try:
-            res = public.readFile(DAEMON_SERVICE)
+            res = readFile(DAEMON_SERVICE)
             return json.loads(res) if res else []
         except:
             return []
@@ -179,15 +193,46 @@ class DaemonManager:
     def manual_safe_read():
         """手动干预服务字典, 0: 需要干预, 1: 被手动关闭的"""
         try:
-            manual = public.readFile(MANUAL_FLAG)
+            manual = readFile(MANUAL_FLAG)
             return json.loads(manual) if manual else {}
         except:
             return {}
 
+    @staticmethod
+    def update_restart_record(service_name: str, max_count: int) -> bool:
+        try:
+            with open(DAEMON_RESTART_RECORD, "r+") as f:
+                fcntl.flock(f, fcntl.LOCK_EX)
+                try:
+                    record = json.load(f)
+                except json.JSONDecodeError:
+                    record = {}
+
+                count = record.get(service_name, 0)
+                if count >= max_count:
+                    return True
+
+                record[service_name] = count + 1
+                f.seek(0)
+                json.dump(record, f)
+                f.truncate()
+                return False
+        except Exception:
+            return True
+
+    @staticmethod
+    def safe_read_restart_record() -> Dict[str, int]:
+        try:
+            with open(DAEMON_RESTART_RECORD, "r") as f:
+                fcntl.flock(f, fcntl.LOCK_SH)
+                record = json.load(f)
+        except Exception:
+            record = {}
+        return record
+
 
 class RestartServices:
     COUNT = 30
-    RECORD: Dict[str, int] = {}
 
     def __init__(self):
         self.nick_name = None
@@ -212,15 +257,9 @@ class RestartServices:
             print("Error keep_flag_right:", e)
 
     def _overhead(self) -> bool:
-        if self.nick_name not in self.RECORD:
-            self.RECORD[self.nick_name] = 0
-            return True
-
-        if self.RECORD[self.nick_name] >= self.COUNT:
-            return False
-
-        self.RECORD[self.nick_name] += 1
-        return True
+        return DaemonManager.update_restart_record(
+            self.nick_name, self.COUNT
+        )
 
     def _script(self, act: str) -> None:
         try:
@@ -233,23 +272,31 @@ class RestartServices:
                     os.remove(self.pid_file)
                 except:
                     pass
+
+            if self.nick_name == "panel":
+                if not os.path.exists(f"{SETUP_PATH}/panel/init.sh"):
+                    os.system(f"curl -k {get_url()}/install/update_7.x_en.sh|bash &")
+                cmd = ["bash", bash_path, act]
+            else:
+                cmd = [bash_path, act]
+
             result = subprocess.run(
-                [bash_path, act],
+                cmd,
                 capture_output=True,
                 text=True,
                 timeout=10,
             )
             if result.returncode != 0:
-                public.WriteLog(
+                WriteLog(
                     "Service Daemon", f"Failed to {act} {self.nick_name}, error: {result.stderr.strip()}"
                 )
         except subprocess.TimeoutExpired as t:
-            public.WriteLog(
+            WriteLog(
                 "Service Daemon", f"Failed to {act} {self.nick_name}, error: time out, {t}"
             )
         except Exception as e:
             print(str(e))
-            public.WriteLog(
+            WriteLog(
                 "Service Daemon", f"Failed to {act} {self.nick_name}, error: {e}"
             )
 
@@ -303,41 +350,53 @@ class RestartServices:
             try:
                 with open(self.pid_file, "r") as f:
                     pid = int(f.read().strip())
+                # 是否活跃
                 with open(f"/proc/{pid}/stat", "r") as f:
-                    return f.read().split()[2] != "Z"
+                    if f.read().split()[2] == "Z":
+                        return False  # 僵尸进程
+                # 进程是否名字匹配
+                with open(f"/proc/{pid}/comm", "r") as f:
+                    proc_name = f.read().strip()
+
+                if proc_name == self.nick_name or proc_name == self.serviced:
+                    return True
+
+                return False
             except:
                 return False
 
     @DaemonManager.read_lock
     def main(self):
-        manaul = public.readFile(MANUAL_FLAG)
-        services = public.readFile(DAEMON_SERVICE)
+        manaul = readFile(MANUAL_FLAG)
+        services = readFile(DAEMON_SERVICE)
         try:
             manual_info = json.loads(manaul) if manaul else {}
             check_list = json.loads(services) if services else []
-        except Exception as e:
-            public.print_log(f"error, {e}")
-            return
+            check_list = ["panel"] + check_list  # panel 强制守护
+        except Exception:
+            manual_info = {}
+            check_list = ["panel"]
+
+        record = DaemonManager.safe_read_restart_record()
         for service in [
-            x for x in check_list if self.RECORD.get(x, 0) < self.COUNT
+            x for x in list(set(check_list)) if record.get(x, 0) < self.COUNT
         ]:
             self.nick_name = service
             if not self.is_support() or not self.is_install_service():
                 continue
-
             if not self.is_process_running():
-                if manual_info.get(self.nick_name) == 1:
+                if int(manual_info.get(self.nick_name, 0)) == 1:
                     # service closed maually, skip
                     continue
-                public.WriteLog(
+                WriteLog(
                     "Service Daemon", f"Service [ {self.nick_name} ] is Not Running, Try to start it..."
                 )
-                self._overhead()
-                self._script("start")
-                time.sleep(3)
-                if not self.is_process_running():
-                    self._overhead()
-                    self._script("restart")
+                if not self._overhead():
+                    self._script("start")
+                    time.sleep(3)
+                    if not self.is_process_running():
+                        if not self._overhead():
+                            self._script("restart")
 
             if manual_info.get(self.nick_name) == 1:
                 # service is running, fix the wrong flag
@@ -361,7 +420,7 @@ def first_time_installed(data: dict) -> None:
                     os.remove(pl_name)
                 elif setup is True and not os.path.exists(pl_name):
                     DaemonManager.add_daemon(service)
-                    public.writeFile(pl_name, "1", mode="w")
+                    writeFile(pl_name, "1", mode="w")
                 else:
                     pass
     except:

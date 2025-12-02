@@ -8,7 +8,10 @@
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 
-import os,sys
+import os
 os.chdir('/www/server/panel')
-import task
+
+from BTTask import task
+
 task.main()
+

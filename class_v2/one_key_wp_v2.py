@@ -310,6 +310,13 @@ class one_key_wp:
         if not ok:
             raise Exception(msg)
 
+        # 处理邮件权限
+        try:
+            if os.path.exists('/var/spool/postfix/maildrop'):
+                public.ExecShell("chmod -R 777 /var/spool/postfix/maildrop")
+        except:
+            pass
+
         # 初始化WP网站信息
         self.write_logs("|-Start installations...")
         ok, msg = wpmgr_obj.wp_install(values['weblog_title'], values['user_name'], values['admin_email'],
@@ -795,7 +802,10 @@ class one_key_wp:
 
         # 新增ols缓存清理反馈
         if webserver == "openlitespeed":
-            self.delete_ols_cache()
+            try:
+                self.delete_ols_cache()
+            except:
+                return public.return_message(-1, 0, public.lang('There are restricted files in the Cache directory. Please try to clear them from the LiteSpeed Cache'))
 
         # 多服务下的清除apache缓存
         if webserver == "apache" and site['service_type'] == 'apache':
@@ -803,8 +813,12 @@ class one_key_wp:
 
         # 清除nginx缓存
         if webserver == 'nginx':
-            from wp_toolkit import wpmgr
-            wpmgr(get.s_id).purge_cache_with_nginx_helper()
+            try:
+                from wp_toolkit import wpmgr
+                wpmgr(get.s_id).purge_cache_with_nginx_helper()
+            except Exception as ex:
+                return public.return_message(-1, 0, public.lang('Cache clearing failed. Please check if the Nginx Helper plugin is functioning properly.'))
+
 
         # if self.__IS_PRO_MEMBER:
         #     from wp_toolkit import wpmgr

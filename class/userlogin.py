@@ -59,7 +59,7 @@ class userlogin:
                     return  public.returnJson(False,public.lang('Verification code is incorrect, please try again!')),json_header
 
         try:
-            if not userInfo:
+            if not userInfo or not isinstance(userInfo, dict):
                 public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()))
                 num = self.limit_address('+')
                 if not num: return  public.returnJson(False,public.lang('You have failed to log in many times, please try again in {} seconds!',int(self.limit_expire_time - time.time()))),json_header
@@ -113,7 +113,11 @@ class userlogin:
             acc_client_ip = self.check_two_step_auth()
 
             if not os.path.exists(_key_file) or acc_client_ip:
-                public.run_thread(public.login_send_body,("account",userInfo['username'],public.GetClientIp(),str(int(request.environ.get('REMOTE_PORT')))))
+                try:
+                    port_str = str(int(request.environ.get('REMOTE_PORT', 0)))
+                except (ValueError, TypeError):
+                    port_str = '0'
+                public.run_thread(public.login_send_body,("account",userInfo['username'],public.GetClientIp(),port_str))
                 self.set_cdn_host(post)
                 return self._set_login_session(userInfo, acc_client_ip)
 

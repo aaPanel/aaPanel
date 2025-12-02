@@ -238,7 +238,7 @@ class ssh_terminal:
                     if sshd_config and sshd_config.find('ssh-dss') == -1:
                         return public.return_message(-1, 0, public.lang('The private key verification fails, the private key may be incorrect, or the ssh-dss private key authentication type may not be enabled in the /etc/ssh/sshd_config configuration file'))
                     return public.return_message(-1, 0,public.lang('Authentication failed, please check whether the private key is correct: {}',(e + "," + self._user + "@" + self._host + ":" +str(self._port))))
-                return public.return_message(-1, 0, public.lang('Account or Password incorrect: {}',str(e + "," + self._user + "@" + self._host + ":" +str(self._port))))
+                return public.return_message(-1, 0, f"Account or Password incorrect: {str(e + ',' + self._user + '@' + self._host + ':' +str(self._port))}")
             if e.find('Bad authentication type; allowed types') != -1:
                 self.debug(public.get_msg_gettext('Authentication failed {}',(str(e),)))
                 if self._host in ['127.0.0.1','localhost'] and self._pass == 'none':

@@ -294,6 +294,8 @@ class firewalls:
             get.status = '1'
         filename = '/etc/sysctl.conf'
         conf = public.readFile(filename)
+        if not isinstance(conf, str):
+            conf = ''
         if conf.find('net.ipv4.icmp_echo') != -1:
             rep = r"net\.ipv4\.icmp_echo.*"
             conf = re.sub(rep, 'net.ipv4.icmp_echo_ignore_all=' + get.status + "\n", conf)

@@ -35,6 +35,7 @@ def control_init_now():
     files_set_mode()
     set_pma_access()
     check_enable_php()
+    reset_restart_record()
 
 def control_init_delay():
     delay_list = [
@@ -75,6 +76,7 @@ def control_init_new():
     control_init_now()
     control_init_delay()
 
+# todo 计划移除
 def control_init():
     update_py312()
     public.chdck_salt()
@@ -751,7 +753,17 @@ def check_enable_php():
     '''.format(php_v)
         public.writeFile(ngx_php_conf,enable_conf)
 
-
+def reset_restart_record():
+    try:
+        import fcntl
+        data_path = os.path.join(public.get_setup_path(), "panel/data")
+        records = os.path.join(data_path, "daemon_restart_record.pl")
+        with open(records, "w") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.write(json.dumps({}))
+            fcntl.flock(f, fcntl.LOCK_UN)
+    except Exception:
+        pass
 
 def write_run_script_log(_log,rn='\n'):
     _log_file = '/www/server/panel/logs/run_script.log'

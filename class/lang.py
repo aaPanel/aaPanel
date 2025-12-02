@@ -40,7 +40,12 @@ class Lang:
             data = file.read()
             if not data:
                 return default_lang
-            settings = json.loads(data)
+
+            try:
+                settings = json.loads(data)
+            except:
+                return default_lang
+
             if not settings.get('languages', None):
                 return default_lang
             return settings.get('default',default_lang)

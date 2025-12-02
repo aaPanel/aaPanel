@@ -118,7 +118,7 @@ class apache:
     def GetApacheValue(self):
         apachedefaultcontent = public.readFile(self.apachedefaultfile)
         apachempmcontent = public.readFile(self.apachempmfile)
-        if not "mpm_event_module" in apachempmcontent:
+        if not isinstance(apachempmcontent, str) or "mpm_event_module" not in apachempmcontent:
             return public.returnMsg(False, public.lang("mpm_event_module conf not found or /www/server/apache/conf/extra/httpd-mpm.conf is empty"))
         apachempmcontent = re.search("\\<IfModule mpm_event_module\\>(\n|.)+?\\</IfModule\\>",apachempmcontent).group()
         ps = ["%s，%s" % (public.lang("Second"),public.lang("Request timeout")),

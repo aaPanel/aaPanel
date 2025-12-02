@@ -55,6 +55,7 @@ def task():
 # 使用task装饰器
 # 所有导入请在函数中进行, 异常由顶层处理记录task.log
 # ======================================================
+# 守护服务
 @task()
 def daemon_service():
     from script.restart_services import RestartServices
@@ -67,12 +68,14 @@ def make_suer_ssl_task():
     make_suer_ssl_task()
 
 
+# site 图标
 @task()
 def find_favicons():
     from data_v2 import data as data_v2_cls
     data_v2_cls().find_stored_favicons()
 
 
+# 放爆破检查任务
 @task()
 def breaking_through():
     import class_v2.breaking_through as breaking_through
@@ -82,6 +85,7 @@ def breaking_through():
     del _breaking_through_obj
 
 
+# 更新WAF配置
 @task()
 def update_waf_config():
     import class_v2.data_v2 as data_v2
@@ -135,6 +139,7 @@ def check_site_monitor():
         public.writeFile('/tmp/panelTask.pl', 'True')
 
 
+# 多web
 @task()
 def multi_web_server_daemon():
     import public
@@ -178,12 +183,14 @@ def multi_web_server_daemon():
                 break
 
 
+# 日志事件loop
 @task()
 def maillog_event():
     from power_mta.maillog_stat import maillog_event
     maillog_event()
 
 
+# 聚合日志
 @task()
 def aggregate_maillogs_task():
     from power_mta.maillog_stat import aggregate_maillogs_task_once
@@ -196,6 +203,7 @@ def schedule_automations():
     Task().schedule_once()
 
 
+# 自动回复mail
 @task()
 def auto_reply_tasks():
     try:
@@ -409,6 +417,7 @@ def submit_module_call_statistics():
     return
 
 
+# 邮箱域名黑名单检查报警
 @task()
 def mailsys_domain_blecklisted_alarm():
     import public
@@ -453,6 +462,7 @@ def mailsys_domain_blecklisted_alarm():
     return
 
 
+# 更新wordpress漏洞库
 @task()
 def update_vulnerabilities():
     import time
@@ -610,12 +620,14 @@ def update_vulnerabilities():
         raise
 
 
+# 更新docker app
 @task()
 def refresh_dockerapps():
     from mod.project.docker.app.appManageMod import AppManage
     AppManage().refresh_apps_list()
 
 
+# 更新软件商店列表
 @task()
 def update_software_list():
     import public
@@ -624,6 +636,250 @@ def update_software_list():
     get = public.dict_obj()
     get.force = 1
     panelPlugin.panelPlugin().get_cloud_list(get)
+
+
+# 每10分钟, 502错误检查线程 (夹杂其他任务)
+@task()
+def check502task():
+    import json
+    import time
+    import psutil
+    import public
+    from BTTask.conf import logger, PYTHON_BIN, BASE_PATH
+
+    def siteEdate():
+        mEdate = time.strftime('%Y-%m-%d', time.localtime())
+        edate_pl = '/www/server/panel/data/edate.pl'
+        try:
+            oldEdate = public.ReadFile(edate_pl)
+            if not oldEdate:
+                oldEdate = '0000-00-00'
+            mEdate = time.strftime('%Y-%m-%d', time.localtime())
+            if oldEdate == mEdate:
+                return False
+            os.system("nohup " + PYTHON_BIN + " /www/server/panel/script/site_task.py > /dev/null 2>&1 &")
+        except Exception:
+            logger.info(public.get_error_info())
+        finally:
+            del oldEdate
+            public.writeFile(edate_pl, mEdate)
+
+    def sess_expire():
+        # session过期处理
+        try:
+            sess_path = '{}/data/session'.format(BASE_PATH)
+            if not os.path.exists(sess_path):
+                return
+            s_time = time.time()
+            f_list = os.listdir(sess_path)
+            f_num = len(f_list)
+            sess_expired_path = f"{public.get_panel_path()}/data/session_timeout.pl"
+            sess_expired = 86400 # default 24H
+            if os.path.exists(sess_expired_path):
+                try:
+                    sess_expired = int(public.readFile(sess_expired_path).strip())
+                except:
+                    pass
+            for fname in f_list:
+                filename = os.path.join(sess_path, fname)
+                fstat = os.stat(filename)
+                f_time = s_time - fstat.st_mtime
+                if f_time > sess_expired:
+                    os.remove(filename)
+                    continue
+                if fstat.st_size < 256 and len(fname) == 32:
+                    if f_time > 60 or f_num > 30:
+                        os.remove(filename)
+                        continue
+            del f_list
+        except Exception as ex:
+            logger.info(str(ex))
+
+    # MySQL配额检查
+    def mysql_quota_check():
+        os.system("nohup " + PYTHON_BIN + " /www/server/panel/script/mysql_quota.py > /dev/null 2>&1 &")
+
+    # 检查502错误
+    def check502():
+        # 处理指定PHP版本
+        def startPHPVersion(version):
+            try:
+                fpm = '/etc/init.d/php-fpm-' + version
+                php_path = '/www/server/php/' + version + '/sbin/php-fpm'
+                if not os.path.exists(php_path):
+                    if os.path.exists(fpm): os.remove(fpm)
+                    return False
+
+                # 尝试重载服务
+                os.system(fpm + ' start')
+                os.system(fpm + ' reload')
+                if checkPHPVersion(version): return True
+
+                # 尝试重启服务
+                cgi = '/tmp/php-cgi-' + version + '.sock'
+                pid = '/www/server/php/' + version + '/var/run/php-fpm.pid'
+                os.system('pkill -9 php-fpm-' + version)
+                time.sleep(0.5)
+                if os.path.exists(cgi):
+                    os.remove(cgi)
+                if os.path.exists(pid):
+                    os.remove(pid)
+                os.system(fpm + ' start')
+                if checkPHPVersion(version):
+                    return True
+                # 检查是否正确启动
+                if os.path.exists(cgi):
+                    return True
+                return False
+            except Exception as ex:
+                logger.info(ex)
+                return True
+
+        # 检查指定PHP版本
+        def checkPHPVersion(version):
+            try:
+                cgi_file = '/tmp/php-cgi-{}.sock'.format(version)
+                if os.path.exists(cgi_file):
+                    init_file = '/etc/init.d/php-fpm-{}'.format(version)
+                    if os.path.exists(init_file):
+                        init_body = public.ReadFile(init_file)
+                        if not init_body: return True
+                    uri = "/phpfpm_" + version + "_status?json"
+                    result = public.request_php(version, uri, '')
+                    json.loads(result)
+                return True
+            except:
+                logger.info("PHP-{} unreachable detected".format(version))
+                return False
+
+        try:
+            phpversions = public.get_php_versions()
+            for version in phpversions:
+                if version in ['52', '5.2']: continue
+                php_path = '/www/server/php/' + version + '/sbin/php-fpm'
+                if not os.path.exists(php_path):
+                    continue
+                if checkPHPVersion(version):
+                    continue
+                if startPHPVersion(version):
+                    public.WriteLog('PHP daemon',
+                                    'PHP-' + version + 'processing exception was detected and has been automatically fixed!',
+                                    not_web=True)
+        except Exception as ex:
+            logger.info(ex)
+
+    def auto_backup_panel():
+        public.auto_backup_panel()
+
+    # 更新 GeoLite2-Country.json
+    def flush_geoip():
+        """
+            @name 检测如果大小小于3M或大于1个月则更新
+            @author wzz <2024/5/21 下午5:33>
+            @param "data":{"参数名":""} <数据类型> 参数描述
+            @return dict{"status":True/False,"msg":"提示信息"}
+        """
+        _ips_path = "/www/server/panel/data/firewall/GeoLite2-Country.json"
+        m_time_file = "/www/server/panel/data/firewall/geoip_mtime.pl"
+        if not os.path.exists(_ips_path):
+            os.system("mkdir -p /www/server/panel/data/firewall")
+            os.system("touch {}".format(_ips_path))
+
+        try:
+            if not os.path.exists(_ips_path):
+                public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)),
+                                    _ips_path)
+                public.writeFile(m_time_file, str(int(time.time())))
+                return
+
+            _ips_size = os.path.getsize(_ips_path)
+            if os.path.exists(m_time_file):
+                _ips_mtime = int(public.readFile(m_time_file))
+            else:
+                _ips_mtime = 0
+
+            if _ips_size < 3145728 or time.time() - _ips_mtime > 2592000:
+                core = psutil.cpu_count()
+                delay = round(1 / (core if core > 0 else 1), 2)
+                os.system("rm -f {}".format(_ips_path))
+                os.system("rm -f {}".format(m_time_file))
+                public.downloadFile('{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)),
+                                    _ips_path)
+                public.writeFile(m_time_file, str(int(time.time())))
+                if os.path.exists(_ips_path):
+                    try:
+                        import json
+                        from xml.etree.ElementTree import ElementTree, Element
+                        from safeModelV2.firewallModel import main as firewall
+
+                        firewallobj = firewall()
+                        ips_list = json.loads(public.readFile(_ips_path))
+                        if ips_list:
+                            bash = os.path.exists('/usr/bin/apt-get') and not os.path.exists("/etc/redhat-release")
+                            if bash:
+                                btsh_path = "/etc/ufw/btsh"
+                                if not os.path.exists(btsh_path):
+                                    os.makedirs(btsh_path)
+
+                                write_map = {}
+                                for ip_dict in ips_list:
+                                    tmp_path = '{}/{}.sh'.format(btsh_path, ip_dict['brief'])
+                                    commands = [
+                                        f'ipset add {ip_dict["brief"]} {ip}'
+                                        for ip in ip_dict.get("ips", [])
+                                        if firewallobj.verify_ip(ip)
+                                    ]
+                                    if commands:
+                                        script_content = "#!/bin/bash\n" + "\n".join(commands) + "\n"
+                                        write_map[tmp_path] = script_content
+                                    time.sleep(delay)
+
+                                for path, content in write_map.items():
+                                    public.writeFile(path, content)
+                                    time.sleep(0.05)
+                            else:
+                                for ip_dict in ips_list:
+                                    xml_path = "/etc/firewalld/ipsets/{}.xml.old".format(ip_dict['brief'])
+                                    xml_body = """<?xml version="1.0" encoding="utf-8"?>
+    <ipset type="hash:net">
+    <option name="maxelem" value="1000000"/>
+    </ipset>
+    """
+                                    if os.path.exists(xml_path):
+                                        public.writeFile(xml_path, xml_body)
+                                    else:
+                                        os.makedirs(os.path.dirname(xml_path), exist_ok=True)
+                                        public.writeFile(xml_path, xml_body)
+
+                                    tree = ElementTree()
+                                    tree.parse(xml_path)
+                                    root = tree.getroot()
+                                    for ip in ip_dict['ips']:
+                                        if firewallobj.verify_ip(ip):
+                                            entry = Element("entry")
+                                            entry.text = ip
+                                            root.append(entry)
+
+                                    firewallobj.format(root)
+                                    tree.write(xml_path, 'utf-8', xml_declaration=True)
+                                    time.sleep(delay)
+                    except:
+                        pass
+        except:
+            try:
+                public.downloadFile(
+                    '{}/install/lib/{}'.format(public.get_url(), os.path.basename(_ips_path)), _ips_path
+                )
+                public.writeFile(m_time_file, str(int(time.time())))
+            except:
+                pass
+
+    auto_backup_panel()
+    check502()
+    mysql_quota_check()
+    siteEdate()
+    sess_expire()
+    flush_geoip()
 
 
 if __name__ == '__main__':

@@ -120,7 +120,13 @@ class ajax:
         #取软件列表
         import json,os
         tmp = public.readFile('data/softList.conf')
-        data = json.loads(tmp)
+        if not isinstance(tmp, str) or not tmp.strip():
+            return public.return_message(0, 0, [])
+        try:
+            data = json.loads(tmp)
+        except Exception as e:
+            return public.return_message(0, 0, [])
+
         tasks = public.M('tasks').where("status!=?",('1',)).field('status,name').select()
         for i in range(len(data)):
             if data[i]['name'] == 'Openlitespeed':
@@ -894,10 +900,18 @@ class ajax:
 
     #取PHP配置
     def GetPHPConfig(self,get):
-        if not hasattr(get,'version'):
+        if not hasattr(get,'version') or not get.version:
             return public.return_message(-1, 0, public.lang("Parameter error!"))
-        if get.version == '':
-            return public.return_message(-1, 0, public.lang("Parameter error!"))
+        # 统一转为字符串（防 int/float）
+        ver_str = str(get.version).strip()
+
+        # 如果太短，自动补 '0'（兼容 "8" → "80"）
+        if len(ver_str) < 2:
+            ver_str = ver_str.ljust(2, '0')  # "8" → "80", "" → "00"
+
+        # 是否为数字
+        if not ver_str.isdigit():
+            return public.return_message(-1, 0, public.lang("Version must be numeric!"))
 
         import re,json
         filename = public.GetConfigValue('setup_path') + '/php/' + get.version + '/etc/php.ini'
@@ -1103,7 +1117,7 @@ class ajax:
             conf = public.readFile(file)
             if not conf:
                 return public.fail_v2(public.lang('Did not find the {} configuration file, please try to close the ssl port settings before opening',i))
-            rulePort = ['80', '443', '21', '20', '8080', '8081', '8089', '11211', '6379']
+            rulePort = ['80', '443', '21', '20', '8080', '8081', '8089', '11211', '6379', '8188', '8189', '8190', '8288', '8289', '8290']
             if get.port in rulePort:
                 return public.fail_v2(public.lang('Please do NOT use the usual port as the phpMyAdmin port!'))
 
@@ -1326,7 +1340,7 @@ class ajax:
 
         if hasattr(get,'port'):
             mainPort = public.readFile('data/port.pl').strip()
-            rulePort = ['80','443','21','20','8080','8081','8089','11211','6379']
+            rulePort = ['80','443','21','20','8080','8081','8089','11211','6379','8188', '8189', '8190', '8288', '8289', '8290']
             oldPort = "888"
             if get.port in rulePort:
                 return public.fail_v2(public.lang('Please do NOT use the usual port as the phpMyAdmin port!'))
@@ -1789,7 +1803,7 @@ class ajax:
                 result['modules'] = []
             if 'php_version' in result:
                 result['phpinfo']['php_version'] = result['php_version']
-        except Exception:
+        except:
             result = {
                 'php_version': php_version,
                 'phpinfo': {},

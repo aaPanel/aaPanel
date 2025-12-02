@@ -111,7 +111,7 @@
     "tools": {
       "index_1": "Database name: ",
       "index_2": "Size: ",
-      "index_3": "Repair",
+      "index_3": "Recover",
       "index_4": "Optimize",
       "index_5": "Convert to InnoDB",
       "index_6": "Convert to MyISAM",

@@ -7,6 +7,10 @@
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import public,os,json,time
+try:
+    from BTPanel import cache
+except:pass
+
 class panelApi:
     save_path = '/www/server/panel/config/api.json'
     timeout = 600
@@ -28,6 +32,17 @@ class panelApi:
         data['qrcode'] = public.base64.b64encode(qrcode).decode('utf-8')
         data['apps'] = sorted(data['apps'],key=lambda x: x['time'],reverse=True)
         del(data['key'])
+        # 处理类型
+        data['ip_type'] = "custom"
+        if data:
+            if data.get('limit_addr') == "0.0.0.0/0":
+                data['ip_type'] = "ipv4"
+            elif data.get('limit_addr') == "::/0":
+                data['ip_type'] = "ipv6"
+            elif "::/0" in data.get('limit_addr') and "0.0.0.0/0" in data.get('limit_addr'):
+                data['ip_type'] = "all"
+            else:
+                data['ip_type'] = "custom"
         return public.return_message(0, 0, data)
 
 
@@ -246,6 +261,11 @@ class panelApi:
             public.add_security_logs('API configuration', 'Change IP limit to [{}]', (get.limit_addr,))
             token ='Saved successfully!'
         self.save_api_config(data)
+
+        # 更新后清除旧缓存
+        if cache:
+            cache.delete('api_token_config')
+
         return public.return_message(0, 0, token)
 
     def get_tmp_token(self,get):

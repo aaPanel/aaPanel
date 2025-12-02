@@ -112,7 +112,12 @@ class ajax:
         #取软件列表
         import json,os
         tmp = public.readFile('data/softList.conf')
-        data = json.loads(tmp)
+        if not isinstance(tmp, str) or not tmp.strip():
+            return []
+        try:
+            data = json.loads(tmp)
+        except Exception as e:
+            return []
         tasks = public.M('tasks').where("status!=?",('1',)).field('status,name').select()
         for i in range(len(data)):
             data[i]['check'] = public.GetConfigValue('root_path')+'/'+data[i]['check']

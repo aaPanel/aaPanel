@@ -111,7 +111,7 @@
 		"tools": {
 			"index_1": "Tên cơ sở dữ liệu: ",
 			"index_2": "Kích cỡ: ",
-			"index_3": "Sửa",
+			"index_3": "Khôi phục",
 			"index_4": "Tối ưu hóa",
 			"index_5": "Chuyển đổi sang Innodb",
 			"index_6": "Chuyển đổi sang Myisam",

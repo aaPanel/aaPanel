@@ -111,7 +111,7 @@
 		"tools": {
 			"index_1": "데이터베이스 이름 : ",
 			"index_2": "크기: ",
-			"index_3": "수리하다",
+			"index_3": "복구",
 			"index_4": "최적화",
 			"index_5": "Innodb로 변환하십시오",
 			"index_6": "Myisam으로 전환하십시오",
