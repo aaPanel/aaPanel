@@ -56,7 +56,7 @@
     "sort": 7
   },
   {
-    "title": "Waf",
+    "title": "WAF",
     "href": "/waf",
     "class": "menu_btwaf",
     "id": "memu_btwaf",
@@ -80,37 +80,36 @@
     "title": "Logs",
     "href": "/logs",
     "class": "menu_logs",
-    "id": "memuAlogs",
+    "id": "memuLogs",
     "sort": 11
+},
+  {
+    "title": "Domains",
+    "href": "/ssl_domain",
+    "class": "menu_domains",
+    "id": "memuDomains",
+    "sort": 12
 },
   {
     "title": "Terminal",
     "href": "/xterm",
     "class": "menu_xterm",
     "id": "memuAxterm",
-    "sort": 12
+    "sort": 13
   },
-  {
-  "id": "memuASSL",
-  "title": "SSL",
-  "href": "/ssl_domain",
-  "class": "menu_ssl",
-  "show": true,
-  "sort": 12
-},
   {
     "title": "Account",
     "href": "/whm",
     "class": "menu_account",
     "id": "memuAccount",
-    "sort": 13
+    "sort": 14
   },
   {
     "title": "Cron",
     "href": "/crontab",
     "class": "menu_day",
     "id": "memuAcrontab",
-    "sort": 13
+    "sort": 15
   },
 
   {
@@ -118,20 +117,20 @@
     "href": "/soft",
     "class": "menu_soft",
     "id": "memuAsoft",
-    "sort": 14
+    "sort": 16
   },
   {
     "title": "Settings",
     "href": "/config",
     "class": "menu_set",
     "id": "memuAconfig",
-    "sort": 15
+    "sort": 17
   },
   {
     "title": "Log out",
     "href": "/login?dologin=True",
     "class": "menu_exit",
     "id": "dologin",
-    "sort": 16
+    "sort": 18
   }
 ]

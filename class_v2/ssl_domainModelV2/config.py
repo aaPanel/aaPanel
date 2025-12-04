@@ -29,6 +29,7 @@ DNS_MAP = {
     "PorkBunDns": PorkBunDns,
     "NameSiloDns": NameSiloDns,
     "aaPanelDns": aaPanelDns,
+    "GodaddyDns": GodaddyDns,
 }
 
 

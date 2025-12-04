@@ -1593,7 +1593,6 @@ class AppManage(App):
         '''
         installed_json = self.read_json(self.installed_json_file)
         if not installed_json:
-
             return public.return_message(0, 0, [])
 
         get.app_type = get.get("app_type", "all")
@@ -1621,6 +1620,12 @@ class AppManage(App):
         # 按照createTime倒序排序
         installed_apps = sorted(installed_apps, key=lambda x: x["createTime"], reverse=True)
         page_data = self.get_page(installed_apps, get)
+
+        # 给billionmail应用添加console_url字段
+        for app in page_data["data"]:
+            if app.get("appname","") == 'billionmail':
+                app_info = app.get("appinfo", [])
+                app["console_url"] = self.get_global_console_url(app_info)
         return self.pageResult(True, data=page_data["data"], page=page_data["page"])
 
     # 2024/8/1 下午4:02 获取指定已安装的应用信息
@@ -1753,3 +1758,27 @@ class AppManage(App):
 
         compose_content = public.readFile(compose_path)
         return public.return_message(0, 0, compose_content)
+
+    def get_global_console_url(self, app_info):
+        """
+        返回billionmail ip的控制台链接(端口字段不一致 先适配billionmail)
+        优先顺序：
+          优先https，其次http
+        """
+        https_port = None
+        http_port = None
+        for info in app_info:
+            if info["fieldKey"] == "HTTPS_PORT" and info["fieldValue"]:
+                https_port = info["fieldValue"]
+            elif info["fieldKey"] == "HTTP_PORT" and info["fieldValue"]:
+                http_port = info["fieldValue"]
+
+        public.print_log("https_port:", https_port)
+        public.print_log("http_port:", http_port)
+        ip_address = public.GetLocalIp()
+        if https_port:
+            return f"https://{ip_address}:{https_port}"
+        elif http_port:
+            return f"http://{ip_address}:{http_port}"
+        else:
+            return f"http://{ip_address}"

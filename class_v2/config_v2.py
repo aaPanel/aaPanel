@@ -415,12 +415,20 @@ class config:
             return public.return_message(-1, 0, public.lang("Setup fail! Please try logging in again."))
         get.password1 = public.url_decode(public.rsa_decrypt(get.password1))
         get.password2 = public.url_decode(public.rsa_decrypt(get.password2))
+        get.userpassword = public.url_decode(public.rsa_decrypt(get.get('userpassword','').strip()))
+
         if get.password1 != get.password2:
             return public.return_message(-1, 0, public.lang("The passwords entered twice are inconsistent, please try again!"))
         if len(get.password1) < 5:
             return public.return_message(-1, 0, public.lang("Password cannot be less than 5 characters!"))
         if not self.check_password_safe(get.password1):
             return public.return_message(-1, 0, public.lang("The password must be at least eight characters in length and contain at least three combinations of digits, uppercase letters, lowercase letters, and special characters"))
+
+        # 密码校验
+        userpassword1 = public.password_salt(public.md5(get.userpassword), username=session['username'])
+        userpassword2 = public.M('users').where("username=?", (session['username'],)).getField('password')
+        if userpassword1 != userpassword2:
+            return public.return_message(-1, 0, public.lang("Password verification failed!"))
 
         if get.password1:
             public.M('users').where("username=?", (session['username'],)).setField(
@@ -445,6 +453,15 @@ class config:
         get.username1 = public.url_decode(public.rsa_decrypt(get.username1))
         get.username2 = public.url_decode(public.rsa_decrypt(get.username2))
         if get.username1 != get.username2: return public.return_message(-1, 0, public.lang("The usernames entered twice are inconsistent, plesea try again!"))
+
+        # 密码校验
+        password = public.url_decode(public.rsa_decrypt(get.get('userpassword').strip()))
+
+        password1 = public.password_salt(public.md5(password), username=session['username'])
+        password2 = public.M('users').where("username=?", (session['username'],)).getField('password')
+        if password1 != password2:
+            return public.return_message(-1, 0, public.lang("Password verification failed!"))
+
         if len(get.username1) < 3: return public.return_message(-1, 0, public.lang("Username cannot be less than 3 characters"))
         public.M('users').where("username=?", (session['username'],)).setField('username', get.username1.strip())
         public.write_log_gettext('Panel configuration', 'Username is modified from [{}] to [{}]',
@@ -1372,9 +1389,6 @@ class config:
                 public.writeFile('ssl/privateKey.pem', result['key'])
                 public.writeFile('ssl/baota_root.pfx', base64.b64decode(result['pfx']), 'wb+')
                 public.writeFile('ssl/root_password.pl', result['password'])
-                public.writeFile('data/ssl.pl', 'True')
-                # public.ExecShell("/etc/init.d/bt reload")
-                print('1')
                 return True
         if os.path.exists('ssl/input.pl'): return True
         import OpenSSL

@@ -82,6 +82,7 @@ class FirewallModule(BaseUtil, ConfigManager):
                             firewall_info["country_data_path"] = backup_path + "/" + file_name
 
                 # 将防火墙信息写入备份配置文件
+                data_list = self.get_backup_data_list(timestamp)
                 data_list['data_list']['firewall'] = firewall_info
                 self.update_backup_data_list(timestamp, data_list)
             except Exception as e:

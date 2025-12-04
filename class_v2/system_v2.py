@@ -901,8 +901,10 @@ class system:
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl stop')
             elif get.type == 'start':
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl start')
-            else:
+            elif get.type == 'restart':
                 public.ExecShell('rm -f /tmp/lshttpd/*.sock* && /usr/local/lsws/bin/lswsctrl restart')
+            else:
+                public.ExecShell("/usr/local/lsws/bin/lswsctrl reload")
             return public.return_message(0, 0, public.lang("Executed successfully!"))
 
         #检查httpd配置文件

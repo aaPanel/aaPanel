@@ -6289,7 +6289,7 @@ def get_php_versions(reverse=False):
     if os.path.exists(_file):
         version_list = json.loads(readFile(_file))
     else:
-        version_list = ['52', '53', '54', '55', '56', '70', '71', '72', '73', '74', '80', '81', '82', '83', '84']
+        version_list = ['52', '53', '54', '55', '56', '70', '71', '72', '73', '74', '80', '81', '82', '83', '84', '85']
 
     return sorted(version_list, reverse=reverse)
 

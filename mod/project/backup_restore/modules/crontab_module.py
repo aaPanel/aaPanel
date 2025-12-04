@@ -135,9 +135,11 @@ class CrontabModule(BaseUtil, ConfigManager):
             )
 
         if result['status'] != 0:
+            error_res = public.find_value_by_key(result, key="result", default="fail")
             self.print_log(
                 public.lang(
-                    f"Crontab Task: {crontab_item['name']} add fail, error: {result['msg']}, skip..."),
+                    f"Crontab Task: {crontab_item['name']} add fail, "
+                    f"error: {error_res}, skip..."),
                 "restore"
             )
         else:

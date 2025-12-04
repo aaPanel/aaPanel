@@ -242,6 +242,8 @@ class Base(object):
             @name 构造返回的分页数据
         """
         count = len(data)
+        if count == 0:
+            return {'data': [], 'count': 0, 'p': 1, 'row': int(get.row)}
 
         result = public.get_page(count, int(get.p), int(get.row))
         result['data'] = data[(int(get.p) - 1) * int(get.row):(int(get.p)) * int(get.row)]

@@ -1687,12 +1687,42 @@ def download():
     if comReturn: return comReturn
     filename = request.args.get('filename')
     if filename.find('|') != -1:
-        filename = filename.split('|')[0]  # 改为获取本地备份
+        filename = filename.split('|')[1]
     if not filename:
         return public.ReturnJson(False, "INIT_ARGS_ERR"), json_header
-    # if filename in ['alioss','qiniu','upyun','txcos','ftp','msonedrive','gcloud_storage', 'gdrive', 'aws_s3']: return panel_cloud()
+
+    if filename in [
+        'alioss', 'qiniu', 'upyun', 'txcos', 'ftp', 'msonedrive',
+        'gcloud_storage', 'gdrive', 'aws_s3', 'obs', 'bos'
+    ]:
+        return panel_cloud(False)
+
+    import html
+    filepath = html.unescape(filename.replace('\x00', ''))
+    if '..' in filepath.split('/') or '..' in filepath.split('\\'):
+        return public.ReturnJson(False, "INVALID PATH"), json_header
+    filename = os.path.abspath(filepath)
+
     if not os.path.exists(filename):
-        return public.ReturnJson(False, "FILE_NOT_EXISTS"), json_header
+        return public.ReturnJson(False, "File not exists"), json_header
+    if os.path.isdir(filename):
+        return public.ReturnJson(False, "The catalog is not downloadable"), json_header
+
+    try:
+        import stat
+        file_stat = os.stat(filename)
+        if stat.S_ISSOCK(file_stat.st_mode):
+            return public.ReturnJson(False, "Unix domain socket files are not downloadable"), json_header
+        elif stat.S_ISCHR(file_stat.st_mode):
+            return public.ReturnJson(False, "Character device files cannot be downloaded"), json_header
+        elif stat.S_ISBLK(file_stat.st_mode):
+            return public.ReturnJson(False, "Block device files are not downloadable"), json_header
+        elif stat.S_ISFIFO(file_stat.st_mode):
+            return public.ReturnJson(False, "FIFO pipeline files are not downloadable"), json_header
+    except:
+        pass
+
+
 
     if request.args.get('play') == 'true':
         import panelVideo
@@ -1706,6 +1736,8 @@ def download():
         public.WriteLog("TYPE_FILE", 'FILE_DOWNLOAD',
                         (filename, public.GetClientIp()))
         g.return_message = True
+        if not os.path.exists(filename):
+            return public.ReturnJson(False, "File not exists"), json_header
         return send_file(filename,
                          mimetype=mimetype,
                          as_attachment=True,
@@ -3529,7 +3561,7 @@ def xterm_v2():
     ssh_host_admin = ssh_terminal_v2.ssh_host_admin()
     defs = ('get_host_list', 'get_host_find', 'modify_host', 'create_host',
             'remove_host', 'set_sort', 'get_command_list', 'create_command',
-            'get_command_find', 'modify_command', 'remove_command')
+            'get_command_find', 'modify_command', 'remove_command', 'test_ssh_connect')
     return publicObject(ssh_host_admin, defs, None)
 
 
@@ -4919,12 +4951,40 @@ def download_v2():
     if comReturn: return comReturn
     filename = request.args.get('filename')
     if filename.find('|') != -1:
-        filename = filename.split('|')[0]  # 改为获取本地备份
+        filename = filename.split('|')[1]
     if not filename:
         return public.ReturnJson(False, "INIT_ARGS_ERR"), json_header
-    # if filename in ['alioss','qiniu','upyun','txcos','ftp','msonedrive','gcloud_storage', 'gdrive', 'aws_s3']: return panel_cloud()
+
+    if filename in [
+        'alioss', 'qiniu', 'upyun', 'txcos', 'ftp', 'msonedrive',
+        'gcloud_storage', 'gdrive', 'aws_s3', 'obs', 'bos'
+    ]:
+        return panel_cloud(False)
+
+    # === 限定下载根目录 ===
+    import html
+    filepath = html.unescape(filename.replace('\x00', ''))
+    if '..' in filepath.split('/') or '..' in filepath.split('\\'):
+        return public.ReturnJson(False, "INVALID PATH"), json_header
+    filename = os.path.abspath(filepath)
     if not os.path.exists(filename):
-        return public.ReturnJson(False, "FILE_NOT_EXISTS"), json_header
+        return public.ReturnJson(False, "File not exists"), json_header
+    if os.path.isdir(filename):
+        return public.ReturnJson(False, "The catalog is not downloadable"), json_header
+
+    try:
+        import stat
+        file_stat = os.stat(filename)
+        if stat.S_ISSOCK(file_stat.st_mode):
+            return public.ReturnJson(False, "Unix domain socket files are not downloadable"), json_header
+        elif stat.S_ISCHR(file_stat.st_mode):
+            return public.ReturnJson(False, "Character device files cannot be downloaded"), json_header
+        elif stat.S_ISBLK(file_stat.st_mode):
+            return public.ReturnJson(False, "Block device files are not downloadable"), json_header
+        elif stat.S_ISFIFO(file_stat.st_mode):
+            return public.ReturnJson(False, "FIFO pipeline files are not downloadable"), json_header
+    except:
+        pass
 
     if request.args.get('play') == 'true':
         import panelVideo
@@ -4938,6 +4998,8 @@ def download_v2():
         public.WriteLog("TYPE_FILE", 'FILE_DOWNLOAD',
                         (filename, public.GetClientIp()))
         g.return_message = True
+        if not os.path.exists(filename):
+            return public.ReturnJson(False, "File not exists"), json_header
         return send_file(filename,
                          mimetype=mimetype,
                          as_attachment=True,

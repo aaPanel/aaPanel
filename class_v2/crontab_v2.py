@@ -16,6 +16,7 @@ import public
 import json
 from flask import request
 from public.validate import Param
+from datetime import datetime
 
 try:
     from BTPanel import cache
@@ -288,9 +289,14 @@ class crontab:
             if 'sudo -u' in task['sBody']:
                 task['sBody'] = task['sBody'].split("bash -c '", 1)[-1].rstrip("'")
             # task['user'] = task.get('user', 'root')
-            
 
-
+            # 任务不存在 ，标记为停止
+            if task['type'] == 'once':
+                res = public.ExecShell(f"systemctl show {task['echo'][:-3] + '.timer'} -p LastTriggerUSecMonotonic --value")[0].strip()
+                if res not in ['0','']:
+                    task['status'] == 0
+                    public.M('crontab').where('id = ?', (task['id'],)).update({'status': 0})
+                task['cycle'] = public.lang("{} Execute once", task['where1'])
             self.get_mysql_increment_save(task)
             self.format_cycle(task)
 
@@ -594,6 +600,18 @@ class crontab:
         cronInfo = public.M('crontab').where('id=?', (id,)).field(self.field).find()
         if not cronInfo:
             return public.return_message(-1,0, public.lang("No data was found for the corresponding scheduled task. Please refresh the page to check if the scheduled task exists!"))
+
+        # 处理一次性定时任务
+        if cronInfo['type'] == 'once':
+            cron_time = datetime.strptime(cronInfo['where1'], "%Y-%m-%d %H:%M:%S")
+            if cron_time <= datetime.now():
+                return public.return_message(-1, 0, public.lang(f'The execution time has passed. Please reconfigure the task! '))
+
+            if get.get('if_stop') == 'true':
+                public.ExecShell(f'systemctl stop {cronInfo['echo'][:-3] + '.timer'}')
+            else:
+                public.ExecShell(f'systemctl start {cronInfo['echo'][:-3] + '.timer'}')
+
         status_msg = ['Stop', 'Start']
         status = 1
         if cronInfo['status'] == status:
@@ -636,6 +654,18 @@ class crontab:
                 try:
                     name = public.M('crontab').where('id=?', (id,)).field('name').find().get('name', '')
                     cronInfo = public.M('crontab').where('id=?', (id,)).field(self.field).find()
+
+                    # 补充定时任务
+                    if cronInfo['type'] == 'once':
+                        cron_time = datetime.strptime(cronInfo['where1'], "%Y-%m-%d %H:%M:%S")
+                        if cron_time <= datetime.now(): # 跳过
+                            continue
+
+                        if get.type == 'stop':
+                            public.ExecShell(f'systemctl stop {cronInfo['echo'][:-3] + '.timer'}')
+                        else:
+                            public.ExecShell(f'systemctl start {cronInfo['echo'][:-3] + '.timer'}')
+
                     if not cronInfo:
                         data.append({id: public.lang('The scheduled task with this ID does not exist'), 'status': False})
                         continue
@@ -709,6 +739,36 @@ class crontab:
             id = get['id']
             cronInfo = public.M('crontab').where('id=?', (id,)).field(self.field).find()
 
+            try:
+                # 处理定时任务
+                if cronInfo['type'] == 'once' and get['type'] == 'once':
+                    timer_path = '/etc/systemd/system/' + cronInfo['echo'][:-3] + '.timer'
+                    if not os.path.exists(timer_path):
+                        return public.return_message(-1,0, public.lang('The timer file does not exist. Try deleting this task and then recreate it!'))
+
+                    try:
+                        execute_datetime = datetime.strptime(get['where1'], "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        raise ValueError(public.lang(f'Execute time format error: {get['where1']}, required: YYYY-MM-DD HH:MM:SS'))
+
+                    timer_content = f"""[Unit]
+Description=Timer for once task: {cronInfo['echo'][:-3] + '.timer'}
+
+[Timer]
+OnCalendar={execute_datetime} 
+Persistent=false
+
+[Install]
+WantedBy=timers.target
+"""
+                    public.writeFile(timer_path, timer_content)
+                    # 重启配置
+                    public.ExecShell('systemctl daemon-reload')
+                    public.ExecShell(f'systemctl restart {cronInfo['echo'][:-3] + '.timer'}')
+                    public.ExecShell(f'systemctl reset-failed {cronInfo['echo'][:-3] + '.timer'}')
+            except Exception as e:
+                return public.return_message(-1,0,str(e))
+
 
             if get['type']=='sweek':
 
@@ -748,17 +808,17 @@ class crontab:
                 db_backup_path=""
             else:
                 db_backup_path=get.get('db_backup_path','')
-            columns = 'type,where1,where_hour,where_minute,save,backupTo,sName,sBody,urladdress,db_type,split_type,split_value,rname,post_param,flock,time_set,backup_mode,db_backup_path,time_type,special_time,user_agent,version,table_list,second'
+            columns = 'status,type,where1,where_hour,where_minute,save,backupTo,sName,sBody,urladdress,db_type,split_type,split_value,rname,post_param,flock,time_set,backup_mode,db_backup_path,time_type,special_time,user_agent,version,table_list,second'
             values = (get['type'], get['where1'], get['hour'],
                       get['minute'], get['save'], get['backupTo'], cronInfo['sName'], get['sBody']
                       , get['urladdress'], get.get("db_type"), get.get("split_type"), get.get("split_value"), get['name'], get.get('post_param', ''), get.get('flock', 0),get.get('time_set',''),get.get('backup_mode', ''),db_backup_path,get.get('time_type',''),get.get('special_time',''),get.get('user_agent',''),get.get('version',''),get.get('table_list',''),get.get('second',''))
             if 'save_local' in get:
                 columns += ",save_local, notice, notice_channel"
-                values = (get['type'], get['where1'], get['hour'],
+                values = (1,get['type'], get['where1'], get['hour'],
                           get['minute'], get['save'], get['backupTo'], cronInfo['sName'], get['sBody'],
                           get['urladdress'], get.get("db_type"), get.get("split_type"), get.get("split_value"), get['name'], get.get('post_param', ''), get.get('flock', 0),get.get('time_set',''),get.get('backup_mode', ''),db_backup_path,get.get('time_type',''),get.get('special_time',''),get.get('user_agent',''),get.get('version',''),get.get('table_list',''),get.get('second',''),
                           get['save_local'], get["notice"],get["notice_channel"])
-            if cronInfo['status'] != 0:
+            if cronInfo['status'] != 0 and cronInfo['type'] != 'once':
                 if not self.remove_for_crond(cronInfo['echo']):
                     return public.return_message(-1,0, public.lang('Writing scheduled task failed, please check if the disk is writable or if system hardening is enabled!'))
                 # if cronInfo['status'] == 0: return public.returnMsg(False, '当前任务处于停止状态,请开启任务后再修改!')
@@ -949,7 +1009,7 @@ class crontab:
                 return public.return_message(-1,0, public.lang('CRONTAB_TASKNAME_EMPTY'))
             if get['sType'] == 'toShell':
                 get['sBody'] = get['sBody'].replace('\r\n', '\n')
-            
+
             # 如果user有值，则修改sBody
             user = get.get('user', 'root')
             if user:
@@ -960,6 +1020,11 @@ class crontab:
                     version = get['version'].replace(".", "")
                     get['sBody'] = get['sBody'].replace("${1/./}", version)
                     print(get['sBody'])
+
+            # 新增定时任务：在指定时间执行一次
+            if get['type'] == 'once' and get['sType'] == 'toShell':
+                return self.add_once_crontab(get)
+
             if get['sType'] == 'startup_services':
                 return self.ensure_execute_commands_script(get)  # 检查并创建脚本
                 
@@ -1011,7 +1076,129 @@ class crontab:
         except Exception as e:
             return public.return_message(-1,0, public.lang(str(e)))
 
+    # 添加一次性定时任务
+    def add_once_crontab(self, get):
+        try:
+            # 执行时间校验
+            execute_time_str = get.get('where1', '').strip()
+            if not execute_time_str:
+                raise ValueError(public.lang('Missing required parameter: execute_time (format: YYYY-MM-DD HH:MM:SS)'))
 
+            if not get['sBody'].strip():
+                raise ValueError(public.lang('CRONTAB_TASKBODY_EMPTY'))
+
+            try:
+                execute_datetime = datetime.strptime(execute_time_str, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                raise ValueError(public.lang(f'Execute time format error: {execute_time_str}, required: YYYY-MM-DD HH:MM:SS'))
+
+            if execute_datetime <= datetime.now():
+                raise ValueError(public.lang(f'Execute time must be in the future'))
+
+            # 生成脚本文件
+            cronPath = public.GetConfigValue('setup_path') + '/cron'
+            os.makedirs(cronPath, mode=0o755, exist_ok=True)
+            cronName = f"once_{int(time.time())}.sh"
+            scriptPath = os.path.join(cronPath, cronName)
+            logPath = os.path.join(cronPath, f"{cronName}.log")
+            script_content = f"""#!/bin/bash
+    {get['sBody']}"""
+
+            # 写入脚本并授权
+            public.writeFile(scriptPath, script_content)
+            os.chmod(scriptPath, 0o755)
+
+             # 使用systemd-timer
+            """
+                默认执行用户：root
+                执行类型：一次性 oneshot
+                执行超时：一小时 3600
+            """
+            systemd_task_name = cronName[:-3]
+            service_path = f"/etc/systemd/system/{systemd_task_name}.service"  # 服务文件
+            timer_path = f"/etc/systemd/system/{systemd_task_name}.timer"  # 定时器文件
+
+            # 生成 systemd 服务文件
+            service_content = f"""[Unit]
+Description=Once crontab task: {public.xssencode2(systemd_task_name)}
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+
+ExecStart=/bin/bash -c '{scriptPath} >> {logPath} 2>&1'
+TimeoutSec=3600
+            """
+
+            # 生成 systemd 定时器文件
+            timer_content = f"""[Unit]
+Description=Timer for once task: {public.xssencode2(systemd_task_name)}
+
+[Timer]
+OnCalendar={execute_time_str} 
+Persistent=false
+
+[Install]
+WantedBy=timers.target
+            """
+
+            # 写入 systemd 配置文件
+            public.writeFile(service_path, service_content)
+            public.writeFile(timer_path, timer_content)
+
+            # 设置 systemd 配置文件权限（符合系统要求：644）
+            os.chmod(service_path, 0o644)
+            os.chmod(timer_path, 0o644)
+
+            # 重新加载 systemd 配置
+            reload_result = public.ExecShell('systemctl daemon-reload')
+            if reload_result[1] != '':
+                raise ValueError(f"systemd reload failed: {reload_result[1]}")
+
+            # 启动定时器
+            start_result = public.ExecShell(f'systemctl start {systemd_task_name}.timer')
+            if start_result[1] != '':
+                raise ValueError(f"Timer start failed: {start_result[1]}")
+            # 数据库记录
+            db_backup_path = "" if get.get('db_backup_path') == "/www/backup" else get.get('db_backup_path', '')
+            columns = 'name,type,where1,where_hour,where_minute,echo,\
+                            status,save,backupTo,sType,sName,sBody,urladdress,db_type,split_type,split_value,keyword,post_param,flock,time_set,backup_mode,db_backup_path,time_type,special_time,user_agent,version,table_list,result,second'
+            values = (
+                public.xssencode2(get['name']), 'once', execute_datetime, 0, 0, cronName,
+                1, get.get('save', 0), get.get('backupTo', ''), get['sType'], get.get('sName', ''), get['sBody'],
+                get.get('urladdress', ''), get.get("db_type"), get.get("split_type"), get.get("split_value"),
+                get.get('keyword', ''), get.get('post_param', ''), get.get('flock', 0), '',
+                get.get('backup_mode', ''), db_backup_path, '', '', get.get('user_agent', ''),
+                get.get('version', ''), get.get('table_list', ''), get.get('result', 1), ''
+            )
+
+            addData = public.M('crontab').add(columns, values)
+            public.add_security_logs('crontab tasks',
+                                     f'Add once task [{get["name"]}] success, execute time: {execute_time_str}')
+
+            if isinstance(addData, str):
+                raise ValueError(addData)
+            public.WriteLog(public.lang('crontab tasks'), public.lang(f'Successfully added once task [{get["name"]}]'))
+            if addData > 0:
+                result = public.return_message(0, 0, public.lang('ADD_SUCCESS'))
+                result['message']['id'] = addData
+                result['message']['execute_time'] = execute_time_str
+                return result
+            raise ValueError(public.lang('Failed to add once task'))
+        except Exception as e:
+            try:
+                if 'scriptPath' in locals() and os.path.exists(scriptPath):
+                    os.remove(scriptPath)
+                if 'logPath' in locals() and os.path.exists(logPath):
+                    os.remove(logPath)
+                if 'service_path' in locals() and os.path.exists(service_path):
+                    os.remove(service_path)
+                if 'timer_path' in locals() and os.path.exists(timer_path):
+                    os.remove(timer_path)
+            except:
+                pass
+            raise ValueError(e)
 
     # 构造周期
     def GetCrondCycle(self, params):
@@ -1138,9 +1325,28 @@ class crontab:
             id = get['id']
             # 尝试删除数据库增量备份表中的数据
             public.M("mysql_increment_settings").where("cron_id=?", (id)).delete()
-            find = public.M('crontab').where("id=?", (id,)).field('name,echo').find()
+            find = public.M('crontab').where("id=?", (id,)).field('name,echo,type').find()
             if not find: return public.return_message(-1,0, public.lang('The specified task does not exist!'))
             if not self.remove_for_crond(find['echo']): return public.return_message(-1,0, public.lang('Unable to write to file, please check if system hardening is enabled!'))
+
+            # 删除一次性定时任务
+            if find['type'] == 'once':
+                try:
+                    # 删除任务配置文件
+                    timer = '/etc/systemd/system/' + find['echo'][:-3] + '.timer'
+                    service = '/etc/systemd/system/' + find['echo'][:-3] + '.service'
+                    if os.path.exists(timer):
+                        public.ExecShell(f'rm -rf {timer}')
+                    if os.path.exists(service):
+                        public.ExecShell(f'rm -rf {service}')
+
+                    # 清理并重载任务
+                    public.ExecShell(f'systemctl stop {find['echo'][:-3] + '.timer'}')
+                    public.ExecShell(f'systemctl daemon-reload')
+                    public.ExecShell(f'systemctl reset-failed {find['echo'][:-3] + '.timer'}')
+                except:
+                    pass
+
             cronPath = public.GetConfigValue('setup_path') + '/cron'
             sfile = cronPath + '/' + find['echo']
             if os.path.exists(sfile): os.remove(sfile)

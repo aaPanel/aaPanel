@@ -1274,10 +1274,11 @@ class data:
         try:
             version=self.get_plugin_version(os.path.join(public.get_panel_path(),"plugin/btwaf/info.json"))
             version_list=version.split(".")
+            #9.6.8版本以上才支持waf报表
             if len(version_list)<3:return result
             if int(version_list[0])<9:return result
             if int(version_list[0])==9 and int(version_list[1])<6:return result
-            if int(version_list[0])==9 and int(version_list[2])<8:return result
+            if int(version_list[0])==9 and int(version_list[1])<6 and int(version_list[2])<8:return result
             get=public.dict_obj()
             get.p=1
             get.limit=10000

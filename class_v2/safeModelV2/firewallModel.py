@@ -2988,6 +2988,7 @@ class main(safeBase):
             pay = self.__check_auth()
             not_pay_list = []
             tmp_data = []
+            result = {"status": False, "msg": "import rules fail"}
             # |分隔符格式文件导入 hezhihong
             if data_list and isinstance(data_list, str):
 

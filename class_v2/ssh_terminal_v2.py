@@ -1089,6 +1089,93 @@ class ssh_host_admin(ssh_terminal):
             host_info['pkey_passwd'] = info_tmp['pkey_passwd']
         return public.return_message(0, 0,  host_info)
 
+    # 测试连接
+    def test_ssh_connect(self, args):
+        """
+        简化版 SSH 连接测试接口
+        请求参数（必传）：host, username, csrf_token
+        请求参数（二选一）：password 或 pkey
+        请求参数（可选）：port（默认22）
+        返回格式：{"code": 0/1, "msg": "提示信息", "data": {}}
+        """
+        # 3.2 必传参数校验
+        host = args.get('host', '').strip()
+        username = args.get('username', 'root').strip()
+        password = args.get('password', '').strip()
+        pkey = args.get('pkey', '').strip()
+        pkey_pwd = args.get('pkey_passwd', '').strip()
+        port = int(args.get('port', 22)) if args.get('port', '22').isdigit() else 22
+
+        if not password and not pkey:
+            return public.return_message(-1,0,'Incomplete parameters!')
+
+        success, msg = self.test_ssh(host, port, username, password, pkey, pkey_pwd)
+        if not success:
+            return public.return_message(-1,0,msg)
+
+        return public.return_message(0,0,'Connection successful')
+
+    def test_ssh(self, host, port, username, password=None, pkey=None,pkey_pwd=None, timeout=10):
+        """
+         SSH 连接测试
+        :param host: 主机IP/域名
+        :param port: SSH端口
+        :param username: 登录用户名
+        :param password: 登录密码（与pkey二选一）
+        :param pkey: SSH私钥字符串（与password二选一）
+        :param timeout: 超时时间（秒）
+        :return: (是否成功, 提示信息)
+        """
+        import paramiko
+        import io
+        ssh_client = None
+        try:
+            # 初始化SSH客户端
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            if pkey:
+                try:
+                    if 'OPENSSH' in pkey:
+                        private_key = paramiko.Ed25519Key.from_private_key(io.StringIO(pkey), password=pkey_pwd)
+                    elif 'RSA' in pkey:
+                        private_key = paramiko.RSAKey.from_private_key(io.StringIO(pkey), password=pkey_pwd)
+                    elif 'EC' in pkey:
+                        private_key = paramiko.ECDSAKey.from_private_key(io.StringIO(pkey), password=pkey_pwd)
+                    else:
+                        return False, 'Unsupported private key type (only support Ed25519/RSA/ECDSA)'
+                except paramiko.PasswordRequiredException:
+                    return False, 'SSH private key is encrypted, please provide pkey_passwd!'
+                except (paramiko.SSHException, ValueError) as e:
+                    return False, f"Invalid SSH private key or password: {str(e)}"
+
+                ssh_client.connect(
+                    hostname=host, port=port, username=username,
+                    pkey=private_key, timeout=timeout,
+                    look_for_keys=False, allow_agent=False
+                )
+            else:
+                # 密码认证
+                ssh_client.connect(
+                    hostname=host, port=port, username=username,
+                    password=password.strip(), timeout=timeout,
+                    look_for_keys=False, allow_agent=False
+                )
+
+            ssh_client.exec_command('whoami', timeout=5)
+            return True, public.lang("Connection successful! {}",f"{host}:{port}@{username}")
+
+        except paramiko.AuthenticationException:
+            return False, "The username or password /SSH Key is incorrect"
+        except TimeoutError:
+            return False, f"Connection timeout (exceeding {timeout} seconds)"
+        except (paramiko.SSHException, ValueError) as e:
+            return False, f"The SSH Key format is incorrect: {str(e)}"
+        except Exception as e:
+            return False, f"Connection failed: {str(e)}"
+        finally:
+            if ssh_client:
+                ssh_client.close()
+
     def modify_host(self,args):
         '''
             @name 修改SSH信息

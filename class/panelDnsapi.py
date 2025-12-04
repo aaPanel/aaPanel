@@ -30,6 +30,7 @@ __all__ = [
     "NameCheapDns",
     "CloudFlareDns",
     "PorkBunDns",
+    "GodaddyDns",
 ]
 
 
@@ -226,6 +227,9 @@ class aaPanelDns(BaseDns):
             "name": record.get("record"),
             "type": record.get("record_type").upper(),
             "value": record.get("record_value"),
+            "ttl": record.get("ttl", 600),
+            "priority": record.get("priority", 10),
+            "proxy": record.get("proxy", -1),
             "new_record": {
                 "name": new_record.get("record"),
                 "type": new_record.get("record_type").upper(),
@@ -1222,30 +1226,185 @@ class NameSiloDns(BaseDns):
         return True
 
 
-# noinspection PyUnusedLocal
-class ClouDns(BaseDns):
-    dns_provider_name = "cloudns"
+class GodaddyDns(BaseDns):
+    dns_provider_name = "godaddy"
     kw_prefix = {
         "priority": "priority"
     }
 
     def __init__(self, api_user, api_key, **kwargs):
         super().__init__()
-        self.api_user = api_user  # auth-id
+        self.api_user = api_user  # secret key
         self.api_key = api_key
         self.timeout = 30
-        self.base_url = "https://api.cloudns.net"
+        # self.base_url = "https://api.ote-godaddy.com"
+        self.base_url = "https://api.godaddy.com"
 
-    def verify(self) -> bool:
-        try:
-            url = f"{self.base_url}/login/login.json"
-            params = {
-                "auth-id": self.api_user,
-                "auth-password": self.api_key
+        self.headers = {
+            "Authorization": f"sso-key {api_key}:{api_user}",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+    def _make_request(self, method, endpoint, payload=None):
+        url = f"{self.base_url}{endpoint}"
+        response = requests.request(method, url, headers=self.headers, json=payload)
+        if response.status_code in [200, 204]:
+            return response
+        if response.json().get("code") == "UNABLE_TO_AUTHENTICATE":
+            # godaddy api 需要拥有50个域名方可调用, 官方链接说明
+            # https://www.godaddy.com/zh/help/how-do-i-access-domain-related-apis-42424
+            raise Exception('GoDaddy API have been rejected, '
+                            'Official Documentation link:\n'
+                            '"https://www.godaddy.com/zh/help/how-do-i-access-domain-related-apis-42424"')
+        raise Exception(f"Godaddy API Error {response.status_code}: {response.text}")
+
+    # =============== acme ======================
+    def create_dns_record(self, domain_name, domain_dns_value):
+        # acme 调用
+        domain_name = domain_name.lstrip("*.")
+        self.create_org_record(
+            domain_name=domain_name,
+            record="_acme-challenge." + domain_name,
+            record_value=domain_dns_value,
+            record_type="TXT",
+            ttl=600,
+        )
+
+    def delete_dns_record(self, domain_name, domain_dns_value):
+        # 移除挑战值
+        domain_name, _, acme_txt = extract_zone(domain_name)
+        acme_txt = acme_txt + "." + domain_name
+        self.remove_record(domain_name, acme_txt, "TXT")
+
+    # =============== ote test ==================
+    def ote_buy_domain(self, domain_name):
+        if "ote" not in self.base_url:
+            raise HintException("Only support ote env")
+        url = self.base_url + f"/v1/domains/purchase"
+        data = {
+            "domain": domain_name,
+            "consent": {
+                "agreementKeys": [
+                    "DNRA"
+                ],
+                "agreedBy": "bt-dev3",
+                "agreedAt": datetime.utcnow().isoformat() + "Z"
+            },
+            "period": 1,
+            "renewAuto": False,
+            "privacy": False,
+            "contactRegistrant": {
+                "nameFirst": "abc",
+                "nameLast": "abc",
+                "email": "abc@example.com",
+                "phone": "+1.1234567890",
+                "addressMailing": {
+                    "address1": "123 Main St",
+                    "city": "town",
+                    "state": "AZ",
+                    "postalCode": "85001",
+                    "country": "US"
+                }
             }
-            req = requests.get(url, params=params)
-            if req.json().get("status") == "Success":
-                return True
-            raise Exception(req.json().get("statusDescription"))
+        }
+        try:
+            response = requests.post(url, headers=self.headers, json=data, timeout=self.timeout)
+            res = response.json()
+            if response.status_code != 200:
+                raise HintException(res.get("message", "buy domain fail"))
+            return res
         except Exception as e:
             raise HintException(e)
+
+    # =============== 域名管理 ====================
+    def get_domains(self) -> list:
+        try:
+            res = self._make_request("GET", "/v1/domains").json()
+            domains = []
+            for domain in res:
+                if domain.get("status") != "ACTIVE":
+                    sync_log(f"|-- warning: [{domain.get('domain')}] is Not ACTIVE, Skip It...")
+                    continue
+                if domain.get("expires") and domain.get("expires") < datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"):
+                    sync_log(f"|-- warning: [{domain.get('domain')}] is Expired, Skip It...")
+                    continue
+                domains.append(domain.get("domain"))
+            domains.sort()
+            return domains
+        except Exception as e:
+            raise HintException(f"get domains error {e}")
+
+    def get_dns_record(self, domain_name: str) -> list:
+        domain_name, _, _ = extract_zone(domain_name)
+        try:
+            res = self._make_request(
+                "GET", f"/v1/domains/{domain_name}/records"
+            ).json()
+            return [
+                {
+                    "record": x.get("name"),
+                    "record_value": x.get("data"),
+                    "record_type": x.get("type"),
+                    "ttl": int(x.get("ttl", 1)),
+                    "priority": int(x.get("priority", -1)) if x.get("priority") not in [None, 0] else -1,
+                    "proxy": -1,
+                } for x in res
+            ]
+        except Exception as e:
+            raise HintException(e)
+
+    def create_org_record(self, domain_name, record, record_value, record_type, ttl=1, **kwargs):
+        domain_name, _, _ = extract_zone(domain_name)
+        body = {
+            "data": record_value,
+            "name": record,
+            "ttl": 600 if ttl == 1 else int(ttl),
+            "type": record_type
+        }
+        body = white_kwargs(body, self.kw_prefix, kwargs)
+        try:
+            self._make_request(
+                "PATCH",
+                f"/v1/domains/{domain_name}/records",
+                payload=[body]
+            )
+            return {"status": True, "msg": "success"}
+        except Exception as e:
+            raise HintException(e)
+
+    def remove_record(self, domain_name, record, record_type="TXT", **kwargs) -> dict:
+        domain_name, _, _ = extract_zone(domain_name)
+        try:
+            self._make_request(
+                "DELETE", f"/v1/domains/{domain_name}/records/{record_type}/{record}"
+            )
+            return {"status": True, "msg": "success"}
+        except Exception as e:
+            raise HintException(e)
+
+    def update_record(self, domain_name, record: dict, new_record: dict, **kwargs):
+        domain_name, _, _ = extract_zone(domain_name)
+        try:
+            body = {
+                "data": new_record.get("record_value"),
+                "name": new_record.get("record"),
+                "ttl": 600 if new_record.get("ttl") == 1 else int(new_record.get("ttl")),
+                "type": new_record.get("record_type")
+            }
+            body = white_kwargs(body, self.kw_prefix, new_record)
+            self._make_request(
+                "PUT",
+                f"/v1/domains/{domain_name}/records/{record['record_type']}/{record['record']}",
+                payload=[body]
+            )
+            return {"status": True, "msg": "success"}
+        except Exception as e:
+            raise HintException(e)
+
+    def verify(self) -> Optional[bool]:
+        try:
+            self.get_domains()
+        except Exception as e:
+            raise HintException(f"Verify fail, please check your Api Key and Secret Key: {e}")
+        return True
