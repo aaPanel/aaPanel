@@ -1,0 +1,99 @@
+{
+  "Plugin": {
+    "Mysql": {
+      "index_1": "Este é o arquivo de configuração principal do {0}, se você não entende as regras de configuração, por favor, não o modifique.",
+      "index_2": "Alertar-me quando o status parar",
+      "index_3": "Configuração de Alarme de Parada de Estado",
+      "index_4": "Reinício automático",
+      "index_5": "Tem certeza de que deseja {0} o serviço {1}?",
+      "index_6": "Log binário",
+      "index_7": "Dicas quentes: O log binário do Mysql serve para registrar o log de operação atual, pode ser usado para recuperação de dados, backup de dados.",
+      "index_8": "Hora da última modificação",
+      "index_9": "Excluir log",
+      "index_10": "Você realmente quer excluir o log [{0}]?",
+      "index_11": "Ativar o log binário pode proteger a segurança dos dados do Mysql, mas ao mesmo tempo consumirá uma certa quantidade de armazenamento em disco, deseja continuar?",
+      "index_12": "Desligar o log binário não registrará mais todas as operações de modificação no log binário do banco de dados?",
+      "index_13": "Mover",
+      "index_14": "Aviso de Risco: O Mysql parará de rodar durante o processo de migração, por favor, tenha cuidado",
+      "index_15": "Aviso de Risco: Aguarde até que a migração seja concluída antes de realizar qualquer outra operação durante o processo de migração",
+      "index_16": "Migração de banco de dados",
+      "index_17": "Tem certeza de que deseja migrar o banco de dados para [{0}]?",
+      "index_18": "Proteção de memória",
+      "index_19": "Nota: Após ativado, a prioridade de memória do MySQL será ajustada e o MySQL nunca será morto pelo sistema, o que pode garantir a operação estável do MySQL. No entanto, pode fazer com que outros processos sejam mortos anormalmente, o que pode afetar seriamente a operação do sistema. É recomendado ativá-lo quando o MySQL precisar rodar de forma estável.",
+      "index_20": "Plano de otimização",
+      "index_21": "Uso máximo de RAM",
+      "index_22": "Reiniciar Serviço {0}",
+      "index_23": "Reinicie o banco de dados para que a configuração entre em vigor",
+      "index_24": "Você reiniciou o serviço {0}?",
+      "index_25": "Se você precisar alterar a versão do MySQL, faça backup dos seus dados, desinstale o MySQL e reinstale-o.",
+      "index_26": "Local de armazenamento",
+      "index_27": "Otimização",
+      "index_28": "Log lento",
+      "index_29": "Tempo de intervalo",
+      "index_30": "Suporte"
+    },
+    "Ftp": {
+      "index_1": "Este recurso é exclusivo da versão Profissional, {a}",
+      "index_2": "Interruptor de gerenciamento de log",
+      "index_3": "Após ligado, todos os registros de login e operação dos usuários FTP serão gravados.",
+      "index_4": "Gerenciamento de log",
+      "index_5": "Após ligar o gerenciamento de log do pure-ftpd, ele registrará o login e os registros de operação de todos os usuários FTP, deseja continuar a operação?",
+      "index_6": "Após desligar o gerenciamento de log do pure-ftpd, ele não poderá registrar o login e os registros de operação de todos os usuários FTP, deseja continuar a operação?",
+      "index_7": "O endereço FTP atual é",
+      "index_8": "Baixar ferramenta de conexão FTP (FileZilla, código aberto gratuito)",
+      "index_9": "Trocar versão",
+      "index_10": "Gerenciamento de usuários",
+      "index_11": "A versão atual é a mesma que a versão selecionada!",
+      "index_12": "Tem certeza de que deseja instalar {0}-{1}"
+    },
+    "Redis": {
+      "index_1": "Após modificar a configuração, você precisa reiniciar o redis para que entre em vigor, se seus dados precisarem ser persistidos, execute a operação de salvamento primeiro.",
+      "index_2": "Aviso: Não ative o acesso à extranet do Redis, pois o acesso irrestrito ao IP provavelmente levará à intrusão do servidor.",
+      "index_3": "Após a configuração, o novo diretório redis_cache será criado no diretório selecionado e receberá permissões do redis",
+      "index_4": "Caminho de armazenamento de arquivo persistente",
+      "index_5": "Persistência AOF",
+      "index_6": "Persistência RDB",
+      "index_7": "Definir Persistência"
+    },
+    "Apache": {
+      "index_1": "Hora de reinício",
+      "index_2": "Hora de inicialização",
+      "index_3": "Total de conexões",
+      "index_4": "Total de bytes transferidos",
+      "index_5": "Requisições por segundo",
+      "index_6": "Processo ocupado",
+      "index_7": "Processo ocioso",
+      "index_8": "Apache usa CPU",
+      "index_9": "Apache usa memória",
+      "index_10": "Daemon",
+      "index_11": "O daemon pode ser iniciado automaticamente após o serviço {0} ser parado para garantir que o serviço {0} esteja sempre em execução.",
+      "index_12": "Campos",
+      "index_13": "Valor atual",
+      "index_14": "Verificação padrão a cada 1 minuto, pode ser alterada no Cron"
+    },
+    "Mencached": {
+      "index_1": "IP de escuta, por favor não modifique livremente",
+      "index_2": "Porta de escuta, geralmente não há necessidade de modificar",
+      "index_3": "MB, tamanho do cache, recomenda-se não exceder 512M",
+      "index_4": "Número máximo de conexões, recomendado não exceder 40960"
+    },
+    "MongoDB": {
+      "index_1": "Após a configuração, crie um novo diretório bt_mongodb no diretório selecionado e dê permissão mongo",
+      "index_2": "Não modifique o IP de monitoramento à vontade",
+      "index_3": "Local de armazenamento de dados",
+      "index_4": "Local do arquivo de log",
+      "index_5": "Caminho de salvamento do PID",
+      "index_6": "Porta de escuta, geralmente não há necessidade de modificar",
+      "index_7": "Por favor, inicie o serviço mongodb primeiro!",
+      "index_8": "Você realmente quer excluir o banco de dados [{0}]?"
+    },
+    "Openlitespeed": {
+      "index_1": "Especifica o tempo máximo de ociosidade da conexão (segundos) permitido durante o processamento de uma solicitação",
+      "index_2": "Habilita a compressão GZIP/Brotli para respostas estáticas e dinâmicas",
+      "index_3": "Especifica o nível de compressão GZIP aplicado ao conteúdo dinâmico. Varia de 1 (mais baixo) a 9 (mais alto)",
+      "index_4": "Especifica o número máximo de conexões simultâneas que o servidor pode aceitar. Isso inclui conexões TCP simples e conexões SSL",
+      "index_5": "Especifica o número máximo de solicitações que podem ser atendidas por meio de uma sessão keep-alive (persistente)",
+      "index_6": "Especifica o número máximo de conexões SSL simultâneas que o servidor aceitará. Como o total de conexões SSL e não SSL simultâneas não pode exceder o limite especificado por “Conexões Máximas”, o número real de conexões SSL simultâneas permitidas deve ser menor que esse limite"
+    }
+  }
+}
